@@ -7,7 +7,7 @@ Use telegram as chatbot assitance. We dont need develop UI to chat, we just wait
 - Every time start app we need to update web hook (subdomain from cloud flare) for telegram chatbot 
 
 
-We dont need build server , buy domain ... Just use our PC , We can use ollama to deploy local PC.
+We dont need build server , dont need buy domain ... Just use our PC , We can use ollama to deploy local PC.
 
 When we chat an message -> telegram call webhook to subdomain ( we use cloudflare tunnel ) -> python in our PC call LLM (eg: gemini or ollama local PC) -> get response -> chatbot reply message 
 
