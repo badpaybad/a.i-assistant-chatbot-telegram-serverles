@@ -82,3 +82,15 @@ my sample chatbot: https://t.me/dunp_assitant_bot
               https://github.com/ollama/ollama
 
               
+# 6. my_telethon.py
+
+Để lấy tất cả msg mà account của bạn đã tham gia, rồi summary unread và gửi vào saved messages. Không bắt buộc cần có
+
+
+            if  TELEGRAM_API_ID is not None and TELEGRAM_API_ID !="" and TELEGRAM_API_HASH is not None and TELEGRAM_API_HASH != "": 
+                # https://my.telegram.org/apps  nếu muốn nhận tất cả tin nhắn từ các nhóm mà bạn tham gia 
+                asyncio.create_task(my_telethon.run_until_disconnected())
+
+            https://my.telegram.org/apps find it here
+            TELEGRAM_API_ID=""
+            TELEGRAM_API_HASH="" 
