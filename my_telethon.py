@@ -111,7 +111,7 @@ async def periodic_summary():
             print(summary_text)
             print("------------------------------------")
 
-            await send_to_saved_messages(f"--- Tóm tắt cho nhóm {group_name} ---\n{summary_text}")
+            await send_to_saved_messages(f"--- Tóm tắt cho nhóm: {group_name} ---\n{summary_text}")
             group_messages[group_id].clear()
 
         # --- TÓM TẮT TIN NHẮN CÁ NHÂN ---
@@ -145,7 +145,7 @@ async def periodic_summary():
             print(summary_text)
             print("------------------------------------")
 
-            await send_to_saved_messages(f"--- Tóm tắt từ {user_name} ---\n{summary_text}")
+            await send_to_saved_messages(f"--- Tóm tắt từ: {user_name} ---\n{summary_text}")
             user_messages[user_id].clear()
 
 

@@ -14,8 +14,8 @@ Bạn sẽ nhận được một đoạn văn bản chứa các tin nhắn từ 
 Nhiệm vụ của bạn là cung cấp một bản tóm tắt ngắn gọn về các chủ đề chính và những điểm quan trọng đã được thảo luận.
 Bản tóm tắt phải bằng tiếng Việt.
 Tập trung vào những thông tin quan trọng nhất và bỏ qua những cuộc trò chuyện không liên quan.
-Bắt đầu bản tóm tắt bằng "Tổng kết các nội dung chính:".
 """
+# Bắt đầu bản tóm tắt bằng "Tổng kết các nội dung chính:".
 # Khởi tạo client cấp thấp với API Key của bạn
 client = genai.Client(api_key=GEMINI_APIKEY)
 
@@ -29,7 +29,7 @@ tools = [
 
 # Cấu hình sinh nội dung
 generation_config = types.GenerateContentConfig(
-    temperature=0.2,  # Độ sáng tạo vừa phải để giữ đúng vần luật,
+    temperature=0.2,  # Độ sáng tạo ít để tập trung nội dung chính
     system_instruction=system_instruction,
     # tools=tools,
     # tool_config=types.ToolConfig(

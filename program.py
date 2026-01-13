@@ -18,8 +18,11 @@ from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memor
 
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH
 
+import bot_telegram
+import bot_discord
 
-import my_telethon 
+import my_telethon
+import telegram_types
 # --- CẤU HÌNH ---
 
 # Biến toàn cục để quản lý tiến trình tunnel
@@ -32,15 +35,6 @@ webhook_base_url = None
 chat_history = defaultdict(lambda: deque(maxlen=10))
 
 # --- HÀM GỬI TIN NHẮN (ASYNC) ---
-
-
-async def send_telegram_message(chat_id: int, text: str):
-    async with httpx.AsyncClient() as client:
-        payload = {"chat_id": chat_id, "text": text}
-        try:
-            await client.post(TELEGRAM_API_URL, json=payload)
-        except Exception as e:
-            print(f"Lỗi khi gửi tin: {e}")
 
 
 async def wait_for_server_ready(url: str, timeout: int = 30):
@@ -78,7 +72,8 @@ cloudflared tunnel --url http://localhost:8088
 """
 
 
-async def background_tunnel_and_webhook():
+async def cloudflare_tunel_get_baseurl():
+
     global tunnel_process
     global webhook_base_url
 
@@ -106,6 +101,12 @@ async def background_tunnel_and_webhook():
         print("Không lấy được URL từ Cloudflare")
         return
 
+    return webhook_base_url
+
+
+async def background_tunnel_and_webhook():
+    await cloudflare_tunel_get_baseurl()
+
     # 3. Đợi cho đến khi port 8088 thông (FastAPI đã boot xong)
     if await wait_for_server_ready(webhook_base_url):
         # 4. Cuối cùng mới đăng ký với Telegram
@@ -114,77 +115,23 @@ async def background_tunnel_and_webhook():
 
         await asyncio.sleep(5)
         # await register_webhook_to_telegram(full_url)
-        await register_webhook()
-        # await update_discord_endpoint(webhook_base_url)
+        await bot_telegram.register_webhook(webhook_base_url)
+        # await bot_discord.update_discord_endpoint(webhook_base_url)
 
-        await asyncio.sleep(2)
-        if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID !=0:
-            await send_telegram_message(TELEGRAM_BOT_CHATID, webhook_base_url)
-
-
-async def register_webhook():
-    # 1. Khởi tạo tunnel tới cổng 8088
-    if not webhook_base_url:
-        print(f"Không lấy được webhook_url")
-        return
-
-    # 2. Bắt đầu chạy tunnel và lấy URL
-    # Lệnh này sẽ trả về URL có dạng https://xxx.trycloudflare.com
-    webhook_url = f"{webhook_base_url}/webhook"
-
-    print(f"Webhook đang cần đăng ký: {webhook_url}")
-
-    async with httpx.AsyncClient() as client:
-        response = await client.get(
-            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setWebhook",
-            params={"url": webhook_url}
-        )
-        print("Telegram Response:", response.json())
-        if response.status_code != 200:
-            raise Exception("Không đăng ký webhook cho telegram được")
-
-    print(f"Webhook đang chạy: {webhook_url}")
-    # Lưu ý: Khi dùng cách này, tunnel sẽ chạy song song với ứng dụng của bạn.
-
-
-async def update_discord_endpoint(new_tunnel_url: str):
-    """Cập nhật URL tương tác cho Discord tự động"""
-
-    # Discord yêu cầu endpoint phải là đường dẫn cụ thể
-    full_url = f"{new_tunnel_url}/discord"
-
-    # API URL của Discord để sửa thông tin Application
-    api_url = f"https://discord.com/api/v10/applications/{DISCORD_APPID}"
-
-    headers = {
-        "Authorization": f"Bot {DISCORD_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "interactions_endpoint_url": full_url
-    }
-
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.patch(api_url, json=payload, headers=headers)
-            if response.status_code == 200:
-                print(f"Discord Endpoint updated to: {full_url}")
-            else:
-                print(
-                    f"❌ Discord Update Failed: {response.status_code} - {response.text}")
-        except Exception as e:
-            print(f"Error updating Discord: {e}")
+        if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID != 0:
+            await asyncio.sleep(2)
+            await bot_telegram.send_telegram_message(TELEGRAM_BOT_CHATID, webhook_base_url)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
 
-    print("Server đang khởi động, bắt đầu đăng ký Webhook...")
-    asyncio.create_task(background_tunnel_and_webhook())
+    if TELEGRAM_BOT_TOKEN is None or TELEGRAM_BOT_TOKEN != "":
+        print("Server đang khởi động, bắt đầu đăng ký Webhook...")
+        asyncio.create_task(background_tunnel_and_webhook())
 
-    if  TELEGRAM_API_ID is not None and TELEGRAM_API_ID !="" and TELEGRAM_API_HASH is not None and TELEGRAM_API_HASH != "": 
-        # https://my.telegram.org/apps  nếu muốn nhận tất cả tin nhắn từ các nhóm mà bạn tham gia 
+    if TELEGRAM_API_ID is not None and TELEGRAM_API_ID != "" and TELEGRAM_API_HASH is not None and TELEGRAM_API_HASH != "":
+        # https://my.telegram.org/apps  nếu muốn nhận tất cả tin nhắn từ các nhóm mà bạn tham gia
         asyncio.create_task(my_telethon.run_until_disconnected())
 
     yield  # Sau từ khóa yield là nơi server đang chạy
@@ -209,26 +156,6 @@ async def health_check():
 # Whitelist: Chỉ trả lời các ID này
 ALLOWED_IDS = []  # [987654321, -100123456789]
 
-# --- ĐỊNH NGHĨA DỮ LIỆU (Pydantic Models) ---
-# Giúp code sạch hơn và tự động kiểm tra dữ liệu đầu vào
-
-
-class Chat(BaseModel):
-    id: int
-    first_name: str | None = None
-    title: str | None = None  # Dành cho Group
-
-
-class Message(BaseModel):
-    chat: Chat
-    text: str | None = None  # Tin nhắn có thể là ảnh/sticker (không có text)
-    date: int
-
-
-class TelegramUpdate(BaseModel):
-    update_id: int
-    message: Message | None = None  # Có thể là edited_message, nên để None
-
 
 # --- WEBHOOK ENDPOINT ---
 
@@ -237,7 +164,7 @@ async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
     print(data)
-    update = TelegramUpdate.model_validate(data)
+    update = telegram_types.TelegramUpdate.model_validate(data)
     # 1. Kiểm tra xem có phải là tin nhắn mới không
     if not update.message:
         return {"status": "ignored", "reason": "Not a new message"}
@@ -286,7 +213,7 @@ async def handle_webhook(request: Request):
     #     # Gọi hàm gửi tin (dùng await để không chặn server)
     #     await send_telegram_message(chat_id, reply_text)
 
-    # https://t.me/dunp_assitant_bot chat with your chatbot  
+    # https://t.me/dunp_assitant_bot chat with your chatbot
     clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
 
     # Lấy lịch sử cho chat_id này
@@ -302,7 +229,7 @@ async def handle_webhook(request: Request):
     chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
 
     # Gọi hàm gửi tin (dùng await để không chặn server)
-    await send_telegram_message(chat_id, reply_text)
+    await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     return {"status": "ok"}
 
@@ -372,7 +299,6 @@ async def discord_interactions(request: Request):
     return {"status": "ok"}
 
 # Đoạn này để chạy trực tiếp bằng python main.py (hoặc dùng lệnh uvicorn ở ngoài)
-
 
 
 if __name__ == "__main__":
