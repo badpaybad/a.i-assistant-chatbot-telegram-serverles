@@ -54,16 +54,16 @@ generation_config = types.GenerateContentConfig(
     temperature=0.7,  # Độ sáng tạo vừa phải để giữ đúng vần luật,
     system_instruction=system_instruction,
     tools=tools,
-    tool_config=types.ToolConfig(
-        function_calling_config=types.FunctionCallingConfig(
-            mode="AUTO"
-        ),
-        # 
-        # retrieval_config={
-        #     "lat_lng": {"latitude": 21.0285, "longitude": 105.8542},  # Hà Nội
-        #     "language_code": "vi"
-        # }
-    ),
+    # tool_config=types.ToolConfig(
+    #     function_calling_config=types.FunctionCallingConfig(
+    #         mode="AUTO"
+    #     ),
+    #     # 
+    #     # retrieval_config={
+    #     #     "lat_lng": {"latitude": 21.0285, "longitude": 105.8542},  # Hà Nội
+    #     #     "language_code": "vi"
+    #     # }
+    # ),
 
 )
 
