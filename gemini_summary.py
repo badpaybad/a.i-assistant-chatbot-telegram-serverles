@@ -23,7 +23,13 @@ client = genai.Client(api_key=GEMINI_APIKEY)
 # Khai báo công cụ Google Search
 tools = [
     types.Tool(
-        google_search=types.GoogleSearch()
+        # google_search=types.GoogleSearch()
+        google_search_retrieval=types.GoogleSearchRetrieval(
+            dynamic_retrieval_config=types.DynamicRetrievalConfig(
+                mode=types.DynamicRetrievalConfigMode.MODE_DYNAMIC,
+                dynamic_threshold=0.6  # AI tự quyết định có tìm hay không
+            )
+        )
     ),
 ]
 
@@ -31,7 +37,7 @@ tools = [
 generation_config = types.GenerateContentConfig(
     temperature=0.2,  # Độ sáng tạo ít để tập trung nội dung chính
     system_instruction=system_instruction,
-    # tools=tools,
+    tools=tools,
     # tool_config=types.ToolConfig(
     #     function_calling_config=types.FunctionCallingConfig(
     #         mode="AUTO"
@@ -43,7 +49,7 @@ generation_config = types.GenerateContentConfig(
 def gemini_summary(text_to_summarize: str):
     # Prepending the system instruction to the user prompt is a robust way
     full_prompt = f"Dưới đây là đoạn hội thoại:\n\n{text_to_summarize}"
-    
+
     response = client.models.generate_content(
         model=GEMINI_MODEL,
         config=generation_config,
