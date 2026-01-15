@@ -33,96 +33,15 @@ user_messages = defaultdict(lambda: deque(maxlen=10))
 # with client:
 #     client.loop.run_until_complete(main())
 
-
-async def send_to_saved_messages(summary_text):
-    try:
-        # 'me' là alias đặc biệt trong Telethon trỏ thẳng tới Saved Messages của bạn
-        await client.send_message('me', summary_text)
-        print("✅ Đã gửi tóm tắt vào Saved Messages")
-    except Exception as e:
-        print(f"❌ Lỗi khi gửi tin nhắn: {e}")
-
-
-
-async def periodic_summary():
-    """
-    Periodically summarizes messages in groups.
-    """
-    while True:
-        # Đợi 1 phút
-        await asyncio.sleep(60*5)
-
-        # --- TÓM TẮT TIN NHẮN NHÓM ---
-        group_ids = list(group_messages.keys())
-        print(f"group_ids count: {len(group_ids)}")
-        for group_id in group_ids:
-            messages_to_summarize = list(group_messages.get(group_id, []))
-            if not messages_to_summarize:
-                continue
-
-            texts = []
-            for msg in messages_to_summarize:
-                sender_name = "Unknown"
-                if msg.sender:
-                    sender_name = msg.sender.first_name or msg.sender.username or "Unknown"
-                if msg.raw_text:
-                    texts.append(f"{sender_name}: {msg.raw_text}")
-
-            if not texts:
-                continue
-
-            full_text = "\n".join(texts)
-            group_name = group_cache.get(group_id).title if group_id in group_cache else group_id
-
-            print(f"--- Đang tóm tắt cho nhóm: {group_name} ---")
-            summary_text = gemini_summary(full_text)
-            print(f"--- Tóm tắt cho nhóm {group_name} ---")
-            print(summary_text)
-            print("------------------------------------")
-
-            await send_to_saved_messages(f"--- Tóm tắt cho nhóm: {group_name} ---\n{summary_text}")
-            group_messages[group_id].clear()
-
-        # --- TÓM TẮT TIN NHẮN CÁ NHÂN ---
-        user_ids = list(user_messages.keys())
-        print(f"group_ids count: {len(user_ids)}")
-        for user_id in user_ids:
-            messages_to_summarize = list(user_messages.get(user_id, []))
-            if not messages_to_summarize:
-                continue
-
-            texts = []
-            for msg in messages_to_summarize:
-                sender_name = "Unknown"
-                # Trong tin nhắn cá nhân, sender chính là người đó
-                if msg.sender:
-                    sender_name = f"{msg.sender.first_name} ({msg.sender.username})"
-                if msg.raw_text:
-                    texts.append(f"{sender_name}: {msg.raw_text}")
-            
-            if not texts:
-                continue
-
-            full_text = "\n".join(texts)
-            user_info = user_cache.get(user_id)
-            user_name = user_info.first_name if user_info else f"User ID: {user_id}"
-
-
-            print(f"--- Đang tóm tắt cho người dùng: {user_name} ---")
-            summary_text = gemini_summary(full_text)
-            print(f"--- Tóm tắt cho người dùng {user_name} ---")
-            print(summary_text)
-            print("------------------------------------")
-
-            await send_to_saved_messages(f"--- Tóm tắt từ: {user_name} ---\n{summary_text}")
-            user_messages[user_id].clear()
-
+client = None
 
 
 async def run_until_disconnected():
-    
+
+    global client
 
     client = TelegramClient(session_name, TELEGRAM_API_ID, TELEGRAM_API_HASH)
+
     @client.on(events.NewMessage)
     async def handler(event):
         # print("event===========================")
@@ -153,7 +72,6 @@ async def run_until_disconnected():
 
         # Logic tóm tắt sẽ được chạy trong một task riêng biệt
 
-
     print("telethon start, you will get summary interval 5 minutes in Saved messageses ...")
     await client.start()
 
@@ -175,3 +93,92 @@ async def run_until_disconnected():
 
     # except Exception as e:
     #     print(f"Lỗi khi gửi tóm tắt đến nhóm {group_name}: {e}")gọi
+
+
+async def send_to_saved_messages(summary_text):
+
+    global client
+# Kiểm tra xem client đã được khởi tạo từ hàm kia chưa
+    if client is None:
+        print("❌ Lỗi: Client chưa được khởi tạo!")
+        return
+    try:
+        # 'me' là alias đặc biệt trong Telethon trỏ thẳng tới Saved Messages của bạn
+        await client.send_message('me', summary_text)
+        print("✅ Đã gửi tóm tắt vào Saved Messages")
+    except Exception as e:
+        print(f"❌ Lỗi khi gửi tin nhắn: {e}")
+
+
+async def periodic_summary():
+    """
+    Periodically summarizes messages in groups.
+    """
+    while True:
+        # Đợi 1 phút
+        await asyncio.sleep(60*5)
+
+        # --- TÓM TẮT TIN NHẮN NHÓM ---
+        group_ids = list(group_messages.keys())
+        print(f"group_ids count: {len(group_ids)}")
+        for group_id in group_ids:
+            messages_to_summarize = list(group_messages.get(group_id, []))
+            if not messages_to_summarize:
+                continue
+
+            texts = []
+            for msg in messages_to_summarize:
+                sender_name = "Unknown"
+                if msg.sender:
+                    sender_name = msg.sender.first_name or msg.sender.username or "Unknown"
+                if msg.raw_text:
+                    texts.append(f"{sender_name}: {msg.raw_text}")
+
+            if not texts:
+                continue
+
+            full_text = "\n".join(texts)
+            group_name = group_cache.get(
+                group_id).title if group_id in group_cache else group_id
+
+            print(f"--- Đang tóm tắt cho nhóm: {group_name} ---")
+            summary_text = gemini_summary(full_text)
+            print(f"--- Tóm tắt cho nhóm {group_name} ---")
+            print(summary_text)
+            print("------------------------------------")
+
+            await send_to_saved_messages(f"--- Tóm tắt cho nhóm: {group_name} ---\n{summary_text}")
+            group_messages[group_id].clear()
+
+        # --- TÓM TẮT TIN NHẮN CÁ NHÂN ---
+        user_ids = list(user_messages.keys())
+        print(f"group_ids count: {len(user_ids)}")
+        for user_id in user_ids:
+            messages_to_summarize = list(user_messages.get(user_id, []))
+            if not messages_to_summarize:
+                continue
+
+            texts = []
+            for msg in messages_to_summarize:
+                sender_name = "Unknown"
+                # Trong tin nhắn cá nhân, sender chính là người đó
+                if msg.sender:
+                    sender_name = f"{msg.sender.first_name} ({msg.sender.username})"
+                if msg.raw_text:
+                    texts.append(f"{sender_name}: {msg.raw_text}")
+
+            if not texts:
+                continue
+
+            full_text = "\n".join(texts)
+            user_info = user_cache.get(user_id)
+            user_name = user_info.first_name if user_info else f"User ID: {user_id}"
+
+            print(f"--- Đang tóm tắt cho người dùng: {user_name} ---")
+            summary_text = gemini_summary(full_text)
+            print(f"--- Tóm tắt cho người dùng {user_name} ---")
+            print(summary_text)
+            print("------------------------------------")
+
+            await send_to_saved_messages(f"--- Tóm tắt từ: {user_name} ---\n{summary_text}")
+            user_messages[user_id].clear()

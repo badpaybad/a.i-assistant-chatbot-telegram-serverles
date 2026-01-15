@@ -25,6 +25,7 @@ All above run
           Đặt username: Nhập username cho bot (phải kết thúc bằng "bot", ví dụ: "MyBotAssitance_bot").
           Nhận token: BotFather sẽ gửi lại một mã API token, đây là chìa khóa để bạn lập trình bot của mình.
           Quản lý bot: Dùng các lệnh khác như /mybots để xem danh sách bot, /setdescription để đổi mô tả, hoặc /setuserpic để đổi ảnh đại diện. 
+          Cần turn off group privacy để bot luôn nhận được tin nhắn từ các group nó được add vào. 
 
 # 2. cloudflare tunnel 
 
@@ -94,3 +95,4 @@ my sample chatbot: https://t.me/dunp_assitant_bot
             https://my.telegram.org/apps find it here
             TELEGRAM_API_ID=""
             TELEGRAM_API_HASH="" 
+
