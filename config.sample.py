@@ -16,3 +16,4 @@ DISCORD_TOKEN = ""
 # https://my.telegram.org/apps find it here
 TELEGRAM_API_ID=""
 TELEGRAM_API_HASH="" 
+REPLY_ON_TAG_BOT_USERNAME=True

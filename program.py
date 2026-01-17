@@ -16,7 +16,7 @@ from google import genai
 from google.genai import types
 from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memory
 
-from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH
+from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
 import bot_telegram
 import bot_discord
@@ -157,6 +157,25 @@ async def health_check():
 ALLOWED_IDS = []  # [987654321, -100123456789]
 
 
+async def process_chat_history_and_received_msg(user_text: str, chat_id):
+
+    clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
+
+    # Lấy lịch sử cho chat_id này
+    history = list(chat_history[chat_id])
+
+    # Gọi AI với lịch sử
+    reply_text, history1 = chat_voi_cu_nguyen_du(
+        clean_message, history=history)
+
+    # Cập nhật lịch sử
+    chat_history[chat_id].append(
+        {"role": "user", "parts": [clean_message]})
+    chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
+
+    return reply_text
+
+
 # --- WEBHOOK ENDPOINT ---
 
 @app.post("/webhook")
@@ -192,44 +211,18 @@ async def handle_webhook(request: Request):
     # 3. Xử lý Logic
     print(f"Nhận tin từ {chat_id}: {user_text}")
 
+    reply_text = await process_chat_history_and_received_msg(user_text, chat_id)
+
     # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
     # Cách đơn giản: Kiểm tra text có chứa @robotnotification_bot không
-    # if user_text and TELEGRAM_BOT_USERNAME in user_text:
-    #     # Xóa tên bot khỏi nội dung để lấy phần câu hỏi thực tế
-    #     clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
-
-    #     # Lấy lịch sử cho chat_id này
-    #     history = list(chat_history[chat_id])
-
-    #     # Gọi AI với lịch sử
-    #     reply_text, history1 = chat_voi_cu_nguyen_du_memory(
-    #         clean_message, history=history)
-
-    #     # Cập nhật lịch sử
-    #     chat_history[chat_id].append(
-    #         {"role": "user", "parts": [clean_message]})
-    #     chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
-
-    #     # Gọi hàm gửi tin (dùng await để không chặn server)
-    #     await send_telegram_message(chat_id, reply_text)
+    if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
+        if user_text and TELEGRAM_BOT_USERNAME in user_text:
+            # Gọi hàm gửi tin (dùng await để không chặn server)
+            await bot_telegram.send_telegram_message(chat_id, reply_text)
+    else:
+        await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     # https://t.me/dunp_assitant_bot chat with your chatbot
-    clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
-
-    # Lấy lịch sử cho chat_id này
-    history = list(chat_history[chat_id])
-
-    # Gọi AI với lịch sử
-    reply_text, history1 = chat_voi_cu_nguyen_du(
-        clean_message, history=history)
-
-    # Cập nhật lịch sử
-    chat_history[chat_id].append(
-        {"role": "user", "parts": [clean_message]})
-    chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
-
-    # Gọi hàm gửi tin (dùng await để không chặn server)
-    await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     return {"status": "ok"}
 
@@ -276,16 +269,7 @@ async def discord_interactions(request: Request):
         if user_input == "":
             return {"type": 6}
 
-        # Lấy lịch sử cho kênh này
-        history = list(chat_history[chat_id])
-
-        # Gọi hàm AI của bạn
-        bot_reply, history1 = chat_voi_cu_nguyen_du(
-            user_input, history=history)
-
-        # Cập nhật lịch sử
-        chat_history[chat_id].append({"role": "user", "parts": [user_input]})
-        chat_history[chat_id].append({"role": "model", "parts": [bot_reply]})
+        bot_reply = await process_chat_history_and_received_msg(user_input, chat_id)
 
         # Trả về kết quả cho Discord
         return {
