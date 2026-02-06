@@ -30,7 +30,7 @@ def update_coords():
         pos_y = y + offset_y
 
     # 4. Cập nhật nội dung và di chuyển cửa sổ
-    label.config(text=f"X:{x}, Y:{y}")
+    label.config(text=f"X:{x} Y:{y}")
     root.geometry(f"+{pos_x}+{pos_y}")
     
     # Tần số 16ms (~60 FPS) là con số lý tưởng cho độ mượt và CPU
@@ -41,10 +41,13 @@ root = tk.Tk()
 # Thiết lập cửa sổ
 root.overrideredirect(True)
 root.attributes("-topmost", True)
-root.config(bg='black')
+root.wait_visibility(root)
+root.attributes("-alpha", 0.7)
+root.config(bg='black') # Đặt nền cửa sổ là màu đen
+# root.attributes("-transparentcolor", "black") # Biến mọi thứ màu đen thành trong suốt
 
 # Thiết lập label (Chữ trắng nền đen cho rõ ràng)
-label = tk.Label(root, font=('Arial', '10', 'bold'), fg='white', bg='black', padx=5, pady=2)
+label = tk.Label(root, font=('Ubuntu Mono', '10', 'bold'), fg='white', bg='black', padx=5, pady=2)
 label.pack()
 
 update_coords()
