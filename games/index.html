@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bé Thông Minh - Đón Tết Vui</title>
+    <link href="https://fonts.googleapis.com/css2?family=Coiny&family=Pangolin&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-red: #d32f2f;
+            --primary-gold: #ffca28;
+            --text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Pangolin', cursive;
+            overflow: hidden;
+            background-color: #ffebee;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.7); /* Light overlay to make text readable */
+            z-index: 1;
+        }
+
+        .content {
+            position: relative;
+            z-index: 2;
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 5px solid var(--primary-red);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: none; /* Hidden by default */
+        }
+        
+        .content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            font-family: 'Coiny', cursive;
+            color: var(--primary-red);
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 1px 1px 0 #fff;
+        }
+        
+        h2 {
+            font-family: 'Pangolin', cursive;
+            color: #d84315;
+            font-size: 2em;
+            margin-bottom: 30px;
+        }
+
+        .question-box {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 30px;
+            line-height: 1.5;
+            min-height: 150px; /* Prevent jumping */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .answer-box {
+            font-size: 2.2em;
+            color: var(--primary-red);
+            font-family: 'Coiny', cursive;
+            margin: 20px 0;
+            height: 50px;
+            opacity: 0;
+            transform: scale(0.8);
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .answer-box.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        button {
+            background-color: var(--primary-red);
+            color: var(--primary-gold);
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.5em;
+            font-family: 'Coiny', cursive;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(211, 47, 47, 0.4);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            background-color: #b71c1c;
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        button:disabled {
+            background-color: #ccc;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Decorative elements */
+        .decoration {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .top-left { top: 10px; left: 10px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23d32f2f" opacity="0.2"/></svg>'); }
+        .top-right { top: 10px; right: 10px; background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23d32f2f" opacity="0.2"/></svg>'); }
+        
+        /* Fallback backgrounds if images fail to load */
+        .bg-start { background: linear-gradient(135deg, #ffcdd2 0%, #ef9a9a 100%); }
+        .bg-end { background: linear-gradient(135deg, #fff9c4 0%, #fff59d 100%); }
+        .bg-fallback-0 { background: linear-gradient(135deg, #a5d6a7 0%, #66bb6a 100%); } /* Green for Banh Chung */
+        .bg-fallback-1 { background: linear-gradient(135deg, #f48fb1 0%, #f06292 100%); } /* Pink for Hoa Dao */
+        .bg-fallback-2 { background: linear-gradient(135deg, #ef9a9a 0%, #e57373 100%); } /* Red for Li Xi */
+        .bg-fallback-3 { background: linear-gradient(135deg, #80deea 0%, #4dd0e1 100%); } /* Blue/Colorful for Phao Hoa */
+        .bg-fallback-4 { background: linear-gradient(135deg, #ffe082 0%, #ffd54f 100%); } /* Yellow/Fruit for Mam Ngu Qua */
+
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="bg-start">
+        <div class="overlay"></div>
+        
+        <div class="decoration top-left"></div>
+        <div class="decoration top-right"></div>
+
+        <!-- Welcome Screen -->
+        <div id="screen-welcome" class="content active">
+            <h1>Chào Đón Tết Vui!</h1>
+            <h2>Bé Thông Minh - Thử Tài Giải Đố</h2>
+            <p style="font-size: 1.5em; color: #555;">Cùng nhau khám phá những câu đố thú vị về ngày Tết cổ truyền nhé!</p>
+            <div class="controls">
+                <button onclick="startGame()">Bắt Đầu</button>
+            </div>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="screen-game" class="content">
+            <h1>Câu Đố Ngày Tết</h1>
+            
+            <div id="question-text" class="question-box">
+                <!-- Question will appear here -->
+            </div>
+
+            <div id="answer-text" class="answer-box">
+                <!-- Answer will appear here -->
+            </div>
+
+            <div class="controls">
+                <button id="btn-reveal" onclick="revealAnswer()">Xem Đáp Án</button>
+                <button id="btn-next" onclick="nextQuestion()" disabled>Câu Tiếp Theo</button>
+            </div>
+        </div>
+
+        <!-- Goodbye Screen -->
+        <div id="screen-goodbye" class="content">
+            <h1>Chúc Mừng Năm Mới!</h1>
+            <h2>Vạn Sự Như Ý - An Khang Thịnh Vượng</h2>
+            <p style="font-size: 1.5em; color: #555;">Các cháu thật giỏi! Chúc các cháu chăm ngoan, học giỏi và đón một cái Tết thật vui vẻ bên gia đình!</p>
+            <div class="controls">
+                <button onclick="resetGame()">Chơi Lại</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const riddles = [
+            {
+                id: 1,
+                question: "Bánh gì vuông vuông, xanh mướt lá dong<br>Bên trong nếp trắng, thịt mỡ đậu xanh<br>Luộc kỹ một đêm, thơm lừng bếp nhỏ?",
+                answer: "Bánh Chưng",
+                bgClass: "bg-fallback-0",
+                bgImage: "assets/bg_banh_chung.jpg"
+            },
+            {
+                id: 2,
+                question: "Hoa gì nho nhỏ, cánh mỏng màu hồng<br>Đua nhau khoe sắc, trong gió xuân nồng<br>Thấy hoa nở rộ, là thấy Tết về?",
+                answer: "Hoa Đào",
+                bgClass: "bg-fallback-1",
+                bgImage: "assets/bg_hoa_dao.jpg"
+            },
+            {
+                id: 3,
+                question: "Cái gì nho nhỏ, màu đỏ xinh tươi<br>Bé nhận trên tay, miệng cười hớn hở<br>Chúc ông, chúc bà, nhận lộc đầu năm?",
+                answer: "Phong Bao Lì Xì",
+                bgClass: "bg-fallback-2",
+                bgImage: "assets/bg_li_xi.jpg"
+            },
+            {
+                id: 4,
+                question: "Trên trời rực rỡ, đủ sắc cầu vồng<br>Tiếng nổ vang lừng, mọi người cùng ngắm<br>Chào đón năm mới, hạnh phúc ấm no?",
+                answer: "Pháo Hoa",
+                bgClass: "bg-fallback-3",
+                bgImage: "assets/bg_phao_hoa.jpg"
+            },
+            {
+                id: 5,
+                question: "Quả gì tên gọi chẳng thừa chẳng thiếu<br>Lại thêm quả sung cho được đủ đầy<br>Cùng dừa, xoài, đu đủ bày trên bàn thờ?",
+                answer: "Quả Đu Đủ (Mâm Ngũ Quả)",
+                bgClass: "bg-fallback-4",
+                bgImage: "assets/bg_mam_ngu_qua.jpg"
+            }
+        ];
+
+        let currentQuestionIndex = 0;
+        const gameContainer = document.getElementById('game-container');
+        
+        const screenWelcome = document.getElementById('screen-welcome');
+        const screenGame = document.getElementById('screen-game');
+        const screenGoodbye = document.getElementById('screen-goodbye');
+
+        const questionText = document.getElementById('question-text');
+        const answerText = document.getElementById('answer-text');
+        const btnReveal = document.getElementById('btn-reveal');
+        const btnNext = document.getElementById('btn-next');
+
+        function showScreen(screenId) {
+            [screenWelcome, screenGame, screenGoodbye].forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function startGame() {
+            currentQuestionIndex = 0;
+            showScreen('screen-game');
+            loadQuestion(0);
+        }
+
+        function loadQuestion(index) {
+            const riddle = riddles[index];
+            
+            questionText.style.opacity = 0;
+            answerText.classList.remove('visible');
+            
+            setTimeout(() => {
+                questionText.innerHTML = riddle.question;
+                questionText.style.opacity = 1;
+                
+                answerText.innerText = riddle.answer;
+                
+                btnReveal.disabled = false;
+                btnNext.disabled = true;
+
+                // Update background
+                gameContainer.className = ''; 
+                gameContainer.classList.add(riddle.bgClass);
+                
+                const img = new Image();
+                img.onload = () => {
+                    gameContainer.style.backgroundImage = `url('${riddle.bgImage}')`;
+                };
+                img.onerror = () => {
+                    gameContainer.style.backgroundImage = '';
+                };
+                img.src = riddle.bgImage;
+
+            }, 200);
+        }
+
+        function revealAnswer() {
+            answerText.classList.add('visible');
+            btnReveal.disabled = true;
+            btnNext.disabled = false;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < riddles.length) {
+                loadQuestion(currentQuestionIndex);
+            } else {
+                showGoodbye();
+            }
+        }
+
+        function showGoodbye() {
+            showScreen('screen-goodbye');
+            gameContainer.className = '';
+            gameContainer.style.backgroundImage = "url('assets/bg_goodbye.jpg')";
+        }
+
+        function resetGame() {
+            showScreen('screen-welcome');
+            gameContainer.className = '';
+            gameContainer.style.backgroundImage = "url('assets/bg_welcome.jpg')";
+        }
+
+        // Initialize with welcome screen
+        resetGame();
+
+    </script>
+</body>
+</html>
