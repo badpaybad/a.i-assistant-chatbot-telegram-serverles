@@ -34,6 +34,11 @@ webhook_base_url = None
 # deque với maxlen=10 sẽ tự động xóa tin nhắn cũ nhất khi đầy
 chat_history = defaultdict(lambda: deque(maxlen=10))
 
+# Buffer cho media group (nhiều ảnh gửi cùng lúc)
+# {media_group_id: {"files": [path1, path2], "text": "caption", "chat_id": 123, "processed": False}}
+media_group_buffer = {}
+media_group_lock = asyncio.Lock()
+
 # --- HÀM GỬI TIN NHẮN (ASYNC) ---
 
 
@@ -147,26 +152,25 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-
 @app.get("/")
 async def health_check():
     return {"status": "ok", "message": "Bot is running!"}
 
-
 # Whitelist: Chỉ trả lời các ID này
 ALLOWED_IDS = []  # [987654321, -100123456789]
 
+async def process_chat_history_and_received_msg(user_text: str, chat_id,listFilePath:list[str]  =None):
 
-async def process_chat_history_and_received_msg(user_text: str, chat_id):
-
+    if user_text is None or user_text == "":
+        return ""
+        
     clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
 
     # Lấy lịch sử cho chat_id này
     history = list(chat_history[chat_id])
 
     # Gọi AI với lịch sử
-    reply_text, history1 = chat_voi_cu_nguyen_du(
-        clean_message, history=history)
+    reply_text, history1 = chat_voi_cu_nguyen_du_memory(clean_message, history=[],listPathFiles=listFilePath)
 
     # Cập nhật lịch sử
     chat_history[chat_id].append(
@@ -201,7 +205,8 @@ async def handle_webhook(request: Request):
         return {"status": "ignored", "reason": "Message too old"}
 
     chat_id = update.message.chat.id
-    user_text = update.message.text
+    user_text = update.message.text or update.message.caption
+    media_group_id = update.message.media_group_id
 
     # 2. Kiểm tra Whitelist (Bảo mật)
     if len(ALLOWED_IDS) > 0 and chat_id not in ALLOWED_IDS:
@@ -209,33 +214,87 @@ async def handle_webhook(request: Request):
         return {"status": "ignored", "reason": "Unauthorized"}
 
     # 3. Xử lý file đính kèm
+    listFilePath=[]
+    media_files = []
     if update.message.photo:
         # Lấy ảnh chất lượng cao nhất (cuối cùng trong list)
-        file_id = update.message.photo[-1].file_id
-        await bot_telegram.download_telegram_file(file_id, chat_id)
-    elif update.message.document:
-        file_id = update.message.document.file_id
-        await bot_telegram.download_telegram_file(file_id, chat_id)
-    elif update.message.video:
-        file_id = update.message.video.file_id
-        await bot_telegram.download_telegram_file(file_id, chat_id)
+        media_files.append((update.message.photo[-1].file_id, None))
+    
+    if update.message.document:
+        media_files.append((update.message.document.file_id, update.message.document.file_name))
+        
+    if update.message.video:
+        media_files.append((update.message.video.file_id, update.message.video.file_name))
+        
+    if update.message.voice:
+        media_files.append((update.message.voice.file_id, None))
+        
+    if update.message.audio:
+        media_files.append((update.message.audio.file_id, update.message.audio.file_name))
+        
+    if update.message.animation:
+        media_files.append((update.message.animation.file_id, update.message.animation.file_name))
+
+    for file_id, custom_name in media_files:
+        fpath=await bot_telegram.download_telegram_file(file_id, chat_id, custom_name, sub_dir=media_group_id)
+        if fpath:
+            listFilePath.append(fpath)
 
     print(f"Nhận tin từ {chat_id}: {user_text}")
-    # 4. Xử lý Logic
-    if user_text:
 
-        reply_text = await process_chat_history_and_received_msg(user_text, chat_id)
+    # 4. Xử lý Media Group logic (Buffering)
+    if media_group_id:
+        async with media_group_lock:
+            if media_group_id not in media_group_buffer:
+                media_group_buffer[media_group_id] = {
+                    "files": [],
+                    "text": None,
+                    "chat_id": chat_id,
+                    "processed": False
+                }
+            
+            if user_text:
+                media_group_buffer[media_group_id]["text"] = user_text
+            
+            if listFilePath:
+                media_group_buffer[media_group_id]["files"].extend(listFilePath)
+        
+        # Đợi một chút để gom các tin nhắn khác trong album
+        await asyncio.sleep(2)
+        
+        async with media_group_lock:
+            # Chỉ xử lý nếu chưa được xử lý bởi request khác (cùng album)
+            if media_group_buffer[media_group_id]["processed"]:
+                return {"status": "ok", "reason": "Handled by another request in group"}
+            
+            # Đánh dấu đã xử lý
+            media_group_buffer[media_group_id]["processed"] = True
+            
+            # Lấy dữ liệu đã gom
+            final_user_text = media_group_buffer[media_group_id]["text"]
+            final_file_paths = media_group_buffer[media_group_id]["files"]
+            
+        # 5. Xử lý Logic AI cho Media Group
+        if final_user_text or final_file_paths:
+            if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
+                if (final_user_text and TELEGRAM_BOT_USERNAME in final_user_text):
+                    reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths)
+                    await bot_telegram.send_telegram_message(chat_id, reply_text)
+            else:
+                await bot_telegram.send_telegram_message(chat_id, reply_text)
+                
+        return {"status": "ok"}
+
+    # 4. Xử lý Logic (Tin nhắn đơn lẻ)
+    if user_text or listFilePath:
 
         # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
-        # Cách đơn giản: Kiểm tra text có chứa @robotnotification_bot không
         if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
             if user_text and TELEGRAM_BOT_USERNAME in user_text:
-                # Gọi hàm gửi tin (dùng await để không chặn server)
+                reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath)
                 await bot_telegram.send_telegram_message(chat_id, reply_text)
         else:
             await bot_telegram.send_telegram_message(chat_id, reply_text)
-
-    # https://t.me/dunp_assitant_bot chat with your chatbot
 
     return {"status": "ok"}
 
