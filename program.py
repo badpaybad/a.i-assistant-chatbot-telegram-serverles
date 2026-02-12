@@ -281,6 +281,7 @@ async def handle_webhook(request: Request):
                     reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths)
                     await bot_telegram.send_telegram_message(chat_id, reply_text)
             else:
+                reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths)
                 await bot_telegram.send_telegram_message(chat_id, reply_text)
                 
         return {"status": "ok"}
@@ -294,6 +295,7 @@ async def handle_webhook(request: Request):
                 reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath)
                 await bot_telegram.send_telegram_message(chat_id, reply_text)
         else:
+            reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath)
             await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     return {"status": "ok"}

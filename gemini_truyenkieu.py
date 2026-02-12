@@ -252,7 +252,7 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
                     path = api_result["content"]
                     try:
                         uploaded_file = clientGemini.files.upload(file=path)
-                        print(f"Agent do -> Đã upload file: {uploaded_file.uri}")
+                        print(f"Agent tools call -> Đã upload file: {uploaded_file.uri}")
                         
                         tool_response_parts.append(
                             types.Part.from_uri(
@@ -271,13 +271,14 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
                     )
                 )
 
-            # Thêm kết quả thực thi tool (tất cả các tool calls) vào ngữ cảnh một lần duy nhất
-            full_contents.append(
-                types.Content(
-                    role="tool",
-                    parts=tool_response_parts
-                )
-            )
+            if len(tool_response_parts)>0:
+              # Thêm kết quả thực thi tool (tất cả các tool calls) vào ngữ cảnh một lần duy nhất
+              full_contents.append(
+                  types.Content(
+                      role="tool",
+                      parts=tool_response_parts
+                  )
+              )
             
             # Tiếp tục vòng lặp để gửi kết quả tool lại cho Gemini xử lý
             continue
