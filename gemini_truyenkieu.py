@@ -2,9 +2,16 @@ from google import genai
 from google.genai import types
 import httpx
 import re
+import os
+import uuid
+from urllib.parse import urlparse
 
 
 from config import GEMINI_APIKEY, GEMINI_MODEL
+
+DOWNLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "downloads")
+if not os.path.exists(DOWNLOAD_DIR):
+    os.makedirs(DOWNLOAD_DIR)
 
 
 # Định nghĩa phong cách của Nguyễn Du qua System Instruction
@@ -42,34 +49,61 @@ def get_stock_price(symbol: str):
     return {"symbol": symbol, "price": 150.0, "currency": "USD"}
 
 def fetch_url_content(url: str):
-    """Lấy nội dung văn bản chính từ một đường dẫn URL (trang web). Dùng công cụ này khi người dùng gửi một đường link và yêu cầu đọc, tóm tắt hoặc phân tích nội dung của link đó.
+    """Lấy nội dung văn bản hoặc tải file từ một đường dẫn URL. 
+    Nếu là văn bản (HTML, JSON, etc.), trả về nội dung văn bản.
+    Nếu là file (Image, PDF, etc.), tải về và trả về đường dẫn file.
 
     Args:
-        url: Đường dẫn URL đầy đủ của trang web cần lấy nội dung (ví dụ: https://example.com).
+        url: Đường dẫn URL đầy đủ cần xử lý.
+    Returns:
+        Một tuple chứa (nội dung hoặc đường dẫn file, mime_type).
     """
     print(f"--- Đang tải nội dung từ URL: {url} ---")
     try:
-        # Sử dụng httpx để lấy nội dung HTML
-        # verify=False để bỏ qua lỗi SSL nếu có (tùy chọn, có thể bỏ nếu muốn bảo mật hơn)
         with httpx.Client(timeout=15.0, follow_redirects=True) as clientSub:
             response = clientSub.get(url)
             response.raise_for_status()
-            html_content = response.text
+            
+            content_type = response.headers.get("Content-Type", "").lower()
+            mime_type = content_type.split(";")[0].strip()
 
-        # Xử lý nội dung HTML để lấy văn bản thuần
-        # 1. Loại bỏ script và style
-        text_content = re.sub(r'<(script|style).*?</\1>', '', html_content, flags=re.DOTALL)
-        # 2. Loại bỏ các thẻ HTML còn lại
-        text_content = re.sub(r'<[^>]+>', ' ', text_content)
-        # 3. Chuẩn hóa khoảng trắng (loại bỏ khoảng trắng thừa)
-        text_content = re.sub(r'\s+', ' ', text_content).strip()
+            # Kiểm tra nếu là text-based content
+            text_types = ["text/", "application/json", "application/javascript", "application/xml"]
+            is_text = any(t in mime_type for t in text_types)
 
-        # Giới hạn độ dài trả về để tránh quá tải token (ví dụ 10000 ký tự)
-        return text_content[:20000] 
+            if is_text:
+                html_content = response.text
+                # Xử lý nội dung HTML để lấy văn bản thuần
+                text_content = re.sub(r'<(script|style).*?</\1>', '', html_content, flags=re.DOTALL)
+                text_content = re.sub(r'<[^>]+>', ' ', text_content)
+                text_content = re.sub(r'\s+', ' ', text_content).strip()
+                return text_content,mime_type, "text"
+            else:
+                # Tải file binary
+                parsed_url = urlparse(url)
+                filename = os.path.basename(parsed_url.path)
+                if not filename:
+                    filename = str(uuid.uuid4())
+                
+                # Tránh các ký tự lạ trong filename
+                filename = re.sub(r'[^\w\.\-]', '_', filename)
+                
+                # Đảm bảo filename có extension nếu mime_type gợi ý
+                if "." not in filename:
+                    if "image/jpeg" in mime_type: filename += ".jpg"
+                    elif "image/png" in mime_type: filename += ".png"
+                    elif "application/pdf" in mime_type: filename += ".pdf"
+                
+                file_path = os.path.join(DOWNLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{filename}")
+                with open(file_path, "wb") as f:
+                    f.write(response.content)
+                
+                print(f"--- Đã tải file về: {file_path} ---")
+                return file_path,mime_type, "file"
 
     except Exception as e:
-        print( f"Không thể lấy nội dung từ URL {url}. Lỗi: {str(e)}")
-        return ""
+        print(f"Không thể lấy nội dung từ URL {url}. Lỗi: {str(e)}")
+        return "", "text/plain","text"
 
 
 # Khai báo công cụ Google Search
@@ -189,6 +223,9 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
             # Thêm phản hồi của model (chứa function call request) vào ngữ cảnh
             full_contents.append(response.candidates[0].content)
 
+            # Danh sách parts chứa kết quả của TẤT CẢ các tool calls trong turn này
+            tool_response_parts = []
+
             for call in response.function_calls:
                 func_name = call.name
                 func_args = call.args
@@ -199,25 +236,48 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
                 if func_name == "fetch_url_content":
                     url = func_args.get("url")
                     if url:
-                        content = fetch_url_content(url)
-                        api_result = {"content": content}
+                        content_or_path, mime_type ,type_content = fetch_url_content(url)
+                        api_result = {
+                            "content": content_or_path,
+                            "type": mime_type,
+                            "type_content": type_content
+                        }
                     else:
                         api_result = {"error": "Missing URL parameter"}
                 else:
                     api_result = {"error": f"Function {func_name} not found"}
 
-                # Thêm kết quả thực thi tool vào ngữ cảnh
-                full_contents.append(
-                    types.Content(
-                        role="tool",
-                        parts=[
-                            types.Part.from_function_response(
-                                name=func_name,
-                                response=api_result
+                # Nếu kết quả là file, upload lên Gemini và thêm URI vào parts
+                if api_result.get("type_content") == "file":
+                    path = api_result["content"]
+                    try:
+                        uploaded_file = clientGemini.files.upload(file=path)
+                        print(f"Agent do -> Đã upload file: {uploaded_file.uri}")
+                        
+                        tool_response_parts.append(
+                            types.Part.from_uri(
+                                file_uri=uploaded_file.uri,
+                                mime_type=uploaded_file.mime_type
                             )
-                        ]
+                        )
+                    except Exception as e:
+                        print(f"Lỗi khi upload file '{path}': {e}")
+               
+                # Thêm phản hồi thực thi tool
+                tool_response_parts.append(
+                    types.Part.from_function_response(
+                        name=func_name,
+                        response=api_result
                     )
                 )
+
+            # Thêm kết quả thực thi tool (tất cả các tool calls) vào ngữ cảnh một lần duy nhất
+            full_contents.append(
+                types.Content(
+                    role="tool",
+                    parts=tool_response_parts
+                )
+            )
             
             # Tiếp tục vòng lặp để gửi kết quả tool lại cho Gemini xử lý
             continue
