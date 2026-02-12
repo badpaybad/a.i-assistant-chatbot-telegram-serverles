@@ -208,19 +208,32 @@ async def handle_webhook(request: Request):
         print(f"Blocked ID: {chat_id}")
         return {"status": "ignored", "reason": "Unauthorized"}
 
-    # 3. Xử lý Logic
+    # 3. Xử lý file đính kèm
+    if update.message.photo:
+        # Lấy ảnh chất lượng cao nhất (cuối cùng trong list)
+        file_id = update.message.photo[-1].file_id
+        await bot_telegram.download_telegram_file(file_id, chat_id)
+    elif update.message.document:
+        file_id = update.message.document.file_id
+        await bot_telegram.download_telegram_file(file_id, chat_id)
+    elif update.message.video:
+        file_id = update.message.video.file_id
+        await bot_telegram.download_telegram_file(file_id, chat_id)
+
     print(f"Nhận tin từ {chat_id}: {user_text}")
+    # 4. Xử lý Logic
+    if user_text:
 
-    reply_text = await process_chat_history_and_received_msg(user_text, chat_id)
+        reply_text = await process_chat_history_and_received_msg(user_text, chat_id)
 
-    # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
-    # Cách đơn giản: Kiểm tra text có chứa @robotnotification_bot không
-    if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
-        if user_text and TELEGRAM_BOT_USERNAME in user_text:
-            # Gọi hàm gửi tin (dùng await để không chặn server)
+        # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
+        # Cách đơn giản: Kiểm tra text có chứa @robotnotification_bot không
+        if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
+            if user_text and TELEGRAM_BOT_USERNAME in user_text:
+                # Gọi hàm gửi tin (dùng await để không chặn server)
+                await bot_telegram.send_telegram_message(chat_id, reply_text)
+        else:
             await bot_telegram.send_telegram_message(chat_id, reply_text)
-    else:
-        await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     # https://t.me/dunp_assitant_bot chat with your chatbot
 

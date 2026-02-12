@@ -10,10 +10,42 @@ class Chat(BaseModel):
     title: str | None = None  # Dành cho Group
 
 
+
+class PhotoSize(BaseModel):
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    file_size: int | None = None
+
+
+class Document(BaseModel):
+    file_id: str
+    file_unique_id: str
+    file_name: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+
+
+class Video(BaseModel):
+    file_id: str
+    file_unique_id: str
+    width: int
+    height: int
+    duration: int
+    file_name: str | None = None
+    mime_type: str | None = None
+    file_size: int | None = None
+
+
 class Message(BaseModel):
     chat: Chat
     text: str | None = None  # Tin nhắn có thể là ảnh/sticker (không có text)
     date: int
+    photo: list[PhotoSize] | None = None
+    document: Document | None = None
+    video: Video | None = None
+
 
 
 class TelegramUpdate(BaseModel):

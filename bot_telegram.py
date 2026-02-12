@@ -5,6 +5,51 @@ import re
 import time
 from typing import Any
 import httpx
+import os
+import aiofiles
+
+
+if not os.path.isdir("downloads"):
+    os.makedirs("downloads")
+async def download_telegram_file(file_id: str, chat_id: int):
+    """
+    Downloads a file from Telegram and saves it to a directory named after the chat_id.
+    """
+    async with httpx.AsyncClient() as client:
+        # 1. Get file path from Telegram
+        get_file_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getFile"
+        try:
+            response = await client.post(get_file_url, json={"file_id": file_id})
+            response.raise_for_status()
+            file_info = response.json()
+            file_path = file_info["result"]["file_path"]
+        except (httpx.HTTPStatusError, KeyError) as e:
+            print(f"Error getting file path from Telegram: {e}")
+            return
+
+        # 2. Download the file
+        file_url = f"https://api.telegram.org/file/bot{TELEGRAM_BOT_TOKEN}/{file_path}"
+        try:
+            response = await client.get(file_url)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            print(f"Error downloading file: {e}")
+            return
+
+        # 3. Save the file
+        save_dir = f"downloads/{chat_id}"
+        os.makedirs(save_dir, exist_ok=True)
+        file_name = os.path.basename(file_path)
+        save_path = os.path.join(save_dir, file_name)
+
+        try:
+            async with aiofiles.open(save_path, "wb") as f:
+                await f.write(response.content)
+            print(f"File saved to {save_path}")
+        except Exception as e:
+            print(f"Error saving file: {e}")
+
+
 
 
 async def send_telegram_message(chat_id: int, text: str):

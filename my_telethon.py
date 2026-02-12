@@ -1,11 +1,15 @@
 from telethon import TelegramClient, events
 import uuid
 from collections import defaultdict, deque
+import os
 # https://my.telegram.org/apps
 from config import TELEGRAM_API_ID, TELEGRAM_API_HASH
 import asyncio
-from gemini_summary import gemini_summary
+# from gemini_summary import gemini_summary
 
+from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memory
+import bot_telegram
+import telegram_types
 
 # Bạn có thể cố định 1 UUID cho 1 tài khoản
 session_name = "dunp-assitant-account-id-v1"
@@ -33,6 +37,8 @@ user_messages = defaultdict(lambda: deque(maxlen=10))
 # with client:
 #     client.loop.run_until_complete(main())
 
+if not os.path.isdir("downloads"):
+    os.makedirs("downloads")
 client = None
 
 
@@ -52,16 +58,51 @@ events.CallbackQuery	Khi người dùng nhấn vào các nút (Inline Buttons) c
     """
     # @client.on(events.UserUpdate)
     # @client.on(events.ChatAction)
-    @client.on(events.MessageDeleted)
+    # @client.on(events.MessageDeleted)
     @client.on(events.MessageEdited)
-    @client.on(events.NewMessage)
     # @client.on(events.CallbackQuery)
+    @client.on(events.NewMessage)
     async def handler(event):
+        # END: Added by Gemini
         print("event===========================")
         print(event)
         print("event===========================")
         # chat_events["all"] = event
 
+        chat_id = event.chat_id
+       
+        listPathFiles=[]
+        # BEGIN: Added by Gemini
+        if event.photo is not None or event.video is not None or event.document is not None:
+            if event.photo or event.video or event.document:
+                # Create a directory for downloads if it doesn't exist
+                
+                save_dir = f"downloads/{chat_id}/"
+                os.makedirs(save_dir, exist_ok=True)
+
+                if event.grouped_id:
+                    print(f"File này thuộc album có ID: {event.grouped_id}")
+
+                    save_dir = f"downloads/{chat_id}/{event.grouped_id}/"
+                    os.makedirs(save_dir, exist_ok=True)
+                # download media
+                # Lấy đường dẫn file đã save
+                path = await event.message.download_media(file=save_dir)
+                
+                if path:
+                    full_path = os.path.abspath(path)
+                    print(f"Đã lưu file tại: {full_path}")
+                    listPathFiles.append(full_path)
+                else:
+                    print("Không tải được file.")
+        if event.message and event.message.message:
+            print("event.message===========================")
+            print(event.message.message)
+            print("event.message===========================")
+            reply_text,newhistory = chat_voi_cu_nguyen_du_memory(event.message.message,[],listPathFiles)
+            print("reply_text===========================")
+            print(reply_text)
+            print("reply_text===========================")
         # if event.is_group:
         #     if event.chat_id not in group_cache:
         #         chat = await event.get_chat()
@@ -157,7 +198,7 @@ async def periodic_summary():
                 group_id).title if group_id in group_cache else group_id
 
             print(f"--- Đang tóm tắt cho nhóm: {group_name} ---")
-            summary_text = gemini_summary(full_text)
+            summary_text = "summary disabled"
             print(f"--- Tóm tắt cho nhóm {group_name} ---")
             print(summary_text)
             print("------------------------------------")
@@ -190,7 +231,7 @@ async def periodic_summary():
             user_name = user_info.first_name if user_info else f"User ID: {user_id}"
 
             print(f"--- Đang tóm tắt cho người dùng: {user_name} ---")
-            summary_text = gemini_summary(full_text)
+            summary_text = "summary disabled"
             print(f"--- Tóm tắt cho người dùng {user_name} ---")
             print(summary_text)
             print("------------------------------------")
