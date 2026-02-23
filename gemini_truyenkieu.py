@@ -55,17 +55,6 @@ LƯU Ý QUAN TRỌNG:
 # Khởi tạo client cấp thấp với API Key của bạn
 clientGemini = genai.Client(api_key=GEMINI_APIKEY)
 
-
-def get_stock_price(symbol: str):
-    """Lấy giá cổ phiếu hiện tại của một công ty.
-
-    Args:
-        symbol: Mã chứng khoán của công ty (ví dụ: 'AAPL' cho Apple, 'VNM' cho Vinamilk).
-    """
-    # Trong thực tế, bạn sẽ gọi API chứng khoán ở đây
-    print(f"--- Đang kiểm tra giá cho mã: {symbol} ---")
-    return {"symbol": symbol, "price": 150.0, "currency": "USD"}
-
 def fetch_url_content(url: str):
     """Lấy nội dung văn bản hoặc tải file từ một đường dẫn URL. 
     Nếu là văn bản (HTML, JSON, etc.), trả về nội dung văn bản.
@@ -149,9 +138,6 @@ fetch_url_content_tool = types.Tool(
 google_search_tool = types.Tool(
     google_search=types.GoogleSearch()
 )
-
-tools = [fetch_url_content_tool]
-tools_google = [google_search_tool]
 
 # Cấu hình sinh nội dung
 generation_config = types.GenerateContentConfig(
