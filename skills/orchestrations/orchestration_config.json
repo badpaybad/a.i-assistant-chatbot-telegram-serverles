@@ -1,0 +1,31 @@
+{
+    "routes": [
+        {
+            "intent": "browser_access",
+            "patterns": [
+                "https?://\\S+",
+                "truy cập (link|trang|url)",
+                "đọc (nội dung|bài viết|tin) tại"
+            ],
+            "target_folder": "fetch_url",
+            "tools": ["fetch_url_content_tool"],
+            "reasoning": "Input contains a URL or explicit request to read web content."
+        }
+        ,
+        {
+            "intent": "database_query",
+            "patterns": [
+                "(kiểm tra|tìm|tra cứu) (dữ liệu|database|db|sql)",
+                "danh sách (người dùng|đơn hàng|sản phẩm)"
+            ],
+            "target_folder": "database_management",
+            "tools": ["query_db"],
+            "reasoning": "Input relates to database queries or data lookup."
+        }
+    ],
+    "default": {
+        "target_folder": "general_search",
+        "tools": ["google_search_tool"],
+        "reasoning": "No specific local pattern matched, using general search as fallback."
+    }
+}
