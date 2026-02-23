@@ -1,0 +1,1 @@
+Dùng để chạy các bash shell trên ubuntu
