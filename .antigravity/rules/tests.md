@@ -6,6 +6,7 @@ Tất cả các file test được tạo ra phải tuân thủ các quy tắc sa
 - Mọi files (.py .txt .jpg ...) test sinh ra phải nằm trong thư mục gốc `/test`.
 - Ví dụ tạo ra text file với nội dung bất kỳ thì cần /test/test_{tên_file_theo_mục_đích}.txt
 - Cấu trúc bên trong thư mục `/test` phải phản chiếu (mirror) cấu trúc của thư mục `/src`.
+- Không cần xóa các file sinh ra để test, có thể dùng lại để chạy bằng tay để test sau này.
 
 ## 2. Quy tắc đặt tên
 - Nếu file nguồn là `src/services/user_service.py`, file test tương ứng phải là `test/services/test_user_service.py`.
