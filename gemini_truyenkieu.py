@@ -218,28 +218,28 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
     
 
     # # Xác định config dựa trên user_input
-    # if re.search(r'https?://\S+', user_input):
-    #     dynamic_tools = [fetch_url_content_tool]
-    #     print("fetch_url_content tool register manual========================================")
-    # else:
-    #     dynamic_tools = [google_search_tool]
-    #     print("GoogleSearch register manual========================================")
+    if re.search(r'https?://\S+', user_input):
+        dynamic_tools = [fetch_url_content_tool]
+        print("fetch_url_content tool register manual========================================")
+    else:
+        dynamic_tools = [google_search_tool]
+        print("GoogleSearch register manual========================================")
 
-    # Xác định config dựa trên user_input bằng LocalOrchestrator
-    routing_result = orchestrator.route(user_input)
-    print(f"Orchestration Decision: {routing_result['target_folder']} - Reason: {routing_result['reasoning']}")
+    # # Xác định config dựa trên user_input bằng LocalOrchestrator
+    # routing_result = orchestrator.route(user_input)
+    # print(f"Orchestration Decision: {routing_result['target_folder']} - Reason: {routing_result['reasoning']}")
     
-    # Ánh xạ tên tool từ config sang đối tượng tool thực tế
-    tool_mapping = {
-        "fetch_url_content_tool": fetch_url_content_tool,
-        "google_search_tool": google_search_tool
-    }
+    # # Ánh xạ tên tool từ config sang đối tượng tool thực tế
+    # tool_mapping = {
+    #     "fetch_url_content_tool": fetch_url_content_tool,
+    #     "google_search_tool": google_search_tool
+    # }
     
-    dynamic_tools = []
-    for tool_name in routing_result.get("tools", []):
-        if tool_name in tool_mapping:
-            dynamic_tools.append(tool_mapping[tool_name])
-            print(f"Registered tool: {tool_name}")
+    # dynamic_tools = []
+    # for tool_name in routing_result.get("tools", []):
+    #     if tool_name in tool_mapping:
+    #         dynamic_tools.append(tool_mapping[tool_name])
+    #         print(f"Registered tool: {tool_name}")
 
     dynamic_config = types.GenerateContentConfig(
         temperature=0.7,
