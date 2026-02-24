@@ -1,3 +1,6 @@
 aiofiles
 telethon
 google-generativeai
+faiss-cpu
+numpy
+pypdf

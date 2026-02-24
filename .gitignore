@@ -10,3 +10,5 @@ zalo_group_0.png
 voice_assistant/giong_cua_toi.wav
 voice_assistant/ket_qua_tieng_viet.wav
 downloads/
+data/vector_db/**/index.faiss
+data/vector_db/**/metadata.pkl
