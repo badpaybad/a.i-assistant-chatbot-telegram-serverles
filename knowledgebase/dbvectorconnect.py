@@ -276,3 +276,26 @@ class LocalVectorDB:
         for chunk in chunks:
             self.add_text(chunk,metadata)
         self._save()
+
+
+    def add_folder(self, folder_path):
+        """
+        Recursively index all supported files in a folder.
+        """
+        if not os.path.isdir(folder_path):
+            print(f"ERROR: Folder not found or is not a directory: {folder_path}")
+            return
+
+        supported_extensions = [
+            ".txt", ".pdf", ".docx", ".pptx", ".json", ".xlsx", ".xls", ".csv",
+            ".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".avi", ".mp3", ".wav", ".m4a"
+        ]
+
+        print(f"DEBUG: Scanning folder: {folder_path}...")
+        for root, dirs, files in os.walk(folder_path):
+            for file in files:
+                ext = os.path.splitext(file)[1].lower()
+                if ext in supported_extensions:
+                    full_path = os.path.join(root, file)
+                    print(f"DEBUG: Adding file from folder: {full_path}")
+                    self.add_file(full_path)
