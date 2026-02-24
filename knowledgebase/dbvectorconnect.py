@@ -12,17 +12,24 @@ from google import genai
 from google.genai import types
 from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
-
 class LocalVectorDB:
-    def __init__(self, db_name):
+    def __init__(self, db_name,embedding_model_type="models/gemini-embedding-001"):
         self.db_name = db_name
         self.db_path = f"data/vector_db/{db_name}"
         self.index_file = f"{self.db_path}/index.faiss"
         self.metadata_file = f"{self.db_path}/metadata.pkl"
         self.client = genai.Client(api_key=GEMINI_APIKEY)
-        self.embedding_model = "models/gemini-embedding-001"
-        self.dimension = 3072  # Dimension for gemini-embedding-001
-        
+        self.embedding_model_type=embedding_model_type
+        if self.embedding_model_type=="models/gemini-embedding-001":
+            self.embedding_model = "models/gemini-embedding-001"
+            self.dimension=3072
+        elif self.embedding_model_type=="models/text-embedding-004":
+            self.embedding_model = "models/gemini-embedding-004"
+            self.dimension=1536
+        elif self.embedding_model_type=="fasttext":
+            import fasttextembeding
+            self.embedding_model = "fasttext"
+            self.dimension=300
         if not os.path.exists("data"):
             os.makedirs("data")
         if not os.path.exists("data/vector_db"):
@@ -39,13 +46,16 @@ class LocalVectorDB:
             self.metadata = []
 
     def get_embedding(self, text):
-        print(f"DEBUG: Getting embedding for: {text[:50]}...")
-        response = self.client.models.embed_content(
-            model=self.embedding_model,
-            contents=[text]
-        )
-        print("DEBUG: Embedding received.")
-        return np.array(response.embeddings[0].values).astype('float32')
+        if self.embedding_model_type=="fasttext":
+            return fasttextembeding.embedding_text(text).astype('float32')
+        else:
+            # print(f"DEBUG: Getting embedding for: {text[:50]}...")
+            response = self.client.models.embed_content(
+                model=self.embedding_model,
+                contents=[text]
+            )
+            # print("DEBUG: Embedding received.")
+            return np.array(response.embeddings[0].values).astype('float32')
 
     def add_text(self, text, extra_metadata=None):
         if not text.strip():
@@ -101,7 +111,7 @@ class LocalVectorDB:
             if idx != -1 and idx < len(self.metadata):
                 results.append({
                     "text": self.metadata[idx]["text"],
-                    "metadata": self.metadata[idx]["extra"],
+                    "extra": self.metadata[idx]["extra"],
                     "distance": float(distances[0][i])
                 })
         return results

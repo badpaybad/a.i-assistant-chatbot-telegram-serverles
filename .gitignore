@@ -14,3 +14,7 @@ data/vector_db/**/index.faiss
 data/vector_db/**/metadata.pkl
 test/data/vector_db/**/index.faiss
 test/data/vector_db/**/metadata.pkl
+knowledgebase/fasttext/cc.vi.300.bin
+knowledgebase/fasttext/cc.vi.300.vec
+knowledgebase/fasttext/cc.vi.300.bin.gz
+knowledgebase/fasttext/cc.vi.300.vec.gz
