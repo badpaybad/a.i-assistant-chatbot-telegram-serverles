@@ -4,3 +4,7 @@ google-generativeai
 faiss-cpu
 numpy
 pypdf
+python-docx
+pandas
+openpyxl
+python-pptx

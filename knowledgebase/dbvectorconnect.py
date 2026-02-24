@@ -1,9 +1,17 @@
 import os
+import datetime
 import pickle
+import json
 import numpy as np
 import faiss
+import pandas as pd
+from pypdf import PdfReader
+from docx import Document
+from pptx import Presentation
 from google import genai
-from config import GEMINI_APIKEY
+from google.genai import types
+from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
+
 
 class LocalVectorDB:
     def __init__(self, db_name):
@@ -48,6 +56,7 @@ class LocalVectorDB:
         
         self.index.add(embedding)
         self.metadata.append({
+            "at": datetime.datetime.now().timestamp(),
             "text": text,
             "extra": extra_metadata or {}
         })
@@ -70,10 +79,11 @@ class LocalVectorDB:
         for i, text in enumerate(texts):
             meta = {}
             if extra_metadatas and i < len(extra_metadatas):
-                meta = extra_metadatas[i]
+                meta = extra_metadatas[i] or {}
             self.metadata.append({
+                "at": datetime.datetime.now().timestamp(),
                 "text": text,
-                "extra": meta
+                "extra": meta or {}
             })
         self._save()
 
@@ -151,8 +161,103 @@ class LocalVectorDB:
             pickle.dump(self.metadata, f)
         print("DEBUG: Save complete.")
 
-    @staticmethod
-    def chunk_text(text, chunk_size=1000, overlap=200):
+    def get_full_text(self, file_path, file_description=None):
+        """
+        Extract full text from a file based on its extension.
+        If file_description is provided and not empty, it returns that.
+        Otherwise, it reads the file content or calls Gemini for multimedia.
+        """
+        if file_description and file_description.strip():
+            return( file_description, {"file_path":file_path})
+
+        if not os.path.exists(file_path):
+            print(f"ERROR: File not found: {file_path}")
+            return ("","")
+
+        ext = os.path.splitext(file_path)[1].lower()
+        print(f"DEBUG: Extracting text from {file_path} (ext: {ext})...")
+
+        try:
+            if ext == ".txt":
+                with open(file_path, "r", encoding="utf-8") as f:
+                    return (f.read(), {"file_path":file_path})
+
+            elif ext == ".pdf":
+                reader = PdfReader(file_path)
+                text = ""
+                for page in reader.pages:
+                    text += page.extract_text() + "\n"
+                return (text, {"file_path":file_path})
+
+            elif ext == ".docx":
+                doc = Document(file_path)
+                return ("\n".join([para.text for para in doc.paragraphs]), {"file_path":file_path})
+
+            elif ext == ".pptx":
+                prs = Presentation(file_path)
+                text_runs = []
+                for slide in prs.slides:
+                    for shape in slide.shapes:
+                        if hasattr(shape, "text"):
+                            text_runs.append(shape.text)
+                return ("\n".join(text_runs), {"file_path":file_path})
+
+            elif ext == ".json":
+                with open(file_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    return (json.dumps(data, indent=2, ensure_ascii=False), {"file_path":file_path})
+
+            elif ext in [".xlsx", ".xls", ".csv"]:
+                if ext == ".csv":
+                    df = pd.read_csv(file_path)
+                else:
+                    df = pd.read_excel(file_path)
+                return (df.to_string(index=False), {"file_path":file_path})
+
+            elif ext in [".jpg", ".jpeg", ".png", ".webp", ".mp4", ".mov", ".avi", ".mp3", ".wav", ".m4a"]:
+                print(f"DEBUG: Calling Gemini to describe multimedia file: {file_path}")
+                
+                # Upload file to Gemini for processing
+                try:
+                    # Get MIME type
+                    import mimetypes
+                    mime_type, _ = mimetypes.guess_type(file_path)
+                    
+                    with open(file_path, "rb") as f:
+                        file_data = f.read()
+                    
+                    prompt = "Hãy mô tả nội dung của file này một cách chi tiết để sử dụng cho việc tìm kiếm RAG sau này. Nếu là văn bản trong ảnh/video, hãy trích xuất toàn bộ. Nếu là âm thanh, hãy chuyển soạn nội dung. Chỉ cần trả lại nội dung mô tả súc tích nhưng dầy đủ thông tin có thể có."
+                    
+                    response = self.client.models.generate_content(
+                        model="gemini-2.0-flash", # Using flash for speed and multimodal support
+                        contents=[
+                            types.Content(
+                                role="user",
+                                parts=[
+                                    types.Part.from_bytes(data=file_data, mime_type=mime_type),
+                                    types.Part.from_text(text=prompt)
+                                ]
+                            )
+                        ]
+                    )
+                    return (response.text,{"file_path":file_path,"response":response})
+                except Exception as e:
+                    print(f"ERROR during Gemini call: {e}")
+                    return (f"Mô tả cho file {os.path.basename(file_path)}",{"file_path":file_path,"error":str(e)})
+
+            else:
+                # Default fallback for unknown extensions
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        return (f.read(),{"file_path":file_path,"response":"unknown extensions"})
+                except Exception as e1:
+                    return (f"Nội dung file: {os.path.basename(file_path)}",{"file_path":file_path,"error":str(e1)})
+
+        except Exception as e:
+            print(f"ERROR extracting text from {file_path}: {e}")
+            return ("",{"file_path":file_path,"error":str(e)})
+
+    def chunk_text(self, text, chunk_size=1000, overlap=200):
         chunks = []
         start = 0
         while start < len(text):
@@ -160,3 +265,14 @@ class LocalVectorDB:
             chunks.append(text[start:end])
             start += chunk_size - overlap
         return chunks
+
+    def add_file(self, file_path, file_description=None):
+        """
+        Index a file in the vector database.
+        """
+        text, metadata = self.get_full_text(file_path, file_description)
+        print( f"==============> add_file: {text}")
+        chunks = self.chunk_text(text)
+        for chunk in chunks:
+            self.add_text(chunk,metadata)
+        self._save()

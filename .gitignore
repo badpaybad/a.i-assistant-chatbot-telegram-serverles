@@ -12,3 +12,5 @@ voice_assistant/ket_qua_tieng_viet.wav
 downloads/
 data/vector_db/**/index.faiss
 data/vector_db/**/metadata.pkl
+test/data/vector_db/**/index.faiss
+test/data/vector_db/**/metadata.pkl

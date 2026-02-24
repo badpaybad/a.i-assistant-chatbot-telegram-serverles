@@ -3,7 +3,8 @@
 Tất cả các file test được tạo ra phải tuân thủ các quy tắc sau:
 
 ## 1. Thư mục lưu trữ
-- Mọi file test phải nằm trong thư mục gốc `/test`.
+- Mọi files (.py .txt .jpg ...) test sinh ra phải nằm trong thư mục gốc `/test`.
+- Ví dụ tạo ra text file với nội dung bất kỳ thì cần /test/test_{tên_file_theo_mục_đích}.txt
 - Cấu trúc bên trong thư mục `/test` phải phản chiếu (mirror) cấu trúc của thư mục `/src`.
 
 ## 2. Quy tắc đặt tên
@@ -15,6 +16,7 @@ Tất cả các file test được tạo ra phải tuân thủ các quy tắc sa
 | :--- | :--- |
 | `src/auth.py` | `test/test_auth.py` |
 | `src/utils/helper.js` | `test/utils/test_helper.js` |
+
 
 # Test Execution & Environment Rules
 
