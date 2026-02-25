@@ -185,13 +185,17 @@ import knowledgebase.dbconnect as dbconnect
 
 db_all_message=dbconnect.SQLiteDB("all_message")
 
+db_all_message_file=dbconnect.SQLiteDB("all_message_file")
+
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
-    db_all_message.insert(data)
+    msg_id_guid = db_all_message.insert(data)
     print(data)
     update = telegram_types.TelegramUpdate.model_validate(data)
+    if update.edited_message:
+        pass
     # 1. Kiểm tra xem có phải là tin nhắn mới không
     if not update.message:
         return {"status": "ignored", "reason": "Not a new message"}
@@ -220,6 +224,7 @@ async def handle_webhook(request: Request):
     # 3. Xử lý file đính kèm
     listFilePath=[]
     media_files = []
+    db_file_rec=[]
     if update.message.photo:
         # Lấy ảnh chất lượng cao nhất (cuối cùng trong list)
         media_files.append((update.message.photo[-1].file_id, None))
@@ -243,7 +248,10 @@ async def handle_webhook(request: Request):
         fpath=await bot_telegram.download_telegram_file(file_id, chat_id, custom_name, sub_dir=media_group_id)
         if fpath:
             listFilePath.append(fpath)
+            db_file_rec.append({"msg_id":msg_id_guid,"chat_id":chat_id, "file_id": file_id, "file_path": fpath})
 
+    if len(db_file_rec) > 0:
+        db_all_message_file.insert(db_file_rec)
     print(f"Nhận tin từ {chat_id}: {user_text}")
 
     # 4. Xử lý Media Group logic (Buffering)

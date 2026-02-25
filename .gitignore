@@ -19,3 +19,4 @@ knowledgebase/fasttext/cc.vi.300.vec
 knowledgebase/fasttext/cc.vi.300.bin.gz
 knowledgebase/fasttext/cc.vi.300.vec.gz
 data/knowledgebase.db
+data/*.db

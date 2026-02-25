@@ -63,6 +63,32 @@ class SQLiteDB:
             conn.execute(query, (record_id, data_json, at_epoch))
             conn.commit()
         return record_id
+    def inserts(self, data_list):
+        """
+        Batch insert multiple records. data_list is an array of data_json (dict or list).
+        """
+        at_epoch = int(time.time())
+        records = []
+        record_ids = []
+        
+        for data_json in data_list:
+            record_id = str(uuid.uuid4())
+            record_ids.append(record_id)
+            
+            if isinstance(data_json, (dict, list)):
+                data_json_str = json.dumps(data_json, ensure_ascii=False)
+            else:
+                data_json_str = data_json
+                
+            records.append((record_id, data_json_str, at_epoch))
+            
+        query = f"INSERT INTO {self.table_name} (id, json, at) VALUES (?, ?, ?)"
+        with self._get_connection() as conn:
+            conn.executemany(query, records)
+            conn.commit()
+            
+        return record_ids
+
 
     def select(self, record_id=None, keyword=None):
         """
