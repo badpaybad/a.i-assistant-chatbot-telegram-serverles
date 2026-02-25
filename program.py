@@ -184,9 +184,9 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
 # --- WEBHOOK ENDPOINT ---
 import knowledgebase.dbconnect as dbconnect
 
-db_all_message=dbconnect.SQLiteDB("all_message")
+sqllite_all_message=dbconnect.SQLiteDB("all_message")
 
-db_all_message_file=dbconnect.SQLiteDB("all_message_file")
+sqllite_all_message_file=dbconnect.SQLiteDB("all_message_file")
 
 
 import knowledgebase.summarychat 
@@ -197,7 +197,7 @@ summarychat= knowledgebase.summarychat.SummaryChat(batch_size=HISTORY_CHAT_MAX_L
 async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
-    msg_id_guid = db_all_message.insert(data)
+    msg_id_guid = sqllite_all_message.insert(data)
     update = telegram_types.TelegramUpdate.model_validate(data)
 
     summarychat.enqueue_update(update)
@@ -261,7 +261,7 @@ async def handle_webhook(request: Request):
             db_file_rec.append({"msg_id":msg_id_guid,"chat_id":chat_id, "file_id": file_id, "file_path": fpath})
 
     if len(db_file_rec) > 0:
-        db_all_message_file.insert(db_file_rec)
+        sqllite_all_message_file.insert(db_file_rec)
     print(f"Nhận tin từ {chat_id}: {user_text}")
 
     # 4. Xử lý Media Group logic (Buffering)
@@ -321,17 +321,23 @@ async def handle_webhook(request: Request):
     
     # 4. Xử lý Logic (Tin nhắn đơn lẻ)
     if user_text or listFilePath:
-
+        telegram_response=None
         # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
         if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
             if user_text and TELEGRAM_BOT_USERNAME in user_text:
                 reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
-                await bot_telegram.send_telegram_message(chat_id, reply_text)
+                telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)
         else:
             reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
-            await bot_telegram.send_telegram_message(chat_id, reply_text)
+            telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)   
 
-    return {"status": "ok"}
+        if telegram_response:
+            #.model_dump_json(by_alias=True)
+            sqllite_all_message.insert(telegram_response.json())
+            summarychat.enqueue_update(telegram_response)
+
+
+    return {"status": "ok", "telegram_response": telegram_response}
 
 # Đoạn này để chạy trực tiếp bằng python main.py (hoặc dùng lệnh uvicorn ở ngoài)
 

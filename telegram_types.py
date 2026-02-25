@@ -9,7 +9,8 @@ class Chat(BaseModel):
     id: int
     first_name: str | None = None
     title: str | None = None  # Dành cho Group
-
+    type: str | None = None
+    all_members_are_administrators:bool|None=None
 
 
 class PhotoSize(BaseModel):
@@ -70,10 +71,10 @@ class Animation(BaseModel):
  
 class FromUser(BaseModel):
     id: int
-    is_bot: bool
-    first_name: str
-    last_name: str
-    username: str
+    is_bot: bool | None = None
+    first_name: str | None = None
+    last_name: str | None = None
+    username: str 
 
 class Message(BaseModel):
 
@@ -102,12 +103,17 @@ class Message(BaseModel):
     #     populate_by_name = True
 
 class TelegramUpdate(BaseModel):
-    update_id: int
+    update_id: int|None=None
     message: Message | None = None  # Có thể là edited_message, nên để None
     edited_message: Message | None = None  # Có thể là edited_message, nên để None
+    ok:bool|None=None
+    result: Message | None = None  # Có thể là kết quả post reply lên group
     def get_chat_id(self):
         if self.message:
             return self.message.chat.id
         elif self.edited_message:
             return self.edited_message.chat.id
+        elif self.result:
+            return self.result.chat.id
         return None
+    

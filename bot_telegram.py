@@ -8,6 +8,7 @@ import httpx
 import os
 import aiofiles
 
+import telegram_types
 
 if not os.path.isdir("downloads"):
     os.makedirs("downloads")
@@ -64,15 +65,21 @@ async def download_telegram_file(file_id: str, chat_id: int, custom_file_name: s
 
 
 
-async def send_telegram_message(chat_id: int, text: str):
+async def send_telegram_message(chat_id: int, text: str)-> telegram_types.TelegramUpdate|None:
     if text is None or text == "":
-        return
+        return None
     async with httpx.AsyncClient() as client:
         payload = {"chat_id": chat_id, "text": text}
         try:
-            await client.post(TELEGRAM_API_URL, json=payload)
+            response= await client.post(TELEGRAM_API_URL, json=payload)
+            # print(f"send_telegram_message Response: {response.json()}")
+            response.raise_for_status()
+
+            telegram_response = telegram_types.TelegramUpdate(**response.json())
+            return telegram_response
         except Exception as e:
             print(f"Lỗi khi gửi tin: {e}")
+            return None
 
 
 async def register_webhook(webhook_base_url: str):
