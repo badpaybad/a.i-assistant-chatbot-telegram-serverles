@@ -31,6 +31,23 @@ class SQLiteDB:
             conn.execute(query)
             conn.commit()
 
+    def set_table_name(self, table_name):
+        """
+        Change the name of the active table and ensure it exists.
+        """
+        self.table_name = table_name
+        self._create_table()
+
+    def get_table_names(self):
+        """
+        Get the list of all table names in the database.
+        """
+        query = "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'"
+        with self._get_connection() as conn:
+            cursor = conn.execute(query)
+            rows = cursor.fetchall()
+            return [row[0] for row in rows]
+
     def insert(self, data_json):
         """
         Insert a new record. data_json can be a dict or a JSON string.
