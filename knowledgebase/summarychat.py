@@ -95,7 +95,7 @@ class SummaryChat:
             chat_id = batch[0][0].get_chat_id()
             
             # Use the date of the first message in batch for chat_datetime or range
-            first_date = batch[0][0].get_chat_id()
+            first_date = batch[0][0].get_message_date()
             dt = datetime.datetime.fromtimestamp(first_date) if first_date else datetime.datetime.now()
             
             combined_text = "\n\n".join([item[1] for item in batch])

@@ -117,3 +117,12 @@ class TelegramUpdate(BaseModel):
             return self.result.chat.id
         return None
     
+    def get_message_date(self):
+        if self.message:
+            return self.message.date
+        elif self.edited_message:
+            return self.edited_message.date
+        elif self.result:
+            return self.result.date
+        return None
+    
