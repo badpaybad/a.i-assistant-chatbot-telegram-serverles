@@ -1,6 +1,6 @@
 
 from pydantic import BaseModel, Field,ConfigDict
-from typing import Any
+from typing import Any,List
 # --- ĐỊNH NGHĨA DỮ LIỆU (Pydantic Models) ---
 # Giúp code sạch hơn và tự động kiểm tra dữ liệu đầu vào
 
@@ -126,3 +126,12 @@ class TelegramUpdate(BaseModel):
             return self.result.date
         return None
     
+
+class OrchestrationMessage:
+    message: TelegramUpdate|None=None
+    msg_id:str|None=None
+    files:List[str]|None=None
+    text:str|None=None
+    chat_id:str|None=None
+    
+        

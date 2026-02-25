@@ -144,6 +144,7 @@ google_search_tool = types.Tool(
 generation_config = types.GenerateContentConfig(
     temperature=0.7,  # Độ sáng tạo vừa phải để giữ đúng vần luật,
     system_instruction=system_instruction,
+    tools= [google_search_tool]
     # tool_config=types.ToolConfig(
     #     function_calling_config=types.FunctionCallingConfig(
     #         mode="AUTO"

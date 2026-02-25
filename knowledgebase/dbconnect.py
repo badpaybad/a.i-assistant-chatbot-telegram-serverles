@@ -97,26 +97,30 @@ class SQLiteDB:
         - If keyword is provided, returns records where json content matches the keyword.
         - Otherwise returns all records in the table.
         """
+        result=[]
         if record_id:
             query = f"SELECT * FROM {self.table_name} WHERE id = ?"
             with self._get_connection() as conn:
                 cursor = conn.execute(query, (record_id,))
                 row = cursor.fetchone()
                 if row:
-                    return {"id": row[0], "json": json.loads(row[1]), "at": row[2]}
-                return None
+                    result= [{"id": row[0], "json": json.loads(row[1]), "at": row[2]}]
         elif keyword:
             query = f"SELECT * FROM {self.table_name} WHERE json LIKE ? ORDER BY at DESC"
             with self._get_connection() as conn:
                 cursor = conn.execute(query, (f"%{keyword}%",))
                 rows = cursor.fetchall()
-                return [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+                result= [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+                result.sort(key=lambda x: x['at'])
         else:
             query = f"SELECT * FROM {self.table_name} ORDER BY at DESC"
             with self._get_connection() as conn:
                 cursor = conn.execute(query)
                 rows = cursor.fetchall()
-                return [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+                result= [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+                result.sort(key=lambda x: x['at'])
+
+        return result
 
     def update(self, record_id, data_json):
         """
@@ -149,9 +153,11 @@ class SQLiteDB:
         """
         # Ensure field_name starts with $. if it's a simple key
         path = field_name if field_name.startswith("$") else f"$.{field_name}"
-        
+        result=[]
         query = f"SELECT * FROM {self.table_name} WHERE json_extract(json, ?) = ? ORDER BY at DESC"
         with self._get_connection() as conn:
             cursor = conn.execute(query, (path, value))
             rows = cursor.fetchall()
-            return [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+            result = [{"id": row[0], "json": json.loads(row[1]), "at": row[2]} for row in rows]
+            result.sort(key=lambda x: x['at'])
+        return result

@@ -3,7 +3,7 @@ import sys
 import random
 import socket
 PORT = 8888
-
+HISTORY_CHAT_MAX_LEN=10
 
 # sys.argv[0] là tên file (program.py)
 # sys.argv[1] sẽ là 'config_dunp'

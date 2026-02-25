@@ -16,7 +16,7 @@ from google import genai
 from google.genai import types
 from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memory
 
-from config import TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
+from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
 import bot_telegram
 import bot_discord
@@ -30,10 +30,9 @@ tunnel_process = None
 webhook_base_url = None
 
 # --- LỊCH SỬ CHAT ---
-HISTORY_CHAT_MAX_LEN = 10
 # Sử dụng defaultdict để tự động tạo deque cho chat_id mới
 # deque với maxlen=10 sẽ tự động xóa tin nhắn cũ nhất khi đầy
-chat_history = defaultdict(lambda: deque(maxlen=HISTORY_CHAT_MAX_LEN))
+# chat_history = defaultdict(lambda: deque(maxlen=HISTORY_CHAT_MAX_LEN))
 
 # Buffer cho media group (nhiều ảnh gửi cùng lúc)
 # {media_group_id: {"files": [path1, path2], "text": "caption", "chat_id": 123, "processed": False}}
@@ -168,15 +167,15 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
     clean_message = user_text.replace(TELEGRAM_BOT_USERNAME, "").strip()
 
     # Lấy lịch sử cho chat_id này
-    history = list(chat_history[chat_id])
+    # history = list(chat_history[chat_id])
 
     # Gọi AI với lịch sử
     reply_text, history1 = chat_voi_cu_nguyen_du_memory(clean_message, history=[],listPathFiles=listFilePath)
 
-    # Cập nhật lịch sử
-    chat_history[chat_id].append(
-        {"role": "user", "parts": [clean_message]})
-    chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
+    # # Cập nhật lịch sử
+    # chat_history[chat_id].append(
+    #     {"role": "user", "parts": [clean_message]})
+    # chat_history[chat_id].append({"role": "model", "parts": [reply_text]})
 
     return reply_text
 
@@ -204,8 +203,10 @@ async def handle_webhook(request: Request):
 
     print(update)
 
-    if update.edited_message:
-        pass
+    if not update.message:
+        if update.edited_message:
+            update.message=update.edited_message
+            pass
     # 1. Kiểm tra xem có phải là tin nhắn mới không
     if not update.message:
         return {"status": "ignored", "reason": "Not a new message"}
@@ -336,6 +337,13 @@ async def handle_webhook(request: Request):
             sqllite_all_message.insert(telegram_response.json())
             summarychat.enqueue_update(telegram_response)
 
+    orchestration_message=telegram_types.OrchestrationMessage()
+    orchestration_message.message=update
+    orchestration_message.msg_id=msg_id_guid
+    orchestration_message.files=listFilePath
+    orchestration_message.text=user_text
+    orchestration_message.chat_id=chat_id
+    
 
     return {"status": "ok", "telegram_response": telegram_response}
 

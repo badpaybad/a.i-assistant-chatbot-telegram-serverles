@@ -2,12 +2,14 @@ import sys
 import os
 import time
 import json
+import datetime
 
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
 from knowledgebase.summarychat import SummaryChat
 from knowledgebase.dbconnect import SQLiteDB
+import telegram_types
 
 def test_summary_chat():
     print("Starting test_summary_chat...")
@@ -15,51 +17,63 @@ def test_summary_chat():
     # Initialize SummaryChat
     sc = SummaryChat()
     
-    # Mock update object template
+    # Mock update object using TelegramUpdate model
     def create_mock_update(i):
-        return {
-            "update_id": 1000 + i,
-            "message": {
-                "message_id": 500 + i,
-                "from": {
-                    "id": 730806080,
-                    "first_name": "User",
-                    "last_name": str(i)
-                },
-                "chat": {
-                    "id": -12345678,
-                    "title": "Test Group",
-                    "type": "group"
-                },
-                "date": int(time.time()) - (10 - i) * 60,
-                "text": f"This is message number {i} for testing summarization."
-            }
-        }
+        msg = telegram_types.Message(
+            message_id=500 + i,
+            from_user=telegram_types.FromUser(
+                id=730806080,
+                first_name="User",
+                last_name=str(i),
+                username=f"user_{i}"
+            ),
+            chat=telegram_types.Chat(
+                id=-12345678,
+                title="Test Group",
+                type="group"
+            ),
+            date=int(time.time()) - (10 - i) * 60,
+            text=f"This is message number {i} for testing summarization."
+        )
+        return telegram_types.TelegramUpdate(
+            update_id=1000 + i,
+            message=msg
+        )
 
     # Enqueue 10 mock updates
-    print("Enqueuing 10 mock updates...")
-    for i in range(10):
+    batch_size = 10
+    print(f"Enqueuing {batch_size} mock updates...")
+    for i in range(batch_size):
         sc.enqueue_update(create_mock_update(i))
     
     # Wait for the batch to be processed (max 15 seconds)
     print("Waiting for processing loop to catch up...")
     time.sleep(12) 
     
+    # Stop the background thread first to ensure all tasks are marked as finished
+    print("Stopping SummaryChat loop...")
+    sc.stop()
+    
     # Check the database
     db = SQLiteDB(table_name="summary_chat")
-    results = db.select() # select all records from summary_chat
+    results = db.select() # select all records from summary_chat, ordered by 'at' DESC
     
     print(f"Found {len(results)} records in summary_chat table.")
     
     if len(results) > 0:
         latest = results[0]
-        # In summary_chat, select returns rows with columns: id, chat_id, chat_datetime, at, chat_summary
-        # Wait, SQLiteDB.select in dbconnect.py assumes id, json, at
-        # Let's check how select works for custom table
         print("Latest record content:")
-        # Since SQLiteDB.select expects (id, json, at), it might fail to parse json if we didn't store it that way
-        # Actually, I should check dbconnect.py select implementation
-        pass
+        # SQLiteDB.select returns [{"id": row[0], "json": json.loads(row[1]), "at": row[2]}]
+        print(json.dumps(latest, indent=2, ensure_ascii=False))
+        
+        # Verify content
+        summary_data = latest["json"]
+        if "summary" in summary_data:
+            print(f"Summary text: {summary_data['summary']}")
+        else:
+            print("FAILED: No 'summary' field found in record.")
+    else:
+        print("FAILED: No records found in database.")
 
     # Stop the background thread
     sc.stop()
