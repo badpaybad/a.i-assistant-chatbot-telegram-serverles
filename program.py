@@ -181,11 +181,15 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
 
 
 # --- WEBHOOK ENDPOINT ---
+import knowledgebase.dbconnect as dbconnect
+
+db_all_message=dbconnect.SQLiteDB("all_message")
 
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
+    db_all_message.insert(data)
     print(data)
     update = telegram_types.TelegramUpdate.model_validate(data)
     # 1. Kiểm tra xem có phải là tin nhắn mới không
