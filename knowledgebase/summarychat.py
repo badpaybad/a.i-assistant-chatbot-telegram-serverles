@@ -92,10 +92,11 @@ class SummaryChat:
     def _summarize_and_save(self, batch:list[telegram_types.TelegramUpdate]):
         try:
             # batch is list of (update_obj, formatted_string)
-            chat_id = batch[0][0].get_chat_id()
+            firstchat:telegram_types.TelegramUpdate = batch[0][0]
+            chat_id = firstchat.get_chat_id()
             
             # Use the date of the first message in batch for chat_datetime or range
-            first_date = batch[0][0].get_message_date()
+            first_date = firstchat.get_message_date()
             dt = datetime.datetime.fromtimestamp(first_date) if first_date else datetime.datetime.now()
             
             combined_text = "\n\n".join([item[1] for item in batch])
