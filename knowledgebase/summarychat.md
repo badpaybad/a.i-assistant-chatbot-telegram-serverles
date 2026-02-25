@@ -8,7 +8,7 @@ tên người gửi ở nhóm tên nhóm lúc thời gian nội dung : hi, hôm 
 
 có chat.id là các nhóm chats khác nhau cần chạy summary cho từng nhóm chát
 
-sau khi lấy xong thì gọi gemini để tóm tắt lại nội dung cuộc trò chuyện và dùng dbconnect.py lưu thành bảng summary_chat với các cột : id, chat_id, chat_datetime, at (timestamp), chat_summary
+sau khi lấy xong thì gọi gemini để tóm tắt lại nội dung cuộc trò chuyện và dùng dbconnect.py lưu thành bảng summary_chat với data_json : {id, chat_id, at (timestamp), chat_summary }
 
 cấu trúc update object dạng json: 
 
