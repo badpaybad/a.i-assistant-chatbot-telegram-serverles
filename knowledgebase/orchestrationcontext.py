@@ -188,7 +188,29 @@ def chat_with_knowledgebase(message: telegram_types.OrchestrationMessage):
     # 3. Combine Context
     context_block = f"{summary_text}\n{recent_text}\n### [Current Message]\n{message.text}"
     user_parts.append(types.Part.from_text(text=context_block))
+
+    # context_block dùng regex để tìm danh sách url trong context_block, dùng fetch_url_content để download hoặc lấy nội dung text về ,, nếu là file thì add vào message.files 
+    url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
+    urls = re.findall(url_pattern, context_block)
     
+    # Loại bỏ các URL trùng lặp (nếu có)
+    unique_urls = list(set(urls))
+    
+    if unique_urls:
+        print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
+        for url in unique_urls:
+            content, mime_type, res_type = fetch_url_content(url)
+            if res_type == "text" and content and content!="":
+                # Nếu là text, thêm vào user_parts để làm ngữ cảnh
+                user_parts.append(types.Part.from_text(text=f"\nContent from {url}:\n{content}\n"))
+            elif res_type == "file" and content:
+                # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
+                if not message.files:
+                    message.files = []
+                if content not in message.files:
+                    message.files.append(content)
+                    print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
+                    
     if len(chat_buffers[chat_id]) >= HISTORY_CHAT_MAX_LEN:
         chat_buffers[chat_id] = [] # Clear buffer for this chat
 
