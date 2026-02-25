@@ -47,7 +47,8 @@ class LocalVectorDB:
 
     def get_embedding(self, text):
         if self.embedding_model_type=="fasttext":
-            return fasttextembeding.embedding_text(text).astype('float32')
+            import fasttextembeding
+            return np.array(fasttextembeding.embedding_text(text)).astype('float32')
         else:
             # print(f"DEBUG: Getting embedding for: {text[:50]}...")
             response = self.client.models.embed_content(

@@ -200,9 +200,9 @@ async def handle_webhook(request: Request):
     # Tính độ trễ (giây)
     time_diff = current_time - message_time
 
-    if time_diff > 60*60*60:
-        print(f"Bỏ qua tin nhắn cũ ({int(time_diff)} giây trước)")
-        return {"status": "ignored", "reason": "Message too old"}
+    # if time_diff > 60*60*60:
+    #     print(f"Bỏ qua tin nhắn cũ ({int(time_diff)} giây trước)")
+    #     return {"status": "ignored", "reason": "Message too old"}
 
     chat_id = update.message.chat.id
     user_text = update.message.text or update.message.caption
