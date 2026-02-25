@@ -30,9 +30,10 @@ tunnel_process = None
 webhook_base_url = None
 
 # --- LỊCH SỬ CHAT ---
+HISTORY_CHAT_MAX_LEN = 10
 # Sử dụng defaultdict để tự động tạo deque cho chat_id mới
 # deque với maxlen=10 sẽ tự động xóa tin nhắn cũ nhất khi đầy
-chat_history = defaultdict(lambda: deque(maxlen=10))
+chat_history = defaultdict(lambda: deque(maxlen=HISTORY_CHAT_MAX_LEN))
 
 # Buffer cho media group (nhiều ảnh gửi cùng lúc)
 # {media_group_id: {"files": [path1, path2], "text": "caption", "chat_id": 123, "processed": False}}
@@ -159,7 +160,7 @@ async def health_check():
 # Whitelist: Chỉ trả lời các ID này
 ALLOWED_IDS = []  # [987654321, -100123456789]
 
-async def process_chat_history_and_received_msg(user_text: str, chat_id,listFilePath:list[str]  =None):
+async def process_chat_history_and_received_msg(user_text: str, chat_id,listFilePath:list[str]  =None,currentmsg=None):
 
     if user_text is None or user_text == "":
         return ""
@@ -187,13 +188,22 @@ db_all_message=dbconnect.SQLiteDB("all_message")
 
 db_all_message_file=dbconnect.SQLiteDB("all_message_file")
 
+
+import knowledgebase.summarychat 
+
+summarychat= knowledgebase.summarychat.SummaryChat(batch_size=HISTORY_CHAT_MAX_LEN)
+
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
     msg_id_guid = db_all_message.insert(data)
-    print(data)
     update = telegram_types.TelegramUpdate.model_validate(data)
+
+    summarychat.enqueue_update(update)
+
+    print(update)
+
     if update.edited_message:
         pass
     # 1. Kiểm tra xem có phải là tin nhắn mới không
@@ -266,7 +276,15 @@ async def handle_webhook(request: Request):
                 }
             
             if user_text:
-                media_group_buffer[media_group_id]["text"] = user_text
+                if media_group_buffer[media_group_id]["text"]:
+                    temp_gtext=f"{media_group_buffer[media_group_id]["text"]}"
+                else:
+                    temp_gtext=None
+
+                if temp_gtext:
+                    media_group_buffer[media_group_id]["text"] = f"{temp_gtext}\n\n{user_text}"
+                else:
+                    media_group_buffer[media_group_id]["text"] = user_text
             
             if listFilePath:
                 media_group_buffer[media_group_id]["files"].extend(listFilePath)
@@ -285,29 +303,32 @@ async def handle_webhook(request: Request):
             # Lấy dữ liệu đã gom
             final_user_text = media_group_buffer[media_group_id]["text"]
             final_file_paths = media_group_buffer[media_group_id]["files"]
-            
-        # 5. Xử lý Logic AI cho Media Group
-        if final_user_text or final_file_paths:
-            if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
-                if (final_user_text and TELEGRAM_BOT_USERNAME in final_user_text):
-                    reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths)
-                    await bot_telegram.send_telegram_message(chat_id, reply_text)
-            else:
-                reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths)
-                await bot_telegram.send_telegram_message(chat_id, reply_text)
-                
-        return {"status": "ok"}
 
+            user_text=final_user_text
+            listFilePath=final_file_paths
+            
+        # # 5. Xử lý Logic AI cho Media Group
+        # if final_user_text or final_file_paths:
+        #     if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
+        #         if (final_user_text and TELEGRAM_BOT_USERNAME in final_user_text):
+        #             reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths,update)
+        #             await bot_telegram.send_telegram_message(chat_id, reply_text)
+        #     else:
+        #         reply_text = await process_chat_history_and_received_msg(final_user_text or "", chat_id, final_file_paths,update)
+        #         await bot_telegram.send_telegram_message(chat_id, reply_text)
+                
+        # return {"status": "ok"}
+    
     # 4. Xử lý Logic (Tin nhắn đơn lẻ)
     if user_text or listFilePath:
 
         # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
         if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
             if user_text and TELEGRAM_BOT_USERNAME in user_text:
-                reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath)
+                reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
                 await bot_telegram.send_telegram_message(chat_id, reply_text)
         else:
-            reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath)
+            reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
             await bot_telegram.send_telegram_message(chat_id, reply_text)
 
     return {"status": "ok"}

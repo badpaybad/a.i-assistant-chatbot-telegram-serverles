@@ -28,7 +28,7 @@ Khi AI tự lên plan để test thì cần tuân theo các quy tắc sau:
 - Ví du: có file cần test knowledgebase/dbconnect.py để test hàm inserts thì cần sinh ra /test/test_dbconnect_SQLiteDB_inserts.py. 
 - Không xóa file sinh ra để test nhằm phục vụ chạy test cho tương lai khi cần
 
-## Cấu hình tham số (Arguments)
+## Cấu hình tham số khi chạy (Arguments)
 - Mọi script test khi thực thi qua command line **bắt buộc** phải đi kèm tham số cấu hình: `config_dunp`.
 - **Cấu trúc lệnh mẫu:** `python <path_to_test_file_tính từ gốc> config_dunp`
 Ví dụ: `python test/test_dbconnect_SQLiteDB_inserts.py config_dunp`

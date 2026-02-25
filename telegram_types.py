@@ -1,5 +1,6 @@
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field,ConfigDict
+from typing import Any
 # --- ĐỊNH NGHĨA DỮ LIỆU (Pydantic Models) ---
 # Giúp code sạch hơn và tự động kiểm tra dữ liệu đầu vào
 
@@ -66,13 +67,24 @@ class Animation(BaseModel):
     file_name: str | None = None
     mime_type: str | None = None
     file_size: int | None = None
-
+ 
+class FromUser(BaseModel):
+    id: int
+    is_bot: bool
+    first_name: str
+    last_name: str
+    username: str
 
 class Message(BaseModel):
+
+    # Cho phép dùng cả 'from_user' và 'from' khi khởi tạo
+    model_config = ConfigDict(populate_by_name=True)
+
     chat: Chat
     text: str | None = None  # Tin nhắn có thể là ảnh/sticker (không có text)
     caption: str | None = None  # Văn bản đi kèm media (ảnh/video/file)
     date: int
+    edit_date:int|None=None
     media_group_id: str | None = None
     photo: list[PhotoSize] | None = None
     document: Document | None = None
@@ -80,8 +92,22 @@ class Message(BaseModel):
     voice: Voice | None = None
     audio: Audio | None = None
     animation: Animation | None = None
-
+    entities:Any=None
+    link_preview_options:Any=None
+    message_id:int
+    from_user: FromUser | None = Field(default=None, alias="from")
+    # class Config:
+    #     # This allows you to populate the model using the alias "from" 
+    #     # but also access it via "from_user"
+    #     populate_by_name = True
 
 class TelegramUpdate(BaseModel):
     update_id: int
     message: Message | None = None  # Có thể là edited_message, nên để None
+    edited_message: Message | None = None  # Có thể là edited_message, nên để None
+    def get_chat_id(self):
+        if self.message:
+            return self.message.chat.id
+        elif self.edited_message:
+            return self.edited_message.chat.id
+        return None
