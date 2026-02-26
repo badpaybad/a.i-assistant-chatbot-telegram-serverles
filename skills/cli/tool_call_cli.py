@@ -52,6 +52,7 @@ Yêu cầu kỹ thuật:
 7. Nếu một lệnh chạy quá 15 giây hoặc không thể dừng lại, hãy kill process đó, rồi thông báo rõ ràng cho người dùng biết họ cần cài đặt thủ công.
 8. Không cho phép đọc nội dung file source code python, c# , java, typescript,php ... 
 9. Không cho phép đọc nội dung file cấu hình vd .env appsettings.json ...
+10. **Bắt buộc** các lệnh sinh ra sẽ không cần sudo để chạy 
 
 Ví dụ:
 Người dùng: "liệt kê các file trong thư mục hiện tại"
