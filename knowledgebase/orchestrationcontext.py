@@ -31,6 +31,7 @@ import httpx
 from urllib.parse import urlparse
 
 from knowledgebase.summarychat import db_summary_chat
+from knowledgebase.orchestrationbuildprompt import build_system_instruction
 # Khởi tạo client cấp thấp với API Key của bạn
 clientGemini = genai.Client(api_key=GEMINI_APIKEY)
 
@@ -137,43 +138,13 @@ def fetch_url_content(url: str):
 def get_summary_chat(chat_id:str):
     return db_summary_chat.search_json("chat_id", chat_id)[0:3]
 
-system_instruction="""
-# ROLE
-Bạn là Hệ điều hành Kỹ năng (Skill OS). Nhiệm vụ **bắt buộc** của bạn là điều phối yêu cầu của người dùng vào đúng Sub-folder chức năng trong thư mục `/skills`.
-
-# SKILL INVENTORY
-1. [Folder: /skills/cli]
-   - Chức năng: Chạy các lệnh bash shell trên hệ điều hành Ubuntu.
-2. [Folder: /skills/common_question_answer]
-   - Chức năng: Trả lời các câu hỏi thông thường, kiến thức chung khi không cần dùng skill chuyên biệt.
-
-# CONTEXT GUIDELINES
-Bạn sẽ được cung cấp:
-- [Summarized History]: Tóm tắt các cuộc trò chuyện cũ để hiểu ngữ cảnh dài hạn.
-- [Recent Messages]: 10 tin nhắn gần nhất trong phiên chat hiện tại.
-- [Current Message]: Tin nhắn mới nhất của người dùng cần xử lý.
-
-# DECISION LOGIC
-1. Phân tích [Summarized History] và [Recent Messages] để hiểu luồng trò chuyện.
-2. Phân tích [Current Message] để xác định ý định (Intent).
-3. Nếu người dùng muốn thực thi lệnh hệ thống, bash script -> `skills/cli`.
-4. Mọi trường hợp khác hoặc hỏi đáp thông thường -> `skills/common_question_answer`.
-
-# OUTPUT FORMAT (JSON ONLY)
-Bạn PHẢI trả về JSON theo cấu trúc sau:
-{
-  "target_folder": "skills/...",
-  "reasoning": "Giải thích ngắn gọn tại sao chọn folder này",
-  "intent": "Mô tả ý định cốt lõi của người dùng"
-}
-"""
 
 import importlib.util
 import os
 
 import skills.common_question_answer.main as common_question_answer
 
-async def do_decision(skill, curret_message, list_current_msg, list_summary_chat):
+async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls):
     """_summary_
 
     Args:
@@ -197,17 +168,22 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
             if hasattr(skill_module, 'exec'):
                 print(f"--- Đang thực thi skill: {target_folder} ---")
                 if asyncio.iscoroutinefunction(skill_module.exec):
-                    await skill_module.exec(curret_message, list_current_msg, list_summary_chat)
+                    await skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
                 else:
-                    skill_module.exec(curret_message, list_current_msg, list_summary_chat)
+                    skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
             else:
                 print(f"Lỗi: Skill '{target_folder}' không có hàm 'exec'. mặc định dùng common_question_answer")
         except Exception as e:
             print(f"Lỗi khi load hoặc thực thi skill '{target_folder}': {str(e)} mặc định dùng common_question_answer")
-            await common_question_answer.exec(curret_message, list_current_msg, list_summary_chat)
+            await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
     else:
         print(f"Lỗi: Không tìm thấy file {module_path} mặc định dùng common_question_answer")
-        await common_question_answer.exec(curret_message, list_current_msg, list_summary_chat)
+        await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+
+
+# system_instruction is now dynamically built in generation_config
+system_instruction=build_system_instruction()
+print("system_instruction ===============================",system_instruction)
 # Khai báo công cụ Google Search, có thể khai báo thêm tool để query dùng dbvectorconnect.py để lấy thêm dữ liệu 
 google_search_tool = types.Tool(
     google_search=types.GoogleSearch()
@@ -340,7 +316,7 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
         bot_reply= response.text
         print("skills_decision =>>>>>> ",bot_reply)
         skill_obj = extract_json_from_llm(bot_reply)
-        await do_decision(skill_obj, message, list_current_msg, list_summary_chat )
+        await do_decision(skill_obj, message, list_current_msg, list_summary_chat,unique_urls )
         break
 
     return skill_obj, []

@@ -6,7 +6,6 @@ import os
 import uuid
 import mimetypes
 from urllib.parse import urlparse
-from skills.orchestrations.main import orchestrator
 
 
 from config import GEMINI_APIKEY, GEMINI_MODEL
