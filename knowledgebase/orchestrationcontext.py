@@ -2,6 +2,9 @@ from collections import defaultdict, deque
 from nacl.exceptions import BadSignatureError
 from nacl.signing import VerifyKey
 from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+import uvicorn
 import subprocess
 import re
 import os
@@ -9,11 +12,8 @@ import json
 import uuid
 import time
 from typing import Any
-from fastapi import FastAPI, Request
-from pydantic import BaseModel
 import httpx
 import asyncio
-import uvicorn
 from contextlib import asynccontextmanager
 from google import genai
 from google.genai import types
@@ -29,8 +29,6 @@ import telegram_types
 import mimetypes
 import httpx
 from urllib.parse import urlparse
-
-
 import importlib.util
 import sys
 
@@ -167,17 +165,24 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
     module_path = os.path.join(target_folder, "main.py")
     if os.path.exists(module_path):
         try:
-            # Tạo tên module duy nhất dựa trên folder
-            module_name = target_folder.replace("/", ".").replace("\\", ".")
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
-            skill_module = importlib.util.module_from_spec(spec)
+            # Normalize target_folder and create a proper module name
+            normalized_folder = target_folder.strip("/").strip("\\")
+            skill_package = normalized_folder.replace("/", ".").replace("\\", ".")
+            module_name = f"{skill_package}.main"
 
-            sys.modules[module_name] = skill_module
-        
-            spec.loader.exec_module(skill_module)
+            try:
+                # Try standard import first (works if skills is a package)
+                skill_module = importlib.import_module(module_name)
+                importlib.reload(skill_module)
+            except Exception:
+                # Fallback to loading from file if standard import fails
+                spec = importlib.util.spec_from_file_location(module_name, module_path)
+                skill_module = importlib.util.module_from_spec(spec)
+                sys.modules[module_name] = skill_module
+                spec.loader.exec_module(skill_module)
             
             if hasattr(skill_module, 'exec'):
-                print(f"--- Đang thực thi skill: {target_folder} --- {module_name}---")
+                print(f"--- Đang thực thi skill: {target_folder} --- {module_name} ---")
                 if asyncio.iscoroutinefunction(skill_module.exec):
                     await skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
                 else:

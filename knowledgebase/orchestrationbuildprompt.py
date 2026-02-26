@@ -108,7 +108,9 @@ def build_system_instruction():
     decision_logic = """1. Phân tích [Summarized History] và [Recent Messages] để hiểu luồng trò chuyện.
 2. Khi đã hiểu luồng trò chuyền kết hợp phân tích [Current Message] để xác định ý định (Intent).
 3. Tìm folder skill phù hợp nhất dựa trên chức năng được liệt kê ở trên.
-4. Mọi trường hợp khác hoặc hỏi đáp thông thường -> `skills/common_question_answer`."""
+4. Mọi trường hợp khác hoặc hỏi đáp thông thường -> `skills/common_question_answer`.
+5. Nếu có lệnh nào đó cần dùng bạn hãy cố gắng cài dùng apt install, nếu không cài được bạn trả thông báo lên chat cho người dùng biết cần phải cài lên máy tính.
+"""
 
     system_instruction = f"""
 # ROLE
@@ -151,3 +153,16 @@ Bạn PHẢI trả về JSON theo cấu trúc sau:
         print(f"Error saving system instruction to cache: {e}")
 
     return system_instruction
+
+if __name__ == "__main__":
+    import sys
+    # Rebuild regardless of cache if any argument is passed (like config_dunp)
+    if len(sys.argv) > 1:
+        # Force rebuild by deleting metadata if it exists
+        kb_dir = os.path.dirname(os.path.abspath(__file__))
+        metadata_path = os.path.join(kb_dir, ".system_instruction_metadata.json")
+        if os.path.exists(metadata_path):
+            os.remove(metadata_path)
+            
+    instruction = build_system_instruction()
+    print("System Instruction rebuilt successfully.")
