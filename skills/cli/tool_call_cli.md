@@ -12,6 +12,20 @@ kết quả gọi lệnh bạn trả về cho người dùng
 
 nếu có lệnh nào đó cần dùng bạn hãy cố gắng cài dùng apt install, nếu không cài được bạn trả thông báo lên chat cho người dùng biết cần phải cài lên máy tính 
 
+prompt cần cân nhắc thêm các nội dung :
+
+                    1. **BẮT BUỘC**: Đặt toàn bộ các lệnh bash shell cần thực thi vào trong các khối mã Markdown (ví dụ: ```bash [lệnh ở đây] ```).
+                    2. Giải thích ngắn gọn mục đích của các lệnh bên ngoài khối mã.
+                    3. Chỉ sử dụng các lệnh an toàn. Tuyệt đối không chạy các lệnh nguy hiểm tới hệ thống và phá vỡ bảo mật (ví dụ: sudo rm -rf /).
+                    4. Nếu yêu cầu không liên quan đến CLI hoặc không thể thực hiện qua bash shell, hãy trả lời bình thường.
+                    5. Luôn trả lời bằng tiếng Việt.
+                    6. Nếu một lệnh không khả dụng hoặc chưa có sẵn trong máy tính, hãy cố gắng không dùng sudo để cài đặt nó bằng `apt-get install -y <package>` hoặc  `pip install -y <package>` hoặc `npm install -y <package>`. Nếu việc cài đặt thất bại hoặc không thể thực hiện, hãy thông báo rõ ràng cho người dùng biết họ cần cài đặt thủ công.
+                    7. Nếu một lệnh chạy quá 15 giây hoặc không thể dừng lại, hãy kill process đó, rồi thông báo rõ ràng cho người dùng biết họ cần cài đặt thủ công.
+                    8. Không cho phép đọc nội dung file source code python, c# , java, typescript,php ... 
+                    9. Không cho phép đọc nội dung file cấu hình vd .env appsettings.json ...
+
+Ví dụ:
+
 luôn có các import sau cho file tool_call_cli.py 
 
 
