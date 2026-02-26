@@ -17,15 +17,13 @@ import telegram_types
 import threading
 import queue
 import time
-from knowledgebase.dbconnect import SQLiteDB
-
-db_summary_chat = SQLiteDB(table_name="summary_chat")
+import knowledgebase.dbcontext
 
 class SummaryChat:
     def __init__(self, batch_size=10):
         self.queue = queue.Queue()
         self.client = genai.Client(api_key=GEMINI_APIKEY)
-        self.db = db_summary_chat
+        self.db = knowledgebase.dbcontext.db_summary_chat
         self.batch_size = batch_size
         self.chat_buffers = {} # dict: chat_id -> list of (update_obj, formatted_string)
         self.running = True

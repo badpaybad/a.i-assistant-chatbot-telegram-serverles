@@ -24,6 +24,10 @@ import bot_discord
 
 import my_telethon
 import telegram_types
+import knowledgebase
+import knowledgebase.dbcontext
+
+import knowledgebase.orchestrationcontext 
 
 from knowledgebase.orchestrationcontext import set_dir_program, skills_decision
 
@@ -189,25 +193,16 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
 
 
 # --- WEBHOOK ENDPOINT ---
-import knowledgebase.dbconnect as dbconnect
 
-sqllite_all_message=dbconnect.SQLiteDB("all_message")
-
-sqllite_all_message_file=dbconnect.SQLiteDB("all_message_file")
-
-
-import knowledgebase.summarychat 
-
-summarychat= knowledgebase.summarychat.SummaryChat(batch_size=HISTORY_CHAT_MAX_LEN)
 
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     # Lấy toàn bộ dữ liệu JSON thô từ Telegram
     data = await request.json()
-    msg_id_guid = sqllite_all_message.insert(data)
+    msg_id_guid = knowledgebase.dbcontext.sqllite_all_message.insert(data)
     update = telegram_types.TelegramUpdate.model_validate(data)
 
-    summarychat.enqueue_update(update)
+    knowledgebase.orchestrationcontext.summarychat.enqueue_update(update)
 
     print(update)
 
@@ -270,7 +265,7 @@ async def handle_webhook(request: Request):
             db_file_rec.append({"msg_id":msg_id_guid,"chat_id":chat_id, "file_id": file_id, "file_path": fpath})
 
     if len(db_file_rec) > 0:
-        sqllite_all_message_file.insert(db_file_rec)
+        knowledgebase.dbcontext.sqllite_all_message_file.insert(db_file_rec)
     print(f"Nhận tin từ {chat_id}: {user_text}")
 
     # 4. Xử lý Media Group logic (Buffering)

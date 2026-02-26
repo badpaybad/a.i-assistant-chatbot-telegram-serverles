@@ -64,6 +64,9 @@ async def download_telegram_file(file_id: str, chat_id: int, custom_file_name: s
 
 
 
+import knowledgebase
+import knowledgebase.orchestrationcontext
+import knowledgebase.dbcontext
 
 async def send_telegram_message(chat_id: int, text: str)-> telegram_types.TelegramUpdate|None:
     if text is None or text == "":
@@ -76,6 +79,12 @@ async def send_telegram_message(chat_id: int, text: str)-> telegram_types.Telegr
             response.raise_for_status()
 
             telegram_response = telegram_types.TelegramUpdate(**response.json())
+
+            if telegram_response:
+                #.model_dump_json(by_alias=True)
+                knowledgebase.dbcontext.sqllite_all_message.insert(telegram_response.json())
+                knowledgebase.orchestrationcontext.summarychat.enqueue_update(telegram_response)
+
             return telegram_response
         except Exception as e:
             print(f"Lỗi khi gửi tin: {e}")

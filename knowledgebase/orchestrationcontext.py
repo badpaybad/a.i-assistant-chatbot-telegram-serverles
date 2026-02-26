@@ -30,8 +30,21 @@ import mimetypes
 import httpx
 from urllib.parse import urlparse
 
-from knowledgebase.summarychat import db_summary_chat
+
+import importlib.util
+import sys
+
+import skills.common_question_answer.main as common_question_answer
+
+import knowledgebase.summarychat
+
+summarychat= knowledgebase.summarychat.SummaryChat(batch_size=HISTORY_CHAT_MAX_LEN)
+
 from knowledgebase.orchestrationbuildprompt import build_system_instruction
+
+import knowledgebase.dbcontext
+
+db_summary_chat = knowledgebase.dbcontext.db_summary_chat
 # Khởi tạo client cấp thấp với API Key của bạn
 clientGemini = genai.Client(api_key=GEMINI_APIKEY)
 
@@ -139,11 +152,6 @@ def get_summary_chat(chat_id:str):
     return db_summary_chat.search_json("chat_id", chat_id)[0:3]
 
 
-import importlib.util
-import os
-
-import skills.common_question_answer.main as common_question_answer
-
 async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls):
     """_summary_
 
@@ -163,6 +171,9 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
             module_name = target_folder.replace("/", ".").replace("\\", ".")
             spec = importlib.util.spec_from_file_location(module_name, module_path)
             skill_module = importlib.util.module_from_spec(spec)
+
+            sys.modules[module_name] = skill_module
+        
             spec.loader.exec_module(skill_module)
             
             if hasattr(skill_module, 'exec'):
