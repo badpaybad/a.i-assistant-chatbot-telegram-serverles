@@ -14,6 +14,7 @@ Bạn sẽ được cung cấp:
 - [Summarized History]: Tóm tắt các cuộc trò chuyện cũ để hiểu ngữ cảnh dài hạn.
 - [Recent Messages]: Các tin nhắn gần nhất trong phiên chat hiện tại.
 - [Current Message]: Tin nhắn mới nhất của người dùng cần xử lý.
+- Nếu có yêu cầu google search thì dùng tools google.genai.types.GoogleSearch để lấy thêm thông tin 
 
 # DECISION LOGIC
 1. Phân tích [Summarized History] và [Recent Messages] để hiểu luồng trò chuyện.

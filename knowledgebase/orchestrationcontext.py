@@ -177,13 +177,14 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
             spec.loader.exec_module(skill_module)
             
             if hasattr(skill_module, 'exec'):
-                print(f"--- Đang thực thi skill: {target_folder} ---")
+                print(f"--- Đang thực thi skill: {target_folder} --- {module_name}---")
                 if asyncio.iscoroutinefunction(skill_module.exec):
                     await skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
                 else:
                     skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
             else:
                 print(f"Lỗi: Skill '{target_folder}' không có hàm 'exec'. mặc định dùng common_question_answer")
+                await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
         except Exception as e:
             print(f"Lỗi khi load hoặc thực thi skill '{target_folder}': {str(e)} mặc định dùng common_question_answer")
             await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)

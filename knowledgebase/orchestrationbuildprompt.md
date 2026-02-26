@@ -10,6 +10,7 @@ Bạn sửa hoặc bổ xung # SKILL INVENTORY , sửa bổ xung # DECISION LOGI
 
 system_instruction cần lưu vào file system_instruction.txt trong folder knowledgebase nếu có rồi thì load lên không cần tạo lại. nếu đã có kiểm tra số lượng sub-folder và nội dung readme.md của từng sub-folder đã thay đổi thì mới tạo lại. Nếu thấy update date của file readme.md có thay đổi cũng sẽ build lại 
 
+
 ### mẫu system_instruction
                 system_instruction="""
                 # ROLE
@@ -26,6 +27,7 @@ system_instruction cần lưu vào file system_instruction.txt trong folder know
                 - [Summarized History]: Tóm tắt các cuộc trò chuyện cũ để hiểu ngữ cảnh dài hạn.
                 - [Recent Messages]: Các tin nhắn gần nhất trong phiên chat hiện tại.
                 - [Current Message]: Tin nhắn mới nhất của người dùng cần xử lý.
+                - Nếu có yêu cầu google search thì dùng tools google.genai.types.GoogleSearch để lấy thêm thông tin 
 
                 # DECISION LOGIC
                 1. Phân tích [Summarized History] và [Recent Messages] để hiểu luồng trò chuyện.
