@@ -70,11 +70,11 @@ class Animation(BaseModel):
     file_size: int | None = None
  
 class FromUser(BaseModel):
-    id: int
+    id: int| None = None
     is_bot: bool | None = None
     first_name: str | None = None
     last_name: str | None = None
-    username: str 
+    username: str | None = None
 
 class Message(BaseModel):
 
@@ -133,5 +133,6 @@ class OrchestrationMessage:
     files:List[str]|None=None
     text:str|None=None
     chat_id:str|None=None
+    webhook_base_url:str|None=None
     
         

@@ -4,6 +4,7 @@ from nacl.signing import VerifyKey
 from fastapi import FastAPI, Request, HTTPException
 import subprocess
 import re
+import os
 import time
 from typing import Any
 from fastapi import FastAPI, Request
@@ -23,6 +24,13 @@ import bot_discord
 
 import my_telethon
 import telegram_types
+
+from knowledgebase.orchestrationcontext import set_dir_program, skills_decision
+
+DIR_PROGRAM=os.path.dirname(os.path.abspath(__file__))
+
+set_dir_program(DIR_PROGRAM)
+
 # --- CẤU HÌNH ---
 
 # Biến toàn cục để quản lý tiến trình tunnel
@@ -320,22 +328,22 @@ async def handle_webhook(request: Request):
                 
         # return {"status": "ok"}
     
-    # 4. Xử lý Logic (Tin nhắn đơn lẻ)
-    if user_text or listFilePath:
-        telegram_response=None
-        # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
-        if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
-            if user_text and TELEGRAM_BOT_USERNAME in user_text:
-                reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
-                telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)
-        else:
-            reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
-            telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)   
+    # # 4. Xử lý Logic (Tin nhắn đơn lẻ)
+    # if user_text or listFilePath:
+    #     telegram_response=None
+    #     # 2. Kiểm tra nếu tin nhắn có chứa nội dung và có tag tên bot
+    #     if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME:
+    #         if user_text and TELEGRAM_BOT_USERNAME in user_text:
+    #             reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
+    #             telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)
+    #     else:
+    #         reply_text = await process_chat_history_and_received_msg(user_text or "", chat_id, listFilePath,update)
+    #         telegram_response = await bot_telegram.send_telegram_message(chat_id, reply_text)   
 
-        if telegram_response:
-            #.model_dump_json(by_alias=True)
-            sqllite_all_message.insert(telegram_response.json())
-            summarychat.enqueue_update(telegram_response)
+    #     if telegram_response:
+    #         #.model_dump_json(by_alias=True)
+    #         sqllite_all_message.insert(telegram_response.json())
+    #         summarychat.enqueue_update(telegram_response)
 
     orchestration_message=telegram_types.OrchestrationMessage()
     orchestration_message.message=update
@@ -343,9 +351,13 @@ async def handle_webhook(request: Request):
     orchestration_message.files=listFilePath
     orchestration_message.text=user_text
     orchestration_message.chat_id=chat_id
+    orchestration_message.webhook_base_url=webhook_base_url
     
+    if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME :
+        if orchestration_message.text and TELEGRAM_BOT_USERNAME in orchestration_message.text:
+            await skills_decision(orchestration_message)
 
-    return {"status": "ok", "telegram_response": telegram_response}
+    return {"status": "ok"}
 
 # Đoạn này để chạy trực tiếp bằng python main.py (hoặc dùng lệnh uvicorn ở ngoài)
 

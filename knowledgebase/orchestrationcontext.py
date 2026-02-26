@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, HTTPException
 import subprocess
 import re
 import os
+import json
 import uuid
 import time
 from typing import Any
@@ -29,11 +30,42 @@ import mimetypes
 import httpx
 from urllib.parse import urlparse
 
-from summarychat import db_summary_chat
-DOWNLOAD_DIR="downloads"
+from knowledgebase.summarychat import db_summary_chat
 # Khởi tạo client cấp thấp với API Key của bạn
 clientGemini = genai.Client(api_key=GEMINI_APIKEY)
 
+DIR_PROGRAM=os.path.dirname(os.path.abspath(__file__))
+DIR_DOWNLOAD=f"{DIR_PROGRAM}/downloads"
+
+def set_dir_program(dir_program):
+    global DIR_PROGRAM, DIR_DOWNLOAD
+    DIR_PROGRAM=dir_program
+    DIR_DOWNLOAD=f"{DIR_PROGRAM}/downloads"
+
+    print("DIR_PROGRAM", DIR_PROGRAM)
+    print("DIR_DOWNLOAD", DIR_DOWNLOAD)
+
+def extract_json_from_llm(response_text):
+    # 1. Dùng Regex để tìm nội dung giữa ```json và ```
+    # re.DOTALL giúp dấu . khớp với cả ký tự xuống dòng
+    match = re.search(r'```json\s+(.*?)\s+```', response_text, re.DOTALL)
+    
+    if match:
+        # Lấy nội dung group 1 và strip khoảng trắng thừa
+        json_str = match.group(1).strip()
+    else:
+        # 2. Dự phòng: Nếu LLM không dùng code block, thử strip toàn bộ chuỗi
+        # để tìm cặp ngoặc nhọn { ... }
+        json_str = response_text.strip()
+        # Loại bỏ các backticks lẻ nếu có
+        json_str = json_str.replace("```json", "").replace("```", "").strip()
+
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError as e:
+        print( f"Lỗi định dạng JSON: {e}")
+
+        raise e
 
 def map_mime_type(mime_type: str) -> str:
     """Ánh xạ mime_type không được Gemini hỗ trợ sang mime_type hợp lệ (như text/plain)."""
@@ -91,7 +123,7 @@ def fetch_url_content(url: str):
                     elif "image/png" in mime_type: filename += ".png"
                     elif "application/pdf" in mime_type: filename += ".pdf"
                 
-                file_path = os.path.join(DOWNLOAD_DIR, f"{uuid.uuid4().hex[:8]}_{filename}")
+                file_path = os.path.join(DIR_DOWNLOAD, f"{uuid.uuid4().hex[:8]}_{filename}")
                 with open(file_path, "wb") as f:
                     f.write(response.content)
                 
@@ -103,18 +135,16 @@ def fetch_url_content(url: str):
         return "", "text/plain","text"
 
 def get_summary_chat(chat_id:str):
-    return db_summary_chat.search_json(chat_id, chat_id)
+    return db_summary_chat.search_json("chat_id", chat_id)[0:3]
 
 system_instruction="""
 # ROLE
-Bạn là Hệ điều hành Kỹ năng (Skill OS). Nhiệm vụ của bạn là điều phối yêu cầu của người dùng vào đúng Sub-folder chức năng trong thư mục `/skills`.
+Bạn là Hệ điều hành Kỹ năng (Skill OS). Nhiệm vụ **bắt buộc** của bạn là điều phối yêu cầu của người dùng vào đúng Sub-folder chức năng trong thư mục `/skills`.
 
 # SKILL INVENTORY
 1. [Folder: /skills/cli]
    - Chức năng: Chạy các lệnh bash shell trên hệ điều hành Ubuntu.
-2. [Folder: /skills/http]
-   - Chức năng: Thực hiện các yêu cầu HTTP, fetch nội dung từ URL.
-3. [Folder: /skills/common_question_answer]
+2. [Folder: /skills/common_question_answer]
    - Chức năng: Trả lời các câu hỏi thông thường, kiến thức chung khi không cần dùng skill chuyên biệt.
 
 # CONTEXT GUIDELINES
@@ -127,8 +157,7 @@ Bạn sẽ được cung cấp:
 1. Phân tích [Summarized History] và [Recent Messages] để hiểu luồng trò chuyện.
 2. Phân tích [Current Message] để xác định ý định (Intent).
 3. Nếu người dùng muốn thực thi lệnh hệ thống, bash script -> `skills/cli`.
-4. Nếu người dùng muốn lấy dữ liệu từ website (URL) -> `skills/http`.
-5. Mọi trường hợp khác hoặc hỏi đáp thông thường -> `skills/common_question_answer`.
+4. Mọi trường hợp khác hoặc hỏi đáp thông thường -> `skills/common_question_answer`.
 
 # OUTPUT FORMAT (JSON ONLY)
 Bạn PHẢI trả về JSON theo cấu trúc sau:
@@ -139,7 +168,47 @@ Bạn PHẢI trả về JSON theo cấu trúc sau:
 }
 """
 
-# Khai báo công cụ Google Search
+import importlib.util
+import os
+
+import skills.common_question_answer.main as common_question_answer
+
+async def do_decision(skill, curret_message, list_current_msg, list_summary_chat):
+    """_summary_
+
+    Args:
+        skill (_type_): {target_folder:"",reasoning:"",intent:"" }
+        message (telegram_types.OrchestrationMessage): _description_
+    """
+    target_folder= skill["target_folder"]
+    reasoning= skill["reasoning"]
+    intent= skill["intent"]
+    
+    # ở các folder skills/... có file main.py trong đó luôn có hàm exec( curret_message, list_current_msg, list_summary_chat) bạn load động file main.py rồi invoke ham exec
+    module_path = os.path.join(target_folder, "main.py")
+    if os.path.exists(module_path):
+        try:
+            # Tạo tên module duy nhất dựa trên folder
+            module_name = target_folder.replace("/", ".").replace("\\", ".")
+            spec = importlib.util.spec_from_file_location(module_name, module_path)
+            skill_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(skill_module)
+            
+            if hasattr(skill_module, 'exec'):
+                print(f"--- Đang thực thi skill: {target_folder} ---")
+                if asyncio.iscoroutinefunction(skill_module.exec):
+                    await skill_module.exec(curret_message, list_current_msg, list_summary_chat)
+                else:
+                    skill_module.exec(curret_message, list_current_msg, list_summary_chat)
+            else:
+                print(f"Lỗi: Skill '{target_folder}' không có hàm 'exec'. mặc định dùng common_question_answer")
+        except Exception as e:
+            print(f"Lỗi khi load hoặc thực thi skill '{target_folder}': {str(e)} mặc định dùng common_question_answer")
+            await common_question_answer.exec(curret_message, list_current_msg, list_summary_chat)
+    else:
+        print(f"Lỗi: Không tìm thấy file {module_path} mặc định dùng common_question_answer")
+        await common_question_answer.exec(curret_message, list_current_msg, list_summary_chat)
+# Khai báo công cụ Google Search, có thể khai báo thêm tool để query dùng dbvectorconnect.py để lấy thêm dữ liệu 
 google_search_tool = types.Tool(
     google_search=types.GoogleSearch()
 )
@@ -156,13 +225,18 @@ generation_config = types.GenerateContentConfig(
 )
 
 chat_buffers = {} # dict: chat_id -> list of (update_obj, formatted_string)
-def chat_with_knowledgebase(message: telegram_types.OrchestrationMessage):
+async def skills_decision(message: telegram_types.OrchestrationMessage):
 
     chat_id = message.chat_id
     if chat_id not in chat_buffers:
         chat_buffers[chat_id] = []
     
     chat_buffers[chat_id].append(message)
+
+    list_current_msg=[]
+
+    for msg in chat_buffers[chat_id]:
+        list_current_msg.append(msg)
 
     list_summary_chat = get_summary_chat(chat_id)
 
@@ -177,7 +251,7 @@ def chat_with_knowledgebase(message: telegram_types.OrchestrationMessage):
     if list_summary_chat:
         summary_text = "### [Summarized History]\n"
         for item in list_summary_chat:
-            summary_text += f"- {item.summary}\n"
+            summary_text += f"- {item["json"]['summary']}\n"
     
     # 2. Format Recent Messages (Long-term buffer)
     recent_text = "### [Recent Messages]\n"
@@ -203,7 +277,7 @@ def chat_with_knowledgebase(message: telegram_types.OrchestrationMessage):
             if res_type == "text" and content and content!="":
                 # Nếu là text, thêm vào user_parts để làm ngữ cảnh
                 user_parts.append(types.Part.from_text(text=f"\nContent from {url}:\n{content}\n"))
-            elif res_type == "file" and content:
+            elif res_type == "file" and content and content!="":
                 # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
                 if not message.files:
                     message.files = []
@@ -262,10 +336,12 @@ def chat_with_knowledgebase(message: telegram_types.OrchestrationMessage):
         if response.candidates:
             print(f"--- Finish Reason: {response.candidates[0].finish_reason} ---")
             print(f"--- Content Parts: {len(response.candidates[0].content.parts)} ---")
-            # print(response)
-
-        bot_reply = response.text
+        
+        bot_reply= response.text
+        print("skills_decision =>>>>>> ",bot_reply)
+        skill_obj = extract_json_from_llm(bot_reply)
+        await do_decision(skill_obj, message, list_current_msg, list_summary_chat )
         break
 
-    return bot_reply, []
+    return skill_obj, []
 
