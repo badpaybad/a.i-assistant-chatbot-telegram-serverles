@@ -259,6 +259,7 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
 
     # 3. Combine Context
     context_block = f"{summary_text}\n{recent_text}\n### [Current Message]\n{message.text}"
+    print("context_block ===============================",context_block)
     user_parts.append(types.Part.from_text(text=context_block))
 
     # context_block dùng regex để tìm danh sách url trong context_block, dùng fetch_url_content để download hoặc lấy nội dung text về ,, nếu là file thì add vào message.files 
