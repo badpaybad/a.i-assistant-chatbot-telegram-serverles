@@ -291,7 +291,7 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
                     print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
                     
 
-    print("context_block -> contents_from_url ===============================",len(contents_from_url),[ cfu[0:100] in contents_from_url])
+    print("context_block -> contents_from_url ===============================",len(contents_from_url),[ cfu[0:100]  for cfu in contents_from_url])
     # # Xử lý file đính kèm nếu có
     # if message.files and len(message.files) > 0:
     #     print(f"--- Đang upload {len(message.files)} file lên Gemini... ---")

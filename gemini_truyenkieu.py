@@ -114,25 +114,25 @@ def fetch_url_content(url: str):
         return "", "text/plain","text"
 
 
-# Khai báo công cụ fetch_url_content một cách tường minh
-fetch_url_content_tool = types.Tool(
-    function_declarations=[
-        types.FunctionDeclaration(
-            name="fetch_url_content",
-            description="BẮT BUỘC gọi công cụ này khi người dùng gửi một liên kết (URL) trong tin nhắn. Công cụ này sẽ lấy toàn bộ nội dung văn bản (HTML, JSON, ...) hoặc tải file (Image, PDF, ...) từ link đó. Bạn cần dữ liệu từ công cụ này để có thể phân tích và trả lời yêu cầu của người dùng một cách chính xác nhất.",
-            parameters=types.Schema(
-                type="OBJECT",
-                properties={
-                    "url": types.Schema(
-                        type="STRING",
-                        description="Đường dẫn URL đầy đủ (ví dụ: http://example.com/article hoặc https://example.com/image.jpg)"
-                    )
-                },
-                required=["url"]
-            )
-        )
-    ]
-)
+# # Khai báo công cụ fetch_url_content một cách tường minh
+# fetch_url_content_tool = types.Tool(
+#     function_declarations=[
+#         types.FunctionDeclaration(
+#             name="fetch_url_content",
+#             description="BẮT BUỘC gọi công cụ này khi người dùng gửi một liên kết (URL) trong tin nhắn. Công cụ này sẽ lấy toàn bộ nội dung văn bản (HTML, JSON, ...) hoặc tải file (Image, PDF, ...) từ link đó. Bạn cần dữ liệu từ công cụ này để có thể phân tích và trả lời yêu cầu của người dùng một cách chính xác nhất.",
+#             parameters=types.Schema(
+#                 type="OBJECT",
+#                 properties={
+#                     "url": types.Schema(
+#                         type="STRING",
+#                         description="Đường dẫn URL đầy đủ (ví dụ: http://example.com/article hoặc https://example.com/image.jpg)"
+#                     )
+#                 },
+#                 required=["url"]
+#             )
+#         )
+#     ]
+# )
 
 # Khai báo công cụ Google Search
 google_search_tool = types.Tool(
@@ -237,11 +237,80 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
 
     # # Xác định config dựa trên user_input
     if re.search(r'https?://\S+', user_input):
-        dynamic_tools = [fetch_url_content_tool]
+        # dynamic_tools = [fetch_url_content_tool]
+        dynamic_tools = [google_search_tool]
         print("fetch_url_content tool register manual========================================")
     else:
         dynamic_tools = [google_search_tool]
         print("GoogleSearch register manual========================================")
+
+    
+    # context_block dùng regex để tìm danh sách url trong context_block, dùng fetch_url_content để download hoặc lấy nội dung text về ,, nếu là file thì add vào message.files 
+    url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
+    urls = re.findall(url_pattern, user_input)
+    
+    # Loại bỏ các URL trùng lặp (nếu có)
+    unique_urls = list(set(urls))
+
+    contents_from_url=[]
+
+    files_local_path=[]
+
+    if unique_urls:
+        print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
+        for url in unique_urls:
+            content, mime_type, res_type = fetch_url_content(url)
+            if res_type == "text" and content and content!="":
+                # Nếu là text, thêm vào user_parts để làm ngữ cảnh
+                context_url = f"\nContent from {url}:\n{content}\n"
+                user_parts.append(types.Part.from_text(text=context_url))
+                contents_from_url.append(context_url)
+            elif res_type == "file" and content and content!="":
+                # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
+                files_local_path.append(content) 
+                print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
+    # Xử lý file đính kèm nếu có
+    if files_local_path and len(files_local_path) > 0:
+        print(f"--- Đang upload {len(files_local_path)} file lên Gemini... ---")
+        for path in files_local_path:
+            try:
+                # Xác định mime_type của file cục bộ trước khi upload
+                mime_type_guess, _ = mimetypes.guess_type(path)
+                upload_mime_type = map_mime_type(mime_type_guess)
+                
+                print(f"--- Đang upload file: {path} với mime_type: {upload_mime_type} ---")
+                
+                # Upload file lên Gemini với mime_type đã được ép kiểu (nếu cần)
+                uploaded_file = clientGemini.files.upload(file=path, config=types.UploadFileConfig(mime_type=upload_mime_type))
+                
+                print(f"Đã upload file: {uploaded_file.uri} {uploaded_file.mime_type}")
+
+                # 2. Vòng lặp kiểm tra trạng thái (Check state)
+                while True:
+                    # Lấy lại thông tin file để cập nhật thuộc tính 'state'
+                    file_info = clientGemini.files.get(name=uploaded_file.name)
+                    
+                    state = file_info.state.name # Trạng thái trả về: 'PROCESSING', 'ACTIVE', hoặc 'FAILED'
+                    
+                    if state == "ACTIVE":
+                        print("File đã sẵn sàng!")
+                        break
+                    elif state == "FAILED":
+                        raise Exception("Google không thể xử lý video này. Lỗi: FAILED")
+                    
+                    # Đợi một chút trước khi check lại để tránh spam API
+                    print("Video đang được xử lý (PROCESSING)...")
+                    time.sleep(3)
+                
+                # Thêm vào parts dưới dạng URI
+                user_parts.append(
+                    types.Part.from_uri(
+                        file_uri=uploaded_file.uri,
+                        mime_type=uploaded_file.mime_type
+                    )
+                )
+            except Exception as e:
+                print(f"Lỗi khi upload file '{path}': {e}")                
 
     # # Xác định config dựa trên user_input bằng LocalOrchestrator
     # routing_result = orchestrator.route(user_input)
