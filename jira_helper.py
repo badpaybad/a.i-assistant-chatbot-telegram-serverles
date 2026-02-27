@@ -54,6 +54,7 @@ def get_all_webhook():
 
 def delete_webhook(webhook_name):
     all_webhook = get_all_webhook()
+    
     if all_webhook is None:
         print("❌ Không thể lấy danh sách webhook")
         return None
@@ -92,6 +93,10 @@ def delete_webhook(webhook_name):
 def create_or_update_webhook(webhook_name, base_url_tunnel):
 
     all_webhook= get_all_webhook()
+
+    if all_webhook is None:
+        print("❌ Không thể lấy danh sách webhook")
+        return None
 
     url_webhook_by_name =None
     for webhook in all_webhook:
