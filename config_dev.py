@@ -23,3 +23,12 @@ TELEGRAM_API_HASH=""
 JIRA_PERSONAL_ACCESS_TOKEN=""
 JIRA_PROJECT_KEY=""
 JIRA_SERVER_URL=""
+
+SWAKSRC="""
+--from you@email.com
+--server smtp.server
+--port 587
+--auth-user you@email.com
+--auth-password youpassword 
+--tls
+"""
