@@ -6,7 +6,7 @@ import os
 # Add project root to sys.path
 sys.path.append(os.getcwd())
 
-from config import JIRA_PERSONAL_ACCESS_TOKEN, JIRA_SERVER_URL, JIRA_PROJECT_KEY
+from config import JIRA_PERSONAL_ACCESS_TOKEN, JIRA_SERVER_ISSUE_API, JIRA_PROJECT_KEY
 
 async def test_simple_jira():
     print("--- Starting Simple Jira API Test ---")
@@ -24,13 +24,13 @@ async def test_simple_jira():
         }
     }
     
-    print(f"URL: {JIRA_SERVER_URL}")
+    print(f"URL: {JIRA_SERVER_ISSUE_API}")
     print(f"Headers: {headers}")
     
     try:
         async with httpx.AsyncClient() as client:
             print("Sending POST request...")
-            response = await client.post(JIRA_SERVER_URL, headers=headers, json=payload, timeout=10.0)
+            response = await client.post(JIRA_SERVER_ISSUE_API, headers=headers, json=payload, timeout=10.0)
             print(f"Status Code: {response.status_code}")
             print(f"Response: {response.text}")
     except Exception as e:

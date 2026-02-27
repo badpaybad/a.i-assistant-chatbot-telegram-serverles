@@ -20,7 +20,7 @@ from config import (
     TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, GEMINI_MODEL, 
     DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN, TELEGRAM_API_ID, 
     TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME, JIRA_PERSONAL_ACCESS_TOKEN, 
-    JIRA_PROJECT_KEY, JIRA_SERVER_URL
+    JIRA_PROJECT_KEY, JIRA_SERVER_ISSUE_API, JIRA_SERVER_WEBHOOK_API
 )
 
 import bot_telegram
@@ -93,18 +93,18 @@ async def create_jira_issue(issue_data: dict) -> str:
         async with httpx.AsyncClient() as client:
             # Lần thử 1: Có duedate (nếu có)
             payload = build_payload(include_duedate=True)
-            response = await client.post(JIRA_SERVER_URL, headers=headers, json=payload, timeout=30.0)
+            response = await client.post(JIRA_SERVER_ISSUE_API, headers=headers, json=payload, timeout=30.0)
             
             # Nếu lỗi 400 liên quan đến duedate, thử lại không có duedate
             if response.status_code == 400 and "duedate" in response.text:
                 print("Jira Error: duedate field not allowed. Retrying without duedate...")
                 payload = build_payload(include_duedate=False)
-                response = await client.post(JIRA_SERVER_URL, headers=headers, json=payload, timeout=30.0)
+                response = await client.post(JIRA_SERVER_ISSUE_API, headers=headers, json=payload, timeout=30.0)
 
             if response.status_code == 201:
                 res_json = response.json()
                 issue_key = res_json.get("key")
-                base_url = JIRA_SERVER_URL.split("/rest/api/")[0]
+                base_url = JIRA_SERVER_ISSUE_API.split("/rest/api/")[0]
                 issue_link = f"{base_url}/browse/{issue_key}"
                 return f"✅ Issue đã được tạo thành công: [{issue_key}]({issue_link})"
             else:
