@@ -94,6 +94,7 @@ async def execute_bash_shell(commands: str) -> str:
         return ""
         
     print(f"--- Đang thực thi lệnh CLI: ---\n{commands}")
+    output = ""
     try:
         process = await asyncio.create_subprocess_shell(
             commands,
@@ -110,20 +111,20 @@ async def execute_bash_shell(commands: str) -> str:
                 process.kill()
             except ProcessLookupError:
                 pass
-            return "⚠️ **Cảnh báo:** Lệnh thực thi quá lâu (vượt quá 15 giây) nên hệ thống đã tự động dừng nó. Vui lòng kiểm tra lại lệnh hoặc thực hiện cài đặt/chạy thủ công trên terminal của bạn."
+            output += "**Cảnh báo:** Lệnh thực thi quá lâu (vượt quá 15 giây) nên hệ thống đã tự động dừng nó. Vui lòng kiểm tra lại lệnh hoặc thực hiện cài đặt/chạy thủ công trên terminal của bạn."
 
-        output = ""
         if stdout:
             output += f"**Output:**\n```\n{stdout.decode().strip()}\n```\n"
         if stderr:
             output += f"**Error:**\n```\n{stderr.decode().strip()}\n```\n"
             
         if not output:
-            output = "Lệnh đã chạy xong nhưng không có output trả về."
+            output += "Lệnh đã chạy xong nhưng không có output trả về."
             
-        return output
     except Exception as e:
-        return f"Lỗi hệ thống khi thực thi: {str(e)}"
+        output += f"Lỗi hệ thống khi thực thi: {str(e)}"
+
+    return output
 
 async def exec(skill, curret_message, list_current_msg, list_summary_chat, unique_urls,contents_from_url):
     """
