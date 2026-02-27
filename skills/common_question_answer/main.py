@@ -5,7 +5,7 @@ from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PO
 import bot_telegram
 import asyncio
 
-async def exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls) :
+async def exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url) :
     user_text=curret_message.text
     chat_id=curret_message.chat_id
     webhook_base_url=curret_message.webhook_base_url

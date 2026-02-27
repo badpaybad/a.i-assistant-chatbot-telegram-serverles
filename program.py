@@ -352,6 +352,20 @@ async def handle_webhook(request: Request):
         orchestration_message.message=update
         orchestration_message.msg_id=msg_id_guid
         orchestration_message.files=listFilePath
+        orchestration_message.files_type= []
+        for f in listFilePath:
+            # if f.endswith(".jpg") or f.endswith(".jpeg") or f.endswith(".png") or f.endswith(".gif") or f.endswith(".webp"):
+            #     orchestration_message.files_type.append("image")
+            # elif f.endswith(".mp4") or f.endswith(".avi") or f.endswith(".mov") or f.endswith(".mkv"):
+            #     orchestration_message.files_type.append("video")
+            # elif f.endswith(".mp3") or f.endswith(".wav") or f.endswith(".aac") or f.endswith(".flac"):
+            #     orchestration_message.files_type.append("audio")
+            # elif f.endswith(".pdf") or f.endswith(".doc") or f.endswith(".docx") or f.endswith(".txt"):
+            #     orchestration_message.files_type.append("document")
+            # else:                
+            #     orchestration_message.files_type.append("file")
+            orchestration_message.files_type.append("file")
+            
         orchestration_message.text=user_text
         orchestration_message.chat_id=chat_id
         orchestration_message.webhook_base_url=webhook_base_url

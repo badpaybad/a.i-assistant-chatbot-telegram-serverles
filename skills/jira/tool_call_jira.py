@@ -112,7 +112,7 @@ async def create_jira_issue(issue_data: dict) -> str:
     except Exception as e:
         return f"❌ Lỗi hệ thống khi gọi Jira API: {str(e)}"
 
-async def exec(skill, curret_message, list_current_msg, list_summary_chat, unique_urls):
+async def exec(skill, curret_message, list_current_msg, list_summary_chat, unique_urls,contents_from_url):
     """
     Hành động chính của skill Jira:
     1. Phân tích ngữ cảnh.
@@ -142,6 +142,8 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
     
     if unique_urls:
         context_block += "\n### [URLs]\n" + "\n".join(unique_urls)
+    if contents_from_url:
+        context_block += "\n### [Contents from URL]\n" + "\n".join(contents_from_url)
 
     # 2. Chuẩn bị Gemini Input
     user_parts = [types.Part.from_text(text=context_block)]

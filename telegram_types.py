@@ -142,5 +142,7 @@ class OrchestrationMessage:
     text:str|None=None
     chat_id:str|None=None
     webhook_base_url:str|None=None
+    files_type:List[str]|None=None
+
     
         

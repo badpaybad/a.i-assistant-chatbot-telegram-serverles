@@ -150,7 +150,7 @@ def get_summary_chat(chat_id:str):
     return db_summary_chat.search_json("chat_id", chat_id)[0:3]
 
 
-async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls):
+async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url):
     """_summary_
 
     Args:
@@ -159,7 +159,7 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
     """
     if skill == None or not skill:
 
-        await common_question_answer.exec({"target_folder":"skills/common_question_answer","reasoning":"Không tìm thấy hoặc lỗi nên dùng mặc định","intent":""},curret_message, list_current_msg, list_summary_chat,unique_urls)
+        await common_question_answer.exec({"target_folder":"skills/common_question_answer","reasoning":"Không tìm thấy hoặc lỗi nên dùng mặc định","intent":""},curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
         return 
 
     target_folder= skill["target_folder"]
@@ -189,18 +189,18 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
             if hasattr(skill_module, 'exec'):
                 print(f"--- Đang thực thi skill: {target_folder} --- {module_name} ---")
                 if asyncio.iscoroutinefunction(skill_module.exec):
-                    await skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+                    await skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
                 else:
-                    skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+                    skill_module.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
             else:
                 print(f"Lỗi: Skill '{target_folder}' không có hàm 'exec'. mặc định dùng common_question_answer")
-                await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+                await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
         except Exception as e:
             print(f"Lỗi khi load hoặc thực thi skill '{target_folder}': {str(e)} mặc định dùng common_question_answer")
-            await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+            await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
     else:
         print(f"Lỗi: Không tìm thấy file {module_path} mặc định dùng common_question_answer")
-        await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls)
+        await common_question_answer.exec(skill,curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url)
 
 
 # system_instruction is now dynamically built in generation_config
@@ -268,21 +268,27 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
     
     # Loại bỏ các URL trùng lặp (nếu có)
     unique_urls = list(set(urls))
+
+    contents_from_url=[]
     
-    # if unique_urls:
-    #     print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
-    #     for url in unique_urls:
-    #         content, mime_type, res_type = fetch_url_content(url)
-    #         if res_type == "text" and content and content!="":
-    #             # Nếu là text, thêm vào user_parts để làm ngữ cảnh
-    #             user_parts.append(types.Part.from_text(text=f"\nContent from {url}:\n{content}\n"))
-    #         elif res_type == "file" and content and content!="":
-    #             # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
-    #             if not message.files:
-    #                 message.files = []
-    #             if content not in message.files:
-    #                 message.files.append(content)
-    #                 print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
+    if unique_urls:
+        print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
+        for url in unique_urls:
+            content, mime_type, res_type = fetch_url_content(url)
+            if res_type == "text" and content and content!="":
+                # Nếu là text, thêm vào user_parts để làm ngữ cảnh
+                context_url = f"\nContent from {url}:\n{content}\n"
+                user_parts.append(types.Part.from_text(text=context_url))
+                contents_from_url.append(context_url)
+            elif res_type == "file" and content and content!="":
+                # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
+                if not message.files:
+                    message.files = []
+                    message.files_type = []
+                if content not in message.files:
+                    message.files.append(content)
+                    message.files_type.append(res_type) 
+                    print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
                     
 
     # # Xử lý file đính kèm nếu có
@@ -358,11 +364,11 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
             bot_reply= response.text
             print("skills_decision =>>>>>> ",bot_reply)
             skill_obj = extract_json_from_llm(bot_reply)
-            await do_decision(skill_obj, message, list_current_msg, list_summary_chat,unique_urls )
+            await do_decision(skill_obj, message, list_current_msg, list_summary_chat,unique_urls,contents_from_url )
             break
         except Exception as e:
             print(f"Orchestration Lỗi khi gọi Gemini API: {e}")
-            await do_decision(None, message, list_current_msg, list_summary_chat,unique_urls )
+            await do_decision(None, message, list_current_msg, list_summary_chat,unique_urls,contents_from_url )
             break
 
     return skill_obj, []
