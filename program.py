@@ -120,6 +120,19 @@ async def cloudflare_tunel_get_baseurl():
 
     return webhook_base_url
 
+async def jira_register_webhook(base_url):
+
+    full_url = f"{base_url}/webhook-jira"
+
+    # todo: cần gọi lên jira để update webhook url mới theo tunnel base_url
+    
+    pass
+async def zalo_oa_register_webhook(base_url):
+
+    full_url = f"{base_url}/webhook-zalo-oa"
+    # todo: cần gọi lên zalo để update webhook url mới theo tunnel base_url
+    
+    pass
 
 async def background_tunnel_and_webhook():
     await cloudflare_tunel_get_baseurl()
@@ -134,6 +147,8 @@ async def background_tunnel_and_webhook():
         # await register_webhook_to_telegram(full_url)
         await bot_telegram.register_webhook(webhook_base_url)
         # await bot_discord.update_discord_endpoint(webhook_base_url)
+        await jira_register_webhook(webhook_base_url)
+        await zalo_oa_register_webhook(webhook_base_url)
 
         if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID != 0:
             await asyncio.sleep(2)
@@ -193,7 +208,18 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
 
 
 # --- WEBHOOK ENDPOINT ---
+# 
+# Đang gửi Webhook tới Telegram: https://testing-sonic-profiles-deserve.trycloudflare.com/webhook-jira
 
+@app.post("/webhook-jira")
+async def handle_jira(request: Request):
+    # todo: cần thao tác xử lý gì cần dùng dbcontext.py để lưu vào db, ở skills/jira cần lưu chat_id và jira url để sau có thể update và kiểm tra trạng thái rồi gửi message lên nhóm chát 
+    pass
+
+@app.post("/webhook-zalo-oa")
+async def handle_zalo_oa(request: Request):
+    # todo: tất cả các loại chát khác, zalo, discord, whatsapp ... cần convert về dạng message của telegram, dùng để hỗ trợ cho zalo group chat tương tự telegram chat bot 
+    pass
 
 @app.post("/webhook")
 async def handle_webhook(request: Request):
@@ -387,8 +413,6 @@ if __name__ == "__main__":
     uvicorn.run("program:app", host="0.0.0.0", port=PORT, reload=False)
 
     # đăng ký bot callback  https://api.telegram.org/bot<TOKEN_CUA_BAN>/setWebhook?url=<LINK_NGROK>/webhook
-
-
 
 # @app.post("/discord")
 # async def discord_interactions(request: Request):
