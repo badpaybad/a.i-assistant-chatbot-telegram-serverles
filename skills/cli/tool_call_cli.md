@@ -30,9 +30,6 @@ prompt cần cân nhắc thêm các nội dung :
                     11. Các nội dung sinh ra để trả về hoặc gửi đi cho người dùng phải là tiếng việt unicode đầy đủ dấu câu
 
 
-
-Ví dụ:
-
 luôn có các import sau cho file tool_call_cli.py 
 
 
@@ -54,7 +51,7 @@ luôn có các import sau cho file tool_call_cli.py
                     from google import genai
                     from google.genai import types
 
-                    from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY,GEMINI_MODEL, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
+                    from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY,GEMINI_MODEL, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME, JIRA_PERSONAL_ACCESS_TOKEN, JIRA_PROJECT_KEY
 
                     import bot_telegram
                     import bot_discord

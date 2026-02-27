@@ -1,1 +1,0 @@
-dùng để gọi lên các api restful lấy dữ liệu hoặc để đọc (crawl) nội dung từ đường link tìm được 

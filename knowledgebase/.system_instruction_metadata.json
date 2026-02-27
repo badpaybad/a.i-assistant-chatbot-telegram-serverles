@@ -1,21 +1,17 @@
 {
-  "folder_count": 4,
+  "folder_count": 3,
   "skill_states": {
     "cli": {
-      "mtime": 1771827439.847352,
-      "hash": "15dba46093a38a610b7436daae9e3f2e"
+      "mtime": 1772164302.000457,
+      "hash": "58611658fbcbfb39b2877f848945ce85"
     },
     "common_question_answer": {
       "mtime": 1771827627.0718718,
       "hash": "b597e193cd38dae39e0dd167cdf7fb94"
     },
-    "http": {
-      "mtime": 1772075989.1036642,
-      "hash": "7eb0621ec7e1f58437cbbc46da2ad586"
-    },
     "jira": {
-      "mtime": 1772155568.5192418,
-      "hash": "8455f7af296aa2b04bc863fa127cb3f4"
+      "mtime": 1772164254.1655116,
+      "hash": "38681de8808b76d9a11c11da8c0f5c79"
     }
   }
 }
