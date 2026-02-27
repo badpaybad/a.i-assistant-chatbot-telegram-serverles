@@ -1,5 +1,5 @@
 
-# idea
+# Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
 Use telegram as chatbot assitance. We dont need develop UI to chat, we just wait telegram callback webhook , then we call LLM , then send reply message 
 
