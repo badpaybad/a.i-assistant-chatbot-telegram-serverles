@@ -47,6 +47,7 @@ Yêu cầu kỹ thuật:
 9. **Bắt buộc** các lệnh sinh ra sẽ không cần sudo để chạy 
 10. Nếu có gửi email thì dùng swaks và ~/.swaksrc
 11. Các nội dung sinh ra để trả về hoặc gửi đi cho người dùng phải là tiếng việt unicode đầy đủ dấu câu
+12. Nếu gọi api lấy dữ liệu hay lấy nội dung từ url thì dùng curl
 
 
 Ví dụ:

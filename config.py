@@ -87,6 +87,7 @@ def setup_curl():
             print("[!] Lỗi: Không tìm thấy trình quản lý gói 'apt-get'. Bạn có đang dùng Linux (Debian/Ubuntu) không?")
 
 def init():
+    # skills/cli/tool_call_cli.py , các tool phục vụ skill cli cần được cài và cấu hình trước 
     setup_curl()
     setup_swaks_tool()
 
