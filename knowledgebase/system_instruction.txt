@@ -8,6 +8,8 @@ Bạn là Hệ điều hành Kỹ năng (Skill OS). Nhiệm vụ **bắt buộc*
    - Chức năng: Nếu orchestration không tìm được tương ứng sẽ dùng skill này mặc định
 3. [Folder: /skills/http]
    - Chức năng: dùng để gọi lên các api restful lấy dữ liệu hoặc để đọc (crawl) nội dung từ đường link tìm được
+4. [Folder: /skills/jira]
+   - Chức năng: Dùng để tạo jira issues
 
 # CONTEXT GUIDELINES
 Bạn sẽ được cung cấp:

@@ -77,7 +77,7 @@ def extract_json_from_llm(response_text):
     except json.JSONDecodeError as e:
         print( f"Lỗi định dạng JSON: {e}")
 
-        raise e
+        return None
 
 def map_mime_type(mime_type: str) -> str:
     """Ánh xạ mime_type không được Gemini hỗ trợ sang mime_type hợp lệ (như text/plain)."""
@@ -157,6 +157,11 @@ async def do_decision(skill, curret_message, list_current_msg, list_summary_chat
         skill (_type_): {target_folder:"",reasoning:"",intent:"" }
         message (telegram_types.OrchestrationMessage): _description_
     """
+    if skill == None or not skill:
+
+        await common_question_answer.exec({"target_folder":"skills/common_question_answer","reasoning":"Không tìm thấy hoặc lỗi nên dùng mặc định","intent":""},curret_message, list_current_msg, list_summary_chat,unique_urls)
+        return 
+
     target_folder= skill["target_folder"]
     reasoning= skill["reasoning"]
     intent= skill["intent"]
@@ -263,49 +268,67 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
     # Loại bỏ các URL trùng lặp (nếu có)
     unique_urls = list(set(urls))
     
-    if unique_urls:
-        print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
-        for url in unique_urls:
-            content, mime_type, res_type = fetch_url_content(url)
-            if res_type == "text" and content and content!="":
-                # Nếu là text, thêm vào user_parts để làm ngữ cảnh
-                user_parts.append(types.Part.from_text(text=f"\nContent from {url}:\n{content}\n"))
-            elif res_type == "file" and content and content!="":
-                # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
-                if not message.files:
-                    message.files = []
-                if content not in message.files:
-                    message.files.append(content)
-                    print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
+    # if unique_urls:
+    #     print(f"--- Đã tìm thấy {len(unique_urls)} URL trong ngữ cảnh ---")
+    #     for url in unique_urls:
+    #         content, mime_type, res_type = fetch_url_content(url)
+    #         if res_type == "text" and content and content!="":
+    #             # Nếu là text, thêm vào user_parts để làm ngữ cảnh
+    #             user_parts.append(types.Part.from_text(text=f"\nContent from {url}:\n{content}\n"))
+    #         elif res_type == "file" and content and content!="":
+    #             # Nếu là file, thêm đường dẫn vào message.files để upload lên Gemini
+    #             if not message.files:
+    #                 message.files = []
+    #             if content not in message.files:
+    #                 message.files.append(content)
+    #                 print(f"--- Đã thêm file từ URL vào danh sách tải lên: {content} ---")
                     
+
+    # # Xử lý file đính kèm nếu có
+    # if message.files and len(message.files) > 0:
+    #     print(f"--- Đang upload {len(message.files)} file lên Gemini... ---")
+    #     for path in message.files:
+    #         try:
+    #             # Xác định mime_type của file cục bộ trước khi upload
+    #             mime_type_guess, _ = mimetypes.guess_type(path)
+    #             upload_mime_type = map_mime_type(mime_type_guess)
+                
+    #             print(f"--- Đang upload file: {path} với mime_type: {upload_mime_type} ---")
+                
+    #             # Upload file lên Gemini với mime_type đã được ép kiểu (nếu cần)
+    #             uploaded_file = clientGemini.files.upload(file=path, config=types.UploadFileConfig(mime_type=upload_mime_type))
+                
+    #             print(f"Đã upload file: {uploaded_file.uri} {uploaded_file.mime_type}")
+
+    #             # 2. Vòng lặp kiểm tra trạng thái (Check state)
+    #             while True:
+    #                 # Lấy lại thông tin file để cập nhật thuộc tính 'state'
+    #                 file_info = clientGemini.files.get(name=uploaded_file.name)
+                    
+    #                 state = file_info.state.name # Trạng thái trả về: 'PROCESSING', 'ACTIVE', hoặc 'FAILED'
+                    
+    #                 if state == "ACTIVE":
+    #                     print("File đã sẵn sàng!")
+    #                     break
+    #                 elif state == "FAILED":
+    #                     raise Exception("Google không thể xử lý video này. Lỗi: FAILED")
+                    
+    #                 # Đợi một chút trước khi check lại để tránh spam API
+    #                 print("Video đang được xử lý (PROCESSING)...")
+    #                 time.sleep(3)
+                
+    #             # Thêm vào parts dưới dạng URI
+    #             user_parts.append(
+    #                 types.Part.from_uri(
+    #                     file_uri=uploaded_file.uri,
+    #                     mime_type=uploaded_file.mime_type
+    #                 )
+    #             )
+    #         except Exception as e:
+    #             print(f"Lỗi khi upload file '{path}': {e}")
+
     if len(chat_buffers[chat_id]) >= HISTORY_CHAT_MAX_LEN:
         chat_buffers[chat_id] = [] # Clear buffer for this chat
-
-    # Xử lý file đính kèm nếu có
-    if message.files and len(message.files) > 0:
-        print(f"--- Đang upload {len(message.files)} file lên Gemini... ---")
-        for path in message.files:
-            try:
-                # Xác định mime_type của file cục bộ trước khi upload
-                mime_type_guess, _ = mimetypes.guess_type(path)
-                upload_mime_type = map_mime_type(mime_type_guess)
-                
-                print(f"--- Đang upload file: {path} với mime_type: {upload_mime_type} ---")
-                
-                # Upload file lên Gemini với mime_type đã được ép kiểu (nếu cần)
-                uploaded_file = clientGemini.files.upload(file=path, config=types.UploadFileConfig(mime_type=upload_mime_type))
-                
-                print(f"Đã upload file: {uploaded_file.uri} {uploaded_file.mime_type}")
-                
-                # Thêm vào parts dưới dạng URI
-                user_parts.append(
-                    types.Part.from_uri(
-                        file_uri=uploaded_file.uri,
-                        mime_type=uploaded_file.mime_type
-                    )
-                )
-            except Exception as e:
-                print(f"Lỗi khi upload file '{path}': {e}")
 
     full_contents.append(
         types.Content(
@@ -316,25 +339,30 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
     
     # 2. Loop & Gọi API (Xử lý Function Calling)
     while True:
-        print("--- Đang gọi Gemini API... ---")
-        response = clientGemini.models.generate_content(
-            model=GEMINI_MODEL,
-            # config=dynamic_config,
-            config=generation_config,
-            contents=full_contents,
-        )
+        try:
+            print("--- Orchestration Đang gọi Gemini API... ---")
+            response = clientGemini.models.generate_content(
+                model=GEMINI_MODEL,
+                # config=dynamic_config,
+                config=generation_config,
+                contents=full_contents,
+            )
 
-        # In kết quả response để debug
-        print(f"--- Gemini Response Candidates: {len(response.candidates)} ---")
-        if response.candidates:
-            print(f"--- Finish Reason: {response.candidates[0].finish_reason} ---")
-            print(f"--- Content Parts: {len(response.candidates[0].content.parts)} ---")
-        
-        bot_reply= response.text
-        print("skills_decision =>>>>>> ",bot_reply)
-        skill_obj = extract_json_from_llm(bot_reply)
-        await do_decision(skill_obj, message, list_current_msg, list_summary_chat,unique_urls )
-        break
+            # In kết quả response để debug
+            print(f"--- Gemini Response Candidates: {len(response.candidates)} ---")
+            if response.candidates:
+                print(f"--- Finish Reason: {response.candidates[0].finish_reason} ---")
+                print(f"--- Content Parts: {len(response.candidates[0].content.parts)} ---")
+            
+            bot_reply= response.text
+            print("skills_decision =>>>>>> ",bot_reply)
+            skill_obj = extract_json_from_llm(bot_reply)
+            await do_decision(skill_obj, message, list_current_msg, list_summary_chat,unique_urls )
+            break
+        except Exception as e:
+            print(f"Orchestration Lỗi khi gọi Gemini API: {e}")
+            await do_decision(None, message, list_current_msg, list_summary_chat,unique_urls )
+            break
 
     return skill_obj, []
 

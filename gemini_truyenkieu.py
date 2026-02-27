@@ -157,6 +157,7 @@ generation_config = types.GenerateContentConfig(
 
 )
 
+import time
 
 def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:list=None):
     # if user_input is None or user_input == "":
@@ -198,6 +199,23 @@ def chat_voi_cu_nguyen_du_memory(user_input, history: list = None,listPathFiles:
                 uploaded_file = clientGemini.files.upload(file=path, config=types.UploadFileConfig(mime_type=upload_mime_type))
                 
                 print(f"Đã upload file: {uploaded_file.uri} {uploaded_file.mime_type}")
+
+                # 2. Vòng lặp kiểm tra trạng thái (Check state)
+                while True:
+                    # Lấy lại thông tin file để cập nhật thuộc tính 'state'
+                    file_info = clientGemini.files.get(name=uploaded_file.name)
+                    
+                    state = file_info.state.name # Trạng thái trả về: 'PROCESSING', 'ACTIVE', hoặc 'FAILED'
+                    
+                    if state == "ACTIVE":
+                        print(f"{path} File đã sẵn sàng!")
+                        break
+                    elif state == "FAILED":
+                        print(f"{path} Google không thể xử lý video này. Lỗi: FAILED")
+                        break
+                    else:
+                        print(f"{path} Video đang được xử lý (PROCESSING)...")
+                        time.sleep(3)
                 
                 # Thêm vào parts dưới dạng URI
                 user_parts.append(

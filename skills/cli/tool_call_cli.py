@@ -170,6 +170,24 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
                 mime_type_guess, _ = mimetypes.guess_type(fpath)
                 mtype = knowledgebase.orchestrationcontext.map_mime_type(mime_type_guess)
                 uploaded = clientGemini.files.upload(file=fpath, config=types.UploadFileConfig(mime_type=mtype))
+
+                # 2. Vòng lặp kiểm tra trạng thái (Check state)
+                while True:
+                    # Lấy lại thông tin file để cập nhật thuộc tính 'state'
+                    file_info = clientGemini.files.get(name=uploaded.name)
+                    
+                    state = file_info.state.name # Trạng thái trả về: 'PROCESSING', 'ACTIVE', hoặc 'FAILED'
+                    
+                    if state == "ACTIVE":
+                        print(f"{fpath} File đã sẵn sàng!")
+                        break
+                    elif state == "FAILED":
+                        print(f"{fpath} Google không thể xử lý video này. Lỗi: FAILED")
+                        break
+                    else:
+                        print(f"{fpath} Video đang được xử lý (PROCESSING)...")
+                        time.sleep(3)
+
                 user_parts.append(types.Part.from_uri(file_uri=uploaded.uri, mime_type=uploaded.mime_type))
             except Exception as e:
                 print(f"CLI Skill file upload error: {e}")

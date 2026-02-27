@@ -1,5 +1,5 @@
 {
-  "folder_count": 3,
+  "folder_count": 4,
   "skill_states": {
     "cli": {
       "mtime": 1771827439.847352,
@@ -12,6 +12,10 @@
     "http": {
       "mtime": 1772075989.1036642,
       "hash": "7eb0621ec7e1f58437cbbc46da2ad586"
+    },
+    "jira": {
+      "mtime": 1772155568.5192418,
+      "hash": "8455f7af296aa2b04bc863fa127cb3f4"
     }
   }
 }
