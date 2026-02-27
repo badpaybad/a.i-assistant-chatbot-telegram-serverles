@@ -8,7 +8,7 @@ cần có prompt thật tốt để sinh ra các lệnh bash shell trên linux ,
 
 sau khi có response text từ gemini bạn parse và lấy ra các lệnh bash shell được sinh ra rồi thực hiện gọi lệnh.
 
-kết quả gọi lệnh bạn trả về cho người dùng
+kết quả gọi lệnh bạn dùng gemini api call để diễn giải kết quả dễ đọc và súc tích có ý nghĩa 
 
 nếu có lệnh nào đó cần dùng bạn hãy cố gắng cài dùng apt install, nếu không cài được bạn trả thông báo lên chat cho người dùng biết cần phải cài lên máy tính 
 

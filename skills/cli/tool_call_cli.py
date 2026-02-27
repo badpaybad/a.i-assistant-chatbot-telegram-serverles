@@ -18,15 +18,7 @@ from google.genai import types
 
 from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY,GEMINI_MODEL, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
-import bot_telegram
-import bot_discord
-import telegram_types
-
-import knowledgebase
-import skills.common_question_answer.main as common_question_answer
-from knowledgebase.orchestrationbuildprompt import build_system_instruction
-import knowledgebase.dbcontext
-import knowledgebase.orchestrationcontext 
+# Imports moved inside exec for robustness and easier testing
 
 # Initialize Gemini client
 clientGemini = genai.Client(api_key=GEMINI_APIKEY)
@@ -64,6 +56,19 @@ Trả lời:
 ```bash
 ls -la
 ```"
+"""
+
+CLI_INTERPRETER_INSTRUCTION = """
+Bạn là một trợ lý AI chuyên về giải thích kết quả thực thi lệnh Linux Bash Shell.
+Nhiệm vụ của bạn là nhận vào [Lệnh đã thực hiện] và [Kết quả thực thi] (bao gồm Output và Error), sau đó diễn giải kết quả đó một cách dễ đọc, súc tích và có ý nghĩa cho người dùng.
+
+Yêu cầu:
+1. Tập trung vào ý nghĩa của kết quả đối với yêu cầu ban đầu của người dùng.
+2. Nếu có lỗi (Error), hãy giải thích ngắn gọn nguyên nhân và gợi ý hướng khắc phục nếu có thể.
+3. Nếu output quá dài, hãy tóm tắt các điểm quan trọng nhất.
+4. Trả lời bằng tiếng Việt, ngôn ngữ tự nhiên, súc tích.
+5. Không cần nhắc lại toàn bộ output nếu không cần thiết.
+6. Nếu kết quả là rỗng nhưng lệnh chạy thành công, hãy xác nhận lệnh đã thực hiện xong mục tiêu.
 """
 
 def extract_bash_commands(text: str) -> str:
@@ -127,6 +132,10 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
     3. Parse lệnh và thực thi.
     4. Gửi kết quả lại cho người dùng.
     """
+    # Import inside to avoid circular dependencies and allow isolated testing
+    import bot_telegram
+    import knowledgebase.orchestrationcontext 
+
     user_text = curret_message.text
     chat_id = curret_message.chat_id
     
@@ -185,12 +194,32 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
         # 4. Trích xuất và thi hành
         commands = extract_bash_commands(gemini_reply)
         exec_result = ""
+        interpreted_result = ""
         if commands:
             exec_result = await execute_bash_shell(commands)
             
+            # 4.5 Gọi Gemini để diễn giải kết quả
+            try:
+                interpretation_context = f"### [Lệnh đã thực hiện]\n```bash\n{commands}\n```\n\n### [Kết quả thực thi]\n{exec_result}"
+                interpretation_response = clientGemini.models.generate_content(
+                    model=GEMINI_MODEL,
+                    config=types.GenerateContentConfig(
+                        temperature=0.0,
+                        system_instruction=CLI_INTERPRETER_INSTRUCTION
+                    ),
+                    contents=[types.Content(role="user", parts=[types.Part.from_text(text=interpretation_context)])]
+                )
+                interpreted_result = interpretation_response.text
+            except Exception as e:
+                print(f"CLI Result Interpretation error: {e}")
+                interpreted_result = f"(Không thể diễn giải kết quả do lỗi AI: {str(e)})"
+            
         # 5. Phản hồi người dùng
         final_msg = gemini_reply
-        if exec_result:
+        if interpreted_result:
+            final_msg += f"\n\n---\n### [Giải thích kết quả]\n{interpreted_result}"
+        elif exec_result:
+            # Fallback nếu không có diễn giải nhung có kết quả thô
             final_msg += f"\n\n---\n### [Kết quả thực thi]\n{exec_result}"
             
         await bot_telegram.send_telegram_message(chat_id, final_msg)
