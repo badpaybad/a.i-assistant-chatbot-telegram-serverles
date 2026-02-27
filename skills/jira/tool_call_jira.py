@@ -76,27 +76,13 @@ async def create_jira_issue(issue_data: dict) -> str:
         payload = {
             "fields": {
                 "project": {
-                    "key": JIRA_PROJECT_KEY
+                    "key": f"{JIRA_PROJECT_KEY}"
                 },
                 "summary": issue_data.get("summary", "New Task from AI Assistant"),
                 "issuetype": {
                     "name": issue_data.get("issuetype", "Task")
                 },
-                "description": {
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        {
-                            "type": "paragraph",
-                            "content": [
-                                {
-                                    "type": "text",
-                                    "text": issue_data.get("description", "No description provided.")
-                                }
-                            ]
-                        }
-                    ]
-                }
+                "description": issue_data.get("description", "No description provided.")
             }
         }
         if include_duedate and issue_data.get("duedate"):

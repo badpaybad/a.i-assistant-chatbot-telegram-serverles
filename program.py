@@ -228,7 +228,14 @@ async def handle_webhook(request: Request):
         #     return {"status": "ignored", "reason": "Message too old"}
 
         chat_id = update.message.chat.id
-        user_text = update.message.text or update.message.caption
+        user_text = update.message.text
+
+        if update.message.caption:
+            user_text=f"{user_text}\n\nCaption: {update.message.caption}"
+
+        if update.message.reply_to_message:
+            user_text=f"{user_text}\n\nReply to: {update.message.reply_to_message.text}"
+
         media_group_id = update.message.media_group_id
 
         # 2. Kiểm tra Whitelist (Bảo mật)

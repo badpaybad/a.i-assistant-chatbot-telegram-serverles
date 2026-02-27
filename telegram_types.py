@@ -1,57 +1,64 @@
 
 from pydantic import BaseModel, Field,ConfigDict
-from typing import Any,List
+from typing import Any,List,Optional
 # --- ĐỊNH NGHĨA DỮ LIỆU (Pydantic Models) ---
 # Giúp code sạch hơn và tự động kiểm tra dữ liệu đầu vào
 
+class AcceptedGiftTypes(BaseModel):
+    unlimited_gifts: bool|None=None
+    limited_gifts: bool|None=None
+    unique_gifts: bool|None=None
+    premium_subscription: bool|None=None
+    gifts_from_channels: bool|None=None
 
 class Chat(BaseModel):
-    id: int
+    id: int| None = None
     first_name: str | None = None
     title: str | None = None  # Dành cho Group
     type: str | None = None
     all_members_are_administrators:bool|None=None
+    accepted_gift_types: AcceptedGiftTypes|None=None
 
 
 class PhotoSize(BaseModel):
-    file_id: str
-    file_unique_id: str
-    width: int
-    height: int
+    file_id: str| None = None
+    file_unique_id: str| None = None
+    width: int| None = None
+    height: int| None = None
     file_size: int | None = None
 
 
 class Document(BaseModel):
-    file_id: str
-    file_unique_id: str
+    file_id: str| None = None
+    file_unique_id: str| None = None
     file_name: str | None = None
     mime_type: str | None = None
     file_size: int | None = None
 
 
 class Video(BaseModel):
-    file_id: str
-    file_unique_id: str
-    width: int
-    height: int
-    duration: int
+    file_id: str| None = None
+    file_unique_id: str| None = None
+    width: int| None = None
+    height: int| None = None
+    duration: int| None = None
     file_name: str | None = None
     mime_type: str | None = None
     file_size: int | None = None
 
 
 class Voice(BaseModel):
-    file_id: str
-    file_unique_id: str
-    duration: int
+    file_id: str| None = None
+    file_unique_id: str| None = None
+    duration: int| None = None
     mime_type: str | None = None
     file_size: int | None = None
 
 
 class Audio(BaseModel):
-    file_id: str
-    file_unique_id: str
-    duration: int
+    file_id: str| None = None
+    file_unique_id: str| None = None
+    duration: int| None = None
     performer: str | None = None
     title: str | None = None
     file_name: str | None = None
@@ -60,11 +67,11 @@ class Audio(BaseModel):
 
 
 class Animation(BaseModel):
-    file_id: str
-    file_unique_id: str
-    width: int
-    height: int
-    duration: int
+    file_id: str| None = None
+    file_unique_id: str| None = None
+    width: int| None = None
+    height: int| None = None
+    duration: int| None = None
     file_name: str | None = None
     mime_type: str | None = None
     file_size: int | None = None
@@ -75,16 +82,16 @@ class FromUser(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
     username: str | None = None
-
+    
 class Message(BaseModel):
 
     # Cho phép dùng cả 'from_user' và 'from' khi khởi tạo
     model_config = ConfigDict(populate_by_name=True)
 
-    chat: Chat
+    chat: Chat | None = None 
     text: str | None = None  # Tin nhắn có thể là ảnh/sticker (không có text)
     caption: str | None = None  # Văn bản đi kèm media (ảnh/video/file)
-    date: int
+    date: int | None = None 
     edit_date:int|None=None
     media_group_id: str | None = None
     photo: list[PhotoSize] | None = None
@@ -93,10 +100,11 @@ class Message(BaseModel):
     voice: Voice | None = None
     audio: Audio | None = None
     animation: Animation | None = None
-    entities:Any=None
+    entities:Any| None = None 
     link_preview_options:Any=None
-    message_id:int
+    message_id:int | None = None 
     from_user: FromUser | None = Field(default=None, alias="from")
+    reply_to_message: Optional['Message'] | None = None
     # class Config:
     #     # This allows you to populate the model using the alias "from" 
     #     # but also access it via "from_user"

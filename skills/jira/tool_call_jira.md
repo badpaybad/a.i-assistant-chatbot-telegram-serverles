@@ -28,21 +28,7 @@ Cấu trúc để gửi request tạo issue jira tham khảo mẫu như sau
                             "name": "Task"
                             },
                             "duedate": "ngày deadline nếu có ", 
-                            "description": {
-                            "type": "doc",
-                            "version": 1,
-                            "content": [
-                                {
-                                "type": "paragraph",
-                                "content": [
-                                    {
-                                    "type": "text",
-                                    "text": "Lấy mô tả task từ curret_message, list_current_msg, list_summary_chat, unique_urls."
-                                    }
-                                ]
-                                }
-                            ]
-                            }
+                            "description": "Lấy mô tả task từ curret_message, list_current_msg, list_summary_chat, unique_urls."
                         }
                         }'
 
