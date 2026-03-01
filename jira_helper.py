@@ -56,7 +56,7 @@ def delete_webhook(webhook_name):
     all_webhook = get_all_webhook()
     
     if all_webhook is None:
-        print("❌ Không thể lấy danh sách webhook")
+        print("JIRA Không thể lấy danh sách webhook")
         return None
 
     url_webhook_by_name = None
@@ -66,7 +66,7 @@ def delete_webhook(webhook_name):
             break
 
     if url_webhook_by_name is None:
-        print(f"❌ Không tìm thấy webhook có tên: {webhook_name}")
+        print(f"JIRA Không tìm thấy webhook có tên: {webhook_name}")
         return None
 
     headers = {
@@ -78,15 +78,15 @@ def delete_webhook(webhook_name):
         response = requests.delete(url_webhook_by_name, headers=headers)
 
         if response.status_code == 200 or response.status_code == 204:
-            print(f"✅ Xóa Webhook '{webhook_name}' thành công!")
+            print(f"JIRA Xóa Webhook '{webhook_name}' thành công!")
             return True
         else:
-            print(f"❌ Xóa Thất bại. Mã lỗi: {response.status_code}")
+            print(f"JIRA Xóa Thất bại. Mã lỗi: {response.status_code}")
             print(response.text)
             return None
 
     except Exception as e:
-        print(f"🔥 Lỗi kết nối: {e}")
+        print(f"JIRA Lỗi kết nối: {e}")
         return None
 
 
@@ -95,7 +95,7 @@ def create_or_update_webhook(webhook_name, base_url_tunnel):
     all_webhook= get_all_webhook()
 
     if all_webhook is None:
-        print("❌ Không thể lấy danh sách webhook")
+        print("JIRA Không thể lấy danh sách webhook")
         return None
 
     url_webhook_by_name =None
@@ -135,16 +135,16 @@ def create_or_update_webhook(webhook_name, base_url_tunnel):
         response = requests.post(JIRA_SERVER_WEBHOOK_API,headers=headers, json=new_webhook_data)
 
         if response.status_code == 201 or response.status_code == 200:
-            print("✅ Tạo mới Webhook thành công!")
+            print("JIRA Tạo mới Webhook thành công!")
             # Trả về thông tin webhook vừa tạo (bao gồm cả ID mới)
             
             return response.json()
         else:
-            print(f"❌ Tạo mới Thất bại. Mã lỗi: {response.status_code}")
+            print(f"JIRA Tạo mới Thất bại. Mã lỗi: {response.status_code}")
             print(response.text)
             return None
         return None
 
     except Exception as e:
-        print(f"🔥 Lỗi kết nối: {e}")
+        print(f"JIRA Lỗi kết nối: {e}")
         return None

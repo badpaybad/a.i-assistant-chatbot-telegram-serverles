@@ -1,6 +1,10 @@
 {
-  "folder_count": 3,
+  "folder_count": 4,
   "skill_states": {
+    "browser": {
+      "mtime": 0,
+      "hash": null
+    },
     "cli": {
       "mtime": 1772164302.000457,
       "hash": "58611658fbcbfb39b2877f848945ce85"
