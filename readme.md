@@ -1,11 +1,14 @@
 
 # Biến PC của bạn thành 1 AI chat bot assistant
 
+- Chạy hoàn toàn private PC của bạn, không cần server, không cần domain, không cần database server, bảo mật, an toàn dữ liệu
+
 - thực hiện lệnh từ xa ( command line exec với ngôn ngữ tự nhiên bạn không cần biết tới lệnh chạy thật, an toàn đảm bảo)
 - tổng hợp tin nhắn từ các group chat . VD như 1 con bot hóng tin và summary cho bạn
 - Jira : Hỗ trợ các nhóm cskh tạo tự động các issues và báo cáo tiến độ cho issues 
 - Quét các folder tại PC chủ động dùng OCR , LLM ... summary image , video, pdx, docx ... để làm knowledge base cho assistant PC của bạn  
-
+- Browser automation (puppyteer), GUI automation ( pyautogui)
+- Hỗ trợ gemini, nếu bạn không muốn dùng gemini có thể dùng LLM PC như ollama, llama.cpp ...
 
 # Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
