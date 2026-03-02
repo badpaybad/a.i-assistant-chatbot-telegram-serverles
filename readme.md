@@ -1,4 +1,12 @@
 
+# Biến PC của bạn thành 1 AI chat bot assistant
+
+- thực hiện lệnh từ xa ( command line exec với ngôn ngữ tự nhiên bạn không cần biết tới lệnh chạy thật, an toàn đảm bảo)
+- tổng hợp tin nhắn từ các group chat . VD như 1 con bot hóng tin và summary cho bạn
+- Jira : Hỗ trợ các nhóm cskh tạo tự động các issues và báo cáo tiến độ cho issues 
+- Quét các folder tại PC chủ động dùng OCR , LLM ... summary image , video, pdx, docx ... để làm knowledge base cho assistant PC của bạn  
+
+
 # Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
 Use telegram as chatbot assitance. We dont need develop UI to chat, we just wait telegram callback webhook , then we call LLM , then send reply message 
