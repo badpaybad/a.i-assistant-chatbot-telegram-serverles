@@ -9,6 +9,11 @@
 - Quét các folder tại PC chủ động dùng OCR , LLM ... summary image , video, pdx, docx ... để làm knowledge base cho assistant PC của bạn  
 - Browser automation (puppyteer), GUI automation ( pyautogui)
 - Hỗ trợ gemini, nếu bạn không muốn dùng gemini có thể dùng LLM PC như ollama, llama.cpp ...
+- Tự bổ xung thêm skill nhờ LLM và python script, đơn giản chỉ cần tạo subfolder trong skills với cấu trúc
+                skill_name
+                ├── main.py
+                ├── readme.md
+                └── config.py
 
 # Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
