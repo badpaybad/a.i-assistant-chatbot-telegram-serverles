@@ -72,17 +72,14 @@ All above run
                           Telegram Response: {'ok': True, 'result': True, 'description': 'Webhook was set'}
 
 
-Chat with your chat bot :
+# 5. LLM local  
 
-my sample chatbot: https://t.me/robotnotification_bot
+                    If dont want gemini can use ollama  local 
 
-add to your group chat then tag @robotnotification_bot to chat
+                    https://github.com/ollama/ollama
 
-# 5. ollama 
 
-              If dont want gemini can use ollama  local 
-
-              https://github.com/ollama/ollama
+### Nếu bạn là devleroper nên dùng: https://github.com/ggml-org/llama.cpp 
 
               
 # 6. my_telethon.py
