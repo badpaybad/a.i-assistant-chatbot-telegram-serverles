@@ -3,8 +3,8 @@
 
 - Chạy hoàn toàn private PC của bạn, không cần server, không cần domain, không cần database server, bảo mật, an toàn dữ liệu
 
-- thực hiện lệnh từ xa ( command line exec với ngôn ngữ tự nhiên bạn không cần biết tới lệnh chạy thật, an toàn đảm bảo)
-- tổng hợp tin nhắn từ các group chat . VD như 1 con bot hóng tin và summary cho bạn
+- Thực hiện lệnh từ xa thông qua chát chít (UI telegram chat) ( command line exec với ngôn ngữ tự nhiên bạn không cần biết tới lệnh chạy thật, an toàn đảm bảo)
+- Tổng hợp tin nhắn từ các group chat . VD như 1 con bot hóng tin và summary cho bạn
 - Jira : Hỗ trợ các nhóm cskh tạo tự động các issues và báo cáo tiến độ cho issues 
 - Quét các folder tại PC chủ động dùng OCR , LLM ... summary image , video, pdx, docx ... để làm knowledge base cho assistant PC của bạn  
 - Browser automation (puppyteer), GUI automation ( pyautogui)
@@ -15,6 +15,9 @@
                         ├── main.py
                         ├── readme.md
                         └── config.py
+
+![cli](img1.png)
+![email](img2.png)
 
 # Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
