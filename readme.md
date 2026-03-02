@@ -104,3 +104,37 @@ add to your group chat then tag @robotnotification_bot to chat
 Dùng để lấy thông tin trên màn hình = OCR 
 
             pip install pyautogui pillow opencv-python easyocr
+
+
+# skills 
+
+Là folder chứa các skill, mỗi skill là một folder chứa các file sau:
+
+- readme.md: Mô tả chức năng của skill
+- main.py: Chứa logic của skill
+- config.py: Chứa cấu hình của skill
+
+
+# orchestrationcontext.py
+
+Là file chứa logic để điều phối các skill, mỗi skill là một folder chứa các file sau:
+
+- tự động build prompt từ các file trong folder skills/ đọc file readme.md của từng skill
+
+# dbcontext
+
+các tên db và bảng dùng sqllite chung cho cả project, có query json , dùng dbconnect.py để kết nối sqllite
+
+
+# chat context
+
+- Luôn luôn phải có context chat, dùng để quyết định orchestration route, từng skill đều chung 
+- List Summary , List Recent Chat, Current Message , Urls, Content for url (scraped from url), files ( image, video, pdf, docx, csv, excel, txt ...)
+- Chat context phân biệt nhờ chat_id 
+
+# LLM 
+
+- Luôn luôn phải có LLM để quyết định orchestration route, từng skill đều chung 
+- LLM phân biệt nhờ chat_id 
+- LLM có thể là gemini hoặc ollama local
+- LLM có tool call hoặc function call để gọi các skill

@@ -1,10 +1,6 @@
 {
   "folder_count": 4,
   "skill_states": {
-    "browser": {
-      "mtime": 0,
-      "hash": null
-    },
     "cli": {
       "mtime": 1772164302.000457,
       "hash": "58611658fbcbfb39b2877f848945ce85"
@@ -14,8 +10,8 @@
       "hash": "b597e193cd38dae39e0dd167cdf7fb94"
     },
     "jira": {
-      "mtime": 1772164254.1655116,
-      "hash": "38681de8808b76d9a11c11da8c0f5c79"
+      "mtime": 1772344000.1888688,
+      "hash": "4acef91d84801aa2917afa1b9246a932"
     }
   }
 }

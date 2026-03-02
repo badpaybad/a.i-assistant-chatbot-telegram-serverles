@@ -27,6 +27,10 @@ def build_system_instruction():
     skills_dir = os.path.join(base_dir, "skills")
     cache_path = os.path.join(kb_dir, "system_instruction.txt")
     metadata_path = os.path.join(kb_dir, ".system_instruction_metadata.json")
+
+    print("metadata_path", metadata_path)
+    print("cache_path", cache_path)
+    print("skills_dir", skills_dir)
     
     # 1. Get current state of skills
     current_skills = []
@@ -37,6 +41,8 @@ def build_system_instruction():
     skill_states = {}
     for skill in current_skills:
         readme_path = os.path.join(skills_dir, skill, "readme.md")
+        if not os.path.exists(readme_path):
+            continue
         mtime = os.path.getmtime(readme_path) if os.path.exists(readme_path) else 0
         file_hash = get_file_hash(readme_path) if os.path.exists(readme_path) else None
         skill_states[skill] = {
