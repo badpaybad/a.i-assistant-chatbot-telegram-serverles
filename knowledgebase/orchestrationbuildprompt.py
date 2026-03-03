@@ -101,7 +101,7 @@ def build_system_instruction():
             try:
                 with open(readme_path, "r", encoding="utf-8") as f:
                     content = f.read().strip()
-                    if content:
+                    if content and content !="":
                         description = content
             except Exception as e:
                 print(f"Error reading {readme_path}: {e}")
