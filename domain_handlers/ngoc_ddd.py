@@ -188,9 +188,9 @@ def process_user_mapping(msg:telegram_types.OrchestrationMessage):
 
 async def handle(msg:telegram_types.OrchestrationMessage):
 
-    # if msg.message.new_chat_members:
+    if msg.message.new_chat_members:
 
-    #     await bot_telegram.send_telegram_welcome(msg.chat_id)
+        await bot_telegram.send_telegram_welcome(msg.chat_id)
         
         # for member in msg.new_chat_members:
         #     print("member",member)
