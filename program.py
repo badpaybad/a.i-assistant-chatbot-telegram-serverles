@@ -19,6 +19,10 @@ from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memor
 
 from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
+import config
+import domain_handlers
+import domain_handlers.ngoc_ddd
+
 import bot_telegram
 import bot_discord
 
@@ -217,7 +221,7 @@ async def handle_jira(request: Request):
     print("Đang nhận Webhook từ Jira...")
     jiradata=await request.json()
     print(jiradata)
-    knowledgebase.dbcontext.db_jira.insert(jiradata)
+    # knowledgebase.dbcontext.db_jira.insert(jiradata)
     # todo: cần thao tác xử lý gì cần dùng dbcontext.py để lưu vào db, ở skills/jira cần lưu chat_id và jira url để sau có thể update và kiểm tra trạng thái rồi gửi message lên nhóm chát 
     pass
 
@@ -228,11 +232,14 @@ async def handle_zalo_oa(request: Request):
     # todo: tất cả các loại chát khác, zalo, discord, whatsapp ... cần convert về dạng message của telegram, dùng để hỗ trợ cho zalo group chat tương tự telegram chat bot 
     pass
 
+
 @app.post("/webhook")
 async def handle_webhook(request: Request):
     try:
+        
         # Lấy toàn bộ dữ liệu JSON thô từ Telegram
         data = await request.json()
+
         msg_id_guid = knowledgebase.dbcontext.sqllite_all_message.insert(data)
         update = telegram_types.TelegramUpdate.model_validate(data)
 
@@ -402,6 +409,11 @@ async def handle_webhook(request: Request):
         orchestration_message.text=user_text
         orchestration_message.chat_id=chat_id
         orchestration_message.webhook_base_url=webhook_base_url
+
+        if config.CONFIG_NAME=="config_ngoc":
+            await domain_handlers.ngoc_ddd.handle(orchestration_message)
+            # return  {"status": "ok"}
+            pass
         
         if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME :
             if orchestration_message.text and TELEGRAM_BOT_USERNAME in orchestration_message.text:

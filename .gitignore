@@ -67,3 +67,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+**/domains/ngoc**
+config_ngoc.py
+
+**/domain_handlers/**.xlsx
+**/domain_handlers/**.csv
+**/phieu_luong_nhan_vien/**

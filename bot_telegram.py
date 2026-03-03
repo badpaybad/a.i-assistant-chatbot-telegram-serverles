@@ -62,32 +62,102 @@ async def download_telegram_file(file_id: str, chat_id: int, custom_file_name: s
             print(f"Error saving file: {e}")
             return None
 
-
-
 import knowledgebase
 import knowledgebase.orchestrationcontext
 import knowledgebase.dbcontext
 
-async def send_telegram_message(chat_id: int, text: str)-> telegram_types.TelegramUpdate|None:
-    if text is None or text == "":
-        return None
+async def send_telegram_welcome(chat_id: int ):
+
     async with httpx.AsyncClient() as client:
-        payload = {"chat_id": chat_id, "text": text}
         try:
-            response= await client.post(TELEGRAM_API_URL, json=payload)
+            text=f"Chào mừng bạn đến với bot AI @{TELEGRAM_BOT_USERNAME}"
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+            response = await client.post(url, json={"chat_id": chat_id, "text": text,
+            "reply_markup": {
+                "inline_keyboard": [
+                    [{"text": "Kích hoạt Bot (Inbox)", "url": f"t.me/{TELEGRAM_BOT_USERNAME}?start=welcome"}]
+                ]
+            }
+            }, timeout=30.0)
+        
+            pass
+        except:
+            pass
+    pass
+
+async def send_telegram_message(chat_id: int, text: str, files: list[str] | None = None, isSendToGroup: bool = True) -> telegram_types.TelegramUpdate | None:
+    """_summary_
+
+    Args:
+        chat_id (int): group chat_id vd -5251554348 or user_id individual vd 730806080 
+        text (str): _description_
+        files (list[str] | None, optional): _description_. Defaults to None.
+        isSendToGroup (bool, optional): _description_. Defaults to True.
+
+    Returns:
+        telegram_types.TelegramUpdate | None: _description_
+    """
+    if (text is None or text == "") and not files:
+        return None
+
+    # if chat_id == -1:
+    #     chat_id = int(TELEGRAM_BOT_CHATID)
+
+    async with httpx.AsyncClient() as client:
+        try:
+            if files and len(files) > 0:
+                # Determine which method to use based on file extension
+                file_path = files[0]
+                if not os.path.exists(file_path):
+                    print(f"File không tồn tại: {file_path}")
+                    # Fallback to sendMessage if text exists
+                    if text:
+                        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+                        response = await client.post(url, json={"chat_id": chat_id, "text": text}, timeout=30.0)
+                    else:
+                        return None
+                else:
+                    ext = os.path.splitext(file_path)[1].lower()
+                    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
+                        method = "sendPhoto"
+                        file_key = "photo"
+                    else:
+                        method = "sendDocument"
+                        file_key = "document"
+
+                    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}"
+                    
+                    # Read file content
+                    async with aiofiles.open(file_path, "rb") as f:
+                        file_content = await f.read()
+                    
+                    files_payload = {file_key: (os.path.basename(file_path), file_content)}
+                    data_payload = {"chat_id": chat_id, "caption": text}
+                    
+                    response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
+            else:
+                # No files, just send message
+                url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+                data_payload = {"chat_id": chat_id, "text": text}
+                response = await client.post(url, json=data_payload, timeout=30.0)
+
             # print(f"send_telegram_message Response: {response.json()}")
             response.raise_for_status()
 
             telegram_response = telegram_types.TelegramUpdate(**response.json())
 
             if telegram_response:
-                #.model_dump_json(by_alias=True)
                 knowledgebase.dbcontext.sqllite_all_message.insert(telegram_response.json())
                 knowledgebase.orchestrationcontext.summarychat.enqueue_update(telegram_response)
 
             return telegram_response
         except Exception as e:
             print(f"Lỗi khi gửi tin: {e}")
+            if 'response' in locals() and response is not None:
+                try:
+                    print(f"Chi tiết lỗi từ Telegram: {response.text}")
+                except:
+                    pass
             return None
 
 

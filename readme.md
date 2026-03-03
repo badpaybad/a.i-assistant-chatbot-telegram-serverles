@@ -89,7 +89,7 @@ All above run
 
 
               pip install --upgrade pip
-              pip install fastapi uvicorn pydantic httpx pynacl google-genai telethon
+              pip install fastapi uvicorn pydantic httpx pynacl google-genai telethon matplotlib
 
               python program.py 
 

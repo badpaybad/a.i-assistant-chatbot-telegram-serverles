@@ -116,6 +116,7 @@ class TelegramUpdate(BaseModel):
     edited_message: Message | None = None  # Có thể là edited_message, nên để None
     ok:bool|None=None
     result: Message | None = None  # Có thể là kết quả post reply lên group
+    new_chat_members:Any|None=None
     def get_chat_id(self):
         if self.message:
             return self.message.chat.id
@@ -133,7 +134,16 @@ class TelegramUpdate(BaseModel):
         elif self.result:
             return self.result.date
         return None
+
     
+    def get_message_from_user(self)->FromUser|None:
+        if self.message:
+            return self.message.from_user
+        elif self.edited_message:
+            return self.edited_message.from_user
+        elif self.result:
+            return self.result.from_user
+        return None
 
 class OrchestrationMessage:
     message: TelegramUpdate|None=None
