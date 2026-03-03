@@ -17,8 +17,10 @@
                         ├── readme.md
                         └── config.py
 
-![cli](img1.png)
-![email](img2.png)
+| cmd explain and exec | email cli |jira issues|poem|
+| :---: | :---: |:---: |:---: |
+|![cli](img1.png)|![email](img2.png)|![jira](img4.png)|![poem](img3.png)|
+
 
 # Chạy trực tiếp trên PC không cần server cần: OS Ubuntu, Telegram, Gemini api  
 
