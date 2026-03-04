@@ -220,7 +220,7 @@ async def process_chat_history_and_received_msg(user_text: str, chat_id,listFile
 async def handle_jira(request: Request):
     print("Đang nhận Webhook từ Jira...")
     jiradata=await request.json()
-    print(jiradata)
+    # print(jiradata)
     # knowledgebase.dbcontext.db_jira.insert(jiradata)
     # todo: cần thao tác xử lý gì cần dùng dbcontext.py để lưu vào db, ở skills/jira cần lưu chat_id và jira url để sau có thể update và kiểm tra trạng thái rồi gửi message lên nhóm chát 
     pass
@@ -228,7 +228,7 @@ async def handle_jira(request: Request):
 @app.post("/webhook-zalo-oa")
 async def handle_zalo_oa(request: Request):
     print("Đang nhận Zalo từ Jira...")
-    print(await request.json())
+    # print(await request.json())
     # todo: tất cả các loại chát khác, zalo, discord, whatsapp ... cần convert về dạng message của telegram, dùng để hỗ trợ cho zalo group chat tương tự telegram chat bot 
     pass
 

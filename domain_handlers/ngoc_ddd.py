@@ -77,7 +77,7 @@ def excel_capture_row(file_path):
     results={}
 
     for index, row in employee_data.iterrows():
-        print("index=======",index)
+        # print("index=======",index)
         emp_name = clean_val(row[2]) # Cột C là tên nhân viên
         if not emp_name or emp_name.lower() == 'tổng':
             continue
@@ -135,18 +135,26 @@ def process_user_mapping(msg:telegram_types.OrchestrationMessage):
 
     # Handle fullname after tên: or ten: or name:
     # Use (?i) for case-insensitive, and \s* for optional spaces
-    fullname_match = re.search(r"(?i)(?:tên|ten|name):\s*(.+)", text)
-    if not fullname_match:
-        print("Không tìm thấy tên")
+    fullname_match = re.search(r"(?i)(?:\s+tên|\s+ten|\s+name)\s*:\s*(.+)", text)
+    fullname=None
+    if not fullname_match: 
+        idx2cham= text.find(":")
+        if idx2cham > -1:
+            fullname = text[idx2cham+1:].strip()
+    else:
+        fullname = fullname_match.group(1).strip()
+
+    if not fullname or fullname=="":
+        print("Không tìm thấy tên, cần theo mẫu vd: @username tên: fullname here")
+        print("msg.message.message.entities ------",msg.message.message.entities)
         return None
-    fullname = fullname_match.group(1).strip()
 
     if msg.message.message.entities:
         for entity in msg.message.message.entities:
-            if entity["type"] == "text_mention":
+            if str(entity["type"]).lower() == "text_mention":
                 # username = entity["user"]["username"] or ""   
                 # fullname = entity["user"]["first_name"] + " " + entity["user"]["last_name"]
-                print("entities",entity)
+                print("entities ->>>>>> ",entity)
                 return {
                     "id": entity["user"]["id"],
                     "username": "",
@@ -159,6 +167,7 @@ def process_user_mapping(msg:telegram_types.OrchestrationMessage):
     # Handle username in text (e.g., @badpaybad)
     username_match = re.search(r"@(\w+)", text)
     if not username_match:
+        print("Không tìm thấy username thiếu @ vd @username tên: fullname here")
         return None
     username = username_match.group(1)
 
@@ -188,24 +197,27 @@ def process_user_mapping(msg:telegram_types.OrchestrationMessage):
 
 async def handle(msg:telegram_types.OrchestrationMessage):
 
-    if msg.message.new_chat_members:
+    if int(msg.chat_id) != int(TELEGRAM_BOT_CHATID): 
+        print("Nhóm không hợp lệ TELEGRAM_BOT_CHATID: ",TELEGRAM_BOT_CHATID, " Nhóm đúng: ",msg.chat_id)
+        print(msg)
+        return
 
-        await bot_telegram.send_telegram_welcome(msg.chat_id)
-        
         # for member in msg.new_chat_members:
         #     print("member",member)
         #     if member["username"]!=TELEGRAM_OWNER_USERNAME:
         #         print("Tài khoản không có quyền làm, cần là tài khoản:",TELEGRAM_OWNER_USERNAME)
         #         return
-            
     
+    if msg.message.new_chat_members:
+        await bot_telegram.send_telegram_welcome(msg.chat_id)
+
     fromuser=msg.message.get_message_from_user()
     print("fromuser",fromuser)
     if fromuser and fromuser.username!=TELEGRAM_OWNER_USERNAME:
-        await bot_telegram.send_telegram_welcome(msg.chat_id)    
         print("Tài khoản không có quyền làm, cần là tài khoản:",TELEGRAM_OWNER_USERNAME)
         return
         pass
+
 
     user_mapping = process_user_mapping(msg)
     print("user_mapping",user_mapping)
@@ -226,7 +238,6 @@ async def handle(msg:telegram_types.OrchestrationMessage):
     if not msg.files and len(msg.files) == 0:
         await bot_telegram.send_telegram_message(msg.chat_id, "Bạn chưa có file excel")
         return 
-
     
     fileimages=excel_capture_row(msg.files[0])
 
@@ -239,7 +250,10 @@ async def handle(msg:telegram_types.OrchestrationMessage):
         if fileimages[user["fullname"].lower()]:
 
             # await bot_telegram.send_telegram_message(msg.chat_id, f"Lương {user['fullname']} ngày gửi: {datetime.datetime.now().strftime('%d/%m/%Y')}",[fileimages[user["fullname"].lower()]])
-            await bot_telegram.send_telegram_message(user["id"], f"Lương {user['fullname']} ngày gửi: {datetime.datetime.now().strftime('%d/%m/%Y')}",[fileimages[user["fullname"].lower()]])
+            rrrr=await bot_telegram.send_telegram_message(user["id"], f"Lương {user['fullname']} ngày gửi: {datetime.datetime.now().strftime('%d/%m/%Y')}",[fileimages[user["fullname"].lower()]])
+            if rrrr ==None:
+                await bot_telegram.send_telegram_welcome(msg.chat_id,f"{user["fullname"]} chưa tham gia bot chat ")    
+                
             wait_time = random.uniform(1, 3)
             time.sleep(wait_time)
         pass
