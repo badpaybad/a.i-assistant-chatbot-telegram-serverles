@@ -145,7 +145,7 @@ class TelegramUpdate(BaseModel):
             return self.result.from_user
         return None
 
-class OrchestrationMessage:
+class OrchestrationMessage(BaseModel):
     message: TelegramUpdate|None=None
     msg_id:str|None=None
     files:List[str]|None=None

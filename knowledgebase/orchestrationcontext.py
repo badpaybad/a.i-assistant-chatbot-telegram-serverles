@@ -149,6 +149,22 @@ def fetch_url_content(url: str):
 def get_summary_chat(chat_id:str):
     return db_summary_chat.search_json("chat_id", chat_id)[0:3]
 
+def get_list_current_orchestration_messages(chat_id: str | int):
+    """
+    Retrieve the 20 latest messages for a specific chat_id.
+    Handles both string and integer chat_id for database matching.
+    """
+    # 1. Try as integer (common for Telegram)
+    try:
+        chat_id_int = int(chat_id)
+        results = knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.message.chat.id", chat_id_int, limit=HISTORY_CHAT_MAX_LEN)
+        if results:
+            return results
+    except (ValueError, TypeError):
+        pass
+    
+    # 2. Try as string (fallback)
+    return knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.message.chat.id", str(chat_id), limit=HISTORY_CHAT_MAX_LEN)
 
 async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url):
     """_summary_
@@ -225,16 +241,31 @@ generation_config = types.GenerateContentConfig(
 chat_buffers = {} # dict: chat_id -> list of (update_obj, formatted_string)
 async def skills_decision(message: telegram_types.OrchestrationMessage):
 
+    knowledgebase.dbcontext.db_orchestration_all_message.insert(message.json())
+
     chat_id = message.chat_id
     if chat_id not in chat_buffers:
         chat_buffers[chat_id] = []
     
     chat_buffers[chat_id].append(message)
 
-    list_current_msg=[]
+    list_current_msg = []
+    
+    # # Lấy 20 tin nhắn mới nhất từ database
+    db_msgs = get_list_current_orchestration_messages(str(chat_id))
+    for rec in db_msgs:
+        try:
+            om = rec["json"]
+            
+            list_current_msg.append(om)
+        except Exception as e:
+            print(f"Lỗi khi chuyển đổi message từ DB: {e}")
+            continue
 
-    for msg in chat_buffers[chat_id]:
-        list_current_msg.append(msg)
+    # Nếu DB trống hoặc lỗi, dùng buffer hiện tại làm dự phòng
+    if not list_current_msg:
+        for msg in chat_buffers[chat_id]:
+            list_current_msg.append(msg)
 
     list_summary_chat = get_summary_chat(chat_id)
 
@@ -253,7 +284,7 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
     
     # 2. Format Recent Messages (Long-term buffer)
     recent_text = "### [Recent Messages]\n"
-    for msg in chat_buffers[chat_id]:
+    for msg in list_current_msg:
         # Giả sử message.text là nội dung
         recent_text += f"- {msg.text}\n"
 

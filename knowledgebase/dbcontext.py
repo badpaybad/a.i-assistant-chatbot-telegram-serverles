@@ -10,3 +10,5 @@ sqllite_all_message_file=dbconnect.SQLiteDB("all_message_file")
 db_summary_chat = SQLiteDB(table_name="summary_chat")
 
 db_jira = SQLiteDB(table_name="jira")
+
+db_orchestration_all_message = SQLiteDB(table_name="orchestration_all_message")
