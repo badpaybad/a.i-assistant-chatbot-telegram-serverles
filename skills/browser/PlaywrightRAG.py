@@ -8,6 +8,7 @@ from playwright.sync_api import sync_playwright
 
 # --- CẤU HÌNH ---
 MODEL_PATH = "cc.en.300.bin"  # Tải từ fasttext.cc
+MODEL_PATH="/work/a.i-assistant-chatbot-telegram-serverles/knowledgebase/fasttext/cc.vi.300.bin"
 FAISS_INDEX_PATH = "playwright_docs.index"
 METADATA_PATH = "playwright_metadata.pkl"
 

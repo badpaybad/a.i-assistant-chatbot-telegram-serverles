@@ -77,3 +77,5 @@ config_ngoc.py
 **/data/**
 **/test/**.db
 breakingnews.zip
+skills/browser/playwright_docs.index
+skills/browser/playwright_metadata.pkl
