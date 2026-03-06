@@ -79,3 +79,6 @@ config_ngoc.py
 breakingnews.zip
 skills/browser/playwright_docs.index
 skills/browser/playwright_metadata.pkl
+**/breakingnews/**.png
+**/breakingnews/**.txt
+**/breakingnews/**.csv
