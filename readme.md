@@ -1,5 +1,5 @@
 
-# Biến PC của bạn thành 1 AI chat bot assistant
+# Biến PC của bạn thành 1 AI chat bot assistant ( PC A.I Agentic framework)
 
 - Chạy hoàn toàn private PC của bạn, không cần server, không cần domain, không cần database server, bảo mật, an toàn dữ liệu
 
