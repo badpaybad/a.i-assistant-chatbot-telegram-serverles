@@ -130,6 +130,8 @@ Bạn sẽ được cung cấp:
 - [Summarized History]: Tóm tắt các cuộc trò chuyện cũ để hiểu ngữ cảnh dài hạn.
 - [Recent Messages]: Các tin nhắn gần nhất trong phiên chat hiện tại.
 - [Current Message]: Tin nhắn mới nhất của người dùng cần xử lý.
+- [URLs]: Các đường dẫn liên quan (nếu có).
+- Các file được gửi kèm (nếu có).
 
 # DECISION LOGIC
 {decision_logic}

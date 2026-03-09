@@ -22,6 +22,7 @@ hoặc gemini_dynamic : có các buildin tool call: cli, http request crawler, f
                         skill_name
                         ├── system_instruction.md
                         ├── readme.md
+                        ├── skill.md
 
 
 | cmd explain and exec | email cli |
