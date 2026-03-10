@@ -4,7 +4,8 @@ from playwright.async_api import async_playwright
 import random
 import os
 import time
-
+import base64
+import requests
 
 import queue
 
@@ -12,14 +13,17 @@ browserActionQueue= queue.Queue()
 isStop=False
 page=None
 context=None
+playwright_instance=None
 
 async def run_browser_agent():
     global browserActionQueue
     global isStop
     global page
     global context
+    global playwright_instance
 
     async with async_playwright() as p:
+        playwright_instance=p
         # 1. Khởi chạy trình duyệt (headless=False để quan sát)
         # browser = await p.chromium.launch(headless=False)
         # context = await browser.new_context()
@@ -38,7 +42,8 @@ async def run_browser_agent():
         context = await p.chromium.launch_persistent_context(
             user_data_dir=user_data_dir,
             channel="chrome",
-            headless=False,
+            # headless=True, # chạy ngầm
+            headless=False, # xem được thao tác 
             args=["--no-sandbox"] # Cần thiết nếu chạy với quyền root hoặc môi trường đặc biệt
         )
         
@@ -46,8 +51,6 @@ async def run_browser_agent():
 
         try:
             # 2. Đi tới trang Login
-            print("Đang mở trang đăng nhập...")
-            await page.goto("https://chat.zalo.me/")
 
             # 3. Nhập liệu (Playwright tự đợi selector này xuất hiện)
             # await page.fill('input[id="inputA"]', f"{random.randint(0, 1000) }")
@@ -60,7 +63,6 @@ async def run_browser_agent():
                 # page.click('#checkBtn'),
             #     #page.wait_for_url("**/dashboard", timeout=10000) # Đợi tới khi URL chứa chữ 'dashboard'
             # )
-            await asyncio.sleep(3)
 
             # # 5. Đợi nội dung ở trang mới load xong
             # print(f"Đã tới trang: {page.url}")
@@ -90,9 +92,9 @@ async def run_browser_agent():
                     continue
                 
                 if asyncio.iscoroutinefunction(nextact):
-                    await nextact(p)
+                    await nextact()
                 else :
-                    nextact(p)
+                    nextact()
 
 
             await asyncio.sleep(1)
@@ -104,9 +106,85 @@ async def run_browser_agent():
             # await browser.close()
             await context.close()
             pass
+async def open_zalo_web():
 
+    print("Đang mở trang đăng nhập...")
+    await page.goto("https://chat.zalo.me/")
+    await asyncio.sleep(3)
+    pass
+
+
+async def download_qr_code():
+    file_name="zalo_qr.png"
+    # 1. Tìm selector: tìm img bên trong class .qr-container
+    qr_selector = ".qr-container img"
+    
+    try:
+        # Đợi QR xuất hiện
+        # await page.wait_for_selector(qr_selector, timeout=10000)
+        
+        # 2. Lấy thuộc tính src của thẻ img
+        qr_src = await page.locator(qr_selector).get_attribute("src")
+        
+        
+        if not qr_src:
+            print("Không tìm thấy thuộc tính src của QR")
+
+            try:
+                await page.get_by_text("Đã hiểu").click()    
+                print(f"Click nút Đã hiểu") 
+
+                await asyncio.sleep(3)
+            except Exception as e:
+                print(f"Không tìm thấy nút Đã hiểu")
+                
+            
+            qr_src = await page.locator(qr_selector).get_attribute("src", timeout=10000)    
+            if not qr_src:
+                print("Không tìm thấy thuộc tính src của QR")
+            return
+
+        # 3. Xử lý nếu là Base64 (Zalo thường dùng cái này cho QR)
+        if "base64," in qr_src:
+            header, encoded = qr_src.split(",", 1)
+            data = base64.b64decode(encoded)
+            with open(file_name, "wb") as f:
+                f.write(data)
+            print(f"Đã lưu QR từ Base64: {file_name}")
+            
+        # 4. Xử lý nếu là URL thông thường
+        else:
+            response = requests.get(qr_src)
+            if response.status_code == 200:
+                with open(file_name, "wb") as f:
+                    f.write(response.content)
+                print(f"Đã tải QR từ URL: {file_name}")
+
+    except Exception as e:
+        print(f"Lỗi khi tải QR: {e}")
+
+async def check_zalo_qr_auth():
+
+
+    await download_qr_code()
+
+    qr_selector = ".fa-Contact_28_Line"
+    while not isStop:
+        try:
+            found=await page.wait_for_selector(qr_selector, timeout=10000)
+            if found:
+                print("QR code đã ẩn, đã vào trang chat")
+                break
+        except:
+            await asyncio.sleep(3)
+            print("QR code download xong, cần đăng nhập bằng điện thoại để vào trang chat")
+
+        pass
+#qr-container
+
+    pass
 # vi du action queue, khi cần làm j đó với 1 page đã được mở lên, không tạo mới page ko sợ mất session         
-async def open_group_omt_tbp(playwright_instance):
+async def open_zalo_group_omt_tbp():
 
     print("click OMT-TBP")
     # page.locator("div:has-text('OMT-TBP')").click()
@@ -138,7 +216,9 @@ async def open_group_omt_tbp(playwright_instance):
 async def loop():
     global isStop
     
-    browserActionQueue.put(open_group_omt_tbp)
+    browserActionQueue.put(open_zalo_web)
+    browserActionQueue.put(check_zalo_qr_auth)
+    browserActionQueue.put(open_zalo_group_omt_tbp)
 
     await asyncio.gather( run_browser_agent())
 
