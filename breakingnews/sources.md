@@ -3,3 +3,5 @@ Dưới đây là mô tả source, bạn cần lấy đường link, Url của c
 | Tên source | URL | Mô tả |
 | --- | --- | --- |
 | VnExpress | https://vnexpress.net/ | Báo điện tử Việt Nam |
+| Thanh Niên | https://thanhnien.vn/ | Báo điện tử Việt Nam |
+
