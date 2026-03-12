@@ -25,6 +25,8 @@ hoặc gemini_dynamic : có các buildin tool call: cli, http request crawler, f
                         ├── skill.md
 
 
+Cần các llm tool call, agent, mcp chuyên cho: Router -> [Chat intent, Image, Video, Code, PDF, Word, Excel,...] -> Aggregator]
+
 ![pc a.i agentic workforce](pc-a.i-agentic.png)
 
 
