@@ -6,7 +6,7 @@ import os
 import time
 import base64
 import requests
-
+import bot_telegram
 import queue
 
 browserActionQueue= queue.Queue()
@@ -165,6 +165,7 @@ async def download_qr_code():
 
 async def check_zalo_qr_auth():
 
+    # https://id.zalo.me/account?continue=https%3A%2F%2Fchat.zalo.me%2F
 
     await download_qr_code()
 

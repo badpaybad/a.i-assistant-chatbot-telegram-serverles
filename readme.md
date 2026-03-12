@@ -24,6 +24,7 @@ hoặc gemini_dynamic : có các buildin tool call: cli, http request crawler, f
                         ├── readme.md
                         ├── skill.md
 
+![pc a.i agentic workforce](pc a.i agentic.png)
 
 | cmd explain and exec | email cli |
 | :---: | :---: |
