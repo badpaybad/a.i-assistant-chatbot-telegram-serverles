@@ -7,14 +7,22 @@ import os
 class SQLiteDB:
     def __init__(self, table_name, db_path="data/knowledgebase.db"):
         self.table_name = table_name
-        self.db_path = db_path
         
+        # Ensure db_path is absolute relative to project root if it's relative
+        if not os.path.isabs(db_path):
+            # Project root is the parent directory of 'knowledgebase' folder
+            root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            self.db_path = os.path.join(root_dir, db_path)
+        else:
+            self.db_path = db_path
+            
         # Ensure the directory exists
         db_dir = os.path.dirname(self.db_path)
         if db_dir and not os.path.exists(db_dir):
             os.makedirs(db_dir)
             
         self._create_table()
+
 
     def _get_connection(self):
         return sqlite3.connect(self.db_path)

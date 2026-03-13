@@ -17,5 +17,4 @@ db_jira_user = SQLiteDB(table_name="jira_user")
 
 db_telegram_user = SQLiteDB(table_name="telegram_user")
 
-
-zalo_all_message=dbconnect.SQLiteDB("zalo_all_message")
+zalo_all_message=dbconnect.SQLiteDB(table_name="zalo_all_message")

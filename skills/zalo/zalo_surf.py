@@ -365,7 +365,7 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
         async with browser_lock:
             chat_items = page.locator("div#messageViewContainer div.chat-item")
             count = await chat_items.count()
-            print(f"Found {count} messages.")
+            print(f"div#messageViewContainer div.chat-item Found {count} messages.")
 
         listmsg=[]
         for i in range(count):
@@ -382,12 +382,13 @@ zalo_group_msg_ActionBlockQueue= asyncio.Queue()
 
 latest_zalo_group_msg_list_check_duplicate=[]
 
-async def loop_enqueue_processed_zalo_group_msg():
+async def loop_enqueue_processed_zalo_group_msg(groupname="OMT-TBP"):
     while not isStop:
-        all_texts = await open_zalo_group_omt_tbp("OMT-TBP")
+        all_texts = await open_zalo_group_omt_tbp(groupname)
         if all_texts:
-            await zalo_group_msg_ActionBlockQueue.put({"groupname": "OMT-TBP", "message": all_texts})
-        await asyncio.sleep(10)
+            for msg in all_texts:
+                await zalo_group_msg_ActionBlockQueue.put({"groupname": groupname, "message": msg})
+        await asyncio.sleep(30)
     pass
 
 
@@ -415,7 +416,7 @@ async def loop_dequeue_processed_zalo_group_msg_into_telegram():
             # Gom tất cả tin nhắn trong batch để check duplicate
             all_messages = []
             for item in batch:
-                all_messages.extend(item["message"])
+                all_messages.append(item["message"])
             
             group_name = batch[0]["groupname"]
             # Chuyển batch thành chuỗi duy nhất để so khớp
@@ -427,18 +428,17 @@ async def loop_dequeue_processed_zalo_group_msg_into_telegram():
                 # Lưu vào db
                 print(f"Xử lý batch {len(batch)} items từ {group_name}: {len(all_messages)} tin nhắn")
                 for msg in all_messages:
+
                     knowledgebase.dbcontext.zalo_all_message.insert({
                         "group": group_name,
                         "message": msg,
-                        "timestamp": time.time(),
-                })
+                        })
+                    # print("inserted ----->", msg)
 
                 # Lưu vào lịch sử trùng lặp
                 latest_zalo_group_msg_list_check_duplicate.append(batch_text_str)
-                if len(latest_zalo_group_msg_list_check_duplicate) > 20:
+                if len(latest_zalo_group_msg_list_check_duplicate) > 200:
                     latest_zalo_group_msg_list_check_duplicate.pop(0)
-
-
             
             # Đánh dấu hoàn thành cho tất cả item trong batch
             for _ in range(len(batch)):
@@ -446,7 +446,8 @@ async def loop_dequeue_processed_zalo_group_msg_into_telegram():
 
         except Exception as e:
             print(f"Lỗi trong loop_dequeue: {e}")
-            await asyncio.sleep(1)
+
+        await asyncio.sleep(1)
     pass
 
 async def loop():
