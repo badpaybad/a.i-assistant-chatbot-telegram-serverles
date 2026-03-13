@@ -19,14 +19,17 @@ from config import TELEGRAM_OWNER_USERID,TELEGRAM_BOT_GROUP_CHATID,HISTORY_CHAT_
 
 import bot_telegram
 
-browserActionQueue= queue.Queue()
+"""_summary_
+các action queue vào sẽ thực hiện lần lượt, vd nếu có while true ở action trước thì đến sau sẽ đợi xong phía trước break while 
+"""
+browserActionBlockQueue= queue.Queue()
 isStop=False
 page=None
 context=None
 playwright_instance=None
 
 async def run_browser_agent():
-    global browserActionQueue
+    global browserActionBlockQueue
     global isStop
     global page
     global context
@@ -91,11 +94,11 @@ async def run_browser_agent():
 
             while not isStop:
 
-                if browserActionQueue.empty():
+                if browserActionBlockQueue.empty():
                     await asyncio.sleep(1)
                     continue
 
-                nextact= browserActionQueue.get()
+                nextact= browserActionBlockQueue.get()
 
                 if not nextact:
                     await asyncio.sleep(1)
@@ -319,10 +322,11 @@ async def open_zalo_group_omt_tbp():
 async def loop():
     global isStop
     
-    browserActionQueue.put(open_zalo_web)
-    browserActionQueue.put(check_zalo_qr_auth)
-    browserActionQueue.put(sync_zalo_chats_groups)
-    browserActionQueue.put(open_zalo_group_omt_tbp)
+    browserActionBlockQueue.put(open_zalo_web)
+    browserActionBlockQueue.put(check_zalo_qr_auth)
+    browserActionBlockQueue.put(sync_zalo_chats_groups)
+
+    browserActionBlockQueue.put(open_zalo_group_omt_tbp)
 
     await asyncio.gather( run_browser_agent())
 
