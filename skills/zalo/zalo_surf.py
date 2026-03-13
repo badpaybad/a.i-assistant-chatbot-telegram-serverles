@@ -331,6 +331,7 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
             async with browser_lock:
                 # conv-item-title__name truncate grid-item
                 await found.click(force=True, timeout=10000)
+                await found.click(force=True, timeout=10000)
                 print("clicked", groupname, found)
             await asyncio.sleep(2)
         
@@ -341,6 +342,7 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
                 print("đang tìm #messageViewContainer")
                 container = page.locator("div#messageViewContainer")
                 if not container and found:
+                    await found.click(force=True, timeout=10000)
                     await found.click(force=True, timeout=10000)
                     print("clicked 2", groupname, found)
 
@@ -382,6 +384,22 @@ zalo_group_msg_ActionBlockQueue= asyncio.Queue()
 
 latest_zalo_group_msg_list_check_duplicate=[]
 
+async def zalo_all_message_last_30_msg_in_db_to_check_duplicate(groupname="OMT-TBP"):
+
+    all_messages=knowledgebase.dbcontext.zalo_all_message.search_json("groupname",groupname,limit=30)
+    # rounded3= round(len(all_messages)/3)*3
+
+    # all_messages=all_messages[:rounded3]
+
+    print("zalo_all_message_last_30_msg_in_db_to_check_duplicate", len(all_messages))
+    for dbdata in all_messages:
+        json_msg=dbdata["json"]
+        # await zalo_group_msg_ActionBlockQueue.put({"groupname": json_msg['groupname'], "message": json_msg['message']})
+
+        batch_text_str = f"{json_msg['groupname']}: " + " | ".join([json_msg['message']])
+        latest_zalo_group_msg_list_check_duplicate.append(batch_text_str)
+    
+
 async def loop_enqueue_processed_zalo_group_msg(groupname="OMT-TBP"):
     while not isStop:
         all_texts = await open_zalo_group_omt_tbp(groupname)
@@ -401,14 +419,14 @@ async def loop_dequeue_processed_zalo_group_msg_into_telegram():
             if txt:
                 batch.append(txt)
             
-            # Thử lấy thêm tối đa 2 item nữa nếu có sẵn trong queue để gom thành batch 3
-            for _ in range(2):
-                if not zalo_group_msg_ActionBlockQueue.empty():
-                    next_txt = await zalo_group_msg_ActionBlockQueue.get()
-                    if next_txt:
-                        batch.append(next_txt)
-                else:
-                    break
+            # # Thử lấy thêm tối đa 2 item nữa nếu có sẵn trong queue để gom thành batch 3
+            # for _ in range(2):
+            #     if not zalo_group_msg_ActionBlockQueue.empty():
+            #         next_txt = await zalo_group_msg_ActionBlockQueue.get()
+            #         if next_txt:
+            #             batch.append(next_txt)
+            #     else:
+            #         break
             
             if not batch:
                 continue
@@ -430,14 +448,14 @@ async def loop_dequeue_processed_zalo_group_msg_into_telegram():
                 for msg in all_messages:
 
                     knowledgebase.dbcontext.zalo_all_message.insert({
-                        "group": group_name,
+                        "groupname": group_name,
                         "message": msg,
                         })
                     # print("inserted ----->", msg)
 
                 # Lưu vào lịch sử trùng lặp
                 latest_zalo_group_msg_list_check_duplicate.append(batch_text_str)
-                if len(latest_zalo_group_msg_list_check_duplicate) > 200:
+                if len(latest_zalo_group_msg_list_check_duplicate) > 100:
                     latest_zalo_group_msg_list_check_duplicate.pop(0)
             
             # Đánh dấu hoàn thành cho tất cả item trong batch
@@ -468,10 +486,14 @@ async def loop():
     await browserActionBlockQueue.put(sync_zalo_chats_groups)
 
     print("Browser initialized and tasks queued. Starting scraping loops...")
+
+    zalo_group_name="OMT-TBP"
+
+    await zalo_all_message_last_30_msg_in_db_to_check_duplicate(zalo_group_name)
     
     await asyncio.gather(
         browser_task,
-        loop_enqueue_processed_zalo_group_msg(),
+        loop_enqueue_processed_zalo_group_msg(zalo_group_name),
         loop_dequeue_processed_zalo_group_msg_into_telegram()
     )
 
