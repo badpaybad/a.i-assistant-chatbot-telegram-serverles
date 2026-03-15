@@ -482,16 +482,16 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
                             await asyncio.wait_for(container.evaluate('''node => {
                                 let scrollNode = node.querySelector('#messageViewContainer .transform-gpu');
                                 if (scrollNode) {
-                                    scrollNode.scrollBy({top: -2800, behavior: 'smooth'});
+                                    scrollNode.scrollBy({top: -800, behavior: 'smooth'});
                                 } else {
-                                    node.scrollTop -= 2800;
+                                    node.scrollTop -= 800;
                                     if (node.parentElement) {
-                                        node.parentElement.scrollTop -= 2800;
+                                        node.parentElement.scrollTop -= 800;
                                     }
                                     let children = node.querySelectorAll('*');
                                     for (let child of children) {
                                         if (child.scrollHeight > child.clientHeight && window.getComputedStyle(child).overflowY !== 'hidden') {
-                                            child.scrollTop -= 2800;
+                                            child.scrollTop -= 800;
                                         }
                                     }
                                 }
@@ -507,16 +507,16 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
                             await asyncio.wait_for(container.evaluate('''node => {
                                 let scrollNode = node.querySelector('#messageViewContainer .transform-gpu');
                                 if (scrollNode) {
-                                    scrollNode.scrollBy({top: 2800, behavior: 'smooth'});
+                                    scrollNode.scrollBy({top: 800, behavior: 'smooth'});
                                 } else {
-                                    node.scrollTop += 2800;
+                                    node.scrollTop += 800;
                                     if (node.parentElement) {
-                                        node.parentElement.scrollTop += 2800;
+                                        node.parentElement.scrollTop += 800;
                                     }
                                     let children = node.querySelectorAll('*');
                                     for (let child of children) {
                                         if (child.scrollHeight > child.clientHeight && window.getComputedStyle(child).overflowY !== 'hidden') {
-                                            child.scrollTop += 2800;
+                                            child.scrollTop += 800;
                                         }
                                     }
                                 }
@@ -570,7 +570,7 @@ async def open_zalo_group_omt_tbp(groupname:str="OMT-TBP"):
         return None
 
 
-latest_zalo_group_msg_list_check_duplicate=[]
+latest_zalo_group_msg_list_check_duplicate={}
 
 max_zalo_message_memory=1000
 
@@ -585,9 +585,12 @@ async def zalo_all_message_last_30_msg_in_db_to_check_duplicate(groupname="OMT-T
     for dbdata in all_messages:
         json_msg=dbdata["json"]
         # await zalo_group_msg_ActionBlockQueue.put({"groupname": json_msg['groupname'], "message": json_msg['message']})
+        if json_msg['groupname'] not in latest_zalo_group_msg_list_check_duplicate:
+            latest_zalo_group_msg_list_check_duplicate[json_msg['groupname']]=[]
 
         batch_text_str = f"{json_msg['groupname']}: " + " | ".join([json_msg['message']])
-        latest_zalo_group_msg_list_check_duplicate.append(batch_text_str)
+
+        latest_zalo_group_msg_list_check_duplicate[json_msg['groupname']].append(batch_text_str)
     
 
 
@@ -619,7 +622,7 @@ async def process_1_zalo_msg_in_group_into_telegram(txt):
         # Chuyển batch thành chuỗi duy nhất để so khớp
         batch_text_str = f"{group_name}: " + " | ".join(all_messages)
 
-        if batch_text_str in latest_zalo_group_msg_list_check_duplicate:
+        if batch_text_str in latest_zalo_group_msg_list_check_duplicate[group_name]:
             print(f"Bỏ qua batch trùng lặp ({len(batch)} items) từ {group_name}")
         else:
             # Lưu vào db
@@ -634,28 +637,25 @@ async def process_1_zalo_msg_in_group_into_telegram(txt):
                 # print("inserted ----->", msg)
 
             # Lưu vào lịch sử trùng lặp
-            latest_zalo_group_msg_list_check_duplicate.append(batch_text_str)
-            if len(latest_zalo_group_msg_list_check_duplicate) > max_zalo_message_memory:
-                latest_zalo_group_msg_list_check_duplicate.pop(0)
+            latest_zalo_group_msg_list_check_duplicate[group_name].append(batch_text_str)
+            if len(latest_zalo_group_msg_list_check_duplicate[group_name]) > max_zalo_message_memory:
+                latest_zalo_group_msg_list_check_duplicate[group_name].pop(0)
         
     except Exception as e:
         print(f"Lỗi trong process_1_zalo_msg_in_group_into_telegram: {e}")
 
 
 
-async def loop_enqueue_processed_zalo_group_msg(groupname="OMT-TBP"):
+async def process_1_zalo_group_msg(groupname="OMT-TBP"):
     global max_zalo_message_memory
-    while not isStop:
-        all_texts = await open_zalo_group_omt_tbp(groupname)
-        if all_texts:
-            if len(all_texts) > max_zalo_message_memory:
-                max_zalo_message_memory=len(all_texts)
-                print("max_zalo_message_memory", max_zalo_message_memory)
-            for msg in all_texts:
-                await process_1_zalo_msg_in_group_into_telegram({"groupname": groupname, "message": msg})
+    all_texts = await open_zalo_group_omt_tbp(groupname)
+    if all_texts:
+        if len(all_texts) > max_zalo_message_memory:
+            max_zalo_message_memory=len(all_texts)
+            print("max_zalo_message_memory", max_zalo_message_memory)
+        for msg in all_texts:
+            await process_1_zalo_msg_in_group_into_telegram({"groupname": groupname, "message": msg})
 
-        await asyncio.sleep(30)
-    pass
 
 
 async def loop():
@@ -677,13 +677,23 @@ async def loop():
 
     print("Browser initialized and tasks queued. Starting scraping loops...")
 
-    zalo_group_name="OMT-TBP"
+    list_group_name=["OMT-TBP", "PHỤ HUYNH LỚP4A4","LỚP 2A4 (25-26)"]
 
-    await zalo_all_message_last_30_msg_in_db_to_check_duplicate(zalo_group_name)
+    async def run_all_group():           
+        while not isStop:
+            for zalo_group_name in list_group_name:
+
+                await zalo_all_message_last_30_msg_in_db_to_check_duplicate(zalo_group_name)
+                await process_1_zalo_group_msg(zalo_group_name)
+
+                await asyncio.sleep(1)
+            
+            await asyncio.sleep(1)
     
+
     await asyncio.gather(
         browser_task,
-        loop_enqueue_processed_zalo_group_msg(zalo_group_name)
+        run_all_group()
     )
 
 if __name__ == "__main__":

@@ -1,8 +1,8 @@
 
 # Biến PC của bạn thành 1 AI chat bot assistant ( PC A.I Agentic framework)
 
-- Chạy hoàn toàn private PC của bạn, không cần server, không cần domain, không cần database server, bảo mật, an toàn dữ liệu
-
+- Chạy hoàn toàn tự động tại private PC của bạn, không cần server, không cần domain, không cần database server, bảo mật, an toàn dữ liệu
+- Hoạt động 24/24 
 - Thực hiện lệnh từ xa thông qua chát chít (UI telegram chat) ( command line exec với ngôn ngữ tự nhiên bạn không cần biết tới lệnh chạy thật, an toàn đảm bảo)
 - Tổng hợp tin nhắn từ các group chat . VD như 1 con bot hóng tin và summary cho bạn
 - Jira : Hỗ trợ các nhóm cskh tạo tự động các issues và báo cáo tiến độ cho issues 
@@ -139,7 +139,7 @@ All above run
             TELEGRAM_API_HASH="" 
 
 
-# pyautogui
+# pyautogui, playwright
 
 Dùng để lấy thông tin trên màn hình = OCR 
 
