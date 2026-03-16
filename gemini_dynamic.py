@@ -100,7 +100,7 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
         - [Recent Messages]: Các tin nhắn gần đây.
         - [Current Message]: Tin nhắn hiện tại của người dùng.
         - [URLs]: Các đường dẫn liên quan (nếu có).
-        - Các file được gửi kèm (nếu có).
+        - [Files]: Các path file được gửi kèm (nếu có).
 
     """
     system_instruction=first_base+system_instruction

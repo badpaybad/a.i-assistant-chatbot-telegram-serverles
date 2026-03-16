@@ -131,7 +131,7 @@ Bạn sẽ được cung cấp:
 - [Recent Messages]: Các tin nhắn gần nhất trong phiên chat hiện tại.
 - [Current Message]: Tin nhắn mới nhất của người dùng cần xử lý.
 - [URLs]: Các đường dẫn liên quan (nếu có).
-- Các file được gửi kèm (nếu có).
+- [Files]: Các path file được gửi kèm (nếu có).
 
 # DECISION LOGIC
 {decision_logic}
