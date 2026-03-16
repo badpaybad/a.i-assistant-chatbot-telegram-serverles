@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Toán Lớp 4 - Bài 62: Câu 3 Luyện tập</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>Bài 62: Câu 3 - Luyện tập</h1>
+            <p class="instruction">Hãy giúp Rô-bốt trả lời câu hỏi của bài toán nhé!</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Đề bài -->
+            <div class="problem-statement">
+                <div class="text-content">
+                    <p><strong>Đề bài cụ thể:</strong> Rô-bốt còn <span class="fraction inline"><span class="num">7</span><span class="den">12</span></span> chai nước giặt. Rô-bốt quyết định sử dụng <span class="fraction inline"><span class="num">1</span><span class="den">3</span></span> chai nước giặt để giặt chăn, rồi dùng thêm <span class="fraction inline"><span class="num">1</span><span class="den">6</span></span> chai nước giặt để giặt quần áo. Hỏi khi ấy chai nước giặt còn lại mấy phần?</p>
+                </div>
+                <!-- <img src="../../bai62cau3luyentap.png" alt="Minh họa bài toán" class="problem-image"> -->
+            </div>
+
+            <!-- Bước 1 -->
+            <div class="test-row">
+                <div class="label step-label">Bước 1:</div>
+                <div class="step-desc">Số nước giặt Rô-bốt đã dùng tất cả là:</div>
+                <div class="flow">
+                    <div class="data-fraction"><span class="num">1</span><span class="den">3</span></div>
+                    <div class="op">+</div>
+                    <div class="data-fraction"><span class="num">1</span><span class="den">6</span></div>
+                    <div class="op">=</div>
+                    
+                    <div class="shape-wrap interactive" id="wrap-step1">
+                        <svg viewBox="0 0 100 100">
+                            <rect class="svg-shape bg-white" x="5" y="5" width="90" height="90" rx="15"/>
+                        </svg>
+                        <div class="input-fraction">
+                            <input type="number" id="s1-num" placeholder="?">
+                            <hr>
+                            <input type="number" id="s1-den" placeholder="?">
+                        </div>
+                    </div>
+                    <div class="unit">(chai)</div>
+                </div>
+            </div>
+
+            <!-- Bước 2 -->
+            <div class="test-row step2-row">
+                <div class="label step-label">Bước 2:</div>
+                <div class="step-desc">Chai nước giặt còn lại số phần là:</div>
+                <div class="flow">
+                    <div class="data-fraction"><span class="num">7</span><span class="den">12</span></div>
+                    <div class="op">-</div>
+                    
+                    <div class="shape-wrap interactive" id="wrap-step2-input">
+                        <svg viewBox="0 0 100 100">
+                            <polygon class="svg-shape bg-white" points="50,5 95,50 50,95 5,50"/>
+                        </svg>
+                        <div class="input-fraction">
+                            <input type="number" id="s2-in-num" placeholder="?">
+                            <hr>
+                            <input type="number" id="s2-in-den" placeholder="?">
+                        </div>
+                    </div>
+                    
+                    <div class="op">=</div>
+                    
+                    <div class="shape-wrap interactive" id="wrap-step2-res">
+                        <svg viewBox="0 0 100 100">
+                            <circle class="svg-shape bg-white" cx="50" cy="50" r="45"/>
+                        </svg>
+                        <div class="input-fraction">
+                            <input type="number" id="s2-res-num" placeholder="?">
+                            <hr>
+                            <input type="number" id="s2-res-den" placeholder="?">
+                        </div>
+                    </div>
+                    <div class="unit">(chai)</div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="btn-check" id="btn-check">Kiểm tra kết quả 🔍</button>
+            </div>
+            
+            <div class="feedback-box" id="feedback-box">
+                <div class="icon">💡</div>
+                <div class="feedback-content">
+                    <h3>Gợi ý cho em:</h3>
+                    <p id="feedback-text">...</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Modal chiến thắng -->
+    <div class="modal-overlay" id="success-modal">
+        <div class="modal-content">
+            <div class="modal-icon">🏆</div>
+            <h2>Tuyệt vời!</h2>
+            <p>Em đã hoàn thành xuất sắc giải bài toán đố về phân số!</p>
+            <div class="final-answer">
+                <p>Đáp số của bài toán là: <strong><span class="fraction inline"><span class="num">1</span><span class="den">12</span></span> chai nước giặt</strong></p>
+            </div>
+            <button class="btn-close" onclick="closeModal()">Đóng</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
