@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giải Ô Chữ Bằng Phân Số - Toán Lớp 4</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- SweetAlert2 for beautiful alerts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+</head>
+<body>
+    <div class="game-container">
+        <header>
+            <h1>🌟 BÉ CHINH PHỤC TOÁN PHÂN SỐ 🌟</h1>
+            <p class="instruction">Hãy giải các phép tính trên thẻ chữ cái rồi <strong>kéo và thả</strong> vào đúng ô trống tương ứng với kết quả để giải ô chữ nhé!</p>
+        </header>
+
+        <div class="game-area">
+            <!-- Board: Target drop zones -->
+            <div class="board" id="board">
+                <!-- Group 1: 2 letters -->
+                <div class="word-group">
+                    <div class="drop-zone-container">
+                        <div class="fraction">
+                            <span class="numerator">11</span>
+                            <span class="fraction-line"></span>
+                            <span class="denominator">6</span>
+                        </div>
+                        <div class="drop-zone" data-target="11/6">?</div>
+                    </div>
+                    <div class="drop-zone-container">
+                        <div class="fraction">
+                            <span class="numerator">12</span>
+                            <span class="fraction-line"></span>
+                            <span class="denominator">11</span>
+                        </div>
+                        <div class="drop-zone" data-target="12/11">?</div>
+                    </div>
+                </div>
+
+                <div class="spacer"></div>
+
+                <!-- Group 2: 3 letters -->
+                <div class="word-group">
+                    <div class="drop-zone-container">
+                        <div class="fraction">
+                            <span class="numerator">15</span>
+                            <span class="fraction-line"></span>
+                            <span class="denominator">6</span>
+                        </div>
+                        <div class="drop-zone" data-target="15/6">?</div>
+                    </div>
+                    <div class="drop-zone-container">
+                        <div class="fraction">
+                            <span class="numerator">6</span>
+                            <span class="fraction-line"></span>
+                            <span class="denominator">11</span>
+                        </div>
+                        <div class="drop-zone" data-target="6/11">?</div>
+                    </div>
+                    <div class="drop-zone-container">
+                        <div class="fraction">
+                            <span class="numerator">17</span>
+                            <span class="fraction-line"></span>
+                            <span class="denominator">11</span>
+                        </div>
+                        <div class="drop-zone" data-target="17/11">?</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Letters: Draggable options -->
+            <div class="letters-pool" id="letters-pool">
+                <!-- Draggable items will be populated by JS to randomize them -->
+            </div>
+        </div>
+        
+        <div class="controls-area">
+            <button id="guide-btn" class="guide-btn">📖 Sổ Tay Hướng Dẫn</button>
+            <button id="reset-btn" class="reset-btn" style="display: none;">Chơi Lại Nào!</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
