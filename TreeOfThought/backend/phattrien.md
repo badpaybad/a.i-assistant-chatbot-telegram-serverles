@@ -63,4 +63,12 @@ Dự án được chia thành các module độc lập:
     - Hiển thị báo cáo tracking và thống kê sau khi kết thúc.
 
 ---
-**Trạng thái**: Đã hoàn thành triển khai theo đúng thiết kế và yêu cầu.
+**Trạng thái**: Đã hoàn thành triển khai và hoàn thiện tất cả các thành phần theo yêu cầu.
+
+### Cập nhật mới:
+- **Firebase Firestore Notification**: Triển khai cơ chế Publish/Delete dữ liệu thông báo qua Firestore path, hỗ trợ Frontend lắng nghe thời gian thực.
+- **Firebase Storage Signed URL**: Hoàn thiện logic tạo URL có thời hạn sử dụng `UrlSigner`.
+- **Firebase Test Project**: Tạo mới project `Core.Infra.FirebaseTest` với đầy đủ các bài test tích hợp.
+- **SqlGenerator**: Tinh chỉnh để hỗ trợ sinh SQL tạo bảng riêng lẻ linh hoạt hơn.
+
+**Lưu ý**: Các bài test tích hợp (Data, Redis, Firebase) yêu cầu môi trường thực tế (Database, Redis, Firebase Project) được cấu hình đúng. Hiện tại mã nguồn đã được xác nhận gọi đúng API và logic xử lý.

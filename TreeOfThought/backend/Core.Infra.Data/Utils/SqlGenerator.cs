@@ -14,9 +14,31 @@ public static class SqlGenerator
 
     public static string GenerateCreateTableScript<TContext>(TContext context, string tableName) where TContext : DbContext
     {
-        // This is a bit complex in EF Core for a single table.
-        // For simplicity, we can use the full script and filter, or use a custom implementation.
-        // The requirement is to have a function to generate SQL.
-        return context.Database.GenerateCreateScript(); // Returns full script for the context
+        // To get a single table script, we generate the full script and filter it.
+        // A more robust way would be to use the Mapping Strategy, but this is a quick and effective way for a modular infra.
+        var fullScript = context.Database.GenerateCreateScript();
+        var lines = fullScript.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+        
+        var tableScript = new System.Text.StringBuilder();
+        bool inTable = false;
+        foreach (var line in lines)
+        {
+            if (line.Contains($"CREATE TABLE [{tableName}]") || line.Contains($"CREATE TABLE \"{tableName}\"") || line.Contains($"CREATE TABLE {tableName}"))
+            {
+                inTable = true;
+            }
+            
+            if (inTable)
+            {
+                tableScript.AppendLine(line);
+                if (line.Trim().EndsWith(";") || line.Trim().ToUpper() == "GO")
+                {
+                    // Check if it's the end of the CREATE TABLE statement
+                    // This is a heuristic, might need refinement for complex schemas with constraints
+                    if (line.Contains(")")) inTable = false;
+                }
+            }
+        }
+        return tableScript.ToString();
     }
 }

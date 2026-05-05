@@ -90,3 +90,4 @@ gemma4/model/
 **/appsettings.json
 **/bin
 **/obj
+**/realtimedbtest-d8c6b-firebase-frontend.json

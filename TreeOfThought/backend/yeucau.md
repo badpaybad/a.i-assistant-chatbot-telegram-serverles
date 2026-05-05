@@ -63,12 +63,13 @@ Các yêu cầu:
             - Google firebase
                 - Cho phép khởi tạo nhiều firebase thông qua json file
                 - Tạo custom token để FE có thể login vào firebase 
-                - Firestore
+                - Firestore dùng để phục vụ FE khi người dùng đang ở 1 màn hình, thực hiện action có request id gửi lên. BE nhânj được dữ liệu khi xử lý nghiệp vụ thành công sẽ bắn trả noti lên, coi request id là topic address path 
                     - Subscribe address path
                     - Publish to address path
                     - Delete address path
                 - FCM 
                     - Push notification theo token device id
+                    - Get token device id theo custom token 
                 - Google cloud storage
                     - Upload file
                         - Cho phép có url để share cho người nhận được link vĩnh viễn
@@ -90,4 +91,5 @@ Các yêu cầu:
                 - test việc khai báo entity, khai báo dbset cho : monogodb,mysql,postgresql, mssql
                 - test các bulk update,insert, delete, partial update
                 - viết các test query select by id, tìm kiếm fulltext search có paging, tìm kiếm theo property có paging và order by property
-            
+            - Tạo prj để test google firebase
+                có thể dùng file json admin sdk **chú ý không copy dùng thẳng đường dẫn file** /work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json

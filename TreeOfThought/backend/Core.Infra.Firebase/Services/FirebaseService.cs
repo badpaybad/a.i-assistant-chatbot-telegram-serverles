@@ -10,9 +10,10 @@ namespace Core.Infra.Firebase.Services;
 
 public class FirebaseService
 {
-    private readonly Dictionary<string, FirebaseApp> _apps = new();
-    private readonly Dictionary<string, FirestoreDb> _firestoreDbs = new();
-    private readonly Dictionary<string, StorageClient> _storageClients = new();
+    private static readonly Dictionary<string, FirebaseApp> _apps = new();
+    private static readonly Dictionary<string, FirestoreDb> _firestoreDbs = new();
+    private static readonly Dictionary<string, StorageClient> _storageClients = new();
+    private static readonly Dictionary<string, string> _jsonFilePaths = new();
     private readonly ILogger<FirebaseService> _logger;
 
     public FirebaseService(ILogger<FirebaseService> logger)
@@ -20,24 +21,46 @@ public class FirebaseService
         _logger = logger;
     }
 
+    private static readonly object _lock = new();
+
     public void InitializeApp(string name, string jsonFilePath, string? projectId = null)
     {
-        var credential = GoogleCredential.FromFile(jsonFilePath);
-        var app = FirebaseApp.Create(new AppOptions
+        lock (_lock)
         {
-            Credential = credential
-        }, name);
-        _apps[name] = app;
+            if (_apps.ContainsKey(name)) return;
 
-        if (!string.IsNullOrEmpty(projectId))
-        {
-            _firestoreDbs[name] = new FirestoreDbBuilder
+            try
             {
-                ProjectId = projectId,
-                Credential = credential
-            }.Build();
+                var credential = GoogleCredential.FromFile(jsonFilePath);
+                FirebaseApp app;
+                try
+                {
+                    app = FirebaseApp.Create(new AppOptions { Credential = credential }, name);
+                }
+                catch (ArgumentException)
+                {
+                    app = FirebaseApp.GetInstance(name);
+                }
 
-            _storageClients[name] = StorageClient.Create(credential);
+                _apps[name] = app;
+                _jsonFilePaths[name] = jsonFilePath;
+
+                if (!string.IsNullOrEmpty(projectId))
+                {
+                    _firestoreDbs[name] = new FirestoreDbBuilder
+                    {
+                        ProjectId = projectId,
+                        Credential = credential
+                    }.Build();
+
+                    _storageClients[name] = StorageClient.Create(credential);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error initializing Firebase app {Name}", name);
+                throw;
+            }
         }
     }
 
@@ -67,19 +90,39 @@ public class FirebaseService
     // Firestore
     public FirestoreDb GetFirestore(string appName) => _firestoreDbs[appName];
 
+    public async Task PublishToAddressPathAsync(string appName, string path, object data)
+    {
+        var db = GetFirestore(appName);
+        // Path format: collection/docId or collection/docId/subcollection/docId
+        var docRef = db.Document(path);
+        await docRef.SetAsync(data, SetOptions.MergeAll);
+    }
+
+    public async Task DeleteAddressPathAsync(string appName, string path)
+    {
+        var db = GetFirestore(appName);
+        var docRef = db.Document(path);
+        await docRef.DeleteAsync();
+    }
+
     // Storage
     public async Task<string> UploadFileAsync(string appName, string bucketName, string objectName, Stream content, string contentType)
     {
         var client = _storageClients[appName];
         var obj = await client.UploadObjectAsync(bucketName, objectName, contentType, content);
-        return obj.MediaLink;
+        return $"https://storage.googleapis.com/{bucketName}/{objectName}";
     }
 
     public string GetSignedUrl(string appName, string bucketName, string objectName, TimeSpan duration)
     {
-        // Note: Signed URLs usually require a service account key with specific permissions
-        var urlSigner = UrlSigner.FromServiceAccountPath(_apps[appName].Options.Credential.ToString()); // This is a simplification
-        return "https://storage.googleapis.com/" + bucketName + "/" + objectName; // Placeholder for actual signer logic
+        var jsonPath = _jsonFilePaths[appName];
+        var urlSigner = UrlSigner.FromServiceAccountPath(jsonPath);
+        return urlSigner.Sign(bucketName, objectName, duration, HttpMethod.Get);
+    }
+
+    public string GetPublicUrl(string bucketName, string objectName)
+    {
+        return $"https://storage.googleapis.com/{bucketName}/{objectName}";
     }
 
     public async Task<byte[]> ReadFileAsync(string appName, string bucketName, string objectName)

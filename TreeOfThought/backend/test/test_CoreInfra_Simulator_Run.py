@@ -10,7 +10,8 @@ def run_simulator():
         # Note: In a real CI, we might need a non-interactive mode.
         # Here we just run it and terminate after some time if it doesn't end.
         process = subprocess.Popen(
-            ["dotnet", "run", "--project", "test/Core.Infra.ConsoleTest/Core.Infra.ConsoleTest.csproj"],
+            ["dotnet", "run"],
+            cwd="test/Core.Infra.ConsoleTest",
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True
