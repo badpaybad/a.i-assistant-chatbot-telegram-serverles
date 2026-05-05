@@ -17,13 +17,14 @@ public class FirebaseServiceTests
         var config = ConfigurationHelper.LoadConfiguration();
         var jsonPath = config["Firebase:JsonFilePath"] ?? "../../realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json";
         var projectId = config["Firebase:ProjectId"] ?? "realtimedbtest-d8c6b";
+        var databaseId = config["Firebase:DatabaseId"] ?? "(default)";
         _testBucket = config["Firebase:TestBucket"] ?? "realtimedbtest-d8c6b.appspot.com";
 
         using var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
         var logger = loggerFactory.CreateLogger<FirebaseService>();
         _firebaseService = new FirebaseService(logger);
         
-        _firebaseService.InitializeApp(_appName, jsonPath, projectId);
+        _firebaseService.InitializeApp(_appName, jsonPath, projectId, databaseId);
     }
 
     [Fact]

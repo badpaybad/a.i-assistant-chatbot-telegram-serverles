@@ -5,6 +5,7 @@ using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Logging;
+using System.Text.Json;
 
 namespace Core.Infra.Firebase.Services;
 
@@ -23,7 +24,7 @@ public class FirebaseService
 
     private static readonly object _lock = new();
 
-    public void InitializeApp(string name, string jsonFilePath, string? projectId = null)
+    public void InitializeApp(string name, string jsonFilePath, string? projectId = null, string? databaseId = null)
     {
         lock (_lock)
         {
@@ -50,7 +51,8 @@ public class FirebaseService
                     _firestoreDbs[name] = new FirestoreDbBuilder
                     {
                         ProjectId = projectId,
-                        Credential = credential
+                        Credential = credential,
+                        DatabaseId = databaseId ?? "(default)"
                     }.Build();
 
                     _storageClients[name] = StorageClient.Create(credential);
@@ -93,9 +95,50 @@ public class FirebaseService
     public async Task PublishToAddressPathAsync(string appName, string path, object data)
     {
         var db = GetFirestore(appName);
+        
+        // Convert JsonElement to Dictionary/List if needed for Firestore serialization
+        if (data is JsonElement element)
+        {
+            data = ConvertToFirestoreData(element) ?? new Dictionary<string, object?>();
+        }
+
         // Path format: collection/docId or collection/docId/subcollection/docId
         var docRef = db.Document(path);
         await docRef.SetAsync(data, SetOptions.MergeAll);
+    }
+
+    private object? ConvertToFirestoreData(JsonElement element)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Object:
+                var dict = new Dictionary<string, object?>();
+                foreach (var prop in element.EnumerateObject())
+                {
+                    dict[prop.Name] = ConvertToFirestoreData(prop.Value);
+                }
+                return dict;
+            case JsonValueKind.Array:
+                var list = new List<object?>();
+                foreach (var item in element.EnumerateArray())
+                {
+                    list.Add(ConvertToFirestoreData(item));
+                }
+                return list;
+            case JsonValueKind.String:
+                return element.GetString();
+            case JsonValueKind.Number:
+                if (element.TryGetInt64(out long l)) return l;
+                return element.GetDouble();
+            case JsonValueKind.True:
+                return true;
+            case JsonValueKind.False:
+                return false;
+            case JsonValueKind.Null:
+                return null;
+            default:
+                return element.GetRawText();
+        }
     }
 
     public async Task DeleteAddressPathAsync(string appName, string path)

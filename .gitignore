@@ -92,3 +92,4 @@ gemma4/model/
 **/obj/**
 **/realtimedbtest-d8c6b-firebase-frontend.json
 **/db_test/**
+**/firebase-adminsdk.json

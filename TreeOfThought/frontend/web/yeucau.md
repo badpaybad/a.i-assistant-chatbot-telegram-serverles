@@ -51,9 +51,27 @@ Các yêu cầu:
 
 Các lệnh cần để build và chạy FE app này
     cần chạy https và port 4200 để test được google firebase
-    ```bash
-    npm install
-    npm run dev
-    npm run build
-    npx serve -s dist -l 80
-    ```
+        
+                ```bash
+                npm install
+                npm run dev
+                npm run build
+                npx serve -s dist -l 80
+                ```
+
+        cần vào google console firestore để set quyền đọc ghi cho user 
+
+                    rules_version = '2';
+                    service cloud.firestore {
+                    match /databases/{database}/documents {
+                        // Cho phép mọi người (đã login hoặc chưa) đọc/ghi vào bảng kết quả lệnh để test
+                        match /commandresults/{document=**} {
+                        allow read, write: if true;
+                        }
+                        
+                        // Các phần khác yêu cầu phải đăng nhập (token bạn đã gửi từ BE)
+                        match /{document=**} {
+                        allow read, write: if request.auth != null;
+                        }
+                    }
+                    }

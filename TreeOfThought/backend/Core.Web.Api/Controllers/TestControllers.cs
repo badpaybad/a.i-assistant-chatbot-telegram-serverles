@@ -3,6 +3,7 @@ using Core.Infra.Firebase.Services;
 using Core.Web.Api.Attributes;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Core.Web.Api.Controllers;
 
@@ -53,17 +54,17 @@ public class CqrsTestController : ControllerBase
     }
 
     [HttpPost("sample-command")]
-    public async Task<IActionResult> EnqueueSampleCommand([FromBody] string payload)
+    public async Task<IActionResult> EnqueueSampleCommand([FromBody] JsonElement payload)
     {
-        var command = new SampleCommand { Payload = payload };
+        var command = new SampleCommand { Payload = payload.GetRawText() };
         await _dispatcher.SendAsync(command);
         return Ok(new { message = "Sample command enqueued", trackingId = command.TrackingId });
     }
 
     [HttpPost("sample-event")]
-    public async Task<IActionResult> PublishSampleEvent([FromBody] string data)
+    public async Task<IActionResult> PublishSampleEvent([FromBody] JsonElement data)
     {
-        var @event = new SampleEvent { Data = data };
+        var @event = new SampleEvent { Data = data.GetRawText() };
         await _dispatcher.PublishAsync(@event);
         return Ok(new { message = "Sample event published", trackingId = @event.TrackingId });
     }

@@ -124,7 +124,7 @@ app.MapControllers();
 var firebase = app.Services.GetRequiredService<FirebaseService>();
 var jsonPath = config["Firebase:JsonFilePath"]!;
 if (!Path.IsPathRooted(jsonPath)) jsonPath = Path.Combine(app.Environment.ContentRootPath, jsonPath);
-firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"]);
+firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"], config["Firebase:DatabaseId"]);
 
 var dispatcher = app.Services.GetRequiredService<IDispatcher>();
 // Register handlers

@@ -93,7 +93,7 @@ Các yêu cầu:
                 - test các bulk update,insert, delete, partial update
                 - viết các test query select by id, tìm kiếm fulltext search có paging, tìm kiếm theo property có paging và order by property
             - Tạo prj để test google firebase
-                có thể dùng file json admin sdk **chú ý không copy dùng thẳng đường dẫn file** /work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json
+                có thể dùng file json admin sdk TreeOfThought/backend/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json có thể copy file này vào root web ứng dụng
 
         - Tạo prj web ứng dụng BE dùng asp.net core restful api đạt các yêu cầu :
             - Có swagger để xem các đầu api, cho phép tắt bật ở appsettings.json
