@@ -189,4 +189,9 @@ public class CqrsDispatcher : IDispatcher
     {
         return _workers.ToDictionary(k => k.Key, v => v.Value.IsRunning ? "Running" : "Stopped");
     }
+
+    public async Task<Dictionary<string, long>> GetStatisticsAsync()
+    {
+        return await _tracker.GetStatsAsync();
+    }
 }

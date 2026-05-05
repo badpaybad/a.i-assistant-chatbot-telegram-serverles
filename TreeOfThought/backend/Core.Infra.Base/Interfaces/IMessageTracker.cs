@@ -6,4 +6,5 @@ public interface IMessageTracker
     Task<List<string>> GetTrackingHistoryAsync(Guid trackingId);
     Task IncrementStatAsync(string statKey);
     Task<long> GetStatAsync(string statKey);
+    Task<Dictionary<string, long>> GetStatsAsync();
 }

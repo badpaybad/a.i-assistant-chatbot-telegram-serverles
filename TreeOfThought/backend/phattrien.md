@@ -62,13 +62,17 @@ Dự án được chia thành các module độc lập:
     - Kiểm tra khả năng phục hồi khi dừng và khởi động lại worker.
     - Hiển thị báo cáo tracking và thống kê sau khi kết thúc.
 
----
-**Trạng thái**: Đã hoàn thành triển khai và hoàn thiện tất cả các thành phần theo yêu cầu.
+- **Core.Web.Api**: Dự án Web API chính thức đã được triển khai với:
+    - Auth JWT & Firebase Custom Token.
+    - Mock User Data (Memory) hỗ trợ Signup/Login/SSO.
+    - Swagger UI tích hợp Bearer Auth.
+    - Cấu hình Port linh hoạt qua `appsettings.json`.
+    - Các Controller kiểm thử hạ tầng Firebase và CQRS.
+    - Đăng ký Handlers dưới dạng Singleton.
+    - **CORS & Security**: 
+        - Cấu hình CORS cho phép tất cả các origin với Credentials.
+        - Cấu hình `Content-Security-Policy` và `Permissions-Policy` cho phép nhúng iframe và sử dụng Camera/Microphone/Geolocation.
+    - **API 'me'**: Bổ sung endpoint `GET /api/auth/me` để lấy thông tin người dùng hiện tại, áp dụng `AppAuthorizeAttribute`.
+    - **JWT Validation**: Điều chỉnh giảm bớt các ràng buộc kiểm tra JWT (Issuer, Audience, SigningKey) theo cấu hình thực tế yêu cầu.
 
-### Cập nhật mới:
-- **Firebase Firestore Notification**: Triển khai cơ chế Publish/Delete dữ liệu thông báo qua Firestore path, hỗ trợ Frontend lắng nghe thời gian thực.
-- **Firebase Storage Signed URL**: Hoàn thiện logic tạo URL có thời hạn sử dụng `UrlSigner`.
-- **Firebase Test Project**: Tạo mới project `Core.Infra.FirebaseTest` với đầy đủ các bài test tích hợp.
-- **SqlGenerator**: Tinh chỉnh để hỗ trợ sinh SQL tạo bảng riêng lẻ linh hoạt hơn.
-
-**Lưu ý**: Các bài test tích hợp (Data, Redis, Firebase) yêu cầu môi trường thực tế (Database, Redis, Firebase Project) được cấu hình đúng. Hiện tại mã nguồn đã được xác nhận gọi đúng API và logic xử lý.
+**Lưu ý**: Các bài test tích hợp yêu cầu môi trường thực tế. Dự án Web API có thể chạy ngay để kiểm tra các luồng Auth và mock.

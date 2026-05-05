@@ -36,4 +36,10 @@ public class MessageTracker : IMessageTracker
         var value = await _db.HashGetAsync("infra:stats", statKey);
         return value.HasValue ? (long)value : 0;
     }
+
+    public async Task<Dictionary<string, long>> GetStatsAsync()
+    {
+        var entries = await _db.HashGetAllAsync("infra:stats");
+        return entries.ToDictionary(e => e.Name.ToString(), e => (long)e.Value);
+    }
 }

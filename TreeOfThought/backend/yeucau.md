@@ -60,6 +60,7 @@ Các yêu cầu:
                 - Xử lý về network timeout, crash có thể chạy lại và không mất data trên queue và có thể chạy khi khởi động lại
                 - Cần thống kê về số lượng command, event, queue name, topic name, handle type, command type. Có thể vẽ được biểu dồ đi lại của command và event thông qua id , đi từ queue nào sang queue nào, sang topic nào sang topic nào, queue sang topic, topic sang queue 
                 - Cần quản lý được các handle ( command handle, event handle) để cho phép điều khiển start, stop và check được trạng thai hoạt động 
+                - Đăng ký các handle (command, event) đều là singleton
             - Google firebase
                 - Cho phép khởi tạo nhiều firebase thông qua json file
                 - Tạo custom token để FE có thể login vào firebase 
@@ -93,3 +94,29 @@ Các yêu cầu:
                 - viết các test query select by id, tìm kiếm fulltext search có paging, tìm kiếm theo property có paging và order by property
             - Tạo prj để test google firebase
                 có thể dùng file json admin sdk **chú ý không copy dùng thẳng đường dẫn file** /work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json
+
+        - Tạo prj web ứng dụng BE dùng asp.net core restful api đạt các yêu cầu :
+            - Có swagger để xem các đầu api, cho phép tắt bật ở appsettings.json
+            - Chop phép cấu hình port chạy ở appsettings.json với binding address 0.0.0.0
+            - Tạo mock dữ liệu user trên memory (tạo data sẵn ở code mock) để test
+            - auth login với username, password để tạo jwt token key secret ở appsettings.json cho FE, và firebase custom token để FE app firebase login tự động. user có 1 email chính để làm SSO với google, MS, facebook
+            - auth verify token, refresh jwt token
+            - auth có api get user info đang đăng nhập, cần apply auth attribute đã đăng nhập
+            - Middleware auth để làm attribute cho các route (class, function) cần check quyền:
+                - đã đăng nhập ( chỉ cần valid jwt token với key secret ở appsettings.json)
+                - đưa claim vào constructor attribute thì cần check với jwt token ở header và check có claim đó hay không, có nhiều claim để check có 1 trong các claim là được 
+            - Người dùng có thể signup bằng username và password **bắt buộc** cầu nhập tên display name và email address, email address cần phải được verify bằng code gửi về email. Verify bằng việc mở url do BE trả về chứa token verify. Khi verify thành công thì mới login được, email đã được verify thì không cần verify lại khi login với username và password 
+            - Người dùng có thể signup bằng tài khoản google, ms, facebook yêu **bắt buộc** cầu nhập tên display name và email address
+                - Khi SSO với google, ms, facebook thành công sẽ tạo 1 user mới và lưu vào mock data memory nếu chưa có. Nếu có rồi thì login luôn với user có email trùng ( email đã được verify) 
+                - Khi SSO với google, ms, facebook thất bại thì trả về lỗi  
+            - Tạo api controller để test các chức năng của google firebase trong của prj core infra
+            - Tạo api controler để test các chức năng của cqrs core trong của prj core infra
+                - controller enqueue command , publish event
+                - Các class sample handle command và handle event để test ( sử dụng command hay event do controler tạo ra )
+                - cần auth attribute "cqrs-test"
+            - Cho phép cors tất cả các origin , allow nhiều method, allow nhiều header, và cho phép credential, cho phép các web khác được load vào thành iframe allow mic, webcam, ...
+                    
+
+
+
+            

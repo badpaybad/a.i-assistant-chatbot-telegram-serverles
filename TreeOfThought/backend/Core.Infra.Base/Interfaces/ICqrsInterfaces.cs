@@ -25,4 +25,5 @@ public interface IDispatcher
     Task StopWorkerAsync(string workerId);
     Task StartWorkerAsync(string workerId);
     Dictionary<string, string> GetWorkerStatus();
+    Task<Dictionary<string, long>> GetStatisticsAsync();
 }
