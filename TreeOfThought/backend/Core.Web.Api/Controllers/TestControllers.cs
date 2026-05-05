@@ -1,45 +1,10 @@
 using Core.Infra.Base.Interfaces;
-using Core.Infra.Firebase.Services;
 using Core.Web.Api.Attributes;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
 namespace Core.Web.Api.Controllers;
-
-[ApiController]
-[Route("api/[controller]")]
-[AppAuthorize] // Require login for all test endpoints
-public class FirebaseTestController : ControllerBase
-{
-    private readonly FirebaseService _firebase;
-
-    public FirebaseTestController(FirebaseService firebase)
-    {
-        _firebase = firebase;
-    }
-
-    [HttpPost("notify")]
-    public async Task<IActionResult> SendNotification([FromQuery] string path, [FromBody] object data)
-    {
-        await _firebase.PublishToAddressPathAsync("Default", path, data);
-        return Ok(new { message = "Notification sent" });
-    }
-
-    [HttpPost("push")]
-    public async Task<IActionResult> PushNotification([FromQuery] string token, [FromQuery] string title, [FromQuery] string body)
-    {
-        await _firebase.SendNotificationAsync("Default", token, title, body);
-        return Ok(new { message = "Push notification sent" });
-    }
-
-    [HttpGet("signed-url")]
-    public IActionResult GetSignedUrl([FromQuery] string bucket, [FromQuery] string objectName)
-    {
-        var url = _firebase.GetSignedUrl("Default", bucket, objectName, TimeSpan.FromHours(1));
-        return Ok(new { url });
-    }
-}
 
 [ApiController]
 [Route("api/[controller]")]

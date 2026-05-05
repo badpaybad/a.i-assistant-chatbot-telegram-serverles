@@ -9,12 +9,16 @@ import {
   message,
   Tag,
   Space,
+  Upload,
 } from "antd";
 import {
   MobileOutlined,
   SendOutlined,
   CopyOutlined,
   ReloadOutlined,
+  CloudUploadOutlined,
+  FileDoneOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 import { setupFCM } from "../../../utils/firebaseUtils";
 import httpClient from "../../../utils/httpClient";
@@ -25,6 +29,8 @@ const FcmTestPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [token, setToken] = useState<string>("");
   const [tokenLoading, setTokenLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadedUrl, setUploadedUrl] = useState<string>("");
 
   const fetchToken = async () => {
     setTokenLoading(true);
@@ -72,9 +78,30 @@ const FcmTestPage: React.FC = () => {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(token);
-    message.success("Token copied to clipboard!");
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    message.success("Copied to clipboard!");
+  };
+
+  const handleUpload = async (options: any) => {
+    const { file } = options;
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    try {
+      const response = await httpClient.post("/FirebaseTest/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setUploadedUrl(response.data.url);
+      message.success("File uploaded successfully!");
+    } catch (error: any) {
+      message.error(
+        "Upload failed: " + (error.response?.data?.message || error.message),
+      );
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -113,7 +140,7 @@ const FcmTestPage: React.FC = () => {
             />
             <Button
               icon={<CopyOutlined />}
-              onClick={copyToClipboard}
+              onClick={() => copyToClipboard(token)}
               disabled={!token}
             />
           </Input.Group>
@@ -161,6 +188,76 @@ const FcmTestPage: React.FC = () => {
             Send Push via Backend
           </Button>
         </Form>
+      </Card>
+
+      <Card
+        title={
+          <span>
+            <CloudUploadOutlined /> Google Cloud Storage Test
+          </span>
+        }
+        style={{ marginTop: 24 }}
+      >
+        <Space direction="vertical" style={{ width: "100%" }} size="middle">
+          <Paragraph>
+            Upload a file to Google Cloud Storage and get a public URL.
+          </Paragraph>
+
+          <Upload.Dragger
+            name="file"
+            multiple={false}
+            customRequest={handleUpload}
+            showUploadList={false}
+            disabled={uploading}
+          >
+            <p className="ant-upload-drag-icon">
+              <CloudUploadOutlined />
+            </p>
+            <p className="ant-upload-text">
+              Click or drag file to this area to upload
+            </p>
+            <p className="ant-upload-hint">
+              Support for a single upload. The file will be stored in GCS.
+            </p>
+          </Upload.Dragger>
+
+          {uploadedUrl && (
+            <Card
+              size="small"
+              type="inner"
+              title={
+                <span>
+                  <FileDoneOutlined /> Upload Success
+                </span>
+              }
+              style={{ backgroundColor: "#f6ffed", borderColor: "#b7eb8f" }}
+            >
+              <Space direction="vertical" style={{ width: "100%" }}>
+                <Text strong>Public URL:</Text>
+                <Input.Group compact>
+                  <Input
+                    style={{ width: "calc(100% - 80px)" }}
+                    value={uploadedUrl}
+                    readOnly
+                    prefix={<LinkOutlined />}
+                  />
+                  <Button
+                    icon={<CopyOutlined />}
+                    onClick={() => copyToClipboard(uploadedUrl)}
+                  />
+                </Input.Group>
+                <a
+                  href={uploadedUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: "12px" }}
+                >
+                  Open in new tab
+                </a>
+              </Space>
+            </Card>
+          )}
+        </Space>
       </Card>
 
       <div style={{ marginTop: 40 }}>
