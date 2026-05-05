@@ -83,3 +83,5 @@ Các lệnh cần để build và chạy FE app này
 
 **bug 1**
 sso MS openid connect chưa hoạt động
+**bug 2**
+sso Facebook openid connect chưa hoạt động

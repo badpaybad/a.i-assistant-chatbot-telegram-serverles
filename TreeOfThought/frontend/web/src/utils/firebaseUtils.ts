@@ -94,11 +94,14 @@ export const onMessageReceived = (callback: (payload: any) => void) => {
 
 export const signInWithGoogle = () => {
   const provider = new GoogleAuthProvider();
+  provider.addScope('email');
   return signInWithPopup(auth, provider);
 };
 
 export const signInWithFacebook = () => {
   const provider = new FacebookAuthProvider();
+  provider.addScope('email');
+  provider.addScope('public_profile');
   return signInWithPopup(auth, provider);
 };
 
