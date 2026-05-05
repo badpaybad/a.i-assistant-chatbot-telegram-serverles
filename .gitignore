@@ -86,3 +86,7 @@ skills/browser/playwright_metadata.pkl
 games/toanlop4/config.md
 **/client_secret_*.json
 gemma4/model/
+**/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json
+**/appsettings.json
+**/bin
+**/obj
