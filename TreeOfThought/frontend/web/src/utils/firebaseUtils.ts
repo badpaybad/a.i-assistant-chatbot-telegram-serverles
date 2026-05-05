@@ -56,7 +56,20 @@ export const setupFCM = async () => {
   try {
     const permission = await Notification.requestPermission();
     if (permission === 'granted') {
-      const token = await getToken(messaging, { vapidKey: firebaseConfig.vapidKey });
+      console.log("Notification permission granted. Registering Service Worker...");
+      
+      // Explicitly register the service worker to handle SSL issues and custom scopes better
+      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+        scope: '/'
+      });
+      
+      console.log("Service Worker registered with scope:", registration.scope);
+
+      const token = await getToken(messaging, { 
+        vapidKey: firebaseConfig.vapidKey,
+        serviceWorkerRegistration: registration
+      });
+      
       console.log("FCM Token:", token);
       return token;
     } else {
@@ -64,6 +77,9 @@ export const setupFCM = async () => {
     }
   } catch (error) {
     console.error("Error setting up FCM:", error);
+    if (error instanceof Error && error.message.includes("ServiceWorker")) {
+      console.error("Service Worker registration failed. Please ensure you are accessing the app via http://localhost:4200 and that the service worker file exists.");
+    }
   }
   return null;
 };

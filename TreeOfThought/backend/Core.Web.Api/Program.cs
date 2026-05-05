@@ -94,7 +94,7 @@ var app = builder.Build();
 
 // --- 7. Configure Pipeline ---
 app.UseCors("AllowAll");
-app.UseHttpsRedirection();
+// app.UseHttpsRedirection();
 
 // Custom Middleware for Security Headers (Iframe, Camera, Microphone)
 app.Use(async (context, next) =>
@@ -102,10 +102,10 @@ app.Use(async (context, next) =>
     // Allow iframe loading from any origin
     context.Response.Headers.Remove("X-Frame-Options");
     context.Response.Headers.Append("Content-Security-Policy", "frame-ancestors *;");
-    
+
     // Allow camera and microphone
     context.Response.Headers.Append("Permissions-Policy", "camera=*, microphone=*, geolocation=*");
-    
+
     await next();
 });
 

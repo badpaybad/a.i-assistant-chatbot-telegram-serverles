@@ -32,7 +32,8 @@ Các yêu cầu:
             - google messaging ( nhận push noti FCM từ BE) khi không mở trình duyệt vẫn nhận được noti 
     - Các permission ẩn hiện UI theo các claim jwt token khi login xong
         - Các perssmion UI này sẽ cần được quản lý tập trung định nghĩa trên FE và đồng bộ lên BE, start ứng dụng sau login thành công (có thể lưu localstorage để xem có cái nào mới thì gọi đồng bộ lên BE)
-    - Api connect sẽ theo mô tả TreeOfThought/backend/yeucau.md (https://localhost:5000/swagger/index.html) nếu chưa có thì vào TreeOfThought/backend/Core.Web.Api chạy lệnh: dotnet run
+    - Api connect sẽ theo mô tả TreeOfThought/backend/yeucau.md (http://localhost:5000/swagger/index.html) nếu chưa có thì vào TreeOfThought/backend/Core.Web.Api chạy lệnh: dotnet run
+        - API_BASE_URL cần đưa vào file cấu hình .ts khi build production sẽ lấy theo chuẩn biến môi trường để build. không phụ thuộc vào config_dunp python
     Cần tạo các pages cũng cần kế thừa layout như đã định nghĩa 
         - Login
             - Login với username/password
@@ -48,6 +49,10 @@ Các yêu cầu:
         - Tạo Modules để test các api cqrs của BE
         - Tạo Module để test việc dùng firestore noti lên 1 UI chức năng khi gọi lên BE, đợi BE hoàn thành rồi nhận noti và hiển thị noti ở góc phải màn hình. người dùng cần tự đóng noti này
             - Bổ xung thêm page để test FCM push noti từ BE lên FE ( FE lấy token device id) gửi lên BE để BE gửi noti sample lại. noti này cũng hiện góc phải màn hình, người dùng cần tự đóng
+        - FE khi login xong cần để username và email thay vào nút login, đồng thời hiện nút logout.
+            - Kích vào nút logout thì log out và chuyển sang trang login
+        - wrap axios vào HttpClient ở utils để khi login thì luôn đưa jwt vào auth header 
+            Cần handle error và show noti góc phải màn hình, noti người dùng tự cần đóng.    
 
 Các lệnh cần để build và chạy FE app này
     cần chạy https và port 4200 để test được google firebase
@@ -75,3 +80,4 @@ Các lệnh cần để build và chạy FE app này
                         }
                     }
                     }
+

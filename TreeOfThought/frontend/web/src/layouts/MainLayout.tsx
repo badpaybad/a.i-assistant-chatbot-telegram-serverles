@@ -13,6 +13,9 @@ import {
 } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
+import { authService } from '../services/authService';
+import { LogoutOutlined } from '@ant-design/icons';
+
 const { Header, Sider, Content } = Layout;
 
 interface MainLayoutProps {
@@ -26,6 +29,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  const isLoggedIn = authService.isAuthenticated();
+  const userInfo = authService.getUserInfo();
+
+  const handleLogout = () => {
+    authService.logout();
+    navigate('/auth/login');
+  };
 
   // Determine active key from path
   const getSelectedKey = () => {
@@ -109,14 +120,30 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
               height: 64,
             }}
           />
-          <div>
-            <Button 
-              type="primary" 
-              icon={<UserOutlined />} 
-              onClick={() => navigate('/auth/login')}
-            >
-              Login
-            </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {isLoggedIn ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', lineHeight: '1.2' }}>
+                  <span style={{ fontWeight: 'bold' }}>{userInfo.username || 'User'}</span>
+                  <span style={{ fontSize: '12px', color: '#888' }}>{userInfo.email || ''}</span>
+                </div>
+                <Button 
+                  danger 
+                  icon={<LogoutOutlined />} 
+                  onClick={handleLogout}
+                >
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <Button 
+                type="primary" 
+                icon={<UserOutlined />} 
+                onClick={() => navigate('/auth/login')}
+              >
+                Login
+              </Button>
+            )}
           </div>
         </Header>
         <Content
