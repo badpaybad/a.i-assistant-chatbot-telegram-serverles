@@ -27,6 +27,7 @@ public class DataCrudTests
         if (string.IsNullOrEmpty(connStr)) return;
 
         using var context = new TestRelationalContext(connStr, provider);
+        await context.Database.EnsureCreatedAsync();
         
         // 1. Test Bulk Insert
         var list = new List<SampleEntity>();

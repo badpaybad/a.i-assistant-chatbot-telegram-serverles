@@ -94,6 +94,7 @@ var app = builder.Build();
 
 // --- 7. Configure Pipeline ---
 app.UseCors("AllowAll");
+app.UseHttpsRedirection();
 
 // Custom Middleware for Security Headers (Iframe, Camera, Microphone)
 app.Use(async (context, next) =>

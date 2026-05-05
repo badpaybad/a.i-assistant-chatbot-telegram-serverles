@@ -1,12 +1,29 @@
-import React from 'react';
-import { Form, Input, Button, Card, Divider, Typography } from 'antd';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Form, Input, Button, Card, Typography, message, Modal } from 'antd';
+import { Link, useNavigate } from 'react-router-dom';
+import { authService } from '../../../services/authService';
 
 const { Title, Text } = Typography;
 
 const SignupPage: React.FC = () => {
-  const onFinish = (values: any) => {
-    console.log('Success:', values);
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const onFinish = async (values: any) => {
+    setLoading(true);
+    try {
+      await authService.signup(values);
+      Modal.success({
+        title: 'Registration Successful',
+        content: 'Please check your email to verify your account before logging in.',
+        onOk: () => navigate('/auth/login')
+      });
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      message.error(error.response?.data?.message || 'Registration failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,7 +92,7 @@ const SignupPage: React.FC = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large">
+            <Button type="primary" htmlType="submit" style={{ width: '100%' }} size="large" loading={loading}>
               Register
             </Button>
           </Form.Item>

@@ -1,22 +1,31 @@
 import React from 'react';
-import { usePermissions } from '../hooks/usePermissions';
+import { authService } from '../services/authService';
 
 interface PermissionGateProps {
   children: React.ReactNode;
-  permissions: string[];
-  noAccess?: React.ReactNode;
+  permission: string | string[];
+  all?: boolean; // If true, must have ALL permissions. If false, must have ANY one of them.
+  fallback?: React.ReactNode;
 }
 
-export const PermissionGate: React.FC<PermissionGateProps> = ({ 
+const PermissionGate: React.FC<PermissionGateProps> = ({ 
   children, 
-  permissions, 
-  noAccess = null 
+  permission, 
+  all = false, 
+  fallback = null 
 }) => {
-  const { hasAnyPermission } = usePermissions();
+  const userClaims = authService.getClaims();
+  const permissions = Array.isArray(permission) ? permission : [permission];
 
-  if (hasAnyPermission(permissions)) {
-    return <>{children}</>;
+  const hasPermission = all 
+    ? permissions.every(p => userClaims.includes(p))
+    : permissions.some(p => userClaims.includes(p));
+
+  if (!hasPermission) {
+    return <>{fallback}</>;
   }
 
-  return <>{noAccess}</>;
+  return <>{children}</>;
 };
+
+export default PermissionGate;

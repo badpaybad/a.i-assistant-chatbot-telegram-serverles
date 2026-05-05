@@ -97,7 +97,7 @@ Các yêu cầu:
 
         - Tạo prj web ứng dụng BE dùng asp.net core restful api đạt các yêu cầu :
             - Có swagger để xem các đầu api, cho phép tắt bật ở appsettings.json
-            - Chop phép cấu hình port chạy ở appsettings.json với binding address 0.0.0.0
+            - Chop phép cấu hình port chạy ở appsettings.json với binding address 0.0.0.0, cần chạy https
             - Tạo mock dữ liệu user trên memory (tạo data sẵn ở code mock) để test
             - auth login với username, password để tạo jwt token key secret ở appsettings.json cho FE, và firebase custom token để FE app firebase login tự động. user có 1 email chính để làm SSO với google, MS, facebook
             - auth verify token, refresh jwt token
@@ -115,7 +115,13 @@ Các yêu cầu:
                 - Các class sample handle command và handle event để test ( sử dụng command hay event do controler tạo ra )
                 - cần auth attribute "cqrs-test"
             - Cho phép cors tất cả các origin , allow nhiều method, allow nhiều header, và cho phép credential, cho phép các web khác được load vào thành iframe allow mic, webcam, ...
-                    
+
+        - Docker file cho web ứng dụng
+            ubuntu 24.04
+
+        - Docker compose cho db test
+            - Tạo các db cần thiết như redis, postgres, mysql, mongodb theo yêu cầu ở local với account: root password: Test123456 rồi cập nhật vào appsettings.json của web ứng dụng để chạy được các api controller test ở trên. redis cũng cần mật khẩu: Test123456
+            - cần tạo folder TreeOfThought/backend/db_test và mount volume các db ra ngoài để dữ liệu có thể dùng dev mà không bị mất
 
 
 

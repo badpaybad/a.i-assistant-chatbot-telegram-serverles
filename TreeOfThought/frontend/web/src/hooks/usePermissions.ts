@@ -1,21 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { authService } from '../services/authService';
 
 export const usePermissions = () => {
-  const [permissions, setPermissions] = useState<string[]>([]);
+  const claims = useMemo(() => authService.getClaims(), []);
 
-  useEffect(() => {
-    const claims = authService.getClaims();
-    setPermissions(claims);
-  }, []);
-
-  const hasPermission = (permission: string) => {
-    return permissions.includes(permission);
+  const hasPermission = (permission: string | string[], all = false) => {
+    const permissions = Array.isArray(permission) ? permission : [permission];
+    return all 
+      ? permissions.every(p => claims.includes(p))
+      : permissions.some(p => claims.includes(p));
   };
 
-  const hasAnyPermission = (requiredPermissions: string[]) => {
-    return requiredPermissions.some(p => permissions.includes(p));
-  };
-
-  return { permissions, hasPermission, hasAnyPermission };
+  return { claims, hasPermission };
 };

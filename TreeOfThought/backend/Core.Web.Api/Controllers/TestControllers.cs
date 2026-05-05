@@ -25,6 +25,13 @@ public class FirebaseTestController : ControllerBase
         return Ok(new { message = "Notification sent" });
     }
 
+    [HttpPost("push")]
+    public async Task<IActionResult> PushNotification([FromQuery] string token, [FromQuery] string title, [FromQuery] string body)
+    {
+        await _firebase.SendNotificationAsync("Default", token, title, body);
+        return Ok(new { message = "Push notification sent" });
+    }
+
     [HttpGet("signed-url")]
     public IActionResult GetSignedUrl([FromQuery] string bucket, [FromQuery] string objectName)
     {

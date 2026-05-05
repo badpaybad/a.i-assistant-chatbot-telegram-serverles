@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Form, Input, Button, Card, List, Tag, Typography, Divider, message } from 'antd';
-import { SendOutlined, RocketOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Form, Input, Button, Card, List, Tag, Typography, Divider, message, notification } from 'antd';
+import { SendOutlined, RocketOutlined, BellOutlined } from '@ant-design/icons';
 import { CqrsOnCommandResult } from '../../../utils/firebaseUtils';
 import axios from 'axios';
+import { authService } from '../../../services/authService';
 
 const { Title, Text } = Typography;
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:5000/api';
 
 interface RequestResult {
   id: string;
@@ -19,41 +21,58 @@ const CQRSTestPage: React.FC = () => {
 
   const onSendCommand = async (values: any) => {
     setLoading(true);
-    const requestId = crypto.randomUUID();
     
     try {
-      // Mock sending command to BE
-      // In real scenario: await axios.post('/api/cqrs/command', { ...values, requestId });
       message.loading({ content: 'Sending command...', key: 'cqrs' });
       
-      console.log('Sending command with Request ID:', requestId);
-
-      // Subscribe to results for this requestId (Firestore)
-      const unsubscribe = CqrsOnCommandResult(requestId, (data) => {
-        setResults(prev => [{ id: requestId, ...data } as RequestResult, ...prev]);
-        message.success({ content: 'Result received!', key: 'cqrs' });
-        unsubscribe(); // Stop listening after first result
+      // 1. Send command to BE first to get trackingId
+      const response = await axios.post(`${API_BASE_URL}/CqrsTest/sample-command`, values.payload || "{}", {
+        headers: { 
+          Authorization: `Bearer ${authService.getToken()}`,
+          'Content-Type': 'application/json'
+        }
       });
 
-      // Simulation of BE process (ONLY FOR DEMO)
-      setTimeout(() => {
-        console.log('Simulating BE result for:', requestId);
-        // This would normally be done by the BE publishing to Firestore
-      }, 2000);
+      const { trackingId } = response.data;
+      console.log('Command sent. Tracking ID:', trackingId);
 
-    } catch (error) {
-      message.error({ content: 'Failed to send command', key: 'cqrs' });
+      // 2. Subscribe to results for this trackingId (Firestore)
+      CqrsOnCommandResult(trackingId, (data) => {
+        setResults(prev => [{ id: trackingId, ...data } as RequestResult, ...prev]);
+        
+        notification.info({
+          message: 'Command Processed',
+          description: `Request ${trackingId} has been completed by backend.`,
+          duration: 0,
+          placement: 'topRight',
+          icon: <BellOutlined style={{ color: '#1890ff' }} />,
+          key: trackingId
+        });
+        
+        message.success({ content: 'Result received!', key: 'cqrs' });
+      });
+
+    } catch (error: any) {
+      console.error('CQRS Error:', error);
+      message.error({ content: error.response?.data?.message || 'Failed to send command', key: 'cqrs' });
     } finally {
       setLoading(false);
     }
   };
 
   const onPublishEvent = async (values: any) => {
-    message.info('Publishing event... (Demo)');
+    try {
+      await axios.post(`${API_BASE_URL}/cqrs/publish`, values, {
+        headers: { Authorization: `Bearer ${authService.getToken()}` }
+      });
+      message.success('Event published!');
+    } catch (error: any) {
+      message.error('Failed to publish event');
+    }
   };
 
   return (
-    <div>
+    <div style={{ padding: '24px' }}>
       <Title level={2}>CQRS & Firebase Integration Test</Title>
       <Text>Test the connection between Frontend, Backend CQRS, and Firebase Firestore.</Text>
       

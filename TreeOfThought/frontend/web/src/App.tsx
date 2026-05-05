@@ -1,10 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { notification, message } from 'antd';
 import MainLayout from './layouts/MainLayout';
 
 import LoginPage from './modules/auth/pages/LoginPage';
 import SignupPage from './modules/auth/pages/SignupPage';
 import CQRSTestPage from './modules/cqrs-test/pages/CQRSTestPage';
+import NotificationTestPage from './modules/notification-test/pages/NotificationTestPage';
+import FcmTestPage from './modules/notification-test/pages/FcmTestPage';
+import { setupFCM, onMessageReceived } from './utils/firebaseUtils';
 
 // Dummy Pages
 const Home = () => <h1>Home Page</h1>;
@@ -12,6 +16,33 @@ const About = () => <h1>About Page</h1>;
 const Contact = () => <h1>Contact Page</h1>;
 
 function App() {
+  useEffect(() => {
+    // Setup FCM
+    const initFCM = async () => {
+      const token = await setupFCM();
+      if (token) {
+        console.log('App started with FCM Token:', token);
+        // Optionally sync token with BE here if user is logged in
+      }
+    };
+
+    initFCM();
+
+    // Listen for foreground messages
+    const unsubscribe = onMessageReceived((payload) => {
+      notification.info({
+        message: payload.notification?.title || 'New Notification',
+        description: payload.notification?.body || 'You have a new message.',
+        placement: 'topRight',
+        duration: 0, // Manual close
+      });
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
+    };
+  }, []);
+
   return (
     <Router>
       <MainLayout>
@@ -26,6 +57,8 @@ function App() {
           
           {/* Modules */}
           <Route path="/modules/cqrs-test" element={<CQRSTestPage />} />
+          <Route path="/modules/notification-test" element={<NotificationTestPage />} />
+          <Route path="/modules/fcm-test" element={<FcmTestPage />} />
           
           <Route path="*" element={<h1>404 Not Found</h1>} />
         </Routes>

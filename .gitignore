@@ -88,6 +88,7 @@ games/toanlop4/config.md
 gemma4/model/
 **/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json
 **/appsettings.json
-**/bin
-**/obj
+**/bin/**
+**/obj/**
 **/realtimedbtest-d8c6b-firebase-frontend.json
+**/db_test/**

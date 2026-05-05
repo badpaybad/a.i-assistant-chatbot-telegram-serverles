@@ -1,4 +1,5 @@
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Firebase.Services;
 using Core.Web.Api.Models;
 
 namespace Core.Web.Api.Handlers;
@@ -7,17 +8,29 @@ public class SampleCommandHandler : ICommandHandler<SampleCommand>
 {
     private int _counter = 0;
     private readonly ILogger<SampleCommandHandler> _logger;
+    private readonly FirebaseService _firebase;
 
-    public SampleCommandHandler(ILogger<SampleCommandHandler> logger)
+    public SampleCommandHandler(ILogger<SampleCommandHandler> logger, FirebaseService firebase)
     {
         _logger = logger;
+        _firebase = firebase;
     }
 
     public async Task HandleAsync(SampleCommand command)
     {
         _counter++;
-        _logger.LogInformation("SampleCommandHandler handled command: {Payload}. Count: {Count}", command.Payload, _counter);
-        await Task.CompletedTask;
+        _logger.LogInformation("SampleCommandHandler handled command: {Payload}. TrackingId: {TrackingId}. Count: {Count}", 
+            command.Payload, command.TrackingId, _counter);
+
+        // Simulate some processing
+        await Task.Delay(1000);
+
+        // Publish result to Firestore for FE tracking
+        await _firebase.PublishToAddressPathAsync("Default", $"commandresults/{command.TrackingId}", new {
+            status = "success",
+            message = $"Command processed successfully. Counter: {_counter}",
+            timestamp = DateTime.UtcNow
+        });
     }
 }
 

@@ -3,6 +3,8 @@ using Core.Infra.Base.Interfaces;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Events;
+using MongoDB.Bson.Serialization;
+using MongoDB.Bson.Serialization.Serializers;
 using System.Linq.Expressions;
 
 namespace Core.Infra.Data.Contexts;
@@ -14,6 +16,9 @@ public abstract class MongoDbContext
 
     protected MongoDbContext(string connectionString, string databaseName)
     {
+        // Register GuidSerializer if not already registered
+        try { BsonSerializer.RegisterSerializer(new GuidSerializer(GuidRepresentation.Standard)); } catch { }
+
         var mongoUrl = new MongoUrl(connectionString);
         var settings = MongoClientSettings.FromUrl(mongoUrl);
 

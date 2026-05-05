@@ -32,4 +32,7 @@ def run_dotnet_tests():
         sys.exit(1)
 
 if __name__ == "__main__":
+    if len(sys.argv) < 2 or sys.argv[1] != "config_dunp":
+        print("Usage: python test/test_CoreInfra_All_RunTests.py config_dunp")
+        sys.exit(1)
     run_dotnet_tests()

@@ -1,5 +1,14 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithCustomToken, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { 
+  getAuth, 
+  signInWithCustomToken, 
+  onAuthStateChanged, 
+  GoogleAuthProvider, 
+  FacebookAuthProvider,
+  OAuthProvider,
+  signInWithPopup, 
+  signOut 
+} from "firebase/auth";
 import type { User } from "firebase/auth";
 import { getFirestore, doc, onSnapshot, deleteDoc } from "firebase/firestore";
 import type { Unsubscribe } from "firebase/firestore";
@@ -16,7 +25,7 @@ let messaging: Messaging | null = null;
 try {
   messaging = getMessaging(app);
 } catch (error) {
-  console.error("Firebase Messaging not supported in this environment", error);
+  console.warn("Firebase Messaging not supported in this environment (likely non-HTTPS or missing service worker)", error);
 }
 
 export const loginWithCustomToken = async (token: string) => {
@@ -39,7 +48,10 @@ export const subscribeToRequest = (requestId: string, callback: (data: any) => v
 };
 
 export const setupFCM = async () => {
-  if (!messaging) return null;
+  if (!messaging) {
+    console.warn("Messaging is not initialized. FCM setup skipped.");
+    return null;
+  }
   
   try {
     const permission = await Notification.requestPermission();
@@ -47,6 +59,8 @@ export const setupFCM = async () => {
       const token = await getToken(messaging, { vapidKey: firebaseConfig.vapidKey });
       console.log("FCM Token:", token);
       return token;
+    } else {
+      console.warn("Notification permission denied");
     }
   } catch (error) {
     console.error("Error setting up FCM:", error);
@@ -56,8 +70,8 @@ export const setupFCM = async () => {
 
 export const onMessageReceived = (callback: (payload: any) => void) => {
   if (!messaging) return;
-  onMessage(messaging, (payload) => {
-    console.log("Message received:", payload);
+  return onMessage(messaging, (payload) => {
+    console.log("Foreground Message received:", payload);
     callback(payload);
   });
 };
@@ -67,28 +81,21 @@ export const signInWithGoogle = () => {
   return signInWithPopup(auth, provider);
 };
 
-export const signOutGoogle = async (): Promise<void> => {
+export const signInWithFacebook = () => {
+  const provider = new FacebookAuthProvider();
+  return signInWithPopup(auth, provider);
+};
+
+export const signInWithMicrosoft = () => {
+  const provider = new OAuthProvider('microsoft.com');
+  return signInWithPopup(auth, provider);
+};
+
+export const signOutFirebase = async (): Promise<void> => {
   try {
     await signOut(auth);
   } catch (error) {
     console.error("Error during sign-out", error);
-    throw error;
-  }
-};
-
-export const fcm_get_device_token = async () => {
-  try {
-    const permission = await Notification.requestPermission();
-    if (permission === 'granted') {
-      if (!messaging) throw new Error("Messaging not supported");
-      const token = await getToken(messaging, { vapidKey: firebaseConfig.vapidKey });
-      console.log("FCM Token:", token);
-      return token;
-    } else {
-      throw new Error("Notification permission denied");
-    }
-  } catch (error) {
-    console.error("Error getting FCM token:", error);
     throw error;
   }
 };

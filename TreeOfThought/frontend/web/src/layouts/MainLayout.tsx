@@ -8,6 +8,8 @@ import {
   PhoneOutlined,
   ApiOutlined,
   UserOutlined,
+  BellOutlined,
+  MobileOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -32,6 +34,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (path.startsWith('/about')) return 'about';
     if (path.startsWith('/contact')) return 'contact';
     if (path.startsWith('/modules/cqrs-test')) return 'cqrs-test';
+    if (path.startsWith('/modules/notification-test')) return 'notification-test';
+    if (path.startsWith('/modules/fcm-test')) return 'fcm-test';
     if (path.startsWith('/auth/login')) return 'login';
     if (path.startsWith('/auth/signup')) return 'signup';
     return 'home';
@@ -57,6 +61,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: 'cqrs-test',
       icon: <ApiOutlined />,
       label: <Link to="/modules/cqrs-test">CQRS Test</Link>,
+    },
+    {
+      key: 'notification-test',
+      icon: <BellOutlined />,
+      label: <Link to="/modules/notification-test">Notification Test</Link>,
+    },
+    {
+      key: 'fcm-test',
+      icon: <MobileOutlined />,
+      label: <Link to="/modules/fcm-test">FCM Test</Link>,
     },
     {
       key: 'login',

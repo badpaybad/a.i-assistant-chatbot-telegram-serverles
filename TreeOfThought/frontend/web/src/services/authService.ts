@@ -1,16 +1,26 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:5000/api';
+
+export interface AuthResponse {
+  token: string;
+  firebaseToken: string;
+  claims: string[];
+}
 
 export const authService = {
-  async login(credentials: any) {
+  async login(credentials: any): Promise<AuthResponse> {
     const response = await axios.post(`${API_BASE_URL}/auth/login`, credentials);
-    const { token, firebaseToken, claims } = response.data;
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('claims', JSON.stringify(claims));
-    
-    return { token, firebaseToken, claims };
+    const data = response.data;
+    this.saveAuthData(data);
+    return data;
+  },
+
+  async loginWithSSO(provider: string, idToken: string): Promise<AuthResponse> {
+    const response = await axios.post(`${API_BASE_URL}/auth/sso`, { provider, idToken });
+    const data = response.data;
+    this.saveAuthData(data);
+    return data;
   },
 
   async signup(data: any) {
@@ -18,11 +28,30 @@ export const authService = {
     return response.data;
   },
 
+  async syncPermissions(permissions: string[]) {
+    const token = this.getToken();
+    if (!token) return;
+    
+    await axios.post(`${API_BASE_URL}/auth/sync-permissions`, { permissions }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+  },
+
+  saveAuthData(data: AuthResponse) {
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('firebaseToken', data.firebaseToken);
+    localStorage.setItem('claims', JSON.stringify(data.claims));
+  },
+
   getToken() {
     return localStorage.getItem('token');
   },
 
-  getClaims() {
+  getFirebaseToken() {
+    return localStorage.getItem('firebaseToken');
+  },
+
+  getClaims(): string[] {
     const claims = localStorage.getItem('claims');
     return claims ? JSON.parse(claims) : [];
   },
