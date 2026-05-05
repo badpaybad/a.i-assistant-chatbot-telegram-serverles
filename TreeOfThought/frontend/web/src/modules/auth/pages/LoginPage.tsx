@@ -39,8 +39,9 @@ const LoginPage: React.FC = () => {
 
       const idToken = await (result.user as any).getIdToken();
       const response = await authService.loginWithSSO(provider, idToken, {
-        username: result.user.displayName,
-        email: result.user.email
+        ssoId: result.user.uid,
+        email: result.user.email,
+        displayName: result.user.displayName
       });
       await loginWithCustomToken(response.firebaseToken);
       

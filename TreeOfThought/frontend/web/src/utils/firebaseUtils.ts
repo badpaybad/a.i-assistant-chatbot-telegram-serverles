@@ -104,6 +104,9 @@ export const signInWithFacebook = () => {
 
 export const signInWithMicrosoft = () => {
   const provider = new OAuthProvider('microsoft.com');
+  provider.addScope('openid');
+  provider.addScope('email');
+  provider.addScope('profile');
   return signInWithPopup(auth, provider);
 };
 

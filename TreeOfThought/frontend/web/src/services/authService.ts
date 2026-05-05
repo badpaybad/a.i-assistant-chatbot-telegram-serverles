@@ -20,7 +20,13 @@ export const authService = {
   },
 
   async loginWithSSO(provider: string, idToken: string, extraInfo?: any): Promise<AuthResponse> {
-    const response = await httpClient.post(`/auth/sso`, { provider, idToken });
+    const response = await httpClient.post(`/auth/sso`, { 
+      provider, 
+      idToken,
+      ssoId: extraInfo?.ssoId,
+      email: extraInfo?.email,
+      displayName: extraInfo?.displayName
+    });
     const data = response.data;
     // Fallback to extra info if backend doesn't return username/email
     if (!data.username && extraInfo?.username) data.username = extraInfo.username;

@@ -84,7 +84,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SsoLogin([FromBody] SsoRequest request)
     {
         // In real app, verify external token here
-        var user = _authService.SsoLogin(request.Provider, request.SsoId, request.Email, request.DisplayName);
+        var user = await _authService.SsoLogin(request.Provider, request.SsoId, request.Email, request.DisplayName, request.IdToken);
         
         var token = _authService.GenerateJwtToken(user);
         var firebaseToken = await _authService.GenerateFirebaseToken(user);
@@ -98,5 +98,5 @@ public class AuthController : ControllerBase
 
     public class LoginRequest { public string Username { get; set; } = ""; public string Password { get; set; } = ""; }
     public class SignupRequest { public string Username { get; set; } = ""; public string Password { get; set; } = ""; public string DisplayName { get; set; } = ""; public string Email { get; set; } = ""; }
-    public class SsoRequest { public string Provider { get; set; } = ""; public string SsoId { get; set; } = ""; public string Email { get; set; } = ""; public string DisplayName { get; set; } = ""; }
+    public class SsoRequest { public string Provider { get; set; } = ""; public string SsoId { get; set; } = ""; public string Email { get; set; } = ""; public string DisplayName { get; set; } = ""; public string IdToken { get; set; } = ""; }
 }

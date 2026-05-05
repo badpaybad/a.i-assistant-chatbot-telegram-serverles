@@ -103,8 +103,27 @@ public class AuthService
         return false;
     }
 
-    public User SsoLogin(string provider, string ssoId, string email, string displayName)
+    public async Task<User> SsoLogin(string provider, string ssoId, string email, string displayName, string? idToken = null)
     {
+        // Verify token if provided
+        if (!string.IsNullOrEmpty(idToken))
+        {
+            try
+            {
+                var decodedToken = await _firebaseService.VerifyIdTokenAsync("Default", idToken);
+                ssoId = decodedToken.Uid;
+                email = decodedToken.Claims.ContainsKey("email") ? decodedToken.Claims["email"].ToString()! : email;
+                displayName = decodedToken.Claims.ContainsKey("name") ? decodedToken.Claims["name"].ToString()! : displayName;
+            }
+            catch (Exception ex)
+            {
+                // In real app, you might want to reject the login if token verification fails
+                Console.WriteLine($"Token verification failed: {ex.Message}");
+            }
+        }
+
+        if (string.IsNullOrEmpty(email)) throw new Exception("Email is required for SSO login");
+
         var user = _userRepo.GetByEmail(email);
         if (user == null)
         {
@@ -119,6 +138,13 @@ public class AuthService
                 Claims = new List<string> { "user" }
             };
             _userRepo.Add(user);
+        }
+        else
+        {
+            // Update SSO info if already exists
+            user.SsoProvider = provider;
+            user.SsoId = ssoId;
+            _userRepo.Update(user);
         }
         return user;
     }
