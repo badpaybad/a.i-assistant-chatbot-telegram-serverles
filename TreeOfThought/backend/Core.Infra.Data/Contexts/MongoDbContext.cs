@@ -5,8 +5,10 @@ using MongoDB.Driver;
 using MongoDB.Driver.Core.Events;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
+using MongoDB.Bson.Serialization.Attributes;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.ComponentModel.DataAnnotations.Schema;
 using Core.Infra.Data.Mongo;
 
 namespace Core.Infra.Data.Contexts;
@@ -51,13 +53,32 @@ public abstract class MongoDbContext
             var entityType = prop.PropertyType.GetGenericArguments()[0];
             var dbSetType = typeof(DbSet<>).MakeGenericType(entityType);
             
-            // Try to get collection name from an attribute if needed, otherwise null
-            string? collectionName = null; 
-            // Optional: check for TableAttribute or similar if you want custom names via attributes
+            string collectionName = GetCollectionName(prop, entityType);
             
             var dbSetInstance = Activator.CreateInstance(dbSetType, Database, collectionName);
             prop.SetValue(this, dbSetInstance);
         }
+    }
+
+    private string GetCollectionName(PropertyInfo prop, Type entityType)
+    {
+        // 1. Check for BsonElementAttribute on the property in the context
+        var bsonAttr = prop.GetCustomAttribute<BsonElementAttribute>();
+        if (bsonAttr != null && !string.IsNullOrEmpty(bsonAttr.ElementName))
+            return bsonAttr.ElementName;
+
+        // 2. Check for TableAttribute on the property in the context
+        var tableAttr = prop.GetCustomAttribute<TableAttribute>();
+        if (tableAttr != null && !string.IsNullOrEmpty(tableAttr.Name))
+            return tableAttr.Name;
+
+        // 3. Check for TableAttribute on the entity class itself
+        var entityTableAttr = entityType.GetCustomAttribute<TableAttribute>();
+        if (entityTableAttr != null && !string.IsNullOrEmpty(entityTableAttr.Name))
+            return entityTableAttr.Name;
+
+        // 4. Default to entity class name
+        return entityType.Name;
     }
 
     public IMongoCollection<T> GetCollection<T>(string? name = null)

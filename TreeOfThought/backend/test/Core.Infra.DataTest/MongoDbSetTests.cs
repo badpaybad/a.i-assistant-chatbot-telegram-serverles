@@ -7,8 +7,10 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using Xunit;
 using Core.Infra.Base.Interfaces;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core.Infra.DataTest;
 
@@ -21,6 +23,17 @@ public class MongoDbSetTests
         _config = ConfigurationHelper.LoadConfiguration();
     }
 
+    [Table("CustomCollectionName")]
+    public class AttributedEntity : IBaseTrackingEntity
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
+        public string? CreatedBy { get; set; }
+        public string? UpdatedBy { get; set; }
+    }
+
     public class TestEnhancedMongoContext : MongoDbContext
     {
         public TestEnhancedMongoContext(string connectionString, string databaseName) 
@@ -28,6 +41,11 @@ public class MongoDbSetTests
 
         public IDbSet<SampleEntity> Samples { get; set; }
         public IDbSet<ExtraFieldEntity> Extras { get; set; }
+        
+        [BsonElement("PropertiesAttributedName")]
+        public IDbSet<SampleEntity> AttributedSamples { get; set; }
+        
+        public IDbSet<AttributedEntity> AttributedEntities { get; set; }
     }
 
     public class ExtraFieldEntity : IBaseTrackingEntity
@@ -52,6 +70,10 @@ public class MongoDbSetTests
         Assert.NotNull(context.Samples);
         Assert.NotNull(context.Extras);
         Assert.Equal("SampleEntity", context.Samples.CollectionName);
+
+        // Verify Attribute-based naming
+        Assert.Equal("PropertiesAttributedName", context.AttributedSamples.CollectionName);
+        Assert.Equal("CustomCollectionName", context.AttributedEntities.CollectionName);
 
         // 1. Test Insert via DbSet
         var entity = new SampleEntity { Name = "Test DbSet", Price = 100 };
