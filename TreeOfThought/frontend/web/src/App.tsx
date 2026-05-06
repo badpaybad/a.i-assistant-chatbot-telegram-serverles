@@ -11,6 +11,9 @@ import FcmTestPage from './modules/notification-test/pages/FcmTestPage';
 import DashboardPage from './modules/cqrs-dashboard/pages/DashboardPage';
 import QueueDetailsPage from './modules/cqrs-dashboard/pages/QueueDetailsPage';
 import TracingPage from './modules/cqrs-dashboard/pages/TracingPage';
+import ProjectListPage from './modules/BookingBds/pages/ProjectListPage';
+import ApartmentLayoutPage from './modules/BookingBds/pages/ApartmentLayoutPage';
+import CartPage from './modules/BookingBds/pages/CartPage';
 import { setupFCM, onMessageReceived } from './utils/firebaseUtils';
 
 // Dummy Pages
@@ -34,7 +37,7 @@ function App() {
     // Listen for foreground messages
     const unsubscribe = onMessageReceived((payload) => {
       notification.info({
-        message: payload.notification?.title || 'New Notification',
+        title: payload.notification?.title || 'New Notification',
         description: payload.notification?.body || 'You have a new message.',
         placement: 'topRight',
         duration: 0, // Manual close
@@ -67,6 +70,11 @@ function App() {
           <Route path="/modules/cqrs-dashboard" element={<DashboardPage />} />
           <Route path="/modules/cqrs-dashboard/queue/:queueName" element={<QueueDetailsPage />} />
           <Route path="/modules/cqrs-dashboard/tracing/:trackingId?" element={<TracingPage />} />
+          
+          {/* Booking Bds */}
+          <Route path="/modules/booking-bds" element={<ProjectListPage />} />
+          <Route path="/modules/booking-bds/projects/:projectId" element={<ApartmentLayoutPage />} />
+          <Route path="/modules/booking-bds/cart" element={<CartPage />} />
           
           <Route path="*" element={<h1>404 Not Found</h1>} />
         </Routes>

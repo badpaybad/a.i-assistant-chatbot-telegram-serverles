@@ -11,6 +11,10 @@ import {
   BellOutlined,
   MobileOutlined,
   DashboardOutlined,
+  BankOutlined,
+  ProjectOutlined,
+  HistoryOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -49,6 +53,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (path.startsWith('/modules/notification-test')) return 'notification-test';
     if (path.startsWith('/modules/fcm-test')) return 'fcm-test';
     if (path.startsWith('/modules/cqrs-dashboard')) return 'cqrs-dashboard';
+    if (path.startsWith('/modules/booking-bds')) return 'booking-bds';
     if (path.startsWith('/auth/login')) return 'login';
     if (path.startsWith('/auth/signup')) return 'signup';
     return 'home';
@@ -89,6 +94,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: 'cqrs-dashboard',
       icon: <DashboardOutlined />,
       label: <Link to="/modules/cqrs-dashboard">CQRS Dashboard</Link>,
+    },
+    {
+      key: 'booking-bds',
+      icon: <BankOutlined />,
+      label: <Link to="/modules/booking-bds">Booking Bds</Link>,
+    },
+    {
+      key: 'booking-cart',
+      icon: <ShoppingCartOutlined />,
+      label: <Link to="/modules/booking-bds/cart">Giỏ hàng</Link>,
     },
     {
       key: 'login',

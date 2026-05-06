@@ -7,6 +7,10 @@ using Core.Web.Api.Handlers;
 using Core.Web.Api.Models;
 using Core.Web.Api.Repositories;
 using Core.Web.Api.Services;
+using Module.BookingBds.Models;
+using Module.BookingBds.Services;
+using Module.BookingBds.Handlers;
+using Module.BookingBds.Commands;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -59,14 +63,22 @@ builder.Services.AddSingleton<IDispatcher, CqrsDispatcher>();
 // --- 4. Web API Services & Repos ---
 builder.Services.AddSingleton<MockUserRepository>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<BookingDbContext>();
+builder.Services.AddScoped<BookingQueryService>();
 
 // --- 5. Handlers (Singleton as requested) ---
 builder.Services.AddSingleton<SampleCommandHandler>();
 builder.Services.AddSingleton<SampleEventHandler>();
 builder.Services.AddSingleton<SampleEventHandlerAlwaysError>();
+builder.Services.AddScoped<CreateBookingCommandHandler>();
+builder.Services.AddScoped<ConfirmPaymentCommandHandler>();
 
 // --- 6. Controllers & Swagger ---
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -132,5 +144,46 @@ var dispatcher = app.Services.GetRequiredService<IDispatcher>();
 await dispatcher.RegisterCommandHandlerAsync<SampleCommand, SampleCommandHandler>("sample.command");
 await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandler>("sample.event", "web-api-subscriber");
 await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandlerAlwaysError>("sample.event", "web-api-subscriber-test-always-err");
+
+// Register BookingBds handlers
+await dispatcher.RegisterCommandHandlerAsync<CreateBookingCommand, CreateBookingCommandHandler>();
+await dispatcher.RegisterCommandHandlerAsync<ConfirmPaymentCommand, ConfirmPaymentCommandHandler>();
+
+// Ensure Database Created (PostgreSQL)
+using (var scope = app.Services.CreateScope())
+{
+    var bookingDb = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+    if (bookingDb.Database.EnsureCreated() || !bookingDb.Projects.Any())
+    {
+        // Seed initial data if database is empty
+        if (!bookingDb.Projects.Any())
+        {
+            var project = new Project
+            {
+                Id = Guid.NewGuid(),
+                Name = "Vinhomes Ocean Park",
+                Description = "Khu đô thị đẳng cấp với biển hồ nước mặn.",
+                Location = "Gia Lâm, Hà Nội",
+                TotalUnits = 100
+            };
+            bookingDb.Projects.Add(project);
+
+            for (int i = 1; i <= 10; i++)
+            {
+                bookingDb.Apartments.Add(new Apartment
+                {
+                    Id = Guid.NewGuid(),
+                    ProjectId = project.Id,
+                    UnitNumber = $"A-{100 + i}",
+                    Floor = 10,
+                    Price = 3000000000 + (i * 100000000),
+                    Status = ApartmentStatus.Available
+                });
+            }
+            bookingDb.SaveChanges();
+        }
+    }
+}
+
 await dispatcher.PublishAsync(new SampleEvent { Data = "Test" });
 app.Run();

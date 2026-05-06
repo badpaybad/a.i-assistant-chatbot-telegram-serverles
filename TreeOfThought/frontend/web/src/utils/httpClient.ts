@@ -31,7 +31,7 @@ httpClient.interceptors.response.use(
 
     // Global Error Notification
     notification.error({
-      message: `API Error: ${status || 'Network Error'}`,
+      title: `API Error: ${status || 'Network Error'}`,
       description: errorMessage,
       duration: 0, // Manual close as requested
       placement: 'topRight',
