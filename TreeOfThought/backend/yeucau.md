@@ -16,6 +16,7 @@ Các yêu cầu:
                 - Không dùng migration của entity framework. 
                     - Mongodb tự động sinh collection
                         - Cho phép lỗi về việc missing field, thiếu property
+                        - tham khảo code ở folder /work/cloud/cloud.core/src/mongodb bổ xung cho phù hợp. cho phép đinh nghĩa entity và dbset cho mongodb. Cần đảm bảo Dbset của mongodb có thể thực hiên linq như dbset của EF với các method Add, Update, Delete, FirstOrDefault Async, ...
                     - Relation db cần đảm bảo đã có table trước khi dùng. 
                         - Có hàm để sinh ra các sql tạo bảng dựa trên entity nếu bảng chưa có. Không tự chạy, khi cần chạy gọi riêng và thực thi độc lập.
                 - Tạo các hàm bulk insert, update, delete . bluk update hỗ trỡ update full entity, partial entity
@@ -123,6 +124,29 @@ Các yêu cầu:
             - Tạo các db cần thiết như redis, postgres, mysql, mongodb theo yêu cầu ở local với account: root password: Test123456 rồi cập nhật vào appsettings.json của web ứng dụng để chạy được các api controller test ở trên. redis cũng cần mật khẩu: Test123456
             - cần tạo folder TreeOfThought/backend/db_test và mount volume các db ra ngoài để dữ liệu có thể dùng dev mà không bị mất
 
+**cập nhật 1**
+
+                    - Mongodb tự động sinh collection
+                        - Cho phép lỗi về việc missing field, thiếu property
+                        - tham khảo code ở folder /work/cloud/cloud.core/src/mongodb bổ xung cho phù hợp. cho phép đinh nghĩa entity và dbset cho mongodb
+
+    bổ xung test với dbset cho monogdb context
+    cần đảm bảo Dbset của mongodb có thể thực hiên linq như dbset của EF với các method Add, Update, Delete, FirstOrDefault Async, ...
 
 
-            
+**cập nhật 2** 
+
+    hiện tại IBaseEntity đang có sẵn các property, tốt nhất IBaseEntity không có sẵn property nào, 
+                public interface IBaseEntity
+                {
+                    Guid Id { get; set; }
+                    DateTime CreatedAt { get; set; }
+                    DateTime? UpdatedAt { get; set; }
+                    string? CreatedBy { get; set; }
+                    string? UpdatedBy { get; set; }
+                }
+
+    đổi IBaseEntity thành IBaseTrackingEntity 
+
+ở dbset của mongodb đang có hàm này bị phụ thuộc vào entity có Id type guid cần bỏ đi. 
+    Task DeleteAsync(Guid id);

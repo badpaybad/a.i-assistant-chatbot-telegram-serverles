@@ -2,7 +2,7 @@ using Core.Infra.Base.Interfaces;
 
 namespace Core.Infra.Base.Models;
 
-public abstract class BaseEntity : IBaseEntity
+public abstract class BaseEntity : IBaseTrackingEntity
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -6,13 +6,15 @@ using MongoDB.Driver.Core.Events;
 using MongoDB.Bson.Serialization;
 using MongoDB.Bson.Serialization.Serializers;
 using System.Linq.Expressions;
+using System.Reflection;
+using Core.Infra.Data.Mongo;
 
 namespace Core.Infra.Data.Contexts;
 
 public abstract class MongoDbContext
 {
-    protected readonly IMongoClient Client;
-    protected readonly IMongoDatabase Database;
+    public readonly IMongoClient Client;
+    public readonly IMongoDatabase Database;
 
     protected MongoDbContext(string connectionString, string databaseName)
     {
@@ -33,6 +35,29 @@ public abstract class MongoDbContext
 
         Client = new MongoClient(settings);
         Database = Client.GetDatabase(databaseName);
+
+        InitializeDbSets();
+    }
+
+    private void InitializeDbSets()
+    {
+        var properties = this.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.PropertyType.IsGenericType && 
+                        (p.PropertyType.GetGenericTypeDefinition() == typeof(IDbSet<>) ||
+                         p.PropertyType.GetGenericTypeDefinition() == typeof(DbSet<>)));
+
+        foreach (var prop in properties)
+        {
+            var entityType = prop.PropertyType.GetGenericArguments()[0];
+            var dbSetType = typeof(DbSet<>).MakeGenericType(entityType);
+            
+            // Try to get collection name from an attribute if needed, otherwise null
+            string? collectionName = null; 
+            // Optional: check for TableAttribute or similar if you want custom names via attributes
+            
+            var dbSetInstance = Activator.CreateInstance(dbSetType, Database, collectionName);
+            prop.SetValue(this, dbSetInstance);
+        }
     }
 
     public IMongoCollection<T> GetCollection<T>(string? name = null)
@@ -47,7 +72,7 @@ public abstract class MongoDbContext
         await collection.InsertManyAsync(entities);
     }
 
-    public virtual async Task BulkUpdateAsync<T>(IEnumerable<T> entities, string? collectionName = null) where T : IBaseEntity
+    public virtual async Task BulkUpdateAsync<T>(IEnumerable<T> entities, string? collectionName = null) where T : IBaseTrackingEntity
     {
         var collection = GetCollection<T>(collectionName);
         var models = entities.Select(e => new ReplaceOneModel<T>(
@@ -56,7 +81,7 @@ public abstract class MongoDbContext
         await collection.BulkWriteAsync(models);
     }
 
-    public virtual async Task BulkDeleteAsync<T>(IEnumerable<Guid> ids, string? collectionName = null) where T : IBaseEntity
+    public virtual async Task BulkDeleteAsync<T>(IEnumerable<Guid> ids, string? collectionName = null) where T : IBaseTrackingEntity
     {
         var collection = GetCollection<T>(collectionName);
         var models = ids.Select(id => new DeleteOneModel<T>(Builders<T>.Filter.Eq(x => x.Id, id)));
