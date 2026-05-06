@@ -2,6 +2,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: tot-redis
+    privileged: true
     command: redis-server --requirepass Test123456 --appendonly yes
     ports:
       - "6379:6379"
@@ -12,6 +13,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: tot-postgres
+    privileged: true
     environment:
       POSTGRES_USER: root
       POSTGRES_PASSWORD: Test123456
@@ -25,6 +27,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: tot-mysql
+    privileged: true
     environment:
       MYSQL_ROOT_PASSWORD: Test123456
       MYSQL_DATABASE: tot_db
@@ -37,6 +40,7 @@ services:
   mongodb:
     image: mongo:6.0
     container_name: tot-mongodb
+    privileged: true
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: Test123456
@@ -49,6 +53,7 @@ services:
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     container_name: tot-mssql
+    privileged: true
     environment:
       ACCEPT_EULA: "Y"
       MSSQL_SA_PASSWORD: Test123456

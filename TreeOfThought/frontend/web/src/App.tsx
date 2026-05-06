@@ -8,6 +8,9 @@ import SignupPage from './modules/auth/pages/SignupPage';
 import CQRSTestPage from './modules/cqrs-test/pages/CQRSTestPage';
 import NotificationTestPage from './modules/notification-test/pages/NotificationTestPage';
 import FcmTestPage from './modules/notification-test/pages/FcmTestPage';
+import DashboardPage from './modules/cqrs-dashboard/pages/DashboardPage';
+import QueueDetailsPage from './modules/cqrs-dashboard/pages/QueueDetailsPage';
+import TracingPage from './modules/cqrs-dashboard/pages/TracingPage';
 import { setupFCM, onMessageReceived } from './utils/firebaseUtils';
 
 // Dummy Pages
@@ -59,6 +62,11 @@ function App() {
           <Route path="/modules/cqrs-test" element={<CQRSTestPage />} />
           <Route path="/modules/notification-test" element={<NotificationTestPage />} />
           <Route path="/modules/fcm-test" element={<FcmTestPage />} />
+          
+          {/* CQRS Dashboard */}
+          <Route path="/modules/cqrs-dashboard" element={<DashboardPage />} />
+          <Route path="/modules/cqrs-dashboard/queue/:queueName" element={<QueueDetailsPage />} />
+          <Route path="/modules/cqrs-dashboard/tracing/:trackingId?" element={<TracingPage />} />
           
           <Route path="*" element={<h1>404 Not Found</h1>} />
         </Routes>

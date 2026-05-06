@@ -85,3 +85,9 @@ Các lệnh cần để build và chạy FE app này
 sso MS openid connect chưa hoạt động
 **bug 2**
 sso Facebook openid connect chưa hoạt động
+
+**cập nhật 2026-05-06 20:20:20** 
+    tạo module CQRS Dashboard với các chức năng sau:
+        CQRS cần bổ xung UI để visualize các topic queue dashboard về số lượng, lỗi, stuck queue ....
+        Có UI để retry resend lên queue or topic các command or event đã fail
+        Vẽ luồng đi lại của command, event đã tracking qua các queue name, topic name

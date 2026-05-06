@@ -93,14 +93,27 @@ public class CqrsDispatcher : IDispatcher
                     var command = await _queueService.DequeueReliableAsync<TCommand>(qName, processingQueue);
                     if (command != null)
                     {
-                        await _tracker.TrackAsync(command.TrackingId, "Worker", $"Dequeued from {qName}");
-                        using var scope = _serviceProvider.CreateScope();
-                        var handler = scope.ServiceProvider.GetRequiredService<THandler>();
-                        await handler.HandleAsync(command);
-                        await _tracker.TrackAsync(command.TrackingId, "Worker", $"Handled by {typeof(THandler).Name}");
-                        
                         var json = JsonSerializer.Serialize(command);
-                        await _queueService.AckReliableAsync(processingQueue, json);
+                        try
+                        {
+                            await _tracker.TrackAsync(command.TrackingId, "Worker", $"Dequeued from {qName}");
+                            using var scope = _serviceProvider.CreateScope();
+                            var handler = scope.ServiceProvider.GetRequiredService<THandler>();
+                            await handler.HandleAsync(command);
+                            await _tracker.TrackAsync(command.TrackingId, "Worker", $"Handled by {typeof(THandler).Name}");
+                            
+                            await _queueService.AckReliableAsync(processingQueue, json);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Error handling command {TrackingId} in queue {Queue}. Moving to DLQ.", command.TrackingId, qName);
+                            await _tracker.TrackAsync(command.TrackingId, "Worker", $"Error: {ex.Message}. Moving to DLQ.");
+                            await _tracker.IncrementStatAsync($"error:{qName}");
+                            
+                            // Move to dead letter queue
+                            await _queueService.EnqueueAsync($"{qName}:dead", command);
+                            await _queueService.AckReliableAsync(processingQueue, json);
+                        }
                     }
                     else
                     {
@@ -110,7 +123,7 @@ public class CqrsDispatcher : IDispatcher
                 catch (OperationCanceledException) { break; }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error processing command queue {Queue}", qName);
+                    _logger.LogError(ex, "Critical error in command worker loop for queue {Queue}", qName);
                     await Task.Delay(1000, ct);
                 }
             }
@@ -193,5 +206,17 @@ public class CqrsDispatcher : IDispatcher
     public async Task<Dictionary<string, long>> GetStatisticsAsync()
     {
         return await _tracker.GetStatsAsync();
+    }
+
+    public async Task RetryCommandAsync(string queueName, string messageJson)
+    {
+        var deadQueue = $"{queueName}:dead";
+        await _queueService.RemoveFromListAsync(deadQueue, messageJson);
+        
+        // Deserialize to dynamic/object to re-enqueue
+        var obj = JsonSerializer.Deserialize<JsonElement>(messageJson);
+        await _queueService.EnqueueAsync(queueName, obj);
+        
+        _logger.LogInformation("Retried message for queue {Queue}", queueName);
     }
 }

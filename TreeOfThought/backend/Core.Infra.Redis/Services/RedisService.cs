@@ -70,6 +70,29 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         await _db.ListRemoveAsync(processingQueueName, messageJson);
     }
 
+    public async Task<long> GetQueueLengthAsync(string queueName)
+    {
+        return await _db.ListLengthAsync(queueName);
+    }
+
+    public async Task<List<string>> GetQueuesAsync(string pattern = "*")
+    {
+        var server = _redis.GetServer(_redis.GetEndPoints()[0]);
+        var keys = server.Keys(_db.Database, pattern);
+        return keys.Select(k => k.ToString()).ToList();
+    }
+
+    public async Task<List<string>> GetListRangeAsync(string key, int start, int stop)
+    {
+        var values = await _db.ListRangeAsync(key, start, stop);
+        return values.Select(v => v.ToString()).ToList();
+    }
+
+    public async Task RemoveFromListAsync(string key, string value)
+    {
+        await _db.ListRemoveAsync(key, value);
+    }
+
     // Event Bus Implementation (Reliable Hybrid: Pub/Sub + Persistent Queues)
     public async Task PublishAsync<T>(string topic, T @event)
     {

@@ -26,4 +26,5 @@ public interface IDispatcher
     Task StartWorkerAsync(string workerId);
     Dictionary<string, string> GetWorkerStatus();
     Task<Dictionary<string, long>> GetStatisticsAsync();
+    Task RetryCommandAsync(string queueName, string messageJson);
 }

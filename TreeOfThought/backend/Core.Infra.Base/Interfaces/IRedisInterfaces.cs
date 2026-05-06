@@ -13,6 +13,10 @@ public interface IQueueService
     Task<T?> DequeueAsync<T>(string queueName);
     Task<T?> DequeueReliableAsync<T>(string queueName, string processingQueueName);
     Task AckReliableAsync(string processingQueueName, string messageJson);
+    Task<long> GetQueueLengthAsync(string queueName);
+    Task<List<string>> GetQueuesAsync(string pattern = "*");
+    Task<List<string>> GetListRangeAsync(string key, int start, int stop);
+    Task RemoveFromListAsync(string key, string value);
 }
 
 public interface IEventBus

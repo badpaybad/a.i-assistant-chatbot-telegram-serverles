@@ -10,6 +10,7 @@ import {
   UserOutlined,
   BellOutlined,
   MobileOutlined,
+  DashboardOutlined,
 } from '@ant-design/icons';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 
@@ -47,6 +48,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     if (path.startsWith('/modules/cqrs-test')) return 'cqrs-test';
     if (path.startsWith('/modules/notification-test')) return 'notification-test';
     if (path.startsWith('/modules/fcm-test')) return 'fcm-test';
+    if (path.startsWith('/modules/cqrs-dashboard')) return 'cqrs-dashboard';
     if (path.startsWith('/auth/login')) return 'login';
     if (path.startsWith('/auth/signup')) return 'signup';
     return 'home';
@@ -82,6 +84,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       key: 'fcm-test',
       icon: <MobileOutlined />,
       label: <Link to="/modules/fcm-test">FCM Test</Link>,
+    },
+    {
+      key: 'cqrs-dashboard',
+      icon: <DashboardOutlined />,
+      label: <Link to="/modules/cqrs-dashboard">CQRS Dashboard</Link>,
     },
     {
       key: 'login',

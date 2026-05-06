@@ -63,6 +63,7 @@ builder.Services.AddScoped<AuthService>();
 // --- 5. Handlers (Singleton as requested) ---
 builder.Services.AddSingleton<SampleCommandHandler>();
 builder.Services.AddSingleton<SampleEventHandler>();
+builder.Services.AddSingleton<SampleEventHandlerAlwaysError>();
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers();
@@ -130,5 +131,6 @@ var dispatcher = app.Services.GetRequiredService<IDispatcher>();
 // Register handlers
 await dispatcher.RegisterCommandHandlerAsync<SampleCommand, SampleCommandHandler>("sample.command");
 await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandler>("sample.event", "web-api-subscriber");
-
+await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandlerAlwaysError>("sample.event", "web-api-subscriber-test-always-err");
+await dispatcher.PublishAsync(new SampleEvent { Data = "Test" });
 app.Run();
