@@ -14,6 +14,8 @@ import TracingPage from './modules/cqrs-dashboard/pages/TracingPage';
 import ProjectListPage from './modules/BookingBds/pages/ProjectListPage';
 import ApartmentLayoutPage from './modules/BookingBds/pages/ApartmentLayoutPage';
 import CartPage from './modules/BookingBds/pages/CartPage';
+import AdminProjectPage from './modules/BookingBds/pages/AdminProjectPage';
+import AdminApartmentPage from './modules/BookingBds/pages/AdminApartmentPage';
 import { setupFCM, onMessageReceived } from './utils/firebaseUtils';
 
 // Dummy Pages
@@ -75,6 +77,10 @@ function App() {
           <Route path="/modules/booking-bds" element={<ProjectListPage />} />
           <Route path="/modules/booking-bds/projects/:projectId" element={<ApartmentLayoutPage />} />
           <Route path="/modules/booking-bds/cart" element={<CartPage />} />
+          
+          {/* Admin Booking Bds */}
+          <Route path="/modules/booking-bds/admin/projects" element={<AdminProjectPage />} />
+          <Route path="/modules/booking-bds/admin/projects/:projectId/apartments" element={<AdminApartmentPage />} />
           
           <Route path="*" element={<h1>404 Not Found</h1>} />
         </Routes>

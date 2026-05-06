@@ -72,6 +72,7 @@ builder.Services.AddSingleton<SampleEventHandler>();
 builder.Services.AddSingleton<SampleEventHandlerAlwaysError>();
 builder.Services.AddScoped<CreateBookingCommandHandler>();
 builder.Services.AddScoped<ConfirmPaymentCommandHandler>();
+builder.Services.AddScoped<AdminCommandHandler>();
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
@@ -148,6 +149,8 @@ await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandlerAlways
 // Register BookingBds handlers
 await dispatcher.RegisterCommandHandlerAsync<CreateBookingCommand, CreateBookingCommandHandler>();
 await dispatcher.RegisterCommandHandlerAsync<ConfirmPaymentCommand, ConfirmPaymentCommandHandler>();
+await dispatcher.RegisterCommandHandlerAsync<CreateProjectCommand, AdminCommandHandler>();
+await dispatcher.RegisterCommandHandlerAsync<CreateApartmentCommand, AdminCommandHandler>();
 
 // Ensure Database Created (PostgreSQL)
 using (var scope = app.Services.CreateScope())

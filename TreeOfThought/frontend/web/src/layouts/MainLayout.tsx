@@ -106,6 +106,11 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       label: <Link to="/modules/booking-bds/cart">Giỏ hàng</Link>,
     },
     {
+      key: 'admin-booking',
+      icon: <ProjectOutlined />,
+      label: <Link to="/modules/booking-bds/admin/projects">Quản lý dự án</Link>,
+    },
+    {
       key: 'login',
       icon: <UserOutlined />,
       label: <Link to="/auth/login">Login</Link>,

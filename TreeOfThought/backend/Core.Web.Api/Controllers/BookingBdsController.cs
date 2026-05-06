@@ -76,6 +76,20 @@ public class BookingBdsController : ControllerBase
         var bookings = await _queryService.GetBookingsByCustomerAsync(userId);
         return Ok(bookings);
     }
+
+    [HttpPost("projects")]
+    public async Task<IActionResult> CreateProject([FromBody] CreateProjectCommand command)
+    {
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
+    }
+
+    [HttpPost("apartments")]
+    public async Task<IActionResult> CreateApartment([FromBody] CreateApartmentCommand command)
+    {
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
+    }
 }
 
 public class CreateBookingRequest

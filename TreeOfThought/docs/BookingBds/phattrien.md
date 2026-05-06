@@ -12,6 +12,10 @@
     - `CreateBookingCommand`: Khởi tạo giữ chỗ, dùng EF Core Transaction và Redis Lock để bảo vệ tranh chấp.
     - `CancelBookingCommand`: Hủy giữ chỗ.
     - `ConfirmPaymentCommand`: Cập nhật trạng thái thanh toán.
+    - `CreateProjectCommand`: Thêm dự án mới.
+    - `UpdateProjectCommand`: Cập nhật thông tin dự án.
+    - `CreateApartmentCommand`: Thêm căn hộ vào dự án.
+    - `UpdateApartmentStatusCommand`: Cập nhật trạng thái căn hộ thủ công.
 - **Queries**: Dùng LINQ to SQL qua EF Core.
     - `GetMyBookingsQuery`: Lấy danh sách booking của khách hàng hiện tại.
 

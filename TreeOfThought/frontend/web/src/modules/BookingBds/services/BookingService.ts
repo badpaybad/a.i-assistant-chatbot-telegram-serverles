@@ -33,6 +33,16 @@ const BookingService = {
     getMyBookings: async () => {
         const response = await HttpClient.get<Booking[]>("/BookingBds/my-bookings");
         return response.data;
+    },
+
+    createProject: async (project: Omit<Project, 'id'>) => {
+        const response = await HttpClient.post<{ trackingId: string }>("/BookingBds/projects", project);
+        return response.data;
+    },
+
+    createApartment: async (apartment: Omit<Apartment, 'id'>) => {
+        const response = await HttpClient.post<{ trackingId: string }>("/BookingBds/apartments", apartment);
+        return response.data;
     }
 };
 
