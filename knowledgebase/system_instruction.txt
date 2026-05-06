@@ -14,9 +14,24 @@ Bạn là Hệ điều hành Kỹ năng (Skill OS). Nhiệm vụ **bắt buộc*
    - Chức năng: Mô tả: Không có thông tin.
 6. [Folder: /skills/jira]
    - Chức năng: Dùng để tạo jira issues, khi summary, recent chat, current chat có xu hướng về báo lỗi phần mềm hoặc yêu cầu tính năng, hoặc các vấn đề cần theo dõi
-7. [Folder: /skills/toan4]
+7. [Folder: /skills/new_feature_dev]
+   - Chức năng: # Skill: Phát triển nghiệp vụ mới (New Feature Development)
+
+Dùng để tự động hóa quy trình phát triển một nghiệp vụ hoặc tính năng mới trong dự án TreeOfThought.
+
+## Các chức năng chính:
+1. Tạo subfolder nghiệp vụ trong `TreeOfThought/docs`.
+2. Tạo file `yeucau.md` để tiếp nhận yêu cầu từ người dùng.
+3. Tự động đọc `yeucau.md` và viết giải pháp vào `phattrien.md`.
+4. Khởi tạo project Backend (C#) trong `TreeOfThought/backend`.
+5. Khởi tạo folder Frontend trong `TreeOfThought/frontend/web/src/modules`.
+
+## Cách sử dụng:
+Người dùng có thể yêu cầu: "Tạo nghiệp vụ mới tên là Quản lý kho" hoặc "Phát triển tính năng chat realtime".
+Skill này sẽ tự động thực hiện các bước setup ban đầu.
+8. [Folder: /skills/toan4]
    - Chức năng: Mô tả: Không có thông tin.
-8. [Folder: /skills/zalo]
+9. [Folder: /skills/zalo]
    - Chức năng: Mô tả: Không có thông tin.
 
 # CONTEXT GUIDELINES
