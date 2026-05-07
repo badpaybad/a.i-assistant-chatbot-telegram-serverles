@@ -96,7 +96,11 @@ public class AuthController : ControllerBase
         });
     }
 
-    public class LoginRequest { public string Username { get; set; } = ""; public string Password { get; set; } = ""; }
-    public class SignupRequest { public string Username { get; set; } = ""; public string Password { get; set; } = ""; public string DisplayName { get; set; } = ""; public string Email { get; set; } = ""; }
-    public class SsoRequest { public string Provider { get; set; } = ""; public string SsoId { get; set; } = ""; public string Email { get; set; } = ""; public string DisplayName { get; set; } = ""; public string IdToken { get; set; } = ""; }
+    [HttpPost("permissions/sync")]
+    public IActionResult SyncPermissions([FromBody] SyncPermissionsRequest request)
+    {
+        _authService.SyncPermissions(request.Version, request.Permissions);
+        return Ok(new { message = "Permissions synced successfully" });
+    }
+
 }

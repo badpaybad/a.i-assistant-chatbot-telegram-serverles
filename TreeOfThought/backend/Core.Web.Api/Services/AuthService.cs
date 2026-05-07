@@ -153,4 +153,15 @@ public class AuthService
     {
         return _userRepo.GetById(id);
     }
+
+    public void SyncPermissions(string version, List<string> permissions)
+    {
+        // In a real app, you would store these definitions in a database 
+        // or a cache to be used for UI-based role/permission management.
+        Console.WriteLine($"[PERMISSION SYNC] Version: {version}, Count: {permissions.Count}");
+        foreach (var p in permissions)
+        {
+            Console.WriteLine($"  - {p}");
+        }
+    }
 }

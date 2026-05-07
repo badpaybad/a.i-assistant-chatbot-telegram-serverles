@@ -1,7 +1,7 @@
 Khi phát triển 1 nghiệp vụ mới cần tuân thủ các bước sau:
 1. Tạo subfolder: {tên nghiệp vụ} trong TreeOfThought/docs  
 2. Tạo yeucau.md trong subfolder vừa tạo 
-3. khi có yeucau.md tuân thủ hướng dẫn chung ở TreeOfThought/readme.md
+3. khi có yeucau.md tuân thủ hướng dẫn chung ở TreeOfThought/1st.md
     - Người dùng sẽ nhập yêu cầu vào yeucau.md
     - Yêu cầu AI đọc yeucau.md và suy nghĩ viết giải pháp cách làm vào phattrien.md
     - nếu có thay đổi cần thêm vào yeucau.md và yêu cầu AI suy nghĩ viết giải pháp cách làm vào phattrien.md. đợi người dùng xác nhận phương án ở phattrien.md rồi mới tiến hành làm

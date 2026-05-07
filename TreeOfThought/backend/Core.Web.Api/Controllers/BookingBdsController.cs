@@ -1,4 +1,5 @@
 using Core.Infra.Base.Interfaces;
+using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Module.BookingBds.Commands;
@@ -90,18 +91,4 @@ public class BookingBdsController : ControllerBase
         await _dispatcher.SendAsync(command);
         return Ok(new { trackingId = command.TrackingId });
     }
-}
-
-public class CreateBookingRequest
-{
-    public Guid ApartmentId { get; set; }
-    public decimal DepositAmount { get; set; }
-    public string RequestId { get; set; } = null!;
-}
-
-public class ConfirmPaymentRequest
-{
-    public Guid BookingId { get; set; }
-    public string TransactionId { get; set; } = null!;
-    public decimal AmountPaid { get; set; }
 }

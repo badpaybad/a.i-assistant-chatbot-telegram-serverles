@@ -1,0 +1,38 @@
+<nz-page-header nzTitle="Message Flow Tracing" [nzSubtitle]="trackingId" (nzBack)="true">
+  <nz-page-header-extra>
+    <button nz-button nzType="default" [routerLink]="['/modules/cqrs-dashboard']">Back to Dashboard</button>
+  </nz-page-header-extra>
+</nz-page-header>
+
+<div class="tracing-content">
+  <nz-card nzTitle="Visualized Flow">
+    <nz-steps [nzCurrent]="history.length - 1" nzDirection="vertical" nzProgressDot>
+      <nz-step 
+        *ngFor="let log of history" 
+        [nzTitle]="log.step" 
+        [nzDescription]="descriptionTemplate"
+        [nzStatus]="getStepStatus(log.step)">
+        <ng-template #descriptionTemplate>
+          <div class="step-details">
+            <p><strong>Time:</strong> {{ log.time | date:'medium' }}</p>
+            <p><strong>Details:</strong> {{ log.details }}</p>
+          </div>
+        </ng-template>
+      </nz-step>
+    </nz-steps>
+
+    <div *ngIf="history.length === 0" class="no-data">
+      No tracking data found for this ID.
+    </div>
+  </nz-card>
+
+  <nz-divider nzText="Raw Timeline"></nz-divider>
+
+  <nz-card>
+    <nz-timeline>
+      <nz-timeline-item *ngFor="let log of history" [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'green'">
+        {{ log.time | date:'HH:mm:ss' }} - {{ log.step }}: {{ log.details }}
+      </nz-timeline-item>
+    </nz-timeline>
+  </nz-card>
+</div>

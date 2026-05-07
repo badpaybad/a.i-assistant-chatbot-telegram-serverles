@@ -17,7 +17,14 @@ public class MockUserRepository
             DisplayName = "System Admin",
             Email = "badpaybad@gmail.com",
             IsEmailVerified = true,
-            Claims = new List<string> { "admin", "user.manage", "cqrs-test" }
+            Claims = new List<string> { 
+                "admin", 
+                "user.manage", 
+                "cqrs-test", 
+                "cqrs:dashboard:view", 
+                "cqrs:dashboard:manage_workers", 
+                "cqrs:dashboard:retry_messages" 
+            }
         };
         _users[admin.Id] = admin;
     }

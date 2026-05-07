@@ -1,0 +1,5 @@
+<router-outlet></router-outlet>
+
+<ng-template #htmlNotification let-notification>
+  <div [innerHTML]="notification?.nzData?.content || notification?.options?.nzData?.content || notification?.content || 'Notification Content Error'"></div>
+</ng-template>

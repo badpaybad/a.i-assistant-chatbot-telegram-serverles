@@ -1,0 +1,37 @@
+.login-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.login-header h2 {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.login-header p {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.login-form-margin {
+  margin-bottom: 16px;
+}
+
+.login-form-forgot {
+  float: right;
+}
+
+.login-form-button {
+  width: 100%;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.sso-buttons button {
+  margin-bottom: 12px;
+}
+
+.sso-buttons button [nz-icon] {
+  margin-right: 8px;
+}

@@ -1,0 +1,14 @@
+.message-list-content {
+  padding: 24px;
+}
+
+.msg-cell {
+  font-family: monospace;
+  color: #555;
+}
+
+.no-data {
+  text-align: center;
+  padding: 40px;
+  color: #999;
+}

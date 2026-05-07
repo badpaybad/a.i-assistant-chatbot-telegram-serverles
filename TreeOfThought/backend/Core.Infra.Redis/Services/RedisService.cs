@@ -93,6 +93,23 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         await _db.ListRemoveAsync(key, value);
     }
 
+    public async Task RecoverProcessingQueueAsync(string queueName, string processingQueueName)
+    {
+        long recoveredCount = 0;
+        while (true)
+        {
+            // Move from processing queue back to the main queue
+            var value = await _db.ListRightPopLeftPushAsync(processingQueueName, queueName);
+            if (!value.HasValue) break;
+            recoveredCount++;
+        }
+
+        if (recoveredCount > 0)
+        {
+            _logger.LogInformation("Recovered {Count} messages from {ProcessingQueue} to {Queue}", recoveredCount, processingQueueName, queueName);
+        }
+    }
+
     // Event Bus Implementation (Reliable Hybrid: Pub/Sub + Persistent Queues)
     public async Task PublishAsync<T>(string topic, T @event)
     {
@@ -147,8 +164,11 @@ public class RedisService : ICacheService, IQueueService, IEventBus
             }
         };
 
-        // 1. Initial drain (in case there's old data)
-        _ = Task.Run(drainQueue);
+        // 1. Initial recovery and drain (in case there's old data or previous crash)
+        _ = Task.Run(async () => {
+            await RecoverProcessingQueueAsync(subQueue, processingQueue);
+            await drainQueue();
+        });
 
         // 2. Wait for signal to drain again
         await _redis.GetSubscriber().SubscribeAsync(RedisChannel.Literal(topic), async (channel, message) =>

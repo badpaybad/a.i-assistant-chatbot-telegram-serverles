@@ -1,74 +1,51 @@
-# Kế hoạch phát triển Frontend TreeOfThought
+# Kế hoạch phát triển Frontend TreeOfThought (Bổ sung & Hoàn thiện)
 
-## 1. Công nghệ sử dụng
-- **React 19**: Phiên bản mới nhất của React.
-- **TypeScript**: Đảm bảo type safety.
-- **Ant Design (antd)**: UI Framework chính.
-- **Vite**: Build tool nhanh chóng.
-- **React Router DOM**: Quản lý routing.
-- **Axios**: Gọi API tới Backend.
-- **Firebase SDK**: Hỗ trợ Auth (Custom Token), Firestore (Realtime), FCM (Push Notification).
-- **Docker**: Nginx serve static files (folder `dist`).
+Dựa trên yêu cầu chi tiết tại [yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/yeucau.md), kế hoạch này tập trung vào việc hoàn thiện các tính năng còn thiếu và tối ưu hóa hệ thống hiện tại.
 
-## 2. Cấu trúc thư mục (Folder Structure)
-```
-/src
-  /assets          # Hình ảnh, font, icon
-  /components      # Component dùng chung toàn app
-  /hooks           # Custom hooks dùng chung
-  /layouts         # Layout chính (MainLayout, AuthLayout)
-  /modules         # Các module nghiệp vụ (gói gọn pages, components, hooks, services, types)
-    /auth          # Module xác thực
-    /cqrs-test     # Module test API CQRS
-  /pages           # Các trang độc lập hoặc trang chủ
-  /services        # Service dùng chung (Firebase, API base)
-  /store           # State management (nếu cần, dùng Context hoặc Zustand)
-  /types           # Type definitions dùng chung
-  /utils           # Helper functions (Firebase utils, formatters)
-/public            # Static assets
-/test              # Folder chứa các file test tự động theo quy tắc
-Dockerfile
-nginx.conf
-package.json
-tsconfig.json
-vite.config.ts
-```
+## 1. Công nghệ bổ sung
+- **Mermaid.js / Ng-zorro-graph**: Để vẽ luồng Command/Event trực quan hơn.
+- **Service Worker**: Để nhận FCM push notification ở chế độ background.
 
-## 3. Các bước thực hiện cụ thể
+## 2. Các bước thực hiện cụ thể
 
-### Bước 1: Khởi tạo Project
-- Chạy `npx create-vite@latest . --template react-ts` trong `TreeOfThought/frontend/web`.
-- Cài đặt các package cần thiết: `antd`, `axios`, `firebase`, `react-router-dom`, `@ant-design/icons`, `web-vapi-key` (nếu cần).
+### Bước 1: Hoàn thiện Firebase & Real-time
+- **Firebase Service**:
+    - Cập nhật `subscribeToRequestId(requestId)`: Sau khi nhận dữ liệu, thực hiện `deleteDoc` để xóa document tương ứng trên Firestore.
+    - Cấu hình `firebase-messaging-sw.js` trong thư mục `src/` để hỗ trợ Google Messaging.
+    - Test việc nhận notification khi tab trình duyệt đang đóng hoặc ở background.
 
-### Bước 2: Thiết lập Layout và Routing
-- Thiết lập `MainLayout` với `Header`, `Sider`, và `Content` sử dụng Ant Design.
-- Định nghĩa hệ thống Route tuân thủ MVC: `/auth/login`, `/auth/signup`, `/home`, `/about`, `/contact`, `/modules/cqrs-test`.
+### Bước 2: Quản lý Quyền (Permission)
+- **Centralized Config**: Tạo `src/app/core/auth/permissions.config.ts` định nghĩa tất cả các quyền UI (ví dụ: `VIEW_CQRS_DASHBOARD`, `MANAGE_WORKERS`).
+- **Sync Logic**: 
+    - Khi `AuthService` login thành công, so sánh version danh sách permission hiện tại với version lưu ở LocalStorage.
+    - Nếu có thay đổi, gửi danh sách này lên BE qua API `/api/auth/permissions/sync` (cần phối hợp với BE).
+- **UI Directive**: Sử dụng `*nzPermission="'PERMISSION_NAME'"` để ẩn/hiện menu và nút bấm.
 
-### Bước 3: Tích hợp Firebase
-- Tạo `firebaseConfig.ts` từ file json được cung cấp.
-- Viết `firebaseUtils.ts`:
-    - `signInWithCustomToken(token)`: Đăng nhập bằng custom token từ BE.
-    - `subscribeToFirestore(requestId)`: Subscribe vào Firestore collection/doc theo request ID để nhận kết quả realtime.
-    - `setupFCM()`: Thiết lập Service Worker để nhận push notification ngay cả khi đóng trình duyệt.
+### Bước 3: Nâng cấp CQRS Dashboard
+- **Visual Flow (Tracing)**: 
+    - Nâng cấp trang Tracing từ dạng Timeline sang dạng Graph (Flow Chart) trực quan.
+    - Hiển thị rõ các node: Command -> Worker -> Queue -> Event -> Topic.
+- **Detailed Error Dashboard**:
+    - Thêm biểu đồ thống kê lỗi theo thời gian (Error rate).
+    - Thêm thông tin chi tiết về nguyên nhân lỗi (Stacktrace) trong message detail.
+    - Thêm tab quản lý Worker chi tiết: Xem log gần nhất của worker, thời gian uptime.
 
-### Bước 4: Xây dựng Module Auth
-- **Trang Login**: Hỗ trợ Email/Password và SSO (Google, MS, Facebook).
-- **Trang Signup**: Đăng ký với các trường bắt buộc, xử lý verify email qua link.
-- **SSO Handling**: Nhận callback từ các provider, gửi lên BE để nhận JWT và Firebase Custom Token.
+### Bước 4: Layout & UX refinements
+- **Header Update**: 
+    - Khi chưa login: Hiện nút Login/Signup.
+    - Khi đã login: Hiện `Username (Email)` và nút Logout.
+- **Error Handling**: 
+    - Interceptor sẽ bắt mọi lỗi API và hiển thị `nzNotification.error`.
+    - Các notification này bắt buộc phải có `nzDuration: 0` (người dùng tự đóng) như yêu cầu.
 
-### Bước 5: Xây dựng Module Test CQRS
-- Tạo UI để enqueue Command và publish Event.
-- Sử dụng Firestore subscription để hiển thị kết quả xử lý từ BE theo `requestId`.
+### Bước 5: Docker & Deployment
+- Cập nhật `Dockerfile` để copy đúng folder `dist` và cấu hình Nginx support Single Page Application (SPA) routing.
 
-### Bước 6: Phân quyền UI (Permission Handling)
-- Viết hook `usePermissions` để check claims từ JWT token.
-- Tạo component `PermissionGate` để ẩn/hiện UI dựa trên claims.
-- Cơ chế đồng bộ permission lên BE sau khi login thành công.
+## 3. Các lưu ý quan trọng
+- Luôn giữ code sạch, tuân thủ Angular best practices (Standalone components, Signals/RxJS).
+- Giao diện phải mang tính "Premium" (Ant Design tokens, smooth transitions).
+- Kiểm tra kỹ việc xóa document Firestore để tránh phát sinh chi phí và dư thừa dữ liệu.
 
-### Bước 7: Docker hóa
-- Viết `Dockerfile`: Multi-stage build. Stage 1: Build Vite (`npm run build`). Stage 2: Nginx serve folder `dist`.
-
-## 4. Các lưu ý quan trọng
-- Không dùng Next.js hay SSR.
-- Tuân thủ quy tắc đặt tên file test trong folder `test` và tham số `config_dunp`.
-- Giao diện cần hiện đại, premium, sử dụng các hiệu ứng của Ant Design.
+## 4. Câu hỏi cho User
+- Backend đã sẵn sàng endpoint `/api/auth/permissions/sync` chưa?
+- Có cần hỗ trợ đa ngôn ngữ (i18n) cho các notification không?

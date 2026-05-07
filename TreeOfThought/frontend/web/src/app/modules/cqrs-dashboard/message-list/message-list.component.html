@@ -1,0 +1,82 @@
+<nz-page-header [nzTitle]="'Messages in ' + queueName" (nzBack)="true">
+  <nz-page-header-extra>
+    <button nz-button nzType="primary" (click)="fetchMessages()" [nzLoading]="loading">
+      <span nz-icon nzType="reload"></span> Refresh
+    </button>
+  </nz-page-header-extra>
+</nz-page-header>
+
+<div class="message-list-content">
+  <nz-table #msgTable [nzData]="messages" [nzLoading]="loading">
+    <thead>
+      <tr>
+        <th *ngIf="isDeadLetter()">Failed At</th>
+        <th *ngIf="isDeadLetter()">Error</th>
+        <th>Message Snapshot</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let msg of msgTable.data">
+        <td *ngIf="isDeadLetter()">{{ msg.failedAt | date:'short' }}</td>
+        <td *ngIf="isDeadLetter()" class="error-cell">
+          <nz-tag nzColor="red" *ngIf="msg.error" [nzTooltipTitle]="msg.error" nz-tooltip>
+            {{ msg.error | slice:0:30 }}...
+          </nz-tag>
+        </td>
+        <td class="msg-cell">{{ (msg.isWrapped ? (msg.data | json) : msg.raw) | slice:0:100 }}...</td>
+        <td>
+          <button nz-button nzType="link" (click)="viewDetails(msg)">View</button>
+          <button *ngIf="isDeadLetter()" nz-button nzType="link" (click)="retry(msg)">Retry</button>
+          <button *ngIf="isDeadLetter()" nz-button nzType="link" nzDanger (click)="remove(msg)">Remove</button>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <div *ngIf="messages.length === 0" class="no-data">
+    No messages found in this queue.
+  </div>
+
+  <nz-modal
+    [(nzVisible)]="isModalVisible"
+    nzTitle="Message Details & Action"
+    (nzOnCancel)="handleCancel()"
+    [nzWidth]="900"
+  >
+    <div *nzModalContent>
+      <div *ngIf="errorMetadata" class="error-info">
+        <nz-alert nzType="error" [nzMessage]="'Error Details'" [nzDescription]="errorDesc" nzShowIcon></nz-alert>
+        <ng-template #errorDesc>
+          <p><strong>Error:</strong> {{ errorMetadata.error }}</p>
+          <p><strong>Failed At:</strong> {{ errorMetadata.failedAt | date:'medium' }}</p>
+          <p *ngIf="errorMetadata.topic"><strong>Topic:</strong> {{ errorMetadata.topic }}</p>
+          <p *ngIf="errorMetadata.subscriber"><strong>Subscriber:</strong> {{ errorMetadata.subscriber }}</p>
+          <p *ngIf="errorMetadata.queue"><strong>Queue:</strong> {{ errorMetadata.queue }}</p>
+        </ng-template>
+        <nz-divider></nz-divider>
+      </div>
+
+      <p>Original Message Content:</p>
+      <textarea
+        nz-input
+        [(ngModel)]="editingJson"
+        [nzAutosize]="{ minRows: 10, maxRows: 20 }"
+        style="font-family: 'Courier New', Courier, monospace; font-size: 13px;"
+      ></textarea>
+    </div>
+    <div *nzModalFooter>
+      <button nz-button nzType="default" (click)="handleCancel()">Close</button>
+      <button nz-button nzType="primary" (click)="pushEdited()">Push as New</button>
+      <button
+        *ngIf="isDeadLetter()"
+        nz-button
+        nzType="primary"
+        nzDanger
+        (click)="retryEdited()"
+      >
+        Retry (Original Queue)
+      </button>
+    </div>
+  </nz-modal>
+</div>

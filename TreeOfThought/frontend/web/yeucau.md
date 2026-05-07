@@ -1,17 +1,15 @@
 folder làm việc TreeOfThought/frontend/web 
 
-Tham khảo hướng dẫn chung ở TreeOfThought/readme.md 
+Tham khảo hướng dẫn chung ở TreeOfThought/1st.md 
 
 Đọc kỹ TreeOfThought/frontend/web/yeucau.md và suy nghĩ viết ra cách làm vào TreeOfThought/frontend/web/phattrien.md nếu cần bổ sung thêm yêu cầu thì sửa vào TreeOfThought/frontend/web/yeucau.md và yêu cầu AI suy nghĩ ra cách làm và bổ sung vào TreeOfThought/frontend/web/phattrien.md. Sau khi xem xong có thể bắt đầu 
 
 Các yêu cầu:
     - Dùng TypeScript
-    - Dùng React 19
+    - Dùng Angular 20
     - Ant design
-    - Vite
-        - **Không dùng nextjs với ssr ( server side rendering)**
     - Dockerfile 
-        - Vite build ra folder dist 
+        - Angular build ra folder dist 
         - nginx serve folder dist
     - Layout:
         - Header: Logo, link to Home,About, Contact
@@ -29,6 +27,7 @@ Các yêu cầu:
             - Auto login với firebase custom token từ BE trả ra qua api auth login
             - push noti với FCM dùng firebase custom token
             - Firestore subcribe theo request id ( GUID sinh ra chủ động trên FE), dùng cho các UI đang thao tác đợi kết quả từ BE và sẽ được BE subcribe topic tương ứng với request id.
+                - khi FE nhận được noti data cần xóa data đó để tránh lưu trữ và thừa
             - google messaging ( nhận push noti FCM từ BE) khi không mở trình duyệt vẫn nhận được noti 
     - Các permission ẩn hiện UI theo các claim jwt token khi login xong
         - Các perssmion UI này sẽ cần được quản lý tập trung định nghĩa trên FE và đồng bộ lên BE, start ứng dụng sau login thành công (có thể lưu localstorage để xem có cái nào mới thì gọi đồng bộ lên BE)
@@ -51,20 +50,14 @@ Các yêu cầu:
             - Bổ xung thêm page để test FCM push noti từ BE lên FE ( FE lấy token device id) gửi lên BE để BE gửi noti sample lại. noti này cũng hiện góc phải màn hình, người dùng cần tự đóng
         - FE khi login xong cần để username và email thay vào nút login, đồng thời hiện nút logout.
             - Kích vào nút logout thì log out và chuyển sang trang login
-        - wrap axios vào HttpClient ở utils để khi login thì luôn đưa jwt vào auth header 
-            Cần handle error và show noti góc phải màn hình, noti người dùng tự cần đóng.    
+        - wrap HttpClient ở utils để khi login thì luôn đưa jwt vào auth header 
+            Cần handle error và show noti góc phải màn hình, noti người dùng tự cần đóng.   
+        - Cần noti content hỗ trợ html để để url cho người dùng click vào đường link dẫn đến login khi không có permission, khi httpclient gọi api bị lỗi 401 hoặc không có quyền truy cập, không có quyền xem noti cần hiển thị link đến trang login 
 
 Các lệnh cần để build và chạy FE app này
     cần chạy https và port 4200 để test được google firebase
         
-                ```bash
-                npm install
-                npm run dev
-                npm run build
-                npx serve -s dist -l 80
-                ```
-
-        cần vào google console firestore để set quyền đọc ghi cho user 
+        cần ghi chú hướng dẫn vào google console firestore để set quyền đọc ghi cho user 
 
                     rules_version = '2';
                     service cloud.firestore {
@@ -81,13 +74,15 @@ Các lệnh cần để build và chạy FE app này
                     }
                     }
 
-**bug 1**
-sso MS openid connect chưa hoạt động
-**bug 2**
-sso Facebook openid connect chưa hoạt động
-
-**cập nhật 2026-05-06 20:20:20** 
-    tạo module CQRS Dashboard với các chức năng sau:
+tạo module CQRS Dashboard với các chức năng sau:
         CQRS cần bổ xung UI để visualize các topic queue dashboard về số lượng, lỗi, stuck queue ....
         Có UI để retry resend lên queue or topic các command or event đã fail
         Vẽ luồng đi lại của command, event đã tracking qua các queue name, topic name
+        Xem và thao tác worker
+        Xem và thao tác chi tiết message bị lỗi, retry (bao gồm cả đọc, retry, push lại)
+        Xem lịch sử message đã xử lý, đã retry, đã fail và nguyên nhân, và đi qua các queue name, topic name trong suốt quá trình xử lý
+        cần thêm trang dashboard chi tiết về các lỗi của các worker và queue. để biết được worker nào đang xử lý lỗi và queue nào đang gặp vấn đề
+
+        khi vào dashboard này cần permision: "cqrs:dashboard:view" và các permission khác để full acccess với account admin, account admin mock càn bổ xung claim, nếu BE chưa có api nhận đồng bộ permision thì cần bổ xung
+
+        cqrs dashboard cần show đúng số message lỗi, queue và topic cũng cần thống kê được tổng số message gửi đến, xem danh sách các message lỗi lỗi ở topic queue nào subcriber nào và khi click vào message lỗi cần có thể show detail và retry send message hoặc loại bỏ message đó ra khỏi queue

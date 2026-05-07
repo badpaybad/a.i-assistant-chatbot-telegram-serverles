@@ -1,0 +1,52 @@
+<div class="login-page">
+  <div class="login-header">
+    <h2>Login</h2>
+    <p>Enter your credentials to access the system</p>
+  </div>
+
+  <form nz-form [formGroup]="validateForm" (ngSubmit)="submitForm()">
+    <nz-form-item>
+      <nz-form-control nzErrorTip="Please input your username!">
+        <nz-input-group nzPrefixIcon="user">
+          <input type="text" nz-input formControlName="username" placeholder="Username" />
+        </nz-input-group>
+      </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+      <nz-form-control nzErrorTip="Please input your Password!">
+        <nz-input-group nzPrefixIcon="lock">
+          <input type="password" nz-input formControlName="password" placeholder="Password" />
+        </nz-input-group>
+      </nz-form-control>
+    </nz-form-item>
+
+    <div nz-row class="login-form-margin">
+      <div nz-col [nzSpan]="12">
+        <label nz-checkbox formControlName="remember">
+          <span>Remember me</span>
+        </label>
+      </div>
+      <div nz-col [nzSpan]="12" class="text-right">
+        <a class="login-form-forgot">Forgot password</a>
+      </div>
+    </div>
+
+    <button nz-button class="login-form-button login-form-margin" [nzType]="'primary'" [nzLoading]="loading">Log in</button>
+    Or <a routerLink="/auth/signup">register now!</a>
+  </form>
+
+  <nz-divider nzText="Or login with"></nz-divider>
+
+  <div class="sso-buttons">
+    <button nz-button nzBlock (click)="loginWithGoogle()">
+      <span nz-icon nzType="google"></span> Google
+    </button>
+    <button nz-button nzBlock (click)="loginWithMS()">
+      <span nz-icon nzType="windows"></span> Microsoft
+    </button>
+    <button nz-button nzBlock (click)="loginWithFacebook()">
+      <span nz-icon nzType="facebook"></span> Facebook
+    </button>
+  </div>
+</div>

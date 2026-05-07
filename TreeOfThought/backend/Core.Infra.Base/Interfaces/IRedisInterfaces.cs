@@ -17,6 +17,7 @@ public interface IQueueService
     Task<List<string>> GetQueuesAsync(string pattern = "*");
     Task<List<string>> GetListRangeAsync(string key, int start, int stop);
     Task RemoveFromListAsync(string key, string value);
+    Task RecoverProcessingQueueAsync(string queueName, string processingQueueName);
 }
 
 public interface IEventBus

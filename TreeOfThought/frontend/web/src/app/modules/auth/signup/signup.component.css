@@ -1,0 +1,31 @@
+.signup-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.signup-header h2 {
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.signup-header p {
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.signup-form-button {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.sso-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sso-buttons button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

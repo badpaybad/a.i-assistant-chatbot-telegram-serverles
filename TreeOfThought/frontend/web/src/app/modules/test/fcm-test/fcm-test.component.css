@@ -1,0 +1,10 @@
+.test-content {
+  padding: 24px;
+}
+
+pre {
+  background: #f0f0f0;
+  padding: 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+}

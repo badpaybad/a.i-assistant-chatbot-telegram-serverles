@@ -1,0 +1,60 @@
+<nz-layout class="app-layout">
+  <nz-sider class="menu-sidebar"
+            nzCollapsible
+            nzWidth="256px"
+            nzBreakpoint="md"
+            [(nzCollapsed)]="isCollapsed"
+            [nzTrigger]="null">
+    <div class="sidebar-logo">
+      <a href="/">
+        <img src="assets/logo.png" alt="logo">
+        <h1>Tree Of Thought</h1>
+      </a>
+    </div>
+    <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
+      <li nz-submenu nzOpen nzTitle="Dashboard" nzIcon="dashboard">
+        <ul>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/cqrs-dashboard">CQRS Dashboard</a>
+          </li>
+        </ul>
+      </li>
+      <li nz-submenu nzTitle="Test Modules" nzIcon="experiment">
+        <ul>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/test/firestore">Firestore Test</a>
+          </li>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/test/fcm">FCM Test</a>
+          </li>
+        </ul>
+      </li>
+    </ul>
+  </nz-sider>
+  <nz-layout>
+    <nz-header>
+      <div class="app-header">
+        <span class="header-trigger" (click)="isCollapsed = !isCollapsed">
+            <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
+        </span>
+        <div class="header-right">
+          <ng-container *ngIf="user$ | async as user; else loginBtn">
+            <span class="user-info">
+              <nz-avatar nzIcon="user" [nzSrc]="user.photoURL || ''"></nz-avatar>
+              <span class="username">{{ user.displayName || user.email }}</span>
+            </span>
+            <button nz-button nzType="link" (click)="logout()">Logout</button>
+          </ng-container>
+          <ng-template #loginBtn>
+            <button nz-button nzType="primary" routerLink="/auth/login">Login</button>
+          </ng-template>
+        </div>
+      </div>
+    </nz-header>
+    <nz-content>
+      <div class="inner-content">
+        <router-outlet></router-outlet>
+      </div>
+    </nz-content>
+  </nz-layout>
+</nz-layout>

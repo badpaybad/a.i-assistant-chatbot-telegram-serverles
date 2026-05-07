@@ -33,4 +33,4 @@ Triggered by: `@dev-feature [BusinessName]`
 - When generating `phattrien.md`, the AI **must** strictly follow the base standards defined in `TreeOfThought/backend/yeucau.md` and `TreeOfThought/frontend/yeucau.md`.
 - Iterations on `yeucau.md` must trigger updates to `phattrien.md`.
 - **Crucial**: The AI must wait for user confirmation of the solution in `phattrien.md` before proceeding with any code implementation.
-- All code must adhere to the principles defined in `TreeOfThought/readme.md`.
+- All code must adhere to the principles defined in `TreeOfThought/1st.md`.

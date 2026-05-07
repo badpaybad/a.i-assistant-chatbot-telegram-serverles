@@ -54,6 +54,8 @@ public class CqrsDispatcher : IDispatcher
             var queueName = command.CommandName;
             await _tracker.TrackAsync(command.TrackingId, "Dispatcher", $"Enqueue to {queueName}");
             await _tracker.IncrementStatAsync($"command:{typeof(TCommand).Name}");
+            await _tracker.IncrementStatAsync("commands_processed");
+            await _tracker.IncrementStatAsync($"sent:{queueName}");
             await _queueService.EnqueueAsync(queueName, command);
         }
     }
@@ -72,6 +74,10 @@ public class CqrsDispatcher : IDispatcher
         else
         {
             var topic = @event.EventName;
+            await _tracker.TrackAsync(@event.TrackingId, "Dispatcher", $"Publishing to topic: {topic}");
+            await _tracker.IncrementStatAsync($"event:{topic}");
+            await _tracker.IncrementStatAsync("events_published");
+            await _tracker.IncrementStatAsync($"sent:topic:{topic}");
             await _eventBus.PublishAsync(topic, @event);
         }
     }
@@ -83,9 +89,21 @@ public class CqrsDispatcher : IDispatcher
         var qName = queueName ?? typeof(TCommand).Name;
         var workerId = $"CommandWorker:{qName}";
 
+        if (_workers.TryGetValue(workerId, out var existing))
+        {
+            if (existing.Type != "Command")
+                throw new InvalidOperationException($"Worker {workerId} is already registered as {existing.Type}");
+            
+            _logger.LogWarning("Worker {WorkerId} is already registered. Overwriting.", workerId);
+        }
+
         Func<CancellationToken, Task> startFunc = async (ct) =>
         {
             var processingQueue = $"{qName}:processing";
+            
+            // Initial recovery
+            await _queueService.RecoverProcessingQueueAsync(qName, processingQueue);
+
             while (!ct.IsCancellationRequested)
             {
                 try
@@ -109,9 +127,19 @@ public class CqrsDispatcher : IDispatcher
                             _logger.LogError(ex, "Error handling command {TrackingId} in queue {Queue}. Moving to DLQ.", command.TrackingId, qName);
                             await _tracker.TrackAsync(command.TrackingId, "Worker", $"Error: {ex.Message}. Moving to DLQ.");
                             await _tracker.IncrementStatAsync($"error:{qName}");
+                            await _tracker.IncrementStatAsync("errors_total");
                             
-                            // Move to dead letter queue
-                            await _queueService.EnqueueAsync($"{qName}:dead", command);
+                            // Move to dead letter queue with metadata
+                            var deadLetter = new
+                            {
+                                _original = command,
+                                _error = ex.Message,
+                                _failedAt = DateTime.UtcNow,
+                                _queue = qName,
+                                _workerId = workerId,
+                                _exceptionType = ex.GetType().Name
+                            };
+                            await _queueService.EnqueueAsync($"{qName}:dead", deadLetter);
                             await _queueService.AckReliableAsync(processingQueue, json);
                         }
                     }
@@ -146,6 +174,11 @@ public class CqrsDispatcher : IDispatcher
     {
         var workerId = $"EventWorker:{topic}:{subscriberName}";
         
+        if (_workers.TryGetValue(workerId, out var existing))
+        {
+            _logger.LogWarning("Event Worker {WorkerId} is already registered. Overwriting.", workerId);
+        }
+        
         // This is tricky because SubscribeAsync in RedisService already starts a Task.Run.
         // For management, we should move that logic here or make it controllable.
         // For now, let's just wrap it.
@@ -155,9 +188,36 @@ public class CqrsDispatcher : IDispatcher
             await _eventBus.SubscribeAsync<TEvent>(topic, subscriberName, async @event =>
             {
                 if (ct.IsCancellationRequested) return;
-                using var scope = _serviceProvider.CreateScope();
-                var handler = scope.ServiceProvider.GetRequiredService<THandler>();
-                await handler.HandleAsync(@event);
+                var json = JsonSerializer.Serialize(@event);
+                try 
+                {
+                    await _tracker.TrackAsync(@event.TrackingId, "Worker", $"Event received: {topic}:{subscriberName}");
+                    using var scope = _serviceProvider.CreateScope();
+                    var handler = scope.ServiceProvider.GetRequiredService<THandler>();
+                    await handler.HandleAsync(@event);
+                    await _tracker.TrackAsync(@event.TrackingId, "Worker", $"Event handled by {typeof(THandler).Name}");
+                }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Error handling event {TrackingId} in {Topic}:{Subscriber}. Moving to DLQ.", @event.TrackingId, topic, subscriberName);
+                        await _tracker.TrackAsync(@event.TrackingId, "Worker", $"Error: {ex.Message}. Moving to DLQ.");
+                        await _tracker.IncrementStatAsync($"error:event:{topic}:{subscriberName}");
+                        await _tracker.IncrementStatAsync("errors_total");
+                        
+                        // Move to dead letter queue with metadata
+                        var deadLetter = new
+                        {
+                            _original = @event,
+                            _error = ex.Message,
+                            _failedAt = DateTime.UtcNow,
+                            _topic = topic,
+                            _subscriber = subscriberName,
+                            _workerId = workerId,
+                            _exceptionType = ex.GetType().Name
+                        };
+                        var deadQueue = $"sub_queue:{topic}:{subscriberName}:dead";
+                        await _queueService.EnqueueAsync(deadQueue, deadLetter);
+                    }
             });
             
             // Wait until cancelled
@@ -210,12 +270,20 @@ public class CqrsDispatcher : IDispatcher
 
     public async Task RetryCommandAsync(string queueName, string messageJson)
     {
-        var deadQueue = $"{queueName}:dead";
+        var deadQueue = queueName.EndsWith(":dead") ? queueName : $"{queueName}:dead";
         await _queueService.RemoveFromListAsync(deadQueue, messageJson);
         
-        // Deserialize to dynamic/object to re-enqueue
-        var obj = JsonSerializer.Deserialize<JsonElement>(messageJson);
-        await _queueService.EnqueueAsync(queueName, obj);
+        using var doc = JsonDocument.Parse(messageJson);
+        if (doc.RootElement.TryGetProperty("_original", out var original))
+        {
+            await _queueService.EnqueueAsync(queueName.Replace(":dead", ""), original);
+        }
+        else
+        {
+            // Deserialize to dynamic/object to re-enqueue (legacy format)
+            var obj = JsonSerializer.Deserialize<JsonElement>(messageJson);
+            await _queueService.EnqueueAsync(queueName.Replace(":dead", ""), obj);
+        }
         
         _logger.LogInformation("Retried message for queue {Queue}", queueName);
     }

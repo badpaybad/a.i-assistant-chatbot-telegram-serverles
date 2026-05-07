@@ -1,0 +1,16 @@
+.test-content {
+  padding: 24px;
+}
+
+.result-item {
+  margin-bottom: 16px;
+  padding: 8px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+
+pre {
+  background: #f0f0f0;
+  padding: 8px;
+  border-radius: 4px;
+}

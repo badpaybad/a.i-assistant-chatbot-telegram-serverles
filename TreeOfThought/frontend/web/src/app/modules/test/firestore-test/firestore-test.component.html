@@ -1,0 +1,34 @@
+<nz-page-header nzTitle="Firestore Realtime Notification Test">
+</nz-page-header>
+
+<div class="test-content">
+  <nz-card nzTitle="Send Command & Wait for Firestore">
+    <form nz-form nzLayout="vertical">
+      <nz-form-item>
+        <nz-form-label>Command Name</nz-form-label>
+        <nz-form-control>
+          <input nz-input [(ngModel)]="commandName" name="commandName" />
+        </nz-form-control>
+      </nz-form-item>
+      <nz-form-item>
+        <nz-form-label>Payload (JSON)</nz-form-label>
+        <nz-form-control>
+          <textarea nz-input [(ngModel)]="payload" name="payload" [nzAutosize]="{ minRows: 3 }"></textarea>
+        </nz-form-control>
+      </nz-form-item>
+      <button nz-button nzType="primary" (click)="sendCommand()" [nzLoading]="loading">
+        Send Command
+      </button>
+    </form>
+  </nz-card>
+
+  <nz-card nzTitle="Recent Results" style="margin-top: 24px;">
+    <div *ngFor="let res of results" class="result-item">
+      <p><strong>ID:</strong> {{ res.requestId }}</p>
+      <p><strong>Time:</strong> {{ res.time | date:'medium' }}</p>
+      <pre>{{ res.data | json }}</pre>
+      <hr />
+    </div>
+    <div *ngIf="results.length === 0">No results yet.</div>
+  </nz-card>
+</div>

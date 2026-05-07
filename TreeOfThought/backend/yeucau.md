@@ -1,6 +1,6 @@
 folder làm việc: TreeOfThought/backend
 
-Tham khảo hướng dẫn chung ở TreeOfThought/readme.md 
+Tham khảo hướng dẫn chung ở TreeOfThought/1st.md 
 
 Đọc kỹ TreeOfThought/backend/yeucau.md suy nghĩ viết ra giải pháp và cách làm vào TreeOfThought/backend/phattrien.md nếu có thay đổi cần thêm vào TreeOfThought/backend/yeucau.md và yêu cầu AI suy nghĩ viết giải pháp cách làm vào TreeOfThought/backend/phattrien.md . Sau khi review TreeOfThought/backend/phattrien.md sẽ xác nhận để tiến hành code
 
