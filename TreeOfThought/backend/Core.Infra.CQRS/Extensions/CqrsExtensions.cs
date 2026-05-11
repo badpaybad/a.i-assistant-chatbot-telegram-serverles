@@ -1,6 +1,7 @@
 using System.Reflection;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.CQRS.Services;
+using Core.Infra.CQRS.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Infra.CQRS.Extensions;
@@ -23,6 +24,9 @@ public static class CqrsExtensions
             // Requirement 64: Register handlers as Singleton
             services.AddSingleton(type);
         }
+
+        // Register open generic notification handler
+        services.AddSingleton(typeof(Handlers.UiNotificationEventHandler<>));
 
         // Register the auto-registration service
         services.AddHostedService<CqrsAutoRegistrationService>(sp => 

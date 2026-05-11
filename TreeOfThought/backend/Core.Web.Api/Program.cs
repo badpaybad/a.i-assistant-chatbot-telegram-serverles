@@ -20,6 +20,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Configuration ---
 var config = builder.Configuration;
+builder.Services.AddMemoryCache();
 
 // --- CORS Configuration ---
 builder.Services.AddCors(options =>

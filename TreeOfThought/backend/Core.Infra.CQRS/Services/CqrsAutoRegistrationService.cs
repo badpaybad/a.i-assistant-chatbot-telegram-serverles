@@ -1,6 +1,7 @@
 using System.Reflection;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.CQRS.Extensions;
+using Core.Infra.CQRS.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -68,6 +69,31 @@ public class CqrsAutoRegistrationService : IHostedService
 
                 var method = dispatcher.GetType().GetMethod(nameof(IDispatcher.RegisterEventHandlerAsync))
                     ?.MakeGenericMethod(eventType, type);
+
+                if (method != null)
+                {
+                    await (Task)method.Invoke(dispatcher, new object?[] { topicName, subscriberName })!;
+                }
+            }
+        }
+
+        // Get all Event types in the assemblies to check for INotifyUiEvent
+        var eventTypes = _assemblies.SelectMany(a => a.GetTypes())
+            .Where(t => typeof(IBaseEvent).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+        foreach (var eventType in eventTypes)
+        {
+            if (typeof(INotifyUiEvent).IsAssignableFrom(eventType))
+            {
+                var topicName = CqrsExtensions.GetTopicNameFromEvent(eventType);
+                var subscriberName = "UiNotificationHandler";
+
+                _logger.LogInformation("Auto-registering Global UI Notification Handler for Topic: {Topic}", topicName);
+
+                var handlerType = typeof(UiNotificationEventHandler<>).MakeGenericType(eventType);
+                
+                var method = dispatcher.GetType().GetMethod(nameof(IDispatcher.RegisterEventHandlerAsync))
+                    ?.MakeGenericMethod(eventType, handlerType);
 
                 if (method != null)
                 {
