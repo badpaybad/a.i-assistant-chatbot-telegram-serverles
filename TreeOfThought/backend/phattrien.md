@@ -19,9 +19,15 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
     - `MessageTracker`: Quản lý tracking ID và thống kê.
 - **Core.Infra.CQRS**: 
     - `Dispatchers/`: `CqrsDispatcher` điều phối Command/Event và quản lý vòng đời Worker.
-- **Core.Infra.Firebase**: 
-    - `Services/`: `FirebaseService` tích hợp Auth, Firestore, FCM, Cloud Storage.
-- **Core.Web.Api**: RESTful API, Middleware, DI Container và khởi tạo hệ thống.
+- **Core.Infra.Auth**: 
+    - `Attributes/`: `AppAuthorizeAttribute` tập trung xử lý validate token, authenticate, authorization. Hỗ trợ kiểm tra theo Role hoặc Permission (logic OR).
+    - `Services/`: `AuthService` xử lý JWT (OIDC compliant), Firebase Custom Token, RBAC & ACL logic, và Admin seeding.
+    - `Controllers/`: 
+        - `AuthController`: API Login, Signup, Verify, SSO và OIDC Discovery.
+        - `AuthManagementController`: Quản lý Role, Permission, User-Role mapping và ACL entries.
+    - `Models/` & `Repositories/`: User, Role, Permission, AclEntry và UserEmail entities. Triển khai PostgreSQL-backed RBAC & ACL.
+- **Core.Web.Api**: Host ứng dụng, cấu hình Middleware, DI Container và nạp các Module/Infra thông qua `ApplicationPart`.
+- **Module.[BusinessName]** (Tương lai): Các project riêng cho từng nghiệp vụ, tuân thủ CQRS, có controller riêng và sử dụng `Core.Infra.Auth`.
 
 ---
 
@@ -38,10 +44,15 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
     - **Bulk Operations**: Sử dụng `AddRangeAsync`, `UpdateRange`, `RemoveRange` tích hợp sẵn của EF Core.
     - **Partial Update**: Sử dụng `Entry(entity).Property(x => x.Field).IsModified = true` để chỉ cập nhật các trường được chỉ định.
     - **SQL Generation**: `context.Database.GenerateCreateScript()` được dùng để sinh mã tạo bảng từ Entity POCO.
+    - **Logging**: Tích hợp `ILoggerFactory` vào `DbContextOptions` để capture và log các câu lệnh SQL sinh ra từ LINQ phục vụ debug.
 - **Mongo Infrastructure**:
-    - **MongoDbContext**: Tự động khởi tạo các `DbSet<T>` thông qua Reflection khi constructor được gọi.
-    - **Custom DbSet<T>**: Triển khai `IQueryable<T>` bằng cách bọc `IMongoCollection.AsQueryable()`. Hỗ trợ các phương thức giống EF như `AddAsync`, `RemoveRangeAsync`, `UpdateAsync`.
-    - **Mapping**: Tự động bỏ qua các trường thừa (`SetIgnoreExtraElements(true)`) và ánh xạ `Id` kiểu Guid.
+    - **MongoDbContext**: Tự động khám phá và khởi tạo các thuộc tính `IDbSet<T>` thông qua Reflection trong constructor.
+    - **Custom DbSet<T>**: Triển khai `IDbSet<T>` và `IQueryable<T>` bằng cách bọc `IMongoCollection.AsQueryable()`.
+    - **EF-like Methods**: Hỗ trợ `AddAsync`, `AddRangeAsync`, `UpdateAsync`, `UpdateRangeAsync`, `RemoveAsync`, `RemoveRangeAsync`.
+    - **ID Handling**: `RemoveAsync` và `UpdateAsync` ưu tiên ép kiểu về `IBaseTrackingEntity` để lấy `Id`. Nếu không, sử dụng Reflection để tìm property `Id`.
+    - **Guid Dependency Removal**: Loại bỏ hoàn toàn các overload `DeleteAsync(Guid id)` trực tiếp để tránh phụ thuộc cứng vào kiểu dữ liệu Guid trong interface hạ tầng.
+    - **Mapping**: Tự động gọi `BsonClassMap.RegisterClassMap<T>` với `SetIgnoreExtraElements(true)` để xử lý lỗi missing field/property.
+    - **Query Logging**: Sử dụng `ClusterConfigurator` khi khởi tạo `MongoClient` để đăng ký `CommandStartedEvent`, cho phép log chính xác các câu lệnh MQL (Mongo Query Language) sinh ra từ LINQ.
 
 ### 2.3. Messaging Tin cậy với Redis
 - **Reliable Queue**: 
@@ -61,6 +72,10 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
     - Mỗi Handler được chạy trong một `Task.Run` with `CancellationToken`.
     - Hỗ trợ **Dead Letter Queue (DLQ)**: Khi Handler lỗi sau khi retry (nếu có), message kèm metadata lỗi được đẩy vào `{queueName}:dead`.
     - **Management**: Cung cấp `StartWorkerAsync`, `StopWorkerAsync` và `GetWorkerStatus` để điều khiển runtime.
+- **Observability & Tracking**:
+    - **MessageTracker**: Lưu trữ metadata của mọi message (Command/Event) vào Redis Hash. Metadata bao gồm: `SourceQueue`, `TargetTopic`, `HandlerType`, `Status`, `ExecutionTime`.
+    - **Lineage Tracking**: Sử dụng `TrackingId` để liên kết các message. Khi một Handler sinh ra message mới, nó kế thừa `TrackingId` cũ, cho phép vẽ biểu đồ luồng đi của dữ liệu giữa các queue và topic.
+    - **Statistics**: Tích hợp các counter trong Redis để thống kê số lượng xử lý thành công/thất bại theo từng `CommandType` và `QueueName`.
 
 ### 2.5. Cloud Services (Firebase)
 - **Multi-App**: Quản lý nhiều Firebase App thông qua `Dictionary<string, FirebaseApp>`.
@@ -69,20 +84,31 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
 
 ---
 
-## 3. Cấu hình Web API & Security
-
-- **Authentication**: 
-    - Kết hợp JWT truyền thống và Firebase Custom Token.
-    - `AppAuthorizeAttribute` hỗ trợ kiểm tra Login và phân quyền theo Claim.
+- **Authentication & Authorization (Core.Infra.Auth)**: 
+    - **PostgreSQL Database**: Sử dụng DB vật lý thay vì mock, đảm bảo tính bền vững.
+    - **RBAC & ACL Hybrid**: 
+        - **RBAC**: Quản lý quyền theo Role và Permission. Hỗ trợ gán permission trực tiếp cho User (Effective permissions).
+        - **ACL**: Quản lý quyền truy cập chi tiết trên từng instance của tài nguyên (`AclEntry` lưu trữ: Subject, ResourceType, ResourceId, Action).
+    - **OpenID Connect (OIDC)**: 
+        - Cung cấp Discovery Document tại `/.well-known/openid-configuration`.
+        - JWT tuân thủ chuẩn OIDC với các claim: `sub`, `preferred_username`, `email`, `iat`, `jti`.
+    - **User & Email Management**:
+        - Hỗ trợ đa Email cho một User thông qua bảng `UserEmail`.
+        - Chỉ cho phép Email đã được **Verified** và là **Primary** được dùng làm khóa SSO (Google, MS, Facebook).
+    - **Admin Seeding**: Tự động kiểm tra và tạo tài khoản Admin mặc định (`admin/Admin123!`) khi hệ thống khởi chạy lần đầu.
 - **Middleware**:
+    - **AppAuthorizeAttribute**: Sử dụng logic OR giữa Roles và Permissions (truy cập được chấp nhận nếu thỏa mãn 1 trong 2).
     - **CORS**: Cấu hình `AllowAll` cho phép Credentials để tích hợp đa nền tảng.
     - **Security Headers**: Gỡ bỏ `X-Frame-Options` và thêm `Content-Security-Policy: frame-ancestors *` để cho phép nhúng iframe.
     - **Permissions-Policy**: Cấp quyền `camera`, `microphone`, `geolocation` cho các ứng dụng nhúng.
+- **Modular Hosting**:
+    - Host (`Core.Web.Api`) sử dụng `.AddApplicationPart()` để nạp Controller từ các assembly `Core.Infra.Auth` và các dự án nghiệp vụ.
+    - Điều này đảm bảo tính tách biệt: Host chỉ quản lý hạ tầng chung, nghiệp vụ nằm trong project riêng.
 - **Initialization Sequence**:
-    1. Cấu hình DI (Infrastructure -> Repos -> Handlers).
+    1. Cấu hình DI (Infrastructure -> Auth -> Repos -> Handlers).
     2. Khởi tạo Firebase App.
     3. Đăng ký Command/Event Handlers vào Dispatcher.
-    4. Kiểm tra và Seed dữ liệu ban đầu cho Database.
+    4. Kiểm tra và Seed dữ liệu ban đầu cho Database (nếu có).
 
 ## 4. Môi trường Phát triển
 

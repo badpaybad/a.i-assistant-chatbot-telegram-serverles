@@ -8,6 +8,7 @@ Khi phát triển 1 nghiệp vụ mới cần tuân thủ các bước sau:
 4. code BE: 
     - tham khảo các base ở TreeOfThought/backend/yeucau.md
     - tự động tạo project c# {tên nghiệp vụ} vào trong folder TreeOfThought/backend
+        
 5. code FE
     - tham khảo các base ở TreeOfThought/frontend/yeucau.md
     - tự động tạo folder {tên nghiệp vụ} vào trong folder TreeOfThought/frontend/web/src/modules

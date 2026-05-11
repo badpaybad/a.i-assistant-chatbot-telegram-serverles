@@ -1,5 +1,5 @@
 using Core.Infra.Base.Interfaces;
-using Core.Web.Api.Attributes;
+using Core.Infra.Auth.Attributes;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

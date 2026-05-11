@@ -1,3 +1,5 @@
+***folder làm việc chính cho solution*** TreeOfThought
+
 Dùng làm template để phát triển phần mềm, dựa trên MVC, FE, BE và dùng A.I IDE (vd google antigravity)
 
 Dùng spec driven và chia ra để trị.
@@ -12,3 +14,10 @@ Dùng spec driven và chia ra để trị.
                     - đợi người dùng duyệt phattrien.md rồi mới tiến hành làm
                         - lúc duyệt có thể chat trực tiếp hoặc sửa bổ xung cập nhật ở file yeucau.md cho đến khi người dùng duyệt phattrien.md thì hỏi để tiến hành làm
 
+phattrien.md là tài liệu dùng để phát triển code lập trình cần phải suy nghĩ cẩn thận kỹ lưỡng, có thể đưa ra các phương án để người dùng lựa chọn, khi người dùng duyệt phattrien.md rồi mới tiến hành làm
+
+**khi yeucau.md thay đổi bắt buộc cập nhật phattrien.md **
+
+**luôn đảm bảo khi có yeucau.md và phatrien.md dù source code có mất vẫn có thể viết lại một cách chính xác theo như mô tả stable và ready to run**
+
+**chú ý khi thực hiện code xong** cần kiểm tra lỗi BE code project .net hãy dùng lệnh dotnet build xem lỗi ở console log và sửa. khi cần kiểm tra lỗi FE cần chạy lênh ng build xem lỗi ở console log và sửa

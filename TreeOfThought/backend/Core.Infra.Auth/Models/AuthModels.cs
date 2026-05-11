@@ -1,4 +1,4 @@
-namespace Core.Web.Api.Models;
+namespace Core.Infra.Auth.Models;
 
 public class LoginRequest 
 { 

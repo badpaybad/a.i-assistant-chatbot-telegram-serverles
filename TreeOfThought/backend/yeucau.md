@@ -1,6 +1,6 @@
 folder làm việc: TreeOfThought/backend
 
-Tham khảo hướng dẫn chung ở TreeOfThought/1st.md 
+**Tuân thủ hướng dẫn chung ở TreeOfThought/1st.md**
 
 Đọc kỹ TreeOfThought/backend/yeucau.md suy nghĩ viết ra giải pháp và cách làm vào TreeOfThought/backend/phattrien.md nếu có thay đổi cần thêm vào TreeOfThought/backend/yeucau.md và yêu cầu AI suy nghĩ viết giải pháp cách làm vào TreeOfThought/backend/phattrien.md . Sau khi review TreeOfThought/backend/phattrien.md sẽ xác nhận để tiến hành code
 
@@ -150,3 +150,29 @@ Các yêu cầu:
 
 ở dbset của mongodb đang có hàm này bị phụ thuộc vào entity có Id type guid cần bỏ đi. 
     Task DeleteAsync(Guid id);
+
+**Cập nhật 3**
+
+Bổ xung tách auth vào core infra auth để làm các việc 
+    - dùng các base core infra
+    - auth attribute middleware tập trung để xử lý validate token, authenticate , authorization ...
+    - các controller liên quan auth
+
+Các nghiệp vụ khi phát triển cần tạo project riêng: dùng lại các core infra base, tuân thủ về cqrs , các handle command, event, queries, và api controller riêng của nghiệp vụ đó. cần dùng core infra auth để chung về cơ chế xử lý auth attr 
+
+**Cập nhật 4**
+core infra auth bỏ mock và tạo db postgres riêng để dùng.
+khi chưa có tài khoản admin ban đầu của hệ thống cần tạo mới.
+Bổ xung việc quản lý các permision
+    - permision là định nghĩa ở code là claim trong auth attr, hoặc được UI gửi lên thông qua việc đồng bộ permission.
+    - cần api quản lý role là nhóm các permission 
+    - cần api quản lý user có role nào (1 user có thể có nhiều role)
+    - cần api quản lý permission nào có trong role nào
+    - cần api quản lý user có permission trực tiếp (effective permission) (1 user có thể có nhiều permission)
+    - login sinh jwt token cần bổ xung role và permission của user vào trong token
+    - cần auth attribute có thể dùng để check quyền
+        - check theo role
+        - check theo permission
+    - bổ xung để dùng cả RBAC và ACL 
+    - bổ xung để tương tích openid connect 
+    - user chỉ có 1 email làm key SSO, user có thể có nhiều email nhưng chỉ duy nhất 1 email active được phép dùng làm SSO ( email active là email đã được verify )
