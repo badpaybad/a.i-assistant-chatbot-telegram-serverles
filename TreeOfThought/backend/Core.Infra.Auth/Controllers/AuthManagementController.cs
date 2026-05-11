@@ -16,9 +16,53 @@ public class AuthManagementController : ControllerBase
     {
         _authRepo = authRepo;
     }
+    
+    [HttpGet("users")]
+    public async Task<IActionResult> GetUsers()
+    {
+        var users = await _authRepo.GetAllUsersAsync();
+        var result = new List<UserDto>();
+        
+        foreach (var user in users)
+        {
+            var roles = await _authRepo.GetUserRolesAsync(user.Id);
+            var claims = await _authRepo.GetUserDirectClaimsAsync(user.Id);
+            
+            result.Add(new UserDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                DisplayName = user.DisplayName,
+                Email = user.Email,
+                IsEmailVerified = user.IsEmailVerified,
+                Roles = roles.Select(r => new IdNameDto { Id = r.Id, Name = r.Name }).ToList(),
+                DirectClaims = claims.Select(c => new IdNameDto { Id = c.Id, Name = c.Name }).ToList()
+            });
+        }
+        
+        return Ok(result);
+    }
 
     [HttpGet("roles")]
-    public async Task<IActionResult> GetRoles() => Ok(await _authRepo.GetAllRolesAsync());
+    public async Task<IActionResult> GetRoles()
+    {
+        var roles = await _authRepo.GetAllRolesAsync();
+        var result = new List<RoleDto>();
+        
+        foreach (var role in roles)
+        {
+            var claims = await _authRepo.GetRoleClaimsAsync(role.Id);
+            result.Add(new RoleDto
+            {
+                Id = role.Id,
+                Name = role.Name,
+                Description = role.Description,
+                Claims = claims.Select(c => new IdNameDto { Id = c.Id, Name = c.Name }).ToList()
+            });
+        }
+        
+        return Ok(result);
+    }
 
     [HttpPost("roles")]
     public async Task<IActionResult> CreateRole([FromBody] Role role)
@@ -63,6 +107,20 @@ public class AuthManagementController : ControllerBase
     {
         await _authRepo.AssignClaimToUserAsync(userId, claimId);
         return Ok(new { message = "Direct claim assigned successfully" });
+    }
+
+    [HttpDelete("users/{userId}/claims/{claimId}")]
+    public async Task<IActionResult> RemoveDirectClaim(Guid userId, Guid claimId)
+    {
+        await _authRepo.RemoveClaimFromUserAsync(userId, claimId);
+        return Ok(new { message = "Direct claim removed successfully" });
+    }
+
+    [HttpDelete("roles/{roleId}/claims/{claimId}")]
+    public async Task<IActionResult> RemoveClaimFromRole(Guid roleId, Guid claimId)
+    {
+        await _authRepo.RemoveClaimFromRoleAsync(roleId, claimId);
+        return Ok(new { message = "Claim removed from role successfully" });
     }
 
     [HttpGet("acl")]

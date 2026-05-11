@@ -27,7 +27,14 @@ const icons: IconDefinition[] = [
   AllIcons.IdcardOutline,
   AllIcons.ReloadOutline,
   AllIcons.SearchOutline,
-  AllIcons.WarningTwoTone
+  AllIcons.WarningTwoTone,
+  AllIcons.HomeOutline,
+  AllIcons.InfoCircleOutline,
+  AllIcons.PhoneOutline,
+  AllIcons.RocketOutline,
+  AllIcons.NotificationOutline,
+  AllIcons.ClusterOutline,
+  AllIcons.ArrowRightOutline
 ];
 
 export const appConfig: ApplicationConfig = {

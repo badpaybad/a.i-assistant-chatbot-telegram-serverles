@@ -3,7 +3,7 @@ import { HttpClientService } from '../http/http-client.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { ALL_PERMISSIONS, PERMISSIONS_VERSION } from './permissions.config';
+import { ALL_CLAIMS, CLAIMS_VERSION } from './claims.config';
 
 
 @Injectable({
@@ -17,11 +17,11 @@ export class AuthService {
   private authStatusSubject = new BehaviorSubject<boolean>(this.hasToken());
   authStatus$ = this.authStatusSubject.asObservable();
 
-  currentUser$ = this.firebase.user$;
+  user$ = this.firebase.user$;
 
   constructor() {
     if (this.hasToken()) {
-      this.syncPermissions();
+      this.syncClaims();
     }
   }
 
@@ -73,41 +73,55 @@ export class AuthService {
       await this.firebase.loginWithCustomToken(firebaseToken);
     }
     
-    // Sync permissions immediately after login
-    await this.syncPermissions();
+    // Sync claims immediately after login
+    await this.syncClaims();
   }
 
   async logout() {
     localStorage.removeItem('jwt_token');
-    localStorage.removeItem('permissions');
+    localStorage.removeItem('claims');
     this.authStatusSubject.next(false);
     await this.firebase.logout();
     this.router.navigate(['/auth/login']);
   }
 
-  async syncPermissions() {
+  async syncClaims() {
     try {
-      // Check if we need to sync local permissions to BE
-      const localVersion = localStorage.getItem('permissions_version');
-      if (localVersion !== PERMISSIONS_VERSION) {
-        await this.http.post('/api/auth/permissions/sync', { 
-          version: PERMISSIONS_VERSION,
-          permissions: ALL_PERMISSIONS 
+      // Check if we need to sync local claims to BE
+      const localVersion = localStorage.getItem('claims_version');
+      if (localVersion !== CLAIMS_VERSION) {
+        await this.http.post('/api/auth/claims/sync', { 
+          version: CLAIMS_VERSION,
+          claims: ALL_CLAIMS 
         });
-        localStorage.setItem('permissions_version', PERMISSIONS_VERSION);
+        localStorage.setItem('claims_version', CLAIMS_VERSION);
       }
 
       const response = await this.http.get('/api/auth/me');
-      const { claims } = response;
-      localStorage.setItem('permissions', JSON.stringify(claims));
-    } catch (e) {
-      console.error('Failed to sync permissions', e);
+      // Support both camelCase and PascalCase from backend
+      const claims = response.claims || response.Claims || [];
+      localStorage.setItem('claims', JSON.stringify(claims));
+    } catch (e: any) {
+      console.error('Failed to sync claims', e);
+      // If we get a 404 or 401, it means our session/user is invalid
+      if (e.status === 404 || e.status === 401) {
+        await this.logout();
+      }
     }
   }
 
-  hasPermission(permission: string): boolean {
-    const permissions = JSON.parse(localStorage.getItem('permissions') || '[]');
-    return permissions.includes(permission) || permissions.includes('admin');
+  hasClaim(claim: string): boolean {
+    const rawClaims = localStorage.getItem('claims');
+    if (!rawClaims || rawClaims === 'undefined') return false;
+    
+    try {
+      const claims = JSON.parse(rawClaims);
+      if (!Array.isArray(claims)) return false;
+      return claims.includes(claim) || claims.includes('admin');
+    } catch (e) {
+      console.error('Error parsing claims from localStorage', e);
+      return false;
+    }
   }
 
   isLoggedIn(): boolean {

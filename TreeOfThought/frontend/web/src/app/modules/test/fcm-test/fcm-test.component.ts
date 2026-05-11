@@ -33,7 +33,7 @@ export class FcmTestComponent implements OnInit {
   sendingSample = false;
 
   ngOnInit() {
-    this.firebase.onNotification((payload) => {
+    this.firebase.onMessageReceived((payload: any) => {
       this.notification.success(
         payload.notification?.title || 'FCM Notification',
         payload.notification?.body || 'New message received',
@@ -45,7 +45,7 @@ export class FcmTestComponent implements OnInit {
   async getDeviceToken() {
     this.loadingToken = true;
     try {
-      this.token = await this.firebase.requestFcmToken();
+      this.token = await this.firebase.getFCMToken();
       if (this.token) {
         this.notification.success('Success', 'FCM Token retrieved');
       } else {

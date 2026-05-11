@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { permissionGuard } from './core/auth/permission.guard';
-import { APP_PERMISSIONS } from './core/auth/permissions.config';
+import { claimGuard } from './core/auth/claim.guard';
+import { APP_CLAIMS } from './core/auth/claims.config';
 
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
@@ -19,17 +19,17 @@ export const routes: Routes = [
       { 
         path: 'modules/cqrs-dashboard', 
         component: DashboardComponent,
-        canActivate: [permissionGuard(APP_PERMISSIONS.CQRS_DASHBOARD.VIEW)]
+        canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
       },
       { 
         path: 'modules/cqrs-dashboard/tracing/:id', 
         component: TracingComponent,
-        canActivate: [permissionGuard(APP_PERMISSIONS.CQRS_DASHBOARD.VIEW)]
+        canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
       },
       { 
         path: 'modules/cqrs-dashboard/messages/:queueName', 
         component: MessageListComponent,
-        canActivate: [permissionGuard(APP_PERMISSIONS.CQRS_DASHBOARD.VIEW)]
+        canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
       },
       { 
         path: 'modules/test/firestore', 
@@ -38,6 +38,30 @@ export const routes: Routes = [
       { 
         path: 'modules/test/fcm', 
         loadComponent: () => import('./modules/test/fcm-test/fcm-test.component').then(m => m.FcmTestComponent) 
+      },
+      {
+        path: 'modules/core-infra-auth/users',
+        loadComponent: () => import('./modules/core-infra-auth/user-list/user-list.component').then(m => m.UserListComponent),
+        canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)]
+      },
+      {
+        path: 'modules/core-infra-auth/roles',
+        loadComponent: () => import('./modules/core-infra-auth/role-list/role-list.component').then(m => m.RoleListComponent),
+        canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)]
+      },
+      {
+        path: 'modules/core-infra-auth/claims',
+        loadComponent: () => import('./modules/core-infra-auth/claim-sync/claim-sync.component').then(m => m.ClaimSyncComponent),
+        canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)]
+      },
+      {
+        path: 'modules/core-infra-auth/acl',
+        loadComponent: () => import('./modules/core-infra-auth/acl-list/acl-list.component').then(m => m.AclListComponent),
+        canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)]
+      },
+      {
+        path: 'modules/core-infra-auth/change-password',
+        loadComponent: () => import('./modules/core-infra-auth/change-password/change-password.component').then(m => m.ChangePasswordComponent)
       }
     ]
   },

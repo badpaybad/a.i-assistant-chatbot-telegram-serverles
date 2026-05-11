@@ -57,6 +57,7 @@ var redisConn = config["Redis:ConnectionString"]!;
 builder.Services.AddSingleton<RedisService>(sp => new RedisService(redisConn, sp.GetRequiredService<ILogger<RedisService>>()));
 builder.Services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<RedisService>());
 builder.Services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<RedisService>());
+builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<RedisService>());
 builder.Services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
 builder.Services.AddSingleton<FirebaseService>();
 builder.Services.AddSingleton<IDispatcher, CqrsDispatcher>();
@@ -77,6 +78,7 @@ builder.Services.AddControllers()
     .AddApplicationPart(typeof(Core.Infra.Auth.Controllers.AuthController).Assembly)
     .AddJsonOptions(options =>
     {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();

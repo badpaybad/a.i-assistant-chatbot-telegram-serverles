@@ -17,23 +17,27 @@
 <div class="dashboard-content">
   <div nz-row [nzGutter]="16">
     <div nz-col [nzSpan]="6">
-      <nz-card>
-        <nz-statistic [nzValue]="getStatValue('commands_processed')" [nzTitle]="'Commands Processed'"></nz-statistic>
+      <nz-card class="glass-card" [nzBodyStyle]="{ padding: '24px' }">
+        <nz-statistic [nzValue]="getStatValue('commands_processed')" [nzTitle]="'Commands Processed'" [nzPrefix]="cmdIcon"></nz-statistic>
+        <ng-template #cmdIcon><span nz-icon nzType="rocket" style="color: #1890ff"></span></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
-      <nz-card>
-        <nz-statistic [nzValue]="getStatValue('events_published')" [nzTitle]="'Events Published'"></nz-statistic>
+      <nz-card class="glass-card" [nzBodyStyle]="{ padding: '24px' }">
+        <nz-statistic [nzValue]="getStatValue('events_published')" [nzTitle]="'Events Published'" [nzPrefix]="evtIcon"></nz-statistic>
+        <ng-template #evtIcon><span nz-icon nzType="notification" style="color: #52c41a"></span></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
-      <nz-card>
-        <nz-statistic [nzValue]="getStatValue('errors_total')" [nzTitle]="'Total Errors'" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+      <nz-card class="glass-card" [nzBodyStyle]="{ padding: '24px' }">
+        <nz-statistic [nzValue]="getStatValue('errors_total')" [nzTitle]="'Total Errors'" [nzValueStyle]="{ color: '#cf1322' }" [nzPrefix]="errIcon"></nz-statistic>
+        <ng-template #errIcon><span nz-icon nzType="warning" style="color: #cf1322"></span></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
-      <nz-card>
-        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Active Workers'"></nz-statistic>
+      <nz-card class="glass-card" [nzBodyStyle]="{ padding: '24px' }">
+        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Active Workers'" [nzPrefix]="wrkIcon"></nz-statistic>
+        <ng-template #wrkIcon><span nz-icon nzType="cluster" style="color: #722ed1"></span></ng-template>
       </nz-card>
     </div>
   </div>
@@ -45,7 +49,7 @@
           <tr>
             <th>Name</th>
             <th>Type</th>
-            <th>Length</th>
+            <th nzWidth="250px">Load Status</th>
             <th>Total Sent</th>
             <th>Errors</th>
             <th>Action</th>
@@ -53,11 +57,16 @@
         </thead>
         <tbody>
           <tr *ngFor="let q of queueTable.data">
-            <td>{{ q.name }}</td>
+            <td><strong>{{ q.name }}</strong></td>
             <td>
               <nz-tag [nzColor]="q.type === 'Queue' ? 'blue' : q.type === 'Subscription' ? 'green' : 'orange'">{{ q.type }}</nz-tag>
             </td>
-            <td>{{ q.length }}</td>
+            <td>
+              <div class="load-status">
+                <span class="length-label">{{ q.length }} msgs</span>
+                <nz-progress [nzPercent]="calculateLoad(q.length)" [nzShowInfo]="false" [nzStatus]="q.length > 50 ? 'exception' : 'active'"></nz-progress>
+              </div>
+            </td>
             <td>{{ q.sentCount }}</td>
             <td>
               <nz-tag [nzColor]="q.errorCount > 0 ? 'red' : 'default'">{{ q.errorCount }}</nz-tag>

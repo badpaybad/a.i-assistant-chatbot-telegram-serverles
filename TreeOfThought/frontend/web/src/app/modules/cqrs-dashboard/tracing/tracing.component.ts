@@ -9,6 +9,7 @@ import { NzTimelineModule } from 'ng-zorro-antd/timeline';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { DashboardService, TrackingStep } from '../services/dashboard.service';
 
 @Component({
@@ -24,7 +25,8 @@ import { DashboardService, TrackingStep } from '../services/dashboard.service';
     NzTimelineModule,
     NzTagModule,
     NzIconModule,
-    NzDividerModule
+    NzDividerModule,
+    NzEmptyModule
   ],
   templateUrl: './tracing.component.html',
   styleUrls: ['./tracing.component.css']
@@ -60,5 +62,15 @@ export class TracingComponent implements OnInit {
     if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'finish';
     if (s.includes('start') || s.includes('publish') || s.includes('enqueue')) return 'process';
     return 'wait';
+  }
+
+  getStepIcon(step: string): string {
+    const s = step.toLowerCase();
+    if (s.includes('fail') || s.includes('error')) return 'close-circle';
+    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'check-circle';
+    if (s.includes('publish') || s.includes('sent')) return 'export';
+    if (s.includes('receive') || s.includes('handle')) return 'import';
+    if (s.includes('enqueue') || s.includes('queue')) return 'database';
+    return 'info-circle';
   }
 }

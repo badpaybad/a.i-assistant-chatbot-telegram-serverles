@@ -8,6 +8,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
@@ -31,6 +32,7 @@ export class LoginComponent {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private notification = inject(NzNotificationService);
 
   validateForm: FormGroup<{
     username: FormControl<string>;
@@ -50,8 +52,9 @@ export class LoginComponent {
       try {
         await this.authService.login(this.validateForm.value);
         this.router.navigate(['/']);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        this.notification.error('Login Failed', e.error?.message || 'Invalid username or password');
       } finally {
         this.loading = false;
       }
@@ -63,6 +66,13 @@ export class LoginComponent {
         }
       });
     }
+  }
+
+  fillAdmin() {
+    this.validateForm.patchValue({
+      username: 'admin',
+      password: 'admin123'
+    });
   }
 
   async loginWithGoogle() {

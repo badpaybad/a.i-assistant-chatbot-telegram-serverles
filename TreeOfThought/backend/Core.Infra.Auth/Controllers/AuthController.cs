@@ -153,10 +153,26 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("claims/sync")]
+    [AppAuthorize]
     public async Task<IActionResult> SyncClaims([FromBody] SyncClaimsRequest request)
     {
         await _authService.SyncClaimsAsync(request.Version, request.Claims);
         return Ok(new { message = "Claims synced successfully" });
+    }
+
+    [HttpPost("change-password")]
+    [AppAuthorize]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        var userIdStr = User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+            return Unauthorized();
+
+        if (await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword))
+        {
+            return Ok(new { message = "Password changed successfully" });
+        }
+        return BadRequest(new { message = "Invalid current password" });
     }
 }
 

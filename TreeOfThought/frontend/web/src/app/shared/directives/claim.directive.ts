@@ -2,16 +2,16 @@ import { Directive, Input, TemplateRef, ViewContainerRef, inject } from '@angula
 import { AuthService } from '../../core/auth/auth.service';
 
 @Directive({
-  selector: '[appPermission]',
+  selector: '[appClaim]',
   standalone: true
 })
-export class PermissionDirective {
+export class ClaimDirective {
   private templateRef = inject(TemplateRef<any>);
   private viewContainer = inject(ViewContainerRef);
   private authService = inject(AuthService);
 
-  @Input() set appPermission(permission: string) {
-    if (this.authService.hasPermission(permission)) {
+  @Input() set appClaim(claim: string) {
+    if (this.authService.hasClaim(claim)) {
       this.viewContainer.createEmbeddedView(this.templateRef);
     } else {
       this.viewContainer.clear();

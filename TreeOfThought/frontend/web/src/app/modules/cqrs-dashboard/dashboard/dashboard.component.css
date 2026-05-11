@@ -5,3 +5,15 @@
 nz-card {
   margin-bottom: 24px;
 }
+
+.load-status {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.length-label {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+}

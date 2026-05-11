@@ -13,6 +13,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzListModule } from 'ng-zorro-antd/list';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '../services/dashboard.service';
 
@@ -33,7 +34,8 @@ import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '..
     NzIconModule,
     NzTabsModule,
     NzListModule,
-    NzInputModule
+    NzInputModule,
+    NzProgressModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
@@ -89,5 +91,10 @@ export class DashboardComponent implements OnInit {
 
   getStatValue(key: string): number {
     return this.stats.stats[key] || 0;
+  }
+
+  calculateLoad(length: number): number {
+    const max = 100;
+    return Math.min((length / max) * 100, 100);
   }
 }

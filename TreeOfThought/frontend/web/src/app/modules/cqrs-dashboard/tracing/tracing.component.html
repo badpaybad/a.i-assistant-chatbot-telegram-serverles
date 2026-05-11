@@ -4,34 +4,46 @@
   </nz-page-header-extra>
 </nz-page-header>
 
-<div class="tracing-content">
-  <nz-card nzTitle="Visualized Flow">
-    <nz-steps [nzCurrent]="history.length - 1" nzDirection="vertical" nzProgressDot>
-      <nz-step 
-        *ngFor="let log of history" 
-        [nzTitle]="log.step" 
-        [nzDescription]="descriptionTemplate"
-        [nzStatus]="getStepStatus(log.step)">
-        <ng-template #descriptionTemplate>
-          <div class="step-details">
-            <p><strong>Time:</strong> {{ log.time | date:'medium' }}</p>
-            <p><strong>Details:</strong> {{ log.details }}</p>
+<div class="tracing-content animate-fade-in">
+  <nz-card nzTitle="Visualized Graph Flow" class="glass-card">
+    <div class="flow-container" *ngIf="history.length > 0">
+      <ng-container *ngFor="let log of history; let last = last">
+        <div class="flow-node" [class]="getStepStatus(log.step)">
+          <div class="node-icon">
+            <span nz-icon [nzType]="getStepIcon(log.step)"></span>
           </div>
-        </ng-template>
-      </nz-step>
-    </nz-steps>
+          <span class="node-title">{{ log.step }}</span>
+          <div class="node-details">
+            <p class="node-time">{{ log.time | date:'HH:mm:ss' }}</p>
+            <p style="font-size: 11px; margin: 0; line-height: 1.2;">{{ log.details }}</p>
+          </div>
+          <div class="node-badge">
+            <nz-tag [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'blue'" nzMode="checkable">
+              {{ getStepStatus(log.step) | uppercase }}
+            </nz-tag>
+          </div>
+        </div>
+        <div class="flow-arrow" *ngIf="!last">
+          <div class="arrow-line"></div>
+          <span nz-icon nzType="right" nzTheme="outline" class="arrow-head"></span>
+        </div>
+      </ng-container>
+    </div>
 
     <div *ngIf="history.length === 0" class="no-data">
-      No tracking data found for this ID.
+      <nz-empty nzNotFoundImage="simple" nzNotFoundContent="No tracking data found for this ID."></nz-empty>
     </div>
   </nz-card>
 
-  <nz-divider nzText="Raw Timeline"></nz-divider>
+  <nz-divider nzText="Event Timeline History"></nz-divider>
 
-  <nz-card>
+  <nz-card class="glass-card">
     <nz-timeline>
-      <nz-timeline-item *ngFor="let log of history" [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'green'">
-        {{ log.time | date:'HH:mm:ss' }} - {{ log.step }}: {{ log.details }}
+      <nz-timeline-item 
+        *ngFor="let log of history" 
+        [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'green'">
+        <p><strong>{{ log.time | date:'HH:mm:ss' }}</strong> - <nz-tag>{{ log.step }}</nz-tag></p>
+        <p>{{ log.details }}</p>
       </nz-timeline-item>
     </nz-timeline>
   </nz-card>

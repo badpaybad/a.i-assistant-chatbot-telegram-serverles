@@ -218,3 +218,10 @@ về scale ngang của các service :
 
 các nghiệp vụ sẽ được viết ở project riêng
                 chỉ cần phát triển controller, handle, command, event , entity , dbcontext ... cho nghiệp vụ đó 
+
+**cập nhật 7**
+
+permission/sync giờ là claims/sync cần đã đăng nhập thì mới được gọi
+
+**cập nhật 8**
+user init hệ thống ban đầu chưa có db, cần init db có account là admin / pass: admin123. role đặc biệt không được xóa là Admin gán cho account admin , toàn quyền hệ thống không limit không restrict. khi init xong cần hiện UI để đổi mật khẩu cho admin. 

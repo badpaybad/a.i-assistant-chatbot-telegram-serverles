@@ -1,0 +1,232 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzSpaceModule } from 'ng-zorro-antd/space';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzMessageService } from 'ng-zorro-antd/message';
+import { AuthManagementService } from '../services/auth-management.service';
+
+@Component({
+  selector: 'app-user-list',
+  standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule,
+    NzTableModule,
+    NzButtonModule,
+    NzIconModule,
+    NzTagModule,
+    NzSpaceModule,
+    NzModalModule,
+    NzSelectModule
+  ],
+  template: `
+    <div class="page-header">
+      <h2>User Management</h2>
+      <button nz-button nzType="primary" (click)="loadUsers()">
+        <span nz-icon nzType="reload"></span> Refresh
+      </button>
+    </div>
+
+    <nz-table #basicTable [nzData]="users" [nzLoading]="loading">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Status</th>
+          <th>Roles</th>
+          <th>Direct Claims</th>
+          <th nzWidth="120px">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of basicTable.data">
+          <td>
+            <div class="user-cell">
+              <strong>{{ data.displayName }}</strong>
+              <span class="sub-text">{{ data.username }} | {{ data.email }}</span>
+            </div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
+              {{ data.isEmailVerified ? 'Verified' : 'Pending' }}
+            </nz-tag>
+          </td>
+          <td>
+            <nz-tag *ngFor="let role of data.roles" nzColor="blue" nzMode="closeable" (nzOnClose)="removeRole(data, role)">
+              {{ role.name }}
+            </nz-tag>
+            <button nz-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+              <span nz-icon nzType="plus"></span>
+            </button>
+          </td>
+          <td>
+            <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" nzMode="closeable" (nzOnClose)="removeClaim(data, claim)">
+              {{ claim.name }}
+            </nz-tag>
+            <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+              <span nz-icon nzType="plus"></span>
+            </button>
+          </td>
+          <td>
+            <nz-space>
+              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteUser(data)">Delete</button>
+            </nz-space>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+
+    <nz-modal [(nzVisible)]="isRoleModalVisible" nzTitle="Assign Role" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
+      <ng-container *nzModalContent>
+        <nz-select style="width: 100%" [(ngModel)]="selectedRoleId" nzPlaceHolder="Select a role" nzShowSearch>
+          <nz-option *ngFor="let role of availableRoles" [nzValue]="role.id" [nzLabel]="role.name"></nz-option>
+        </nz-select>
+      </ng-container>
+    </nz-modal>
+
+    <nz-modal [(nzVisible)]="isClaimModalVisible" nzTitle="Assign Direct Claim" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
+      <ng-container *nzModalContent>
+        <nz-select style="width: 100%" [(ngModel)]="selectedClaimId" nzPlaceHolder="Select a claim" nzShowSearch>
+          <nz-option *ngFor="let claim of availableClaims" [nzValue]="claim.id" [nzLabel]="claim.name"></nz-option>
+        </nz-select>
+      </ng-container>
+    </nz-modal>
+  `,
+  styles: [`
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .user-cell {
+      display: flex;
+      flex-direction: column;
+    }
+    .sub-text {
+      font-size: 12px;
+      color: #888;
+    }
+    nz-tag {
+      margin-bottom: 4px;
+    }
+  `]
+})
+export class UserListComponent implements OnInit {
+  private authMgmt = inject(AuthManagementService);
+  private message = inject(NzMessageService);
+  private modal = inject(NzModalService);
+
+  users: any[] = [];
+  loading = false;
+  
+  availableRoles: any[] = [];
+  availableClaims: any[] = [];
+  
+  isRoleModalVisible = false;
+  isClaimModalVisible = false;
+  
+  selectedUser: any = null;
+  selectedRoleId: string = '';
+  selectedClaimId: string = '';
+
+  ngOnInit(): void {
+    this.loadUsers();
+    this.loadMetadata();
+  }
+
+  async loadUsers() {
+    this.loading = true;
+    try {
+      this.users = await this.authMgmt.getUsers();
+    } catch (e) {
+      this.message.error('Failed to load users');
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async loadMetadata() {
+    try {
+      this.availableRoles = await this.authMgmt.getRoles();
+      this.availableClaims = await this.authMgmt.getClaims();
+    } catch (e) {
+      console.error('Failed to load metadata', e);
+    }
+  }
+
+  showRoleModal(user: any) {
+    this.selectedUser = user;
+    this.selectedRoleId = '';
+    this.isRoleModalVisible = true;
+  }
+
+  async assignRole() {
+    if (!this.selectedRoleId) return;
+    try {
+      await this.authMgmt.assignRoleToUser(this.selectedUser.id, this.selectedRoleId);
+      this.message.success('Role assigned successfully');
+      this.isRoleModalVisible = false;
+      this.loadUsers();
+    } catch (e) {
+      this.message.error('Failed to assign role');
+    }
+  }
+
+  async removeRole(user: any, role: any) {
+    this.modal.confirm({
+      nzTitle: `Are you sure you want to remove role ${role.name} from ${user.username}?`,
+      nzOnOk: async () => {
+        try {
+          await this.authMgmt.removeRoleFromUser(user.id, role.id);
+          this.message.success('Role removed successfully');
+          this.loadUsers();
+        } catch (e) {
+          this.message.error('Failed to remove role');
+        }
+      }
+    });
+  }
+
+  showClaimModal(user: any) {
+    this.selectedUser = user;
+    this.selectedClaimId = '';
+    this.isClaimModalVisible = true;
+  }
+
+  async assignClaim() {
+    if (!this.selectedClaimId) return;
+    try {
+      await this.authMgmt.assignClaimToUser(this.selectedUser.id, this.selectedClaimId);
+      this.message.success('Claim assigned successfully');
+      this.isClaimModalVisible = false;
+      this.loadUsers();
+    } catch (e) {
+      this.message.error('Failed to assign claim');
+    }
+  }
+
+  async removeClaim(user: any, claim: any) {
+    this.modal.confirm({
+      nzTitle: `Are you sure you want to remove direct claim ${claim.name} from ${user.username}?`,
+      nzOnOk: async () => {
+        try {
+          await this.authMgmt.removeClaimFromUser(user.id, claim.id);
+          this.message.success('Claim removed successfully');
+          this.loadUsers();
+        } catch (e) {
+          this.message.error('Failed to remove claim');
+        }
+      }
+    });
+  }
+
+  async deleteUser(user: any) {
+    this.message.info('User deletion not yet fully implemented');
+  }
+}

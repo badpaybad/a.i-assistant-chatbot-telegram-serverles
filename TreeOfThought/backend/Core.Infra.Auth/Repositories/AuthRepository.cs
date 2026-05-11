@@ -1,6 +1,9 @@
 using Core.Infra.Auth.Contexts;
 using Core.Infra.Auth.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
+using Npgsql;
 
 namespace Core.Infra.Auth.Repositories;
 
@@ -42,6 +45,8 @@ public class AuthRepository : IAuthRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    public async Task<List<User>> GetAllUsersAsync() => await _context.Users.ToListAsync();
 
     public async Task<Role?> GetRoleByNameAsync(string name) => 
         await _context.Roles.FirstOrDefaultAsync(r => r.Name == name);
@@ -247,6 +252,7 @@ public class AuthRepository : IAuthRepository
         var admin = await GetUserByUsernameAsync(adminUsername);
         if (admin == null)
         {
+            Console.WriteLine($"[SEEDING] Creating admin user: {adminUsername}");
             admin = new User
             {
                 Username = adminUsername,
@@ -257,24 +263,61 @@ public class AuthRepository : IAuthRepository
                 CreatedAt = DateTime.UtcNow
             };
             await CreateUserAsync(admin);
-
-            // Create Admin Role
-            var adminRole = await GetRoleByNameAsync("Admin");
-            if (adminRole == null)
-            {
-                adminRole = new Role { Name = "Admin", Description = "Full system access" };
-                await CreateRoleAsync(adminRole);
-            }
-
-            await AssignRoleToUserAsync(admin.Id, adminRole.Id);
         }
+        else
+        {
+            // Do not overwrite password if user already exists
+            // Requirement: Allow UI to change password and persist it
+            Console.WriteLine($"[SEEDING] Admin user exists: '{adminUsername}'");
+        }
+
+        // Create Admin Role
+        var adminRole = await GetRoleByNameAsync("Admin");
+        if (adminRole == null)
+        {
+            Console.WriteLine("[SEEDING] Creating Admin role");
+            adminRole = new Role { Name = "Admin", Description = "Full system access" };
+            await CreateRoleAsync(adminRole);
+        }
+
+        await AssignRoleToUserAsync(admin.Id, adminRole.Id);
+
+        // Ensure "admin" claim exists and is assigned to Admin role
+        var adminClaim = await GetClaimByNameAsync("admin");
+        if (adminClaim == null)
+        {
+            Console.WriteLine("[SEEDING] Creating 'admin' claim");
+            adminClaim = new AppClaim { Name = "admin", Description = "God-mode claim", CreatedAt = DateTime.UtcNow };
+            await CreateClaimAsync(adminClaim);
+        }
+        await AssignClaimToRoleAsync(adminRole.Id, adminClaim.Id);
     }
 
     public async Task EnsureTablesCreatedAsync()
     {
-        // Simple way to ensure tables exist without migrations for now, 
-        // as per yeucau.md instruction "Không dùng migration của entity framework".
-        // BaseDbContext has logic for this if needed, or we can use context.Database.EnsureCreated()
-        await _context.Database.EnsureCreatedAsync();
+        // EnsureCreatedAsync only creates tables if the database is empty.
+        // If the database exists but some tables are missing, we use IRelationalDatabaseCreator.
+        var databaseCreator = _context.Database.GetService<IDatabaseCreator>() as IRelationalDatabaseCreator;
+        if (databaseCreator != null)
+        {
+            if (!await databaseCreator.ExistsAsync())
+            {
+                await databaseCreator.CreateAsync();
+            }
+
+            try
+            {
+                await databaseCreator.CreateTablesAsync();
+            }
+            catch (PostgresException ex) when (ex.SqlState == "42P07") // duplicate_table
+            {
+                // Tables already exist, ignore
+            }
+            catch (Exception ex)
+            {
+                // Log or handle other creation errors
+                Console.WriteLine($"Table creation info: {ex.Message}");
+            }
+        }
     }
 }

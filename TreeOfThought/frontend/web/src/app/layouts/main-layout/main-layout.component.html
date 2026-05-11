@@ -12,14 +12,48 @@
       </a>
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <li nz-submenu nzOpen nzTitle="Dashboard" nzIcon="dashboard">
+      <li nz-menu-item nzMatchRouter>
+        <span nz-icon nzType="home"></span>
+        <a routerLink="/">Home</a>
+      </li>
+      <li nz-menu-item nzMatchRouter>
+        <span nz-icon nzType="info-circle"></span>
+        <a routerLink="/about">About</a>
+      </li>
+      <li nz-menu-item nzMatchRouter>
+        <span nz-icon nzType="phone"></span>
+        <a routerLink="/contact">Contact</a>
+      </li>
+
+      <li nz-submenu nzTitle="Dashboard" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
         <ul>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/cqrs-dashboard">CQRS Dashboard</a>
           </li>
         </ul>
       </li>
-      <li nz-submenu nzTitle="Test Modules" nzIcon="experiment">
+
+      <li nz-submenu nzTitle="Core Infra Auth" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
+        <ul>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/core-infra-auth/users">User Management</a>
+          </li>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/core-infra-auth/roles">Role Management</a>
+          </li>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/core-infra-auth/claims">Claim Management</a>
+          </li>
+          <li nz-menu-item nzMatchRouter *ngIf="hasClaim(claims.AUTH.MANAGE_ACL)">
+            <a routerLink="/modules/core-infra-auth/acl">ACL Management</a>
+          </li>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/core-infra-auth/change-password">Change Password</a>
+          </li>
+        </ul>
+      </li>
+
+      <li nz-submenu nzTitle="Test Modules" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
         <ul>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/test/firestore">Firestore Test</a>
@@ -43,6 +77,7 @@
               <nz-avatar nzIcon="user" [nzSrc]="user.photoURL || ''"></nz-avatar>
               <span class="username">{{ user.displayName || user.email }}</span>
             </span>
+            <button nz-button nzType="link" routerLink="/modules/core-infra-auth/change-password">Change Password</button>
             <button nz-button nzType="link" (click)="logout()">Logout</button>
           </ng-container>
           <ng-template #loginBtn>
@@ -52,7 +87,7 @@
       </div>
     </nz-header>
     <nz-content>
-      <div class="inner-content">
+      <div class="inner-content animate-fade-in">
         <router-outlet></router-outlet>
       </div>
     </nz-content>

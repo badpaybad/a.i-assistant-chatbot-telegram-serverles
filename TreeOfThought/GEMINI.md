@@ -1,0 +1,1 @@
+tôi luôn có file yeucau.md và phattrien.md trong từng folder. yeucau.md là tôi viết ra. cần đọc kỹ yeucau.md và suy nghĩ thật kỹ đưa ra phương án cách làm vào phattrien.md và chờ tôi duyệt trước khi tiến hành code

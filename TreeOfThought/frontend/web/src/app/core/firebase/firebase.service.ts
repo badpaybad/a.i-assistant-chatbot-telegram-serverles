@@ -1,106 +1,104 @@
-import { Injectable, inject, PLATFORM_ID } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithCustomToken, 
-  signInWithPopup,
-  GoogleAuthProvider,
-  FacebookAuthProvider,
-  OAuthProvider,
-  User, 
-  onAuthStateChanged 
-} from 'firebase/auth';
-import { getFirestore, doc, onSnapshot, deleteDoc, Unsubscribe } from 'firebase/firestore';
-import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
-import { BehaviorSubject } from 'rxjs';
-import { firebaseConfig } from './firebase.config';
+import { Injectable } from '@angular/core';
+import { initializeApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
+import { getFirestore, Firestore, doc, onSnapshot, deleteDoc } from 'firebase/firestore';
+import { getMessaging, Messaging, getToken, onMessage } from 'firebase/messaging';
+import { environment } from '../../../environments/environment';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class FirebaseService {
-  private app = initializeApp(firebaseConfig);
-  private auth = getAuth(this.app);
-  private db = getFirestore(this.app);
+  private app: FirebaseApp;
+  private auth: Auth;
+  private db: Firestore;
   private messaging?: Messaging;
-  private platformId = inject(PLATFORM_ID);
-
-  private userSubject = new BehaviorSubject<User | null>(null);
-  user$ = this.userSubject.asObservable();
+  
+  private firebaseUserSubject = new BehaviorSubject<User | null>(null);
+  public user$ = this.firebaseUserSubject.asObservable();
 
   constructor() {
-    onAuthStateChanged(this.auth, (user) => {
-      this.userSubject.next(user);
-    });
-
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        this.messaging = getMessaging(this.app);
-      } catch (e) {
-        console.warn('Messaging not supported in this browser', e);
-      }
+    this.app = initializeApp(environment.firebase);
+    this.auth = getAuth(this.app);
+    this.db = getFirestore(this.app);
+    
+    // Messaging only works in secure contexts (HTTPS) and supported browsers
+    try {
+      this.messaging = getMessaging(this.app);
+    } catch (e) {
+      console.warn('Firebase Messaging not supported in this browser/context', e);
     }
+
+    onAuthStateChanged(this.auth, (user) => {
+      this.firebaseUserSubject.next(user);
+    });
   }
 
-  async loginWithCustomToken(token: string): Promise<User> {
-    const userCredential = await signInWithCustomToken(this.auth, token);
-    return userCredential.user;
-  }
-
-  async loginWithGoogle(): Promise<User> {
+  async loginWithGoogle() {
+    const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(this.auth, provider);
     return result.user;
   }
 
-  async loginWithFacebook(): Promise<User> {
+  async loginWithFacebook() {
+    const { FacebookAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new FacebookAuthProvider();
     const result = await signInWithPopup(this.auth, provider);
     return result.user;
   }
 
-  async loginWithMicrosoft(): Promise<User> {
+  async loginWithMicrosoft() {
+    const { OAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new OAuthProvider('microsoft.com');
     const result = await signInWithPopup(this.auth, provider);
     return result.user;
   }
 
-  async logout(): Promise<void> {
+  async loginWithCustomToken(token: string) {
+    try {
+      const userCredential = await signInWithCustomToken(this.auth, token);
+      return userCredential.user;
+    } catch (error) {
+      console.error('Firebase custom token login failed', error);
+      throw error;
+    }
+  }
+
+  async logout() {
     await this.auth.signOut();
   }
 
-  subscribeToRequestId(requestId: string, callback: (data: any) => void): Unsubscribe {
+  subscribeToRequestId(requestId: string, callback: (data: any) => void) {
     const docRef = doc(this.db, 'commandresults', requestId);
     return onSnapshot(docRef, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         callback(data);
         
-        // Delete document after processing to avoid storage bloat as requested in yeucau.md
+        // Requirement: delete data after receive to avoid storage clutter
         try {
           await deleteDoc(docRef);
         } catch (e) {
-          console.warn('Failed to delete command result document', e);
+          console.error('Failed to delete Firestore document after receipt', e);
         }
       }
     });
   }
 
-  async requestFcmToken(): Promise<string | null> {
+  async getFCMToken(): Promise<string | null> {
     if (!this.messaging) return null;
     try {
-      const token = await getToken(this.messaging, {
-        vapidKey: firebaseConfig.vapidKey
-      });
+      const token = await getToken(this.messaging, { vapidKey: environment.firebase.vapidKey });
       return token;
-    } catch (e) {
-      console.error('Error getting FCM token', e);
+    } catch (error) {
+      console.error('Failed to get FCM token', error);
       return null;
     }
   }
 
-  onNotification(callback: (payload: any) => void) {
+  onMessageReceived(callback: (payload: any) => void) {
     if (!this.messaging) return;
     onMessage(this.messaging, (payload) => {
       callback(payload);

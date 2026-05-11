@@ -7,6 +7,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthService } from '../../core/auth/auth.service';
+import { APP_CLAIMS } from '../../core/auth/claims.config';
 
 @Component({
   selector: 'app-main-layout',
@@ -27,7 +28,12 @@ import { AuthService } from '../../core/auth/auth.service';
 export class MainLayoutComponent {
   isCollapsed = false;
   private authService = inject(AuthService);
-  user$ = this.authService.currentUser$;
+  user$ = this.authService.user$;
+  claims = APP_CLAIMS;
+
+  hasClaim(claim: string): boolean {
+    return this.authService.hasClaim(claim);
+  }
 
   logout() {
     this.authService.logout();

@@ -29,7 +29,7 @@ public class AuthService
         await _userRepo.EnsureTablesCreatedAsync();
         
         var adminUser = _config["Admin:Username"] ?? "admin";
-        var adminPass = _config["Admin:Password"] ?? "Admin123!";
+        var adminPass = _config["Admin:Password"] ?? "admin123";
         var adminEmail = _config["Admin:Email"] ?? "admin@example.com";
         
         await _userRepo.EnsureAdminExistsAsync(adminUser, adminPass, adminEmail);
@@ -93,11 +93,19 @@ public class AuthService
     public async Task<User?> AuthenticateAsync(string username, string password)
     {
         var user = await _userRepo.GetUserByUsernameAsync(username);
-        if (user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        if (user == null)
+        {
+            Console.WriteLine($"[AUTH] Login failed: User '{username}' not found");
+            return null;
+        }
+
+        if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
         {
             if (!user.IsEmailVerified) throw new Exception("Email not verified");
             return user;
         }
+        
+        Console.WriteLine($"[AUTH] Login failed: Invalid password for user '{username}'");
         return null;
     }
 
@@ -266,6 +274,21 @@ public class AuthService
         }
         
         Console.WriteLine($"[ACL SYNC] User: {userId}, Synced {groupedAcl.Count()} bitmasked resource keys to Redis.");
+    }
+
+    public async Task<bool> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await _userRepo.GetUserByIdAsync(userId);
+        if (user == null) return false;
+
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+        {
+            return false;
+        }
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        await _userRepo.UpdateUserAsync(user);
+        return true;
     }
 }
 

@@ -4,21 +4,21 @@ import { AuthService } from './auth.service';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NotificationTemplateService } from '../services/notification-template.service';
 
-export const permissionGuard = (permission: string): CanActivateFn => {
+export const claimGuard = (claim: string): CanActivateFn => {
   return () => {
     const authService = inject(AuthService);
     const router = inject(Router);
     const notification = inject(NzNotificationService);
     const templateService = inject(NotificationTemplateService);
 
-    if (authService.hasPermission(permission)) {
+    if (authService.hasClaim(claim)) {
       return true;
     }
 
     const isLoggedIn = authService.isLoggedIn();
     const title = isLoggedIn ? 'Access Denied' : 'Authentication Required';
     const message = isLoggedIn 
-      ? `You do not have the required permission: ${permission}.`
+      ? `You do not have the required claim: ${claim}.`
       : 'Please login to access this resource.';
     
     const loginLink = '<a href="/auth/login" style="color: #1890ff; text-decoration: underline;">Click here to login.</a>';

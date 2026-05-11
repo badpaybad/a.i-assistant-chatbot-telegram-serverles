@@ -1,6 +1,6 @@
 folder làm việc TreeOfThought/frontend/web 
 
-Tham khảo hướng dẫn chung ở TreeOfThought/1st.md 
+**Tuân thủ** hướng dẫn chung ở TreeOfThought/1st.md 
 
 Đọc kỹ TreeOfThought/frontend/web/yeucau.md và suy nghĩ viết ra cách làm vào TreeOfThought/frontend/web/phattrien.md nếu cần bổ sung thêm yêu cầu thì sửa vào TreeOfThought/frontend/web/yeucau.md và yêu cầu AI suy nghĩ ra cách làm và bổ sung vào TreeOfThought/frontend/web/phattrien.md. Sau khi xem xong có thể bắt đầu 
 
@@ -29,8 +29,8 @@ Các yêu cầu:
             - Firestore subcribe theo request id ( GUID sinh ra chủ động trên FE), dùng cho các UI đang thao tác đợi kết quả từ BE và sẽ được BE subcribe topic tương ứng với request id.
                 - khi FE nhận được noti data cần xóa data đó để tránh lưu trữ và thừa
             - google messaging ( nhận push noti FCM từ BE) khi không mở trình duyệt vẫn nhận được noti 
-    - Các permission ẩn hiện UI theo các claim jwt token khi login xong
-        - Các perssmion UI này sẽ cần được quản lý tập trung định nghĩa trên FE và đồng bộ lên BE, start ứng dụng sau login thành công (có thể lưu localstorage để xem có cái nào mới thì gọi đồng bộ lên BE)
+    - Các Claims ẩn hiện UI theo các claim jwt token khi login xong
+        - Các Claims UI này sẽ cần được quản lý tập trung định nghĩa trên FE và đồng bộ lên BE, start ứng dụng sau login thành công (có thể lưu localstorage để xem có cái nào mới thì gọi đồng bộ lên BE)
     - Api connect sẽ theo mô tả TreeOfThought/backend/yeucau.md (http://localhost:5000/swagger/index.html) nếu chưa có thì vào TreeOfThought/backend/Core.Web.Api chạy lệnh: dotnet run
         - API_BASE_URL cần đưa vào file cấu hình .ts khi build production sẽ lấy theo chuẩn biến môi trường để build. không phụ thuộc vào config_dunp python
     Cần tạo các pages cũng cần kế thừa layout như đã định nghĩa 
@@ -52,7 +52,7 @@ Các yêu cầu:
             - Kích vào nút logout thì log out và chuyển sang trang login
         - wrap HttpClient ở utils để khi login thì luôn đưa jwt vào auth header 
             Cần handle error và show noti góc phải màn hình, noti người dùng tự cần đóng.   
-        - Cần noti content hỗ trợ html để để url cho người dùng click vào đường link dẫn đến login khi không có permission, khi httpclient gọi api bị lỗi 401 hoặc không có quyền truy cập, không có quyền xem noti cần hiển thị link đến trang login 
+        - Cần noti content hỗ trợ html để để url cho người dùng click vào đường link dẫn đến login khi không có Claims, khi httpclient gọi api bị lỗi 401 hoặc không có quyền truy cập, không có quyền xem noti cần hiển thị link đến trang login 
 
 Các lệnh cần để build và chạy FE app này
     cần chạy https và port 4200 để test được google firebase
@@ -83,16 +83,22 @@ tạo module CQRS Dashboard với các chức năng sau:
         Xem lịch sử message đã xử lý, đã retry, đã fail và nguyên nhân, và đi qua các queue name, topic name trong suốt quá trình xử lý
         cần thêm trang dashboard chi tiết về các lỗi của các worker và queue. để biết được worker nào đang xử lý lỗi và queue nào đang gặp vấn đề
 
-        khi vào dashboard này cần permision: "cqrs:dashboard:view" và các permission khác để full acccess với account admin, account admin mock càn bổ xung claim, nếu BE chưa có api nhận đồng bộ permision thì cần bổ xung
+        khi vào dashboard này cần Claims: "cqrs:dashboard:view" và các Claims khác để full acccess với account admin, account admin mock càn bổ xung claim, nếu BE chưa có api nhận đồng bộ Claims thì cần bổ xung
 
         cqrs dashboard cần show đúng số message lỗi, queue và topic cũng cần thống kê được tổng số message gửi đến, xem danh sách các message lỗi lỗi ở topic queue nào subcriber nào và khi click vào message lỗi cần có thể show detail và retry send message hoặc loại bỏ message đó ra khỏi queue
 
 # triển khai UI cho core infra auth 
+
 đọc yêu cầu của BE cho core infra auth trong file TreeOfThought/backend/yeucau.md và triển khai Module UI cho core infra auth, UI UX dễ dùng thuận tiện :
     - Role Management
-    - Permission Management
+    - Claims Management
     - User Management
     - Acl Management cho users
 
-    **chú ý làm xong cần tuân thủ TreeOfThought/1st.md** việc phân quyền module là cần à account admin hoặc user được gán các permision
+    **chú ý làm xong cần tuân thủ TreeOfThought/1st.md** việc phân quyền module là cần là account admin hoặc user được gán các Claims. Do BE đã chuyển permision thành Claims nên FE cần thống nhất theo
 
+**cập nhật 1** cần check xem những gì liên quan permission cần chuyển thành claims cho FE UI , do BE đã chuyển khái niệm permision thành claim như mô tả ở TreeOfThought/backend/yeucau.md
+
+**cập nhật 2**
+
+ở TreeOfThought/backend/yeucau.md có **cập nhật 8** cần làm UI tương ứng cho việc đổi mật khẩu của tài khoản admin 

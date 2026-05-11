@@ -20,4 +20,4 @@ phattrien.md là tài liệu dùng để phát triển code lập trình cần p
 
 **luôn đảm bảo khi có yeucau.md và phatrien.md dù source code có mất vẫn có thể viết lại một cách chính xác theo như mô tả stable và ready to run**
 
-**chú ý khi thực hiện code xong** cần kiểm tra lỗi BE code project .net hãy dùng lệnh dotnet build xem lỗi ở console log và sửa. khi cần kiểm tra lỗi FE cần chạy lênh ng build xem lỗi ở console log và sửa
+**chú ý khi thực hiện code xong** cần kiểm tra lỗi BE code project .net hãy dùng lệnh dotnet run xem lỗi ở console log và sửa. khi cần kiểm tra lỗi FE cần chạy lênh ng build xem lỗi ở console log và sửa. sau khi chạy xong cần close các process để tránh xung đột port, vd port 5000, 4200

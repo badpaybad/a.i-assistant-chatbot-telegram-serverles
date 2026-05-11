@@ -28,3 +28,9 @@ public class SyncClaimsRequest
     public string Version { get; set; } = ""; 
     public List<string> Claims { get; set; } = new(); 
 }
+
+public class ChangePasswordRequest
+{
+    public string CurrentPassword { get; set; } = "";
+    public string NewPassword { get; set; } = "";
+}

@@ -56,6 +56,9 @@ Dự án được tổ chức theo mô hình Modular Monolith/Microservices-read
 #### AppAuthorizeAttribute linh hoạt
 - **AuthMode**: Hỗ trợ logic **AND** (cần tất cả quyền) hoặc **OR** (chỉ cần một trong các quyền). Mặc định là **OR**.
 
+#### Đồng bộ Claims (Claim Synchronization)
+- **claims/sync**: API cho phép Frontend đồng bộ danh sách định nghĩa các Claims lên hệ thống. Yêu cầu người dùng phải đăng nhập (`[AppAuthorize]`) để thực hiện.
+
 ### 2.4. Tự động đăng ký CQRS Handlers (Reflection)
 - **Cấu hình dựa trên Property**: 
     - `IBaseCommand.QueueName`: Tên queue cho command (bắt buộc).

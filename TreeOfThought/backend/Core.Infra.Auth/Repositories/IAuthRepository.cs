@@ -11,6 +11,7 @@ public interface IAuthRepository
     Task CreateUserAsync(User user);
     Task UpdateUserAsync(User user);
     Task DeleteUserAsync(Guid id);
+    Task<List<User>> GetAllUsersAsync();
 
     // Role operations
     Task<Role?> GetRoleByNameAsync(string name);
