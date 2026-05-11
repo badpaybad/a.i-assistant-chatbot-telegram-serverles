@@ -26,7 +26,7 @@
         <span><a routerLink="/contact">{{ 'Liên hệ' | translate }}</a></span>
       </li>
 
-      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
+      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)" [(nzOpen)]="openMap['dashboard']">
         <ng-template #dashboardTitle>
           <span>{{ 'Dashboard' | translate }}</span>
         </ng-template>
@@ -37,7 +37,7 @@
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
+      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)" [(nzOpen)]="openMap['auth']">
         <ng-template #authTitle>
           <span>{{ 'Core Infra Auth' | translate }}</span>
         </ng-template>
@@ -60,7 +60,7 @@
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
+      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)" [(nzOpen)]="openMap['test']">
         <ng-template #testTitle>
           <span>{{ 'Mô-đun thử nghiệm' | translate }}</span>
         </ng-template>
@@ -119,6 +119,16 @@
     </nz-header>
     <nz-content>
       <div class="inner-content animate-fade-in">
+        <nz-breadcrumb class="app-breadcrumb" *ngIf="breadcrumbs.length > 0">
+          <nz-breadcrumb-item>
+            <a routerLink="/">
+              <span nz-icon nzType="home"></span>
+            </a>
+          </nz-breadcrumb-item>
+          <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
+            <a [routerLink]="item.url">{{ item.label | translate }}</a>
+          </nz-breadcrumb-item>
+        </nz-breadcrumb>
         <router-outlet></router-outlet>
       </div>
     </nz-content>

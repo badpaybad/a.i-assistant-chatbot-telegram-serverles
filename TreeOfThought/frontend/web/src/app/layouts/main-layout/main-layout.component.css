@@ -134,6 +134,29 @@
   min-height: calc(100vh - 64px);
 }
 
+.app-breadcrumb {
+  margin-bottom: 24px;
+  padding: 12px 24px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.app-breadcrumb a {
+  color: rgba(0, 0, 0, 0.45);
+  transition: color 0.3s;
+}
+
+.app-breadcrumb a:hover {
+  color: #1890ff;
+}
+
+.app-breadcrumb nz-breadcrumb-item:last-child a {
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
+  pointer-events: none;
+}
+
 /* Resize Handle */
 .resize-handle {
   position: absolute;
@@ -160,6 +183,25 @@
 .menu-sidebar.ant-layout-sider-collapsed .ant-menu-item a {
   display: flex;
   justify-content: center;
+}
+
+/* Fix sidemenu text color for non-link elements in dark mode */
+::ng-deep .ant-menu-dark .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+::ng-deep .ant-menu-dark .ant-menu-submenu-title:hover {
+  color: #fff !important;
+}
+
+::ng-deep .ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Ensure span inside menu items is also styled if it's not a link */
+.menu-sidebar .ant-menu-item span:not([nz-icon]),
+.menu-sidebar .ant-menu-submenu-title span:not([nz-icon]) {
+  color: inherit;
 }
 
 /* Disable transitions during resizing for smoothness */

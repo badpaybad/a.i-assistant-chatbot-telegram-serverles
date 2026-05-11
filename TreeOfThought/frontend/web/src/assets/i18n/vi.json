@@ -184,5 +184,7 @@
   "Access Denied": "Truy cập bị từ chối",
   "Authentication Required": "Yêu cầu đăng nhập",
   "User not found": "Không tìm thấy người dùng",
-  "Invalid password": "Mật khẩu không đúng"
+  "Invalid password": "Mật khẩu không đúng",
+  "Lệnh / Sự kiện": "Lệnh / Sự kiện",
+  "Handler": "Handler"
 }

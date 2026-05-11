@@ -49,7 +49,9 @@
           <tr>
             <th>{{ 'Tên' | translate }}</th>
             <th>{{ 'Loại' | translate }}</th>
-            <th nzWidth="250px">{{ 'Trạng thái tải' | translate }}</th>
+            <th>{{ 'Lệnh / Sự kiện' | translate }}</th>
+            <th>{{ 'Handler' | translate }}</th>
+            <th nzWidth="150px">{{ 'Trạng thái tải' | translate }}</th>
             <th>{{ 'Tổng đã gửi' | translate }}</th>
             <th>{{ 'Lỗi' | translate }}</th>
             <th>{{ 'Hành động' | translate }}</th>
@@ -61,6 +63,8 @@
             <td>
               <nz-tag [nzColor]="q.type === 'Queue' ? 'blue' : q.type === 'Subscription' ? 'green' : 'orange'">{{ q.type }}</nz-tag>
             </td>
+            <td><code *ngIf="q.messageName">{{ q.messageName }}</code></td>
+            <td><small *ngIf="q.handlerName">{{ q.handlerName }}</small></td>
             <td>
               <div class="load-status">
                 <span class="length-label">{{ q.length }} msgs</span>
@@ -84,6 +88,8 @@
         <thead>
           <tr>
             <th>{{ 'ID Worker' | translate }}</th>
+            <th>{{ 'Lệnh / Sự kiện' | translate }}</th>
+            <th>{{ 'Handler' | translate }}</th>
             <th>{{ 'Trạng thái' | translate }}</th>
             <th>{{ 'Hành động' | translate }}</th>
           </tr>
@@ -91,6 +97,8 @@
         <tbody>
           <tr *ngFor="let w of workerTable.data">
             <td>{{ w.id }}</td>
+            <td><code *ngIf="w.messageName">{{ w.messageName }}</code></td>
+            <td><small *ngIf="w.handlerName">{{ w.handlerName }}</small></td>
             <td>
               <nz-tag [nzColor]="w.status === 'Running' ? 'success' : 'error'">{{ (w.status === 'Running' ? 'Bắt đầu' : 'Dừng') | translate }}</nz-tag>
             </td>

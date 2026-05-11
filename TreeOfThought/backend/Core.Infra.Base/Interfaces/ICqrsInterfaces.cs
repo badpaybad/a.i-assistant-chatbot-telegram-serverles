@@ -24,7 +24,17 @@ public interface IDispatcher
     // Handler Management
     Task StopWorkerAsync(string workerId);
     Task StartWorkerAsync(string workerId);
-    Dictionary<string, string> GetWorkerStatus();
+    List<WorkerStatusDto> GetWorkerStatus();
     Task<Dictionary<string, long>> GetStatisticsAsync();
     Task RetryCommandAsync(string queueName, string messageJson);
+}
+
+public class WorkerStatusDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+    public string? MessageName { get; set; }
+    public string? HandlerName { get; set; }
+    public string? QueueOrTopicName { get; set; }
 }

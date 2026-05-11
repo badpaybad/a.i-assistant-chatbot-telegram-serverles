@@ -10,6 +10,9 @@ import { AuthService } from '../../core/auth/auth.service';
 import { APP_CLAIMS } from '../../core/auth/claims.config';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
+import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { Router, ActivatedRoute, NavigationEnd, Event } from '@angular/router';
+import { filter } from 'rxjs/operators';
 
 @Component({
   selector: 'app-main-layout',
@@ -24,7 +27,8 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
     NzButtonModule,
     NzAvatarModule,
     TranslateModule,
-    NzDropDownModule
+    NzDropDownModule,
+    NzBreadCrumbModule
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css']
@@ -34,9 +38,18 @@ export class MainLayoutComponent {
   currentLang = 'vi';
   sidebarWidth = 256;
   sidebarBorderRight = '1px solid #303030'; // Configurable border
+  breadcrumbs: Array<{ label: string; url: string }> = [];
+  openMap: { [key: string]: boolean } = {
+    dashboard: false,
+    auth: false,
+    test: false
+  };
 
   private authService = inject(AuthService);
   private translate = inject(TranslateService);
+  private router = inject(Router);
+  private activatedRoute = inject(ActivatedRoute);
+
   user$ = this.authService.user$;
   claims = APP_CLAIMS;
 
@@ -50,6 +63,51 @@ export class MainLayoutComponent {
     this.translate.onLangChange.subscribe(event => {
       this.currentLang = event.lang;
     });
+
+    this.router.events
+      .pipe(filter((event: Event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe(() => {
+        this.breadcrumbs = this.createBreadcrumbs(this.activatedRoute.root);
+        this.updateOpenMap();
+      });
+    
+    // Initial call
+    this.breadcrumbs = this.createBreadcrumbs(this.activatedRoute.root);
+    this.updateOpenMap();
+  }
+
+  private createBreadcrumbs(route: ActivatedRoute, url: string = '', breadcrumbs: Array<{ label: string; url: string }> = []): Array<{ label: string; url: string }> {
+    const children: ActivatedRoute[] = route.children;
+
+    if (children.length === 0) {
+      return breadcrumbs;
+    }
+
+    for (const child of children) {
+      const snapshot = child.snapshot;
+      if (!snapshot) continue;
+
+      const routeURL: string = snapshot.url.map(segment => segment.path).join('/');
+      if (routeURL !== '') {
+        url += `/${routeURL}`;
+      }
+
+      const label = snapshot.data['breadcrumb'];
+      if (label) {
+        breadcrumbs.push({ label, url });
+      }
+
+      return this.createBreadcrumbs(child, url, breadcrumbs);
+    }
+
+    return breadcrumbs;
+  }
+
+  private updateOpenMap() {
+    const url = this.router.url;
+    this.openMap['dashboard'] = url.includes('/modules/cqrs-dashboard');
+    this.openMap['auth'] = url.includes('/modules/core-infra-auth');
+    this.openMap['test'] = url.includes('/modules/test');
   }
 
   toggleCollapse() {

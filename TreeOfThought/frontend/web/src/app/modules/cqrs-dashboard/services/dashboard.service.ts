@@ -4,7 +4,16 @@ import { Observable, from } from 'rxjs';
 
 export interface DashboardStats {
   stats: Record<string, number>;
-  workerStatus: Record<string, string>;
+  workerStatus: WorkerDetail[];
+}
+
+export interface WorkerDetail {
+  id: string;
+  type: string;
+  status: string;
+  messageName?: string;
+  handlerName?: string;
+  queueOrTopicName?: string;
 }
 
 export interface QueueInfo {
@@ -13,6 +22,8 @@ export interface QueueInfo {
   type: string;
   sentCount: number;
   errorCount: number;
+  messageName?: string;
+  handlerName?: string;
 }
 
 export interface TrackingSummary {

@@ -16,7 +16,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '../services/dashboard.service';
+import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail } from '../services/dashboard.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -47,10 +47,10 @@ export class DashboardComponent implements OnInit {
   private notification = inject(NzNotificationService);
   private translate = inject(TranslateService);
 
-  stats: DashboardStats = { stats: {}, workerStatus: {} };
+  stats: DashboardStats = { stats: {}, workerStatus: [] };
   queues: QueueInfo[] = [];
   recentTracking: TrackingSummary[] = [];
-  workerList: { id: string, status: string }[] = [];
+  workerList: WorkerDetail[] = [];
   errorStats: { name: string, count: number }[] = [];
   loading = false;
 
@@ -74,7 +74,7 @@ export class DashboardComponent implements OnInit {
   }
 
   updateComputedStats(): void {
-    this.workerList = Object.entries(this.stats.workerStatus).map(([id, status]) => ({ id, status }));
+    this.workerList = this.stats.workerStatus;
     this.errorStats = Object.entries(this.stats.stats)
       .filter(([key]) => key.startsWith('error:'))
       .map(([key, value]) => ({ 

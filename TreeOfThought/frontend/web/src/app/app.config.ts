@@ -58,7 +58,7 @@ export const appConfig: ApplicationConfig = {
     provideNzI18n(en_US),
     provideHttpClient(),
     provideTranslateService({
-      defaultLanguage: 'vi'
+      fallbackLang: 'vi'
     }),
     provideTranslateHttpLoader({
       prefix: './assets/i18n/',

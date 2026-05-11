@@ -24,6 +24,9 @@ public class CqrsDispatcher : IDispatcher
         public bool IsRunning { get; set; }
         public CancellationTokenSource? Cts { get; set; }
         public Func<CancellationToken, Task>? StartFunc { get; set; }
+        public string? MessageName { get; set; }
+        public string? HandlerName { get; set; }
+        public string? QueueOrTopicName { get; set; }
     }
 
     public CqrsDispatcher(
@@ -162,7 +165,10 @@ public class CqrsDispatcher : IDispatcher
         {
             WorkerId = workerId,
             Type = "Command",
-            StartFunc = startFunc
+            StartFunc = startFunc,
+            MessageName = typeof(TCommand).Name,
+            HandlerName = typeof(THandler).Name,
+            QueueOrTopicName = qName
         };
 
         _workers[workerId] = workerInfo;
@@ -229,7 +235,10 @@ public class CqrsDispatcher : IDispatcher
         {
             WorkerId = workerId,
             Type = "Event",
-            StartFunc = startFunc
+            StartFunc = startFunc,
+            MessageName = typeof(TEvent).Name,
+            HandlerName = typeof(THandler).Name,
+            QueueOrTopicName = topic
         };
 
         _workers[workerId] = workerInfo;
@@ -259,9 +268,17 @@ public class CqrsDispatcher : IDispatcher
         return Task.CompletedTask;
     }
 
-    public Dictionary<string, string> GetWorkerStatus()
+    public List<WorkerStatusDto> GetWorkerStatus()
     {
-        return _workers.ToDictionary(k => k.Key, v => v.Value.IsRunning ? "Running" : "Stopped");
+        return _workers.Values.Select(w => new WorkerStatusDto
+        {
+            Id = w.WorkerId,
+            Type = w.Type,
+            Status = w.IsRunning ? "Running" : "Stopped",
+            MessageName = w.MessageName,
+            HandlerName = w.HandlerName,
+            QueueOrTopicName = w.QueueOrTopicName
+        }).ToList();
     }
 
     public async Task<Dictionary<string, long>> GetStatisticsAsync()

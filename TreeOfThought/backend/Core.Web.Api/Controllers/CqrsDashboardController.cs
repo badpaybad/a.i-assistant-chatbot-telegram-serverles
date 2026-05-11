@@ -33,6 +33,7 @@ public class CqrsDashboardController : ControllerBase
     {
         var allKeys = await _queueService.GetQueuesAsync();
         var stats = await _tracker.GetStatsAsync();
+        var workerStatus = _dispatcher.GetWorkerStatus();
         
         var queues = allKeys
             .Where(k => !k.StartsWith("track:") && !k.StartsWith("infra:") && !k.StartsWith("topic_subs:"))
@@ -60,12 +61,17 @@ public class CqrsDashboardController : ControllerBase
             stats.TryGetValue(sentKey, out long sentCount);
             stats.TryGetValue(errorKey, out long errorCount);
 
+            // Find associated worker info
+            var associatedWorker = workerStatus.FirstOrDefault(w => w.QueueOrTopicName == q || (q.StartsWith("sub_queue:") && w.QueueOrTopicName == q.Split(':')[1]));
+
             result.Add(new { 
                 name = q, 
                 length, 
                 type, 
                 sentCount, 
-                errorCount 
+                errorCount,
+                messageName = associatedWorker?.MessageName,
+                handlerName = associatedWorker?.HandlerName
             });
         }
 
