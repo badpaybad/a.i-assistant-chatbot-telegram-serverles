@@ -64,7 +64,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.name === 'admin'"
+                      [disabled]="data.name?.toLowerCase() === 'admin'"
                       (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
@@ -165,7 +165,7 @@ export class ClaimSyncComponent implements OnInit {
   }
 
   async deleteClaim(claim: any) {
-    if (claim.name === 'admin') {
+    if (claim.name?.toLowerCase() === 'admin') {
       this.notification.warning(this.translate.instant('Cảnh báo'), this.translate.instant('Không thể xóa quyền admin'));
       return;
     }

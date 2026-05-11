@@ -57,7 +57,7 @@ import { AppSelectComponent } from '../../../shared';
           <td>
             <div class="claim-tags">
               <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
-                      [nzMode]="(data.name === 'Admin' && claim.name === 'admin') ? 'default' : 'closeable'" 
+                      [nzMode]="(data.name?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
                       (nzOnClose)="removeClaim(data, claim)">
                 {{ claim.name }}
               </nz-tag>
@@ -69,7 +69,7 @@ import { AppSelectComponent } from '../../../shared';
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.name === 'Admin'"
+                      [disabled]="data.name?.toLowerCase() === 'admin'"
                       (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
@@ -217,7 +217,7 @@ export class RoleListComponent implements OnInit {
   }
 
   async deleteRole(role: any) {
-    if (role.name === 'Admin') {
+    if (role.name?.toLowerCase() === 'admin') {
       this.message.warning(this.translate.instant('Không thể xóa vai trò Admin'));
       return;
     }

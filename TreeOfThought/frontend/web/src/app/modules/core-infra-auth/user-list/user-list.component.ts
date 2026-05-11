@@ -62,7 +62,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </td>
           <td>
             <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
-                    [nzMode]="(data.username === 'admin' && role.name === 'Admin') ? 'default' : 'closeable'" 
+                    [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
                     (nzOnClose)="removeRole(data, role)">
               {{ role.name }}
             </nz-tag>
@@ -72,7 +72,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </td>
           <td>
             <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
-                    [nzMode]="(data.username === 'admin' && claim.name === 'admin') ? 'default' : 'closeable'" 
+                    [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
                     (nzOnClose)="removeClaim(data, claim)">
               {{ claim.name }}
             </nz-tag>
@@ -83,7 +83,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.username === 'admin'"
+                      [disabled]="data.username?.toLowerCase() === 'admin'"
                       (click)="deleteUser(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
@@ -244,7 +244,7 @@ export class UserListComponent implements OnInit {
   }
 
   async deleteUser(user: any) {
-    if (user.username === 'admin') {
+    if (user.username?.toLowerCase() === 'admin') {
       this.message.warning(this.translate.instant('Không thể xóa tài khoản admin'));
       return;
     }

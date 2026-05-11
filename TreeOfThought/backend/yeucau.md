@@ -232,3 +232,5 @@ không cho phép xóa claim admin ở quản lý claim
 Không cho phép xóa account admin ở quản lý account
 
 role Admin hoặc claim admin là đặc biệt là full quyền không hạn chế quyền (cần check từ BE). không thể bị chỉnh sửa, thêm xóa, khi check quyền thì cần ưu tiên role Admin hoặc claim admin, xem FE nếu cần TreeOfThought/frontend/web/yeucau.md
+
+username, role, claim là không quan tâm hoa thường 

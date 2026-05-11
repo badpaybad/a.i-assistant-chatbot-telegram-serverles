@@ -35,7 +35,8 @@ public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
         }
 
         // 2. Full Access for Admin role or admin claim
-        if (user.IsInRole("Admin") || user.HasClaim("claims", "admin"))
+        if (user.Claims.Any(c => (c.Type == ClaimTypes.Role && c.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)) ||
+                                 (c.Type == "claims" && c.Value.Equals("admin", StringComparison.OrdinalIgnoreCase))))
         {
             return; // Authorized
         }

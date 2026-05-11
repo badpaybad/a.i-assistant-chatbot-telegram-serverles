@@ -19,7 +19,7 @@ public class AuthRepository : IAuthRepository
     public async Task<User?> GetUserByIdAsync(Guid id) => await _context.Users.FindAsync(id);
 
     public async Task<User?> GetUserByUsernameAsync(string username) => 
-        await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+        await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
 
     public async Task<User?> GetUserByEmailAsync(string email) => 
         await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -32,6 +32,15 @@ public class AuthRepository : IAuthRepository
 
     public async Task UpdateUserAsync(User user)
     {
+        var existing = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+        if (existing != null)
+        {
+            if (existing.Username.Equals("admin", StringComparison.OrdinalIgnoreCase) && 
+                !user.Username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cannot rename the system admin account.");
+            }
+        }
         _context.Users.Update(user);
         await _context.SaveChangesAsync();
     }
@@ -53,7 +62,7 @@ public class AuthRepository : IAuthRepository
     public async Task<List<User>> GetAllUsersAsync() => await _context.Users.ToListAsync();
 
     public async Task<Role?> GetRoleByNameAsync(string name) => 
-        await _context.Roles.FirstOrDefaultAsync(r => r.Name == name);
+        await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
 
     public async Task CreateRoleAsync(Role role)
     {
@@ -78,7 +87,7 @@ public class AuthRepository : IAuthRepository
     public async Task<List<Role>> GetAllRolesAsync() => await _context.Roles.ToListAsync();
 
     public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
-        await _context.Claims.FirstOrDefaultAsync(p => p.Name == name);
+        await _context.Claims.FirstOrDefaultAsync(p => p.Name.ToLower() == name.ToLower());
 
     public async Task CreateClaimAsync(AppClaim claim)
     {
@@ -226,7 +235,10 @@ public class AuthRepository : IAuthRepository
 
         if (roleNames != null && roleNames.Any())
         {
-            var roles = await _context.Roles.Where(r => roleNames.Contains(r.Name)).Select(r => r.Id).ToListAsync();
+            var roles = await _context.Roles
+                .Where(r => roleNames.Select(rn => rn.ToLower()).Contains(r.Name.ToLower()))
+                .Select(r => r.Id)
+                .ToListAsync();
             var roleAccessEntries = await _context.AclEntries.Where(a => 
                 a.RoleId.HasValue && roles.Contains(a.RoleId.Value) && 
                 a.ResourceType == resourceType && 
