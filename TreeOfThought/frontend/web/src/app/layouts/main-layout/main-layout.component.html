@@ -1,10 +1,11 @@
-<nz-layout class="app-layout">
+<nz-layout class="app-layout" nzHasSider>
   <nz-sider class="menu-sidebar"
             nzCollapsible
-            nzWidth="256px"
-            nzBreakpoint="md"
+            [nzWidth]="sidebarWidth"
+            [nzCollapsedWidth]="80"
             [(nzCollapsed)]="isCollapsed"
-            [nzTrigger]="null">
+            [nzTrigger]="null"
+            [style.borderRight]="isCollapsed ? 'none' : sidebarBorderRight">
     <div class="sidebar-logo">
       <a routerLink="/">
         <img src="assets/logo.png" alt="logo">
@@ -14,26 +15,32 @@
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="home"></span>
-        <a routerLink="/">{{ 'Trang chủ' | translate }}</a>
+        <span><a routerLink="/">{{ 'Trang chủ' | translate }}</a></span>
       </li>
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="info-circle"></span>
-        <a routerLink="/about">{{ 'Giới thiệu' | translate }}</a>
+        <span><a routerLink="/about">{{ 'Giới thiệu' | translate }}</a></span>
       </li>
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="phone"></span>
-        <a routerLink="/contact">{{ 'Liên hệ' | translate }}</a>
+        <span><a routerLink="/contact">{{ 'Liên hệ' | translate }}</a></span>
       </li>
 
-      <li nz-submenu [nzTitle]="'Dashboard'" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
+      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
+        <ng-template #dashboardTitle>
+          <span>{{ 'Dashboard' | translate }}</span>
+        </ng-template>
         <ul>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/cqrs-dashboard">CQRS Dashboard</a>
+            <a routerLink="/modules/cqrs-dashboard">{{ 'CQRS Dashboard' | translate }}</a>
           </li>
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="'Core Infra Auth'" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
+      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
+        <ng-template #authTitle>
+          <span>{{ 'Core Infra Auth' | translate }}</span>
+        </ng-template>
         <ul>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/core-infra-auth/users">{{ 'Người dùng' | translate }}</a>
@@ -45,7 +52,7 @@
             <a routerLink="/modules/core-infra-auth/claims">{{ 'Quyền' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter *ngIf="hasClaim(claims.AUTH.MANAGE_ACL)">
-            <a routerLink="/modules/core-infra-auth/acl">ACL Management</a>
+            <a routerLink="/modules/core-infra-auth/acl">{{ 'Quản lý ACL' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/core-infra-auth/change-password">{{ 'Đổi mật khẩu' | translate }}</a>
@@ -53,23 +60,27 @@
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="'Test Modules'" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
+      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
+        <ng-template #testTitle>
+          <span>{{ 'Mô-đun thử nghiệm' | translate }}</span>
+        </ng-template>
         <ul>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/firestore">Firestore Test</a>
+            <a routerLink="/modules/test/firestore">{{ 'Thử nghiệm Firestore' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/fcm">FCM Test</a>
+            <a routerLink="/modules/test/fcm">{{ 'Thử nghiệm FCM' | translate }}</a>
           </li>
         </ul>
       </li>
     </ul>
+    <div class="resize-handle" (mousedown)="onMouseDown($event)" *ngIf="!isCollapsed"></div>
   </nz-sider>
   <nz-layout>
     <nz-header>
       <div class="app-header">
         <div class="header-left">
-          <span class="header-trigger" (click)="isCollapsed = !isCollapsed">
+          <span class="header-trigger" (click)="toggleCollapse()">
               <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
           </span>
           <div class="header-links">
@@ -79,6 +90,20 @@
           </div>
         </div>
         <div class="header-right">
+          <div class="lang-selector">
+            <a nz-dropdown [nzDropdownMenu]="langMenu">
+              <span nz-icon nzType="global"></span>
+              {{ currentLang === 'vi' ? 'Tiếng Việt' : 'English' }}
+              <span nz-icon nzType="down"></span>
+            </a>
+            <nz-dropdown-menu #langMenu="nzDropdownMenu">
+              <ul nz-menu>
+                <li nz-menu-item (click)="switchLanguage('vi')">Tiếng Việt</li>
+                <li nz-menu-item (click)="switchLanguage('en')">English</li>
+              </ul>
+            </nz-dropdown-menu>
+          </div>
+
           <ng-container *ngIf="user$ | async as user; else loginBtn">
             <span class="user-info">
               <nz-avatar nzIcon="user" [nzSrc]="user.photoURL || ''"></nz-avatar>

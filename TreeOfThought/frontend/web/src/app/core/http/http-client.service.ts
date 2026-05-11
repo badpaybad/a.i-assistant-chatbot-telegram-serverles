@@ -37,7 +37,8 @@ export class HttpClientService {
     const message = error.error?.message || error.message || 'Unknown error';
     
     if (status >= 400 || status === 0) {
-      const displayMessage = status === 0 ? this.translate.instant('Lỗi kết nối hoặc server đang bảo trì') : message;
+      const translatedMessage = this.translate.instant(message);
+      const displayMessage = status === 0 ? this.translate.instant('Lỗi kết nối hoặc server đang bảo trì') : translatedMessage;
       const linkText = this.translate.instant('Click vào đây để đăng nhập');
       const htmlContent = `${displayMessage}. <a href="/auth/login" style="color: #1890ff; text-decoration: underline;">${linkText}.</a>`;
       
@@ -46,10 +47,10 @@ export class HttpClientService {
       
       if (template) {
         const ref = this.notification.create('error', errorTitle, template, { nzData: { content: htmlContent }, nzDuration: 0 });
-        ref.onClick.subscribe(() => {
-          this.router.navigate(['/auth/login']);
-          this.notification.remove(ref.messageId);
-        });
+        // ref.onClick.subscribe(() => {
+        //   this.router.navigate(['/auth/login']);
+        //   this.notification.remove(ref.messageId);
+        // });
       } else {
         const ref = this.notification.error(errorTitle, `${displayMessage}. ${linkText}.`, { nzDuration: 0 });
         ref.onClick.subscribe(() => {

@@ -41,7 +41,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       <thead>
         <tr>
           <th>{{ 'Người dùng' | translate }}</th>
-          <th>Status</th>
+          <th>{{ 'Trạng thái' | translate }}</th>
           <th>{{ 'Vai trò' | translate }}</th>
           <th>{{ 'Quyền' | translate }}</th>
           <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
@@ -57,7 +57,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </td>
           <td>
             <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
-              {{ data.isEmailVerified ? 'Verified' : 'Pending' }}
+              {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | translate }}
             </nz-tag>
           </td>
           <td>
@@ -154,7 +154,7 @@ export class UserListComponent implements OnInit {
     try {
       this.users = await this.authMgmt.getUsers();
     } catch (e) {
-      this.message.error('Failed to load users');
+      this.message.error(this.translate.instant('Lỗi khi tải người dùng'));
     } finally {
       this.loading = false;
     }
@@ -179,11 +179,11 @@ export class UserListComponent implements OnInit {
     if (!this.selectedRoleId) return;
     try {
       await this.authMgmt.assignRoleToUser(this.selectedUser.id, this.selectedRoleId);
-      this.message.success('Role assigned successfully');
+      this.message.success(this.translate.instant('Gán vai trò thành công'));
       this.isRoleModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error('Failed to assign role');
+      this.message.error(this.translate.instant('Gán vai trò thất bại'));
     }
   }
 
@@ -194,10 +194,10 @@ export class UserListComponent implements OnInit {
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeRoleFromUser(user.id, role.id);
-          this.message.success('Role removed successfully');
+          this.message.success(this.translate.instant('Xóa vai trò thành công'));
           this.loadUsers();
         } catch (e) {
-          this.message.error('Failed to remove role');
+          this.message.error(this.translate.instant('Xóa vai trò thất bại'));
         }
       }
     });
@@ -213,11 +213,11 @@ export class UserListComponent implements OnInit {
     if (!this.selectedClaimId) return;
     try {
       await this.authMgmt.assignClaimToUser(this.selectedUser.id, this.selectedClaimId);
-      this.message.success('Claim assigned successfully');
+      this.message.success(this.translate.instant('Gán quyền thành công'));
       this.isClaimModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error('Failed to assign claim');
+      this.message.error(this.translate.instant('Gán quyền thất bại'));
     }
   }
 
@@ -228,16 +228,16 @@ export class UserListComponent implements OnInit {
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeClaimFromUser(user.id, claim.id);
-          this.message.success('Claim removed successfully');
+          this.message.success(this.translate.instant('Xóa quyền thành công'));
           this.loadUsers();
         } catch (e) {
-          this.message.error('Failed to remove claim');
+          this.message.error(this.translate.instant('Xóa quyền thất bại'));
         }
       }
     });
   }
 
   async deleteUser(user: any) {
-    this.message.info('User deletion not yet fully implemented');
+    this.message.info(this.translate.instant('Chưa hỗ trợ xóa người dùng'));
   }
 }

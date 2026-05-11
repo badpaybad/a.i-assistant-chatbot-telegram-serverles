@@ -49,8 +49,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       <thead>
         <tr>
           <th>{{ 'Quyền' | translate }}</th>
-          <th>Description</th>
-          <th>Created At</th>
+          <th>{{ 'Mô tả' | translate }}</th>
+          <th>{{ 'Ngày tạo' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -68,13 +68,13 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <nz-form-item>
             <nz-form-label [nzSpan]="null">{{ 'Quyền' | translate }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newClaim.name" name="name" placeholder="e.g. report:export" />
+              <input nz-input [(ngModel)]="newClaim.name" name="name" [placeholder]="'Quyền' | translate" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Description</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Mô tả' | translate }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newClaim.description" name="description" placeholder="Claim description" />
+              <input nz-input [(ngModel)]="newClaim.description" name="description" [placeholder]="'Mô tả' | translate" />
             </nz-form-control>
           </nz-form-item>
         </form>

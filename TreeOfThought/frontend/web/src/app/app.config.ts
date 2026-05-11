@@ -13,8 +13,16 @@ import * as AllIcons from '@ant-design/icons-angular/icons';
 
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { NZ_CONFIG, NzConfig } from 'ng-zorro-antd/core/config';
 
 registerLocaleData(en);
+
+const nzConfig: NzConfig = {
+  notification: {
+    nzPlacement: 'topRight',
+    nzDuration: 15000 // 15 seconds
+  }
+};
 
 const icons: IconDefinition[] = [
   AllIcons.UserOutline,
@@ -37,7 +45,9 @@ const icons: IconDefinition[] = [
   AllIcons.RocketOutline,
   AllIcons.NotificationOutline,
   AllIcons.ClusterOutline,
-  AllIcons.ArrowRightOutline
+  AllIcons.ArrowRightOutline,
+  AllIcons.GlobalOutline,
+  AllIcons.DownOutline
 ];
 
 export const appConfig: ApplicationConfig = {
@@ -54,6 +64,7 @@ export const appConfig: ApplicationConfig = {
       prefix: './assets/i18n/',
       suffix: '.json'
     }),
+    { provide: NZ_CONFIG, useValue: nzConfig },
     importProvidersFrom(
       FormsModule, 
       NzIconModule.forRoot(icons)

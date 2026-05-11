@@ -16,7 +16,7 @@
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập mật khẩu!' | translate">
         <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="password" [placeholder]="'Mật khẩu' | translate" (keyup.enter)="submitForm()" />
+          <input type="password" nz-input formControlName="password" [placeholder]="'Mật khẩu' | translate" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
@@ -36,10 +36,10 @@
       {{ 'Đăng nhập' | translate }}
     </button>
     
-    <button nz-button type="button" class="login-form-button" (click)="fillAdmin()">Auto-fill Admin (test)</button>
+    <button nz-button type="button" class="login-form-button" (click)="fillAdmin()">{{ 'Tự động nhập Admin (thử nghiệm)' | translate }}</button>
     
     <div class="register-link">
-      {{ 'Hoặc đăng nhập với' | translate }} <a routerLink="/auth/signup">{{ 'Đăng ký ngay!' | translate }}</a>
+      {{ 'Hoặc' | translate }} <a routerLink="/auth/signup">{{ 'Đăng ký ngay!' | translate }}</a>
     </div>
   </form>
 
@@ -47,13 +47,13 @@
 
   <div class="sso-buttons">
     <button nz-button nzBlock type="button" (click)="loginWithGoogle()">
-      <span nz-icon nzType="google"></span> Google
+      <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
     </button>
     <button nz-button nzBlock type="button" (click)="loginWithMS()">
-      <span nz-icon nzType="windows"></span> Microsoft
+      <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
     </button>
     <button nz-button nzBlock type="button" (click)="loginWithFacebook()">
-      <span nz-icon nzType="facebook"></span> Facebook
+      <span nz-icon nzType="facebook"></span> {{ 'Facebook' | translate }}
     </button>
   </div>
 </div>

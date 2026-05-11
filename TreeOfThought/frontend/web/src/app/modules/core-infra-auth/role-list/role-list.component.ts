@@ -45,7 +45,7 @@ import { AppSelectComponent } from '../../../shared';
       <thead>
         <tr>
           <th nzWidth="200px">{{ 'Vai trò' | translate }}</th>
-          <th>Description</th>
+          <th>{{ 'Mô tả' | translate }}</th>
           <th>{{ 'Quyền' | translate }}</th>
           <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
         </tr>
@@ -79,13 +79,13 @@ import { AppSelectComponent } from '../../../shared';
           <nz-form-item>
             <nz-form-label [nzSpan]="null">{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newRole.name" name="name" placeholder="e.g. manager" />
+              <input nz-input [(ngModel)]="newRole.name" name="name" [placeholder]="'Vai trò' | translate" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Description</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Mô tả' | translate }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newRole.description" name="description" placeholder="Role description" />
+              <input nz-input [(ngModel)]="newRole.description" name="description" [placeholder]="'Mô tả' | translate" />
             </nz-form-control>
           </nz-form-item>
         </form>
@@ -147,7 +147,7 @@ export class RoleListComponent implements OnInit {
     try {
       this.roles = await this.authMgmt.getRoles();
     } catch (e) {
-      this.message.error('Failed to load roles');
+      this.message.error(this.translate.instant('Lỗi khi tải vai trò'));
     } finally {
       this.loading = false;
     }
@@ -170,11 +170,11 @@ export class RoleListComponent implements OnInit {
     if (!this.newRole.name) return;
     try {
       await this.authMgmt.createRole(this.newRole);
-      this.message.success('Role created successfully');
+      this.message.success(this.translate.instant('Tạo vai trò thành công'));
       this.isCreateModalVisible = false;
       this.loadRoles();
     } catch (e) {
-      this.message.error('Failed to create role');
+      this.message.error(this.translate.instant('Tạo vai trò thất bại'));
     }
   }
 
@@ -188,11 +188,11 @@ export class RoleListComponent implements OnInit {
     if (!this.selectedClaimId) return;
     try {
       await this.authMgmt.assignClaimToRole(this.selectedRole.id, this.selectedClaimId);
-      this.message.success('Claim assigned successfully');
+      this.message.success(this.translate.instant('Gán quyền thành công'));
       this.isClaimModalVisible = false;
       this.loadRoles();
     } catch (e) {
-      this.message.error('Failed to assign claim');
+      this.message.error(this.translate.instant('Gán quyền thất bại'));
     }
   }
 
@@ -203,10 +203,10 @@ export class RoleListComponent implements OnInit {
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeClaimFromRole(role.id, claim.id);
-          this.message.success('Claim removed successfully');
+          this.message.success(this.translate.instant('Xóa quyền thành công'));
           this.loadRoles();
         } catch (e) {
-          this.message.error('Failed to remove claim');
+          this.message.error(this.translate.instant('Xóa quyền thất bại'));
         }
       }
     });
@@ -218,7 +218,7 @@ export class RoleListComponent implements OnInit {
       nzContent: `${this.translate.instant('Xóa')} ${role.name}?`,
       nzOkDanger: true,
       nzOnOk: async () => {
-        this.message.info('Role deletion not yet fully implemented');
+        this.message.info(this.translate.instant('Chưa hỗ trợ xóa vai trò'));
       }
     });
   }

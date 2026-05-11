@@ -1,7 +1,7 @@
-<nz-page-header [nzTitle]="'Messages in ' + queueName" (nzBack)="true">
+<nz-page-header [nzTitle]="('Tin nhắn trong' | translate) + ' ' + queueName" (nzBack)="true">
   <nz-page-header-extra>
     <button nz-button nzType="primary" (click)="fetchMessages()" [nzLoading]="loading">
-      <span nz-icon nzType="reload"></span> Refresh
+      <span nz-icon nzType="reload"></span> {{ 'Làm mới' | translate }}
     </button>
   </nz-page-header-extra>
 </nz-page-header>
@@ -10,10 +10,10 @@
   <nz-table #msgTable [nzData]="messages" [nzLoading]="loading">
     <thead>
       <tr>
-        <th *ngIf="isDeadLetter()">Failed At</th>
-        <th *ngIf="isDeadLetter()">Error</th>
-        <th>Message Snapshot</th>
-        <th>Action</th>
+        <th *ngIf="isDeadLetter()">{{ 'Lỗi tại' | translate }}</th>
+        <th *ngIf="isDeadLetter()">{{ 'Lỗi' | translate }}</th>
+        <th>{{ 'Nội dung tin nhắn' | translate }}</th>
+        <th>{{ 'Hành động' | translate }}</th>
       </tr>
     </thead>
     <tbody>
@@ -26,38 +26,38 @@
         </td>
         <td class="msg-cell">{{ (msg.isWrapped ? (msg.data | json) : msg.raw) | slice:0:100 }}...</td>
         <td>
-          <button nz-button nzType="link" (click)="viewDetails(msg)">View</button>
-          <button *ngIf="isDeadLetter()" nz-button nzType="link" (click)="retry(msg)">Retry</button>
-          <button *ngIf="isDeadLetter()" nz-button nzType="link" nzDanger (click)="remove(msg)">Remove</button>
+          <button nz-button nzType="link" (click)="viewDetails(msg)">{{ 'Xem' | translate }}</button>
+          <button *ngIf="isDeadLetter()" nz-button nzType="link" (click)="retry(msg)">{{ 'Thử lại' | translate }}</button>
+          <button *ngIf="isDeadLetter()" nz-button nzType="link" nzDanger (click)="remove(msg)">{{ 'Xóa bỏ' | translate }}</button>
         </td>
       </tr>
     </tbody>
   </nz-table>
 
   <div *ngIf="messages.length === 0" class="no-data">
-    No messages found in this queue.
+    {{ 'Không tìm thấy tin nhắn nào trong hàng đợi này.' | translate }}
   </div>
 
   <nz-modal
     [(nzVisible)]="isModalVisible"
-    nzTitle="Message Details & Action"
+    [nzTitle]="'Chi tiết tin nhắn & Hành động' | translate"
     (nzOnCancel)="handleCancel()"
     [nzWidth]="900"
   >
     <div *nzModalContent>
       <div *ngIf="errorMetadata" class="error-info">
-        <nz-alert nzType="error" [nzMessage]="'Error Details'" [nzDescription]="errorDesc" nzShowIcon></nz-alert>
+        <nz-alert nzType="error" [nzMessage]="'Chi tiết lỗi' | translate" [nzDescription]="errorDesc" nzShowIcon></nz-alert>
         <ng-template #errorDesc>
-          <p><strong>Error:</strong> {{ errorMetadata.error }}</p>
-          <p><strong>Failed At:</strong> {{ errorMetadata.failedAt | date:'medium' }}</p>
-          <p *ngIf="errorMetadata.topic"><strong>Topic:</strong> {{ errorMetadata.topic }}</p>
-          <p *ngIf="errorMetadata.subscriber"><strong>Subscriber:</strong> {{ errorMetadata.subscriber }}</p>
-          <p *ngIf="errorMetadata.queue"><strong>Queue:</strong> {{ errorMetadata.queue }}</p>
+          <p><strong>{{ 'Lỗi' | translate }}:</strong> {{ errorMetadata.error }}</p>
+          <p><strong>{{ 'Lỗi tại' | translate }}:</strong> {{ errorMetadata.failedAt | date:'medium' }}</p>
+          <p *ngIf="errorMetadata.topic"><strong>{{ 'Chủ đề' | translate }}:</strong> {{ errorMetadata.topic }}</p>
+          <p *ngIf="errorMetadata.subscriber"><strong>{{ 'Người đăng ký' | translate }}:</strong> {{ errorMetadata.subscriber }}</p>
+          <p *ngIf="errorMetadata.queue"><strong>{{ 'Hàng đợi' | translate }}:</strong> {{ errorMetadata.queue }}</p>
         </ng-template>
         <nz-divider></nz-divider>
       </div>
 
-      <p>Original Message Content:</p>
+      <p>{{ 'Nội dung tin nhắn gốc' | translate }}:</p>
       <textarea
         nz-input
         [(ngModel)]="editingJson"
@@ -66,8 +66,8 @@
       ></textarea>
     </div>
     <div *nzModalFooter>
-      <button nz-button nzType="default" (click)="handleCancel()">Close</button>
-      <button nz-button nzType="primary" (click)="pushEdited()">Push as New</button>
+      <button nz-button nzType="default" (click)="handleCancel()">{{ 'Đóng' | translate }}</button>
+      <button nz-button nzType="primary" (click)="pushEdited()">{{ 'Đẩy như mới' | translate }}</button>
       <button
         *ngIf="isDeadLetter()"
         nz-button
@@ -75,7 +75,7 @@
         nzDanger
         (click)="retryEdited()"
       >
-        Retry (Original Queue)
+        {{ 'Thử lại (Hàng đợi gốc)' | translate }}
       </button>
     </div>
   </nz-modal>

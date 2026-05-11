@@ -1,6 +1,7 @@
 import { Component, TemplateRef, ViewChild, AfterViewInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { TranslateService } from '@ngx-translate/core';
 import { NotificationTemplateService } from './core/services/notification-template.service';
 
 @Component({
@@ -13,6 +14,12 @@ import { NotificationTemplateService } from './core/services/notification-templa
 export class AppComponent implements AfterViewInit {
   @ViewChild('htmlNotification') htmlNotificationTemplate!: TemplateRef<any>;
   private templateService = inject(NotificationTemplateService);
+  private translate = inject(TranslateService);
+
+  constructor() {
+    const savedLang = localStorage.getItem('lang') || 'vi';
+    this.translate.use(savedLang);
+  }
 
   ngAfterViewInit() {
     this.templateService.registerTemplate('html', this.htmlNotificationTemplate);

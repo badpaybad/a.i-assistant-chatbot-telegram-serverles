@@ -52,13 +52,13 @@
 
     <div class="sso-buttons">
       <button nz-button nzType="default" (click)="signupWithGoogle()" [nzLoading]="loading">
-        <span nz-icon nzType="google"></span> Google
+        <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
       </button>
       <button nz-button nzType="default" (click)="signupWithMS()" [nzLoading]="loading">
-        <span nz-icon nzType="windows"></span> Microsoft
+        <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
       </button>
       <button nz-button nzType="default" (click)="signupWithFacebook()" [nzLoading]="loading">
-        <span nz-icon nzType="facebook"></span> Facebook
+        <span nz-icon nzType="facebook"></span> {{ 'Facebook' | translate }}
       </button>
     </div>
   </form>

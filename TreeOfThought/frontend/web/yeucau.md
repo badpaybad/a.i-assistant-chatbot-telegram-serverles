@@ -121,3 +121,10 @@ khi login type username , password rôi key press Enter thì bị báo access de
 nút colapse expand side menu chưa hoạt động 
 
 thêm dropdown chọn language ở góc phải trên cùng màn hình: Tiếng Việt, Tiếng Anh
+
+**cập nhật 5**
+sidebar khi expanded có thể thay đổi được độ rộng bằng chuột, khi shrink thì hiển thị icon, expanded hiển thị text và icon, có thể config border right của sidebar khi expanded
+
+**cập nhật 6**
+các notify lên góc phải màn hình cần có thời gian, và user cần tự tắt noti
+dịch chưa triệt để cho module auth và cqrs, tiếng Việt là mặc định

@@ -10,6 +10,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
+import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, TrackingStep } from '../services/dashboard.service';
 
 @Component({
@@ -26,7 +28,8 @@ import { DashboardService, TrackingStep } from '../services/dashboard.service';
     NzTagModule,
     NzIconModule,
     NzDividerModule,
-    NzEmptyModule
+    NzEmptyModule,
+    TranslateModule
   ],
   templateUrl: './tracing.component.html',
   styleUrls: ['./tracing.component.css']
@@ -34,6 +37,8 @@ import { DashboardService, TrackingStep } from '../services/dashboard.service';
 export class TracingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private dashboardService = inject(DashboardService);
+  private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
 
   trackingId = '';
   history: TrackingStep[] = [];
@@ -50,9 +55,15 @@ export class TracingComponent implements OnInit {
 
   fetchTracking(): void {
     this.loading = true;
-    this.dashboardService.getTracking(this.trackingId).subscribe(res => {
-      this.history = res;
-      this.loading = false;
+    this.dashboardService.getTracking(this.trackingId).subscribe({
+      next: res => {
+        this.history = res;
+        this.loading = false;
+      },
+      error: () => {
+        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Lỗi khi tải dữ liệu theo dõi'));
+        this.loading = false;
+      }
     });
   }
 

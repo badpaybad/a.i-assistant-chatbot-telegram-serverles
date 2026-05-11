@@ -33,6 +33,15 @@
   font-size: 18px;
   font-family: Avenir, 'Helvetica Neue', Arial, Helvetica, sans-serif;
   vertical-align: middle;
+  transition: opacity 0.3s, width 0.3s;
+}
+
+.menu-sidebar.ant-layout-sider-collapsed .sidebar-logo h1 {
+  opacity: 0;
+  width: 0;
+  margin: 0;
+  overflow: hidden;
+  display: none;
 }
 
 .nz-header {
@@ -89,6 +98,23 @@
   padding-right: 24px;
   display: flex;
   align-items: center;
+  gap: 16px;
+}
+
+.lang-selector {
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+.lang-selector a {
+  color: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lang-selector a:hover {
+  color: #1890ff;
 }
 
 .user-info {
@@ -106,4 +132,39 @@
   padding: 24px;
   background: #f0f2f5;
   min-height: calc(100vh - 64px);
+}
+
+/* Resize Handle */
+.resize-handle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 100;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.resize-handle:hover {
+  background: rgba(24, 144, 255, 0.5); /* Primary color with transparency */
+}
+
+/* Ensure menu text is hidden when collapsed */
+.menu-sidebar.ant-layout-sider-collapsed .ant-menu-item span:not([nz-icon]),
+.menu-sidebar.ant-layout-sider-collapsed .ant-menu-submenu-title span:not([nz-icon]) {
+  display: none;
+}
+
+.menu-sidebar.ant-layout-sider-collapsed .ant-menu-item a {
+  display: flex;
+  justify-content: center;
+}
+
+/* Disable transitions during resizing for smoothness */
+.app-layout:has(.resize-handle:active) .menu-sidebar,
+.app-layout:has(.resize-handle:active) .sidebar-logo,
+.app-layout:has(.resize-handle:active) .sidebar-logo h1 {
+  transition: none !important;
 }

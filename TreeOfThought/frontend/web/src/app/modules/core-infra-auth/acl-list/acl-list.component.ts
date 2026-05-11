@@ -43,16 +43,16 @@ import { AppSelectComponent } from '../../../shared';
   ],
   template: `
     <div class="page-header">
-      <h2>ACL Management</h2>
+      <h2>{{ 'Quản lý ACL' | translate }}</h2>
       <nz-card class="filter-card">
         <div class="filter-box">
           <div class="filter-item">
-            <span class="label">Resource Type:</span>
-            <input nz-input [(ngModel)]="filter.resourceType" placeholder="e.g. order" style="width: 150px" />
+            <span class="label">{{ 'Loại tài nguyên' | translate }}:</span>
+            <input nz-input [(ngModel)]="filter.resourceType" [placeholder]="'Ví dụ: order' | translate" style="width: 150px" />
           </div>
           <div class="filter-item">
-            <span class="label">Resource Id:</span>
-            <input nz-input [(ngModel)]="filter.resourceId" placeholder="e.g. 123 or *" style="width: 150px" />
+            <span class="label">{{ 'ID tài nguyên' | translate }}:</span>
+            <input nz-input [(ngModel)]="filter.resourceId" [placeholder]="'Ví dụ: 123 hoặc *' | translate" style="width: 150px" />
           </div>
           <button nz-button nzType="primary" (click)="loadAcl()">
             <span nz-icon nzType="search"></span> {{ 'Tìm kiếm...' | translate }}
@@ -67,9 +67,9 @@ import { AppSelectComponent } from '../../../shared';
     <nz-table #basicTable [nzData]="aclEntries" [nzLoading]="loading">
       <thead>
         <tr>
-          <th>Subject</th>
-          <th>Resource</th>
-          <th>Access Mask</th>
+          <th>{{ 'Đối tượng' | translate }}</th>
+          <th>{{ 'Tài nguyên' | translate }}</th>
+          <th>{{ 'Mặt nạ quyền' | translate }}</th>
           <th nzWidth="100px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
@@ -93,10 +93,10 @@ import { AppSelectComponent } from '../../../shared';
             <div class="mask-display">
               <span class="mask-value">{{ data.permissionMask }}</span>
               <div class="mask-details">
-                <nz-tag *ngIf="hasMask(data.permissionMask, 1)" nzColor="blue">Read</nz-tag>
-                <nz-tag *ngIf="hasMask(data.permissionMask, 2)" nzColor="green">Write</nz-tag>
-                <nz-tag *ngIf="hasMask(data.permissionMask, 4)" nzColor="red">Delete</nz-tag>
-                <nz-tag *ngIf="hasMask(data.permissionMask, 8)" nzColor="orange">Share</nz-tag>
+                <nz-tag *ngIf="hasMask(data.permissionMask, 1)" nzColor="blue">{{ 'Đọc' | translate }}</nz-tag>
+                <nz-tag *ngIf="hasMask(data.permissionMask, 2)" nzColor="green">{{ 'Ghi' | translate }}</nz-tag>
+                <nz-tag *ngIf="hasMask(data.permissionMask, 4)" nzColor="red">{{ 'Xóa' | translate }}</nz-tag>
+                <nz-tag *ngIf="hasMask(data.permissionMask, 8)" nzColor="orange">{{ 'Chia sẻ' | translate }}</nz-tag>
               </div>
             </div>
           </td>
@@ -111,7 +111,7 @@ import { AppSelectComponent } from '../../../shared';
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Subject Type</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Loại đối tượng' | translate }}</nz-form-label>
             <nz-form-control>
               <nz-radio-group [(ngModel)]="newEntry.subjectType" name="subjectType">
                 <label nz-radio nzValue="user">{{ 'Người dùng' | translate }}</label>
@@ -148,17 +148,17 @@ import { AppSelectComponent } from '../../../shared';
           <nz-divider></nz-divider>
 
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Resource</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Tài nguyên' | translate }}</nz-form-label>
             <nz-form-control>
               <div style="display: flex; gap: 8px;">
-                <input nz-input [(ngModel)]="newEntry.resourceType" name="resType" placeholder="Type" style="width: 120px" />
-                <input nz-input [(ngModel)]="newEntry.resourceId" name="resId" placeholder="ID or *" style="flex: 1" />
+                <input nz-input [(ngModel)]="newEntry.resourceType" name="resType" [placeholder]="'Loại' | translate" style="width: 120px" />
+                <input nz-input [(ngModel)]="newEntry.resourceId" name="resId" [placeholder]="'ID hoặc *' | translate" style="flex: 1" />
               </div>
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Access Levels</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Mức độ truy cập' | translate }}</nz-form-label>
             <nz-form-control>
               <nz-checkbox-group [(ngModel)]="accessOptions" name="perms"></nz-checkbox-group>
             </nz-form-control>
@@ -261,7 +261,7 @@ export class AclListComponent implements OnInit {
     try {
       this.aclEntries = await this.authMgmt.getAcl(this.filter.resourceType, this.filter.resourceId);
     } catch (e) {
-      this.message.error('Failed to load ACL entries');
+      this.message.error(this.translate.instant('Lỗi khi tải danh sách ACL'));
     } finally {
       this.loading = false;
     }
@@ -269,7 +269,10 @@ export class AclListComponent implements OnInit {
 
   showCreateModal() {
     this.newEntry = { subjectType: 'user', userId: '', roleId: '', resourceType: this.filter.resourceType, resourceId: this.filter.resourceId, permissionMask: 0 };
-    this.accessOptions.forEach(o => o.checked = false);
+    this.accessOptions.forEach(o => {
+      o.checked = false;
+      o.label = this.translate.instant(o.label.split(' (')[0]) + ' (' + o.value + ')';
+    });
     this.isCreateModalVisible = true;
   }
 
@@ -290,13 +293,13 @@ export class AclListComponent implements OnInit {
 
     try {
       await this.authMgmt.addAcl(payload);
-      this.message.success('ACL entry added successfully');
+      this.message.success(this.translate.instant('Thêm ACL thành công'));
       this.isCreateModalVisible = false;
       if (this.filter.resourceType === payload.resourceType && this.filter.resourceId === payload.resourceId) {
         this.loadAcl();
       }
     } catch (e) {
-      this.message.error('Failed to add ACL entry');
+      this.message.error(this.translate.instant('Thêm ACL thất bại'));
     }
   }
 
@@ -307,10 +310,10 @@ export class AclListComponent implements OnInit {
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeAcl(id);
-          this.message.success('ACL entry deleted successfully');
+          this.message.success(this.translate.instant('Xóa ACL thành công'));
           this.loadAcl();
         } catch (e) {
-          this.message.error('Failed to delete ACL entry');
+          this.message.error(this.translate.instant('Xóa ACL thất bại'));
         }
       }
     });

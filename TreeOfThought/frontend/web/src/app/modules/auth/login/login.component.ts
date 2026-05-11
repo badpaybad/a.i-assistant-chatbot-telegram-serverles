@@ -9,7 +9,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
@@ -35,6 +35,7 @@ export class LoginComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
 
   validateForm: FormGroup<{
     username: FormControl<string>;
@@ -56,7 +57,10 @@ export class LoginComponent {
         this.router.navigate(['/']);
       } catch (e: any) {
         console.error(e);
-        this.notification.error('Login Failed', e.error?.message || 'Invalid username or password');
+        this.notification.error(
+          this.translate.instant('Đăng nhập thất bại'), 
+          e.error?.message || this.translate.instant('Tên đăng nhập hoặc mật khẩu không đúng')
+        );
       } finally {
         this.loading = false;
       }

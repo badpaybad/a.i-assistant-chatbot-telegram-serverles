@@ -15,6 +15,7 @@ import { NzListModule } from 'ng-zorro-antd/list';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '../services/dashboard.service';
 
 @Component({
@@ -35,7 +36,8 @@ import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '..
     NzTabsModule,
     NzListModule,
     NzInputModule,
-    NzProgressModule
+    NzProgressModule,
+    TranslateModule
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
@@ -43,6 +45,7 @@ import { DashboardService, QueueInfo, DashboardStats, TrackingSummary } from '..
 export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
 
   stats: DashboardStats = { stats: {}, workerStatus: {} };
   queues: QueueInfo[] = [];
@@ -84,7 +87,11 @@ export class DashboardComponent implements OnInit {
   toggleWorker(workerId: string, currentStatus: string): void {
     const action = currentStatus === 'Running' ? this.dashboardService.stopWorker(workerId) : this.dashboardService.startWorker(workerId);
     action.subscribe(() => {
-      this.notification.success('Success', `Worker ${workerId} ${currentStatus === 'Running' ? 'stopped' : 'started'}`);
+      const key = currentStatus === 'Running' ? 'Worker {id} đã dừng' : 'Worker {id} đã bắt đầu';
+      this.notification.success(
+        this.translate.instant('Thành công'), 
+        this.translate.instant(key, { id: workerId })
+      );
       this.refresh();
     });
   }
