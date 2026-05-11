@@ -13,7 +13,7 @@
       </a>
     </div>
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <li nz-menu-item nzMatchRouter>
+      <!-- <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="home"></span>
         <span><a routerLink="/">{{ 'Trang chủ' | translate }}</a></span>
       </li>
@@ -24,7 +24,7 @@
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="phone"></span>
         <span><a routerLink="/contact">{{ 'Liên hệ' | translate }}</a></span>
-      </li>
+      </li> -->
 
       <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)" [(nzOpen)]="openMap['dashboard']">
         <ng-template #dashboardTitle>
@@ -83,11 +83,11 @@
           <span class="header-trigger" (click)="toggleCollapse()">
               <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
           </span>
-          <div class="header-links">
+          <!-- <div class="header-links">
             <a routerLink="/" class="nav-link">{{ 'Trang chủ' | translate }}</a>
             <a routerLink="/about" class="nav-link">{{ 'Giới thiệu' | translate }}</a>
             <a routerLink="/contact" class="nav-link">{{ 'Liên hệ' | translate }}</a>
-          </div>
+          </div> -->
         </div>
         <div class="header-right">
           <div class="lang-selector">

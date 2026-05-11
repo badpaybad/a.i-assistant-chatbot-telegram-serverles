@@ -16,3 +16,7 @@ main-layout
 
         **sidemenu bug1** breadcrumb chưa tiện cho việc qua lại vd url cha http://localhost:4200/modules/cqrs-dashboard url con [ http://localhost:4200/modules/cqrs-dashboard/overview , http://localhost:4200/modules/cqrs-dashboard/tracing/f721a058-b703-4c7a-b4a6-1fd7ef2dab75 ] nhưng vào con thì không có breadcrumb cha để click quay lại
 
+**cập nhật 2026-05-11 22:15:05**
+main-layout    
+    breadcrumb: chiếm hơi nhiều diện tích, chỉ cần là đường link thường là đủ, khoảng không line high cần thu hẹp vừa với chữ.
+        

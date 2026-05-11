@@ -135,16 +135,17 @@
 }
 
 .app-breadcrumb {
-  margin-bottom: 24px;
-  padding: 12px 24px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  margin-bottom: 8px;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
 
 .app-breadcrumb a {
   color: rgba(0, 0, 0, 0.45);
   transition: color 0.3s;
+  font-size: 13px;
 }
 
 .app-breadcrumb a:hover {
@@ -155,6 +156,27 @@
   color: rgba(0, 0, 0, 0.85);
   font-weight: 500;
   pointer-events: none;
+}
+
+/* Tighten breadcrumb line-height and spacing */
+::ng-deep .ant-breadcrumb {
+  line-height: 1.2 !important;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+::ng-deep .ant-breadcrumb-link,
+::ng-deep .ant-breadcrumb-link > a {
+  display: inline-flex;
+  align-items: center;
+}
+
+::ng-deep .ant-breadcrumb-separator {
+  margin: 0 4px !important;
+  color: rgba(0, 0, 0, 0.3) !important;
+  vertical-align: middle;
 }
 
 /* Resize Handle */
