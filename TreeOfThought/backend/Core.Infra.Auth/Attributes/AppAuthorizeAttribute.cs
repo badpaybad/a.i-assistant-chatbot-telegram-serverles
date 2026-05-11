@@ -12,15 +12,14 @@ public enum AuthMode { OR, AND }
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
 public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
 {
-    private readonly string[] _permissions;
-    public string? Roles { get; set; }
+    private readonly string[] _claims;
     public AuthMode Mode { get; set; } = AuthMode.OR;
     public string? ResourceType { get; set; }
     public ResourceActions Action { get; set; } // Sử dụng Enum Flags
 
-    public AppAuthorizeAttribute(params string[] permissions)
+    public AppAuthorizeAttribute(params string[] claims)
     {
-        _permissions = permissions;
+        _claims = claims;
     }
 
     public void OnAuthorization(AuthorizationFilterContext context)
@@ -42,30 +41,44 @@ public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
 
         bool isAuthorized = false;
 
-        // 2. Check Roles if any specified
-        if (!string.IsNullOrEmpty(Roles))
-        {
-            var requiredRoles = Roles.Split(',').Select(r => r.Trim());
-            if (requiredRoles.Any(r => user.IsInRole(r)))
-            {
-                isAuthorized = true;
-            }
-        }
 
-        // 3. Check permissions if any specified
-        if (!isAuthorized && _permissions.Length > 0)
+        // 3. Check claims if any specified
+        if (!isAuthorized && _claims.Length > 0)
         {
-            var userPermissions = user.FindAll("permissions").Select(c => c.Value).ToList();
+            var userId = user.FindFirst("userId")?.Value;
+            var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            List<string> userClaims;
+
+            if (userRoles.Any() && !string.IsNullOrEmpty(userId))
+            {
+                // Hybrid Mode: Roles detected, fetch granular claims from Redis
+                var cacheService = context.HttpContext.RequestServices.GetService(typeof(Core.Infra.Base.Interfaces.ICacheService)) as Core.Infra.Base.Interfaces.ICacheService;
+                if (cacheService != null)
+                {
+                    var cacheKey = $"claims:{userId}";
+                    userClaims = cacheService.GetAsync<List<string>>(cacheKey).GetAwaiter().GetResult() ?? new List<string>();
+                }
+                else
+                {
+                    userClaims = new List<string>();
+                }
+            }
+            else
+            {
+                // Stateless Mode: Read granular claims from JWT
+                userClaims = user.FindAll("claims").Select(c => c.Value).ToList();
+            }
+
             if (Mode == AuthMode.OR)
             {
-                if (_permissions.Any(p => userPermissions.Contains(p)))
+                if (_claims.Any(p => userClaims.Contains(p)))
                 {
                     isAuthorized = true;
                 }
             }
             else // AND mode
             {
-                if (_permissions.All(p => userPermissions.Contains(p)))
+                if (_claims.All(p => userClaims.Contains(p)))
                 {
                     isAuthorized = true;
                 }
@@ -108,8 +121,8 @@ public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
             }
         }
 
-        // 5. Final check (if neither role nor permission nor ACL specified, then just being authenticated is enough)
-        if (string.IsNullOrEmpty(Roles) && _permissions.Length == 0 && string.IsNullOrEmpty(finalResourceType))
+        // 5. Final check (if neither claim nor ACL specified, then just being authenticated is enough)
+        if (_claims.Length == 0 && string.IsNullOrEmpty(finalResourceType))
         {
             isAuthorized = true;
         }

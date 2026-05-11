@@ -7,7 +7,7 @@ namespace Core.Infra.Auth.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AppAuthorize(Roles = "Admin")]
+[AppAuthorize("admin")]
 public class AuthManagementController : ControllerBase
 {
     private readonly IAuthRepository _authRepo;
@@ -27,14 +27,14 @@ public class AuthManagementController : ControllerBase
         return Ok(role);
     }
 
-    [HttpGet("permissions")]
-    public async Task<IActionResult> GetPermissions() => Ok(await _authRepo.GetAllPermissionsAsync());
+    [HttpGet("claims")]
+    public async Task<IActionResult> GetClaims() => Ok(await _authRepo.GetAllClaimsAsync());
 
-    [HttpPost("permissions")]
-    public async Task<IActionResult> CreatePermission([FromBody] Permission permission)
+    [HttpPost("claims")]
+    public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
     {
-        await _authRepo.CreatePermissionAsync(permission);
-        return Ok(permission);
+        await _authRepo.CreateClaimAsync(claim);
+        return Ok(claim);
     }
 
     [HttpPost("users/{userId}/roles/{roleId}")]
@@ -51,18 +51,18 @@ public class AuthManagementController : ControllerBase
         return Ok(new { message = "Role removed successfully" });
     }
 
-    [HttpPost("roles/{roleId}/permissions/{permissionId}")]
-    public async Task<IActionResult> AssignPermissionToRole(Guid roleId, Guid permissionId)
+    [HttpPost("roles/{roleId}/claims/{claimId}")]
+    public async Task<IActionResult> AssignClaimToRole(Guid roleId, Guid claimId)
     {
-        await _authRepo.AssignPermissionToRoleAsync(roleId, permissionId);
-        return Ok(new { message = "Permission assigned to role successfully" });
+        await _authRepo.AssignClaimToRoleAsync(roleId, claimId);
+        return Ok(new { message = "Claim assigned to role successfully" });
     }
 
-    [HttpPost("users/{userId}/permissions/{permissionId}")]
-    public async Task<IActionResult> AssignDirectPermission(Guid userId, Guid permissionId)
+    [HttpPost("users/{userId}/claims/{claimId}")]
+    public async Task<IActionResult> AssignDirectClaim(Guid userId, Guid claimId)
     {
-        await _authRepo.AssignPermissionToUserAsync(userId, permissionId);
-        return Ok(new { message = "Direct permission assigned successfully" });
+        await _authRepo.AssignClaimToUserAsync(userId, claimId);
+        return Ok(new { message = "Direct claim assigned successfully" });
     }
 
     [HttpGet("acl")]

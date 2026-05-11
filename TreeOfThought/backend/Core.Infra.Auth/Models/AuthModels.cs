@@ -23,8 +23,8 @@ public class SsoRequest
     public string IdToken { get; set; } = ""; 
 }
 
-public class SyncPermissionsRequest 
+public class SyncClaimsRequest 
 { 
     public string Version { get; set; } = ""; 
-    public List<string> Permissions { get; set; } = new(); 
+    public List<string> Claims { get; set; } = new(); 
 }

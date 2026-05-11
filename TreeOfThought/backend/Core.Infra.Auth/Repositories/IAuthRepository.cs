@@ -17,24 +17,24 @@ public interface IAuthRepository
     Task CreateRoleAsync(Role role);
     Task<List<Role>> GetAllRolesAsync();
 
-    // Permission operations
-    Task<Permission?> GetPermissionByNameAsync(string name);
-    Task CreatePermissionAsync(Permission permission);
-    Task<List<Permission>> GetAllPermissionsAsync();
+    // Claim operations
+    Task<AppClaim?> GetClaimByNameAsync(string name);
+    Task CreateClaimAsync(AppClaim claim);
+    Task<List<AppClaim>> GetAllClaimsAsync();
 
     // Mapping operations
     Task AssignRoleToUserAsync(Guid userId, Guid roleId);
     Task RemoveRoleFromUserAsync(Guid userId, Guid roleId);
-    Task AssignPermissionToRoleAsync(Guid roleId, Guid permissionId);
-    Task RemovePermissionFromRoleAsync(Guid roleId, Guid permissionId);
-    Task AssignPermissionToUserAsync(Guid userId, Guid permissionId);
-    Task RemovePermissionFromUserAsync(Guid userId, Guid permissionId);
+    Task AssignClaimToRoleAsync(Guid roleId, Guid claimId);
+    Task RemoveClaimFromRoleAsync(Guid roleId, Guid claimId);
+    Task AssignClaimToUserAsync(Guid userId, Guid claimId);
+    Task RemoveClaimFromUserAsync(Guid userId, Guid claimId);
 
     // Fetching related data
     Task<List<Role>> GetUserRolesAsync(Guid userId);
-    Task<List<Permission>> GetRolePermissionsAsync(Guid roleId);
-    Task<List<Permission>> GetUserDirectPermissionsAsync(Guid userId);
-    Task<List<Permission>> GetUserEffectivePermissionsAsync(Guid userId);
+    Task<List<AppClaim>> GetRoleClaimsAsync(Guid roleId);
+    Task<List<AppClaim>> GetUserDirectClaimsAsync(Guid userId);
+    Task<List<AppClaim>> GetUserEffectiveClaimsAsync(Guid userId);
 
     // ACL operations
     Task AddAclAsync(AclEntry entry);

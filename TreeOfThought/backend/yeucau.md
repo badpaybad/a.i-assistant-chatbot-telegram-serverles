@@ -164,18 +164,20 @@ Các nghiệp vụ khi phát triển cần tạo project riêng: dùng lại cá
 core infra auth bỏ mock và tạo db postgres riêng để dùng.
 khi chưa có tài khoản admin ban đầu của hệ thống cần tạo mới.
 Bổ xung việc quản lý các permision
-    - permision là định nghĩa ở code là claim trong auth attr, hoặc được UI gửi lên thông qua việc đồng bộ permission.
-    - cần api quản lý role là nhóm các permission 
+    - claims : là định nghĩa ở code là claim trong auth attr, hoặc được UI gửi lên thông qua việc đồng bộ claims.
+    - cần api quản lý role là nhóm các claims 
     - cần api quản lý user có role nào (1 user có thể có nhiều role)
-    - cần api quản lý permission nào có trong role nào
-    - cần api quản lý user có permission trực tiếp (effective permission) (1 user có thể có nhiều permission)
-    - login sinh jwt token cần bổ xung role và permission của user vào trong token
+    - cần api quản lý claims nào có trong role nào
+    - cần api quản lý user có claims trực tiếp (effective claims) (1 user có thể có nhiều claims)
+    - login sinh jwt token cần bổ xung role và claims của user vào trong token
     - cần auth attribute có thể dùng để check quyền
-        - check theo role
-        - check theo permission
+        - check theo claims
     - bổ xung để dùng cả RBAC và ACL 
     - bổ xung để tương tích openid connect 
     - user chỉ có 1 email làm key SSO, user có thể có nhiều email nhưng chỉ duy nhất 1 email active được phép dùng làm SSO ( email active là email đã được verify )
     - Auth attribute bổ xung cho phép check quyền OR hoặc AND mặc định là OR 
         - Bổ xung việc xử lý ACL trong auth attribute để check quyền có trong danh sách được phép, cần dùng redis (cần code dùng redis ở core infra base) để xử lý do ACL có thể có rất nhiều. 
         IEntity<TKey> là các project khác nhìn được, IBaseEntity private prj để làm việc generic khi cần ở tại project
+    - Khi tạo jwt chỉ có claims , còn role là để query các claims đi theo role theo user đó. 
+        - Bổ xung cơ chế tự động check từ redis khi cần, nếu lượng claims trong jwt lớn hơn 30, thì bổ xung roles cho jwt khi login, và khi check thấy có roles auth attr sẽ vào redis lấy dữ liệu để check không ưu tiên các claim sẵn trong jwt 
+        

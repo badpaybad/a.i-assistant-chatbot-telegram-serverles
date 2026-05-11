@@ -14,7 +14,7 @@ public class Role : IBaseTrackingEntity<Guid>
     public string? UpdatedBy { get; set; }
 }
 
-public class Permission : IBaseTrackingEntity<Guid>
+public class AppClaim : IBaseTrackingEntity<Guid>
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = string.Empty; // e.g. "user.create", "role.view"
@@ -38,11 +38,11 @@ public class UserRole : IBaseTrackingEntity<Guid>
     public string? UpdatedBy { get; set; }
 }
 
-public class RolePermission : IBaseTrackingEntity<Guid>
+public class RoleClaim : IBaseTrackingEntity<Guid>
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid RoleId { get; set; }
-    public Guid PermissionId { get; set; }
+    public Guid ClaimId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
@@ -50,11 +50,11 @@ public class RolePermission : IBaseTrackingEntity<Guid>
     public string? UpdatedBy { get; set; }
 }
 
-public class UserPermission : IBaseTrackingEntity<Guid>
+public class UserClaim : IBaseTrackingEntity<Guid>
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid UserId { get; set; }
-    public Guid PermissionId { get; set; }
+    public Guid ClaimId { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

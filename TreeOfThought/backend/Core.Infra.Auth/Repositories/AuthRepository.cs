@@ -54,16 +54,16 @@ public class AuthRepository : IAuthRepository
 
     public async Task<List<Role>> GetAllRolesAsync() => await _context.Roles.ToListAsync();
 
-    public async Task<Permission?> GetPermissionByNameAsync(string name) => 
-        await _context.Permissions.FirstOrDefaultAsync(p => p.Name == name);
+    public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
+        await _context.Claims.FirstOrDefaultAsync(p => p.Name == name);
 
-    public async Task CreatePermissionAsync(Permission permission)
+    public async Task CreateClaimAsync(AppClaim claim)
     {
-        await _context.Permissions.AddAsync(permission);
+        await _context.Claims.AddAsync(claim);
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<Permission>> GetAllPermissionsAsync() => await _context.Permissions.ToListAsync();
+    public async Task<List<AppClaim>> GetAllClaimsAsync() => await _context.Claims.ToListAsync();
 
     public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
     {
@@ -84,40 +84,40 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task AssignPermissionToRoleAsync(Guid roleId, Guid permissionId)
+    public async Task AssignClaimToRoleAsync(Guid roleId, Guid claimId)
     {
-        if (!await _context.RolePermissions.AnyAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId))
+        if (!await _context.RoleClaims.AnyAsync(rp => rp.RoleId == roleId && rp.ClaimId == claimId))
         {
-            await _context.RolePermissions.AddAsync(new RolePermission { RoleId = roleId, PermissionId = permissionId });
+            await _context.RoleClaims.AddAsync(new RoleClaim { RoleId = roleId, ClaimId = claimId });
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task RemovePermissionFromRoleAsync(Guid roleId, Guid permissionId)
+    public async Task RemoveClaimFromRoleAsync(Guid roleId, Guid claimId)
     {
-        var mapping = await _context.RolePermissions.FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.PermissionId == permissionId);
+        var mapping = await _context.RoleClaims.FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.ClaimId == claimId);
         if (mapping != null)
         {
-            _context.RolePermissions.Remove(mapping);
+            _context.RoleClaims.Remove(mapping);
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task AssignPermissionToUserAsync(Guid userId, Guid permissionId)
+    public async Task AssignClaimToUserAsync(Guid userId, Guid claimId)
     {
-        if (!await _context.UserPermissions.AnyAsync(up => up.UserId == userId && up.PermissionId == permissionId))
+        if (!await _context.UserClaims.AnyAsync(up => up.UserId == userId && up.ClaimId == claimId))
         {
-            await _context.UserPermissions.AddAsync(new UserPermission { UserId = userId, PermissionId = permissionId });
+            await _context.UserClaims.AddAsync(new UserClaim { UserId = userId, ClaimId = claimId });
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task RemovePermissionFromUserAsync(Guid userId, Guid permissionId)
+    public async Task RemoveClaimFromUserAsync(Guid userId, Guid claimId)
     {
-        var mapping = await _context.UserPermissions.FirstOrDefaultAsync(up => up.UserId == userId && up.PermissionId == permissionId);
+        var mapping = await _context.UserClaims.FirstOrDefaultAsync(up => up.UserId == userId && up.ClaimId == claimId);
         if (mapping != null)
         {
-            _context.UserPermissions.Remove(mapping);
+            _context.UserClaims.Remove(mapping);
             await _context.SaveChangesAsync();
         }
     }
@@ -130,33 +130,33 @@ public class AuthRepository : IAuthRepository
                       select r).ToListAsync();
     }
 
-    public async Task<List<Permission>> GetRolePermissionsAsync(Guid roleId)
+    public async Task<List<AppClaim>> GetRoleClaimsAsync(Guid roleId)
     {
-        return await (from rp in _context.RolePermissions
-                      join p in _context.Permissions on rp.PermissionId equals p.Id
+        return await (from rp in _context.RoleClaims
+                      join p in _context.Claims on rp.ClaimId equals p.Id
                       where rp.RoleId == roleId
                       select p).ToListAsync();
     }
 
-    public async Task<List<Permission>> GetUserDirectPermissionsAsync(Guid userId)
+    public async Task<List<AppClaim>> GetUserDirectClaimsAsync(Guid userId)
     {
-        return await (from up in _context.UserPermissions
-                      join p in _context.Permissions on up.PermissionId equals p.Id
+        return await (from up in _context.UserClaims
+                      join p in _context.Claims on up.ClaimId equals p.Id
                       where up.UserId == userId
                       select p).ToListAsync();
     }
 
-    public async Task<List<Permission>> GetUserEffectivePermissionsAsync(Guid userId)
+    public async Task<List<AppClaim>> GetUserEffectiveClaimsAsync(Guid userId)
     {
-        var rolePermissions = await (from ur in _context.UserRoles
-                                     join rp in _context.RolePermissions on ur.RoleId equals rp.RoleId
-                                     join p in _context.Permissions on rp.PermissionId equals p.Id
+        var roleClaims = await (from ur in _context.UserRoles
+                                     join rp in _context.RoleClaims on ur.RoleId equals rp.RoleId
+                                     join p in _context.Claims on rp.ClaimId equals p.Id
                                      where ur.UserId == userId
                                      select p).ToListAsync();
 
-        var directPermissions = await GetUserDirectPermissionsAsync(userId);
+        var directClaims = await GetUserDirectClaimsAsync(userId);
 
-        return rolePermissions.Concat(directPermissions).DistinctBy(p => p.Id).ToList();
+        return roleClaims.Concat(directClaims).DistinctBy(p => p.Id).ToList();
     }
 
     public async Task AddAclAsync(AclEntry entry)

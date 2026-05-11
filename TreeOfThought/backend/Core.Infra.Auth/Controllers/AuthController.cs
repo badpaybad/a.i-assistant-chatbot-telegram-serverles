@@ -61,15 +61,34 @@ public class AuthController : ControllerBase
         var user = await _authService.GetUserByIdAsync(userId);
         if (user == null) return NotFound();
 
-        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        var permissions = User.FindAll("permissions").Select(c => c.Value).ToList();
+        var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+        List<string> claims;
+
+        if (userRoles.Any())
+        {
+            // Hybrid Mode: Roles detected, fetch granular claims from Redis
+            var cacheService = HttpContext.RequestServices.GetService(typeof(Core.Infra.Base.Interfaces.ICacheService)) as Core.Infra.Base.Interfaces.ICacheService;
+            if (cacheService != null)
+            {
+                var cacheKey = $"claims:{userId}";
+                claims = await cacheService.GetAsync<List<string>>(cacheKey) ?? new List<string>();
+            }
+            else
+            {
+                claims = new List<string>();
+            }
+        }
+        else
+        {
+            // Stateless Mode: Read granular claims from JWT
+            claims = User.FindAll("claims").Select(c => c.Value).ToList();
+        }
 
         return Ok(new { 
             user.Username, 
             user.DisplayName, 
             user.Email,
-            Roles = roles,
-            Permissions = permissions
+            Claims = claims
         });
     }
 
@@ -133,11 +152,11 @@ public class AuthController : ControllerBase
         });
     }
 
-    [HttpPost("permissions/sync")]
-    public async Task<IActionResult> SyncPermissions([FromBody] SyncPermissionsRequest request)
+    [HttpPost("claims/sync")]
+    public async Task<IActionResult> SyncClaims([FromBody] SyncClaimsRequest request)
     {
-        await _authService.SyncPermissionsAsync(request.Version, request.Permissions);
-        return Ok(new { message = "Permissions synced successfully" });
+        await _authService.SyncClaimsAsync(request.Version, request.Claims);
+        return Ok(new { message = "Claims synced successfully" });
     }
 }
 

@@ -88,9 +88,11 @@ tạo module CQRS Dashboard với các chức năng sau:
         cqrs dashboard cần show đúng số message lỗi, queue và topic cũng cần thống kê được tổng số message gửi đến, xem danh sách các message lỗi lỗi ở topic queue nào subcriber nào và khi click vào message lỗi cần có thể show detail và retry send message hoặc loại bỏ message đó ra khỏi queue
 
 # triển khai UI cho core infra auth 
-đọc yêu cầu của BE cho core infra auth trong file TreeOfThought/backend/yeucau.md và triển khai UI cho core infra auth :
+đọc yêu cầu của BE cho core infra auth trong file TreeOfThought/backend/yeucau.md và triển khai Module UI cho core infra auth, UI UX dễ dùng thuận tiện :
     - Role Management
     - Permission Management
     - User Management
     - Acl Management cho users
+
+    **chú ý làm xong cần tuân thủ TreeOfThought/1st.md** việc phân quyền module là cần à account admin hoặc user được gán các permision
 

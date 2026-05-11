@@ -51,18 +51,28 @@ public class AuthService
             new Claim("userId", user.Id.ToString())
         };
 
-        // Add Roles
-        var roles = await _userRepo.GetUserRolesAsync(user.Id);
-        foreach (var role in roles)
+        // Add Effective Claims with Hybrid Strategy
+        var claimsList = await _userRepo.GetUserEffectiveClaimsAsync(user.Id);
+        
+        if (claimsList.Count > 30)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            // Hybrid Mode: Add Roles to JWT, move granular claims to Redis
+            var roles = await _userRepo.GetUserRolesAsync(user.Id);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            }
+            
+            // Sync claims to Redis to ensure they are available
+            await SyncUserClaimsToRedisAsync(user.Id);
         }
-
-        // Add Effective Permissions
-        var permissions = await _userRepo.GetUserEffectivePermissionsAsync(user.Id);
-        foreach (var p in permissions)
+        else
         {
-            claims.Add(new Claim("permissions", p.Name));
+            // Stateless Mode: Add all granular claims to JWT
+            foreach (var p in claimsList)
+            {
+                claims.Add(new Claim("claims", p.Name));
+            }
         }
 
         var token = new JwtSecurityToken(
@@ -212,17 +222,29 @@ public class AuthService
         return await _userRepo.GetUserByIdAsync(id);
     }
 
-    public async Task SyncPermissionsAsync(string version, List<string> permissionNames)
+    public async Task SyncClaimsAsync(string version, List<string> claimNames)
     {
-        Console.WriteLine($"[PERMISSION SYNC] Version: {version}, Count: {permissionNames.Count}");
-        foreach (var name in permissionNames)
+        Console.WriteLine($"[CLAIM SYNC] Version: {version}, Count: {claimNames.Count}");
+        foreach (var name in claimNames)
         {
-            var p = await _userRepo.GetPermissionByNameAsync(name);
+            var p = await _userRepo.GetClaimByNameAsync(name);
             if (p == null)
             {
-                await _userRepo.CreatePermissionAsync(new Permission { Name = name, CreatedAt = DateTime.UtcNow });
+                await _userRepo.CreateClaimAsync(new AppClaim { Name = name, CreatedAt = DateTime.UtcNow });
             }
         }
+    }
+
+    public async Task SyncUserClaimsToRedisAsync(Guid userId)
+    {
+        var claims = await _userRepo.GetUserEffectiveClaimsAsync(userId);
+        var claimNames = claims.Select(c => c.Name).ToList();
+        
+        // Key format: claims:{userId}
+        var cacheKey = $"claims:{userId}";
+        await _cacheService.SetAsync(cacheKey, claimNames, TimeSpan.FromHours(24));
+        
+        Console.WriteLine($"[CLAIMS SYNC] User: {userId}, Synced {claimNames.Count} granular claims to Redis.");
     }
 
     public async Task SyncUserAclToRedisAsync(Guid userId)
