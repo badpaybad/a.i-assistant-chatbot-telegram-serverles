@@ -287,6 +287,7 @@ public class AuthService
         }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.MustChangePassword = false;
         await _userRepo.UpdateUserAsync(user);
         return true;
     }

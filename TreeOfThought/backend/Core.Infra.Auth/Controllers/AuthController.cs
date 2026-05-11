@@ -106,6 +106,7 @@ public class AuthController : ControllerBase
             return Ok(new { 
                 token, 
                 firebaseToken,
+                mustChangePassword = user.MustChangePassword,
                 user = new { user.Username, user.DisplayName, user.Email } 
             });
         }

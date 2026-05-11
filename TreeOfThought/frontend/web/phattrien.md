@@ -57,7 +57,27 @@ Thống nhất toàn bộ hệ thống phân quyền ở Frontend (FE) theo cơ 
 5. Cập nhật toàn bộ module `core-infra-auth` (rename component, update template/logic).
 6. Cập nhật `MainLayout` và `app.routes.ts`.
 7. Kiểm tra lại toàn bộ ứng dụng và chạy `ng build` để xác nhận không còn lỗi tham chiếu.
-## 5. Cập nhật 3: Linh kiện Droplist thông minh
+## 5. Cập nhật 4: Bảo vệ tài khoản và quyền Admin (Admin Special Handling)
+
+### 5.1 Mục tiêu
+Đảm bảo các thực thể quan trọng nhất của hệ thống (User admin, Role Admin, Claim admin) không bị xóa hoặc thay đổi nhầm lẫn từ UI.
+
+### 5.2 Kỹ thuật triển khai
+- **Vô hiệu hóa hành động xóa**:
+    - Trong `UserListComponent`, ẩn hoặc disable nút "Xóa" nếu `username === 'admin'`.
+    - Trong `RoleListComponent`, ẩn hoặc disable nút "Xóa" nếu `name === 'Admin'`.
+    - Trong `ClaimSyncComponent`, ẩn hoặc disable nút "Xóa" nếu `name === 'admin'`.
+- **Khóa gán quyền/vai trò**:
+    - Đối với tài khoản `admin`, các tag hiển thị role `Admin` và claim `admin` sẽ được set `nzMode="default"` (không có nút close) để ngăn chặn việc gỡ bỏ các quyền tối cao này.
+- **Xử lý thông báo**:
+    - Hiển thị thông báo cảnh báo (Warning) nếu người dùng cố gắng thực hiện các hành động bị cấm thông qua các phương thức lập trình.
+- **Quản lý Xóa (Delete Management)**:
+    - Triển khai các phương thức `deleteUser`, `deleteRole`, `deleteClaim` trong `AuthManagementService` để gọi API BE tương ứng.
+    - Luôn hiển thị modal xác nhận (`nz-modal` confirm) trước khi thực hiện xóa các thực thể thông thường.
+- **Bắt buộc đổi mật khẩu Admin**:
+    - Sau khi login, nếu response trả về `mustChangePassword: true`, FE sẽ tự động điều hướng về trang `/modules/core-infra-auth/change-password` (hoặc modal tương ứng) và không cho phép thoát ra cho đến khi đổi mật khẩu thành công.
+
+## 6. Cập nhật 3: Linh kiện Droplist thông minh
 
 ### 5.1 Mục tiêu
 Xây dựng component `AppSelectComponent` dùng chung hỗ trợ:

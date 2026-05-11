@@ -1,3 +1,4 @@
-tôi luôn có file yeucau.md và phattrien.md trong từng folder. yeucau.md là tôi viết ra. cần đọc kỹ yeucau.md và suy nghĩ thật kỹ đưa ra phương án cách làm vào phattrien.md và chờ tôi duyệt trước khi tiến hành code
+nguyên tắc chung tuân thủ ở đây TreeOfThought/1st.md
 
 **chú ý** ưu tiên việc viết tài liệu bằng tiếng Việt Nam, kể cả những code sinh ra ở FE, BE là text cần là tiếng Việt trước và khi đưa lên FE thì hỗ trợ i18n trên FE để dịch đa ngôn ngữ. hỗ trợ mặc định tiếng Việt và tiếng Anh
+

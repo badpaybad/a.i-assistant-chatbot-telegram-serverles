@@ -53,8 +53,16 @@ export class LoginComponent {
     if (this.validateForm.valid) {
       this.loading = true;
       try {
-        await this.authService.login(this.validateForm.value);
-        this.router.navigate(['/']);
+        const response = await this.authService.login(this.validateForm.value);
+        if (response.mustChangePassword) {
+          this.notification.warning(
+            this.translate.instant('Yêu cầu đổi mật khẩu'),
+            this.translate.instant('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục')
+          );
+          this.router.navigate(['/modules/core-infra-auth/change-password']);
+        } else {
+          this.router.navigate(['/']);
+        }
       } catch (e: any) {
         console.error(e);
         this.notification.error(

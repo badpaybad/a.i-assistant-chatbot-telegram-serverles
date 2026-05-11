@@ -292,6 +292,7 @@ public class AuthRepository : IAuthRepository
                 Email = adminEmail,
                 DisplayName = "Administrator",
                 IsEmailVerified = true,
+                MustChangePassword = true,
                 CreatedAt = DateTime.UtcNow
             };
             await CreateUserAsync(admin);

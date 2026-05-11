@@ -16,6 +16,8 @@ public class User : IBaseTrackingEntity<Guid>
 
     public string? SsoProvider { get; set; } // google, ms, facebook
     public string? SsoId { get; set; }
+    
+    public bool MustChangePassword { get; set; } = false;
 
     // IBaseTrackingEntity implementation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
