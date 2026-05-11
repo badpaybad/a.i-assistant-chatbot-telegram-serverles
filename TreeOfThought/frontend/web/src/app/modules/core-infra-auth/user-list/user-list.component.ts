@@ -61,7 +61,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
             </nz-tag>
           </td>
           <td>
-            <nz-tag *ngFor="let role of data.roles" nzColor="blue" nzMode="closeable" (nzOnClose)="removeRole(data, role)">
+            <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
+                    [nzMode]="(data.username === 'admin' && role.name === 'Admin') ? 'default' : 'closeable'" 
+                    (nzOnClose)="removeRole(data, role)">
               {{ role.name }}
             </nz-tag>
             <button nz-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
@@ -69,7 +71,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
             </button>
           </td>
           <td>
-            <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" nzMode="closeable" (nzOnClose)="removeClaim(data, claim)">
+            <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
+                    [nzMode]="(data.username === 'admin' && claim.name === 'admin') ? 'default' : 'closeable'" 
+                    (nzOnClose)="removeClaim(data, claim)">
               {{ claim.name }}
             </nz-tag>
             <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
@@ -78,7 +82,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </td>
           <td>
             <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteUser(data)">{{ 'Xóa' | translate }}</button>
+              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+                      [disabled]="data.username === 'admin'"
+                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
         </tr>
@@ -238,6 +244,24 @@ export class UserListComponent implements OnInit {
   }
 
   async deleteUser(user: any) {
-    this.message.info(this.translate.instant('Chưa hỗ trợ xóa người dùng'));
+    if (user.username === 'admin') {
+      this.message.warning(this.translate.instant('Không thể xóa tài khoản admin'));
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: `${this.translate.instant('Xác nhận xóa người dùng')} ${user.username}?`,
+      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          await this.authMgmt.deleteUser(user.id);
+          this.message.success(this.translate.instant('Xóa người dùng thành công'));
+          this.loadUsers();
+        } catch (e: any) {
+          this.message.error(e.error?.message || this.translate.instant('Xóa người dùng thất bại'));
+        }
+      }
+    });
   }
 }

@@ -81,6 +81,48 @@ public class AuthManagementController : ControllerBase
         return Ok(claim);
     }
 
+    [HttpDelete("users/{id}")]
+    public async Task<IActionResult> DeleteUser(Guid id)
+    {
+        try
+        {
+            await _authRepo.DeleteUserAsync(id);
+            return Ok(new { message = "User deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("roles/{id}")]
+    public async Task<IActionResult> DeleteRole(Guid id)
+    {
+        try
+        {
+            await _authRepo.DeleteRoleAsync(id);
+            return Ok(new { message = "Role deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpDelete("claims/{id}")]
+    public async Task<IActionResult> DeleteClaim(Guid id)
+    {
+        try
+        {
+            await _authRepo.DeleteClaimAsync(id);
+            return Ok(new { message = "Claim deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost("users/{userId}/roles/{roleId}")]
     public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
     {

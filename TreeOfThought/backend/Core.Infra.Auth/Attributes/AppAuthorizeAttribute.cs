@@ -34,6 +34,12 @@ public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
             return;
         }
 
+        // 2. Full Access for Admin role or admin claim
+        if (user.IsInRole("Admin") || user.HasClaim("claims", "admin"))
+        {
+            return; // Authorized
+        }
+
         // Xác định ResourceType ưu tiên: Header > Attribute Property
         var finalResourceType = request.Headers["x-resource-type"].ToString();
         if (string.IsNullOrEmpty(finalResourceType))

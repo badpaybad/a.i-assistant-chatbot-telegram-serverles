@@ -29,6 +29,10 @@ export class AuthManagementService {
     return this.http.delete(`${this.BASE_URL}/users/${userId}/claims/${claimId}`);
   }
 
+  deleteUser(userId: string) {
+    return this.http.delete(`${this.BASE_URL}/users/${userId}`);
+  }
+
   // Role Management
   getRoles() {
     return this.http.get(`${this.BASE_URL}/roles`);
@@ -36,6 +40,10 @@ export class AuthManagementService {
 
   createRole(role: any) {
     return this.http.post(`${this.BASE_URL}/roles`, role);
+  }
+
+  deleteRole(roleId: string) {
+    return this.http.delete(`${this.BASE_URL}/roles/${roleId}`);
   }
 
   assignClaimToRole(roleId: string, claimId: string) {
@@ -53,6 +61,10 @@ export class AuthManagementService {
 
   createClaim(claim: any) {
     return this.http.post(`${this.BASE_URL}/claims`, claim);
+  }
+
+  deleteClaim(claimId: string) {
+    return this.http.delete(`${this.BASE_URL}/claims/${claimId}`);
   }
 
   syncClaims(version: string, claims: string[]) {

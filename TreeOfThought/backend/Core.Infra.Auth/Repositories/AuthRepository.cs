@@ -41,6 +41,10 @@ public class AuthRepository : IAuthRepository
         var user = await GetUserByIdAsync(id);
         if (user != null)
         {
+            if (user.Username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cannot delete the system admin account.");
+            }
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
         }
@@ -57,6 +61,20 @@ public class AuthRepository : IAuthRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task DeleteRoleAsync(Guid id)
+    {
+        var role = await _context.Roles.FindAsync(id);
+        if (role != null)
+        {
+            if (role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cannot delete the system Admin role.");
+            }
+            _context.Roles.Remove(role);
+            await _context.SaveChangesAsync();
+        }
+    }
+
     public async Task<List<Role>> GetAllRolesAsync() => await _context.Roles.ToListAsync();
 
     public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
@@ -66,6 +84,20 @@ public class AuthRepository : IAuthRepository
     {
         await _context.Claims.AddAsync(claim);
         await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteClaimAsync(Guid id)
+    {
+        var claim = await _context.Claims.FindAsync(id);
+        if (claim != null)
+        {
+            if (claim.Name.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Cannot delete the system admin claim.");
+            }
+            _context.Claims.Remove(claim);
+            await _context.SaveChangesAsync();
+        }
     }
 
     public async Task<List<AppClaim>> GetAllClaimsAsync() => await _context.Claims.ToListAsync();

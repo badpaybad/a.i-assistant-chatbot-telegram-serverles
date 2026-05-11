@@ -6,9 +6,10 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NzTableModule } from 'ng-zorro-antd/table';
-import { NzModalModule } from 'ng-zorro-antd/modal';
+import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { AuthManagementService } from '../services/auth-management.service';
 import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -26,6 +27,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzModalModule,
     NzFormModule,
     NzInputModule,
+    NzSpaceModule,
     TranslateModule
   ],
   template: `
@@ -51,6 +53,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <th>{{ 'Quyền' | translate }}</th>
           <th>{{ 'Mô tả' | translate }}</th>
           <th>{{ 'Ngày tạo' | translate }}</th>
+          <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -58,6 +61,13 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <td>{{ data.name }}</td>
           <td>{{ data.description }}</td>
           <td>{{ data.createdAt | date:'short' }}</td>
+          <td>
+            <nz-space>
+              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+                      [disabled]="data.name === 'admin'"
+                      (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
+            </nz-space>
+          </td>
         </tr>
       </tbody>
     </nz-table>
@@ -96,6 +106,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 export class ClaimSyncComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private notification = inject(NzNotificationService);
+  private modal = inject(NzModalService);
   private translate = inject(TranslateService);
   
   version = CLAIMS_VERSION;
@@ -151,5 +162,27 @@ export class ClaimSyncComponent implements OnInit {
     } catch (e) {
       this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Thêm quyền thất bại'));
     }
+  }
+
+  async deleteClaim(claim: any) {
+    if (claim.name === 'admin') {
+      this.notification.warning(this.translate.instant('Cảnh báo'), this.translate.instant('Không thể xóa quyền admin'));
+      return;
+    }
+
+    this.modal.confirm({
+      nzTitle: `${this.translate.instant('Xác nhận xóa quyền')} ${claim.name}?`,
+      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          await this.authMgmt.deleteClaim(claim.id);
+          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Xóa quyền thành công'));
+          this.loadClaims();
+        } catch (e: any) {
+          this.notification.error(this.translate.instant('Thất bại'), e.error?.message || this.translate.instant('Xóa quyền thất bại'));
+        }
+      }
+    });
   }
 }

@@ -56,7 +56,9 @@ import { AppSelectComponent } from '../../../shared';
           <td>{{ data.description }}</td>
           <td>
             <div class="claim-tags">
-              <nz-tag *ngFor="let claim of data.claims" nzColor="blue" nzMode="closeable" (nzOnClose)="removeClaim(data, claim)">
+              <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
+                      [nzMode]="(data.name === 'Admin' && claim.name === 'admin') ? 'default' : 'closeable'" 
+                      (nzOnClose)="removeClaim(data, claim)">
                 {{ claim.name }}
               </nz-tag>
               <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
@@ -66,7 +68,9 @@ import { AppSelectComponent } from '../../../shared';
           </td>
           <td>
             <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
+              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+                      [disabled]="data.name === 'Admin'"
+                      (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
         </tr>
@@ -213,12 +217,23 @@ export class RoleListComponent implements OnInit {
   }
 
   async deleteRole(role: any) {
+    if (role.name === 'Admin') {
+      this.message.warning(this.translate.instant('Không thể xóa vai trò Admin'));
+      return;
+    }
+
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận')}?`,
-      nzContent: `${this.translate.instant('Xóa')} ${role.name}?`,
+      nzTitle: `${this.translate.instant('Xác nhận xóa vai trò')} ${role.name}?`,
+      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
       nzOnOk: async () => {
-        this.message.info(this.translate.instant('Chưa hỗ trợ xóa vai trò'));
+        try {
+          await this.authMgmt.deleteRole(role.id);
+          this.message.success(this.translate.instant('Xóa vai trò thành công'));
+          this.loadRoles();
+        } catch (e: any) {
+          this.message.error(e.error?.message || this.translate.instant('Xóa vai trò thất bại'));
+        }
       }
     });
   }

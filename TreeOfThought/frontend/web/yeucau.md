@@ -128,3 +128,10 @@ sidebar khi expanded có thể thay đổi được độ rộng bằng chuột,
 **cập nhật 6**
 các notify lên góc phải màn hình cần có thời gian, và user cần tự tắt noti
 dịch chưa triệt để cho module auth và cqrs, tiếng Việt là mặc định
+
+**cập nhật 7** khi người dùng được gán là role Admin hoặc claim admin , thì sẽ có quyền full không restrict. 
+Không cho phép xóa role Admin ở quản lý role
+không cho phép xóa claim admin ở quản lý claim
+Không cho phép xóa account admin ở quản lý account
+
+role Admin hoặc claim admin là đặc biệt là full quyền không hạn chế quyền (cần check từ BE). không thể bị chỉnh sửa, thêm xóa, khi check quyền thì cần ưu tiên role Admin hoặc claim admin, BE đang mô tả ở TreeOfThought/backend/yeucau.md update BE nếu cần

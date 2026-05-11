@@ -16,11 +16,13 @@ public interface IAuthRepository
     // Role operations
     Task<Role?> GetRoleByNameAsync(string name);
     Task CreateRoleAsync(Role role);
+    Task DeleteRoleAsync(Guid id);
     Task<List<Role>> GetAllRolesAsync();
 
     // Claim operations
     Task<AppClaim?> GetClaimByNameAsync(string name);
     Task CreateClaimAsync(AppClaim claim);
+    Task DeleteClaimAsync(Guid id);
     Task<List<AppClaim>> GetAllClaimsAsync();
 
     // Mapping operations
