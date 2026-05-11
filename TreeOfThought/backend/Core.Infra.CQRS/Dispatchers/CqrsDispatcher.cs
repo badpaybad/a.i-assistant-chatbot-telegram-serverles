@@ -1,4 +1,5 @@
 using Core.Infra.Base.Interfaces;
+using Core.Infra.CQRS.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
@@ -51,7 +52,7 @@ public class CqrsDispatcher : IDispatcher
         }
         else
         {
-            var queueName = command.CommandName;
+            var queueName = CqrsExtensions.GetQueueNameFromCommand(command.GetType())!;
             await _tracker.TrackAsync(command.TrackingId, "Dispatcher", $"Enqueue to {queueName}");
             await _tracker.IncrementStatAsync($"command:{typeof(TCommand).Name}");
             await _tracker.IncrementStatAsync("commands_processed");
@@ -73,7 +74,7 @@ public class CqrsDispatcher : IDispatcher
         }
         else
         {
-            var topic = @event.EventName;
+            var topic = CqrsExtensions.GetTopicNameFromEvent(@event.GetType())!;
             await _tracker.TrackAsync(@event.TrackingId, "Dispatcher", $"Publishing to topic: {topic}");
             await _tracker.IncrementStatAsync($"event:{topic}");
             await _tracker.IncrementStatAsync("events_published");
@@ -86,7 +87,7 @@ public class CqrsDispatcher : IDispatcher
         where TCommand : IBaseCommand
         where THandler : ICommandHandler<TCommand>
     {
-        var qName = queueName ?? typeof(TCommand).Name;
+        var qName = queueName ?? CqrsExtensions.GetQueueNameFromCommand(typeof(TCommand))!;
         var workerId = $"CommandWorker:{qName}";
 
         if (_workers.TryGetValue(workerId, out var existing))

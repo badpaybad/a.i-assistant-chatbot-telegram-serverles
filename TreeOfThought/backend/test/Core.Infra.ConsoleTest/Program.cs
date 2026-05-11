@@ -2,6 +2,7 @@ using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Models;
 using Core.Infra.Base.Utils;
 using Core.Infra.CQRS.Dispatchers;
+using Core.Infra.CQRS.Extensions;
 using Core.Infra.Redis.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,7 +17,7 @@ public class SampleCommand : IBaseCommand
     public Guid TrackingId { get; set; } = Guid.NewGuid();
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string? UserId { get; set; } = "TestUser";
-    public string CommandName => "sample_command_queue";
+    public string QueueName => "sample_command_queue";
     public string Data { get; set; } = "Hello Command";
 }
 
@@ -38,7 +39,7 @@ public class SampleEvent : IBaseEvent
     public Guid TrackingId { get; set; } = Guid.NewGuid();
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
     public string? UserId { get; set; } = "TestUser";
-    public string EventName => "sample_topic";
+    public string TopicName => "sample_topic";
     public string Message { get; set; } = "Hello Event";
 }
 
@@ -72,8 +73,8 @@ class Program
                 services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
                 services.AddSingleton<IDispatcher, CqrsDispatcher>();
                 
-                services.AddTransient<SampleCommandHandler>();
-                services.AddTransient<SampleEventHandler>();
+                // 3. Auto-register all handlers in this assembly
+                services.AddCqrsHandlers(typeof(Program).Assembly);
             })
             .ConfigureLogging(logging =>
             {
@@ -90,9 +91,14 @@ class Program
 
         try 
         {
-            // 3. Register Workers
-            await dispatcher.RegisterCommandHandlerAsync<SampleCommand, SampleCommandHandler>("sample_command_queue");
-            await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandler>("sample_topic", "console_subscriber");
+            // 3. Workers are auto-registered via CqrsAutoRegistrationService (IHostedService)
+            // But since this is a Console App without a long-running Host.RunAsync (it uses manual await),
+            // we might need to manually trigger the service or just wait for it.
+            // Actually, Host.CreateDefaultBuilder().Build() doesn't start services until RunAsync().
+            
+            // For this simulator, we will manually trigger registration or use RunAsync.
+            // Let's use Host.StartAsync() to trigger IHostedServices.
+            await host.StartAsync();
 
             // 4. Test Command
             Console.WriteLine("\n[COMMAND TEST]");

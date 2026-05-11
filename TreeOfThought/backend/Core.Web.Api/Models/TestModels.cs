@@ -3,7 +3,7 @@ namespace Core.Web.Api.Models;
 public class TestCommandRequest
 {
     public Guid RequestId { get; set; }
-    public string CommandName { get; set; } = string.Empty;
+    public string QueueName { get; set; } = string.Empty;
     public object? Payload { get; set; }
 }
 

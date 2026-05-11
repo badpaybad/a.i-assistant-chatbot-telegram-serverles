@@ -13,6 +13,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Reflection;
+using Core.Infra.CQRS.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -64,10 +66,10 @@ builder.Services.AddScoped<AuthDbContext>(sp => new AuthDbContext(pgConn, BaseDb
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<AuthService>();
 
-// --- 5. Handlers (Singleton as requested) ---
-builder.Services.AddSingleton<SampleCommandHandler>();
-builder.Services.AddSingleton<SampleEventHandler>();
-builder.Services.AddSingleton<SampleEventHandlerAlwaysError>();
+// --- 5. Handlers (Auto Registration) ---
+builder.Services.AddCqrsHandlers(Assembly.GetExecutingAssembly());
+// Note: You can also add handlers from other assemblies if needed:
+// builder.Services.AddCqrsHandlers(typeof(SomeModuleHandler).Assembly);
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
@@ -144,11 +146,9 @@ using (var scope = app.Services.CreateScope())
     if (!Path.IsPathRooted(jsonPath)) jsonPath = Path.Combine(app.Environment.ContentRootPath, jsonPath);
     firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"], config["Firebase:DatabaseId"]);
 
-    // Initialize CQRS Dispatcher
+    // Initialize CQRS Dispatcher (Auto Registration)
     var dispatcher = services.GetRequiredService<IDispatcher>();
-    await dispatcher.RegisterCommandHandlerAsync<SampleCommand, SampleCommandHandler>("sample.command");
-    await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandler>("sample.event", "web-api-subscriber");
-    await dispatcher.RegisterEventHandlerAsync<SampleEvent, SampleEventHandlerAlwaysError>("sample.event", "web-api-subscriber-test-always-err");
+    // CQRS Handlers are auto-registered via CqrsAutoRegistrationService (IHostedService)
     
     await dispatcher.PublishAsync(new SampleEvent { Data = "Infrastructure Initialized" });
 }

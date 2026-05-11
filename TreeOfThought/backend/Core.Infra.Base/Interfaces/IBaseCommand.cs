@@ -5,5 +5,5 @@ public interface IBaseCommand
     Guid TrackingId { get; set; }
     DateTime Timestamp { get; set; }
     string? UserId { get; set; }
-    string CommandName { get; }
+    string QueueName { get; }
 }

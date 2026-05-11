@@ -28,7 +28,7 @@ public class TestController : ControllerBase
         // In a real app, you would validate the command name
         var commandType = AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
-            .FirstOrDefault(t => t.Name == request.CommandName);
+            .FirstOrDefault(t => t.Name == request.QueueName);
 
         if (commandType == null)
         {
@@ -40,7 +40,7 @@ public class TestController : ControllerBase
         // The frontend expects the result in Firestore at 'commandresults/{requestId}'
         // We can create a generic handler or just manually publish to Firestore for this test
         
-        await _tracker.TrackAsync(request.RequestId, "TestController", $"Received command {request.CommandName}");
+        await _tracker.TrackAsync(request.RequestId, "TestController", $"Received command {request.QueueName}");
         
         // Mocking the completion after a short delay
         _ = Task.Run(async () => {

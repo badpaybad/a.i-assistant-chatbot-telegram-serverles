@@ -180,4 +180,11 @@ Bổ xung việc quản lý các permision
         IEntity<TKey> là các project khác nhìn được, IBaseEntity private prj để làm việc generic khi cần ở tại project
     - Khi tạo jwt chỉ có claims , còn role là để query các claims đi theo role theo user đó. 
         - Bổ xung cơ chế tự động check từ redis khi cần, nếu lượng claims trong jwt lớn hơn 30, thì bổ xung roles cho jwt khi login, và khi check thấy có roles auth attr sẽ vào redis lấy dữ liệu để check không ưu tiên các claim sẵn trong jwt 
-        
+
+**Cập nhật 5**
+việc CqrsDispatcher đăng ký các handle đang thủ công các dòng code ở program, tôi cần bổ xung thêm việc auto đăng ký = reflection, cần làm đạt mục tiêu:
+    - command , event có property queueu name , topic name , thì tự đăng ký handle theo, không bổ xung thêm class attribute như DotNetCore.CAP 
+        - kiểm tra nếu queue name , topic name empty thì throw exception biết được lỗi ở handle command nào event nào để xác định nghiệp vụ
+    - code refection cần xem nếu cache được các value sau khi reflection thì dùng luôn
+    - chỉ những hàm public của handle class mới cần auto đăng ký
+    

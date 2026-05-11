@@ -29,6 +29,8 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
 - **Generic Entity**: Loại bỏ phụ thuộc cứng vào `Guid`. `IEntity<TKey>` cho phép dùng `string`, `long`, `ObjectId` tùy loại DB.
 - **Audit Tracking**: Mọi Entity kế thừa `IBaseTrackingEntity` tự động có `CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`.
 - **Vietnamese Search**: `StringHelper` hỗ trợ chuyển đổi có dấu sang không dấu để tìm kiếm chính xác trên các DB không hỗ trợ collation tiếng Việt tốt.
+- **Auto Registration Handlers**: Tự động đăng ký các handler thông qua Reflection.
+    - **Giải pháp**: Sử dụng `QueueName` trong Command và `TopicName` trong Event để tự động cấu hình Workers thông qua một `IHostedService` tại startup.
 
 ### 2.2. Đa Database (SQL & NoSQL)
 - **EF Core (SQL)**: Hỗ trợ SQL Server, PostgreSQL, MySQL. Sinh mã tạo bảng (Script Generation) từ Entity.
@@ -53,6 +55,14 @@ Dự án được tổ chức theo mô hình Modular Monolith, tách biệt các
 
 #### AppAuthorizeAttribute linh hoạt
 - **AuthMode**: Hỗ trợ logic **AND** (cần tất cả quyền) hoặc **OR** (chỉ cần một trong các quyền). Mặc định là **OR**.
+
+- **Property-based Configuration**: 
+    - `IBaseCommand.QueueName`: Định nghĩa tên queue cho command.
+    - `IBaseEvent.TopicName`: Định nghĩa tên topic cho event.
+- **Auto Registration Logic**:
+    - `AddCqrsHandlers(assemblies)`: Quét các assembly được chỉ định, đăng ký các class implement `ICommandHandler<>` hoặc `IEventHandler<>` vào DI Container dưới dạng `Singleton` (Requirement 64).
+    - **Hosted Service**: Tự động đăng ký `CqrsAutoRegistrationService`. Khi ứng dụng khởi chạy, service này sẽ dùng Reflection tạo instance message để đọc `QueueName`/`TopicName` và tự động gọi `RegisterCommandHandlerAsync`/`RegisterEventHandlerAsync` trên `IDispatcher`.
+    - **Subscriber Name**: Mặc định dùng tên class Handler làm `SubscriberName` cho các Event Workers.
 
 ---
 
