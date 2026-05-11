@@ -175,36 +175,48 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, string action)
+    public async Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, int actionMask)
     {
         if (userId.HasValue)
         {
-            var userAccess = await _context.AclEntries.AnyAsync(a => 
+            var userAccess = await _context.AclEntries.FirstOrDefaultAsync(a => 
                 a.UserId == userId.Value && 
                 a.ResourceType == resourceType && 
-                a.ResourceId == resourceId && 
-                a.Action == action);
-            if (userAccess) return true;
+                a.ResourceId == resourceId);
+            
+            if (userAccess != null && (userAccess.PermissionMask & actionMask) == actionMask) return true;
         }
 
         if (roleNames != null && roleNames.Any())
         {
             var roles = await _context.Roles.Where(r => roleNames.Contains(r.Name)).Select(r => r.Id).ToListAsync();
-            var roleAccess = await _context.AclEntries.AnyAsync(a => 
+            var roleAccessEntries = await _context.AclEntries.Where(a => 
                 a.RoleId.HasValue && roles.Contains(a.RoleId.Value) && 
                 a.ResourceType == resourceType && 
-                a.ResourceId == resourceId && 
-                a.Action == action);
-            if (roleAccess) return true;
+                a.ResourceId == resourceId).ToListAsync();
+
+            var combinedMask = roleAccessEntries.Aggregate(0, (current, entry) => current | entry.PermissionMask);
+            if ((combinedMask & actionMask) == actionMask) return true;
         }
 
         return false;
     }
 
+
     public async Task<List<AclEntry>> GetAclEntriesAsync(string resourceType, string resourceId)
     {
         return await _context.AclEntries
             .Where(a => a.ResourceType == resourceType && a.ResourceId == resourceId)
+            .ToListAsync();
+    }
+
+    public async Task<List<AclEntry>> GetUserAclEntriesAsync(Guid userId)
+    {
+        // Get directly assigned ACLs + ACLs assigned to user's roles
+        var userRoleIds = await _context.UserRoles.Where(ur => ur.UserId == userId).Select(ur => ur.RoleId).ToListAsync();
+        
+        return await _context.AclEntries
+            .Where(a => a.UserId == userId || (a.RoleId.HasValue && userRoleIds.Contains(a.RoleId.Value)))
             .ToListAsync();
     }
 

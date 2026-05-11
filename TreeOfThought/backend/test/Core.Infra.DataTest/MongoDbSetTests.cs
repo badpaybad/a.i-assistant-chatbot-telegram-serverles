@@ -24,7 +24,7 @@ public class MongoDbSetTests
     }
 
     [Table("CustomCollectionName")]
-    public class AttributedEntity : IBaseTrackingEntity
+    public class AttributedEntity : IBaseTrackingEntity<Guid>
     {
         public Guid Id { get; set; }
         public string Name { get; set; }
@@ -48,7 +48,7 @@ public class MongoDbSetTests
         public IDbSet<AttributedEntity> AttributedEntities { get; set; }
     }
 
-    public class ExtraFieldEntity : IBaseTrackingEntity
+    public class ExtraFieldEntity : IBaseTrackingEntity<Guid>
     {
         public Guid Id { get; set; }
         public string Name { get; set; }

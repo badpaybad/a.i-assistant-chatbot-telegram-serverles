@@ -5,7 +5,10 @@ namespace Core.Infra.Tests;
 
 public class BaseEntityTests
 {
-    private class TestEntity : BaseEntity { }
+    private class TestEntity : BaseEntity<Guid> 
+    { 
+        public TestEntity() { Id = Guid.NewGuid(); }
+    }
 
     [Fact]
     public void BaseEntity_Should_Initialize_With_Default_Values()

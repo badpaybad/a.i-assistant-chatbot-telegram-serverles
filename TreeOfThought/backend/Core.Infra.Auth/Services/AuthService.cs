@@ -14,12 +14,14 @@ public class AuthService
     private readonly IConfiguration _config;
     private readonly IAuthRepository _userRepo;
     private readonly FirebaseService _firebaseService;
+    private readonly Core.Infra.Base.Interfaces.ICacheService _cacheService;
 
-    public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService)
+    public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService, Core.Infra.Base.Interfaces.ICacheService cacheService)
     {
         _config = config;
         _userRepo = userRepo;
         _firebaseService = firebaseService;
+        _cacheService = cacheService;
     }
 
     public async Task InitializeAsync()
@@ -200,9 +202,9 @@ public class AuthService
         return user;
     }
 
-    public async Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, string action)
+    public async Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, int actionMask)
     {
-        return await _userRepo.CheckAclAsync(userId, roleNames, resourceType, resourceId, action);
+        return await _userRepo.CheckAclAsync(userId, roleNames, resourceType, resourceId, actionMask);
     }
 
     public async Task<User?> GetUserByIdAsync(Guid id)
@@ -222,5 +224,27 @@ public class AuthService
             }
         }
     }
+
+    public async Task SyncUserAclToRedisAsync(Guid userId)
+    {
+        var aclEntries = await _userRepo.GetUserAclEntriesAsync(userId);
+        
+        // Group by ResourceType and ResourceId to calculate ORed bitmask
+        var groupedAcl = aclEntries
+            .GroupBy(a => new { a.ResourceType, a.ResourceId })
+            .Select(g => new { 
+                Key = $"acl:{userId}:{g.Key.ResourceType}:{g.Key.ResourceId}", 
+                Mask = g.Aggregate(0, (current, entry) => current | entry.PermissionMask)
+            });
+
+        foreach (var entry in groupedAcl)
+        {
+            // Set ACL in Redis with 24h expiry
+            await _cacheService.SetAsync(entry.Key, entry.Mask, TimeSpan.FromHours(24));
+        }
+        
+        Console.WriteLine($"[ACL SYNC] User: {userId}, Synced {groupedAcl.Count()} bitmasked resource keys to Redis.");
+    }
 }
+
 

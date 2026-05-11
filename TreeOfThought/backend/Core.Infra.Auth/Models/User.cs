@@ -2,7 +2,7 @@ using Core.Infra.Base.Interfaces;
 
 namespace Core.Infra.Auth.Models;
 
-public class User : IBaseTrackingEntity
+public class User : IBaseTrackingEntity<Guid>
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Username { get; set; } = string.Empty;

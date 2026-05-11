@@ -57,7 +57,7 @@ public abstract class BaseDbContext : DbContext
     }
 
     // Partial Update
-    public virtual async Task PartialUpdateAsync<T>(T entity, params Expression<Func<T, object>>[] updatedProperties) where T : class, IBaseTrackingEntity
+    public virtual async Task PartialUpdateAsync<T>(T entity, params Expression<Func<T, object>>[] updatedProperties) where T : class
     {
         var entry = Entry(entity);
         if (entry.State == EntityState.Detached)

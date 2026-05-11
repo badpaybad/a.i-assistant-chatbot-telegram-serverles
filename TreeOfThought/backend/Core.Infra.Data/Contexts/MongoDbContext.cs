@@ -93,21 +93,22 @@ public abstract class MongoDbContext
         await collection.InsertManyAsync(entities);
     }
 
-    public virtual async Task BulkUpdateAsync<T>(IEnumerable<T> entities, string? collectionName = null) where T : IBaseTrackingEntity
+    public virtual async Task BulkUpdateAsync<T, TKey>(IEnumerable<T> entities, string? collectionName = null) where T : IEntity<TKey>
     {
         var collection = GetCollection<T>(collectionName);
         var models = entities.Select(e => new ReplaceOneModel<T>(
-            Builders<T>.Filter.Eq(x => x.Id, e.Id), e) { IsUpsert = true });
+            Builders<T>.Filter.Eq("Id", e.Id), e) { IsUpsert = true });
         
         await collection.BulkWriteAsync(models);
     }
 
-    public virtual async Task BulkDeleteAsync<T>(IEnumerable<Guid> ids, string? collectionName = null) where T : IBaseTrackingEntity
+    public virtual async Task BulkDeleteAsync<T, TKey>(IEnumerable<TKey> ids, string? collectionName = null)
     {
         var collection = GetCollection<T>(collectionName);
-        var models = ids.Select(id => new DeleteOneModel<T>(Builders<T>.Filter.Eq(x => x.Id, id)));
+        var models = ids.Select(id => new DeleteOneModel<T>(Builders<T>.Filter.Eq("Id", id)));
         await collection.BulkWriteAsync(models);
     }
+
 
     // Paging & Sorting
     public virtual async Task<(List<T> Items, long Total)> GetPagedAsync<T>(

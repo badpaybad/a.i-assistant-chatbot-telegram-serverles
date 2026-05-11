@@ -39,8 +39,9 @@ public interface IAuthRepository
     // ACL operations
     Task AddAclAsync(AclEntry entry);
     Task RemoveAclAsync(Guid id);
-    Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, string action);
+    Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, int actionMask);
     Task<List<AclEntry>> GetAclEntriesAsync(string resourceType, string resourceId);
+    Task<List<AclEntry>> GetUserAclEntriesAsync(Guid userId);
 
     // UserEmail operations
     Task<List<UserEmail>> GetUserEmailsAsync(Guid userId);

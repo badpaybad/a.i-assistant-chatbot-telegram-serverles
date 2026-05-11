@@ -16,7 +16,7 @@ Dùng spec driven và chia ra để trị.
 
 phattrien.md là tài liệu dùng để phát triển code lập trình cần phải suy nghĩ cẩn thận kỹ lưỡng, có thể đưa ra các phương án để người dùng lựa chọn, khi người dùng duyệt phattrien.md rồi mới tiến hành làm
 
-**khi yeucau.md thay đổi bắt buộc cập nhật phattrien.md **
+**khi yeucau.md thay đổi bắt buộc cập nhật phattrien.md có thể cần đọc source code được đề cập ở yeucau.md để cập nhật phattrien.md**
 
 **luôn đảm bảo khi có yeucau.md và phatrien.md dù source code có mất vẫn có thể viết lại một cách chính xác theo như mô tả stable và ready to run**
 

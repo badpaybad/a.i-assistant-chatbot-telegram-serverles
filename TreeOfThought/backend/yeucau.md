@@ -176,3 +176,6 @@ Bổ xung việc quản lý các permision
     - bổ xung để dùng cả RBAC và ACL 
     - bổ xung để tương tích openid connect 
     - user chỉ có 1 email làm key SSO, user có thể có nhiều email nhưng chỉ duy nhất 1 email active được phép dùng làm SSO ( email active là email đã được verify )
+    - Auth attribute bổ xung cho phép check quyền OR hoặc AND mặc định là OR 
+        - Bổ xung việc xử lý ACL trong auth attribute để check quyền có trong danh sách được phép, cần dùng redis (cần code dùng redis ở core infra base) để xử lý do ACL có thể có rất nhiều. 
+        IEntity<TKey> là các project khác nhìn được, IBaseEntity private prj để làm việc generic khi cần ở tại project

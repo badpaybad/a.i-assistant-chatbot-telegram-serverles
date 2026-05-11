@@ -70,24 +70,23 @@ public class DbSet<T> : IDbSet<T> where T : class
     
     public async Task RemoveAsync(T entity)
     {
-        if (entity is IBaseTrackingEntity baseEntity)
+        object? idValue = null;
+        
+        // Try to get Id via Reflection first to be most flexible
+        var idProp = typeof(T).GetProperty("Id");
+        if (idProp != null)
         {
-            var filter = Builders<T>.Filter.Eq("Id", baseEntity.Id);
+            idValue = idProp.GetValue(entity);
+        }
+
+        if (idValue != null)
+        {
+            var filter = Builders<T>.Filter.Eq("Id", idValue);
             await _collection.DeleteOneAsync(filter);
         }
         else
         {
-            var idProp = typeof(T).GetProperty("Id");
-            if (idProp != null)
-            {
-                var idValue = idProp.GetValue(entity);
-                var filter = Builders<T>.Filter.Eq("Id", idValue);
-                await _collection.DeleteOneAsync(filter);
-            }
-            else
-            {
-                throw new InvalidOperationException("Entity must have an Id property to be removed.");
-            }
+            throw new InvalidOperationException("Entity must have an Id property to be removed.");
         }
     }
 
@@ -114,24 +113,22 @@ public class DbSet<T> : IDbSet<T> where T : class
 
     public async Task UpdateAsync(T entity)
     {
-        if (entity is IBaseTrackingEntity baseEntity)
+        object? idValue = null;
+        
+        var idProp = typeof(T).GetProperty("Id");
+        if (idProp != null)
         {
-            var filter = Builders<T>.Filter.Eq("Id", baseEntity.Id);
-            await _collection.ReplaceOneAsync(filter, entity);
+            idValue = idProp.GetValue(entity);
         }
+
+        if (idValue != null)
+        {
+            var filter = Builders<T>.Filter.Eq("Id", idValue);
+            await _collection.ReplaceOneAsync(filter, entity);
+        } 
         else
         {
-            var idProp = typeof(T).GetProperty("Id");
-            if (idProp != null)
-            {
-                var idValue = idProp.GetValue(entity);
-                var filter = Builders<T>.Filter.Eq("Id", idValue);
-                await _collection.ReplaceOneAsync(filter, entity);
-            }
-            else
-            {
-                throw new InvalidOperationException("Entity must have an Id property to be updated.");
-            }
+            throw new InvalidOperationException("Entity must have an Id property to be updated.");
         }
     }
 
@@ -142,6 +139,7 @@ public class DbSet<T> : IDbSet<T> where T : class
             await UpdateAsync(entity);
         }
     }
+
 
     public async Task DeleteAsync(Expression<Func<T, bool>> predicate)
     {

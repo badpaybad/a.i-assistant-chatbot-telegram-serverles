@@ -34,6 +34,6 @@ public class AuthDbContext : BaseDbContext
         modelBuilder.Entity<UserPermission>().HasIndex(up => new { up.UserId, up.PermissionId }).IsUnique();
         
         modelBuilder.Entity<UserEmail>().HasIndex(ue => ue.Email).IsUnique();
-        modelBuilder.Entity<AclEntry>().HasIndex(a => new { a.UserId, a.RoleId, a.ResourceType, a.ResourceId, a.Action });
+        modelBuilder.Entity<AclEntry>().HasIndex(a => new { a.UserId, a.RoleId, a.ResourceType, a.ResourceId, a.PermissionMask });
     }
 }

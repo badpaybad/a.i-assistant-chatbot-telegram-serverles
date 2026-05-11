@@ -101,7 +101,7 @@ public class DataCrudTests
 
         // 2. Test Bulk Update
         foreach (var item in list) item.Price += 50;
-        await context.BulkUpdateAsync(list);
+        await context.BulkUpdateAsync<SampleEntity, Guid>(list);
 
         // 3. Test Paging & Sorting
         var filter = Builders<SampleEntity>.Filter.Empty;
@@ -124,6 +124,6 @@ public class DataCrudTests
         Assert.NotEmpty(results);
 
         // Cleanup
-        await context.BulkDeleteAsync<SampleEntity>(list.Select(x => x.Id));
+        await context.BulkDeleteAsync<SampleEntity, Guid>(list.Select(x => x.Id));
     }
 }

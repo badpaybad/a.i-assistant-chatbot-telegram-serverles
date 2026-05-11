@@ -2,9 +2,9 @@ using Core.Infra.Base.Interfaces;
 
 namespace Core.Infra.Base.Models;
 
-public abstract class BaseEntity : IBaseTrackingEntity
+public abstract class BaseEntity<TKey> : IBaseTrackingEntity<TKey>, IBaseEntity
 {
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public TKey Id { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public string? CreatedBy { get; set; }
