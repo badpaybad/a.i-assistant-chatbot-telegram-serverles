@@ -16,6 +16,8 @@ import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthManagementService } from '../services/auth-management.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AppSelectComponent } from '../../../shared';
 
 @Component({
   selector: 'app-acl-list',
@@ -35,7 +37,9 @@ import { AuthManagementService } from '../services/auth-management.service';
     NzCardModule,
     NzRadioModule,
     NzTagModule,
-    NzDividerModule
+    NzDividerModule,
+    TranslateModule,
+    AppSelectComponent
   ],
   template: `
     <div class="page-header">
@@ -51,10 +55,10 @@ import { AuthManagementService } from '../services/auth-management.service';
             <input nz-input [(ngModel)]="filter.resourceId" placeholder="e.g. 123 or *" style="width: 150px" />
           </div>
           <button nz-button nzType="primary" (click)="loadAcl()">
-            <span nz-icon nzType="search"></span> Search
+            <span nz-icon nzType="search"></span> {{ 'Tìm kiếm...' | translate }}
           </button>
           <button nz-button nzType="default" (click)="showCreateModal()">
-            <span nz-icon nzType="plus"></span> Add Entry
+            <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
           </button>
         </div>
       </nz-card>
@@ -66,7 +70,7 @@ import { AuthManagementService } from '../services/auth-management.service';
           <th>Subject</th>
           <th>Resource</th>
           <th>Access Mask</th>
-          <th nzWidth="100px">Action</th>
+          <th nzWidth="100px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -74,11 +78,11 @@ import { AuthManagementService } from '../services/auth-management.service';
           <td>
             <div *ngIf="data.userId" class="subject-info">
               <span nz-icon nzType="user"></span>
-              <span>User: <strong>{{ data.userId }}</strong></span>
+              <span>{{ 'Người dùng' | translate }}: <strong>{{ data.userId }}</strong></span>
             </div>
             <div *ngIf="data.roleId" class="subject-info">
               <span nz-icon nzType="team"></span>
-              <span>Role: <strong>{{ data.roleId }}</strong></span>
+              <span>{{ 'Vai trò' | translate }}: <strong>{{ data.roleId }}</strong></span>
             </div>
           </td>
           <td>
@@ -97,40 +101,47 @@ import { AuthManagementService } from '../services/auth-management.service';
             </div>
           </td>
           <td>
-            <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteAcl(data.id)">Delete</button>
+            <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | translate }}</button>
           </td>
         </tr>
       </tbody>
     </nz-table>
 
-    <nz-modal [(nzVisible)]="isCreateModalVisible" nzTitle="Add ACL Entry" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createAcl()">
+    <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createAcl()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
             <nz-form-label [nzSpan]="null">Subject Type</nz-form-label>
             <nz-form-control>
               <nz-radio-group [(ngModel)]="newEntry.subjectType" name="subjectType">
-                <label nz-radio nzValue="user">User</label>
-                <label nz-radio nzValue="role">Role</label>
+                <label nz-radio nzValue="user">{{ 'Người dùng' | translate }}</label>
+                <label nz-radio nzValue="role">{{ 'Vai trò' | translate }}</label>
               </nz-radio-group>
             </nz-form-control>
           </nz-form-item>
           
           <nz-form-item *ngIf="newEntry.subjectType === 'user'">
-            <nz-form-label [nzSpan]="null">Select User</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Người dùng' | translate }}</nz-form-label>
             <nz-form-control>
-              <nz-select [(ngModel)]="newEntry.userId" name="userId" nzShowSearch nzPlaceHolder="Search user by username">
-                <nz-option *ngFor="let u of availableUsers" [nzValue]="u.id" [nzLabel]="u.username + ' (' + u.displayName + ')'"></nz-option>
-              </nz-select>
+              <app-select
+                apiUrl="/api/AuthManagement/users"
+                [placeholder]="'Tìm kiếm...' | translate"
+                labelField="username"
+                [(ngModel)]="newEntry.userId"
+                name="userId"
+              ></app-select>
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item *ngIf="newEntry.subjectType === 'role'">
-            <nz-form-label [nzSpan]="null">Select Role</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
-              <nz-select [(ngModel)]="newEntry.roleId" name="roleId" nzShowSearch nzPlaceHolder="Search role by name">
-                <nz-option *ngFor="let r of availableRoles" [nzValue]="r.id" [nzLabel]="r.name"></nz-option>
-              </nz-select>
+              <app-select
+                apiUrl="/api/AuthManagement/roles"
+                [placeholder]="'Tìm kiếm...' | translate"
+                [(ngModel)]="newEntry.roleId"
+                name="roleId"
+              ></app-select>
             </nz-form-control>
           </nz-form-item>
 
@@ -206,6 +217,7 @@ export class AclListComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
+  private translate = inject(TranslateService);
 
   aclEntries: any[] = [];
   loading = false;
@@ -242,7 +254,7 @@ export class AclListComponent implements OnInit {
 
   async loadAcl() {
     if (!this.filter.resourceType || !this.filter.resourceId) {
-      this.message.warning('Please enter both Resource Type and Resource Id');
+      this.message.warning(this.translate.instant('Vui lòng nhập đầy đủ thông tin'));
       return;
     }
     this.loading = true;
@@ -290,7 +302,8 @@ export class AclListComponent implements OnInit {
 
   async deleteAcl(id: string) {
     this.modal.confirm({
-      nzTitle: 'Are you sure you want to delete this ACL entry?',
+      nzTitle: `${this.translate.instant('Xác nhận')}?`,
+      nzContent: `${this.translate.instant('Xóa')} ACL entry?`,
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeAcl(id);

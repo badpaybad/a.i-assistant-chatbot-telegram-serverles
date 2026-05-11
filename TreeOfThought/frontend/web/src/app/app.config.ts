@@ -11,6 +11,9 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { IconDefinition } from '@ant-design/icons-angular';
 import * as AllIcons from '@ant-design/icons-angular/icons';
 
+import { provideTranslateService } from '@ngx-translate/core';
+import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+
 registerLocaleData(en);
 
 const icons: IconDefinition[] = [
@@ -43,7 +46,17 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideNzI18n(en_US),
-    importProvidersFrom(FormsModule, NzIconModule.forRoot(icons)),
-    provideHttpClient()
+    provideHttpClient(),
+    provideTranslateService({
+      defaultLanguage: 'vi'
+    }),
+    provideTranslateHttpLoader({
+      prefix: './assets/i18n/',
+      suffix: '.json'
+    }),
+    importProvidersFrom(
+      FormsModule, 
+      NzIconModule.forRoot(icons)
+    )
   ]
 };

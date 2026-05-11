@@ -102,3 +102,22 @@ tạo module CQRS Dashboard với các chức năng sau:
 **cập nhật 2**
 
 ở TreeOfThought/backend/yeucau.md có **cập nhật 8** cần làm UI tương ứng cho việc đổi mật khẩu của tài khoản admin 
+
+**cập nhật 3**
+
+các droplist cần hỗ trợ việc auto complete và search để chọn các giá trị, nếu có liên quan việc lấy dữ liệu từ db thì cần dạng scroll paging page size là 20 item 1 lần. khi user cuộn lên đầu thì tự động fetch thêm dữ liệu để hiển thị, nếu user search thì query theo từ khóa tìm kiếm. 
+
+cần support multiselect như dropdown chọn nhiều option (tích vào checkbox của option), tùy vào yêu cầu. nếu multi select thì cho phép chọn nhiều, còn không thì là single select
+
+**bug 1** 
+ở form login http://localhost:4200/auth/login khi điền đủ usernam , password nhân phím Enter bị báo lỗi no permision, click chuột vào nút login lại đăng nhập được. cần check lại khi nhấn enter phím thì cũng cần như click chuột vào nút login
+
+**cập nhật 4 chú ý** ưu tiên việc viết tài liệu bằng tiếng Việt Nam, kể cả những code sinh ra ở FE, BE là text cần là tiếng Việt trước và khi đưa lên FE thì hỗ trợ i18n trên FE để dịch đa ngôn ngữ. hỗ trợ mặc định tiếng Việt và tiếng Anh
+    vd ở template có <label>{{t("Tên đăng nhập")}}</label> hoặc dùng transloco hoặc pipe translate tức là key dùng i18n là tiếng Việt. ở en.json là {"Tên đăng nhập":"Username"} 
+
+**bug 2**
+khi login type username , password rôi key press Enter thì bị báo access deny. click nút login vẫn login thành công
+
+nút colapse expand side menu chưa hoạt động 
+
+thêm dropdown chọn language ở góc phải trên cùng màn hình: Tiếng Việt, Tiếng Anh

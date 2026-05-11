@@ -57,3 +57,24 @@ Thống nhất toàn bộ hệ thống phân quyền ở Frontend (FE) theo cơ 
 5. Cập nhật toàn bộ module `core-infra-auth` (rename component, update template/logic).
 6. Cập nhật `MainLayout` và `app.routes.ts`.
 7. Kiểm tra lại toàn bộ ứng dụng và chạy `ng build` để xác nhận không còn lỗi tham chiếu.
+## 5. Cập nhật 3: Linh kiện Droplist thông minh
+
+### 5.1 Mục tiêu
+Xây dựng component `AppSelectComponent` dùng chung hỗ trợ:
+- Autocomplete & Server-side search.
+- Infinite scroll (Scroll paging, size = 20).
+- Multi-select với Checkbox.
+
+### 5.2 Kỹ thuật triển khai
+- **Base**: `nz-select` của NG-ZORRO.
+- **Search**: RxJS `Subject` + `debounceTime(300)` + `distinctUntilChanged`.
+- **Infinite Scroll**: Lắng nghe `nzScrollToBottom`, gọi API với `pageIndex++`.
+- **UI**: 
+    - Custom template cho `nz-option` để hiển thị Checkbox khi `mode="multiple"`.
+    - `nzServerSearch` để tắt search local.
+- **Data Binding**: Hỗ trợ `ControlValueAccessor` để dùng được với `ngModel` và `ReactiveForms`.
+
+### 5.3 Danh sách file
+- `src/app/shared/components/app-select/app-select.component.ts`
+- `src/app/shared/components/app-select/app-select.component.html`
+- `src/app/shared/shared.module.ts` (export component)

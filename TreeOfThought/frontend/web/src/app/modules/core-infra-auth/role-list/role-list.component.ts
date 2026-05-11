@@ -12,6 +12,8 @@ import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { AuthManagementService } from '../services/auth-management.service';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AppSelectComponent } from '../../../shared';
 
 @Component({
   selector: 'app-role-list',
@@ -27,23 +29,25 @@ import { AuthManagementService } from '../services/auth-management.service';
     NzModalModule,
     NzSelectModule,
     NzFormModule,
-    NzInputModule
+    NzInputModule,
+    TranslateModule,
+    AppSelectComponent
   ],
   template: `
     <div class="page-header">
-      <h2>Role Management</h2>
+      <h2>{{ 'Vai trò' | translate }}</h2>
       <button nz-button nzType="primary" (click)="showCreateModal()">
-        <span nz-icon nzType="plus"></span> Add Role
+        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
       </button>
     </div>
 
     <nz-table #basicTable [nzData]="roles" [nzLoading]="loading">
       <thead>
         <tr>
-          <th nzWidth="200px">Role Name</th>
+          <th nzWidth="200px">{{ 'Vai trò' | translate }}</th>
           <th>Description</th>
-          <th>Claims</th>
-          <th nzWidth="120px">Action</th>
+          <th>{{ 'Quyền' | translate }}</th>
+          <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -62,18 +66,18 @@ import { AuthManagementService } from '../services/auth-management.service';
           </td>
           <td>
             <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteRole(data)">Delete</button>
+              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
         </tr>
       </tbody>
     </nz-table>
 
-    <nz-modal [(nzVisible)]="isCreateModalVisible" nzTitle="Create Role" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createRole()">
+    <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createRole()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Role Name</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
               <input nz-input [(ngModel)]="newRole.name" name="name" placeholder="e.g. manager" />
             </nz-form-control>
@@ -88,11 +92,13 @@ import { AuthManagementService } from '../services/auth-management.service';
       </ng-container>
     </nz-modal>
 
-    <nz-modal [(nzVisible)]="isClaimModalVisible" nzTitle="Assign Claim to Role" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
+    <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
-        <nz-select style="width: 100%" [(ngModel)]="selectedClaimId" nzPlaceHolder="Select a claim" nzShowSearch>
-          <nz-option *ngFor="let claim of availableClaims" [nzValue]="claim.id" [nzLabel]="claim.name"></nz-option>
-        </nz-select>
+        <app-select
+          apiUrl="/api/AuthManagement/claims"
+          [placeholder]="'Vui lòng chọn' | translate"
+          [(ngModel)]="selectedClaimId"
+        ></app-select>
       </ng-container>
     </nz-modal>
   `,
@@ -117,6 +123,7 @@ export class RoleListComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
+  private translate = inject(TranslateService);
 
   roles: any[] = [];
   loading = false;
@@ -191,7 +198,8 @@ export class RoleListComponent implements OnInit {
 
   async removeClaim(role: any, claim: any) {
     this.modal.confirm({
-      nzTitle: `Are you sure you want to remove claim ${claim.name} from role ${role.name}?`,
+      nzTitle: `${this.translate.instant('Xác nhận')}?`,
+      nzContent: `${this.translate.instant('Xóa')} ${claim.name} ${this.translate.instant('khỏi')} ${role.name}?`,
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeClaimFromRole(role.id, claim.id);
@@ -206,8 +214,8 @@ export class RoleListComponent implements OnInit {
 
   async deleteRole(role: any) {
     this.modal.confirm({
-      nzTitle: `Are you sure you want to delete role ${role.name}?`,
-      nzContent: 'This action cannot be undone.',
+      nzTitle: `${this.translate.instant('Xác nhận')}?`,
+      nzContent: `${this.translate.instant('Xóa')} ${role.name}?`,
       nzOkDanger: true,
       nzOnOk: async () => {
         this.message.info('Role deletion not yet fully implemented');

@@ -8,6 +8,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthService } from '../../core/auth/auth.service';
 import { APP_CLAIMS } from '../../core/auth/claims.config';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-main-layout',
@@ -20,7 +21,8 @@ import { APP_CLAIMS } from '../../core/auth/claims.config';
     NzMenuModule,
     NzIconModule,
     NzButtonModule,
-    NzAvatarModule
+    NzAvatarModule,
+    TranslateModule
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css']

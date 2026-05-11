@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { firstValueFrom } from 'rxjs';
 import { NotificationTemplateService } from '../services/notification-template.service';
+import { TranslateService } from '@ngx-translate/core';
 
 @Injectable({
   providedIn: 'root'
@@ -13,6 +14,7 @@ export class HttpClientService {
   private notification = inject(NzNotificationService);
   private router = inject(Router);
   private templateService = inject(NotificationTemplateService);
+  private translate = inject(TranslateService);
 
   // Default base URL - can be overridden by environment
   private readonly API_BASE_URL = (window as any).env?.API_BASE_URL || 'http://localhost:5000';
@@ -35,25 +37,28 @@ export class HttpClientService {
     const message = error.error?.message || error.message || 'Unknown error';
     
     if (status >= 400 || status === 0) {
-      const displayMessage = status === 0 ? 'Network error or Server is down' : message;
-      const htmlContent = `${displayMessage}. <a href="/auth/login" style="color: #1890ff; text-decoration: underline;">Click here to login.</a>`;
+      const displayMessage = status === 0 ? this.translate.instant('Lỗi kết nối hoặc server đang bảo trì') : message;
+      const linkText = this.translate.instant('Click vào đây để đăng nhập');
+      const htmlContent = `${displayMessage}. <a href="/auth/login" style="color: #1890ff; text-decoration: underline;">${linkText}.</a>`;
       
       const template = this.templateService.getTemplate('html');
+      const errorTitle = this.translate.instant('Thông báo');
+      
       if (template) {
-        const ref = this.notification.create('error', 'Error', template, { nzData: { content: htmlContent }, nzDuration: 0 });
+        const ref = this.notification.create('error', errorTitle, template, { nzData: { content: htmlContent }, nzDuration: 0 });
         ref.onClick.subscribe(() => {
           this.router.navigate(['/auth/login']);
           this.notification.remove(ref.messageId);
         });
       } else {
-        const ref = this.notification.error('Error', `${displayMessage}. Click here to login.`, { nzDuration: 0 });
+        const ref = this.notification.error(errorTitle, `${displayMessage}. ${linkText}.`, { nzDuration: 0 });
         ref.onClick.subscribe(() => {
           this.router.navigate(['/auth/login']);
           this.notification.remove(ref.messageId);
         });
       }
     } else {
-      this.notification.error('Error', message, { nzDuration: 0 });
+      this.notification.error(this.translate.instant('Thông báo'), message, { nzDuration: 0 });
     }
     
     throw error;

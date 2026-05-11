@@ -1,13 +1,13 @@
 import { Component, inject } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { AuthManagementService } from '../services/auth-management.service';
-import { Router } from '@angular/router';
+import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { HttpClientService } from '../../../core/http/http-client.service';
 
 @Component({
   selector: 'app-change-password',
@@ -18,46 +18,57 @@ import { Router } from '@angular/router';
     NzFormModule,
     NzInputModule,
     NzButtonModule,
-    NzCardModule
+    NzCardModule,
+    TranslateModule
   ],
   templateUrl: './change-password.component.html',
-  styles: [`
-    .change-password-card {
-      max-width: 500px;
-      margin: 50px auto;
-    }
-  `]
+  styleUrl: './change-password.component.css'
 })
 export class ChangePasswordComponent {
-  private fb = inject(FormBuilder);
-  private authService = inject(AuthManagementService);
-  private message = inject(NzMessageService);
-  private router = inject(Router);
+  private fb = inject(NonNullableFormBuilder);
+  private http = inject(HttpClientService);
+  private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
 
-  confirmationValidator = (group: FormGroup): { [key: string]: boolean } | null => {
-    if (group.get('newPassword')?.value !== group.get('confirmPassword')?.value) {
-      return { confirm: true };
+  loading = false;
+
+  confirmationValidator: ValidatorFn = (control: AbstractControl): { [s: string]: boolean } => {
+    if (!control.value) {
+      return { required: true };
+    } else if (control.value !== this.validateForm?.controls.newPassword.value) {
+      return { confirm: true, error: true };
     }
-    return null;
+    return {};
   };
 
-  validateForm: FormGroup = this.fb.group({
-    currentPassword: ['', [Validators.required]],
+  validateForm: FormGroup<{
+    oldPassword: FormControl<string>;
+    newPassword: FormControl<string>;
+    confirmPassword: FormControl<string>;
+  }> = this.fb.group({
+    oldPassword: ['', [Validators.required]],
     newPassword: ['', [Validators.required, Validators.minLength(6)]],
-    confirmPassword: ['', [Validators.required]]
-  }, {
-    validators: this.confirmationValidator
+    confirmPassword: ['', [Validators.required, (c: AbstractControl) => this.confirmationValidator(c)]]
   });
 
   async submitForm(): Promise<void> {
     if (this.validateForm.valid) {
-      const { currentPassword, newPassword } = this.validateForm.value;
+      this.loading = true;
       try {
-        await this.authService.changePassword({ currentPassword, newPassword });
-        this.message.success('Password changed successfully');
-        this.router.navigate(['/']);
-      } catch (err: any) {
-        this.message.error(err.error?.message || 'Failed to change password');
+        await this.http.post('/api/auth/change-password', this.validateForm.value);
+        this.notification.success(
+          this.translate.instant('Thành công'),
+          this.translate.instant('Đổi mật khẩu thành công')
+        );
+        this.validateForm.reset();
+      } catch (e: any) {
+        console.error(e);
+        this.notification.error(
+          this.translate.instant('Thất bại'),
+          e.error?.message || this.translate.instant('Đổi mật khẩu thất bại')
+        );
+      } finally {
+        this.loading = false;
       }
     } else {
       Object.values(this.validateForm.controls).forEach(control => {

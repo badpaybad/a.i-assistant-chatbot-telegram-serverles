@@ -9,6 +9,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AuthService } from '../../../core/auth/auth.service';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-signup',
@@ -21,7 +22,8 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
     NzInputModule,
     NzButtonModule,
     NzIconModule,
-    NzDividerModule
+    NzDividerModule,
+    TranslateModule
   ],
   templateUrl: './signup.component.html',
   styleUrls: ['./signup.component.css']
@@ -31,6 +33,7 @@ export class SignupComponent {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
 
   validateForm: FormGroup<{
     username: FormControl<string>;
@@ -51,14 +54,14 @@ export class SignupComponent {
   async submitForm(): Promise<void> {
     if (this.validateForm.valid) {
       if (this.validateForm.value.password !== this.validateForm.value.confirmPassword) {
-        this.notification.error('Error', 'Passwords do not match');
+        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Mật khẩu không khớp'));
         return;
       }
 
       this.loading = true;
       try {
         await this.authService.signup(this.validateForm.value);
-        this.notification.success('Success', 'Signup successful. Please check your email for confirmation and then login.');
+        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đăng ký thành công. Vui lòng kiểm tra email để xác nhận và sau đó đăng nhập.'));
         this.router.navigate(['/auth/login']);
       } catch (e) {
         console.error(e);

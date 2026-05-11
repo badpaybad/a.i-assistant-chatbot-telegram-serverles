@@ -6,7 +6,7 @@
             [(nzCollapsed)]="isCollapsed"
             [nzTrigger]="null">
     <div class="sidebar-logo">
-      <a href="/">
+      <a routerLink="/">
         <img src="assets/logo.png" alt="logo">
         <h1>Tree Of Thought</h1>
       </a>
@@ -14,18 +14,18 @@
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="home"></span>
-        <a routerLink="/">Home</a>
+        <a routerLink="/">{{ 'Trang chủ' | translate }}</a>
       </li>
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="info-circle"></span>
-        <a routerLink="/about">About</a>
+        <a routerLink="/about">{{ 'Giới thiệu' | translate }}</a>
       </li>
       <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="phone"></span>
-        <a routerLink="/contact">Contact</a>
+        <a routerLink="/contact">{{ 'Liên hệ' | translate }}</a>
       </li>
 
-      <li nz-submenu nzTitle="Dashboard" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
+      <li nz-submenu [nzTitle]="'Dashboard'" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)">
         <ul>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/cqrs-dashboard">CQRS Dashboard</a>
@@ -33,27 +33,27 @@
         </ul>
       </li>
 
-      <li nz-submenu nzTitle="Core Infra Auth" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
+      <li nz-submenu [nzTitle]="'Core Infra Auth'" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)">
         <ul>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/users">User Management</a>
+            <a routerLink="/modules/core-infra-auth/users">{{ 'Người dùng' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/roles">Role Management</a>
+            <a routerLink="/modules/core-infra-auth/roles">{{ 'Vai trò' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/claims">Claim Management</a>
+            <a routerLink="/modules/core-infra-auth/claims">{{ 'Quyền' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter *ngIf="hasClaim(claims.AUTH.MANAGE_ACL)">
             <a routerLink="/modules/core-infra-auth/acl">ACL Management</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/change-password">Change Password</a>
+            <a routerLink="/modules/core-infra-auth/change-password">{{ 'Đổi mật khẩu' | translate }}</a>
           </li>
         </ul>
       </li>
 
-      <li nz-submenu nzTitle="Test Modules" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
+      <li nz-submenu [nzTitle]="'Test Modules'" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)">
         <ul>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/test/firestore">Firestore Test</a>
@@ -68,20 +68,26 @@
   <nz-layout>
     <nz-header>
       <div class="app-header">
-        <span class="header-trigger" (click)="isCollapsed = !isCollapsed">
-            <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
-        </span>
+        <div class="header-left">
+          <span class="header-trigger" (click)="isCollapsed = !isCollapsed">
+              <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
+          </span>
+          <div class="header-links">
+            <a routerLink="/" class="nav-link">{{ 'Trang chủ' | translate }}</a>
+            <a routerLink="/about" class="nav-link">{{ 'Giới thiệu' | translate }}</a>
+            <a routerLink="/contact" class="nav-link">{{ 'Liên hệ' | translate }}</a>
+          </div>
+        </div>
         <div class="header-right">
           <ng-container *ngIf="user$ | async as user; else loginBtn">
             <span class="user-info">
               <nz-avatar nzIcon="user" [nzSrc]="user.photoURL || ''"></nz-avatar>
               <span class="username">{{ user.displayName || user.email }}</span>
             </span>
-            <button nz-button nzType="link" routerLink="/modules/core-infra-auth/change-password">Change Password</button>
-            <button nz-button nzType="link" (click)="logout()">Logout</button>
+            <button nz-button nzType="link" (click)="logout()">{{ 'Đăng xuất' | translate }}</button>
           </ng-container>
           <ng-template #loginBtn>
-            <button nz-button nzType="primary" routerLink="/auth/login">Login</button>
+            <button nz-button nzType="primary" routerLink="/auth/login">{{ 'Đăng nhập' | translate }}</button>
           </ng-template>
         </div>
       </div>

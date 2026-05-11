@@ -9,6 +9,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { TranslateModule } from '@ngx-translate/core';
 import { AuthService } from '../../../core/auth/auth.service';
 
 @Component({
@@ -23,7 +24,8 @@ import { AuthService } from '../../../core/auth/auth.service';
     NzButtonModule,
     NzCheckboxModule,
     NzDividerModule,
-    NzIconModule
+    NzIconModule,
+    TranslateModule
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css']

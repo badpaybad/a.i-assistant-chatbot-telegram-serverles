@@ -11,6 +11,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { AuthManagementService } from '../services/auth-management.service';
 import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-claim-sync',
@@ -24,21 +25,22 @@ import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
     NzTableModule,
     NzModalModule,
     NzFormModule,
-    NzInputModule
+    NzInputModule,
+    TranslateModule
   ],
   template: `
     <div class="page-header">
-      <h2>Claim Management</h2>
+      <h2>{{ 'Quyền' | translate }}</h2>
       <button nz-button nzType="primary" (click)="showCreateModal()">
-        <span nz-icon nzType="plus"></span> Add Claim
+        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
       </button>
     </div>
 
-    <nz-card nzTitle="Predefined Frontend Claims" style="margin-bottom: 16px;">
+    <nz-card [nzTitle]="'Quyền' | translate" style="margin-bottom: 16px;">
       <p>Version: <strong>{{ version }}</strong> | Count: <strong>{{ claimsCount }}</strong></p>
       <div class="sync-actions">
         <button nz-button nzType="primary" (click)="sync()" [nzLoading]="loading">
-          <span nz-icon nzType="sync"></span> Sync Predefined with Backend
+          <span nz-icon nzType="sync"></span> {{ 'Đồng bộ' | translate }}
         </button>
       </div>
     </nz-card>
@@ -46,7 +48,7 @@ import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
     <nz-table #basicTable [nzData]="existingClaims" [nzLoading]="loading">
       <thead>
         <tr>
-          <th>Claim Name</th>
+          <th>{{ 'Quyền' | translate }}</th>
           <th>Description</th>
           <th>Created At</th>
         </tr>
@@ -60,11 +62,11 @@ import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
       </tbody>
     </nz-table>
 
-    <nz-modal [(nzVisible)]="isCreateModalVisible" nzTitle="Add Manual Claim" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
+    <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">Claim Name</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Quyền' | translate }}</nz-form-label>
             <nz-form-control>
               <input nz-input [(ngModel)]="newClaim.name" name="name" placeholder="e.g. report:export" />
             </nz-form-control>
@@ -94,6 +96,7 @@ import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
 export class ClaimSyncComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private notification = inject(NzNotificationService);
+  private translate = inject(TranslateService);
   
   version = CLAIMS_VERSION;
   claims = ALL_CLAIMS;
@@ -114,7 +117,7 @@ export class ClaimSyncComponent implements OnInit {
     try {
       this.existingClaims = await this.authMgmt.getClaims();
     } catch (e) {
-      this.notification.error('Error', 'Failed to load existing claims');
+      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Không thể tải danh sách quyền'));
     } finally {
       this.loading = false;
     }
@@ -124,10 +127,10 @@ export class ClaimSyncComponent implements OnInit {
     this.loading = true;
     try {
       await this.authMgmt.syncClaims(this.version, this.claims);
-      this.notification.success('Success', 'Claims synchronized successfully');
+      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đồng bộ quyền thành công'));
       this.loadClaims();
     } catch (e) {
-      this.notification.error('Error', 'Failed to synchronize claims');
+      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Đồng bộ quyền thất bại'));
     } finally {
       this.loading = false;
     }
@@ -142,11 +145,11 @@ export class ClaimSyncComponent implements OnInit {
     if (!this.newClaim.name) return;
     try {
       await this.authMgmt.createClaim(this.newClaim);
-      this.notification.success('Success', 'Claim added successfully');
+      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Thêm quyền thành công'));
       this.isCreateModalVisible = false;
       this.loadClaims();
     } catch (e) {
-      this.notification.error('Error', 'Failed to add claim');
+      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Thêm quyền thất bại'));
     }
   }
 }
