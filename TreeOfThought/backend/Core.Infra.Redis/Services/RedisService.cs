@@ -77,7 +77,7 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         return JsonSerializer.Deserialize<T>(value!);
     }
 
-    public async Task<T?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
+    public async Task<DequeuedMessage<T>?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
     {
         // Lua script for reliable priority dequeue (handles both List and ZSet for source)
         const string script = @"
@@ -85,12 +85,11 @@ public class RedisService : ICacheService, IQueueService, IEventBus
             local type = typeinfo['ok']
             local val = nil
             if type == 'zset' then
-                local range = redis.call('ZRANGE', KEYS[1], 0, 0)
-                if range[1] then
-                    val = range[1]
-                    redis.call('ZREM', KEYS[1], val)
+                local pop = redis.call('ZPOPMIN', KEYS[1])
+                if pop and #pop > 0 then
+                    val = pop[1]
                 end
-            elseif type == 'list' then
+            else
                 val = redis.call('RPOP', KEYS[1])
             end
             
@@ -106,7 +105,10 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         var json = result.ToString()!;
         try
         {
-            return JsonSerializer.Deserialize<T>(json, CqrsJsonOptions.Default);
+            var value = JsonSerializer.Deserialize<T>(json, CqrsJsonOptions.Default);
+            if (value == null) return default;
+
+            return new DequeuedMessage<T> { Value = value, RawJson = json };
         }
         catch (JsonException ex)
         {
@@ -196,13 +198,13 @@ public class RedisService : ICacheService, IQueueService, IEventBus
     {
         // For CQRS, the Dispatcher handles enqueuing to subscriber queues.
         // This method just triggers the signal to wake up workers.
-        await _redis.GetSubscriber().PublishAsync(RedisChannel.Literal(topic), "new_message");
+        await _redis.GetSubscriber().PublishAsync(RedisChannel.Literal(topic), CqrsConstants.SignalMessage);
     }
 
     public async Task SubscribeAsync<T>(string topic, string subscriberName, Func<T, Task> handler)
     {
         // Just register the subscriber
-        await _db.SetAddAsync($"topic_subs:{topic}", subscriberName);
+        await _db.SetAddAsync(CqrsConstants.GetTopicSubsKey(topic), subscriberName);
 
         // Note: CqrsDispatcher will handle the drainQueue loop and call the handler.
         // We still subscribe to the channel to trigger the dispatcher if needed,

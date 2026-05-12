@@ -149,3 +149,8 @@ FE
 
 BE 
     để tránh nhầm lẫn cộng chuỗi sai các tạo tên queuename, tên topic name, từ redis cho đến cqrs dispatcher cần tạo các const prefix key, topic name, queue name. các data json quy chuẩn camelCase 
+
+    Sử dụng Raw JSON cho Ack: Tôi đã cập nhật Worker để lưu lại đúng chuỗi JSON gốc lấy từ Redis. Khi gọi Ack, nó sẽ dùng chính xác chuỗi đó để xóa, đảm bảo tin nhắn được gỡ bỏ hoàn toàn khỏi hàng đợi sau khi xử lý.
+    Chuẩn hóa camelCase: Đảm bảo tất cả các bước (Publish, Track, Log, Ack) đều dùng chung một chuẩn format dữ liệu
+
+    

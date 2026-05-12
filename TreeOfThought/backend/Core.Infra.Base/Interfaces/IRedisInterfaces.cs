@@ -13,7 +13,7 @@ public interface IQueueService
     Task EnqueuePriorityAsync<T>(string queueName, T message, long priority);
     Task<T?> DequeueAsync<T>(string queueName);
     Task<T?> DequeueReliableAsync<T>(string queueName, string processingQueueName);
-    Task<T?> DequeuePriorityAsync<T>(string queueName, string processingQueueName);
+    Task<DequeuedMessage<T>?> DequeuePriorityAsync<T>(string queueName, string processingQueueName);
     Task AckReliableAsync(string processingQueueName, string messageJson);
     Task<long> GetQueueLengthAsync(string queueName);
     Task<List<string>> GetQueuesAsync(string pattern = "*");

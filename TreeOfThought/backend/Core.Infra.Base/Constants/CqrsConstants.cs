@@ -17,11 +17,19 @@ public static class CqrsConstants
     public const string StatusError = "error";
     public const string StatusDead = "dead";
     
+    public const string SignalMessage = "new_message";
+    
     // Methods for generating keys
     public static string GetTopicSubsKey(string topic) => $"{TopicSubsPrefix}{topic}";
     public static string GetSubQueueKey(string topic, string subscriber) => $"{SubQueuePrefix}{topic}:{subscriber}";
     public static string GetSubProcKey(string topic, string subscriber) => $"{SubProcPrefix}{topic}:{subscriber}";
+    public static string GetDeadLetterKey(string queueName) => $"{queueName}:{StatusDead}";
+    public static string GetProcessingKey(string queueName) => $"{queueName}:{StatusProcessing}";
     public static string GetTrackingKey(string status, string queueOrTopic) => $"{TrackingPrefix}{status}:{queueOrTopic}";
     public static string GetTrackingHistoryKey(Guid trackingId) => $"{TrackingHistoryPrefix}{trackingId}";
     public static string GetStatsKey(string metric) => $"{StatsPrefix}{metric}";
+    
+    // Worker IDs
+    public static string GetCommandWorkerId(string queue) => $"CommandWorker:{queue}";
+    public static string GetEventWorkerId(string topic, string sub) => $"EventWorker:{topic}:{sub}";
 }

@@ -105,7 +105,7 @@ public class CqrsDispatcher : IDispatcher
         _allTopics.Add(topic);
         _lastActive[topic] = DateTime.UtcNow;
 
-        var json = JsonSerializer.Serialize(@event, new JsonSerializerOptions { WriteIndented = true });
+        var json = JsonSerializer.Serialize(@event, CqrsJsonOptions.Default);
 
         if (useMemoryMode)
         {
@@ -126,7 +126,7 @@ public class CqrsDispatcher : IDispatcher
                 TrackingId = @event.TrackingId, 
                 Step = "Dispatcher", 
                 Details = "Memory Mode: End",
-                Status = "success"
+                Status = CqrsConstants.StatusSuccess
             });
         }
         else
@@ -185,10 +185,11 @@ public class CqrsDispatcher : IDispatcher
         {
             try
             {
-                var message = await _queueService.DequeuePriorityAsync<TMessage>(queueName, processingQueueName);
-                if (message != null)
+                var dequeued = await _queueService.DequeuePriorityAsync<TMessage>(queueName, processingQueueName);
+                if (dequeued != null)
                 {
-                    var json = JsonSerializer.Serialize(message);
+                    var message = dequeued.Value;
+                    var json = dequeued.RawJson;
                     try
                     {
                         // Tracking Point 2: Dequeue (Before Invoke)
@@ -199,7 +200,7 @@ public class CqrsDispatcher : IDispatcher
                             MessageContent = json,
                             QueueOrTopicName = queueName,
                             WorkerName = workerId,
-                            Status = "processing"
+                            Status = CqrsConstants.StatusProcessing
                         });
 
                         using (var scope = _serviceProvider.CreateScope())
@@ -213,7 +214,7 @@ public class CqrsDispatcher : IDispatcher
                             Step = "Worker", 
                             Details = $"Handled by {handlerName}",
                             HandlerOrEventName = handlerName,
-                            Status = "success"
+                            Status = CqrsConstants.StatusSuccess
                         });
 
                         await _tracker.IncrementStatAsync($"processed:{queueName}");
@@ -221,34 +222,35 @@ public class CqrsDispatcher : IDispatcher
                             await _tracker.IncrementStatAsync($"processed:topic:{trackingTargetName}");
                         
                         await _tracker.IncrementStatAsync("total:processed");
-                        await _tracker.LogStatusAsync(queueName, message.TrackingId, "success");
+                        await _tracker.LogStatusAsync(queueName, message.TrackingId, CqrsConstants.StatusSuccess);
                         if (trackingTargetName != queueName)
-                            await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, "success");
+                            await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, CqrsConstants.StatusSuccess);
 
                         await _queueService.AckReliableAsync(processingQueueName, json);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error handling message {TrackingId} in {WorkerId}", message.TrackingId, workerId);
+                        _logger.LogError(ex, "Error processing message {TrackingId} in {WorkerId}", message.TrackingId, workerId);
                         
                         await _tracker.TrackAsync(new TrackingEntry { 
                             TrackingId = message.TrackingId, 
                             Step = "Worker", 
                             Details = $"Error: {ex.Message}",
-                            Status = "error"
+                            HandlerOrEventName = handlerName,
+                            Status = CqrsConstants.StatusError
                         });
 
                         await _tracker.IncrementStatAsync($"error:{queueName}");
-                        if (trackingTargetName != queueName)
+                        if (trackingTargetName != queueName) 
                             await _tracker.IncrementStatAsync($"error:topic:{trackingTargetName}");
                         
                         await _tracker.IncrementStatAsync("total:error");
-                        await _tracker.LogStatusAsync(queueName, message.TrackingId, "error", ex.Message);
+                        await _tracker.LogStatusAsync(queueName, message.TrackingId, CqrsConstants.StatusError, ex.Message);
                         if (trackingTargetName != queueName)
-                            await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, "error", ex.Message);
+                            await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, CqrsConstants.StatusError, ex.Message);
 
-                        var deadLetter = new { _original = message, _error = ex.Message, _failedAt = DateTime.UtcNow };
-                        await _queueService.EnqueueAsync($"{queueName}:dead", deadLetter);
+                        var deadLetter = new { original = message, error = ex.Message, failedAt = DateTime.UtcNow };
+                        await _queueService.EnqueueAsync(CqrsConstants.GetDeadLetterKey(queueName), deadLetter);
                         await _queueService.AckReliableAsync(processingQueueName, json);
                     }
                 }
@@ -275,13 +277,13 @@ public class CqrsDispatcher : IDispatcher
         if (string.IsNullOrEmpty(qName)) qName = typeof(TCommand).FullName!;
 
         _allQueues.Add(qName);
-        var workerId = $"CommandWorker:{qName}";
+        var workerId = CqrsConstants.GetCommandWorkerId(qName);
 
         Func<CancellationToken, Task> startFunc = async (ct) =>
         {
             await ProcessMessagesAsync<TCommand>(
                 qName, 
-                $"{qName}:processing", 
+                CqrsConstants.GetProcessingKey(qName), 
                 workerId, 
                 qName,
                 async (sp, cmd) => await sp.GetRequiredService<THandler>().HandleAsync(cmd),
@@ -322,7 +324,7 @@ public class CqrsDispatcher : IDispatcher
 
         await _queueService.SetAddAsync(CqrsConstants.GetTopicSubsKey(topic), subscriberName);
         
-        var workerId = $"EventWorker:{topic}:{subscriberName}";
+        var workerId = CqrsConstants.GetEventWorkerId(topic, subscriberName);
         var subQueue = CqrsConstants.GetSubQueueKey(topic, subscriberName);
         var processingQueue = CqrsConstants.GetSubProcKey(topic, subscriberName);
 
