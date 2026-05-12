@@ -50,3 +50,6 @@ program.cs cần
     // ...
     builder.Services.AddControllers().AddAuthControllers(); // Đăng ký Controller
 
+    // --- 8. Initialize Infrastructure ---
+    await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
+
