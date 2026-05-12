@@ -47,7 +47,11 @@ const icons: IconDefinition[] = [
   AllIcons.ClusterOutline,
   AllIcons.ArrowRightOutline,
   AllIcons.GlobalOutline,
-  AllIcons.DownOutline
+  AllIcons.DownOutline,
+  AllIcons.UpOutline,
+  AllIcons.CopyOutline,
+  AllIcons.DeleteOutline,
+  AllIcons.RollbackOutline
 ];
 
 export const appConfig: ApplicationConfig = {

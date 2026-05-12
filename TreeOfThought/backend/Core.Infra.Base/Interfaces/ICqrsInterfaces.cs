@@ -25,8 +25,12 @@ public interface IDispatcher
     Task StopWorkerAsync(string workerId);
     Task StartWorkerAsync(string workerId);
     List<WorkerStatusDto> GetWorkerStatus();
+    List<HandlerRegistrationDto> GetHandlerRegistrations();
     Task<Dictionary<string, long>> GetStatisticsAsync();
     Task RetryCommandAsync(string queueName, string messageJson);
+    List<string> GetAllQueues();
+    List<string> GetAllTopics();
+    List<string> GetTopicSubscribers(string topic);
 }
 
 public class WorkerStatusDto
@@ -37,4 +41,12 @@ public class WorkerStatusDto
     public string? MessageName { get; set; }
     public string? HandlerName { get; set; }
     public string? QueueOrTopicName { get; set; }
+}
+
+public class HandlerRegistrationDto
+{
+    public string MessageName { get; set; } = string.Empty;
+    public string HandlerName { get; set; } = string.Empty;
+    public string QueueOrTopicName { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
 }

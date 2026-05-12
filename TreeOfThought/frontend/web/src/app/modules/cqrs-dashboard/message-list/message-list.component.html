@@ -1,82 +1,75 @@
-<nz-page-header [nzTitle]="('Tin nhắn trong' | translate) + ' ' + queueName" (nzBack)="true">
-  <nz-page-header-extra>
-    <button nz-button nzType="primary" (click)="fetchMessages()" [nzLoading]="loading">
-      <span nz-icon nzType="reload"></span> {{ 'Làm mới' | translate }}
-    </button>
-  </nz-page-header-extra>
-</nz-page-header>
-
-<div class="message-list-content">
-  <nz-table #msgTable [nzData]="messages" [nzLoading]="loading">
+<div class="message-list-container">
+  <nz-table #msgTable [nzData]="messages" [nzLoading]="loading" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex" [nzPageSize]="pageSize" (nzPageIndexChange)="onPageIndexChange($event)" [nzScroll]="{ x: '1000px' }">
     <thead>
       <tr>
-        <th *ngIf="isDeadLetter()">{{ 'Lỗi tại' | translate }}</th>
-        <th *ngIf="isDeadLetter()">{{ 'Lỗi' | translate }}</th>
+        <th nzWidth="180px" nzLeft="0px">{{ 'Thời gian' | translate }}</th>
         <th>{{ 'Nội dung tin nhắn' | translate }}</th>
-        <th>{{ 'Hành động' | translate }}</th>
+        <th nzWidth="120px">{{ 'Trạng thái' | translate }}</th>
+        <th nzWidth="200px" nzRight="0px">{{ 'Hành động' | translate }}</th>
       </tr>
     </thead>
     <tbody>
-      <tr *ngFor="let msg of msgTable.data">
-        <td *ngIf="isDeadLetter()">{{ msg.failedAt | date:'short' }}</td>
-        <td *ngIf="isDeadLetter()" class="error-cell">
-          <nz-tag nzColor="red" *ngIf="msg.error" [nzTooltipTitle]="msg.error" nz-tooltip>
-            {{ msg.error | slice:0:30 }}...
-          </nz-tag>
-        </td>
-        <td class="msg-cell">{{ (msg.isWrapped ? (msg.data | json) : msg.raw) | slice:0:100 }}...</td>
-        <td>
-          <button nz-button nzType="link" (click)="viewDetails(msg)">{{ 'Xem' | translate }}</button>
-          <button *ngIf="isDeadLetter()" nz-button nzType="link" (click)="retry(msg)">{{ 'Thử lại' | translate }}</button>
-          <button *ngIf="isDeadLetter()" nz-button nzType="link" nzDanger (click)="remove(msg)">{{ 'Xóa bỏ' | translate }}</button>
-        </td>
-      </tr>
+      <ng-container *ngFor="let item of msgTable.data">
+        <tr>
+          <td nzLeft="0px">{{ getTime(item) | date:'yyyy-MM-dd HH:mm:ss' }}</td>
+          <td>
+            <div class="msg-preview" (click)="item.expand = !item.expand">
+              {{ item.raw | slice:0:100 }}{{ item.raw.length > 100 ? '...' : '' }}
+            </div>
+          </td>
+          <td>
+            <nz-tag [nzColor]="getStatus(item) === 'error' ? 'error' : getStatus(item) === 'processing' ? 'processing' : 'default'">
+              {{ getStatus(item) | translate }}
+            </nz-tag>
+          </td>
+          <td nzRight="0px">
+            <div style="display: flex; gap: 8px;">
+              <button *ngIf="queueName.endsWith(':dead')" nz-button nzType="primary" nzSize="small" (click)="resend(item)">
+                <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+              </button>
+              <button *ngIf="queueName.endsWith(':dead')" nz-button nzDanger nzSize="small" (click)="delete(item)">
+                <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+              </button>
+              <button nz-button nzSize="small" (click)="item.expand = !item.expand">
+                <i nz-icon [nzType]="item.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | translate }}
+              </button>
+            </div>
+          </td>
+        </tr>
+        <tr [nzExpand]="item.expand">
+          <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
+              <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
+                <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
+              </button>
+            </div>
+            <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(item.parsed) }}</pre>
+            
+            <div *ngIf="item.parsed._error" style="margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;">
+              <div style="font-weight: bold; color: #ff4d4f; margin-bottom: 4px;">Error Details:</div>
+              <div style="color: #ffccc7;">{{ item.parsed._error }}</div>
+              <div style="font-size: 11px; color: #a61d24; margin-top: 4px;">Worker: {{ item.parsed._workerId }}</div>
+            </div>
+          </div>
+        </tr>
+      </ng-container>
     </tbody>
   </nz-table>
-
-  <div *ngIf="messages.length === 0" class="no-data">
-    {{ 'Không tìm thấy tin nhắn nào trong hàng đợi này.' | translate }}
-  </div>
-
-  <nz-modal
-    [(nzVisible)]="isModalVisible"
-    [nzTitle]="'Chi tiết tin nhắn & Hành động' | translate"
-    (nzOnCancel)="handleCancel()"
-    [nzWidth]="900"
-  >
-    <div *nzModalContent>
-      <div *ngIf="errorMetadata" class="error-info">
-        <nz-alert nzType="error" [nzMessage]="'Chi tiết lỗi' | translate" [nzDescription]="errorDesc" nzShowIcon></nz-alert>
-        <ng-template #errorDesc>
-          <p><strong>{{ 'Lỗi' | translate }}:</strong> {{ errorMetadata.error }}</p>
-          <p><strong>{{ 'Lỗi tại' | translate }}:</strong> {{ errorMetadata.failedAt | date:'medium' }}</p>
-          <p *ngIf="errorMetadata.topic"><strong>{{ 'Chủ đề' | translate }}:</strong> {{ errorMetadata.topic }}</p>
-          <p *ngIf="errorMetadata.subscriber"><strong>{{ 'Người đăng ký' | translate }}:</strong> {{ errorMetadata.subscriber }}</p>
-          <p *ngIf="errorMetadata.queue"><strong>{{ 'Hàng đợi' | translate }}:</strong> {{ errorMetadata.queue }}</p>
-        </ng-template>
-        <nz-divider></nz-divider>
-      </div>
-
-      <p>{{ 'Nội dung tin nhắn gốc' | translate }}:</p>
-      <textarea
-        nz-input
-        [(ngModel)]="editingJson"
-        [nzAutosize]="{ minRows: 10, maxRows: 20 }"
-        style="font-family: 'Courier New', Courier, monospace; font-size: 13px;"
-      ></textarea>
-    </div>
-    <div *nzModalFooter>
-      <button nz-button nzType="default" (click)="handleCancel()">{{ 'Đóng' | translate }}</button>
-      <button nz-button nzType="primary" (click)="pushEdited()">{{ 'Đẩy như mới' | translate }}</button>
-      <button
-        *ngIf="isDeadLetter()"
-        nz-button
-        nzType="primary"
-        nzDanger
-        (click)="retryEdited()"
-      >
-        {{ 'Thử lại (Hàng đợi gốc)' | translate }}
-      </button>
-    </div>
-  </nz-modal>
 </div>
+
+<style>
+  .msg-preview {
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 12px;
+    color: #999;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 500px;
+  }
+  .msg-preview:hover {
+    color: #1890ff;
+  }
+</style>

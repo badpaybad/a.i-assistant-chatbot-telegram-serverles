@@ -18,24 +18,49 @@ export interface WorkerDetail {
 
 export interface QueueInfo {
   name: string;
-  length: number;
-  type: string;
-  sentCount: number;
+  pendingCount: number;
+  activeCount: number;
+  processingCount: number;
+  processedCount: number;
   errorCount: number;
-  messageName?: string;
-  handlerName?: string;
+  totalCount: number;
+  type: string;
+  workers: string[];
+  handlers: { handlerName: string; messageName: string }[];
+  subscribers?: {
+    name: string;
+    queueName: string;
+    pending: number;
+    active: number;
+    processed: number;
+    error: number;
+  }[];
 }
 
 export interface TrackingSummary {
   id: string;
   lastStep: string;
   time: string;
+  content: string;
+  status: string;
+  queueOrTopic?: string;
+  handler?: string;
+  worker?: string;
+  history: TrackingStep[];
+  expand?: boolean;
+}
+
+export interface TrackingResponse {
+  items: TrackingSummary[];
+  total: number;
 }
 
 export interface TrackingStep {
   time: string;
   step: string;
   details: string;
+  status?: string;
+  messageContent?: string;
 }
 
 @Injectable({
@@ -52,8 +77,8 @@ export class DashboardService {
     return from(this.http.get<QueueInfo[]>('/api/cqrs/dashboard/queues'));
   }
 
-  getMessages(queueName: string, count: number = 50): Observable<string[]> {
-    return from(this.http.get<string[]>(`/api/cqrs/dashboard/messages/${queueName}?count=${count}`));
+  getMessages(queueName: string, page: number = 1, pageSize: number = 20): Observable<{ items: string[], total: number }> {
+    return from(this.http.get<{ items: string[], total: number }>(`/api/cqrs/dashboard/messages/${queueName}?page=${page}&pageSize=${pageSize}`));
   }
 
   retryCommand(queueName: string, messageJson: string): Observable<any> {
@@ -72,8 +97,20 @@ export class DashboardService {
     return from(this.http.get<TrackingStep[]>(`/api/cqrs/dashboard/tracking/${trackingId}`));
   }
 
-  getRecentTracking(count: number = 50): Observable<TrackingSummary[]> {
-    return from(this.http.get<TrackingSummary[]>(`/api/cqrs/dashboard/tracking/recent?count=${count}`));
+  getRecentTracking(params: any): Observable<TrackingResponse> {
+    const query = Object.keys(params)
+      .filter(k => params[k] !== null && params[k] !== undefined && params[k] !== '')
+      .map(k => `${k}=${encodeURIComponent(params[k])}`)
+      .join('&');
+    return from(this.http.get<TrackingResponse>(`/api/cqrs/dashboard/tracking/recent?${query}`));
+  }
+
+  resendTracking(trackingId: string): Observable<any> {
+    return from(this.http.post(`/api/cqrs/dashboard/tracking/${trackingId}/resend`, {}));
+  }
+
+  deleteTracking(trackingId: string): Observable<any> {
+    return from(this.http.delete(`/api/cqrs/dashboard/tracking/${trackingId}`));
   }
 
   stopWorker(workerId: string): Observable<any> {
@@ -82,5 +119,13 @@ export class DashboardService {
 
   startWorker(workerId: string): Observable<any> {
     return from(this.http.post(`/api/cqrs/dashboard/workers/${workerId}/start`, {}));
+  }
+
+  sendTestCommand(data: any): Observable<any> {
+    return from(this.http.post('/api/Test/cqrs/sample-command', { data }));
+  }
+
+  sendTestEvent(data: any): Observable<any> {
+    return from(this.http.post('/api/Test/cqrs/sample-event', { data }));
   }
 }

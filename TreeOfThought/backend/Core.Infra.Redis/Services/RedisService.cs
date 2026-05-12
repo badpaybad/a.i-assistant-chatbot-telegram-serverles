@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Base.Constants;
 using Microsoft.Extensions.Logging;
 using StackExchange.Redis;
 
@@ -51,6 +52,17 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         await _db.ListLeftPushAsync(queueName, json);
     }
 
+    public async Task EnqueuePriorityAsync<T>(string queueName, T message, long priority)
+    {
+        var json = JsonSerializer.Serialize(message, CqrsJsonOptions.Default);
+        var type = await _db.KeyTypeAsync(queueName);
+        if (type != RedisType.SortedSet && type != RedisType.None)
+        {
+            await _db.KeyDeleteAsync(queueName);
+        }
+        await _db.SortedSetAddAsync(queueName, json, priority);
+    }
+
     public async Task<T?> DequeueAsync<T>(string queueName)
     {
         var value = await _db.ListRightPopAsync(queueName);
@@ -65,6 +77,45 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         return JsonSerializer.Deserialize<T>(value!);
     }
 
+    public async Task<T?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
+    {
+        // Lua script for reliable priority dequeue (handles both List and ZSet for source)
+        const string script = @"
+            local typeinfo = redis.call('TYPE', KEYS[1])
+            local type = typeinfo['ok']
+            local val = nil
+            if type == 'zset' then
+                local range = redis.call('ZRANGE', KEYS[1], 0, 0)
+                if range[1] then
+                    val = range[1]
+                    redis.call('ZREM', KEYS[1], val)
+                end
+            elseif type == 'list' then
+                val = redis.call('RPOP', KEYS[1])
+            end
+            
+            if val then
+                redis.call('LPUSH', KEYS[2], val)
+                return val
+            end
+            return nil";
+
+        var result = await _db.ScriptEvaluateAsync(script, new RedisKey[] { queueName, processingQueueName });
+        if (result.IsNull) return default;
+
+        var json = result.ToString()!;
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, CqrsJsonOptions.Default);
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning("Failed to deserialize message from {Queue}: {Json}. Error: {Error}. Acknowledging to skip corrupt message.", queueName, json, ex.Message);
+            await AckReliableAsync(processingQueueName, json);
+            return default;
+        }
+    }
+
     public async Task AckReliableAsync(string processingQueueName, string messageJson)
     {
         await _db.ListRemoveAsync(processingQueueName, messageJson);
@@ -72,6 +123,9 @@ public class RedisService : ICacheService, IQueueService, IEventBus
 
     public async Task<long> GetQueueLengthAsync(string queueName)
     {
+        var type = await _db.KeyTypeAsync(queueName);
+        if (type == RedisType.SortedSet)
+            return await _db.SortedSetLengthAsync(queueName);
         return await _db.ListLengthAsync(queueName);
     }
 
@@ -84,23 +138,50 @@ public class RedisService : ICacheService, IQueueService, IEventBus
 
     public async Task<List<string>> GetListRangeAsync(string key, int start, int stop)
     {
-        var values = await _db.ListRangeAsync(key, start, stop);
-        return values.Select(v => v.ToString()).ToList();
+        var type = await _db.KeyTypeAsync(key);
+        if (type == RedisType.SortedSet)
+        {
+            var values = await _db.SortedSetRangeByRankAsync(key, start, stop, Order.Descending);
+            return values.Select(v => v.ToString()).ToList();
+        }
+        else
+        {
+            var values = await _db.ListRangeAsync(key, start, stop);
+            return values.Select(v => v.ToString()).ToList();
+        }
     }
 
     public async Task RemoveFromListAsync(string key, string value)
     {
-        await _db.ListRemoveAsync(key, value);
+        var type = await _db.KeyTypeAsync(key);
+        if (type == RedisType.SortedSet)
+            await _db.SortedSetRemoveAsync(key, value);
+        else
+            await _db.ListRemoveAsync(key, value);
     }
 
     public async Task RecoverProcessingQueueAsync(string queueName, string processingQueueName)
     {
         long recoveredCount = 0;
+        var type = await _db.KeyTypeAsync(queueName);
+
         while (true)
         {
-            // Move from processing queue back to the main queue
-            var value = await _db.ListRightPopLeftPushAsync(processingQueueName, queueName);
+            var value = await _db.ListRightPopAsync(processingQueueName);
             if (!value.HasValue) break;
+
+            if (type == RedisType.SortedSet)
+            {
+                // For priority queues, we use Ticks from the message if possible, 
+                // but since we don't want to deserialize here, we just use current ticks as fallback
+                // or assume we can't easily recover exact priority without deserialization.
+                // However, usually recovery just puts it back at "now" priority.
+                await _db.SortedSetAddAsync(queueName, value, DateTime.UtcNow.Ticks);
+            }
+            else
+            {
+                await _db.ListLeftPushAsync(queueName, value);
+            }
             recoveredCount++;
         }
 
@@ -110,70 +191,35 @@ public class RedisService : ICacheService, IQueueService, IEventBus
         }
     }
 
-    // Event Bus Implementation (Reliable Hybrid: Pub/Sub + Persistent Queues)
+    // Event Bus Implementation (Simplified: Only handles signaling)
     public async Task PublishAsync<T>(string topic, T @event)
     {
-        var json = JsonSerializer.Serialize(@event);
-
-        // 1. Enqueue to all subscriber queues
-        var subscribers = await _db.SetMembersAsync($"topic_subs:{topic}");
-        foreach (var sub in subscribers)
-        {
-            var subQueue = $"sub_queue:{topic}:{sub}";
-            await _db.ListLeftPushAsync(subQueue, json);
-        }
-
-        // 2. Trigger signal via Pub/Sub
-        await _redis.GetSubscriber().PublishAsync(RedisChannel.Literal(topic), json);
+        // For CQRS, the Dispatcher handles enqueuing to subscriber queues.
+        // This method just triggers the signal to wake up workers.
+        await _redis.GetSubscriber().PublishAsync(RedisChannel.Literal(topic), "new_message");
     }
 
     public async Task SubscribeAsync<T>(string topic, string subscriberName, Func<T, Task> handler)
     {
+        // Just register the subscriber
         await _db.SetAddAsync($"topic_subs:{topic}", subscriberName);
 
-        var subQueue = $"sub_queue:{topic}:{subscriberName}";
-        var processingQueue = $"sub_proc:{topic}:{subscriberName}";
-
-        // Worker function to drain the queue
-        Func<Task> drainQueue = async () =>
-        {
-            while (true)
-            {
-                try
-                {
-                    var value = await _db.ListRightPopLeftPushAsync(subQueue, processingQueue);
-                    if (value.HasValue)
-                    {
-                        var @event = JsonSerializer.Deserialize<T>(value!);
-                        if (@event != null)
-                        {
-                            await handler(@event);
-                            await _db.ListRemoveAsync(processingQueue, value);
-                        }
-                    }
-                    else
-                    {
-                        break; // Queue is empty, stop loop and wait for next signal
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error draining queue {Queue}", subQueue);
-                    break;
-                }
-            }
-        };
-
-        // 1. Initial recovery and drain (in case there's old data or previous crash)
-        _ = Task.Run(async () => {
-            await RecoverProcessingQueueAsync(subQueue, processingQueue);
-            await drainQueue();
-        });
-
-        // 2. Wait for signal to drain again
+        // Note: CqrsDispatcher will handle the drainQueue loop and call the handler.
+        // We still subscribe to the channel to trigger the dispatcher if needed,
+        // but the dispatcher will handle the actual Subscribe logic.
         await _redis.GetSubscriber().SubscribeAsync(RedisChannel.Literal(topic), async (channel, message) =>
         {
-            await drainQueue();
+            await handler(default!);
         });
+    }
+    public async Task<List<string>> GetSetMembersAsync(string key)
+    {
+        var members = await _db.SetMembersAsync(key);
+        return members.Select(m => m.ToString()).ToList();
+    }
+
+    public async Task SetAddAsync(string key, string member)
+    {
+        await _db.SetAddAsync(key, member);
     }
 }

@@ -40,7 +40,12 @@ public class TestController : ControllerBase
         // The frontend expects the result in Firestore at 'commandresults/{requestId}'
         // We can create a generic handler or just manually publish to Firestore for this test
         
-        await _tracker.TrackAsync(request.RequestId, "TestController", $"Received command {request.QueueName}");
+        await _tracker.TrackAsync(new TrackingEntry { 
+            TrackingId = request.RequestId, 
+            Step = "TestController", 
+            Details = $"Received command {request.QueueName}",
+            QueueOrTopicName = request.QueueName
+        });
         
         // Mocking the completion after a short delay
         _ = Task.Run(async () => {
@@ -61,5 +66,31 @@ public class TestController : ControllerBase
     {
         await _firebase.SendNotificationAsync("Default", request.Token, request.Title, request.Body);
         return Ok(new { message = "FCM Notification sent" });
+    }
+
+    [HttpPost("cqrs/sample-command")]
+    public async Task<IActionResult> SendSampleCommand([FromBody] JsonElement payload)
+    {
+        var trackingId = Guid.NewGuid();
+        var command = new SampleCommand 
+        { 
+            TrackingId = trackingId, 
+            Payload = payload.GetProperty("data").ToString() 
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId });
+    }
+
+    [HttpPost("cqrs/sample-event")]
+    public async Task<IActionResult> SendSampleEvent([FromBody] JsonElement payload)
+    {
+        var trackingId = Guid.NewGuid();
+        var @event = new SampleEvent 
+        { 
+            TrackingId = trackingId, 
+            Payload = payload.GetProperty("data").ToString() 
+        };
+        await _dispatcher.PublishAsync(@event);
+        return Ok(new { trackingId });
     }
 }

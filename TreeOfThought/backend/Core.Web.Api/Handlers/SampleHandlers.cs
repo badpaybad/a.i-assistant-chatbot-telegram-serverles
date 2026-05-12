@@ -10,12 +10,14 @@ public class SampleCommandHandler : ICommandHandler<SampleCommand>
     private readonly ILogger<SampleCommandHandler> _logger;
     private readonly FirebaseService _firebase;
     private readonly IMessageTracker _tracker;
+    private readonly IDispatcher _dispatcher;
 
-    public SampleCommandHandler(ILogger<SampleCommandHandler> logger, FirebaseService firebase, IMessageTracker tracker)
+    public SampleCommandHandler(ILogger<SampleCommandHandler> logger, FirebaseService firebase, IMessageTracker tracker, IDispatcher dispatcher)
     {
         _logger = logger;
         _firebase = firebase;
         _tracker = tracker;
+        _dispatcher = dispatcher;
     }
 
     public async Task HandleAsync(SampleCommand command)
@@ -34,6 +36,13 @@ public class SampleCommandHandler : ICommandHandler<SampleCommand>
             message = $"Command processed successfully. Counter: {_counter}",
             timestamp = DateTime.UtcNow
         });
+
+        // Publish event to demonstrate command -> event link
+        await _dispatcher.PublishAsync(new SampleEvent 
+        { 
+            TrackingId = command.TrackingId, 
+            Payload = $"Event triggered by command count: {_counter}" 
+        });
     }
 }
 
@@ -50,7 +59,7 @@ public class SampleEventHandler : IEventHandler<SampleEvent>
     public async Task HandleAsync(SampleEvent @event)
     {
         _counter++;
-        _logger.LogInformation("SampleEventHandler handled event: {Data}. Count: {Count}", @event.Data, _counter);
+        _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
         await Task.CompletedTask;
     }
 }
@@ -69,7 +78,7 @@ public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
     {
         throw new Exception("Test error");
         _counter++;
-        _logger.LogInformation("SampleEventHandler handled event: {Data}. Count: {Count}", @event.Data, _counter);
+        _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
         await Task.CompletedTask;
     }
 }

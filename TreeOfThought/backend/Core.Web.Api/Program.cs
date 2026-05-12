@@ -1,3 +1,4 @@
+using StackExchange.Redis;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.CQRS.Dispatchers;
 using Core.Infra.Data.Contexts;
@@ -54,11 +55,14 @@ builder.Services.AddAuthorization();
 
 // --- 3. Infra Services ---
 var redisConn = config["Redis:ConnectionString"]!;
-builder.Services.AddSingleton<RedisService>(sp => new RedisService(redisConn, sp.GetRequiredService<ILogger<RedisService>>()));
+builder.Services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
+builder.Services.AddSingleton<RedisService>(sp => new RedisService(
+    redisConn, 
+    sp.GetRequiredService<ILogger<RedisService>>()
+));
 builder.Services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<RedisService>());
 builder.Services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<RedisService>());
 builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<RedisService>());
-builder.Services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
 builder.Services.AddSingleton<FirebaseService>();
 builder.Services.AddSingleton<IDispatcher, CqrsDispatcher>();
 
@@ -133,28 +137,28 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-    
-    // Initialize Auth Database
-    var authRepo = services.GetRequiredService<IAuthRepository>();
-    await authRepo.EnsureTablesCreatedAsync();
-    await authRepo.EnsureAdminExistsAsync(
-        config["Auth:Admin:Username"] ?? "admin",
-        config["Auth:Admin:Password"] ?? "Admin@123",
-        config["Auth:Admin:Email"] ?? "admin@example.com"
-    );
 
-    // Initialize Firebase
-    var firebase = services.GetRequiredService<FirebaseService>();
-    var jsonPath = config["Firebase:JsonFilePath"]!;
-    if (!Path.IsPathRooted(jsonPath)) jsonPath = Path.Combine(app.Environment.ContentRootPath, jsonPath);
-    firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"], config["Firebase:DatabaseId"]);
+    try 
+    {
+        // Initialize Auth Database
+        var authRepo = services.GetRequiredService<IAuthRepository>();
+        await authRepo.EnsureTablesCreatedAsync();
+        await authRepo.EnsureAdminExistsAsync(
+            config["Auth:Admin:Username"] ?? "admin",
+            config["Auth:Admin:Password"] ?? "Admin@123",
+            config["Auth:Admin:Email"] ?? "admin@example.com"
+        );
 
-    // Initialize CQRS Dispatcher (Auto Registration)
-    var dispatcher = services.GetRequiredService<IDispatcher>();
-    // CQRS Handlers are auto-registered via CqrsAutoRegistrationService (IHostedService)
-    
-    await dispatcher.PublishAsync(new SampleEvent { Data = "Infrastructure Initialized" });
+        // Initialize Firebase
+        var firebase = services.GetRequiredService<FirebaseService>();
+        var jsonPath = config["Firebase:JsonFilePath"]!;
+        if (!Path.IsPathRooted(jsonPath)) jsonPath = Path.Combine(app.Environment.ContentRootPath, jsonPath);
+        firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"], config["Firebase:DatabaseId"]);
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[STARTUP ERROR] {ex.Message}");
+    }
 }
 
 app.Run();
-

@@ -10,14 +10,18 @@ public interface ICacheService
 public interface IQueueService
 {
     Task EnqueueAsync<T>(string queueName, T message);
+    Task EnqueuePriorityAsync<T>(string queueName, T message, long priority);
     Task<T?> DequeueAsync<T>(string queueName);
     Task<T?> DequeueReliableAsync<T>(string queueName, string processingQueueName);
+    Task<T?> DequeuePriorityAsync<T>(string queueName, string processingQueueName);
     Task AckReliableAsync(string processingQueueName, string messageJson);
     Task<long> GetQueueLengthAsync(string queueName);
     Task<List<string>> GetQueuesAsync(string pattern = "*");
     Task<List<string>> GetListRangeAsync(string key, int start, int stop);
     Task RemoveFromListAsync(string key, string value);
     Task RecoverProcessingQueueAsync(string queueName, string processingQueueName);
+    Task<List<string>> GetSetMembersAsync(string key);
+    Task SetAddAsync(string key, string member);
 }
 
 public interface IEventBus

@@ -52,6 +52,11 @@ export const routes: Routes = [
             path: 'fcm', 
             loadComponent: () => import('./modules/test/fcm-test/fcm-test.component').then(m => m.FcmTestComponent),
             data: { breadcrumb: 'FCM Test' }
+          },
+          { 
+            path: 'cqrs', 
+            loadComponent: () => import('./modules/cqrs-dashboard/cqrs-test/cqrs-test.component').then(m => m.CqrsTestComponent),
+            data: { breadcrumb: 'CQRS Test' }
           }
         ]
       },

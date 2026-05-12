@@ -1,19 +1,109 @@
-.dashboard-content {
-  padding: 0 24px 24px;
+.dashboard-container {
+  padding: 24px;
 }
 
 nz-card {
   margin-bottom: 24px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
 }
 
-.load-status {
+.queue-name {
+  font-weight: 600;
+  color: #1890ff;
+  font-family: 'Consolas', monospace;
+}
+
+.worker-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.handler-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
-.length-label {
-  font-size: 11px;
-  color: #888;
+.handler-item {
+  font-size: 12px;
+}
+
+.handler-name {
+  font-weight: 500;
+  color: #52c41a;
+}
+
+.message-name {
+  color: #999;
+  margin-left: 4px;
+}
+
+.filters-container {
+  background: #fbfbfb;
+  padding: 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid #f0f0f0;
+}
+
+.id-text {
   font-family: monospace;
+  font-size: 11px;
+  color: #666;
+  background: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: help;
+}
+
+.meta-text {
+  font-size: 12px;
+  color: #666;
+  word-break: break-all;
+}
+
+.json-viewer-container {
+  padding: 16px;
+  background: #fdfdfd;
+  border: 1px solid #f0f0f0;
+  border-top: none;
+}
+
+.json-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: #1890ff;
+}
+
+.json-content {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 16px;
+  border-radius: 4px;
+  font-family: 'Consolas', monospace;
+  font-size: 12px;
+  max-height: 400px;
+  overflow: auto;
+  margin: 0;
+}
+
+/* Dark mode overrides for JSON viewer */
+:host-context([nz-theme="dark"]) .json-viewer-container {
+  background: #141414;
+  border-color: #303030;
+}
+
+:host-context([nz-theme="dark"]) .filters-container {
+  background: #1f1f1f;
+  border-color: #303030;
+}
+
+:host-context([nz-theme="dark"]) .id-text {
+  background: #262626;
+  color: #aaa;
 }

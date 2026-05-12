@@ -23,6 +23,7 @@ Các yêu cầu:
                 - Hỗ trợ fulltext search, tìm kiếm cho phép cả tiếng Việt có dấu và tiêng Việt không dấu 
             - Base redis dùng làm cache, queue, event bus
                 - Hỗ trợ cả standalone và cluster
+                - Dùng StackExchange.Redis để kết nối 
                 - Event bus cần đáp ứng:``
                     - publish event
                     - subscribe event
@@ -184,7 +185,7 @@ Bổ xung việc quản lý các permision
 **Cập nhật 5**
 việc CqrsDispatcher đăng ký các handle đang thủ công các dòng code ở program, tôi cần bổ xung thêm việc auto đăng ký = reflection, cần làm đạt mục tiêu:
     - command , event có property queueu name , topic name , thì tự đăng ký handle theo, không bổ xung thêm class attribute như DotNetCore.CAP 
-        - kiểm tra nếu queue name , topic name empty thì throw exception biết được lỗi ở handle command nào event nào để xác định nghiệp vụ
+        - kiểm tra nếu queue name , topic name empty thì lấy theo type.fullname 
     - code refection cần xem nếu cache được các value sau khi reflection thì dùng luôn
     - chỉ những hàm public của handle class mới cần auto đăng ký
     

@@ -1,10 +1,7 @@
 namespace Core.Infra.Base.Interfaces;
 
-public interface IBaseEvent
+public interface IBaseEvent : IBaseMessage
 {
-    Guid TrackingId { get; set; }
-    DateTime Timestamp { get; set; }
-    string? UserId { get; set; }
     string TopicName { get; }
 }
 

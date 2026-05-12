@@ -12,5 +12,5 @@ public class SampleCommand : BaseMessage, IBaseCommand
 public class SampleEvent : BaseMessage, IBaseEvent
 {
     public string TopicName => "sample.event";
-    public string Data { get; set; } = string.Empty;
+    public string Payload { get; set; } = string.Empty;
 }

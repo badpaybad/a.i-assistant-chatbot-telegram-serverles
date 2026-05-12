@@ -24,12 +24,24 @@ public class SampleCommand : IBaseCommand
 public class SampleCommandHandler : ICommandHandler<SampleCommand>
 {
     private readonly ILogger<SampleCommandHandler> _logger;
-    public SampleCommandHandler(ILogger<SampleCommandHandler> logger) => _logger = logger;
+    private readonly IDispatcher _dispatcher;
 
-    public Task HandleAsync(SampleCommand command)
+    public SampleCommandHandler(ILogger<SampleCommandHandler> logger, IDispatcher dispatcher)
+    {
+        _logger = logger;
+        _dispatcher = dispatcher;
+    }
+
+    public async Task HandleAsync(SampleCommand command)
     {
         _logger.LogInformation(">>> Xử lý command: {Data} | TrackingId: {Id}", command.Data, command.TrackingId);
-        return Task.CompletedTask;
+        
+        // Publish event to demonstrate link
+        var evt = new SampleEvent { 
+            TrackingId = command.TrackingId, // Keep same tracking ID
+            Message = $"Processed: {command.Data}" 
+        };
+        await _dispatcher.PublishAsync(evt);
     }
 }
 
@@ -92,12 +104,6 @@ class Program
         try 
         {
             // 3. Workers are auto-registered via CqrsAutoRegistrationService (IHostedService)
-            // But since this is a Console App without a long-running Host.RunAsync (it uses manual await),
-            // we might need to manually trigger the service or just wait for it.
-            // Actually, Host.CreateDefaultBuilder().Build() doesn't start services until RunAsync().
-            
-            // For this simulator, we will manually trigger registration or use RunAsync.
-            // Let's use Host.StartAsync() to trigger IHostedServices.
             await host.StartAsync();
 
             // 4. Test Command
@@ -106,12 +112,6 @@ class Program
             Console.WriteLine($"Gửi command ID: {cmd.TrackingId}");
             await dispatcher.SendAsync(cmd);
 
-            // 5. Test Event
-            Console.WriteLine("\n[EVENT TEST]");
-            var evt = new SampleEvent { Message = "Broadcast via Topic" };
-            Console.WriteLine($"Publish event ID: {evt.TrackingId}");
-            await dispatcher.PublishAsync(evt);
-
             // Wait for workers to process
             await Task.Delay(3000);
 
@@ -119,18 +119,15 @@ class Program
             var workerId = "CommandWorker:sample_command_queue";
             Console.WriteLine("\n--- Thử nghiệm Quản lý Worker ---");
             var status = dispatcher.GetWorkerStatus();
-            if (status.ContainsKey(workerId))
-                Console.WriteLine($"Trạng thái {workerId}: {status[workerId]}");
+            var worker = status.FirstOrDefault(w => w.Id == workerId);
+            if (worker != null)
+                Console.WriteLine($"Trạng thái {workerId}: {worker.Status}");
 
             // 7. Summary
             Console.WriteLine("\n--- Kết quả Tracking ---");
             var cmdHistory = await tracker.GetTrackingHistoryAsync(cmd.TrackingId);
             Console.WriteLine($"Command History ({cmd.TrackingId}):");
-            foreach (var log in cmdHistory) Console.WriteLine($"  {log}");
-
-            var evtHistory = await tracker.GetTrackingHistoryAsync(evt.TrackingId);
-            Console.WriteLine($"\nEvent History ({evt.TrackingId}):");
-            foreach (var log in evtHistory) Console.WriteLine($"  {log}");
+            foreach (var log in cmdHistory) Console.WriteLine($"  {log.Timestamp:O} | {log.Step} | {log.Details} | Status: {log.Status}");
         }
         catch (Exception ex)
         {

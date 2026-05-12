@@ -44,16 +44,11 @@ public static class CqrsExtensions
             {
                 var instance = Activator.CreateInstance(t) as IBaseCommand;
                 var name = instance?.QueueName;
-                if (string.IsNullOrEmpty(name))
-                {
-                    var handlerInfo = handlerType != null ? $" used by handler: {handlerType.FullName}" : "";
-                    throw new InvalidOperationException($"QueueName is not defined for command type: {t.FullName}{handlerInfo}. Please implement QueueName property explicitly.");
-                }
-                return name;
+                return !string.IsNullOrEmpty(name) ? name : t.FullName!;
             }
-            catch (Exception ex) when (!(ex is InvalidOperationException))
+            catch 
             {
-                throw new InvalidOperationException($"Failed to resolve QueueName for command type: {t.FullName}", ex);
+                return t.FullName!;
             }
         });
     }
@@ -67,16 +62,11 @@ public static class CqrsExtensions
             {
                 var instance = Activator.CreateInstance(t) as IBaseEvent;
                 var name = instance?.TopicName;
-                if (string.IsNullOrEmpty(name))
-                {
-                    var handlerInfo = handlerType != null ? $" used by handler: {handlerType.FullName}" : "";
-                    throw new InvalidOperationException($"TopicName is not defined for event type: {t.FullName}{handlerInfo}. Please implement TopicName property explicitly.");
-                }
-                return name;
+                return !string.IsNullOrEmpty(name) ? name : t.FullName!;
             }
-            catch (Exception ex) when (!(ex is InvalidOperationException))
+            catch 
             {
-                throw new InvalidOperationException($"Failed to resolve TopicName for event type: {t.FullName}", ex);
+                return t.FullName!;
             }
         });
     }

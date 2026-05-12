@@ -1,156 +1,134 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
-import { NzPageHeaderModule } from 'ng-zorro-antd/page-header';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
-import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
-import { FormsModule } from '@angular/forms';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzAlertModule } from 'ng-zorro-antd/alert';
-import { NzDividerModule } from 'ng-zorro-antd/divider';
-import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService } from '../services/dashboard.service';
+import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 
 @Component({
   selector: 'app-message-list',
   standalone: true,
   imports: [
     CommonModule,
-    NzPageHeaderModule,
     NzTableModule,
     NzButtonModule,
-    NzTagModule,
     NzIconModule,
-    NzModalModule,
-    FormsModule,
-    NzInputModule,
-    NzAlertModule,
-    NzDividerModule,
-    NzTooltipModule,
+    NzTagModule,
     TranslateModule
   ],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.css']
 })
 export class MessageListComponent implements OnInit {
-  private route = inject(ActivatedRoute);
   private dashboardService = inject(DashboardService);
-  private modal = inject(NzModalService);
   private notification = inject(NzNotificationService);
+  private modal = inject(NzModalService);
   private translate = inject(TranslateService);
+  private modalData = inject(NZ_MODAL_DATA, { optional: true });
 
-  queueName = '';
+  @Input() inputQueueName?: string;
+  
+  queueName: string = '';
   messages: any[] = [];
   loading = false;
-
-  // Edit Modal State
-  isModalVisible = false;
-  editingJson = '';
-  originalJson = '';
   
-  // Error metadata if wrapped
-  errorMetadata: any = null;
+  pageIndex = 1;
+  pageSize = 10;
+  total = 0;
 
   ngOnInit(): void {
-    this.route.params.subscribe(params => {
-      this.queueName = params['queueName'];
-      if (this.queueName) {
-        this.fetchMessages();
-      }
-    });
+    this.queueName = this.inputQueueName || this.modalData?.inputQueueName || '';
+    if (this.queueName) {
+      this.loadMessages();
+    }
   }
 
-  fetchMessages(): void {
+  loadMessages(): void {
     this.loading = true;
-    this.dashboardService.getMessages(this.queueName).subscribe({
-      next: res => {
-        this.messages = res.map(m => {
+    this.dashboardService.getMessages(this.queueName, this.pageIndex, this.pageSize).subscribe({
+      next: (res) => {
+        this.messages = res.items.map(m => {
           try {
-            const parsed = JSON.parse(m);
-            if (parsed._original) {
-              return {
-                raw: m,
-                data: parsed._original,
-                isWrapped: true,
-                error: parsed._error,
-                failedAt: parsed._failedAt,
-                topic: parsed._topic,
-                subscriber: parsed._subscriber,
-                queue: parsed._queue
-              };
-            }
-            return { raw: m, data: parsed, isWrapped: false };
-          } catch (e) {
-            return { raw: m, data: m, isWrapped: false };
+            return { 
+              raw: m, 
+              parsed: JSON.parse(m),
+              expand: false
+            };
+          } catch {
+            return { 
+              raw: m, 
+              parsed: m,
+              expand: false
+            };
           }
         });
+        this.total = res.total;
         this.loading = false;
       },
       error: () => {
-        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Lỗi khi tải tin nhắn'));
         this.loading = false;
+        this.notification.error(this.translate.instant('Lỗi'), this.translate.instant('Không thể tải danh sách tin nhắn'));
       }
     });
   }
 
-  viewDetails(msgItem: any): void {
-    this.originalJson = msgItem.raw;
-    this.errorMetadata = msgItem.isWrapped ? {
-      error: msgItem.error,
-      failedAt: msgItem.failedAt,
-      topic: msgItem.topic,
-      subscriber: msgItem.subscriber,
-      queue: msgItem.queue
-    } : null;
-
-    try {
-      this.editingJson = JSON.stringify(msgItem.data, null, 2);
-    } catch (e) {
-      this.editingJson = typeof msgItem.data === 'string' ? msgItem.data : JSON.stringify(msgItem.data);
-    }
-    this.isModalVisible = true;
+  onPageIndexChange(index: number): void {
+    this.pageIndex = index;
+    this.loadMessages();
   }
 
-  handleCancel(): void {
-    this.isModalVisible = false;
+  formatJson(json: any): string {
+    return JSON.stringify(json, null, 2);
   }
 
-  pushEdited(): void {
-    this.dashboardService.pushMessage(this.queueName.replace(':dead', ''), this.editingJson).subscribe(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã được đẩy vào hàng đợi'));
-      this.isModalVisible = false;
-      this.fetchMessages();
+  copyToClipboard(text: string): void {
+    navigator.clipboard.writeText(text).then(() => {
+      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã sao chép vào bộ nhớ tạm'));
     });
   }
 
-  retryEdited(): void {
-    this.dashboardService.retryCommand(this.queueName, this.originalJson).subscribe(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã được thử lại'));
-      this.isModalVisible = false;
-      this.fetchMessages();
+  resend(item: any): void {
+    this.modal.confirm({
+      nzTitle: this.translate.instant('Xác nhận gửi lại'),
+      nzContent: this.translate.instant('Bạn có chắc chắn muốn gửi lại tin nhắn này vào hàng đợi gốc?'),
+      nzOnOk: () => {
+        this.dashboardService.retryCommand(this.queueName, item.raw).subscribe(() => {
+          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã được gửi lại'));
+          this.loadMessages();
+        });
+      }
     });
   }
 
-  retry(msgItem: any): void {
-    this.dashboardService.retryCommand(this.queueName, msgItem.raw).subscribe(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Lệnh thử lại đã được phát'));
-      this.fetchMessages();
+  delete(item: any): void {
+    this.modal.confirm({
+      nzTitle: this.translate.instant('Xác nhận xóa'),
+      nzContent: this.translate.instant('Bạn có chắc chắn muốn xóa tin nhắn này khỏi hàng đợi?'),
+      nzOnOk: () => {
+        this.dashboardService.removeFromDeadLetter(this.queueName, item.raw).subscribe(() => {
+          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã xóa tin nhắn'));
+          this.loadMessages();
+        });
+      }
     });
   }
 
-  remove(msgItem: any): void {
-    this.dashboardService.removeFromDeadLetter(this.queueName.replace(':dead', ''), msgItem.raw).subscribe(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã bị xóa khỏi DLQ'));
-      this.fetchMessages();
-    });
+  getStatus(item: any): string {
+    if (item.parsed?._status) return item.parsed._status;
+    if (this.queueName.endsWith(':dead')) return 'error';
+    if (this.queueName.endsWith(':processing')) return 'processing';
+    return 'pending';
   }
 
-  isDeadLetter(): boolean {
-    return this.queueName.endsWith(':dead');
+  getTime(item: any): string {
+    if (item.parsed?._failedAt) return item.parsed._failedAt;
+    if (item.parsed?.Timestamp) return item.parsed.Timestamp;
+    if (item.parsed?._timestamp) return item.parsed._timestamp;
+    return '';
   }
 }

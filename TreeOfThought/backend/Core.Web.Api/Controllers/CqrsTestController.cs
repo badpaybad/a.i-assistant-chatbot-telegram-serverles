@@ -29,7 +29,7 @@ public class CqrsTestController : ControllerBase
     [HttpPost("sample-event")]
     public async Task<IActionResult> PublishSampleEvent([FromBody] JsonElement data)
     {
-        var @event = new SampleEvent { Data = data.GetRawText() };
+        var @event = new SampleEvent { Payload = data.GetRawText() };
         await _dispatcher.PublishAsync(@event);
         return Ok(new { message = "Sample event published", trackingId = @event.TrackingId });
     }
