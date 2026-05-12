@@ -27,7 +27,7 @@ builder.Services.AddMemoryCache();
 var defaultRedisConn = config["Redis:ConnectionString"];
 if (!string.IsNullOrEmpty(defaultRedisConn))
 {
-    builder.Services.AddSingleton<AppRedisService>(sp => 
+    builder.Services.AddSingleton<AppRedisService>(sp =>
         new AppRedisService(defaultRedisConn, sp.GetRequiredService<ILogger<AppRedisService>>()));
     builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<AppRedisService>());
 }
@@ -113,20 +113,13 @@ app.UseAuthorization();
 app.MapControllers();
 
 // --- 8. Initialize Infrastructure ---
+await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
+
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
-
-    try 
+    try
     {
-        // Initialize Auth Database
-        var authRepo = services.GetRequiredService<IAuthRepository>();
-        await authRepo.EnsureTablesCreatedAsync();
-        await authRepo.EnsureAdminExistsAsync(
-            config["Auth:Admin:Username"] ?? "admin",
-            config["Auth:Admin:Password"] ?? "Admin@123",
-            config["Auth:Admin:Email"] ?? "admin@example.com"
-        );
 
         // Initialize Firebase
         var firebase = services.GetRequiredService<FirebaseService>();

@@ -237,12 +237,35 @@ public class AuthService
     public async Task SyncClaimsAsync(string version, List<string> claimNames)
     {
         Console.WriteLine($"[CLAIM SYNC] Version: {version}, Count: {claimNames.Count}");
-        foreach (var name in claimNames)
+        await UpsertClaimsAsync(claimNames, "Frontend Sync");
+    }
+
+    public async Task UpsertClaimsAsync(IEnumerable<string> claimNames, string source)
+    {
+        if (claimNames == null || !claimNames.Any()) return;
+
+        // 1. Get all existing claims from DB to memory for fast checking
+        var existingClaims = await _userRepo.GetAllClaimsAsync();
+        var existingNames = new HashSet<string>(existingClaims.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
+
+        // 2. Identify missing claims
+        var missingClaims = claimNames
+            .Where(name => !string.IsNullOrEmpty(name) && !existingNames.Contains(name))
+            .Distinct()
+            .ToList();
+
+        if (missingClaims.Any())
         {
-            var p = await _userRepo.GetClaimByNameAsync(name);
-            if (p == null)
+            Console.WriteLine($"[{source}] Found {missingClaims.Count} new claims. Inserting...");
+            foreach (var name in missingClaims)
             {
-                await _userRepo.CreateClaimAsync(new AppClaim { Name = name, CreatedAt = DateTime.UtcNow });
+                await _userRepo.CreateClaimAsync(new AppClaim 
+                { 
+                    Name = name, 
+                    Description = $"Automatically created from {source}",
+                    CreatedAt = DateTime.UtcNow 
+                });
+                Console.WriteLine($"[{source}] Created claim: {name}");
             }
         }
     }
