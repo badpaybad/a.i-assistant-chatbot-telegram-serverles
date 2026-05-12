@@ -117,7 +117,7 @@ public static class AuthServiceExtensions
 
                 if (allScannedClaims.Any())
                 {
-                    await authService.UpsertClaimsAsync(allScannedClaims, "Attribute Scanner");
+                    await authService.UpsertClaimsAsync(allScannedClaims, "Attribute Scanner", isBeSource: true);
                 }
             }
             catch (Exception ex)

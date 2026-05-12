@@ -17,6 +17,10 @@ public class AuthService
     private readonly FirebaseService _firebaseService;
     private readonly Core.Infra.Base.Interfaces.ICacheService _cacheService;
 
+    private static bool _isBeClaimsSynced = false;
+    private static bool _isFeClaimsSynced = false;
+    private static readonly System.Threading.SemaphoreSlim _syncLock = new System.Threading.SemaphoreSlim(1, 1);
+
     public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService, AuthRedisService cacheService)
     {
         _config = config;
@@ -237,36 +241,53 @@ public class AuthService
     public async Task SyncClaimsAsync(string version, List<string> claimNames)
     {
         Console.WriteLine($"[CLAIM SYNC] Version: {version}, Count: {claimNames.Count}");
-        await UpsertClaimsAsync(claimNames, "Frontend Sync");
+        await UpsertClaimsAsync(claimNames, "Frontend Sync", isBeSource: false);
     }
 
-    public async Task UpsertClaimsAsync(IEnumerable<string> claimNames, string source)
+    public async Task UpsertClaimsAsync(IEnumerable<string> claimNames, string source, bool isBeSource)
     {
         if (claimNames == null || !claimNames.Any()) return;
+        
+        if (isBeSource && _isBeClaimsSynced) return;
+        if (!isBeSource && _isFeClaimsSynced) return;
 
-        // 1. Get all existing claims from DB to memory for fast checking
-        var existingClaims = await _userRepo.GetAllClaimsAsync();
-        var existingNames = new HashSet<string>(existingClaims.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
-
-        // 2. Identify missing claims
-        var missingClaims = claimNames
-            .Where(name => !string.IsNullOrEmpty(name) && !existingNames.Contains(name))
-            .Distinct()
-            .ToList();
-
-        if (missingClaims.Any())
+        await _syncLock.WaitAsync();
+        try
         {
-            Console.WriteLine($"[{source}] Found {missingClaims.Count} new claims. Inserting...");
-            foreach (var name in missingClaims)
+            if (isBeSource && _isBeClaimsSynced) return;
+            if (!isBeSource && _isFeClaimsSynced) return;
+
+            // 1. Get all existing claims from DB to memory for fast checking
+            var existingClaims = await _userRepo.GetAllClaimsAsync();
+            var existingNames = new HashSet<string>(existingClaims.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
+
+            // 2. Identify missing claims
+            var missingClaims = claimNames
+                .Where(name => !string.IsNullOrEmpty(name) && !existingNames.Contains(name))
+                .Distinct()
+                .ToList();
+
+            if (missingClaims.Any())
             {
-                await _userRepo.CreateClaimAsync(new AppClaim 
-                { 
-                    Name = name, 
-                    Description = $"Automatically created from {source}",
-                    CreatedAt = DateTime.UtcNow 
-                });
-                Console.WriteLine($"[{source}] Created claim: {name}");
+                Console.WriteLine($"[{source}] Found {missingClaims.Count} new claims. Inserting...");
+                foreach (var name in missingClaims)
+                {
+                    await _userRepo.CreateClaimAsync(new AppClaim 
+                    { 
+                        Name = name, 
+                        Description = $"Automatically created from {source}",
+                        CreatedAt = DateTime.UtcNow 
+                    });
+                    Console.WriteLine($"[{source}] Created claim: {name}");
+                }
             }
+
+            if (isBeSource) _isBeClaimsSynced = true;
+            else _isFeClaimsSynced = true;
+        }
+        finally
+        {
+            _syncLock.Release();
         }
     }
 

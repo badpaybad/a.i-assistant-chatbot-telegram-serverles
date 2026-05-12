@@ -21,7 +21,7 @@ public class ClaimScannerService
         var claims = GetClaimsFromAssembly(assembly);
         if (claims.Any())
         {
-            await _authService.UpsertClaimsAsync(claims, "Attribute Scanner");
+            await _authService.UpsertClaimsAsync(claims, "Attribute Scanner", isBeSource: true);
         }
     }
 
