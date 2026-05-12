@@ -8,7 +8,7 @@ namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AppAuthorize("cqrs-test")]
+[AppAuthorize( "cqrs-test")]
 public class CqrsTestController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

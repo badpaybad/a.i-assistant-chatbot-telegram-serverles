@@ -118,6 +118,8 @@ Các yêu cầu:
                 - cần auth attribute "cqrs-test"
             - Cho phép cors tất cả các origin , allow nhiều method, allow nhiều header, và cho phép credential, cho phép các web khác được load vào thành iframe allow mic, webcam, ...
 
+        - core infra auth xem file: TreeOfThought/backend/Core.Infra.Auth/yeucau.md
+
         - Docker file cho web ứng dụng
             ubuntu 24.04
 

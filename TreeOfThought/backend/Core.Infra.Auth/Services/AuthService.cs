@@ -51,19 +51,19 @@ public class AuthService
             new Claim("userId", user.Id.ToString())
         };
 
-        // Add Effective Claims with Hybrid Strategy
+        // 1. Always add Roles to JWT to support standard [Authorize(Roles = "...")]
+        var roles = await _userRepo.GetUserRolesAsync(user.Id);
+        foreach (var role in roles)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+        }
+
+        // 2. Handle granular claims with Hybrid Strategy
         var claimsList = await _userRepo.GetUserEffectiveClaimsAsync(user.Id);
         
         if (claimsList.Count > 30)
         {
-            // Hybrid Mode: Add Roles to JWT, move granular claims to Redis
-            var roles = await _userRepo.GetUserRolesAsync(user.Id);
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role.Name));
-            }
-            
-            // Sync claims to Redis to ensure they are available
+            // Hybrid Mode: Granular claims moved to Redis (Roles already in JWT)
             await SyncUserClaimsToRedisAsync(user.Id);
         }
         else
@@ -74,6 +74,9 @@ public class AuthService
                 claims.Add(new Claim("claims", p.Name));
             }
         }
+
+        // Always sync ACL to Redis because ACL checks always rely on Redis
+        await SyncUserAclToRedisAsync(user.Id);
 
         var token = new JwtSecurityToken(
             issuer: _config["Jwt:Issuer"],

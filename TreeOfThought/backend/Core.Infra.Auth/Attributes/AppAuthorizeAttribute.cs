@@ -9,136 +9,69 @@ namespace Core.Infra.Auth.Attributes;
 public enum AuthMode { OR, AND }
 
 
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class AppAuthorizeAttribute : Attribute, IAuthorizationFilter
+[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
+public class AppAuthorizeAttribute : AuthorizeAttribute
 {
-    private readonly string[] _claims;
-    public AuthMode Mode { get; set; } = AuthMode.OR;
-    public string? ResourceType { get; set; }
-    public ResourceActions Action { get; set; } // Sử dụng Enum Flags
+    private AuthMode _mode = AuthMode.OR;
+    public AuthMode Mode 
+    { 
+        get => _mode; 
+        set { _mode = value; UpdatePolicyFromProperties(); } 
+    }
+
+    private string? _resourceType;
+    public string? ResourceType 
+    { 
+        get => _resourceType; 
+        set { _resourceType = value; UpdatePolicyFromProperties(); } 
+    }
+
+    private ResourceActions _action;
+    public ResourceActions Action 
+    { 
+        get => _action; 
+        set { _action = value; UpdatePolicyFromProperties(); } 
+    }
+
+    private string? _roles;
+    public new string? Roles 
+    { 
+        get => _roles; 
+        set { _roles = value; UpdatePolicyFromProperties(); } 
+    }
+
+    private string? _basePolicy;
+    public new string? Policy 
+    { 
+        get => _basePolicy; 
+        set { _basePolicy = value; UpdatePolicyFromProperties(); } 
+    }
 
     public AppAuthorizeAttribute(params string[] claims)
     {
-        _claims = claims;
+        var claimsStr = claims.Length > 0 ? string.Join(",", claims) : "null";
+        UpdatePolicy(claimsStr);
     }
 
-    public void OnAuthorization(AuthorizationFilterContext context)
+    private void UpdatePolicy(string claimsStr)
     {
-        var user = context.HttpContext.User;
-        var request = context.HttpContext.Request;
+        // Format: AppAuthorize:Mode:Action:ResourceType:Roles:Policy:Claims
+        // Gán vào thuộc tính thực sự của lớp cha để Framework nhận diện
+        base.Policy = $"AppAuthorize:{Mode}:{Action}:{(ResourceType ?? "null")}:{(Roles ?? "null")}:{(Policy ?? "null")}:{claimsStr}";
+    }
 
-        // 1. Check if authenticated
-        if (!user.Identity?.IsAuthenticated ?? true)
+    private void UpdatePolicyFromProperties()
+    {
+        var claimsStr = "null";
+        if (!string.IsNullOrEmpty(base.Policy) && base.Policy.StartsWith("AppAuthorize"))
         {
-            context.Result = new UnauthorizedResult();
-            return;
+            var parts = base.Policy.Split(':');
+            if (parts.Length >= 7) claimsStr = parts[6];
         }
-
-        // 2. Full Access for Admin role or admin claim
-        if (user.Claims.Any(c => (c.Type == ClaimTypes.Role && c.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)) ||
-                                 (c.Type == "claims" && c.Value.Equals("admin", StringComparison.OrdinalIgnoreCase))))
-        {
-            return; // Authorized
-        }
-
-        // Xác định ResourceType ưu tiên: Header > Attribute Property
-        var finalResourceType = request.Headers["x-resource-type"].ToString();
-        if (string.IsNullOrEmpty(finalResourceType))
-            finalResourceType = ResourceType;
-
-        bool isAuthorized = false;
-
-
-        // 3. Check claims if any specified
-        if (!isAuthorized && _claims.Length > 0)
-        {
-            var userId = user.FindFirst("userId")?.Value;
-            var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-            List<string> userClaims;
-
-            if (userRoles.Any() && !string.IsNullOrEmpty(userId))
-            {
-                // Hybrid Mode: Roles detected, fetch granular claims from Redis
-                var cacheService = context.HttpContext.RequestServices.GetService(typeof(Core.Infra.Base.Interfaces.ICacheService)) as Core.Infra.Base.Interfaces.ICacheService;
-                if (cacheService != null)
-                {
-                    var cacheKey = $"claims:{userId}";
-                    userClaims = cacheService.GetAsync<List<string>>(cacheKey).GetAwaiter().GetResult() ?? new List<string>();
-                }
-                else
-                {
-                    userClaims = new List<string>();
-                }
-            }
-            else
-            {
-                // Stateless Mode: Read granular claims from JWT
-                userClaims = user.FindAll("claims").Select(c => c.Value).ToList();
-            }
-
-            if (Mode == AuthMode.OR)
-            {
-                if (_claims.Any(p => userClaims.Contains(p)))
-                {
-                    isAuthorized = true;
-                }
-            }
-            else // AND mode
-            {
-                if (_claims.All(p => userClaims.Contains(p)))
-                {
-                    isAuthorized = true;
-                }
-            }
-        }
-
-        // 4. Check ACL from Redis if Action specified
-        if (!isAuthorized && Action != ResourceActions.None)
-        {
-            var userId = user.FindFirst("userId")?.Value;
-
-            // Thứ tự ưu tiên lấy ResourceId: Header > Route > Query
-            var resourceId = request.Headers["x-resource-id"].ToString();
-            if (string.IsNullOrEmpty(resourceId)) 
-                resourceId = context.RouteData.Values["id"]?.ToString();
-            if (string.IsNullOrEmpty(resourceId))
-                resourceId = request.Query["id"].ToString();
-
-            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(resourceId) && !string.IsNullOrEmpty(finalResourceType))
-            {
-                var cacheService = context.HttpContext.RequestServices.GetService(typeof(Core.Infra.Base.Interfaces.ICacheService)) as Core.Infra.Base.Interfaces.ICacheService;
-                if (cacheService != null)
-                {
-                    // Key format: acl:{userId}:{resourceType}:{resourceId}
-                    var cacheKey = $"acl:{userId}:{finalResourceType}:{resourceId}";
-                    var userActionsMask = cacheService.GetAsync<int>(cacheKey).GetAwaiter().GetResult();
-                    
-                    if (userActionsMask > 0)
-                    {
-                        if (Mode == AuthMode.OR)
-                        {
-                            isAuthorized = (userActionsMask & (int)Action) != 0;
-                        }
-                        else // AND mode
-                        {
-                            isAuthorized = (userActionsMask & (int)Action) == (int)Action;
-                        }
-                    }
-                }
-            }
-        }
-
-        // 5. Final check (if neither claim nor ACL specified, then just being authenticated is enough)
-        if (_claims.Length == 0 && string.IsNullOrEmpty(finalResourceType))
-        {
-            isAuthorized = true;
-        }
-
-        if (!isAuthorized)
-        {
-            context.Result = new ForbidResult();
-        }
+        UpdatePolicy(claimsStr);
     }
 }
+
+
 
 

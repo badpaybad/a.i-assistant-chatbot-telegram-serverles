@@ -16,6 +16,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Reflection;
 using Core.Infra.CQRS.Extensions;
+using Core.Infra.Auth.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,23 +36,8 @@ builder.Services.AddCors(options =>
     });
 });
 
-// --- 2. Authentication & Authorization ---
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = false,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = config["Jwt:Issuer"],
-            ValidAudience = config["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]!))
-        };
-    });
-
-builder.Services.AddAuthorization();
+// --- 2. Authentication & Authorization (Encapsulated) ---
+builder.Services.AddAppAuth(config);
 
 // --- 3. Infra Services ---
 var redisConn = config["Redis:ConnectionString"]!;
@@ -67,10 +53,7 @@ builder.Services.AddSingleton<FirebaseService>();
 builder.Services.AddSingleton<IDispatcher, CqrsDispatcher>();
 
 // --- 4. Database & Auth Repos ---
-var pgConn = config.GetConnectionString("PostgreSql")!;
-builder.Services.AddScoped<AuthDbContext>(sp => new AuthDbContext(pgConn, BaseDbContext.DbProviderType.PostgreSql));
-builder.Services.AddScoped<IAuthRepository, AuthRepository>();
-builder.Services.AddScoped<AuthService>();
+// Registered via AddAppAuth extension
 
 // --- 5. Handlers (Auto Registration) ---
 builder.Services.AddCqrsHandlers(Assembly.GetExecutingAssembly());
@@ -79,7 +62,7 @@ builder.Services.AddCqrsHandlers(Assembly.GetExecutingAssembly());
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(Core.Infra.Auth.Controllers.AuthController).Assembly)
+    .AddAuthControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;

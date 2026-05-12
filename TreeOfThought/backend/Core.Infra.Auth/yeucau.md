@@ -1,0 +1,49 @@
+AppAuthorizeAttribute
+Hiện tại đóng vai trò là nơi lưu trữ Metadata. Nó tự động tạo ra một chuỗi Policy duy nhất dựa trên các tham số (Mode, Action, ResourceType, Claims).
+Ví dụ: [AppAuthorize("user.view", Mode = AuthMode.And)] sẽ tạo ra Policy: AppAuthorize:AND:None:null:user.view.
+AppAuthorizationRequirement.cs (Mới):
+
+Lớp chứa dữ liệu điều kiện để Handler sử dụng.
+AppAuthorizationHandler.cs (Mới):
+
+Nơi thực hiện logic phân quyền Bất đồng bộ (Async).
+Sử dụng ICacheService và IHttpContextAccessor thông qua Dependency Injection.
+Logic kiểm tra Claims (Hybrid Mode) và ACL (Bitmask từ Redis) đã được tối ưu hóa với await.
+AppAuthorizationPolicyProvider.cs (Mới):
+
+Xử lý việc tạo Policy động. Khi nhận thấy Policy bắt đầu bằng AppAuthorize:, nó sẽ phân tách chuỗi để tạo ra Requirement tương ứng.
+Program.cs:
+
+Đăng ký các dịch vụ mới: IHttpContextAccessor, IAuthorizationPolicyProvider, và IAuthorizationHandler.
+
+Các kịch bản sử dụng chuẩn MS:
+Dùng như [Authorize(Roles = "A")]: [AppAuthorize(Roles = "A")] -> Chỉ chạy qua bước kiểm tra Role rồi Succeed. Hoàn toàn giống chuẩn MS.
+Dùng như [Authorize(Policy = "P")]: [AppAuthorize(Policy = "P")] -> Chỉ chạy qua bước kiểm tra Policy rồi Succeed. Hoàn toàn giống chuẩn MS.
+Dùng kết hợp: [AppAuthorize(Roles = "A", Policy = "P")] -> Kiểm tra A trước, rồi P, xong mới cho qua.
+
+Logic Custom (Redis/ACL) chỉ thực sự "tốn công" chạy khi bạn truyền tham số vào constructor: [AppAuthorize("user.edit", Roles = "Staff")] Trong trường hợp này, nếu User không phải là Staff, hệ thống sẽ chặn ngay ở bước kiểm tra Role, giúp bạn tiết kiệm được một lần gọi vào Redis.
+
+chỉ dùng [AppAuthorize("user.edit")] (không có Roles, không có Policy)
+Luồng xử lý:
+Bỏ qua các lớp lọc chuẩn:
+Hệ thống thấy Roles = null -> Bỏ qua (Không check Role).
+Hệ thống thấy Policy = null -> Bỏ qua (Không check Policy tĩnh).
+Tập trung vào Logic Custom:
+Hệ thống thấy bạn có truyền vào user.edit.
+Nó sẽ lấy userId của người dùng hiện tại.
+Truy vấn Redis: Nó tìm trong Key claims:{userId} xem có chuỗi user.edit không.
+
+program.cs cần 
+    builder.Services.AddAppAuth(config); // Đăng ký dịch vụ
+
+    //hoặc có thể truyền thêm policy tùy chỉnh 
+
+    builder.Services.AddAppAuth(config,  new Dictionary<string, Action<AuthorizationPolicyBuilder>>
+    {
+        { "VipOnly", policy => policy.RequireClaim("membership", "vip") },
+        { "ComplianceTeam", policy => policy.RequireRole("Compliance") }
+    });
+
+    // ...
+    builder.Services.AddControllers().AddAuthControllers(); // Đăng ký Controller
+
