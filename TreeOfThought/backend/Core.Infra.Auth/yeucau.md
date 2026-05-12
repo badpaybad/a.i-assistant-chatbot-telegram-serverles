@@ -46,4 +46,3 @@ program.cs cần
 
     // ...
     builder.Services.AddControllers().AddAuthControllers(); // Đăng ký Controller
-

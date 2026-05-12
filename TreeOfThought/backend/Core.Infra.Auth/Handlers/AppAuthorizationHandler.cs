@@ -32,6 +32,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         var user = context.User;
         var request = httpContext.Request;
 
+        // trình tựu ưu tiên check auth: role -> policy -> redis theo cách sinh jwt ở hàm GenerateJwtToken trong TreeOfThought/backend/Core.Infra.Auth/Services/AuthService.cs
+
         // 1. Check if authenticated
         if (!user.Identity?.IsAuthenticated ?? true)
         {
