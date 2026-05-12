@@ -17,15 +17,32 @@ Dự án được tổ chức theo mô hình Modular Monolith/Microservices-read
 
 ## 2. Chi tiết triển khai Hạ tầng
 
-### 2.1. Quản trị Hệ thống & Bảo mật (Admin Protection)
-Hệ thống thiết lập các cơ chế bảo vệ tài khoản quản trị tối cao:
+### 2.1. Quản trị Hệ thống & Bảo mật (Security Protection)
+Hệ thống thiết lập các cơ chế bảo vệ tài khoản quản trị và Superuser:
 - **Khởi tạo (Initialization)**: Khi chưa có DB, hệ thống tự động tạo tài khoản `admin` (mật khẩu mặc định: `admin123`), role `Admin` và claim `admin`.
-- **Bất biến (Immutability)**: 
+- **Bảo vệ Định danh (Protected Entities)**: 
     - Không cho phép xóa hoặc đổi tên tài khoản `admin`.
     - Không cho phép xóa hoặc đổi tên role `Admin`.
     - Không cho phép xóa hoặc đổi tên claim `admin`.
-- **Quyền hạn tối cao (Full Access)**: 
-    - Trong `AppAuthorizeAttribute`, ưu tiên kiểm tra nếu User có role `Admin` hoặc claim `admin` thì cấp quyền truy cập toàn diện, bỏ qua mọi hạn chế (restrict) khác.
+- **Đặc quyền tối cao (Superuser Bypass)**: 
+    - Trong `AppAuthorizationHandler`, hệ thống tự động `Succeed` (cho qua) nếu:
+        - User có role `Admin` hoặc claim `admin`.
+        - Username của User là `dunp` (được cấu hình qua `preferred_username` claim).
+    - Các bypass này được thực hiện ở đầu luồng xử lý để tối ưu hiệu năng.
+
+### 2.3. Hệ thống Phân quyền Hybrid & Dynamic Policy
+Hệ thống chuyển đổi từ `IAuthorizationFilter` (đồng bộ) sang **Policy-based Authorization** (bất đồng bộ):
+- **AppAuthorizeAttribute**: Đóng vai trò Metadata Provider, tự động tạo chuỗi Policy động.
+    - Format: `AppAuthorize:{Mode}:{Action}:{ResourceType}:{Roles}:{Policy}:{Claims}`.
+- **AppAuthorizationPolicyProvider**: Phân tách chuỗi Policy động và tạo ra `AppAuthorizationRequirement` tương ứng.
+- **AppAuthorizationHandler**: Thực thi logic kiểm tra theo thứ tự ưu tiên (Waterfall):
+    1. **Authentication**: Kiểm tra trạng thái đăng nhập.
+    2. **Superuser Check**: Bypass cho `Admin` và `dunp`.
+    3. **Short-circuit Roles/Policy**: Kiểm tra `Roles` và `BasePolicy` chuẩn của Microsoft. Nếu không đạt -> Ngắt luôn (Return).
+    4. **Granular Claims (Hybrid)**: 
+        - Nếu User có Role -> Lấy Claims từ Redis (`claims:{userId}`).
+        - Nếu User không có Role -> Lấy Claims từ JWT.
+    5. **Resource-based ACL**: Kiểm tra quyền trên tài nguyên cụ thể bằng phép toán Bitmask trên dữ liệu Redis.
 
 ### 2.2. Tự động đăng ký CQRS Handlers (Reflection)
 - **Cơ chế**: Quét Assembly để tìm các class implement `ICommandHandler<>` hoặc `IEventHandler<>`.
@@ -49,6 +66,8 @@ Hệ thống thiết lập các cơ chế bảo vệ tài khoản quản trị t
 | **Tracking Status** | `infra:tracks:{status}:{name}` | ZSET chứa TrackingId thành công/lỗi theo queue/topic |
 | **Counters** | `infra:stats:{metric}` | String/Counter lưu số lượng (eg: `processed:{name}`) |
 | **Last Active** | `infra:last_active:{name}` | String lưu ISO Timestamp hoạt động cuối cùng |
+| **User Claims** | `claims:{userId}` | List chứa các quyền chi tiết (granular claims) của user |
+| **Resource ACL**| `acl:{userId}:{type}:{resourceId}` | Integer chứa bitmask quyền của user trên tài nguyên |
 
 ### 3.2. Cấu trúc Dữ liệu Cốt lõi (DTOs)
 - **TrackingEntry**: `TrackingId (Guid)`, `Step (string)`, `Details (string)`, `Status (string)`, `MessageContent (string)`, `QueueOrTopicName (string)`, `Timestamp (DateTime)`.
@@ -84,6 +103,12 @@ Mỗi khi Enqueue hoặc Dequeue thành công, hệ thống gọi `UpdateLastAct
 - **Stateless**: Trạng thái phiên làm việc qua JWT và Redis.
 - **Horizontal Scaling**: Workers có thể scale độc lập theo tên hàng đợi.
 - **Reliability**: Cơ chế processing queue và recovery (khi khởi động worker) đảm bảo không mất tin nhắn.
+
+---
+## 6. Đóng gói & Mở rộng (DI Extensions)
+Toàn bộ hạ tầng Auth được đóng gói qua `AuthServiceExtensions` để tái sử dụng:
+- **AddAppAuth**: Đăng ký JWT, Authorization Policies (bao gồm policy `dunp` mặc định), và các dịch vụ Repository/Service. Hỗ trợ tham số `configurePolicyAdditional` để thêm các chính sách tùy chỉnh từ bên ngoài.
+- **AddAuthControllers**: Tự động đăng ký toàn bộ Controllers trong module Auth vào Web API.
 
 ---
 **Lưu ý**: Tài liệu này là cơ sở để viết lại toàn bộ Source Code trong trường hợp mất dữ liệu. Đảm bảo tính nhất quán giữa mô hình và thực tế.

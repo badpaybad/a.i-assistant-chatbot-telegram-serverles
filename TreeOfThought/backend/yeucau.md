@@ -98,24 +98,24 @@ Các yêu cầu:
                 có thể dùng file json admin sdk TreeOfThought/backend/realtimedbtest-d8c6b-firebase-adminsdk-luofp-e7b3882eb3.json có thể copy file này vào root web ứng dụng
 
         - Tạo prj web ứng dụng BE dùng asp.net core restful api đạt các yêu cầu :
-            - Có swagger để xem các đầu api, cho phép tắt bật ở appsettings.json
-            - Chop phép cấu hình port chạy ở appsettings.json với binding address 0.0.0.0, cần chạy https
-            - Tạo mock dữ liệu user trên memory (tạo data sẵn ở code mock) để test
-            - auth login với username, password để tạo jwt token key secret ở appsettings.json cho FE, và firebase custom token để FE app firebase login tự động. user có 1 email chính để làm SSO với google, MS, facebook
-            - auth verify token, refresh jwt token
-            - auth có api get user info đang đăng nhập, cần apply auth attribute đã đăng nhập
-            - Middleware auth để làm attribute cho các route (class, function) cần check quyền:
-                - đã đăng nhập ( chỉ cần valid jwt token với key secret ở appsettings.json)
-                - đưa claim vào constructor attribute thì cần check với jwt token ở header và check có claim đó hay không, có nhiều claim để check có 1 trong các claim là được 
-            - Người dùng có thể signup bằng username và password **bắt buộc** cầu nhập tên display name và email address, email address cần phải được verify bằng code gửi về email. Verify bằng việc mở url do BE trả về chứa token verify. Khi verify thành công thì mới login được, email đã được verify thì không cần verify lại khi login với username và password 
-            - Người dùng có thể signup bằng tài khoản google, ms, facebook yêu **bắt buộc** cầu nhập tên display name và email address
-                - Khi SSO với google, ms, facebook thành công sẽ tạo 1 user mới và lưu vào mock data memory nếu chưa có. Nếu có rồi thì login luôn với user có email trùng ( email đã được verify) 
-                - Khi SSO với google, ms, facebook thất bại thì trả về lỗi  
-            - Tạo api controller để test các chức năng của google firebase trong của prj core infra
-            - Tạo api controler để test các chức năng của cqrs core trong của prj core infra
-                - controller enqueue command , publish event
-                - Các class sample handle command và handle event để test ( sử dụng command hay event do controler tạo ra )
-                - cần auth attribute "cqrs-test"
+            - [x] Có swagger để xem các đầu api, cho phép tắt bật ở appsettings.json
+            - [x] Chop phép cấu hình port chạy ở appsettings.json với binding address 0.0.0.0, cần chạy https
+            - [x] Tạo mock dữ liệu user trên memory (tạo data sẵn ở code mock) để test
+            - [x] auth login với username, password để tạo jwt token key secret ở appsettings.json cho FE, và firebase custom token để FE app firebase login tự động. user có 1 email chính để làm SSO với google, MS, facebook
+            - [/] auth verify token, refresh jwt token
+            - [x] auth có api get user info đang đăng nhập, cần apply auth attribute đã đăng nhập
+            - [x] Middleware auth để làm attribute cho các route (class, function) cần check quyền:
+                - [x] đã đăng nhập ( chỉ cần valid jwt token với key secret ở appsettings.json)
+                - [x] đưa claim vào constructor attribute thì cần check với jwt token ở header và check có claim đó hay không, có nhiều claim để check có 1 trong các claim là được 
+            - [/] Người dùng có thể signup bằng username và password **bắt buộc** cầu nhập tên display name và email address, email address cần phải được verify bằng code gửi về email. Verify bằng việc mở url do BE trả về chứa token verify. Khi verify thành công thì mới login được, email đã được verify thì không cần verify lại khi login với username và password 
+            - [/] Người dùng có thể signup bằng tài khoản google, ms, facebook yêu **bắt buộc** cầu nhập tên display name và email address
+                - [x] Khi SSO với google, ms, facebook thành công sẽ tạo 1 user mới và lưu vào mock data memory nếu chưa có. Nếu có rồi thì login luôn với user có email trùng ( email đã được verify) 
+                - [x] Khi SSO với google, ms, facebook thất bại thì trả về lỗi  
+            - [x] Tạo api controller để test các chức năng của google firebase trong của prj core infra
+            - [x] Tạo api controler để test các chức năng của cqrs core trong của prj core infra
+                - [x] controller enqueue command , publish event
+                - [x] Các class sample handle command và handle event để test ( sử dụng command hay event do controler tạo ra )
+                - [x] cần auth attribute "cqrs-test"
             - Cho phép cors tất cả các origin , allow nhiều method, allow nhiều header, và cho phép credential, cho phép các web khác được load vào thành iframe allow mic, webcam, ...
 
         - core infra auth xem file: TreeOfThought/backend/Core.Infra.Auth/yeucau.md
