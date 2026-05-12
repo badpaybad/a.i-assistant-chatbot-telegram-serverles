@@ -132,6 +132,53 @@ public class CqrsDashboardController : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("last-activity")]
+    public async Task<IActionResult> GetLastActivity()
+    {
+        var keys = await _queueService.GetQueuesAsync($"{CqrsConstants.LastActivePrefix}*");
+        var result = new List<LastActivityDto>();
+
+        foreach (var key in keys)
+        {
+            var rawValue = await ((ICacheService)_queueService).GetAsync<string>(key);
+            if (string.IsNullOrEmpty(rawValue)) continue;
+
+            if (DateTime.TryParse(rawValue, out var lastActive))
+            {
+                var name = key.Replace(CqrsConstants.LastActivePrefix, "");
+                var type = "Command";
+                var mainName = name;
+                string? subName = null;
+
+                if (name.StartsWith(CqrsConstants.SubQueuePrefix))
+                {
+                    type = "Subscriber";
+                    // sub_queue:topic:sub
+                    var parts = name.Replace(CqrsConstants.SubQueuePrefix, "").Split(':');
+                    if (parts.Length >= 2)
+                    {
+                        mainName = parts[0];
+                        subName = parts[1];
+                    }
+                }
+                else if (_dispatcher.GetAllTopics().Contains(name))
+                {
+                    type = "Topic";
+                }
+
+                result.Add(new LastActivityDto
+                {
+                    Type = type,
+                    MainName = mainName,
+                    SubscriberName = subName,
+                    LastActive = lastActive
+                });
+            }
+        }
+
+        return Ok(result.OrderByDescending(x => x.LastActive).ToList());
+    }
+
     [HttpGet("messages/{queueName}")]
     public async Task<IActionResult> GetMessages(string queueName, [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {

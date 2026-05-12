@@ -22,6 +22,7 @@ public interface IQueueService
     Task RecoverProcessingQueueAsync(string queueName, string processingQueueName);
     Task<List<string>> GetSetMembersAsync(string key);
     Task SetAddAsync(string key, string member);
+    Task ZAddAsync(string key, string member, double score);
 }
 
 public interface IEventBus

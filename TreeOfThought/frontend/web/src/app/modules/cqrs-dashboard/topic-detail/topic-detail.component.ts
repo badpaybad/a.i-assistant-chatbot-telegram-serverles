@@ -23,14 +23,15 @@ import { QueueInfo } from '../services/dashboard.service';
         <div style="margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 8px;">
           <nz-radio-group [(ngModel)]="activeSubIndex" nzButtonStyle="solid">
             <label *ngFor="let sub of topic.subscribers; let i = index" nz-radio-button [nzValue]="i">
-              {{ sub.name }}
+              <span style="font-weight: bold;">{{ sub.queueName }}</span>
+              <span style="margin-left: 8px; font-size: 12px; color: #999;">({{ sub.name }})</span>
             </label>
           </nz-radio-group>
         </div>
         
         <div *ngFor="let sub of topic.subscribers; let i = index">
           <div *ngIf="activeSubIndex === i">
-            <app-message-list [inputQueueName]="showInProgress ? sub.queueName + ':processing' : sub.queueName"></app-message-list>
+            <app-message-list [inputQueueName]="showInProgress ? sub.queueName.replace('sub_queue:', 'sub_proc:') : sub.queueName"></app-message-list>
           </div>
         </div>
       </div>

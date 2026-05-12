@@ -21,7 +21,7 @@ import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail } from '../services/dashboard.service';
+import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
 import { MessageListComponent } from '../message-list/message-list.component';
 import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
 import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
@@ -67,9 +67,10 @@ export class DashboardComponent implements OnInit {
   totalTracking = 0;
   workerList: WorkerDetail[] = [];
   errorStats: { name: string, count: number }[] = [];
+  lastActivityList: LastActivity[] = [];
   loading = false;
 
-  activeTab: 'queues' | 'tracking' | 'workers' | 'test' = 'queues';
+  activeTab: 'queues' | 'tracking' | 'workers' | 'test' | 'activity' = 'queues';
 
   refreshInterval = 0;
   refreshIntervals = [
@@ -134,6 +135,10 @@ export class DashboardComponent implements OnInit {
     this.dashboardService.getQueues().subscribe(res => {
       this.queues = res;
       if (!isAuto) this.loading = false;
+    });
+
+    this.dashboardService.getLastActivity().subscribe(res => {
+      this.lastActivityList = res;
     });
 
     this.loadTracking();

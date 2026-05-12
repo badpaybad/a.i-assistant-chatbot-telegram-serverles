@@ -9,6 +9,7 @@ public static class CqrsConstants
     public const string TrackingPrefix = "infra:tracks:";
     public const string TrackingHistoryPrefix = "infra:tracks:history:";
     public const string StatsPrefix = "infra:stats:";
+    public const string LastActivePrefix = "infra:last_active:";
     
     // Statuses
     public const string StatusPending = "pending";
@@ -28,6 +29,7 @@ public static class CqrsConstants
     public static string GetTrackingKey(string status, string queueOrTopic) => $"{TrackingPrefix}{status}:{queueOrTopic}";
     public static string GetTrackingHistoryKey(Guid trackingId) => $"{TrackingHistoryPrefix}{trackingId}";
     public static string GetStatsKey(string metric) => $"{StatsPrefix}{metric}";
+    public static string GetLastActiveKey(string name) => $"{LastActivePrefix}{name}";
     
     // Worker IDs
     public static string GetCommandWorkerId(string queue) => $"CommandWorker:{queue}";

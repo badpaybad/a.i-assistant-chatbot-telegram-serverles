@@ -18,7 +18,6 @@ public class CqrsDispatcher : IDispatcher
 
     private readonly ConcurrentDictionary<string, WorkerInfo> _workers = new();
     private readonly ConcurrentBag<HandlerRegistrationDto> _registrations = new();
-    private readonly ConcurrentDictionary<string, DateTime> _lastActive = new();
     private readonly ConcurrentDictionary<string, HashSet<string>> _topicSubscribers = new();
     private readonly HashSet<string> _allQueues = new();
     private readonly HashSet<string> _allTopics = new();
@@ -56,7 +55,7 @@ public class CqrsDispatcher : IDispatcher
         if (string.IsNullOrEmpty(queueName)) queueName = command.GetType().FullName!;
 
         _allQueues.Add(queueName);
-        _lastActive[queueName] = DateTime.UtcNow;
+        await _tracker.UpdateLastActiveAsync(queueName);
 
         var json = JsonSerializer.Serialize(command, CqrsJsonOptions.Default);
         if (useMemoryMode)
@@ -103,7 +102,7 @@ public class CqrsDispatcher : IDispatcher
         if (string.IsNullOrEmpty(topic)) topic = @event.GetType().FullName!;
 
         _allTopics.Add(topic);
-        _lastActive[topic] = DateTime.UtcNow;
+        await _tracker.UpdateLastActiveAsync(topic);
 
         var json = JsonSerializer.Serialize(@event, CqrsJsonOptions.Default);
 
@@ -192,6 +191,11 @@ public class CqrsDispatcher : IDispatcher
                     var json = dequeued.RawJson;
                     try
                     {
+                        // Update last active for the specific subscriber queue
+                        await _tracker.UpdateLastActiveAsync(queueName);
+                        if (trackingTargetName != queueName)
+                            await _tracker.UpdateLastActiveAsync(trackingTargetName);
+
                         // Tracking Point 2: Dequeue (Before Invoke)
                         await _tracker.TrackAsync(new TrackingEntry { 
                             TrackingId = message.TrackingId, 
@@ -226,6 +230,8 @@ public class CqrsDispatcher : IDispatcher
                         if (trackingTargetName != queueName)
                             await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, CqrsConstants.StatusSuccess);
 
+                        await _queueService.ZAddAsync(CqrsConstants.GetTrackingKey(CqrsConstants.StatusSuccess, trackingTargetName), message.TrackingId.ToString(), DateTime.UtcNow.Ticks);
+
                         await _queueService.AckReliableAsync(processingQueueName, json);
                     }
                     catch (Exception ex)
@@ -239,6 +245,7 @@ public class CqrsDispatcher : IDispatcher
                             HandlerOrEventName = handlerName,
                             Status = CqrsConstants.StatusError
                         });
+                        await _queueService.ZAddAsync(CqrsConstants.GetTrackingKey(CqrsConstants.StatusError, trackingTargetName), message.TrackingId.ToString(), DateTime.UtcNow.Ticks);
 
                         await _tracker.IncrementStatAsync($"error:{queueName}");
                         if (trackingTargetName != queueName) 

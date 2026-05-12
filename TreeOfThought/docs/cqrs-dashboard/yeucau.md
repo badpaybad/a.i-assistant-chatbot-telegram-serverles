@@ -153,4 +153,12 @@ BE
     Sử dụng Raw JSON cho Ack: Tôi đã cập nhật Worker để lưu lại đúng chuỗi JSON gốc lấy từ Redis. Khi gọi Ack, nó sẽ dùng chính xác chuỗi đó để xóa, đảm bảo tin nhắn được gỡ bỏ hoàn toàn khỏi hàng đợi sau khi xử lý.
     Chuẩn hóa camelCase: Đảm bảo tất cả các bước (Publish, Track, Log, Ack) đều dùng chung một chuẩn format dữ liệu
 
+FE 
+    Bổ xung thêm tab: "Danh sách thời gian hoạt động lần cuối" có thời gian cuối cùng nhận được message xử lý. lần cuối được enqueue data, publish data của queue name và topic name. Mới nhất lên trên 
+    |loại|queue name / topic name| queue name của subscribe nếu có | last receive data|
     
+    khi xem chi tiết 1 topic modal mở lên tab title là queue name của subscribe
+      mở modal Chi tiết Topic: sample.event không thấy có dữ liệu nào ở 2 tab 
+            SampleEventHandler     SampleEventHandlerAlwaysError
+
+            cần 2 tab có title là queue name của subscribe 

@@ -63,6 +63,13 @@ export interface TrackingStep {
   messageContent?: string;
 }
 
+export interface LastActivity {
+  type: string;
+  mainName: string;
+  subscriberName?: string;
+  lastActive?: string;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -127,5 +134,9 @@ export class DashboardService {
 
   sendTestEvent(data: any): Observable<any> {
     return from(this.http.post('/api/Test/cqrs/sample-event', { data }));
+  }
+
+  getLastActivity(): Observable<LastActivity[]> {
+    return from(this.http.get<LastActivity[]>('/api/cqrs/dashboard/last-activity'));
   }
 }

@@ -47,6 +47,7 @@
       <label nz-radio-button nzValue="queues"><i nz-icon nzType="database"></i> {{ 'Hàng đợi & Chủ đề' | translate }}</label>
       <label nz-radio-button nzValue="tracking"><i nz-icon nzType="history"></i> {{ 'Theo dõi gần đây' | translate }}</label>
       <label nz-radio-button nzValue="workers"><i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | translate }}</label>
+      <label nz-radio-button nzValue="activity"><i nz-icon nzType="clock-circle"></i> {{ 'Hoạt động cuối' | translate }}</label>
       <label nz-radio-button nzValue="test"><i nz-icon nzType="experiment"></i> {{ 'Kiểm thử CQRS' | translate }}</label>
     </nz-radio-group>
   </div>
@@ -263,6 +264,43 @@
               <p style="margin-top: 16px;">{{ 'Không có lỗi nào được ghi nhận' | translate }}</p>
             </div>
           </div>
+        </div>
+      </nz-card>
+    </div>
+    <div *ngSwitchCase="'activity'">
+      <nz-card [nzTitle]="'Danh sách thời gian hoạt động lần cuối' | translate">
+        <nz-table #activityTable [nzData]="lastActivityList" [nzPageSize]="100" [nzShowPagination]="false" nzSize="middle">
+          <thead>
+            <tr>
+              <th nzWidth="120px">{{ 'Loại' | translate }}</th>
+              <th>{{ 'Tên queue / topic' | translate }}</th>
+              <th>{{ 'Subscriber (nếu có)' | translate }}</th>
+              <th nzWidth="200px">{{ 'Hoạt động cuối' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of activityTable.data">
+              <td>
+                <nz-tag [nzColor]="item.type === 'Command' ? 'blue' : item.type === 'Topic' ? 'purple' : 'cyan'">
+                  {{ item.type | translate }}
+                </nz-tag>
+              </td>
+              <td><b>{{ item.mainName }}</b></td>
+              <td>{{ item.subscriberName || '-' }}</td>
+              <td>
+                <span [nz-tooltip]="item.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
+                  {{ item.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
+                </span>
+                <span style="color: #999; font-size: 12px; margin-left: 8px;">
+                  ({{ item.lastActive | date:'HH:mm:ss' }})
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
+        <div *ngIf="lastActivityList.length === 0" class="empty-state" style="padding: 40px; text-align: center; color: #999;">
+          <i nz-icon nzType="info-circle" style="font-size: 24px;"></i>
+          <p>{{ 'Chưa có dữ liệu hoạt động nào' | translate }}</p>
         </div>
       </nz-card>
     </div>

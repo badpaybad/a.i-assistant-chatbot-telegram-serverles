@@ -24,7 +24,21 @@ public class RedisService : ICacheService, IQueueService, IEventBus
     {
         var value = await _db.StringGetAsync(key);
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value!);
+        
+        var str = value.ToString();
+        if (typeof(T) == typeof(string))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<T>(str);
+            }
+            catch
+            {
+                return (T?)(object)str;
+            }
+        }
+        
+        return JsonSerializer.Deserialize<T>(str);
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
@@ -223,5 +237,10 @@ public class RedisService : ICacheService, IQueueService, IEventBus
     public async Task SetAddAsync(string key, string member)
     {
         await _db.SetAddAsync(key, member);
+    }
+
+    public async Task ZAddAsync(string key, string member, double score)
+    {
+        await _db.SortedSetAddAsync(key, member, score);
     }
 }
