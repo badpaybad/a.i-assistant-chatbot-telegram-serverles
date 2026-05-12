@@ -22,6 +22,7 @@ Các yêu cầu:
                 - Tạo các hàm bulk insert, update, delete . bluk update hỗ trỡ update full entity, partial entity
                 - Hỗ trợ fulltext search, tìm kiếm cho phép cả tiếng Việt có dấu và tiêng Việt không dấu 
             - Base redis dùng làm cache, queue, event bus
+                - là abstract class để độc lập nghiệp vụ thì cần kế thừa và DI dễ dàng
                 - Hỗ trợ cả standalone và cluster
                 - Dùng StackExchange.Redis để kết nối 
                 - Event bus cần đáp ứng:``
