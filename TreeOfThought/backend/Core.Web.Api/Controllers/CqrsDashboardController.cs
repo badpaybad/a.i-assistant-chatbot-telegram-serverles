@@ -3,6 +3,7 @@ using Core.Infra.Base.Constants;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Web.Api.Controllers;
 
@@ -16,7 +17,12 @@ public class CqrsDashboardController : ControllerBase
     private readonly IEventBus _eventBus;
     private readonly ILogger<CqrsDashboardController> _logger;
 
-    public CqrsDashboardController(IDispatcher dispatcher, IQueueService queueService, IMessageTracker tracker, IEventBus eventBus, ILogger<CqrsDashboardController> logger)
+    public CqrsDashboardController(
+        IDispatcher dispatcher, 
+        IQueueService queueService, 
+        IMessageTracker tracker, 
+        IEventBus eventBus, 
+        ILogger<CqrsDashboardController> logger)
     {
         _dispatcher = dispatcher;
         _queueService = queueService;

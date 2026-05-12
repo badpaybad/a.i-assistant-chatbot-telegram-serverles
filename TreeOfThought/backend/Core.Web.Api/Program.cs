@@ -1,9 +1,7 @@
 using StackExchange.Redis;
 using Core.Infra.Base.Interfaces;
-using Core.Infra.CQRS.Dispatchers;
 using Core.Infra.Data.Contexts;
 using Core.Infra.Firebase.Services;
-using Core.Infra.Redis.Services;
 using Core.Web.Api.Handlers;
 using Core.Web.Api.Models;
 using Core.Infra.Auth.Repositories;
@@ -17,12 +15,22 @@ using System.Text;
 using System.Reflection;
 using Core.Infra.CQRS.Extensions;
 using Core.Infra.Auth.Extensions;
+using Core.Web.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Configuration ---
 var config = builder.Configuration;
 builder.Services.AddMemoryCache();
+
+// --- Default Redis Service (for general caching) ---
+var defaultRedisConn = config["Redis:ConnectionString"];
+if (!string.IsNullOrEmpty(defaultRedisConn))
+{
+    builder.Services.AddSingleton<AppRedisService>(sp => 
+        new AppRedisService(defaultRedisConn, sp.GetRequiredService<ILogger<AppRedisService>>()));
+    builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<AppRedisService>());
+}
 
 // --- CORS Configuration ---
 builder.Services.AddCors(options =>
@@ -39,26 +47,14 @@ builder.Services.AddCors(options =>
 // --- 2. Authentication & Authorization (Encapsulated) ---
 builder.Services.AddAppAuth(config);
 
-// --- 3. Infra Services ---
-var redisConn = config["Redis:ConnectionString"]!;
-builder.Services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
-builder.Services.AddSingleton<RedisService>(sp => new RedisService(
-    redisConn, 
-    sp.GetRequiredService<ILogger<RedisService>>()
-));
-builder.Services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<RedisService>());
-builder.Services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<RedisService>());
-builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<RedisService>());
-builder.Services.AddSingleton<FirebaseService>();
-builder.Services.AddSingleton<IDispatcher, CqrsDispatcher>();
+// --- 3. Infra Services (CQRS & Base) ---
+builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly());
 
 // --- 4. Database & Auth Repos ---
 // Registered via AddAppAuth extension
 
-// --- 5. Handlers (Auto Registration) ---
-builder.Services.AddCqrsHandlers(Assembly.GetExecutingAssembly());
-// Note: You can also add handlers from other assemblies if needed:
-// builder.Services.AddCqrsHandlers(typeof(SomeModuleHandler).Assembly);
+// --- 5. Handlers ---
+// Registered via AddCqrs extension above
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()

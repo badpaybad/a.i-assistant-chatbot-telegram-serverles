@@ -6,13 +6,13 @@ using StackExchange.Redis;
 
 namespace Core.Infra.Redis.Services;
 
-public class RedisService : ICacheService, IQueueService, IEventBus
+public abstract class RedisService : ICacheService, IQueueService, IEventBus
 {
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IDatabase _db;
-    private readonly ILogger<RedisService> _logger;
+    protected readonly IConnectionMultiplexer _redis;
+    protected readonly IDatabase _db;
+    protected readonly ILogger<RedisService> _logger;
 
-    public RedisService(string connectionString, ILogger<RedisService> logger)
+    protected RedisService(string connectionString, ILogger<RedisService> logger)
     {
         _logger = logger;
         _redis = ConnectionMultiplexer.Connect(connectionString);

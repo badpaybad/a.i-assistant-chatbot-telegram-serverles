@@ -4,18 +4,18 @@ using Microsoft.AspNetCore.Routing;
 using System.Security.Claims;
 using Core.Infra.Auth.Models;
 using Core.Infra.Auth.Attributes;
-using Core.Infra.Base.Interfaces;
+using Core.Infra.Auth.Services;
 
 namespace Core.Infra.Auth.Handlers;
 
 public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequirement>
 {
-    private readonly ICacheService _cacheService;
+    private readonly AuthRedisService _cacheService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IAuthorizationService _authorizationService;
 
     public AppAuthorizationHandler(
-        ICacheService cacheService,
+        AuthRedisService cacheService,
         IHttpContextAccessor httpContextAccessor,
         IAuthorizationService authorizationService)
     {

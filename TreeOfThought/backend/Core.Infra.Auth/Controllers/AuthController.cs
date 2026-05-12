@@ -3,6 +3,8 @@ using Core.Infra.Auth.Models;
 using Core.Infra.Auth.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using Microsoft.Extensions.DependencyInjection;
+using Core.Infra.Base.Interfaces;
 
 namespace Core.Infra.Auth.Controllers;
 
@@ -11,14 +13,18 @@ namespace Core.Infra.Auth.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
+    private readonly AuthRedisService _cacheService;
+    private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
-    public AuthController(AuthService authService, Microsoft.Extensions.Configuration.IConfiguration config)
+    public AuthController(
+        AuthService authService, 
+        AuthRedisService cacheService,
+        Microsoft.Extensions.Configuration.IConfiguration config)
     {
         _authService = authService;
+        _cacheService = cacheService;
         _config = config;
     }
-
-    private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
     [HttpGet("/.well-known/openid-configuration")]
     public IActionResult GetDiscoveryDocument()
@@ -67,16 +73,8 @@ public class AuthController : ControllerBase
         if (userRoles.Any())
         {
             // Hybrid Mode: Roles detected, fetch granular claims from Redis
-            var cacheService = HttpContext.RequestServices.GetService(typeof(Core.Infra.Base.Interfaces.ICacheService)) as Core.Infra.Base.Interfaces.ICacheService;
-            if (cacheService != null)
-            {
-                var cacheKey = $"claims:{userId}";
-                claims = await cacheService.GetAsync<List<string>>(cacheKey) ?? new List<string>();
-            }
-            else
-            {
-                claims = new List<string>();
-            }
+            var cacheKey = $"claims:{userId}";
+            claims = await _cacheService.GetAsync<List<string>>(cacheKey) ?? new List<string>();
         }
         else
         {

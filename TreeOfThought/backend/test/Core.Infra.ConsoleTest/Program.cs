@@ -3,6 +3,7 @@ using Core.Infra.Base.Models;
 using Core.Infra.Base.Utils;
 using Core.Infra.CQRS.Dispatchers;
 using Core.Infra.CQRS.Extensions;
+using Core.Infra.CQRS.Services;
 using Core.Infra.Redis.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,10 +78,10 @@ class Program
         var host = Host.CreateDefaultBuilder(args)
             .ConfigureServices((context, services) =>
             {
-                services.AddSingleton<RedisService>(sp => new RedisService(redisConn, sp.GetRequiredService<ILogger<RedisService>>()));
-                services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<RedisService>());
-                services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<RedisService>());
-                services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<RedisService>());
+                services.AddSingleton<CqrsRedisService>(sp => new CqrsRedisService(redisConn, sp.GetRequiredService<ILogger<CqrsRedisService>>()));
+                services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<CqrsRedisService>());
+                services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<CqrsRedisService>());
+                services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<CqrsRedisService>());
                 
                 services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
                 services.AddSingleton<IDispatcher, CqrsDispatcher>();

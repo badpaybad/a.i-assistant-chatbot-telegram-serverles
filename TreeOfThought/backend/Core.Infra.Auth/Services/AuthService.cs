@@ -6,6 +6,7 @@ using System.Security.Claims;
 using System.Text;
 using Core.Infra.Firebase.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Infra.Auth.Services;
 
@@ -16,7 +17,7 @@ public class AuthService
     private readonly FirebaseService _firebaseService;
     private readonly Core.Infra.Base.Interfaces.ICacheService _cacheService;
 
-    public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService, Core.Infra.Base.Interfaces.ICacheService cacheService)
+    public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService, AuthRedisService cacheService)
     {
         _config = config;
         _userRepo = userRepo;
