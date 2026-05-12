@@ -14,6 +14,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AppSelectComponent } from '../../../shared';
+import { ADMIN_CLAIM, ADMIN_ROLE } from '../../../core/auth/claims.config';
 
 @Component({
   selector: 'app-role-list',
@@ -57,7 +58,7 @@ import { AppSelectComponent } from '../../../shared';
           <td>
             <div class="claim-tags">
               <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
-                      [nzMode]="(data.name?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
+                      [nzMode]="(data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase() && claim.name?.toLowerCase() === ADMIN_CLAIM.toLowerCase()) ? 'default' : 'closeable'" 
                       (nzOnClose)="removeClaim(data, claim)">
                 {{ claim.name }}
               </nz-tag>
@@ -69,7 +70,7 @@ import { AppSelectComponent } from '../../../shared';
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.name?.toLowerCase() === 'admin'"
+                      [disabled]="data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()"
                       (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
@@ -128,6 +129,9 @@ export class RoleListComponent implements OnInit {
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
   private translate = inject(TranslateService);
+  
+  ADMIN_ROLE = ADMIN_ROLE;
+  ADMIN_CLAIM = ADMIN_CLAIM;
 
   roles: any[] = [];
   loading = false;
@@ -217,8 +221,8 @@ export class RoleListComponent implements OnInit {
   }
 
   async deleteRole(role: any) {
-    if (role.name?.toLowerCase() === 'admin') {
-      this.message.warning(this.translate.instant('Không thể xóa vai trò Admin'));
+    if (role.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()) {
+      this.message.warning(this.translate.instant(`Không thể xóa vai trò ${ADMIN_ROLE}`));
       return;
     }
 

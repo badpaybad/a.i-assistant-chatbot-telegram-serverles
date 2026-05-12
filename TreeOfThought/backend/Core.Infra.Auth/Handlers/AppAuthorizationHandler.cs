@@ -41,8 +41,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         }
 
         // 2. Full Access for Admin role or admin claim
-        if (user.Claims.Any(c => (c.Type == ClaimTypes.Role && c.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase)) ||
-                                 (c.Type == "claims" && c.Value.Equals("admin", StringComparison.OrdinalIgnoreCase))))
+        if (user.Claims.Any(c => (c.Type == ClaimTypes.Role && c.Value.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase)) ||
+                                 (c.Type == "claims" && c.Value.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))))
         {
             context.Succeed(requirement);
             return;

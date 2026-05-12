@@ -1,21 +1,24 @@
+export const ADMIN_CLAIM = 'be.admin';
+export const ADMIN_ROLE = 'Admin';
+
 export const APP_CLAIMS = {
   CQRS_DASHBOARD: {
-    VIEW: 'cqrs:dashboard:view',
-    MANAGE_WORKERS: 'cqrs:dashboard:manage_workers',
-    RETRY_MESSAGES: 'cqrs:dashboard:retry_messages'
+    VIEW: 'fe.cqrs:dashboard:view',
+    MANAGE_WORKERS: 'fe.cqrs:dashboard:manage_workers',
+    RETRY_MESSAGES: 'fe.cqrs:dashboard:retry_messages'
   },
   TEST_MODULE: {
-    VIEW: 'test:view',
-    FIRE_COMMANDS: 'test:fire_commands'
+    VIEW: 'fe.test:view',
+    FIRE_COMMANDS: 'fe.test:fire_commands'
   },
   AUTH: {
-    VIEW_ROLES: 'auth:roles:view',
-    MANAGE_ROLES: 'auth:roles:manage',
-    VIEW_CLAIMS: 'auth:claims:view',
-    MANAGE_CLAIMS: 'auth:claims:manage',
-    VIEW_USERS: 'auth:users:view',
-    MANAGE_USERS: 'auth:users:manage',
-    MANAGE_ACL: 'auth:acl:manage'
+    VIEW_ROLES: 'fe.auth:roles:view',
+    MANAGE_ROLES: 'fe.auth:roles:manage',
+    VIEW_CLAIMS: 'fe.auth:claims:view',
+    MANAGE_CLAIMS: 'fe.auth:claims:manage',
+    VIEW_USERS: 'fe.auth:users:view',
+    MANAGE_USERS: 'fe.auth:users:manage',
+    MANAGE_ACL: 'fe.auth:acl:manage'
   }
 };
 
@@ -34,4 +37,4 @@ export const ALL_CLAIMS = [
   APP_CLAIMS.AUTH.MANAGE_ACL,
 ];
 
-export const CLAIMS_VERSION = '1.2.0';
+export const CLAIMS_VERSION = '1.3.0';

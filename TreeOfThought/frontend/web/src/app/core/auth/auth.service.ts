@@ -3,7 +3,7 @@ import { HttpClientService } from '../http/http-client.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { ALL_CLAIMS, CLAIMS_VERSION } from './claims.config';
+import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM } from './claims.config';
 
 
 @Injectable({
@@ -117,7 +117,7 @@ export class AuthService {
     try {
       const claims = JSON.parse(rawClaims);
       if (!Array.isArray(claims)) return false;
-      return claims.includes(claim) || claims.includes('admin');
+      return claims.includes(claim) || claims.includes(ADMIN_CLAIM);
     } catch (e) {
       console.error('Error parsing claims from localStorage', e);
       return false;

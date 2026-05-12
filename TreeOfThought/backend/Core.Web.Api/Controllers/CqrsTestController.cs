@@ -8,7 +8,7 @@ namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AppAuthorize( "cqrs-test")]
+[AppAuthorize("be.cqrs-test")]
 public class CqrsTestController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;
@@ -35,7 +35,7 @@ public class CqrsTestController : ControllerBase
     }
 
     [HttpGet("stats")]
-    [AppAuthorize("admin")] // Only admin can see stats
+    [AppAuthorize("be.admin")] // Only admin can see stats
     public async Task<IActionResult> GetStats()
     {
         var stats = await _dispatcher.GetStatisticsAsync();
@@ -43,7 +43,7 @@ public class CqrsTestController : ControllerBase
     }
 
     [HttpGet("workers")]
-    [AppAuthorize("admin")]
+    [AppAuthorize("be.admin")]
     public IActionResult GetWorkers()
     {
         return Ok(_dispatcher.GetWorkerStatus());

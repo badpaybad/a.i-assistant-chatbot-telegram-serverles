@@ -1,6 +1,7 @@
 AppAuthorizeAttribute
 Hiện tại đóng vai trò là nơi lưu trữ Metadata. Nó tự động tạo ra một chuỗi Policy duy nhất dựa trên các tham số (Mode, Action, ResourceType, Claims).
-Ví dụ: [AppAuthorize("user.view", Mode = AuthMode.And)] sẽ tạo ra Policy: AppAuthorize:AND:None:null:user.view.
+Ví dụ: [AppAuthorize("user.view", Mode = AuthMode.And)] sẽ tạo ra Policy: AppAuthorize:AND:None:null:null:null:be.user.view.
+(Lưu ý: Tất cả claims truyền vào AppAuthorize sẽ tự động được prepend "be.")
 AppAuthorizationRequirement.cs (Mới):
 
 Lớp chứa dữ liệu điều kiện để Handler sử dụng.
@@ -21,9 +22,9 @@ Dùng như [Authorize(Roles = "A")]: [AppAuthorize(Roles = "A")] -> Chỉ chạy
 Dùng như [Authorize(Policy = "P")]: [AppAuthorize(Policy = "P")] -> Chỉ chạy qua bước kiểm tra Policy rồi Succeed. Hoàn toàn giống chuẩn MS.
 Dùng kết hợp: [AppAuthorize(Roles = "A", Policy = "P")] -> Kiểm tra A trước, rồi P, xong mới cho qua.
 
-Logic Custom (Redis/ACL) chỉ thực sự "tốn công" chạy khi bạn truyền tham số vào constructor: [AppAuthorize("user.edit", Roles = "Staff")] Trong trường hợp này, nếu User không phải là Staff, hệ thống sẽ chặn ngay ở bước kiểm tra Role, giúp bạn tiết kiệm được một lần gọi vào Redis.
+Logic Custom (Redis/ACL) chỉ thực sự "tốn công" chạy khi bạn truyền tham số vào constructor: [AppAuthorize("be.user.edit", Roles = "Staff")] Trong trường hợp này, nếu User không phải là Staff, hệ thống sẽ chặn ngay ở bước kiểm tra Role, giúp bạn tiết kiệm được một lần gọi vào Redis. (Lưu ý: "be.user.edit" sẽ được kiểm tra)
 
-chỉ dùng [AppAuthorize("user.edit")] (không có Roles, không có Policy)
+chỉ dùng [AppAuthorize("be.user.edit")] (không có Roles, không có Policy)
 Luồng xử lý:
 Bỏ qua các lớp lọc chuẩn:
 Hệ thống thấy Roles = null -> Bỏ qua (Không check Role).

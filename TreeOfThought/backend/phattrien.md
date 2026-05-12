@@ -34,6 +34,7 @@ Hệ thống thiết lập các cơ chế bảo vệ tài khoản quản trị v
 Hệ thống chuyển đổi từ `IAuthorizationFilter` (đồng bộ) sang **Policy-based Authorization** (bất đồng bộ):
 - **AppAuthorizeAttribute**: Đóng vai trò Metadata Provider, tự động tạo chuỗi Policy động.
     - Format: `AppAuthorize:{Mode}:{Action}:{ResourceType}:{Roles}:{Policy}:{Claims}`.
+    - Claims ở backend tự động được prepend `be.` (ví dụ: `[AppAuthorize("admin")]` -> yêu cầu claim `be.admin`).
 - **AppAuthorizationPolicyProvider**: Phân tách chuỗi Policy động và tạo ra `AppAuthorizationRequirement` tương ứng.
 - **AppAuthorizationHandler**: Thực thi logic kiểm tra theo thứ tự ưu tiên (Waterfall):
     1. **Authentication**: Kiểm tra trạng thái đăng nhập.

@@ -11,7 +11,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { AuthManagementService } from '../services/auth-management.service';
-import { ALL_CLAIMS, CLAIMS_VERSION } from '../../../core/auth/claims.config';
+import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM } from '../../../core/auth/claims.config';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -64,7 +64,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.name?.toLowerCase() === 'admin'"
+                      [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
                       (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
             </nz-space>
           </td>
@@ -165,8 +165,8 @@ export class ClaimSyncComponent implements OnInit {
   }
 
   async deleteClaim(claim: any) {
-    if (claim.name?.toLowerCase() === 'admin') {
-      this.notification.warning(this.translate.instant('Cảnh báo'), this.translate.instant('Không thể xóa quyền admin'));
+    if (claim.name?.toLowerCase() === ADMIN_CLAIM) {
+      this.notification.warning(this.translate.instant('Cảnh báo'), `${this.translate.instant('Không thể xóa quyền')} ${ADMIN_CLAIM}`);
       return;
     }
 

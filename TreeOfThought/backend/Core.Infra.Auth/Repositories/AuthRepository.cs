@@ -75,7 +75,7 @@ public class AuthRepository : IAuthRepository
         var role = await _context.Roles.FindAsync(id);
         if (role != null)
         {
-            if (role.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            if (role.Name.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot delete the system Admin role.");
             }
@@ -100,7 +100,7 @@ public class AuthRepository : IAuthRepository
         var claim = await _context.Claims.FindAsync(id);
         if (claim != null)
         {
-            if (claim.Name.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            if (claim.Name.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot delete the system admin claim.");
             }
@@ -317,22 +317,22 @@ public class AuthRepository : IAuthRepository
         }
 
         // Create Admin Role
-        var adminRole = await GetRoleByNameAsync("Admin");
+        var adminRole = await GetRoleByNameAsync(AuthConstants.AdminRole);
         if (adminRole == null)
         {
-            Console.WriteLine("[SEEDING] Creating Admin role");
-            adminRole = new Role { Name = "Admin", Description = "Full system access" };
+            Console.WriteLine($"[SEEDING] Creating {AuthConstants.AdminRole} role");
+            adminRole = new Role { Name = AuthConstants.AdminRole, Description = "Full system access" };
             await CreateRoleAsync(adminRole);
         }
 
         await AssignRoleToUserAsync(admin.Id, adminRole.Id);
 
-        // Ensure "admin" claim exists and is assigned to Admin role
-        var adminClaim = await GetClaimByNameAsync("admin");
+        // Ensure Admin claim exists and is assigned to Admin role
+        var adminClaim = await GetClaimByNameAsync(AuthConstants.AdminClaim);
         if (adminClaim == null)
         {
-            Console.WriteLine("[SEEDING] Creating 'admin' claim");
-            adminClaim = new AppClaim { Name = "admin", Description = "God-mode claim", CreatedAt = DateTime.UtcNow };
+            Console.WriteLine($"[SEEDING] Creating '{AuthConstants.AdminClaim}' claim");
+            adminClaim = new AppClaim { Name = AuthConstants.AdminClaim, Description = "God-mode claim", CreatedAt = DateTime.UtcNow };
             await CreateClaimAsync(adminClaim);
         }
         await AssignClaimToRoleAsync(adminRole.Id, adminClaim.Id);

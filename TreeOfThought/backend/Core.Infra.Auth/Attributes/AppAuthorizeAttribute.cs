@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
+using System.Linq;
 using Core.Infra.Auth.Models;
 
 namespace Core.Infra.Auth.Attributes;
@@ -49,7 +50,8 @@ public class AppAuthorizeAttribute : AuthorizeAttribute
 
     public AppAuthorizeAttribute(params string[] claims)
     {
-        var claimsStr = claims.Length > 0 ? string.Join(",", claims) : "null";
+        var prefixedClaims = claims.Select(c => c.StartsWith("be.") ? c : $"be.{c}").ToArray();
+        var claimsStr = prefixedClaims.Length > 0 ? string.Join(",", prefixedClaims) : "null";
         UpdatePolicy(claimsStr);
     }
 
