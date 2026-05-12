@@ -33,6 +33,8 @@ Hệ thống thấy bạn có truyền vào user.edit.
 Nó sẽ lấy userId của người dùng hiện tại.
 Truy vấn Redis: Nó tìm trong Key claims:{userId} xem có chuỗi user.edit không.
 
+claims đánh dấu các chức năng user có thể thực hiện , roles trong DB là nhóm các claims lại , hoàn toàn quản lý động ở DB. khác với [Authorize(Roles = "A")] trong mvc, chỉ dùng mvc thì khó để quản lý các quyền phức tạp và động. AppAuthorize vẫn hỗ trợ các tính năng cũ của mvc
+
 program.cs cần 
     builder.Services.AddAppAuth(config); // Đăng ký dịch vụ
 
@@ -46,3 +48,4 @@ program.cs cần
 
     // ...
     builder.Services.AddControllers().AddAuthControllers(); // Đăng ký Controller
+
