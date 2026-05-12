@@ -14,7 +14,7 @@ namespace Core.Infra.Auth.Extensions;
 
 public static class AuthServiceExtensions
 {
-    public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string,Action<AuthorizationPolicyBuilder>> configurePolicyAdditional=null)
+    public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>> configurePolicyAdditional = null)
     {
         // 1. HttpContextAccessor
         services.AddHttpContextAccessor();
@@ -40,12 +40,14 @@ public static class AuthServiceExtensions
         services.AddScoped<IAuthorizationHandler, AppAuthorizationHandler>();
         services.AddAuthorization(options =>
         {
-            // Thêm Policy "dunp" cho phép user "dunp" pass mọi thứ
-            options.AddPolicy("dunp", policy => 
-                policy.RequireClaim("preferred_username", "dunp"));
+            // // Thêm Policy "dunp" cho phép user "dunp" pass mọi thứ
+            // options.AddPolicy("dunp", policy => 
+            //     policy.RequireClaim("preferred_username", "dunp"));
 
-            if(configurePolicyAdditional!=null){
-                foreach(var policy in configurePolicyAdditional){
+            if (configurePolicyAdditional != null)
+            {
+                foreach (var policy in configurePolicyAdditional)
+                {
                     options.AddPolicy(policy.Key, policy.Value);
                 }
             }
