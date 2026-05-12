@@ -26,46 +26,64 @@ Hệ thống thiết lập các cơ chế bảo vệ tài khoản quản trị t
     - Không cho phép xóa hoặc đổi tên claim `admin`.
 - **Quyền hạn tối cao (Full Access)**: 
     - Trong `AppAuthorizeAttribute`, ưu tiên kiểm tra nếu User có role `Admin` hoặc claim `admin` thì cấp quyền truy cập toàn diện, bỏ qua mọi hạn chế (restrict) khác.
-- **Case-Insensitivity**: Việc kiểm tra `username`, `role`, và `claim` không phân biệt chữ hoa chữ thường.
 
 ### 2.2. Tự động đăng ký CQRS Handlers (Reflection)
 - **Cơ chế**: Quét Assembly để tìm các class implement `ICommandHandler<>` hoặc `IEventHandler<>`.
 - **Định danh Tự động (Naming Fallback)**: 
     - Ưu tiên lấy `QueueName`/`TopicName` định nghĩa trong code.
-    - Nếu trống (Empty/Null), hệ thống tự động sử dụng **`Type.FullName`** của lớp thông điệp làm tên hàng đợi/chủ đề.
-- **Hiệu năng**: Kết quả Reflection (tên, kiểu dữ liệu) được cache lại để tránh quét nhiều lần.
-
-### 2.3. Đa Database (SQL & NoSQL)
-- **EF Core**: Hỗ trợ PostgreSQL, MySQL, MSSQL. Có hàm sinh Script SQL tạo bảng độc lập.
-- **MongoDB**: 
-    - `DbSet<T>` bọc `IMongoCollection`, hỗ trợ LINQ và các phương thức `Add/Update/Delete` Async tương tự EF.
-    - Cho phép lỗi `Missing Field` khi dữ liệu DB và Entity không khớp hoàn toàn.
-
-### 2.4. Redis Service & Statistics
-- **Đa năng**: Một service duy nhất (`RedisService`) đóng vai trò là Cache, Queue và Event Bus.
-- **Thống kê (Counters)**: Tích hợp ghi nhận số liệu trực tiếp khi Enqueue/Publish/Subscribe.
-    - `processed:{name}`: Số lượng xử lý thành công.
-    - `error:{name}`: Số lượng xử lý lỗi.
-    - Topic Stat: Tổng hợp số liệu từ tất cả các Subscriber queue.
+    - Nếu trống, hệ thống tự động sử dụng **`Type.FullName`** của lớp thông điệp.
 
 ---
 
-## 3. Mô hình CQRS & Luồng Dữ liệu
+## 3. Đặc tả Kỹ thuật Hệ thống (Technical Specs)
 
-### 3.1. Quy trình xử lý
-1. **Command**: UI gửi request -> API Enqueue -> Worker Dequeue -> Xử lý nghiệp vụ -> Publish Event.
-2. **Event**: Worker nhận signal từ Redis Pub/Sub -> Dequeue từ queue riêng của subscriber -> Xử lý nghiệp vụ liên quan.
-3. **Tracking**: Hệ thống ghi log `Append-only` vào Redis tại mỗi điểm thay đổi trạng thái kèm theo `Payload` dữ liệu.
+Để đảm bảo khả năng tái cấu trúc 100%, các quy chuẩn sau đây phải được tuân thủ tuyệt đối:
 
-### 3.2. Caching Hybrid
-- **L1 (Memory)**: 5 giây - Giảm tải tức thì.
-- **L2 (Redis)**: 10 giây - Nhất quán giữa các container.
+### 3.1. Quy chuẩn Đặt tên Key Redis
+| Loại dữ liệu | Pattern Key | Mô tả |
+| :--- | :--- | :--- |
+| **Subscriber List** | `topic_subs:{topic}` | Set chứa danh sách tên các Subscriber của topic |
+| **Subscriber Queue** | `sub_queue:{topic}:{sub}` | Sorted Set (ZSET) chứa message của từng subscriber |
+| **Processing Queue** | `sub_proc:{topic}:{sub}` | List chứa message đang được xử lý (Reliable) |
+| **Tracking History** | `infra:tracks:history:{id}` | List chứa các bước (TrackingEntry) của 1 TrackingId |
+| **Tracking Status** | `infra:tracks:{status}:{name}` | ZSET chứa TrackingId thành công/lỗi theo queue/topic |
+| **Counters** | `infra:stats:{metric}` | String/Counter lưu số lượng (eg: `processed:{name}`) |
+| **Last Active** | `infra:last_active:{name}` | String lưu ISO Timestamp hoạt động cuối cùng |
+
+### 3.2. Cấu trúc Dữ liệu Cốt lõi (DTOs)
+- **TrackingEntry**: `TrackingId (Guid)`, `Step (string)`, `Details (string)`, `Status (string)`, `MessageContent (string)`, `QueueOrTopicName (string)`, `Timestamp (DateTime)`.
+- **WorkerStatusDto**: `Id (string)`, `Type (Command/Event)`, `Status (Running/Stopped)`, `HandlerName (string)`, `QueueOrTopicName (string)`.
+
+### 3.3. Logic Priority Dequeue (Lua Script)
+Để đảm bảo tính nguyên tử (Atomic) và tin cậy (Reliable), việc Dequeue từ hàng đợi ưu tiên sử dụng Lua script:
+```lua
+local val = redis.call('ZPOPMIN', KEYS[1]) -- Lấy message có score nhỏ nhất (cũ nhất)
+if val and #val > 0 then
+    redis.call('LPUSH', KEYS[2], val[1]) -- Đẩy vào processing queue
+    return val[1]
+end
+return nil
+```
 
 ---
 
-## 4. Vận hành & Scale ngang
-- **Stateless**: Toàn bộ trạng thái phiên làm việc được quản lý qua JWT và Redis.
-- **Horizontal Scaling**: Các Command/Event Workers có thể scale độc lập theo tên hàng đợi để đáp ứng tải trọng cao.
+## 4. Mô hình CQRS & Luồng Dữ liệu
+
+### 4.1. Quy trình xử lý & Tracking (Append-only)
+Tracking được thực hiện tại 3 điểm chốt trong `CqrsDispatcher`:
+1. **Point 1 (Dispatch)**: Ghi nhận message phát sinh + Payload. Trạng thái: `pending`.
+2. **Point 2 (Worker Receive)**: Ghi nhận message bắt đầu được xử lý. Trạng thái: `processing`.
+3. **Point 3 (Handler Result)**: Ghi nhận kết quả cuối cùng. Trạng thái: `success` hoặc `error`.
+
+### 4.2. Giám sát Hoạt động (Last Activity)
+Mỗi khi Enqueue hoặc Dequeue thành công, hệ thống gọi `UpdateLastActiveAsync(name)` để ghi lại thời điểm tương tác cuối cùng vào Redis.
 
 ---
-**Lưu ý**: Luôn đảm bảo khi có `yeucau.md` và `phatrien.md`, dù source code có mất vẫn có thể viết lại một cách chính xác.
+
+## 5. Vận hành & Scale ngang
+- **Stateless**: Trạng thái phiên làm việc qua JWT và Redis.
+- **Horizontal Scaling**: Workers có thể scale độc lập theo tên hàng đợi.
+- **Reliability**: Cơ chế processing queue và recovery (khi khởi động worker) đảm bảo không mất tin nhắn.
+
+---
+**Lưu ý**: Tài liệu này là cơ sở để viết lại toàn bộ Source Code trong trường hợp mất dữ liệu. Đảm bảo tính nhất quán giữa mô hình và thực tế.

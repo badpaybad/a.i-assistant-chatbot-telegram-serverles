@@ -6,51 +6,48 @@ Hoàn thiện hệ thống giám sát và quản lý CQRS toàn diện, cho phé
 ## 2. Giải pháp thực hiện
 
 ### 2.1 Backend (.NET Core)
-
-#### A. Xử lý tên Command/Event & Metadata
-- **Định danh**: Nếu `QueueName` hoặc `TopicName` không được định nghĩa rõ ràng trong code, hệ thống tự động sử dụng `Type.FullName` của lớp Message.
-- **Ánh xạ Handlers**: `CqrsDispatcher` duy trì danh sách `HandlerRegistrationDto` để hiển thị trên Dashboard mối liên hệ giữa: Thực thể (Queue/Topic) <-> Thông điệp (Command/Event) <-> Lớp xử lý (Handler).
-
-#### B. Logic thống kê chi tiết (Statistics)
-- **Đang xử lý (Processing)**: 
-    - `Count = (Số lượng trong Queue gốc) + (Số lượng trong Queue :processing)`.
-    - Đối với Topic: Tổng của tất cả các bộ (Queue Subscriber + Queue Subscriber :processing).
-- **Thành công/Lỗi**: Lấy trực tiếp từ các bộ đếm Redis (`processed:{name}`, `error:{name}`). Bộ đếm được thực hiện tại lớp hạ tầng `RedisService` để đảm bảo tính chính xác cao nhất.
-
-#### C. Tracking append-only & Payload
-- **Lưu trữ**: Mỗi bước tracking trong quy trình (Dispatcher -> Worker -> Result) đều lưu lại `Payload` (nội dung JSONIndented của message) tại thời điểm đó.
-- **Append-only**: Dữ liệu không bao giờ bị ghi đè, cho phép truy vết lịch sử xử lý xuyên suốt của một `TrackingId`.
+- **Định danh**: Ưu tiên lấy từ code, fallback về `Type.FullName`.
+- **Thống kê**: Tính toán động `Processing = Queue + ProcessingQueue`. Thành công/Lỗi lấy từ Counters và ZSETs.
+- **Tracking**: Ghi nhận 3 điểm chốt kèm Payload JSON vào `infra:tracks:history:{id}`.
 
 ### 2.2 Frontend (Angular 21 + Ng-Zorro-Antd)
+- **Tab Hàng đợi & Chủ đề**: Bảng tổng quát + Modal chi tiết (Command: List, Topic: Subscriber Tabs).
+- **Tab Theo dõi gần đây**: Timeline dòng chảy message từ lịch sử tracking.
+- **Tab Hoạt động cuối cùng**: Danh sách thực thể sắp xếp theo thời gian tương tác mới nhất.
 
-#### A. Cấu trúc Tab "Hàng đợi & Chủ đề"
-- **Bảng dữ liệu**: Hiển thị Loại, Tên, Đang xử lý, Đã xử lý thành công, Đã xử lý lỗi, Tổng message, Danh sách Worker, Danh sách Handlers.
-- **Modal Chi tiết**:
-    - **Nếu là Command**: Hiển thị bảng danh sách message đơn giản (Thời gian, Message Payload JSON, Trạng thái, Hành động Gửi lại/Xóa).
-    - **Nếu là Topic**: Hiển thị giao diện **Tabs**, mỗi Tab đại diện cho một Subscriber. Trong mỗi Tab là bảng danh sách message của Subscriber đó.
+---
 
-#### B. Cấu trúc Tab "Theo dõi gần đây"
-- Hiển thị danh sách các Tracking ID. Mỗi dòng có thể mở rộng (Expand) để xem:
-    - **Payload**: Nội dung message hiện tại.
-    - **Lịch sử xử lý**: Danh sách các bước (Step) kèm thời gian và mô tả chi tiết.
-- Cột: Tracking ID, Message Item (Expandable), Thời gian, Trạng thái, Hành động (Gửi lại, Xóa).
+## 3. Đặc tả Kỹ thuật (Technical Specs)
 
-#### C. Tính năng vận hành
-- **Worker Control**: Nút Dừng/Khởi chạy trực tiếp trên bảng "Trạng thái Workers".
-- **Auto Refresh**: Droplist cho phép cấu hình thời gian làm mới tự động (0s - 1h).
+### 3.1. Danh mục API Endpoints (`/api/cqrs/dashboard/`)
+| Endpoint | Method | Mô tả |
+| :--- | :--- | :--- |
+| `stats` | GET | Lấy bộ đếm thống kê tổng quát và trạng thái Workers |
+| `queues` | GET | Lấy danh sách Queue/Topic kèm thông số chi tiết và Handlers |
+| `last-activity` | GET | Lấy danh sách thời gian hoạt động cuối cùng của các thực thể |
+| `messages/{name}` | GET | Lấy danh sách message (Pending + Historical) của một Queue/Topic |
+| `tracking/{id}` | GET | Lấy toàn bộ lịch sử các bước xử lý của một TrackingId |
+| `tracking/recent`| GET | Lấy danh sách các bản ghi tracking mới nhất (có phân trang) |
+| `retry` | POST | Gửi lệnh yêu cầu thực hiện lại (Retry) một message |
+| `workers/{id}/stop`| POST | Dừng một Worker cụ thể |
+| `workers/{id}/start`| POST | Khởi chạy một Worker cụ thể |
 
-## 3. Quy trình Kiểm tra & Xác thực
+### 3.2. Quy tắc Ánh xạ Dữ liệu (Frontend Data Mapping)
+- **Trạng thái Message**: 
+    - `pending`: Đang nằm trong hàng đợi chờ xử lý.
+    - `processing`: Đang được Worker đảm nhận.
+    - `success`: Xử lý thành công.
+    - `error`: Gặp lỗi (hiện kèm chi tiết lỗi).
+- **Phân loại Thực thể**:
+    - `Queue`: Các hàng đợi Command.
+    - `Topic`: Các chủ đề Event.
+    - `Subscriber`: Từng hàng đợi riêng biệt của từng Subscriber thuộc Topic.
 
-### 3.1 Backend
-- `dotnet run` tại `TreeOfThought/backend/Core.Web.Api`.
-- Kiểm tra dữ liệu JSON tại các endpoint dashboard api.
-- Xác nhận số liệu thống kê thay đổi khi gửi SampleCommand/SampleEvent.
+---
 
-### 3.2 Frontend
-- `ng build` tại thư mục `frontend/web`.
-- Đảm bảo tính ổn định của giao diện khi chuyển đổi giữa các tab và mở modal chi tiết topic.
-- Kiểm tra chức năng Gửi lại (Retry) và Xóa (Delete) message.
+## 4. Quy trình Kiểm tra & Xác thực
+- **Backend**: `dotnet run` -> Kiểm tra JSON tại các endpoint trên. Fix `JsonException` bằng cách bọc `try-catch` tại `RedisService.GetAsync<string>`.
+- **Frontend**: `npm start` -> Kiểm tra giao diện các Tab, Modal và chức năng Resend/Retry.
 
-## 4. Trạng thái Hệ thống
-- **Stable & Ready to Run**: Toàn bộ code đã được đồng bộ với mô hình dữ liệu thống kê mới và các cột bảng theo yêu cầu.
-- **Tài liệu**: Mô tả đủ chi tiết để tái cấu trúc module Dashboard chính xác 100%.
+## 5. Trạng thái Hệ thống
+- **Stable & Ready to Run**: Tài liệu mô tả đủ chi tiết để tái cấu trúc module Dashboard chính xác 100% dù không còn Source Code.
