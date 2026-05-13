@@ -57,6 +57,11 @@ export const routes: Routes = [
             path: 'cqrs', 
             loadComponent: () => import('./modules/cqrs-dashboard/cqrs-test/cqrs-test.component').then(m => m.CqrsTestComponent),
             data: { breadcrumb: 'CQRS Test' }
+          },
+          { 
+            path: 'editor', 
+            loadComponent: () => import('./modules/test/editor-test/editor-test.component').then(m => m.EditorTestComponent),
+            data: { breadcrumb: 'Editor Test' }
           }
         ]
       },

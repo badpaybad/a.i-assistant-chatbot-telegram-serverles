@@ -114,4 +114,12 @@ export class HttpClientService {
       this.handleError(error as HttpErrorResponse);
     }
   }
+
+  postObservable<T = any>(url: string, data?: any, options?: any) {
+    const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
+    return this.http.post<T>(fullUrl, data, {
+      headers: this.getHeaders(data),
+      ...options
+    });
+  }
 }

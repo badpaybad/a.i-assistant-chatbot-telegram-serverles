@@ -42,3 +42,18 @@ public class FileItem : IBaseTrackingEntity<Guid>
     public string? CreatedBy { get; set; }
     public string? UpdatedBy { get; set; }
 }
+
+public class EditorFileItem : IBaseTrackingEntity<Guid>
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Name { get; set; } = string.Empty;
+    public string Url { get; set; } = string.Empty;
+    public long Size { get; set; }
+    public string MimeType { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? UpdatedAt { get; set; }
+    public string? CreatedBy { get; set; }
+    public string? UpdatedBy { get; set; }
+}

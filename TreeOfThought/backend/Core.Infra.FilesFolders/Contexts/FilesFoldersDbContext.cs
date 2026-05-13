@@ -18,6 +18,7 @@ public class FilesFoldersDbContext : BaseDbContext
 
     public DbSet<Folder> Folders { get; set; }
     public DbSet<FileItem> Files { get; set; }
+    public DbSet<EditorFileItem> EditorFiles { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,8 +37,17 @@ public class FilesFoldersDbContext : BaseDbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
             entity.Property(e => e.Url).IsRequired();
+            entity.Property(e => e.FolderId).IsRequired(false);
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.FolderId);
+        });
+
+        modelBuilder.Entity<EditorFileItem>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Url).IsRequired();
+            entity.HasIndex(e => e.UserId);
         });
     }
 }

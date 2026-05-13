@@ -1,6 +1,7 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.FilesFolders.Contexts;
 using Core.Infra.FilesFolders.Models;
+using Core.Infra.FilesFolders.Services;
 using Core.Infra.Firebase.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -18,17 +19,20 @@ public class FilesFoldersCommandHandler :
 {
     private readonly FilesFoldersDbContext _db;
     private readonly FirebaseService _firebaseService;
+    private readonly FilesFoldersService _filesFoldersService;
     private readonly ILogger<FilesFoldersCommandHandler> _logger;
-    private const string AppName = "default"; // Assuming default app name
-    private const string BucketName = "tree-of-thought-files"; // Should be configured
+    private const string AppName = "Default"; 
+    private const string BucketName = "dunp-test-gcs";
 
     public FilesFoldersCommandHandler(
         FilesFoldersDbContext db, 
         FirebaseService firebaseService,
+        FilesFoldersService filesFoldersService,
         ILogger<FilesFoldersCommandHandler> logger)
     {
         _db = db;
         _firebaseService = firebaseService;
+        _filesFoldersService = filesFoldersService;
         _logger = logger;
     }
 
@@ -116,30 +120,13 @@ public class FilesFoldersCommandHandler :
 
     public async Task HandleAsync(UploadFileCommand command)
     {
-        var path = "";
-        if (command.FolderId != Guid.Empty)
-        {
-            var folder = await _db.Folders.FindAsync(command.FolderId);
-            if (folder != null) path = folder.Path;
-        }
-
-        var objectName = $"{path}{Guid.NewGuid()}_{command.FileName}";
-        using var stream = new MemoryStream(command.Content);
-        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, command.ContentType);
-
-        var file = new FileItem
-        {
-            FolderId = command.FolderId == Guid.Empty ? null : command.FolderId,
-            Name = command.FileName,
-            Url = url,
-            Size = command.Content.Length,
-            MimeType = command.ContentType,
-            UserId = Guid.Parse(command.UserId!),
-            CreatedBy = command.UserId
-        };
-
-        _db.Files.Add(file);
-        await _db.SaveChangesAsync();
+        await _filesFoldersService.UploadFileAsync(
+            Guid.Parse(command.UserId!),
+            command.FolderId,
+            command.FileName,
+            command.ContentType,
+            command.Content
+        );
     }
 
     public async Task HandleAsync(DeleteFileCommand command)

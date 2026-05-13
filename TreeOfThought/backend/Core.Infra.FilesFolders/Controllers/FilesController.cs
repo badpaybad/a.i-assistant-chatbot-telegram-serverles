@@ -2,6 +2,7 @@ using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -64,6 +65,29 @@ public class FilesController : ControllerBase
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command);
         return Ok(new { message = "Yêu cầu cập nhật quyền đã được gửi" });
+    }
+
+    [HttpPost("editor-upload")]
+    public async Task<IActionResult> EditorUpload(IFormFile upload)
+    {
+        if (upload == null || upload.Length == 0) return BadRequest("File không hợp lệ");
+
+        using var ms = new MemoryStream();
+        await upload.CopyToAsync(ms);
+
+        var userId = GetUserId();
+        
+        var file = await _filesFoldersService.UploadEditorFileAsync(userId, upload.FileName, upload.ContentType, ms.ToArray());
+
+        return Ok(new { url = file.Url });
+    }
+
+    [HttpGet("search")]
+    public async Task<IActionResult> Search([FromQuery] string query)
+    {
+        var userId = GetUserId();
+        var files = await _filesFoldersService.SearchFilesAsync(userId, query ?? "");
+        return Ok(files);
     }
 
     [HttpGet("{id}")]
