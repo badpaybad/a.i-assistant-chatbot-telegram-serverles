@@ -9,8 +9,8 @@ export class AuthManagementService {
   private readonly BASE_URL = '/api/AuthManagement';
 
   // User Management
-  getUsers() {
-    return this.http.get(`${this.BASE_URL}/users`);
+  getUsers(params?: any) {
+    return this.http.get(`${this.BASE_URL}/users`, { params });
   }
 
   assignRoleToUser(userId: string, roleId: string) {
@@ -34,8 +34,8 @@ export class AuthManagementService {
   }
 
   // Role Management
-  getRoles() {
-    return this.http.get(`${this.BASE_URL}/roles`);
+  getRoles(params?: any) {
+    return this.http.get(`${this.BASE_URL}/roles`, { params });
   }
 
   createRole(role: any) {
@@ -55,8 +55,8 @@ export class AuthManagementService {
   }
 
   // Claim Management
-  getClaims() {
-    return this.http.get(`${this.BASE_URL}/claims`);
+  getClaims(params?: any) {
+    return this.http.get(`${this.BASE_URL}/claims`, { params });
   }
 
   createClaim(claim: any) {

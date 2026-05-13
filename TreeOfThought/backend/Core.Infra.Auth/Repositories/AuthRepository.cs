@@ -59,7 +59,58 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<User>> GetAllUsersAsync() => await _context.Users.ToListAsync();
+    public async Task<List<User>> GetAllUsersAsync(UserSearchQuery? query = null)
+    {
+        var usersQuery = _context.Users.AsQueryable();
+
+        if (query != null)
+        {
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                var keyword = query.Keyword.ToLower();
+                usersQuery = usersQuery.Where(u => u.Username.ToLower().Contains(keyword) || 
+                                                   u.DisplayName.ToLower().Contains(keyword) || 
+                                                   u.Email.ToLower().Contains(keyword));
+            }
+
+            if (query.IsEmailVerified.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.IsEmailVerified == query.IsEmailVerified.Value);
+            }
+
+            if (query.RoleIds != null && query.RoleIds.Any())
+            {
+                usersQuery = usersQuery.Where(u => _context.UserRoles.Any(ur => ur.UserId == u.Id && query.RoleIds.Contains(ur.RoleId)));
+            }
+
+            if (query.ClaimIds != null && query.ClaimIds.Any())
+            {
+                usersQuery = usersQuery.Where(u => _context.UserClaims.Any(uc => uc.UserId == u.Id && query.ClaimIds.Contains(uc.ClaimId)));
+            }
+
+            if (query.StartDate.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.CreatedAt >= query.StartDate.Value);
+            }
+
+            if (query.EndDate.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.CreatedAt <= query.EndDate.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.SsoProvider))
+            {
+                usersQuery = usersQuery.Where(u => u.SsoProvider == query.SsoProvider);
+            }
+
+            if (!string.IsNullOrWhiteSpace(query.SsoId))
+            {
+                usersQuery = usersQuery.Where(u => u.SsoId == query.SsoId);
+            }
+        }
+
+        return await usersQuery.ToListAsync();
+    }
 
     public async Task<Role?> GetRoleByNameAsync(string name) => 
         await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
@@ -84,7 +135,27 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<Role>> GetAllRolesAsync() => await _context.Roles.ToListAsync();
+    public async Task<List<Role>> GetAllRolesAsync(RoleSearchQuery? query = null)
+    {
+        var rolesQuery = _context.Roles.AsQueryable();
+
+        if (query != null)
+        {
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                var keyword = query.Keyword.ToLower();
+                rolesQuery = rolesQuery.Where(r => r.Name.ToLower().Contains(keyword) || 
+                                                   (r.Description != null && r.Description.ToLower().Contains(keyword)));
+            }
+
+            if (query.ClaimIds != null && query.ClaimIds.Any())
+            {
+                rolesQuery = rolesQuery.Where(r => _context.RoleClaims.Any(rc => rc.RoleId == r.Id && query.ClaimIds.Contains(rc.ClaimId)));
+            }
+        }
+
+        return await rolesQuery.ToListAsync();
+    }
 
     public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
         await _context.Claims.FirstOrDefaultAsync(p => p.Name.ToLower() == name.ToLower());
@@ -109,7 +180,32 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<AppClaim>> GetAllClaimsAsync() => await _context.Claims.ToListAsync();
+    public async Task<List<AppClaim>> GetAllClaimsAsync(ClaimSearchQuery? query = null)
+    {
+        var claimsQuery = _context.Claims.AsQueryable();
+
+        if (query != null)
+        {
+            if (!string.IsNullOrWhiteSpace(query.Keyword))
+            {
+                var keyword = query.Keyword.ToLower();
+                claimsQuery = claimsQuery.Where(c => c.Name.ToLower().Contains(keyword) || 
+                                                   (c.Description != null && c.Description.ToLower().Contains(keyword)));
+            }
+
+            if (query.StartDate.HasValue)
+            {
+                claimsQuery = claimsQuery.Where(c => c.CreatedAt >= query.StartDate.Value);
+            }
+
+            if (query.EndDate.HasValue)
+            {
+                claimsQuery = claimsQuery.Where(c => c.CreatedAt <= query.EndDate.Value);
+            }
+        }
+
+        return await claimsQuery.ToListAsync();
+    }
 
     public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
     {

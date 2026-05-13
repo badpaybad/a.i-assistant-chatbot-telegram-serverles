@@ -11,6 +11,8 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AppSelectComponent } from '../../../shared';
@@ -31,6 +33,8 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '../../../core/auth/claims.config';
     NzSelectModule,
     NzFormModule,
     NzInputModule,
+    NzGridModule,
+    NzCardModule,
     TranslateModule,
     AppSelectComponent
   ],
@@ -41,6 +45,25 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '../../../core/auth/claims.config';
         <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
       </button>
     </div>
+
+    <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="8">
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | translate" (keyup.enter)="loadRoles()" />
+        </div>
+        <div nz-col [nzSpan]="10">
+          <nz-select [(ngModel)]="searchQuery.claimIds" [nzPlaceHolder]="'Quyền' | translate" nzMode="multiple" nzAllowClear style="width: 100%" nzShowSearch>
+            <nz-option *ngFor="let claim of availableClaims" [nzValue]="claim.id" [nzLabel]="claim.name"></nz-option>
+          </nz-select>
+        </div>
+        <div nz-col [nzSpan]="6" class="search-actions">
+          <nz-space>
+            <button *nzSpaceItem nz-button nzType="primary" (click)="loadRoles()">{{ 'Tìm kiếm' | translate }}</button>
+            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ 'Đặt lại' | translate }}</button>
+          </nz-space>
+        </div>
+      </div>
+    </nz-card>
 
     <nz-table #basicTable [nzData]="roles" [nzLoading]="loading">
       <thead>
@@ -108,11 +131,13 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '../../../core/auth/claims.config';
     </nz-modal>
   `,
   styles: [`
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .search-card {
       margin-bottom: 16px;
+    }
+    .search-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
     .claim-tags {
       display: flex;
@@ -145,20 +170,38 @@ export class RoleListComponent implements OnInit {
   selectedRole: any = null;
   selectedClaimId = '';
 
+  searchQuery: any = {
+    keyword: '',
+    claimIds: []
+  };
+
   ngOnInit(): void {
-    this.loadRoles();
     this.loadMetadata();
+    this.loadRoles();
   }
 
   async loadRoles() {
     this.loading = true;
     try {
-      this.roles = await this.authMgmt.getRoles();
+      const params: any = {};
+      if (this.searchQuery.keyword) params.keyword = this.searchQuery.keyword;
+      if (this.searchQuery.claimIds && this.searchQuery.claimIds.length > 0) {
+        params.claimIds = this.searchQuery.claimIds;
+      }
+      this.roles = await this.authMgmt.getRoles(params);
     } catch (e) {
       this.message.error(this.translate.instant('Lỗi khi tải vai trò'));
     } finally {
       this.loading = false;
     }
+  }
+
+  resetSearch() {
+    this.searchQuery = {
+      keyword: '',
+      claimIds: []
+    };
+    this.loadRoles();
   }
 
   async loadMetadata() {

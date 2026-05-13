@@ -10,6 +10,8 @@ import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
+import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
+import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
 import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM } from '../../../core/auth/claims.config';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -28,6 +30,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzFormModule,
     NzInputModule,
     NzSpaceModule,
+    NzDatePickerModule,
+    NzGridModule,
     TranslateModule
   ],
   template: `
@@ -38,7 +42,24 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       </button>
     </div>
 
-    <nz-card [nzTitle]="'Quyền' | translate" style="margin-bottom: 16px;">
+    <nz-card [nzTitle]="'Tìm kiếm' | translate" class="search-card">
+      <div nz-row [nzGutter]="[16, 16]">
+        <div nz-col [nzSpan]="10">
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên quyền, mô tả' | translate" (keyup.enter)="loadClaims()" />
+        </div>
+        <div nz-col [nzSpan]="8">
+          <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
+        </div>
+        <div nz-col [nzSpan]="6" class="search-actions">
+          <nz-space>
+            <button *nzSpaceItem nz-button nzType="primary" (click)="loadClaims()">{{ 'Tìm kiếm' | translate }}</button>
+            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ 'Đặt lại' | translate }}</button>
+          </nz-space>
+        </div>
+      </div>
+    </nz-card>
+
+    <nz-card [nzTitle]="'Đồng bộ quyền' | translate" style="margin-bottom: 16px;">
       <p>Version: <strong>{{ version }}</strong> | Count: <strong>{{ claimsCount }}</strong></p>
       <div class="sync-actions">
         <button nz-button nzType="primary" (click)="sync()" [nzLoading]="loading">
@@ -92,11 +113,13 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     </nz-modal>
   `,
   styles: [`
-    .page-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .search-card {
       margin-bottom: 16px;
+    }
+    .search-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
     }
     .sync-actions {
       margin-top: 8px;
@@ -120,6 +143,11 @@ export class ClaimSyncComponent implements OnInit {
   isCreateModalVisible = false;
   newClaim = { name: '', description: '' };
 
+  searchQuery: any = {
+    keyword: '',
+    dateRange: []
+  };
+
   ngOnInit(): void {
     this.loadClaims();
   }
@@ -127,12 +155,26 @@ export class ClaimSyncComponent implements OnInit {
   async loadClaims() {
     this.loading = true;
     try {
-      this.existingClaims = await this.authMgmt.getClaims();
+      const params: any = {};
+      if (this.searchQuery.keyword) params.keyword = this.searchQuery.keyword;
+      if (this.searchQuery.dateRange && this.searchQuery.dateRange.length === 2) {
+        params.startDate = this.searchQuery.dateRange[0]?.toISOString();
+        params.endDate = this.searchQuery.dateRange[1]?.toISOString();
+      }
+      this.existingClaims = await this.authMgmt.getClaims(params);
     } catch (e) {
       this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Không thể tải danh sách quyền'));
     } finally {
       this.loading = false;
     }
+  }
+
+  resetSearch() {
+    this.searchQuery = {
+      keyword: '',
+      dateRange: []
+    };
+    this.loadClaims();
   }
 
   async sync() {

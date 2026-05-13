@@ -18,9 +18,9 @@ public class AuthManagementController : ControllerBase
     }
     
     [HttpGet("users")]
-    public async Task<IActionResult> GetUsers()
+    public async Task<IActionResult> GetUsers([FromQuery] UserSearchQuery query)
     {
-        var users = await _authRepo.GetAllUsersAsync();
+        var users = await _authRepo.GetAllUsersAsync(query);
         var result = new List<UserDto>();
         
         foreach (var user in users)
@@ -44,9 +44,9 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpGet("roles")]
-    public async Task<IActionResult> GetRoles()
+    public async Task<IActionResult> GetRoles([FromQuery] RoleSearchQuery query)
     {
-        var roles = await _authRepo.GetAllRolesAsync();
+        var roles = await _authRepo.GetAllRolesAsync(query);
         var result = new List<RoleDto>();
         
         foreach (var role in roles)
@@ -72,7 +72,7 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpGet("claims")]
-    public async Task<IActionResult> GetClaims() => Ok(await _authRepo.GetAllClaimsAsync());
+    public async Task<IActionResult> GetClaims([FromQuery] ClaimSearchQuery query) => Ok(await _authRepo.GetAllClaimsAsync(query));
 
     [HttpPost("claims")]
     public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
