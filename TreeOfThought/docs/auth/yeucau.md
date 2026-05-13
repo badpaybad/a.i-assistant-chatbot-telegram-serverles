@@ -29,3 +29,7 @@ Quyền bổ xung tìm kiếm theo
 
 **cập nhật 2026-05-13 18:55:42**
 trong bảng người dùng, bảng vai trò, khi thêm/sửa có droplist chọn quyền , khi thêm/sửa vai trò droplist cần là auto complete select nhiều giống ở filter  
+
+**cập nhật 2026-05-13 20:30:00**
+ở bảng hiển thị người dùng cần hiện thêm cột email, avatar, ngày tạo, ngày cập nhật
+    bổ xung thêm cột avatar, khi click vào thì change được avatar của người dùng, cần upload file lên google cloud storage, avatar lưu public url của file trên google cloud storage

@@ -49,6 +49,12 @@ export class AuthManagementService {
     return this.http.delete(`${this.BASE_URL}/users/${userId}`);
   }
 
+  uploadAvatar(userId: string, file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post(`${this.BASE_URL}/users/${userId}/avatar`, formData);
+  }
+
   // Role Management
   getRoles(params?: any) {
     return this.http.get(`${this.BASE_URL}/roles`, { params });

@@ -158,7 +158,10 @@ public class FirebaseService
     public async Task<string> UploadFileAsync(string appName, string bucketName, string objectName, Stream content, string contentType)
     {
         var client = _storageClients[appName];
-        var obj = await client.UploadObjectAsync(bucketName, objectName, contentType, content);
+        var obj = await client.UploadObjectAsync(bucketName, objectName, contentType, content, new UploadObjectOptions
+        {
+            PredefinedAcl = PredefinedObjectAcl.PublicRead
+        });
         return $"https://storage.googleapis.com/{bucketName}/{objectName}";
     }
 

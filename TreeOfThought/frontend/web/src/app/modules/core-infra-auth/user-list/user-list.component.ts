@@ -15,6 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
+import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
 import { AppSelectComponent } from '../../../shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -38,6 +39,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzCardModule,
     NzFormModule,
     NzCheckboxModule,
+    NzAvatarModule,
     AppSelectComponent,
     TranslateModule
   ],
@@ -113,21 +115,34 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     <nz-table #basicTable [nzData]="users" [nzLoading]="loading">
       <thead>
         <tr>
+          <th nzWidth="80px">{{ 'Avatar' | translate }}</th>
           <th>{{ 'Người dùng' | translate }}</th>
+          <th>{{ 'Email' | translate }}</th>
           <th>{{ 'Trạng thái' | translate }}</th>
           <th>{{ 'Vai trò' | translate }}</th>
           <th>{{ 'Quyền' | translate }}</th>
+          <th>{{ 'Ngày tạo' | translate }}</th>
+          <th>{{ 'Cập nhật' | translate }}</th>
           <th nzWidth="150px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let data of basicTable.data">
           <td>
-            <div class="user-cell">
-              <strong>{{ data.displayName }}</strong>
-              <span class="sub-text">{{ data.username }} | {{ data.email }}</span>
+            <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
+              <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
+              <div class="avatar-mask">
+                <span nz-icon nzType="camera"></span>
+              </div>
             </div>
           </td>
+          <td>
+            <div class="user-cell">
+              <strong>{{ data.displayName }}</strong>
+              <span class="sub-text">{{ data.username }}</span>
+            </div>
+          </td>
+          <td>{{ data.email }}</td>
           <td>
             <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
               {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | translate }}
@@ -153,6 +168,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
               <span nz-icon nzType="plus"></span>
             </button>
           </td>
+          <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          <td>{{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <nz-space>
               <button *nzSpaceItem nz-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</button>
@@ -164,6 +181,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
         </tr>
       </tbody>
     </nz-table>
+
+    <input type="file" #avatarInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
 
     <!-- Modal Thêm/Sửa Người dùng -->
     <nz-modal [(nzVisible)]="isUserModalVisible" [nzTitle]="(editingUser ? 'Sửa người dùng' : 'Thêm người dùng') | translate" (nzOnCancel)="isUserModalVisible = false" (nzOnOk)="saveUser()">
@@ -275,6 +294,36 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     nz-tag {
       margin-bottom: 4px;
     }
+    .avatar-wrapper {
+      position: relative;
+      cursor: pointer;
+      display: inline-block;
+      border-radius: 50%;
+      overflow: hidden;
+      width: 48px;
+      height: 48px;
+    }
+    .avatar-mask {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+      font-size: 18px;
+    }
+    .avatar-wrapper:hover .avatar-mask {
+      opacity: 1;
+    }
+    .user-avatar {
+      border: 1px solid #f0f0f0;
+    }
   `]
 })
 export class UserListComponent implements OnInit {
@@ -291,6 +340,7 @@ export class UserListComponent implements OnInit {
   isUserModalVisible = false;
   
   selectedUser: any = null;
+  selectedUserForAvatar: any = null;
   selectedRoleIds: string[] = [];
   selectedClaimIds: string[] = [];
 
@@ -504,5 +554,28 @@ export class UserListComponent implements OnInit {
         }
       }
     });
+  }
+
+  async onFileSelected(event: any) {
+    const file = event.target.files[0];
+    if (!file || !this.selectedUserForAvatar) return;
+
+    const loadingMsg = this.message.loading(this.translate.instant('Đang tải lên...'), { nzDuration: 0 }).messageId;
+    try {
+      const result: any = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
+      this.selectedUserForAvatar.avatarUrl = result.url;
+      this.message.success(this.translate.instant('Cập nhật ảnh đại diện thành công'));
+      
+      // Update the user in the list locally to avoid full reload
+      const index = this.users.findIndex(u => u.id === this.selectedUserForAvatar.id);
+      if (index !== -1) {
+        this.users[index].avatarUrl = result.url;
+      }
+    } catch (e) {
+      this.message.error(this.translate.instant('Lỗi khi tải lên ảnh đại diện'));
+    } finally {
+      this.message.remove(loadingMsg);
+      event.target.value = ''; // Reset file input
+    }
   }
 }

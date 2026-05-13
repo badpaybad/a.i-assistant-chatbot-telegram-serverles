@@ -19,10 +19,12 @@ export class HttpClientService {
   // Default base URL - can be overridden by environment
   private readonly API_BASE_URL = (window as any).env?.API_BASE_URL || 'http://localhost:5000';
 
-  private getHeaders(): HttpHeaders {
-    let headers = new HttpHeaders({
-      'Content-Type': 'application/json'
-    });
+  private getHeaders(data?: any): HttpHeaders {
+    let headers = new HttpHeaders();
+    
+    if (!(data instanceof FormData)) {
+      headers = headers.set('Content-Type', 'application/json');
+    }
 
     const token = localStorage.getItem('jwt_token');
     if (token) {
@@ -81,7 +83,7 @@ export class HttpClientService {
     try {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.post<T>(fullUrl, data, {
-        headers: this.getHeaders(),
+        headers: this.getHeaders(data),
         ...options
       }) as any);
     } catch (error) {
@@ -93,7 +95,7 @@ export class HttpClientService {
     try {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.put<T>(fullUrl, data, {
-        headers: this.getHeaders(),
+        headers: this.getHeaders(data),
         ...options
       }) as any);
     } catch (error) {

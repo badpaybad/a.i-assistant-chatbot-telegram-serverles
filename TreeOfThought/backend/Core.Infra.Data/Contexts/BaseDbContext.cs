@@ -108,4 +108,59 @@ public abstract class BaseDbContext : DbContext
 
         return source.Provider.CreateQuery<T>(resultExpression);
     }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+        foreach (var entry in entries)
+        {
+            // Check if entity implements IBaseTrackingEntity<TKey>
+            var entityType = entry.Entity.GetType();
+            var trackingInterface = entityType.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+
+            if (trackingInterface != null)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entityType.GetProperty("CreatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                }
+                else
+                {
+                    entityType.GetProperty("UpdatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                }
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
+    public override int SaveChanges()
+    {
+        var entries = ChangeTracker.Entries()
+            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified));
+
+        foreach (var entry in entries)
+        {
+            var entityType = entry.Entity.GetType();
+            var trackingInterface = entityType.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+
+            if (trackingInterface != null)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    entityType.GetProperty("CreatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                }
+                else
+                {
+                    entityType.GetProperty("UpdatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                }
+            }
+        }
+
+        return base.SaveChanges();
+    }
 }

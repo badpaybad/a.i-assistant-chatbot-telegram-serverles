@@ -1,7 +1,10 @@
 using Core.Infra.Auth.Attributes;
 using Core.Infra.Auth.Models;
 using Core.Infra.Auth.Repositories;
+using Core.Infra.Firebase.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace Core.Infra.Auth.Controllers;
 
@@ -11,10 +14,14 @@ namespace Core.Infra.Auth.Controllers;
 public class AuthManagementController : ControllerBase
 {
     private readonly IAuthRepository _authRepo;
+    private readonly FirebaseService _firebaseService;
+    private readonly IConfiguration _config;
 
-    public AuthManagementController(IAuthRepository authRepo)
+    public AuthManagementController(IAuthRepository authRepo, FirebaseService firebaseService, IConfiguration config)
     {
         _authRepo = authRepo;
+        _firebaseService = firebaseService;
+        _config = config;
     }
     
     [HttpGet("users")]
@@ -34,7 +41,10 @@ public class AuthManagementController : ControllerBase
                 Username = user.Username,
                 DisplayName = user.DisplayName,
                 Email = user.Email,
+                AvatarUrl = user.AvatarUrl,
                 IsEmailVerified = user.IsEmailVerified,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
                 Roles = roles.Select(r => new IdNameDto { Id = r.Id, Name = r.Name }).ToList(),
                 DirectClaims = claims.Select(c => new IdNameDto { Id = c.Id, Name = c.Name }).ToList()
             });
@@ -137,6 +147,33 @@ public class AuthManagementController : ControllerBase
         catch (InvalidOperationException ex)
         {
             return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("users/{userId}/avatar")]
+    public async Task<IActionResult> UploadAvatar(Guid userId, [FromForm] IFormFile file)
+    {
+        var user = await _authRepo.GetUserByIdAsync(userId);
+        if (user == null) return NotFound(new { message = "User not found" });
+
+        if (file == null || file.Length == 0) return BadRequest(new { message = "No file uploaded" });
+
+        try
+        {
+            var bucketName = _config["Firebase:StorageBucket"] ?? "dunp-test-gcs";
+            var fileName = $"avatars/{userId}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
+
+            using var stream = file.OpenReadStream();
+            var publicUrl = await _firebaseService.UploadFileAsync("Default", bucketName, fileName, stream, file.ContentType);
+
+            user.AvatarUrl = publicUrl;
+            await _authRepo.UpdateUserAsync(user);
+
+            return Ok(new { url = publicUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = "Error uploading avatar", detail = ex.Message });
         }
     }
 
