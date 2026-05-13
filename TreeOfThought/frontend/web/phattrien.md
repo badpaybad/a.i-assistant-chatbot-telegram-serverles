@@ -98,3 +98,28 @@ Xây dựng component `AppSelectComponent` dùng chung hỗ trợ:
 - `src/app/shared/components/app-select/app-select.component.ts`
 - `src/app/shared/components/app-select/app-select.component.html`
 - `src/app/shared/shared.module.ts` (export component)
+
+## 7. Cập nhật 5: Nâng cấp hệ thống Directive Phân quyền (Structural Directive)
+
+### 7.1 Mục tiêu
+Thay thế hoàn toàn việc sử dụng `*ngIf="hasClaim(...)"` bằng Directive chuyên dụng `*appClaimCheck` để:
+- Giảm thiểu code lặp lại trong template.
+- Tự động hiển thị thông báo "Truy cập bị hạn chế" (Permission Denied) thay vì chỉ ẩn đi, giúp tăng trải nghiệm người dùng.
+
+### 7.2 Kỹ thuật triển khai
+- **AppClaimDirective (Selector: `appClaimCheck`)**:
+    - Là một **Structural Directive** (`*appClaimCheck`).
+    - **Logic**: Nếu người dùng có quyền, render nội dung gốc. Nếu không, render một giao diện thông báo lỗi (Denial Message) chuyên nghiệp.
+    - **Hỗ trợ chế độ ẩn**: Thêm Input `appClaimCheckHide` để chỉ ẩn phần tử (giống `*ngIf`) khi cần thiết (ví dụ: các nút hành động nhỏ).
+    - **Xử lý Layout Thông minh**: Tự động nhận diện nếu Directive nằm trong một danh sách (`<ul>` - ví dụ: Menu Sidebar) thì sẽ bọc thông báo lỗi trong thẻ `<li>` để đảm bảo không làm vỡ cấu trúc DOM và CSS của Ant Design.
+    - **Bảo mật & Thẩm mỹ**: Sử dụng `DomSanitizer` để render an toàn các thông báo có style CSS inline, tạo giao diện báo lỗi Premium.
+- **Tích hợp Router Toàn cục**:
+    - Sử dụng `*appClaimCheck=""` bọc ngoài `<router-outlet>` trong `MainLayout`. Đây là một kỹ thuật mạnh mẽ để yêu cầu trạng thái đăng nhập cho toàn bộ khu vực nội dung chính mà không cần cấu hình Guard cho từng route lẻ.
+- **Cập nhật AuthService**:
+    - Phương thức `hasClaim` được nâng cấp để hỗ trợ kiểm tra giá trị rỗng (`null`, `undefined`, `""`, `[]`). Khi giá trị kiểm tra rỗng, hàm sẽ trả về `true` nếu người dùng đã đăng nhập (có bất kỳ claim nào), giúp triển khai điều kiện "Chỉ cần đăng nhập" một cách dễ dàng.
+
+### 7.3 Danh sách file đã hoàn thành
+- `src/app/shared/directives/claim.directive.ts` (Implement `AppClaimDirective`)
+- `src/app/core/auth/auth.service.ts` (Nâng cấp logic `hasClaim`)
+- `src/app/layouts/main-layout/main-layout.component.html` (Chuyển đổi từ `*ngIf` sang `*appClaimCheck`)
+- `src/app/layouts/main-layout/main-layout.component.ts` (Import và cấu hình directive)
