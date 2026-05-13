@@ -24,35 +24,7 @@ const nzConfig: NzConfig = {
   }
 };
 
-const icons: IconDefinition[] = [
-  AllIcons.UserOutline,
-  AllIcons.LockOutline,
-  AllIcons.GoogleOutline,
-  AllIcons.WindowsOutline,
-  AllIcons.FacebookOutline,
-  AllIcons.DashboardOutline,
-  AllIcons.ExperimentOutline,
-  AllIcons.MenuFoldOutline,
-  AllIcons.MenuUnfoldOutline,
-  AllIcons.MailOutline,
-  AllIcons.IdcardOutline,
-  AllIcons.ReloadOutline,
-  AllIcons.SearchOutline,
-  AllIcons.WarningTwoTone,
-  AllIcons.HomeOutline,
-  AllIcons.InfoCircleOutline,
-  AllIcons.PhoneOutline,
-  AllIcons.RocketOutline,
-  AllIcons.NotificationOutline,
-  AllIcons.ClusterOutline,
-  AllIcons.ArrowRightOutline,
-  AllIcons.GlobalOutline,
-  AllIcons.DownOutline,
-  AllIcons.UpOutline,
-  AllIcons.CopyOutline,
-  AllIcons.DeleteOutline,
-  AllIcons.RollbackOutline
-];
+const icons: IconDefinition[] = Object.keys(AllIcons).map(key => (AllIcons as any)[key]);
 
 export const appConfig: ApplicationConfig = {
   providers: [
