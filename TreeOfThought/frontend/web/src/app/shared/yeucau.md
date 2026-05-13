@@ -13,3 +13,7 @@ cần làm component share dùng ckeditor
     
 sau khi làm xong component cần tao test vào module test: TreeOfThought/docs/test/yeucau.md cần để là sub menu của Module thử nghiệm
 
+**cập nhật 1**
+component ckeditor cần thêm plugin: plugin ckeditor5-math cho latext MathJax
+    - công thức toán học
+    - công thức hóa học 

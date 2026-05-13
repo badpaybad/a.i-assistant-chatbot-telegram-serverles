@@ -58,6 +58,9 @@ import {
 } from 'ckeditor5';
 
 import 'ckeditor5/ckeditor5.css';
+import MathType from '@wiris/mathtype-ckeditor5/dist/index.js'; // Math & Chem plugins v2
+// import Math from 'ckeditor5-math/src/math';
+// import AutoMath from 'ckeditor5-math/src/automath';
 
 import { EditorService } from '../../services/editor.service';
 import { HttpClientService } from '../../../core/http/http-client.service';
@@ -113,6 +116,7 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
       'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor', '|',
       'bold', 'italic', 'underline', 'strikethrough', 'subscript', 'superscript', 'code', '|',
       'alignment', '|',
+      'MathType', 'ChemType', /*'math',*/ '|',
       'link', 'insertImage', 'insertBase64Image', 'mediaEmbed', 'filesFolders', 'insertTable', 'blockQuote', 'codeBlock', 'horizontalLine', 'specialCharacters', 'highlight', '|',
       'bulletedList', 'numberedList', 'outdent', 'indent'
     ],
@@ -126,8 +130,18 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
       Table, TableCaption, TableCellProperties, 
       TableProperties, TableToolbar, TextTransformation, Underline, Undo,
       GeneralHtmlSupport,
+      MathType,
+      // Math, AutoMath,
       FilesFoldersPlugin, GcsUploadAdapterPlugin, Base64ImagePlugin
     ],
+    /*
+    math: {
+      engine: 'mathjax',
+      outputType: 'script',
+      forceOutput: false,
+      enablePrettier: true
+    },
+    */
     htmlSupport: {
       allow: [
         {
@@ -171,7 +185,18 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
     private modalService: NzModalService,
     private http: HttpClient,
     private httpService: HttpClientService
-  ) {}
+  ) {
+    this.loadMathJax();
+  }
+
+  private loadMathJax() {
+    if (!(window as any).MathJax) {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js';
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }
 
   ngOnInit(): void {
     this.config.editorService = this.editorService;
