@@ -1,0 +1,8 @@
+<nz-layout class="files-layout">
+  <nz-sider nzWidth="280px" nzTheme="light" class="folder-sider">
+    <app-folder-tree (folderSelected)="onFolderSelected($any($event))"></app-folder-tree>
+  </nz-sider>
+  <nz-content class="explorer-content">
+    <app-file-explorer [selectedFolderId]="selectedFolderId"></app-file-explorer>
+  </nz-content>
+</nz-layout>

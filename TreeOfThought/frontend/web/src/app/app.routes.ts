@@ -100,6 +100,11 @@ export const routes: Routes = [
           }
 
         ]
+      },
+      {
+        path: 'modules/files-folders',
+        data: { breadcrumb: 'Quản lý tài liệu' },
+        loadComponent: () => import('./modules/files-folders/components/files-folders/files-folders').then(m => m.FilesFolders)
       }
 
     ]

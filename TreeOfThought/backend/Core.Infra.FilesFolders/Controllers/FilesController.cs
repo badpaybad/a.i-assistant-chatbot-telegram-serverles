@@ -1,0 +1,85 @@
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Base.Interfaces;
+using Core.Infra.FilesFolders.Models;
+using Core.Infra.FilesFolders.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Core.Infra.FilesFolders.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+[AppAuthorize]
+public class FilesController : ControllerBase
+{
+    private readonly FilesFoldersService _filesFoldersService;
+    private readonly IDispatcher _dispatcher;
+
+    public FilesController(FilesFoldersService filesFoldersService, IDispatcher dispatcher)
+    {
+        _filesFoldersService = filesFoldersService;
+        _dispatcher = dispatcher;
+    }
+
+    [HttpPost("upload")]
+    public async Task<IActionResult> Upload([FromForm] Guid folderId, IFormFile file)
+    {
+        if (file == null || file.Length == 0) return BadRequest("File không hợp lệ");
+
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+
+        var command = new UploadFileCommand
+        {
+            FolderId = folderId,
+            FileName = file.FileName,
+            ContentType = file.ContentType,
+            Content = ms.ToArray(),
+            UserId = GetUserId().ToString()
+        };
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { message = "Yêu cầu upload file đã được gửi" });
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(Guid id)
+    {
+        var command = new DeleteFileCommand { FileId = id, UserId = GetUserId().ToString() };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { message = "Yêu cầu xóa file đã được gửi" });
+    }
+
+    [HttpPost("move")]
+    public async Task<IActionResult> Move([FromBody] MoveFileCommand command)
+    {
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { message = "Yêu cầu di chuyển file đã được gửi" });
+    }
+
+    [HttpPost("permission")]
+    public async Task<IActionResult> SetPermission([FromBody] SetFilePermissionCommand command)
+    {
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { message = "Yêu cầu cập nhật quyền đã được gửi" });
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetDetail(Guid id)
+    {
+        var userId = GetUserId();
+        var file = await _filesFoldersService.GetFileByIdAsync(userId, id);
+        if (file == null) return NotFound();
+        return Ok(file);
+    }
+
+    private Guid GetUserId()
+    {
+        var userIdStr = User.FindFirst("userId")?.Value;
+        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+            throw new UnauthorizedAccessException();
+        return userId;
+    }
+}

@@ -22,6 +22,9 @@ export const APP_CLAIMS = {
     VIEW_USERS: 'fe.auth:users:view',
     MANAGE_USERS: 'fe.auth:users:manage',
     MANAGE_ACL: 'fe.auth:acl:manage'
+  },
+  FILES_FOLDERS: {
+    VIEW: 'fe.files_folders:view'
   }
 };
 

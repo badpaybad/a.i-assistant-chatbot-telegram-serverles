@@ -44,7 +44,8 @@ export class MainLayoutComponent {
   openMap: { [key: string]: boolean } = {
     dashboard: false,
     auth: false,
-    test: false
+    test: false,
+    files: false
   };
 
   private authService = inject(AuthService);
@@ -110,6 +111,7 @@ export class MainLayoutComponent {
     this.openMap['dashboard'] = url.includes('/modules/cqrs-dashboard');
     this.openMap['auth'] = url.includes('/modules/core-infra-auth');
     this.openMap['test'] = url.includes('/modules/test');
+    this.openMap['files'] = url.includes('/modules/files-folders');
   }
 
   toggleCollapse() {

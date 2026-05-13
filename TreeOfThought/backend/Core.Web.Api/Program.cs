@@ -16,6 +16,10 @@ using System.Reflection;
 using Core.Infra.CQRS.Extensions;
 using Core.Infra.Auth.Extensions;
 using Core.Web.Api.Services;
+using Core.Infra.FilesFolders.Extensions;
+using Core.Infra.FilesFolders.Handlers;
+using Core.Infra.FilesFolders.Controllers;
+using Core.Infra.FilesFolders.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,9 +52,10 @@ builder.Services.AddCors(options =>
 builder.Services.AddAppAuth(config);
 
 // --- 3. Infra Services (CQRS & Base) ---
-builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly());
+builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly);
 
 // --- 4. Database & Auth Repos ---
+builder.Services.AddFilesFolders(config);
 // Registered via AddAppAuth extension
 
 // --- 5. Handlers ---
@@ -59,6 +64,7 @@ builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly());
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
     .AddAuthControllers()
+    .AddApplicationPart(typeof(FoldersController).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -113,13 +119,15 @@ app.UseAuthorization();
 app.MapControllers();
 
 // --- 8. Initialize Infrastructure ---
-await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
+await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly(), typeof(FoldersController).Assembly });
 
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
     try
     {
+        var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
+        await filesDb.EnsureTablesCreatedAsync();
 
         // Initialize Firebase
         var firebase = services.GetRequiredService<FirebaseService>();

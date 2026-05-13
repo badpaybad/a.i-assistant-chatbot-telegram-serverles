@@ -188,5 +188,7 @@
   "User not found": "Không tìm thấy người dùng",
   "Invalid password": "Mật khẩu không đúng",
   "Lệnh / Sự kiện": "Lệnh / Sự kiện",
-  "Handler": "Handler"
+  "Handler": "Handler",
+  "Quản lý tài liệu": "Quản lý tài liệu",
+  "Khám phá tệp tin": "Khám phá tệp tin"
 }

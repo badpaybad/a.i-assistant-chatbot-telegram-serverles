@@ -34,7 +34,7 @@ public abstract class BaseDbContext : DbContext
         }
 
         // Enable SQL logging to Console
-        optionsBuilder.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
+        // optionsBuilder.LogTo(Console.WriteLine, Microsoft.Extensions.Logging.LogLevel.Information);
     }
 
     // Bulk Operations

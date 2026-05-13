@@ -15,7 +15,7 @@ public static class CqrsExtensions
 {
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<Type, string> _nameCache = new();
 
-    public static IServiceCollection AddCqrs(this IServiceCollection services, IConfiguration config, Assembly? handlerAssembly = null)
+    public static IServiceCollection AddCqrs(this IServiceCollection services, IConfiguration config, params Assembly[] handlerAssemblies)
     {
         var redisConn = config["Cqrs:Redis"]!;
 
@@ -36,10 +36,10 @@ public static class CqrsExtensions
         // 3. Core CQRS Dispatcher
         services.AddSingleton<IDispatcher, CqrsDispatcher>();
 
-        // 4. Auto-register handlers if assembly provided
-        if (handlerAssembly != null)
+        // 4. Auto-register handlers if assemblies provided
+        if (handlerAssemblies != null && handlerAssemblies.Length > 0)
         {
-            services.AddCqrsHandlers(handlerAssembly);
+            services.AddCqrsHandlers(handlerAssemblies);
         }
 
         return services;
@@ -56,8 +56,8 @@ public static class CqrsExtensions
 
         foreach (var type in handlerTypes)
         {
-            // Requirement 64: Register handlers as Singleton
-            services.AddSingleton(type);
+            // Register handlers as Scoped (changed from Singleton to support Scoped dependencies like DbContext)
+            services.AddScoped(type);
         }
 
         // Register open generic notification handler

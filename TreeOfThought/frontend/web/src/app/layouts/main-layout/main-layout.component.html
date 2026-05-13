@@ -65,6 +65,17 @@
         </ul>
       </li>
 
+      <li nz-submenu [nzTitle]="filesFoldersTitle" nzIcon="folder" *appClaimCheck="claims.FILES_FOLDERS.VIEW" [(nzOpen)]="openMap['files']">
+        <ng-template #filesFoldersTitle>
+          <span>{{ 'Quản lý tài liệu' | translate }}</span>
+        </ng-template>
+        <ul>
+          <li nz-menu-item nzMatchRouter>
+            <a routerLink="/modules/files-folders">{{ 'Khám phá tệp tin' | translate }}</a>
+          </li>
+        </ul>
+      </li>
+
       <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *appClaimCheck="claims.TEST_MODULE.VIEW" [(nzOpen)]="openMap['test']">
         <ng-template #testTitle>
           <span>{{ 'Mô-đun thử nghiệm' | translate }}</span>

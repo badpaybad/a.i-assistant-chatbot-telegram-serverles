@@ -1,0 +1,31 @@
+<div class="tree-container">
+  <div class="tree-header">
+    <h3>Thư mục</h3>
+    <button nz-button nzType="text" (click)="showCreateModal('root')" nz-tooltip nzTooltipTitle="Tạo thư mục gốc">
+      <span nz-icon nzType="plus"></span>
+    </button>
+  </div>
+  <nz-tree
+    [nzData]="nodes"
+    nzShowIcon
+    (nzClick)="onEvent($any($event))"
+    (nzExpandChange)="onEvent($any($event))"
+    (nzContextMenu)="onContextMenu($any($event), menu)"
+  >
+  </nz-tree>
+
+  <nz-dropdown-menu #menu="nzDropdownMenu">
+    <ul nz-menu>
+      <li nz-menu-item (click)="showCreateModal(contextNode?.key)">
+        <span nz-icon nzType="plus"></span> Thêm thư mục con
+      </li>
+      <li nz-menu-item (click)="renameFolder(contextNode!)">
+        <span nz-icon nzType="edit"></span> Đổi tên
+      </li>
+      <li nz-menu-divider></li>
+      <li nz-menu-item nzDanger (click)="deleteFolder(contextNode!)">
+        <span nz-icon nzType="delete"></span> Xóa
+      </li>
+    </ul>
+  </nz-dropdown-menu>
+</div>
