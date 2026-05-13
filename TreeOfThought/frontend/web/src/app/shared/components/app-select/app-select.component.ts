@@ -47,6 +47,28 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
   onChange: any = () => {};
   onTouched: any = () => {};
 
+  private getCacheKey(): string {
+    const paramsStr = JSON.stringify(this.params || {});
+    return `app_select_cache_${this.apiUrl}_${paramsStr}`;
+  }
+
+  private getCache(): any[] {
+    try {
+      const data = sessionStorage.getItem(this.getCacheKey());
+      return data ? JSON.parse(data) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  private setCache(data: any[]) {
+    try {
+      sessionStorage.setItem(this.getCacheKey(), JSON.stringify(data));
+    } catch (e) {
+      console.warn('Failed to save to sessionStorage', e);
+    }
+  }
+
   ngOnInit() {
     this.search$
       .pipe(
@@ -59,7 +81,13 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
         this.resetAndFetch();
       });
 
-    this.fetchData();
+    const cached = this.getCache();
+    if (cached.length > 0) {
+      this.options = cached.slice(0, this.pageSize);
+      this.hasMore = cached.length > this.options.length;
+    } else {
+      this.fetchData();
+    }
   }
 
   ngOnDestroy() {
@@ -95,7 +123,18 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
   }
 
   onScrollToBottom() {
-    if (!this.loading && this.hasMore) {
+    if (this.loading) return;
+
+    const cached = this.getCache();
+    // Nếu không search và còn data trong cache chưa show hết thì show thêm
+    if (!this.searchTerm && cached.length > this.options.length) {
+      this.pageIndex++;
+      this.options = cached.slice(0, this.pageIndex * this.pageSize);
+      this.hasMore = cached.length > this.options.length;
+      return;
+    }
+
+    if (this.hasMore) {
       this.pageIndex++;
       this.fetchData();
     }
@@ -122,22 +161,35 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
 
       const res = await this.httpService.get(this.apiUrl, { params: queryParams });
       
-      // Giả định BE trả về format: { items: [], total: 0 }
-      // Hoặc nếu BE trả về array trực tiếp (không phân trang)
       const newItems = Array.isArray(res) ? res : (res?.items || []);
       const total = res?.total ?? 0;
 
-      if (this.pageIndex === 1) {
-        this.options = newItems;
-      } else {
-        this.options = [...this.options, ...newItems];
-      }
+      // Cập nhật cache: append dữ liệu mới và de-duplicate
+      let allCached = this.getCache();
+      newItems.forEach((item: any) => {
+        const val = this.getFieldValue(item, this.valueField);
+        if (!allCached.find((c: any) => this.getFieldValue(c, this.valueField) === val)) {
+          allCached.push(item);
+        }
+      });
+      this.setCache(allCached);
 
-      // Kiểm tra xem còn dữ liệu không
-      if (Array.isArray(res)) {
-        this.hasMore = false; // Nếu trả về array thì coi như không có phân trang
+      // Cập nhật hiển thị
+      if (this.searchTerm) {
+        // Filter local để fix lỗi BE không filter theo keyword
+        const term = this.searchTerm.toLowerCase();
+        this.options = allCached.filter(item => 
+          this.getFieldValue(item, this.labelField).toLowerCase().includes(term)
+        );
+        this.hasMore = false; // Khi search thì ưu tiên kết quả tìm kiếm, có thể mở rộng sau nếu BE hỗ trợ phân trang search
       } else {
-        this.hasMore = this.options.length < total;
+        this.options = allCached.slice(0, this.pageIndex * this.pageSize);
+        
+        if (Array.isArray(res)) {
+          this.hasMore = allCached.length > this.options.length;
+        } else {
+          this.hasMore = this.options.length < total || allCached.length > this.options.length;
+        }
       }
     } catch (error) {
       console.error('Error fetching select options:', error);
@@ -148,11 +200,12 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
 
   // Helper to get nested properties if field is like 'user.name'
   getFieldValue(item: any, field: string): string {
+    if (!item) return '';
     return field.split('.').reduce((obj, key) => obj?.[key], item) || '';
   }
 
   isSelected(item: any): boolean {
-    if (!this.selectedValue) return false;
+    if (this.selectedValue === null || this.selectedValue === undefined) return false;
     const itemValue = this.getFieldValue(item, this.valueField);
     
     if (this.mode === 'multiple' && Array.isArray(this.selectedValue)) {
@@ -161,3 +214,4 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
     return this.selectedValue === itemValue;
   }
 }
+

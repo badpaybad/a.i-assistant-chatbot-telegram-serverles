@@ -175,3 +175,8 @@ curl chạy và có response đúng trả jwt ... thông tin user ... nhưng UI 
 **cập nhật 9** [OK]
 notify lên góc phải luôn có thêm thời gian để người dùng biết được thơi gian của noti
 người dùng luôn cần phải tự tắt noti, không có thời gian tự tắt noti
+
+**cập nhật 2026-05-13 15:03:23**
+các droplist đã có hỗ trợ search và auto complete, thêm dạng scroll paging cho scroll khi cần thiết (khi có nhiều item) nhưng đang bị lỗi khi gõ text tìm kiếm thì không filter theo text tìm kiếm.
+    để đỡ quá tải server:
+        lần đầu lấy dữ liệu cân lưu vào session storage, lần tới mở ra chưa tìm kiếm chưa scroll thì lấy luôn. nếu có các thao tác search hay scroll thì append thêm vào dữ liệu đã có trong session storage
