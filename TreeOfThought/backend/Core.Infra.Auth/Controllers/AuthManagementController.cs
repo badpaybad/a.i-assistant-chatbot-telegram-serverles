@@ -43,6 +43,21 @@ public class AuthManagementController : ControllerBase
         return Ok(result);
     }
 
+    [HttpPost("users")]
+    public async Task<IActionResult> CreateUser([FromBody] User user)
+    {
+        await _authRepo.CreateUserAsync(user);
+        return Ok(user);
+    }
+
+    [HttpPut("users/{id}")]
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] User user)
+    {
+        user.Id = id;
+        await _authRepo.UpdateUserAsync(user);
+        return Ok(user);
+    }
+
     [HttpGet("roles")]
     public async Task<IActionResult> GetRoles([FromQuery] RoleSearchQuery query)
     {
@@ -71,6 +86,14 @@ public class AuthManagementController : ControllerBase
         return Ok(role);
     }
 
+    [HttpPut("roles/{id}")]
+    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] Role role)
+    {
+        role.Id = id;
+        await _authRepo.UpdateRoleAsync(role);
+        return Ok(role);
+    }
+
     [HttpGet("claims")]
     public async Task<IActionResult> GetClaims([FromQuery] ClaimSearchQuery query) => Ok(await _authRepo.GetAllClaimsAsync(query));
 
@@ -78,6 +101,14 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
     {
         await _authRepo.CreateClaimAsync(claim);
+        return Ok(claim);
+    }
+
+    [HttpPut("claims/{id}")]
+    public async Task<IActionResult> UpdateClaim(Guid id, [FromBody] AppClaim claim)
+    {
+        claim.Id = id;
+        await _authRepo.UpdateClaimAsync(claim);
         return Ok(claim);
     }
 
@@ -130,6 +161,13 @@ public class AuthManagementController : ControllerBase
         return Ok(new { message = "Role assigned successfully" });
     }
 
+    [HttpPost("users/{userId}/roles/batch")]
+    public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
+    {
+        await _authRepo.AssignRolesToUserAsync(userId, roleIds);
+        return Ok(new { message = "Roles assigned successfully" });
+    }
+
     [HttpDelete("users/{userId}/roles/{roleId}")]
     public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
     {
@@ -144,11 +182,25 @@ public class AuthManagementController : ControllerBase
         return Ok(new { message = "Claim assigned to role successfully" });
     }
 
+    [HttpPost("roles/{roleId}/claims/batch")]
+    public async Task<IActionResult> AssignClaimsToRole(Guid roleId, [FromBody] List<Guid> claimIds)
+    {
+        await _authRepo.AssignClaimsToRoleAsync(roleId, claimIds);
+        return Ok(new { message = "Claims assigned to role successfully" });
+    }
+
     [HttpPost("users/{userId}/claims/{claimId}")]
     public async Task<IActionResult> AssignDirectClaim(Guid userId, Guid claimId)
     {
         await _authRepo.AssignClaimToUserAsync(userId, claimId);
         return Ok(new { message = "Direct claim assigned successfully" });
+    }
+
+    [HttpPost("users/{userId}/claims/batch")]
+    public async Task<IActionResult> AssignDirectClaims(Guid userId, [FromBody] List<Guid> claimIds)
+    {
+        await _authRepo.AssignClaimsToUserAsync(userId, claimIds);
+        return Ok(new { message = "Direct claims assigned successfully" });
     }
 
     [HttpDelete("users/{userId}/claims/{claimId}")]

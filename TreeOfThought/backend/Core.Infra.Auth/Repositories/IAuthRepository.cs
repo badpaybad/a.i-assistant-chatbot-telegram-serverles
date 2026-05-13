@@ -16,21 +16,26 @@ public interface IAuthRepository
     // Role operations
     Task<Role?> GetRoleByNameAsync(string name);
     Task CreateRoleAsync(Role role);
+    Task UpdateRoleAsync(Role role);
     Task DeleteRoleAsync(Guid id);
     Task<List<Role>> GetAllRolesAsync(RoleSearchQuery? query = null);
 
     // Claim operations
     Task<AppClaim?> GetClaimByNameAsync(string name);
     Task CreateClaimAsync(AppClaim claim);
+    Task UpdateClaimAsync(AppClaim claim);
     Task DeleteClaimAsync(Guid id);
     Task<List<AppClaim>> GetAllClaimsAsync(ClaimSearchQuery? query = null);
 
     // Mapping operations
     Task AssignRoleToUserAsync(Guid userId, Guid roleId);
+    Task AssignRolesToUserAsync(Guid userId, List<Guid> roleIds);
     Task RemoveRoleFromUserAsync(Guid userId, Guid roleId);
     Task AssignClaimToRoleAsync(Guid roleId, Guid claimId);
+    Task AssignClaimsToRoleAsync(Guid roleId, List<Guid> claimIds);
     Task RemoveClaimFromRoleAsync(Guid roleId, Guid claimId);
     Task AssignClaimToUserAsync(Guid userId, Guid claimId);
+    Task AssignClaimsToUserAsync(Guid userId, List<Guid> claimIds);
     Task RemoveClaimFromUserAsync(Guid userId, Guid claimId);
 
     // Fetching related data

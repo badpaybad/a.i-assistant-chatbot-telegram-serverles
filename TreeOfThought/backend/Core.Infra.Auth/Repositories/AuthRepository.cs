@@ -121,6 +121,12 @@ public class AuthRepository : IAuthRepository
         await _context.SaveChangesAsync();
     }
 
+    public async Task UpdateRoleAsync(Role role)
+    {
+        _context.Roles.Update(role);
+        await _context.SaveChangesAsync();
+    }
+
     public async Task DeleteRoleAsync(Guid id)
     {
         var role = await _context.Roles.FindAsync(id);
@@ -163,6 +169,12 @@ public class AuthRepository : IAuthRepository
     public async Task CreateClaimAsync(AppClaim claim)
     {
         await _context.Claims.AddAsync(claim);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task UpdateClaimAsync(AppClaim claim)
+    {
+        _context.Claims.Update(claim);
         await _context.SaveChangesAsync();
     }
 
@@ -216,6 +228,24 @@ public class AuthRepository : IAuthRepository
         }
     }
 
+    public async Task AssignRolesToUserAsync(Guid userId, List<Guid> roleIds)
+    {
+        var existingRoleIds = await _context.UserRoles
+            .Where(ur => ur.UserId == userId && roleIds.Contains(ur.RoleId))
+            .Select(ur => ur.RoleId)
+            .ToListAsync();
+
+        var newRoleIds = roleIds.Except(existingRoleIds).ToList();
+        if (newRoleIds.Any())
+        {
+            foreach (var roleId in newRoleIds)
+            {
+                await _context.UserRoles.AddAsync(new UserRole { UserId = userId, RoleId = roleId });
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
+
     public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
     {
         var mapping = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
@@ -231,6 +261,24 @@ public class AuthRepository : IAuthRepository
         if (!await _context.RoleClaims.AnyAsync(rp => rp.RoleId == roleId && rp.ClaimId == claimId))
         {
             await _context.RoleClaims.AddAsync(new RoleClaim { RoleId = roleId, ClaimId = claimId });
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task AssignClaimsToRoleAsync(Guid roleId, List<Guid> claimIds)
+    {
+        var existingClaimIds = await _context.RoleClaims
+            .Where(rc => rc.RoleId == roleId && claimIds.Contains(rc.ClaimId))
+            .Select(rc => rc.ClaimId)
+            .ToListAsync();
+
+        var newClaimIds = claimIds.Except(existingClaimIds).ToList();
+        if (newClaimIds.Any())
+        {
+            foreach (var claimId in newClaimIds)
+            {
+                await _context.RoleClaims.AddAsync(new RoleClaim { RoleId = roleId, ClaimId = claimId });
+            }
             await _context.SaveChangesAsync();
         }
     }
@@ -254,6 +302,24 @@ public class AuthRepository : IAuthRepository
         }
     }
 
+    public async Task AssignClaimsToUserAsync(Guid userId, List<Guid> claimIds)
+    {
+        var existingClaimIds = await _context.UserClaims
+            .Where(uc => uc.UserId == userId && claimIds.Contains(uc.ClaimId))
+            .Select(uc => uc.ClaimId)
+            .ToListAsync();
+
+        var newClaimIds = claimIds.Except(existingClaimIds).ToList();
+        if (newClaimIds.Any())
+        {
+            foreach (var claimId in newClaimIds)
+            {
+                await _context.UserClaims.AddAsync(new UserClaim { UserId = userId, ClaimId = claimId });
+            }
+            await _context.SaveChangesAsync();
+        }
+    }
+
     public async Task RemoveClaimFromUserAsync(Guid userId, Guid claimId)
     {
         var mapping = await _context.UserClaims.FirstOrDefaultAsync(up => up.UserId == userId && up.ClaimId == claimId);
@@ -263,7 +329,6 @@ public class AuthRepository : IAuthRepository
             await _context.SaveChangesAsync();
         }
     }
-
     public async Task<List<Role>> GetUserRolesAsync(Guid userId)
     {
         return await (from ur in _context.UserRoles

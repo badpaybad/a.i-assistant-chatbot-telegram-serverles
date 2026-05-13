@@ -26,3 +26,6 @@ Quyền bổ xung tìm kiếm theo
         quyền, mô tả
     date range
         ngày tạo 
+
+**cập nhật 2026-05-13 18:55:42**
+trong bảng người dùng, bảng vai trò, khi thêm/sửa có droplist chọn quyền , khi thêm/sửa vai trò droplist cần là auto complete select nhiều giống ở filter  

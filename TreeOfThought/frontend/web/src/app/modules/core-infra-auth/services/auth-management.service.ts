@@ -13,8 +13,20 @@ export class AuthManagementService {
     return this.http.get(`${this.BASE_URL}/users`, { params });
   }
 
+  createUser(user: any) {
+    return this.http.post(`${this.BASE_URL}/users`, user);
+  }
+
+  updateUser(userId: string, user: any) {
+    return this.http.put(`${this.BASE_URL}/users/${userId}`, user);
+  }
+
   assignRoleToUser(userId: string, roleId: string) {
     return this.http.post(`${this.BASE_URL}/users/${userId}/roles/${roleId}`);
+  }
+  
+  assignRolesToUser(userId: string, roleIds: string[]) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/roles/batch`, roleIds);
   }
 
   removeRoleFromUser(userId: string, roleId: string) {
@@ -23,6 +35,10 @@ export class AuthManagementService {
 
   assignClaimToUser(userId: string, claimId: string) {
     return this.http.post(`${this.BASE_URL}/users/${userId}/claims/${claimId}`);
+  }
+  
+  assignClaimsToUser(userId: string, claimIds: string[]) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/claims/batch`, claimIds);
   }
 
   removeClaimFromUser(userId: string, claimId: string) {
@@ -42,12 +58,20 @@ export class AuthManagementService {
     return this.http.post(`${this.BASE_URL}/roles`, role);
   }
 
+  updateRole(roleId: string, role: any) {
+    return this.http.put(`${this.BASE_URL}/roles/${roleId}`, role);
+  }
+
   deleteRole(roleId: string) {
     return this.http.delete(`${this.BASE_URL}/roles/${roleId}`);
   }
 
   assignClaimToRole(roleId: string, claimId: string) {
     return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/${claimId}`);
+  }
+  
+  assignClaimsToRole(roleId: string, claimIds: string[]) {
+    return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/batch`, claimIds);
   }
 
   removeClaimFromRole(roleId: string, claimId: string) {
@@ -61,6 +85,10 @@ export class AuthManagementService {
 
   createClaim(claim: any) {
     return this.http.post(`${this.BASE_URL}/claims`, claim);
+  }
+
+  updateClaim(claimId: string, claim: any) {
+    return this.http.put(`${this.BASE_URL}/claims/${claimId}`, claim);
   }
 
   deleteClaim(claimId: string) {

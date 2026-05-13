@@ -13,6 +13,8 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
+import { NzFormModule } from 'ng-zorro-antd/form';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { AuthManagementService } from '../services/auth-management.service';
 import { AppSelectComponent } from '../../../shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -34,15 +36,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzDatePickerModule,
     NzGridModule,
     NzCardModule,
+    NzFormModule,
+    NzCheckboxModule,
     AppSelectComponent,
     TranslateModule
   ],
   template: `
     <div class="page-header">
       <h2>{{ 'Danh sách người dùng' | translate }}</h2>
-      <button nz-button nzType="primary" (click)="loadUsers()">
-        <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
-      </button>
+      <nz-space>
+        <button *nzSpaceItem nz-button nzType="primary" (click)="showCreateModal()">
+          <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | translate }}
+        </button>
+        <button *nzSpaceItem nz-button (click)="loadUsers()">
+          <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
+        </button>
+      </nz-space>
     </div>
 
     <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
@@ -62,14 +71,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </nz-select>
         </div>
         <div nz-col [nzSpan]="6">
-          <nz-select [(ngModel)]="searchQuery.roleIds" [nzPlaceHolder]="'Vai trò' | translate" nzMode="multiple" nzAllowClear style="width: 100%" nzShowSearch>
-            <nz-option *ngFor="let role of availableRoles" [nzValue]="role.id" [nzLabel]="role.name"></nz-option>
-          </nz-select>
+          <app-select
+            apiUrl="/api/AuthManagement/roles"
+            [placeholder]="'Vai trò' | translate"
+            mode="multiple"
+            [(ngModel)]="searchQuery.roleIds"
+            (valueChange)="loadUsers()"
+          ></app-select>
         </div>
         <div nz-col [nzSpan]="6">
-          <nz-select [(ngModel)]="searchQuery.claimIds" [nzPlaceHolder]="'Quyền' | translate" nzMode="multiple" nzAllowClear style="width: 100%" nzShowSearch>
-            <nz-option *ngFor="let claim of availableClaims" [nzValue]="claim.id" [nzLabel]="claim.name"></nz-option>
-          </nz-select>
+          <app-select
+            apiUrl="/api/AuthManagement/claims"
+            [placeholder]="'Quyền' | translate"
+            mode="multiple"
+            [(ngModel)]="searchQuery.claimIds"
+            (valueChange)="loadUsers()"
+          ></app-select>
         </div>
         <div nz-col [nzSpan]="8">
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
@@ -100,7 +117,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <th>{{ 'Trạng thái' | translate }}</th>
           <th>{{ 'Vai trò' | translate }}</th>
           <th>{{ 'Quyền' | translate }}</th>
-          <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
+          <th nzWidth="150px">{{ 'Hành động' | translate }}</th>
         </tr>
       </thead>
       <tbody>
@@ -138,6 +155,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </td>
           <td>
             <nz-space>
+              <button *nzSpaceItem nz-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</button>
               <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
                       [disabled]="data.username?.toLowerCase() === 'admin'"
                       (click)="deleteUser(data)">{{ 'Xóa' | translate }}</button>
@@ -147,12 +165,75 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       </tbody>
     </nz-table>
 
+    <!-- Modal Thêm/Sửa Người dùng -->
+    <nz-modal [(nzVisible)]="isUserModalVisible" [nzTitle]="(editingUser ? 'Sửa người dùng' : 'Thêm người dùng') | translate" (nzOnCancel)="isUserModalVisible = false" (nzOnOk)="saveUser()">
+      <ng-container *nzModalContent>
+        <form nz-form nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'Tên đăng nhập' | translate }}</nz-form-label>
+            <nz-form-control>
+              <input nz-input [(ngModel)]="userForm.username" name="username" [disabled]="!!editingUser" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item *ngIf="!editingUser">
+            <nz-form-label nzRequired>{{ 'Mật khẩu' | translate }}</nz-form-label>
+            <nz-form-control>
+              <input nz-input type="password" [(ngModel)]="userForm.password" name="password" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'Tên hiển thị' | translate }}</nz-form-label>
+            <nz-form-control>
+              <input nz-input [(ngModel)]="userForm.displayName" name="displayName" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'Email' | translate }}</nz-form-label>
+            <nz-form-control>
+              <input nz-input [(ngModel)]="userForm.email" name="email" />
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-control>
+              <label nz-checkbox [(ngModel)]="userForm.isEmailVerified" name="isEmailVerified">{{ 'Đã xác minh email' | translate }}</label>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'Vai trò' | translate }}</nz-form-label>
+            <nz-form-control>
+              <app-select
+                apiUrl="/api/AuthManagement/roles"
+                [placeholder]="'Chọn vai trò' | translate"
+                mode="multiple"
+                [(ngModel)]="userForm.roleIds"
+                name="roleIds"
+              ></app-select>
+            </nz-form-control>
+          </nz-form-item>
+          <nz-form-item>
+            <nz-form-label>{{ 'Quyền trực tiếp' | translate }}</nz-form-label>
+            <nz-form-control>
+              <app-select
+                apiUrl="/api/AuthManagement/claims"
+                [placeholder]="'Chọn quyền' | translate"
+                mode="multiple"
+                [(ngModel)]="userForm.claimIds"
+                name="claimIds"
+              ></app-select>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </ng-container>
+    </nz-modal>
+
+    <!-- Các Modal gán nhanh -->
     <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="'Vai trò' | translate" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
       <ng-container *nzModalContent>
         <app-select
           apiUrl="/api/AuthManagement/roles"
           [placeholder]="'Vui lòng chọn' | translate"
-          [(ngModel)]="selectedRoleId"
+          mode="multiple"
+          [(ngModel)]="selectedRoleIds"
         ></app-select>
       </ng-container>
     </nz-modal>
@@ -162,12 +243,19 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
         <app-select
           apiUrl="/api/AuthManagement/claims"
           [placeholder]="'Vui lòng chọn' | translate"
-          [(ngModel)]="selectedClaimId"
+          mode="multiple"
+          [(ngModel)]="selectedClaimIds"
         ></app-select>
       </ng-container>
     </nz-modal>
   `,
   styles: [`
+    .page-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
     .search-card {
       margin-bottom: 16px;
     }
@@ -198,15 +286,24 @@ export class UserListComponent implements OnInit {
   users: any[] = [];
   loading = false;
   
-  availableRoles: any[] = [];
-  availableClaims: any[] = [];
-  
   isRoleModalVisible = false;
   isClaimModalVisible = false;
+  isUserModalVisible = false;
   
   selectedUser: any = null;
-  selectedRoleId: string = '';
-  selectedClaimId: string = '';
+  selectedRoleIds: string[] = [];
+  selectedClaimIds: string[] = [];
+
+  editingUser: any = null;
+  userForm: any = {
+    username: '',
+    password: '',
+    displayName: '',
+    email: '',
+    isEmailVerified: false,
+    roleIds: [],
+    claimIds: []
+  };
 
   searchQuery: any = {
     keyword: '',
@@ -219,7 +316,6 @@ export class UserListComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.loadMetadata();
     this.loadUsers();
   }
 
@@ -266,30 +362,76 @@ export class UserListComponent implements OnInit {
     this.loadUsers();
   }
 
-  async loadMetadata() {
+  showCreateModal() {
+    this.editingUser = null;
+    this.userForm = {
+      username: '',
+      password: '',
+      displayName: '',
+      email: '',
+      isEmailVerified: false,
+      roleIds: [],
+      claimIds: []
+    };
+    this.isUserModalVisible = true;
+  }
+
+  showEditModal(user: any) {
+    this.editingUser = user;
+    this.userForm = {
+      username: user.username,
+      displayName: user.displayName,
+      email: user.email,
+      isEmailVerified: user.isEmailVerified,
+      roleIds: user.roles?.map((r: any) => r.id) || [],
+      claimIds: user.directClaims?.map((c: any) => c.id) || []
+    };
+    this.isUserModalVisible = true;
+  }
+
+  async saveUser() {
+    if (!this.userForm.username || !this.userForm.displayName || !this.userForm.email || (!this.editingUser && !this.userForm.password)) {
+      this.message.warning(this.translate.instant('Vui lòng nhập đầy đủ thông tin bắt buộc'));
+      return;
+    }
+
     try {
-      this.availableRoles = await this.authMgmt.getRoles();
-      this.availableClaims = await this.authMgmt.getClaims();
+      if (this.editingUser) {
+        await this.authMgmt.updateUser(this.editingUser.id, this.userForm);
+        // Batch assign roles/claims after update
+        await this.authMgmt.assignRolesToUser(this.editingUser.id, this.userForm.roleIds);
+        await this.authMgmt.assignClaimsToUser(this.editingUser.id, this.userForm.claimIds);
+        this.message.success(this.translate.instant('Cập nhật người dùng thành công'));
+      } else {
+        const newUser: any = await this.authMgmt.createUser(this.userForm);
+        // Assign roles/claims for new user
+        if (newUser && newUser.id) {
+          await this.authMgmt.assignRolesToUser(newUser.id, this.userForm.roleIds);
+          await this.authMgmt.assignClaimsToUser(newUser.id, this.userForm.claimIds);
+        }
+        this.message.success(this.translate.instant('Thêm người dùng thành công'));
+      }
+      this.isUserModalVisible = false;
+      this.loadUsers();
     } catch (e) {
-      console.error('Failed to load metadata', e);
+      this.message.error(this.translate.instant('Lỗi khi lưu người dùng'));
     }
   }
 
   showRoleModal(user: any) {
     this.selectedUser = user;
-    this.selectedRoleId = '';
+    this.selectedRoleIds = user.roles?.map((r: any) => r.id) || [];
     this.isRoleModalVisible = true;
   }
 
   async assignRole() {
-    if (!this.selectedRoleId) return;
     try {
-      await this.authMgmt.assignRoleToUser(this.selectedUser.id, this.selectedRoleId);
-      this.message.success(this.translate.instant('Gán vai trò thành công'));
+      await this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds);
+      this.message.success(this.translate.instant('Cập nhật vai trò thành công'));
       this.isRoleModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error(this.translate.instant('Gán vai trò thất bại'));
+      this.message.error(this.translate.instant('Cập nhật vai trò thất bại'));
     }
   }
 
@@ -311,19 +453,18 @@ export class UserListComponent implements OnInit {
 
   showClaimModal(user: any) {
     this.selectedUser = user;
-    this.selectedClaimId = '';
+    this.selectedClaimIds = user.directClaims?.map((c: any) => c.id) || [];
     this.isClaimModalVisible = true;
   }
 
   async assignClaim() {
-    if (!this.selectedClaimId) return;
     try {
-      await this.authMgmt.assignClaimToUser(this.selectedUser.id, this.selectedClaimId);
-      this.message.success(this.translate.instant('Gán quyền thành công'));
+      await this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds);
+      this.message.success(this.translate.instant('Cập nhật quyền thành công'));
       this.isClaimModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error(this.translate.instant('Gán quyền thất bại'));
+      this.message.error(this.translate.instant('Cập nhật quyền thất bại'));
     }
   }
 
