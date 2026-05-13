@@ -135,3 +135,19 @@ không cho phép xóa claim admin ở quản lý claim
 Không cho phép xóa account admin ở quản lý account
 
 role Admin hoặc claim admin là đặc biệt là full quyền không hạn chế quyền (cần check từ BE). không thể bị chỉnh sửa, thêm xóa, khi check quyền thì cần ưu tiên role Admin hoặc claim admin, BE đang mô tả ở TreeOfThought/backend/yeucau.md update BE nếu cần
+
+**cập nhật 8**
+khi user đăng nhập xong cần api để lấy toàn bộ roles và claim user đó có và lưu lại cho tới khi đăng nhập lại hoặc đồng bộ lại, các roles claims này được sử dụng để check quyền trong FE cùng với thông tin ở jwt.  
+
+TreeOfThought/frontend/web/src/app/core/auth/claims.config.ts các const claims về quyền vào 1 đoạn code, hiện 1 UI
+về authorize logic đang được triển khai : 
+        TreeOfThough/frontend/web/src/app/core/auth/claim.guard.ts để cấu hình truy cập các route uri path
+        TreeOfThought/frontend/web/src/app/shared/directives/claim.directive.ts việc ẩn hiện UI      
+    xem TreeOfThought/backend/Core.Infra.Auth/Attributes/AppAuthorizeAttribute.cs mô phỏng theo logic để nhất quán về claims và check quyền được vào: 
+        đưa vào là 1 mảng claims
+
+            logic check của claim directive và claim guard cần phỏng theo AppAuthorizeAttribute, không dùng tới Policy kiểu BE, FE quan tâm về claims , role của user là định nghiã động và gom (list claims )      
+
+claim.directive.ts
+    nếu không đủ quyền thì cần render ra message thay vì content empty. text message: Bạn không có quyền truy cập tính năng. Bạn cần các quyền sau: {list claim} để có thể truy cập tính năng. Vui lòng liên hệ với quản trị viên để yêu cầu cấp quyền. Để login click vào đây để login.
+

@@ -1,5 +1,8 @@
-export const ADMIN_CLAIM = 'be.admin';
-export const ADMIN_ROLE = 'Admin';
+export const AUTH_CONFIG = {
+  ADMIN_CLAIM: 'be.admin',
+  ADMIN_ROLE: 'Admin',
+  CLAIMS_VERSION: '1.3.0'
+};
 
 export const APP_CLAIMS = {
   CQRS_DASHBOARD: {
@@ -22,19 +25,11 @@ export const APP_CLAIMS = {
   }
 };
 
-export const ALL_CLAIMS = [
-  APP_CLAIMS.CQRS_DASHBOARD.VIEW,
-  APP_CLAIMS.CQRS_DASHBOARD.MANAGE_WORKERS,
-  APP_CLAIMS.CQRS_DASHBOARD.RETRY_MESSAGES,
-  APP_CLAIMS.TEST_MODULE.VIEW,
-  APP_CLAIMS.TEST_MODULE.FIRE_COMMANDS,
-  APP_CLAIMS.AUTH.VIEW_ROLES,
-  APP_CLAIMS.AUTH.MANAGE_ROLES,
-  APP_CLAIMS.AUTH.VIEW_CLAIMS,
-  APP_CLAIMS.AUTH.MANAGE_CLAIMS,
-  APP_CLAIMS.AUTH.VIEW_USERS,
-  APP_CLAIMS.AUTH.MANAGE_USERS,
-  APP_CLAIMS.AUTH.MANAGE_ACL,
-];
+// Flatten all claims for sync
+export const ALL_CLAIMS = Object.values(APP_CLAIMS).flatMap(module => Object.values(module));
 
-export const CLAIMS_VERSION = '1.3.0';
+// Re-export constants for compatibility
+export const ADMIN_CLAIM = AUTH_CONFIG.ADMIN_CLAIM;
+export const ADMIN_ROLE = AUTH_CONFIG.ADMIN_ROLE;
+export const CLAIMS_VERSION = AUTH_CONFIG.CLAIMS_VERSION;
+

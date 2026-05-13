@@ -92,7 +92,13 @@ export const routes: Routes = [
             path: 'change-password',
             loadComponent: () => import('./modules/core-infra-auth/change-password/change-password.component').then(m => m.ChangePasswordComponent),
             data: { breadcrumb: 'Đổi mật khẩu' }
+          },
+          {
+            path: 'authorize-info',
+            loadComponent: () => import('./modules/core-infra-auth/authorize-info/authorize-info.component').then(m => m.AuthorizeInfoComponent),
+            data: { breadcrumb: 'Thông tin phân quyền' }
           }
+
         ]
       }
 

@@ -100,7 +100,10 @@ export class AuthService {
       const response = await this.http.get('/api/auth/me');
       // Support both camelCase and PascalCase from backend
       const claims = response.claims || response.Claims || [];
+      const roles = response.roles || response.Roles || [];
       localStorage.setItem('claims', JSON.stringify(claims));
+      localStorage.setItem('roles', JSON.stringify(roles));
+
     } catch (e: any) {
       console.error('Failed to sync claims', e);
       // If we get a 404 or 401, it means our session/user is invalid
@@ -110,19 +113,30 @@ export class AuthService {
     }
   }
 
-  hasClaim(claim: string): boolean {
+  hasClaim(claimOrClaims: string | string[], mode: 'OR' | 'AND' = 'OR'): boolean {
     const rawClaims = localStorage.getItem('claims');
     if (!rawClaims || rawClaims === 'undefined') return false;
     
     try {
-      const claims = JSON.parse(rawClaims);
-      if (!Array.isArray(claims)) return false;
-      return claims.includes(claim) || claims.includes(ADMIN_CLAIM);
+      const userClaims = JSON.parse(rawClaims);
+      if (!Array.isArray(userClaims)) return false;
+
+      // Admin bypass
+      if (userClaims.includes(ADMIN_CLAIM)) return true;
+
+      const claimsToCheck = Array.isArray(claimOrClaims) ? claimOrClaims : [claimOrClaims];
+      
+      if (mode === 'OR') {
+        return claimsToCheck.some(c => userClaims.includes(c));
+      } else {
+        return claimsToCheck.every(c => userClaims.includes(c));
+      }
     } catch (e) {
       console.error('Error parsing claims from localStorage', e);
       return false;
     }
   }
+
 
   isLoggedIn(): boolean {
     return !!localStorage.getItem('jwt_token');
