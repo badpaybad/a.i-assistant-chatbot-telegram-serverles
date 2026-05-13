@@ -20,7 +20,7 @@ registerLocaleData(en);
 const nzConfig: NzConfig = {
   notification: {
     nzPlacement: 'topRight',
-    nzDuration: 15000 // 15 seconds
+    nzDuration: 0
   }
 };
 

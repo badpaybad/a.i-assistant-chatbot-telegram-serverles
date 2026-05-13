@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../services/app-notification.service';
 import { firstValueFrom } from 'rxjs';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { TranslateService } from '@ngx-translate/core';
@@ -11,7 +11,7 @@ import { TranslateService } from '@ngx-translate/core';
 })
 export class HttpClientService {
   private http = inject(HttpClient);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private router = inject(Router);
   private templateService = inject(NotificationTemplateService);
   private translate = inject(TranslateService);

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -105,7 +105,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 })
 export class ClaimSyncComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private modal = inject(NzModalService);
   private translate = inject(TranslateService);
   

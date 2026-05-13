@@ -5,7 +5,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { HttpClientService } from '../../../core/http/http-client.service';
 
@@ -27,7 +27,7 @@ import { HttpClientService } from '../../../core/http/http-client.service';
 export class ChangePasswordComponent {
   private fb = inject(NonNullableFormBuilder);
   private http = inject(HttpClientService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
 
   loading = false;

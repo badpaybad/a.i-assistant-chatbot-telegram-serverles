@@ -10,7 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, TrackingStep } from '../services/dashboard.service';
 
@@ -37,7 +37,7 @@ import { DashboardService, TrackingStep } from '../services/dashboard.service';
 export class TracingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private dashboardService = inject(DashboardService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
 
   trackingId = '';

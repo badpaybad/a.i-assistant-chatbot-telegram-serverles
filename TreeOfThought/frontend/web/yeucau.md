@@ -171,3 +171,7 @@ curl chạy và có response đúng trả jwt ... thông tin user ... nhưng UI 
     -H 'sec-ch-ua-mobile: ?0' \
     -H 'sec-ch-ua-platform: "Linux"' \
     --data-raw '{"username":"admin","password":"admin123","remember":true}'
+
+**cập nhật 9** [OK]
+notify lên góc phải luôn có thêm thời gian để người dùng biết được thơi gian của noti
+người dùng luôn cần phải tự tắt noti, không có thời gian tự tắt noti

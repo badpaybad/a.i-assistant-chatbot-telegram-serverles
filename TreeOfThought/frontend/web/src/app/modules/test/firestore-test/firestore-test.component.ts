@@ -6,7 +6,7 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { FirebaseService } from '../../../core/firebase/firebase.service';
 import { HttpClientService } from '../../../core/http/http-client.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -30,7 +30,7 @@ import { Unsubscribe } from 'firebase/firestore';
 export class FirestoreTestComponent implements OnDestroy {
   private firebase = inject(FirebaseService);
   private http = inject(HttpClientService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
 
   commandName = 'sample.command';
   payload = '{"message": "Hello from Firestore Test"}';

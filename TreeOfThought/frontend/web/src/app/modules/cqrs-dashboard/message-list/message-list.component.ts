@@ -4,7 +4,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService } from '../services/dashboard.service';
@@ -26,7 +26,7 @@ import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 })
 export class MessageListComponent implements OnInit {
   private dashboardService = inject(DashboardService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private modal = inject(NzModalService);
   private translate = inject(TranslateService);
   private modalData = inject(NZ_MODAL_DATA, { optional: true });

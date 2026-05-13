@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../services/app-notification.service';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { TranslateService } from '@ngx-translate/core';
 
@@ -9,7 +9,7 @@ export const claimGuard = (claimOrClaims: string | string[], mode: 'OR' | 'AND' 
   return () => {
     const authService = inject(AuthService);
     const router = inject(Router);
-    const notification = inject(NzNotificationService);
+    const notification = inject(AppNotificationService);
     const templateService = inject(NotificationTemplateService);
     const translate = inject(TranslateService);
 

@@ -7,7 +7,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AuthService } from '../../../core/auth/auth.service';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
@@ -32,7 +32,7 @@ export class SignupComponent {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
 
   validateForm: FormGroup<{

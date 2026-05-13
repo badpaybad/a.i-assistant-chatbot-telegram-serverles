@@ -19,7 +19,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
 import { MessageListComponent } from '../message-list/message-list.component';
@@ -57,7 +57,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
 })
 export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
   private modal = inject(NzModalService);
 

@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -78,7 +78,7 @@ import { DashboardService } from '../services/dashboard.service';
 })
 export class CqrsTestComponent {
   private dashboardService = inject(DashboardService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
 
   commandPayload = '{"message": "Hello from UI Test Command", "timestamp": "' + new Date().toISOString() + '"}';

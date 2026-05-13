@@ -5,7 +5,7 @@ import { NzPageHeaderModule } from 'ng-zorro-antd/page-header';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { AppNotificationService } from '../../../core/services/app-notification.service';
 import { FirebaseService } from '../../../core/firebase/firebase.service';
 import { HttpClientService } from '../../../core/http/http-client.service';
 
@@ -26,7 +26,7 @@ import { HttpClientService } from '../../../core/http/http-client.service';
 export class FcmTestComponent implements OnInit {
   private firebase = inject(FirebaseService);
   private http = inject(HttpClientService);
-  private notification = inject(NzNotificationService);
+  private notification = inject(AppNotificationService);
 
   token: string | null = null;
   loadingToken = false;
