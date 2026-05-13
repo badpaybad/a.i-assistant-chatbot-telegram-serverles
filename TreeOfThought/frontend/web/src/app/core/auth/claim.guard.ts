@@ -49,9 +49,9 @@ export const claimGuard = (claimOrClaims: string | string[], mode: 'OR' | 'AND' 
       });
     }
 
-    if (!isLoggedIn) {
-      router.navigate(['/auth/login']);
-    }
+    // if (!isLoggedIn) {
+    //   router.navigate(['/auth/login']);
+    // }
 
     return false;
   };

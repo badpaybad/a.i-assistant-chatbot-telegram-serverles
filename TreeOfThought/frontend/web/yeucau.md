@@ -151,3 +151,23 @@ về authorize logic đang được triển khai :
 claim.directive.ts
     nếu không đủ quyền thì cần render ra message thay vì content empty. text message: Bạn không có quyền truy cập tính năng. Bạn cần các quyền sau: {list claim} để có thể truy cập tính năng. Vui lòng liên hệ với quản trị viên để yêu cầu cấp quyền. Để login click vào đây để login.
 
+**bug 2026-05-13 13:13:13**
+ở form đăng nhập khi điền tài khoản , mật khẩu nhấn phím enter 
+curl chạy và có response đúng trả jwt ... thông tin user ... nhưng UI vẫn bị đứng ở màn login, Enter 1 lần nữa mới được chuyển sang màn home
+    curl 'http://localhost:5000/api/auth/login' \
+    -H 'Accept: application/json, text/plain, */*' \
+    -H 'Accept-Language: en-US,en;q=0.9,vi;q=0.8' \
+    -H 'Cache-Control: no-cache' \
+    -H 'Connection: keep-alive' \
+    -H 'Content-Type: application/json' \
+    -H 'Origin: http://localhost:4200' \
+    -H 'Pragma: no-cache' \
+    -H 'Referer: http://localhost:4200/' \
+    -H 'Sec-Fetch-Dest: empty' \
+    -H 'Sec-Fetch-Mode: cors' \
+    -H 'Sec-Fetch-Site: same-site' \
+    -H 'User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36' \
+    -H 'sec-ch-ua: "Chromium";v="148", "Google Chrome";v="148", "Not/A)Brand";v="99"' \
+    -H 'sec-ch-ua-mobile: ?0' \
+    -H 'sec-ch-ua-platform: "Linux"' \
+    --data-raw '{"username":"admin","password":"admin123","remember":true}'

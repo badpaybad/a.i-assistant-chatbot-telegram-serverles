@@ -13,6 +13,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { Router, ActivatedRoute, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { AppClaimDirective } from '../../shared/directives/claim.directive';
 
 @Component({
   selector: 'app-main-layout',
@@ -28,7 +29,8 @@ import { filter } from 'rxjs/operators';
     NzAvatarModule,
     TranslateModule,
     NzDropDownModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    AppClaimDirective
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css']

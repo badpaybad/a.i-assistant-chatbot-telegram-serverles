@@ -32,7 +32,7 @@ export class AuthService {
   async login(credentials: any) {
     const response = await this.http.post('/api/auth/login', credentials);
     const { token, firebaseToken } = response;
-    this.saveSession(token, firebaseToken);
+    await this.saveSession(token, firebaseToken);
     return response;
   }
 
@@ -60,7 +60,7 @@ export class AuthService {
     });
 
     const { token, firebaseToken } = response;
-    this.saveSession(token, firebaseToken);
+    await this.saveSession(token, firebaseToken);
     return response;
   }
 
@@ -121,10 +121,17 @@ export class AuthService {
       const userClaims = JSON.parse(rawClaims);
       if (!Array.isArray(userClaims)) return false;
 
+      // Handle empty check (logged in only)
+      const claimsToCheck = Array.isArray(claimOrClaims) 
+        ? claimOrClaims.filter(c => !!c) 
+        : (claimOrClaims ? [claimOrClaims] : []);
+
+      if (claimsToCheck.length === 0) {
+        return true; // If logged in and no specific claims required
+      }
+
       // Admin bypass
       if (userClaims.includes(ADMIN_CLAIM)) return true;
-
-      const claimsToCheck = Array.isArray(claimOrClaims) ? claimOrClaims : [claimOrClaims];
       
       if (mode === 'OR') {
         return claimsToCheck.some(c => userClaims.includes(c));

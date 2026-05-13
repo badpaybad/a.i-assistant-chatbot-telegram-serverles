@@ -23,18 +23,18 @@ export const routes: Routes = [
           { 
             path: '', 
             component: DashboardComponent,
-            canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
+            // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           { 
             path: 'tracing/:id', 
             component: TracingComponent,
-            canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
+            // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Tracing' }
           },
           { 
             path: 'messages/:queueName', 
             component: MessageListComponent,
-            canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
+            // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Messages' }
           }
         ]

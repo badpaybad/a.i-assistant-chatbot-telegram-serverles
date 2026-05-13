@@ -12,6 +12,7 @@
         <h1>Tree Of Thought</h1>
       </a>
     </div>
+
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
       <!-- <li nz-menu-item nzMatchRouter>
         <span nz-icon nzType="home"></span>
@@ -26,7 +27,7 @@
         <span><a routerLink="/contact">{{ 'Liên hệ' | translate }}</a></span>
       </li> -->
 
-      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *ngIf="hasClaim(claims.CQRS_DASHBOARD.VIEW)" [(nzOpen)]="openMap['dashboard']">
+      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *appClaimCheck="claims.CQRS_DASHBOARD.VIEW" [(nzOpen)]="openMap['dashboard']">
         <ng-template #dashboardTitle>
           <span>{{ 'Dashboard' | translate }}</span>
         </ng-template>
@@ -37,7 +38,7 @@
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *ngIf="hasClaim(claims.AUTH.VIEW_USERS)" [(nzOpen)]="openMap['auth']">
+      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *appClaimCheck="claims.AUTH.VIEW_USERS" [(nzOpen)]="openMap['auth']">
         <ng-template #authTitle>
           <span>{{ 'Core Infra Auth' | translate }}</span>
         </ng-template>
@@ -51,7 +52,7 @@
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/core-infra-auth/claims">{{ 'Quyền' | translate }}</a>
           </li>
-          <li nz-menu-item nzMatchRouter *ngIf="hasClaim(claims.AUTH.MANAGE_ACL)">
+          <li nz-menu-item nzMatchRouter *appClaimCheck="claims.AUTH.MANAGE_ACL">
             <a routerLink="/modules/core-infra-auth/acl">{{ 'Quản lý ACL' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
@@ -64,7 +65,7 @@
         </ul>
       </li>
 
-      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *ngIf="hasClaim(claims.TEST_MODULE.VIEW)" [(nzOpen)]="openMap['test']">
+      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *appClaimCheck="claims.TEST_MODULE.VIEW" [(nzOpen)]="openMap['test']">
         <ng-template #testTitle>
           <span>{{ 'Mô-đun thử nghiệm' | translate }}</span>
         </ng-template>
@@ -136,7 +137,7 @@
             <a [routerLink]="item.url">{{ item.label | translate }}</a>
           </nz-breadcrumb-item>
         </nz-breadcrumb>
-        <router-outlet></router-outlet>
+        <router-outlet *appClaimCheck=""></router-outlet>
       </div>
     </nz-content>
   </nz-layout>
