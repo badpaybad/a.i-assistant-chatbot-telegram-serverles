@@ -23,7 +23,7 @@ export const claimGuard = (claim: string): CanActivateFn => {
       : translate.instant('Yêu cầu đăng nhập');
     
     const message = isLoggedIn 
-      ? translate.instant('Bạn không có quyền: {claim}', { claim })
+      ? translate.instant('Bạn không có quyền: {{claim}}', { claim })
       : translate.instant('Vui lòng đăng nhập để truy cập tài nguyên này');
     
     const loginLinkText = translate.instant('Click vào đây để đăng nhập');
@@ -41,6 +41,10 @@ export const claimGuard = (claim: string): CanActivateFn => {
         router.navigate(['/auth/login']);
         notification.remove(ref.messageId);
       });
+    }
+
+    if (!isLoggedIn) {
+      router.navigate(['/auth/login']);
     }
 
     return false;

@@ -180,7 +180,7 @@
   "Hoặc": "Hoặc",
   "Truy cập bị từ chối": "Truy cập bị từ chối",
   "Yêu cầu đăng nhập": "Yêu cầu đăng nhập",
-  "Bạn không có quyền: {claim}": "Bạn không có quyền: {claim}",
+  "Bạn không có quyền: {{claim}}": "Bạn không có quyền: {{claim}}",
   "Vui lòng đăng nhập để truy cập tài nguyên này": "Vui lòng đăng nhập để truy cập tài nguyên này",
   "Click vào đây để đăng nhập": "Click vào đây để đăng nhập",
   "Access Denied": "Truy cập bị từ chối",

@@ -5,6 +5,7 @@ using System.Security.Claims;
 using Core.Infra.Auth.Models;
 using Core.Infra.Auth.Attributes;
 using Core.Infra.Auth.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Infra.Auth.Handlers;
 
@@ -12,16 +13,16 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
 {
     private readonly AuthRedisService _cacheService;
     private readonly IHttpContextAccessor _httpContextAccessor;
-    private readonly IAuthorizationService _authorizationService;
+    private readonly IServiceProvider _serviceProvider;
 
     public AppAuthorizationHandler(
         AuthRedisService cacheService,
         IHttpContextAccessor httpContextAccessor,
-        IAuthorizationService authorizationService)
+        IServiceProvider serviceProvider)
     {
         _cacheService = cacheService;
         _httpContextAccessor = httpContextAccessor;
-        _authorizationService = authorizationService;
+        _serviceProvider = serviceProvider;
     }
 
     protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AppAuthorizationRequirement requirement)
@@ -63,7 +64,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         // 2.2. Prioritized BasePolicy Check (Short-circuit)
         if (!string.IsNullOrEmpty(requirement.BasePolicy))
         {
-            var result = await _authorizationService.AuthorizeAsync(user, requirement.BasePolicy);
+            var authService = _serviceProvider.GetRequiredService<IAuthorizationService>();
+            var result = await authService.AuthorizeAsync(user, requirement.BasePolicy);
             if (!result.Succeeded)
             {
                 // Base policy failed, no need to check Redis

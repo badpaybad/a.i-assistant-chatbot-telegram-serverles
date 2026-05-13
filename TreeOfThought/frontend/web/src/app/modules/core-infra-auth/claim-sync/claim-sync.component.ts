@@ -112,6 +112,7 @@ export class ClaimSyncComponent implements OnInit {
   version = CLAIMS_VERSION;
   claims = ALL_CLAIMS;
   claimsCount = ALL_CLAIMS.length;
+  ADMIN_CLAIM = ADMIN_CLAIM;
   
   existingClaims: any[] = [];
   loading = false;

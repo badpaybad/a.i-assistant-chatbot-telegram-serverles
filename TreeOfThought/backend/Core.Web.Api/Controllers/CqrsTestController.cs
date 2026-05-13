@@ -1,5 +1,6 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Auth.Attributes;
+using Core.Infra.Auth.Models;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
@@ -35,7 +36,7 @@ public class CqrsTestController : ControllerBase
     }
 
     [HttpGet("stats")]
-    [AppAuthorize("be.admin")] // Only admin can see stats
+    [AppAuthorize(AuthConstants.AdminClaim)] // Only admin can see stats
     public async Task<IActionResult> GetStats()
     {
         var stats = await _dispatcher.GetStatisticsAsync();
@@ -43,7 +44,7 @@ public class CqrsTestController : ControllerBase
     }
 
     [HttpGet("workers")]
-    [AppAuthorize("be.admin")]
+    [AppAuthorize(AuthConstants.AdminClaim)]
     public IActionResult GetWorkers()
     {
         return Ok(_dispatcher.GetWorkerStatus());

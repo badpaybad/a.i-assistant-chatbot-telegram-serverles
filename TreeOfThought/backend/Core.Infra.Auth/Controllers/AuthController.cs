@@ -67,19 +67,15 @@ public class AuthController : ControllerBase
         var user = await _authService.GetUserByIdAsync(userId);
         if (user == null) return NotFound();
 
-        var userRoles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
-        List<string> claims;
+        // 1. Try reading from JWT first (Stateless Mode)
+        var claims = User.FindAll("claims").Select(c => c.Value).ToList();
 
-        if (userRoles.Any())
+        // 2. If none in JWT, check Redis (Hybrid Mode)
+        if (!claims.Any())
         {
-            // Hybrid Mode: Roles detected, fetch granular claims from Redis
             var cacheKey = $"claims:{userId}";
-            claims = await _cacheService.GetAsync<List<string>>(cacheKey) ?? new List<string>();
-        }
-        else
-        {
-            // Stateless Mode: Read granular claims from JWT
-            claims = User.FindAll("claims").Select(c => c.Value).ToList();
+            var cachedClaims = await _cacheService.GetAsync<List<string>>(cacheKey);
+            if (cachedClaims != null) claims = cachedClaims;
         }
 
         return Ok(new { 
@@ -167,7 +163,7 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized();
 
-        if (await _authService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword))
+        if (await _authService.ChangePasswordAsync(userId, request.OldPassword, request.NewPassword))
         {
             return Ok(new { message = "Password changed successfully" });
         }

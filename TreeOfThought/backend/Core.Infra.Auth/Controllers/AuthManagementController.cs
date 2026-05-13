@@ -7,7 +7,7 @@ namespace Core.Infra.Auth.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[AppAuthorize("be.admin")]
+[AppAuthorize(AuthConstants.AdminClaim)]
 public class AuthManagementController : ControllerBase
 {
     private readonly IAuthRepository _authRepo;
