@@ -60,3 +60,5 @@ nút tạo mới folder cần có icon folder
 tất cả các thao tác: thêm mới folder , upload file, xóa file, xóa folder, move file, move folder đều cần reload lại danh sách folder ở treeview sidebar và danh sách file bên content right
 
 kiểm tra backend luôn await các async khi gọi insert update delete vào db. đảm bảo dữ liệu vào db rồi mới thực hiện việc khác tiếp
+
+    **bug 2: **cập nhật 5** ** tính năng move file, move folder chưa hoạt động, cần kiểm tra lại và sửa.

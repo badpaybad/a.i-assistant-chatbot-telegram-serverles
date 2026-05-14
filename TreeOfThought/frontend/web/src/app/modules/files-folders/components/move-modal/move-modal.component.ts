@@ -1,9 +1,9 @@
-import { Component, Input, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzTreeModule, NzTreeNodeOptions, NzFormatEmitEvent } from 'ng-zorro-antd/tree';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { NzModalRef } from 'ng-zorro-antd/modal';
+import { NzModalRef, NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { FilesFoldersService } from '../../services/files-folders.service';
 
@@ -67,9 +67,10 @@ import { FilesFoldersService } from '../../services/files-folders.service';
   `
 })
 export class MoveModalComponent implements OnInit {
-  @Input() itemId!: string;
-  @Input() itemType!: 'file' | 'folder';
-  @Input() itemName!: string;
+  private modalData = inject(NZ_MODAL_DATA);
+  itemId: string = this.modalData.itemId;
+  itemType: 'file' | 'folder' = this.modalData.itemType;
+  itemName: string = this.modalData.itemName;
 
   nodes: NzTreeNodeOptions[] = [
     {
