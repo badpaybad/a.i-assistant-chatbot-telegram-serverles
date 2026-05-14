@@ -53,12 +53,12 @@ public class AuthController : ControllerBase
         return Ok(new { keys = new[] { jwk } });
     }
 
-    [HttpPost("init")]
-    public async Task<IActionResult> Initialize()
-    {
-        await _authService.InitializeAsync();
-        return Ok(new { message = "Auth system initialized and admin seeded" });
-    }
+    // [HttpPost("init")]
+    // public async Task<IActionResult> Initialize()
+    // {
+    //     await _authService.InitializeAsync();
+    //     return Ok(new { message = "Auth system initialized and admin seeded" });
+    // }
 
     [HttpGet("me")]
     [AppAuthorize]
