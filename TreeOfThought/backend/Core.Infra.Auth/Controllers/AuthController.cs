@@ -108,9 +108,9 @@ public class AuthController : ControllerBase
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
             };
-            var identity = new ClaimsIdentity(claims, "SsoSession");
+            var identity = new ClaimsIdentity(claims, AuthConstants.SsoSessionScheme);
             var principal = new ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync("SsoSession", principal, new AuthenticationProperties
+            await HttpContext.SignInAsync(AuthConstants.SsoSessionScheme, principal, new AuthenticationProperties
             {
                 IsPersistent = true,
                 ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
@@ -137,7 +137,7 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequest request)
     {
         // 1. Check if user is already logged in via Session Cookie
-        var authenticateResult = await HttpContext.AuthenticateAsync("SsoSession");
+        var authenticateResult = await HttpContext.AuthenticateAsync(AuthConstants.SsoSessionScheme);
         if (authenticateResult.Succeeded && authenticateResult.Principal != null)
         {
             var userIdStr = authenticateResult.Principal.FindFirst(AuthConstants.UserIdClaim)?.Value;

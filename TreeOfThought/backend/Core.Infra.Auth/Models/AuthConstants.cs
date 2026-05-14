@@ -11,4 +11,6 @@ public static class AuthConstants
     public const string NameClaim = "name";
 
     public const string PolicyPrefix = "AppAuthorize";
+
+    public const string SsoSessionScheme = "SsoSession";
 }

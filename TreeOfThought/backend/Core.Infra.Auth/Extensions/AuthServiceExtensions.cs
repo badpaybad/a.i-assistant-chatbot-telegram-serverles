@@ -23,12 +23,24 @@ public static class AuthServiceExtensions
 {
     public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>>? configurePolicyAdditional = null)
     {
+        // --- CORS Configuration ---
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", policy =>
+            {
+                policy.SetIsOriginAllowed(_ => true) // Allow all origins with credentials
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+            });
+        });
+
         // 1. HttpContextAccessor
         services.AddHttpContextAccessor();
 
         // 2. Authentication
         var isOidc = config.GetValue<bool>("Jwt:IsOidc");
-        services.AddAuthentication(options => 
+        services.AddAuthentication(options =>
         {
             options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -65,7 +77,7 @@ public static class AuthServiceExtensions
                 }
 
             })
-            .AddCookie("SsoSession", options =>
+            .AddCookie(AuthConstants.SsoSessionScheme, options =>
             {
                 options.Cookie.Name = "TOT_SSO_SESSION";
                 options.Cookie.HttpOnly = true;
@@ -97,13 +109,13 @@ public static class AuthServiceExtensions
         var pgConn = config["Auth:PostgreSql"]!;
         services.AddScoped<AuthDbContext>(sp => new AuthDbContext(pgConn, BaseDbContext.DbProviderType.PostgreSql));
         services.AddScoped<IAuthRepository, AuthRepository>();
-        
+
         // 5. Redis for Auth (Specific Service Inheritance)
         var redisConn = config["Auth:Redis"]!;
-        services.AddSingleton<AuthRedisService>(sp => 
+        services.AddSingleton<AuthRedisService>(sp =>
             new AuthRedisService(redisConn, sp.GetRequiredService<ILogger<AuthRedisService>>()));
-        
-        services.AddSingleton<Core.Infra.Base.Interfaces.ICacheService>(sp => 
+
+        services.AddSingleton<Core.Infra.Base.Interfaces.ICacheService>(sp =>
             sp.GetRequiredService<AuthRedisService>());
 
         services.AddScoped<AuthService>();
@@ -136,18 +148,18 @@ public static class AuthServiceExtensions
                 // 2. Scan and Sync Claims from [AppAuthorize] attributes
                 var scanner = services.GetRequiredService<ClaimScannerService>();
                 var authService = services.GetRequiredService<AuthService>();
-                
+
                 var allScannedClaims = new HashSet<string>();
-                
+
                 // Always scan the Auth assembly (where management controllers are)
-                foreach(var c in scanner.GetClaimsFromAssembly(typeof(AuthServiceExtensions).Assembly)) 
+                foreach (var c in scanner.GetClaimsFromAssembly(typeof(AuthServiceExtensions).Assembly))
                     allScannedClaims.Add(c);
 
                 if (additionalAssembliesToScan != null)
                 {
                     foreach (var assembly in additionalAssembliesToScan)
                     {
-                        foreach(var c in scanner.GetClaimsFromAssembly(assembly)) 
+                        foreach (var c in scanner.GetClaimsFromAssembly(assembly))
                             allScannedClaims.Add(c);
                     }
                 }
@@ -176,7 +188,7 @@ public static class AuthServiceExtensions
             .Replace("\\n", "\n")
             .Replace("\\r", "\r")
             .Trim();
-            
+
         // Keep only valid ASCII and printable characters + newlines
         var sb = new StringBuilder();
         foreach (var c in cleaned)
@@ -187,13 +199,13 @@ public static class AuthServiceExtensions
             }
         }
         cleaned = sb.ToString().Replace("\r", ""); // Normalize to \n
-        
+
         // Ensure headers and content are correctly separated
         var lines = cleaned.Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim())
             .Where(l => !string.IsNullOrEmpty(l))
             .ToList();
-        
+
         return string.Join("\n", lines);
     }
 
@@ -212,13 +224,13 @@ public static class AuthServiceExtensions
         using var rsa = RSA.Create();
         var cleanPem = NormalizePem(privateKeyPem);
         var lines = cleanPem.Split('\n').ToList();
-        
-        try 
+
+        try
         {
             // Try standard way first
             rsa.ImportFromPem(cleanPem);
         }
-        catch 
+        catch
         {
             try
             {
@@ -229,13 +241,13 @@ public static class AuthServiceExtensions
                     if (line.StartsWith("-----")) continue;
                     base64Builder.Append(line);
                 }
-                
+
                 var rawBase64 = base64Builder.ToString();
                 // Filter to ONLY base64 alphabet characters, ignoring padding for now
-                var base64NoPadding = new string(rawBase64.Where(c => 
-                    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || 
+                var base64NoPadding = new string(rawBase64.Where(c =>
+                    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
                     c == '+' || c == '/').ToArray());
-                
+
                 // Re-add padding correctly
                 var finalBase64 = base64NoPadding;
                 switch (finalBase64.Length % 4)
@@ -243,9 +255,9 @@ public static class AuthServiceExtensions
                     case 2: finalBase64 += "=="; break;
                     case 3: finalBase64 += "="; break;
                 }
-                
+
                 var bytes = Convert.FromBase64String(finalBase64);
-                
+
                 if (cleanPem.Contains("RSA PRIVATE KEY"))
                 {
                     rsa.ImportRSAPrivateKey(bytes, out _);
@@ -261,7 +273,7 @@ public static class AuthServiceExtensions
                     $"Error: {innerEx.Message}. PEM snippet: {(cleanPem.Length > 50 ? cleanPem.Substring(0, 50) : cleanPem)}", innerEx);
             }
         }
-        
+
         var parameters = rsa.ExportParameters(false);
         var jwk = new JsonWebKey
         {

@@ -36,18 +36,6 @@ if (!string.IsNullOrEmpty(defaultRedisConn))
     builder.Services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<AppRedisService>());
 }
 
-// --- CORS Configuration ---
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
-    {
-        policy.SetIsOriginAllowed(_ => true) // Allow all origins with credentials
-              .AllowAnyMethod()
-              .AllowAnyHeader()
-              .AllowCredentials();
-    });
-});
-
 // --- 2. Authentication & Authorization (Encapsulated) ---
 builder.Services.AddAppAuth(config);
 

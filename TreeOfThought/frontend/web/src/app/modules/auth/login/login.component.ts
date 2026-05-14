@@ -1,6 +1,12 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  NonNullableFormBuilder,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -25,10 +31,10 @@ import { AuthService } from '../../../core/auth/auth.service';
     NzCheckboxModule,
     NzDividerModule,
     NzIconModule,
-    TranslateModule
+    TranslateModule,
   ],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css']
+  styleUrls: ['./login.component.css'],
 })
 export class LoginComponent {
   private fb = inject(NonNullableFormBuilder);
@@ -45,7 +51,7 @@ export class LoginComponent {
   }> = this.fb.group({
     username: ['', [Validators.required]],
     password: ['', [Validators.required]],
-    remember: [true]
+    remember: [true],
   });
 
   loading = false;
@@ -64,13 +70,13 @@ export class LoginComponent {
       this.loading = true;
       try {
         const response = await this.authService.login(this.validateForm.value);
-        
+
         if (this.handleRedirect()) return;
 
         if (response.mustChangePassword) {
           this.notification.warning(
             this.translate.instant('Yêu cầu đổi mật khẩu'),
-            this.translate.instant('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục')
+            this.translate.instant('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục'),
           );
           this.router.navigate(['/modules/core-infra-auth/change-password']);
         } else {
@@ -79,27 +85,20 @@ export class LoginComponent {
       } catch (e: any) {
         console.error(e);
         this.notification.error(
-          this.translate.instant('Đăng nhập thất bại'), 
-          e.error?.message || this.translate.instant('Tên đăng nhập hoặc mật khẩu không đúng')
+          this.translate.instant('Đăng nhập thất bại'),
+          e.error?.message || this.translate.instant('Tên đăng nhập hoặc mật khẩu không đúng'),
         );
       } finally {
         this.loading = false;
       }
     } else {
-      Object.values(this.validateForm.controls).forEach(control => {
+      Object.values(this.validateForm.controls).forEach((control) => {
         if (control.invalid) {
           control.markAsDirty();
           control.updateValueAndValidity({ onlySelf: true });
         }
       });
     }
-  }
-
-  fillAdmin() {
-    this.validateForm.patchValue({
-      username: 'admin',
-      password: 'admin123'
-    });
   }
 
   async loginWithGoogle() {
