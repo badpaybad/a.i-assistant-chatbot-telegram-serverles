@@ -17,12 +17,12 @@ public class AppAuthorizationPolicyProvider : DefaultAuthorizationPolicyProvider
     public override async Task<AuthorizationPolicy?> GetPolicyAsync(string policyName)
     {
         // Kiểm tra xem policyName có bắt đầu bằng tiền tố của chúng ta không
-        if (policyName.StartsWith("AppAuthorize", StringComparison.OrdinalIgnoreCase))
+        if (policyName.StartsWith(AuthConstants.PolicyPrefix, StringComparison.OrdinalIgnoreCase))
         {
             var parts = policyName.Split(':');
             if (parts.Length >= 7)
             {
-                // Format: AppAuthorize:Mode:Action:ResourceType:Roles:BasePolicy:Claims
+                // Format: {PolicyPrefix}:Mode:Action:ResourceType:Roles:BasePolicy:Claims
                 var mode = Enum.Parse<AuthMode>(parts[1]);
                 var action = Enum.Parse<ResourceActions>(parts[2]);
                 var resourceType = parts[3] == "null" ? null : parts[3];

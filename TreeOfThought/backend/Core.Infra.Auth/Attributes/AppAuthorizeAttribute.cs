@@ -57,15 +57,15 @@ public class AppAuthorizeAttribute : AuthorizeAttribute
 
     private void UpdatePolicy(string claimsStr)
     {
-        // Format: AppAuthorize:Mode:Action:ResourceType:Roles:Policy:Claims
+        // Format: {PolicyPrefix}:Mode:Action:ResourceType:Roles:Policy:Claims
         // Gán vào thuộc tính thực sự của lớp cha để Framework nhận diện
-        base.Policy = $"AppAuthorize:{Mode}:{Action}:{(ResourceType ?? "null")}:{(Roles ?? "null")}:{(Policy ?? "null")}:{claimsStr}";
+        base.Policy = $"{AuthConstants.PolicyPrefix}:{Mode}:{Action}:{(ResourceType ?? "null")}:{(Roles ?? "null")}:{(Policy ?? "null")}:{claimsStr}";
     }
 
     private void UpdatePolicyFromProperties()
     {
         var claimsStr = "null";
-        if (!string.IsNullOrEmpty(base.Policy) && base.Policy.StartsWith("AppAuthorize"))
+        if (!string.IsNullOrEmpty(base.Policy) && base.Policy.StartsWith(AuthConstants.PolicyPrefix))
         {
             var parts = base.Policy.Split(':');
             if (parts.Length >= 7) claimsStr = parts[6];

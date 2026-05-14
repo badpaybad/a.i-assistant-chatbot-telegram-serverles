@@ -10,5 +10,5 @@ public static class AuthConstants
     public const string UserIdClaim = "userId";
     public const string NameClaim = "name";
 
-
+    public const string PolicyPrefix = "AppAuthorize";
 }
