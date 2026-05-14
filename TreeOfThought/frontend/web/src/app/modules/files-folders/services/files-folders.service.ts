@@ -1,4 +1,5 @@
 import { Injectable, inject } from '@angular/core';
+import { Subject } from 'rxjs';
 import { HttpClientService } from '../../../core/http/http-client.service';
 
 @Injectable({
@@ -6,6 +7,17 @@ import { HttpClientService } from '../../../core/http/http-client.service';
 })
 export class FilesFoldersService {
   private http = inject(HttpClientService);
+  private refreshSubject = new Subject<void>();
+
+  refresh$ = this.refreshSubject.asObservable();
+
+  notifyRefresh(delayMs: number = 0) {
+    if (delayMs > 0) {
+      setTimeout(() => this.refreshSubject.next(), delayMs);
+    } else {
+      this.refreshSubject.next();
+    }
+  }
 
   getFolderTree() {
     return this.http.get('/api/folders/tree');
@@ -29,9 +41,11 @@ export class FilesFoldersService {
     return this.http.post('/api/folders/move', { folderId, newParentId });
   }
 
-  uploadFile(folderId: string, file: File) {
+  uploadFile(folderId: string | null, file: File) {
     const formData = new FormData();
-    formData.append('folderId', folderId);
+    if (folderId) {
+      formData.append('folderId', folderId);
+    }
     formData.append('file', file);
     return this.http.post('/api/files/upload', formData);
   }

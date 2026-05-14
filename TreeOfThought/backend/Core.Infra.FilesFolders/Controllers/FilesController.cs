@@ -28,7 +28,7 @@ public class FilesController : ControllerBase
     }
 
     [HttpPost("upload")]
-    public async Task<IActionResult> Upload([FromForm] Guid folderId, IFormFile file)
+    public async Task<IActionResult> Upload([FromForm] Guid? folderId, IFormFile file)
     {
         if (file == null || file.Length == 0) return BadRequest("File không hợp lệ");
 
@@ -44,32 +44,32 @@ public class FilesController : ControllerBase
             UserId = GetUserId().ToString()
         };
 
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu upload file đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "File đã được upload" });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var command = new DeleteFileCommand { FileId = id, UserId = GetUserId().ToString() };
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu xóa file đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "File đã được xóa" });
     }
 
     [HttpPost("move")]
     public async Task<IActionResult> Move([FromBody] MoveFileCommand command)
     {
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu di chuyển file đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "File đã được di chuyển" });
     }
 
     [HttpPost("permission")]
     public async Task<IActionResult> SetPermission([FromBody] SetFilePermissionCommand command)
     {
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu cập nhật quyền đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Quyền đã được cập nhật" });
     }
 
     [HttpGet("{id}/share-url")]

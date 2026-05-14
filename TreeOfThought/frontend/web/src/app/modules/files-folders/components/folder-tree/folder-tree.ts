@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output, ViewChild, inject } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output, ViewChild, inject, OnDestroy } from '@angular/core';
 import { FilesFoldersService } from '../../services/files-folders.service';
 import { NzFormatEmitEvent, NzTreeNodeOptions, NzTreeModule, NzTreeNode, NzTreeComponent } from 'ng-zorro-antd/tree';
 import { NzModalService, NzModalModule } from 'ng-zorro-antd/modal';
@@ -11,6 +11,8 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CreateFolderPopoverComponent } from '../create-folder-popover/create-folder-popover.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-folder-tree',
@@ -25,14 +27,17 @@ import { FormsModule } from '@angular/forms';
     NzButtonModule,
     NzIconModule,
     NzTooltipModule,
-    NzPopoverModule
+    NzPopoverModule,
+    CreateFolderPopoverComponent
   ],
   templateUrl: './folder-tree.html',
   styleUrl: './folder-tree.css',
 })
-export class FolderTreeComponent implements OnInit {
+export class FolderTreeComponent implements OnInit, OnDestroy {
   @Output() folderSelected = new EventEmitter<string | null>();
+  @Output() folderCreated = new EventEmitter<void>();
   @ViewChild('treeComponent', { static: false }) treeComponent!: NzTreeComponent;
+  @ViewChild(CreateFolderPopoverComponent) createPopover!: CreateFolderPopoverComponent;
 
   private filesFoldersService = inject(FilesFoldersService);
   private nzContextMenuService = inject(NzContextMenuService);
@@ -55,13 +60,34 @@ export class FolderTreeComponent implements OnInit {
   newFolderName = '';
   creating = false;
   contextNode: NzTreeNode | null = null;
+  private refreshSub?: Subscription;
+
+  get currentFolderName(): string {
+    if (this.contextNode) return this.contextNode.title;
+    const selectedNode = this.treeComponent?.getSelectedNodeList()[0];
+    return selectedNode ? selectedNode.title : 'Tài liệu của tôi';
+  }
+
+  get selectedParentId(): string | null {
+    if (this.contextNode) return this.contextNode.key === 'root' ? null : this.contextNode.key;
+    const selectedNode = this.treeComponent?.getSelectedNodeList()[0];
+    if (!selectedNode) return null;
+    return selectedNode.key === 'root' ? null : selectedNode.key;
+  }
 
   ngOnInit(): void {
     this.loadTree();
+    this.refreshSub = this.filesFoldersService.refresh$.subscribe(() => {
+      this.loadTree();
+    });
     // Default selection
     setTimeout(() => {
       this.folderSelected.emit(null);
     }, 0);
+  }
+
+  ngOnDestroy(): void {
+    this.refreshSub?.unsubscribe();
   }
 
   async loadTree(): Promise<void> {
@@ -104,40 +130,7 @@ export class FolderTreeComponent implements OnInit {
     if (this.contextNode) {
       this.selectedNodeKey = this.contextNode.key;
       this.folderSelected.emit(this.selectedNodeKey === 'root' ? null : this.selectedNodeKey);
-      this.createPopoverVisible = true;
-    }
-  }
-
-  validateFolderName(name: string): boolean {
-    if (!name || !name.trim()) {
-      this.message.error('Tên thư mục không được để trống');
-      return false;
-    }
-    // OS invalid characters: \ / : * ? " < > |
-    const invalidChars = /[\\/:*?"<>|]/;
-    if (invalidChars.test(name)) {
-      this.message.error('Tên thư mục không được chứa các ký tự đặc biệt: \\ / : * ? " < > |');
-      return false;
-    }
-    return true;
-  }
-
-  async createFolder(): Promise<void> {
-    if (!this.validateFolderName(this.newFolderName)) return;
-
-    this.creating = true;
-    try {
-      const parentId = this.selectedNodeKey === 'root' ? null : this.selectedNodeKey;
-      await this.filesFoldersService.createFolder(this.newFolderName, parentId);
-      this.message.success('Đã gửi yêu cầu tạo thư mục');
-      this.createPopoverVisible = false;
-      this.newFolderName = '';
-      // Reload tree to show new folder
-      setTimeout(() => this.loadTree(), 1000); 
-    } catch (error) {
-      this.message.error('Lỗi khi tạo thư mục');
-    } finally {
-      this.creating = false;
+      this.createPopover.open();
     }
   }
 
@@ -152,7 +145,7 @@ export class FolderTreeComponent implements OnInit {
         try {
           await this.filesFoldersService.deleteFolder(node.key);
           this.message.success('Đã gửi yêu cầu xóa thư mục');
-          setTimeout(() => this.loadTree(), 1000);
+          this.filesFoldersService.notifyRefresh();
         } catch (error) {
           this.message.error('Lỗi khi xóa thư mục');
         }

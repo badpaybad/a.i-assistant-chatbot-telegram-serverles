@@ -48,24 +48,24 @@ public class FoldersController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateFolderCommand command)
     {
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu tạo thư mục đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Thư mục đã được tạo" });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
         var command = new DeleteFolderCommand { FolderId = id, UserId = GetUserId().ToString() };
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu xóa thư mục đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Thư mục đã được xóa" });
     }
 
     [HttpPost("move")]
     public async Task<IActionResult> Move([FromBody] MoveFolderCommand command)
     {
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command);
-        return Ok(new { message = "Yêu cầu di chuyển thư mục đã được gửi" });
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Thư mục đã được di chuyển" });
     }
 
     private Guid GetUserId()

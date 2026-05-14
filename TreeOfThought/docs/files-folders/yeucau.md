@@ -44,3 +44,19 @@ Chức năng và quản lý file, folder info với db postgresql, UI giống fo
 **cập nhật 3**
 bên content right danh sách file. nút tải lên để sang bên phải.
 bổ xung đường dẫn file hiện tại trên top bên trái . có thể click vào từng folder trên path để truy cập folder
+bổ xung nút thêm mới  cạnh nút tải lên , trước nút làm mới 
+**cập nhật 4**
+thư mục gốc cũng có thể upload được file 
+
+**cập nhật 5**
+popover khi điền tên folder để tạo mới, cần có title Tạo mới folder, trong folder hiện tại: {tên folder hiện tại}
+    cần dùng chung 1 component popover tạo mới folder cho cả bên treeview sidebar và bên content right khi click nút thêm mới 
+nút tạo mới folder cần có icon folder 
+ở danh sách bên phải cần bổ xung thêm hành động Chuyển folder (move):
+    áp dụng cho cả file và folder
+    click vào nút move, hiện lên modal để chọn folder đích
+        modal hiển thị treeview folder , người dùng chọn folder và ok thì move
+
+tất cả các thao tác: thêm mới folder , upload file, xóa file, xóa folder, move file, move folder đều cần reload lại danh sách folder ở treeview sidebar và danh sách file bên content right
+
+kiểm tra backend luôn await các async khi gọi insert update delete vào db. đảm bảo dữ liệu vào db rồi mới thực hiện việc khác tiếp

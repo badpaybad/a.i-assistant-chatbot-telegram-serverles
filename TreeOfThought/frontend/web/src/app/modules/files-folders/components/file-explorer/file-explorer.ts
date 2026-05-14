@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, inject } from '@angular/core';
+import { Component, Input, OnChanges, SimpleChanges, inject, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { FilesFoldersService } from '../../services/files-folders.service';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService, NzModalModule } from 'ng-zorro-antd/modal';
@@ -11,6 +11,12 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
+import { FormsModule } from '@angular/forms';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzPopoverModule } from 'ng-zorro-antd/popover';
+import { CreateFolderPopoverComponent } from '../create-folder-popover/create-folder-popover.component';
+import { MoveModalComponent } from '../move-modal/move-modal.component';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-file-explorer',
@@ -24,13 +30,18 @@ import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
     NzTooltipModule,
     NzTagModule,
     NzModalModule,
-    NzBreadCrumbModule
+    NzBreadCrumbModule,
+    FormsModule,
+    NzInputModule,
+    NzPopoverModule,
+    CreateFolderPopoverComponent
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
 })
-export class FileExplorerComponent implements OnChanges {
+export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   @Input() selectedFolderId: string | null = null;
+  @Output() folderCreated = new EventEmitter<void>();
 
   private filesFoldersService = inject(FilesFoldersService);
   private message = inject(NzMessageService);
@@ -44,6 +55,28 @@ export class FileExplorerComponent implements OnChanges {
   pageSize = 10;
   total = 0;
   breadcrumbs: any[] = [];
+  
+  get currentFolderName(): string {
+    if (this.breadcrumbs && this.breadcrumbs.length > 0) {
+      return this.breadcrumbs[this.breadcrumbs.length - 1].name;
+    }
+    return 'Tài liệu của tôi';
+  }
+  
+  createPopoverVisible = false;
+  newFolderName = '';
+  creatingFolder = false;
+  private refreshSub?: Subscription;
+
+  ngOnInit(): void {
+    this.refreshSub = this.filesFoldersService.refresh$.subscribe(() => {
+      this.loadContent();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.refreshSub?.unsubscribe();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedFolderId']) {
@@ -84,12 +117,12 @@ export class FileExplorerComponent implements OnChanges {
 
   async onUpload(event: any): Promise<void> {
     const file = event.target.files[0];
-    if (!file || !this.selectedFolderId) return;
+    if (!file) return;
 
     try {
       await this.filesFoldersService.uploadFile(this.selectedFolderId, file);
       this.message.success('Đã gửi yêu cầu upload file');
-      setTimeout(() => this.loadContent(), 2000);
+      this.filesFoldersService.notifyRefresh();
     } catch (error) {
       this.message.error('Lỗi khi upload file');
     }
@@ -118,10 +151,29 @@ export class FileExplorerComponent implements OnChanges {
         try {
           await this.filesFoldersService.deleteFile(fileId);
           this.message.success('Đã gửi yêu cầu xóa file');
-          setTimeout(() => this.loadContent(), 1000);
+          this.filesFoldersService.notifyRefresh();
         } catch (error) {
           this.message.error('Lỗi khi xóa file');
         }
+      }
+    });
+  }
+
+  openMoveModal(item: any, type: 'file' | 'folder'): void {
+    const modal = this.modal.create({
+      nzTitle: `Chuyển ${type === 'file' ? 'file' : 'thư mục'}: ${item.name}`,
+      nzContent: MoveModalComponent,
+      nzData: {
+        itemId: item.id,
+        itemType: type,
+        itemName: item.name
+      },
+      nzFooter: null
+    });
+
+    modal.afterClose.subscribe(result => {
+      if (result) {
+        // Refresh handled by component via service
       }
     });
   }
@@ -134,7 +186,7 @@ export class FileExplorerComponent implements OnChanges {
         try {
           await this.filesFoldersService.deleteFolder(folderId);
           this.message.success('Đã gửi yêu cầu xóa thư mục');
-          setTimeout(() => this.loadContent(), 1000);
+          this.filesFoldersService.notifyRefresh();
         } catch (error) {
           this.message.error('Lỗi khi xóa thư mục');
         }

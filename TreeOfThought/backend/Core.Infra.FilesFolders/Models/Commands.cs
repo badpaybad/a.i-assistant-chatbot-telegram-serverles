@@ -27,7 +27,7 @@ public class MoveFolderCommand : FilesFoldersCommand
 
 public class UploadFileCommand : FilesFoldersCommand
 {
-    public Guid FolderId { get; set; }
+    public Guid? FolderId { get; set; }
     public string FileName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
     public byte[] Content { get; set; } = Array.Empty<byte>();
@@ -41,7 +41,7 @@ public class DeleteFileCommand : FilesFoldersCommand
 public class MoveFileCommand : FilesFoldersCommand
 {
     public Guid FileId { get; set; }
-    public Guid NewFolderId { get; set; }
+    public Guid? NewFolderId { get; set; }
 }
 
 public class SetFilePermissionCommand : FilesFoldersCommand

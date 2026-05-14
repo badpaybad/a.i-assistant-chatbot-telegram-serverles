@@ -58,6 +58,16 @@ public static class CqrsExtensions
         {
             // Register handlers as Scoped (changed from Singleton to support Scoped dependencies like DbContext)
             services.AddScoped(type);
+
+            // Also register as its interfaces to support IDispatcher Memory Mode (resolving by interface)
+            var interfaces = type.GetInterfaces().Where(i =>
+                (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(ICommandHandler<>)) ||
+                (i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IEventHandler<>))
+            );
+            foreach (var iface in interfaces)
+            {
+                services.AddScoped(iface, type);
+            }
         }
 
         // Register open generic notification handler
