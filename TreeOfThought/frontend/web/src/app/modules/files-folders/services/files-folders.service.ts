@@ -48,6 +48,10 @@ export class FilesFoldersService {
     return this.http.post('/api/files/permission', { fileId, permission, shareCode, expiredAt });
   }
 
+  getShareUrl(fileId: string, durationHours: number = 24) {
+    return this.http.get(`/api/files/${fileId}/share-url?durationHours=${durationHours}`);
+  }
+
   getFileDetail(fileId: string) {
     return this.http.get(`/api/files/${fileId}`);
   }

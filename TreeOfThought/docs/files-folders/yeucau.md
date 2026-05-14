@@ -28,3 +28,6 @@ Chức năng và quản lý file, folder info với db postgresql, UI giống fo
     khi tao xong cần reload lại treeview
 
 ở content area (content bên phải) , khi upload xong cần reload lại
+**cập nhật 2**
+Ở danh sách file bên phải, nút share file , click vào lên modal để chọn chế độ share
+    cần đưa ra các cách share file theo google cloud storage về share file và url

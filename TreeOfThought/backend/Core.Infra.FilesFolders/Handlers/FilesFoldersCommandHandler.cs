@@ -163,19 +163,38 @@ public class FilesFoldersCommandHandler :
         var file = await _db.Files.FindAsync(command.FileId);
         if (file == null) return;
 
+        var oldPermission = file.Permission;
         file.Permission = command.Permission;
         file.ShareCode = command.ShareCode;
         file.ExpiredAt = command.ExpiredAt;
         file.UpdatedBy = command.UserId;
+
+        // If permission changed to/from Public, update GCS
+        if (oldPermission != file.Permission)
+        {
+            if (file.Permission == PermissionType.Public || oldPermission == PermissionType.Public)
+            {
+                try
+                {
+                    var objectName = GetGcsObjectName(file);
+                    await _firebaseService.UpdateObjectAclAsync(AppName, BucketName, objectName, file.Permission == PermissionType.Public);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating GCS ACL for file {FileId}", file.Id);
+                }
+            }
+        }
+
         await _db.SaveChangesAsync();
     }
 
     private string GetGcsObjectName(FileItem file)
     {
-        // Extract object name from URL or store it in DB. 
-        // For now, parsing from URL: https://storage.googleapis.com/{bucket}/{objectName}
+        // Extract object name from URL: https://storage.googleapis.com/{bucket}/{objectName}
         var uri = new Uri(file.Url);
-        var parts = uri.AbsolutePath.Split('/', 3);
+        var path = uri.AbsolutePath; // /bucket/objectName
+        var parts = path.Split('/', 3);
         return parts.Length > 2 ? parts[2] : file.Name;
     }
 }

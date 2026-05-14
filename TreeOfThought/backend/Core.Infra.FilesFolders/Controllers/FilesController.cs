@@ -2,6 +2,7 @@ using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;
+using Core.Infra.Firebase.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -14,11 +15,15 @@ namespace Core.Infra.FilesFolders.Controllers;
 public class FilesController : ControllerBase
 {
     private readonly FilesFoldersService _filesFoldersService;
+    private readonly FirebaseService _firebaseService;
     private readonly IDispatcher _dispatcher;
+    private const string AppName = "Default";
+    private const string BucketName = "dunp-test-gcs";
 
-    public FilesController(FilesFoldersService filesFoldersService, IDispatcher dispatcher)
+    public FilesController(FilesFoldersService filesFoldersService, FirebaseService firebaseService, IDispatcher dispatcher)
     {
         _filesFoldersService = filesFoldersService;
+        _firebaseService = firebaseService;
         _dispatcher = dispatcher;
     }
 
@@ -65,6 +70,22 @@ public class FilesController : ControllerBase
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command);
         return Ok(new { message = "Yêu cầu cập nhật quyền đã được gửi" });
+    }
+
+    [HttpGet("{id}/share-url")]
+    public async Task<IActionResult> GetShareUrl(Guid id, [FromQuery] int durationHours = 24)
+    {
+        var userId = GetUserId();
+        var file = await _filesFoldersService.GetFileByIdAsync(userId, id);
+        if (file == null) return NotFound();
+
+        // Extract object name from URL
+        var uri = new Uri(file.Url);
+        var parts = uri.AbsolutePath.Split('/', 3);
+        var objectName = parts.Length > 2 ? parts[2] : file.Name;
+
+        var signedUrl = _firebaseService.GetSignedUrl(AppName, BucketName, objectName, TimeSpan.FromHours(durationHours));
+        return Ok(new { url = signedUrl });
     }
 
     [HttpPost("editor-upload")]

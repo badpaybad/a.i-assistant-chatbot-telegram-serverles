@@ -165,6 +165,26 @@ public class FirebaseService
         return $"https://storage.googleapis.com/{bucketName}/{objectName}";
     }
 
+    public async Task UpdateObjectAclAsync(string appName, string bucketName, string objectName, bool isPublic)
+    {
+        var client = _storageClients[appName];
+        var obj = await client.GetObjectAsync(bucketName, objectName);
+        if (isPublic)
+        {
+            await client.UpdateObjectAsync(obj, new UpdateObjectOptions
+            {
+                PredefinedAcl = PredefinedObjectAcl.PublicRead
+            });
+        }
+        else
+        {
+            await client.UpdateObjectAsync(obj, new UpdateObjectOptions
+            {
+                PredefinedAcl = PredefinedObjectAcl.Private
+            });
+        }
+    }
+
     public string GetSignedUrl(string appName, string bucketName, string objectName, TimeSpan duration)
     {
         var jsonPath = _jsonFilePaths[appName];
