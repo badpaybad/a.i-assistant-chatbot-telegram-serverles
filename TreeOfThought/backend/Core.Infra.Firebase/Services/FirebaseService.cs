@@ -14,7 +14,7 @@ public class FirebaseService
     private static readonly Dictionary<string, FirebaseApp> _apps = new();
     private static readonly Dictionary<string, FirestoreDb> _firestoreDbs = new();
     private static readonly Dictionary<string, StorageClient> _storageClients = new();
-    private static readonly Dictionary<string, string> _jsonFilePaths = new();
+    private static readonly Dictionary<string, GoogleCredential> _credentials = new();
     private readonly ILogger<FirebaseService> _logger;
 
     public FirebaseService(ILogger<FirebaseService> logger)
@@ -44,7 +44,7 @@ public class FirebaseService
                 }
 
                 _apps[name] = app;
-                _jsonFilePaths[name] = jsonFilePath;
+                _credentials[name] = credential;
 
                 if (!string.IsNullOrEmpty(projectId))
                 {
@@ -183,8 +183,8 @@ public class FirebaseService
 
     public string GetSignedUrl(string appName, string bucketName, string objectName, TimeSpan duration)
     {
-        var jsonPath = _jsonFilePaths[appName];
-        var urlSigner = UrlSigner.FromServiceAccountPath(jsonPath);
+        var credential = _credentials[appName];
+        var urlSigner = UrlSigner.FromCredential(credential);
         return urlSigner.Sign(bucketName, objectName, duration, HttpMethod.Get);
     }
 

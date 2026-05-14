@@ -7,6 +7,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using System.Reflection;
+using System.Security.Cryptography;
+using System.Linq;
+
 using Core.Infra.Auth.Contexts;
 using Core.Infra.Auth.Handlers;
 using Core.Infra.Auth.Repositories;
@@ -17,25 +20,42 @@ namespace Core.Infra.Auth.Extensions;
 
 public static class AuthServiceExtensions
 {
-    public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>> configurePolicyAdditional = null)
+    public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>>? configurePolicyAdditional = null)
     {
         // 1. HttpContextAccessor
         services.AddHttpContextAccessor();
 
         // 2. Authentication
+        var isOidc = config.GetValue<bool>("Jwt:IsOidc");
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                options.TokenValidationParameters = new TokenValidationParameters
+                if (isOidc)
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = false,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = config["Jwt:Issuer"],
-                    ValidAudience = config["Jwt:Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config["Jwt:Secret"]!))
-                };
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ValidateLifetime = false,
+                        ValidateIssuerSigningKey = true,
+                        ValidIssuer = config["Jwt:Issuer"],
+                        ValidAudience = config["Jwt:Audience"],
+                        IssuerSigningKey = GetJwks(config.GetRsaPrivateKey(), config["Jwt:Kid"] ?? "tot-v1")
+                    };
+                }
+                else
+                {
+                    options.Authority = config["Jwt:Authority"];
+                    options.RequireHttpsMetadata = false;
+                    options.MapInboundClaims = false;
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateAudience = false,
+                        ValidateIssuer = false,
+                        NameClaimType = "name",
+                        RoleClaimType = "role"
+                    };
+                }
             });
 
         // 3. Authorization (Dynamic Policy Provider & Custom Handler)
@@ -80,7 +100,7 @@ public static class AuthServiceExtensions
         return mvcBuilder.AddApplicationPart(typeof(Core.Infra.Auth.Controllers.AuthController).Assembly);
     }
 
-    public static async Task UseAppAuth(this IApplicationBuilder app, IConfiguration config, Assembly[] additionalAssembliesToScan = null)
+    public static async Task UseAppAuth(this IApplicationBuilder app, IConfiguration config, Assembly[]? additionalAssembliesToScan = null)
     {
         using (var scope = app.ApplicationServices.CreateScope())
         {
@@ -127,5 +147,114 @@ public static class AuthServiceExtensions
                 else Console.WriteLine($"[AUTH INIT ERROR] {ex.Message}");
             }
         }
+    }
+
+    public static string NormalizePem(string pem)
+    {
+        if (string.IsNullOrWhiteSpace(pem)) return string.Empty;
+
+        // Normalize and clean the PEM string
+        // Handle literal \n and \r, remove non-ASCII chars, and normalize newlines
+        var cleaned = pem
+            .Replace("\\n", "\n")
+            .Replace("\\r", "\r")
+            .Trim();
+            
+        // Keep only valid ASCII and printable characters + newlines
+        var sb = new StringBuilder();
+        foreach (var c in cleaned)
+        {
+            if (c == '\n' || c == '\r' || (c >= 32 && c <= 126))
+            {
+                sb.Append(c);
+            }
+        }
+        cleaned = sb.ToString().Replace("\r", ""); // Normalize to \n
+        
+        // Ensure headers and content are correctly separated
+        var lines = cleaned.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => l.Trim())
+            .Where(l => !string.IsNullOrEmpty(l))
+            .ToList();
+        
+        return string.Join("\n", lines);
+    }
+
+    public static string GetRsaPrivateKey(this IConfiguration config)
+    {
+        return NormalizePem(config["Jwt:RsaPrivateKey"] ?? "");
+    }
+
+    public static JsonWebKey GetJwks(string privateKeyPem, string kid = "tot-v1")
+    {
+        if (string.IsNullOrWhiteSpace(privateKeyPem))
+        {
+            throw new ArgumentException("Private key PEM is empty or null.", nameof(privateKeyPem));
+        }
+
+        using var rsa = RSA.Create();
+        var cleanPem = NormalizePem(privateKeyPem);
+        var lines = cleanPem.Split('\n').ToList();
+        
+        try 
+        {
+            // Try standard way first
+            rsa.ImportFromPem(cleanPem);
+        }
+        catch 
+        {
+            try
+            {
+                // Fallback: Manually extract base64 data
+                var base64Builder = new StringBuilder();
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("-----")) continue;
+                    base64Builder.Append(line);
+                }
+                
+                var rawBase64 = base64Builder.ToString();
+                // Filter to ONLY base64 alphabet characters, ignoring padding for now
+                var base64NoPadding = new string(rawBase64.Where(c => 
+                    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || 
+                    c == '+' || c == '/').ToArray());
+                
+                // Re-add padding correctly
+                var finalBase64 = base64NoPadding;
+                switch (finalBase64.Length % 4)
+                {
+                    case 2: finalBase64 += "=="; break;
+                    case 3: finalBase64 += "="; break;
+                }
+                
+                var bytes = Convert.FromBase64String(finalBase64);
+                
+                if (cleanPem.Contains("RSA PRIVATE KEY"))
+                {
+                    rsa.ImportRSAPrivateKey(bytes, out _);
+                }
+                else
+                {
+                    rsa.ImportPkcs8PrivateKey(bytes, out _);
+                }
+            }
+            catch (Exception innerEx)
+            {
+                throw new ArgumentException($"Failed to import RSA key. Length: {cleanPem.Length}. " +
+                    $"Error: {innerEx.Message}. PEM snippet: {(cleanPem.Length > 50 ? cleanPem.Substring(0, 50) : cleanPem)}", innerEx);
+            }
+        }
+        
+        var parameters = rsa.ExportParameters(false);
+        var jwk = new JsonWebKey
+        {
+            Kty = "RSA",
+            Use = "sig",
+            Alg = "RS256",
+            Kid = kid,
+            N = Convert.ToBase64String(parameters.Modulus!).Replace('+', '-').Replace('/', '_').TrimEnd('='),
+            E = Convert.ToBase64String(parameters.Exponent!).Replace('+', '-').Replace('/', '_').TrimEnd('=')
+        };
+        return jwk;
     }
 }

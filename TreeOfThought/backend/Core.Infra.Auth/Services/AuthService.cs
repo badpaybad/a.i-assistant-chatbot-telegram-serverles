@@ -1,5 +1,6 @@
 using Core.Infra.Auth.Models;
 using Core.Infra.Auth.Repositories;
+using Core.Infra.Auth.Extensions;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -42,8 +43,11 @@ public class AuthService
 
     public async Task<string> GenerateJwtToken(User user)
     {
-        var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Secret"]!));
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+        var rsa = System.Security.Cryptography.RSA.Create();
+        var pem = _config.GetRsaPrivateKey();
+        rsa.ImportFromPem(pem);
+        var securityKey = new RsaSecurityKey(rsa) { KeyId = _config["Jwt:Kid"] ?? "tot-v1" };
+        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
 
         var claims = new List<Claim>
         {

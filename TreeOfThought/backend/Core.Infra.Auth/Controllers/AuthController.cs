@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Auth.Extensions;
 
 namespace Core.Infra.Auth.Controllers;
 
@@ -35,18 +36,19 @@ public class AuthController : ControllerBase
             issuer = _config["Jwt:Issuer"],
             jwks_uri = $"{baseUrl}/api/auth/jwks",
             authorization_endpoint = $"{baseUrl}/api/auth/authorize",
-            token_endpoint = $"{baseUrl}/api/auth/login", // Map to existing login for now
+            token_endpoint = $"{baseUrl}/api/auth/login",
             userinfo_endpoint = $"{baseUrl}/api/auth/me",
             response_types_supported = new[] { "code", "token", "id_token" },
             subject_types_supported = new[] { "public" },
-            id_token_signing_alg_values_supported = new[] { "HS256" }
+            id_token_signing_alg_values_supported = new[] { "RS256" }
         });
     }
 
     [HttpGet("jwks")]
     public IActionResult GetJwks()
     {
-        return Ok(new { keys = new object[] { } });
+        var jwk = AuthServiceExtensions.GetJwks(_config.GetRsaPrivateKey(), _config["Jwt:Kid"] ?? "tot-v1");
+        return Ok(new { keys = new[] { jwk } });
     }
 
     [HttpPost("init")]

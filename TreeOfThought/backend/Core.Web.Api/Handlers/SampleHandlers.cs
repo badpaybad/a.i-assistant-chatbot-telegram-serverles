@@ -66,7 +66,6 @@ public class SampleEventHandler : IEventHandler<SampleEvent>
 
 public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
 {
-    private int _counter = 0;
     private readonly ILogger<SampleEventHandlerAlwaysError> _logger;
 
     public SampleEventHandlerAlwaysError(ILogger<SampleEventHandlerAlwaysError> logger)
@@ -76,9 +75,10 @@ public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
 
     public async Task HandleAsync(SampleEvent @event)
     {
+        _logger.LogInformation("SampleEventHandlerAlwaysError is about to throw a test error.");
         throw new Exception("Test error");
-        _counter++;
-        _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
-        await Task.CompletedTask;
+        // _counter++;
+        // _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
+        // await Task.CompletedTask;
     }
 }
