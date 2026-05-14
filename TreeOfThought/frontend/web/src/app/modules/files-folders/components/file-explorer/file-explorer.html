@@ -1,4 +1,51 @@
 <div class="explorer-container">
+  <div class="search-section">
+    <nz-input-group [nzSuffix]="suffixTemplate">
+      <input type="text" nz-input placeholder="Tìm kiếm tên file..." [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" />
+    </nz-input-group>
+    <ng-template #suffixTemplate>
+      <div class="search-actions">
+        <span nz-icon nzType="close-circle" class="clear-btn" *ngIf="searchQuery || searchResults.length > 0" (click)="clearSearch()" nz-tooltip nzTooltipTitle="Xóa tìm kiếm"></span>
+        <span nz-icon [nzType]="searching ? 'loading' : 'search'" class="search-btn" (click)="onSearch()"></span>
+      </div>
+    </ng-template>
+
+    <nz-collapse [nzBordered]="false" class="search-results-collapse" *ngIf="searchResults.length > 0 || searching">
+      <nz-collapse-panel [nzHeader]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [nzActive]="searchExpanded">
+        <nz-table 
+          #searchTable 
+          [nzData]="searchResults" 
+          nzSize="small" 
+          [nzPageIndex]="searchPageIndex"
+          [nzPageSize]="searchPageSize"
+          (nzPageIndexChange)="searchPageIndex = $event"
+        >
+          <thead>
+            <tr>
+              <th>Tên file</th>
+              <th>Đường dẫn</th>
+              <th nzWidth="100px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let data of searchTable.data">
+              <td>
+                <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+                {{ data.name }}
+              </td>
+              <td><nz-tag>{{ data.folderPath }}</nz-tag></td>
+              <td>
+                <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
+                  <span nz-icon nzType="arrow-right"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </nz-collapse-panel>
+    </nz-collapse>
+  </div>
+
   <div class="explorer-toolbar">
     <div class="toolbar-left">
       <nz-breadcrumb>

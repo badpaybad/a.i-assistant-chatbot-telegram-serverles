@@ -8,8 +8,10 @@ import { HttpClientService } from '../../../core/http/http-client.service';
 export class FilesFoldersService {
   private http = inject(HttpClientService);
   private refreshSubject = new Subject<void>();
+  private selectFolderSubject = new Subject<string | null>();
 
   refresh$ = this.refreshSubject.asObservable();
+  selectFolder$ = this.selectFolderSubject.asObservable();
 
   notifyRefresh(delayMs: number = 0) {
     if (delayMs > 0) {
@@ -17,6 +19,10 @@ export class FilesFoldersService {
     } else {
       this.refreshSubject.next();
     }
+  }
+
+  notifySelectFolder(folderId: string | null) {
+    this.selectFolderSubject.next(folderId);
   }
 
   getFolderTree() {
@@ -68,5 +74,9 @@ export class FilesFoldersService {
 
   getFileDetail(fileId: string) {
     return this.http.get(`/api/files/${fileId}`);
+  }
+
+  searchFiles(query: string) {
+    return this.http.get(`/api/files/search?query=${query}`);
   }
 }

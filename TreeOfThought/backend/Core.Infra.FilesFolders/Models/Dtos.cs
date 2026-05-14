@@ -19,6 +19,7 @@ public class FileDto
     public string MimeType { get; set; } = string.Empty;
     public PermissionType Permission { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string FolderPath { get; set; } = string.Empty;
 }
 
 public class FolderContentDto

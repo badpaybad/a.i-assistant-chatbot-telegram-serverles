@@ -61,6 +61,7 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
   creating = false;
   contextNode: NzTreeNode | null = null;
   private refreshSub?: Subscription;
+  private selectFolderSub?: Subscription;
 
   get currentFolderName(): string {
     if (this.contextNode) return this.contextNode.title;
@@ -80,6 +81,11 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
     this.refreshSub = this.filesFoldersService.refresh$.subscribe(() => {
       this.loadTree();
     });
+
+    this.selectFolderSub = this.filesFoldersService.selectFolder$.subscribe((folderId) => {
+      this.selectAndExpandFolder(folderId);
+    });
+
     // Default selection
     setTimeout(() => {
       this.folderSelected.emit(null);
@@ -88,6 +94,7 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.refreshSub?.unsubscribe();
+    this.selectFolderSub?.unsubscribe();
   }
 
   async loadTree(): Promise<void> {
@@ -156,5 +163,33 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
   renameFolder(node: NzTreeNode): void {
     if (node.key === 'root') return;
     this.message.info('Tính năng đổi tên đang được cập nhật');
+  }
+
+  private selectAndExpandFolder(folderId: string | null): void {
+    const key = folderId || 'root';
+    this.selectedNodeKey = key;
+    
+    // Find node in tree
+    const node = this.treeComponent.getTreeNodeByKey(key);
+    if (node) {
+      // Select the node
+      node.isSelected = true;
+      this.selectedNodeKey = key;
+      
+      // Expand all parents
+      let parent = node.getParentNode();
+      while (parent) {
+        parent.isExpanded = true;
+        parent = parent.getParentNode();
+      }
+
+      // Notify parent/Explorer
+      this.folderSelected.emit(folderId);
+    } else {
+      // If node not found (might not be loaded if tree is lazy?)
+      // But our tree is not lazy, we load the whole tree in loadTree().
+      // However, loadTree might still be in progress.
+      console.warn('Folder node not found:', key);
+    }
   }
 }

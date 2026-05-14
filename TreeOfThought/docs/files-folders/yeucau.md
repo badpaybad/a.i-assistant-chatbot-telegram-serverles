@@ -57,8 +57,18 @@ nút tạo mới folder cần có icon folder
     click vào nút move, hiện lên modal để chọn folder đích
         modal hiển thị treeview folder , người dùng chọn folder và ok thì move
 
-tất cả các thao tác: thêm mới folder , upload file, xóa file, xóa folder, move file, move folder đều cần reload lại danh sách folder ở treeview sidebar và danh sách file bên content right
+tất cả các thao tác: thêm mới folder , upload file, xóa file, xóa folder, move file, move folder đều cần  reload lại danh sách folder ở treeview sidebar và danh sách file bên content right
 
 kiểm tra backend luôn await các async khi gọi insert update delete vào db. đảm bảo dữ liệu vào db rồi mới thực hiện việc khác tiếp
 
     **bug 2: **cập nhật 5** ** tính năng move file, move folder chưa hoạt động, cần kiểm tra lại và sửa.
+
+**cập nhật 6**
+bổ xung tìm kiếm tên files , vị trí ở phía trên bảng danh sách file
+khi nhập vào input tìm kiếm , nhấn nút tìm kiếm có icon search
+    kết quả sẽ expand ra arcordion có bảng danh sách file tìm được có phân trang, mặc định page size =5, có các cột
+        tên file, đường dẫn đến file , nút goto file 
+            khi click nút goto file treeview folder sẽ mở rộng đến folder chứa file đó và chọn folder đó
+
+có nút xóa tìm kiếm để ẩn kết quả tìm kiếm đi khi không muốn tìm nữa 
+    ** bug 3:**cập nhật 6** ** tìm kiếm xong click go to chưa hoạt động, click goto cần vẫn expand arcordion của tìm kiếm

@@ -54,6 +54,8 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpPost("users")]
+
+[AppAuthorize("be.auth.manage.user.create")]
     public async Task<IActionResult> CreateUser([FromBody] User user)
     {
         await _authRepo.CreateUserAsync(user);

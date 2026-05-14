@@ -179,22 +179,36 @@ public class FilesFoldersService
 
     public async Task<List<FileDto>> SearchFilesAsync(Guid userId, string query)
     {
-        return await _db.Files
+        var files = await _db.Files
             .Where(f => f.UserId == userId && f.Name.ToLower().Contains(query.ToLower()))
             .OrderByDescending(f => f.CreatedAt)
             .Take(50)
-            .Select(f => new FileDto
-            {
-                Id = f.Id,
-                FolderId = f.FolderId,
-                Name = f.Name,
-                Url = f.Url,
-                Size = f.Size,
-                MimeType = f.MimeType,
-                Permission = f.Permission,
-                CreatedAt = f.CreatedAt
-            })
             .ToListAsync();
+
+        var result = new List<FileDto>();
+        foreach (var file in files)
+        {
+            var folderPath = "/";
+            if (file.FolderId.HasValue)
+            {
+                var folder = await _db.Folders.FindAsync(file.FolderId.Value);
+                if (folder != null) folderPath = folder.Path;
+            }
+
+            result.Add(new FileDto
+            {
+                Id = file.Id,
+                FolderId = file.FolderId,
+                Name = file.Name,
+                Url = file.Url,
+                Size = file.Size,
+                MimeType = file.MimeType,
+                Permission = file.Permission,
+                CreatedAt = file.CreatedAt,
+                FolderPath = folderPath
+            });
+        }
+        return result;
     }
 
     public async Task<EditorFileItem> UploadEditorFileAsync(Guid userId, string fileName, string contentType, byte[] content)

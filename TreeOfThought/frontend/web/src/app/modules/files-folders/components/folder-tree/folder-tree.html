@@ -12,6 +12,7 @@
   <nz-tree
     #treeComponent
     [nzData]="nodes"
+    [nzSelectedKeys]="[selectedNodeKey]"
     nzShowIcon
     (nzClick)="onEvent($any($event))"
     (nzExpandChange)="onEvent($any($event))"

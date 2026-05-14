@@ -16,6 +16,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzPopoverModule } from 'ng-zorro-antd/popover';
 import { CreateFolderPopoverComponent } from '../create-folder-popover/create-folder-popover.component';
 import { MoveModalComponent } from '../move-modal/move-modal.component';
+import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -34,7 +35,8 @@ import { Subscription } from 'rxjs';
     FormsModule,
     NzInputModule,
     NzPopoverModule,
-    CreateFolderPopoverComponent
+    CreateFolderPopoverComponent,
+    NzCollapseModule
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
@@ -66,6 +68,15 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   createPopoverVisible = false;
   newFolderName = '';
   creatingFolder = false;
+
+  // Search properties
+  searchQuery = '';
+  searchResults: any[] = [];
+  searching = false;
+  searchExpanded = false;
+  searchPageIndex = 1;
+  searchPageSize = 5;
+
   private refreshSub?: Subscription;
 
   ngOnInit(): void {
@@ -192,6 +203,40 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
         }
       }
     });
+  }
+
+  async onSearch(): Promise<void> {
+    if (!this.searchQuery || !this.searchQuery.trim()) {
+      this.searchResults = [];
+      this.searchExpanded = false;
+      return;
+    }
+
+    this.searching = true;
+    try {
+      const results: any = await this.filesFoldersService.searchFiles(this.searchQuery);
+      this.searchResults = results || [];
+      this.searchExpanded = this.searchResults.length > 0;
+      this.searchPageIndex = 1;
+      if (this.searchResults.length === 0) {
+        this.message.info('Không tìm thấy file nào');
+      }
+    } catch (error) {
+      this.message.error('Lỗi khi tìm kiếm file');
+    } finally {
+      this.searching = false;
+    }
+  }
+
+  goToFolder(folderId: string | null): void {
+    this.filesFoldersService.notifySelectFolder(folderId);
+    // Keep searchExpanded = true as requested by user
+  }
+
+  clearSearch(): void {
+    this.searchQuery = '';
+    this.searchResults = [];
+    this.searchExpanded = false;
   }
 
   formatSize(bytes: number): string {
