@@ -88,11 +88,32 @@ public class FilesFoldersService
             })
             .ToListAsync();
 
+        var breadcrumbs = new List<FolderDto>();
+        if (folderId.HasValue)
+        {
+            var currentId = folderId;
+            while (currentId.HasValue && currentId.Value != Guid.Empty)
+            {
+                var folder = await _db.Folders.FindAsync(currentId.Value);
+                if (folder == null || folder.UserId != userId) break;
+
+                breadcrumbs.Insert(0, new FolderDto
+                {
+                    Id = folder.Id,
+                    ParentId = folder.ParentId,
+                    Name = folder.Name,
+                    Path = folder.Path
+                });
+                currentId = folder.ParentId;
+            }
+        }
+
         return new FolderContentDto
         {
             Folders = folders,
             Files = files,
-            TotalFiles = totalFiles
+            TotalFiles = totalFiles,
+            Breadcrumbs = breadcrumbs
         };
     }
 

@@ -26,4 +26,5 @@ public class FolderContentDto
     public List<FolderDto> Folders { get; set; } = new();
     public List<FileDto> Files { get; set; } = new();
     public int TotalFiles { get; set; }
+    public List<FolderDto> Breadcrumbs { get; set; } = new();
 }

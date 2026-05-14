@@ -10,6 +10,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
+import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 
 @Component({
   selector: 'app-file-explorer',
@@ -22,7 +23,8 @@ import { FileShareModalComponent } from '../file-share-modal/file-share-modal.co
     NzDropDownModule,
     NzTooltipModule,
     NzTagModule,
-    NzModalModule
+    NzModalModule,
+    NzBreadCrumbModule
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
@@ -41,6 +43,7 @@ export class FileExplorerComponent implements OnChanges {
   pageIndex = 1;
   pageSize = 10;
   total = 0;
+  breadcrumbs: any[] = [];
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedFolderId']) {
@@ -56,6 +59,7 @@ export class FileExplorerComponent implements OnChanges {
       this.folders = response.folders || [];
       this.files = response.files || [];
       this.total = response.totalFiles || 0;
+      this.breadcrumbs = response.breadcrumbs || [];
     } catch (error) {
       this.message.error('Lỗi khi tải nội dung thư mục');
     } finally {
@@ -70,6 +74,11 @@ export class FileExplorerComponent implements OnChanges {
 
   onPageSizeChange(size: number): void {
     this.pageSize = size;
+    this.loadContent();
+  }
+
+  navigateToFolder(folderId: string | null): void {
+    this.selectedFolderId = folderId;
     this.loadContent();
   }
 

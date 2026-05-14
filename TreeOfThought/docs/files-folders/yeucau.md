@@ -41,3 +41,6 @@ Chức năng và quản lý file, folder info với db postgresql, UI giống fo
                 Lưu ý quan trọng: Khi bạn chuyển file về Riêng tư (Private), URL gốc trong DB sẽ bị GCS chặn truy cập (lỗi 403), đảm bảo an toàn cho dữ liệu.
 
     **bug 1** áp dụng riêng tư rồi , sao url https://storage.googleapis.com/dunp-test-gcs/dunp/8a1ae663-4441-458e-9471-4746f84a492f_du1.jpeg vẫn vào đc, code BE chưa gọi lên google cloud storage để set lại quyền
+**cập nhật 3**
+bên content right danh sách file. nút tải lên để sang bên phải.
+bổ xung đường dẫn file hiện tại trên top bên trái . có thể click vào từng folder trên path để truy cập folder

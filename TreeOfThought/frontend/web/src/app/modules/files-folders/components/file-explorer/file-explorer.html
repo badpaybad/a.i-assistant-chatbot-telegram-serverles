@@ -1,12 +1,23 @@
 <div class="explorer-container">
   <div class="explorer-toolbar">
     <div class="toolbar-left">
-      <button nz-button nzType="primary" (click)="fileInput.click()" [disabled]="!selectedFolderId">
+      <nz-breadcrumb>
+        <nz-breadcrumb-item>
+          <a (click)="navigateToFolder(null)">
+            <span nz-icon nzType="home"></span> Tài liệu của tôi
+          </a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
+          <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
+        </nz-breadcrumb-item>
+      </nz-breadcrumb>
+    </div>
+    <div class="toolbar-right">
+      <button nz-button nzType="primary" (click)="fileInput.click()" [disabled]="!selectedFolderId" style="margin-right: 8px">
         <span nz-icon nzType="upload"></span> Tải lên
       </button>
       <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
-    </div>
-    <div class="toolbar-right">
+      
       <button nz-button nzType="default" (click)="loadContent()">
         <span nz-icon nzType="reload"></span> Làm mới
       </button>
