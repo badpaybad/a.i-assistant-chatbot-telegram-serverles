@@ -56,15 +56,14 @@ public class AuthService
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim("userId", user.Id.ToString())
+            new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
         };
 
-        // 1. Always add Roles to JWT to support standard [Authorize(Roles = "...")]
+        // 1. Always add Roles to JWT using standard "role" claim
         var roles = await _userRepo.GetUserRolesAsync(user.Id);
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role.Name));
+            claims.Add(new Claim(AuthConstants.RoleClaim, role.Name));
         }
 
         // 2. Handle granular claims with Hybrid Strategy
@@ -72,15 +71,15 @@ public class AuthService
         
         if (claimsList.Count > 30)
         {
-            // Hybrid Mode: Granular claims moved to Redis (Roles already in JWT)
+            // Hybrid Mode: Granular claims moved to Redis
             await SyncUserClaimsToRedisAsync(user.Id);
         }
         else
         {
-            // Stateless Mode: Add all granular claims to JWT
+            // Stateless Mode: Add granular claims to JWT
             foreach (var p in claimsList)
             {
-                claims.Add(new Claim("claims", p.Name));
+                claims.Add(new Claim(AuthConstants.PermissionClaim, p.Name));
             }
         }
 
@@ -91,11 +90,13 @@ public class AuthService
             issuer: _config["Jwt:Issuer"],
             audience: _config["Jwt:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddMinutes(double.Parse(_config["Jwt:ExpiryMinutes"] ?? "60")),
+            notBefore: DateTime.UtcNow,
+            expires: DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpiryMinutes"] ?? "60")),
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
 
     public async Task<string> GenerateFirebaseToken(User user)
     {

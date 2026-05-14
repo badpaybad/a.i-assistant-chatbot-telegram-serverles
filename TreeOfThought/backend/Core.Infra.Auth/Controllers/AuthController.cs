@@ -62,7 +62,7 @@ public class AuthController : ControllerBase
     [AppAuthorize]
     public async Task<IActionResult> GetMe()
     {
-        var userIdStr = User.FindFirst("userId")?.Value;
+        var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized();
 
@@ -70,7 +70,8 @@ public class AuthController : ControllerBase
         if (user == null) return NotFound();
 
         // 1. Try reading from JWT first (Stateless Mode)
-        var claims = User.FindAll("claims").Select(c => c.Value).ToList();
+        var roles = User.FindAll(AuthConstants.RoleClaim).Select(c => c.Value).ToList();
+        var claims = User.FindAll(AuthConstants.PermissionClaim).Select(c => c.Value).ToList();
 
         // 2. If none in JWT, check Redis (Hybrid Mode)
         if (!claims.Any())
@@ -84,9 +85,11 @@ public class AuthController : ControllerBase
             user.Username, 
             user.DisplayName, 
             user.Email,
+            Roles = roles,
             Claims = claims
         });
     }
+
 
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -161,7 +164,7 @@ public class AuthController : ControllerBase
     [AppAuthorize]
     public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
     {
-        var userIdStr = User.FindFirst("userId")?.Value;
+        var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
         if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
             return Unauthorized();
 

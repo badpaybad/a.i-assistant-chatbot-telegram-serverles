@@ -3,7 +3,7 @@ import { HttpClientService } from '../http/http-client.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { Router } from '@angular/router';
 import { BehaviorSubject } from 'rxjs';
-import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM } from './claims.config';
+import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM, ADMIN_ROLE } from './claims.config';
 
 
 @Injectable({
@@ -115,11 +115,17 @@ export class AuthService {
 
   hasClaim(claimOrClaims: string | string[], mode: 'OR' | 'AND' = 'OR'): boolean {
     const rawClaims = localStorage.getItem('claims');
+    const rawRoles = localStorage.getItem('roles');
+    
     if (!rawClaims || rawClaims === 'undefined') return false;
     
     try {
-      const userClaims = JSON.parse(rawClaims);
+      const userClaims = JSON.parse(rawClaims) || [];
+      const userRoles = rawRoles ? JSON.parse(rawRoles) : [];
       if (!Array.isArray(userClaims)) return false;
+
+      // Admin bypass (Check both Role and Claim for consistency with BE)
+      if (userRoles.includes(ADMIN_ROLE) || userClaims.includes(ADMIN_CLAIM)) return true;
 
       // Handle empty check (logged in only)
       const claimsToCheck = Array.isArray(claimOrClaims) 
@@ -129,9 +135,6 @@ export class AuthService {
       if (claimsToCheck.length === 0) {
         return true; // If logged in and no specific claims required
       }
-
-      // Admin bypass
-      if (userClaims.includes(ADMIN_CLAIM)) return true;
       
       if (mode === 'OR') {
         return claimsToCheck.some(c => userClaims.includes(c));
@@ -143,6 +146,7 @@ export class AuthService {
       return false;
     }
   }
+
 
 
   isLoggedIn(): boolean {

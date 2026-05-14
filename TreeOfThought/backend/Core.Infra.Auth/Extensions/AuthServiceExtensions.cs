@@ -15,6 +15,7 @@ using Core.Infra.Auth.Handlers;
 using Core.Infra.Auth.Repositories;
 using Core.Infra.Auth.Services;
 using Core.Infra.Data.Contexts;
+using Core.Infra.Auth.Models;
 
 namespace Core.Infra.Auth.Extensions;
 
@@ -40,7 +41,9 @@ public static class AuthServiceExtensions
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = config["Jwt:Issuer"],
                         ValidAudience = config["Jwt:Audience"],
-                        IssuerSigningKey = GetJwks(config.GetRsaPrivateKey(), config["Jwt:Kid"] ?? "tot-v1")
+                        IssuerSigningKey = GetJwks(config.GetRsaPrivateKey(), config["Jwt:Kid"] ?? "tot-v1"),
+                        NameClaimType = AuthConstants.NameClaim,
+                        RoleClaimType = AuthConstants.RoleClaim
                     };
                 }
                 else
@@ -52,10 +55,11 @@ public static class AuthServiceExtensions
                     {
                         ValidateAudience = false,
                         ValidateIssuer = false,
-                        NameClaimType = "name",
-                        RoleClaimType = "role"
+                        NameClaimType = AuthConstants.NameClaim,
+                        RoleClaimType = AuthConstants.RoleClaim
                     };
                 }
+
             });
 
         // 3. Authorization (Dynamic Policy Provider & Custom Handler)

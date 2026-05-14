@@ -42,8 +42,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         }
 
         // 2. Full Access for Admin role or admin claim
-        if (user.Claims.Any(c => (c.Type == ClaimTypes.Role && c.Value.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase)) ||
-                                 (c.Type == "claims" && c.Value.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))))
+        if (user.Claims.Any(c => (c.Type == AuthConstants.RoleClaim && c.Value.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase)) ||
+                                 (c.Type == AuthConstants.PermissionClaim && c.Value.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))))
         {
             context.Succeed(requirement);
             return;
@@ -83,8 +83,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         // 3. Check claims if any specified
         if (requirement.Claims.Length > 0)
         {
-            var userId = user.FindFirst("userId")?.Value;
-            var userRoles = user.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList();
+            var userId = user.FindFirst(AuthConstants.UserIdClaim)?.Value;
+            var userRoles = user.FindAll(AuthConstants.RoleClaim).Select(c => c.Value).ToList();
             List<string> userClaims;
 
             if (userRoles.Any() && !string.IsNullOrEmpty(userId))
@@ -96,7 +96,7 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
             else
             {
                 // Stateless Mode: Read granular claims from JWT
-                userClaims = user.FindAll("claims").Select(c => c.Value).ToList();
+                userClaims = user.FindAll(AuthConstants.PermissionClaim).Select(c => c.Value).ToList();
             }
 
             if (requirement.Mode == AuthMode.OR)
@@ -118,7 +118,7 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         // 4. Check ACL from Redis if Action specified
         if (!isAuthorized && requirement.Action != ResourceActions.None)
         {
-            var userId = user.FindFirst("userId")?.Value;
+            var userId = user.FindFirst(AuthConstants.UserIdClaim)?.Value;
 
             // Thứ tự ưu tiên lấy ResourceId: Header > Route > Query
             var resourceId = request.Headers["x-resource-id"].ToString();
