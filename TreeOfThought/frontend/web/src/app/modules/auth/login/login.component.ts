@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -34,6 +34,7 @@ export class LoginComponent {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private notification = inject(AppNotificationService);
   private translate = inject(TranslateService);
 
@@ -49,11 +50,23 @@ export class LoginComponent {
 
   loading = false;
 
+  private handleRedirect(): boolean {
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+    if (returnUrl) {
+      window.location.href = returnUrl;
+      return true;
+    }
+    return false;
+  }
+
   async submitForm(): Promise<void> {
     if (this.validateForm.valid) {
       this.loading = true;
       try {
         const response = await this.authService.login(this.validateForm.value);
+        
+        if (this.handleRedirect()) return;
+
         if (response.mustChangePassword) {
           this.notification.warning(
             this.translate.instant('Yêu cầu đổi mật khẩu'),
@@ -93,6 +106,7 @@ export class LoginComponent {
     this.loading = true;
     try {
       await this.authService.ssoLogin('google');
+      if (this.handleRedirect()) return;
       this.router.navigate(['/']);
     } catch (e) {
       console.error(e);
@@ -105,6 +119,7 @@ export class LoginComponent {
     this.loading = true;
     try {
       await this.authService.ssoLogin('ms');
+      if (this.handleRedirect()) return;
       this.router.navigate(['/']);
     } catch (e) {
       console.error(e);
@@ -117,6 +132,7 @@ export class LoginComponent {
     this.loading = true;
     try {
       await this.authService.ssoLogin('facebook');
+      if (this.handleRedirect()) return;
       this.router.navigate(['/']);
     } catch (e) {
       console.error(e);

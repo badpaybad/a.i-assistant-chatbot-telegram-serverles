@@ -35,3 +35,29 @@ public class ChangePasswordRequest
     public string NewPassword { get; set; } = "";
     public string ConfirmPassword { get; set; } = "";
 }
+
+public class AuthorizeRequest
+{
+    public string? ClientId { get; set; }
+    public string? RedirectUri { get; set; }
+    public string? ResponseType { get; set; }
+    public string? Scope { get; set; }
+    public string? State { get; set; }
+    public string? Nonce { get; set; }
+}
+
+public class TokenRequest
+{
+    public string? GrantType { get; set; }
+    public string? Code { get; set; }
+    public string? RedirectUri { get; set; }
+    public string? ClientId { get; set; }
+    public string? ClientSecret { get; set; }
+}
+
+public class AuthCodeData
+{
+    public Guid UserId { get; set; }
+    public string ClientId { get; set; } = "";
+    public string RedirectUri { get; set; } = "";
+}

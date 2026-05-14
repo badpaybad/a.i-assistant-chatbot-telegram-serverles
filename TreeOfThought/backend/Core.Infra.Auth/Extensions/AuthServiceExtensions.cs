@@ -28,7 +28,11 @@ public static class AuthServiceExtensions
 
         // 2. Authentication
         var isOidc = config.GetValue<bool>("Jwt:IsOidc");
-        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        services.AddAuthentication(options => 
+        {
+            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
             .AddJwtBearer(options =>
             {
                 if (isOidc)
@@ -60,6 +64,15 @@ public static class AuthServiceExtensions
                     };
                 }
 
+            })
+            .AddCookie("SsoSession", options =>
+            {
+                options.Cookie.Name = "TOT_SSO_SESSION";
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+                options.ExpireTimeSpan = TimeSpan.FromDays(7);
+                options.LoginPath = "/api/auth/authorize"; // Redirect to authorize if cookie missing
             });
 
         // 3. Authorization (Dynamic Policy Provider & Custom Handler)

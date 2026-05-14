@@ -6,6 +6,8 @@ using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Auth.Extensions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Core.Infra.Auth.Controllers;
 
@@ -18,7 +20,7 @@ public class AuthController : ControllerBase
     private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
     public AuthController(
-        AuthService authService, 
+        AuthService authService,
         AuthRedisService cacheService,
         Microsoft.Extensions.Configuration.IConfiguration config)
     {
@@ -81,9 +83,10 @@ public class AuthController : ControllerBase
             if (cachedClaims != null) claims = cachedClaims;
         }
 
-        return Ok(new { 
-            user.Username, 
-            user.DisplayName, 
+        return Ok(new
+        {
+            user.Username,
+            user.DisplayName,
             user.Email,
             Roles = roles,
             Claims = claims
@@ -99,20 +102,83 @@ public class AuthController : ControllerBase
             var user = await _authService.AuthenticateAsync(request.Username, request.Password);
             if (user == null) return Unauthorized(new { message = "Invalid credentials" });
 
+            // 1. Create SSO Session (Cookie)
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
+            };
+            var identity = new ClaimsIdentity(claims, "SsoSession");
+            var principal = new ClaimsPrincipal(identity);
+            await HttpContext.SignInAsync("SsoSession", principal, new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
             var token = await _authService.GenerateJwtToken(user);
             var firebaseToken = await _authService.GenerateFirebaseToken(user);
 
-            return Ok(new { 
-                token, 
+            return Ok(new
+            {
+                token,
                 firebaseToken,
                 mustChangePassword = user.MustChangePassword,
-                user = new { user.Username, user.DisplayName, user.Email } 
+                user = new { user.Username, user.DisplayName, user.Email }
             });
         }
         catch (Exception ex)
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    [HttpGet("authorize")]
+    public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequest request)
+    {
+        // 1. Check if user is already logged in via Session Cookie
+        var authenticateResult = await HttpContext.AuthenticateAsync("SsoSession");
+        if (authenticateResult.Succeeded && authenticateResult.Principal != null)
+        {
+            var userIdStr = authenticateResult.Principal.FindFirst(AuthConstants.UserIdClaim)?.Value;
+            if (Guid.TryParse(userIdStr, out var userId))
+            {
+                // Already logged in -> Generate code and redirect back to app
+                var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId ?? "", request.RedirectUri ?? "");
+                var redirectUrl = $"{request.RedirectUri}{(request.RedirectUri!.Contains("?") ? "&" : "?")}code={code}&state={request.State}";
+                return Redirect(redirectUrl);
+            }
+        }
+
+        // 2. If not logged in, redirect to SPA Login UI
+        var loginUrl = _config["Auth:OidcLoginUiUrl"] ?? "/login";
+        var returnUrl = Request.Scheme + "://" + Request.Host + Request.Path + Request.QueryString;
+
+        // If loginUrl is relative, make it absolute to the SPA host if possible, 
+        // but for now we assume it's on the same domain or handled by proxy
+        return Redirect($"{loginUrl}?returnUrl={Uri.EscapeDataString(returnUrl)}");
+    }
+
+    [HttpPost("token")]
+    [Consumes("application/x-www-form-urlencoded", "application/json")]
+    public async Task<IActionResult> GetToken([FromForm] TokenRequest? formRequest, [FromBody] TokenRequest? bodyRequest)
+    {
+        var request = formRequest?.Code != null ? formRequest : bodyRequest;
+        if (request == null || string.IsNullOrEmpty(request.Code))
+            return BadRequest(new { error = "invalid_request", error_description = "Code is required" });
+
+        var user = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "");
+        if (user == null) return BadRequest(new { error = "invalid_grant" });
+
+        var token = await _authService.GenerateJwtToken(user);
+
+        return Ok(new
+        {
+            access_token = token,
+            token_type = "Bearer",
+            expires_in = 3600,
+            id_token = token
+        });
     }
 
     [HttpPost("signup")]
@@ -141,14 +207,15 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SsoLogin([FromBody] SsoRequest request)
     {
         var user = await _authService.SsoLoginAsync(request.Provider, request.SsoId, request.Email, request.DisplayName, request.IdToken);
-        
+
         var token = await _authService.GenerateJwtToken(user);
         var firebaseToken = await _authService.GenerateFirebaseToken(user);
 
-        return Ok(new { 
-            token, 
+        return Ok(new
+        {
+            token,
             firebaseToken,
-            user = new { user.Username, user.DisplayName, user.Email } 
+            user = new { user.Username, user.DisplayName, user.Email }
         });
     }
 

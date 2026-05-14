@@ -344,6 +344,39 @@ public class AuthService
         await _userRepo.UpdateUserAsync(user);
         return true;
     }
+
+    public async Task<string> GenerateAuthorizationCodeAsync(Guid userId, string clientId, string redirectUri)
+    {
+        var code = Guid.NewGuid().ToString("N");
+        var data = new AuthCodeData
+        {
+            UserId = userId,
+            ClientId = clientId,
+            RedirectUri = redirectUri
+        };
+
+        // Store code in Redis for 5 minutes
+        var cacheKey = $"auth_code:{code}";
+        await _cacheService.SetAsync(cacheKey, data, TimeSpan.FromMinutes(5));
+        
+        return code;
+    }
+
+    public async Task<User?> ExchangeCodeForTokenAsync(string code, string clientId)
+    {
+        var cacheKey = $"auth_code:{code}";
+        var data = await _cacheService.GetAsync<AuthCodeData>(cacheKey);
+
+        if (data == null || data.ClientId != clientId)
+        {
+            return null;
+        }
+
+        // Remove code after use (One-time use)
+        await _cacheService.RemoveAsync(cacheKey);
+
+        return await _userRepo.GetUserByIdAsync(data.UserId);
+    }
 }
 
 
