@@ -52,7 +52,7 @@ public class FilesFoldersService
         return root;
     }
 
-    public async Task<FolderContentDto> GetFolderContentAsync(Guid userId, Guid? folderId)
+    public async Task<FolderContentDto> GetFolderContentAsync(Guid userId, Guid? folderId, int pageIndex = 1, int pageSize = 10)
     {
         var folders = await _db.Folders
             .Where(f => f.UserId == userId && f.ParentId == folderId)
@@ -66,9 +66,15 @@ public class FilesFoldersService
             })
             .ToListAsync();
 
-        var files = await _db.Files
-            .Where(f => f.UserId == userId && f.FolderId == folderId)
+        var query = _db.Files
+            .Where(f => f.UserId == userId && f.FolderId == folderId);
+
+        var totalFiles = await query.CountAsync();
+
+        var files = await query
             .OrderBy(f => f.Name)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(f => new FileDto
             {
                 Id = f.Id,
@@ -85,7 +91,8 @@ public class FilesFoldersService
         return new FolderContentDto
         {
             Folders = folders,
-            Files = files
+            Files = files,
+            TotalFiles = totalFiles
         };
     }
 

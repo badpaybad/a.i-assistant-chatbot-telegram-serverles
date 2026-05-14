@@ -29,18 +29,18 @@ public class FoldersController : ControllerBase
     }
 
     [HttpGet("{id}/content")]
-    public async Task<IActionResult> GetContent(Guid id)
+    public async Task<IActionResult> GetContent(Guid id, [FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
     {
         var userId = GetUserId();
-        var content = await _filesFoldersService.GetFolderContentAsync(userId, id);
+        var content = await _filesFoldersService.GetFolderContentAsync(userId, id, pageIndex, pageSize);
         return Ok(content);
     }
 
     [HttpGet("root/content")]
-    public async Task<IActionResult> GetRootContent()
+    public async Task<IActionResult> GetRootContent([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
     {
         var userId = GetUserId();
-        var content = await _filesFoldersService.GetFolderContentAsync(userId, null);
+        var content = await _filesFoldersService.GetFolderContentAsync(userId, null, pageIndex, pageSize);
         return Ok(content);
     }
 

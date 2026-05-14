@@ -11,8 +11,9 @@ export class FilesFoldersService {
     return this.http.get('/api/folders/tree');
   }
 
-  getFolderContent(folderId: string | null) {
-    const path = folderId ? `/api/folders/${folderId}/content` : '/api/folders/root/content';
+  getFolderContent(folderId: string | null, pageIndex: number = 1, pageSize: number = 10) {
+    const baseUrl = folderId ? `/api/folders/${folderId}/content` : '/api/folders/root/content';
+    const path = `${baseUrl}?pageIndex=${pageIndex}&pageSize=${pageSize}`;
     return this.http.get(path);
   }
 

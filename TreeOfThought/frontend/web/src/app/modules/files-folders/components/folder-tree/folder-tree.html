@@ -1,11 +1,22 @@
 <div class="tree-container">
   <div class="tree-header">
     <h3>Thư mục</h3>
-    <button nz-button nzType="text" (click)="showCreateModal('root')" nz-tooltip nzTooltipTitle="Tạo thư mục gốc">
+    <button 
+      nz-button 
+      nzType="text" 
+      nz-tooltip 
+      nzTooltipTitle="Tạo thư mục mới"
+      nz-popover
+      [(nzPopoverVisible)]="createPopoverVisible"
+      nzPopoverTrigger="click"
+      [nzPopoverContent]="createFolderPopover"
+      nzPopoverPlacement="bottomRight"
+    >
       <span nz-icon nzType="plus"></span>
     </button>
   </div>
   <nz-tree
+    #treeComponent
     [nzData]="nodes"
     nzShowIcon
     (nzClick)="onEvent($any($event))"
@@ -16,7 +27,7 @@
 
   <nz-dropdown-menu #menu="nzDropdownMenu">
     <ul nz-menu>
-      <li nz-menu-item (click)="showCreateModal(contextNode?.key)">
+      <li nz-menu-item (click)="openCreatePopoverFromContext()">
         <span nz-icon nzType="plus"></span> Thêm thư mục con
       </li>
       <li nz-menu-item (click)="renameFolder(contextNode!)">
@@ -28,4 +39,32 @@
       </li>
     </ul>
   </nz-dropdown-menu>
+
+  <ng-template #createFolderPopover>
+    <div class="popover-content">
+      <input 
+        nz-input 
+        placeholder="Tên thư mục" 
+        [(ngModel)]="newFolderName" 
+        (keyup.enter)="createFolder()"
+        autoFocus
+      />
+      <div class="popover-footer">
+        <button nz-button nzType="default" nzSize="small" (click)="createPopoverVisible = false">Hủy</button>
+        <button nz-button nzType="primary" nzSize="small" (click)="createFolder()" [nzLoading]="creating">Tạo</button>
+      </div>
+    </div>
+  </ng-template>
 </div>
+
+<style>
+  .popover-content {
+    width: 200px;
+  }
+  .popover-footer {
+    margin-top: 8px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+</style>

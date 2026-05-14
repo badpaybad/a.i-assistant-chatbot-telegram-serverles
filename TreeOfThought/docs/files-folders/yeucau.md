@@ -18,3 +18,13 @@ Chức năng và quản lý file, folder info với db postgresql, UI giống fo
     - file đã upload lên google cloud storage cho phép set lại thành private or public or share có mã xác thực và hạn thời gian , có url để chia sẻ file 
 
 **tuân thủ** hướng dẫn TreeOfThought/1st.md
+
+**cập nhật 1**
+ở tree view folder (sidemenu) , nút tạo mới folder cần:
+    click vào lên popover có input để điền tên folder ( cần check theo chuẩn tên folder như hệ điều hành)
+    mặc định chọn là folder gốc: tài liệu của tôi
+    khi tạo mới folder sẽ tạo subfolder của folder đang chọn
+    chọn folder nào thì content bên phải là danh sách file có phân trang 
+    khi tao xong cần reload lại treeview
+
+ở content area (content bên phải) , khi upload xong cần reload lại

@@ -13,7 +13,18 @@
     </div>
   </div>
 
-  <nz-table #basicTable [nzData]="files" [nzLoading]="loading" nzSize="middle">
+  <nz-table 
+    #basicTable 
+    [nzData]="files" 
+    [nzLoading]="loading" 
+    nzSize="middle"
+    [nzFrontPagination]="false"
+    [nzTotal]="total"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  >
     <thead>
       <tr>
         <th nzWidth="40px"></th>

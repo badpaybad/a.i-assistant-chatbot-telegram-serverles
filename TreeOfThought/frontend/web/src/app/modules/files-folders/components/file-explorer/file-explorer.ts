@@ -38,8 +38,13 @@ export class FileExplorerComponent implements OnChanges {
   files: any[] = [];
   loading = false;
 
+  pageIndex = 1;
+  pageSize = 10;
+  total = 0;
+
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['selectedFolderId']) {
+      this.pageIndex = 1;
       this.loadContent();
     }
   }
@@ -47,14 +52,25 @@ export class FileExplorerComponent implements OnChanges {
   async loadContent(): Promise<void> {
     this.loading = true;
     try {
-      const response: any = await this.filesFoldersService.getFolderContent(this.selectedFolderId);
+      const response: any = await this.filesFoldersService.getFolderContent(this.selectedFolderId, this.pageIndex, this.pageSize);
       this.folders = response.folders || [];
       this.files = response.files || [];
+      this.total = response.totalFiles || 0;
     } catch (error) {
       this.message.error('Lỗi khi tải nội dung thư mục');
     } finally {
       this.loading = false;
     }
+  }
+
+  onPageIndexChange(index: number): void {
+    this.pageIndex = index;
+    this.loadContent();
+  }
+
+  onPageSizeChange(size: number): void {
+    this.pageSize = size;
+    this.loadContent();
   }
 
   async onUpload(event: any): Promise<void> {
