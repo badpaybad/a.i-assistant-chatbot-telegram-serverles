@@ -125,7 +125,7 @@ public class FilesFoldersService
 
         var objectName = $"{path}{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
-        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType);
+        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType, permission == PermissionType.Public);
 
         var file = new FileItem
         {
@@ -180,7 +180,7 @@ public class FilesFoldersService
     {
         var objectName = $"editor/{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
-        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType);
+        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType, true);
 
         var file = new EditorFileItem
         {

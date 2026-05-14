@@ -169,21 +169,19 @@ public class FilesFoldersCommandHandler :
         file.ExpiredAt = command.ExpiredAt;
         file.UpdatedBy = command.UserId;
 
-        // If permission changed to/from Public, update GCS
-        if (oldPermission != file.Permission)
+        // Ensure GCS ACL matches the permission
+        // Public (1) -> GCS Public
+        // Private (0) or Shared (2) -> GCS Private
+        try
         {
-            if (file.Permission == PermissionType.Public || oldPermission == PermissionType.Public)
-            {
-                try
-                {
-                    var objectName = GetGcsObjectName(file);
-                    await _firebaseService.UpdateObjectAclAsync(AppName, BucketName, objectName, file.Permission == PermissionType.Public);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error updating GCS ACL for file {FileId}", file.Id);
-                }
-            }
+            var objectName = GetGcsObjectName(file);
+            bool isPublic = file.Permission == PermissionType.Public;
+            _logger.LogInformation("Updating GCS ACL for {FileId}: ObjectName={ObjectName}, isPublic={IsPublic}", file.Id, objectName, isPublic);
+            await _firebaseService.UpdateObjectAclAsync(AppName, BucketName, objectName, isPublic);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating GCS ACL for file {FileId}", file.Id);
         }
 
         await _db.SaveChangesAsync();
@@ -195,6 +193,6 @@ public class FilesFoldersCommandHandler :
         var uri = new Uri(file.Url);
         var path = uri.AbsolutePath; // /bucket/objectName
         var parts = path.Split('/', 3);
-        return parts.Length > 2 ? parts[2] : file.Name;
+        return Uri.UnescapeDataString(parts.Length > 2 ? parts[2] : file.Name);
     }
 }

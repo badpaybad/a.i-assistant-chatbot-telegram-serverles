@@ -1,9 +1,9 @@
 import { Component, Input, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { NzModalModule, NzModalRef } from 'ng-zorro-antd/modal';
+import { NzModalModule, NzModalRef, NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
-import { NzInputModule, NzInputGroupModule } from 'ng-zorro-antd/input';
+import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -23,7 +23,6 @@ import { FilesFoldersService } from '../../services/files-folders.service';
     NzModalModule,
     NzFormModule,
     NzInputModule,
-    NzInputGroupModule,
     NzRadioModule,
     NzDatePickerModule,
     NzButtonModule,
@@ -32,89 +31,200 @@ import { FilesFoldersService } from '../../services/files-folders.service';
     NzDividerModule
   ],
   template: `
-    <div class="share-container">
-      <nz-form-item>
-        <nz-form-label [nzSpan]="24">Chế độ chia sẻ</nz-form-label>
-        <nz-form-control [nzSpan]="24">
-          <nz-radio-group [(ngModel)]="shareMode" (ngModelChange)="onModeChange($event)" nzButtonStyle="solid">
-            <label nz-radio-button [nzValue]="'private'">Riêng tư</label>
-            <label nz-radio-button [nzValue]="'public'">Công khai (GCS)</label>
-            <label nz-radio-button [nzValue]="'signed'">Link tạm thời</label>
-            <label nz-radio-button [nzValue]="'secure'">Bảo mật (Mã)</label>
-          </nz-radio-group>
-        </nz-form-control>
-      </nz-form-item>
+    <div class="share-container" *ngIf="file">
+      <div class="header-info">
+        <div class="file-icon">
+          <span nz-icon nzType="file" nzTheme="twotone"></span>
+        </div>
+        <div class="file-details">
+          <div class="file-name text-truncate">{{ file?.name }}</div>
+          <div class="file-meta">{{ formatSize(file?.size || 0) }} • {{ file?.mimeType }}</div>
+        </div>
+      </div>
 
       <nz-divider></nz-divider>
 
-      <!-- Private Mode -->
-      <div *ngIf="shareMode === 'private'" class="mode-info">
-        <p><span nz-icon nzType="lock" nzTheme="outline"></span> Chỉ bạn mới có quyền truy cập file này.</p>
+      <div class="mode-selector">
+        <div class="section-title">Chế độ chia sẻ</div>
+        <nz-radio-group [(ngModel)]="shareMode" (ngModelChange)="onModeChange($event)" nzButtonStyle="solid" class="full-width-group">
+          <label nz-radio-button [nzValue]="'private'">
+            <span nz-icon nzType="lock"></span> Riêng tư
+          </label>
+          <label nz-radio-button [nzValue]="'public'">
+            <span nz-icon nzType="global"></span> Công khai
+          </label>
+          <label nz-radio-button [nzValue]="'signed'">
+            <span nz-icon nzType="clock-circle"></span> Tạm thời
+          </label>
+          <label nz-radio-button [nzValue]="'secure'">
+            <span nz-icon nzType="safety"></span> Bảo mật
+          </label>
+        </nz-radio-group>
       </div>
 
-      <!-- Public Mode -->
-      <div *ngIf="shareMode === 'public'" class="mode-info">
-        <p><span nz-icon nzType="global" nzTheme="outline"></span> Bất kỳ ai có đường dẫn đều có thể xem file.</p>
-        <nz-input-group [nzAddOnAfter]="copyButton">
-          <input nz-input [ngModel]="file.url" readonly />
-        </nz-input-group>
-        <ng-template #copyButton>
-          <button nz-button (click)="copyLink(file.url)"><span nz-icon nzType="copy"></span> Copy</button>
-        </ng-template>
-      </div>
-
-      <!-- Signed URL Mode -->
-      <div *ngIf="shareMode === 'signed'" class="mode-info">
-        <p><span nz-icon nzType="clock-circle" nzTheme="outline"></span> Tạo đường dẫn truy cập có thời hạn.</p>
-        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-          <nz-select [(ngModel)]="durationHours" style="flex: 1">
-            <nz-option [nzValue]="1" nzLabel="1 giờ"></nz-option>
-            <nz-option [nzValue]="24" nzLabel="24 giờ"></nz-option>
-            <nz-option [nzValue]="168" nzLabel="7 ngày"></nz-option>
-          </nz-select>
-          <button nz-button nzType="primary" (click)="generateSignedUrl()" [nzLoading]="generating">Tạo Link</button>
+      <div class="mode-content mt-4">
+        <!-- Private Mode -->
+        <div *ngIf="shareMode === 'private'" class="mode-card animate-in">
+          <div class="mode-icon private"><span nz-icon nzType="lock" nzTheme="outline"></span></div>
+          <div class="mode-text">
+            <h3>Truy cập riêng tư</h3>
+            <p>Chỉ bạn mới có quyền xem và quản lý tệp này. Đây là chế độ an toàn nhất.</p>
+          </div>
         </div>
-        <nz-input-group *ngIf="signedUrl" [nzAddOnAfter]="copySignedButton">
-          <input nz-input [ngModel]="signedUrl" readonly />
-        </nz-input-group>
-        <ng-template #copySignedButton>
-          <button nz-button (click)="copyLink(signedUrl)"><span nz-icon nzType="copy"></span> Copy</button>
-        </ng-template>
+
+        <!-- Public Mode -->
+        <div *ngIf="shareMode === 'public'" class="mode-card animate-in">
+          <div class="mode-icon public"><span nz-icon nzType="global" nzTheme="outline"></span></div>
+          <div class="mode-text">
+            <h3>Truy cập công khai</h3>
+            <p>Bất kỳ ai có đường dẫn trực tiếp từ GCS đều có thể xem tệp này.</p>
+            <div class="url-copy-box mt-3">
+              <nz-input-group [nzAddOnAfter]="copyButton">
+                <input nz-input [ngModel]="file?.url" readonly />
+              </nz-input-group>
+              <ng-template #copyButton>
+                <button nz-button (click)="copyLink(file?.url || '')" nzType="primary">
+                  <span nz-icon nzType="copy"></span> Sao chép
+                </button>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Signed URL Mode -->
+        <div *ngIf="shareMode === 'signed'" class="mode-card animate-in">
+          <div class="mode-icon signed"><span nz-icon nzType="link" nzTheme="outline"></span></div>
+          <div class="mode-text">
+            <h3>Đường dẫn tạm thời</h3>
+            <p>Tạo một liên kết có thời hạn truy cập ngắn (Signed URL).</p>
+            
+            <div class="duration-selector mt-3">
+              <span class="label">Hiệu lực trong:</span>
+              <nz-select [(ngModel)]="durationHours" style="width: 140px">
+                <nz-option [nzValue]="1" nzLabel="1 giờ"></nz-option>
+                <nz-option [nzValue]="24" nzLabel="24 giờ"></nz-option>
+                <nz-option [nzValue]="168" nzLabel="7 ngày"></nz-option>
+              </nz-select>
+              <button nz-button nzType="primary" (click)="generateSignedUrl()" [nzLoading]="generating" class="ml-2">
+                Tạo Link
+              </button>
+            </div>
+
+            <div *ngIf="signedUrl" class="url-copy-box mt-3">
+              <nz-input-group [nzAddOnAfter]="copySignedButton">
+                <input nz-input [ngModel]="signedUrl" readonly />
+              </nz-input-group>
+              <ng-template #copySignedButton>
+                <button nz-button (click)="copyLink(signedUrl)" nzType="primary">
+                  <span nz-icon nzType="copy"></span> Sao chép
+                </button>
+              </ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secure Mode -->
+        <div *ngIf="shareMode === 'secure'" class="mode-card animate-in">
+          <div class="mode-icon secure"><span nz-icon nzType="safety" nzTheme="outline"></span></div>
+          <div class="mode-text">
+            <h3>Truy cập bảo mật</h3>
+            <p>Yêu cầu người dùng nhập mã xác thực và giới hạn thời gian truy cập.</p>
+            
+            <form nz-form [formGroup]="secureForm" nzLayout="vertical" class="mt-3">
+              <div class="row">
+                <div class="col-6">
+                  <nz-form-item>
+                    <nz-form-label nzRequired>Mã bí mật</nz-form-label>
+                    <nz-form-control nzErrorTip="Vui lòng nhập mã">
+                      <nz-input-group nzPrefixIcon="key">
+                        <input nz-input formControlName="shareCode" placeholder="vd: 123456" />
+                      </nz-input-group>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+                <div class="col-6">
+                  <nz-form-item>
+                    <nz-form-label>Ngày hết hạn</nz-form-label>
+                    <nz-form-control>
+                      <nz-date-picker formControlName="expiredAt" nzShowTime style="width: 100%"></nz-date-picker>
+                    </nz-form-control>
+                  </nz-form-item>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
 
-      <!-- Secure Mode (Mã xác thực) -->
-      <div *ngIf="shareMode === 'secure'" class="mode-info">
-        <p><span nz-icon nzType="safety" nzTheme="outline"></span> Yêu cầu người nhận nhập mã xác thực thông qua ứng dụng.</p>
-        <form nz-form [formGroup]="secureForm">
-          <nz-form-item>
-            <nz-form-label [nzSpan]="24">Mã xác thực</nz-form-label>
-            <nz-form-control>
-              <input nz-input formControlName="shareCode" placeholder="Nhập mã bí mật" />
-            </nz-form-control>
-          </nz-form-item>
-          <nz-form-item>
-            <nz-form-label [nzSpan]="24">Hết hạn sau</nz-form-label>
-            <nz-form-control>
-              <nz-date-picker formControlName="expiredAt" nzShowTime style="width: 100%"></nz-date-picker>
-            </nz-form-control>
-          </nz-form-item>
-        </form>
-      </div>
-
-      <div class="footer" style="text-align: right; margin-top: 24px;">
-        <button nz-button nzType="default" (click)="handleCancel($event)">Hủy</button>
-        <button nz-button nzType="primary" (click)="submitForm()" [nzLoading]="submitting" style="margin-left: 8px;">Lưu thay đổi</button>
+      <div class="modal-footer mt-4">
+        <button nz-button nzType="default" (click)="handleCancel($event)">Bỏ qua</button>
+        <button nz-button nzType="primary" (click)="submitForm()" [nzLoading]="submitting" class="ml-2 save-btn">
+          <span nz-icon nzType="check"></span> Áp dụng thay đổi
+        </button>
       </div>
     </div>
   `,
   styles: [`
-    .share-container { padding: 8px; }
-    .mode-info { padding: 12px; background: #fafafa; border-radius: 4px; min-height: 120px; }
-    .mode-info p { color: #666; margin-bottom: 12px; }
+    .share-container { padding: 4px; font-family: 'Inter', -apple-system, sans-serif; }
+    
+    .header-info { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+    .file-icon { font-size: 32px; background: #f0f7ff; padding: 12px; border-radius: 12px; display: flex; }
+    .file-name { font-weight: 600; font-size: 16px; color: #1a1a1a; max-width: 300px; }
+    .file-meta { font-size: 13px; color: #8c8c8c; margin-top: 2px; }
+
+    .section-title { font-weight: 500; font-size: 14px; margin-bottom: 12px; color: #595959; }
+    
+    .full-width-group { width: 100%; display: flex; }
+    .full-width-group label { flex: 1; text-align: center; }
+
+    .mode-card { 
+      display: flex; gap: 16px; padding: 20px; 
+      background: #fdfdfd; border: 1px solid #f0f0f0; 
+      border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+      min-height: 160px;
+    }
+    
+    .mode-icon { 
+      font-size: 24px; width: 48px; height: 48px; 
+      display: flex; align-items: center; justify-content: center; 
+      border-radius: 50%; flex-shrink: 0;
+    }
+    .mode-icon.private { background: #fff1f0; color: #ff4d4f; }
+    .mode-icon.public { background: #f6ffed; color: #52c41a; }
+    .mode-icon.signed { background: #e6f7ff; color: #1890ff; }
+    .mode-icon.secure { background: #f9f0ff; color: #722ed1; }
+
+    .mode-text h3 { margin: 0 0 4px; font-size: 16px; font-weight: 600; color: #262626; }
+    .mode-text p { margin: 0; font-size: 14px; color: #8c8c8c; line-height: 1.5; }
+
+    .url-copy-box { background: #f5f5f5; padding: 4px; border-radius: 8px; }
+    
+    .duration-selector { display: flex; align-items: center; gap: 8px; }
+    .duration-selector .label { font-size: 13px; color: #595959; }
+
+    .modal-footer { display: flex; justify-content: flex-end; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+    .save-btn { min-width: 140px; }
+
+    .row { display: flex; margin: 0 -8px; }
+    .col-6 { flex: 0 0 50%; padding: 0 8px; }
+    .mt-3 { margin-top: 12px; }
+    .mt-4 { margin-top: 16px; }
+    .ml-2 { margin-left: 8px; }
+    .text-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .animate-in {
+      animation: slide-up 0.3s ease-out;
+    }
+
+    @keyframes slide-up {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   `]
 })
 export class FileShareModalComponent implements OnInit {
-  @Input() file: any;
+  readonly modalData = inject(NZ_MODAL_DATA);
+  file = this.modalData.file;
 
   private fb = inject(FormBuilder);
   private modal = inject(NzModalRef);
@@ -136,6 +246,23 @@ export class FileShareModalComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.fetchFileDetails();
+  }
+
+  async fetchFileDetails(): Promise<void> {
+    if (!this.file?.id) return;
+    try {
+      const latestFile: any = await this.filesFoldersService.getFileDetail(this.file.id);
+      this.file = latestFile;
+      this.updateModeFromPermission();
+    } catch (error) {
+      this.message.error('Lỗi khi tải thông tin chi tiết file');
+      // Fallback to initial data
+      this.updateModeFromPermission();
+    }
+  }
+
+  private updateModeFromPermission(): void {
     if (this.file) {
       if (this.file.permission === 1) this.shareMode = 'public';
       else if (this.file.permission === 2) {
@@ -217,5 +344,13 @@ export class FileShareModalComponent implements OnInit {
   handleCancel(event: MouseEvent): void {
     event.preventDefault();
     this.modal.close();
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 }

@@ -31,3 +31,13 @@ Chức năng và quản lý file, folder info với db postgresql, UI giống fo
 **cập nhật 2**
 Ở danh sách file bên phải, nút share file , click vào lên modal để chọn chế độ share
     cần đưa ra các cách share file theo google cloud storage về share file và url
+
+                    So sánh với các URL ở chức năng Share
+                Chế độ Share	URL sinh ra	Có giống URL trong DB không?
+                Công khai (Public)	https://storage.googleapis.com/...	GIỐNG HỆT. Đây chính là URL gốc. Khi bạn bật chế độ này, BE sẽ lên GCS mở quyền cho phép "bất kỳ ai" truy cập vào chính URL gốc đó.
+                Link tạm thời (Signed URL)	https://storage.googleapis.com/...&GoogleAccessId=...&Signature=...	KHÁC. Nó bắt đầu bằng URL gốc nhưng có thêm một chuỗi ký tự bảo mật rất dài ở phía sau. Chuỗi này chứa "chìa khóa" tạm thời và thời gian hết hạn.
+                Bảo mật (Secure/Mã xác thực)	http://localhost:5000/api/files/share/{shareId}	KHÁC HOÀN TOÀN. Đây là URL nội bộ của hệ thống (không phải link trực tiếp GCS). Khi truy cập link này, người dùng phải nhập mã thì hệ thống mới cho phép tải file.
+
+                Lưu ý quan trọng: Khi bạn chuyển file về Riêng tư (Private), URL gốc trong DB sẽ bị GCS chặn truy cập (lỗi 403), đảm bảo an toàn cho dữ liệu.
+
+    **bug 1** áp dụng riêng tư rồi , sao url https://storage.googleapis.com/dunp-test-gcs/dunp/8a1ae663-4441-458e-9471-4746f84a492f_du1.jpeg vẫn vào đc, code BE chưa gọi lên google cloud storage để set lại quyền

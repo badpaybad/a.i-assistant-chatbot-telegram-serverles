@@ -155,12 +155,12 @@ public class FirebaseService
     }
 
     // Storage
-    public async Task<string> UploadFileAsync(string appName, string bucketName, string objectName, Stream content, string contentType)
+    public async Task<string> UploadFileAsync(string appName, string bucketName, string objectName, Stream content, string contentType, bool isPublic = false)
     {
         var client = _storageClients[appName];
         var obj = await client.UploadObjectAsync(bucketName, objectName, contentType, content, new UploadObjectOptions
         {
-            PredefinedAcl = PredefinedObjectAcl.PublicRead
+            PredefinedAcl = isPublic ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
         });
         return $"https://storage.googleapis.com/{bucketName}/{objectName}";
     }
@@ -168,21 +168,17 @@ public class FirebaseService
     public async Task UpdateObjectAclAsync(string appName, string bucketName, string objectName, bool isPublic)
     {
         var client = _storageClients[appName];
-        var obj = await client.GetObjectAsync(bucketName, objectName);
-        if (isPublic)
+        
+        _logger.LogInformation("Patching ACL for {ObjectName} in {BucketName} to {Acl}", objectName, bucketName, isPublic ? "PublicRead" : "Private");
+        
+        await client.PatchObjectAsync(new Google.Apis.Storage.v1.Data.Object
         {
-            await client.UpdateObjectAsync(obj, new UpdateObjectOptions
-            {
-                PredefinedAcl = PredefinedObjectAcl.PublicRead
-            });
-        }
-        else
+            Bucket = bucketName,
+            Name = objectName
+        }, new PatchObjectOptions
         {
-            await client.UpdateObjectAsync(obj, new UpdateObjectOptions
-            {
-                PredefinedAcl = PredefinedObjectAcl.Private
-            });
-        }
+            PredefinedAcl = isPublic ? PredefinedObjectAcl.PublicRead : PredefinedObjectAcl.Private
+        });
     }
 
     public string GetSignedUrl(string appName, string bucketName, string objectName, TimeSpan duration)
