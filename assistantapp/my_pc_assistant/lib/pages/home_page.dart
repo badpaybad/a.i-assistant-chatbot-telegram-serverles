@@ -35,7 +35,17 @@ class _HomePageState extends State<HomePage> {
                     radius: 25,
                     backgroundImage: NetworkImage(user?.profileImageUrl ?? 'https://i.pravatar.cc/150'),
                   ),
-                  const SizedBox(width: 15),
+                  IconButton(
+                    icon: const Icon(Icons.logout, color: AppColors.white, size: 20),
+                    tooltip: 'Sign Out',
+                    onPressed: () async {
+                      await context.read<AuthService>().signOut();
+                      if (context.mounted) {
+                        Navigator.pushReplacementNamed(context, AppRoutes.signIn);
+                      }
+                    },
+                  ),
+                  const SizedBox(width: 5),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [

@@ -83,6 +83,12 @@ Tuân thủ yêu cầu chia tách rõ ràng:
 - Đã xử lý callback trao đổi mã code lấy token và lấy thông tin user trong `AuthService`.
 - Đã cấu hình deep link scheme `my-pc-assistant` trong `AndroidManifest.xml` (Android) và `Info.plist` (iOS).
 
+### Bước 14: Tính năng Đăng xuất (Sign Out & OIDC Logout) - [HOÀN THÀNH]
+- Đã bổ sung nút Đăng xuất (Sign Out) ngay cạnh Avatar trên màn hình chính (`HomePage`).
+- Tích hợp logic gọi hàm `signOut()` từ `AuthService`.
+- **Hỗ trợ OIDC Logout**: Khi đăng xuất, ứng dụng sẽ mở trình duyệt để gọi endpoint `api/auth/logout` của OIDC Provider nhằm xóa session cookie trên server, đảm bảo đăng xuất hoàn toàn (Single Sign-Out).
+- Sau khi OIDC Provider callback về app, ứng dụng sẽ xóa session cục bộ và chuyển hướng người dùng quay lại màn hình Đăng nhập (`SignInPage`).
+
 --- 
 Lưu ý quan trọng:
 Để các tính năng Firebase hoạt động, bạn cần thực hiện bước cuối cùng là thêm các tệp cấu hình từ Firebase Console:

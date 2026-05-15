@@ -159,9 +159,30 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void signOut() {
-    _currentUser = null;
-    _isAuthenticated = false;
-    notifyListeners();
+  Future<void> signOut() async {
+    try {
+      if (_isAuthenticated) {
+        final String callbackUrlScheme = 'my-pc-assistant';
+        final Uri logoutUri = Uri.parse('$_baseUrl/api/auth/logout').replace(queryParameters: {
+          'post_logout_redirect_uri': '$callbackUrlScheme://logout-callback',
+        });
+        
+        debugPrint('[SSO] Starting OIDC logout with URL: ${logoutUri.toString()}');
+        
+        // Mở trình duyệt để logout ở phía server (OIDC Provider)
+        await FlutterWebAuth2.authenticate(
+          url: logoutUri.toString(),
+          callbackUrlScheme: callbackUrlScheme,
+        );
+        debugPrint('[SSO] OIDC logout completed');
+      }
+    } catch (e) {
+      debugPrint('[SSO] OIDC Logout info/error: $e');
+      // Tiếp tục xóa session cục bộ kể cả khi OIDC logout gặp lỗi hoặc bị hủy
+    } finally {
+      _currentUser = null;
+      _isAuthenticated = false;
+      notifyListeners();
+    }
   }
 }
