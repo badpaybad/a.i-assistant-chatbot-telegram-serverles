@@ -12,7 +12,8 @@ const originalFetch = window.fetch;
 window.fetch = function (input, init) {
   const url = typeof input === 'string' ? input : (input instanceof Request ? input.url : input.toString());
   if (url.includes('telemeter_wasm_bg.wasm')) {
-    return originalFetch('/assets/telemeter_wasm_bg.wasm', init);
+    // Assets are served under /admin/assets because of the baseHref configuration
+    return originalFetch('/admin/assets/telemeter_wasm_bg.wasm', init);
   }
   return originalFetch(input, init);
 };

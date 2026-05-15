@@ -40,6 +40,9 @@
             ],
             "styles": [
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
+              "node_modules/ckeditor5/dist/ckeditor5.css",
+              "node_modules/@wiris/mathtype-ckeditor5/dist/index.css",
+              "node_modules/@wiris/mathtype-ckeditor5/dist/index-editor.css",
               "src/styles.css"
             ]
           },

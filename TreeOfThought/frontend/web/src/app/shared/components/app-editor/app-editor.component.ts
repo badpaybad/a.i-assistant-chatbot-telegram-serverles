@@ -57,7 +57,6 @@ import {
   GeneralHtmlSupport
 } from 'ckeditor5';
 
-import 'ckeditor5/ckeditor5.css';
 import MathType from '@wiris/mathtype-ckeditor5/dist/index.js'; // Math & Chem plugins v2
 // import Math from 'ckeditor5-math/src/math';
 // import AutoMath from 'ckeditor5-math/src/automath';
@@ -134,14 +133,6 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
       // Math, AutoMath,
       FilesFoldersPlugin, GcsUploadAdapterPlugin, Base64ImagePlugin
     ],
-    /*
-    math: {
-      engine: 'mathjax',
-      outputType: 'script',
-      forceOutput: false,
-      enablePrettier: true
-    },
-    */
     htmlSupport: {
       allow: [
         {
@@ -172,9 +163,9 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
     },
     placeholder: '',
     licenseKey: 'GPL',
-    editorService: null as any, // Will be set in ngOnInit
-    httpClient: null as any, // Will be set in ngOnInit
-    httpClientService: null as any // Will be set in ngOnInit
+    editorService: null as any,
+    httpClient: null as any,
+    httpClientService: null as any
   };
 
   private onChange: any = () => {};
@@ -231,17 +222,14 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
   }
 
   onReady(editor: any): void {
-    // Customizations after ready if needed
   }
 
   onValueChange(val: string): void {
-    // Basic XSS protection: remove <script> tags
     const sanitized = val ? val.replace(/<script\b[^>]*>([\s\S]*?)<\/script>/gim, "") : "";
     this.value = sanitized;
     this.onChange(sanitized);
   }
 
-  // ControlValueAccessor methods
   writeValue(value: any): void {
     this.value = value || '';
   }
@@ -255,6 +243,5 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
   }
 
   setDisabledState?(isDisabled: boolean): void {
-    // Implement if needed
   }
 }

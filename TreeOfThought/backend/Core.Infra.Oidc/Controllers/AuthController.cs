@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Core.Infra.Auth.Services;
 using Core.Infra.Auth.Interfaces;
+using System.Net;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -61,13 +62,6 @@ public class AuthController : ControllerBase
         var jwk = _jwtService.GetJwks();
         return Ok(new { keys = new[] { jwk } });
     }
-
-    // [HttpPost("init")]
-    // public async Task<IActionResult> Initialize()
-    // {
-    //     await _authService.InitializeAsync();
-    //     return Ok(new { message = "Auth system initialized and admin seeded" });
-    // }
 
     [HttpGet("me")]
     [AppAuthorize]
@@ -209,17 +203,17 @@ public class AuthController : ControllerBase
 
         // 2. If not logged in, redirect to SPA Login UI
         var loginUrl = _config["Oidc:OidcLoginUiUrl"]!;
-        var returnUrl = Request.Scheme + "://" + Request.Host + Request.Path + Request.QueryString;
+        // Use relative path for returnUrl so the frontend can resolve it using window.location.origin
+        var returnUrl = Request.Path + Request.QueryString;
 
-        // Đảm bảo URL chuyển hướng là tuyệt đối và sử dụng chính Host mà client đang truy cập
-        // (Điều này quan trọng vì máy ảo dùng 10.0.2.2 còn desktop dùng localhost hoặc IP LAN)
+        // Ensure we use the actual host the user is using to avoid 0.0.0.0 issues
         var host = Request.Host.Value;
         var scheme = Request.Scheme;
         var absoluteLoginUrl = loginUrl.StartsWith("http") 
             ? loginUrl 
             : $"{scheme}://{host}{Request.PathBase}{loginUrl}";
 
-        var finalRedirect = $"{absoluteLoginUrl}?returnUrl={Uri.EscapeDataString(returnUrl)}";
+        var finalRedirect = $"{absoluteLoginUrl}?returnUrl={WebUtility.UrlEncode(returnUrl)}";
         Console.WriteLine($"[OIDC] Redirecting to: {finalRedirect}");
         
         return Redirect(finalRedirect);
@@ -362,4 +356,3 @@ public class AuthController : ControllerBase
         return BadRequest(new { message = "Invalid current password" });
     }
 }
-

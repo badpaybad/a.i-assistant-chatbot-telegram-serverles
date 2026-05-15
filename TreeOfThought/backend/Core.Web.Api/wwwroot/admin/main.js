@@ -9425,7 +9425,7 @@ var routes = [
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-SH7DKCYV.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-3TYEFTRR.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -9859,7 +9859,7 @@ var originalFetch = window.fetch;
 window.fetch = function(input, init) {
   const url = typeof input === "string" ? input : input instanceof Request ? input.url : input.toString();
   if (url.includes("telemeter_wasm_bg.wasm")) {
-    return originalFetch("/assets/telemeter_wasm_bg.wasm", init);
+    return originalFetch("/admin/assets/telemeter_wasm_bg.wasm", init);
   }
   return originalFetch(input, init);
 };
