@@ -48,6 +48,12 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ],
               "budgets": [
                 {
                   "type": "initial",
@@ -68,6 +74,12 @@
               "sourceMap": true
             },
             "integrated": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.integrated.ts"
+                }
+              ],
               "outputPath": {
                 "base": "../../backend/Core.Web.Api/wwwroot/admin",
                 "browser": ""
@@ -87,6 +99,9 @@
             },
             "development": {
               "buildTarget": "web:build:development"
+            },
+            "integrated": {
+              "buildTarget": "web:build:integrated"
             }
           },
           "defaultConfiguration": "development"

@@ -126,6 +126,42 @@ export class FirebaseService {
   async getFCMToken(): Promise<string | null> {
     if (!this.messaging) return null;
     try {
+      // Register service worker explicitly to handle baseHref
+      if ('serviceWorker' in navigator) {
+        const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
+        const swPath = `${baseHref}firebase-messaging-sw.js`.replace('//', '/');
+        
+        console.log('Registering FCM Service Worker:', swPath, 'with scope:', baseHref);
+        
+        const registration = await navigator.serviceWorker.register(swPath, {
+          scope: baseHref
+        });
+        
+        // Wait for the service worker to be active to avoid AbortError
+        if (!registration.active) {
+          console.log('FCM Service Worker not active, waiting for activation...');
+          await new Promise<void>((resolve) => {
+            const worker = registration.installing || registration.waiting;
+            if (worker) {
+              worker.addEventListener('statechange', (e: any) => {
+                if (e.target.state === 'activated') {
+                  console.log('FCM Service Worker activated');
+                  resolve();
+                }
+              });
+            } else {
+              resolve();
+            }
+          });
+        }
+        
+        const token = await getToken(this.messaging, { 
+          vapidKey: environment.firebase.vapidKey,
+          serviceWorkerRegistration: registration
+        });
+        return token;
+      }
+      
       const token = await getToken(this.messaging, { vapidKey: environment.firebase.vapidKey });
       return token;
     } catch (error) {

@@ -1,20 +1,20 @@
 import {
   AuthService,
   NzDescriptionsModule
-} from "./chunk-ZRIWJIC7.js";
+} from "./chunk-YP3KBCRE.js";
 import {
   APP_CLAIMS
 } from "./chunk-F6TGNGA2.js";
 import {
   CqrsTestComponent,
   DashboardService
-} from "./chunk-Z6SBXC3P.js";
+} from "./chunk-XQXDXSUQ.js";
 import {
   NzPageHeaderComponent,
   NzPageHeaderExtraDirective,
   NzPageHeaderModule
-} from "./chunk-6AAZKQFY.js";
-import "./chunk-WEPRVIH2.js";
+} from "./chunk-F2HNJKHN.js";
+import "./chunk-BRXGOM47.js";
 import "./chunk-IRGOCD6C.js";
 import {
   NzBreadCrumbComponent,
@@ -25,34 +25,34 @@ import {
   NzLayoutComponent,
   NzLayoutModule,
   NzSiderComponent
-} from "./chunk-EH4I7SDZ.js";
+} from "./chunk-IA42CVZZ.js";
 import {
   NzDividerComponent,
   NzDividerModule
-} from "./chunk-VMXZFLQI.js";
+} from "./chunk-YZJBDBW7.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-ME3RX76H.js";
+} from "./chunk-J2JH5WAC.js";
 import {
   NzCardComponent,
   NzCardModule,
   NzSkeletonComponent,
   NzSkeletonModule
-} from "./chunk-T7PAMWZ4.js";
+} from "./chunk-7RCWUD7A.js";
 import {
   NzDatePickerComponent,
   NzDatePickerModule
-} from "./chunk-WZD6RHN2.js";
+} from "./chunk-IZR5ZOPP.js";
 import {
   NZ_MODAL_DATA,
   NzModalModule,
   NzModalService
-} from "./chunk-VOL5HVFB.js";
+} from "./chunk-BEUTVBBR.js";
 import {
   NzTagComponent,
   NzTagModule
-} from "./chunk-GVGPR4NJ.js";
+} from "./chunk-LMDRMSXW.js";
 import {
   NzCellFixedDirective,
   NzCheckboxComponent,
@@ -85,7 +85,7 @@ import {
   NzTheadComponent,
   NzTrDirective,
   NzTrExpandDirective
-} from "./chunk-QZ7FOKZW.js";
+} from "./chunk-F5V5UTFR.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
@@ -93,24 +93,24 @@ import {
   NzFormModule,
   NzTooltipDirective,
   NzTooltipModule
-} from "./chunk-HE5DAGAC.js";
+} from "./chunk-AWLOCL4K.js";
 import {
   en_US,
   provideNzI18n,
   timeUnits
-} from "./chunk-QA53ID2Z.js";
+} from "./chunk-SPKOZRRR.js";
 import {
   NzColDirective,
   NzGridModule,
   NzRowDirective
-} from "./chunk-VO7LFQ3A.js";
-import "./chunk-FVBTWRWW.js";
+} from "./chunk-7NOM6P4G.js";
+import "./chunk-KMAEKJDE.js";
 import {
   NzInputDirective,
   NzInputGroupComponent,
   NzInputGroupWhitSuffixOrPrefixDirective,
   NzInputModule
-} from "./chunk-QVFRY7SZ.js";
+} from "./chunk-OCV5YBAO.js";
 import {
   ActivatedRoute,
   AppNotificationService,
@@ -175,7 +175,7 @@ import {
   takeUntilDestroyed,
   toBoolean,
   ɵNgNoValidate
-} from "./chunk-BV7BATNO.js";
+} from "./chunk-LJSHPVT7.js";
 import {
   ANIMATION_MODULE_TYPE,
   BehaviorSubject,
@@ -10964,22 +10964,22 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-O6YGXPST.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-TWP4WJMC.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-E2Y7B2AB.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-5JZTXVJO.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-NMGNV3TW.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-3MUGIEEN.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-5CVUXX7G.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-IU3NX5VI.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -10990,36 +10990,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-Q5OM5VYR.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-L5HJHUQX.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-SUGH7LRL.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-UPZ6JMCA.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-F3AXHETF.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-64LJAFZB.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-TL63CGBI.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-VFBKUPND.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-ZTISZ6JT.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-UARBK3ZR.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-DJCKW3HU.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-GB2HZ5FD.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -11027,7 +11027,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-6BZSOHWO.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-S4UROLJO.js").then((m) => m.FilesFolders)
       }
     ]
   },

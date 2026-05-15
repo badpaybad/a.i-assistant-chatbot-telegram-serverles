@@ -14,7 +14,7 @@ mkdir -p wwwroot/admin
 echo "Starting Angular build in watch mode..."
 # Using --base-href and --output-path here as well to be sure, 
 # although they are in angular.json
-(cd ../../frontend/web && npm start) &
+(cd ../../frontend/web && npm run integrated) &
 ANGULAR_PID=$!
 
 # Function to kill background processes on exit

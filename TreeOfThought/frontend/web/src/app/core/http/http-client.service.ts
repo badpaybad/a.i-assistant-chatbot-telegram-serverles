@@ -6,6 +6,8 @@ import { firstValueFrom } from 'rxjs';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { TranslateService } from '@ngx-translate/core';
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
@@ -16,8 +18,8 @@ export class HttpClientService {
   private templateService = inject(NotificationTemplateService);
   private translate = inject(TranslateService);
 
-  // Default base URL - can be empty to use current origin
-  private readonly API_BASE_URL = (window as any).env?.API_BASE_URL || '';
+  // Default base URL from environment
+  private readonly API_BASE_URL = environment.apiBaseUrl || '';
 
   private getHeaders(data?: any): HttpHeaders {
     let headers = new HttpHeaders();
