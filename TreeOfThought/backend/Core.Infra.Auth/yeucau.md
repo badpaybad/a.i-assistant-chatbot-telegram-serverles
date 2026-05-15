@@ -1,3 +1,4 @@
+xem file TreeOfThought/backend/yeucau.md 
 AppAuthorizeAttribute
 Hiện tại đóng vai trò là nơi lưu trữ Metadata. Nó tự động tạo ra một chuỗi Policy duy nhất dựa trên các tham số (Mode, Action, ResourceType, Claims).
 Ví dụ: [AppAuthorize("user.view", Mode = AuthMode.And)] sẽ tạo ra Policy: AppAuthorize:AND:None:null:null:null:be.user.view.
@@ -53,3 +54,10 @@ program.cs cần
     // --- 8. Initialize Infrastructure ---
     await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
 
+**cập nhật 2026-05-15 1-:28:28**
+
+openid connect đã được bổ xung 
+BE: TreeOfThought/backend/Core.Infra.Auth/Controllers/AuthController.cs
+FE: TreeOfThought/docs/auth/yeucau.md 
+oidc kết hợp cả backend và SPA frontend web: 
+    logic login oidc đã đúng chưa. khi mà bên thứ 3 request login oidc sau khi đăng nhập thành công redirect để trả code cho bên thứ 3

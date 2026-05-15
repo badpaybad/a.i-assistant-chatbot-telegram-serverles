@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
 import { getFirestore, Firestore, doc, onSnapshot, deleteDoc } from 'firebase/firestore';
-import { getMessaging, Messaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, Messaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { environment } from '../../../environments/environment';
 import { BehaviorSubject, Observable } from 'rxjs';
 
@@ -22,17 +22,24 @@ export class FirebaseService {
     this.app = initializeApp(environment.firebase);
     this.auth = getAuth(this.app);
     this.db = getFirestore(this.app);
+    this.initMessaging();
     
-    // Messaging only works in secure contexts (HTTPS) and supported browsers
-    try {
-      this.messaging = getMessaging(this.app);
-    } catch (e) {
-      console.warn('Firebase Messaging not supported in this browser/context', e);
-    }
-
     onAuthStateChanged(this.auth, (user) => {
       this.firebaseUserSubject.next(user);
     });
+  }
+
+  private async initMessaging() {
+    // Messaging only works in secure contexts (HTTPS) and supported browsers
+    try {
+      if (await isSupported()) {
+        this.messaging = getMessaging(this.app);
+      } else {
+        console.warn('Firebase Messaging not supported in this browser/context');
+      }
+    } catch (e) {
+      console.warn('Error checking for Firebase Messaging support', e);
+    }
   }
 
   async loginWithGoogle() {

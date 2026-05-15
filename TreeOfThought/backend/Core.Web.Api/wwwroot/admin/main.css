@@ -296,7 +296,7 @@
 [dir=rtl] .ck.ck-responsive-form > :not(:last-child) {
   margin-left: var(--ck-spacing-standard);
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-responsive-form {
     width: calc(.8 * var(--ck-input-width));
     padding: 0;
@@ -387,24 +387,24 @@
 .ck.ck-form .ck.ck-dropdown .ck-dropdown__button .ck-button__label {
   width: 100%;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-form.ck-responsive-form .ck.ck-form__row.ck-form__row_with-submit {
     flex-direction: column;
     align-items: stretch;
     padding: 0;
   }
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-form.ck-responsive-form .ck.ck-form__row.ck-form__row_with-submit > .ck {
     margin: var(--ck-spacing-large) var(--ck-spacing-large) 0;
   }
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-form.ck-responsive-form .ck.ck-form__row.ck-form__row_with-submit .ck-button_with-text {
     justify-content: center;
   }
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-form.ck-responsive-form .ck.ck-form__row.ck-form__row_large-bottom-padding {
     padding-bottom: var(--ck-spacing-large);
   }
@@ -978,7 +978,10 @@ a.ck.ck-button-bold {
   overscroll-behavior: none;
   animation: .3s ck-dialog-fade-in;
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ck.ck-dialog-overlay.ck-dialog-overlay__transparent {
   pointer-events: none;
@@ -2577,7 +2580,7 @@ a.ck.ck-button-bold {
 :root {
   --ck-bookmark-form-width: 340px;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-bookmark-form-width: 300px;
   }
@@ -3004,7 +3007,7 @@ div.ck.ck-balloon-panel.ck-emoji-picker-balloon {
   width: 100%;
   display: flex;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-find-and-replace-form {
     width: 300px;
     max-width: 100%;
@@ -3472,7 +3475,10 @@ body.ck-fullscreen {
   align-items: center;
   display: flex;
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ck-widget.raw-html-embed {
   font-style: normal;
@@ -3933,7 +3939,7 @@ span.ck-widget.html-object-embed {
 :root {
   --ck-image-custom-resize-form-width: 340px;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-image-custom-resize-form-width: 300px;
   }
@@ -3944,7 +3950,7 @@ span.ck-widget.html-object-embed {
 :root {
   --ck-text-alternative-form-width: 340px;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-text-alternative-form-width: 300px;
   }
@@ -4042,7 +4048,7 @@ a.ck.ck-button.ck-link-toolbar__preview:has(.ck-icon) {
   --ck-link-provider-list-item-text-height: calc(var(--ck-line-height-base) * var(--ck-font-size-base));
   --ck-link-provider-list-item-height: calc(var(--ck-link-provider-list-item-text-height) + var(--ck-spacing-small) + var(--ck-spacing-small));
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-link-panel-width: 300px;
   }
@@ -4051,7 +4057,7 @@ a.ck.ck-button.ck-link-toolbar__preview:has(.ck-icon) {
   width: var(--ck-link-panel-width);
   padding-bottom: 0;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-form.ck-link-form.ck-responsive-form .ck-labeled-field-view {
     margin: 0;
   }
@@ -4080,7 +4086,7 @@ a.ck.ck-button.ck-link-toolbar__preview:has(.ck-icon) {
 :root {
   --ck-link-properties-width: 340px;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-link-properties-width: 300px;
   }
@@ -4093,7 +4099,7 @@ a.ck.ck-button.ck-link-toolbar__preview:has(.ck-icon) {
   --ck-link-list-view-max-height: 240px;
   --ck-link-list-view-icon-size: calc(var(--ck-icon-size) * .8);
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   :root {
     --ck-link-providers-width: 300px;
   }
@@ -4473,7 +4479,7 @@ a.ck.ck-button.ck-link-toolbar__preview:has(.ck-icon) {
 .ck.ck-media-form .ck-input {
   width: 100%;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-media-form {
     flex-wrap: wrap;
   }
@@ -4820,7 +4826,7 @@ div.ck.ck-balloon-panel.ck-mention-balloon {
   max-height: 250px;
   overflow: hidden auto;
 }
-@media screen and (width <= 600px) {
+@media screen and (max-width: 600px) {
   .ck.ck-special-characters-navigation {
     max-width: 190px;
   }
@@ -5593,7 +5599,10 @@ div.ck.ck-balloon-panel.ck-mention-balloon {
   pointer-events: none;
   background-color: var(--ck-table-selected-cell-background);
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ck.ck-editor__editable .table table :where(td, th).ck-editor__editable_selected ::selection,
 .ck.ck-editor__editable .table table :where(td, th).ck-editor__editable_selected:focus {

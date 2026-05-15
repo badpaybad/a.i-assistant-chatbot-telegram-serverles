@@ -3,7 +3,8 @@
 # Ensure we are in the script's directory
 cd "$(dirname "$0")"
 
-# Create wwwroot/admin if it doesn't exist
+# Create wwwroot/admin if it doesn't exist, and clean it to avoid StaticWebAssets conflicts
+rm -rf wwwroot/admin/*
 mkdir -p wwwroot/admin
 
 # Start Angular build in watch mode in the background
@@ -22,5 +23,6 @@ cleanup() {
 trap cleanup SIGINT SIGTERM
 
 # Start .NET backend in watch mode
-echo "Starting .NET backend..."
-dotnet watch run --urls "http://localhost:5000"
+echo "Starting Backend in watch mode (Hot Reload disabled for stability)..."
+# Use --no-hot-reload to avoid crashes when Angular builds many files into wwwroot
+dotnet watch run --no-hot-reload --urls "http://0.0.0.0:5000"

@@ -22,3 +22,16 @@ FE UI của app:
 
 **cập nhật 2026-04-22 09:09:09**
 cần lưu dữ liệu không quan trọng xuống ổ cứng, như cấu hình về hiển thị cá nhân, các dữ liệu tạm thời, cache, hoặc nhận diện khuôn mặt, chụp ảnh, files, microphone ... để khi khởi động lại app không bị mất dữ liệu và có thể sử dụng lại được. chọn package có hỗ trợ về vector database để dùng gemma4 hoặc fasttext, faiss ...
+
+**cập nhật 2026-05-15 09:09:09**
+Đăng nhập Bổ xung authapp SSO với OIDC url http://192.168.4.248:5000/
+    - cần làm cho android , ios trước 
+    - tôi sẽ test với máy ảo android 
+    - kiểm tra http://192.168.4.248:5000/ đã đủ chuẩn oidc để sso chưa
+    **bug 1 **cập nhật 2026-05-15 09:09:09** ** chưa thấy nút ở page login để SSO với OIDC  http://192.168.4.248:5000/
+        click login sso phải sang trang login SSO vd http://192.168.4.248:5000/admin/auth/login
+        
+    - dùng code kiểm tra IP để lấy thông tin http://localhost:5000/.well-known/openid-configuration
+ và hiện lên UI
+    - nếu ở máy ảo không nhìn thấy 192.168.4.248 cần network của máy ảo là bridge mode
+        - nếu không chuyển đươc chế độ máy ảo dùng bridge mode thì thêm droplist để chọn ip sso iodc gồm cả ip thần thánh của android hoặc ip 192.168.4.248 hoặc 118.70.117.208

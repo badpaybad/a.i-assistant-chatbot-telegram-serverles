@@ -83,5 +83,5 @@ Dự án này được tối ưu để làm việc cùng **Antigravity**. Bạn 
 - **Cập nhật tính năng**: "Thêm tính năng gửi thông báo khi PC bị quá nhiệt".
 
 ---
-*Dự án là một phần của hệ sinh thái a.i-assistant-chatbot-telegram-serverless.*
+*Dự án là một phần của hệ sinh thái a.i-assistant-chatbot-telegram-serverles.*
 

@@ -1,7 +1,7 @@
 import {
   AuthService,
   NzDescriptionsModule
-} from "./chunk-X2XMNKPJ.js";
+} from "./chunk-HLTF3FBN.js";
 import {
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
@@ -11,42 +11,42 @@ import {
   NzLayoutComponent,
   NzLayoutModule,
   NzSiderComponent
-} from "./chunk-QDO3672U.js";
+} from "./chunk-VR2NOZPH.js";
 import {
   NzDividerComponent,
   NzDividerModule
-} from "./chunk-YK4DIBVG.js";
+} from "./chunk-IBB4Z5I5.js";
 import {
   CqrsTestComponent,
   DashboardService
-} from "./chunk-VJJEH7JN.js";
+} from "./chunk-UGOXY3I4.js";
 import {
   NzPageHeaderComponent,
   NzPageHeaderExtraDirective,
   NzPageHeaderModule
-} from "./chunk-7DPKMPHO.js";
-import "./chunk-3NZ5Q47C.js";
-import "./chunk-3UVI5PPS.js";
+} from "./chunk-KCN2Y6ON.js";
+import "./chunk-HDYQOSJT.js";
+import "./chunk-IRGOCD6C.js";
 import {
   NzListComponent,
   NzListItemComponent,
   NzListModule
-} from "./chunk-KBH5GPC3.js";
+} from "./chunk-QSDXAG3T.js";
 import {
   NzDatePickerComponent,
   NzDatePickerModule
-} from "./chunk-S3XBSPCS.js";
+} from "./chunk-N67LIGDP.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-CA2ZJX7F.js";
+} from "./chunk-KHCAJSOY.js";
 import {
   APP_CLAIMS
 } from "./chunk-F6TGNGA2.js";
 import {
   NzTagComponent,
   NzTagModule
-} from "./chunk-VPK5D3YW.js";
+} from "./chunk-WSY7BE7S.js";
 import {
   NzCellFixedDirective,
   NzDropDownModule,
@@ -72,7 +72,7 @@ import {
   NzTheadComponent,
   NzTrDirective,
   NzTrExpandDirective
-} from "./chunk-WWEYNENX.js";
+} from "./chunk-MMWJDA4K.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
@@ -80,42 +80,42 @@ import {
   NzFormModule,
   NzTooltipDirective,
   NzTooltipModule
-} from "./chunk-CBSEJKW6.js";
-import "./chunk-LJHNROZJ.js";
-import "./chunk-QINMGAYK.js";
+} from "./chunk-ZP2E5FZJ.js";
+import "./chunk-DI76EDHS.js";
+import "./chunk-5HQ52OJW.js";
 import {
   NZ_MODAL_DATA,
   NzModalModule,
   NzModalService
-} from "./chunk-SH5Y5PM4.js";
+} from "./chunk-RO4CJ46N.js";
 import {
   NzCheckboxComponent,
   NzCheckboxModule,
   NzEmptyComponent,
   NzEmptyModule
-} from "./chunk-IUB3UJ22.js";
+} from "./chunk-STVBHBPJ.js";
 import {
   en_US,
   provideNzI18n,
   timeUnits
-} from "./chunk-YKGZRODH.js";
+} from "./chunk-ZX5WOUY2.js";
 import {
   NzColDirective,
   NzGridModule,
   NzRowDirective
-} from "./chunk-6HRQWKYQ.js";
+} from "./chunk-VTSHLNMQ.js";
 import {
   NzCardComponent,
   NzCardModule,
   NzSkeletonComponent,
   NzSkeletonModule
-} from "./chunk-CAYGJQMP.js";
+} from "./chunk-TEVLHC4P.js";
 import {
   NzInputDirective,
   NzInputGroupComponent,
   NzInputGroupWhitSuffixOrPrefixDirective,
   NzInputModule
-} from "./chunk-2VAOQ2VH.js";
+} from "./chunk-2IS6VVE2.js";
 import {
   ActivatedRoute,
   AppNotificationService,
@@ -180,7 +180,7 @@ import {
   takeUntilDestroyed,
   toBoolean,
   ɵNgNoValidate
-} from "./chunk-UBWGFO7R.js";
+} from "./chunk-W3A2S6TY.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionScheduler,
@@ -290,11 +290,12 @@ import {
   ɵɵtwoWayListener,
   ɵɵtwoWayProperty,
   ɵɵviewQuery
-} from "./chunk-UJ2IZ7EW.js";
+} from "./chunk-2BQMWOA2.js";
 import {
   __objRest,
+  __publicField,
   __spreadValues
-} from "./chunk-653SOEEV.js";
+} from "./chunk-MYGOUE3E.js";
 
 // node_modules/zone.js/fesm2015/zone.js
 var __defProp = Object.defineProperty;
@@ -316,7 +317,7 @@ var __spreadValues2 = (a, b) => {
   return a;
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __publicField = (obj, key, value) => {
+var __publicField2 = (obj, key, value) => {
   __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
   return value;
 };
@@ -336,10 +337,10 @@ function initZone() {
   mark("Zone");
   const _ZoneImpl = class _ZoneImpl2 {
     constructor(parent, zoneSpec) {
-      __publicField(this, "_parent");
-      __publicField(this, "_name");
-      __publicField(this, "_properties");
-      __publicField(this, "_zoneDelegate");
+      __publicField2(this, "_parent");
+      __publicField2(this, "_name");
+      __publicField2(this, "_properties");
+      __publicField2(this, "_zoneDelegate");
       this._parent = parent;
       this._name = zoneSpec ? zoneSpec.name || "unnamed" : "<root>";
       this._properties = zoneSpec && zoneSpec.properties || {};
@@ -544,7 +545,7 @@ function initZone() {
       }
     }
   };
-  __publicField(_ZoneImpl, "__symbol__", __symbol__);
+  __publicField2(_ZoneImpl, "__symbol__", __symbol__);
   let ZoneImpl = _ZoneImpl;
   const DELEGATE_ZS = {
     name: "",
@@ -555,37 +556,37 @@ function initZone() {
   };
   class _ZoneDelegate {
     constructor(zone, parentDelegate, zoneSpec) {
-      __publicField(this, "_zone");
-      __publicField(this, "_taskCounts", {
+      __publicField2(this, "_zone");
+      __publicField2(this, "_taskCounts", {
         "microTask": 0,
         "macroTask": 0,
         "eventTask": 0
       });
-      __publicField(this, "_forkDlgt");
-      __publicField(this, "_forkZS");
-      __publicField(this, "_forkCurrZone");
-      __publicField(this, "_interceptDlgt");
-      __publicField(this, "_interceptZS");
-      __publicField(this, "_interceptCurrZone");
-      __publicField(this, "_invokeDlgt");
-      __publicField(this, "_invokeZS");
-      __publicField(this, "_invokeCurrZone");
-      __publicField(this, "_handleErrorDlgt");
-      __publicField(this, "_handleErrorZS");
-      __publicField(this, "_handleErrorCurrZone");
-      __publicField(this, "_scheduleTaskDlgt");
-      __publicField(this, "_scheduleTaskZS");
-      __publicField(this, "_scheduleTaskCurrZone");
-      __publicField(this, "_invokeTaskDlgt");
-      __publicField(this, "_invokeTaskZS");
-      __publicField(this, "_invokeTaskCurrZone");
-      __publicField(this, "_cancelTaskDlgt");
-      __publicField(this, "_cancelTaskZS");
-      __publicField(this, "_cancelTaskCurrZone");
-      __publicField(this, "_hasTaskDlgt");
-      __publicField(this, "_hasTaskDlgtOwner");
-      __publicField(this, "_hasTaskZS");
-      __publicField(this, "_hasTaskCurrZone");
+      __publicField2(this, "_forkDlgt");
+      __publicField2(this, "_forkZS");
+      __publicField2(this, "_forkCurrZone");
+      __publicField2(this, "_interceptDlgt");
+      __publicField2(this, "_interceptZS");
+      __publicField2(this, "_interceptCurrZone");
+      __publicField2(this, "_invokeDlgt");
+      __publicField2(this, "_invokeZS");
+      __publicField2(this, "_invokeCurrZone");
+      __publicField2(this, "_handleErrorDlgt");
+      __publicField2(this, "_handleErrorZS");
+      __publicField2(this, "_handleErrorCurrZone");
+      __publicField2(this, "_scheduleTaskDlgt");
+      __publicField2(this, "_scheduleTaskZS");
+      __publicField2(this, "_scheduleTaskCurrZone");
+      __publicField2(this, "_invokeTaskDlgt");
+      __publicField2(this, "_invokeTaskZS");
+      __publicField2(this, "_invokeTaskCurrZone");
+      __publicField2(this, "_cancelTaskDlgt");
+      __publicField2(this, "_cancelTaskZS");
+      __publicField2(this, "_cancelTaskCurrZone");
+      __publicField2(this, "_hasTaskDlgt");
+      __publicField2(this, "_hasTaskDlgtOwner");
+      __publicField2(this, "_hasTaskZS");
+      __publicField2(this, "_hasTaskCurrZone");
       this._zone = zone;
       this._forkZS = zoneSpec && (zoneSpec && zoneSpec.onFork ? zoneSpec : parentDelegate._forkZS);
       this._forkDlgt = zoneSpec && (zoneSpec.onFork ? parentDelegate : parentDelegate._forkDlgt);
@@ -713,17 +714,17 @@ function initZone() {
   }
   class ZoneTask {
     constructor(type, source, callback, options, scheduleFn, cancelFn) {
-      __publicField(this, "type");
-      __publicField(this, "source");
-      __publicField(this, "invoke");
-      __publicField(this, "callback");
-      __publicField(this, "data");
-      __publicField(this, "scheduleFn");
-      __publicField(this, "cancelFn");
-      __publicField(this, "_zone", null);
-      __publicField(this, "runCount", 0);
-      __publicField(this, "_zoneDelegates", null);
-      __publicField(this, "_state", "notScheduled");
+      __publicField2(this, "type");
+      __publicField2(this, "source");
+      __publicField2(this, "invoke");
+      __publicField2(this, "callback");
+      __publicField2(this, "data");
+      __publicField2(this, "scheduleFn");
+      __publicField2(this, "cancelFn");
+      __publicField2(this, "_zone", null);
+      __publicField2(this, "runCount", 0);
+      __publicField2(this, "_zoneDelegates", null);
+      __publicField2(this, "_state", "notScheduled");
       this.type = type;
       this.source = source;
       this.data = options;
@@ -2755,17 +2756,7 @@ var claimGuard = (claimOrClaims, mode = "OR") => {
 };
 
 // src/app/shared/directives/claim.directive.ts
-var AppClaimDirective = class _AppClaimDirective {
-  templateRef = inject(TemplateRef);
-  viewContainer = inject(ViewContainerRef);
-  authService = inject(AuthService);
-  renderer = inject(Renderer2);
-  el = inject(ElementRef);
-  sanitizer = inject(DomSanitizer);
-  claims = [];
-  mode = "OR";
-  hideOnly = false;
-  denialEl = null;
+var _AppClaimDirective = class _AppClaimDirective {
   set appClaimCheck(value) {
     this.claims = value;
     this.updateView();
@@ -2779,6 +2770,16 @@ var AppClaimDirective = class _AppClaimDirective {
     this.updateView();
   }
   constructor() {
+    this.templateRef = inject(TemplateRef);
+    this.viewContainer = inject(ViewContainerRef);
+    this.authService = inject(AuthService);
+    this.renderer = inject(Renderer2);
+    this.el = inject(ElementRef);
+    this.sanitizer = inject(DomSanitizer);
+    this.claims = [];
+    this.mode = "OR";
+    this.hideOnly = false;
+    this.denialEl = null;
   }
   ngOnInit() {
     this.updateView();
@@ -2844,11 +2845,12 @@ var AppClaimDirective = class _AppClaimDirective {
   ngOnDestroy() {
     this.removeDenialMessage();
   }
-  static \u0275fac = function AppClaimDirective_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _AppClaimDirective)();
-  };
-  static \u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective({ type: _AppClaimDirective, selectors: [["", "appClaimCheck", ""]], inputs: { appClaimCheck: "appClaimCheck", appClaimCheckMode: "appClaimCheckMode", appClaimCheckHide: "appClaimCheckHide" } });
 };
+_AppClaimDirective.\u0275fac = function AppClaimDirective_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _AppClaimDirective)();
+};
+_AppClaimDirective.\u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective({ type: _AppClaimDirective, selectors: [["", "appClaimCheck", ""]], inputs: { appClaimCheck: "appClaimCheck", appClaimCheckMode: "appClaimCheckMode", appClaimCheckHide: "appClaimCheckHide" } });
+var AppClaimDirective = _AppClaimDirective;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppClaimDirective, [{
     type: Directive,
@@ -3159,30 +3161,28 @@ function MainLayoutComponent_router_outlet_39_Template(rf, ctx) {
     \u0275\u0275element(0, "router-outlet");
   }
 }
-var MainLayoutComponent = class _MainLayoutComponent {
-  isCollapsed = false;
-  currentLang = "vi";
-  sidebarWidth = 256;
-  sidebarBorderRight = "1px solid #303030";
-  // Configurable border
-  breadcrumbs = [];
-  openMap = {
-    dashboard: false,
-    auth: false,
-    test: false,
-    files: false
-  };
-  authService = inject(AuthService);
-  translate = inject(TranslateService);
-  router = inject(Router);
-  activatedRoute = inject(ActivatedRoute);
-  user$ = this.authService.user$;
-  claims = APP_CLAIMS;
-  // Resize properties
-  isResizing = false;
-  startX = 0;
-  startWidth = 0;
+var _MainLayoutComponent = class _MainLayoutComponent {
   constructor() {
+    this.isCollapsed = false;
+    this.currentLang = "vi";
+    this.sidebarWidth = 256;
+    this.sidebarBorderRight = "1px solid #303030";
+    this.breadcrumbs = [];
+    this.openMap = {
+      dashboard: false,
+      auth: false,
+      test: false,
+      files: false
+    };
+    this.authService = inject(AuthService);
+    this.translate = inject(TranslateService);
+    this.router = inject(Router);
+    this.activatedRoute = inject(ActivatedRoute);
+    this.user$ = this.authService.user$;
+    this.claims = APP_CLAIMS;
+    this.isResizing = false;
+    this.startX = 0;
+    this.startWidth = 0;
     this.currentLang = this.translate.currentLang || localStorage.getItem("lang") || "vi";
     this.translate.onLangChange.subscribe((event) => {
       this.currentLang = event.lang;
@@ -3261,134 +3261,135 @@ var MainLayoutComponent = class _MainLayoutComponent {
       document.body.style.cursor = "default";
     }
   }
-  static \u0275fac = function MainLayoutComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _MainLayoutComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MainLayoutComponent, selectors: [["app-main-layout"]], hostBindings: function MainLayoutComponent_HostBindings(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275listener("mousemove", function MainLayoutComponent_mousemove_HostBindingHandler($event) {
-        return ctx.onMouseMove($event);
-      }, \u0275\u0275resolveDocument)("mouseup", function MainLayoutComponent_mouseup_HostBindingHandler() {
-        return ctx.onMouseUp();
-      }, \u0275\u0275resolveDocument);
-    }
-  }, decls: 40, vars: 20, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["dashboardTitle", ""], ["authTitle", ""], ["filesFoldersTitle", ""], ["testTitle", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["nz-menu-item", "", "nzMatchRouter", ""], ["routerLink", "/modules/cqrs-dashboard"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/core-infra-auth/users"], ["routerLink", "/modules/core-infra-auth/roles"], ["routerLink", "/modules/core-infra-auth/claims"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["routerLink", "/modules/core-infra-auth/change-password"], ["routerLink", "/modules/core-infra-auth/authorize-info"], ["routerLink", "/modules/core-infra-auth/acl"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/files-folders"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/test/firestore"], ["routerLink", "/modules/test/fcm"], ["routerLink", "/modules/test/cqrs"], ["routerLink", "/modules/test/editor"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "username"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [3, "routerLink"]], template: function MainLayoutComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      const _r1 = \u0275\u0275getCurrentView();
-      \u0275\u0275elementStart(0, "nz-layout", 6)(1, "nz-sider", 7);
-      \u0275\u0275twoWayListener("nzCollapsedChange", function MainLayoutComponent_Template_nz_sider_nzCollapsedChange_1_listener($event) {
-        \u0275\u0275restoreView(_r1);
-        \u0275\u0275twoWayBindingSet(ctx.isCollapsed, $event) || (ctx.isCollapsed = $event);
-        return \u0275\u0275resetView($event);
-      });
-      \u0275\u0275elementStart(2, "div", 8)(3, "a", 9);
-      \u0275\u0275element(4, "img", 10);
-      \u0275\u0275elementStart(5, "h1");
-      \u0275\u0275text(6, "Tree Of Thought");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(7, "ul", 11);
-      \u0275\u0275template(8, MainLayoutComponent_li_8_Template, 8, 5, "li", 12)(9, MainLayoutComponent_li_9_Template, 25, 18, "li", 13)(10, MainLayoutComponent_li_10_Template, 8, 5, "li", 14)(11, MainLayoutComponent_li_11_Template, 20, 14, "li", 15);
-      \u0275\u0275elementEnd();
-      \u0275\u0275template(12, MainLayoutComponent_div_12_Template, 1, 0, "div", 16);
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(13, "nz-layout")(14, "nz-header")(15, "div", 17)(16, "div", 18)(17, "span", 19);
-      \u0275\u0275listener("click", function MainLayoutComponent_Template_span_click_17_listener() {
-        return ctx.toggleCollapse();
-      });
-      \u0275\u0275element(18, "span", 20);
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(19, "div", 21)(20, "div", 22)(21, "a", 23);
-      \u0275\u0275element(22, "span", 24);
-      \u0275\u0275text(23);
-      \u0275\u0275element(24, "span", 25);
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(25, "nz-dropdown-menu", null, 0)(27, "ul", 26)(28, "li", 27);
-      \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_28_listener() {
-        return ctx.switchLanguage("vi");
-      });
-      \u0275\u0275text(29, "Ti\u1EBFng Vi\u1EC7t");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(30, "li", 27);
-      \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_30_listener() {
-        return ctx.switchLanguage("en");
-      });
-      \u0275\u0275text(31, "English");
-      \u0275\u0275elementEnd()()()();
-      \u0275\u0275template(32, MainLayoutComponent_ng_container_32_Template, 8, 5, "ng-container", 28);
-      \u0275\u0275pipe(33, "async");
-      \u0275\u0275template(34, MainLayoutComponent_ng_template_34_Template, 3, 3, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(36, "nz-content")(37, "div", 29);
-      \u0275\u0275template(38, MainLayoutComponent_nz_breadcrumb_38_Template, 5, 1, "nz-breadcrumb", 30)(39, MainLayoutComponent_router_outlet_39_Template, 1, 0, "router-outlet", 31);
-      \u0275\u0275elementEnd()()()();
-    }
-    if (rf & 2) {
-      const langMenu_r15 = \u0275\u0275reference(26);
-      const loginBtn_r16 = \u0275\u0275reference(35);
-      \u0275\u0275advance();
-      \u0275\u0275styleProp("border-right", ctx.isCollapsed ? "none" : ctx.sidebarBorderRight);
-      \u0275\u0275property("nzWidth", ctx.sidebarWidth)("nzCollapsedWidth", 80);
-      \u0275\u0275twoWayProperty("nzCollapsed", ctx.isCollapsed);
-      \u0275\u0275property("nzTrigger", null);
-      \u0275\u0275advance(6);
-      \u0275\u0275property("nzInlineCollapsed", ctx.isCollapsed);
-      \u0275\u0275advance();
-      \u0275\u0275property("appClaimCheck", ctx.claims.CQRS_DASHBOARD.VIEW);
-      \u0275\u0275advance();
-      \u0275\u0275property("appClaimCheck", ctx.claims.AUTH.VIEW_USERS);
-      \u0275\u0275advance();
-      \u0275\u0275property("appClaimCheck", ctx.claims.FILES_FOLDERS.VIEW);
-      \u0275\u0275advance();
-      \u0275\u0275property("appClaimCheck", ctx.claims.TEST_MODULE.VIEW);
-      \u0275\u0275advance();
-      \u0275\u0275property("ngIf", !ctx.isCollapsed);
-      \u0275\u0275advance(6);
-      \u0275\u0275property("nzType", ctx.isCollapsed ? "menu-unfold" : "menu-fold");
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzDropdownMenu", langMenu_r15);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", ctx.currentLang === "vi" ? "Ti\u1EBFng Vi\u1EC7t" : "English", " ");
-      \u0275\u0275advance(9);
-      \u0275\u0275property("ngIf", \u0275\u0275pipeBind1(33, 18, ctx.user$))("ngIfElse", loginBtn_r16);
-      \u0275\u0275advance(6);
-      \u0275\u0275property("ngIf", ctx.breadcrumbs.length > 0);
-    }
-  }, dependencies: [
-    CommonModule,
-    NgForOf,
-    NgIf,
-    RouterOutlet,
-    RouterLink,
-    NzLayoutModule,
-    NzLayoutComponent,
-    NzHeaderComponent,
-    NzContentComponent,
-    NzSiderComponent,
-    NzMenuModule,
-    NzMenuDirective,
-    NzMenuItemComponent,
-    NzSubMenuComponent,
-    NzIconModule,
-    NzIconDirective,
-    NzButtonModule,
-    NzButtonComponent,
-    NzTransitionPatchDirective,
-    NzWaveDirective,
-    NzAvatarModule,
-    NzAvatarComponent,
-    TranslateModule,
-    NzDropDownModule,
-    NzDropdownDirective,
-    NzDropdownADirective,
-    NzDropdownMenuComponent,
-    NzBreadCrumbModule,
-    NzBreadCrumbComponent,
-    NzBreadCrumbItemComponent,
-    AppClaimDirective,
-    AsyncPipe,
-    TranslatePipe
-  ], styles: ['\n.app-layout[_ngcontent-%COMP%] {\n  height: 100vh;\n}\n.menu-sidebar[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 10;\n  min-height: 100vh;\n  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);\n}\n.sidebar-logo[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding-left: 24px;\n  overflow: hidden;\n  line-height: 64px;\n  background: #001529;\n  transition: all 0.3s;\n}\n.sidebar-logo[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: inline-block;\n  height: 32px;\n  vertical-align: middle;\n}\n.sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  display: inline-block;\n  margin: 0 0 0 12px;\n  color: #fff;\n  font-weight: 600;\n  font-size: 18px;\n  font-family:\n    Avenir,\n    "Helvetica Neue",\n    Arial,\n    Helvetica,\n    sans-serif;\n  vertical-align: middle;\n  transition: opacity 0.3s, width 0.3s;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  opacity: 0;\n  width: 0;\n  margin: 0;\n  overflow: hidden;\n  display: none;\n}\n.nz-header[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  z-index: 2;\n}\n.app-header[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding: 0;\n  background: #fff;\n  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.header-left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.header-trigger[_ngcontent-%COMP%] {\n  height: 64px;\n  padding: 0 24px;\n  font-size: 18px;\n  cursor: pointer;\n  transition: all 0.3s;\n}\n.header-links[_ngcontent-%COMP%] {\n  margin-left: 12px;\n  display: flex;\n  gap: 20px;\n}\n.nav-link[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  font-weight: 500;\n  transition: color 0.3s;\n}\n.nav-link[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.header-trigger[_ngcontent-%COMP%]:hover {\n  background: rgba(0, 0, 0, 0.025);\n}\n.header-right[_ngcontent-%COMP%] {\n  padding-right: 24px;\n  display: flex;\n  align-items: center;\n  gap: 16px;\n}\n.lang-selector[_ngcontent-%COMP%] {\n  margin-right: 8px;\n  cursor: pointer;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.user-info[_ngcontent-%COMP%] {\n  margin-right: 16px;\n  display: flex;\n  align-items: center;\n}\n.username[_ngcontent-%COMP%] {\n  margin-left: 8px;\n  font-weight: 500;\n}\n.inner-content[_ngcontent-%COMP%] {\n  padding: 24px;\n  background: #f0f2f5;\n  min-height: calc(100vh - 64px);\n}\n.app-breadcrumb[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  padding: 0;\n  background: transparent;\n  box-shadow: none;\n  border-radius: 0;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  transition: color 0.3s;\n  font-size: 13px;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   nz-breadcrumb-item[_ngcontent-%COMP%]:last-child   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.85);\n  font-weight: 500;\n  pointer-events: none;\n}\n  .ant-breadcrumb {\n  line-height: 1.2 !important;\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  font-size: 14px;\n}\n  .ant-breadcrumb-link, \n  .ant-breadcrumb-link > a {\n  display: inline-flex;\n  align-items: center;\n}\n  .ant-breadcrumb-separator {\n  margin: 0 4px !important;\n  color: rgba(0, 0, 0, 0.3) !important;\n  vertical-align: middle;\n}\n.resize-handle[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: 6px;\n  cursor: col-resize;\n  z-index: 100;\n  background: transparent;\n  transition: background 0.2s;\n}\n.resize-handle[_ngcontent-%COMP%]:hover {\n  background: rgba(24, 144, 255, 0.5);\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  display: none;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n}\n  .ant-menu-dark .ant-menu-submenu-title {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title:hover {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  color: inherit;\n}\n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .menu-sidebar[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  transition: none !important;\n}\n/*# sourceMappingURL=main-layout.component.css.map */'] });
 };
+_MainLayoutComponent.\u0275fac = function MainLayoutComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _MainLayoutComponent)();
+};
+_MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MainLayoutComponent, selectors: [["app-main-layout"]], hostBindings: function MainLayoutComponent_HostBindings(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275listener("mousemove", function MainLayoutComponent_mousemove_HostBindingHandler($event) {
+      return ctx.onMouseMove($event);
+    }, \u0275\u0275resolveDocument)("mouseup", function MainLayoutComponent_mouseup_HostBindingHandler() {
+      return ctx.onMouseUp();
+    }, \u0275\u0275resolveDocument);
+  }
+}, decls: 40, vars: 20, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["dashboardTitle", ""], ["authTitle", ""], ["filesFoldersTitle", ""], ["testTitle", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["nz-menu-item", "", "nzMatchRouter", ""], ["routerLink", "/modules/cqrs-dashboard"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/core-infra-auth/users"], ["routerLink", "/modules/core-infra-auth/roles"], ["routerLink", "/modules/core-infra-auth/claims"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["routerLink", "/modules/core-infra-auth/change-password"], ["routerLink", "/modules/core-infra-auth/authorize-info"], ["routerLink", "/modules/core-infra-auth/acl"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/files-folders"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/test/firestore"], ["routerLink", "/modules/test/fcm"], ["routerLink", "/modules/test/cqrs"], ["routerLink", "/modules/test/editor"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "username"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [3, "routerLink"]], template: function MainLayoutComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "nz-layout", 6)(1, "nz-sider", 7);
+    \u0275\u0275twoWayListener("nzCollapsedChange", function MainLayoutComponent_Template_nz_sider_nzCollapsedChange_1_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.isCollapsed, $event) || (ctx.isCollapsed = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementStart(2, "div", 8)(3, "a", 9);
+    \u0275\u0275element(4, "img", 10);
+    \u0275\u0275elementStart(5, "h1");
+    \u0275\u0275text(6, "Tree Of Thought");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(7, "ul", 11);
+    \u0275\u0275template(8, MainLayoutComponent_li_8_Template, 8, 5, "li", 12)(9, MainLayoutComponent_li_9_Template, 25, 18, "li", 13)(10, MainLayoutComponent_li_10_Template, 8, 5, "li", 14)(11, MainLayoutComponent_li_11_Template, 20, 14, "li", 15);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(12, MainLayoutComponent_div_12_Template, 1, 0, "div", 16);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(13, "nz-layout")(14, "nz-header")(15, "div", 17)(16, "div", 18)(17, "span", 19);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_span_click_17_listener() {
+      return ctx.toggleCollapse();
+    });
+    \u0275\u0275element(18, "span", 20);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(19, "div", 21)(20, "div", 22)(21, "a", 23);
+    \u0275\u0275element(22, "span", 24);
+    \u0275\u0275text(23);
+    \u0275\u0275element(24, "span", 25);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(25, "nz-dropdown-menu", null, 0)(27, "ul", 26)(28, "li", 27);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_28_listener() {
+      return ctx.switchLanguage("vi");
+    });
+    \u0275\u0275text(29, "Ti\u1EBFng Vi\u1EC7t");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(30, "li", 27);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_30_listener() {
+      return ctx.switchLanguage("en");
+    });
+    \u0275\u0275text(31, "English");
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275template(32, MainLayoutComponent_ng_container_32_Template, 8, 5, "ng-container", 28);
+    \u0275\u0275pipe(33, "async");
+    \u0275\u0275template(34, MainLayoutComponent_ng_template_34_Template, 3, 3, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(36, "nz-content")(37, "div", 29);
+    \u0275\u0275template(38, MainLayoutComponent_nz_breadcrumb_38_Template, 5, 1, "nz-breadcrumb", 30)(39, MainLayoutComponent_router_outlet_39_Template, 1, 0, "router-outlet", 31);
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const langMenu_r15 = \u0275\u0275reference(26);
+    const loginBtn_r16 = \u0275\u0275reference(35);
+    \u0275\u0275advance();
+    \u0275\u0275styleProp("border-right", ctx.isCollapsed ? "none" : ctx.sidebarBorderRight);
+    \u0275\u0275property("nzWidth", ctx.sidebarWidth)("nzCollapsedWidth", 80);
+    \u0275\u0275twoWayProperty("nzCollapsed", ctx.isCollapsed);
+    \u0275\u0275property("nzTrigger", null);
+    \u0275\u0275advance(6);
+    \u0275\u0275property("nzInlineCollapsed", ctx.isCollapsed);
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", ctx.claims.CQRS_DASHBOARD.VIEW);
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", ctx.claims.AUTH.VIEW_USERS);
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", ctx.claims.FILES_FOLDERS.VIEW);
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", ctx.claims.TEST_MODULE.VIEW);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx.isCollapsed);
+    \u0275\u0275advance(6);
+    \u0275\u0275property("nzType", ctx.isCollapsed ? "menu-unfold" : "menu-fold");
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzDropdownMenu", langMenu_r15);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", ctx.currentLang === "vi" ? "Ti\u1EBFng Vi\u1EC7t" : "English", " ");
+    \u0275\u0275advance(9);
+    \u0275\u0275property("ngIf", \u0275\u0275pipeBind1(33, 18, ctx.user$))("ngIfElse", loginBtn_r16);
+    \u0275\u0275advance(6);
+    \u0275\u0275property("ngIf", ctx.breadcrumbs.length > 0);
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  RouterOutlet,
+  RouterLink,
+  NzLayoutModule,
+  NzLayoutComponent,
+  NzHeaderComponent,
+  NzContentComponent,
+  NzSiderComponent,
+  NzMenuModule,
+  NzMenuDirective,
+  NzMenuItemComponent,
+  NzSubMenuComponent,
+  NzIconModule,
+  NzIconDirective,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzAvatarModule,
+  NzAvatarComponent,
+  TranslateModule,
+  NzDropDownModule,
+  NzDropdownDirective,
+  NzDropdownADirective,
+  NzDropdownMenuComponent,
+  NzBreadCrumbModule,
+  NzBreadCrumbComponent,
+  NzBreadCrumbItemComponent,
+  AppClaimDirective,
+  AsyncPipe,
+  TranslatePipe
+], styles: ['\n.app-layout[_ngcontent-%COMP%] {\n  height: 100vh;\n}\n.menu-sidebar[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 10;\n  min-height: 100vh;\n  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);\n}\n.sidebar-logo[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding-left: 24px;\n  overflow: hidden;\n  line-height: 64px;\n  background: #001529;\n  transition: all 0.3s;\n}\n.sidebar-logo[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: inline-block;\n  height: 32px;\n  vertical-align: middle;\n}\n.sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  display: inline-block;\n  margin: 0 0 0 12px;\n  color: #fff;\n  font-weight: 600;\n  font-size: 18px;\n  font-family:\n    Avenir,\n    "Helvetica Neue",\n    Arial,\n    Helvetica,\n    sans-serif;\n  vertical-align: middle;\n  transition: opacity 0.3s, width 0.3s;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  opacity: 0;\n  width: 0;\n  margin: 0;\n  overflow: hidden;\n  display: none;\n}\n.nz-header[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  z-index: 2;\n}\n.app-header[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding: 0;\n  background: #fff;\n  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.header-left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.header-trigger[_ngcontent-%COMP%] {\n  height: 64px;\n  padding: 0 24px;\n  font-size: 18px;\n  cursor: pointer;\n  transition: all 0.3s;\n}\n.header-links[_ngcontent-%COMP%] {\n  margin-left: 12px;\n  display: flex;\n  gap: 20px;\n}\n.nav-link[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  font-weight: 500;\n  transition: color 0.3s;\n}\n.nav-link[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.header-trigger[_ngcontent-%COMP%]:hover {\n  background: rgba(0, 0, 0, 0.025);\n}\n.header-right[_ngcontent-%COMP%] {\n  padding-right: 24px;\n  display: flex;\n  align-items: center;\n  gap: 16px;\n}\n.lang-selector[_ngcontent-%COMP%] {\n  margin-right: 8px;\n  cursor: pointer;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.user-info[_ngcontent-%COMP%] {\n  margin-right: 16px;\n  display: flex;\n  align-items: center;\n}\n.username[_ngcontent-%COMP%] {\n  margin-left: 8px;\n  font-weight: 500;\n}\n.inner-content[_ngcontent-%COMP%] {\n  padding: 24px;\n  background: #f0f2f5;\n  min-height: calc(100vh - 64px);\n}\n.app-breadcrumb[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  padding: 0;\n  background: transparent;\n  box-shadow: none;\n  border-radius: 0;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  transition: color 0.3s;\n  font-size: 13px;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   nz-breadcrumb-item[_ngcontent-%COMP%]:last-child   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.85);\n  font-weight: 500;\n  pointer-events: none;\n}\n  .ant-breadcrumb {\n  line-height: 1.2 !important;\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  font-size: 14px;\n}\n  .ant-breadcrumb-link, \n  .ant-breadcrumb-link > a {\n  display: inline-flex;\n  align-items: center;\n}\n  .ant-breadcrumb-separator {\n  margin: 0 4px !important;\n  color: rgba(0, 0, 0, 0.3) !important;\n  vertical-align: middle;\n}\n.resize-handle[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: 6px;\n  cursor: col-resize;\n  z-index: 100;\n  background: transparent;\n  transition: background 0.2s;\n}\n.resize-handle[_ngcontent-%COMP%]:hover {\n  background: rgba(24, 144, 255, 0.5);\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  display: none;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n}\n  .ant-menu-dark .ant-menu-submenu-title {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title:hover {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  color: inherit;\n}\n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .menu-sidebar[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  transition: none !important;\n}\n/*# sourceMappingURL=main-layout.component.css.map */'] });
+var MainLayoutComponent = _MainLayoutComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MainLayoutComponent, [{
     type: Component,
@@ -3577,22 +3578,23 @@ var MainLayoutComponent = class _MainLayoutComponent {
 })();
 
 // src/app/layouts/auth-layout/auth-layout.component.ts
-var AuthLayoutComponent = class _AuthLayoutComponent {
-  static \u0275fac = function AuthLayoutComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _AuthLayoutComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AuthLayoutComponent, selectors: [["app-auth-layout"]], decls: 3, vars: 0, consts: [[1, "auth-container"], [1, "auth-content"]], template: function AuthLayoutComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "div", 0)(1, "div", 1);
-      \u0275\u0275element(2, "router-outlet");
-      \u0275\u0275elementEnd()();
-    }
-  }, dependencies: [RouterOutlet], styles: ["\n.auth-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n}\n.auth-content[_ngcontent-%COMP%] {\n  width: 100%;\n  max-width: 400px;\n  padding: 32px;\n  background: #fff;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=auth-layout.component.css.map */"] });
+var _AuthLayoutComponent = class _AuthLayoutComponent {
 };
+_AuthLayoutComponent.\u0275fac = function AuthLayoutComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _AuthLayoutComponent)();
+};
+_AuthLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AuthLayoutComponent, selectors: [["app-auth-layout"]], decls: 3, vars: 0, consts: [[1, "auth-container"], [1, "auth-content"]], template: function AuthLayoutComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 0)(1, "div", 1);
+    \u0275\u0275element(2, "router-outlet");
+    \u0275\u0275elementEnd()();
+  }
+}, dependencies: [RouterOutlet], styles: ['\n.auth-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container[_ngcontent-%COMP%]::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content[_ngcontent-%COMP%] {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: rgba(255, 255, 255, 0.95);\n  -webkit-backdrop-filter: blur(20px);\n  backdrop-filter: blur(20px);\n  border-radius: 20px;\n  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);\n  border: 1px solid rgba(255, 255, 255, 0.5);\n  z-index: 1;\n}\n/*# sourceMappingURL=auth-layout.component.css.map */'] });
+var AuthLayoutComponent = _AuthLayoutComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AuthLayoutComponent, [{
     type: Component,
-    args: [{ selector: "app-auth-layout", standalone: true, imports: [RouterOutlet], template: '<div class="auth-container">\n  <div class="auth-content">\n    <router-outlet></router-outlet>\n  </div>\n</div>\n', styles: ["/* src/app/layouts/auth-layout/auth-layout.component.css */\n.auth-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n}\n.auth-content {\n  width: 100%;\n  max-width: 400px;\n  padding: 32px;\n  background: #fff;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n}\n/*# sourceMappingURL=auth-layout.component.css.map */\n"] }]
+    args: [{ selector: "app-auth-layout", standalone: true, imports: [RouterOutlet], template: '<div class="auth-container">\n  <div class="auth-content">\n    <router-outlet></router-outlet>\n  </div>\n</div>\n', styles: ['/* src/app/layouts/auth-layout/auth-layout.component.css */\n.auth-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: rgba(255, 255, 255, 0.95);\n  -webkit-backdrop-filter: blur(20px);\n  backdrop-filter: blur(20px);\n  border-radius: 20px;\n  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);\n  border: 1px solid rgba(255, 255, 255, 0.5);\n  z-index: 1;\n}\n/*# sourceMappingURL=auth-layout.component.css.map */\n'] }]
   }], null, null);
 })();
 (() => {
@@ -3600,19 +3602,89 @@ var AuthLayoutComponent = class _AuthLayoutComponent {
 })();
 
 // src/app/modules/auth/login/login.component.ts
-var LoginComponent = class _LoginComponent {
-  fb = inject(NonNullableFormBuilder);
-  authService = inject(AuthService);
-  router = inject(Router);
-  route = inject(ActivatedRoute);
-  notification = inject(AppNotificationService);
-  translate = inject(TranslateService);
-  validateForm = this.fb.group({
-    username: ["", [Validators.required]],
-    password: ["", [Validators.required]],
-    remember: [true]
-  });
-  loading = false;
+function LoginComponent_div_10_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 26)(1, "span", 27);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 28);
+    \u0275\u0275element(4, "span", 29);
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "translate");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r1.ssoClientName);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 2, "K\u1EBFt n\u1ED1i an to\xE0n"), " ");
+  }
+}
+function LoginComponent_div_39_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 30);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementStart(3, "a", 31);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, "Ho\u1EB7c"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 4, "\u0110\u0103ng k\xFD ngay!"));
+  }
+}
+function LoginComponent_ng_template_41_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "span", 32);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
+  }
+}
+var _LoginComponent = class _LoginComponent {
+  constructor() {
+    this.fb = inject(NonNullableFormBuilder);
+    this.authService = inject(AuthService);
+    this.router = inject(Router);
+    this.route = inject(ActivatedRoute);
+    this.notification = inject(AppNotificationService);
+    this.translate = inject(TranslateService);
+    this.validateForm = this.fb.group({
+      username: ["", [Validators.required]],
+      password: ["", [Validators.required]],
+      remember: [true]
+    });
+    this.loading = false;
+    this.ssoClientName = null;
+    this.ssoRedirectUri = null;
+    this.detectSsoContext();
+  }
+  detectSsoContext() {
+    const returnUrl = this.route.snapshot.queryParams["returnUrl"];
+    if (returnUrl) {
+      try {
+        const fullUrl = returnUrl.startsWith("http") ? returnUrl : window.location.origin + returnUrl;
+        const url = new URL(fullUrl);
+        const params = new URLSearchParams(url.search);
+        this.ssoClientName = params.get("client_id");
+        this.ssoRedirectUri = params.get("redirect_uri");
+        if (this.ssoClientName === "my_pc_assistant") {
+          this.ssoClientName = "My PC Assistant App";
+        }
+      } catch (e) {
+        console.error("Failed to parse returnUrl for SSO context", e);
+      }
+    }
+  }
   handleRedirect() {
     const returnUrl = this.route.snapshot.queryParams["returnUrl"];
     if (returnUrl) {
@@ -3622,6 +3694,7 @@ var LoginComponent = class _LoginComponent {
     return false;
   }
   async submitForm() {
+    var _a;
     if (this.validateForm.valid) {
       this.loading = true;
       try {
@@ -3636,7 +3709,7 @@ var LoginComponent = class _LoginComponent {
         }
       } catch (e) {
         console.error(e);
-        this.notification.error(this.translate.instant("\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"), e.error?.message || this.translate.instant("T\xEAn \u0111\u0103ng nh\u1EADp ho\u1EB7c m\u1EADt kh\u1EA9u kh\xF4ng \u0111\xFAng"));
+        this.notification.error(this.translate.instant("\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"), ((_a = e.error) == null ? void 0 : _a.message) || this.translate.instant("T\xEAn \u0111\u0103ng nh\u1EADp ho\u1EB7c m\u1EADt kh\u1EA9u kh\xF4ng \u0111\xFAng"));
       } finally {
         this.loading = false;
       }
@@ -3688,155 +3761,152 @@ var LoginComponent = class _LoginComponent {
       this.loading = false;
     }
   }
-  static \u0275fac = function LoginComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _LoginComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 55, vars: 50, consts: [[1, "login-page"], [1, "login-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nz-button", "", "nzHtmlType", "submit", 1, "login-form-button", "login-form-margin", 3, "nzType", "nzLoading"], [1, "register-link"], ["routerLink", "/auth/signup"], [3, "nzText"], [1, "sso-buttons"], ["nz-button", "", "nzBlock", "", "type", "button", 3, "click"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function LoginComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
-      \u0275\u0275text(3);
-      \u0275\u0275pipe(4, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(5, "p");
-      \u0275\u0275text(6);
-      \u0275\u0275pipe(7, "translate");
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(8, "form", 2);
-      \u0275\u0275listener("ngSubmit", function LoginComponent_Template_form_ngSubmit_8_listener($event) {
-        $event.preventDefault();
-        return ctx.submitForm();
-      });
-      \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-control", 3);
-      \u0275\u0275pipe(11, "translate");
-      \u0275\u0275elementStart(12, "nz-input-group", 4);
-      \u0275\u0275element(13, "input", 5);
-      \u0275\u0275pipe(14, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 3);
-      \u0275\u0275pipe(17, "translate");
-      \u0275\u0275elementStart(18, "nz-input-group", 6);
-      \u0275\u0275element(19, "input", 7);
-      \u0275\u0275pipe(20, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(21, "div", 8)(22, "div", 9)(23, "label", 10)(24, "span");
-      \u0275\u0275text(25);
-      \u0275\u0275pipe(26, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(27, "div", 11)(28, "a", 12);
-      \u0275\u0275text(29);
-      \u0275\u0275pipe(30, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(31, "button", 13);
-      \u0275\u0275text(32);
-      \u0275\u0275pipe(33, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(34, "div", 14);
-      \u0275\u0275text(35);
-      \u0275\u0275pipe(36, "translate");
-      \u0275\u0275elementStart(37, "a", 15);
-      \u0275\u0275text(38);
-      \u0275\u0275pipe(39, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275element(40, "nz-divider", 16);
-      \u0275\u0275pipe(41, "translate");
-      \u0275\u0275elementStart(42, "div", 17)(43, "button", 18);
-      \u0275\u0275listener("click", function LoginComponent_Template_button_click_43_listener() {
-        return ctx.loginWithGoogle();
-      });
-      \u0275\u0275element(44, "span", 19);
-      \u0275\u0275text(45);
-      \u0275\u0275pipe(46, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(47, "button", 18);
-      \u0275\u0275listener("click", function LoginComponent_Template_button_click_47_listener() {
-        return ctx.loginWithMS();
-      });
-      \u0275\u0275element(48, "span", 20);
-      \u0275\u0275text(49);
-      \u0275\u0275pipe(50, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(51, "button", 18);
-      \u0275\u0275listener("click", function LoginComponent_Template_button_click_51_listener() {
-        return ctx.loginWithFacebook();
-      });
-      \u0275\u0275element(52, "span", 21);
-      \u0275\u0275text(53);
-      \u0275\u0275pipe(54, "translate");
-      \u0275\u0275elementEnd()()();
-    }
-    if (rf & 2) {
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 20, "\u0110\u0103ng nh\u1EADp"));
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 22, "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("formGroup", ctx.validateForm);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(11, 24, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 26, "T\xEAn \u0111\u0103ng nh\u1EADp"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 28, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(20, 30, "M\u1EADt kh\u1EA9u"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzSpan", 12);
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(26, 32, "Ghi nh\u1EDB t\xF4i"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzSpan", 12);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(30, 34, "Qu\xEAn m\u1EADt kh\u1EA9u"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
-      \u0275\u0275advance();
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(33, 36, "\u0110\u0103ng nh\u1EADp"), " ");
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(36, 38, "Ho\u1EB7c"), " ");
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(39, 40, "\u0110\u0103ng k\xFD ngay!"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzText", \u0275\u0275pipeBind1(41, 42, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
-      \u0275\u0275advance(5);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(46, 44, "Google"), " ");
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(50, 46, "Microsoft"), " ");
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(54, 48, "Facebook"), " ");
-    }
-  }, dependencies: [
-    CommonModule,
-    ReactiveFormsModule,
-    \u0275NgNoValidate,
-    DefaultValueAccessor,
-    NgControlStatus,
-    NgControlStatusGroup,
-    FormGroupDirective,
-    FormControlName,
-    RouterLink,
-    NzFormModule,
-    NzColDirective,
-    NzRowDirective,
-    NzFormDirective,
-    NzFormItemComponent,
-    NzFormControlComponent,
-    NzInputModule,
-    NzInputDirective,
-    NzInputGroupComponent,
-    NzButtonModule,
-    NzButtonComponent,
-    NzTransitionPatchDirective,
-    NzWaveDirective,
-    NzCheckboxModule,
-    NzCheckboxComponent,
-    NzDividerModule,
-    NzDividerComponent,
-    NzIconModule,
-    NzIconDirective,
-    TranslateModule,
-    TranslatePipe
-  ], styles: ["\n.login-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 24px;\n}\n.login-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  font-weight: 600;\n}\n.login-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n}\n.login-form-margin[_ngcontent-%COMP%] {\n  margin-bottom: 16px;\n}\n.login-form-forgot[_ngcontent-%COMP%] {\n  float: right;\n}\n.login-form-button[_ngcontent-%COMP%] {\n  width: 100%;\n}\n.text-right[_ngcontent-%COMP%] {\n  text-align: right;\n}\n.sso-buttons[_ngcontent-%COMP%]   button[_ngcontent-%COMP%] {\n  margin-bottom: 12px;\n}\n.sso-buttons[_ngcontent-%COMP%]   button[_ngcontent-%COMP%]   [nz-icon][_ngcontent-%COMP%] {\n  margin-right: 8px;\n}\n/*# sourceMappingURL=login.component.css.map */"] });
 };
+_LoginComponent.\u0275fac = function LoginComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _LoginComponent)();
+};
+_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 52, vars: 41, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], [1, "brand-logo"], ["nz-icon", "", "nzType", "cluster", "nzTheme", "outline"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nz-button", "", "nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "nzLoading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "google", 3, "click"], ["nz-icon", "", "nzType", "google"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "ms", 3, "click"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "div", 3);
+    \u0275\u0275element(3, "span", 4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "h2");
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "p");
+    \u0275\u0275text(8);
+    \u0275\u0275pipe(9, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(10, LoginComponent_div_10_Template, 7, 4, "div", 5);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(11, "form", 6);
+    \u0275\u0275listener("ngSubmit", function LoginComponent_Template_form_ngSubmit_11_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      $event.preventDefault();
+      return \u0275\u0275resetView(ctx.submitForm());
+    });
+    \u0275\u0275elementStart(12, "nz-form-item")(13, "nz-form-control", 7);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275elementStart(15, "nz-input-group", 8);
+    \u0275\u0275element(16, "input", 9);
+    \u0275\u0275pipe(17, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(18, "nz-form-item")(19, "nz-form-control", 7);
+    \u0275\u0275pipe(20, "translate");
+    \u0275\u0275elementStart(21, "nz-input-group", 10);
+    \u0275\u0275element(22, "input", 11);
+    \u0275\u0275pipe(23, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(24, "div", 12)(25, "div", 13)(26, "label", 14)(27, "span");
+    \u0275\u0275text(28);
+    \u0275\u0275pipe(29, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(30, "div", 15)(31, "a", 16);
+    \u0275\u0275text(32);
+    \u0275\u0275pipe(33, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(34, "button", 17)(35, "span");
+    \u0275\u0275text(36);
+    \u0275\u0275pipe(37, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(38, "span", 18);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(39, LoginComponent_div_39_Template, 6, 6, "div", 19);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(40, "nz-divider", 20);
+    \u0275\u0275template(41, LoginComponent_ng_template_41_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(43, "div", 21)(44, "button", 22);
+    \u0275\u0275listener("click", function LoginComponent_Template_button_click_44_listener() {
+      return ctx.loginWithGoogle();
+    });
+    \u0275\u0275element(45, "span", 23);
+    \u0275\u0275text(46);
+    \u0275\u0275pipe(47, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(48, "button", 24);
+    \u0275\u0275listener("click", function LoginComponent_Template_button_click_48_listener() {
+      return ctx.loginWithMS();
+    });
+    \u0275\u0275element(49, "span", 25);
+    \u0275\u0275text(50);
+    \u0275\u0275pipe(51, "translate");
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const dividerText_r3 = \u0275\u0275reference(42);
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(6, 19, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(9, 21, ctx.ssoClientName ? "B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o" : "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", ctx.ssoClientName);
+    \u0275\u0275advance();
+    \u0275\u0275property("formGroup", ctx.validateForm);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(14, 23, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(17, 25, "T\xEAn \u0111\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(20, 27, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(23, 29, "M\u1EADt kh\u1EA9u"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzSpan", 12);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 31, "Ghi nh\u1EDB t\xF4i"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzSpan", 12);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(33, 33, "Qu\xEAn m\u1EADt kh\u1EA9u"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(37, 35, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("ngIf", !ctx.ssoClientName);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzText", dividerText_r3);
+    \u0275\u0275advance(6);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(47, 37, "Google"), " ");
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(51, 39, "Microsoft"), " ");
+  }
+}, dependencies: [
+  CommonModule,
+  NgIf,
+  ReactiveFormsModule,
+  \u0275NgNoValidate,
+  DefaultValueAccessor,
+  NgControlStatus,
+  NgControlStatusGroup,
+  FormGroupDirective,
+  FormControlName,
+  RouterLink,
+  NzFormModule,
+  NzColDirective,
+  NzRowDirective,
+  NzFormDirective,
+  NzFormItemComponent,
+  NzFormControlComponent,
+  NzInputModule,
+  NzInputDirective,
+  NzInputGroupComponent,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzCheckboxModule,
+  NzCheckboxComponent,
+  NzDividerModule,
+  NzDividerComponent,
+  NzIconModule,
+  NzIconDirective,
+  TranslateModule,
+  TranslatePipe
+], styles: ["\n.login-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n}\n.login-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 32px;\n}\n.brand-logo[_ngcontent-%COMP%] {\n  width: 64px;\n  height: 64px;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff 0%,\n      #096dd9 100%);\n  color: white;\n  border-radius: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0 auto 16px;\n  font-size: 32px;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);\n}\n.login-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 24px;\n  font-weight: 700;\n  margin-bottom: 8px;\n  color: #262626;\n}\n.login-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: #8c8c8c;\n  margin-bottom: 0;\n}\n.sso-badge[_ngcontent-%COMP%] {\n  margin-top: 16px;\n  padding: 12px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n  border: 1px solid rgba(24, 144, 255, 0.2);\n  background: rgba(24, 144, 255, 0.05);\n}\n.client-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-size: 16px;\n}\n.security-check[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #52c41a;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.premium-input[_ngcontent-%COMP%]     .ant-input-affix-wrapper {\n  padding: 10px 12px;\n  border-radius: 8px;\n  border: 1.5px solid #f0f0f0;\n  transition: all 0.3s;\n}\n.premium-input[_ngcontent-%COMP%]     .ant-input-affix-wrapper-focused {\n  border-color: #1890ff;\n  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);\n}\n.login-form-margin[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.login-btn[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 44px;\n  font-size: 16px;\n  font-weight: 600;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n}\n.register-link[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-top: 16px;\n  color: #8c8c8c;\n}\n.divider-text[_ngcontent-%COMP%] {\n  color: #bfbfbf;\n  font-size: 12px;\n  font-weight: 400;\n}\n.sso-social-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.social-btn[_ngcontent-%COMP%] {\n  height: 40px;\n  border-radius: 8px;\n  border: 1px solid #d9d9d9;\n  font-weight: 500;\n  transition: all 0.2s;\n}\n.social-btn[_ngcontent-%COMP%]:hover {\n  background: #fafafa;\n  border-color: #bfbfbf;\n}\n.social-btn.google[_ngcontent-%COMP%]   [nz-icon][_ngcontent-%COMP%] {\n  color: #db4437;\n}\n.social-btn.ms[_ngcontent-%COMP%]   [nz-icon][_ngcontent-%COMP%] {\n  color: #00a4ef;\n}\n/*# sourceMappingURL=login.component.css.map */"] });
+var LoginComponent = _LoginComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(LoginComponent, [{
     type: Component,
@@ -3851,16 +3921,27 @@ var LoginComponent = class _LoginComponent {
       NzDividerModule,
       NzIconModule,
       TranslateModule
-    ], template: `<div class="login-page">
+    ], template: `<div class="login-container animate-fade-in">
   <div class="login-header">
-    <h2>{{ '\u0110\u0103ng nh\u1EADp' | translate }}</h2>
-    <p>{{ 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng' | translate }}</p>
+    <div class="brand-logo">
+      <span nz-icon nzType="cluster" nzTheme="outline"></span>
+    </div>
+    <h2>{{ (ssoClientName ? '\u0110\u0103ng nh\u1EADp SSO' : '\u0110\u0103ng nh\u1EADp') | translate }}</h2>
+    <p>{{ (ssoClientName ? 'B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o' : 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng') | translate }}</p>
+    
+    <div *ngIf="ssoClientName" class="sso-badge glass-card">
+      <span class="client-name">{{ ssoClientName }}</span>
+      <div class="security-check">
+        <span nz-icon nzType="safety-certificate" nzTheme="fill"></span>
+        {{ 'K\u1EBFt n\u1ED1i an to\xE0n' | translate }}
+      </div>
+    </div>
   </div>
 
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | translate">
-        <nz-input-group nzPrefixIcon="user">
+        <nz-input-group nzPrefixIcon="user" class="premium-input">
           <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | translate" />
         </nz-input-group>
       </nz-form-control>
@@ -3868,7 +3949,7 @@ var LoginComponent = class _LoginComponent {
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | translate">
-        <nz-input-group nzPrefixIcon="lock">
+        <nz-input-group nzPrefixIcon="lock" class="premium-input">
           <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | translate" />
         </nz-input-group>
       </nz-form-control>
@@ -3885,51 +3966,54 @@ var LoginComponent = class _LoginComponent {
       </div>
     </div>
 
-    <button nz-button nzHtmlType="submit" class="login-form-button login-form-margin" [nzType]="'primary'" [nzLoading]="loading">
-      {{ '\u0110\u0103ng nh\u1EADp' | translate }}
+    <button nz-button nzHtmlType="submit" class="login-btn premium-button" [nzType]="'primary'" [nzLoading]="loading">
+      <span>{{ (ssoClientName ? 'Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp' : '\u0110\u0103ng nh\u1EADp') | translate }}</span>
+      <span nz-icon nzType="arrow-right"></span>
     </button>
     
-    <div class="register-link">
+    <div class="register-link" *ngIf="!ssoClientName">
       {{ 'Ho\u1EB7c' | translate }} <a routerLink="/auth/signup">{{ '\u0110\u0103ng k\xFD ngay!' | translate }}</a>
     </div>
   </form>
 
-  <nz-divider [nzText]="('Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | translate)"></nz-divider>
+  <nz-divider [nzText]="dividerText"></nz-divider>
+  <ng-template #dividerText>
+    <span class="divider-text">{{ 'Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | translate }}</span>
+  </ng-template>
 
-  <div class="sso-buttons">
-    <button nz-button nzBlock type="button" (click)="loginWithGoogle()">
+  <div class="sso-social-buttons">
+    <button nz-button nzBlock type="button" class="social-btn google" (click)="loginWithGoogle()">
       <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
     </button>
-    <button nz-button nzBlock type="button" (click)="loginWithMS()">
+    <button nz-button nzBlock type="button" class="social-btn ms" (click)="loginWithMS()">
       <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
-    </button>
-    <button nz-button nzBlock type="button" (click)="loginWithFacebook()">
-      <span nz-icon nzType="facebook"></span> {{ 'Facebook' | translate }}
     </button>
   </div>
 </div>
-`, styles: ["/* src/app/modules/auth/login/login.component.css */\n.login-header {\n  text-align: center;\n  margin-bottom: 24px;\n}\n.login-header h2 {\n  margin-bottom: 8px;\n  font-weight: 600;\n}\n.login-header p {\n  color: rgba(0, 0, 0, 0.45);\n}\n.login-form-margin {\n  margin-bottom: 16px;\n}\n.login-form-forgot {\n  float: right;\n}\n.login-form-button {\n  width: 100%;\n}\n.text-right {\n  text-align: right;\n}\n.sso-buttons button {\n  margin-bottom: 12px;\n}\n.sso-buttons button [nz-icon] {\n  margin-right: 8px;\n}\n/*# sourceMappingURL=login.component.css.map */\n"] }]
-  }], null, null);
+`, styles: ["/* src/app/modules/auth/login/login.component.css */\n.login-container {\n  display: flex;\n  flex-direction: column;\n}\n.login-header {\n  text-align: center;\n  margin-bottom: 32px;\n}\n.brand-logo {\n  width: 64px;\n  height: 64px;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff 0%,\n      #096dd9 100%);\n  color: white;\n  border-radius: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0 auto 16px;\n  font-size: 32px;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);\n}\n.login-header h2 {\n  font-size: 24px;\n  font-weight: 700;\n  margin-bottom: 8px;\n  color: #262626;\n}\n.login-header p {\n  color: #8c8c8c;\n  margin-bottom: 0;\n}\n.sso-badge {\n  margin-top: 16px;\n  padding: 12px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n  border: 1px solid rgba(24, 144, 255, 0.2);\n  background: rgba(24, 144, 255, 0.05);\n}\n.client-name {\n  font-weight: 600;\n  color: #1890ff;\n  font-size: 16px;\n}\n.security-check {\n  font-size: 12px;\n  color: #52c41a;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.premium-input ::ng-deep .ant-input-affix-wrapper {\n  padding: 10px 12px;\n  border-radius: 8px;\n  border: 1.5px solid #f0f0f0;\n  transition: all 0.3s;\n}\n.premium-input ::ng-deep .ant-input-affix-wrapper-focused {\n  border-color: #1890ff;\n  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);\n}\n.login-form-margin {\n  margin-bottom: 24px;\n}\n.login-btn {\n  width: 100%;\n  height: 44px;\n  font-size: 16px;\n  font-weight: 600;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n}\n.register-link {\n  text-align: center;\n  margin-top: 16px;\n  color: #8c8c8c;\n}\n.divider-text {\n  color: #bfbfbf;\n  font-size: 12px;\n  font-weight: 400;\n}\n.sso-social-buttons {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.social-btn {\n  height: 40px;\n  border-radius: 8px;\n  border: 1px solid #d9d9d9;\n  font-weight: 500;\n  transition: all 0.2s;\n}\n.social-btn:hover {\n  background: #fafafa;\n  border-color: #bfbfbf;\n}\n.social-btn.google [nz-icon] {\n  color: #db4437;\n}\n.social-btn.ms [nz-icon] {\n  color: #00a4ef;\n}\n/*# sourceMappingURL=login.component.css.map */\n"] }]
+  }], () => [], null);
 })();
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(LoginComponent, { className: "LoginComponent", filePath: "src/app/modules/auth/login/login.component.ts", lineNumber: 39 });
 })();
 
 // src/app/modules/auth/signup/signup.component.ts
-var SignupComponent = class _SignupComponent {
-  fb = inject(NonNullableFormBuilder);
-  authService = inject(AuthService);
-  router = inject(Router);
-  notification = inject(AppNotificationService);
-  translate = inject(TranslateService);
-  validateForm = this.fb.group({
-    username: ["", [Validators.required]],
-    email: ["", [Validators.required, Validators.email]],
-    displayName: ["", [Validators.required]],
-    password: ["", [Validators.required]],
-    confirmPassword: ["", [Validators.required]]
-  });
-  loading = false;
+var _SignupComponent = class _SignupComponent {
+  constructor() {
+    this.fb = inject(NonNullableFormBuilder);
+    this.authService = inject(AuthService);
+    this.router = inject(Router);
+    this.notification = inject(AppNotificationService);
+    this.translate = inject(TranslateService);
+    this.validateForm = this.fb.group({
+      username: ["", [Validators.required]],
+      email: ["", [Validators.required, Validators.email]],
+      displayName: ["", [Validators.required]],
+      password: ["", [Validators.required]],
+      confirmPassword: ["", [Validators.required]]
+    });
+    this.loading = false;
+  }
   async submitForm() {
     if (this.validateForm.valid) {
       if (this.validateForm.value.password !== this.validateForm.value.confirmPassword) {
@@ -3988,172 +4072,173 @@ var SignupComponent = class _SignupComponent {
       this.loading = false;
     }
   }
-  static \u0275fac = function SignupComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _SignupComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 62, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "mail"], ["type", "email", "nz-input", "", "formControlName", "email", 3, "placeholder"], ["nzPrefixIcon", "idcard"], ["type", "text", "nz-input", "", "formControlName", "displayName", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["type", "password", "nz-input", "", "formControlName", "confirmPassword", 3, "placeholder"], ["nz-button", "", 1, "signup-form-button", 3, "nzType", "nzLoading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nz-button", "", "nzType", "default", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
-      \u0275\u0275text(3);
-      \u0275\u0275pipe(4, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(5, "p");
-      \u0275\u0275text(6);
-      \u0275\u0275pipe(7, "translate");
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(8, "form", 2);
-      \u0275\u0275listener("ngSubmit", function SignupComponent_Template_form_ngSubmit_8_listener($event) {
-        $event.preventDefault();
-        return ctx.submitForm();
-      });
-      \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-control", 3);
-      \u0275\u0275pipe(11, "translate");
-      \u0275\u0275elementStart(12, "nz-input-group", 4);
-      \u0275\u0275element(13, "input", 5);
-      \u0275\u0275pipe(14, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 3);
-      \u0275\u0275pipe(17, "translate");
-      \u0275\u0275elementStart(18, "nz-input-group", 6);
-      \u0275\u0275element(19, "input", 7);
-      \u0275\u0275pipe(20, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control", 3);
-      \u0275\u0275pipe(23, "translate");
-      \u0275\u0275elementStart(24, "nz-input-group", 8);
-      \u0275\u0275element(25, "input", 9);
-      \u0275\u0275pipe(26, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(27, "nz-form-item")(28, "nz-form-control", 3);
-      \u0275\u0275pipe(29, "translate");
-      \u0275\u0275elementStart(30, "nz-input-group", 10);
-      \u0275\u0275element(31, "input", 11);
-      \u0275\u0275pipe(32, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(33, "nz-form-item")(34, "nz-form-control", 3);
-      \u0275\u0275pipe(35, "translate");
-      \u0275\u0275elementStart(36, "nz-input-group", 10);
-      \u0275\u0275element(37, "input", 12);
-      \u0275\u0275pipe(38, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(39, "button", 13);
-      \u0275\u0275text(40);
-      \u0275\u0275pipe(41, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275text(42);
-      \u0275\u0275pipe(43, "translate");
-      \u0275\u0275elementStart(44, "a", 14);
-      \u0275\u0275text(45);
-      \u0275\u0275pipe(46, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275element(47, "nz-divider", 15);
-      \u0275\u0275pipe(48, "translate");
-      \u0275\u0275elementStart(49, "div", 16)(50, "button", 17);
-      \u0275\u0275listener("click", function SignupComponent_Template_button_click_50_listener() {
-        return ctx.signupWithGoogle();
-      });
-      \u0275\u0275element(51, "span", 18);
-      \u0275\u0275text(52);
-      \u0275\u0275pipe(53, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(54, "button", 17);
-      \u0275\u0275listener("click", function SignupComponent_Template_button_click_54_listener() {
-        return ctx.signupWithMS();
-      });
-      \u0275\u0275element(55, "span", 19);
-      \u0275\u0275text(56);
-      \u0275\u0275pipe(57, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(58, "button", 17);
-      \u0275\u0275listener("click", function SignupComponent_Template_button_click_58_listener() {
-        return ctx.signupWithFacebook();
-      });
-      \u0275\u0275element(59, "span", 20);
-      \u0275\u0275text(60);
-      \u0275\u0275pipe(61, "translate");
-      \u0275\u0275elementEnd()()()();
-    }
-    if (rf & 2) {
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 25, "\u0110\u0103ng k\xFD"));
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 27, "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("formGroup", ctx.validateForm);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(11, 29, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 31, "T\xEAn \u0111\u0103ng nh\u1EADp"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 33, "Vui l\xF2ng nh\u1EADp email!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(20, 35, "Email"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(23, 37, "Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(26, 39, "T\xEAn hi\u1EC3n th\u1ECB"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(29, 41, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(32, 43, "M\u1EADt kh\u1EA9u"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(35, 45, "Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(38, 47, "X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
-      \u0275\u0275advance();
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(41, 49, "\u0110\u0103ng k\xFD"));
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(43, 51, "\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?"), " ");
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(46, 53, "\u0110\u0103ng nh\u1EADp"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzText", \u0275\u0275pipeBind1(48, 55, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzLoading", ctx.loading);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 57, "Google"), " ");
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzLoading", ctx.loading);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 59, "Microsoft"), " ");
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzLoading", ctx.loading);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 61, "Facebook"), " ");
-    }
-  }, dependencies: [
-    CommonModule,
-    ReactiveFormsModule,
-    \u0275NgNoValidate,
-    DefaultValueAccessor,
-    NgControlStatus,
-    NgControlStatusGroup,
-    FormGroupDirective,
-    FormControlName,
-    RouterLink,
-    NzFormModule,
-    NzColDirective,
-    NzRowDirective,
-    NzFormDirective,
-    NzFormItemComponent,
-    NzFormControlComponent,
-    NzInputModule,
-    NzInputDirective,
-    NzInputGroupComponent,
-    NzButtonModule,
-    NzButtonComponent,
-    NzTransitionPatchDirective,
-    NzWaveDirective,
-    NzIconModule,
-    NzIconDirective,
-    NzDividerModule,
-    NzDividerComponent,
-    TranslateModule,
-    TranslatePipe
-  ], styles: ["\n.signup-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 24px;\n}\n.signup-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  font-weight: 600;\n}\n.signup-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n}\n.signup-form-button[_ngcontent-%COMP%] {\n  width: 100%;\n  margin-bottom: 16px;\n}\n.sso-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.sso-buttons[_ngcontent-%COMP%]   button[_ngcontent-%COMP%] {\n  width: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n/*# sourceMappingURL=signup.component.css.map */"] });
 };
+_SignupComponent.\u0275fac = function SignupComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _SignupComponent)();
+};
+_SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 62, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "mail"], ["type", "email", "nz-input", "", "formControlName", "email", 3, "placeholder"], ["nzPrefixIcon", "idcard"], ["type", "text", "nz-input", "", "formControlName", "displayName", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["type", "password", "nz-input", "", "formControlName", "confirmPassword", 3, "placeholder"], ["nz-button", "", 1, "signup-form-button", 3, "nzType", "nzLoading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nz-button", "", "nzType", "default", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
+    \u0275\u0275text(3);
+    \u0275\u0275pipe(4, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(5, "p");
+    \u0275\u0275text(6);
+    \u0275\u0275pipe(7, "translate");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(8, "form", 2);
+    \u0275\u0275listener("ngSubmit", function SignupComponent_Template_form_ngSubmit_8_listener($event) {
+      $event.preventDefault();
+      return ctx.submitForm();
+    });
+    \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-control", 3);
+    \u0275\u0275pipe(11, "translate");
+    \u0275\u0275elementStart(12, "nz-input-group", 4);
+    \u0275\u0275element(13, "input", 5);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 3);
+    \u0275\u0275pipe(17, "translate");
+    \u0275\u0275elementStart(18, "nz-input-group", 6);
+    \u0275\u0275element(19, "input", 7);
+    \u0275\u0275pipe(20, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control", 3);
+    \u0275\u0275pipe(23, "translate");
+    \u0275\u0275elementStart(24, "nz-input-group", 8);
+    \u0275\u0275element(25, "input", 9);
+    \u0275\u0275pipe(26, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(27, "nz-form-item")(28, "nz-form-control", 3);
+    \u0275\u0275pipe(29, "translate");
+    \u0275\u0275elementStart(30, "nz-input-group", 10);
+    \u0275\u0275element(31, "input", 11);
+    \u0275\u0275pipe(32, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(33, "nz-form-item")(34, "nz-form-control", 3);
+    \u0275\u0275pipe(35, "translate");
+    \u0275\u0275elementStart(36, "nz-input-group", 10);
+    \u0275\u0275element(37, "input", 12);
+    \u0275\u0275pipe(38, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(39, "button", 13);
+    \u0275\u0275text(40);
+    \u0275\u0275pipe(41, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(42);
+    \u0275\u0275pipe(43, "translate");
+    \u0275\u0275elementStart(44, "a", 14);
+    \u0275\u0275text(45);
+    \u0275\u0275pipe(46, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(47, "nz-divider", 15);
+    \u0275\u0275pipe(48, "translate");
+    \u0275\u0275elementStart(49, "div", 16)(50, "button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_button_click_50_listener() {
+      return ctx.signupWithGoogle();
+    });
+    \u0275\u0275element(51, "span", 18);
+    \u0275\u0275text(52);
+    \u0275\u0275pipe(53, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(54, "button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_button_click_54_listener() {
+      return ctx.signupWithMS();
+    });
+    \u0275\u0275element(55, "span", 19);
+    \u0275\u0275text(56);
+    \u0275\u0275pipe(57, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(58, "button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_button_click_58_listener() {
+      return ctx.signupWithFacebook();
+    });
+    \u0275\u0275element(59, "span", 20);
+    \u0275\u0275text(60);
+    \u0275\u0275pipe(61, "translate");
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 25, "\u0110\u0103ng k\xFD"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 27, "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("formGroup", ctx.validateForm);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(11, 29, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 31, "T\xEAn \u0111\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 33, "Vui l\xF2ng nh\u1EADp email!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(20, 35, "Email"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(23, 37, "Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(26, 39, "T\xEAn hi\u1EC3n th\u1ECB"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(29, 41, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(32, 43, "M\u1EADt kh\u1EA9u"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(35, 45, "Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(38, 47, "X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(41, 49, "\u0110\u0103ng k\xFD"));
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(43, 51, "\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(46, 53, "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzText", \u0275\u0275pipeBind1(48, 55, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 57, "Google"), " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 59, "Microsoft"), " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 61, "Facebook"), " ");
+  }
+}, dependencies: [
+  CommonModule,
+  ReactiveFormsModule,
+  \u0275NgNoValidate,
+  DefaultValueAccessor,
+  NgControlStatus,
+  NgControlStatusGroup,
+  FormGroupDirective,
+  FormControlName,
+  RouterLink,
+  NzFormModule,
+  NzColDirective,
+  NzRowDirective,
+  NzFormDirective,
+  NzFormItemComponent,
+  NzFormControlComponent,
+  NzInputModule,
+  NzInputDirective,
+  NzInputGroupComponent,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzIconModule,
+  NzIconDirective,
+  NzDividerModule,
+  NzDividerComponent,
+  TranslateModule,
+  TranslatePipe
+], styles: ["\n.signup-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 24px;\n}\n.signup-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  font-weight: 600;\n}\n.signup-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n}\n.signup-form-button[_ngcontent-%COMP%] {\n  width: 100%;\n  margin-bottom: 16px;\n}\n.sso-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.sso-buttons[_ngcontent-%COMP%]   button[_ngcontent-%COMP%] {\n  width: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n/*# sourceMappingURL=signup.component.css.map */"] });
+var SignupComponent = _SignupComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(SignupComponent, [{
     type: Component,
@@ -4240,7 +4325,7 @@ var SignupComponent = class _SignupComponent {
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-core-pipe.mjs
-var NzTimeRangePipe = class _NzTimeRangePipe {
+var _NzTimeRangePipe = class _NzTimeRangePipe {
   transform(value, format = "HH:mm:ss") {
     let duration = Number(value || 0);
     return timeUnits.reduce((current, [name, unit]) => {
@@ -4252,15 +4337,16 @@ var NzTimeRangePipe = class _NzTimeRangePipe {
       return current;
     }, format);
   }
-  static \u0275fac = function NzTimeRangePipe_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzTimeRangePipe)();
-  };
-  static \u0275pipe = /* @__PURE__ */ \u0275\u0275definePipe({
-    name: "nzTimeRange",
-    type: _NzTimeRangePipe,
-    pure: true
-  });
 };
+__publicField(_NzTimeRangePipe, "\u0275fac", function NzTimeRangePipe_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzTimeRangePipe)();
+});
+__publicField(_NzTimeRangePipe, "\u0275pipe", /* @__PURE__ */ \u0275\u0275definePipe({
+  name: "nzTimeRange",
+  type: _NzTimeRangePipe,
+  pure: true
+}));
+var NzTimeRangePipe = _NzTimeRangePipe;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzTimeRangePipe, [{
     type: Pipe,
@@ -4269,17 +4355,18 @@ var NzTimeRangePipe = class _NzTimeRangePipe {
     }]
   }], null, null);
 })();
-var NzPipesModule = class _NzPipesModule {
-  static \u0275fac = function NzPipesModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzPipesModule)();
-  };
-  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
-    type: _NzPipesModule,
-    imports: [NzTimeRangePipe],
-    exports: [NzTimeRangePipe]
-  });
-  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({});
+var _NzPipesModule = class _NzPipesModule {
 };
+__publicField(_NzPipesModule, "\u0275fac", function NzPipesModule_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzPipesModule)();
+});
+__publicField(_NzPipesModule, "\u0275mod", /* @__PURE__ */ \u0275\u0275defineNgModule({
+  type: _NzPipesModule,
+  imports: [NzTimeRangePipe],
+  exports: [NzTimeRangePipe]
+}));
+__publicField(_NzPipesModule, "\u0275inj", /* @__PURE__ */ \u0275\u0275defineInjector({}));
+var NzPipesModule = _NzPipesModule;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzPipesModule, [{
     type: NgModule,
@@ -4436,12 +4523,14 @@ function NzCountdownComponent_ng_template_1_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(1, 1, ctx_r0.diff, ctx_r0.nzFormat));
   }
 }
-var NzStatisticContentValueComponent = class _NzStatisticContentValueComponent {
-  nzValue;
-  nzValueTemplate;
-  displayInt = "";
-  displayDecimal = "";
-  locale_id = inject(LOCALE_ID);
+var _NzStatisticContentValueComponent = class _NzStatisticContentValueComponent {
+  constructor() {
+    __publicField(this, "nzValue");
+    __publicField(this, "nzValueTemplate");
+    __publicField(this, "displayInt", "");
+    __publicField(this, "displayDecimal", "");
+    __publicField(this, "locale_id", inject(LOCALE_ID));
+  }
   ngOnChanges() {
     this.formatNumber();
   }
@@ -4452,35 +4541,36 @@ var NzStatisticContentValueComponent = class _NzStatisticContentValueComponent {
     this.displayInt = int;
     this.displayDecimal = decimal ? `${decimalSeparator}${decimal}` : "";
   }
-  static \u0275fac = function NzStatisticContentValueComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStatisticContentValueComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzStatisticContentValueComponent,
-    selectors: [["nz-statistic-content-value"]],
-    hostAttrs: [1, "ant-statistic-content-value"],
-    inputs: {
-      nzValue: "nzValue",
-      nzValueTemplate: "nzValueTemplate"
-    },
-    exportAs: ["nzStatisticContentValue"],
-    features: [\u0275\u0275NgOnChangesFeature],
-    decls: 2,
-    vars: 1,
-    consts: [[3, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ant-statistic-content-value-int"], [1, "ant-statistic-content-value-decimal"]],
-    template: function NzStatisticContentValueComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275conditionalCreate(0, NzStatisticContentValueComponent_Conditional_0_Template, 1, 4, "ng-container", 0)(1, NzStatisticContentValueComponent_Conditional_1_Template, 2, 2);
-      }
-      if (rf & 2) {
-        \u0275\u0275conditional(ctx.nzValueTemplate ? 0 : 1);
-      }
-    },
-    dependencies: [NgTemplateOutlet],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzStatisticContentValueComponent, "\u0275fac", function NzStatisticContentValueComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStatisticContentValueComponent)();
+});
+__publicField(_NzStatisticContentValueComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzStatisticContentValueComponent,
+  selectors: [["nz-statistic-content-value"]],
+  hostAttrs: [1, "ant-statistic-content-value"],
+  inputs: {
+    nzValue: "nzValue",
+    nzValueTemplate: "nzValueTemplate"
+  },
+  exportAs: ["nzStatisticContentValue"],
+  features: [\u0275\u0275NgOnChangesFeature],
+  decls: 2,
+  vars: 1,
+  consts: [[3, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ant-statistic-content-value-int"], [1, "ant-statistic-content-value-decimal"]],
+  template: function NzStatisticContentValueComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275conditionalCreate(0, NzStatisticContentValueComponent_Conditional_0_Template, 1, 4, "ng-container", 0)(1, NzStatisticContentValueComponent_Conditional_1_Template, 2, 2);
+    }
+    if (rf & 2) {
+      \u0275\u0275conditional(ctx.nzValueTemplate ? 0 : 1);
+    }
+  },
+  dependencies: [NgTemplateOutlet],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzStatisticContentValueComponent = _NzStatisticContentValueComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStatisticContentValueComponent, [{
     type: Component,
@@ -4515,70 +4605,74 @@ var NzStatisticContentValueComponent = class _NzStatisticContentValueComponent {
     }]
   });
 })();
-var NzStatisticComponent = class _NzStatisticComponent {
-  nzPrefix;
-  nzSuffix;
-  nzTitle;
-  nzValue;
-  nzValueStyle = {};
-  nzValueTemplate;
-  nzLoading = false;
-  dir = "ltr";
-  cdr = inject(ChangeDetectorRef);
-  destroyRef = inject(DestroyRef);
-  directionality = inject(Directionality);
+var _NzStatisticComponent = class _NzStatisticComponent {
+  constructor() {
+    __publicField(this, "nzPrefix");
+    __publicField(this, "nzSuffix");
+    __publicField(this, "nzTitle");
+    __publicField(this, "nzValue");
+    __publicField(this, "nzValueStyle", {});
+    __publicField(this, "nzValueTemplate");
+    __publicField(this, "nzLoading", false);
+    __publicField(this, "dir", "ltr");
+    __publicField(this, "cdr", inject(ChangeDetectorRef));
+    __publicField(this, "destroyRef", inject(DestroyRef));
+    __publicField(this, "directionality", inject(Directionality));
+  }
   ngOnInit() {
-    this.directionality.change?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
+    var _a;
+    (_a = this.directionality.change) == null ? void 0 : _a.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
       this.dir = direction;
       this.cdr.detectChanges();
     });
     this.dir = this.directionality.value;
   }
-  static \u0275fac = function NzStatisticComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStatisticComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzStatisticComponent,
-    selectors: [["nz-statistic"]],
-    hostAttrs: [1, "ant-statistic"],
-    hostVars: 2,
-    hostBindings: function NzStatisticComponent_HostBindings(rf, ctx) {
-      if (rf & 2) {
-        \u0275\u0275classProp("ant-statistic-rtl", ctx.dir === "rtl");
-      }
-    },
-    inputs: {
-      nzPrefix: "nzPrefix",
-      nzSuffix: "nzSuffix",
-      nzTitle: "nzTitle",
-      nzValue: "nzValue",
-      nzValueStyle: "nzValueStyle",
-      nzValueTemplate: "nzValueTemplate",
-      nzLoading: [2, "nzLoading", "nzLoading", booleanAttribute]
-    },
-    exportAs: ["nzStatistic"],
-    decls: 4,
-    vars: 2,
-    consts: [[1, "ant-statistic-title"], [4, "nzStringTemplateOutlet"], [1, "ant-statistic-skeleton", 3, "nzParagraph"], [1, "ant-statistic-content", 3, "style"], [1, "ant-statistic-content"], [1, "ant-statistic-content-prefix"], [3, "nzValue", "nzValueTemplate"], [1, "ant-statistic-content-suffix"]],
-    template: function NzStatisticComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275elementStart(0, "div", 0);
-        \u0275\u0275template(1, NzStatisticComponent_ng_container_1_Template, 2, 1, "ng-container", 1);
-        \u0275\u0275elementEnd();
-        \u0275\u0275conditionalCreate(2, NzStatisticComponent_Conditional_2_Template, 1, 1, "nz-skeleton", 2)(3, NzStatisticComponent_Conditional_3_Template, 4, 6, "div", 3);
-      }
-      if (rf & 2) {
-        \u0275\u0275advance();
-        \u0275\u0275property("nzStringTemplateOutlet", ctx.nzTitle);
-        \u0275\u0275advance();
-        \u0275\u0275conditional(ctx.nzLoading ? 2 : 3);
-      }
-    },
-    dependencies: [NzSkeletonModule, NzSkeletonComponent, NzStatisticContentValueComponent, NzOutletModule, NzStringTemplateOutletDirective],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzStatisticComponent, "\u0275fac", function NzStatisticComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStatisticComponent)();
+});
+__publicField(_NzStatisticComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzStatisticComponent,
+  selectors: [["nz-statistic"]],
+  hostAttrs: [1, "ant-statistic"],
+  hostVars: 2,
+  hostBindings: function NzStatisticComponent_HostBindings(rf, ctx) {
+    if (rf & 2) {
+      \u0275\u0275classProp("ant-statistic-rtl", ctx.dir === "rtl");
+    }
+  },
+  inputs: {
+    nzPrefix: "nzPrefix",
+    nzSuffix: "nzSuffix",
+    nzTitle: "nzTitle",
+    nzValue: "nzValue",
+    nzValueStyle: "nzValueStyle",
+    nzValueTemplate: "nzValueTemplate",
+    nzLoading: [2, "nzLoading", "nzLoading", booleanAttribute]
+  },
+  exportAs: ["nzStatistic"],
+  decls: 4,
+  vars: 2,
+  consts: [[1, "ant-statistic-title"], [4, "nzStringTemplateOutlet"], [1, "ant-statistic-skeleton", 3, "nzParagraph"], [1, "ant-statistic-content", 3, "style"], [1, "ant-statistic-content"], [1, "ant-statistic-content-prefix"], [3, "nzValue", "nzValueTemplate"], [1, "ant-statistic-content-suffix"]],
+  template: function NzStatisticComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275elementStart(0, "div", 0);
+      \u0275\u0275template(1, NzStatisticComponent_ng_container_1_Template, 2, 1, "ng-container", 1);
+      \u0275\u0275elementEnd();
+      \u0275\u0275conditionalCreate(2, NzStatisticComponent_Conditional_2_Template, 1, 1, "nz-skeleton", 2)(3, NzStatisticComponent_Conditional_3_Template, 4, 6, "div", 3);
+    }
+    if (rf & 2) {
+      \u0275\u0275advance();
+      \u0275\u0275property("nzStringTemplateOutlet", ctx.nzTitle);
+      \u0275\u0275advance();
+      \u0275\u0275conditional(ctx.nzLoading ? 2 : 3);
+    }
+  },
+  dependencies: [NzSkeletonModule, NzSkeletonComponent, NzStatisticContentValueComponent, NzOutletModule, NzStringTemplateOutletDirective],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzStatisticComponent = _NzStatisticComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStatisticComponent, [{
     type: Component,
@@ -4643,16 +4737,16 @@ var NzStatisticComponent = class _NzStatisticComponent {
   });
 })();
 var REFRESH_INTERVAL = 1e3 / 30;
-var NzCountdownComponent = class _NzCountdownComponent extends NzStatisticComponent {
-  ngZone = inject(NgZone);
-  platform = inject(Platform);
-  nzFormat = "HH:mm:ss";
-  nzCountdownFinish = new EventEmitter();
-  diff;
-  target = 0;
-  intervalId = null;
+var _NzCountdownComponent = class _NzCountdownComponent extends NzStatisticComponent {
   constructor() {
     super();
+    __publicField(this, "ngZone", inject(NgZone));
+    __publicField(this, "platform", inject(Platform));
+    __publicField(this, "nzFormat", "HH:mm:ss");
+    __publicField(this, "nzCountdownFinish", new EventEmitter());
+    __publicField(this, "diff");
+    __publicField(this, "target", 0);
+    __publicField(this, "intervalId", null);
     this.destroyRef.onDestroy(() => {
       this.stopTimer();
     });
@@ -4708,38 +4802,39 @@ var NzCountdownComponent = class _NzCountdownComponent extends NzStatisticCompon
       }
     }
   }
-  static \u0275fac = function NzCountdownComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzCountdownComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzCountdownComponent,
-    selectors: [["nz-countdown"]],
-    inputs: {
-      nzFormat: "nzFormat"
-    },
-    outputs: {
-      nzCountdownFinish: "nzCountdownFinish"
-    },
-    exportAs: ["nzCountdown"],
-    features: [\u0275\u0275InheritDefinitionFeature, \u0275\u0275NgOnChangesFeature],
-    decls: 3,
-    vars: 6,
-    consts: [["countDownTpl", ""], [3, "nzValue", "nzValueStyle", "nzValueTemplate", "nzTitle", "nzPrefix", "nzSuffix"]],
-    template: function NzCountdownComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275element(0, "nz-statistic", 1);
-        \u0275\u0275template(1, NzCountdownComponent_ng_template_1_Template, 2, 4, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-      }
-      if (rf & 2) {
-        const countDownTpl_r2 = \u0275\u0275reference(2);
-        \u0275\u0275property("nzValue", ctx.diff)("nzValueStyle", ctx.nzValueStyle)("nzValueTemplate", ctx.nzValueTemplate || countDownTpl_r2)("nzTitle", ctx.nzTitle)("nzPrefix", ctx.nzPrefix)("nzSuffix", ctx.nzSuffix);
-      }
-    },
-    dependencies: [NzStatisticComponent, NzPipesModule, NzTimeRangePipe],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzCountdownComponent, "\u0275fac", function NzCountdownComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzCountdownComponent)();
+});
+__publicField(_NzCountdownComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzCountdownComponent,
+  selectors: [["nz-countdown"]],
+  inputs: {
+    nzFormat: "nzFormat"
+  },
+  outputs: {
+    nzCountdownFinish: "nzCountdownFinish"
+  },
+  exportAs: ["nzCountdown"],
+  features: [\u0275\u0275InheritDefinitionFeature, \u0275\u0275NgOnChangesFeature],
+  decls: 3,
+  vars: 6,
+  consts: [["countDownTpl", ""], [3, "nzValue", "nzValueStyle", "nzValueTemplate", "nzTitle", "nzPrefix", "nzSuffix"]],
+  template: function NzCountdownComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275element(0, "nz-statistic", 1);
+      \u0275\u0275template(1, NzCountdownComponent_ng_template_1_Template, 2, 4, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    }
+    if (rf & 2) {
+      const countDownTpl_r2 = \u0275\u0275reference(2);
+      \u0275\u0275property("nzValue", ctx.diff)("nzValueStyle", ctx.nzValueStyle)("nzValueTemplate", ctx.nzValueTemplate || countDownTpl_r2)("nzTitle", ctx.nzTitle)("nzPrefix", ctx.nzPrefix)("nzSuffix", ctx.nzSuffix);
+    }
+  },
+  dependencies: [NzStatisticComponent, NzPipesModule, NzTimeRangePipe],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzCountdownComponent = _NzCountdownComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzCountdownComponent, [{
     type: Component,
@@ -4771,19 +4866,20 @@ var NzCountdownComponent = class _NzCountdownComponent extends NzStatisticCompon
     }]
   });
 })();
-var NzStatisticModule = class _NzStatisticModule {
-  static \u0275fac = function NzStatisticModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStatisticModule)();
-  };
-  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
-    type: _NzStatisticModule,
-    imports: [NzStatisticComponent, NzCountdownComponent, NzStatisticContentValueComponent],
-    exports: [NzStatisticComponent, NzCountdownComponent, NzStatisticContentValueComponent]
-  });
-  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({
-    imports: [NzStatisticComponent, NzCountdownComponent]
-  });
+var _NzStatisticModule = class _NzStatisticModule {
 };
+__publicField(_NzStatisticModule, "\u0275fac", function NzStatisticModule_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStatisticModule)();
+});
+__publicField(_NzStatisticModule, "\u0275mod", /* @__PURE__ */ \u0275\u0275defineNgModule({
+  type: _NzStatisticModule,
+  imports: [NzStatisticComponent, NzCountdownComponent, NzStatisticContentValueComponent],
+  exports: [NzStatisticComponent, NzCountdownComponent, NzStatisticContentValueComponent]
+}));
+__publicField(_NzStatisticModule, "\u0275inj", /* @__PURE__ */ \u0275\u0275defineInjector({
+  imports: [NzStatisticComponent, NzCountdownComponent]
+}));
+var NzStatisticModule = _NzStatisticModule;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStatisticModule, [{
     type: NgModule,
@@ -5036,6 +5132,7 @@ var statusIconNameMap = /* @__PURE__ */ new Map([["success", "check"], ["excepti
 var statusColorMap = /* @__PURE__ */ new Map([["normal", "#108ee9"], ["exception", "#ff5500"], ["success", "#87d068"]]);
 var defaultFormatter = (p) => `${p}%`;
 var NzProgressComponent = (() => {
+  var _a;
   let _nzShowInfo_decorators;
   let _nzShowInfo_initializers = [];
   let _nzShowInfo_extraInitializers = [];
@@ -5057,158 +5154,53 @@ var NzProgressComponent = (() => {
   let _nzStrokeLinecap_decorators;
   let _nzStrokeLinecap_initializers = [];
   let _nzStrokeLinecap_extraInitializers = [];
-  return class NzProgressComponent2 {
-    static {
-      const _metadata = typeof Symbol === "function" && Symbol.metadata ? /* @__PURE__ */ Object.create(null) : void 0;
-      _nzShowInfo_decorators = [WithConfig()];
-      _nzStrokeColor_decorators = [WithConfig()];
-      _nzSize_decorators = [WithConfig()];
-      _nzStrokeWidth_decorators = [WithConfig()];
-      _nzGapDegree_decorators = [WithConfig()];
-      _nzGapPosition_decorators = [WithConfig()];
-      _nzStrokeLinecap_decorators = [WithConfig()];
-      __esDecorate(null, null, _nzShowInfo_decorators, {
-        kind: "field",
-        name: "nzShowInfo",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzShowInfo" in obj,
-          get: (obj) => obj.nzShowInfo,
-          set: (obj, value) => {
-            obj.nzShowInfo = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzShowInfo_initializers, _nzShowInfo_extraInitializers);
-      __esDecorate(null, null, _nzStrokeColor_decorators, {
-        kind: "field",
-        name: "nzStrokeColor",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzStrokeColor" in obj,
-          get: (obj) => obj.nzStrokeColor,
-          set: (obj, value) => {
-            obj.nzStrokeColor = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzStrokeColor_initializers, _nzStrokeColor_extraInitializers);
-      __esDecorate(null, null, _nzSize_decorators, {
-        kind: "field",
-        name: "nzSize",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzSize" in obj,
-          get: (obj) => obj.nzSize,
-          set: (obj, value) => {
-            obj.nzSize = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzSize_initializers, _nzSize_extraInitializers);
-      __esDecorate(null, null, _nzStrokeWidth_decorators, {
-        kind: "field",
-        name: "nzStrokeWidth",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzStrokeWidth" in obj,
-          get: (obj) => obj.nzStrokeWidth,
-          set: (obj, value) => {
-            obj.nzStrokeWidth = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzStrokeWidth_initializers, _nzStrokeWidth_extraInitializers);
-      __esDecorate(null, null, _nzGapDegree_decorators, {
-        kind: "field",
-        name: "nzGapDegree",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzGapDegree" in obj,
-          get: (obj) => obj.nzGapDegree,
-          set: (obj, value) => {
-            obj.nzGapDegree = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzGapDegree_initializers, _nzGapDegree_extraInitializers);
-      __esDecorate(null, null, _nzGapPosition_decorators, {
-        kind: "field",
-        name: "nzGapPosition",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzGapPosition" in obj,
-          get: (obj) => obj.nzGapPosition,
-          set: (obj, value) => {
-            obj.nzGapPosition = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzGapPosition_initializers, _nzGapPosition_extraInitializers);
-      __esDecorate(null, null, _nzStrokeLinecap_decorators, {
-        kind: "field",
-        name: "nzStrokeLinecap",
-        static: false,
-        private: false,
-        access: {
-          has: (obj) => "nzStrokeLinecap" in obj,
-          get: (obj) => obj.nzStrokeLinecap,
-          set: (obj, value) => {
-            obj.nzStrokeLinecap = value;
-          }
-        },
-        metadata: _metadata
-      }, _nzStrokeLinecap_initializers, _nzStrokeLinecap_extraInitializers);
-      if (_metadata) Object.defineProperty(this, Symbol.metadata, {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: _metadata
+  return _a = class {
+    constructor() {
+      __publicField(this, "_nzModuleName", NZ_CONFIG_MODULE_NAME);
+      __publicField(this, "cdr", inject(ChangeDetectorRef));
+      __publicField(this, "directionality", inject(Directionality));
+      __publicField(this, "destroyRef", inject(DestroyRef));
+      __publicField(this, "nzShowInfo", __runInitializers(this, _nzShowInfo_initializers, true));
+      __publicField(this, "nzWidth", (__runInitializers(this, _nzShowInfo_extraInitializers), 132));
+      __publicField(this, "nzStrokeColor", __runInitializers(this, _nzStrokeColor_initializers, void 0));
+      __publicField(this, "nzSize", (__runInitializers(this, _nzStrokeColor_extraInitializers), __runInitializers(this, _nzSize_initializers, "default")));
+      __publicField(this, "nzFormat", __runInitializers(this, _nzSize_extraInitializers));
+      __publicField(this, "nzSuccessPercent");
+      __publicField(this, "nzPercent", 0);
+      __publicField(this, "nzStrokeWidth", __runInitializers(this, _nzStrokeWidth_initializers, void 0));
+      __publicField(this, "nzGapDegree", (__runInitializers(this, _nzStrokeWidth_extraInitializers), __runInitializers(this, _nzGapDegree_initializers, void 0)));
+      __publicField(this, "nzStatus", __runInitializers(this, _nzGapDegree_extraInitializers));
+      __publicField(this, "nzType", "line");
+      __publicField(this, "nzGapPosition", __runInitializers(this, _nzGapPosition_initializers, "top"));
+      __publicField(this, "nzStrokeLinecap", (__runInitializers(this, _nzGapPosition_extraInitializers), __runInitializers(this, _nzStrokeLinecap_initializers, "round")));
+      __publicField(this, "nzSteps", (__runInitializers(this, _nzStrokeLinecap_extraInitializers), 0));
+      __publicField(this, "steps", []);
+      /** Gradient style when `nzType` is `line`. */
+      __publicField(this, "lineGradient", null);
+      /** If user uses gradient color. */
+      __publicField(this, "isGradient", false);
+      /** If the linear progress is a step progress. */
+      __publicField(this, "isSteps", false);
+      /**
+       * Each progress whose `nzType` is circle or dashboard should have unique id to
+       * define `<linearGradient>`.
+       */
+      __publicField(this, "gradientId", gradientIdSeed++);
+      /** Paths to rendered in the template. */
+      __publicField(this, "progressCirclePath", []);
+      __publicField(this, "circleGradient");
+      __publicField(this, "trailPathStyle", null);
+      __publicField(this, "pathString");
+      __publicField(this, "icon");
+      __publicField(this, "dir", "ltr");
+      __publicField(this, "cachedStatus", "normal");
+      __publicField(this, "inferredStatus", "normal");
+      onConfigChangeEventForComponent(NZ_CONFIG_MODULE_NAME, () => {
+        this.updateIcon();
+        this.setStrokeColor();
+        this.getCirclePaths();
       });
     }
-    _nzModuleName = NZ_CONFIG_MODULE_NAME;
-    cdr = inject(ChangeDetectorRef);
-    directionality = inject(Directionality);
-    destroyRef = inject(DestroyRef);
-    nzShowInfo = __runInitializers(this, _nzShowInfo_initializers, true);
-    nzWidth = (__runInitializers(this, _nzShowInfo_extraInitializers), 132);
-    nzStrokeColor = __runInitializers(this, _nzStrokeColor_initializers, void 0);
-    nzSize = (__runInitializers(this, _nzStrokeColor_extraInitializers), __runInitializers(this, _nzSize_initializers, "default"));
-    nzFormat = __runInitializers(this, _nzSize_extraInitializers);
-    nzSuccessPercent;
-    nzPercent = 0;
-    nzStrokeWidth = __runInitializers(this, _nzStrokeWidth_initializers, void 0);
-    nzGapDegree = (__runInitializers(this, _nzStrokeWidth_extraInitializers), __runInitializers(this, _nzGapDegree_initializers, void 0));
-    nzStatus = __runInitializers(this, _nzGapDegree_extraInitializers);
-    nzType = "line";
-    nzGapPosition = __runInitializers(this, _nzGapPosition_initializers, "top");
-    nzStrokeLinecap = (__runInitializers(this, _nzGapPosition_extraInitializers), __runInitializers(this, _nzStrokeLinecap_initializers, "round"));
-    nzSteps = (__runInitializers(this, _nzStrokeLinecap_extraInitializers), 0);
-    steps = [];
-    /** Gradient style when `nzType` is `line`. */
-    lineGradient = null;
-    /** If user uses gradient color. */
-    isGradient = false;
-    /** If the linear progress is a step progress. */
-    isSteps = false;
-    /**
-     * Each progress whose `nzType` is circle or dashboard should have unique id to
-     * define `<linearGradient>`.
-     */
-    gradientId = gradientIdSeed++;
-    /** Paths to rendered in the template. */
-    progressCirclePath = [];
-    circleGradient;
-    trailPathStyle = null;
-    pathString;
-    icon;
-    dir = "ltr";
     get formatter() {
       return this.nzFormat || defaultFormatter;
     }
@@ -5220,15 +5212,6 @@ var NzProgressComponent = (() => {
     }
     get isCircleStyle() {
       return this.nzType === "circle" || this.nzType === "dashboard";
-    }
-    cachedStatus = "normal";
-    inferredStatus = "normal";
-    constructor() {
-      onConfigChangeEventForComponent(NZ_CONFIG_MODULE_NAME, () => {
-        this.updateIcon();
-        this.setStrokeColor();
-        this.getCirclePaths();
-      });
     }
     ngOnChanges(changes) {
       const {
@@ -5273,7 +5256,8 @@ var NzProgressComponent = (() => {
       }
     }
     ngOnInit() {
-      this.directionality.change?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
+      var _a2;
+      (_a2 = this.directionality.change) == null ? void 0 : _a2.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
         this.dir = direction;
         this.cdr.detectChanges();
       });
@@ -5372,56 +5356,167 @@ var NzProgressComponent = (() => {
         this.circleGradient = [];
       }
     }
-    static \u0275fac = function NzProgressComponent_Factory(__ngFactoryType__) {
-      return new (__ngFactoryType__ || NzProgressComponent2)();
-    };
-    static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-      type: NzProgressComponent2,
-      selectors: [["nz-progress"]],
-      inputs: {
-        nzShowInfo: "nzShowInfo",
-        nzWidth: "nzWidth",
-        nzStrokeColor: "nzStrokeColor",
-        nzSize: "nzSize",
-        nzFormat: "nzFormat",
-        nzSuccessPercent: [2, "nzSuccessPercent", "nzSuccessPercent", numberAttributeWithZeroFallback],
-        nzPercent: [2, "nzPercent", "nzPercent", numberAttribute],
-        nzStrokeWidth: [2, "nzStrokeWidth", "nzStrokeWidth", numberAttributeWithZeroFallback],
-        nzGapDegree: [2, "nzGapDegree", "nzGapDegree", numberAttributeWithZeroFallback],
-        nzStatus: "nzStatus",
-        nzType: "nzType",
-        nzGapPosition: "nzGapPosition",
-        nzStrokeLinecap: "nzStrokeLinecap",
-        nzSteps: [2, "nzSteps", "nzSteps", numberAttribute]
-      },
-      exportAs: ["nzProgress"],
-      features: [\u0275\u0275NgOnChangesFeature],
-      decls: 5,
-      vars: 18,
-      consts: [["progressInfoTemplate", ""], [1, "ant-progress-inner", 3, "width", "height", "fontSize", "ant-progress-circle-gradient"], [1, "ant-progress-text"], [3, "nzType"], [4, "nzStringTemplateOutlet", "nzStringTemplateOutletContext"], [1, "ant-progress-steps-outer"], [1, "ant-progress-steps-item", 3, "style"], [3, "ngTemplateOutlet"], [1, "ant-progress-steps-item"], [1, "ant-progress-outer"], [1, "ant-progress-inner"], [1, "ant-progress-bg"], [1, "ant-progress-success-bg", 3, "width", "border-radius", "height"], [1, "ant-progress-success-bg"], ["viewBox", "0 0 100 100", 1, "ant-progress-circle"], ["stroke", "#f3f3f3", "fill-opacity", "0", 1, "ant-progress-circle-trail"], ["fill-opacity", "0", 1, "ant-progress-circle-path", 3, "style"], ["x1", "100%", "y1", "0%", "x2", "0%", "y2", "0%", 3, "id"], ["fill-opacity", "0", 1, "ant-progress-circle-path"]],
-      template: function NzProgressComponent_Template(rf, ctx) {
-        if (rf & 1) {
-          \u0275\u0275template(0, NzProgressComponent_ng_template_0_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-          \u0275\u0275elementStart(2, "div");
-          \u0275\u0275conditionalCreate(3, NzProgressComponent_Conditional_3_Template, 3, 1, "div");
-          \u0275\u0275conditionalCreate(4, NzProgressComponent_Conditional_4_Template, 7, 14, "div", 1);
-          \u0275\u0275elementEnd();
-        }
-        if (rf & 2) {
-          \u0275\u0275advance(2);
-          \u0275\u0275classMap("ant-progress ant-progress-status-" + ctx.status);
-          \u0275\u0275classProp("ant-progress-line", ctx.nzType === "line")("ant-progress-small", ctx.nzSize === "small")("ant-progress-default", ctx.nzSize === "default")("ant-progress-show-info", ctx.nzShowInfo)("ant-progress-circle", ctx.isCircleStyle)("ant-progress-steps", ctx.isSteps)("ant-progress-rtl", ctx.dir === "rtl");
-          \u0275\u0275advance();
-          \u0275\u0275conditional(ctx.nzType === "line" ? 3 : -1);
-          \u0275\u0275advance();
-          \u0275\u0275conditional(ctx.isCircleStyle ? 4 : -1);
+  }, (() => {
+    const _metadata = typeof Symbol === "function" && Symbol.metadata ? /* @__PURE__ */ Object.create(null) : void 0;
+    _nzShowInfo_decorators = [WithConfig()];
+    _nzStrokeColor_decorators = [WithConfig()];
+    _nzSize_decorators = [WithConfig()];
+    _nzStrokeWidth_decorators = [WithConfig()];
+    _nzGapDegree_decorators = [WithConfig()];
+    _nzGapPosition_decorators = [WithConfig()];
+    _nzStrokeLinecap_decorators = [WithConfig()];
+    __esDecorate(null, null, _nzShowInfo_decorators, {
+      kind: "field",
+      name: "nzShowInfo",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzShowInfo" in obj,
+        get: (obj) => obj.nzShowInfo,
+        set: (obj, value) => {
+          obj.nzShowInfo = value;
         }
       },
-      dependencies: [NzIconModule, NzIconDirective, NzOutletModule, NzStringTemplateOutletDirective, NgTemplateOutlet],
-      encapsulation: 2,
-      changeDetection: 0
+      metadata: _metadata
+    }, _nzShowInfo_initializers, _nzShowInfo_extraInitializers);
+    __esDecorate(null, null, _nzStrokeColor_decorators, {
+      kind: "field",
+      name: "nzStrokeColor",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzStrokeColor" in obj,
+        get: (obj) => obj.nzStrokeColor,
+        set: (obj, value) => {
+          obj.nzStrokeColor = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzStrokeColor_initializers, _nzStrokeColor_extraInitializers);
+    __esDecorate(null, null, _nzSize_decorators, {
+      kind: "field",
+      name: "nzSize",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzSize" in obj,
+        get: (obj) => obj.nzSize,
+        set: (obj, value) => {
+          obj.nzSize = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzSize_initializers, _nzSize_extraInitializers);
+    __esDecorate(null, null, _nzStrokeWidth_decorators, {
+      kind: "field",
+      name: "nzStrokeWidth",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzStrokeWidth" in obj,
+        get: (obj) => obj.nzStrokeWidth,
+        set: (obj, value) => {
+          obj.nzStrokeWidth = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzStrokeWidth_initializers, _nzStrokeWidth_extraInitializers);
+    __esDecorate(null, null, _nzGapDegree_decorators, {
+      kind: "field",
+      name: "nzGapDegree",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzGapDegree" in obj,
+        get: (obj) => obj.nzGapDegree,
+        set: (obj, value) => {
+          obj.nzGapDegree = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzGapDegree_initializers, _nzGapDegree_extraInitializers);
+    __esDecorate(null, null, _nzGapPosition_decorators, {
+      kind: "field",
+      name: "nzGapPosition",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzGapPosition" in obj,
+        get: (obj) => obj.nzGapPosition,
+        set: (obj, value) => {
+          obj.nzGapPosition = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzGapPosition_initializers, _nzGapPosition_extraInitializers);
+    __esDecorate(null, null, _nzStrokeLinecap_decorators, {
+      kind: "field",
+      name: "nzStrokeLinecap",
+      static: false,
+      private: false,
+      access: {
+        has: (obj) => "nzStrokeLinecap" in obj,
+        get: (obj) => obj.nzStrokeLinecap,
+        set: (obj, value) => {
+          obj.nzStrokeLinecap = value;
+        }
+      },
+      metadata: _metadata
+    }, _nzStrokeLinecap_initializers, _nzStrokeLinecap_extraInitializers);
+    if (_metadata) Object.defineProperty(_a, Symbol.metadata, {
+      enumerable: true,
+      configurable: true,
+      writable: true,
+      value: _metadata
     });
-  };
+  })(), __publicField(_a, "\u0275fac", function NzProgressComponent_Factory(__ngFactoryType__) {
+    return new (__ngFactoryType__ || _a)();
+  }), __publicField(_a, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+    type: _a,
+    selectors: [["nz-progress"]],
+    inputs: {
+      nzShowInfo: "nzShowInfo",
+      nzWidth: "nzWidth",
+      nzStrokeColor: "nzStrokeColor",
+      nzSize: "nzSize",
+      nzFormat: "nzFormat",
+      nzSuccessPercent: [2, "nzSuccessPercent", "nzSuccessPercent", numberAttributeWithZeroFallback],
+      nzPercent: [2, "nzPercent", "nzPercent", numberAttribute],
+      nzStrokeWidth: [2, "nzStrokeWidth", "nzStrokeWidth", numberAttributeWithZeroFallback],
+      nzGapDegree: [2, "nzGapDegree", "nzGapDegree", numberAttributeWithZeroFallback],
+      nzStatus: "nzStatus",
+      nzType: "nzType",
+      nzGapPosition: "nzGapPosition",
+      nzStrokeLinecap: "nzStrokeLinecap",
+      nzSteps: [2, "nzSteps", "nzSteps", numberAttribute]
+    },
+    exportAs: ["nzProgress"],
+    features: [\u0275\u0275NgOnChangesFeature],
+    decls: 5,
+    vars: 18,
+    consts: [["progressInfoTemplate", ""], [1, "ant-progress-inner", 3, "width", "height", "fontSize", "ant-progress-circle-gradient"], [1, "ant-progress-text"], [3, "nzType"], [4, "nzStringTemplateOutlet", "nzStringTemplateOutletContext"], [1, "ant-progress-steps-outer"], [1, "ant-progress-steps-item", 3, "style"], [3, "ngTemplateOutlet"], [1, "ant-progress-steps-item"], [1, "ant-progress-outer"], [1, "ant-progress-inner"], [1, "ant-progress-bg"], [1, "ant-progress-success-bg", 3, "width", "border-radius", "height"], [1, "ant-progress-success-bg"], ["viewBox", "0 0 100 100", 1, "ant-progress-circle"], ["stroke", "#f3f3f3", "fill-opacity", "0", 1, "ant-progress-circle-trail"], ["fill-opacity", "0", 1, "ant-progress-circle-path", 3, "style"], ["x1", "100%", "y1", "0%", "x2", "0%", "y2", "0%", 3, "id"], ["fill-opacity", "0", 1, "ant-progress-circle-path"]],
+    template: function NzProgressComponent_Template(rf, ctx) {
+      if (rf & 1) {
+        \u0275\u0275template(0, NzProgressComponent_ng_template_0_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+        \u0275\u0275elementStart(2, "div");
+        \u0275\u0275conditionalCreate(3, NzProgressComponent_Conditional_3_Template, 3, 1, "div");
+        \u0275\u0275conditionalCreate(4, NzProgressComponent_Conditional_4_Template, 7, 14, "div", 1);
+        \u0275\u0275elementEnd();
+      }
+      if (rf & 2) {
+        \u0275\u0275advance(2);
+        \u0275\u0275classMap("ant-progress ant-progress-status-" + ctx.status);
+        \u0275\u0275classProp("ant-progress-line", ctx.nzType === "line")("ant-progress-small", ctx.nzSize === "small")("ant-progress-default", ctx.nzSize === "default")("ant-progress-show-info", ctx.nzShowInfo)("ant-progress-circle", ctx.isCircleStyle)("ant-progress-steps", ctx.isSteps)("ant-progress-rtl", ctx.dir === "rtl");
+        \u0275\u0275advance();
+        \u0275\u0275conditional(ctx.nzType === "line" ? 3 : -1);
+        \u0275\u0275advance();
+        \u0275\u0275conditional(ctx.isCircleStyle ? 4 : -1);
+      }
+    },
+    dependencies: [NzIconModule, NzIconDirective, NzOutletModule, NzStringTemplateOutletDirective, NgTemplateOutlet],
+    encapsulation: 2,
+    changeDetection: 0
+  })), _a;
 })();
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzProgressComponent, [{
@@ -5601,19 +5696,20 @@ var NzProgressComponent = (() => {
     }]
   });
 })();
-var NzProgressModule = class _NzProgressModule {
-  static \u0275fac = function NzProgressModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzProgressModule)();
-  };
-  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
-    type: _NzProgressModule,
-    imports: [NzProgressComponent],
-    exports: [NzProgressComponent]
-  });
-  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({
-    imports: [NzProgressComponent]
-  });
+var _NzProgressModule = class _NzProgressModule {
 };
+__publicField(_NzProgressModule, "\u0275fac", function NzProgressModule_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzProgressModule)();
+});
+__publicField(_NzProgressModule, "\u0275mod", /* @__PURE__ */ \u0275\u0275defineNgModule({
+  type: _NzProgressModule,
+  imports: [NzProgressComponent],
+  exports: [NzProgressComponent]
+}));
+__publicField(_NzProgressModule, "\u0275inj", /* @__PURE__ */ \u0275\u0275defineInjector({
+  imports: [NzProgressComponent]
+}));
+var NzProgressModule = _NzProgressModule;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzProgressModule, [{
     type: NgModule,
@@ -5766,21 +5862,23 @@ function MessageListComponent_ng_container_18_Template(rf, ctx) {
     \u0275\u0275property("ngIf", item_r2.parsed._error);
   }
 }
-var MessageListComponent = class _MessageListComponent {
-  dashboardService = inject(DashboardService);
-  notification = inject(AppNotificationService);
-  modal = inject(NzModalService);
-  translate = inject(TranslateService);
-  modalData = inject(NZ_MODAL_DATA, { optional: true });
-  inputQueueName;
-  queueName = "";
-  messages = [];
-  loading = false;
-  pageIndex = 1;
-  pageSize = 10;
-  total = 0;
+var _MessageListComponent = class _MessageListComponent {
+  constructor() {
+    this.dashboardService = inject(DashboardService);
+    this.notification = inject(AppNotificationService);
+    this.modal = inject(NzModalService);
+    this.translate = inject(TranslateService);
+    this.modalData = inject(NZ_MODAL_DATA, { optional: true });
+    this.queueName = "";
+    this.messages = [];
+    this.loading = false;
+    this.pageIndex = 1;
+    this.pageSize = 10;
+    this.total = 0;
+  }
   ngOnInit() {
-    this.queueName = this.inputQueueName || this.modalData?.inputQueueName || "";
+    var _a;
+    this.queueName = this.inputQueueName || ((_a = this.modalData) == null ? void 0 : _a.inputQueueName) || "";
     if (this.queueName) {
       this.loadMessages();
     }
@@ -5850,7 +5948,8 @@ var MessageListComponent = class _MessageListComponent {
     });
   }
   getStatus(item) {
-    if (item.parsed?._status)
+    var _a;
+    if ((_a = item.parsed) == null ? void 0 : _a._status)
       return item.parsed._status;
     if (this.queueName.endsWith(":dead"))
       return "error";
@@ -5859,60 +5958,62 @@ var MessageListComponent = class _MessageListComponent {
     return "pending";
   }
   getTime(item) {
-    if (item.parsed?._failedAt)
+    var _a, _b, _c;
+    if ((_a = item.parsed) == null ? void 0 : _a._failedAt)
       return item.parsed._failedAt;
-    if (item.parsed?.Timestamp)
+    if ((_b = item.parsed) == null ? void 0 : _b.Timestamp)
       return item.parsed.Timestamp;
-    if (item.parsed?._timestamp)
+    if ((_c = item.parsed) == null ? void 0 : _c._timestamp)
       return item.parsed._timestamp;
     return "";
   }
-  static \u0275fac = function MessageListComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _MessageListComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], inputs: { inputQueueName: "inputQueueName" }, decls: 19, vars: 21, consts: [["msgTable", ""], [1, "message-list-container"], [3, "nzPageIndexChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzScroll"], ["nzWidth", "180px", "nzLeft", "0px"], ["nzWidth", "120px"], ["nzWidth", "200px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [1, "msg-preview", 3, "click"], [3, "nzColor"], ["nzRight", "0px"], [2, "display", "flex", "gap", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "nzExpand"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nz-button", "", "nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "div", 1)(1, "nz-table", 2, 0);
-      \u0275\u0275listener("nzPageIndexChange", function MessageListComponent_Template_nz_table_nzPageIndexChange_1_listener($event) {
-        return ctx.onPageIndexChange($event);
-      });
-      \u0275\u0275elementStart(3, "thead")(4, "tr")(5, "th", 3);
-      \u0275\u0275text(6);
-      \u0275\u0275pipe(7, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(8, "th");
-      \u0275\u0275text(9);
-      \u0275\u0275pipe(10, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(11, "th", 4);
-      \u0275\u0275text(12);
-      \u0275\u0275pipe(13, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(14, "th", 5);
-      \u0275\u0275text(15);
-      \u0275\u0275pipe(16, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(17, "tbody");
-      \u0275\u0275template(18, MessageListComponent_ng_container_18_Template, 33, 26, "ng-container", 6);
-      \u0275\u0275elementEnd()()();
-    }
-    if (rf & 2) {
-      const msgTable_r6 = \u0275\u0275reference(2);
-      \u0275\u0275advance();
-      \u0275\u0275property("nzData", ctx.messages)("nzLoading", ctx.loading)("nzFrontPagination", false)("nzTotal", ctx.total)("nzPageIndex", ctx.pageIndex)("nzPageSize", ctx.pageSize)("nzScroll", \u0275\u0275pureFunction0(20, _c03));
-      \u0275\u0275advance(5);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 12, "Th\u1EDDi gian"));
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 14, "N\u1ED9i dung tin nh\u1EAFn"));
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(13, 16, "Tr\u1EA1ng th\xE1i"));
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(16, 18, "H\xE0nh \u0111\u1ED9ng"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("ngForOf", msgTable_r6.data);
-    }
-  }, dependencies: [CommonModule, NgForOf, NgIf, NzTableModule, NzTableComponent, NzTableCellDirective, NzThMeasureDirective, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellFixedDirective, NzTrExpandDirective, NzTableFixedRowComponent, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule, NzIconDirective, NzTagModule, NzTagComponent, TranslateModule, SlicePipe, DatePipe, TranslatePipe], styles: ["\n.message-list-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.msg-cell[_ngcontent-%COMP%] {\n  font-family: monospace;\n  color: #555;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n/*# sourceMappingURL=message-list.component.css.map */", "\n.msg-preview[_ngcontent-%COMP%] {\n  cursor: pointer;\n  font-family: monospace;\n  font-size: 12px;\n  color: #999;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 500px;\n}\n.msg-preview[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n/*# sourceMappingURL=message-list.component.css.map */"] });
 };
+_MessageListComponent.\u0275fac = function MessageListComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _MessageListComponent)();
+};
+_MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], inputs: { inputQueueName: "inputQueueName" }, decls: 19, vars: 21, consts: [["msgTable", ""], [1, "message-list-container"], [3, "nzPageIndexChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzScroll"], ["nzWidth", "180px", "nzLeft", "0px"], ["nzWidth", "120px"], ["nzWidth", "200px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [1, "msg-preview", 3, "click"], [3, "nzColor"], ["nzRight", "0px"], [2, "display", "flex", "gap", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "nzExpand"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nz-button", "", "nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 1)(1, "nz-table", 2, 0);
+    \u0275\u0275listener("nzPageIndexChange", function MessageListComponent_Template_nz_table_nzPageIndexChange_1_listener($event) {
+      return ctx.onPageIndexChange($event);
+    });
+    \u0275\u0275elementStart(3, "thead")(4, "tr")(5, "th", 3);
+    \u0275\u0275text(6);
+    \u0275\u0275pipe(7, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(8, "th");
+    \u0275\u0275text(9);
+    \u0275\u0275pipe(10, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(11, "th", 4);
+    \u0275\u0275text(12);
+    \u0275\u0275pipe(13, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(14, "th", 5);
+    \u0275\u0275text(15);
+    \u0275\u0275pipe(16, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(17, "tbody");
+    \u0275\u0275template(18, MessageListComponent_ng_container_18_Template, 33, 26, "ng-container", 6);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const msgTable_r6 = \u0275\u0275reference(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzData", ctx.messages)("nzLoading", ctx.loading)("nzFrontPagination", false)("nzTotal", ctx.total)("nzPageIndex", ctx.pageIndex)("nzPageSize", ctx.pageSize)("nzScroll", \u0275\u0275pureFunction0(20, _c03));
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 12, "Th\u1EDDi gian"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 14, "N\u1ED9i dung tin nh\u1EAFn"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(13, 16, "Tr\u1EA1ng th\xE1i"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(16, 18, "H\xE0nh \u0111\u1ED9ng"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("ngForOf", msgTable_r6.data);
+  }
+}, dependencies: [CommonModule, NgForOf, NgIf, NzTableModule, NzTableComponent, NzTableCellDirective, NzThMeasureDirective, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellFixedDirective, NzTrExpandDirective, NzTableFixedRowComponent, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule, NzIconDirective, NzTagModule, NzTagComponent, TranslateModule, SlicePipe, DatePipe, TranslatePipe], styles: ["\n.message-list-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.msg-cell[_ngcontent-%COMP%] {\n  font-family: monospace;\n  color: #555;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n/*# sourceMappingURL=message-list.component.css.map */", "\n.msg-preview[_ngcontent-%COMP%] {\n  cursor: pointer;\n  font-family: monospace;\n  font-size: 12px;\n  color: #999;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 500px;\n}\n.msg-preview[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n/*# sourceMappingURL=message-list.component.css.map */"] });
+var MessageListComponent = _MessageListComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageListComponent, [{
     type: Component,
@@ -6090,42 +6191,45 @@ function TopicDetailComponent_ng_template_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 1, "Kh\xF4ng c\xF3 subscriber n\xE0o"), " ");
   }
 }
-var TopicDetailComponent = class _TopicDetailComponent {
-  modalData = inject(NZ_MODAL_DATA);
-  topic = this.modalData.topic;
-  showInProgress = this.modalData.showInProgress || false;
-  activeSubIndex = 0;
+var _TopicDetailComponent = class _TopicDetailComponent {
+  constructor() {
+    this.modalData = inject(NZ_MODAL_DATA);
+    this.topic = this.modalData.topic;
+    this.showInProgress = this.modalData.showInProgress || false;
+    this.activeSubIndex = 0;
+  }
   ngOnInit() {
   }
-  static \u0275fac = function TopicDetailComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _TopicDetailComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TopicDetailComponent, selectors: [["app-topic-detail"]], decls: 4, vars: 2, consts: [["noSubs", ""], [1, "topic-detail-container"], [4, "ngIf", "ngIfElse"], [2, "margin-bottom", "16px", "border-bottom", "1px solid #333", "padding-bottom", "8px"], ["nzButtonStyle", "solid", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", 3, "nzValue", 4, "ngFor", "ngForOf"], [4, "ngFor", "ngForOf"], ["nz-radio-button", "", 3, "nzValue"], [2, "font-weight", "bold"], [2, "margin-left", "8px", "font-size", "12px", "color", "#999"], [4, "ngIf"], [3, "inputQueueName"], [2, "text-align", "center", "padding", "24px", "color", "#999"]], template: function TopicDetailComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "div", 1);
-      \u0275\u0275template(1, TopicDetailComponent_div_1_Template, 5, 3, "div", 2)(2, TopicDetailComponent_ng_template_2_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd();
-    }
-    if (rf & 2) {
-      const noSubs_r7 = \u0275\u0275reference(3);
-      \u0275\u0275advance();
-      \u0275\u0275property("ngIf", ctx.topic.subscribers && ctx.topic.subscribers.length > 0)("ngIfElse", noSubs_r7);
-    }
-  }, dependencies: [
-    CommonModule,
-    NgForOf,
-    NgIf,
-    NzRadioModule,
-    NzRadioComponent,
-    NzRadioGroupComponent,
-    FormsModule,
-    NgControlStatus,
-    NgModel,
-    TranslateModule,
-    MessageListComponent,
-    TranslatePipe
-  ], styles: ["\n.topic-detail-container[_ngcontent-%COMP%] {\n  min-height: 400px;\n}\n/*# sourceMappingURL=topic-detail.component.css.map */"] });
 };
+_TopicDetailComponent.\u0275fac = function TopicDetailComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TopicDetailComponent)();
+};
+_TopicDetailComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TopicDetailComponent, selectors: [["app-topic-detail"]], decls: 4, vars: 2, consts: [["noSubs", ""], [1, "topic-detail-container"], [4, "ngIf", "ngIfElse"], [2, "margin-bottom", "16px", "border-bottom", "1px solid #333", "padding-bottom", "8px"], ["nzButtonStyle", "solid", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", 3, "nzValue", 4, "ngFor", "ngForOf"], [4, "ngFor", "ngForOf"], ["nz-radio-button", "", 3, "nzValue"], [2, "font-weight", "bold"], [2, "margin-left", "8px", "font-size", "12px", "color", "#999"], [4, "ngIf"], [3, "inputQueueName"], [2, "text-align", "center", "padding", "24px", "color", "#999"]], template: function TopicDetailComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 1);
+    \u0275\u0275template(1, TopicDetailComponent_div_1_Template, 5, 3, "div", 2)(2, TopicDetailComponent_ng_template_2_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const noSubs_r7 = \u0275\u0275reference(3);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx.topic.subscribers && ctx.topic.subscribers.length > 0)("ngIfElse", noSubs_r7);
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  NzRadioModule,
+  NzRadioComponent,
+  NzRadioGroupComponent,
+  FormsModule,
+  NgControlStatus,
+  NgModel,
+  TranslateModule,
+  MessageListComponent,
+  TranslatePipe
+], styles: ["\n.topic-detail-container[_ngcontent-%COMP%] {\n  min-height: 400px;\n}\n/*# sourceMappingURL=topic-detail.component.css.map */"] });
+var TopicDetailComponent = _TopicDetailComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TopicDetailComponent, [{
     type: Component,
@@ -6951,47 +7055,48 @@ function DashboardComponent_div_67_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-var DashboardComponent = class _DashboardComponent {
-  dashboardService = inject(DashboardService);
-  notification = inject(AppNotificationService);
-  translate = inject(TranslateService);
-  modal = inject(NzModalService);
-  stats = { stats: {}, workerStatus: [] };
-  queues = [];
-  recentTracking = [];
-  totalTracking = 0;
-  workerList = [];
-  errorStats = [];
-  lastActivityList = [];
-  loading = false;
-  activeTab = "queues";
-  refreshInterval = 0;
-  refreshIntervals = [
-    { label: "0s (Manual)", value: 0 },
-    { label: "1s", value: 1e3 },
-    { label: "5s", value: 5e3 },
-    { label: "10s", value: 1e4 },
-    { label: "30s", value: 3e4 },
-    { label: "1m", value: 6e4 },
-    { label: "5m", value: 3e5 },
-    { label: "10m", value: 6e5 },
-    { label: "30m", value: 18e5 },
-    { label: "1h", value: 36e5 }
-  ];
-  pageIndex = 1;
-  pageSize = 10;
-  filters = {
-    trackingId: "",
-    content: "",
-    status: "",
-    fromDate: null,
-    toDate: null,
-    queueOrTopic: "",
-    handler: "",
-    worker: ""
-  };
-  destroy$ = new Subject();
-  refreshSubscription;
+var _DashboardComponent = class _DashboardComponent {
+  constructor() {
+    this.dashboardService = inject(DashboardService);
+    this.notification = inject(AppNotificationService);
+    this.translate = inject(TranslateService);
+    this.modal = inject(NzModalService);
+    this.stats = { stats: {}, workerStatus: [] };
+    this.queues = [];
+    this.recentTracking = [];
+    this.totalTracking = 0;
+    this.workerList = [];
+    this.errorStats = [];
+    this.lastActivityList = [];
+    this.loading = false;
+    this.activeTab = "queues";
+    this.refreshInterval = 0;
+    this.refreshIntervals = [
+      { label: "0s (Manual)", value: 0 },
+      { label: "1s", value: 1e3 },
+      { label: "5s", value: 5e3 },
+      { label: "10s", value: 1e4 },
+      { label: "30s", value: 3e4 },
+      { label: "1m", value: 6e4 },
+      { label: "5m", value: 3e5 },
+      { label: "10m", value: 6e5 },
+      { label: "30m", value: 18e5 },
+      { label: "1h", value: 36e5 }
+    ];
+    this.pageIndex = 1;
+    this.pageSize = 10;
+    this.filters = {
+      trackingId: "",
+      content: "",
+      status: "",
+      fromDate: null,
+      toDate: null,
+      queueOrTopic: "",
+      handler: "",
+      worker: ""
+    };
+    this.destroy$ = new Subject();
+  }
   ngOnInit() {
     this.refresh();
   }
@@ -7138,7 +7243,8 @@ var DashboardComponent = class _DashboardComponent {
             this.refresh();
           },
           error: (err) => {
-            this.notification.error(this.translate.instant("Th\u1EA5t b\u1EA1i"), err.error?.message || "L\u1ED7i khi g\u1EEDi l\u1EA1i tin nh\u1EAFn");
+            var _a;
+            this.notification.error(this.translate.instant("Th\u1EA5t b\u1EA1i"), ((_a = err.error) == null ? void 0 : _a.message) || "L\u1ED7i khi g\u1EEDi l\u1EA1i tin nh\u1EAFn");
           }
         });
       }
@@ -7163,217 +7269,218 @@ var DashboardComponent = class _DashboardComponent {
     const percent = length / max * 100;
     return Math.min(percent, 100);
   }
-  static \u0275fac = function DashboardComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _DashboardComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 68, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTable", ""], ["prefixSearch", ""], ["trackingTable", ""], ["historyItem", ""], ["workerTable", ""], ["errorItem", ""], ["activityTable", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "primary", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], ["nzSize", "middle", 3, "nzData", "nzLoading", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "80px", "nzLeft", "0px"], ["nzWidth", "200px", "nzLeft", "80px"], ["nzWidth", "100px"], ["nzWidth", "120px"], ["nzWidth", "200px"], ["nzWidth", "150px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [3, "nzColor"], ["nzLeft", "80px"], [1, "queue-name-cell"], [1, "queue-name"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], ["nzRight", "0px"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nz-button", "", "nzType", "primary", "nzGhost", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzType", "default", "nzSize", "small", 3, "click"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nz-button", "", "nzBlock", "", 3, "click"], [3, "nzPageIndexChange", "nzData", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzLoading", "nzScroll"], ["nzWidth", "200px", "nzLeft", "0px"], ["nzWidth", "180px"], ["nz-icon", "", "nzType", "search"], ["nz-tooltip", "", 1, "id-text", 3, "nzTooltipTitle"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [2, "display", "flex", "gap", "4px"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nzDanger", "", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], [3, "nzExpand"], [1, "json-viewer-container"], [1, "json-header"], ["nz-icon", "", "nzType", "copy"], [1, "json-content"], [2, "margin-top", "16px"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "nzData", "nzPageSize", "nzShowPagination", "nzScroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], ["nz-button", "", 3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], ["nzSize", "middle", 3, "nzData", "nzPageSize", "nzShowPagination"], ["class", "empty-state", "style", "padding: 40px; text-align: center; color: #999;", 4, "ngIf"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "empty-state", 2, "padding", "40px", "text-align", "center", "color", "#999"], ["nz-icon", "", "nzType", "info-circle", 2, "font-size", "24px"]], template: function DashboardComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      const _r1 = \u0275\u0275getCurrentView();
-      \u0275\u0275elementStart(0, "div", 11)(1, "nz-page-header", 12);
-      \u0275\u0275pipe(2, "translate");
-      \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 13)(5, "div", 14)(6, "span", 15);
-      \u0275\u0275text(7);
-      \u0275\u0275pipe(8, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(9, "nz-select", 16);
-      \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener($event) {
-        \u0275\u0275restoreView(_r1);
-        \u0275\u0275twoWayBindingSet(ctx.refreshInterval, $event) || (ctx.refreshInterval = $event);
-        return \u0275\u0275resetView($event);
-      });
-      \u0275\u0275listener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener() {
-        return ctx.onRefreshIntervalChange();
-      });
-      \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 17);
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(11, "button", 18);
-      \u0275\u0275listener("click", function DashboardComponent_Template_button_click_11_listener() {
-        return ctx.refresh();
-      });
-      \u0275\u0275element(12, "i", 19);
-      \u0275\u0275text(13);
-      \u0275\u0275pipe(14, "translate");
-      \u0275\u0275elementEnd()()()();
-      \u0275\u0275elementStart(15, "div", 20)(16, "div", 21)(17, "nz-card", 22);
-      \u0275\u0275element(18, "nz-statistic", 23);
-      \u0275\u0275pipe(19, "translate");
-      \u0275\u0275template(20, DashboardComponent_ng_template_20_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(22, "div", 21)(23, "nz-card", 22);
-      \u0275\u0275element(24, "nz-statistic", 24);
-      \u0275\u0275pipe(25, "translate");
-      \u0275\u0275template(26, DashboardComponent_ng_template_26_Template, 1, 0, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(28, "div", 21)(29, "nz-card", 22);
-      \u0275\u0275element(30, "nz-statistic", 24);
-      \u0275\u0275pipe(31, "translate");
-      \u0275\u0275template(32, DashboardComponent_ng_template_32_Template, 1, 0, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd()();
-      \u0275\u0275elementStart(34, "div", 21)(35, "nz-card", 22);
-      \u0275\u0275element(36, "nz-statistic", 23);
-      \u0275\u0275pipe(37, "translate");
-      \u0275\u0275template(38, DashboardComponent_ng_template_38_Template, 1, 0, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(40, "div", 25)(41, "nz-radio-group", 26);
-      \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_radio_group_ngModelChange_41_listener($event) {
-        \u0275\u0275restoreView(_r1);
-        \u0275\u0275twoWayBindingSet(ctx.activeTab, $event) || (ctx.activeTab = $event);
-        return \u0275\u0275resetView($event);
-      });
-      \u0275\u0275elementStart(42, "label", 27);
-      \u0275\u0275element(43, "i", 28);
-      \u0275\u0275text(44);
-      \u0275\u0275pipe(45, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(46, "label", 29);
-      \u0275\u0275element(47, "i", 30);
-      \u0275\u0275text(48);
-      \u0275\u0275pipe(49, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(50, "label", 31);
-      \u0275\u0275element(51, "i", 32);
-      \u0275\u0275text(52);
-      \u0275\u0275pipe(53, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(54, "label", 33);
-      \u0275\u0275element(55, "i", 34);
-      \u0275\u0275text(56);
-      \u0275\u0275pipe(57, "translate");
-      \u0275\u0275elementEnd();
-      \u0275\u0275elementStart(58, "label", 35);
-      \u0275\u0275element(59, "i", 36);
-      \u0275\u0275text(60);
-      \u0275\u0275pipe(61, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementContainerStart(62, 37);
-      \u0275\u0275template(63, DashboardComponent_div_63_Template, 36, 37, "div", 38)(64, DashboardComponent_div_64_Template, 51, 61, "div", 38)(65, DashboardComponent_div_65_Template, 33, 33, "div", 38)(66, DashboardComponent_div_66_Template, 22, 20, "div", 38)(67, DashboardComponent_div_67_Template, 2, 0, "div", 38);
-      \u0275\u0275elementContainerEnd();
-      \u0275\u0275elementEnd();
-    }
-    if (rf & 2) {
-      const prefixEnqueued_r23 = \u0275\u0275reference(21);
-      const prefixProcessed_r24 = \u0275\u0275reference(27);
-      const prefixError_r25 = \u0275\u0275reference(33);
-      const prefixWorkers_r26 = \u0275\u0275reference(39);
-      \u0275\u0275advance();
-      \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 37, "CQRS Dashboard"));
-      \u0275\u0275advance(6);
-      \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(8, 39, "T\u1EF1 \u0111\u1ED9ng l\xE0m m\u1EDBi"), ":");
-      \u0275\u0275advance(2);
-      \u0275\u0275twoWayProperty("ngModel", ctx.refreshInterval);
-      \u0275\u0275advance();
-      \u0275\u0275property("ngForOf", ctx.refreshIntervals);
-      \u0275\u0275advance();
-      \u0275\u0275property("nzLoading", ctx.loading);
-      \u0275\u0275advance(2);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 41, "L\xE0m m\u1EDBi"), " ");
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzGutter", 16);
-      \u0275\u0275advance();
-      \u0275\u0275property("nzSpan", 6);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 43, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r23);
-      \u0275\u0275advance(4);
-      \u0275\u0275property("nzSpan", 6);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 45, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r24)("nzValueStyle", \u0275\u0275pureFunction0(61, _c04));
-      \u0275\u0275advance(4);
-      \u0275\u0275property("nzSpan", 6);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 47, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r25)("nzValueStyle", \u0275\u0275pureFunction0(62, _c1));
-      \u0275\u0275advance(4);
-      \u0275\u0275property("nzSpan", 6);
-      \u0275\u0275advance(2);
-      \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(37, 49, "Workers \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkers_r26);
-      \u0275\u0275advance(5);
-      \u0275\u0275twoWayProperty("ngModel", ctx.activeTab);
-      \u0275\u0275advance(3);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 51, "H\xE0ng \u0111\u1EE3i & Ch\u1EE7 \u0111\u1EC1"));
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 53, "Theo d\xF5i g\u1EA7n \u0111\xE2y"));
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 55, "Tr\u1EA1ng th\xE1i Workers"));
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 57, "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i"));
-      \u0275\u0275advance(4);
-      \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 59, "Ki\u1EC3m th\u1EED CQRS"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("ngSwitch", ctx.activeTab);
-      \u0275\u0275advance();
-      \u0275\u0275property("ngSwitchCase", "queues");
-      \u0275\u0275advance();
-      \u0275\u0275property("ngSwitchCase", "tracking");
-      \u0275\u0275advance();
-      \u0275\u0275property("ngSwitchCase", "workers");
-      \u0275\u0275advance();
-      \u0275\u0275property("ngSwitchCase", "activity");
-      \u0275\u0275advance();
-      \u0275\u0275property("ngSwitchCase", "test");
-    }
-  }, dependencies: [
-    CommonModule,
-    NgForOf,
-    NgIf,
-    NgSwitch,
-    NgSwitchCase,
-    NzPageHeaderModule,
-    NzPageHeaderComponent,
-    NzPageHeaderExtraDirective,
-    NzButtonModule,
-    NzButtonComponent,
-    NzTransitionPatchDirective,
-    NzWaveDirective,
-    NzCardModule,
-    NzCardComponent,
-    NzStatisticModule,
-    NzStatisticComponent,
-    NzTableModule,
-    NzTableComponent,
-    NzTableCellDirective,
-    NzThMeasureDirective,
-    NzTheadComponent,
-    NzTbodyComponent,
-    NzTrDirective,
-    NzCellFixedDirective,
-    NzTrExpandDirective,
-    NzTableFixedRowComponent,
-    NzTagModule,
-    NzTagComponent,
-    NzDividerModule,
-    NzGridModule,
-    NzColDirective,
-    NzRowDirective,
-    NzIconModule,
-    NzIconDirective,
-    NzListModule,
-    NzListComponent,
-    NzListItemComponent,
-    NzInputModule,
-    NzInputDirective,
-    NzInputGroupComponent,
-    NzInputGroupWhitSuffixOrPrefixDirective,
-    NzProgressModule,
-    NzModalModule,
-    NzSelectModule,
-    NzOptionComponent,
-    NzSelectComponent,
-    NzDatePickerModule,
-    NzDatePickerComponent,
-    NzTooltipModule,
-    NzTooltipDirective,
-    NzRadioModule,
-    NzRadioComponent,
-    NzRadioGroupComponent,
-    FormsModule,
-    DefaultValueAccessor,
-    NgControlStatus,
-    NgModel,
-    TranslateModule,
-    CqrsTestComponent,
-    DatePipe,
-    TranslatePipe
-  ], styles: ['\n.dashboard-container[_ngcontent-%COMP%] {\n  padding: 24px;\n}\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item[_ngcontent-%COMP%] {\n  font-size: 12px;\n}\n.handler-name[_ngcontent-%COMP%] {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name[_ngcontent-%COMP%] {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container[_ngcontent-%COMP%] {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text[_ngcontent-%COMP%] {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content[_ngcontent-%COMP%] {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%] {\n  background: #141414;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%] {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .id-text[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .id-text[_ngcontent-%COMP%] {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */'] });
 };
+_DashboardComponent.\u0275fac = function DashboardComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _DashboardComponent)();
+};
+_DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 68, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTable", ""], ["prefixSearch", ""], ["trackingTable", ""], ["historyItem", ""], ["workerTable", ""], ["errorItem", ""], ["activityTable", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "primary", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], ["nzSize", "middle", 3, "nzData", "nzLoading", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "80px", "nzLeft", "0px"], ["nzWidth", "200px", "nzLeft", "80px"], ["nzWidth", "100px"], ["nzWidth", "120px"], ["nzWidth", "200px"], ["nzWidth", "150px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [3, "nzColor"], ["nzLeft", "80px"], [1, "queue-name-cell"], [1, "queue-name"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], ["nzRight", "0px"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nz-button", "", "nzType", "primary", "nzGhost", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzType", "default", "nzSize", "small", 3, "click"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nz-button", "", "nzBlock", "", 3, "click"], [3, "nzPageIndexChange", "nzData", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzLoading", "nzScroll"], ["nzWidth", "200px", "nzLeft", "0px"], ["nzWidth", "180px"], ["nz-icon", "", "nzType", "search"], ["nz-tooltip", "", 1, "id-text", 3, "nzTooltipTitle"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [2, "display", "flex", "gap", "4px"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nzDanger", "", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], [3, "nzExpand"], [1, "json-viewer-container"], [1, "json-header"], ["nz-icon", "", "nzType", "copy"], [1, "json-content"], [2, "margin-top", "16px"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "nzData", "nzPageSize", "nzShowPagination", "nzScroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], ["nz-button", "", 3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], ["nzSize", "middle", 3, "nzData", "nzPageSize", "nzShowPagination"], ["class", "empty-state", "style", "padding: 40px; text-align: center; color: #999;", 4, "ngIf"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "empty-state", 2, "padding", "40px", "text-align", "center", "color", "#999"], ["nz-icon", "", "nzType", "info-circle", 2, "font-size", "24px"]], template: function DashboardComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 11)(1, "nz-page-header", 12);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 13)(5, "div", 14)(6, "span", 15);
+    \u0275\u0275text(7);
+    \u0275\u0275pipe(8, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(9, "nz-select", 16);
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.refreshInterval, $event) || (ctx.refreshInterval = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275listener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener() {
+      return ctx.onRefreshIntervalChange();
+    });
+    \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 17);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(11, "button", 18);
+    \u0275\u0275listener("click", function DashboardComponent_Template_button_click_11_listener() {
+      return ctx.refresh();
+    });
+    \u0275\u0275element(12, "i", 19);
+    \u0275\u0275text(13);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementStart(15, "div", 20)(16, "div", 21)(17, "nz-card", 22);
+    \u0275\u0275element(18, "nz-statistic", 23);
+    \u0275\u0275pipe(19, "translate");
+    \u0275\u0275template(20, DashboardComponent_ng_template_20_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(22, "div", 21)(23, "nz-card", 22);
+    \u0275\u0275element(24, "nz-statistic", 24);
+    \u0275\u0275pipe(25, "translate");
+    \u0275\u0275template(26, DashboardComponent_ng_template_26_Template, 1, 0, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(28, "div", 21)(29, "nz-card", 22);
+    \u0275\u0275element(30, "nz-statistic", 24);
+    \u0275\u0275pipe(31, "translate");
+    \u0275\u0275template(32, DashboardComponent_ng_template_32_Template, 1, 0, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(34, "div", 21)(35, "nz-card", 22);
+    \u0275\u0275element(36, "nz-statistic", 23);
+    \u0275\u0275pipe(37, "translate");
+    \u0275\u0275template(38, DashboardComponent_ng_template_38_Template, 1, 0, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(40, "div", 25)(41, "nz-radio-group", 26);
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_radio_group_ngModelChange_41_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.activeTab, $event) || (ctx.activeTab = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementStart(42, "label", 27);
+    \u0275\u0275element(43, "i", 28);
+    \u0275\u0275text(44);
+    \u0275\u0275pipe(45, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(46, "label", 29);
+    \u0275\u0275element(47, "i", 30);
+    \u0275\u0275text(48);
+    \u0275\u0275pipe(49, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(50, "label", 31);
+    \u0275\u0275element(51, "i", 32);
+    \u0275\u0275text(52);
+    \u0275\u0275pipe(53, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(54, "label", 33);
+    \u0275\u0275element(55, "i", 34);
+    \u0275\u0275text(56);
+    \u0275\u0275pipe(57, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(58, "label", 35);
+    \u0275\u0275element(59, "i", 36);
+    \u0275\u0275text(60);
+    \u0275\u0275pipe(61, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementContainerStart(62, 37);
+    \u0275\u0275template(63, DashboardComponent_div_63_Template, 36, 37, "div", 38)(64, DashboardComponent_div_64_Template, 51, 61, "div", 38)(65, DashboardComponent_div_65_Template, 33, 33, "div", 38)(66, DashboardComponent_div_66_Template, 22, 20, "div", 38)(67, DashboardComponent_div_67_Template, 2, 0, "div", 38);
+    \u0275\u0275elementContainerEnd();
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const prefixEnqueued_r23 = \u0275\u0275reference(21);
+    const prefixProcessed_r24 = \u0275\u0275reference(27);
+    const prefixError_r25 = \u0275\u0275reference(33);
+    const prefixWorkers_r26 = \u0275\u0275reference(39);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 37, "CQRS Dashboard"));
+    \u0275\u0275advance(6);
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(8, 39, "T\u1EF1 \u0111\u1ED9ng l\xE0m m\u1EDBi"), ":");
+    \u0275\u0275advance(2);
+    \u0275\u0275twoWayProperty("ngModel", ctx.refreshInterval);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx.refreshIntervals);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 41, "L\xE0m m\u1EDBi"), " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzGutter", 16);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 43, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r23);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 45, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r24)("nzValueStyle", \u0275\u0275pureFunction0(61, _c04));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 47, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r25)("nzValueStyle", \u0275\u0275pureFunction0(62, _c1));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(37, 49, "Workers \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkers_r26);
+    \u0275\u0275advance(5);
+    \u0275\u0275twoWayProperty("ngModel", ctx.activeTab);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 51, "H\xE0ng \u0111\u1EE3i & Ch\u1EE7 \u0111\u1EC1"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 53, "Theo d\xF5i g\u1EA7n \u0111\xE2y"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 55, "Tr\u1EA1ng th\xE1i Workers"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 57, "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 59, "Ki\u1EC3m th\u1EED CQRS"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngSwitch", ctx.activeTab);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngSwitchCase", "queues");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngSwitchCase", "tracking");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngSwitchCase", "workers");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngSwitchCase", "activity");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngSwitchCase", "test");
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  NgSwitch,
+  NgSwitchCase,
+  NzPageHeaderModule,
+  NzPageHeaderComponent,
+  NzPageHeaderExtraDirective,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzCardModule,
+  NzCardComponent,
+  NzStatisticModule,
+  NzStatisticComponent,
+  NzTableModule,
+  NzTableComponent,
+  NzTableCellDirective,
+  NzThMeasureDirective,
+  NzTheadComponent,
+  NzTbodyComponent,
+  NzTrDirective,
+  NzCellFixedDirective,
+  NzTrExpandDirective,
+  NzTableFixedRowComponent,
+  NzTagModule,
+  NzTagComponent,
+  NzDividerModule,
+  NzGridModule,
+  NzColDirective,
+  NzRowDirective,
+  NzIconModule,
+  NzIconDirective,
+  NzListModule,
+  NzListComponent,
+  NzListItemComponent,
+  NzInputModule,
+  NzInputDirective,
+  NzInputGroupComponent,
+  NzInputGroupWhitSuffixOrPrefixDirective,
+  NzProgressModule,
+  NzModalModule,
+  NzSelectModule,
+  NzOptionComponent,
+  NzSelectComponent,
+  NzDatePickerModule,
+  NzDatePickerComponent,
+  NzTooltipModule,
+  NzTooltipDirective,
+  NzRadioModule,
+  NzRadioComponent,
+  NzRadioGroupComponent,
+  FormsModule,
+  DefaultValueAccessor,
+  NgControlStatus,
+  NgModel,
+  TranslateModule,
+  CqrsTestComponent,
+  DatePipe,
+  TranslatePipe
+], styles: ['\n.dashboard-container[_ngcontent-%COMP%] {\n  padding: 24px;\n}\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item[_ngcontent-%COMP%] {\n  font-size: 12px;\n}\n.handler-name[_ngcontent-%COMP%] {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name[_ngcontent-%COMP%] {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container[_ngcontent-%COMP%] {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text[_ngcontent-%COMP%] {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content[_ngcontent-%COMP%] {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%] {\n  background: #141414;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%] {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .id-text[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .id-text[_ngcontent-%COMP%] {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */'] });
+var DashboardComponent = _DashboardComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(DashboardComponent, [{
     type: Component,
@@ -7882,17 +7989,34 @@ function NzStepComponent_ng_container_11_Template(rf, ctx) {
   }
 }
 var _c32 = ["*"];
-var NzStepComponent = class _NzStepComponent {
-  cdr = inject(ChangeDetectorRef);
-  destroyRef = inject(DestroyRef);
-  processDotTemplate;
-  itemContainer;
-  nzTitle;
-  nzSubtitle;
-  nzDescription;
-  nzDisabled = false;
-  nzPercentage = null;
-  nzSize = "default";
+var _NzStepComponent = class _NzStepComponent {
+  constructor() {
+    __publicField(this, "cdr", inject(ChangeDetectorRef));
+    __publicField(this, "destroyRef", inject(DestroyRef));
+    __publicField(this, "processDotTemplate");
+    __publicField(this, "itemContainer");
+    __publicField(this, "nzTitle");
+    __publicField(this, "nzSubtitle");
+    __publicField(this, "nzDescription");
+    __publicField(this, "nzDisabled", false);
+    __publicField(this, "nzPercentage", null);
+    __publicField(this, "nzSize", "default");
+    __publicField(this, "isCustomStatus", false);
+    __publicField(this, "_status", "wait");
+    __publicField(this, "oldAPIIcon", true);
+    __publicField(this, "_icon");
+    __publicField(this, "customProcessTemplate");
+    // Set by parent.
+    __publicField(this, "direction", "horizontal");
+    __publicField(this, "index", 0);
+    __publicField(this, "last", false);
+    __publicField(this, "outStatus", "process");
+    __publicField(this, "showProcessDot", false);
+    __publicField(this, "clickable", false);
+    __publicField(this, "clickOutsideAngular$", new Subject());
+    __publicField(this, "nullProcessFormat", () => null);
+    __publicField(this, "_currentIndex", 0);
+  }
   get nzStatus() {
     return this._status;
   }
@@ -7900,8 +8024,6 @@ var NzStepComponent = class _NzStepComponent {
     this._status = status;
     this.isCustomStatus = true;
   }
-  isCustomStatus = false;
-  _status = "wait";
   get nzIcon() {
     return this._icon;
   }
@@ -7911,18 +8033,6 @@ var NzStepComponent = class _NzStepComponent {
     }
     this._icon = value;
   }
-  oldAPIIcon = true;
-  _icon;
-  customProcessTemplate;
-  // Set by parent.
-  direction = "horizontal";
-  index = 0;
-  last = false;
-  outStatus = "process";
-  showProcessDot = false;
-  clickable = false;
-  clickOutsideAngular$ = new Subject();
-  nullProcessFormat = () => null;
   get showProgress() {
     return this.nzPercentage !== null && !this.nzIcon && this.nzStatus === "process" && this.nzPercentage >= 0 && this.nzPercentage <= 100;
   }
@@ -7935,7 +8045,6 @@ var NzStepComponent = class _NzStepComponent {
       this._status = current > this.index ? "finish" : current === this.index ? this.outStatus || "" : "wait";
     }
   }
-  _currentIndex = 0;
   ngOnInit() {
     fromEventOutsideAngular(this.itemContainer.nativeElement, "click").pipe(filter(() => this.clickable && this.currentIndex !== this.index && !this.nzDisabled), takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.clickOutsideAngular$.next(this.index);
@@ -7952,81 +8061,82 @@ var NzStepComponent = class _NzStepComponent {
   markForCheck() {
     this.cdr.markForCheck();
   }
-  static \u0275fac = function NzStepComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStepComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzStepComponent,
-    selectors: [["nz-step"]],
-    viewQuery: function NzStepComponent_Query(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275viewQuery(_c05, 5)(_c12, 7);
-      }
-      if (rf & 2) {
-        let _t;
-        \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.processDotTemplate = _t.first);
-        \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.itemContainer = _t.first);
-      }
-    },
-    hostAttrs: [1, "ant-steps-item"],
-    hostVars: 16,
-    hostBindings: function NzStepComponent_HostBindings(rf, ctx) {
-      if (rf & 2) {
-        \u0275\u0275classProp("ant-steps-item-wait", ctx.nzStatus === "wait")("ant-steps-item-process", ctx.nzStatus === "process")("ant-steps-item-finish", ctx.nzStatus === "finish")("ant-steps-item-error", ctx.nzStatus === "error")("ant-steps-item-active", ctx.currentIndex === ctx.index)("ant-steps-item-disabled", ctx.nzDisabled)("ant-steps-item-custom", !!ctx.nzIcon)("ant-steps-next-error", ctx.outStatus === "error" && ctx.currentIndex === ctx.index + 1);
-      }
-    },
-    inputs: {
-      nzTitle: "nzTitle",
-      nzSubtitle: "nzSubtitle",
-      nzDescription: "nzDescription",
-      nzDisabled: [2, "nzDisabled", "nzDisabled", booleanAttribute],
-      nzPercentage: "nzPercentage",
-      nzSize: "nzSize",
-      nzStatus: "nzStatus",
-      nzIcon: "nzIcon"
-    },
-    exportAs: ["nzStep"],
-    decls: 12,
-    vars: 8,
-    consts: [["itemContainer", ""], ["processDotTemplate", ""], [1, "ant-steps-item-container", 3, "tabindex"], [1, "ant-steps-item-tail"], [1, "ant-steps-item-icon"], [1, "ant-steps-icon"], [1, "ant-steps-item-content"], [1, "ant-steps-item-title"], [4, "nzStringTemplateOutlet"], [1, "ant-steps-item-subtitle"], [1, "ant-steps-item-description"], [1, "ant-steps-progress-icon"], ["nzType", "circle", 3, "nzPercent", "nzWidth", "nzFormat", "nzStrokeWidth"], ["nzType", "check"], ["nzType", "close"], [3, "nzType"], [3, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ant-steps-icon-dot"]],
-    template: function NzStepComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275elementStart(0, "div", 2, 0);
-        \u0275\u0275conditionalCreate(2, NzStepComponent_Conditional_2_Template, 1, 0, "div", 3);
-        \u0275\u0275elementStart(3, "div", 4);
-        \u0275\u0275conditionalCreate(4, NzStepComponent_Conditional_4_Template, 5, 5);
-        \u0275\u0275conditionalCreate(5, NzStepComponent_Conditional_5_Template, 4, 6, "span", 5);
-        \u0275\u0275elementEnd();
-        \u0275\u0275elementStart(6, "div", 6)(7, "div", 7);
-        \u0275\u0275template(8, NzStepComponent_ng_container_8_Template, 2, 1, "ng-container", 8);
-        \u0275\u0275conditionalCreate(9, NzStepComponent_Conditional_9_Template, 2, 1, "div", 9);
-        \u0275\u0275elementEnd();
-        \u0275\u0275elementStart(10, "div", 10);
-        \u0275\u0275template(11, NzStepComponent_ng_container_11_Template, 2, 1, "ng-container", 8);
-        \u0275\u0275elementEnd()()();
-      }
-      if (rf & 2) {
-        \u0275\u0275property("tabindex", ctx.clickable && !ctx.nzDisabled ? 0 : null);
-        \u0275\u0275attribute("role", ctx.clickable && !ctx.nzDisabled ? "button" : null);
-        \u0275\u0275advance(2);
-        \u0275\u0275conditional(!ctx.last ? 2 : -1);
-        \u0275\u0275advance(2);
-        \u0275\u0275conditional(!ctx.showProcessDot ? 4 : -1);
-        \u0275\u0275advance();
-        \u0275\u0275conditional(ctx.showProcessDot ? 5 : -1);
-        \u0275\u0275advance(3);
-        \u0275\u0275property("nzStringTemplateOutlet", ctx.nzTitle);
-        \u0275\u0275advance();
-        \u0275\u0275conditional(ctx.nzSubtitle ? 9 : -1);
-        \u0275\u0275advance(2);
-        \u0275\u0275property("nzStringTemplateOutlet", ctx.nzDescription);
-      }
-    },
-    dependencies: [NzProgressModule, NzProgressComponent, NzIconModule, NzIconDirective, NzOutletModule, NzStringTemplateOutletDirective, NgTemplateOutlet],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzStepComponent, "\u0275fac", function NzStepComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStepComponent)();
+});
+__publicField(_NzStepComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzStepComponent,
+  selectors: [["nz-step"]],
+  viewQuery: function NzStepComponent_Query(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275viewQuery(_c05, 5)(_c12, 7);
+    }
+    if (rf & 2) {
+      let _t;
+      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.processDotTemplate = _t.first);
+      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.itemContainer = _t.first);
+    }
+  },
+  hostAttrs: [1, "ant-steps-item"],
+  hostVars: 16,
+  hostBindings: function NzStepComponent_HostBindings(rf, ctx) {
+    if (rf & 2) {
+      \u0275\u0275classProp("ant-steps-item-wait", ctx.nzStatus === "wait")("ant-steps-item-process", ctx.nzStatus === "process")("ant-steps-item-finish", ctx.nzStatus === "finish")("ant-steps-item-error", ctx.nzStatus === "error")("ant-steps-item-active", ctx.currentIndex === ctx.index)("ant-steps-item-disabled", ctx.nzDisabled)("ant-steps-item-custom", !!ctx.nzIcon)("ant-steps-next-error", ctx.outStatus === "error" && ctx.currentIndex === ctx.index + 1);
+    }
+  },
+  inputs: {
+    nzTitle: "nzTitle",
+    nzSubtitle: "nzSubtitle",
+    nzDescription: "nzDescription",
+    nzDisabled: [2, "nzDisabled", "nzDisabled", booleanAttribute],
+    nzPercentage: "nzPercentage",
+    nzSize: "nzSize",
+    nzStatus: "nzStatus",
+    nzIcon: "nzIcon"
+  },
+  exportAs: ["nzStep"],
+  decls: 12,
+  vars: 8,
+  consts: [["itemContainer", ""], ["processDotTemplate", ""], [1, "ant-steps-item-container", 3, "tabindex"], [1, "ant-steps-item-tail"], [1, "ant-steps-item-icon"], [1, "ant-steps-icon"], [1, "ant-steps-item-content"], [1, "ant-steps-item-title"], [4, "nzStringTemplateOutlet"], [1, "ant-steps-item-subtitle"], [1, "ant-steps-item-description"], [1, "ant-steps-progress-icon"], ["nzType", "circle", 3, "nzPercent", "nzWidth", "nzFormat", "nzStrokeWidth"], ["nzType", "check"], ["nzType", "close"], [3, "nzType"], [3, "ngTemplateOutlet", "ngTemplateOutletContext"], [1, "ant-steps-icon-dot"]],
+  template: function NzStepComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275elementStart(0, "div", 2, 0);
+      \u0275\u0275conditionalCreate(2, NzStepComponent_Conditional_2_Template, 1, 0, "div", 3);
+      \u0275\u0275elementStart(3, "div", 4);
+      \u0275\u0275conditionalCreate(4, NzStepComponent_Conditional_4_Template, 5, 5);
+      \u0275\u0275conditionalCreate(5, NzStepComponent_Conditional_5_Template, 4, 6, "span", 5);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(6, "div", 6)(7, "div", 7);
+      \u0275\u0275template(8, NzStepComponent_ng_container_8_Template, 2, 1, "ng-container", 8);
+      \u0275\u0275conditionalCreate(9, NzStepComponent_Conditional_9_Template, 2, 1, "div", 9);
+      \u0275\u0275elementEnd();
+      \u0275\u0275elementStart(10, "div", 10);
+      \u0275\u0275template(11, NzStepComponent_ng_container_11_Template, 2, 1, "ng-container", 8);
+      \u0275\u0275elementEnd()()();
+    }
+    if (rf & 2) {
+      \u0275\u0275property("tabindex", ctx.clickable && !ctx.nzDisabled ? 0 : null);
+      \u0275\u0275attribute("role", ctx.clickable && !ctx.nzDisabled ? "button" : null);
+      \u0275\u0275advance(2);
+      \u0275\u0275conditional(!ctx.last ? 2 : -1);
+      \u0275\u0275advance(2);
+      \u0275\u0275conditional(!ctx.showProcessDot ? 4 : -1);
+      \u0275\u0275advance();
+      \u0275\u0275conditional(ctx.showProcessDot ? 5 : -1);
+      \u0275\u0275advance(3);
+      \u0275\u0275property("nzStringTemplateOutlet", ctx.nzTitle);
+      \u0275\u0275advance();
+      \u0275\u0275conditional(ctx.nzSubtitle ? 9 : -1);
+      \u0275\u0275advance(2);
+      \u0275\u0275property("nzStringTemplateOutlet", ctx.nzDescription);
+    }
+  },
+  dependencies: [NzProgressModule, NzProgressComponent, NzIconModule, NzIconDirective, NzOutletModule, NzStringTemplateOutletDirective, NgTemplateOutlet],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzStepComponent = _NzStepComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStepComponent, [{
     type: Component,
@@ -8163,20 +8273,27 @@ var NzStepComponent = class _NzStepComponent {
     }]
   });
 })();
-var NzStepsComponent = class _NzStepsComponent {
-  static ngAcceptInputType_nzProgressDot;
-  cdr = inject(ChangeDetectorRef);
-  ngZone = inject(NgZone);
-  directionality = inject(Directionality);
-  destroyRef = inject(DestroyRef);
-  steps;
-  nzCurrent = 0;
-  nzDirection = "horizontal";
-  nzLabelPlacement = "horizontal";
-  nzType = "default";
-  nzSize = "default";
-  nzStartIndex = 0;
-  nzStatus = "process";
+var _NzStepsComponent = class _NzStepsComponent {
+  constructor() {
+    __publicField(this, "cdr", inject(ChangeDetectorRef));
+    __publicField(this, "ngZone", inject(NgZone));
+    __publicField(this, "directionality", inject(Directionality));
+    __publicField(this, "destroyRef", inject(DestroyRef));
+    __publicField(this, "steps");
+    __publicField(this, "nzCurrent", 0);
+    __publicField(this, "nzDirection", "horizontal");
+    __publicField(this, "nzLabelPlacement", "horizontal");
+    __publicField(this, "nzType", "default");
+    __publicField(this, "nzSize", "default");
+    __publicField(this, "nzStartIndex", 0);
+    __publicField(this, "nzStatus", "process");
+    __publicField(this, "nzIndexChange", new EventEmitter());
+    __publicField(this, "indexChangeSubscription", Subscription.EMPTY);
+    __publicField(this, "showProcessDot", false);
+    __publicField(this, "showProgress", false);
+    __publicField(this, "customProcessDotTemplate");
+    __publicField(this, "dir", "ltr");
+  }
   set nzProgressDot(value) {
     if (value instanceof TemplateRef) {
       this.showProcessDot = true;
@@ -8186,12 +8303,6 @@ var NzStepsComponent = class _NzStepsComponent {
     }
     this.updateChildrenSteps();
   }
-  nzIndexChange = new EventEmitter();
-  indexChangeSubscription = Subscription.EMPTY;
-  showProcessDot = false;
-  showProgress = false;
-  customProcessDotTemplate;
-  dir = "ltr";
   ngOnChanges(changes) {
     const {
       nzStartIndex,
@@ -8205,7 +8316,8 @@ var NzStepsComponent = class _NzStepsComponent {
     }
   }
   ngOnInit() {
-    this.directionality.change?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
+    var _a;
+    (_a = this.directionality.change) == null ? void 0 : _a.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
       this.dir = direction;
       this.cdr.detectChanges();
     });
@@ -8252,56 +8364,58 @@ var NzStepsComponent = class _NzStepsComponent {
       });
     }
   }
-  static \u0275fac = function NzStepsComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStepsComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzStepsComponent,
-    selectors: [["nz-steps"]],
-    contentQueries: function NzStepsComponent_ContentQueries(rf, ctx, dirIndex) {
-      if (rf & 1) {
-        \u0275\u0275contentQuery(dirIndex, NzStepComponent, 4);
-      }
-      if (rf & 2) {
-        let _t;
-        \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.steps = _t);
-      }
-    },
-    hostAttrs: [1, "ant-steps"],
-    hostVars: 18,
-    hostBindings: function NzStepsComponent_HostBindings(rf, ctx) {
-      if (rf & 2) {
-        \u0275\u0275classProp("ant-steps-horizontal", ctx.nzDirection === "horizontal")("ant-steps-vertical", ctx.nzDirection === "vertical")("ant-steps-label-horizontal", ctx.nzDirection === "horizontal")("ant-steps-label-vertical", (ctx.showProcessDot || ctx.nzLabelPlacement === "vertical") && ctx.nzDirection === "horizontal")("ant-steps-dot", ctx.showProcessDot)("ant-steps-small", ctx.nzSize === "small")("ant-steps-navigation", ctx.nzType === "navigation")("ant-steps-rtl", ctx.dir === "rtl")("ant-steps-with-progress", ctx.showProgress);
-      }
-    },
-    inputs: {
-      nzCurrent: "nzCurrent",
-      nzDirection: "nzDirection",
-      nzLabelPlacement: "nzLabelPlacement",
-      nzType: "nzType",
-      nzSize: "nzSize",
-      nzStartIndex: "nzStartIndex",
-      nzStatus: "nzStatus",
-      nzProgressDot: "nzProgressDot"
-    },
-    outputs: {
-      nzIndexChange: "nzIndexChange"
-    },
-    exportAs: ["nzSteps"],
-    features: [\u0275\u0275NgOnChangesFeature],
-    ngContentSelectors: _c32,
-    decls: 1,
-    vars: 0,
-    template: function NzStepsComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275projectionDef();
-        \u0275\u0275projection(0);
-      }
-    },
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzStepsComponent, "ngAcceptInputType_nzProgressDot");
+__publicField(_NzStepsComponent, "\u0275fac", function NzStepsComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStepsComponent)();
+});
+__publicField(_NzStepsComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzStepsComponent,
+  selectors: [["nz-steps"]],
+  contentQueries: function NzStepsComponent_ContentQueries(rf, ctx, dirIndex) {
+    if (rf & 1) {
+      \u0275\u0275contentQuery(dirIndex, NzStepComponent, 4);
+    }
+    if (rf & 2) {
+      let _t;
+      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.steps = _t);
+    }
+  },
+  hostAttrs: [1, "ant-steps"],
+  hostVars: 18,
+  hostBindings: function NzStepsComponent_HostBindings(rf, ctx) {
+    if (rf & 2) {
+      \u0275\u0275classProp("ant-steps-horizontal", ctx.nzDirection === "horizontal")("ant-steps-vertical", ctx.nzDirection === "vertical")("ant-steps-label-horizontal", ctx.nzDirection === "horizontal")("ant-steps-label-vertical", (ctx.showProcessDot || ctx.nzLabelPlacement === "vertical") && ctx.nzDirection === "horizontal")("ant-steps-dot", ctx.showProcessDot)("ant-steps-small", ctx.nzSize === "small")("ant-steps-navigation", ctx.nzType === "navigation")("ant-steps-rtl", ctx.dir === "rtl")("ant-steps-with-progress", ctx.showProgress);
+    }
+  },
+  inputs: {
+    nzCurrent: "nzCurrent",
+    nzDirection: "nzDirection",
+    nzLabelPlacement: "nzLabelPlacement",
+    nzType: "nzType",
+    nzSize: "nzSize",
+    nzStartIndex: "nzStartIndex",
+    nzStatus: "nzStatus",
+    nzProgressDot: "nzProgressDot"
+  },
+  outputs: {
+    nzIndexChange: "nzIndexChange"
+  },
+  exportAs: ["nzSteps"],
+  features: [\u0275\u0275NgOnChangesFeature],
+  ngContentSelectors: _c32,
+  decls: 1,
+  vars: 0,
+  template: function NzStepsComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275projectionDef();
+      \u0275\u0275projection(0);
+    }
+  },
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzStepsComponent = _NzStepsComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStepsComponent, [{
     type: Component,
@@ -8358,19 +8472,20 @@ var NzStepsComponent = class _NzStepsComponent {
     }]
   });
 })();
-var NzStepsModule = class _NzStepsModule {
-  static \u0275fac = function NzStepsModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzStepsModule)();
-  };
-  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
-    type: _NzStepsModule,
-    imports: [NzStepsComponent, NzStepComponent],
-    exports: [NzStepsComponent, NzStepComponent]
-  });
-  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({
-    imports: [NzStepComponent]
-  });
+var _NzStepsModule = class _NzStepsModule {
 };
+__publicField(_NzStepsModule, "\u0275fac", function NzStepsModule_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzStepsModule)();
+});
+__publicField(_NzStepsModule, "\u0275mod", /* @__PURE__ */ \u0275\u0275defineNgModule({
+  type: _NzStepsModule,
+  imports: [NzStepsComponent, NzStepComponent],
+  exports: [NzStepsComponent, NzStepComponent]
+}));
+__publicField(_NzStepsModule, "\u0275inj", /* @__PURE__ */ \u0275\u0275defineInjector({
+  imports: [NzStepComponent]
+}));
+var NzStepsModule = _NzStepsModule;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzStepsModule, [{
     type: NgModule,
@@ -8535,19 +8650,22 @@ function NzTimelineComponent_ng_template_5_Template(rf, ctx) {
     \u0275\u0275conditional(ctx_r2.nzPending ? 0 : -1);
   }
 }
-var TimelineService = class _TimelineService {
-  check$ = new ReplaySubject(1);
+var _TimelineService = class _TimelineService {
+  constructor() {
+    __publicField(this, "check$", new ReplaySubject(1));
+  }
   markForCheck() {
     this.check$.next();
   }
-  static \u0275fac = function TimelineService_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _TimelineService)();
-  };
-  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({
-    token: _TimelineService,
-    factory: _TimelineService.\u0275fac
-  });
 };
+__publicField(_TimelineService, "\u0275fac", function TimelineService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TimelineService)();
+});
+__publicField(_TimelineService, "\u0275prov", /* @__PURE__ */ \u0275\u0275defineInjectable({
+  token: _TimelineService,
+  factory: _TimelineService.\u0275fac
+}));
+var TimelineService = _TimelineService;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TimelineService, [{
     type: Injectable
@@ -8557,17 +8675,19 @@ var TimelineTimeDefaultColors = ["red", "blue", "green", "grey", "gray"];
 function isDefaultColor(color) {
   return TimelineTimeDefaultColors.findIndex((i) => i === color) !== -1;
 }
-var NzTimelineItemComponent = class _NzTimelineItemComponent {
-  cdr = inject(ChangeDetectorRef);
-  timelineService = inject(TimelineService);
-  template;
-  nzPosition;
-  nzColor = "blue";
-  nzDot;
-  nzLabel;
-  isLast = false;
-  borderColor = null;
-  position;
+var _NzTimelineItemComponent = class _NzTimelineItemComponent {
+  constructor() {
+    __publicField(this, "cdr", inject(ChangeDetectorRef));
+    __publicField(this, "timelineService", inject(TimelineService));
+    __publicField(this, "template");
+    __publicField(this, "nzPosition");
+    __publicField(this, "nzColor", "blue");
+    __publicField(this, "nzDot");
+    __publicField(this, "nzLabel");
+    __publicField(this, "isLast", false);
+    __publicField(this, "borderColor", null);
+    __publicField(this, "position");
+  }
   ngOnChanges(changes) {
     this.timelineService.markForCheck();
     const {
@@ -8583,44 +8703,45 @@ var NzTimelineItemComponent = class _NzTimelineItemComponent {
   updateCustomColor() {
     this.borderColor = isDefaultColor(this.nzColor) ? null : this.nzColor;
   }
-  static \u0275fac = function NzTimelineItemComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzTimelineItemComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzTimelineItemComponent,
-    selectors: [["nz-timeline-item"], ["", "nz-timeline-item", ""]],
-    viewQuery: function NzTimelineItemComponent_Query(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275viewQuery(_c06, 5);
-      }
-      if (rf & 2) {
-        let _t;
-        \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.template = _t.first);
-      }
-    },
-    inputs: {
-      nzPosition: "nzPosition",
-      nzColor: "nzColor",
-      nzDot: "nzDot",
-      nzLabel: "nzLabel"
-    },
-    exportAs: ["nzTimelineItem"],
-    features: [\u0275\u0275NgOnChangesFeature],
-    ngContentSelectors: _c13,
-    decls: 2,
-    vars: 0,
-    consts: [["template", ""], [1, "ant-timeline-item"], [1, "ant-timeline-item-label"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"]],
-    template: function NzTimelineItemComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275projectionDef();
-        \u0275\u0275template(0, NzTimelineItemComponent_ng_template_0_Template, 7, 20, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-      }
-    },
-    dependencies: [NzOutletModule, NzStringTemplateOutletDirective],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzTimelineItemComponent, "\u0275fac", function NzTimelineItemComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzTimelineItemComponent)();
+});
+__publicField(_NzTimelineItemComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzTimelineItemComponent,
+  selectors: [["nz-timeline-item"], ["", "nz-timeline-item", ""]],
+  viewQuery: function NzTimelineItemComponent_Query(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275viewQuery(_c06, 5);
+    }
+    if (rf & 2) {
+      let _t;
+      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.template = _t.first);
+    }
+  },
+  inputs: {
+    nzPosition: "nzPosition",
+    nzColor: "nzColor",
+    nzDot: "nzDot",
+    nzLabel: "nzLabel"
+  },
+  exportAs: ["nzTimelineItem"],
+  features: [\u0275\u0275NgOnChangesFeature],
+  ngContentSelectors: _c13,
+  decls: 2,
+  vars: 0,
+  consts: [["template", ""], [1, "ant-timeline-item"], [1, "ant-timeline-item-label"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"]],
+  template: function NzTimelineItemComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275projectionDef();
+      \u0275\u0275template(0, NzTimelineItemComponent_ng_template_0_Template, 7, 20, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    }
+  },
+  dependencies: [NzOutletModule, NzStringTemplateOutletDirective],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzTimelineItemComponent = _NzTimelineItemComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzTimelineItemComponent, [{
     type: Component,
@@ -8683,20 +8804,22 @@ var NzTimelineItemComponent = class _NzTimelineItemComponent {
     }]
   });
 })();
-var NzTimelineComponent = class _NzTimelineComponent {
-  cdr = inject(ChangeDetectorRef);
-  timelineService = inject(TimelineService);
-  directionality = inject(Directionality);
-  destroyRef = inject(DestroyRef);
-  listOfItems;
-  nzMode = "left";
-  nzPending;
-  nzPendingDot;
-  nzReverse = false;
-  isPendingBoolean = false;
-  timelineItems = [];
-  dir = "ltr";
-  hasLabelItem = false;
+var _NzTimelineComponent = class _NzTimelineComponent {
+  constructor() {
+    __publicField(this, "cdr", inject(ChangeDetectorRef));
+    __publicField(this, "timelineService", inject(TimelineService));
+    __publicField(this, "directionality", inject(Directionality));
+    __publicField(this, "destroyRef", inject(DestroyRef));
+    __publicField(this, "listOfItems");
+    __publicField(this, "nzMode", "left");
+    __publicField(this, "nzPending");
+    __publicField(this, "nzPendingDot");
+    __publicField(this, "nzReverse", false);
+    __publicField(this, "isPendingBoolean", false);
+    __publicField(this, "timelineItems", []);
+    __publicField(this, "dir", "ltr");
+    __publicField(this, "hasLabelItem", false);
+  }
   ngOnChanges(changes) {
     const {
       nzMode,
@@ -8711,10 +8834,11 @@ var NzTimelineComponent = class _NzTimelineComponent {
     }
   }
   ngOnInit() {
+    var _a;
     this.timelineService.check$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.cdr.markForCheck();
     });
-    this.directionality.change?.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
+    (_a = this.directionality.change) == null ? void 0 : _a.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((direction) => {
       this.dir = direction;
       this.cdr.detectChanges();
     });
@@ -8746,59 +8870,60 @@ var NzTimelineComponent = class _NzTimelineComponent {
     }
     this.cdr.markForCheck();
   }
-  static \u0275fac = function NzTimelineComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzTimelineComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
-    type: _NzTimelineComponent,
-    selectors: [["nz-timeline"]],
-    contentQueries: function NzTimelineComponent_ContentQueries(rf, ctx, dirIndex) {
-      if (rf & 1) {
-        \u0275\u0275contentQuery(dirIndex, NzTimelineItemComponent, 4);
-      }
-      if (rf & 2) {
-        let _t;
-        \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.listOfItems = _t);
-      }
-    },
-    inputs: {
-      nzMode: "nzMode",
-      nzPending: "nzPending",
-      nzPendingDot: "nzPendingDot",
-      nzReverse: [2, "nzReverse", "nzReverse", booleanAttribute]
-    },
-    exportAs: ["nzTimeline"],
-    features: [\u0275\u0275ProvidersFeature([TimelineService]), \u0275\u0275NgOnChangesFeature],
-    ngContentSelectors: _c13,
-    decls: 8,
-    vars: 14,
-    consts: [["pendingTemplate", ""], [1, "ant-timeline"], [3, "ngTemplateOutlet"], [1, "ant-timeline-item", "ant-timeline-item-pending"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head", "ant-timeline-item-head-custom", "ant-timeline-item-head-blue"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"], ["nzType", "loading"]],
-    template: function NzTimelineComponent_Template(rf, ctx) {
-      if (rf & 1) {
-        \u0275\u0275projectionDef();
-        \u0275\u0275elementStart(0, "ul", 1);
-        \u0275\u0275conditionalCreate(1, NzTimelineComponent_Conditional_1_Template, 1, 1, "ng-container", 2);
-        \u0275\u0275repeaterCreate(2, NzTimelineComponent_For_3_Template, 1, 1, null, 2, \u0275\u0275repeaterTrackByIdentity);
-        \u0275\u0275conditionalCreate(4, NzTimelineComponent_Conditional_4_Template, 1, 1, "ng-container", 2);
-        \u0275\u0275elementEnd();
-        \u0275\u0275template(5, NzTimelineComponent_ng_template_5_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-        \u0275\u0275projection(7);
-      }
-      if (rf & 2) {
-        \u0275\u0275classProp("ant-timeline-label", ctx.hasLabelItem)("ant-timeline-right", !ctx.hasLabelItem && ctx.nzMode === "right")("ant-timeline-alternate", ctx.nzMode === "alternate" || ctx.nzMode === "custom")("ant-timeline-pending", !!ctx.nzPending)("ant-timeline-reverse", ctx.nzReverse)("ant-timeline-rtl", ctx.dir === "rtl");
-        \u0275\u0275advance();
-        \u0275\u0275conditional(ctx.nzReverse ? 1 : -1);
-        \u0275\u0275advance();
-        \u0275\u0275repeater(ctx.timelineItems);
-        \u0275\u0275advance(2);
-        \u0275\u0275conditional(!ctx.nzReverse ? 4 : -1);
-      }
-    },
-    dependencies: [NgTemplateOutlet, NzOutletModule, NzStringTemplateOutletDirective, NzIconModule, NzIconDirective],
-    encapsulation: 2,
-    changeDetection: 0
-  });
 };
+__publicField(_NzTimelineComponent, "\u0275fac", function NzTimelineComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzTimelineComponent)();
+});
+__publicField(_NzTimelineComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineComponent({
+  type: _NzTimelineComponent,
+  selectors: [["nz-timeline"]],
+  contentQueries: function NzTimelineComponent_ContentQueries(rf, ctx, dirIndex) {
+    if (rf & 1) {
+      \u0275\u0275contentQuery(dirIndex, NzTimelineItemComponent, 4);
+    }
+    if (rf & 2) {
+      let _t;
+      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.listOfItems = _t);
+    }
+  },
+  inputs: {
+    nzMode: "nzMode",
+    nzPending: "nzPending",
+    nzPendingDot: "nzPendingDot",
+    nzReverse: [2, "nzReverse", "nzReverse", booleanAttribute]
+  },
+  exportAs: ["nzTimeline"],
+  features: [\u0275\u0275ProvidersFeature([TimelineService]), \u0275\u0275NgOnChangesFeature],
+  ngContentSelectors: _c13,
+  decls: 8,
+  vars: 14,
+  consts: [["pendingTemplate", ""], [1, "ant-timeline"], [3, "ngTemplateOutlet"], [1, "ant-timeline-item", "ant-timeline-item-pending"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head", "ant-timeline-item-head-custom", "ant-timeline-item-head-blue"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"], ["nzType", "loading"]],
+  template: function NzTimelineComponent_Template(rf, ctx) {
+    if (rf & 1) {
+      \u0275\u0275projectionDef();
+      \u0275\u0275elementStart(0, "ul", 1);
+      \u0275\u0275conditionalCreate(1, NzTimelineComponent_Conditional_1_Template, 1, 1, "ng-container", 2);
+      \u0275\u0275repeaterCreate(2, NzTimelineComponent_For_3_Template, 1, 1, null, 2, \u0275\u0275repeaterTrackByIdentity);
+      \u0275\u0275conditionalCreate(4, NzTimelineComponent_Conditional_4_Template, 1, 1, "ng-container", 2);
+      \u0275\u0275elementEnd();
+      \u0275\u0275template(5, NzTimelineComponent_ng_template_5_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+      \u0275\u0275projection(7);
+    }
+    if (rf & 2) {
+      \u0275\u0275classProp("ant-timeline-label", ctx.hasLabelItem)("ant-timeline-right", !ctx.hasLabelItem && ctx.nzMode === "right")("ant-timeline-alternate", ctx.nzMode === "alternate" || ctx.nzMode === "custom")("ant-timeline-pending", !!ctx.nzPending)("ant-timeline-reverse", ctx.nzReverse)("ant-timeline-rtl", ctx.dir === "rtl");
+      \u0275\u0275advance();
+      \u0275\u0275conditional(ctx.nzReverse ? 1 : -1);
+      \u0275\u0275advance();
+      \u0275\u0275repeater(ctx.timelineItems);
+      \u0275\u0275advance(2);
+      \u0275\u0275conditional(!ctx.nzReverse ? 4 : -1);
+    }
+  },
+  dependencies: [NgTemplateOutlet, NzOutletModule, NzStringTemplateOutletDirective, NzIconModule, NzIconDirective],
+  encapsulation: 2,
+  changeDetection: 0
+}));
+var NzTimelineComponent = _NzTimelineComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzTimelineComponent, [{
     type: Component,
@@ -8890,19 +9015,20 @@ function getInferredTimelineItemPosition(index, mode) {
     return mode === "alternate" && index % 2 === 0 ? "left" : "right";
   }
 }
-var NzTimelineModule = class _NzTimelineModule {
-  static \u0275fac = function NzTimelineModule_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _NzTimelineModule)();
-  };
-  static \u0275mod = /* @__PURE__ */ \u0275\u0275defineNgModule({
-    type: _NzTimelineModule,
-    imports: [NzTimelineItemComponent, NzTimelineComponent],
-    exports: [NzTimelineItemComponent, NzTimelineComponent]
-  });
-  static \u0275inj = /* @__PURE__ */ \u0275\u0275defineInjector({
-    imports: [NzTimelineItemComponent, NzTimelineComponent]
-  });
+var _NzTimelineModule = class _NzTimelineModule {
 };
+__publicField(_NzTimelineModule, "\u0275fac", function NzTimelineModule_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NzTimelineModule)();
+});
+__publicField(_NzTimelineModule, "\u0275mod", /* @__PURE__ */ \u0275\u0275defineNgModule({
+  type: _NzTimelineModule,
+  imports: [NzTimelineItemComponent, NzTimelineComponent],
+  exports: [NzTimelineItemComponent, NzTimelineComponent]
+}));
+__publicField(_NzTimelineModule, "\u0275inj", /* @__PURE__ */ \u0275\u0275defineInjector({
+  imports: [NzTimelineItemComponent, NzTimelineComponent]
+}));
+var NzTimelineModule = _NzTimelineModule;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NzTimelineModule, [{
     type: NgModule,
@@ -9018,14 +9144,16 @@ function TracingComponent_nz_timeline_item_15_Template(rf, ctx) {
     \u0275\u0275textInterpolate(log_r4.details);
   }
 }
-var TracingComponent = class _TracingComponent {
-  route = inject(ActivatedRoute);
-  dashboardService = inject(DashboardService);
-  notification = inject(AppNotificationService);
-  translate = inject(TranslateService);
-  trackingId = "";
-  history = [];
-  loading = false;
+var _TracingComponent = class _TracingComponent {
+  constructor() {
+    this.route = inject(ActivatedRoute);
+    this.dashboardService = inject(DashboardService);
+    this.notification = inject(AppNotificationService);
+    this.translate = inject(TranslateService);
+    this.trackingId = "";
+    this.history = [];
+    this.loading = false;
+  }
   ngOnInit() {
     this.route.params.subscribe((params) => {
       this.trackingId = params["id"];
@@ -9071,76 +9199,77 @@ var TracingComponent = class _TracingComponent {
       return "database";
     return "info-circle";
   }
-  static \u0275fac = function TracingComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _TracingComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TracingComponent, selectors: [["app-tracing"]], decls: 16, vars: 18, consts: [[3, "nzBack", "nzTitle", "nzSubtitle"], ["nz-button", "", "nzType", "default", 3, "routerLink"], [1, "tracing-content", "animate-fade-in"], [1, "glass-card", 3, "nzTitle"], ["class", "flow-container", 4, "ngIf"], ["class", "no-data", 4, "ngIf"], [3, "nzText"], [1, "glass-card"], [3, "nzColor", 4, "ngFor", "ngForOf"], [1, "flow-container"], [4, "ngFor", "ngForOf"], [1, "flow-node"], [1, "node-icon"], ["nz-icon", "", 3, "nzType"], [1, "node-title"], [1, "node-details"], [1, "node-time"], [2, "font-size", "11px", "margin", "0", "line-height", "1.2"], [1, "node-badge"], ["nzMode", "checkable", 3, "nzColor"], ["class", "flow-arrow", 4, "ngIf"], [1, "flow-arrow"], [1, "arrow-line"], ["nz-icon", "", "nzType", "right", "nzTheme", "outline", 1, "arrow-head"], [1, "no-data"], ["nzNotFoundImage", "simple", 3, "nzNotFoundContent"], [3, "nzColor"]], template: function TracingComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275elementStart(0, "nz-page-header", 0);
-      \u0275\u0275pipe(1, "translate");
-      \u0275\u0275listener("nzBack", function TracingComponent_Template_nz_page_header_nzBack_0_listener() {
-        return true;
-      });
-      \u0275\u0275elementStart(2, "nz-page-header-extra")(3, "button", 1);
-      \u0275\u0275text(4);
-      \u0275\u0275pipe(5, "translate");
-      \u0275\u0275elementEnd()()();
-      \u0275\u0275elementStart(6, "div", 2)(7, "nz-card", 3);
-      \u0275\u0275pipe(8, "translate");
-      \u0275\u0275template(9, TracingComponent_div_9_Template, 2, 1, "div", 4)(10, TracingComponent_div_10_Template, 3, 3, "div", 5);
-      \u0275\u0275elementEnd();
-      \u0275\u0275element(11, "nz-divider", 6);
-      \u0275\u0275pipe(12, "translate");
-      \u0275\u0275elementStart(13, "nz-card", 7)(14, "nz-timeline");
-      \u0275\u0275template(15, TracingComponent_nz_timeline_item_15_Template, 10, 7, "nz-timeline-item", 8);
-      \u0275\u0275elementEnd()()();
-    }
-    if (rf & 2) {
-      \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(1, 9, "Theo d\xF5i lu\u1ED3ng tin nh\u1EAFn"))("nzSubtitle", ctx.trackingId);
-      \u0275\u0275advance(3);
-      \u0275\u0275property("routerLink", \u0275\u0275pureFunction0(17, _c07));
-      \u0275\u0275advance();
-      \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 11, "Quay l\u1EA1i Dashboard"));
-      \u0275\u0275advance(3);
-      \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(8, 13, "Lu\u1ED3ng \u0111\u1ED3 th\u1ECB tr\u1EF1c quan"));
-      \u0275\u0275advance(2);
-      \u0275\u0275property("ngIf", ctx.history.length > 0);
-      \u0275\u0275advance();
-      \u0275\u0275property("ngIf", ctx.history.length === 0);
-      \u0275\u0275advance();
-      \u0275\u0275property("nzText", \u0275\u0275pipeBind1(12, 15, "L\u1ECBch s\u1EED d\xF2ng th\u1EDDi gian s\u1EF1 ki\u1EC7n"));
-      \u0275\u0275advance(4);
-      \u0275\u0275property("ngForOf", ctx.history);
-    }
-  }, dependencies: [
-    CommonModule,
-    NgForOf,
-    NgIf,
-    RouterLink,
-    NzPageHeaderModule,
-    NzPageHeaderComponent,
-    NzPageHeaderExtraDirective,
-    NzStepsModule,
-    NzCardModule,
-    NzCardComponent,
-    NzDescriptionsModule,
-    NzTimelineModule,
-    NzTimelineItemComponent,
-    NzTimelineComponent,
-    NzTagModule,
-    NzTagComponent,
-    NzIconModule,
-    NzIconDirective,
-    NzDividerModule,
-    NzDividerComponent,
-    NzEmptyModule,
-    NzEmptyComponent,
-    TranslateModule,
-    UpperCasePipe,
-    DatePipe,
-    TranslatePipe
-  ], styles: ["\n.tracing-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.flow-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  padding: 40px 0;\n  overflow-x: auto;\n}\n.flow-node[_ngcontent-%COMP%] {\n  min-width: 180px;\n  max-width: 250px;\n  padding: 16px;\n  background: white;\n  border-radius: 8px;\n  border: 1px solid #e8e8e8;\n  position: relative;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  transition: all 0.3s ease;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n}\n.flow-node[_ngcontent-%COMP%]:hover {\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n  transform: translateY(-4px);\n}\n.flow-node.finish[_ngcontent-%COMP%] {\n  border-top: 4px solid #52c41a;\n}\n.flow-node.error[_ngcontent-%COMP%] {\n  border-top: 4px solid #f5222d;\n}\n.flow-node.process[_ngcontent-%COMP%] {\n  border-top: 4px solid #1890ff;\n}\n.flow-node.wait[_ngcontent-%COMP%] {\n  border-top: 4px solid #faad14;\n}\n.node-icon[_ngcontent-%COMP%] {\n  font-size: 24px;\n  margin-bottom: 8px;\n  color: #1890ff;\n}\n.flow-node.finish[_ngcontent-%COMP%]   .node-icon[_ngcontent-%COMP%] {\n  color: #52c41a;\n}\n.flow-node.error[_ngcontent-%COMP%]   .node-icon[_ngcontent-%COMP%] {\n  color: #f5222d;\n}\n.node-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  margin-bottom: 8px;\n  display: block;\n}\n.node-time[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-bottom: 4px;\n}\n.flow-arrow[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  margin: 0 12px;\n  flex: 1;\n  min-width: 60px;\n}\n.arrow-line[_ngcontent-%COMP%] {\n  height: 2px;\n  background: #d9d9d9;\n  flex: 1;\n}\n.arrow-head[_ngcontent-%COMP%] {\n  color: #d9d9d9;\n  margin-left: -4px;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #8c8c8c;\n}\n/*# sourceMappingURL=tracing.component.css.map */"] });
 };
+_TracingComponent.\u0275fac = function TracingComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TracingComponent)();
+};
+_TracingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TracingComponent, selectors: [["app-tracing"]], decls: 16, vars: 18, consts: [[3, "nzBack", "nzTitle", "nzSubtitle"], ["nz-button", "", "nzType", "default", 3, "routerLink"], [1, "tracing-content", "animate-fade-in"], [1, "glass-card", 3, "nzTitle"], ["class", "flow-container", 4, "ngIf"], ["class", "no-data", 4, "ngIf"], [3, "nzText"], [1, "glass-card"], [3, "nzColor", 4, "ngFor", "ngForOf"], [1, "flow-container"], [4, "ngFor", "ngForOf"], [1, "flow-node"], [1, "node-icon"], ["nz-icon", "", 3, "nzType"], [1, "node-title"], [1, "node-details"], [1, "node-time"], [2, "font-size", "11px", "margin", "0", "line-height", "1.2"], [1, "node-badge"], ["nzMode", "checkable", 3, "nzColor"], ["class", "flow-arrow", 4, "ngIf"], [1, "flow-arrow"], [1, "arrow-line"], ["nz-icon", "", "nzType", "right", "nzTheme", "outline", 1, "arrow-head"], [1, "no-data"], ["nzNotFoundImage", "simple", 3, "nzNotFoundContent"], [3, "nzColor"]], template: function TracingComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-page-header", 0);
+    \u0275\u0275pipe(1, "translate");
+    \u0275\u0275listener("nzBack", function TracingComponent_Template_nz_page_header_nzBack_0_listener() {
+      return true;
+    });
+    \u0275\u0275elementStart(2, "nz-page-header-extra")(3, "button", 1);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(6, "div", 2)(7, "nz-card", 3);
+    \u0275\u0275pipe(8, "translate");
+    \u0275\u0275template(9, TracingComponent_div_9_Template, 2, 1, "div", 4)(10, TracingComponent_div_10_Template, 3, 3, "div", 5);
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(11, "nz-divider", 6);
+    \u0275\u0275pipe(12, "translate");
+    \u0275\u0275elementStart(13, "nz-card", 7)(14, "nz-timeline");
+    \u0275\u0275template(15, TracingComponent_nz_timeline_item_15_Template, 10, 7, "nz-timeline-item", 8);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(1, 9, "Theo d\xF5i lu\u1ED3ng tin nh\u1EAFn"))("nzSubtitle", ctx.trackingId);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("routerLink", \u0275\u0275pureFunction0(17, _c07));
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 11, "Quay l\u1EA1i Dashboard"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(8, 13, "Lu\u1ED3ng \u0111\u1ED3 th\u1ECB tr\u1EF1c quan"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", ctx.history.length > 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx.history.length === 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzText", \u0275\u0275pipeBind1(12, 15, "L\u1ECBch s\u1EED d\xF2ng th\u1EDDi gian s\u1EF1 ki\u1EC7n"));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("ngForOf", ctx.history);
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  RouterLink,
+  NzPageHeaderModule,
+  NzPageHeaderComponent,
+  NzPageHeaderExtraDirective,
+  NzStepsModule,
+  NzCardModule,
+  NzCardComponent,
+  NzDescriptionsModule,
+  NzTimelineModule,
+  NzTimelineItemComponent,
+  NzTimelineComponent,
+  NzTagModule,
+  NzTagComponent,
+  NzIconModule,
+  NzIconDirective,
+  NzDividerModule,
+  NzDividerComponent,
+  NzEmptyModule,
+  NzEmptyComponent,
+  TranslateModule,
+  UpperCasePipe,
+  DatePipe,
+  TranslatePipe
+], styles: ["\n.tracing-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.flow-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  padding: 40px 0;\n  overflow-x: auto;\n}\n.flow-node[_ngcontent-%COMP%] {\n  min-width: 180px;\n  max-width: 250px;\n  padding: 16px;\n  background: white;\n  border-radius: 8px;\n  border: 1px solid #e8e8e8;\n  position: relative;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  transition: all 0.3s ease;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n}\n.flow-node[_ngcontent-%COMP%]:hover {\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n  transform: translateY(-4px);\n}\n.flow-node.finish[_ngcontent-%COMP%] {\n  border-top: 4px solid #52c41a;\n}\n.flow-node.error[_ngcontent-%COMP%] {\n  border-top: 4px solid #f5222d;\n}\n.flow-node.process[_ngcontent-%COMP%] {\n  border-top: 4px solid #1890ff;\n}\n.flow-node.wait[_ngcontent-%COMP%] {\n  border-top: 4px solid #faad14;\n}\n.node-icon[_ngcontent-%COMP%] {\n  font-size: 24px;\n  margin-bottom: 8px;\n  color: #1890ff;\n}\n.flow-node.finish[_ngcontent-%COMP%]   .node-icon[_ngcontent-%COMP%] {\n  color: #52c41a;\n}\n.flow-node.error[_ngcontent-%COMP%]   .node-icon[_ngcontent-%COMP%] {\n  color: #f5222d;\n}\n.node-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  margin-bottom: 8px;\n  display: block;\n}\n.node-time[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-bottom: 4px;\n}\n.flow-arrow[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  margin: 0 12px;\n  flex: 1;\n  min-width: 60px;\n}\n.arrow-line[_ngcontent-%COMP%] {\n  height: 2px;\n  background: #d9d9d9;\n  flex: 1;\n}\n.arrow-head[_ngcontent-%COMP%] {\n  color: #d9d9d9;\n  margin-left: -4px;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #8c8c8c;\n}\n/*# sourceMappingURL=tracing.component.css.map */"] });
+var TracingComponent = _TracingComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TracingComponent, [{
     type: Component,
@@ -9250,22 +9379,22 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-OK5BOHM5.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-WT3XBM6N.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-K4N7INPC.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-SPHJBUCN.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-XVZKSZ27.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-YDFJKSQE.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-2H753QZN.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-IGAYAE3D.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -9276,36 +9405,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-SOZZN7U3.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-LVWMZ27C.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-R76MT3UV.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-DFZMGYI7.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-WMPWWB4J.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-2SJFWFMC.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-MP5MM5VH.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-Z6BU6TOM.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-2BAAYDW2.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-OSWJ472U.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-ECBCTJ74.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-N4VFCDDS.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -9313,7 +9442,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-ECMRDX2V.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-XMVZLSQJ.js").then((m) => m.FilesFolders)
       }
     ]
   },
@@ -9329,20 +9458,20 @@ var routes = [
 
 // node_modules/@angular/platform-browser/fesm2022/animations-async.mjs
 var ANIMATION_PREFIX = "@";
-var AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
-  doc;
-  delegate;
-  zone;
-  animationType;
-  moduleImpl;
-  _rendererFactoryPromise = null;
-  scheduler = null;
-  injector = inject(Injector);
-  loadingSchedulerFn = inject(\u0275ASYNC_ANIMATION_LOADING_SCHEDULER_FN, {
-    optional: true
-  });
-  _engine;
+var _AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
   constructor(doc, delegate, zone, animationType, moduleImpl) {
+    __publicField(this, "doc");
+    __publicField(this, "delegate");
+    __publicField(this, "zone");
+    __publicField(this, "animationType");
+    __publicField(this, "moduleImpl");
+    __publicField(this, "_rendererFactoryPromise", null);
+    __publicField(this, "scheduler", null);
+    __publicField(this, "injector", inject(Injector));
+    __publicField(this, "loadingSchedulerFn", inject(\u0275ASYNC_ANIMATION_LOADING_SCHEDULER_FN, {
+      optional: true
+    }));
+    __publicField(this, "_engine");
     this.doc = doc;
     this.delegate = delegate;
     this.zone = zone;
@@ -9350,10 +9479,14 @@ var AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
     this.moduleImpl = moduleImpl;
   }
   ngOnDestroy() {
-    this._engine?.flush();
+    var _a;
+    (_a = this._engine) == null ? void 0 : _a.flush();
   }
   loadImpl() {
-    const loadFn = () => this.moduleImpl ?? import("./chunk-57NLEBNT.js").then((m) => m);
+    const loadFn = () => {
+      var _a;
+      return (_a = this.moduleImpl) != null ? _a : import("./chunk-7KKD64HX.js").then((m) => m);
+    };
     let moduleImplPromise;
     if (this.loadingSchedulerFn) {
       moduleImplPromise = this.loadingSchedulerFn(loadFn);
@@ -9373,6 +9506,7 @@ var AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
     });
   }
   createRenderer(hostElement, rendererType) {
+    var _a, _b;
     const renderer = this.delegate.createRenderer(hostElement, rendererType);
     if (renderer.\u0275type === 0) {
       return renderer;
@@ -9381,42 +9515,48 @@ var AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
       renderer.throwOnSyntheticProps = false;
     }
     const dynamicRenderer = new DynamicDelegationRenderer(renderer);
-    if (rendererType?.data?.["animation"] && !this._rendererFactoryPromise) {
+    if (((_a = rendererType == null ? void 0 : rendererType.data) == null ? void 0 : _a["animation"]) && !this._rendererFactoryPromise) {
       this._rendererFactoryPromise = this.loadImpl();
     }
-    this._rendererFactoryPromise?.then((animationRendererFactory) => {
+    (_b = this._rendererFactoryPromise) == null ? void 0 : _b.then((animationRendererFactory) => {
+      var _a2, _b2;
       const animationRenderer = animationRendererFactory.createRenderer(hostElement, rendererType);
       dynamicRenderer.use(animationRenderer);
-      this.scheduler ??= this.injector.get(ChangeDetectionScheduler, null, {
+      (_a2 = this.scheduler) != null ? _a2 : this.scheduler = this.injector.get(ChangeDetectionScheduler, null, {
         optional: true
       });
-      this.scheduler?.notify(10);
+      (_b2 = this.scheduler) == null ? void 0 : _b2.notify(10);
     }).catch((e) => {
       dynamicRenderer.use(renderer);
     });
     return dynamicRenderer;
   }
   begin() {
-    this.delegate.begin?.();
+    var _a, _b;
+    (_b = (_a = this.delegate).begin) == null ? void 0 : _b.call(_a);
   }
   end() {
-    this.delegate.end?.();
+    var _a, _b;
+    (_b = (_a = this.delegate).end) == null ? void 0 : _b.call(_a);
   }
   whenRenderingDone() {
-    return this.delegate.whenRenderingDone?.() ?? Promise.resolve();
+    var _a, _b, _c;
+    return (_c = (_b = (_a = this.delegate).whenRenderingDone) == null ? void 0 : _b.call(_a)) != null ? _c : Promise.resolve();
   }
   componentReplaced(componentId) {
-    this._engine?.flush();
-    this.delegate.componentReplaced?.(componentId);
+    var _a, _b, _c;
+    (_a = this._engine) == null ? void 0 : _a.flush();
+    (_c = (_b = this.delegate).componentReplaced) == null ? void 0 : _c.call(_b, componentId);
   }
-  static \u0275fac = function AsyncAnimationRendererFactory_Factory(__ngFactoryType__) {
-    \u0275\u0275invalidFactory();
-  };
-  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({
-    token: _AsyncAnimationRendererFactory,
-    factory: _AsyncAnimationRendererFactory.\u0275fac
-  });
 };
+__publicField(_AsyncAnimationRendererFactory, "\u0275fac", function AsyncAnimationRendererFactory_Factory(__ngFactoryType__) {
+  \u0275\u0275invalidFactory();
+});
+__publicField(_AsyncAnimationRendererFactory, "\u0275prov", /* @__PURE__ */ \u0275\u0275defineInjectable({
+  token: _AsyncAnimationRendererFactory,
+  factory: _AsyncAnimationRendererFactory.\u0275fac
+}));
+var AsyncAnimationRendererFactory = _AsyncAnimationRendererFactory;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AsyncAnimationRendererFactory, [{
     type: Injectable
@@ -9433,10 +9573,10 @@ var AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
   }], null);
 })();
 var DynamicDelegationRenderer = class {
-  delegate;
-  replay = [];
-  \u0275type = 1;
   constructor(delegate) {
+    __publicField(this, "delegate");
+    __publicField(this, "replay", []);
+    __publicField(this, "\u0275type", 1);
     this.delegate = delegate;
   }
   use(impl) {
@@ -9551,10 +9691,10 @@ var en_default = ["en", [["a", "p"], ["AM", "PM"]], [["AM", "PM"]], [["S", "M", 
 
 // node_modules/@ngx-translate/http-loader/fesm2022/ngx-translate-http-loader.mjs
 var TRANSLATE_HTTP_LOADER_CONFIG = new InjectionToken("TRANSLATE_HTTP_LOADER_CONFIG");
-var TranslateHttpLoader = class _TranslateHttpLoader {
-  http;
-  config;
+var _TranslateHttpLoader = class _TranslateHttpLoader {
   constructor() {
+    __publicField(this, "http");
+    __publicField(this, "config");
     this.config = __spreadValues({
       prefix: "/assets/i18n/",
       suffix: ".json",
@@ -9570,21 +9710,23 @@ var TranslateHttpLoader = class _TranslateHttpLoader {
     const cacheBuster = this.config.enforceLoading ? `?enforceLoading=${Date.now()}` : "";
     return this.http.get(`${this.config.prefix}${lang}${this.config.suffix}${cacheBuster}`);
   }
-  static \u0275fac = function TranslateHttpLoader_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _TranslateHttpLoader)();
-  };
-  static \u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({
-    token: _TranslateHttpLoader,
-    factory: _TranslateHttpLoader.\u0275fac
-  });
 };
+__publicField(_TranslateHttpLoader, "\u0275fac", function TranslateHttpLoader_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TranslateHttpLoader)();
+});
+__publicField(_TranslateHttpLoader, "\u0275prov", /* @__PURE__ */ \u0275\u0275defineInjectable({
+  token: _TranslateHttpLoader,
+  factory: _TranslateHttpLoader.\u0275fac
+}));
+var TranslateHttpLoader = _TranslateHttpLoader;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TranslateHttpLoader, [{
     type: Injectable
   }], () => [], null);
 })();
 function provideTranslateHttpLoader(config = {}) {
-  const useBackend = config.useHttpBackend ?? false;
+  var _a;
+  const useBackend = (_a = config.useHttpBackend) != null ? _a : false;
   return [{
     provide: TRANSLATE_HTTP_LOADER_CONFIG,
     useValue: config
@@ -9634,35 +9776,35 @@ function AppComponent_ng_template_1_Template(rf, ctx) {
     \u0275\u0275property("innerHTML", (notification_r1 == null ? null : notification_r1.nzData == null ? null : notification_r1.nzData.content) || (notification_r1 == null ? null : notification_r1.options == null ? null : notification_r1.options.nzData == null ? null : notification_r1.options.nzData.content) || (notification_r1 == null ? null : notification_r1.content) || "Notification Content Error", \u0275\u0275sanitizeHtml);
   }
 }
-var AppComponent = class _AppComponent {
-  htmlNotificationTemplate;
-  templateService = inject(NotificationTemplateService);
-  translate = inject(TranslateService);
+var _AppComponent = class _AppComponent {
   constructor() {
+    this.templateService = inject(NotificationTemplateService);
+    this.translate = inject(TranslateService);
     const savedLang = localStorage.getItem("lang") || "vi";
     this.translate.use(savedLang);
   }
   ngAfterViewInit() {
     this.templateService.registerTemplate("html", this.htmlNotificationTemplate);
   }
-  static \u0275fac = function AppComponent_Factory(__ngFactoryType__) {
-    return new (__ngFactoryType__ || _AppComponent)();
-  };
-  static \u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], viewQuery: function AppComponent_Query(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275viewQuery(_c08, 5);
-    }
-    if (rf & 2) {
-      let _t;
-      \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.htmlNotificationTemplate = _t.first);
-    }
-  }, decls: 3, vars: 0, consts: [["htmlNotification", ""], [3, "innerHTML"]], template: function AppComponent_Template(rf, ctx) {
-    if (rf & 1) {
-      \u0275\u0275element(0, "router-outlet");
-      \u0275\u0275template(1, AppComponent_ng_template_1_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-    }
-  }, dependencies: [RouterOutlet, CommonModule], encapsulation: 2 });
 };
+_AppComponent.\u0275fac = function AppComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _AppComponent)();
+};
+_AppComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppComponent, selectors: [["app-root"]], viewQuery: function AppComponent_Query(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275viewQuery(_c08, 5);
+  }
+  if (rf & 2) {
+    let _t;
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.htmlNotificationTemplate = _t.first);
+  }
+}, decls: 3, vars: 0, consts: [["htmlNotification", ""], [3, "innerHTML"]], template: function AppComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "router-outlet");
+    \u0275\u0275template(1, AppComponent_ng_template_1_Template, 1, 1, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+  }
+}, dependencies: [RouterOutlet, CommonModule], encapsulation: 2 });
+var AppComponent = _AppComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppComponent, [{
     type: Component,

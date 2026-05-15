@@ -1,13 +1,24 @@
-<div class="login-page">
+<div class="login-container animate-fade-in">
   <div class="login-header">
-    <h2>{{ 'Đăng nhập' | translate }}</h2>
-    <p>{{ 'Nhập thông tin của bạn để truy cập hệ thống' | translate }}</p>
+    <div class="brand-logo">
+      <span nz-icon nzType="cluster" nzTheme="outline"></span>
+    </div>
+    <h2>{{ (ssoClientName ? 'Đăng nhập SSO' : 'Đăng nhập') | translate }}</h2>
+    <p>{{ (ssoClientName ? 'Bạn đang đăng nhập vào' : 'Nhập thông tin của bạn để truy cập hệ thống') | translate }}</p>
+    
+    <div *ngIf="ssoClientName" class="sso-badge glass-card">
+      <span class="client-name">{{ ssoClientName }}</span>
+      <div class="security-check">
+        <span nz-icon nzType="safety-certificate" nzTheme="fill"></span>
+        {{ 'Kết nối an toàn' | translate }}
+      </div>
+    </div>
   </div>
 
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập tên đăng nhập!' | translate">
-        <nz-input-group nzPrefixIcon="user">
+        <nz-input-group nzPrefixIcon="user" class="premium-input">
           <input type="text" nz-input formControlName="username" [placeholder]="'Tên đăng nhập' | translate" />
         </nz-input-group>
       </nz-form-control>
@@ -15,7 +26,7 @@
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập mật khẩu!' | translate">
-        <nz-input-group nzPrefixIcon="lock">
+        <nz-input-group nzPrefixIcon="lock" class="premium-input">
           <input type="password" nz-input formControlName="password" [placeholder]="'Mật khẩu' | translate" />
         </nz-input-group>
       </nz-form-control>
@@ -32,26 +43,27 @@
       </div>
     </div>
 
-    <button nz-button nzHtmlType="submit" class="login-form-button login-form-margin" [nzType]="'primary'" [nzLoading]="loading">
-      {{ 'Đăng nhập' | translate }}
+    <button nz-button nzHtmlType="submit" class="login-btn premium-button" [nzType]="'primary'" [nzLoading]="loading">
+      <span>{{ (ssoClientName ? 'Tiếp tục đăng nhập' : 'Đăng nhập') | translate }}</span>
+      <span nz-icon nzType="arrow-right"></span>
     </button>
     
-    <div class="register-link">
+    <div class="register-link" *ngIf="!ssoClientName">
       {{ 'Hoặc' | translate }} <a routerLink="/auth/signup">{{ 'Đăng ký ngay!' | translate }}</a>
     </div>
   </form>
 
-  <nz-divider [nzText]="('Hoặc đăng nhập với' | translate)"></nz-divider>
+  <nz-divider [nzText]="dividerText"></nz-divider>
+  <ng-template #dividerText>
+    <span class="divider-text">{{ 'Hoặc đăng nhập với' | translate }}</span>
+  </ng-template>
 
-  <div class="sso-buttons">
-    <button nz-button nzBlock type="button" (click)="loginWithGoogle()">
+  <div class="sso-social-buttons">
+    <button nz-button nzBlock type="button" class="social-btn google" (click)="loginWithGoogle()">
       <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
     </button>
-    <button nz-button nzBlock type="button" (click)="loginWithMS()">
+    <button nz-button nzBlock type="button" class="social-btn ms" (click)="loginWithMS()">
       <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
-    </button>
-    <button nz-button nzBlock type="button" (click)="loginWithFacebook()">
-      <span nz-icon nzType="facebook"></span> {{ 'Facebook' | translate }}
     </button>
   </div>
 </div>

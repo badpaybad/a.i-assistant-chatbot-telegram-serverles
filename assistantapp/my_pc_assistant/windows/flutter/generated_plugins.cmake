@@ -5,13 +5,15 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   cloud_firestore
   connectivity_plus
+  desktop_webview_window
   file_selector_windows
   firebase_core
-  flutter_blue_plus_winrt
   local_auth_windows
   objectbox_flutter_libs
   permission_handler_windows
   record_windows
+  url_launcher_windows
+  window_to_front
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST

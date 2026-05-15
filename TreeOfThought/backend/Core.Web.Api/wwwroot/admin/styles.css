@@ -5644,7 +5644,9 @@ textarea.ant-picker-input > input {
   height: calc(16px / 2);
   background: var(--antd-arrow-background-color);
   content: "";
+  -webkit-clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
   clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
+  -webkit-clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   inset-inline-start: 0;
 }
@@ -6658,7 +6660,10 @@ nz-descriptions {
 }
 .ant-drawer {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 1000;
   pointer-events: none;
 }
@@ -6667,7 +6672,10 @@ nz-descriptions {
 }
 .ant-drawer-mask {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   z-index: 1000;
   background: rgba(0, 0, 0, .45);
   pointer-events: auto;
@@ -7002,7 +7010,9 @@ nz-descriptions {
   height: calc(16px / 2);
   background: var(--antd-arrow-background-color);
   content: "";
+  -webkit-clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
   clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
+  -webkit-clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   inset-inline-start: 0;
 }
@@ -7381,7 +7391,10 @@ nz-descriptions {
 }
 .ant-dropdown {
   position: relative;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-dropdown:not(:has(.ant-dropdown-arrow)) {
   margin-block: calc(calc(16px / 2 + 4px) - 16px / 2);
@@ -14810,6 +14823,7 @@ textarea.ant-input-number {
   border-radius: 2px;
   outline: 0;
   transition: all .3s linear;
+  -webkit-appearance: textfield !important;
   appearance: textfield !important;
 }
 .ant-input-number-input::placeholder {
@@ -19143,7 +19157,9 @@ nz-pagination {
   height: calc(16px / 2);
   background: var(--antd-arrow-background-color);
   content: "";
+  -webkit-clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
   clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
+  -webkit-clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   inset-inline-start: 0;
 }
@@ -20002,10 +20018,14 @@ span.ant-radio + * {
 .ant-select-single.ant-select .ant-select-selector .ant-select-selection-search {
   position: absolute;
   width: 100%;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-select-single.ant-select .ant-select-selector .ant-select-selection-search-input {
   width: 100%;
+  -webkit-appearance: textfield;
   appearance: textfield;
 }
 .ant-select-single.ant-select .ant-select-selector .ant-select-selection-item,
@@ -20080,10 +20100,14 @@ span.ant-radio + * {
 .ant-select-single.ant-select-sm .ant-select-selector .ant-select-selection-search {
   position: absolute;
   width: 100%;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-select-single.ant-select-sm .ant-select-selector .ant-select-selection-search-input {
   width: 100%;
+  -webkit-appearance: textfield;
   appearance: textfield;
 }
 .ant-select-single.ant-select-sm .ant-select-selector .ant-select-selection-item,
@@ -20168,10 +20192,14 @@ span.ant-radio + * {
 .ant-select-single.ant-select-lg .ant-select-selector .ant-select-selection-search {
   position: absolute;
   width: 100%;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-select-single.ant-select-lg .ant-select-selector .ant-select-selection-search-input {
   width: 100%;
+  -webkit-appearance: textfield;
   appearance: textfield;
 }
 .ant-select-single.ant-select-lg .ant-select-selector .ant-select-selection-item,
@@ -20886,10 +20914,12 @@ span.ant-radio + * {
   background: 0 0;
   border: none;
   outline: 0;
+  -webkit-appearance: none;
   appearance: none;
 }
 .ant-select:not(.ant-select-customize-input) .ant-select-selector .ant-select-selection-search-input::-webkit-search-cancel-button {
   display: none;
+  -webkit-appearance: none;
   appearance: none;
 }
 .ant-select:not(.ant-select-disabled):hover .ant-select-selector {
@@ -22314,7 +22344,10 @@ nz-spin {
 .ant-splitter-mask {
   position: fixed;
   z-index: 1000;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-splitter-mask-horizontal {
   cursor: col-resize;
@@ -24897,7 +24930,10 @@ cdk-virtual-scroll-viewport.ant-table-body {
 .ant-tabs-switch-leave {
   position: absolute;
   transition: none;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-tabs-switch-leave-start {
   opacity: 1;
@@ -25516,7 +25552,9 @@ cdk-virtual-scroll-viewport.ant-table-body {
   height: calc(16px / 2);
   background: var(--antd-arrow-background-color);
   content: "";
+  -webkit-clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
   clip-path: polygon(1.65685425px 100%, 50% 1.65685425px, 14.34314575px 100%, 1.65685425px 100%);
+  -webkit-clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   clip-path: path("M 0 8 A 4 4 0 0 0 2.82842712474619 6.82842712474619 L 6.585786437626905 3.0710678118654755 A 2 2 0 0 1 9.414213562373096 3.0710678118654755 L 13.17157287525381 6.82842712474619 A 4 4 0 0 0 16 8 Z");
   inset-inline-start: 0;
 }
@@ -29068,7 +29106,10 @@ nz-space-item {
 }
 .ant-color-picker-gradient {
   position: absolute;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
 }
 .ant-color-picker-palette {
   position: relative;

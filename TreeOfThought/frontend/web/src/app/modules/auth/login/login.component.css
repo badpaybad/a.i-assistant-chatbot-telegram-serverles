@@ -1,37 +1,123 @@
+.login-container {
+  display: flex;
+  flex-direction: column;
+}
+
 .login-header {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+}
+
+.brand-logo {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
+  color: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 32px;
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);
 }
 
 .login-header h2 {
+  font-size: 24px;
+  font-weight: 700;
   margin-bottom: 8px;
-  font-weight: 600;
+  color: #262626;
 }
 
 .login-header p {
-  color: rgba(0, 0, 0, 0.45);
+  color: #8c8c8c;
+  margin-bottom: 0;
+}
+
+.sso-badge {
+  margin-top: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(24, 144, 255, 0.2);
+  background: rgba(24, 144, 255, 0.05);
+}
+
+.client-name {
+  font-weight: 600;
+  color: #1890ff;
+  font-size: 16px;
+}
+
+.security-check {
+  font-size: 12px;
+  color: #52c41a;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.premium-input ::ng-deep .ant-input-affix-wrapper {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1.5px solid #f0f0f0;
+  transition: all 0.3s;
+}
+
+.premium-input ::ng-deep .ant-input-affix-wrapper-focused {
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
 }
 
 .login-form-margin {
-  margin-bottom: 16px;
+  margin-bottom: 24px;
 }
 
-.login-form-forgot {
-  float: right;
-}
-
-.login-form-button {
+.login-btn {
   width: 100%;
+  height: 44px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
-.text-right {
-  text-align: right;
+.register-link {
+  text-align: center;
+  margin-top: 16px;
+  color: #8c8c8c;
 }
 
-.sso-buttons button {
-  margin-bottom: 12px;
+.divider-text {
+  color: #bfbfbf;
+  font-size: 12px;
+  font-weight: 400;
 }
 
-.sso-buttons button [nz-icon] {
-  margin-right: 8px;
+.sso-social-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
+
+.social-btn {
+  height: 40px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.social-btn:hover {
+  background: #fafafa;
+  border-color: #bfbfbf;
+}
+
+.social-btn.google [nz-icon] { color: #db4437; }
+.social-btn.ms [nz-icon] { color: #00a4ef; }
+

@@ -16,8 +16,8 @@ export class HttpClientService {
   private templateService = inject(NotificationTemplateService);
   private translate = inject(TranslateService);
 
-  // Default base URL - can be overridden by environment
-  private readonly API_BASE_URL = (window as any).env?.API_BASE_URL || 'http://localhost:5000';
+  // Default base URL - can be empty to use current origin
+  private readonly API_BASE_URL = (window as any).env?.API_BASE_URL || '';
 
   private getHeaders(data?: any): HttpHeaders {
     let headers = new HttpHeaders();

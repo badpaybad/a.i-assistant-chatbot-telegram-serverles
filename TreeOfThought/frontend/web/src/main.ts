@@ -18,4 +18,4 @@ window.fetch = function (input, init) {
 };
 
 bootstrapApplication(AppComponent, appConfig)
-  .catch((err) => console.error(err));
+  .catch((err: any) => console.error(err));

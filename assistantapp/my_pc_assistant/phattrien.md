@@ -33,6 +33,7 @@ Tuân thủ yêu cầu chia tách rõ ràng:
 - **NFC**: `nfc_manager`.
 - **Connectivity**: `connectivity_plus` (Wifi, 4G, 5G).
 - **HTTP Client**: `dio`.
+- **SSO Login**: `flutter_web_auth_2`.
 
 ## Lộ trình thực hiện (Tiếp theo)  
 
@@ -57,7 +58,7 @@ Tuân thủ yêu cầu chia tách rõ ràng:
 - Đã xây dựng `DatabaseService` để tương tác với Firestore và Realtime Database.
 
 ### Bước 10: Lưu trữ dữ liệu cục bộ & Media (Microphone, Camera) - [HOÀN THÀNH]
-- Tích hợp `shared_preferences` cho cấu hình người dùng (theme, cài đặt cá nhân).
+- Tích hợp `shared_preferences` cho cấu hình người dùng (theme, cài đặt cáyna).
 - Tích hợp `path_provider` để quản lý tệp tin, ảnh chụp và bộ nhớ tạm (cache).
 - Sử dụng `ObjectBox` làm Vector Database hỗ trợ lưu trữ embedding cho AI (Gemma4, FastText).
 - Đã bổ sung `MediaService` hỗ trợ ghi âm (Microphone) và chụp ảnh (Camera).
@@ -74,6 +75,13 @@ Tuân thủ yêu cầu chia tách rõ ràng:
 - Tích hợp `integration_test` để kiểm tra luồng UI chính.
 - Chạy test tự động trên emulator để đảm bảo tính ổn định.
 - Tự động chạy emulator và ứng dụng thông qua command line.
+
+### Bước 13: Tích hợp Đăng nhập SSO với authapp - [HOÀN THÀNH]
+- Đã bổ sung thư viện `flutter_web_auth_2` và `dio`.
+- Đã cấu hình URL SSO: `http://10.0.2.2:5000` cho Android Emulator và `localhost:5000` cho các môi trường khác.
+- Đã thêm nút "Sign in with SSO" vào `SignInPage`.
+- Đã xử lý callback trao đổi mã code lấy token và lấy thông tin user trong `AuthService`.
+- Đã cấu hình deep link scheme `my-pc-assistant` trong `AndroidManifest.xml` (Android) và `Info.plist` (iOS).
 
 --- 
 Lưu ý quan trọng:

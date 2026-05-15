@@ -6,6 +6,7 @@ import '../core/app_colors.dart';
 import '../core/app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
+import 'package:dio/dio.dart';
 import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
@@ -98,7 +99,7 @@ class _SignInPageState extends State<SignInPage> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(30),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
                 'Welcome Back',
@@ -130,7 +131,33 @@ class _SignInPageState extends State<SignInPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 20),
+              // IP Selection Dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
+                ),
+                child: Consumer<AuthService>(
+                  builder: (context, authService, child) => DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: authService.selectedIp,
+                      isExpanded: true,
+                      icon: const Icon(Icons.network_wifi),
+                      items: const [
+                        DropdownMenuItem(value: '192.168.4.248', child: Text('IP LAN (192.168.4.248)')),
+                        DropdownMenuItem(value: '10.0.2.2', child: Text('Emulator Host (10.0.2.2)')),
+                        DropdownMenuItem(value: '118.70.117.208', child: Text('Public Server (118.70.117.208)')),
+                      ],
+                      onChanged: (value) {
+                        if (value != null) authService.setBaseUrl(value);
+                      },
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
               CustomTextField(
                 hintText: 'Email or Username',
                 controller: _emailController,
@@ -140,6 +167,30 @@ class _SignInPageState extends State<SignInPage> {
                 hintText: 'Password',
                 isPassword: true,
                 controller: _passwordController,
+              ),
+              const SizedBox(height: 20),
+              Consumer<AuthService>(
+                builder: (context, auth, child) => CustomButton(
+                  text: 'Đăng nhập SSO (${auth.selectedIp})',
+                  color: Colors.blue.shade700,
+                  textColor: Colors.white,
+                  icon: Icons.vpn_key,
+                  onPressed: () async {
+                    final authService = context.read<AuthService>();
+                    final success = await authService.signInWithSso();
+                    if (success) {
+                      if (mounted) {
+                        Navigator.pushReplacementNamed(context, AppRoutes.home);
+                      }
+                    } else {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Đăng nhập SSO thất bại')),
+                        );
+                      }
+                    }
+                  },
+                ),
               ),
               const SizedBox(height: 10),
               Align(
@@ -152,9 +203,9 @@ class _SignInPageState extends State<SignInPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
               CustomButton(
-                text: 'Sign in',
+                text: 'Sign in với mật khẩu',
                 isLoading: _isLoading,
                 onPressed: _handleSignIn,
               ),
@@ -168,6 +219,59 @@ class _SignInPageState extends State<SignInPage> {
                         Icons.fingerprint,
                         size: 60,
                         color: Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    TextButton.icon(
+                      onPressed: () async {
+                        try {
+                          final authService = context.read<AuthService>();
+                          final targetIp = authService.selectedIp;
+                          final dio = Dio();
+                          final response = await dio.get('http://$targetIp:5000/.well-known/openid-configuration').timeout(const Duration(seconds: 5));
+                          if (context.mounted) {
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                title: Text('OIDC Config from $targetIp'),
+                                content: SingleChildScrollView(
+                                  child: Text(response.data.toString(), style: const TextStyle(fontSize: 12, fontFamily: 'monospace')),
+                                ),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Đóng'))
+                                ],
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          debugPrint('OIDC Check Error: $e');
+                          if (context.mounted) {
+                            final targetIp = context.read<AuthService>().selectedIp;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Lỗi kết nối $targetIp: ${e.toString().split('\n').first}'), 
+                                backgroundColor: Colors.red,
+                                duration: const Duration(seconds: 10),
+                                action: SnackBarAction(label: 'Chi tiết', textColor: Colors.white, onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Chi tiết lỗi'),
+                                      content: Text(e.toString()),
+                                      actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('OK'))],
+                                    ),
+                                  );
+                                }),
+                              ),
+                            );
+                          }
+                        }
+                      },
+                      icon: const Icon(Icons.network_check),
+                      label: Consumer<AuthService>(
+                        builder: (context, auth, child) => Text('Kiểm tra cấu hình OIDC (${auth.selectedIp})'),
                       ),
                     ),
                     const SizedBox(height: 20),

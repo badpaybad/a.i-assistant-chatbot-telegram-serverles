@@ -185,5 +185,10 @@
   "Lệnh / Sự kiện": "Command / Event",
   "Handler": "Handler",
   "Quản lý tài liệu": "Files & Folders",
-  "Khám phá tệp tin": "File Explorer"
+  "Khám phá tệp tin": "File Explorer",
+  "Đăng nhập SSO": "SSO Login",
+  "Bạn đang đăng nhập vào": "You are logging into",
+  "Kết nối an toàn": "Secure Connection",
+  "Tiếp tục đăng nhập": "Continue to Login",
+  "My PC Assistant App": "My PC Assistant App"
 }
