@@ -39,6 +39,15 @@ builder.Services.AddAuthentication(options =>
     options.GetClaimsFromUserInfoEndpoint = true;
     options.RequireHttpsMetadata = false; 
 
+    // Fix "Correlation failed" on HTTP
+    options.NonceCookie.SameSite = SameSiteMode.Lax;
+    options.CorrelationCookie.SameSite = SameSiteMode.Lax;
+    options.NonceCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.CorrelationCookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+
+    // Fix "RequireNonce is True" error (provider doesn't support nonce)
+    options.ProtocolValidator.RequireNonce = false;
+
     options.TokenValidationParameters = new TokenValidationParameters
     {
         NameClaimType = "preferred_username",
@@ -114,7 +123,7 @@ namespace WebTestOidc.Data
     public class AuditLog
     {
         public int Id { get; set; }
-        public string Message { get; set; }
+        public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
     }
 }

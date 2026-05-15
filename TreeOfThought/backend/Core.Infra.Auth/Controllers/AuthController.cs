@@ -41,6 +41,7 @@ public class AuthController : ControllerBase
             authorization_endpoint = $"{baseUrl}/api/auth/authorize",
             token_endpoint = $"{baseUrl}/api/auth/token",
             userinfo_endpoint = $"{baseUrl}/api/auth/me",
+            end_session_endpoint = $"{baseUrl}/api/auth/logout",
             response_types_supported = new[] { "code", "token", "id_token" },
             subject_types_supported = new[] { "public" },
             id_token_signing_alg_values_supported = new[] { "RS256" }
@@ -212,6 +213,21 @@ public class AuthController : ControllerBase
         Console.WriteLine($"[OIDC] Redirecting to: {finalRedirect}");
         
         return Redirect(finalRedirect);
+    }
+
+    [HttpGet("logout")]
+    public async Task<IActionResult> Logout([FromQuery(Name = "post_logout_redirect_uri")] string? postLogoutRedirectUri)
+    {
+        Console.WriteLine($"[OIDC] Logout request received. PostLogoutRedirectUri={postLogoutRedirectUri}");
+        await HttpContext.SignOutAsync(AuthConstants.SsoSessionScheme);
+        
+        if (!string.IsNullOrEmpty(postLogoutRedirectUri))
+        {
+            Console.WriteLine($"[OIDC] Redirecting back to: {postLogoutRedirectUri}");
+            return Redirect(postLogoutRedirectUri);
+        }
+
+        return Ok(new { message = "Logged out successfully" });
     }
 
     [HttpPost("token")]
