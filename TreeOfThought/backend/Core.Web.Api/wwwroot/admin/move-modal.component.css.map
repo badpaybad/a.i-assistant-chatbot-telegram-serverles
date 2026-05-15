@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;87e6537bee36c8327f113236ffa94bfb75bfed3af14d0574bc114aab1c02447a;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/files-folders/components/move-modal/move-modal.component.ts"],
+  "sourcesContent": ["\n      .move-modal-container {\n        padding: 10px;\n      }\n      .tree-wrapper {\n        max-height: 400px;\n        overflow-y: auto;\n        border: 1px solid #f0f0f0;\n        padding: 8px;\n        border-radius: 4px;\n        margin-bottom: 16px;\n      }\n      .modal-footer {\n        display: flex;\n        justify-content: flex-end;\n        gap: 8px;\n      }\n      .custom-node {\n        display: flex;\n        align-items: center;\n        gap: 8px;\n      }\n    "],
+  "mappings": ";AACM,CAAC;AACC,WAAS;AACX;AACA,CAAC;AACC,cAAY;AACZ,cAAY;AACZ,UAAQ,IAAI,MAAM;AAClB,WAAS;AACT,iBAAe;AACf,iBAAe;AACjB;AACA,CAAC;AACC,WAAS;AACT,mBAAiB;AACjB,OAAK;AACP;AACA,CAAC;AACC,WAAS;AACT,eAAa;AACb,OAAK;AACP;",
+  "names": []
+}

@@ -19,6 +19,9 @@
           "options": {
             "browser": "src/main.ts",
             "tsConfig": "tsconfig.app.json",
+            "loader": {
+              ".svg": "file"
+            },
             "assets": [
               {
                 "glob": "**/*",
@@ -59,6 +62,15 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
+              "sourceMap": true
+            },
+            "integrated": {
+              "outputPath": {
+                "base": "../../backend/Core.Web.Api/wwwroot/admin",
+                "browser": ""
+              },
+              "baseHref": "/admin/",
+              "optimization": false,
               "sourceMap": true
             }
           },

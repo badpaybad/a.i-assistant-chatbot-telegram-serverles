@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/layouts/auth-layout/auth-layout.component.css"],
+  "sourcesContent": [".auth-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background-image: url('https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png');\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n}\n\n.auth-content {\n  width: 100%;\n  max-width: 400px;\n  padding: 32px;\n  background: #fff;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);\n}\n"],
+  "mappings": ";AAAA,CAAC;AACC,WAAS;AACT,eAAa;AACb,mBAAiB;AACjB,cAAY;AACZ,cAAY;AACZ,oBAAkB;AAClB,qBAAmB;AACnB,uBAAqB,OAAO;AAC5B,mBAAiB;AACnB;AAEA,CAAC;AACC,SAAO;AACP,aAAW;AACX,WAAS;AACT,cAAY;AACZ,iBAAe;AACf,cAAY,EAAE,IAAI,IAAI,KAAK,CAAC,EAAE,CAAC,EAAE,CAAC,EAAE;AACtC;",
+  "names": []
+}

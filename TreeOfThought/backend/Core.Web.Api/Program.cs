@@ -86,6 +86,7 @@ var app = builder.Build();
 
 // --- 7. Configure Pipeline ---
 app.UseCors("AllowAll");
+app.UseStaticFiles();
 
 app.Use(async (context, next) =>
 {
@@ -105,6 +106,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapFallbackToFile("/admin/{*path:nonfile}", "admin/index.html");
 
 // --- 8. Initialize Infrastructure ---
 await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly(), typeof(FoldersController).Assembly });
