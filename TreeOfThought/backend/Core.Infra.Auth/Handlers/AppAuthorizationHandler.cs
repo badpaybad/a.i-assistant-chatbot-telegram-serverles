@@ -26,7 +26,8 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         _serviceProvider = serviceProvider;
     }
 
-    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, AppAuthorizationRequirement requirement)
+    protected override async Task HandleRequirementAsync(AuthorizationHandlerContext context, 
+    AppAuthorizationRequirement requirement)
     {
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext == null) return;
