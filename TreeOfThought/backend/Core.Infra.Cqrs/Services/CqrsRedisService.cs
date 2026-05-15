@@ -1,7 +1,7 @@
 using Core.Infra.Redis.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Core.Infra.CQRS.Services;
+namespace Core.Infra.Cqrs.Services;
 
 public class CqrsRedisService : RedisService
 {

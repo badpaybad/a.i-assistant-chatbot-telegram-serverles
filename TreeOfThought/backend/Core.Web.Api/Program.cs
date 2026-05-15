@@ -13,7 +13,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Reflection;
-using Core.Infra.CQRS.Extensions;
+using Core.Infra.Cqrs.Extensions;
 using Core.Infra.Oidc.Extensions;
 using Core.Web.Api.Services;
 using Core.Infra.FilesFolders.Extensions;

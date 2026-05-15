@@ -2,7 +2,7 @@ using Core.Infra.Base.Interfaces;
 using Core.Infra.Firebase.Services;
 using Microsoft.Extensions.Logging;
 
-namespace Core.Infra.CQRS.Handlers;
+namespace Core.Infra.Cqrs.Handlers;
 
 /// <summary>
 /// A generic handler that automatically publishes events implementing INotifyUiEvent to Firestore.

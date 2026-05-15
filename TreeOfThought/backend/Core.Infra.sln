@@ -9,7 +9,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Data", "Core.Inf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Redis", "Core.Infra.Redis\Core.Infra.Redis.csproj", "{3DCB6F7C-66CB-4266-B75D-367944583496}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.CQRS", "Core.Infra.CQRS\Core.Infra.CQRS.csproj", "{9A12E1E1-356E-4760-A18B-F9888D398D2C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Cqrs", "Core.Infra.Cqrs\Core.Infra.Cqrs.csproj", "{9A12E1E1-356E-4760-A18B-F9888D398D2C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Firebase", "Core.Infra.Firebase\Core.Infra.Firebase.csproj", "{F311AAA0-C945-4313-809A-2CE564E1A3DF}"
 EndProject

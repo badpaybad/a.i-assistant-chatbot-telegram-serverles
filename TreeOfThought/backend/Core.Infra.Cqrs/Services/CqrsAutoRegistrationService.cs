@@ -1,12 +1,12 @@
 using System.Reflection;
 using Core.Infra.Base.Interfaces;
-using Core.Infra.CQRS.Extensions;
-using Core.Infra.CQRS.Handlers;
+using Core.Infra.Cqrs.Extensions;
+using Core.Infra.Cqrs.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace Core.Infra.CQRS.Services;
+namespace Core.Infra.Cqrs.Services;
 
 public class CqrsAutoRegistrationService : IHostedService
 {

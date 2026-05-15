@@ -1,12 +1,12 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Constants;
-using Core.Infra.CQRS.Extensions;
+using Core.Infra.Cqrs.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 using System.Text.Json;
 
-namespace Core.Infra.CQRS.Dispatchers;
+namespace Core.Infra.Cqrs.Dispatchers;
 
 public class CqrsDispatcher : IDispatcher
 {

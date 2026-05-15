@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra.Base\Core.Infra.Base.csproj" />
-    <ProjectReference Include="..\Core.Infra.CQRS\Core.Infra.CQRS.csproj" />
+    <ProjectReference Include="..\Core.Infra.Cqrs\Core.Infra.Cqrs.csproj" />
     <ProjectReference Include="..\Core.Infra.Data\Core.Infra.Data.csproj" />
     <ProjectReference Include="..\Core.Infra.Firebase\Core.Infra.Firebase.csproj" />
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />

@@ -1,15 +1,15 @@
 using System.Reflection;
 using Core.Infra.Base.Interfaces;
-using Core.Infra.CQRS.Services;
-using Core.Infra.CQRS.Handlers;
+using Core.Infra.Cqrs.Services;
+using Core.Infra.Cqrs.Handlers;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Core.Infra.Redis.Services;
 using Core.Infra.Firebase.Services;
-using Core.Infra.CQRS.Dispatchers;
+using Core.Infra.Cqrs.Dispatchers;
 
-namespace Core.Infra.CQRS.Extensions;
+namespace Core.Infra.Cqrs.Extensions;
 
 public static class CqrsExtensions
 {

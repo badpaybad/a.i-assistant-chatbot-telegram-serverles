@@ -19,7 +19,6 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
-
     public static IMvcBuilder AddFilesFoldersControllers(this IMvcBuilder mvcBuilder)
     {
         return mvcBuilder.AddApplicationPart(typeof(FilesController).Assembly);

@@ -1,9 +1,9 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Models;
 using Core.Infra.Base.Utils;
-using Core.Infra.CQRS.Dispatchers;
-using Core.Infra.CQRS.Extensions;
-using Core.Infra.CQRS.Services;
+using Core.Infra.Cqrs.Dispatchers;
+using Core.Infra.Cqrs.Extensions;
+using Core.Infra.Cqrs.Services;
 using Core.Infra.Redis.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
