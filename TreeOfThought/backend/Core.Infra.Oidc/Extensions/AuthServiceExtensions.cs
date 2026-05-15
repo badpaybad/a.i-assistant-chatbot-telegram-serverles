@@ -11,7 +11,9 @@ using System.Security.Cryptography;
 using System.Linq;
 
 using Core.Infra.Oidc.Contexts;
-using Core.Infra.Oidc.Handlers;
+using Core.Infra.Auth.Handlers;
+using Core.Infra.Auth.Extensions;
+using Core.Infra.Session.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Services;
 using Core.Infra.Data.Contexts;
@@ -21,8 +23,16 @@ namespace Core.Infra.Oidc.Extensions;
 
 public static class AuthServiceExtensions
 {
-    public static IServiceCollection AddAppAuth(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>>? configurePolicyAdditional = null)
+    public static IMvcBuilder AddOidcControllers(this IMvcBuilder mvcBuilder)
     {
+        return mvcBuilder.AddApplicationPart(typeof(AuthServiceExtensions).Assembly);
+    }
+
+    public static IServiceCollection AddAppOidc(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>>? configurePolicyAdditional = null)
+    {
+        // 0. Include Authorization Infrastructure (which includes Session)
+        services.AddAppAuthorization(config);
+
         // --- CORS Configuration ---
         services.AddCors(options =>
         {
@@ -87,15 +97,9 @@ public static class AuthServiceExtensions
                 options.LoginPath = "/api/auth/authorize"; // Redirect to authorize if cookie missing
             });
 
-        // 3. Authorization (Dynamic Policy Provider & Custom Handler)
-        services.AddSingleton<IAuthorizationPolicyProvider, AppAuthorizationPolicyProvider>();
-        services.AddScoped<IAuthorizationHandler, AppAuthorizationHandler>();
+        // 3. Authorization (Additional Policies)
         services.AddAuthorization(options =>
         {
-            // // Thêm Policy "dunp" cho phép user "dunp" pass mọi thứ
-            // options.AddPolicy("dunp", policy => 
-            //     policy.RequireClaim("preferred_username", "dunp"));
-
             if (configurePolicyAdditional != null)
             {
                 foreach (var policy in configurePolicyAdditional)
@@ -109,14 +113,6 @@ public static class AuthServiceExtensions
         var pgConn = config["Auth:PostgreSql"]!;
         services.AddScoped<AuthDbContext>(sp => new AuthDbContext(pgConn, BaseDbContext.DbProviderType.PostgreSql));
         services.AddScoped<IAuthRepository, AuthRepository>();
-
-        // 5. Redis for Auth (Specific Service Inheritance)
-        var redisConn = config["Auth:Redis"]!;
-        services.AddSingleton<AuthRedisService>(sp =>
-            new AuthRedisService(redisConn, sp.GetRequiredService<ILogger<AuthRedisService>>()));
-
-        services.AddSingleton<Core.Infra.Base.Interfaces.ICacheService>(sp =>
-            sp.GetRequiredService<AuthRedisService>());
 
         services.AddScoped<AuthService>();
         services.AddScoped<ClaimScannerService>();

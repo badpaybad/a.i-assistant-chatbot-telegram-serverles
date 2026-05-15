@@ -1,4 +1,4 @@
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;

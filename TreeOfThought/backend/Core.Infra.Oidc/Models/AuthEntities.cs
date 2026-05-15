@@ -1,4 +1,5 @@
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Auth.Models;
 
 namespace Core.Infra.Oidc.Models;
 
@@ -62,16 +63,6 @@ public class UserClaim : IBaseTrackingEntity<Guid>
     public string? UpdatedBy { get; set; }
 }
 
-[Flags]
-public enum ResourceActions
-{
-    None = 0,
-    Read = 1,      // 1 << 0
-    Write = 2,     // 1 << 1
-    Delete = 4,    // 1 << 2
-    Share = 8,     // 1 << 3
-    FullControl = 15 // 1|2|4|8
-}
 
 public class AclEntry : IBaseTrackingEntity<Guid>
 {

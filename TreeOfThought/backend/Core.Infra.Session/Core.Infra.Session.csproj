@@ -11,22 +11,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.5.1" />
-    <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra.Base\Core.Infra.Base.csproj" />
-    <ProjectReference Include="..\Core.Infra.Data\Core.Infra.Data.csproj" />
-    <ProjectReference Include="..\Core.Infra.Firebase\Core.Infra.Firebase.csproj" />
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
-    <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
-    <ProjectReference Include="..\Core.Infra.Session\Core.Infra.Session.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.*" />
   </ItemGroup>
 
 </Project>

@@ -2,25 +2,26 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using System.Security.Claims;
-using Core.Infra.Oidc.Models;
-using Core.Infra.Oidc.Attributes;
-using Core.Infra.Oidc.Services;
+using Core.Infra.Session.Models;
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Auth.Models;
+using Core.Infra.Session.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Core.Infra.Oidc.Handlers;
+namespace Core.Infra.Auth.Handlers;
 
 public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequirement>
 {
-    private readonly AuthRedisService _cacheService;
+    private readonly IUserSessionService _sessionService;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly IServiceProvider _serviceProvider;
 
     public AppAuthorizationHandler(
-        AuthRedisService cacheService,
+        IUserSessionService sessionService,
         IHttpContextAccessor httpContextAccessor,
         IServiceProvider serviceProvider)
     {
-        _cacheService = cacheService;
+        _sessionService = sessionService;
         _httpContextAccessor = httpContextAccessor;
         _serviceProvider = serviceProvider;
     }
@@ -32,8 +33,6 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
 
         var user = context.User;
         var request = httpContext.Request;
-
-        // trình tựu ưu tiên check auth: role -> policy -> redis theo cách sinh jwt ở hàm GenerateJwtToken trong TreeOfThought/backend/Core.Infra.Oidc/Services/AuthService.cs
 
         // 1. Check if authenticated
         if (!user.Identity?.IsAuthenticated ?? true)
@@ -56,7 +55,6 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
             bool hasRequiredRole = allowedRoles.Any(role => user.IsInRole(role.Trim()));
             if (!hasRequiredRole)
             {
-                // User doesn't have the required role, no need to check Redis
                 return;
             }
         }
@@ -68,7 +66,6 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
             var result = await authService.AuthorizeAsync(user, requirement.BasePolicy);
             if (!result.Succeeded)
             {
-                // Base policy failed, no need to check Redis
                 return;
             }
         }
@@ -90,8 +87,7 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
             if (userRoles.Any() && !string.IsNullOrEmpty(userId))
             {
                 // Hybrid Mode: Roles detected, fetch granular claims from Redis
-                var cacheKey = $"claims:{userId}";
-                userClaims = await _cacheService.GetAsync<List<string>>(cacheKey) ?? new List<string>();
+                userClaims = await _sessionService.GetUserClaimsAsync(Guid.Parse(userId)) ?? new List<string>();
             }
             else
             {
@@ -129,9 +125,7 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
 
             if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(resourceId) && !string.IsNullOrEmpty(finalResourceType))
             {
-                // Key format: acl:{userId}:{resourceType}:{resourceId}
-                var cacheKey = $"acl:{userId}:{finalResourceType}:{resourceId}";
-                var userActionsMask = await _cacheService.GetAsync<int>(cacheKey);
+                var userActionsMask = await _sessionService.GetUserAclMaskAsync(Guid.Parse(userId), finalResourceType, resourceId);
 
                 if (userActionsMask > 0)
                 {

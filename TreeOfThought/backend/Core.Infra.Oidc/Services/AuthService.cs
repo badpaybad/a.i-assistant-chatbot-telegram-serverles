@@ -1,13 +1,9 @@
+using Core.Infra.Session.Interfaces;
+using Core.Infra.Session.Models;
 using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Repositories;
-using Core.Infra.Oidc.Extensions;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
 using Core.Infra.Firebase.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Core.Infra.Oidc.Services;
 
@@ -16,18 +12,25 @@ public class AuthService
     private readonly IConfiguration _config;
     private readonly IAuthRepository _userRepo;
     private readonly FirebaseService _firebaseService;
-    private readonly Core.Infra.Base.Interfaces.ICacheService _cacheService;
+    private readonly IUserSessionService _sessionService;
+    private readonly IJwtService _jwtService;
 
     private static bool _isBeClaimsSynced = false;
     private static bool _isFeClaimsSynced = false;
     private static readonly System.Threading.SemaphoreSlim _syncLock = new System.Threading.SemaphoreSlim(1, 1);
 
-    public AuthService(IConfiguration config, IAuthRepository userRepo, FirebaseService firebaseService, AuthRedisService cacheService)
+    public AuthService(
+        IConfiguration config, 
+        IAuthRepository userRepo, 
+        FirebaseService firebaseService, 
+        IUserSessionService sessionService,
+        IJwtService jwtService)
     {
         _config = config;
         _userRepo = userRepo;
         _firebaseService = firebaseService;
-        _cacheService = cacheService;
+        _sessionService = sessionService;
+        _jwtService = jwtService;
     }
 
     public async Task InitializeAsync()
@@ -43,59 +46,20 @@ public class AuthService
 
     public async Task<string> GenerateJwtToken(User user)
     {
-        var rsa = System.Security.Cryptography.RSA.Create();
-        var pem = _config.GetRsaPrivateKey();
-        rsa.ImportFromPem(pem);
-        var securityKey = new RsaSecurityKey(rsa) { KeyId = _config["Jwt:Kid"] ?? "tot-v1" };
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.RsaSha256);
+        var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.Name).ToList();
+        var claims = (await _userRepo.GetUserEffectiveClaimsAsync(user.Id)).Select(c => c.Name).ToList();
 
-        var claims = new List<Claim>
+        // 1. Sync session state to Redis (Hybrid strategy: roles in JWT, granular claims in Redis if too many)
+        if (claims.Count > 30)
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()), 
-            new Claim("preferred_username", user.Username),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Name, user.DisplayName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
-        };
-
-        // 1. Always add Roles to JWT using standard "role" claim
-        var roles = await _userRepo.GetUserRolesAsync(user.Id);
-        foreach (var role in roles)
-        {
-            claims.Add(new Claim(AuthConstants.RoleClaim, role.Name));
+            await _sessionService.SetUserClaimsAsync(user.Id, claims);
         }
 
-        // 2. Handle granular claims with Hybrid Strategy
-        var claimsList = await _userRepo.GetUserEffectiveClaimsAsync(user.Id);
-        
-        if (claimsList.Count > 30)
-        {
-            // Hybrid Mode: Granular claims moved to Redis
-            await SyncUserClaimsToRedisAsync(user.Id);
-        }
-        else
-        {
-            // Stateless Mode: Add granular claims to JWT
-            foreach (var p in claimsList)
-            {
-                claims.Add(new Claim(AuthConstants.PermissionClaim, p.Name));
-            }
-        }
-
-        // Always sync ACL to Redis because ACL checks always rely on Redis
+        // 2. Sync ACL to Redis
         await SyncUserAclToRedisAsync(user.Id);
 
-        var token = new JwtSecurityToken(
-            issuer: _config["Jwt:Issuer"],
-            audience: _config["Jwt:Audience"],
-            claims: claims,
-            notBefore: DateTime.UtcNow,
-            expires: DateTime.UtcNow.AddMinutes(double.Parse(_config["Jwt:ExpiryMinutes"] ?? "60")),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        // 3. Generate token
+        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims);
     }
 
 
@@ -302,9 +266,7 @@ public class AuthService
         var claims = await _userRepo.GetUserEffectiveClaimsAsync(userId);
         var claimNames = claims.Select(c => c.Name).ToList();
         
-        // Key format: claims:{userId}
-        var cacheKey = $"claims:{userId}";
-        await _cacheService.SetAsync(cacheKey, claimNames, TimeSpan.FromHours(24));
+        await _sessionService.SetUserClaimsAsync(userId, claimNames);
         
         Console.WriteLine($"[CLAIMS SYNC] User: {userId}, Synced {claimNames.Count} granular claims to Redis.");
     }
@@ -317,14 +279,14 @@ public class AuthService
         var groupedAcl = aclEntries
             .GroupBy(a => new { a.ResourceType, a.ResourceId })
             .Select(g => new { 
-                Key = $"acl:{userId}:{g.Key.ResourceType}:{g.Key.ResourceId}", 
+                g.Key.ResourceType, 
+                g.Key.ResourceId, 
                 Mask = g.Aggregate(0, (current, entry) => current | entry.PermissionMask)
             });
 
         foreach (var entry in groupedAcl)
         {
-            // Set ACL in Redis with 24h expiry
-            await _cacheService.SetAsync(entry.Key, entry.Mask, TimeSpan.FromHours(24));
+            await _sessionService.SetUserAclAsync(userId, entry.ResourceType, entry.ResourceId, entry.Mask);
         }
         
         Console.WriteLine($"[ACL SYNC] User: {userId}, Synced {groupedAcl.Count()} bitmasked resource keys to Redis.");
@@ -356,17 +318,13 @@ public class AuthService
             RedirectUri = redirectUri
         };
 
-        // Store code in Redis for 5 minutes
-        var cacheKey = $"auth_code:{code}";
-        await _cacheService.SetAsync(cacheKey, data, TimeSpan.FromMinutes(5));
-        
+        await _sessionService.SaveAuthCodeAsync(code, data);
         return code;
     }
 
     public async Task<User?> ExchangeCodeForTokenAsync(string code, string clientId)
     {
-        var cacheKey = $"auth_code:{code}";
-        var data = await _cacheService.GetAsync<AuthCodeData>(cacheKey);
+        var data = await _sessionService.GetAuthCodeAsync<AuthCodeData>(code);
 
         if (data == null || data.ClientId != clientId)
         {
@@ -374,7 +332,7 @@ public class AuthService
         }
 
         // Remove code after use (One-time use)
-        await _cacheService.RemoveAsync(cacheKey);
+        await _sessionService.RemoveAuthCodeAsync(code);
 
         return await _userRepo.GetUserByIdAsync(data.UserId);
     }

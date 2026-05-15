@@ -1,6 +1,6 @@
 using Core.Infra.Base.Interfaces;
-using Core.Infra.Oidc.Attributes;
-using Core.Infra.Oidc.Models;
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Session.Models;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;

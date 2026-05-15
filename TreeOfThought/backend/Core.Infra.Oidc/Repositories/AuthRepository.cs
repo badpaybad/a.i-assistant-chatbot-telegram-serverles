@@ -1,5 +1,6 @@
 using Core.Infra.Oidc.Contexts;
 using Core.Infra.Oidc.Models;
+using Core.Infra.Session.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;

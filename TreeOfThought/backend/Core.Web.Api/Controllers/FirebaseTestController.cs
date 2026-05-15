@@ -1,5 +1,5 @@
 using Core.Infra.Firebase.Services;
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Auth.Attributes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Core.Web.Api.Controllers;

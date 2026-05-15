@@ -14,6 +14,8 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Reflection;
 using Core.Infra.Cqrs.Extensions;
+using Core.Infra.Session.Extensions;
+using Core.Infra.Auth.Extensions;
 using Core.Infra.Oidc.Extensions;
 using Core.Web.Api.Services;
 using Core.Infra.FilesFolders.Extensions;
@@ -36,7 +38,7 @@ if (!string.IsNullOrEmpty(defaultRedisConn))
 }
 
 // --- 2. Authentication & Authorization (Encapsulated) ---
-builder.Services.AddAppAuth(config);
+builder.Services.AddAppOidc(config);
 
 // --- 3. Infra Services (CQRS & Base) ---
 builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly);
@@ -51,6 +53,7 @@ builder.Services.AddFilesFolders(config);
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
     .AddFilesFoldersControllers()
+    .AddOidcControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;

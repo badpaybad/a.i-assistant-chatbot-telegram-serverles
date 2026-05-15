@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
-using Core.Infra.Oidc.Models;
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Session.Models;
 
-namespace Core.Infra.Oidc.Models;
+namespace Core.Infra.Auth.Models;
 
 public class AppAuthorizationRequirement : IAuthorizationRequirement
 {

@@ -12,15 +12,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Core.Infra.Base\Core.Infra.Base.csproj" />
-    <ProjectReference Include="..\Core.Infra.Data\Core.Infra.Data.csproj" />
-    <ProjectReference Include="..\Core.Infra.Firebase\Core.Infra.Firebase.csproj" />
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
-    <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.*" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.*" />
+    <ProjectReference Include="..\Core.Infra.Session\Core.Infra.Session.csproj" />
   </ItemGroup>
 
 </Project>

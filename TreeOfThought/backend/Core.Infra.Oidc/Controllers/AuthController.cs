@@ -1,4 +1,7 @@
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Auth.Models;
+using Core.Infra.Session.Models;
+using Core.Infra.Session.Interfaces;
 using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -10,23 +13,23 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace Core.Web.Api.Controllers;
+namespace Core.Infra.Oidc.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
     private readonly AuthService _authService;
-    private readonly AuthRedisService _cacheService;
+    private readonly IUserSessionService _sessionService;
     private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
 
     public AuthController(
         AuthService authService,
-        AuthRedisService cacheService,
+        IUserSessionService sessionService,
         Microsoft.Extensions.Configuration.IConfiguration config)
     {
         _authService = authService;
-        _cacheService = cacheService;
+        _sessionService = sessionService;
         _config = config;
     }
 
@@ -80,8 +83,7 @@ public class AuthController : ControllerBase
         // 2. If none in JWT, check Redis (Hybrid Mode)
         if (!claims.Any())
         {
-            var cacheKey = $"claims:{userId}";
-            var cachedClaims = await _cacheService.GetAsync<List<string>>(cacheKey);
+            var cachedClaims = await _sessionService.GetUserClaimsAsync(userId);
             if (cachedClaims != null) claims = cachedClaims;
         }
 

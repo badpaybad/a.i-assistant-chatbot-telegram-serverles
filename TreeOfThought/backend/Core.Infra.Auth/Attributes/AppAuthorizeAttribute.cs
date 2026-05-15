@@ -3,12 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using System.Security.Claims;
 using System.Linq;
-using Core.Infra.Oidc.Models;
+using Core.Infra.Session.Models;
 
-namespace Core.Infra.Oidc.Attributes;
-
-public enum AuthMode { OR, AND }
-
+namespace Core.Infra.Auth.Attributes;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
 public class AppAuthorizeAttribute : AuthorizeAttribute
@@ -58,7 +55,6 @@ public class AppAuthorizeAttribute : AuthorizeAttribute
     private void UpdatePolicy(string claimsStr)
     {
         // Format: {PolicyPrefix}:Mode:Action:ResourceType:Roles:Policy:Claims
-        // Gán vào thuộc tính thực sự của lớp cha để Framework nhận diện
         base.Policy = $"{AuthConstants.PolicyPrefix}:{Mode}:{Action}:{(ResourceType ?? "null")}:{(Roles ?? "null")}:{(Policy ?? "null")}:{claimsStr}";
     }
 
@@ -73,7 +69,3 @@ public class AppAuthorizeAttribute : AuthorizeAttribute
         UpdatePolicy(claimsStr);
     }
 }
-
-
-
-

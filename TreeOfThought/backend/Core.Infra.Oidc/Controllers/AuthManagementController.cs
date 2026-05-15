@@ -1,4 +1,5 @@
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Session.Models;
 using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Firebase.Services;
@@ -6,7 +7,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace Core.Web.Api.Controllers;
+namespace Core.Infra.Oidc.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

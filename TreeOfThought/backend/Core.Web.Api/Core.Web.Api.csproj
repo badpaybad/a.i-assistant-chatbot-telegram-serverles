@@ -20,6 +20,7 @@
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
     <ProjectReference Include="..\Core.Infra.Oidc\Core.Infra.Oidc.csproj" />
     <ProjectReference Include="..\Core.Infra.FilesFolders\Core.Infra.FilesFolders.csproj" />
+    <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
   </ItemGroup>
 
 </Project>

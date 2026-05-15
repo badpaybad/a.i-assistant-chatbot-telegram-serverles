@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -26,6 +26,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Web.Api", "Core.Web.Api\Core.Web.Api.csproj", "{8E8A2320-2D79-44F9-9087-5A0ADE1E4C08}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.FilesFolders", "Core.Infra.FilesFolders\Core.Infra.FilesFolders.csproj", "{E82788BD-FBFC-4217-AED0-7B269BDA977B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Auth", "Core.Infra.Auth\Core.Infra.Auth.csproj", "{4059F4D9-08CE-490A-A633-9F50E4A24D94}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Session", "Core.Infra.Session\Core.Infra.Session.csproj", "{B1E31767-0477-43C6-BE82-116979CFC1FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -80,6 +84,14 @@ Global
 		{E82788BD-FBFC-4217-AED0-7B269BDA977B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E82788BD-FBFC-4217-AED0-7B269BDA977B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E82788BD-FBFC-4217-AED0-7B269BDA977B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4059F4D9-08CE-490A-A633-9F50E4A24D94}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4059F4D9-08CE-490A-A633-9F50E4A24D94}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4059F4D9-08CE-490A-A633-9F50E4A24D94}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4059F4D9-08CE-490A-A633-9F50E4A24D94}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1E31767-0477-43C6-BE82-116979CFC1FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1E31767-0477-43C6-BE82-116979CFC1FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1E31767-0477-43C6-BE82-116979CFC1FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1E31767-0477-43C6-BE82-116979CFC1FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FEE4CA80-4B95-4AE3-9EBE-76205BBF53B2} = {D223059C-1823-417D-A6E4-4A49DE3215C8}

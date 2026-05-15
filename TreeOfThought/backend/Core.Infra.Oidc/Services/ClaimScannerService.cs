@@ -1,7 +1,8 @@
 using System.Reflection;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using Core.Infra.Oidc.Attributes;
+using Core.Infra.Auth.Attributes;
+using Core.Infra.Auth.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Models;
 

@@ -77,9 +77,4 @@ public class TokenRequest
     public string? ClientSecret { get; set; }
 }
 
-public class AuthCodeData
-{
-    public Guid UserId { get; set; }
-    public string ClientId { get; set; } = "";
-    public string RedirectUri { get; set; } = "";
-}
+
