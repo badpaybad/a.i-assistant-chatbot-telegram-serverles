@@ -92,6 +92,7 @@ public class AuthController : ControllerBase
             name = user.DisplayName,
             email = user.Email,
             email_verified = user.IsEmailVerified,
+            picture = user.AvatarUrl,
             roles = roles,
             claims = claims,
             permissions = claims // Keep for backward compatibility if any

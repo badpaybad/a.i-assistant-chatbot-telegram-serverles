@@ -123,9 +123,22 @@
   align-items: center;
 }
 
+.user-text {
+  display: flex;
+  flex-direction: column;
+  margin-left: 12px;
+  line-height: 1.2;
+}
+
 .username {
-  margin-left: 8px;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.display-name {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
 }
 
 .inner-content {

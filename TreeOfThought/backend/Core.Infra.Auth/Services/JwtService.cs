@@ -26,7 +26,7 @@ public class JwtService : IJwtService
         authConfig = _config.GetSection("Auth");
     }
 
-    public async Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims)
+    public async Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims, string? avatarUrl = null)
     {
         var rsa = RSA.Create();
         var pem = GetRsaPrivateKey();
@@ -44,6 +44,11 @@ public class JwtService : IJwtService
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new Claim(AuthConstants.UserIdClaim, userId.ToString())
         };
+
+        if (!string.IsNullOrEmpty(avatarUrl))
+        {
+            jwtClaims.Add(new Claim("picture", avatarUrl));
+        }
 
         // 1. Add Roles
         foreach (var role in roles)

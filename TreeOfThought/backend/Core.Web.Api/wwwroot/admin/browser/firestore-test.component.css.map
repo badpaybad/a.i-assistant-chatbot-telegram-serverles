@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["src/app/modules/test/firestore-test/firestore-test.component.css"],
-  "sourcesContent": [".test-content {\n  padding: 24px;\n}\n\n.result-item {\n  margin-bottom: 16px;\n  padding: 8px;\n  background: #f9f9f9;\n  border-radius: 4px;\n}\n\npre {\n  background: #f0f0f0;\n  padding: 8px;\n  border-radius: 4px;\n}\n"],
-  "mappings": ";AAAA,CAAC;AACC,WAAS;AACX;AAEA,CAAC;AACC,iBAAe;AACf,WAAS;AACT,cAAY;AACZ,iBAAe;AACjB;AAEA;AACE,cAAY;AACZ,WAAS;AACT,iBAAe;AACjB;",
-  "names": []
-}

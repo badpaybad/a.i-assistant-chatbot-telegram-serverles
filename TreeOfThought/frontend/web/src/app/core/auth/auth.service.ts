@@ -23,9 +23,17 @@ export class AuthService {
   private ssoCompleteSubject = new BehaviorSubject<boolean>(false);
   ssoComplete$ = this.ssoCompleteSubject.asObservable();
 
+  private currentUserSubject = new BehaviorSubject<any>(null);
+  currentUser$ = this.currentUserSubject.asObservable();
+
   user$ = this.firebase.user$;
 
   constructor() {
+    const savedUser = this.getCurrentUser();
+    if (savedUser) {
+      this.currentUserSubject.next(savedUser);
+    }
+
     if (this.hasToken()) {
       this.syncClaims();
     }
@@ -120,7 +128,10 @@ export class AuthService {
   async logout() {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('claims');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('user_profile');
     this.authStatusSubject.next(false);
+    this.currentUserSubject.next(null);
     this.claimsUpdatedSubject.next();
     await this.firebase.logout();
     this.router.navigate(['/auth/login']);
@@ -144,7 +155,9 @@ export class AuthService {
       const roles = response.roles || response.Roles || [];
       localStorage.setItem('claims', JSON.stringify(claims));
       localStorage.setItem('roles', JSON.stringify(roles));
+      localStorage.setItem('user_profile', JSON.stringify(response));
       
+      this.currentUserSubject.next(response);
       this.claimsUpdatedSubject.next();
 
     } catch (e: any) {
@@ -198,5 +211,10 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!localStorage.getItem('jwt_token');
+  }
+
+  getCurrentUser() {
+    const user = localStorage.getItem('user_profile');
+    return user ? JSON.parse(user) : null;
   }
 }

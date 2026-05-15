@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;43195080be02ca54965279e0421b820c06b4a55d9d2302df9824e6eb52865903;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/test/editor-test/editor-test.component.ts"],
-  "sourcesContent": ["\n    .mt-4 { margin-top: 2rem; }\n  "],
-  "mappings": ";AACI,CAAC;AAAO,cAAY;AAAM;",
-  "names": []
-}

@@ -28,4 +28,5 @@ trap cleanup SIGINT SIGTERM
 # Start .NET backend in watch mode
 echo "Starting Backend in watch mode (Hot Reload disabled for stability)..."
 # Use --no-hot-reload to avoid crashes when Angular builds many files into wwwroot
-dotnet watch run --no-hot-reload --urls "http://0.0.0.0:5000"
+# dotnet watch run --no-hot-reload --urls "http://0.0.0.0:5000"
+dotnet run

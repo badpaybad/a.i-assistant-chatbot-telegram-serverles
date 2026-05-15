@@ -7,7 +7,7 @@ namespace Core.Infra.Auth.Interfaces;
 
 public interface IJwtService
 {
-    Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims);
+    Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims, string? avatarUrl = null);
     JsonWebKey GetJwks();
     string GetRsaPrivateKey();
 }

@@ -53,7 +53,7 @@ export class MainLayoutComponent {
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
 
-  user$ = this.authService.user$;
+  user$ = this.authService.currentUser$;
   claims = APP_CLAIMS;
 
   // Resize properties

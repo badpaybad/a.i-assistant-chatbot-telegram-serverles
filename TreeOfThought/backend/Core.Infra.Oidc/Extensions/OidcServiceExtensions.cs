@@ -71,7 +71,7 @@ public static class OidcServiceExtensions
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = authConfig["Jwt:Issuer"]!,
                         ValidAudience = authConfig["Jwt:Audience"]!,
-                        IssuerSigningKey = JwtService.GetJwks(authConfig["Jwt:RsaPrivateKey"], authConfig["Jwt:Kid"]!),
+                        IssuerSigningKey = JwtService.GetJwks(authConfig["Jwt:RsaPrivateKey"]!, authConfig["Jwt:Kid"]!),
                         NameClaimType = AuthConstants.NameClaim,
                         RoleClaimType = AuthConstants.RoleClaim
                     };

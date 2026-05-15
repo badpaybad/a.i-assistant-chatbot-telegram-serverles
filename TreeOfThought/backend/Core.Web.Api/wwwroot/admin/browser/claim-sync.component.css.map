@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;3d6c087fef029db6e15f3bdfeb8f2744819840f4d2bfb03dd85b6d0cde160fe1;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/core-infra-auth/claim-sync/claim-sync.component.ts"],
-  "sourcesContent": ["\n    .search-card {\n      margin-bottom: 16px;\n    }\n    .search-actions {\n      display: flex;\n      justify-content: flex-end;\n      align-items: center;\n    }\n    .sync-actions {\n      margin-top: 8px;\n    }\n  "],
-  "mappings": ";AACI,CAAC;AACC,iBAAe;AACjB;AACA,CAAC;AACC,WAAS;AACT,mBAAiB;AACjB,eAAa;AACf;AACA,CAAC;AACC,cAAY;AACd;",
-  "names": []
-}

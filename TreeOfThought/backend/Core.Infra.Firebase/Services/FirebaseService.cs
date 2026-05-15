@@ -67,10 +67,10 @@ public class FirebaseService
     }
 
     // Auth
-    public async Task<string> CreateCustomTokenAsync(string appName, string uid)
+    public async Task<string> CreateCustomTokenAsync(string appName, string uid, IDictionary<string, object>? claims = null)
     {
         var auth = FirebaseAuth.GetAuth(_apps[appName]);
-        return await auth.CreateCustomTokenAsync(uid);
+        return await auth.CreateCustomTokenAsync(uid, claims);
     }
 
     public async Task<FirebaseToken> VerifyIdTokenAsync(string appName, string idToken)

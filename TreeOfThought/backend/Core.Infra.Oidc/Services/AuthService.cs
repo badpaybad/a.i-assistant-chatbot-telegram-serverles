@@ -60,7 +60,7 @@ public class AuthService
         await SyncUserAclToRedisAsync(user.Id);
 
         // 3. Generate token
-        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims);
+        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl);
     }
 
 

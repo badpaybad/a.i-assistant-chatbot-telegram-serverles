@@ -128,8 +128,11 @@
 
           <ng-container *ngIf="user$ | async as user; else loginBtn">
             <span class="user-info">
-              <nz-avatar nzIcon="user" [nzSrc]="user.photoURL || ''"></nz-avatar>
-              <span class="username">{{ user.displayName || user.email }}</span>
+              <nz-avatar nzIcon="user" [nzSrc]="user.picture || ''"></nz-avatar>
+              <div class="user-text">
+                <span class="username">{{ user.preferred_username }}</span>
+                <span class="display-name">{{ user.name }}</span>
+              </div>
             </span>
             <button nz-button nzType="link" (click)="logout()">{{ 'Đăng xuất' | translate }}</button>
           </ng-container>
