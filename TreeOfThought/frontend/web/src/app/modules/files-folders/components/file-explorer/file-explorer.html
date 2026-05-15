@@ -35,6 +35,9 @@
               </td>
               <td><nz-tag>{{ data.folderPath }}</nz-tag></td>
               <td>
+                <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="fileSelected.emit(data)" style="margin-right: 8px">
+                  Chèn
+                </button>
                 <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
                   <span nz-icon nzType="arrow-right"></span>
                 </button>
@@ -128,6 +131,9 @@
         <td>{{ file.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
         <td>
           <div class="action-buttons">
+            <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="fileSelected.emit(file)">
+              Chèn
+            </button>
             <a nz-button nzType="text" [href]="file.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
               <span nz-icon nzType="download"></span>
             </a>

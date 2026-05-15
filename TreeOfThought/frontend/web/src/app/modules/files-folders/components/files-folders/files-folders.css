@@ -17,3 +17,9 @@
   height: 100%;
   overflow-y: auto;
 }
+
+.files-layout.selection-mode {
+  height: 600px;
+  box-shadow: none;
+  border: 1px solid #f0f0f0;
+}

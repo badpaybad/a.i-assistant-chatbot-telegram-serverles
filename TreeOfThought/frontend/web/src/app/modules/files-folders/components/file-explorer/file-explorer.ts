@@ -43,7 +43,9 @@ import { Subscription } from 'rxjs';
 })
 export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   @Input() selectedFolderId: string | null = null;
+  @Input() selectionMode = false;
   @Output() folderCreated = new EventEmitter<void>();
+  @Output() fileSelected = new EventEmitter<any>();
 
   private filesFoldersService = inject(FilesFoldersService);
   private message = inject(NzMessageService);

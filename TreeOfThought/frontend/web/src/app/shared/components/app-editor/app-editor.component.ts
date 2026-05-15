@@ -201,7 +201,7 @@ export class AppEditorComponent implements OnInit, OnDestroy, ControlValueAccess
           const modal = this.modalService.create({
             nzTitle: 'Chọn File',
             nzContent: FileSelectModalComponent,
-            nzWidth: 800,
+            nzWidth: 1000,
             nzFooter: null
           });
 

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;1dbcde110f2c644768fc21a75d454c467fdb2d03062ab45a65dc36fc837a56b3;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/shared/components/app-editor/app-editor.component.ts"],
+  "sourcesContent": ["\n    .editor-wrapper {\n      border: 1px solid #d9d9d9;\n      border-radius: 4px;\n    }\n    :host ::ng-deep .ck-editor__editable {\n      min-height: 300px;\n    }\n  "],
+  "mappings": ";AACI,CAAC;AACC,UAAQ,IAAI,MAAM;AAClB,iBAAe;AACjB;AACA,MAAM,UAAU,CAAC;AACf,cAAY;AACd;",
+  "names": []
+}

@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["src/app/shared/components/app-select/app-select.component.css"],
+  "sourcesContent": [":host {\n  display: block;\n  width: 100%;\n}\n\n::ng-deep .ant-select-item-option-content {\n  display: flex;\n  align-items: center;\n}\n\n::ng-deep .ant-select-item-option-selected label[nz-checkbox] .ant-checkbox-inner {\n  background-color: #1890ff;\n  border-color: #1890ff;\n}\n"],
+  "mappings": ";AAAA;AACE,WAAS;AACT,SAAO;AACT;AAEA,UAAU,CAAC;AACT,WAAS;AACT,eAAa;AACf;AAEA,UAAU,CAAC,gCAAgC,KAAK,CAAC,aAAa,CAAC;AAC7D,oBAAkB;AAClB,gBAAc;AAChB;",
+  "names": []
+}
