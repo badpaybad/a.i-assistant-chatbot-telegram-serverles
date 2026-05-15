@@ -18,7 +18,6 @@ using Core.Infra.Auth.Extensions;
 using Core.Web.Api.Services;
 using Core.Infra.FilesFolders.Extensions;
 using Core.Infra.FilesFolders.Handlers;
-using Core.Infra.FilesFolders.Controllers;
 using Core.Infra.FilesFolders.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -51,8 +50,6 @@ builder.Services.AddFilesFolders(config);
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
-    .AddAuthControllers()
-    .AddApplicationPart(typeof(FoldersController).Assembly)
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
@@ -109,7 +106,7 @@ app.MapControllers();
 app.MapFallbackToFile("/admin/{*path:nonfile}", "admin/index.html");
 
 // --- 8. Initialize Infrastructure ---
-await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly(), typeof(FoldersController).Assembly });
+await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
 
 using (var scope = app.Services.CreateScope())
 {

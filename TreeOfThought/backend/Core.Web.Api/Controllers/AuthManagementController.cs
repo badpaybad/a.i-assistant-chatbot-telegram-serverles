@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
-namespace Core.Infra.Auth.Controllers;
+namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

@@ -124,10 +124,6 @@ public static class AuthServiceExtensions
         return services;
     }
 
-    public static IMvcBuilder AddAuthControllers(this IMvcBuilder mvcBuilder)
-    {
-        return mvcBuilder.AddApplicationPart(typeof(Core.Infra.Auth.Controllers.AuthController).Assembly);
-    }
 
     public static async Task UseAppAuth(this IApplicationBuilder app, IConfiguration config, Assembly[]? additionalAssembliesToScan = null)
     {
@@ -151,9 +147,6 @@ public static class AuthServiceExtensions
 
                 var allScannedClaims = new HashSet<string>();
 
-                // Always scan the Auth assembly (where management controllers are)
-                foreach (var c in scanner.GetClaimsFromAssembly(typeof(AuthServiceExtensions).Assembly))
-                    allScannedClaims.Add(c);
 
                 if (additionalAssembliesToScan != null)
                 {

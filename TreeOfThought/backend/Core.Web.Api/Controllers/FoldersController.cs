@@ -4,7 +4,7 @@ using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Core.Infra.FilesFolders.Controllers;
+namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

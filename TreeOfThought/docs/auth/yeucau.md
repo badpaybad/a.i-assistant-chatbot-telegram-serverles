@@ -38,3 +38,6 @@ trong bảng người dùng, bảng vai trò, khi thêm/sửa có droplist chọ
 sidebar menu khi đăng nhập lại bị lỗi, trong khi account admin có role Admin và claims be.admin
     Truy cập bị hạn chế
     Thiếu quyền: fe.cqrs:dashboard:view
+    
+**cập nhật 2026-05-15 12:30:00**
+để độc lập và reuse được AppAuthorizeAttribute AppAuthorizationHandler cần move Controllers lên project Core.Web.Api

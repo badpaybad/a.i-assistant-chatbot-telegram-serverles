@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Core.Infra.FilesFolders.Controllers;
+namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

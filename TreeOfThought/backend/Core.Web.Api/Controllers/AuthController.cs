@@ -10,7 +10,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
-namespace Core.Infra.Auth.Controllers;
+namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
