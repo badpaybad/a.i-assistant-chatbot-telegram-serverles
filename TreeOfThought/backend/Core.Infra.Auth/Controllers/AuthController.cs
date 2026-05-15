@@ -92,7 +92,8 @@ public class AuthController : ControllerBase
             email = user.Email,
             email_verified = user.IsEmailVerified,
             roles = roles,
-            permissions = claims
+            claims = claims,
+            permissions = claims // Keep for backward compatibility if any
         });
     }
 

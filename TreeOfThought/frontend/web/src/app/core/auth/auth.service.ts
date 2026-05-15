@@ -17,6 +17,9 @@ export class AuthService {
   private authStatusSubject = new BehaviorSubject<boolean>(this.hasToken());
   authStatus$ = this.authStatusSubject.asObservable();
 
+  private claimsUpdatedSubject = new BehaviorSubject<void>(undefined);
+  claimsUpdated$ = this.claimsUpdatedSubject.asObservable();
+
   user$ = this.firebase.user$;
 
   constructor() {
@@ -81,6 +84,7 @@ export class AuthService {
     localStorage.removeItem('jwt_token');
     localStorage.removeItem('claims');
     this.authStatusSubject.next(false);
+    this.claimsUpdatedSubject.next();
     await this.firebase.logout();
     this.router.navigate(['/auth/login']);
   }
@@ -99,10 +103,12 @@ export class AuthService {
 
       const response = await this.http.get('/api/auth/me');
       // Support both camelCase and PascalCase from backend
-      const claims = response.claims || response.Claims || [];
+      const claims = response.claims || response.permissions || response.Claims || response.Permissions || [];
       const roles = response.roles || response.Roles || [];
       localStorage.setItem('claims', JSON.stringify(claims));
       localStorage.setItem('roles', JSON.stringify(roles));
+      
+      this.claimsUpdatedSubject.next();
 
     } catch (e: any) {
       console.error('Failed to sync claims', e);
@@ -117,15 +123,21 @@ export class AuthService {
     const rawClaims = localStorage.getItem('claims');
     const rawRoles = localStorage.getItem('roles');
     
-    if (!rawClaims || rawClaims === 'undefined') return false;
+    // Even if claims are missing, we should still allow role check if roles are present
+    // if (!rawClaims || rawClaims === 'undefined') return false;
     
     try {
-      const userClaims = JSON.parse(rawClaims) || [];
-      const userRoles = rawRoles ? JSON.parse(rawRoles) : [];
-      if (!Array.isArray(userClaims)) return false;
+      const userClaims: string[] = rawClaims && rawClaims !== 'undefined' ? JSON.parse(rawClaims) : [];
+      const userRoles: string[] = rawRoles && rawRoles !== 'undefined' ? JSON.parse(rawRoles) : [];
+      
+      if (!Array.isArray(userClaims) && !Array.isArray(userRoles)) return false;
 
       // Admin bypass (Check both Role and Claim for consistency with BE)
-      if (userRoles.includes(ADMIN_ROLE) || userClaims.includes(ADMIN_CLAIM)) return true;
+      // Use case-insensitive check for Admin role/claim
+      const isAdmin = userRoles.some(r => r.toLowerCase() === ADMIN_ROLE.toLowerCase()) || 
+                      userClaims.some(c => c.toLowerCase() === ADMIN_CLAIM.toLowerCase());
+      
+      if (isAdmin) return true;
 
       // Handle empty check (logged in only)
       const claimsToCheck = Array.isArray(claimOrClaims) 
@@ -133,7 +145,7 @@ export class AuthService {
         : (claimOrClaims ? [claimOrClaims] : []);
 
       if (claimsToCheck.length === 0) {
-        return true; // If logged in and no specific claims required
+        return this.isLoggedIn();
       }
       
       if (mode === 'OR') {
@@ -142,7 +154,7 @@ export class AuthService {
         return claimsToCheck.every(c => userClaims.includes(c));
       }
     } catch (e) {
-      console.error('Error parsing claims from localStorage', e);
+      console.error('Error parsing claims/roles from localStorage', e);
       return false;
     }
   }

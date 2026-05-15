@@ -89,6 +89,8 @@ var _AuthService = class _AuthService {
     this.router = inject(Router);
     this.authStatusSubject = new BehaviorSubject(this.hasToken());
     this.authStatus$ = this.authStatusSubject.asObservable();
+    this.claimsUpdatedSubject = new BehaviorSubject(void 0);
+    this.claimsUpdated$ = this.claimsUpdatedSubject.asObservable();
     this.user$ = this.firebase.user$;
     if (this.hasToken()) {
       this.syncClaims();
@@ -146,6 +148,7 @@ var _AuthService = class _AuthService {
     localStorage.removeItem("jwt_token");
     localStorage.removeItem("claims");
     this.authStatusSubject.next(false);
+    this.claimsUpdatedSubject.next();
     await this.firebase.logout();
     this.router.navigate(["/auth/login"]);
   }
@@ -160,10 +163,11 @@ var _AuthService = class _AuthService {
         localStorage.setItem("claims_version", CLAIMS_VERSION);
       }
       const response = await this.http.get("/api/auth/me");
-      const claims = response.claims || response.Claims || [];
+      const claims = response.claims || response.permissions || response.Claims || response.Permissions || [];
       const roles = response.roles || response.Roles || [];
       localStorage.setItem("claims", JSON.stringify(claims));
       localStorage.setItem("roles", JSON.stringify(roles));
+      this.claimsUpdatedSubject.next();
     } catch (e) {
       console.error("Failed to sync claims", e);
       if (e.status === 404 || e.status === 401) {
@@ -174,18 +178,17 @@ var _AuthService = class _AuthService {
   hasClaim(claimOrClaims, mode = "OR") {
     const rawClaims = localStorage.getItem("claims");
     const rawRoles = localStorage.getItem("roles");
-    if (!rawClaims || rawClaims === "undefined")
-      return false;
     try {
-      const userClaims = JSON.parse(rawClaims) || [];
-      const userRoles = rawRoles ? JSON.parse(rawRoles) : [];
-      if (!Array.isArray(userClaims))
+      const userClaims = rawClaims && rawClaims !== "undefined" ? JSON.parse(rawClaims) : [];
+      const userRoles = rawRoles && rawRoles !== "undefined" ? JSON.parse(rawRoles) : [];
+      if (!Array.isArray(userClaims) && !Array.isArray(userRoles))
         return false;
-      if (userRoles.includes(ADMIN_ROLE) || userClaims.includes(ADMIN_CLAIM))
+      const isAdmin = userRoles.some((r) => r.toLowerCase() === ADMIN_ROLE.toLowerCase()) || userClaims.some((c) => c.toLowerCase() === ADMIN_CLAIM.toLowerCase());
+      if (isAdmin)
         return true;
       const claimsToCheck = Array.isArray(claimOrClaims) ? claimOrClaims.filter((c) => !!c) : claimOrClaims ? [claimOrClaims] : [];
       if (claimsToCheck.length === 0) {
-        return true;
+        return this.isLoggedIn();
       }
       if (mode === "OR") {
         return claimsToCheck.some((c) => userClaims.includes(c));
@@ -193,7 +196,7 @@ var _AuthService = class _AuthService {
         return claimsToCheck.every((c) => userClaims.includes(c));
       }
     } catch (e) {
-      console.error("Error parsing claims from localStorage", e);
+      console.error("Error parsing claims/roles from localStorage", e);
       return false;
     }
   }
@@ -1038,4 +1041,4 @@ export {
   NzDescriptionsComponent,
   NzDescriptionsModule
 };
-//# sourceMappingURL=chunk-HLTF3FBN.js.map
+//# sourceMappingURL=chunk-4XYBYJUE.js.map

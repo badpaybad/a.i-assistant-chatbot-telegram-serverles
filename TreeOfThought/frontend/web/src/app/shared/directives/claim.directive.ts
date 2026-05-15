@@ -1,6 +1,7 @@
 import { Directive, Input, TemplateRef, ViewContainerRef, inject, Renderer2, ElementRef, OnDestroy, OnInit, SecurityContext } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
 import { AuthService } from '../../core/auth/auth.service';
+import { Subscription } from 'rxjs';
 
 @Directive({
   selector: '[appClaimCheck]',
@@ -18,6 +19,7 @@ export class AppClaimDirective implements OnDestroy, OnInit {
   private mode: 'OR' | 'AND' = 'OR';
   private hideOnly = false;
   private denialEl: HTMLElement | null = null;
+  private claimsSubscription?: Subscription;
 
   @Input() set appClaimCheck(value: string | string[]) {
     this.claims = value;
@@ -37,7 +39,9 @@ export class AppClaimDirective implements OnDestroy, OnInit {
   constructor() {}
 
   ngOnInit() {
-    this.updateView();
+    this.claimsSubscription = this.authService.claimsUpdated$.subscribe(() => {
+      this.updateView();
+    });
   }
 
   private updateView() {
@@ -111,5 +115,6 @@ export class AppClaimDirective implements OnDestroy, OnInit {
 
   ngOnDestroy() {
     this.removeDenialMessage();
+    this.claimsSubscription?.unsubscribe();
   }
 }

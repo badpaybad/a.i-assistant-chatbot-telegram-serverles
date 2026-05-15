@@ -33,3 +33,8 @@ trong bảng người dùng, bảng vai trò, khi thêm/sửa có droplist chọ
 **cập nhật 2026-05-13 20:30:00**
 ở bảng hiển thị người dùng cần hiện thêm cột email, avatar, ngày tạo, ngày cập nhật
     bổ xung thêm cột avatar, khi click vào thì change được avatar của người dùng, cần upload file lên google cloud storage, avatar lưu public url của file trên google cloud storage
+
+**bug 1**
+sidebar menu khi đăng nhập lại bị lỗi, trong khi account admin có role Admin và claims be.admin
+    Truy cập bị hạn chế
+    Thiếu quyền: fe.cqrs:dashboard:view

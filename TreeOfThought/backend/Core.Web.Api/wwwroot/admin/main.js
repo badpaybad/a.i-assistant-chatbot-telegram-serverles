@@ -1,7 +1,7 @@
 import {
   AuthService,
   NzDescriptionsModule
-} from "./chunk-HLTF3FBN.js";
+} from "./chunk-4XYBYJUE.js";
 import {
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
@@ -2782,7 +2782,9 @@ var _AppClaimDirective = class _AppClaimDirective {
     this.denialEl = null;
   }
   ngOnInit() {
-    this.updateView();
+    this.claimsSubscription = this.authService.claimsUpdated$.subscribe(() => {
+      this.updateView();
+    });
   }
   updateView() {
     this.viewContainer.clear();
@@ -2843,7 +2845,9 @@ var _AppClaimDirective = class _AppClaimDirective {
     }
   }
   ngOnDestroy() {
+    var _a;
     this.removeDenialMessage();
+    (_a = this.claimsSubscription) == null ? void 0 : _a.unsubscribe();
   }
 };
 _AppClaimDirective.\u0275fac = function AppClaimDirective_Factory(__ngFactoryType__) {
@@ -9440,7 +9444,7 @@ var routes = [
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-N4VFCDDS.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-KZKGGQ2T.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]

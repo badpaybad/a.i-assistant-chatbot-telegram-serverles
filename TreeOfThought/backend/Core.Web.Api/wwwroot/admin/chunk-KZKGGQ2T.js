@@ -3,7 +3,7 @@ import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
   NzDescriptionsModule
-} from "./chunk-HLTF3FBN.js";
+} from "./chunk-4XYBYJUE.js";
 import "./chunk-HDYQOSJT.js";
 import "./chunk-IRGOCD6C.js";
 import {
@@ -3366,4 +3366,4 @@ var AuthorizeInfoComponent = _AuthorizeInfoComponent;
 export {
   AuthorizeInfoComponent
 };
-//# sourceMappingURL=chunk-N4VFCDDS.js.map
+//# sourceMappingURL=chunk-KZKGGQ2T.js.map
