@@ -16,8 +16,3 @@ public interface IUserSessionService
     Task<T?> GetAuthCodeAsync<T>(string code);
     Task RemoveAuthCodeAsync(string code);
 }
-
-public interface IJwtService
-{
-    Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims);
-}

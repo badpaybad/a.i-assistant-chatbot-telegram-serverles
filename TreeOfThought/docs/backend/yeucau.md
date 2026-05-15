@@ -25,14 +25,29 @@ tách sang riêng project Core.Infra.Session
 các project đều cần có extension để đăng ký vào program.cs cho web api cần 
 
 Core.Infra.Session 
-    như vậy project TreeOfThought/backend/Core.Infra.Session sẽ kiêm sinh jwt, session để thống nhất , cấp các const cho các project khác nếu cần. cần extension để đăng ký vào program.cs cho web api cần 
+    như vậy project TreeOfThought/backend/Core.Infra.Session lưu session khi cần xài redis để thống nhất , cấp các const key cho các project khác nếu cần. cần extension để đăng ký vào program.cs cho web api cần . khi hybrid jwt session sẽ cần
+
+    appsettings.json nếu cần cho Session sẽ là "Session": {
+        "key": "value vd key value cho redis , postgresql",
+    }
+
+Core.Infra.Auth
 
     việc sinh jwt cũng cần ở project TreeOfThought/backend/Core.Infra.Auth vì logic check jwt , lấy session ra check ở TreeOfThought/backend/Core.Infra.Auth/Handlers/AppAuthorizationHandler.cs 
 
-Core.Infra.Auth
-    TreeOfThought/backend/Core.Infra.Auth sinh ra để tất cả các project nghiệp vụ dùng AppAuthorizeAttribute nhất quán về kiểm tra quyền / role / permission / policy / acl ... . cần extension để đăng ký vào program.cs cho web api cần , extension của project Core.Infra.Auth cần có sẵn luôn của Core.Infra.Session 
+    TreeOfThought/backend/Core.Infra.Auth sinh ra để tất cả các project nghiệp vụ dùng AppAuthorizeAttribute nhất quán về kiểm tra quyền / role / permission / policy / acl ... . cần extension để đăng ký vào program.cs cho web api cần , extension của project Core.Infra.Auth cần có sẵn luôn của Core.Infra.Session  khi hybrid jwt session sẽ cần
     Các project nghiệp vụ có controller đều cần dùng Core.Infra.Auth AppAuthorizeAttribute
+    cấp các const key cho các project khác nếu cần.
+    
+    appsettings.json nếu cần cho Auth sẽ là "Auth": {
+        "key": "value vd key value cho redis , postgresql",
+    }
 
 Core.Infra.Oidc
     TreeOfThought/backend/Core.Infra.Oidc Đây là project nghiệp vụ để quản lý user, role, claims sync ..., sso , oidc provider, login ..., 
         lúc này extension để đăng ký vào program.cs là đã có của Core.Infra.Auth
+    cấp các const key cho các project khác nếu cần.
+
+    appsettings.json nếu cần cho Oidc sẽ là "Oidc": {
+        "key": "value vd key value cho redis , postgresql",
+    }

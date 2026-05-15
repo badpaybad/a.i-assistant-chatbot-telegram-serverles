@@ -81,33 +81,30 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
         if (requirement.Claims.Length > 0)
         {
             var userId = user.FindFirst(AuthConstants.UserIdClaim)?.Value;
-            var userRoles = user.FindAll(AuthConstants.RoleClaim).Select(c => c.Value).ToList();
-            List<string> userClaims;
+            var userClaims = user.FindAll(AuthConstants.PermissionClaim).Select(c => c.Value).ToList();
 
-            if (userRoles.Any() && !string.IsNullOrEmpty(userId))
+            bool hasAllInJwt = requirement.Mode == AuthMode.AND 
+                ? requirement.Claims.All(p => userClaims.Contains(p))
+                : requirement.Claims.Any(p => userClaims.Contains(p));
+
+            if (!hasAllInJwt && !string.IsNullOrEmpty(userId))
             {
-                // Hybrid Mode: Roles detected, fetch granular claims from Redis
-                userClaims = await _sessionService.GetUserClaimsAsync(Guid.Parse(userId)) ?? new List<string>();
-            }
-            else
-            {
-                // Stateless Mode: Read granular claims from JWT
-                userClaims = user.FindAll(AuthConstants.PermissionClaim).Select(c => c.Value).ToList();
+                // Hybrid Mode: JWT lacks required claims, fetch from Redis session
+                var redisClaims = await _sessionService.GetUserClaimsAsync(Guid.Parse(userId));
+                if (redisClaims != null)
+                {
+                    userClaims.AddRange(redisClaims);
+                    userClaims = userClaims.Distinct().ToList();
+                }
             }
 
             if (requirement.Mode == AuthMode.OR)
             {
-                if (requirement.Claims.Any(p => userClaims.Contains(p)))
-                {
-                    isAuthorized = true;
-                }
+                isAuthorized = requirement.Claims.Any(p => userClaims.Contains(p));
             }
             else // AND mode
             {
-                if (requirement.Claims.All(p => userClaims.Contains(p)))
-                {
-                    isAuthorized = true;
-                }
+                isAuthorized = requirement.Claims.All(p => userClaims.Contains(p));
             }
         }
 

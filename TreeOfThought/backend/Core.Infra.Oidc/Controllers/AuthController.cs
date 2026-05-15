@@ -12,6 +12,8 @@ using Core.Infra.Oidc.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Core.Infra.Auth.Services;
+using Core.Infra.Auth.Interfaces;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -22,12 +24,14 @@ public class AuthController : ControllerBase
     private readonly AuthService _authService;
     private readonly IUserSessionService _sessionService;
     private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
-
+    private readonly IJwtService _jwtService;
     public AuthController(
+        IJwtService jwtService,
         AuthService authService,
         IUserSessionService sessionService,
         Microsoft.Extensions.Configuration.IConfiguration config)
     {
+        _jwtService = jwtService;
         _authService = authService;
         _sessionService = sessionService;
         _config = config;
@@ -54,7 +58,7 @@ public class AuthController : ControllerBase
     [HttpGet("jwks")]
     public IActionResult GetJwks()
     {
-        var jwk = AuthServiceExtensions.GetJwks(_config.GetRsaPrivateKey(), _config["Jwt:Kid"] ?? "tot-v1");
+        var jwk = _jwtService.GetJwks();
         return Ok(new { keys = new[] { jwk } });
     }
 

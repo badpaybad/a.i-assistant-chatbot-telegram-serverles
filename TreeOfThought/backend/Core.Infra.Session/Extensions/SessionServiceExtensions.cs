@@ -10,15 +10,13 @@ public static class SessionServiceExtensions
 {
     public static IServiceCollection AddAppSession(this IServiceCollection services, IConfiguration config)
     {
-        var redisConn = config["Auth:Redis"] ?? config["Redis:ConnectionString"]!;
-        
+        var redisConn = config["Session:Redis"]!;
+
         services.AddSingleton<RedisSessionService>(sp =>
             new RedisSessionService(redisConn, sp.GetRequiredService<ILogger<RedisSessionService>>()));
 
         services.AddSingleton<IUserSessionService>(sp =>
             sp.GetRequiredService<RedisSessionService>());
-
-        services.AddSingleton<IJwtService, JwtService>();
 
         return services;
     }

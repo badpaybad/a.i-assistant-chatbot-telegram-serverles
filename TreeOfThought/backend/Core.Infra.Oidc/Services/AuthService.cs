@@ -1,4 +1,5 @@
 using Core.Infra.Session.Interfaces;
+using Core.Infra.Auth.Interfaces;
 using Core.Infra.Session.Models;
 using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Repositories;
