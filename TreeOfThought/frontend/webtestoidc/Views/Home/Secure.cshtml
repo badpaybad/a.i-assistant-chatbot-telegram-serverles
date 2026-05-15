@@ -1,0 +1,69 @@
+@{
+    ViewData["Title"] = "Vùng bảo mật";
+}
+
+<div class="container py-5 animate-fade-in">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Vùng tài nguyên bảo mật</h2>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại
+                </a>
+            </div>
+
+            <div class="alert alert-success d-flex align-items-center shadow-sm mb-4">
+                <i class="bi bi-check-circle-fill me-3 fs-4"></i>
+                <div>
+                    <strong>Xác thực thành công!</strong> Bạn đang truy cập vào vùng tài nguyên được bảo vệ bởi OIDC.
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 pt-4 px-4">
+                            <h5 class="fw-bold text-secondary mb-0">ID Token</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="small text-muted mb-3">Token này chứa thông tin định danh của người dùng (Identity).</p>
+                            <textarea class="form-control font-monospace small bg-light" rows="8" readonly>@ViewData["IdToken"]</textarea>
+                            <button class="btn btn-link btn-sm mt-2 text-decoration-none" onclick="copyToClipboard(this)">
+                                <i class="bi bi-copy me-1"></i> Sao chép
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 pt-4 px-4">
+                            <h5 class="fw-bold text-secondary mb-0">Access Token</h5>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="small text-muted mb-3">Token này được dùng để gọi các API được bảo vệ.</p>
+                            <textarea class="form-control font-monospace small bg-light" rows="8" readonly>@ViewData["AccessToken"]</textarea>
+                            <button class="btn btn-link btn-sm mt-2 text-decoration-none" onclick="copyToClipboard(this)">
+                                <i class="bi bi-copy me-1"></i> Sao chép
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function copyToClipboard(btn) {
+            const textarea = btn.previousElementSibling;
+            textarea.select();
+            document.execCommand('copy');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="bi bi-check2 me-1"></i> Đã chép';
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+            }, 2000);
+        }
+    </script>
+}

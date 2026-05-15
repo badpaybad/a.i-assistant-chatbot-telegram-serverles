@@ -1,0 +1,44 @@
+@{
+    ViewData["Title"] = "Danh sách Claims";
+}
+
+<div class="container py-5 animate-fade-in">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold"><i class="bi bi-list-check text-primary me-2"></i>Thông tin Claims</h2>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Quay lại
+                </a>
+            </div>
+
+            <div class="card border-0 shadow-sm overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="border-0 px-4 py-3 text-secondary text-uppercase small">Tên Claim (Type)</th>
+                                <th class="border-0 px-4 py-3 text-secondary text-uppercase small">Giá trị (Value)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var claim in User.Claims)
+                            {
+                                <tr class="claim-row">
+                                    <td class="px-4 py-3 fw-bold small text-primary">@claim.Type</td>
+                                    <td class="px-4 py-3 text-break">@claim.Value</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="mt-4 p-3 bg-white rounded border-start border-primary border-4 shadow-sm">
+                <p class="mb-0 small text-muted">
+                    <i class="bi bi-info-circle me-1"></i> Các claims này được trích xuất từ <strong>ID Token</strong> và <strong>User Info Endpoint</strong> của OIDC Provider.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
