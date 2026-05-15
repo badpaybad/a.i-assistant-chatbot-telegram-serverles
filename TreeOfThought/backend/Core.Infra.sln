@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.ConsoleTest", "t
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.DataTest", "test\Core.Infra.DataTest\Core.Infra.DataTest.csproj", "{2194BD75-8535-4A26-AE55-47C9567156C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Auth", "Core.Infra.Auth\Core.Infra.Auth.csproj", "{E83FC83E-D478-435E-8043-A3F3EA39894F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.Oidc", "Core.Infra.Oidc\Core.Infra.Oidc.csproj", "{E83FC83E-D478-435E-8043-A3F3EA39894F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Web.Api", "Core.Web.Api\Core.Web.Api.csproj", "{8E8A2320-2D79-44F9-9087-5A0ADE1E4C08}"
 EndProject

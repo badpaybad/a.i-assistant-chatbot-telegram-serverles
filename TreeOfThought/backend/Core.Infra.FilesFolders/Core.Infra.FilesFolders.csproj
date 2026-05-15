@@ -15,7 +15,7 @@
     <ProjectReference Include="..\Core.Infra.Data\Core.Infra.Data.csproj" />
     <ProjectReference Include="..\Core.Infra.Firebase\Core.Infra.Firebase.csproj" />
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
-    <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
+    <ProjectReference Include="..\Core.Infra.Oidc\Core.Infra.Oidc.csproj" />
   </ItemGroup>
 
   <ItemGroup>

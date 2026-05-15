@@ -1,11 +1,11 @@
-using Core.Infra.Auth.Attributes;
-using Core.Infra.Auth.Models;
-using Core.Infra.Auth.Services;
+using Core.Infra.Oidc.Attributes;
+using Core.Infra.Oidc.Models;
+using Core.Infra.Oidc.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using Microsoft.Extensions.DependencyInjection;
 using Core.Infra.Base.Interfaces;
-using Core.Infra.Auth.Extensions;
+using Core.Infra.Oidc.Extensions;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;

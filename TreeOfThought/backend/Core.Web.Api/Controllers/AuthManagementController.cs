@@ -1,6 +1,6 @@
-using Core.Infra.Auth.Attributes;
-using Core.Infra.Auth.Models;
-using Core.Infra.Auth.Repositories;
+using Core.Infra.Oidc.Attributes;
+using Core.Infra.Oidc.Models;
+using Core.Infra.Oidc.Repositories;
 using Core.Infra.Firebase.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
