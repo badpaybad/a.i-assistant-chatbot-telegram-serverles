@@ -35,3 +35,6 @@ cần lưu dữ liệu không quan trọng xuống ổ cứng, như cấu hình 
  và hiện lên UI
     - nếu ở máy ảo không nhìn thấy 192.168.4.248 cần network của máy ảo là bridge mode
         - nếu không chuyển đươc chế độ máy ảo dùng bridge mode thì thêm droplist để chọn ip sso iodc gồm cả ip thần thánh của android hoặc ip 192.168.4.248 hoặc 118.70.117.208
+    **bug 2 cập nhật 2026-05-15 09:09:09** ở login page, click nut đăng nhập sso 192.168.4.248 -> page login SSO hiện đen thui không thấy nội dung
+        kiểm tra độ tương thích web angular cho mobi 
+            - mở url  http://192.168.4.248:5000/api/auth/authorize?client_id=my_pc_assistant&redirect_uri=http://callback.vn&response_type=code&scope=openid profile email&state=random_state trên desktop bình thường . mở trên mobi không thấy gì 

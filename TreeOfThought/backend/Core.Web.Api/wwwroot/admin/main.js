@@ -3589,12 +3589,12 @@ _AuthLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275element(2, "router-outlet");
     \u0275\u0275elementEnd()();
   }
-}, dependencies: [RouterOutlet], styles: ['\n.auth-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container[_ngcontent-%COMP%]::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content[_ngcontent-%COMP%] {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: rgba(255, 255, 255, 0.95);\n  -webkit-backdrop-filter: blur(20px);\n  backdrop-filter: blur(20px);\n  border-radius: 20px;\n  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);\n  border: 1px solid rgba(255, 255, 255, 0.5);\n  z-index: 1;\n}\n/*# sourceMappingURL=auth-layout.component.css.map */'] });
+}, dependencies: [RouterOutlet], styles: ['\n.auth-container[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container[_ngcontent-%COMP%]::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content[_ngcontent-%COMP%] {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: #ffffff;\n  border-radius: 20px;\n  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);\n  border: 1px solid #eeeeee;\n  z-index: 1;\n}\n@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {\n  .auth-content[_ngcontent-%COMP%] {\n    background: rgba(255, 255, 255, 0.98);\n    backdrop-filter: blur(20px);\n    -webkit-backdrop-filter: blur(20px);\n  }\n}\n/*# sourceMappingURL=auth-layout.component.css.map */'] });
 var AuthLayoutComponent = _AuthLayoutComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AuthLayoutComponent, [{
     type: Component,
-    args: [{ selector: "app-auth-layout", standalone: true, imports: [RouterOutlet], template: '<div class="auth-container">\n  <div class="auth-content">\n    <router-outlet></router-outlet>\n  </div>\n</div>\n', styles: ['/* src/app/layouts/auth-layout/auth-layout.component.css */\n.auth-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: rgba(255, 255, 255, 0.95);\n  -webkit-backdrop-filter: blur(20px);\n  backdrop-filter: blur(20px);\n  border-radius: 20px;\n  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);\n  border: 1px solid rgba(255, 255, 255, 0.5);\n  z-index: 1;\n}\n/*# sourceMappingURL=auth-layout.component.css.map */\n'] }]
+    args: [{ selector: "app-auth-layout", standalone: true, imports: [RouterOutlet], template: '<div class="auth-container">\n  <div class="auth-content">\n    <router-outlet></router-outlet>\n  </div>\n</div>\n', styles: ['/* src/app/layouts/auth-layout/auth-layout.component.css */\n.auth-container {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  min-height: 100vh;\n  background: #f0f2f5;\n  background:\n    radial-gradient(\n      circle at top left,\n      #e6f7ff 0%,\n      #ffffff 50%,\n      #f0f5ff 100%);\n  position: relative;\n  overflow: hidden;\n}\n.auth-container::before {\n  content: "";\n  position: absolute;\n  width: 100%;\n  height: 100%;\n  background-image: url(https://gw.alipayobjects.com/zos/rmsportal/TVirNRn9LqY9hS6969.png);\n  background-repeat: no-repeat;\n  background-position: center 110px;\n  background-size: 100%;\n  opacity: 0.4;\n  pointer-events: none;\n}\n.auth-content {\n  width: 100%;\n  max-width: 440px;\n  padding: 40px;\n  background: #ffffff;\n  border-radius: 20px;\n  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);\n  border: 1px solid #eeeeee;\n  z-index: 1;\n}\n@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {\n  .auth-content {\n    background: rgba(255, 255, 255, 0.98);\n    backdrop-filter: blur(20px);\n    -webkit-backdrop-filter: blur(20px);\n  }\n}\n/*# sourceMappingURL=auth-layout.component.css.map */\n'] }]
   }], null, null);
 })();
 (() => {
@@ -3669,20 +3669,26 @@ var _LoginComponent = class _LoginComponent {
     this.detectSsoContext();
   }
   detectSsoContext() {
-    const returnUrl = this.route.snapshot.queryParams["returnUrl"];
-    if (returnUrl) {
-      try {
-        const fullUrl = returnUrl.startsWith("http") ? returnUrl : window.location.origin + returnUrl;
-        const url = new URL(fullUrl);
-        const params = new URLSearchParams(url.search);
-        this.ssoClientName = params.get("client_id");
-        this.ssoRedirectUri = params.get("redirect_uri");
-        if (this.ssoClientName === "my_pc_assistant") {
-          this.ssoClientName = "My PC Assistant App";
-        }
-      } catch (e) {
-        console.error("Failed to parse returnUrl for SSO context", e);
+    try {
+      const returnUrl = this.route.snapshot.queryParams["returnUrl"];
+      console.log("[SSO] returnUrl from queryParams:", returnUrl);
+      if (!returnUrl)
+        return;
+      let fullUrl = returnUrl;
+      if (!returnUrl.startsWith("http")) {
+        fullUrl = window.location.origin + (returnUrl.startsWith("/") ? "" : "/") + returnUrl;
       }
+      console.log("[SSO] Parsing full URL:", fullUrl);
+      const url = new URL(fullUrl);
+      const params = new URLSearchParams(url.search);
+      this.ssoClientName = params.get("client_id");
+      this.ssoRedirectUri = params.get("redirect_uri");
+      console.log("[SSO] Detected Client ID:", this.ssoClientName);
+      if (this.ssoClientName === "my_pc_assistant") {
+        this.ssoClientName = "My PC Assistant App";
+      }
+    } catch (e) {
+      console.error("[SSO] Error detecting context:", e);
     }
   }
   handleRedirect() {

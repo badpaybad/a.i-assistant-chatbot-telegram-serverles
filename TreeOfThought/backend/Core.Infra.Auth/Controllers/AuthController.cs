@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Auth.Extensions;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace Core.Infra.Auth.Controllers;
@@ -85,11 +86,13 @@ public class AuthController : ControllerBase
 
         return Ok(new
         {
-            user.Username,
-            user.DisplayName,
-            user.Email,
-            Roles = roles,
-            Claims = claims
+            sub = user.Id.ToString(),
+            preferred_username = user.Username,
+            name = user.DisplayName,
+            email = user.Email,
+            email_verified = user.IsEmailVerified,
+            roles = roles,
+            permissions = claims
         });
     }
 
@@ -149,17 +152,28 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("authorize")]
-    public async Task<IActionResult> Authorize([FromQuery] AuthorizeRequest request)
+    public async Task<IActionResult> Authorize([Microsoft.AspNetCore.Mvc.FromQuery] AuthorizeRequest request)
     {
-        if (string.IsNullOrEmpty(request.ClientId) || string.IsNullOrEmpty(request.RedirectUri))
+        // Manual fallback if binding fails (common with complex models and different binder behaviors)
+        var clientId = request.ClientId ?? Request.Query["client_id"].ToString();
+        var redirectUri = request.RedirectUri ?? Request.Query["redirect_uri"].ToString();
+        var state = request.State ?? Request.Query["state"].ToString();
+
+        if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
         {
-            Console.WriteLine($"[OIDC] Invalid Authorize request: ClientId={request.ClientId}, RedirectUri={request.RedirectUri}");
+            Console.WriteLine($"[OIDC] Invalid Authorize request (Binding failed?): ClientId={clientId}, RedirectUri={redirectUri}");
+            Console.WriteLine($"[OIDC] Raw Query: {Request.QueryString}");
             return BadRequest(new { error = "invalid_request", error_description = "client_id and redirect_uri are required." });
         }
 
         var cookies = Request.Cookies.Keys;
-        Console.WriteLine($"[OIDC] Authorize request: ClientId={request.ClientId}, RedirectUri={request.RedirectUri}, State={request.State}");
+        Console.WriteLine($"[OIDC] Authorize request: ClientId={clientId}, RedirectUri={redirectUri}, State={state}");
         Console.WriteLine($"[OIDC] Cookies received: {string.Join(", ", cookies)}");
+
+        // Update request model to ensure following logic uses corrected values
+        request.ClientId = clientId;
+        request.RedirectUri = redirectUri;
+        request.State = state;
 
         // 1. Check if user is already logged in via Session Cookie
         var authenticateResult = await HttpContext.AuthenticateAsync(AuthConstants.SsoSessionScheme);
@@ -200,22 +214,47 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("token")]
-    [Consumes("application/x-www-form-urlencoded", "application/json")]
-    public async Task<IActionResult> GetToken([FromForm] TokenRequest? formRequest, [FromBody] TokenRequest? bodyRequest)
+    public async Task<IActionResult> GetToken()
     {
-        var request = formRequest?.Code != null ? formRequest : bodyRequest;
-        Console.WriteLine($"[OIDC] Token request received. GrantType={request?.GrantType}, ClientId={request?.ClientId}");
+        TokenRequest? request = null;
+
+        if (Request.HasFormContentType)
+        {
+            request = new TokenRequest
+            {
+                GrantType = Request.Form["grant_type"],
+                Code = Request.Form["code"],
+                ClientId = Request.Form["client_id"],
+                RedirectUri = Request.Form["redirect_uri"],
+                ClientSecret = Request.Form["client_secret"]
+            };
+            Console.WriteLine("[OIDC] Token request received via Form.");
+        }
+        else
+        {
+            try 
+            {
+                request = await Request.ReadFromJsonAsync<TokenRequest>();
+                Console.WriteLine("[OIDC] Token request received via JSON.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[OIDC] Failed to read token request as JSON: {ex.Message}");
+            }
+        }
 
         if (request == null || string.IsNullOrEmpty(request.Code))
         {
-            Console.WriteLine("[OIDC] Token request failed: Code is missing.");
+            Console.WriteLine($"[OIDC] Token request failed: request is null or code is missing. Raw ContentType: {Request.ContentType}");
             return BadRequest(new { error = "invalid_request", error_description = "Code is required" });
         }
+
+        Console.WriteLine($"[OIDC] Token request details: GrantType={request.GrantType}, ClientId={request.ClientId}, Code={request.Code.Substring(0, Math.Min(4, request.Code.Length))}...");
 
         var user = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "");
         if (user == null)
         {
-            Console.WriteLine("[OIDC] Token request failed: Invalid code or ClientId.");
+            Console.WriteLine($"[OIDC] Token request failed: Invalid code or ClientId. Code: {request.Code}, ClientId: {request.ClientId}");
             return BadRequest(new { error = "invalid_grant" });
         }
 

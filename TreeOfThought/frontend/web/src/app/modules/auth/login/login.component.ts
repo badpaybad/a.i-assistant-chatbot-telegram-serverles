@@ -63,23 +63,33 @@ export class LoginComponent {
   }
 
   private detectSsoContext(): void {
-    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
-    if (returnUrl) {
-      try {
-        // Handle both relative and absolute URLs
-        const fullUrl = returnUrl.startsWith('http') ? returnUrl : window.location.origin + returnUrl;
-        const url = new URL(fullUrl);
-        const params = new URLSearchParams(url.search);
-        this.ssoClientName = params.get('client_id');
-        this.ssoRedirectUri = params.get('redirect_uri');
-        
-        // Pretty name mapping
-        if (this.ssoClientName === 'my_pc_assistant') {
-          this.ssoClientName = 'My PC Assistant App';
-        }
-      } catch (e) {
-        console.error('Failed to parse returnUrl for SSO context', e);
+    try {
+      const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+      console.log('[SSO] returnUrl from queryParams:', returnUrl);
+      
+      if (!returnUrl) return;
+
+      // Handle relative URLs safely
+      let fullUrl = returnUrl;
+      if (!returnUrl.startsWith('http')) {
+        fullUrl = window.location.origin + (returnUrl.startsWith('/') ? '' : '/') + returnUrl;
       }
+      
+      console.log('[SSO] Parsing full URL:', fullUrl);
+      const url = new URL(fullUrl);
+      const params = new URLSearchParams(url.search);
+      
+      this.ssoClientName = params.get('client_id');
+      this.ssoRedirectUri = params.get('redirect_uri');
+      
+      console.log('[SSO] Detected Client ID:', this.ssoClientName);
+      
+      // Pretty name mapping
+      if (this.ssoClientName === 'my_pc_assistant') {
+        this.ssoClientName = 'My PC Assistant App';
+      }
+    } catch (e) {
+      console.error('[SSO] Error detecting context:', e);
     }
   }
 

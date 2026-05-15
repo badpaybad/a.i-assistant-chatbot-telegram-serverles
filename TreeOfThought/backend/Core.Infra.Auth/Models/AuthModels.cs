@@ -40,40 +40,40 @@ public class ChangePasswordRequest
 
 public class AuthorizeRequest
 {
-    [FromQuery(Name = "client_id")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "client_id")]
     public string? ClientId { get; set; }
 
-    [FromQuery(Name = "redirect_uri")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "redirect_uri")]
     public string? RedirectUri { get; set; }
 
-    [FromQuery(Name = "response_type")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "response_type")]
     public string? ResponseType { get; set; }
 
-    [FromQuery(Name = "scope")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "scope")]
     public string? Scope { get; set; }
 
-    [FromQuery(Name = "state")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "state")]
     public string? State { get; set; }
 
-    [FromQuery(Name = "nonce")]
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "nonce")]
     public string? Nonce { get; set; }
 }
 
 public class TokenRequest
 {
-    [FromForm(Name = "grant_type")]
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "grant_type")]
     public string? GrantType { get; set; }
 
-    [FromForm(Name = "code")]
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "code")]
     public string? Code { get; set; }
 
-    [FromForm(Name = "redirect_uri")]
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "redirect_uri")]
     public string? RedirectUri { get; set; }
 
-    [FromForm(Name = "client_id")]
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "client_id")]
     public string? ClientId { get; set; }
 
-    [FromForm(Name = "client_secret")]
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "client_secret")]
     public string? ClientSecret { get; set; }
 }
 

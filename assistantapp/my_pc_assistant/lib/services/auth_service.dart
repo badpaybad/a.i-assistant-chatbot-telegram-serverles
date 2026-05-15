@@ -54,25 +54,31 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       final String callbackUrlScheme = 'my-pc-assistant';
-      final String authorizeUrl = '$_baseUrl/api/auth/authorize'
-          '?client_id=my_pc_assistant'
-          '&redirect_uri=$callbackUrlScheme://callback'
-          '&response_type=code'
-          '&scope=openid profile email'
-          '&state=random_state';
+      final Uri authorizeUri = Uri.parse('$_baseUrl/api/auth/authorize').replace(queryParameters: {
+        'client_id': 'my_pc_assistant',
+        'redirect_uri': '$callbackUrlScheme://callback',
+        'response_type': 'code',
+        'scope': 'openid profile email',
+        'state': 'random_state',
+      });
+      
+      final String authorizeUrl = authorizeUri.toString();
 
-      debugPrint('Opening SSO URL: $authorizeUrl');
+      debugPrint('[SSO] Starting authentication with URL: $authorizeUrl');
+      debugPrint('[SSO] Callback Scheme: $callbackUrlScheme');
 
       final result = await FlutterWebAuth2.authenticate(
         url: authorizeUrl,
         callbackUrlScheme: callbackUrlScheme,
       );
 
+      debugPrint('[SSO] Authentication result received: $result');
+
       final Uri callbackUri = Uri.parse(result);
       final String? code = callbackUri.queryParameters['code'];
 
       if (code != null) {
-        debugPrint('SSO Code received: $code');
+        debugPrint('[SSO] Code received: $code. Exchanging for token...');
         
         // Trao đổi code lấy token
         final response = await _dio.post(
@@ -81,16 +87,22 @@ class AuthService extends ChangeNotifier {
             'code': code,
             'client_id': 'my_pc_assistant',
             'grant_type': 'authorization_code',
+            'redirect_uri': '$callbackUrlScheme://callback',
           },
           options: Options(
             contentType: Headers.formUrlEncodedContentType,
           ),
         );
 
+        debugPrint('[SSO] Token response status: ${response.statusCode}');
+        debugPrint('[SSO] Token response data: ${response.data}');
+
         if (response.statusCode == 200) {
           final data = response.data;
           final String accessToken = data['access_token'];
           
+          debugPrint('[SSO] Access token received. Fetching user info...');
+
           // Lấy thông tin user (từ /api/auth/me)
           final userResponse = await _dio.get(
             '$_baseUrl/api/auth/me',
@@ -99,27 +111,34 @@ class AuthService extends ChangeNotifier {
             ),
           );
 
+          debugPrint('[SSO] User info status: ${userResponse.statusCode}');
+
           if (userResponse.statusCode == 200) {
             final userData = userResponse.data;
+            final username = userData['preferred_username'] ?? userData['sub'];
             _currentUser = UserModel(
-              id: 'sso_${userData['username']}',
-              name: userData['displayName'] ?? userData['username'],
+              id: 'sso_$username',
+              name: userData['name'] ?? username,
               email: userData['email'],
-              profileImageUrl: 'https://i.pravatar.cc/150?u=${userData['username']}',
+              profileImageUrl: 'https://i.pravatar.cc/150?u=$username',
             );
             _isAuthenticated = true;
             _isLoading = false;
             notifyListeners();
+            debugPrint('[SSO] Login successful for $username');
             return true;
           }
         }
+      } else {
+        debugPrint('[SSO] No code found in callback URL');
       }
       
       _isLoading = false;
       notifyListeners();
       return false;
-    } catch (e) {
-      debugPrint('SSO Login Error: $e');
+    } catch (e, stackTrace) {
+      debugPrint('[SSO] Login Error: $e');
+      debugPrint('[SSO] Stack trace: $stackTrace');
       _isLoading = false;
       notifyListeners();
       return false;
