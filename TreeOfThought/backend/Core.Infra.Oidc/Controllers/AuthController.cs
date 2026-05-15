@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
         var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
         return Ok(new
         {
-            issuer = _config["Jwt:Issuer"],
+            issuer = _config["Auth:Jwt:Issuer"],
             jwks_uri = $"{baseUrl}/api/auth/jwks",
             authorization_endpoint = $"{baseUrl}/api/auth/authorize",
             token_endpoint = $"{baseUrl}/api/auth/token",
@@ -204,7 +204,7 @@ public class AuthController : ControllerBase
         Console.WriteLine("[OIDC] User not logged in or session expired. Redirecting to Login UI...");
 
         // 2. If not logged in, redirect to SPA Login UI
-        var loginUrl = _config["Auth:OidcLoginUiUrl"] ?? "/login";
+        var loginUrl = _config["Oidc:OidcLoginUiUrl"]!;
         var returnUrl = Request.Scheme + "://" + Request.Host + Request.Path + Request.QueryString;
 
         // Đảm bảo URL chuyển hướng là tuyệt đối và sử dụng chính Host mà client đang truy cập

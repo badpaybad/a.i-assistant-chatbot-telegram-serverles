@@ -38,9 +38,9 @@ public class AuthService
     {
         await _userRepo.EnsureTablesCreatedAsync();
         
-        var adminUser = _config["Admin:Username"] ?? "admin";
-        var adminPass = _config["Admin:Password"] ?? "admin123";
-        var adminEmail = _config["Admin:Email"] ?? "admin@example.com";
+        var adminUser = _config["Oidc:Admin:Username"] ?? "admin";
+        var adminPass = _config["Oidc:Admin:Password"] ?? "admin123";
+        var adminEmail = _config["Oidc:Admin:Email"] ?? "admin@example.com";
         
         await _userRepo.EnsureAdminExistsAsync(adminUser, adminPass, adminEmail);
     }

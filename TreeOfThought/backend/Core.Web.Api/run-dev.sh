@@ -3,6 +3,8 @@
 # Ensure we are in the script's directory
 cd "$(dirname "$0")"
 
+fuser -k 5000/tcp 4200/tcp
+
 # Create wwwroot/admin if it doesn't exist, and clean it to avoid StaticWebAssets conflicts
 rm -rf wwwroot/admin/*
 mkdir -p wwwroot/admin
