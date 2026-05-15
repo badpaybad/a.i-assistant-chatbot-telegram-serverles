@@ -1,5 +1,6 @@
 using Core.Infra.Data.Contexts;
 using Core.Infra.FilesFolders.Contexts;
+using Core.Infra.FilesFolders.Controllers;
 using Core.Infra.FilesFolders.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,5 +18,10 @@ public static class ServiceCollectionExtensions
         services.AddScoped<FilesFoldersService>();
 
         return services;
+    }
+
+    public static IMvcBuilder AddFilesFoldersControllers(this IMvcBuilder mvcBuilder)
+    {
+        return mvcBuilder.AddApplicationPart(typeof(FilesController).Assembly);
     }
 }

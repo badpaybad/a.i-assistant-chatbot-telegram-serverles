@@ -50,6 +50,7 @@ builder.Services.AddFilesFolders(config);
 
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
+    .AddFilesFoldersControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
