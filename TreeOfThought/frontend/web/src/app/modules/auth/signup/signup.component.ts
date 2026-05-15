@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -28,7 +28,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
   templateUrl: './signup.component.html',
   styleUrls: ['./signup.component.css']
 })
-export class SignupComponent {
+export class SignupComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -50,6 +50,20 @@ export class SignupComponent {
   });
 
   loading = false;
+  ssoClientName: string | null = null;
+
+  ngOnInit(): void {
+    // If user is already logged in (e.g. returning from social redirect)
+    this.authService.ssoComplete$.subscribe(complete => {
+      if (complete) {
+        this.router.navigate(['/']);
+      }
+    });
+
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/']);
+    }
+  }
 
   async submitForm(): Promise<void> {
     if (this.validateForm.valid) {
@@ -81,11 +95,12 @@ export class SignupComponent {
   async signupWithGoogle() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('google');
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('google');
+      if (completed) {
+        this.router.navigate(['/']);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -93,11 +108,12 @@ export class SignupComponent {
   async signupWithMS() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('ms');
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('ms');
+      if (completed) {
+        this.router.navigate(['/']);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -105,11 +121,12 @@ export class SignupComponent {
   async signupWithFacebook() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('facebook');
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('facebook');
+      if (completed) {
+        this.router.navigate(['/']);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }

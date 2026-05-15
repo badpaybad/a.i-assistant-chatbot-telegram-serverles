@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, signInWithCustomToken, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, Auth, signInWithCustomToken, onAuthStateChanged, User, signInWithRedirect, getRedirectResult } from 'firebase/auth';
 import { getFirestore, Firestore, doc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { getMessaging, Messaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { environment } from '../../../environments/environment';
@@ -29,6 +29,10 @@ export class FirebaseService {
     });
   }
 
+  private isMobile(): boolean {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  }
+
   private async initMessaging() {
     // Messaging only works in secure contexts (HTTPS) and supported browsers
     try {
@@ -45,22 +49,37 @@ export class FirebaseService {
   async loginWithGoogle() {
     const { GoogleAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(this.auth, provider);
-    return result.user;
+    if (this.isMobile()) {
+      await signInWithRedirect(this.auth, provider);
+      return null;
+    } else {
+      const result = await signInWithPopup(this.auth, provider);
+      return result.user;
+    }
   }
 
   async loginWithFacebook() {
     const { FacebookAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new FacebookAuthProvider();
-    const result = await signInWithPopup(this.auth, provider);
-    return result.user;
+    if (this.isMobile()) {
+      await signInWithRedirect(this.auth, provider);
+      return null;
+    } else {
+      const result = await signInWithPopup(this.auth, provider);
+      return result.user;
+    }
   }
 
   async loginWithMicrosoft() {
     const { OAuthProvider, signInWithPopup } = await import('firebase/auth');
     const provider = new OAuthProvider('microsoft.com');
-    const result = await signInWithPopup(this.auth, provider);
-    return result.user;
+    if (this.isMobile()) {
+      await signInWithRedirect(this.auth, provider);
+      return null;
+    } else {
+      const result = await signInWithPopup(this.auth, provider);
+      return result.user;
+    }
   }
 
   async loginWithCustomToken(token: string) {
@@ -69,6 +88,16 @@ export class FirebaseService {
       return userCredential.user;
     } catch (error) {
       console.error('Firebase custom token login failed', error);
+      throw error;
+    }
+  }
+
+  async handleRedirectResult() {
+    try {
+      const result = await getRedirectResult(this.auth);
+      return result?.user;
+    } catch (error) {
+      console.error('Firebase redirect login failed', error);
       throw error;
     }
   }

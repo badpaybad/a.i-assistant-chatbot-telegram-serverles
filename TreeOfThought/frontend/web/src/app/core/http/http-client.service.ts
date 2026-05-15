@@ -49,10 +49,6 @@ export class HttpClientService {
       
       if (template) {
         const ref = this.notification.create('error', errorTitle, template, { nzData: { content: htmlContent }, nzDuration: 0 });
-        // ref.onClick.subscribe(() => {
-        //   this.router.navigate(['/auth/login']);
-        //   this.notification.remove(ref.messageId);
-        // });
       } else {
         const ref = this.notification.error(errorTitle, `${displayMessage}. ${linkText}.`, { nzDuration: 0 });
         ref.onClick.subscribe(() => {
@@ -72,6 +68,7 @@ export class HttpClientService {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.get<T>(fullUrl, {
         headers: this.getHeaders(),
+        withCredentials: true,
         ...options
       }) as any);
     } catch (error) {
@@ -84,6 +81,7 @@ export class HttpClientService {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.post<T>(fullUrl, data, {
         headers: this.getHeaders(data),
+        withCredentials: true,
         ...options
       }) as any);
     } catch (error) {
@@ -96,6 +94,7 @@ export class HttpClientService {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.put<T>(fullUrl, data, {
         headers: this.getHeaders(data),
+        withCredentials: true,
         ...options
       }) as any);
     } catch (error) {
@@ -108,6 +107,7 @@ export class HttpClientService {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       return await firstValueFrom(this.http.delete<T>(fullUrl, {
         headers: this.getHeaders(),
+        withCredentials: true,
         ...options
       }) as any);
     } catch (error) {
@@ -119,6 +119,7 @@ export class HttpClientService {
     const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
     return this.http.post<T>(fullUrl, data, {
       headers: this.getHeaders(data),
+      withCredentials: true,
       ...options
     });
   }

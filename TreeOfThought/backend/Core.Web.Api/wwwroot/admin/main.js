@@ -1,7 +1,7 @@
 import {
   AuthService,
   NzDescriptionsModule
-} from "./chunk-4XYBYJUE.js";
+} from "./chunk-CZAT4A77.js";
 import {
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
@@ -11,42 +11,42 @@ import {
   NzLayoutComponent,
   NzLayoutModule,
   NzSiderComponent
-} from "./chunk-VR2NOZPH.js";
+} from "./chunk-4VLURIGP.js";
 import {
   NzDividerComponent,
   NzDividerModule
-} from "./chunk-IBB4Z5I5.js";
+} from "./chunk-VMXZFLQI.js";
 import {
   CqrsTestComponent,
   DashboardService
-} from "./chunk-UGOXY3I4.js";
+} from "./chunk-Z2PZQOD4.js";
 import {
   NzPageHeaderComponent,
   NzPageHeaderExtraDirective,
   NzPageHeaderModule
-} from "./chunk-KCN2Y6ON.js";
-import "./chunk-HDYQOSJT.js";
+} from "./chunk-6AAZKQFY.js";
+import "./chunk-WEPRVIH2.js";
 import "./chunk-IRGOCD6C.js";
 import {
   NzListComponent,
   NzListItemComponent,
   NzListModule
-} from "./chunk-QSDXAG3T.js";
+} from "./chunk-76B2TS5G.js";
 import {
   NzDatePickerComponent,
   NzDatePickerModule
-} from "./chunk-N67LIGDP.js";
+} from "./chunk-XPAK6AXI.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-KHCAJSOY.js";
+} from "./chunk-ME3RX76H.js";
 import {
   APP_CLAIMS
 } from "./chunk-F6TGNGA2.js";
 import {
   NzTagComponent,
   NzTagModule
-} from "./chunk-WSY7BE7S.js";
+} from "./chunk-GVGPR4NJ.js";
 import {
   NzCellFixedDirective,
   NzDropDownModule,
@@ -72,7 +72,7 @@ import {
   NzTheadComponent,
   NzTrDirective,
   NzTrExpandDirective
-} from "./chunk-MMWJDA4K.js";
+} from "./chunk-BSYK5PYY.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
@@ -80,42 +80,42 @@ import {
   NzFormModule,
   NzTooltipDirective,
   NzTooltipModule
-} from "./chunk-ZP2E5FZJ.js";
-import "./chunk-DI76EDHS.js";
-import "./chunk-5HQ52OJW.js";
+} from "./chunk-LU2YYR2M.js";
+import "./chunk-SHYS2JTL.js";
+import "./chunk-FVBTWRWW.js";
 import {
   NZ_MODAL_DATA,
   NzModalModule,
   NzModalService
-} from "./chunk-RO4CJ46N.js";
+} from "./chunk-M3AES4KG.js";
 import {
   NzCheckboxComponent,
   NzCheckboxModule,
   NzEmptyComponent,
   NzEmptyModule
-} from "./chunk-STVBHBPJ.js";
+} from "./chunk-RUHI3VNX.js";
 import {
   en_US,
   provideNzI18n,
   timeUnits
-} from "./chunk-ZX5WOUY2.js";
+} from "./chunk-NRPLV2GT.js";
 import {
   NzColDirective,
   NzGridModule,
   NzRowDirective
-} from "./chunk-VTSHLNMQ.js";
+} from "./chunk-VO7LFQ3A.js";
 import {
   NzCardComponent,
   NzCardModule,
   NzSkeletonComponent,
   NzSkeletonModule
-} from "./chunk-TEVLHC4P.js";
+} from "./chunk-T7PAMWZ4.js";
 import {
   NzInputDirective,
   NzInputGroupComponent,
   NzInputGroupWhitSuffixOrPrefixDirective,
   NzInputModule
-} from "./chunk-2IS6VVE2.js";
+} from "./chunk-QVFRY7SZ.js";
 import {
   ActivatedRoute,
   AppNotificationService,
@@ -180,7 +180,7 @@ import {
   takeUntilDestroyed,
   toBoolean,
   ɵNgNoValidate
-} from "./chunk-W3A2S6TY.js";
+} from "./chunk-BV7BATNO.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionScheduler,
@@ -3606,13 +3606,13 @@ var AuthLayoutComponent = _AuthLayoutComponent;
 })();
 
 // src/app/modules/auth/login/login.component.ts
-function LoginComponent_div_10_Template(rf, ctx) {
+function LoginComponent_div_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 26)(1, "span", 27);
+    \u0275\u0275elementStart(0, "div", 24)(1, "span", 25);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 28);
-    \u0275\u0275element(4, "span", 29);
+    \u0275\u0275elementStart(3, "div", 26);
+    \u0275\u0275element(4, "span", 27);
     \u0275\u0275text(5);
     \u0275\u0275pipe(6, "translate");
     \u0275\u0275elementEnd()();
@@ -3625,12 +3625,12 @@ function LoginComponent_div_10_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 2, "K\u1EBFt n\u1ED1i an to\xE0n"), " ");
   }
 }
-function LoginComponent_div_39_Template(rf, ctx) {
+function LoginComponent_div_37_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 30);
+    \u0275\u0275elementStart(0, "div", 28);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "a", 31);
+    \u0275\u0275elementStart(3, "a", 29);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "translate");
     \u0275\u0275elementEnd()();
@@ -3642,9 +3642,9 @@ function LoginComponent_div_39_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 4, "\u0110\u0103ng k\xFD ngay!"));
   }
 }
-function LoginComponent_ng_template_41_Template(rf, ctx) {
+function LoginComponent_ng_template_39_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 32);
+    \u0275\u0275elementStart(0, "span", 30);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "translate");
     \u0275\u0275elementEnd();
@@ -3671,6 +3671,19 @@ var _LoginComponent = class _LoginComponent {
     this.ssoClientName = null;
     this.ssoRedirectUri = null;
     this.detectSsoContext();
+  }
+  ngOnInit() {
+    const returnUrl = this.route.snapshot.queryParams["returnUrl"];
+    this.authService.ssoComplete$.subscribe((complete) => {
+      if (complete) {
+        console.log("[Login] SSO process complete, handling redirect...");
+        this.handleRedirect();
+      }
+    });
+    if (this.authService.isLoggedIn() && !returnUrl) {
+      console.log("[Login] User already logged in, redirecting to home");
+      this.router.navigate(["/"]);
+    }
   }
   detectSsoContext() {
     try {
@@ -3719,7 +3732,7 @@ var _LoginComponent = class _LoginComponent {
         }
       } catch (e) {
         console.error(e);
-        this.notification.error(this.translate.instant("\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"), ((_a = e.error) == null ? void 0 : _a.message) || this.translate.instant("T\xEAn \u0111\u0103ng nh\u1EADp ho\u1EB7c m\u1EADt kh\u1EA9u kh\xF4ng \u0111\xFAng"));
+        this.notification.error(this.translate.instant("L\u1ED7i"), this.translate.instant(((_a = e.error) == null ? void 0 : _a.message) || "\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"));
       } finally {
         this.loading = false;
       }
@@ -3735,39 +3748,36 @@ var _LoginComponent = class _LoginComponent {
   async loginWithGoogle() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("google");
-      if (this.handleRedirect())
-        return;
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("google");
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
   async loginWithMS() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("ms");
-      if (this.handleRedirect())
-        return;
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("ms");
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
   async loginWithFacebook() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("facebook");
-      if (this.handleRedirect())
-        return;
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("facebook");
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -3775,113 +3785,110 @@ var _LoginComponent = class _LoginComponent {
 _LoginComponent.\u0275fac = function LoginComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _LoginComponent)();
 };
-_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 52, vars: 41, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], [1, "brand-logo"], ["nz-icon", "", "nzType", "cluster", "nzTheme", "outline"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nz-button", "", "nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "nzLoading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "google", 3, "click"], ["nz-icon", "", "nzType", "google"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "ms", 3, "click"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
+_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 50, vars: 41, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nz-button", "", "nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "nzLoading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "google", 3, "click"], ["nz-icon", "", "nzType", "google"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "ms", 3, "click"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "div", 3);
-    \u0275\u0275element(3, "span", 4);
+    \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "h2");
+    \u0275\u0275text(3);
+    \u0275\u0275pipe(4, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "h2");
-    \u0275\u0275text(5);
-    \u0275\u0275pipe(6, "translate");
+    \u0275\u0275elementStart(5, "p");
+    \u0275\u0275text(6);
+    \u0275\u0275pipe(7, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "p");
-    \u0275\u0275text(8);
-    \u0275\u0275pipe(9, "translate");
+    \u0275\u0275template(8, LoginComponent_div_8_Template, 7, 4, "div", 3);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(10, LoginComponent_div_10_Template, 7, 4, "div", 5);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "form", 6);
-    \u0275\u0275listener("ngSubmit", function LoginComponent_Template_form_ngSubmit_11_listener($event) {
+    \u0275\u0275elementStart(9, "form", 4);
+    \u0275\u0275listener("ngSubmit", function LoginComponent_Template_form_ngSubmit_9_listener($event) {
       \u0275\u0275restoreView(_r1);
       $event.preventDefault();
       return \u0275\u0275resetView(ctx.submitForm());
     });
-    \u0275\u0275elementStart(12, "nz-form-item")(13, "nz-form-control", 7);
-    \u0275\u0275pipe(14, "translate");
-    \u0275\u0275elementStart(15, "nz-input-group", 8);
-    \u0275\u0275element(16, "input", 9);
-    \u0275\u0275pipe(17, "translate");
+    \u0275\u0275elementStart(10, "nz-form-item")(11, "nz-form-control", 5);
+    \u0275\u0275pipe(12, "translate");
+    \u0275\u0275elementStart(13, "nz-input-group", 6);
+    \u0275\u0275element(14, "input", 7);
+    \u0275\u0275pipe(15, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(18, "nz-form-item")(19, "nz-form-control", 7);
-    \u0275\u0275pipe(20, "translate");
-    \u0275\u0275elementStart(21, "nz-input-group", 10);
-    \u0275\u0275element(22, "input", 11);
-    \u0275\u0275pipe(23, "translate");
+    \u0275\u0275elementStart(16, "nz-form-item")(17, "nz-form-control", 5);
+    \u0275\u0275pipe(18, "translate");
+    \u0275\u0275elementStart(19, "nz-input-group", 8);
+    \u0275\u0275element(20, "input", 9);
+    \u0275\u0275pipe(21, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(24, "div", 12)(25, "div", 13)(26, "label", 14)(27, "span");
-    \u0275\u0275text(28);
-    \u0275\u0275pipe(29, "translate");
+    \u0275\u0275elementStart(22, "div", 10)(23, "div", 11)(24, "label", 12)(25, "span");
+    \u0275\u0275text(26);
+    \u0275\u0275pipe(27, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(30, "div", 15)(31, "a", 16);
-    \u0275\u0275text(32);
-    \u0275\u0275pipe(33, "translate");
+    \u0275\u0275elementStart(28, "div", 13)(29, "a", 14);
+    \u0275\u0275text(30);
+    \u0275\u0275pipe(31, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(34, "button", 17)(35, "span");
-    \u0275\u0275text(36);
-    \u0275\u0275pipe(37, "translate");
+    \u0275\u0275elementStart(32, "button", 15)(33, "span");
+    \u0275\u0275text(34);
+    \u0275\u0275pipe(35, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275element(38, "span", 18);
+    \u0275\u0275element(36, "span", 16);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(39, LoginComponent_div_39_Template, 6, 6, "div", 19);
+    \u0275\u0275template(37, LoginComponent_div_37_Template, 6, 6, "div", 17);
     \u0275\u0275elementEnd();
-    \u0275\u0275element(40, "nz-divider", 20);
-    \u0275\u0275template(41, LoginComponent_ng_template_41_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(43, "div", 21)(44, "button", 22);
-    \u0275\u0275listener("click", function LoginComponent_Template_button_click_44_listener() {
+    \u0275\u0275element(38, "nz-divider", 18);
+    \u0275\u0275template(39, LoginComponent_ng_template_39_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(41, "div", 19)(42, "button", 20);
+    \u0275\u0275listener("click", function LoginComponent_Template_button_click_42_listener() {
       return ctx.loginWithGoogle();
     });
-    \u0275\u0275element(45, "span", 23);
-    \u0275\u0275text(46);
-    \u0275\u0275pipe(47, "translate");
+    \u0275\u0275element(43, "span", 21);
+    \u0275\u0275text(44);
+    \u0275\u0275pipe(45, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(48, "button", 24);
-    \u0275\u0275listener("click", function LoginComponent_Template_button_click_48_listener() {
+    \u0275\u0275elementStart(46, "button", 22);
+    \u0275\u0275listener("click", function LoginComponent_Template_button_click_46_listener() {
       return ctx.loginWithMS();
     });
-    \u0275\u0275element(49, "span", 25);
-    \u0275\u0275text(50);
-    \u0275\u0275pipe(51, "translate");
+    \u0275\u0275element(47, "span", 23);
+    \u0275\u0275text(48);
+    \u0275\u0275pipe(49, "translate");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const dividerText_r3 = \u0275\u0275reference(42);
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(6, 19, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
+    const dividerText_r3 = \u0275\u0275reference(40);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(9, 21, ctx.ssoClientName ? "B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o" : "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 19, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 21, ctx.ssoClientName ? "B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o" : "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
     \u0275\u0275advance(2);
     \u0275\u0275property("ngIf", ctx.ssoClientName);
     \u0275\u0275advance();
     \u0275\u0275property("formGroup", ctx.validateForm);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(14, 23, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(12, 23, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(17, 25, "T\xEAn \u0111\u0103ng nh\u1EADp"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(15, 25, "T\xEAn \u0111\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(20, 27, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(18, 27, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(23, 29, "M\u1EADt kh\u1EA9u"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(21, 29, "M\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 31, "Ghi nh\u1EDB t\xF4i"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(27, 31, "Ghi nh\u1EDB t\xF4i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(33, 33, "Qu\xEAn m\u1EADt kh\u1EA9u"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(31, 33, "Qu\xEAn m\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(37, 35, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(35, 35, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
     \u0275\u0275property("ngIf", !ctx.ssoClientName);
     \u0275\u0275advance();
     \u0275\u0275property("nzText", dividerText_r3);
     \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(47, 37, "Google"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 37, "Google"), " ");
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(51, 39, "Microsoft"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 39, "Microsoft"), " ");
   }
 }, dependencies: [
   CommonModule,
@@ -3933,9 +3940,9 @@ var LoginComponent = _LoginComponent;
       TranslateModule
     ], template: `<div class="login-container animate-fade-in">
   <div class="login-header">
-    <div class="brand-logo">
+    <!-- <div class="brand-logo">
       <span nz-icon nzType="cluster" nzTheme="outline"></span>
-    </div>
+    </div> -->
     <h2>{{ (ssoClientName ? '\u0110\u0103ng nh\u1EADp SSO' : '\u0110\u0103ng nh\u1EADp') | translate }}</h2>
     <p>{{ (ssoClientName ? 'B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o' : 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng') | translate }}</p>
     
@@ -4023,6 +4030,17 @@ var _SignupComponent = class _SignupComponent {
       confirmPassword: ["", [Validators.required]]
     });
     this.loading = false;
+    this.ssoClientName = null;
+  }
+  ngOnInit() {
+    this.authService.ssoComplete$.subscribe((complete) => {
+      if (complete) {
+        this.router.navigate(["/"]);
+      }
+    });
+    if (this.authService.isLoggedIn()) {
+      this.router.navigate(["/"]);
+    }
   }
   async submitForm() {
     if (this.validateForm.valid) {
@@ -4052,33 +4070,36 @@ var _SignupComponent = class _SignupComponent {
   async signupWithGoogle() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("google");
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("google");
+      if (completed) {
+        this.router.navigate(["/"]);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
   async signupWithMS() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("ms");
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("ms");
+      if (completed) {
+        this.router.navigate(["/"]);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
   async signupWithFacebook() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin("facebook");
-      this.router.navigate(["/"]);
+      const completed = await this.authService.ssoLogin("facebook");
+      if (completed) {
+        this.router.navigate(["/"]);
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -9389,22 +9410,22 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-WT3XBM6N.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-KHIE2E5Z.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-SPHJBUCN.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-WE7VHQDY.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-YDFJKSQE.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-MXR5IHYW.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-IGAYAE3D.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-SH7DKCYV.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -9415,36 +9436,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-LVWMZ27C.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-QLSHJ4VR.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-DFZMGYI7.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-Q6ELWSTX.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-2SJFWFMC.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-OOU4Y7LF.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-Z6BU6TOM.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-CWB5PZ4E.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-OSWJ472U.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-QVIA53DQ.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-KZKGGQ2T.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-O7ROVYBO.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -9452,7 +9473,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-XMVZLSQJ.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-TGB2CQ57.js").then((m) => m.FilesFolders)
       }
     ]
   },

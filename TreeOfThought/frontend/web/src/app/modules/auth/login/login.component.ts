@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   FormControl,
@@ -36,7 +36,7 @@ import { AuthService } from '../../../core/auth/auth.service';
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private fb = inject(NonNullableFormBuilder);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -60,6 +60,27 @@ export class LoginComponent {
 
   constructor() {
     this.detectSsoContext();
+  }
+
+  ngOnInit(): void {
+    const returnUrl = this.route.snapshot.queryParams['returnUrl'];
+
+    // Subscribe to SSO completion
+    this.authService.ssoComplete$.subscribe(complete => {
+      if (complete) {
+        console.log('[Login] SSO process complete, handling redirect...');
+        this.handleRedirect();
+      }
+    });
+
+    // Only auto-redirect to home if NOT in an OIDC flow (no returnUrl)
+    // If there is a returnUrl, we should NOT auto-redirect based on existing JWT
+    // because that can cause an infinite loop if the backend session cookie is missing.
+    // The user will see the login page and can click a provider or log in again.
+    if (this.authService.isLoggedIn() && !returnUrl) {
+      console.log('[Login] User already logged in, redirecting to home');
+      this.router.navigate(['/']);
+    }
   }
 
   private detectSsoContext(): void {
@@ -122,8 +143,8 @@ export class LoginComponent {
       } catch (e: any) {
         console.error(e);
         this.notification.error(
-          this.translate.instant('Đăng nhập thất bại'),
-          e.error?.message || this.translate.instant('Tên đăng nhập hoặc mật khẩu không đúng'),
+          this.translate.instant('Lỗi'),
+          this.translate.instant(e.error?.message || 'Đăng nhập thất bại'),
         );
       } finally {
         this.loading = false;
@@ -141,12 +162,12 @@ export class LoginComponent {
   async loginWithGoogle() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('google');
-      if (this.handleRedirect()) return;
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('google');
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -154,12 +175,12 @@ export class LoginComponent {
   async loginWithMS() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('ms');
-      if (this.handleRedirect()) return;
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('ms');
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }
@@ -167,12 +188,12 @@ export class LoginComponent {
   async loginWithFacebook() {
     this.loading = true;
     try {
-      await this.authService.ssoLogin('facebook');
-      if (this.handleRedirect()) return;
-      this.router.navigate(['/']);
+      const completed = await this.authService.ssoLogin('facebook');
+      if (completed) {
+        this.handleRedirect();
+      }
     } catch (e) {
       console.error(e);
-    } finally {
       this.loading = false;
     }
   }

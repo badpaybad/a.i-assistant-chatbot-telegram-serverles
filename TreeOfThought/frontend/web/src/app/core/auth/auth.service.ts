@@ -20,11 +20,34 @@ export class AuthService {
   private claimsUpdatedSubject = new BehaviorSubject<void>(undefined);
   claimsUpdated$ = this.claimsUpdatedSubject.asObservable();
 
+  private ssoCompleteSubject = new BehaviorSubject<boolean>(false);
+  ssoComplete$ = this.ssoCompleteSubject.asObservable();
+
   user$ = this.firebase.user$;
 
   constructor() {
     if (this.hasToken()) {
       this.syncClaims();
+    }
+    this.handleRedirectCallback();
+  }
+
+  private async handleRedirectCallback() {
+    try {
+      const user = await this.firebase.handleRedirectResult();
+      if (user) {
+        console.log('[Auth] Redirect result found, completing SSO login...');
+        const provider = localStorage.getItem('sso_provider') || 'unknown';
+        await this.processSsoUser(provider, user);
+        
+        // Clear the pending provider
+        localStorage.removeItem('sso_provider');
+        
+        // Notify any listeners or components if needed
+        this.ssoCompleteSubject.next(true);
+      }
+    } catch (e) {
+      console.error('[Auth] Error handling redirect callback', e);
     }
   }
 
@@ -44,7 +67,10 @@ export class AuthService {
     return response;
   }
 
-  async ssoLogin(provider: string) {
+  async ssoLogin(provider: string): Promise<boolean> {
+    // Store provider to know how to process when returning from redirect
+    localStorage.setItem('sso_provider', provider);
+    
     let user;
     switch (provider) {
       case 'google': user = await this.firebase.loginWithGoogle(); break;
@@ -52,7 +78,18 @@ export class AuthService {
       case 'ms': user = await this.firebase.loginWithMicrosoft(); break;
       default: throw new Error('Unsupported provider');
     }
+    
+    if (user) {
+      // If we got a user back immediately (Popup mode on Desktop)
+      await this.processSsoUser(provider, user);
+      localStorage.removeItem('sso_provider');
+      return true;
+    }
+    return false;
+    // If user is null, it means we are in redirect mode (Mobile) and execution stops here
+  }
 
+  private async processSsoUser(provider: string, user: any) {
     const idToken = await user.getIdToken();
     const response = await this.http.post('/api/auth/sso', {
       provider,
@@ -158,8 +195,6 @@ export class AuthService {
       return false;
     }
   }
-
-
 
   isLoggedIn(): boolean {
     return !!localStorage.getItem('jwt_token');

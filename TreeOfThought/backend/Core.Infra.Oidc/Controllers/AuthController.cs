@@ -120,20 +120,8 @@ public class AuthController : ControllerBase
 
             Console.WriteLine($"[AUTH] Authentication successful for user: {user.Username} (ID: {user.Id})");
 
-            // 1. Create SSO Session (Cookie)
             Console.WriteLine("[AUTH] Creating SSO Session Cookie...");
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, user.Username),
-                new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
-            };
-            var identity = new ClaimsIdentity(claims, AuthConstants.SsoSessionScheme);
-            var principal = new ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync(AuthConstants.SsoSessionScheme, principal, new AuthenticationProperties
-            {
-                IsPersistent = true,
-                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
-            });
+            await CreateSsoSessionCookie(user);
             Console.WriteLine("[AUTH] SSO Session Cookie created.");
 
             Console.WriteLine("[AUTH] Generating JWT Token...");
@@ -157,6 +145,22 @@ public class AuthController : ControllerBase
             Console.WriteLine($"[AUTH] Error during login for {request.Username}: {ex.Message}");
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    private async Task CreateSsoSessionCookie(Core.Infra.Oidc.Models.User user)
+    {
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Name, user.Username),
+            new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
+        };
+        var identity = new ClaimsIdentity(claims, AuthConstants.SsoSessionScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(AuthConstants.SsoSessionScheme, principal, new AuthenticationProperties
+        {
+            IsPersistent = true,
+            ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
+        });
     }
 
     [HttpGet("authorize")]
@@ -320,6 +324,9 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> SsoLogin([FromBody] SsoRequest request)
     {
         var user = await _authService.SsoLoginAsync(request.Provider, request.SsoId, request.Email, request.DisplayName, request.IdToken);
+
+        // Create SSO Session (Cookie) for OIDC flow
+        await CreateSsoSessionCookie(user);
 
         var token = await _authService.GenerateJwtToken(user);
         var firebaseToken = await _authService.GenerateFirebaseToken(user);
