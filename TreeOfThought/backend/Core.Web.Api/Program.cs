@@ -87,15 +87,16 @@ var app = builder.Build();
 
 // --- 7. Configure Pipeline ---
 app.UseCors("AllowAll");
-app.UseStaticFiles();
-
 app.Use(async (context, next) =>
 {
     context.Response.Headers.Remove("X-Frame-Options");
     context.Response.Headers.Append("Content-Security-Policy", "frame-ancestors *;");
     context.Response.Headers.Append("Permissions-Policy", "camera=*, microphone=*, geolocation=*");
+    context.Response.Headers.Append("Cross-Origin-Opener-Policy", "same-origin-allow-popups");
     await next();
 });
+
+app.UseStaticFiles();
 
 if (app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {

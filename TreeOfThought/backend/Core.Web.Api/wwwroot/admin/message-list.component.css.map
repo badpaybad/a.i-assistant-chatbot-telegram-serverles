@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;83e7dd69ca1ef731ee791253815c857391ef19343f8043d076218784555af8e1;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/cqrs-dashboard/message-list/message-list.component.html"],
-  "sourcesContent": ["\n  .msg-preview {\n    cursor: pointer;\n    font-family: monospace;\n    font-size: 12px;\n    color: #999;\n    white-space: nowrap;\n    overflow: hidden;\n    text-overflow: ellipsis;\n    max-width: 500px;\n  }\n  .msg-preview:hover {\n    color: #1890ff;\n  }\n"],
-  "mappings": ";AACE,CAAC;AACC,UAAQ;AACR,eAAa;AACb,aAAW;AACX,SAAO;AACP,eAAa;AACb,YAAU;AACV,iBAAe;AACf,aAAW;AACb;AACA,CAVC,WAUW;AACV,SAAO;AACT;",
+  "sources": ["src/app/modules/cqrs-dashboard/message-list/message-list.component.css"],
+  "sourcesContent": [".message-list-content {\n  padding: 24px;\n}\n\n.msg-cell {\n  font-family: monospace;\n  color: #555;\n}\n\n.no-data {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n"],
+  "mappings": ";AAAA,CAAC;AACC,WAAS;AACX;AAEA,CAAC;AACC,eAAa;AACb,SAAO;AACT;AAEA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,SAAO;AACT;",
   "names": []
 }

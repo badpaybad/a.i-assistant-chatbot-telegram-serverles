@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;919fdfca84b012487c20dd19b7e07eee72c17eba4f8e8e370f53f96f830c5cdd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/files-folders/components/folder-tree/folder-tree.html"],
-  "sourcesContent": ["\n  .popover-content {\n    width: 200px;\n  }\n  .popover-footer {\n    margin-top: 8px;\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n  }\n"],
-  "mappings": ";AACE,CAAC;AACC,SAAO;AACT;AACA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,mBAAiB;AACjB,OAAK;AACP;",
-  "names": []
-}
