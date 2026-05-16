@@ -23,7 +23,7 @@ export class FilesFolders {
   @Output() fileSelected = new EventEmitter<any>();
 
   constructor(private registry: ComponentRegistryService) {
-    this.registry.register(REGISTRY_KEYS.FILES_FOLDERS, FilesFolders);
+    // Component is registered eagerly via provideBusinessFiles() in app.config.ts
   }
 
   selectedFolderId: string | null = null;

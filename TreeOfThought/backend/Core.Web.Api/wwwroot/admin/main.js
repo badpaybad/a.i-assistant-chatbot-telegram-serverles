@@ -1,14 +1,14 @@
 import {
   APP_CLAIMS,
   AuthService
-} from "./chunk-HOOX2EWX.js";
+} from "./chunk-I334XZ2B.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-U4QT5BFJ.js";
+} from "./chunk-FHAQRQ6Y.js";
 import {
   FIREBASE_CONFIG
-} from "./chunk-4NPCYEGD.js";
+} from "./chunk-GYMFUDA3.js";
 import "./chunk-IRGOCD6C.js";
 import {
   NzBreadCrumbComponent,
@@ -18,8 +18,10 @@ import {
   NzHeaderComponent,
   NzLayoutComponent,
   NzLayoutModule,
-  NzSiderComponent
-} from "./chunk-RDMPVVOH.js";
+  NzSiderComponent,
+  provideBusinessFiles
+} from "./chunk-BEP7HJTW.js";
+import "./chunk-S3AT7VWC.js";
 import {
   NzCheckboxComponent,
   NzCheckboxModule,
@@ -33,13 +35,13 @@ import {
   NzMenuItemComponent,
   NzMenuModule,
   NzSubMenuComponent
-} from "./chunk-YA5VTMF5.js";
+} from "./chunk-SYOZIKP7.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
   NzFormItemComponent,
   NzFormModule
-} from "./chunk-LFQY2OAB.js";
+} from "./chunk-VC6GADZU.js";
 import {
   API_URL,
   ActivatedRoute,
@@ -92,7 +94,7 @@ import {
   registerLocaleData,
   withInterceptors,
   ɵNgNoValidate
-} from "./chunk-XU754HJP.js";
+} from "./chunk-KYB65WBY.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionScheduler,
@@ -156,7 +158,7 @@ import {
   ɵɵtwoWayListener,
   ɵɵtwoWayProperty,
   ɵɵviewQuery
-} from "./chunk-2BQMWOA2.js";
+} from "./chunk-ZYJZNBYG.js";
 import {
   __publicField,
   __spreadValues
@@ -3178,7 +3180,7 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onMouseUp();
     }, \u0275\u0275resolveDocument);
   }
-}, decls: 40, vars: 20, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["dashboardTitle", ""], ["authTitle", ""], ["filesFoldersTitle", ""], ["testTitle", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["nz-menu-item", "", "nzMatchRouter", ""], ["routerLink", "/modules/cqrs-dashboard"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/core-infra-auth/users"], ["routerLink", "/modules/core-infra-auth/roles"], ["routerLink", "/modules/core-infra-auth/claims"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["routerLink", "/modules/core-infra-auth/change-password"], ["routerLink", "/modules/core-infra-auth/authorize-info"], ["routerLink", "/modules/core-infra-auth/acl"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/files-folders"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/test/firestore"], ["routerLink", "/modules/test/fcm"], ["routerLink", "/modules/test/cqrs"], ["routerLink", "/modules/test/editor"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [3, "routerLink"]], template: function MainLayoutComponent_Template(rf, ctx) {
+}, decls: 40, vars: 20, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["dashboardTitle", ""], ["authTitle", ""], ["filesFoldersTitle", ""], ["testTitle", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["nz-menu-item", "", "nzMatchRouter", ""], ["routerLink", "/modules/cqrs-dashboard"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/core-infra-auth/users"], ["routerLink", "/modules/core-infra-auth/roles"], ["routerLink", "/modules/core-infra-auth/claims"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["routerLink", "/modules/core-infra-auth/change-password"], ["routerLink", "/modules/core-infra-auth/authorize-info"], ["routerLink", "/modules/core-infra-auth/acl"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/files-folders"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/test/firestore"], ["routerLink", "/modules/test/fcm"], ["routerLink", "/modules/cqrs-dashboard/cqrs"], ["routerLink", "/modules/test/editor"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [3, "routerLink"]], template: function MainLayoutComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "nz-layout", 6)(1, "nz-sider", 7);
@@ -3401,7 +3403,7 @@ var MainLayoutComponent = _MainLayoutComponent;
             <a routerLink="/modules/test/fcm">{{ 'Th\u1EED nghi\u1EC7m FCM' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/cqrs">{{ 'Th\u1EED nghi\u1EC7m CQRS' | translate }}</a>
+            <a routerLink="/modules/cqrs-dashboard/cqrs">{{ 'Th\u1EED nghi\u1EC7m CQRS' | translate }}</a>
           </li>
           <li nz-menu-item nzMatchRouter>
             <a routerLink="/modules/test/editor">{{ 'Th\u1EED nghi\u1EC7m CKEditor' | translate }}</a>
@@ -4272,24 +4274,24 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-QGFQECYR.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-AKFZNISE.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-QGFQECYR.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-AKFZNISE.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-QGFQECYR.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-AKFZNISE.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-QGFQECYR.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-AKFZNISE.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           }
         ]
@@ -4300,17 +4302,17 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-GGIESCKC.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-RYVWNXX7.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-GGIESCKC.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-RYVWNXX7.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-GGIESCKC.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-RYVWNXX7.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4321,36 +4323,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-ZGNCBCHC.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-GRZY7UKT.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4358,7 +4360,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-3H5CKQJF.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-ZLP47J3P.js").then((m) => m.FilesFolders)
       }
     ]
   },
@@ -4401,7 +4403,7 @@ var _AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
   loadImpl() {
     const loadFn = () => {
       var _a;
-      return (_a = this.moduleImpl) != null ? _a : import("./chunk-7KKD64HX.js").then((m) => m);
+      return (_a = this.moduleImpl) != null ? _a : import("./chunk-YPYFI3TK.js").then((m) => m);
     };
     let moduleImplPromise;
     if (this.loadingSchedulerFn) {
@@ -4695,6 +4697,7 @@ var appConfig = {
       suffix: ".json"
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
+    provideBusinessFiles(),
     importProvidersFrom(FormsModule, NzIconModule.forRoot(icons))
   ]
 };
