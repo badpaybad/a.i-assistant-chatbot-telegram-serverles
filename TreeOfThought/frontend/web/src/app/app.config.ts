@@ -11,12 +11,10 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { IconDefinition } from '@ant-design/icons-angular';
 import * as AllIcons from '@ant-design/icons-angular/icons';
 
-import { provideTransloco } from '@jsverse/transloco';
-import { TranslocoHttpLoader } from './transloco-loader';
 import { NZ_CONFIG, NzConfig } from 'ng-zorro-antd/core/config';
 
 import { environment } from '../environments/environment';
-import { authInterceptor, errorInterceptor, API_URL, FIREBASE_CONFIG } from '@tot/core';
+import { authInterceptor, errorInterceptor, API_URL, FIREBASE_CONFIG, provideTotI18n } from '@tot/core';
 import { provideBusinessFiles } from '@tot/business-files';
 
 registerLocaleData(en);
@@ -41,14 +39,10 @@ export const appConfig: ApplicationConfig = {
     ),
     { provide: API_URL, useValue: environment.apiBaseUrl },
     { provide: FIREBASE_CONFIG, useValue: environment.firebase },
-    provideTransloco({
-      config: {
-        availableLangs: ['en', 'vi'],
-        defaultLang: 'vi',
-        reRenderOnLangChange: true,
-        prodMode: environment.production,
-      },
-      loader: TranslocoHttpLoader
+    provideTotI18n({
+      prodMode: environment.production,
+      availableLangs: ['en', 'vi'],
+      defaultLang: 'vi'
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),

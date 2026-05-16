@@ -2763,6 +2763,40 @@ var TotClaimDirective = _TotClaimDirective;
   }] });
 })();
 
+// projects/tot/core/src/lib/i18n/transloco-loader.ts
+var _TranslocoHttpLoader = class _TranslocoHttpLoader {
+  constructor() {
+    this.http = inject(HttpClient);
+  }
+  getTranslation(lang) {
+    return this.http.get(`./assets/lang/${lang}.json`);
+  }
+};
+_TranslocoHttpLoader.\u0275fac = function TranslocoHttpLoader_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TranslocoHttpLoader)();
+};
+_TranslocoHttpLoader.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _TranslocoHttpLoader, factory: _TranslocoHttpLoader.\u0275fac, providedIn: "root" });
+var TranslocoHttpLoader = _TranslocoHttpLoader;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TranslocoHttpLoader, [{
+    type: Injectable,
+    args: [{ providedIn: "root" }]
+  }], null, null);
+})();
+
+// projects/tot/core/src/lib/i18n/i18n.provider.ts
+function provideTotI18n(config) {
+  return provideTransloco({
+    config: {
+      availableLangs: config.availableLangs || ["en", "vi"],
+      defaultLang: config.defaultLang || "vi",
+      reRenderOnLangChange: true,
+      prodMode: config.prodMode
+    },
+    loader: TranslocoHttpLoader
+  });
+}
+
 // src/app/services/menu.service.ts
 var _MenuService = class _MenuService {
   constructor() {
@@ -4521,27 +4555,6 @@ function plural(val) {
 }
 var en_default = ["en", [["a", "p"], ["AM", "PM"]], [["AM", "PM"]], [["S", "M", "T", "W", "T", "F", "S"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]], u, [["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"], ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]], u, [["B", "A"], ["BC", "AD"], ["Before Christ", "Anno Domini"]], 0, [6, 0], ["M/d/yy", "MMM d, y", "MMMM d, y", "EEEE, MMMM d, y"], ["h:mm\u202Fa", "h:mm:ss\u202Fa", "h:mm:ss\u202Fa z", "h:mm:ss\u202Fa zzzz"], ["{1}, {0}", u, u, u], [".", ",", ";", "%", "+", "-", "E", "\xD7", "\u2030", "\u221E", "NaN", ":"], ["#,##0.###", "#,##0%", "\xA4#,##0.00", "#E0"], "USD", "$", "US Dollar", {}, "ltr", plural];
 
-// src/app/transloco-loader.ts
-var _TranslocoHttpLoader = class _TranslocoHttpLoader {
-  constructor() {
-    this.http = inject(HttpClient);
-  }
-  getTranslation(lang) {
-    return this.http.get(`./assets/lang/${lang}.json`);
-  }
-};
-_TranslocoHttpLoader.\u0275fac = function TranslocoHttpLoader_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _TranslocoHttpLoader)();
-};
-_TranslocoHttpLoader.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _TranslocoHttpLoader, factory: _TranslocoHttpLoader.\u0275fac, providedIn: "root" });
-var TranslocoHttpLoader = _TranslocoHttpLoader;
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TranslocoHttpLoader, [{
-    type: Injectable,
-    args: [{ providedIn: "root" }]
-  }], null, null);
-})();
-
 // src/environments/environment.ts
 var environment = {
   production: false,
@@ -4576,14 +4589,10 @@ var appConfig = {
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: API_URL, useValue: environment.apiBaseUrl },
     { provide: FIREBASE_CONFIG, useValue: environment.firebase },
-    provideTransloco({
-      config: {
-        availableLangs: ["en", "vi"],
-        defaultLang: "vi",
-        reRenderOnLangChange: true,
-        prodMode: environment.production
-      },
-      loader: TranslocoHttpLoader
+    provideTotI18n({
+      prodMode: environment.production,
+      availableLangs: ["en", "vi"],
+      defaultLang: "vi"
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),

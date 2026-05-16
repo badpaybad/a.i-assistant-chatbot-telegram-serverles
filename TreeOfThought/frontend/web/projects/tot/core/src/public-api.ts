@@ -31,3 +31,7 @@ export * from './lib/interceptors/error.interceptor';
 
 // Directives
 export * from './lib/directives/claim.directive';
+
+// I18n
+export * from './lib/i18n/transloco-loader';
+export * from './lib/i18n/i18n.provider';
