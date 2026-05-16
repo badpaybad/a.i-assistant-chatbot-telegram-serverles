@@ -8,7 +8,7 @@ import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService } from '../services/dashboard.service';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 
 @Component({
@@ -21,7 +21,7 @@ import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
     NzIconModule,
     NzTagModule,
     TranslateModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.css']

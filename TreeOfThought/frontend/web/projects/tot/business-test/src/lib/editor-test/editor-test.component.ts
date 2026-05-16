@@ -1,17 +1,17 @@
-import { AppEditorComponent } from '@tot/shared';
+import { TotEditorComponent } from '@tot/shared';
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzCardModule } from 'ng-zorro-antd/card';
 
 @Component({
-  selector: 'app-editor-test',
+  selector: 'tot-editor-test',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppEditorComponent, NzCardModule],
+  imports: [CommonModule, FormsModule, TotEditorComponent, NzCardModule],
   template: `
     <div style="padding: 30px;">
       <nz-card nzTitle="Test Shared CKEditor Component">
-        <app-editor [(ngModel)]="editorContent" placeholder="Thử nghiệm CKEditor..."></app-editor>
+        <tot-editor [(ngModel)]="editorContent" placeholder="Thử nghiệm CKEditor..."></tot-editor>
 
         <div class="mt-4">
           <h3>Kết quả HTML:</h3>

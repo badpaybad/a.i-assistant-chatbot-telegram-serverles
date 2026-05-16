@@ -27,7 +27,8 @@ Dùng thông tin này để phát triển, sửa lỗi, hỏi đáp và làm rõ
 4.  **Xác nhận:** **LUÔN LUÔN** yêu cầu người dùng xác nhận file `phattrien.md` trước khi tiến hành triển khai.
 5.  **Triển khai:**
     - **Backend:** Tạo project là sub-folder của `TreeOfThought/docs/backend`. Xem thêm hướng dẫn tại `TreeOfThought/docs/backend/phattrien.md`.
-    - **Frontend:** Tạo project là thư viện Angular trong folder `TreeOfThought/docs/frontend/web`. Xem thêm hướng dẫn tại `TreeOfThought/docs/frontend/phattrien.md`.
+    - **Frontend:** Tạo project là thư viện Angular trong folder `TreeOfThought/docs/frontend/web`. Xem thêm hướng dẫn tại `TreeOfThought/docs/frontend/phattrien.md`. 
+        - **Lưu ý:** Các component trong thư viện `shared` phải bắt đầu với prefix `tot-` (ví dụ: `tot-button`).
 
 ### B. Đối với Sửa lỗi (Fix Bug)
 1.  **Phân tích:** Tìm đúng tài liệu và code hiện tại trong `TreeOfThought/docs` để đưa ra cách sửa lỗi tối ưu nhất, đơn giản nhất và tốt nhất.

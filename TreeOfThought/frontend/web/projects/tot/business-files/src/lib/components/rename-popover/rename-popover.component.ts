@@ -6,7 +6,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { FilesFoldersService } from '../../services/files-folders.service';
 import { FirebaseService } from '@tot/core';
 
@@ -19,7 +19,7 @@ import { FirebaseService } from '@tot/core';
     NzButtonModule,
     NzIconModule,
     NzInputModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   template: `
     <div class="popover-content">
@@ -42,8 +42,8 @@ import { FirebaseService } from '@tot/core';
       </div>
 
       <div class="popover-footer">
-        <app-button nzType="text" nzSize="small" (click)="cancel()">Hủy</app-button>
-        <app-button nzType="primary" nzSize="small" (click)="submit()" [loading]="loading">Lưu thay đổi</app-button>
+        <tot-button nzType="text" nzSize="small" (click)="cancel()">Hủy</tot-button>
+        <tot-button nzType="primary" nzSize="small" (click)="submit()" [loading]="loading">Lưu thay đổi</tot-button>
       </div>
     </div>
 

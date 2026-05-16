@@ -17,7 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AppSelectComponent } from '@tot/shared';
+import { TotSelectComponent } from '@tot/shared';
 
 @Component({
   selector: 'app-acl-list',
@@ -39,7 +39,7 @@ import { AppSelectComponent } from '@tot/shared';
     NzTagModule,
     NzDividerModule,
     TranslateModule,
-    AppSelectComponent
+    TotSelectComponent
   ],
   template: `
     <div class="page-header">
@@ -123,25 +123,25 @@ import { AppSelectComponent } from '@tot/shared';
           <nz-form-item *ngIf="newEntry.subjectType === 'user'">
             <nz-form-label [nzSpan]="null">{{ 'Người dùng' | translate }}</nz-form-label>
             <nz-form-control>
-              <app-select
+              <tot-select
                 apiUrl="/api/AuthManagement/users"
                 [placeholder]="'Tìm kiếm...' | translate"
                 labelField="username"
                 [(ngModel)]="newEntry.userId"
                 name="userId"
-              ></app-select>
+              ></tot-select>
             </nz-form-control>
           </nz-form-item>
 
           <nz-form-item *ngIf="newEntry.subjectType === 'role'">
             <nz-form-label [nzSpan]="null">{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
-              <app-select
+              <tot-select
                 apiUrl="/api/AuthManagement/roles"
                 [placeholder]="'Tìm kiếm...' | translate"
                 [(ngModel)]="newEntry.roleId"
                 name="roleId"
-              ></app-select>
+              ></tot-select>
             </nz-form-control>
           </nz-form-item>
 

@@ -1,1 +1,1 @@
-export * from './components/app-select/app-select.component';
+export * from './components/tot-select/tot-select.component';

@@ -5,7 +5,7 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { AppNotificationService } from '@tot/core';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
@@ -23,7 +23,7 @@ import { DashboardService } from '../services/dashboard.service';
     NzGridModule,
     NzIconModule,
     TranslateModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   template: `
     <div style="padding: 24px;">
@@ -37,9 +37,9 @@ import { DashboardService } from '../services/dashboard.service';
               <label>{{ 'Payload dữ liệu' | translate }}</label>
               <textarea nz-input [(ngModel)]="commandPayload" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
-            <app-button nzType="primary" [loading]="loadingCommand" (click)="sendTestCommand()" [nzBlock]="true">
+            <tot-button nzType="primary" [loading]="loadingCommand" (click)="sendTestCommand()" [nzBlock]="true">
               <span nz-icon nzType="rocket"></span> {{ 'Gửi Command' | translate }}
-            </app-button>
+            </tot-button>
           </nz-card>
         </div>
         
@@ -50,9 +50,9 @@ import { DashboardService } from '../services/dashboard.service';
               <label>{{ 'Nội dung sự kiện' | translate }}</label>
               <textarea nz-input [(ngModel)]="eventData" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
-            <app-button nzType="primary" [loading]="loadingEvent" (click)="sendTestEvent()" [nzBlock]="true">
+            <tot-button nzType="primary" [loading]="loadingEvent" (click)="sendTestEvent()" [nzBlock]="true">
               <span nz-icon nzType="notification"></span> {{ 'Gửi Event' | translate }}
-            </app-button>
+            </tot-button>
           </nz-card>
         </div>
       </div>

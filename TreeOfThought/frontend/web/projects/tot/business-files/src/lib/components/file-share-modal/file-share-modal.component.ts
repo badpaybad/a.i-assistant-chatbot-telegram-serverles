@@ -11,7 +11,7 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { FilesFoldersService } from '../../services/files-folders.service';
 
 @Component({
@@ -30,7 +30,7 @@ import { FilesFoldersService } from '../../services/files-folders.service';
     NzSelectModule,
     NzIconModule,
     NzDividerModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   template: `
     <div class="share-container" *ngIf="file">
@@ -85,9 +85,9 @@ import { FilesFoldersService } from '../../services/files-folders.service';
                 <input nz-input [ngModel]="file?.url" readonly />
               </nz-input-group>
               <ng-template #copyButton>
-                <app-button (click)="copyLink(file?.url || '')" nzType="primary">
+                <tot-button (click)="copyLink(file?.url || '')" nzType="primary">
                   <span nz-icon nzType="copy"></span> Sao chép
-                </app-button>
+                </tot-button>
               </ng-template>
             </div>
           </div>
@@ -107,9 +107,9 @@ import { FilesFoldersService } from '../../services/files-folders.service';
                 <nz-option [nzValue]="24" nzLabel="24 giờ"></nz-option>
                 <nz-option [nzValue]="168" nzLabel="7 ngày"></nz-option>
               </nz-select>
-              <app-button nzType="primary" (click)="generateSignedUrl()" [loading]="generating" class="ml-2">
+              <tot-button nzType="primary" (click)="generateSignedUrl()" [loading]="generating" class="ml-2">
                 Tạo Link
-              </app-button>
+              </tot-button>
             </div>
 
             <div *ngIf="signedUrl" class="url-copy-box mt-3">
@@ -117,9 +117,9 @@ import { FilesFoldersService } from '../../services/files-folders.service';
                 <input nz-input [ngModel]="signedUrl" readonly />
               </nz-input-group>
               <ng-template #copySignedButton>
-                <app-button (click)="copyLink(signedUrl)" nzType="primary">
+                <tot-button (click)="copyLink(signedUrl)" nzType="primary">
                   <span nz-icon nzType="copy"></span> Sao chép
-                </app-button>
+                </tot-button>
               </ng-template>
             </div>
           </div>
@@ -159,10 +159,10 @@ import { FilesFoldersService } from '../../services/files-folders.service';
       </div>
 
       <div class="modal-footer mt-4">
-        <app-button nzType="default" (click)="handleCancel($event)">Bỏ qua</app-button>
-        <app-button nzType="primary" (click)="submitForm()" [loading]="submitting" class="ml-2 save-btn">
+        <tot-button nzType="default" (click)="handleCancel($event)">Bỏ qua</tot-button>
+        <tot-button nzType="primary" (click)="submitForm()" [loading]="submitting" class="ml-2 save-btn">
           <span nz-icon nzType="check"></span> Áp dụng thay đổi
-        </app-button>
+        </tot-button>
       </div>
     </div>
   `,

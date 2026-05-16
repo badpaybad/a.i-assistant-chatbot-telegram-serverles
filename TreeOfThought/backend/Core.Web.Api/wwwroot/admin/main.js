@@ -16,7 +16,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-Q65HE2LA.js";
+} from "./chunk-EHMU4H5Q.js";
 import "./chunk-WVLO4HWC.js";
 import {
   NzCheckboxComponent,
@@ -31,7 +31,7 @@ import {
   NzMenuItemComponent,
   NzMenuModule,
   NzSubMenuComponent
-} from "./chunk-P7ELSXBK.js";
+} from "./chunk-WONYILY4.js";
 import {
   FIREBASE_CONFIG,
   NzFormControlComponent,
@@ -4272,24 +4272,24 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-OLIWLZAC.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-OLIWLZAC.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-OLIWLZAC.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-OLIWLZAC.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           }
         ]
@@ -4300,17 +4300,17 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-SRM3PJJY.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-NWU42M6U.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-SRM3PJJY.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-NWU42M6U.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-SRM3PJJY.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-NWU42M6U.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4321,36 +4321,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-PHSPMYVR.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4358,7 +4358,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-JBDNPSV3.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-AQEGCUWW.js").then((m) => m.FilesFolders)
       }
     ]
   },

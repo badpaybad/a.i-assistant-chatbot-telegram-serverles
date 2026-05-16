@@ -17,7 +17,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
-import { AppSelectComponent, AppButtonComponent } from '@tot/shared';
+import { TotSelectComponent, TotButtonComponent } from '@tot/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -40,23 +40,23 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzFormModule,
     NzCheckboxModule,
     NzAvatarModule,
-    AppSelectComponent,
-    AppButtonComponent,
+    TotSelectComponent,
+    TotButtonComponent,
     TranslateModule
   ],
   template: `
     <div class="page-header">
       <h2>{{ 'Danh sách người dùng' | translate }}</h2>
       <nz-space>
-        <app-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
+        <tot-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
           <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | translate }}
-        </app-button>
-        <app-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
+        </tot-button>
+        <tot-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
           <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
-        </app-button>
-        <app-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
+        </tot-button>
+        <tot-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
           <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
-        </app-button>
+        </tot-button>
       </nz-space>
     </div>
 
@@ -77,22 +77,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </nz-select>
         </div>
         <div nz-col [nzSpan]="6">
-          <app-select
+          <tot-select
             apiUrl="/api/AuthManagement/roles"
             [placeholder]="'Vai trò' | translate"
             mode="multiple"
             [(ngModel)]="searchQuery.roleIds"
             (valueChange)="loadUsers()"
-          ></app-select>
+          ></tot-select>
         </div>
         <div nz-col [nzSpan]="6">
-          <app-select
+          <tot-select
             apiUrl="/api/AuthManagement/claims"
             [placeholder]="'Quyền' | translate"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
             (valueChange)="loadUsers()"
-          ></app-select>
+          ></tot-select>
         </div>
         <div nz-col [nzSpan]="8">
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
@@ -109,8 +109,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
         </div>
         <div nz-col [nzSpan]="8" class="search-actions">
           <nz-space>
-            <app-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | translate }}</app-button>
-            <app-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | translate }}</app-button>
+            <tot-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | translate }}</tot-button>
+            <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | translate }}</tot-button>
           </nz-space>
         </div>
       </div>
@@ -158,9 +158,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
                     (nzOnClose)="removeRole(data, role)">
               {{ role.name }}
             </nz-tag>
-            <app-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+            <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
               <span nz-icon nzType="plus"></span>
-            </app-button>
+            </tot-button>
           </td>
           <td>
             <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
@@ -168,18 +168,18 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
                     (nzOnClose)="removeClaim(data, claim)">
               {{ claim.name }}
             </nz-tag>
-            <app-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+            <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
               <span nz-icon nzType="plus"></span>
-            </app-button>
+            </tot-button>
           </td>
           <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <nz-space>
-              <app-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</app-button>
-              <app-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
+              <tot-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+              <tot-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
                       [disabled]="data.username?.toLowerCase() === 'admin'"
-                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</app-button>
+                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</tot-button>
             </nz-space>
           </td>
         </tr>
@@ -224,25 +224,25 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <nz-form-item>
             <nz-form-label>{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
-              <app-select
+              <tot-select
                 apiUrl="/api/AuthManagement/roles"
                 [placeholder]="'Chọn vai trò' | translate"
                 mode="multiple"
                 [(ngModel)]="userForm.roleIds"
                 name="roleIds"
-              ></app-select>
+              ></tot-select>
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
             <nz-form-label>{{ 'Quyền trực tiếp' | translate }}</nz-form-label>
             <nz-form-control>
-              <app-select
+              <tot-select
                 apiUrl="/api/AuthManagement/claims"
                 [placeholder]="'Chọn quyền' | translate"
                 mode="multiple"
                 [(ngModel)]="userForm.claimIds"
                 name="claimIds"
-              ></app-select>
+              ></tot-select>
             </nz-form-control>
           </nz-form-item>
         </form>
@@ -252,23 +252,23 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     <!-- Các Modal gán nhanh -->
     <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="'Vai trò' | translate" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
       <ng-container *nzModalContent>
-        <app-select
+        <tot-select
           apiUrl="/api/AuthManagement/roles"
           [placeholder]="'Vui lòng chọn' | translate"
           mode="multiple"
           [(ngModel)]="selectedRoleIds"
-        ></app-select>
+        ></tot-select>
       </ng-container>
     </nz-modal>
 
     <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
-        <app-select
+        <tot-select
           apiUrl="/api/AuthManagement/claims"
           [placeholder]="'Vui lòng chọn' | translate"
           mode="multiple"
           [(ngModel)]="selectedClaimIds"
-        ></app-select>
+        ></tot-select>
       </ng-container>
     </nz-modal>
   `,

@@ -1,0 +1,14 @@
+:host {
+  display: block;
+  width: 100%;
+}
+
+::ng-deep .ant-select-item-option-content {
+  display: flex;
+  align-items: center;
+}
+
+::ng-deep .ant-select-item-option-selected label[nz-checkbox] .ant-checkbox-inner {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}

@@ -15,7 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AppSelectComponent } from '@tot/shared';
+import { TotSelectComponent } from '@tot/shared';
 import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
 
 @Component({
@@ -36,7 +36,7 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
     NzGridModule,
     NzCardModule,
     TranslateModule,
-    AppSelectComponent
+    TotSelectComponent
   ],
   template: `
     <div class="page-header">
@@ -52,13 +52,13 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
           <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | translate" (keyup.enter)="loadRoles()" />
         </div>
         <div nz-col [nzSpan]="10">
-          <app-select
+          <tot-select
             apiUrl="/api/AuthManagement/claims"
             [placeholder]="'Quyền' | translate"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
             (valueChange)="loadRoles()"
-          ></app-select>
+          ></tot-select>
         </div>
         <div nz-col [nzSpan]="6" class="search-actions">
           <nz-space>
@@ -125,13 +125,13 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
           <nz-form-item>
             <nz-form-label>{{ 'Quyền' | translate }}</nz-form-label>
             <nz-form-control>
-              <app-select
+              <tot-select
                 apiUrl="/api/AuthManagement/claims"
                 [placeholder]="'Chọn quyền' | translate"
                 mode="multiple"
                 [(ngModel)]="roleForm.claimIds"
                 name="claimIds"
-              ></app-select>
+              ></tot-select>
             </nz-form-control>
           </nz-form-item>
         </form>
@@ -141,12 +141,12 @@ import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
     <!-- Modal gán nhanh (Giữ nguyên) -->
     <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
-        <app-select
+        <tot-select
           apiUrl="/api/AuthManagement/claims"
           [placeholder]="'Vui lòng chọn' | translate"
           mode="multiple"
           [(ngModel)]="selectedClaimIds"
-        ></app-select>
+        ></tot-select>
       </ng-container>
     </nz-modal>
   `,

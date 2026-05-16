@@ -5,7 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzModalRef, NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { NzMessageService } from 'ng-zorro-antd/message';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { FilesFoldersService } from '../../services/files-folders.service';
 
 @Component({
@@ -16,7 +16,7 @@ import { FilesFoldersService } from '../../services/files-folders.service';
     NzTreeModule,
     NzButtonModule,
     NzIconModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   template: `
     <div class="move-modal-container">
@@ -36,10 +36,10 @@ import { FilesFoldersService } from '../../services/files-folders.service';
         </nz-tree>
       </div>
       <div class="modal-footer">
-        <app-button nzType="default" (click)="cancel()">Hủy</app-button>
-        <app-button nzType="primary" (click)="submit()" [loading]="loading" [disabled]="!selectedFolderId && selectedFolderId !== null">
+        <tot-button nzType="default" (click)="cancel()">Hủy</tot-button>
+        <tot-button nzType="primary" (click)="submit()" [loading]="loading" [disabled]="!selectedFolderId && selectedFolderId !== null">
           Chuyển đến đây
-        </app-button>
+        </tot-button>
       </div>
     </div>
 

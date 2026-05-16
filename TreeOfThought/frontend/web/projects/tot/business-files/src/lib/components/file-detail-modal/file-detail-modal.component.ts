@@ -8,7 +8,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { NzMessageService } from 'ng-zorro-antd/message';
@@ -25,7 +25,7 @@ import { NzMessageService } from 'ng-zorro-antd/message';
     NzDividerModule, 
     NzInputModule, 
     FormsModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   templateUrl: './file-detail-modal.component.html',
   styleUrl: './file-detail-modal.component.css'

@@ -24,15 +24,15 @@
           </td>
           <td nzRight="0px">
             <div style="display: flex; gap: 8px;">
-              <app-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(item)">
+              <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(item)">
                 <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
-              </app-button>
-              <app-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(item)">
+              </tot-button>
+              <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(item)">
                 <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
-              </app-button>
-              <app-button nzSize="small" (click)="item.expand = !item.expand">
+              </tot-button>
+              <tot-button nzSize="small" (click)="item.expand = !item.expand">
                 <i nz-icon [nzType]="item.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | translate }}
-              </app-button>
+              </tot-button>
             </div>
           </td>
         </tr>
@@ -40,9 +40,9 @@
           <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
-              <app-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
+              <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
                 <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
-              </app-button>
+              </tot-button>
             </div>
             <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(item.parsed) }}</pre>
             

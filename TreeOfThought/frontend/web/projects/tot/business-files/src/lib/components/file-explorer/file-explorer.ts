@@ -10,7 +10,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
-import { AppButtonComponent } from '@tot/shared';
+import { TotButtonComponent } from '@tot/shared';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { FormsModule } from '@angular/forms';
@@ -42,7 +42,7 @@ import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal
     CreateFolderPopoverComponent,
     RenamePopoverComponent,
     NzCollapseModule,
-    AppButtonComponent
+    TotButtonComponent
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
