@@ -92,15 +92,17 @@ Các app mobi
     TreeOfThought/frontend/mobi/my_pc_assistant
         dùng để test oidc sso với identity server
 
+đảm bảo về việc khi phát triển nghiệp vụ mới, sửa lỗi bổ xung logic gì đó cần: 
+    nhất quán về auth 
+    nhất quán về dùng db cache cqrs firebase
+    phát triển nghiệp vụ chỉ cần quan tâm tới
+        controller ( có dùng tới auth attr với claims rõ ràng và chính xác )
+        các handle (thực hiện các logic nghiệp vụ)
+        query dữ liệu 
+        db, redis dữ liệu, cache riêng theo nghiệp vụ nếu cần
+        cần trao đổi dữ liệu nghiệp vụ khác sẽ qua command event 
+        có thể dùng session nếu jwt chưa đủ thông tin 
+    tùy vào nhu cầu có thể tạo thêm project api restful, các nghiệp vụ hiện tại để kiểm tra dễ dàng đang đưa vào sử dụng tại TreeOfThought/backend/Core.Web.Api
+
+
 **đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
-    review code xem cần thêm gì so với tài liêu.
-        đảm bảo về việc khi phát triển nghiệp vụ mới
-            nhất quán về auth 
-            nhất quán về dùng db cache cqrs firebase
-            phát triển nghiệp vụ chỉ cần quan tâm tới
-                controller ( có dùng tới auth attr với claims rõ ràng và chính xác )
-                các handle (thực hiện các logic nghiệp vụ)
-                có thể dùng session nếu jwt chưa đủ thông tin 
-                db, redis dữ liệu, cache riêng theo nghiệp vụ nếu cần
-                cần trao đổi dữ liệu nghiệp vụ khác sẽ qua command event 
-            tùy vào nhu cầu có thể tạo thêm project api restful, các nghiệp vụ hiện tại để kiểm tra dễ dàng đang đưa vào sử dụng tại TreeOfThought/backend/Core.Web.Api
