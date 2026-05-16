@@ -2782,10 +2782,22 @@ var _MenuService = class _MenuService {
         icon: "lock",
         claim: ["fe.auth:users:view", "fe.auth:roles:view"],
         children: [
-          { label: "Ng\u01B0\u1EDDi d\xF9ng", route: "/modules/core-infra-auth/users", claim: "fe.auth:users:view" },
+          {
+            label: "Ng\u01B0\u1EDDi d\xF9ng",
+            route: "/modules/core-infra-auth/users",
+            claim: "fe.auth:users:view"
+          },
           { label: "Vai tr\xF2", route: "/modules/core-infra-auth/roles", claim: "fe.auth:roles:view" },
-          { label: "Quy\u1EC1n h\u1EA1n", route: "/modules/core-infra-auth/claims", claim: "fe.auth:claims:view" },
-          { label: "Qu\u1EA3n l\xFD ACL", route: "/modules/core-infra-auth/acl", claim: "fe.auth:acl:manage" },
+          {
+            label: "Quy\u1EC1n h\u1EA1n",
+            route: "/modules/core-infra-auth/claims",
+            claim: "fe.auth:claims:view"
+          },
+          {
+            label: "Qu\u1EA3n l\xFD ACL",
+            route: "/modules/core-infra-auth/acl",
+            claim: "fe.auth:acl:manage"
+          },
           { label: "\u0110\u1ED5i m\u1EADt kh\u1EA9u", route: "/modules/core-infra-auth/change-password" },
           { label: "Th\xF4ng tin ph\xE2n quy\u1EC1n", route: "/modules/core-infra-auth/authorize-info" }
         ]
