@@ -140,7 +140,7 @@ export class DashboardComponent implements OnInit {
       { title: 'Lỗi', width: '100px', align: 'center' },
       { title: 'Tổng', key: 'totalCount', width: '100px', align: 'center' },
       { title: 'Workers', width: '200px' },
-      { title: 'Handlers' },
+      { title: 'Handlers', width: '250px' },
       { title: 'Hành động', width: '150px', right: true }
     ];
 

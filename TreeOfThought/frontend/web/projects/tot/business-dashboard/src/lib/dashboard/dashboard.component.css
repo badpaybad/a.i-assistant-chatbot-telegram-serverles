@@ -107,3 +107,43 @@ nz-card {
   background: #262626;
   color: #aaa;
 }
+
+.handler-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.handler-tag-item {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  background: #f6f8fa;
+  border-radius: 4px;
+  border-left: 3px solid #52c41a;
+  font-size: 12px;
+}
+
+.h-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.m-name {
+  color: #7f8c8d;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+}
+
+:host-context([nz-theme="dark"]) .handler-tag-item {
+  background: #262626;
+  border-left-color: #3f8600;
+}
+
+:host-context([nz-theme="dark"]) .h-name {
+  color: #ecf0f1;
+}
+
+:host-context([nz-theme="dark"]) .m-name {
+  color: #bdc3c7;
+}

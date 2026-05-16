@@ -1,19 +1,11 @@
-import { Component, Input, Output, EventEmitter, TemplateRef, ContentChildren, QueryList, Directive } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef, ContentChildren, QueryList } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { TranslocoModule } from '@jsverse/transloco';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
-
-@Directive({
-  selector: '[totCell]',
-  standalone: true
-})
-export class TotCellDirective {
-  @Input('totCell') columnKey!: string;
-  constructor(public template: TemplateRef<any>) {}
-}
+import { TotCellDirective } from './tot-cell.directive';
 
 export interface TotTableColumn {
   title: string;
@@ -88,8 +80,8 @@ export interface TotTableColumn {
               [nzFilters]="col.filterOptions || []"
               [nzFilterFn]="col.filterable ? true : null"
               [nzAlign]="col.align || 'left'"
-              [nzLeft]="col.left || false"
-              [nzRight]="col.right || false"
+              [nzLeft]="col.left === true ? '0px' : col.left || false"
+              [nzRight]="col.right === true ? '0px' : col.right || false"
             >
               {{ col.title | transloco }}
             </th>
@@ -114,8 +106,8 @@ export interface TotTableColumn {
               <td
                 *ngFor="let col of columns"
                 [nzAlign]="col.align || 'left'"
-                [nzLeft]="col.left || false"
-                [nzRight]="col.right || false"
+                [nzLeft]="col.left === true ? '0px' : col.left || false"
+                [nzRight]="col.right === true ? '0px' : col.right || false"
               >
                 <ng-container *ngIf="getColTemplate(col); else textOnly">
                   <ng-container
