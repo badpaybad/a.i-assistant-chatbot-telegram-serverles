@@ -1,4 +1,5 @@
 FE web sẽ chạy trên đây: TreeOfThought/frontend/web
+stack dùng là typescript, angular, ant design ...
 tôi dùng angular, cần tạo lib module riêng cho từng nghiệp vụ rồi import vào app chính, setup sẵn routing, cần làm như thế nào, độ khả thi để các lib module nghiệp vụ đi theo layout các rule chung về httpclient, auth, intercepter
 
 các moulde cần có quy chuẩn dùng chung dạng event buss, đăng ký topic queue để gửi dữ liệu qua nhau cần tạo lib core tách ra từ TreeOfThought/frontend/web để sử dụng nhất quán cho các nghiệp vụ và app chính. về httpclient, auth, intercepter, guard, các const claims  
@@ -22,5 +23,11 @@ các component của các nghiệp vụ mà dùng qua lại của nhau thì cầ
 
 các component directive pipe liên quan tới auth, cần đưa lên core để thống nhất trong 1 solution về ẩn hiện UI, truy cập compnonent ... element , về truy cập url ...
     các key dùng để đăng ký dùng component ở các module khác nhau, nên cần có const ở core để nắm bắt và điều phối chung khi cần  
+
+khi phát triển nghiệp vụ mới, FE cần tạo thư viện là thành folder con {tên nghiệp vụ} trong TreeOfThought/frontend/web/projects/tot
+    tuẩn thủ về dùng các thư viện core, shared
+    các nguyên tắc về đăng ký routing , component, command event 
+    có thể đưa vào app chính TreeOfThought/frontend/web/src/app để dùng hoặc test 
+    không nhất thiết các nghiệp vụ sẽ có prefix là business phụ thuộc vào yêu cầu của người dùng cần lấy tên liên quan tương đối chính xác là được
 
 **suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**

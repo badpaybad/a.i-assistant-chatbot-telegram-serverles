@@ -34,7 +34,8 @@ Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần c
         KISS ("Keep It Simple, Stupid") tuân thủ để tư duy và hành động, để không tạo ra tech debt , nợ kỹ thuật về lâu dài
             Nếu làm đơn giản được thì làm, không được phức tạp vấn đề 
         Khi làm cần đọc yeucau.md để hiểu ý định nếu chưa có cần thông báo người dùng đưa yêu cầu vào yeucau.md, phattrien.md là để xác thực giải pháp, code mới là để thực thi.
-            Không được làm lộn xộn logic của người dùng, nếu không biết thì hỏi 
+            Không được làm lộn xộn logic của người dùng, nếu không biết, không rõ, không chắc chắn thì hỏi
+            nếu phattrien.md đã có trước đó cần đọc để xác định rõ hơn về yêu cầu và ý định  
         Khi các nghiệp vụ được đưa vào TreeOfThought/backend/Core.Web.Api/ dùng có thể chạy lệnh run-dev.sh ở TreeOfThought/backend/Core.Web.Api/ đọc console log để biết lỗi, và sửa lỗi nếu lỗi.
 
 **Luôn dựa vào yeucau.md để suy nghĩ và đưa ra giải pháp cách làm vào phattrien.md. Luôn cần yêu cầu người dùng xác nhận file phattrien.md trước khi tiến hành**
