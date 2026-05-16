@@ -1,5 +1,5 @@
 /*
- * Public API Surface of business-auth
+ * Public API Surface of business-oidc
  */
 
 export * from './lib/user-list/user-list.component';

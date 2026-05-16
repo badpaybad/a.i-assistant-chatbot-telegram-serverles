@@ -68,36 +68,36 @@ export const routes: Routes = [
         children: [
           {
             path: 'users',
-            loadComponent: () => import('@tot/business-auth').then(m => m.UserListComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: 'Người dùng' }
           },
           {
             path: 'roles',
-            loadComponent: () => import('@tot/business-auth').then(m => m.RoleListComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: 'Vai trò' }
           },
           {
             path: 'claims',
-            loadComponent: () => import('@tot/business-auth').then(m => m.ClaimSyncComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: 'Quyền' }
           },
           {
             path: 'acl',
-            loadComponent: () => import('@tot/business-auth').then(m => m.AclListComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: 'Quản lý ACL' }
           },
           {
             path: 'change-password',
-            loadComponent: () => import('@tot/business-auth').then(m => m.ChangePasswordComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.ChangePasswordComponent),
             data: { breadcrumb: 'Đổi mật khẩu' }
           },
           {
             path: 'authorize-info',
-            loadComponent: () => import('@tot/business-auth').then(m => m.AuthorizeInfoComponent),
+            loadComponent: () => import('@tot/business-oidc').then(m => m.AuthorizeInfoComponent),
             data: { breadcrumb: 'Thông tin phân quyền' }
           }
         ]

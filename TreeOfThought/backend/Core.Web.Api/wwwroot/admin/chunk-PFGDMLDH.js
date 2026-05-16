@@ -244,7 +244,7 @@ import {
   __spreadValues
 } from "./chunk-MYGOUE3E.js";
 
-// projects/tot/business-auth/src/lib/services/auth-management.service.ts
+// projects/tot/business-oidc/src/lib/services/auth-management.service.ts
 var _AuthManagementService = class _AuthManagementService {
   constructor() {
     this.http = inject(HttpClientService);
@@ -765,7 +765,7 @@ var AppButtonComponent = _AppButtonComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppButtonComponent, { className: "AppButtonComponent", filePath: "projects/tot/shared/src/lib/components/app-button/app-button.component.ts", lineNumber: 29 });
 })();
 
-// projects/tot/business-auth/src/lib/user-list/user-list.component.ts
+// projects/tot/business-oidc/src/lib/user-list/user-list.component.ts
 var _c02 = () => [16, 16];
 function UserListComponent_app_button_5_Template(rf, ctx) {
   if (rf & 1) {
@@ -2038,14 +2038,14 @@ var UserListComponent = _UserListComponent;
         ></app-select>
       </ng-container>
     </nz-modal>
-  `, styles: ["/* angular:styles/component:css;86100bbd9790674ad4dc8b2db5e831b9421d449ed6ac30a7b6ab39229fef823f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/user-list/user-list.component.ts */\n.page-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n}\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.user-cell {\n  display: flex;\n  flex-direction: column;\n}\n.sub-text {\n  font-size: 12px;\n  color: #888;\n}\nnz-tag {\n  margin-bottom: 4px;\n}\n.avatar-wrapper {\n  position: relative;\n  cursor: pointer;\n  display: inline-block;\n  border-radius: 50%;\n  overflow: hidden;\n  width: 48px;\n  height: 48px;\n}\n.avatar-mask {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(0, 0, 0, 0.4);\n  color: white;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  opacity: 0;\n  transition: opacity 0.3s;\n  font-size: 18px;\n}\n.avatar-wrapper:hover .avatar-mask {\n  opacity: 1;\n}\n.user-avatar {\n  border: 1px solid #f0f0f0;\n}\n/*# sourceMappingURL=user-list.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;86100bbd9790674ad4dc8b2db5e831b9421d449ed6ac30a7b6ab39229fef823f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/user-list/user-list.component.ts */\n.page-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n}\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.user-cell {\n  display: flex;\n  flex-direction: column;\n}\n.sub-text {\n  font-size: 12px;\n  color: #888;\n}\nnz-tag {\n  margin-bottom: 4px;\n}\n.avatar-wrapper {\n  position: relative;\n  cursor: pointer;\n  display: inline-block;\n  border-radius: 50%;\n  overflow: hidden;\n  width: 48px;\n  height: 48px;\n}\n.avatar-mask {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(0, 0, 0, 0.4);\n  color: white;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  opacity: 0;\n  transition: opacity 0.3s;\n  font-size: 18px;\n}\n.avatar-wrapper:hover .avatar-mask {\n  opacity: 1;\n}\n.user-avatar {\n  border: 1px solid #f0f0f0;\n}\n/*# sourceMappingURL=user-list.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(UserListComponent, { className: "UserListComponent", filePath: "projects/tot/business-auth/src/lib/user-list/user-list.component.ts", lineNumber: 333 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(UserListComponent, { className: "UserListComponent", filePath: "projects/tot/business-oidc/src/lib/user-list/user-list.component.ts", lineNumber: 333 });
 })();
 
-// projects/tot/business-auth/src/lib/role-list/role-list.component.ts
+// projects/tot/business-oidc/src/lib/role-list/role-list.component.ts
 var _c03 = () => [16, 16];
 function RoleListComponent_button_19_Template(rf, ctx) {
   if (rf & 1) {
@@ -2725,14 +2725,14 @@ var RoleListComponent = _RoleListComponent;
         ></app-select>
       </ng-container>
     </nz-modal>
-  `, styles: ["/* angular:styles/component:css;c1be7f8108080fb46e612cf4a6008186d841b4d04e7d60fb3d8e4ffe93bbf65f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/role-list/role-list.component.ts */\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.claim-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\nnz-tag {\n  margin-bottom: 4px;\n}\n/*# sourceMappingURL=role-list.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;c1be7f8108080fb46e612cf4a6008186d841b4d04e7d60fb3d8e4ffe93bbf65f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/role-list/role-list.component.ts */\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.claim-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\nnz-tag {\n  margin-bottom: 4px;\n}\n/*# sourceMappingURL=role-list.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RoleListComponent, { className: "RoleListComponent", filePath: "projects/tot/business-auth/src/lib/role-list/role-list.component.ts", lineNumber: 172 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(RoleListComponent, { className: "RoleListComponent", filePath: "projects/tot/business-oidc/src/lib/role-list/role-list.component.ts", lineNumber: 172 });
 })();
 
-// projects/tot/business-auth/src/lib/acl-list/acl-list.component.ts
+// projects/tot/business-oidc/src/lib/acl-list/acl-list.component.ts
 function AclListComponent_tr_43_div_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 25);
@@ -3437,14 +3437,14 @@ var AclListComponent = _AclListComponent;
         </form>
       </ng-container>
     </nz-modal>
-  `, styles: ["/* angular:styles/component:css;0b341135562a1eed7d039abbd27d40d4437d1cd0412b7ce500c8b8eb3356cda9;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/acl-list/acl-list.component.ts */\n.page-header {\n  margin-bottom: 24px;\n}\n.filter-card {\n  margin-top: 16px;\n  background: rgba(255, 255, 255, 0.7);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n}\n.filter-box {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n.filter-item {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.label {\n  font-weight: 500;\n}\n.subject-info {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.mask-display {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.mask-value {\n  font-family: monospace;\n  font-weight: bold;\n  background: #f0f2f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n}\n.mask-details {\n  display: flex;\n  gap: 4px;\n}\n/*# sourceMappingURL=acl-list.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;0b341135562a1eed7d039abbd27d40d4437d1cd0412b7ce500c8b8eb3356cda9;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/acl-list/acl-list.component.ts */\n.page-header {\n  margin-bottom: 24px;\n}\n.filter-card {\n  margin-top: 16px;\n  background: rgba(255, 255, 255, 0.7);\n  -webkit-backdrop-filter: blur(10px);\n  backdrop-filter: blur(10px);\n}\n.filter-box {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  flex-wrap: wrap;\n}\n.filter-item {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.label {\n  font-weight: 500;\n}\n.subject-info {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.mask-display {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.mask-value {\n  font-family: monospace;\n  font-weight: bold;\n  background: #f0f2f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n}\n.mask-details {\n  display: flex;\n  gap: 4px;\n}\n/*# sourceMappingURL=acl-list.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AclListComponent, { className: "AclListComponent", filePath: "projects/tot/business-auth/src/lib/acl-list/acl-list.component.ts", lineNumber: 216 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AclListComponent, { className: "AclListComponent", filePath: "projects/tot/business-oidc/src/lib/acl-list/acl-list.component.ts", lineNumber: 216 });
 })();
 
-// projects/tot/business-auth/src/lib/claim-sync/claim-sync.component.ts
+// projects/tot/business-oidc/src/lib/claim-sync/claim-sync.component.ts
 var _c04 = () => [16, 16];
 function ClaimSyncComponent_button_18_Template(rf, ctx) {
   if (rf & 1) {
@@ -3962,14 +3962,14 @@ var ClaimSyncComponent = _ClaimSyncComponent;
         </form>
       </ng-container>
     </nz-modal>
-  `, styles: ["/* angular:styles/component:css;3d6c087fef029db6e15f3bdfeb8f2744819840f4d2bfb03dd85b6d0cde160fe1;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/claim-sync/claim-sync.component.ts */\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.sync-actions {\n  margin-top: 8px;\n}\n/*# sourceMappingURL=claim-sync.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;3d6c087fef029db6e15f3bdfeb8f2744819840f4d2bfb03dd85b6d0cde160fe1;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/claim-sync/claim-sync.component.ts */\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n  align-items: center;\n}\n.sync-actions {\n  margin-top: 8px;\n}\n/*# sourceMappingURL=claim-sync.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ClaimSyncComponent, { className: "ClaimSyncComponent", filePath: "projects/tot/business-auth/src/lib/claim-sync/claim-sync.component.ts", lineNumber: 129 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ClaimSyncComponent, { className: "ClaimSyncComponent", filePath: "projects/tot/business-oidc/src/lib/claim-sync/claim-sync.component.ts", lineNumber: 129 });
 })();
 
-// projects/tot/business-auth/src/lib/change-password/change-password.component.ts
+// projects/tot/business-oidc/src/lib/change-password/change-password.component.ts
 function ChangePasswordComponent_ng_template_19_ng_container_0_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementContainerStart(0);
@@ -4220,11 +4220,11 @@ var ChangePasswordComponent = _ChangePasswordComponent;
     </form>
   </nz-card>
 </div>
-`, styles: ["/* projects/tot/business-auth/src/lib/change-password/change-password.component.css */\n.change-password-container {\n  max-width: 800px;\n  margin: 24px auto;\n}\nnz-card {\n  width: 100%;\n}\n/*# sourceMappingURL=change-password.component.css.map */\n"] }]
+`, styles: ["/* projects/tot/business-oidc/src/lib/change-password/change-password.component.css */\n.change-password-container {\n  max-width: 800px;\n  margin: 24px auto;\n}\nnz-card {\n  width: 100%;\n}\n/*# sourceMappingURL=change-password.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChangePasswordComponent, { className: "ChangePasswordComponent", filePath: "projects/tot/business-auth/src/lib/change-password/change-password.component.ts", lineNumber: 27 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChangePasswordComponent, { className: "ChangePasswordComponent", filePath: "projects/tot/business-oidc/src/lib/change-password/change-password.component.ts", lineNumber: 27 });
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-tabs.mjs
@@ -7064,7 +7064,7 @@ var NzTabsModule = _NzTabsModule;
   }], null, null);
 })();
 
-// projects/tot/business-auth/src/lib/authorize-info/authorize-info.component.ts
+// projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts
 function AuthorizeInfoComponent_nz_tag_17_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "nz-tag", 15);
@@ -7407,11 +7407,11 @@ var AuthorizeInfoComponent = _AuthorizeInfoComponent;
       </nz-tabs>
 
     </div>
-  `, styles: ["/* angular:styles/component:css;70efadc8f01df98a16b477d44f79bf19b355eff90c2a62fef78074449633cbfa;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/authorize-info/authorize-info.component.ts */\n.authorize-info-container {\n  padding: 0;\n}\n.page-header {\n  margin-bottom: 24px;\n}\n.subtitle {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content {\n  padding: 16px 0;\n}\n.info-card {\n  margin-bottom: 24px;\n}\n.claims-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice span {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n/*# sourceMappingURL=authorize-info.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;70efadc8f01df98a16b477d44f79bf19b355eff90c2a62fef78074449633cbfa;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts */\n.authorize-info-container {\n  padding: 0;\n}\n.page-header {\n  margin-bottom: 24px;\n}\n.subtitle {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content {\n  padding: 16px 0;\n}\n.info-card {\n  margin-bottom: 24px;\n}\n.claims-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice span {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n/*# sourceMappingURL=authorize-info.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AuthorizeInfoComponent, { className: "AuthorizeInfoComponent", filePath: "projects/tot/business-auth/src/lib/authorize-info/authorize-info.component.ts", lineNumber: 141 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AuthorizeInfoComponent, { className: "AuthorizeInfoComponent", filePath: "projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts", lineNumber: 141 });
 })();
 export {
   AclListComponent,
@@ -7422,4 +7422,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-AOGZCW64.js.map
+//# sourceMappingURL=chunk-PFGDMLDH.js.map

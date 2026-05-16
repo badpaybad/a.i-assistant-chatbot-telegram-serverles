@@ -215,20 +215,20 @@
         }
       }
     },
-    "@tot/business-auth": {
+    "@tot/business-oidc": {
       "projectType": "library",
-      "root": "projects/tot/business-auth",
-      "sourceRoot": "projects/tot/business-auth/src",
+      "root": "projects/tot/business-oidc",
+      "sourceRoot": "projects/tot/business-oidc/src",
       "prefix": "tot",
       "architect": {
         "build": {
           "builder": "@angular/build:ng-packagr",
           "configurations": {
             "production": {
-              "tsConfig": "projects/tot/business-auth/tsconfig.lib.prod.json"
+              "tsConfig": "projects/tot/business-oidc/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/tot/business-auth/tsconfig.lib.json"
+              "tsConfig": "projects/tot/business-oidc/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -236,7 +236,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/tot/business-auth/tsconfig.spec.json"
+            "tsConfig": "projects/tot/business-oidc/tsconfig.spec.json"
           }
         }
       }

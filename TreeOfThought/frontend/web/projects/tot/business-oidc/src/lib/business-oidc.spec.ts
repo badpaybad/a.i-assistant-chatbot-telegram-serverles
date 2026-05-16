@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { BusinessAuth } from './business-auth';
+import { BusinessOidc } from './business-oidc';
 
-describe('BusinessAuth', () => {
-  let component: BusinessAuth;
-  let fixture: ComponentFixture<BusinessAuth>;
+describe('BusinessOidc', () => {
+  let component: BusinessOidc;
+  let fixture: ComponentFixture<BusinessOidc>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [BusinessAuth],
+      imports: [BusinessOidc],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(BusinessAuth);
+    fixture = TestBed.createComponent(BusinessOidc);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
