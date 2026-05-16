@@ -10,7 +10,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
-import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
 import { ViewChild, TemplateRef } from '@angular/core';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
@@ -46,6 +46,7 @@ import { TranslocoModule } from '@jsverse/transloco';
     NzCollapseModule,
     TotButtonComponent,
     TotTableComponent,
+    TotCellDirective,
     TranslocoModule
   ],
   templateUrl: './file-explorer.html',
@@ -107,45 +108,32 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     });
   }
 
-  @ViewChild('folderNameTpl', { static: true }) folderNameTpl!: TemplateRef<any>;
-  @ViewChild('folderActionsTpl', { static: true }) folderActionsTpl!: TemplateRef<any>;
-  @ViewChild('fileNameTpl', { static: true }) fileNameTpl!: TemplateRef<any>;
-  @ViewChild('fileSizeTpl', { static: true }) fileSizeTpl!: TemplateRef<any>;
-  @ViewChild('fileStatusTpl', { static: true }) fileStatusTpl!: TemplateRef<any>;
-  @ViewChild('fileActionsTpl', { static: true }) fileActionsTpl!: TemplateRef<any>;
-
-  folderColumns: TotTableColumn[] = [];
-  fileColumns: TotTableColumn[] = [];
-
-  @ViewChild('searchNameTpl', { static: true }) searchNameTpl!: TemplateRef<any>;
-  @ViewChild('searchPathTpl', { static: true }) searchPathTpl!: TemplateRef<any>;
-  @ViewChild('searchActionsTpl', { static: true }) searchActionsTpl!: TemplateRef<any>;
-  @ViewChild('fileTypeTpl', { static: true }) fileTypeTpl!: TemplateRef<any>;
-  @ViewChild('fileDateTpl', { static: true }) fileDateTpl!: TemplateRef<any>;
   @ViewChild('fileTitleTpl', { static: true }) fileTitleTpl!: TemplateRef<any>;
   @ViewChild('fileExtraTpl', { static: true }) fileExtraTpl!: TemplateRef<any>;
 
   searchColumns: TotTableColumn[] = [];
+  folderColumns: TotTableColumn[] = [];
+  fileColumns: TotTableColumn[] = [];
 
   private initColumns() {
     this.searchColumns = [
-      { title: 'Tên file', template: this.searchNameTpl },
-      { title: 'Đường dẫn', template: this.searchPathTpl },
-      { title: 'Thao tác', width: '100px', template: this.searchActionsTpl, right: true }
+      { title: 'Tên file' },
+      { title: 'Đường dẫn' },
+      { title: 'Thao tác', width: '100px', right: true }
     ];
 
     this.folderColumns = [
-      { title: 'Tên thư mục', template: this.folderNameTpl },
-      { title: 'Hành động', width: '150px', template: this.folderActionsTpl, right: true }
+      { title: 'Tên thư mục' },
+      { title: 'Hành động', width: '150px', right: true }
     ];
 
     this.fileColumns = [
-      { title: 'Tên file', template: this.fileNameTpl },
-      { title: 'Trạng thái', width: '120px', template: this.fileStatusTpl },
-      { title: 'Kích thước', width: '120px', template: this.fileSizeTpl },
-      { title: 'Loại', width: '120px', template: this.fileTypeTpl },
-      { title: 'Ngày tạo', width: '150px', template: this.fileDateTpl },
-      { title: 'Hành động', width: '150px', template: this.fileActionsTpl, right: true }
+      { title: 'Tên file' },
+      { title: 'Trạng thái', width: '120px' },
+      { title: 'Kích thước', width: '120px' },
+      { title: 'Loại', width: '120px' },
+      { title: 'Ngày tạo', width: '150px' },
+      { title: 'Hành động', width: '150px', right: true }
     ];
   }
 

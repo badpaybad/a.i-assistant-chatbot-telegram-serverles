@@ -17,7 +17,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
-import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
 
@@ -44,6 +44,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     TotAutocompleteComponent,
     TotButtonComponent,
     TotTableComponent,
+    TotCellDirective,
     TranslocoModule
   ],
   template: `
@@ -126,67 +127,71 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [data]="users" 
       [columns]="userColumns" 
       [loading]="loading" 
-      [title]="'Danh sách người dùng'"
+      [title]="'Danh sách người dùng' | transloco"
       [extra]="userExtraTpl"
       [frontPagination]="true"
-    ></tot-table>
-
-    <ng-template #avatarTpl let-data>
-      <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
-        <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
-        <div class="avatar-mask">
-          <span nz-icon nzType="camera"></span>
+    >
+      <ng-template totCell="Avatar" let-data>
+        <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
+          <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
+          <div class="avatar-mask">
+            <span nz-icon nzType="camera"></span>
+          </div>
         </div>
-      </div>
-    </ng-template>
+      </ng-template>
 
-    <ng-template #userTpl let-data>
-      <div class="user-cell">
-        <strong>{{ data.displayName }}</strong>
-        <span class="sub-text">{{ data.username }}</span>
-      </div>
-    </ng-template>
+      <ng-template totCell="Người dùng" let-data>
+        <div class="user-cell">
+          <strong>{{ data.displayName }}</strong>
+          <span class="sub-text">{{ data.username }}</span>
+        </div>
+      </ng-template>
 
-    <ng-template #statusTpl let-data>
-      <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
-        {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | transloco }}
-      </nz-tag>
-    </ng-template>
+      <ng-template totCell="Trạng thái" let-data>
+        <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
+          {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | transloco }}
+        </nz-tag>
+      </ng-template>
 
-    <ng-template #rolesTpl let-data>
-      <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
-              [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-              (nzOnClose)="removeRole(data, role)">
-        {{ role.name }}
-      </nz-tag>
-      <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
-        <span nz-icon nzType="plus"></span>
-      </tot-button>
-    </ng-template>
+      <ng-template totCell="Vai trò" let-data>
+        <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
+                [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
+                (nzOnClose)="removeRole(data, role)">
+          {{ role.name }}
+        </nz-tag>
+        <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+          <span nz-icon nzType="plus"></span>
+        </tot-button>
+      </ng-template>
 
-    <ng-template #claimsTpl let-data>
-      <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
-              [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-              (nzOnClose)="removeClaim(data, claim)">
-        {{ claim.name }}
-      </nz-tag>
-      <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
-        <span nz-icon nzType="plus"></span>
-      </tot-button>
-    </ng-template>
+      <ng-template totCell="Quyền" let-data>
+        <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
+                [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
+                (nzOnClose)="removeClaim(data, claim)">
+          {{ claim.name }}
+        </nz-tag>
+        <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+          <span nz-icon nzType="plus"></span>
+        </tot-button>
+      </ng-template>
 
-    <ng-template #dateTpl let-data let-key="key">
-      {{ data[key] | date:'dd/MM/yyyy HH:mm' }}
-    </ng-template>
+      <ng-template totCell="createdAt" let-data>
+        {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
+      </ng-template>
 
-    <ng-template #actionsTpl let-data>
-      <div style="display: flex; gap: 4px; flex-direction: column;">
-        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
-        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
-                [disabled]="data.username?.toLowerCase() === 'admin'"
-                (click)="deleteUser(data)">{{ 'Xóa' | transloco }}</tot-button>
-      </div>
-    </ng-template>
+      <ng-template totCell="updatedAt" let-data>
+        {{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}
+      </ng-template>
+
+      <ng-template totCell="Hành động" let-data>
+        <div style="display: flex; gap: 4px; flex-direction: column;">
+          <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
+          <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
+                  [disabled]="data.username?.toLowerCase() === 'admin'"
+                  (click)="deleteUser(data)">{{ 'Xóa' | transloco }}</tot-button>
+        </div>
+      </ng-template>
+    </tot-table>
 
     <input type="file" #avatarInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
 
@@ -372,28 +377,21 @@ export class UserListComponent implements OnInit {
     ssoId: ''
   };
 
-  @ViewChild('avatarTpl', { static: true }) avatarTpl!: TemplateRef<any>;
-  @ViewChild('userTpl', { static: true }) userTpl!: TemplateRef<any>;
-  @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
-  @ViewChild('rolesTpl', { static: true }) rolesTpl!: TemplateRef<any>;
-  @ViewChild('claimsTpl', { static: true }) claimsTpl!: TemplateRef<any>;
-  @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
-  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
   @ViewChild('userExtraTpl', { static: true }) userExtraTpl!: TemplateRef<any>;
 
   userColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
     this.userColumns = [
-      { title: 'Avatar', width: '80px', template: this.avatarTpl },
-      { title: 'Người dùng', template: this.userTpl },
+      { title: 'Avatar', width: '80px' },
+      { title: 'Người dùng' },
       { title: 'Email', key: 'email' },
-      { title: 'Trạng thái', template: this.statusTpl },
-      { title: 'Vai trò', template: this.rolesTpl },
-      { title: 'Quyền', template: this.claimsTpl },
-      { title: 'Ngày tạo', key: 'createdAt', template: this.dateTpl },
-      { title: 'Cập nhật', key: 'updatedAt', template: this.dateTpl },
-      { title: 'Hành động', width: '150px', template: this.actionsTpl, right: true }
+      { title: 'Trạng thái' },
+      { title: 'Vai trò' },
+      { title: 'Quyền' },
+      { title: 'Ngày tạo', key: 'createdAt' },
+      { title: 'Cập nhật', key: 'updatedAt' },
+      { title: 'Hành động', width: '150px', right: true }
     ];
     this.loadUsers();
   }

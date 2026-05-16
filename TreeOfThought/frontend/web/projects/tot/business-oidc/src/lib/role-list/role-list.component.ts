@@ -15,7 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
 import { ViewChild, TemplateRef } from '@angular/core';
 
@@ -39,7 +39,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
     TranslocoModule,
     TotAutocompleteComponent,
     TotButtonComponent,
-    TotTableComponent
+    TotTableComponent,
+    TotCellDirective
   ],
   template: `
     <ng-template #roleExtraTpl>
@@ -75,36 +76,36 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [data]="roles" 
       [columns]="roleColumns" 
       [loading]="loading"
-      [title]="'Vai trò'"
+      [title]="'Vai trò' | transloco"
       [extra]="roleExtraTpl"
       [frontPagination]="true"
-    ></tot-table>
+    >
+      <ng-template totCell="Vai trò" let-data>
+        <strong>{{ data.name }}</strong>
+      </ng-template>
 
-    <ng-template #roleTpl let-data>
-      <strong>{{ data.name }}</strong>
-    </ng-template>
+      <ng-template totCell="Quyền" let-data>
+        <div class="claim-tags">
+          <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
+                  [nzMode]="(data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase() && claim.name?.toLowerCase() === ADMIN_CLAIM.toLowerCase()) ? 'default' : 'closeable'" 
+                  (nzOnClose)="removeClaim(data, claim)">
+            {{ claim.name }}
+          </nz-tag>
+          <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+            <span nz-icon nzType="plus"></span>
+          </tot-button>
+        </div>
+      </ng-template>
 
-    <ng-template #claimsTpl let-data>
-      <div class="claim-tags">
-        <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
-                [nzMode]="(data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase() && claim.name?.toLowerCase() === ADMIN_CLAIM.toLowerCase()) ? 'default' : 'closeable'" 
-                (nzOnClose)="removeClaim(data, claim)">
-          {{ claim.name }}
-        </nz-tag>
-        <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
-          <span nz-icon nzType="plus"></span>
-        </tot-button>
-      </div>
-    </ng-template>
-
-    <ng-template #actionsTpl let-data>
-      <div style="display: flex; gap: 4px; flex-direction: column;">
-        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
-        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
-                [disabled]="data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()"
-                (click)="deleteRole(data)">{{ 'Xóa' | transloco }}</tot-button>
-      </div>
-    </ng-template>
+      <ng-template totCell="Hành động" let-data>
+        <div style="display: flex; gap: 4px; flex-direction: column;">
+          <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
+          <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
+                  [disabled]="data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()"
+                  (click)="deleteRole(data)">{{ 'Xóa' | transloco }}</tot-button>
+        </div>
+      </ng-template>
+    </tot-table>
 
     <!-- Modal Thêm/Sửa Vai trò -->
     <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="(editingRole ? 'Sửa vai trò' : 'Thêm mới') | transloco" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="saveRole()">
@@ -199,19 +200,15 @@ export class RoleListComponent implements OnInit {
     claimIds: []
   };
 
-  @ViewChild('roleTpl', { static: true }) roleTpl!: TemplateRef<any>;
-  @ViewChild('claimsTpl', { static: true }) claimsTpl!: TemplateRef<any>;
-  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
-  @ViewChild('roleExtraTpl', { static: true }) roleExtraTpl!: TemplateRef<any>;
-
   roleColumns: TotTableColumn[] = [];
+  @ViewChild('roleExtraTpl', { static: true }) roleExtraTpl!: TemplateRef<any>;
 
   ngOnInit(): void {
     this.roleColumns = [
-      { title: 'Vai trò', width: '200px', template: this.roleTpl },
+      { title: 'Vai trò', width: '200px' },
       { title: 'Mô tả', key: 'description' },
-      { title: 'Quyền', template: this.claimsTpl },
-      { title: 'Hành động', width: '150px', template: this.actionsTpl, right: true }
+      { title: 'Quyền' },
+      { title: 'Hành động', width: '150px', right: true }
     ];
     this.loadRoles();
   }

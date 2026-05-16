@@ -8,7 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { ADMIN_CLAIM, ADMIN_ROLE, APP_CLAIMS, AuthService, CLAIMS_VERSION } from '@tot/core';
 
 import { TranslocoModule } from '@jsverse/transloco';
-import { TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 
 @Component({
   selector: 'app-authorize-info',
@@ -21,7 +21,8 @@ import { TotTableComponent, TotTableColumn } from '@tot/shared';
     NzTabsModule,
     NzIconModule,
     TranslocoModule,
-    TotTableComponent
+    TotTableComponent,
+    TotCellDirective
   ],
   template: `
     <div class="authorize-info-container">
@@ -75,7 +76,7 @@ import { TotTableComponent, TotTableColumn } from '@tot/shared';
               [columns]="claimsColumns"
               [pageSize]="10"
             >
-              <ng-template #valueTpl let-data>
+              <ng-template totCell="value" let-data>
                 <code>{{ data.value }}</code>
               </ng-template>
             </tot-table>
@@ -130,10 +131,8 @@ import { TotTableComponent, TotTableColumn } from '@tot/shared';
     }
   `]
 })
-export class AuthorizeInfoComponent implements OnInit, AfterViewInit {
+export class AuthorizeInfoComponent implements OnInit {
   private authService = inject(AuthService);
-
-  @ViewChild('valueTpl', { static: true }) valueTpl!: TemplateRef<any>;
 
   userRoles: string[] = [];
   userClaims: string[] = [];
@@ -147,16 +146,13 @@ export class AuthorizeInfoComponent implements OnInit, AfterViewInit {
   claimsColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
-    this.loadUserData();
-    this.processAppClaims();
-  }
-
-  ngAfterViewInit(): void {
     this.claimsColumns = [
       { title: 'Mô-đun', key: 'module', sortable: true },
       { title: 'Hành động', key: 'action', sortable: true },
-      { title: 'Giá trị Claim', key: 'value', template: this.valueTpl }
+      { title: 'Giá trị Claim', key: 'value' }
     ];
+    this.loadUserData();
+    this.processAppClaims();
   }
 
   private loadUserData() {

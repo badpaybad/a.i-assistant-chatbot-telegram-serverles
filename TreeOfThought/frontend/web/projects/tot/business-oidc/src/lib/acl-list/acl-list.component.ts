@@ -17,7 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
@@ -42,7 +42,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
     TranslocoModule,
     TotAutocompleteComponent,
     TotButtonComponent,
-    TotTableComponent
+    TotTableComponent,
+    TotCellDirective
   ],
   template: `
     <div class="page-header">
@@ -67,39 +68,39 @@ import { ViewChild, TemplateRef } from '@angular/core';
       </nz-card>
     </div>
 
-    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh sách ACL'" [frontPagination]="true"></tot-table>
-
-    <ng-template #subjectTpl let-data>
-      <div *ngIf="data.userId" class="subject-info">
-        <span nz-icon nzType="user"></span>
-        <span>{{ 'Người dùng' | transloco }}: <strong>{{ data.userId }}</strong></span>
-      </div>
-      <div *ngIf="data.roleId" class="subject-info">
-        <span nz-icon nzType="team"></span>
-        <span>{{ 'Vai trò' | transloco }}: <strong>{{ data.roleId }}</strong></span>
-      </div>
-    </ng-template>
-
-    <ng-template #resourceTpl let-data>
-      <nz-tag>{{ data.resourceType }}</nz-tag>
-      <code>{{ data.resourceId }}</code>
-    </ng-template>
-
-    <ng-template #maskTpl let-data>
-      <div class="mask-display">
-        <span class="mask-value">{{ data.permissionMask }}</span>
-        <div class="mask-details">
-          <nz-tag *ngIf="hasMask(data.permissionMask, 1)" nzColor="blue">{{ 'Đọc' | transloco }}</nz-tag>
-          <nz-tag *ngIf="hasMask(data.permissionMask, 2)" nzColor="green">{{ 'Ghi' | transloco }}</nz-tag>
-          <nz-tag *ngIf="hasMask(data.permissionMask, 4)" nzColor="red">{{ 'Xóa' | transloco }}</nz-tag>
-          <nz-tag *ngIf="hasMask(data.permissionMask, 8)" nzColor="orange">{{ 'Chia sẻ' | transloco }}</nz-tag>
+    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh sách ACL' | transloco" [frontPagination]="true">
+      <ng-template totCell="Đối tượng" let-data>
+        <div *ngIf="data.userId" class="subject-info">
+          <span nz-icon nzType="user"></span>
+          <span>{{ 'Người dùng' | transloco }}: <strong>{{ data.userId }}</strong></span>
         </div>
-      </div>
-    </ng-template>
+        <div *ngIf="data.roleId" class="subject-info">
+          <span nz-icon nzType="team"></span>
+          <span>{{ 'Vai trò' | transloco }}: <strong>{{ data.roleId }}</strong></span>
+        </div>
+      </ng-template>
 
-    <ng-template #actionsTpl let-data>
-      <tot-button nzType="primary" [nzDanger]="true" nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | transloco }}</tot-button>
-    </ng-template>
+      <ng-template totCell="Tài nguyên" let-data>
+        <nz-tag>{{ data.resourceType }}</nz-tag>
+        <code>{{ data.resourceId }}</code>
+      </ng-template>
+
+      <ng-template totCell="Mặt nạ quyền" let-data>
+        <div class="mask-display">
+          <span class="mask-value">{{ data.permissionMask }}</span>
+          <div class="mask-details">
+            <nz-tag *ngIf="hasMask(data.permissionMask, 1)" nzColor="blue">{{ 'Đọc' | transloco }}</nz-tag>
+            <nz-tag *ngIf="hasMask(data.permissionMask, 2)" nzColor="green">{{ 'Ghi' | transloco }}</nz-tag>
+            <nz-tag *ngIf="hasMask(data.permissionMask, 4)" nzColor="red">{{ 'Xóa' | transloco }}</nz-tag>
+            <nz-tag *ngIf="hasMask(data.permissionMask, 8)" nzColor="orange">{{ 'Chia sẻ' | transloco }}</nz-tag>
+          </div>
+        </div>
+      </ng-template>
+
+      <ng-template totCell="Hành động" let-data>
+        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | transloco }}</tot-button>
+      </ng-template>
+    </tot-table>
 
     <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | transloco" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createAcl()">
       <ng-container *nzModalContent>
@@ -231,19 +232,14 @@ export class AclListComponent implements OnInit {
     { label: 'Share (8)', value: 8, checked: false }
   ];
 
-  @ViewChild('subjectTpl', { static: true }) subjectTpl!: TemplateRef<any>;
-  @ViewChild('resourceTpl', { static: true }) resourceTpl!: TemplateRef<any>;
-  @ViewChild('maskTpl', { static: true }) maskTpl!: TemplateRef<any>;
-  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
-
   aclColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
     this.aclColumns = [
-      { title: 'Đối tượng', template: this.subjectTpl },
-      { title: 'Tài nguyên', template: this.resourceTpl },
-      { title: 'Mặt nạ quyền', template: this.maskTpl },
-      { title: 'Hành động', width: '120px', template: this.actionsTpl, right: true }
+      { title: 'Đối tượng' },
+      { title: 'Tài nguyên' },
+      { title: 'Mặt nạ quyền' },
+      { title: 'Hành động', width: '120px', right: true }
     ];
     this.loadMetadata();
   }

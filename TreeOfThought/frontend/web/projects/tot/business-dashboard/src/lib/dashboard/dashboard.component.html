@@ -63,7 +63,51 @@
           [frontPagination]="true"
           [showPagination]="true"
           [scroll]="{ x: '1200px' }"
-        ></tot-table>
+        >
+          <ng-template totCell="Loại" let-data>
+            <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
+              {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | transloco }}
+            </nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Đang xử lý" let-data>
+            <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Thành công" let-data>
+            <nz-tag nzColor="success">{{ data.processedCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Lỗi" let-data>
+            <nz-tag nzColor="error">{{ data.errorCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Workers" let-data>
+            <div class="worker-tags">
+              <nz-tag *ngFor="let w of data.workers" nzColor="processing">{{ w }}</nz-tag>
+            </div>
+          </ng-template>
+
+          <ng-template totCell="Handlers" let-data>
+            <div class="handler-grid">
+              <div *ngFor="let h of data.handlers" class="handler-tag-item">
+                <span class="h-name">{{ h.handlerName }}</span>
+                <span class="m-name">{{ h.messageName }}</span>
+              </div>
+            </div>
+          </ng-template>
+
+          <ng-template totCell="Hành động" let-data>
+            <div style="display: flex; gap: 4px; flex-direction: column;">
+              <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
+                {{ 'Chi tiết' | transloco }}
+              </tot-button>
+              <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
+                {{ 'Xem đang xử lý' | transloco }}
+              </tot-button>
+            </div>
+          </ng-template>
+        </tot-table>
       </nz-card>
     </div>
 
@@ -106,7 +150,40 @@
           [frontPagination]="false"
           [expandTemplate]="expandTpl"
           (queryParamsChange)="onQueryParamsChange($event)"
-        ></tot-table>
+        >
+          <ng-template totCell="Status" let-data>
+            <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
+              {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | transloco }}
+            </nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Worker" let-data>
+            {{ data.worker || data.workerId || '-' }}
+          </ng-template>
+
+          <ng-template totCell="Content" let-data>
+            <div class="content-preview">
+              <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
+              <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
+                <span nz-icon nzType="copy"></span>
+              </tot-button>
+            </div>
+          </ng-template>
+
+          <ng-template totCell="Hành động" let-data>
+            <div style="display: flex; gap: 4px; flex-direction: column;">
+              <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | transloco">
+                <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
+              </tot-button>
+              <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | transloco">
+                <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
+              </tot-button>
+              <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
+                <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | transloco }}
+              </tot-button>
+            </div>
+          </ng-template>
+        </tot-table>
       </nz-card>
     </div>
 
@@ -119,7 +196,19 @@
           [frontPagination]="true"
           [showPagination]="true"
           [scroll]="{ x: '800px' }"
-        ></tot-table>
+        >
+          <ng-template totCell="Trạng thái" let-data>
+            <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
+              {{ (data.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | transloco }}
+            </nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Hành động" let-data>
+            <tot-button [nzType]="data.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(data.id, data.status)" [nzDanger]="data.status === 'Running'">
+              {{ (data.status === 'Running' ? 'Dừng' : 'Khởi chạy') | transloco }}
+            </tot-button>
+          </ng-template>
+        </tot-table>
       </nz-card>
 
       <nz-card [nzTitle]="'Phân tích lỗi' | transloco" style="margin-top: 24px;">
@@ -153,91 +242,28 @@
           [frontPagination]="true"
           [showPagination]="true"
           nzSize="middle"
-        ></tot-table>
+        >
+          <ng-template totCell="Loại" let-data>
+            <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">
+              {{ data.type | transloco }}
+            </nz-tag>
+          </ng-template>
+
+          <ng-template totCell="Hoạt động cuối" let-data>
+            <span [nz-tooltip]="data.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
+              {{ data.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
+            </span>
+            <span style="color: #999; font-size: 12px; margin-left: 8px;">
+              ({{ data.lastActive | date:'HH:mm:ss' }})
+            </span>
+          </ng-template>
+        </tot-table>
       </nz-card>
     </div>
     <div *ngSwitchCase="'test'">
       <app-cqrs-test></app-cqrs-test>
     </div>
   </ng-container>
-
-  <!-- Templates for tot-table -->
-  <ng-template #queueTypeTpl let-data>
-    <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
-      {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #activeCountTpl let-data>
-    <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
-  </ng-template>
-
-  <ng-template #successCountTpl let-data>
-    <nz-tag nzColor="success">{{ data.processedCount }}</nz-tag>
-  </ng-template>
-
-  <ng-template #errorCountTpl let-data>
-    <nz-tag nzColor="error">{{ data.errorCount }}</nz-tag>
-  </ng-template>
-
-  <ng-template #workerTagsTpl let-data>
-    <div class="worker-tags">
-      <nz-tag *ngFor="let w of data.workers" nzColor="processing">{{ w }}</nz-tag>
-    </div>
-  </ng-template>
-
-  <ng-template #handlerGridTpl let-data>
-    <div class="handler-grid">
-      <div *ngFor="let h of data.handlers" class="handler-tag-item">
-        <span class="h-name">{{ h.handlerName }}</span>
-        <span class="m-name">{{ h.messageName }}</span>
-      </div>
-    </div>
-  </ng-template>
-
-  <ng-template #queueActionsTpl let-data>
-    <div style="display: flex; gap: 4px; flex-direction: column;">
-      <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
-        {{ 'Chi tiết' | transloco }}
-      </tot-button>
-      <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
-        {{ 'Xem đang xử lý' | transloco }}
-      </tot-button>
-    </div>
-  </ng-template>
-
-  <ng-template #statusTpl let-data>
-    <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
-      {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #trackingWorkerTpl let-data>
-    {{ data.worker || data.workerId || '-' }}
-  </ng-template>
-
-  <ng-template #contentTpl let-data>
-    <div class="content-preview">
-      <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
-      <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
-        <span nz-icon nzType="copy"></span>
-      </tot-button>
-    </div>
-  </ng-template>
-
-  <ng-template #actionsTpl let-data>
-    <div style="display: flex; gap: 4px; flex-direction: column;">
-      <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | transloco">
-        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
-      </tot-button>
-      <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | transloco">
-        <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
-      </tot-button>
-      <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
-        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | transloco }}
-      </tot-button>
-    </div>
-  </ng-template>
 
   <ng-template #expandTpl let-data>
     <div class="json-viewer-container" style="width: 100%;">
@@ -265,32 +291,5 @@
         </nz-list>
       </div>
     </div>
-  </ng-template>
-
-  <ng-template #workerStatusTpl let-data>
-    <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
-      {{ (data.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #workerActionsTpl let-data>
-    <tot-button [nzType]="data.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(data.id, data.status)" [nzDanger]="data.status === 'Running'">
-      {{ (data.status === 'Running' ? 'Dừng' : 'Khởi chạy') | transloco }}
-    </tot-button>
-  </ng-template>
-
-  <ng-template #activityTypeTpl let-data>
-    <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">
-      {{ data.type | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #lastActiveTpl let-data>
-    <span [nz-tooltip]="data.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
-      {{ data.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
-    </span>
-    <span style="color: #999; font-size: 12px; margin-left: 8px;">
-      ({{ data.lastActive | date:'HH:mm:ss' }})
-    </span>
   </ng-template>
 </div>

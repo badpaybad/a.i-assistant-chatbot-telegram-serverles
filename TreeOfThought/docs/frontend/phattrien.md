@@ -54,8 +54,23 @@ Thành phần hiển thị danh sách dữ liệu chuyên sâu, hỗ trợ từ 
     - **Độ rộng**: Khuyến nghị **150px**.
     - **Layout**: Sử dụng **Vertical Layout** (mỗi nút một dòng, `flex-direction: column`) để tiết kiệm chiều ngang và đảm bảo tính thẩm mỹ.
     - **Component**: Chỉ sử dụng `tot-button` bên trong các template hành động.
-- **Cấu trúc Template (Hoisting)**:
-    - Để tránh lỗi tham chiếu `ViewChild`, tất cả các `ng-template` dùng cho cell/extra phải được định nghĩa ở **CUỐI CÙNG** của file template, sau component `tot-table`.
+- **Xử lý Template (Tùy chỉnh Cell)**:
+    - Để hiển thị dữ liệu tùy chỉnh (ví dụ: các nút hành động, tag, link...), sử dụng directive `totCell` trên `ng-template` đặt **BÊN TRONG** thẻ `<tot-table>`.
+    - `totCell` sẽ khớp với cột dựa trên `key` hoặc `title` được định nghĩa trong mảng `columns`.
+    - **Ví dụ**:
+    ```html
+    <tot-table [data]="roles" [columns]="roleColumns">
+      <!-- Template cho cột 'Hành động' -->
+      <ng-template totCell="Hành động" let-data>
+        <tot-button (click)="edit(data)">Sửa</tot-button>
+      </ng-template>
+
+      <!-- Template cho cột có key là 'status' -->
+      <ng-template totCell="status" let-data>
+        <nz-tag>{{ data.status }}</nz-tag>
+      </ng-template>
+    </tot-table>
+    ```
 - **Màu sắc & Style**:
     - **Đồng nhất**: Màu nền Header là `#fafafa`. Màu nền các ô (bao gồm cả ô cố định) là `#fff`.
     - **Hover**: Hiệu ứng hover dòng phải rõ ràng và bao phủ toàn bộ các cột cố định.

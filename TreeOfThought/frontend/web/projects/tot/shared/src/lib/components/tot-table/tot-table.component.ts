@@ -1,10 +1,19 @@
-import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef, ContentChildren, QueryList, Directive } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { TranslocoModule } from '@jsverse/transloco';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
+
+@Directive({
+  selector: '[totCell]',
+  standalone: true
+})
+export class TotCellDirective {
+  @Input('totCell') columnKey!: string;
+  constructor(public template: TemplateRef<any>) {}
+}
 
 export interface TotTableColumn {
   title: string;
@@ -108,9 +117,9 @@ export interface TotTableColumn {
                 [nzLeft]="col.left || false"
                 [nzRight]="col.right || false"
               >
-                <ng-container *ngIf="col.template; else textOnly">
+                <ng-container *ngIf="getColTemplate(col); else textOnly">
                   <ng-container
-                    *ngTemplateOutlet="col.template; context: { $implicit: item, index: i, key: col.key }"
+                    *ngTemplateOutlet="getColTemplate(col)!; context: { $implicit: item, index: i, key: col.key }"
                   ></ng-container>
                 </ng-container>
                 <ng-template #textOnly>
@@ -171,6 +180,14 @@ export class TotTableComponent {
   @Input() expandTemplate?: TemplateRef<any>;
   @Input() title?: string | TemplateRef<any>;
   @Input() extra?: TemplateRef<any>;
+
+  @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
+
+  getColTemplate(col: TotTableColumn): TemplateRef<any> | undefined {
+    if (col.template) return col.template;
+    const directive = this.cellDirectives?.find(d => d.columnKey === col.key || d.columnKey === col.title);
+    return directive?.template;
+  }
 
   isString(val: any): val is string {
     return typeof val === 'string';
