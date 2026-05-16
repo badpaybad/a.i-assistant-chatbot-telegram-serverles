@@ -199,7 +199,7 @@ export class DashboardComponent implements OnInit {
   toggleWorker(workerId: string, currentStatus: string): void {
     const action = currentStatus === 'Running' ? this.dashboardService.stopWorker(workerId) : this.dashboardService.startWorker(workerId);
     action.subscribe(() => {
-      const key = currentStatus === 'Running' ? 'Worker {{id}} đã dừng' : 'Worker {{id}} đã bắt đầu';
+      const key = currentStatus === 'Running' ? 'NOTIFICATIONS.WORKER_STOPPED' : 'NOTIFICATIONS.WORKER_STARTED';
       this.notification.success(
         this.translate.instant('Thành công'), 
         this.translate.instant(key, { id: workerId })

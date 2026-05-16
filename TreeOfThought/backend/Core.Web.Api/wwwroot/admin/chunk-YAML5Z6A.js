@@ -5,6 +5,7 @@ import {
   REGISTRY_KEYS
 } from "./chunk-S3AT7VWC.js";
 import {
+  AppButtonComponent,
   NzContextMenuService,
   NzDatePickerComponent,
   NzDatePickerModule,
@@ -32,7 +33,7 @@ import {
   NzThMeasureDirective,
   NzTheadComponent,
   NzTrDirective
-} from "./chunk-DD53A73C.js";
+} from "./chunk-CC2KKG67.js";
 import {
   FirebaseService,
   NzFormControlComponent,
@@ -4725,16 +4726,16 @@ function CreateFolderPopoverComponent_ng_template_3_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r1.submit());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 7)(4, "button", 8);
-    \u0275\u0275listener("click", function CreateFolderPopoverComponent_ng_template_3_Template_button_click_4_listener() {
+    \u0275\u0275elementStart(3, "div", 7)(4, "app-button", 8);
+    \u0275\u0275listener("click", function CreateFolderPopoverComponent_ng_template_3_Template_app_button_click_4_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.visible = false);
     });
     \u0275\u0275text(5, "H\u1EE7y");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "button", 9);
-    \u0275\u0275listener("click", function CreateFolderPopoverComponent_ng_template_3_Template_button_click_6_listener() {
+    \u0275\u0275elementStart(6, "app-button", 9);
+    \u0275\u0275listener("click", function CreateFolderPopoverComponent_ng_template_3_Template_app_button_click_6_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.submit());
@@ -4747,7 +4748,7 @@ function CreateFolderPopoverComponent_ng_template_3_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx_r1.name);
     \u0275\u0275advance(5);
-    \u0275\u0275property("nzLoading", ctx_r1.loading);
+    \u0275\u0275property("loading", ctx_r1.loading);
   }
 }
 var _CreateFolderPopoverComponent = class _CreateFolderPopoverComponent {
@@ -4813,7 +4814,7 @@ var _CreateFolderPopoverComponent = class _CreateFolderPopoverComponent {
 _CreateFolderPopoverComponent.\u0275fac = function CreateFolderPopoverComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _CreateFolderPopoverComponent)();
 };
-_CreateFolderPopoverComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _CreateFolderPopoverComponent, selectors: [["app-create-folder-popover"]], inputs: { parentId: "parentId", currentFolderName: "currentFolderName", buttonType: "buttonType", buttonIcon: "buttonIcon", buttonText: "buttonText", buttonClass: "buttonClass", placement: "placement" }, outputs: { created: "created" }, decls: 5, vars: 9, consts: [["contentTemplate", ""], ["folderInput", ""], ["nz-button", "", "nz-popover", "", "nzPopoverTrigger", "click", 3, "nzPopoverVisibleChange", "nzType", "nzPopoverVisible", "nzPopoverTitle", "nzPopoverContent", "nzPopoverPlacement"], ["nz-icon", "", 3, "nzType"], [4, "ngIf"], [1, "popover-content"], ["nz-input", "", "placeholder", "T\xEAn th\u01B0 m\u1EE5c", 3, "ngModelChange", "keyup.enter", "ngModel"], [1, "popover-footer"], ["nz-button", "", "nzType", "default", "nzSize", "small", 3, "click"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "nzLoading"]], template: function CreateFolderPopoverComponent_Template(rf, ctx) {
+_CreateFolderPopoverComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _CreateFolderPopoverComponent, selectors: [["app-create-folder-popover"]], inputs: { parentId: "parentId", currentFolderName: "currentFolderName", buttonType: "buttonType", buttonIcon: "buttonIcon", buttonText: "buttonText", buttonClass: "buttonClass", placement: "placement" }, outputs: { created: "created" }, decls: 5, vars: 9, consts: [["contentTemplate", ""], ["folderInput", ""], ["nz-button", "", "nz-popover", "", "nzPopoverTrigger", "click", 3, "nzPopoverVisibleChange", "nzType", "nzPopoverVisible", "nzPopoverTitle", "nzPopoverContent", "nzPopoverPlacement"], ["nz-icon", "", 3, "nzType"], [4, "ngIf"], [1, "popover-content"], ["nz-input", "", "placeholder", "T\xEAn th\u01B0 m\u1EE5c", 3, "ngModelChange", "keyup.enter", "ngModel"], [1, "popover-footer"], ["nzType", "default", "nzSize", "small", 3, "click"], ["nzType", "primary", "nzSize", "small", 3, "click", "loading"]], template: function CreateFolderPopoverComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 2);
@@ -4838,7 +4839,7 @@ _CreateFolderPopoverComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComp
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx.buttonText);
   }
-}, dependencies: [CommonModule, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel, NzPopoverModule, NzPopoverDirective, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule, NzIconDirective, NzInputModule, NzInputDirective], styles: ["\n.popover-content[_ngcontent-%COMP%] {\n  width: 200px;\n}\n.popover-footer[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  display: flex;\n  justify-content: flex-end;\n  gap: 8px;\n}\n/*# sourceMappingURL=create-folder-popover.component.css.map */"] });
+}, dependencies: [CommonModule, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel, NzPopoverModule, NzPopoverDirective, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule, NzIconDirective, NzInputModule, NzInputDirective, AppButtonComponent], styles: ["\n.popover-content[_ngcontent-%COMP%] {\n  width: 200px;\n}\n.popover-footer[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  display: flex;\n  justify-content: flex-end;\n  gap: 8px;\n}\n/*# sourceMappingURL=create-folder-popover.component.css.map */"] });
 var CreateFolderPopoverComponent = _CreateFolderPopoverComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(CreateFolderPopoverComponent, [{
@@ -4852,7 +4853,8 @@ var CreateFolderPopoverComponent = _CreateFolderPopoverComponent;
         NzPopoverModule,
         NzButtonModule,
         NzIconModule,
-        NzInputModule
+        NzInputModule,
+        AppButtonComponent
       ],
       template: `
     <button 
@@ -4880,8 +4882,8 @@ var CreateFolderPopoverComponent = _CreateFolderPopoverComponent;
           #folderInput
         />
         <div class="popover-footer">
-          <button nz-button nzType="default" nzSize="small" (click)="visible = false">H\u1EE7y</button>
-          <button nz-button nzType="primary" nzSize="small" (click)="submit()" [nzLoading]="loading">T\u1EA1o</button>
+          <app-button nzType="default" nzSize="small" (click)="visible = false">H\u1EE7y</app-button>
+          <app-button nzType="primary" nzSize="small" (click)="submit()" [loading]="loading">T\u1EA1o</app-button>
         </div>
       </div>
     </ng-template>
@@ -4918,7 +4920,7 @@ var CreateFolderPopoverComponent = _CreateFolderPopoverComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(CreateFolderPopoverComponent, { className: "CreateFolderPopoverComponent", filePath: "projects/tot/business-files/src/lib/components/create-folder-popover/create-folder-popover.component.ts", lineNumber: 68 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(CreateFolderPopoverComponent, { className: "CreateFolderPopoverComponent", filePath: "projects/tot/business-files/src/lib/components/create-folder-popover/create-folder-popover.component.ts", lineNumber: 70 });
 })();
 
 // projects/tot/business-files/src/lib/components/folder-tree/folder-tree.ts
@@ -5191,8 +5193,8 @@ function FileShareModalComponent_div_0_div_27_Template(rf, ctx) {
 function FileShareModalComponent_div_0_div_28_ng_template_11_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 33);
-    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_28_ng_template_11_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 33);
+    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_28_ng_template_11_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r1 = \u0275\u0275nextContext(3);
       return \u0275\u0275resetView(ctx_r1.copyLink((ctx_r1.file == null ? null : ctx_r1.file.url) || ""));
@@ -5231,8 +5233,8 @@ function FileShareModalComponent_div_0_div_28_Template(rf, ctx) {
 function FileShareModalComponent_div_0_div_29_div_17_ng_template_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 33);
-    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_29_div_17_ng_template_3_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 33);
+    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_29_div_17_ng_template_3_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r6);
       const ctx_r1 = \u0275\u0275nextContext(4);
       return \u0275\u0275resetView(ctx_r1.copyLink(ctx_r1.signedUrl));
@@ -5283,8 +5285,8 @@ function FileShareModalComponent_div_0_div_29_Template(rf, ctx) {
     });
     \u0275\u0275element(12, "nz-option", 40)(13, "nz-option", 41)(14, "nz-option", 42);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(15, "button", 43);
-    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_29_Template_button_click_15_listener() {
+    \u0275\u0275elementStart(15, "app-button", 43);
+    \u0275\u0275listener("click", function FileShareModalComponent_div_0_div_29_Template_app_button_click_15_listener() {
       \u0275\u0275restoreView(_r5);
       const ctx_r1 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r1.generateSignedUrl());
@@ -5305,7 +5307,7 @@ function FileShareModalComponent_div_0_div_29_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzValue", 168);
     \u0275\u0275advance();
-    \u0275\u0275property("nzLoading", ctx_r1.generating);
+    \u0275\u0275property("loading", ctx_r1.generating);
     \u0275\u0275advance(2);
     \u0275\u0275property("ngIf", ctx_r1.signedUrl);
   }
@@ -5387,16 +5389,16 @@ function FileShareModalComponent_div_0_Template(rf, ctx) {
     \u0275\u0275elementStart(26, "div", 18);
     \u0275\u0275template(27, FileShareModalComponent_div_0_div_27_Template, 8, 0, "div", 19)(28, FileShareModalComponent_div_0_div_28_Template, 13, 2, "div", 19)(29, FileShareModalComponent_div_0_div_29_Template, 18, 6, "div", 19)(30, FileShareModalComponent_div_0_div_30_Template, 23, 1, "div", 19);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(31, "div", 20)(32, "button", 21);
-    \u0275\u0275listener("click", function FileShareModalComponent_div_0_Template_button_click_32_listener($event) {
+    \u0275\u0275elementStart(31, "div", 20)(32, "app-button", 21);
+    \u0275\u0275listener("click", function FileShareModalComponent_div_0_Template_app_button_click_32_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.handleCancel($event));
     });
     \u0275\u0275text(33, "B\u1ECF qua");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(34, "button", 22);
-    \u0275\u0275listener("click", function FileShareModalComponent_div_0_Template_button_click_34_listener() {
+    \u0275\u0275elementStart(34, "app-button", 22);
+    \u0275\u0275listener("click", function FileShareModalComponent_div_0_Template_app_button_click_34_listener() {
       \u0275\u0275restoreView(_r1);
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.submitForm());
@@ -5430,7 +5432,7 @@ function FileShareModalComponent_div_0_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r1.shareMode === "secure");
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzLoading", ctx_r1.submitting);
+    \u0275\u0275property("loading", ctx_r1.submitting);
   }
 }
 var _FileShareModalComponent = class _FileShareModalComponent {
@@ -5549,7 +5551,7 @@ var _FileShareModalComponent = class _FileShareModalComponent {
 _FileShareModalComponent.\u0275fac = function FileShareModalComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _FileShareModalComponent)();
 };
-_FileShareModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileShareModalComponent, selectors: [["app-file-share-modal"]], decls: 1, vars: 1, consts: [["copyButton", ""], ["copySignedButton", ""], ["class", "share-container", 4, "ngIf"], [1, "share-container"], [1, "header-info"], [1, "file-icon"], ["nz-icon", "", "nzType", "file", "nzTheme", "twotone"], [1, "file-details"], [1, "file-name", "text-truncate"], [1, "file-meta"], [1, "mode-selector"], [1, "section-title"], ["nzButtonStyle", "solid", 1, "full-width-group", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", 3, "nzValue"], ["nz-icon", "", "nzType", "lock"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-icon", "", "nzType", "safety"], [1, "mode-content", "mt-4"], ["class", "mode-card animate-in", 4, "ngIf"], [1, "modal-footer", "mt-4"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 1, "ml-2", "save-btn", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "check"], [1, "mode-card", "animate-in"], [1, "mode-icon", "private"], ["nz-icon", "", "nzType", "lock", "nzTheme", "outline"], [1, "mode-text"], [1, "mode-icon", "public"], ["nz-icon", "", "nzType", "global", "nzTheme", "outline"], [1, "url-copy-box", "mt-3"], [3, "nzAddOnAfter"], ["nz-input", "", "readonly", "", 3, "ngModel"], ["nz-button", "", "nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "copy"], [1, "mode-icon", "signed"], ["nz-icon", "", "nzType", "link", "nzTheme", "outline"], [1, "duration-selector", "mt-3"], [1, "label"], [2, "width", "140px", 3, "ngModelChange", "ngModel"], ["nzLabel", "1 gi\u1EDD", 3, "nzValue"], ["nzLabel", "24 gi\u1EDD", 3, "nzValue"], ["nzLabel", "7 ng\xE0y", 3, "nzValue"], ["nz-button", "", "nzType", "primary", 1, "ml-2", 3, "click", "nzLoading"], ["class", "url-copy-box mt-3", 4, "ngIf"], [1, "mode-icon", "secure"], ["nz-icon", "", "nzType", "safety", "nzTheme", "outline"], ["nz-form", "", "nzLayout", "vertical", 1, "mt-3", 3, "formGroup"], [1, "row"], [1, "col-6"], ["nzRequired", ""], ["nzErrorTip", "Vui l\xF2ng nh\u1EADp m\xE3"], ["nzPrefixIcon", "key"], ["nz-input", "", "formControlName", "shareCode", "placeholder", "vd: 123456"], ["formControlName", "expiredAt", "nzShowTime", "", 2, "width", "100%"]], template: function FileShareModalComponent_Template(rf, ctx) {
+_FileShareModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileShareModalComponent, selectors: [["app-file-share-modal"]], decls: 1, vars: 1, consts: [["copyButton", ""], ["copySignedButton", ""], ["class", "share-container", 4, "ngIf"], [1, "share-container"], [1, "header-info"], [1, "file-icon"], ["nz-icon", "", "nzType", "file", "nzTheme", "twotone"], [1, "file-details"], [1, "file-name", "text-truncate"], [1, "file-meta"], [1, "mode-selector"], [1, "section-title"], ["nzButtonStyle", "solid", 1, "full-width-group", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", 3, "nzValue"], ["nz-icon", "", "nzType", "lock"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-icon", "", "nzType", "safety"], [1, "mode-content", "mt-4"], ["class", "mode-card animate-in", 4, "ngIf"], [1, "modal-footer", "mt-4"], ["nzType", "default", 3, "click"], ["nzType", "primary", 1, "ml-2", "save-btn", 3, "click", "loading"], ["nz-icon", "", "nzType", "check"], [1, "mode-card", "animate-in"], [1, "mode-icon", "private"], ["nz-icon", "", "nzType", "lock", "nzTheme", "outline"], [1, "mode-text"], [1, "mode-icon", "public"], ["nz-icon", "", "nzType", "global", "nzTheme", "outline"], [1, "url-copy-box", "mt-3"], [3, "nzAddOnAfter"], ["nz-input", "", "readonly", "", 3, "ngModel"], ["nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "copy"], [1, "mode-icon", "signed"], ["nz-icon", "", "nzType", "link", "nzTheme", "outline"], [1, "duration-selector", "mt-3"], [1, "label"], [2, "width", "140px", 3, "ngModelChange", "ngModel"], ["nzLabel", "1 gi\u1EDD", 3, "nzValue"], ["nzLabel", "24 gi\u1EDD", 3, "nzValue"], ["nzLabel", "7 ng\xE0y", 3, "nzValue"], ["nzType", "primary", 1, "ml-2", 3, "click", "loading"], ["class", "url-copy-box mt-3", 4, "ngIf"], [1, "mode-icon", "secure"], ["nz-icon", "", "nzType", "safety", "nzTheme", "outline"], ["nz-form", "", "nzLayout", "vertical", 1, "mt-3", 3, "formGroup"], [1, "row"], [1, "col-6"], ["nzRequired", ""], ["nzErrorTip", "Vui l\xF2ng nh\u1EADp m\xE3"], ["nzPrefixIcon", "key"], ["nz-input", "", "formControlName", "shareCode", "placeholder", "vd: 123456"], ["formControlName", "expiredAt", "nzShowTime", "", 2, "width", "100%"]], template: function FileShareModalComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275template(0, FileShareModalComponent_div_0_Template, 37, 13, "div", 2);
   }
@@ -5585,16 +5587,15 @@ _FileShareModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
   NzDatePickerModule,
   NzDatePickerComponent,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzSelectModule,
   NzOptionComponent,
   NzSelectComponent,
   NzIconModule,
   NzIconDirective,
   NzDividerModule,
-  NzDividerComponent
+  NzDividerComponent,
+  AppButtonComponent
 ], styles: ['\n.share-container[_ngcontent-%COMP%] {\n  padding: 4px;\n  font-family:\n    "Inter",\n    -apple-system,\n    sans-serif;\n}\n.header-info[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  margin-bottom: 8px;\n}\n.file-icon[_ngcontent-%COMP%] {\n  font-size: 32px;\n  background: #f0f7ff;\n  padding: 12px;\n  border-radius: 12px;\n  display: flex;\n}\n.file-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 16px;\n  color: #1a1a1a;\n  max-width: 300px;\n}\n.file-meta[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: #8c8c8c;\n  margin-top: 2px;\n}\n.section-title[_ngcontent-%COMP%] {\n  font-weight: 500;\n  font-size: 14px;\n  margin-bottom: 12px;\n  color: #595959;\n}\n.full-width-group[_ngcontent-%COMP%] {\n  width: 100%;\n  display: flex;\n}\n.full-width-group[_ngcontent-%COMP%]   label[_ngcontent-%COMP%] {\n  flex: 1;\n  text-align: center;\n}\n.mode-card[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 16px;\n  padding: 20px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);\n  min-height: 160px;\n}\n.mode-icon[_ngcontent-%COMP%] {\n  font-size: 24px;\n  width: 48px;\n  height: 48px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 50%;\n  flex-shrink: 0;\n}\n.mode-icon.private[_ngcontent-%COMP%] {\n  background: #fff1f0;\n  color: #ff4d4f;\n}\n.mode-icon.public[_ngcontent-%COMP%] {\n  background: #f6ffed;\n  color: #52c41a;\n}\n.mode-icon.signed[_ngcontent-%COMP%] {\n  background: #e6f7ff;\n  color: #1890ff;\n}\n.mode-icon.secure[_ngcontent-%COMP%] {\n  background: #f9f0ff;\n  color: #722ed1;\n}\n.mode-text[_ngcontent-%COMP%]   h3[_ngcontent-%COMP%] {\n  margin: 0 0 4px;\n  font-size: 16px;\n  font-weight: 600;\n  color: #262626;\n}\n.mode-text[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  margin: 0;\n  font-size: 14px;\n  color: #8c8c8c;\n  line-height: 1.5;\n}\n.url-copy-box[_ngcontent-%COMP%] {\n  background: #f5f5f5;\n  padding: 4px;\n  border-radius: 8px;\n}\n.duration-selector[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.duration-selector[_ngcontent-%COMP%]   .label[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: #595959;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n  padding-top: 16px;\n  border-top: 1px solid #f0f0f0;\n}\n.save-btn[_ngcontent-%COMP%] {\n  min-width: 140px;\n}\n.row[_ngcontent-%COMP%] {\n  display: flex;\n  margin: 0 -8px;\n}\n.col-6[_ngcontent-%COMP%] {\n  flex: 0 0 50%;\n  padding: 0 8px;\n}\n.mt-3[_ngcontent-%COMP%] {\n  margin-top: 12px;\n}\n.mt-4[_ngcontent-%COMP%] {\n  margin-top: 16px;\n}\n.ml-2[_ngcontent-%COMP%] {\n  margin-left: 8px;\n}\n.text-truncate[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.animate-in[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_slide-up 0.3s ease-out;\n}\n@keyframes _ngcontent-%COMP%_slide-up {\n  from {\n    opacity: 0;\n    transform: translateY(10px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n/*# sourceMappingURL=file-share-modal.component.css.map */'] });
 var FileShareModalComponent = _FileShareModalComponent;
 (() => {
@@ -5612,7 +5613,8 @@ var FileShareModalComponent = _FileShareModalComponent;
       NzButtonModule,
       NzSelectModule,
       NzIconModule,
-      NzDividerModule
+      NzDividerModule,
+      AppButtonComponent
     ], template: `
     <div class="share-container" *ngIf="file">
       <div class="header-info">
@@ -5666,9 +5668,9 @@ var FileShareModalComponent = _FileShareModalComponent;
                 <input nz-input [ngModel]="file?.url" readonly />
               </nz-input-group>
               <ng-template #copyButton>
-                <button nz-button (click)="copyLink(file?.url || '')" nzType="primary">
+                <app-button (click)="copyLink(file?.url || '')" nzType="primary">
                   <span nz-icon nzType="copy"></span> Sao ch\xE9p
-                </button>
+                </app-button>
               </ng-template>
             </div>
           </div>
@@ -5688,9 +5690,9 @@ var FileShareModalComponent = _FileShareModalComponent;
                 <nz-option [nzValue]="24" nzLabel="24 gi\u1EDD"></nz-option>
                 <nz-option [nzValue]="168" nzLabel="7 ng\xE0y"></nz-option>
               </nz-select>
-              <button nz-button nzType="primary" (click)="generateSignedUrl()" [nzLoading]="generating" class="ml-2">
+              <app-button nzType="primary" (click)="generateSignedUrl()" [loading]="generating" class="ml-2">
                 T\u1EA1o Link
-              </button>
+              </app-button>
             </div>
 
             <div *ngIf="signedUrl" class="url-copy-box mt-3">
@@ -5698,9 +5700,9 @@ var FileShareModalComponent = _FileShareModalComponent;
                 <input nz-input [ngModel]="signedUrl" readonly />
               </nz-input-group>
               <ng-template #copySignedButton>
-                <button nz-button (click)="copyLink(signedUrl)" nzType="primary">
+                <app-button (click)="copyLink(signedUrl)" nzType="primary">
                   <span nz-icon nzType="copy"></span> Sao ch\xE9p
-                </button>
+                </app-button>
               </ng-template>
             </div>
           </div>
@@ -5740,17 +5742,17 @@ var FileShareModalComponent = _FileShareModalComponent;
       </div>
 
       <div class="modal-footer mt-4">
-        <button nz-button nzType="default" (click)="handleCancel($event)">B\u1ECF qua</button>
-        <button nz-button nzType="primary" (click)="submitForm()" [nzLoading]="submitting" class="ml-2 save-btn">
+        <app-button nzType="default" (click)="handleCancel($event)">B\u1ECF qua</app-button>
+        <app-button nzType="primary" (click)="submitForm()" [loading]="submitting" class="ml-2 save-btn">
           <span nz-icon nzType="check"></span> \xC1p d\u1EE5ng thay \u0111\u1ED5i
-        </button>
+        </app-button>
       </div>
     </div>
   `, styles: ['/* angular:styles/component:css;64b512170887530f4f876bfdf23aeda0eeda1cfac0f1b8e0823c067f1923a09d;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-files/src/lib/components/file-share-modal/file-share-modal.component.ts */\n.share-container {\n  padding: 4px;\n  font-family:\n    "Inter",\n    -apple-system,\n    sans-serif;\n}\n.header-info {\n  display: flex;\n  align-items: center;\n  gap: 16px;\n  margin-bottom: 8px;\n}\n.file-icon {\n  font-size: 32px;\n  background: #f0f7ff;\n  padding: 12px;\n  border-radius: 12px;\n  display: flex;\n}\n.file-name {\n  font-weight: 600;\n  font-size: 16px;\n  color: #1a1a1a;\n  max-width: 300px;\n}\n.file-meta {\n  font-size: 13px;\n  color: #8c8c8c;\n  margin-top: 2px;\n}\n.section-title {\n  font-weight: 500;\n  font-size: 14px;\n  margin-bottom: 12px;\n  color: #595959;\n}\n.full-width-group {\n  width: 100%;\n  display: flex;\n}\n.full-width-group label {\n  flex: 1;\n  text-align: center;\n}\n.mode-card {\n  display: flex;\n  gap: 16px;\n  padding: 20px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);\n  min-height: 160px;\n}\n.mode-icon {\n  font-size: 24px;\n  width: 48px;\n  height: 48px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  border-radius: 50%;\n  flex-shrink: 0;\n}\n.mode-icon.private {\n  background: #fff1f0;\n  color: #ff4d4f;\n}\n.mode-icon.public {\n  background: #f6ffed;\n  color: #52c41a;\n}\n.mode-icon.signed {\n  background: #e6f7ff;\n  color: #1890ff;\n}\n.mode-icon.secure {\n  background: #f9f0ff;\n  color: #722ed1;\n}\n.mode-text h3 {\n  margin: 0 0 4px;\n  font-size: 16px;\n  font-weight: 600;\n  color: #262626;\n}\n.mode-text p {\n  margin: 0;\n  font-size: 14px;\n  color: #8c8c8c;\n  line-height: 1.5;\n}\n.url-copy-box {\n  background: #f5f5f5;\n  padding: 4px;\n  border-radius: 8px;\n}\n.duration-selector {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.duration-selector .label {\n  font-size: 13px;\n  color: #595959;\n}\n.modal-footer {\n  display: flex;\n  justify-content: flex-end;\n  padding-top: 16px;\n  border-top: 1px solid #f0f0f0;\n}\n.save-btn {\n  min-width: 140px;\n}\n.row {\n  display: flex;\n  margin: 0 -8px;\n}\n.col-6 {\n  flex: 0 0 50%;\n  padding: 0 8px;\n}\n.mt-3 {\n  margin-top: 12px;\n}\n.mt-4 {\n  margin-top: 16px;\n}\n.ml-2 {\n  margin-left: 8px;\n}\n.text-truncate {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.animate-in {\n  animation: slide-up 0.3s ease-out;\n}\n@keyframes slide-up {\n  from {\n    opacity: 0;\n    transform: translateY(10px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n/*# sourceMappingURL=file-share-modal.component.css.map */\n'] }]
   }], () => [], null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(FileShareModalComponent, { className: "FileShareModalComponent", filePath: "projects/tot/business-files/src/lib/components/file-share-modal/file-share-modal.component.ts", lineNumber: 225 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(FileShareModalComponent, { className: "FileShareModalComponent", filePath: "projects/tot/business-files/src/lib/components/file-share-modal/file-share-modal.component.ts", lineNumber: 227 });
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-breadcrumb.mjs
@@ -6243,7 +6245,7 @@ var _MoveModalComponent = class _MoveModalComponent {
 _MoveModalComponent.\u0275fac = function MoveModalComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _MoveModalComponent)();
 };
-_MoveModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MoveModalComponent, selectors: [["app-move-modal"]], decls: 10, vars: 4, consts: [["nzTreeTemplate", ""], [1, "move-modal-container"], [1, "tree-wrapper"], ["nzShowIcon", "", 3, "nzClick", "nzData", "nzTreeTemplate"], [1, "modal-footer"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 3, "click", "nzLoading", "disabled"], [1, "custom-node"], ["nz-icon", "", "nzTheme", "fill", 2, "color", "#ffca28", 3, "nzType"], [1, "folder-name"]], template: function MoveModalComponent_Template(rf, ctx) {
+_MoveModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MoveModalComponent, selectors: [["app-move-modal"]], decls: 10, vars: 4, consts: [["nzTreeTemplate", ""], [1, "move-modal-container"], [1, "tree-wrapper"], ["nzShowIcon", "", 3, "nzClick", "nzData", "nzTreeTemplate"], [1, "modal-footer"], ["nzType", "default", 3, "click"], ["nzType", "primary", 3, "click", "loading", "disabled"], [1, "custom-node"], ["nz-icon", "", "nzTheme", "fill", 2, "color", "#ffca28", 3, "nzType"], [1, "folder-name"]], template: function MoveModalComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "nz-tree", 3);
     \u0275\u0275listener("nzClick", function MoveModalComponent_Template_nz_tree_nzClick_2_listener($event) {
@@ -6251,14 +6253,14 @@ _MoveModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     });
     \u0275\u0275template(3, MoveModalComponent_ng_template_3_Template, 4, 2, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "div", 4)(6, "button", 5);
-    \u0275\u0275listener("click", function MoveModalComponent_Template_button_click_6_listener() {
+    \u0275\u0275elementStart(5, "div", 4)(6, "app-button", 5);
+    \u0275\u0275listener("click", function MoveModalComponent_Template_app_button_click_6_listener() {
       return ctx.cancel();
     });
     \u0275\u0275text(7, "H\u1EE7y");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "button", 6);
-    \u0275\u0275listener("click", function MoveModalComponent_Template_button_click_8_listener() {
+    \u0275\u0275elementStart(8, "app-button", 6);
+    \u0275\u0275listener("click", function MoveModalComponent_Template_app_button_click_8_listener() {
       return ctx.submit();
     });
     \u0275\u0275text(9, " Chuy\u1EC3n \u0111\u1EBFn \u0111\xE2y ");
@@ -6269,18 +6271,17 @@ _MoveModalComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance(2);
     \u0275\u0275property("nzData", ctx.nodes)("nzTreeTemplate", nzTreeTemplate_r2);
     \u0275\u0275advance(6);
-    \u0275\u0275property("nzLoading", ctx.loading)("disabled", !ctx.selectedFolderId && ctx.selectedFolderId !== null);
+    \u0275\u0275property("loading", ctx.loading)("disabled", !ctx.selectedFolderId && ctx.selectedFolderId !== null);
   }
 }, dependencies: [
   CommonModule,
   NzTreeModule,
   NzTreeComponent,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzIconModule,
-  NzIconDirective
+  NzIconDirective,
+  AppButtonComponent
 ], styles: ["\n.move-modal-container[_ngcontent-%COMP%] {\n  padding: 10px;\n}\n.tree-wrapper[_ngcontent-%COMP%] {\n  max-height: 400px;\n  overflow-y: auto;\n  border: 1px solid #f0f0f0;\n  padding: 8px;\n  border-radius: 4px;\n  margin-bottom: 16px;\n}\n.modal-footer[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n  gap: 8px;\n}\n.custom-node[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n/*# sourceMappingURL=move-modal.component.css.map */"] });
 var MoveModalComponent = _MoveModalComponent;
 (() => {
@@ -6293,7 +6294,8 @@ var MoveModalComponent = _MoveModalComponent;
         CommonModule,
         NzTreeModule,
         NzButtonModule,
-        NzIconModule
+        NzIconModule,
+        AppButtonComponent
       ],
       template: `
     <div class="move-modal-container">
@@ -6313,10 +6315,10 @@ var MoveModalComponent = _MoveModalComponent;
         </nz-tree>
       </div>
       <div class="modal-footer">
-        <button nz-button nzType="default" (click)="cancel()">H\u1EE7y</button>
-        <button nz-button nzType="primary" (click)="submit()" [nzLoading]="loading" [disabled]="!selectedFolderId && selectedFolderId !== null">
+        <app-button nzType="default" (click)="cancel()">H\u1EE7y</app-button>
+        <app-button nzType="primary" (click)="submit()" [loading]="loading" [disabled]="!selectedFolderId && selectedFolderId !== null">
           Chuy\u1EC3n \u0111\u1EBFn \u0111\xE2y
-        </button>
+        </app-button>
       </div>
     </div>
 
@@ -6348,7 +6350,7 @@ var MoveModalComponent = _MoveModalComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MoveModalComponent, { className: "MoveModalComponent", filePath: "projects/tot/business-files/src/lib/components/move-modal/move-modal.component.ts", lineNumber: 69 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MoveModalComponent, { className: "MoveModalComponent", filePath: "projects/tot/business-files/src/lib/components/move-modal/move-modal.component.ts", lineNumber: 71 });
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-collapse.mjs
@@ -7153,6 +7155,8 @@ var _FileExplorerComponent = class _FileExplorerComponent {
     this.folders = [];
     this.files = [];
     this.loading = false;
+    this.loadingUpload = false;
+    this.loadingRefresh = false;
     this.pageIndex = 1;
     this.pageSize = 10;
     this.total = 0;
@@ -7188,8 +7192,11 @@ var _FileExplorerComponent = class _FileExplorerComponent {
       this.loadContent();
     }
   }
-  async loadContent() {
-    this.loading = true;
+  async loadContent(isRefresh = false) {
+    if (isRefresh)
+      this.loadingRefresh = true;
+    else
+      this.loading = true;
     try {
       const response = await this.filesFoldersService.getFolderContent(this.selectedFolderId, this.pageIndex, this.pageSize);
       this.folders = response.folders || [];
@@ -7200,6 +7207,7 @@ var _FileExplorerComponent = class _FileExplorerComponent {
       this.message.error("L\u1ED7i khi t\u1EA3i n\u1ED9i dung th\u01B0 m\u1EE5c");
     } finally {
       this.loading = false;
+      this.loadingRefresh = false;
     }
   }
   onPageIndexChange(index) {
@@ -7219,11 +7227,14 @@ var _FileExplorerComponent = class _FileExplorerComponent {
     if (!file)
       return;
     try {
+      this.loadingUpload = true;
       const result = await this.filesFoldersService.uploadFile(this.selectedFolderId, file);
       this.message.loading("\u0110ang x\u1EED l\xFD upload file...");
       this.waitForTask(result.trackingId, "File \u0111\xE3 \u0111\u01B0\u1EE3c upload th\xE0nh c\xF4ng");
     } catch (error) {
       this.message.error("L\u1ED7i khi upload file");
+    } finally {
+      this.loadingUpload = false;
     }
   }
   openShareModal(file) {
@@ -7349,7 +7360,7 @@ var _FileExplorerComponent = class _FileExplorerComponent {
 _FileExplorerComponent.\u0275fac = function FileExplorerComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _FileExplorerComponent)();
 };
-_FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileExplorerComponent, selectors: [["app-file-explorer"]], inputs: { selectedFolderId: "selectedFolderId", selectionMode: "selectionMode" }, outputs: { folderCreated: "folderCreated", fileSelected: "fileSelected" }, features: [\u0275\u0275NgOnChangesFeature], decls: 43, vars: 14, consts: [["suffixTemplate", ""], ["fileInput", ""], ["basicTable", ""], ["searchTable", ""], [1, "explorer-container"], [1, "search-section"], [3, "nzSuffix"], ["type", "text", "nz-input", "", "placeholder", "T\xECm ki\u1EBFm t\xEAn file...", 3, "ngModelChange", "keyup.enter", "ngModel"], ["class", "search-results-collapse", 3, "nzBordered", 4, "ngIf"], [1, "explorer-toolbar"], [1, "toolbar-left"], [3, "click"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [1, "toolbar-right"], ["buttonText", "Th\xEAm m\u1EDBi", "buttonIcon", "folder-add", 2, "margin-right", "8px", 3, "parentId", "currentFolderName"], ["nz-button", "", "nzType", "default", 2, "margin-right", "8px", 3, "click"], ["nz-icon", "", "nzType", "upload"], ["type", "file", 2, "display", "none", 3, "change"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nzSize", "middle", 3, "nzPageIndexChange", "nzPageSizeChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize"], ["nzWidth", "40px"], ["nzWidth", "150px"], [1, "search-actions"], ["nz-icon", "", "nzType", "close-circle", "class", "clear-btn", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 3, "click", 4, "ngIf"], ["nz-icon", "", 1, "search-btn", 3, "click", "nzType"], ["nz-icon", "", "nzType", "close-circle", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 1, "clear-btn", 3, "click"], [1, "search-results-collapse", 3, "nzBordered"], [3, "nzHeader", "nzActive"], ["nzSize", "small", 3, "nzPageIndexChange", "nzData", "nzPageIndex", "nzPageSize"], ["nzWidth", "100px"], ["nz-icon", "", "nzType", "file", 2, "margin-right", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", "style", "margin-right: 8px", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "link", "nzSize", "small", "nz-tooltip", "", "nzTooltipTitle", "\u0110i \u0111\u1EBFn th\u01B0 m\u1EE5c", 3, "click"], ["nz-icon", "", "nzType", "arrow-right"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-right", "8px", 3, "click"], ["nz-icon", "", "nzType", "folder", "nzTheme", "fill", 2, "color", "#ffca28"], [1, "action-buttons"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Di chuy\u1EC3n", 3, "click"], ["nz-icon", "", "nzType", "drag"], ["nz-button", "", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a", 3, "click"], ["nz-icon", "", "nzType", "delete"], ["nz-icon", "", "nzType", "file", "nzTheme", "outline", 2, "color", "#1890ff"], ["target", "_blank", 3, "href"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "text", "target", "_blank", "nz-tooltip", "", "nzTooltipTitle", "T\u1EA3i v\u1EC1", 3, "href"], ["nz-icon", "", "nzType", "download"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Chia s\u1EBB", 3, "click"], ["nz-icon", "", "nzType", "share-alt"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"]], template: function FileExplorerComponent_Template(rf, ctx) {
+_FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileExplorerComponent, selectors: [["app-file-explorer"]], inputs: { selectedFolderId: "selectedFolderId", selectionMode: "selectionMode" }, outputs: { folderCreated: "folderCreated", fileSelected: "fileSelected" }, features: [\u0275\u0275NgOnChangesFeature], decls: 43, vars: 16, consts: [["suffixTemplate", ""], ["fileInput", ""], ["basicTable", ""], ["searchTable", ""], [1, "explorer-container"], [1, "search-section"], [3, "nzSuffix"], ["type", "text", "nz-input", "", "placeholder", "T\xECm ki\u1EBFm t\xEAn file...", 3, "ngModelChange", "keyup.enter", "ngModel"], ["class", "search-results-collapse", 3, "nzBordered", 4, "ngIf"], [1, "explorer-toolbar"], [1, "toolbar-left"], [3, "click"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [1, "toolbar-right"], ["buttonText", "Th\xEAm m\u1EDBi", "buttonIcon", "folder-add", 2, "margin-right", "8px", 3, "parentId", "currentFolderName"], ["nzType", "default", 2, "margin-right", "8px", 3, "click", "loading"], ["nz-icon", "", "nzType", "upload"], ["type", "file", 2, "display", "none", 3, "change"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nzSize", "middle", 3, "nzPageIndexChange", "nzPageSizeChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize"], ["nzWidth", "40px"], ["nzWidth", "150px"], [1, "search-actions"], ["nz-icon", "", "nzType", "close-circle", "class", "clear-btn", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 3, "click", 4, "ngIf"], ["nz-icon", "", 1, "search-btn", 3, "click", "nzType"], ["nz-icon", "", "nzType", "close-circle", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 1, "clear-btn", 3, "click"], [1, "search-results-collapse", 3, "nzBordered"], [3, "nzHeader", "nzActive"], ["nzSize", "small", 3, "nzPageIndexChange", "nzData", "nzPageIndex", "nzPageSize"], ["nzWidth", "100px"], ["nz-icon", "", "nzType", "file", 2, "margin-right", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", "style", "margin-right: 8px", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "link", "nzSize", "small", "nz-tooltip", "", "nzTooltipTitle", "\u0110i \u0111\u1EBFn th\u01B0 m\u1EE5c", 3, "click"], ["nz-icon", "", "nzType", "arrow-right"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-right", "8px", 3, "click"], ["nz-icon", "", "nzType", "folder", "nzTheme", "fill", 2, "color", "#ffca28"], [1, "action-buttons"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Di chuy\u1EC3n", 3, "click"], ["nz-icon", "", "nzType", "drag"], ["nz-button", "", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a", 3, "click"], ["nz-icon", "", "nzType", "delete"], ["nz-icon", "", "nzType", "file", "nzTheme", "outline", 2, "color", "#1890ff"], ["target", "_blank", 3, "href"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "text", "target", "_blank", "nz-tooltip", "", "nzTooltipTitle", "T\u1EA3i v\u1EC1", 3, "href"], ["nz-icon", "", "nzType", "download"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Chia s\u1EBB", 3, "click"], ["nz-icon", "", "nzType", "share-alt"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"]], template: function FileExplorerComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 4)(1, "div", 5)(2, "nz-input-group", 6)(3, "input", 7);
@@ -7375,8 +7386,8 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(15, "div", 14);
     \u0275\u0275element(16, "app-create-folder-popover", 15);
-    \u0275\u0275elementStart(17, "button", 16);
-    \u0275\u0275listener("click", function FileExplorerComponent_Template_button_click_17_listener() {
+    \u0275\u0275elementStart(17, "app-button", 16);
+    \u0275\u0275listener("click", function FileExplorerComponent_Template_app_button_click_17_listener() {
       \u0275\u0275restoreView(_r1);
       const fileInput_r12 = \u0275\u0275reference(21);
       return \u0275\u0275resetView(fileInput_r12.click());
@@ -7389,9 +7400,9 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
       return ctx.onUpload($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(22, "button", 19);
-    \u0275\u0275listener("click", function FileExplorerComponent_Template_button_click_22_listener() {
-      return ctx.loadContent();
+    \u0275\u0275elementStart(22, "app-button", 19);
+    \u0275\u0275listener("click", function FileExplorerComponent_Template_app_button_click_22_listener() {
+      return ctx.loadContent(true);
     });
     \u0275\u0275element(23, "span", 20);
     \u0275\u0275text(24, " L\xE0m m\u1EDBi ");
@@ -7435,7 +7446,11 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
     \u0275\u0275property("ngForOf", ctx.breadcrumbs);
     \u0275\u0275advance(2);
     \u0275\u0275property("parentId", ctx.selectedFolderId)("currentFolderName", ctx.currentFolderName);
-    \u0275\u0275advance(9);
+    \u0275\u0275advance();
+    \u0275\u0275property("loading", ctx.loadingUpload);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("loading", ctx.loadingRefresh);
+    \u0275\u0275advance(3);
     \u0275\u0275property("nzData", ctx.files)("nzLoading", ctx.loading)("nzFrontPagination", false)("nzTotal", ctx.total)("nzPageIndex", ctx.pageIndex)("nzPageSize", ctx.pageSize);
     \u0275\u0275advance(16);
     \u0275\u0275property("ngForOf", ctx.folders);
@@ -7481,6 +7496,7 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
   NzCollapseModule,
   NzCollapsePanelComponent,
   NzCollapseComponent,
+  AppButtonComponent,
   DatePipe
 ], styles: ["\n.explorer-container[_ngcontent-%COMP%] {\n  background: #fff;\n  padding: 16px;\n  border-radius: 8px;\n  min-height: 100%;\n}\n.search-section[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.search-results-collapse[_ngcontent-%COMP%] {\n  margin-top: 12px;\n  background: #fafafa;\n  border-radius: 8px;\n}\n.search-btn[_ngcontent-%COMP%] {\n  cursor: pointer;\n  color: #1890ff;\n  font-size: 16px;\n}\n.search-actions[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.clear-btn[_ngcontent-%COMP%] {\n  cursor: pointer;\n  color: #bfbfbf;\n  font-size: 14px;\n  transition: color 0.3s;\n}\n.clear-btn[_ngcontent-%COMP%]:hover {\n  color: #ff4d4f;\n}\n.search-btn.spinning[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_spin 1s linear infinite;\n}\n@keyframes _ngcontent-%COMP%_spin {\n  from {\n    transform: rotate(0deg);\n  }\n  to {\n    transform: rotate(360deg);\n  }\n}\n.explorer-toolbar[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n  padding-bottom: 16px;\n  border-bottom: 1px solid #f0f0f0;\n}\n.toolbar-left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.toolbar-right[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.action-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 4px;\n}\n[nz-icon][_ngcontent-%COMP%] {\n  font-size: 16px;\n}\n.text-truncate[_ngcontent-%COMP%] {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n[_ngcontent-%COMP%]::v-deep   .nz-collapse-header[_ngcontent-%COMP%] {\n  background: #f0f7ff !important;\n  font-weight: 500;\n}\n/*# sourceMappingURL=file-explorer.css.map */"] });
 var FileExplorerComponent = _FileExplorerComponent;
@@ -7501,7 +7517,8 @@ var FileExplorerComponent = _FileExplorerComponent;
       NzInputModule,
       NzPopoverModule,
       CreateFolderPopoverComponent,
-      NzCollapseModule
+      NzCollapseModule,
+      AppButtonComponent
     ], template: `<div class="explorer-container">
   <div class="search-section">
     <nz-input-group [nzSuffix]="suffixTemplate">
@@ -7575,14 +7592,14 @@ var FileExplorerComponent = _FileExplorerComponent;
         style="margin-right: 8px"
       ></app-create-folder-popover>
 
-      <button nz-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px">
+      <app-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
         <span nz-icon nzType="upload"></span> T\u1EA3i l\xEAn
-      </button>
+      </app-button>
       <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
       
-      <button nz-button nzType="default" (click)="loadContent()">
+      <app-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
         <span nz-icon nzType="reload"></span> L\xE0m m\u1EDBi
-      </button>
+      </app-button>
     </div>
   </div>
 
@@ -7668,7 +7685,7 @@ var FileExplorerComponent = _FileExplorerComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(FileExplorerComponent, { className: "FileExplorerComponent", filePath: "projects/tot/business-files/src/lib/components/file-explorer/file-explorer.ts", lineNumber: 45 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(FileExplorerComponent, { className: "FileExplorerComponent", filePath: "projects/tot/business-files/src/lib/components/file-explorer/file-explorer.ts", lineNumber: 47 });
 })();
 
 // projects/tot/business-files/src/lib/components/files-folders/files-folders.ts
@@ -7783,4 +7800,4 @@ export {
   FilesFolders,
   provideBusinessFiles
 };
-//# sourceMappingURL=chunk-D6RLR7X5.js.map
+//# sourceMappingURL=chunk-YAML5Z6A.js.map

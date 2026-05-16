@@ -4,9 +4,8 @@ import {
   NzPageHeaderModule
 } from "./chunk-GJLFPFAM.js";
 import {
-  AppButtonComponent,
   NzDescriptionsModule
-} from "./chunk-GJUXBUK6.js";
+} from "./chunk-RBSEN2PV.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -18,6 +17,7 @@ import {
   NzSkeletonModule
 } from "./chunk-YBVHYS6H.js";
 import {
+  AppButtonComponent,
   NzCellFixedDirective,
   NzDatePickerComponent,
   NzDatePickerModule,
@@ -45,7 +45,7 @@ import {
   NzTheadComponent,
   NzTrDirective,
   NzTrExpandDirective
-} from "./chunk-DD53A73C.js";
+} from "./chunk-CC2KKG67.js";
 import {
   ActivatedRoute,
   AppNotificationService,
@@ -3834,7 +3834,7 @@ var _CqrsTestComponent = class _CqrsTestComponent {
     this.dashboardService.sendTestCommand(this.commandPayload).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant("\u0110\xE3 g\u1EEDi SampleCommand. Tracking ID: {{id}}", { id: res.trackingId }));
+        this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant("NOTIFICATIONS.SAMPLE_COMMAND_SENT", { id: res.trackingId }));
         this.loadingCommand = false;
       },
       error: () => {
@@ -3848,7 +3848,7 @@ var _CqrsTestComponent = class _CqrsTestComponent {
     this.dashboardService.sendTestEvent(this.eventData).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant("\u0110\xE3 g\u1EEDi SampleEvent. Tracking ID: {{id}}", { id: res.trackingId }));
+        this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant("NOTIFICATIONS.SAMPLE_EVENT_PUBLISHED", { id: res.trackingId }));
         this.loadingEvent = false;
       },
       error: () => {
@@ -4947,7 +4947,7 @@ var _DashboardComponent = class _DashboardComponent {
   toggleWorker(workerId, currentStatus) {
     const action = currentStatus === "Running" ? this.dashboardService.stopWorker(workerId) : this.dashboardService.startWorker(workerId);
     action.subscribe(() => {
-      const key = currentStatus === "Running" ? "Worker {{id}} \u0111\xE3 d\u1EEBng" : "Worker {{id}} \u0111\xE3 b\u1EAFt \u0111\u1EA7u";
+      const key = currentStatus === "Running" ? "NOTIFICATIONS.WORKER_STOPPED" : "NOTIFICATIONS.WORKER_STARTED";
       this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant(key, { id: workerId }));
       this.refresh();
     });
@@ -7125,4 +7125,4 @@ export {
   TopicDetailComponent,
   TracingComponent
 };
-//# sourceMappingURL=chunk-ROHGO7AB.js.map
+//# sourceMappingURL=chunk-MYFCCSTG.js.map

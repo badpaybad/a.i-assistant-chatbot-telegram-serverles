@@ -71,14 +71,14 @@
         style="margin-right: 8px"
       ></app-create-folder-popover>
 
-      <button nz-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px">
+      <app-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
         <span nz-icon nzType="upload"></span> Tải lên
-      </button>
+      </app-button>
       <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
       
-      <button nz-button nzType="default" (click)="loadContent()">
+      <app-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
         <span nz-icon nzType="reload"></span> Làm mới
-      </button>
+      </app-button>
     </div>
   </div>
 

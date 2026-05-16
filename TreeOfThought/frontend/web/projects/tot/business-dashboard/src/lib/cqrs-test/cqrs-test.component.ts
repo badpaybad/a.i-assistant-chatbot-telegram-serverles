@@ -95,7 +95,7 @@ export class CqrsTestComponent {
     this.dashboardService.sendTestCommand(this.commandPayload).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã gửi SampleCommand. Tracking ID: {{id}}', { id: res.trackingId }));
+        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('NOTIFICATIONS.SAMPLE_COMMAND_SENT', { id: res.trackingId }));
         this.loadingCommand = false;
       },
       error: () => {
@@ -110,7 +110,7 @@ export class CqrsTestComponent {
     this.dashboardService.sendTestEvent(this.eventData).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã gửi SampleEvent. Tracking ID: {{id}}', { id: res.trackingId }));
+        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('NOTIFICATIONS.SAMPLE_EVENT_PUBLISHED', { id: res.trackingId }));
         this.loadingEvent = false;
       },
       error: () => {

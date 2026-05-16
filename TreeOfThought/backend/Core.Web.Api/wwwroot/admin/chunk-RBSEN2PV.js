@@ -1,17 +1,11 @@
 import {
-  CommonModule,
   Directionality,
   NgTemplateOutlet,
   NzBreakpointEnum,
   NzBreakpointService,
-  NzButtonComponent,
-  NzButtonModule,
   NzConfigService,
-  NzIconModule,
   NzOutletModule,
   NzStringTemplateOutletDirective,
-  NzTransitionPatchDirective,
-  NzWaveDirective,
   WithConfig,
   gridResponsiveMap,
   takeUntilDestroyed,
@@ -33,17 +27,13 @@ import {
   __runInitializers,
   auditTime,
   booleanAttribute,
-  finalize,
-  from,
   inject,
-  isObservable,
   merge,
   numberAttribute,
   setClassMetadata,
   startWith,
   switchMap,
   tap,
-  ɵsetClassDebugInfo,
   ɵɵNgOnChangesFeature,
   ɵɵadvance,
   ɵɵclassProp,
@@ -58,7 +48,6 @@ import {
   ɵɵelementContainerStart,
   ɵɵelementEnd,
   ɵɵelementStart,
-  ɵɵlistener,
   ɵɵloadQuery,
   ɵɵnextContext,
   ɵɵprojection,
@@ -78,117 +67,8 @@ import {
   __publicField
 } from "./chunk-MYGOUE3E.js";
 
-// projects/tot/shared/src/lib/components/app-button/app-button.component.ts
-var _c0 = ["*"];
-var _AppButtonComponent = class _AppButtonComponent {
-  constructor() {
-    this.nzType = "default";
-    this.nzSize = "default";
-    this.nzDanger = false;
-    this.nzShape = null;
-    this.nzBlock = false;
-    this.nzGhost = false;
-    this.disabled = false;
-    this.isLoading = false;
-  }
-  set loading(value) {
-    var _a;
-    if (value === null || value === void 0) {
-      this.isLoading = false;
-      return;
-    }
-    if (typeof value === "boolean") {
-      this.isLoading = value;
-      return;
-    }
-    this.isLoading = true;
-    const obs$ = isObservable(value) ? value : from(value);
-    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
-    this.subscription = obs$.pipe(finalize(() => {
-      this.isLoading = false;
-    })).subscribe({
-      error: () => {
-        this.isLoading = false;
-      }
-    });
-  }
-  handleClick(event) {
-    if (this.isLoading) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-  ngOnDestroy() {
-    var _a;
-    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
-  }
-};
-_AppButtonComponent.\u0275fac = function AppButtonComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _AppButtonComponent)();
-};
-_AppButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppButtonComponent, selectors: [["app-button"]], inputs: { nzType: "nzType", nzSize: "nzSize", nzDanger: "nzDanger", nzShape: "nzShape", nzBlock: "nzBlock", nzGhost: "nzGhost", disabled: "disabled", loading: "loading" }, ngContentSelectors: _c0, decls: 2, vars: 8, consts: [["nz-button", "", 3, "click", "nzType", "nzSize", "nzDanger", "nzShape", "nzBlock", "nzGhost", "nzLoading", "disabled"]], template: function AppButtonComponent_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275projectionDef();
-    \u0275\u0275elementStart(0, "button", 0);
-    \u0275\u0275listener("click", function AppButtonComponent_Template_button_click_0_listener($event) {
-      return ctx.handleClick($event);
-    });
-    \u0275\u0275projection(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    \u0275\u0275property("nzType", ctx.nzType)("nzSize", ctx.nzSize)("nzDanger", ctx.nzDanger)("nzShape", ctx.nzShape)("nzBlock", ctx.nzBlock)("nzGhost", ctx.nzGhost)("nzLoading", ctx.isLoading)("disabled", ctx.disabled || ctx.isLoading);
-  }
-}, dependencies: [CommonModule, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule], encapsulation: 2 });
-var AppButtonComponent = _AppButtonComponent;
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppButtonComponent, [{
-    type: Component,
-    args: [{
-      selector: "app-button",
-      standalone: true,
-      imports: [CommonModule, NzButtonModule, NzIconModule],
-      template: `
-    <button
-      nz-button
-      [nzType]="nzType"
-      [nzSize]="nzSize"
-      [nzDanger]="nzDanger"
-      [nzShape]="nzShape"
-      [nzBlock]="nzBlock"
-      [nzGhost]="nzGhost"
-      [nzLoading]="isLoading"
-      [disabled]="disabled || isLoading"
-      (click)="handleClick($event)"
-    >
-      <ng-content></ng-content>
-    </button>
-  `
-    }]
-  }], null, { nzType: [{
-    type: Input
-  }], nzSize: [{
-    type: Input
-  }], nzDanger: [{
-    type: Input
-  }], nzShape: [{
-    type: Input
-  }], nzBlock: [{
-    type: Input
-  }], nzGhost: [{
-    type: Input
-  }], disabled: [{
-    type: Input
-  }], loading: [{
-    type: Input
-  }] });
-})();
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppButtonComponent, { className: "AppButtonComponent", filePath: "projects/tot/shared/src/lib/components/app-button/app-button.component.ts", lineNumber: 29 });
-})();
-
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-descriptions.mjs
-var _c02 = ["*"];
+var _c0 = ["*"];
 function NzDescriptionsItemComponent_ng_template_0_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275projection(0);
@@ -534,7 +414,7 @@ __publicField(_NzDescriptionsItemComponent, "\u0275cmp", /* @__PURE__ */ \u0275\
   },
   exportAs: ["nzDescriptionsItem"],
   features: [\u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c02,
+  ngContentSelectors: _c0,
   decls: 1,
   vars: 0,
   template: function NzDescriptionsItemComponent_Template(rf, ctx) {
@@ -1005,9 +885,8 @@ var NzDescriptionsModule = _NzDescriptionsModule;
 })();
 
 export {
-  AppButtonComponent,
   NzDescriptionsItemComponent,
   NzDescriptionsComponent,
   NzDescriptionsModule
 };
-//# sourceMappingURL=chunk-GJUXBUK6.js.map
+//# sourceMappingURL=chunk-RBSEN2PV.js.map

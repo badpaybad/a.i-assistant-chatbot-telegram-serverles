@@ -6,6 +6,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
+import { AppButtonComponent } from '@tot/shared';
 import { FilesFoldersService } from '../../services/files-folders.service';
 import { FirebaseService } from '@tot/core';
 
@@ -18,7 +19,8 @@ import { FirebaseService } from '@tot/core';
     NzPopoverModule,
     NzButtonModule,
     NzIconModule,
-    NzInputModule
+    NzInputModule,
+    AppButtonComponent
   ],
   template: `
     <button 
@@ -46,8 +48,8 @@ import { FirebaseService } from '@tot/core';
           #folderInput
         />
         <div class="popover-footer">
-          <button nz-button nzType="default" nzSize="small" (click)="visible = false">Hủy</button>
-          <button nz-button nzType="primary" nzSize="small" (click)="submit()" [nzLoading]="loading">Tạo</button>
+          <app-button nzType="default" nzSize="small" (click)="visible = false">Hủy</app-button>
+          <app-button nzType="primary" nzSize="small" (click)="submit()" [loading]="loading">Tạo</app-button>
         </div>
       </div>
     </ng-template>

@@ -166,6 +166,12 @@
   "Worker {{id}} đã dừng": "Worker {{id}} đã dừng",
   "Đã gửi SampleCommand. Tracking ID: {{id}}": "Đã gửi SampleCommand. Tracking ID: {{id}}",
   "Đã gửi SampleEvent. Tracking ID: {{id}}": "Đã gửi SampleEvent. Tracking ID: {{id}}",
+  "NOTIFICATIONS": {
+    "WORKER_STARTED": "Worker {{id}} đã bắt đầu",
+    "WORKER_STOPPED": "Worker {{id}} đã dừng",
+    "SAMPLE_COMMAND_SENT": "Đã gửi SampleCommand. Tracking ID: {{id}}",
+    "SAMPLE_EVENT_PUBLISHED": "Đã gửi SampleEvent. Tracking ID: {{id}}"
+  },
   "Tin nhắn đã được đẩy vào hàng đợi": "Tin nhắn đã được đẩy vào hàng đợi",
   "Tin nhắn đã được thử lại": "Tin nhắn đã được thử lại",
   "Lệnh thử lại đã được phát": "Lệnh thử lại đã được phát",

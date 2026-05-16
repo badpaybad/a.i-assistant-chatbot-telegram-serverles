@@ -10,6 +10,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
+import { AppButtonComponent } from '@tot/shared';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { FormsModule } from '@angular/forms';
@@ -37,7 +38,8 @@ import { Subscription } from 'rxjs';
     NzInputModule,
     NzPopoverModule,
     CreateFolderPopoverComponent,
-    NzCollapseModule
+    NzCollapseModule,
+    AppButtonComponent
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
@@ -57,6 +59,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   folders: any[] = [];
   files: any[] = [];
   loading = false;
+  loadingUpload = false;
+  loadingRefresh = false;
 
   pageIndex = 1;
   pageSize = 10;
@@ -101,8 +105,9 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  async loadContent(): Promise<void> {
-    this.loading = true;
+  async loadContent(isRefresh = false): Promise<void> {
+    if (isRefresh) this.loadingRefresh = true;
+    else this.loading = true;
     try {
       const response: any = await this.filesFoldersService.getFolderContent(this.selectedFolderId, this.pageIndex, this.pageSize);
       this.folders = response.folders || [];
@@ -113,6 +118,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
       this.message.error('Lỗi khi tải nội dung thư mục');
     } finally {
       this.loading = false;
+      this.loadingRefresh = false;
     }
   }
 
@@ -136,11 +142,14 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     if (!file) return;
 
     try {
+      this.loadingUpload = true;
       const result: any = await this.filesFoldersService.uploadFile(this.selectedFolderId, file);
       this.message.loading('Đang xử lý upload file...');
       this.waitForTask(result.trackingId, 'File đã được upload thành công');
     } catch (error) {
       this.message.error('Lỗi khi upload file');
+    } finally {
+      this.loadingUpload = false;
     }
   }
 
