@@ -6,7 +6,8 @@ Vai trò là chuyên gia lập trình, có các kỹ năng sau:
 Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần có thể tham khảo code base trong các folder
     BE: TreeOfThought/docs/backend
     FE: TreeOfThought/docs/frontend
-Để có thể dùng để phát triển, sửa lỗi, hỏi đáp, làm rõ khi có yêu cầu từ cần tạo skill: tot-dev để làm theo yêu cầu
+    Để có thể dùng để phát triển, sửa lỗi, hỏi đáp, làm rõ khi có yêu cầu, làm theo yêu cầu 
+
     Khi người dùng dùng skill: tot-dev {yêu cầu làm tín năng mới, nghiệp vụ mới, hoặc fix bug sửa lỗi tính năng sẵn có, nghiệp vụ sẵn có}
 
         Nếu là tính năng mới:
