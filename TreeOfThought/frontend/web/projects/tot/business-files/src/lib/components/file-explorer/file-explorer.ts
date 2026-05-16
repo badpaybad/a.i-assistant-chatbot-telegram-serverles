@@ -117,23 +117,23 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
 
   private initColumns() {
     this.searchColumns = [
-      { title: 'Tên file' },
-      { title: 'Đường dẫn' },
-      { title: 'Thao tác', width: '100px', right: true }
+      { title: 'Tên file', key: 'name' },
+      { title: 'Đường dẫn', key: 'path' },
+      { title: 'Thao tác', key: 'action', width: '100px', right: true }
     ];
 
     this.folderColumns = [
-      { title: 'Tên thư mục' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Tên thư mục', key: 'name' },
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
 
     this.fileColumns = [
-      { title: 'Tên file' },
-      { title: 'Trạng thái', width: '120px' },
-      { title: 'Kích thước', width: '120px' },
-      { title: 'Loại', width: '120px' },
-      { title: 'Ngày tạo', width: '150px' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Tên file', key: 'name' },
+      { title: 'Trạng thái', key: 'status', width: '120px' },
+      { title: 'Kích thước', key: 'size', width: '120px' },
+      { title: 'Loại', key: 'type', width: '120px' },
+      { title: 'Ngày tạo', key: 'createdAt', width: '150px' },
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
   }
 

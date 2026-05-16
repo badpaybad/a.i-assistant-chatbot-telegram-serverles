@@ -123,40 +123,40 @@ export class DashboardComponent implements OnInit {
   private initColumns(): void {
     this.trackingColumns = [
       { title: 'Tracking ID', key: 'id' },
-      { title: 'Status' },
+      { title: 'Status', key: 'status' },
       { title: 'Queue/Topic', key: 'queueOrTopic' },
       { title: 'Handler', key: 'handler' },
-      { title: 'Worker' },
-      { title: 'Content' },
+      { title: 'Worker', key: 'worker' },
+      { title: 'Content', key: 'content' },
       { title: 'Created', key: 'time' },
-      { title: 'Hành động', width: '100px', right: true }
+      { title: 'Hành động', key: 'action', width: '100px', right: true }
     ];
 
     this.queueColumns = [
-      { title: 'Loại', width: '80px', left: true },
+      { title: 'Loại', key: 'type', width: '80px', left: true },
       { title: 'Tên topic/ queue', key: 'name', width: '200px', left: '80px' },
-      { title: 'Đang xử lý', width: '100px', align: 'center' },
+      { title: 'Đang xử lý', key: 'processing', width: '100px', align: 'center' },
       { title: 'Thành công', width: '120px', align: 'center' },
       { title: 'Lỗi', width: '100px', align: 'center' },
       { title: 'Tổng', key: 'totalCount', width: '100px', align: 'center' },
       { title: 'Workers', width: '200px' },
       { title: 'Handlers', width: '250px' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
 
     this.workerColumns = [
       { title: 'Tên Worker', key: 'id', width: '200px', left: true },
-      { title: 'Trạng thái', width: '120px' },
+      { title: 'Trạng thái', key: 'status', width: '120px' },
       { title: 'Loại', key: 'type', width: '100px' },
       { title: 'Chi tiết đích', key: 'queueOrTopicName' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
 
     this.activityColumns = [
-      { title: 'Loại', width: '120px' },
+      { title: 'Loại', key: 'type', width: '120px' },
       { title: 'Tên queue / topic', key: 'mainName' },
       { title: 'Subscriber', key: 'subscriberName' },
-      { title: 'Hoạt động cuối', width: '250px' }
+      { title: 'Hoạt động cuối', key: 'lastActive', width: '250px' }
     ];
   }
 

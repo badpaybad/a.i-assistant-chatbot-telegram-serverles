@@ -1,11 +1,19 @@
-import { Component, Input, Output, EventEmitter, TemplateRef, ContentChildren, QueryList } from '@angular/core';
+import { Component, Input, Output, EventEmitter, TemplateRef, ContentChildren, QueryList, Directive } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { TranslocoModule } from '@jsverse/transloco';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { TotCellDirective } from './tot-cell.directive';
+
+@Directive({
+  selector: '[totCell]',
+  standalone: true
+})
+export class TotCellDirective {
+  @Input('totCell') columnKey!: string;
+  constructor(public template: TemplateRef<any>) {}
+}
 
 export interface TotTableColumn {
   title: string;
@@ -25,21 +33,16 @@ export interface TotTableColumn {
   standalone: true,
   imports: [CommonModule, NzTableModule, TranslocoModule, NzTooltipModule, NzIconModule, NzCardModule],
   template: `
-    <ng-container *ngIf="title; else simpleTable">
-      <nz-card [nzTitle]="titleTpl" [nzExtra]="extra">
-        <ng-template #titleTpl>
-          <ng-container *ngIf="isString(title); else templateTitle">
-            {{ title | transloco }}
-          </ng-container>
-          <ng-template #templateTitle>
-            <ng-container *ngTemplateOutlet="$any(title)"></ng-container>
-          </ng-template>
+    <nz-card [nzTitle]="titleTpl" [nzExtra]="extra || undefined">
+      <ng-template #titleTpl>
+        <ng-container *ngIf="isString(title); else refTpl">
+          {{ title }}
+        </ng-container>
+        <ng-template #refTpl>
+          <ng-container *ngTemplateOutlet="asTemplate(title)"></ng-container>
         </ng-template>
-        <ng-container *ngTemplateOutlet="simpleTable"></ng-container>
-      </nz-card>
-    </ng-container>
+      </ng-template>
 
-    <ng-template #simpleTable>
       <nz-table
         #basicTable
         [nzData]="data"
@@ -47,38 +50,22 @@ export interface TotTableColumn {
         [nzTotal]="total"
         [nzPageIndex]="pageIndex"
         [nzPageSize]="pageSize"
-        [nzShowSizeChanger]="true"
-        [nzPageSizeOptions]="[5, 10, 20, 25, 50, 100, 200]"
         [nzFrontPagination]="frontPagination"
-        (nzQueryParams)="onQueryParamsChange($event)"
-        [nzScroll]="scroll"
-        [nzSize]="size"
         [nzShowPagination]="showPagination"
-        [nzHideOnSinglePage]="false"
-        (nzCurrentPageDataChange)="onCurrentPageDataChange($event)"
+        [nzBordered]="true"
+        [nzSize]="nzSize"
+        [nzScroll]="scroll"
+        (nzQueryParamsChange)="onQueryParamsChange($any($event))"
         nzTableLayout="fixed"
       >
         <thead>
           <tr>
-            <th
-              *ngIf="showSelection"
-              nzWidth="40px"
-              [nzLeft]="true"
-              [nzShowCheckbox]="true"
-              [nzChecked]="allChecked"
-              [nzIndeterminate]="indeterminate"
-              (nzCheckedChange)="onAllChecked($event)"
-            ></th>
-            <th *ngIf="expandTemplate" nzWidth="40px" [nzLeft]="showSelection ? '40px' : true"></th>
+            <th *ngIf="expandTemplate" nzWidth="40px"></th>
             <th
               *ngFor="let col of columns"
               [nzWidth]="col.width || null"
-              [nzShowSort]="col.sortable"
-              [nzSortFn]="col.sortable ? true : null"
-              [nzColumnKey]="col.key"
-              [nzShowFilter]="col.filterable"
-              [nzFilters]="col.filterOptions || []"
-              [nzFilterFn]="col.filterable ? true : null"
+              [nzSortFn]="col.sortable || null"
+              [nzShowSort]="col.sortable || false"
               [nzAlign]="col.align || 'left'"
               [nzLeft]="col.left === true ? '0px' : col.left || false"
               [nzRight]="col.right === true ? '0px' : col.right || false"
@@ -90,19 +77,7 @@ export interface TotTableColumn {
         <tbody>
           <ng-container *ngFor="let item of basicTable.data; let i = index">
             <tr>
-              <td
-                *ngIf="showSelection"
-                [nzLeft]="true"
-                [nzShowCheckbox]="true"
-                [nzChecked]="setOfCheckedId.has(item[idKey])"
-                (nzCheckedChange)="onItemChecked(item, $event)"
-              ></td>
-              <td
-                *ngIf="expandTemplate"
-                [nzLeft]="showSelection ? '40px' : true"
-                [nzExpand]="item.expand"
-                (nzExpandChange)="onExpandChange(item, $event)"
-              ></td>
+              <td *ngIf="expandTemplate" [nzExpand]="item.expand" (nzExpandChange)="onExpandChange(item, $event)"></td>
               <td
                 *ngFor="let col of columns"
                 [nzAlign]="col.align || 'left'"
@@ -119,44 +94,51 @@ export interface TotTableColumn {
                 </ng-template>
               </td>
             </tr>
-            <tr *ngIf="expandTemplate" [nzExpand]="item.expand">
-              <td [attr.colspan]="columns.length + (showSelection ? 1 : 0) + 1">
-                <ng-container
-                  *ngTemplateOutlet="expandTemplate; context: { $implicit: item, index: i }"
-                ></ng-container>
-              </td>
+            <tr [nzExpand]="item.expand" *ngIf="expandTemplate">
+              <ng-container *ngTemplateOutlet="expandTemplate; context: { $implicit: item }"></ng-container>
             </tr>
           </ng-container>
         </tbody>
       </nz-table>
-    </ng-template>
+    </nz-card>
   `,
-  styles: [
-    `
-      :host {
-        display: block;
-        width: 100%;
-      }
-      ::ng-deep .ant-table-thead > tr > th {
-        white-space: nowrap;
-        background-color: #fafafa !important;
-      }
-      ::ng-deep .ant-table-cell-fix-left,
-      ::ng-deep .ant-table-cell-fix-right {
-        background-color: #fff !important;
-      }
-      ::ng-deep .ant-table-tbody > tr:hover > td {
-        background-color: #f5f5f5 !important;
-      }
-      ::ng-deep .ant-table-tbody > tr > td {
-        background-color: #fff !important;
-      }
-      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-left,
-      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-right {
-        background-color: #fafafa !important;
-      }
-    `,
-  ],
+  styles: [`
+    :host ::ng-deep .ant-card-head-title {
+      font-weight: 600;
+      font-size: 16px;
+    }
+    :host ::ng-deep .ant-table-thead > tr > th {
+      background: #fafafa;
+      font-weight: 600;
+    }
+    .worker-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .handler-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .handler-tag-item {
+      display: flex;
+      flex-direction: column;
+      padding: 4px 8px;
+      background: #f0f5ff;
+      border: 1px solid #adc6ff;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+    .h-name {
+      font-weight: 600;
+      color: #003a8c;
+    }
+    .m-name {
+      color: #595959;
+      font-family: monospace;
+    }
+  `]
 })
 export class TotTableComponent {
   @Input() data: any[] = [];
@@ -165,87 +147,66 @@ export class TotTableComponent {
   @Input() total = 0;
   @Input() pageIndex = 1;
   @Input() pageSize = 10;
-  @Input() frontPagination = false;
-  @Input() scroll: { x?: string | null; y?: string | null } = { x: '1200px' };
-  @Input() size: 'default' | 'middle' | 'small' = 'default';
+  @Input() title: string | TemplateRef<any> = '';
+  @Input() extra: TemplateRef<any> | string | null | undefined = undefined;
+  @Input() frontPagination = true;
   @Input() showPagination = true;
-  @Input() expandTemplate?: TemplateRef<any>;
-  @Input() title?: string | TemplateRef<any>;
-  @Input() extra?: TemplateRef<any>;
-
-  @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
-
-  getColTemplate(col: TotTableColumn): TemplateRef<any> | undefined {
-    if (col.template) return col.template;
-    const directive = this.cellDirectives?.find(d => d.columnKey === col.key || d.columnKey === col.title);
-    return directive?.template;
-  }
-
-  isString(val: any): val is string {
-    return typeof val === 'string';
-  }
-
-  // Selection
-  @Input() showSelection = false;
-  @Input() idKey = 'id';
-  @Output() selectionChange = new EventEmitter<any[]>();
+  @Input() nzSize: 'middle' | 'small' | 'default' = 'default';
+  @Input() scroll: { x?: string | null; y?: string | null } = { x: null, y: null };
+  @Input() expandTemplate: TemplateRef<any> | null = null;
 
   @Output() queryParamsChange = new EventEmitter<NzTableQueryParams>();
 
-  checked = false;
-  indeterminate = false;
-  allChecked = false;
-  setOfCheckedId = new Set<any>();
-
-  private currentPageData: readonly any[] = [];
+  @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     this.queryParamsChange.emit(params);
   }
 
-  onCurrentPageDataChange(data: readonly any[]): void {
-    this.currentPageData = data;
-    this.refreshCheckedStatus();
-  }
-
-  refreshCheckedStatus(): void {
-    const listOfEnabledData = this.currentPageData;
-    this.allChecked = listOfEnabledData.length > 0 && listOfEnabledData.every((item) => this.setOfCheckedId.has(item[this.idKey]));
-    this.indeterminate = listOfEnabledData.some((item) => this.setOfCheckedId.has(item[this.idKey])) && !this.allChecked;
-  }
-
-  onAllChecked(checked: boolean): void {
-    this.currentPageData.forEach((item) => this.updateCheckedSet(item, checked));
-    this.refreshCheckedStatus();
-    this.emitSelection();
-  }
-
-  onItemChecked(item: any, checked: boolean): void {
-    this.updateCheckedSet(item, checked);
-    this.refreshCheckedStatus();
-    this.emitSelection();
-  }
-
-  updateCheckedSet(item: any, checked: boolean): void {
-    if (checked) {
-      this.setOfCheckedId.add(item[this.idKey]);
-    } else {
-      this.setOfCheckedId.delete(item[this.idKey]);
+  getColTemplate(col: TotTableColumn): TemplateRef<any> | undefined {
+    if (col.template) return col.template;
+    if (!this.cellDirectives) return undefined;
+    
+    // 1. Exact match on key or title
+    let directive = this.cellDirectives.find(d => 
+      (!!col.key && d.columnKey === col.key) || 
+      (!!col.title && d.columnKey === col.title)
+    );
+    
+    // 2. Fallback: case-insensitive and trimmed match
+    if (!directive) {
+      const targetKey = col.key?.trim().toLowerCase();
+      const targetTitle = col.title?.trim().toLowerCase();
+      
+      directive = this.cellDirectives.find(d => {
+        const dk = d.columnKey?.trim().toLowerCase();
+        return (!!targetKey && dk === targetKey) || (!!targetTitle && dk === targetTitle);
+      });
     }
+    
+    return directive?.template;
   }
 
-  emitSelection(): void {
-    const selectedItems = this.data.filter((item) => this.setOfCheckedId.has(item[this.idKey]));
-    this.selectionChange.emit(selectedItems);
+  getFieldValue(item: any, key?: string): any {
+    if (!key) return '';
+    const keys = key.split('.');
+    let value = item;
+    for (const k of keys) {
+      if (value === null || value === undefined) return '';
+      value = value[k];
+    }
+    return value;
   }
 
   onExpandChange(item: any, checked: boolean): void {
     item.expand = checked;
   }
 
-  getFieldValue(item: any, key?: string): any {
-    if (!key || !item) return '';
-    const value = key.split('.').reduce((obj, k) => obj?.[k], item);
-    return value === undefined || value === null ? '' : value;
+  isString(val: any): boolean {
+    return typeof val === 'string';
+  }
+
+  asTemplate(val: any): TemplateRef<any> {
+    return val as TemplateRef<any>;
   }
 }

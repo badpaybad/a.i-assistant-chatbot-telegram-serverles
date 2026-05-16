@@ -69,7 +69,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </div>
 
     <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh sách ACL' | transloco" [frontPagination]="true">
-      <ng-template totCell="Đối tượng" let-data>
+      <ng-template totCell="subject" let-data>
         <div *ngIf="data.userId" class="subject-info">
           <span nz-icon nzType="user"></span>
           <span>{{ 'Người dùng' | transloco }}: <strong>{{ data.userId }}</strong></span>
@@ -80,12 +80,12 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </div>
       </ng-template>
 
-      <ng-template totCell="Tài nguyên" let-data>
+      <ng-template totCell="resource" let-data>
         <nz-tag>{{ data.resourceType }}</nz-tag>
         <code>{{ data.resourceId }}</code>
       </ng-template>
 
-      <ng-template totCell="Mặt nạ quyền" let-data>
+      <ng-template totCell="mask" let-data>
         <div class="mask-display">
           <span class="mask-value">{{ data.permissionMask }}</span>
           <div class="mask-details">
@@ -97,7 +97,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </div>
       </ng-template>
 
-      <ng-template totCell="Hành động" let-data>
+      <ng-template totCell="action" let-data>
         <tot-button nzType="primary" [nzDanger]="true" nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | transloco }}</tot-button>
       </ng-template>
     </tot-table>
@@ -236,10 +236,10 @@ export class AclListComponent implements OnInit {
 
   ngOnInit(): void {
     this.aclColumns = [
-      { title: 'Đối tượng' },
-      { title: 'Tài nguyên' },
-      { title: 'Mặt nạ quyền' },
-      { title: 'Hành động', width: '120px', right: true }
+      { title: 'Đối tượng', key: 'subject' },
+      { title: 'Tài nguyên', key: 'resource' },
+      { title: 'Mặt nạ quyền', key: 'mask' },
+      { title: 'Hành động', key: 'action', width: '120px', right: true }
     ];
     this.loadMetadata();
   }

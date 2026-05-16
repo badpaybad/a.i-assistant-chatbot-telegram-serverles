@@ -131,7 +131,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [extra]="userExtraTpl"
       [frontPagination]="true"
     >
-      <ng-template totCell="Avatar" let-data>
+      <ng-template totCell="avatar" let-data>
         <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
           <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
           <div class="avatar-mask">
@@ -140,20 +140,20 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </div>
       </ng-template>
 
-      <ng-template totCell="Người dùng" let-data>
+      <ng-template totCell="user" let-data>
         <div class="user-cell">
           <strong>{{ data.displayName }}</strong>
           <span class="sub-text">{{ data.username }}</span>
         </div>
       </ng-template>
 
-      <ng-template totCell="Trạng thái" let-data>
+      <ng-template totCell="status" let-data>
         <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
           {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | transloco }}
         </nz-tag>
       </ng-template>
 
-      <ng-template totCell="Vai trò" let-data>
+      <ng-template totCell="roles" let-data>
         <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
                 [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
                 (nzOnClose)="removeRole(data, role)">
@@ -164,7 +164,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </tot-button>
       </ng-template>
 
-      <ng-template totCell="Quyền" let-data>
+      <ng-template totCell="claims" let-data>
         <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
                 [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
                 (nzOnClose)="removeClaim(data, claim)">
@@ -183,7 +183,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         {{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}
       </ng-template>
 
-      <ng-template totCell="Hành động" let-data>
+      <ng-template totCell="action" let-data>
         <div style="display: flex; gap: 4px; flex-direction: column;">
           <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
           <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
@@ -383,15 +383,15 @@ export class UserListComponent implements OnInit {
 
   ngOnInit(): void {
     this.userColumns = [
-      { title: 'Avatar', width: '80px' },
-      { title: 'Người dùng' },
+      { title: 'Avatar', key: 'avatar', width: '80px' },
+      { title: 'Người dùng', key: 'user' },
       { title: 'Email', key: 'email' },
-      { title: 'Trạng thái' },
-      { title: 'Vai trò' },
-      { title: 'Quyền' },
+      { title: 'Trạng thái', key: 'status' },
+      { title: 'Vai trò', key: 'roles' },
+      { title: 'Quyền', key: 'claims' },
       { title: 'Ngày tạo', key: 'createdAt' },
       { title: 'Cập nhật', key: 'updatedAt' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
     this.loadUsers();
   }

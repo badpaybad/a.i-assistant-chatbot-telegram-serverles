@@ -80,11 +80,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [extra]="roleExtraTpl"
       [frontPagination]="true"
     >
-      <ng-template totCell="Vai trò" let-data>
+      <ng-template totCell="role" let-data>
         <strong>{{ data.name }}</strong>
       </ng-template>
 
-      <ng-template totCell="Quyền" let-data>
+      <ng-template totCell="claims" let-data>
         <div class="claim-tags">
           <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
                   [nzMode]="(data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase() && claim.name?.toLowerCase() === ADMIN_CLAIM.toLowerCase()) ? 'default' : 'closeable'" 
@@ -97,7 +97,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </div>
       </ng-template>
 
-      <ng-template totCell="Hành động" let-data>
+      <ng-template totCell="action" let-data>
         <div style="display: flex; gap: 4px; flex-direction: column;">
           <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
           <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
@@ -205,10 +205,10 @@ export class RoleListComponent implements OnInit {
 
   ngOnInit(): void {
     this.roleColumns = [
-      { title: 'Vai trò', width: '200px' },
+      { title: 'Vai trò', key: 'role', width: '200px' },
       { title: 'Mô tả', key: 'description' },
-      { title: 'Quyền' },
-      { title: 'Hành động', width: '150px', right: true }
+      { title: 'Quyền', key: 'claims' },
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
     this.loadRoles();
   }
