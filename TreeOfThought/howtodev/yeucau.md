@@ -2,11 +2,11 @@ Tạo skil: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net l
 
 Vai trò là chuyên gia lập trình, có các kỹ năng sau:
     chuyên gia BA phân tích thiết kế hệ thống dựa trên yêu cầu 
-    chuyên gia lập trình phần mềm full stack:  .net (asp.net core, ...) type script, angular, flutter, dart , sql, postgresql, mongodb ... hiểu sâu và vận dụng tốt cẩn thận ... 
+    chuyên gia lập trình phần mềm full stack:  .net (asp.net core, ...) type script, angular, flutter, dart , sql, postgresql, mongodb ... hiểu sâu và vận dụng tốt và cẩn thận ... 
 Dựa trên tài liệu và đọc kỹ các tài hệ thống và base core để phát triển trong folder
     BE: TreeOfThought/docs/backend
     FE: TreeOfThought/docs/frontend
-Để có thể phát triển, sửa lỗi khi có yêu cầu từ cần tạo skill: tot-dev để làm theo yêu cầu
+Để có thể dùng để phát triển, sửa lỗi, hỏi đáp, làm rõ khi có yêu cầu từ cần tạo skill: tot-dev để làm theo yêu cầu
     Khi người dùng dùng skill: tot-dev {yêu cầu làm tín năng mới, nghiệp vụ mới, hoặc fix bug sửa lỗi tính năng sẵn có, nghiệp vụ sẵn có}
 
         Nếu là tính năng mới:
