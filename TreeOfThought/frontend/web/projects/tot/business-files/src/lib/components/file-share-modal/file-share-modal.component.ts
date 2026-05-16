@@ -266,8 +266,10 @@ export class FileShareModalComponent implements OnInit {
 
   private updateModeFromPermission(): void {
     if (this.file) {
-      if (this.file.permission === 1) this.shareMode = 'public';
-      else if (this.file.permission === 2) {
+      const p = String(this.file.permission);
+      if (p === '1' || p === 'Public') {
+        this.shareMode = 'public';
+      } else if (p === '2' || p === 'Shared') {
         this.shareMode = 'secure';
         this.secureForm.patchValue({
           shareCode: this.file.shareCode || '',

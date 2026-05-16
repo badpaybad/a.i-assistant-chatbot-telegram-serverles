@@ -27,6 +27,19 @@ Dựa trên review hiện trạng, tài liệu này mô tả các bước cụ t
 - **Service**:
     - Refactor `GetUserId()` vào một Base class để dùng chung.
 
+### D. Frontend (Giao diện & Trải nghiệm người dùng)
+- **File List (FileExplorerComponent)**:
+    - Thêm cột "Chia sẻ" hiển thị icon/tag tương ứng với `Permission` (Private/Public/Shared).
+    - Biến tên file thành link, click vào gọi hàm `openFileDetail(file)`.
+- **File Detail Modal**:
+    - Hiển thị thông tin: Name, Size, CreatedAt, MimeType, Url.
+    - **Preview Logic**:
+        - Image: `<img>` tag.
+        - PDF: `<iframe>` hoặc ngx-pdf-viewer.
+        - Text/Code: `<pre>` hoặc code viewer.
+        - Audio/Video: `<audio>`/`<video>` tag.
+        - Khác: Hiển thị icon và nút Download.
+
 ### C. Frontend (business-files)
 - **Services**:
     - `FilesFoldersService` sẽ nhận về `TrackingId` từ các lệnh gọi API.
@@ -43,6 +56,8 @@ Dựa trên review hiện trạng, tài liệu này mô tả các bước cụ t
 3. [ ] Cập nhật `FilesFolders` Controllers để xử lý TrackingId.
 4. [ ] Cập nhật `FileExplorer` Component để lắng nghe Firestore.
 5. [ ] Refactor cấu hình và `GetUserId` dùng chung.
+6. [ ] Cập nhật UI File List hiển thị trạng thái chia sẻ.
+7. [ ] Xây dựng Modal xem chi tiết và Preview file.
 
 ## 4. Xác nhận từ người dùng
-- Tôi sẽ tiến hành triển khai các bước trên. Bạn có yêu cầu thay đổi nào không?
+- Tôi đã cập nhật kế hoạch dựa trên yêu cầu mới về UI. Bạn có đồng ý với giải pháp này không?

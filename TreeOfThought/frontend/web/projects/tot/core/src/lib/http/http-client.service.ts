@@ -148,9 +148,10 @@ export class HttpClientService {
   }
 
   postObservable<T = any>(url: string, data?: any, options?: any) {
+    const trackingId = options?.trackingId || this.generateTrackingId();
     const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
     return this.http.post<T>(fullUrl, data, {
-      headers: this.getHeaders(data),
+      headers: this.getHeaders(data, trackingId),
       withCredentials: true,
       ...options
     });

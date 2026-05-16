@@ -1,0 +1,48 @@
+<div class="detail-container">
+  <div class="preview-section">
+    <ng-container [ngSwitch]="previewType">
+      <img *ngSwitchCase="'image'" [src]="file.url" [alt]="file.name" />
+      
+      <iframe *ngSwitchCase="'pdf'" [src]="safeUrl"></iframe>
+      
+      <div *ngSwitchCase="'text'" class="text-preview">{{ textContent }}</div>
+      
+      <video *ngSwitchCase="'video'" [src]="file.url" controls style="width: 100%; max-height: 400px;"></video>
+      
+      <audio *ngSwitchCase="'audio'" [src]="file.url" controls style="width: 100%;"></audio>
+      
+      <div *ngSwitchDefault class="unsupported-preview">
+        <span nz-icon [nzType]="getFileIcon(file.mimeType)" nzTheme="outline"></span>
+        <span>Không hỗ trợ xem trước cho định dạng này</span>
+      </div>
+    </ng-container>
+  </div>
+
+  <div class="info-section">
+    <div class="info-label">Tên file:</div>
+    <div class="info-value">{{ file.name }}</div>
+
+    <div class="info-label">Loại file:</div>
+    <div class="info-value">{{ file.mimeType }}</div>
+
+    <div class="info-label">Kích thước:</div>
+    <div class="info-value">{{ formatSize(file.size) }}</div>
+
+    <div class="info-label">Ngày tạo:</div>
+    <div class="info-value">{{ file.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</div>
+
+    <div class="info-label">Trạng thái:</div>
+    <div class="info-value">
+      <nz-tag [nzColor]="getPermissionColor(file.permission)">
+        {{ getPermissionLabel(file.permission) }}
+      </nz-tag>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <a nz-button nzType="primary" [href]="file.url" target="_blank">
+      <span nz-icon nzType="download"></span> Tải về
+    </a>
+    <button nz-button nzType="default" (click)="close()">Đóng</button>
+  </div>
+</div>

@@ -20,6 +20,7 @@ import { CreateFolderPopoverComponent } from '../create-folder-popover/create-fo
 import { MoveModalComponent } from '../move-modal/move-modal.component';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subscription } from 'rxjs';
+import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal.component';
 
 @Component({
   selector: 'app-file-explorer',
@@ -284,5 +285,41 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  openFileDetail(file: any): void {
+    this.modal.create({
+      nzTitle: `Chi tiết file: ${file.name}`,
+      nzContent: FileDetailModalComponent,
+      nzData: { file },
+      nzFooter: null,
+      nzWidth: 800
+    });
+  }
+
+  getPermissionLabel(permission: any): string {
+    const p = String(permission);
+    switch (p) {
+      case '0':
+      case 'Private': return 'Riêng tư';
+      case '1':
+      case 'Public': return 'Công khai';
+      case '2':
+      case 'Shared': return 'Được chia sẻ';
+      default: return 'Không xác định';
+    }
+  }
+
+  getPermissionColor(permission: any): string {
+    const p = String(permission);
+    switch (p) {
+      case '0':
+      case 'Private': return 'default';
+      case '1':
+      case 'Public': return 'success';
+      case '2':
+      case 'Shared': return 'processing';
+      default: return 'default';
+    }
   }
 }

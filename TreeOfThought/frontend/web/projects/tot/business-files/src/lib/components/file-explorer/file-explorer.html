@@ -99,6 +99,7 @@
       <tr>
         <th nzWidth="40px"></th>
         <th>Tên</th>
+        <th>Trạng thái</th>
         <th>Kích thước</th>
         <th>Loại</th>
         <th>Ngày tạo</th>
@@ -109,6 +110,7 @@
       <tr *ngFor="let folder of folders">
         <td><span nz-icon nzType="folder" nzTheme="fill" style="color: #ffca28"></span></td>
         <td><a (click)="selectedFolderId = folder.id; loadContent()">{{ folder.name }}</a></td>
+        <td>--</td>
         <td>--</td>
         <td>Thư mục</td>
         <td>--</td>
@@ -125,7 +127,12 @@
       </tr>
       <tr *ngFor="let file of files">
         <td><span nz-icon nzType="file" nzTheme="outline" style="color: #1890ff"></span></td>
-        <td><a [href]="file.url" target="_blank">{{ file.name }}</a></td>
+        <td><a (click)="openFileDetail(file)">{{ file.name }}</a></td>
+        <td>
+          <nz-tag [nzColor]="getPermissionColor(file.permission)">
+            {{ getPermissionLabel(file.permission) }}
+          </nz-tag>
+        </td>
         <td>{{ formatSize(file.size) }}</td>
         <td>{{ file.mimeType }}</td>
         <td>{{ file.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
