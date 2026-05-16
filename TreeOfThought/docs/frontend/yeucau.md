@@ -30,4 +30,22 @@ khi phát triển nghiệp vụ mới, FE cần tạo thư viện là thành fol
     có thể đưa vào app chính TreeOfThought/frontend/web/src/app để dùng hoặc test 
     không nhất thiết các nghiệp vụ sẽ có prefix là business phụ thuộc vào yêu cầu của người dùng cần lấy tên liên quan tương đối chính xác là được
 
+tổng kết nhanh về cấu trúc
+    lib core 
+        auth, guard, interceptor, const claims, http client, event bus, component register
+    lib shared
+        một số component hay dùng
+        quy chuẩn các nút thao tác vd button , icon button ... khi click cần có loading trên nút để người dùng biết đã click và đang xử lý cho tới khi có kết quả thì ẩn loading
+        droplist auto complete sẽ cần dạng cho phép chọn nhiều , hoặc chọn signle item, có thể cho phép scroll để paging load khi scroll tới cuối danh sách thì tự động load thêm, cho phép add value vào session storage để lần đầu vào là có dữ liệu đã sẵn, khi paging hoặc tìm kiếm thì sẽ thêm các value lấy được chưa có ở session storage vào session hiện có. cần có loading khi đang lấy dữ liệu. tùy vào yêu cầu mà cần gọi lên server lấy hoặc data sẵn .  page size mặc định 25
+        table cần có paging tiện lợi về việc tới các trang trước sau hoặc nhảy trang bất kỳ, cho phép chọn page size 5, 10, 20 ,25, 50 ,100, 200 có thể có sort, filter tìm kiếm 
+        page size mặc định 25
+    lib module tên nghiệp vụ (business-dashboard, business-files-folders, ...) tên không bắt buộc bằng business
+        dùng core, shared
+        không được phép dùng trực tiếp component hay bất kỳ gì của module nghiệp vụ khác
+            dùng thông qua event buss, message buss, component regsiter 
+    app chính 
+        cấu hình lazy load các module nghiệp vụ , khi cần dùng tới thì mới load 
+        layout , theme, style, menu, breadcrum, route ...
+        đăng ký các module nghiệp vụ để dùng 
+
 **suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**

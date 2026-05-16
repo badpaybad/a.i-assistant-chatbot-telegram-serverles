@@ -1,101 +1,112 @@
 # Định hướng Phát triển Frontend (TreeOfThought)
 
-Tài liệu này trình bày giải pháp kỹ thuật cho việc xây dựng Frontend Angular theo mô hình modularized, đảm bảo tính độc lập của các nghiệp vụ (Business Modules) nhưng vẫn tuân thủ các quy chuẩn chung của hệ thống.
+Tài liệu này trình bày giải pháp kỹ thuật chi tiết cho việc xây dựng Frontend Angular theo mô hình modularized, đảm bảo tính độc lập của các nghiệp vụ (Business Modules) nhưng vẫn tuân thủ các quy chuẩn chung của hệ thống.
 
-## 1. Kiến trúc Module Nghiệp vụ (Business Libraries) và Core Library
+## 1. Kiến trúc Module Nghiệp vụ (Business Libraries)
 
-Để đạt được sự tách biệt hoàn toàn và khả năng tái sử dụng, chúng ta sử dụng kiến trúc **Angular Workspace Libraries** kết hợp với **Ant Design (NG-ZORRO)** cho UI.
+Hệ thống sử dụng kiến trúc **Angular Workspace Libraries** kết hợp với **Ant Design (NG-ZORRO)**.
 
-### Cấu trúc thư mục:
+### Cấu trúc Workspace:
 - **`projects/tot/core`**: Thư viện cốt lõi (Core Library).
-  - Chứa: `HttpClientService`, `AuthService`, `Interceptors`, `Guards`, `Claims Configuration`, `MessageBusService`, `ComponentRegistryService`.
-- **`projects/tot/shared`**: Thư viện dùng chung (Shared Library) cho các UI Component tái sử dụng (Editor, Select, Modals).
-- **`projects/tot/business-*` hoặc `projects/tot/*`**: Các thư viện nghiệp vụ riêng biệt (ví dụ: `auth`, `files`, `dashboard`).
-  - Phụ thuộc vào `@tot/core` và `@tot/shared`.
-- **`src/app`**: App chính (Shell), đóng vai trò cấu hình routing cấp cao và layout tổng thể.
+  - Chứa: `HttpClientService`, `AuthService`, `Interceptors`, `Guards`, `Claims`, `MessageBusService`, `ComponentRegistryService`.
+- **`projects/tot/shared`**: Thư viện dùng chung (Shared Library).
+  - Chứa các UI Component tái sử dụng cao: `tot-button`, `tot-autocomplete`, `tot-table`, `tot-editor`...
+- **`projects/tot/{ten-nghiep-vu}`**: Các thư viện nghiệp vụ (ví dụ: `dashboard`, `files-folders`).
+  - Phụ thuộc vào `@tot/core` và `@tot/shared`. Tuyệt đối không phụ thuộc chéo (circular dependency) vào các module nghiệp vụ khác.
 
-### Cách thực hiện cho nghiệp vụ mới:
-Khi phát triển nghiệp vụ mới, tạo thư viện trong thư mục `projects/tot`. Tên thư viện cần phản ánh chính xác nghiệp vụ đó (không bắt buộc phải có prefix `business-`):
+### Workflow phát triển:
+Khi tạo nghiệp vụ mới, tạo folder con trong `projects/tot/`:
 ```bash
-ng generate library @tot/{ten-nghiep-vu} --prefix tot
+ng generate library @tot/{name} --prefix tot
 ```
-*Lưu ý: Luôn tuân thủ việc sử dụng các thư viện core và shared để đảm bảo tính nhất quán.*
+Mọi thay đổi trong các lib này sẽ được `watch` và cập nhật trực tiếp lên App chính (HMR) thông qua cấu hình `paths` trong `tsconfig.json`.
 
-## 2. Quy chuẩn chung (Core Rules)
+---
 
-Tất cả các module nghiệp vụ phải tuân thủ các quy tắc sau để đảm bảo tính đồng nhất:
+## 2. Quy chuẩn UI Components (Shared Library)
 
-### HttpClient & Interceptors
-- **Core Library** cung cấp `HttpClientService` chuẩn hóa.
-- Các nghiệp vụ sử dụng `HttpClientService` từ `@tot/core`.
-- **Interceptors** được định nghĩa trong `@tot/core` và được `provide` tại app chính:
-  - `AuthInterceptor`: Tự động thêm `Authorization: Bearer <token>`.
-  - `ErrorInterceptor`: Xử lý thông báo lỗi tập trung qua `AppNotificationService`.
+Mọi module nghiệp vụ phải sử dụng các component từ `@tot/shared` để đảm bảo trải nghiệm người dùng nhất quán.
 
-### Auth & Authorization
-- `AuthService`, `ClaimGuard` và hằng số `APP_CLAIMS` nằm trong `@tot/core`.
-- Sử dụng Directive `*appClaimCheck` (trong Core) để kiểm soát ẩn/hiện UI dựa trên Permission.
+### 2.1. Tot Button
+- **Tính năng**: Tự động hiển thị loading icon trên nút khi đang xử lý (async operation).
+- **Sử dụng**: Truyền một `Observable` hoặc `Promise` vào input `[loading]`. Nút sẽ tự động vô hiệu hóa và hiện loading cho đến khi stream hoàn tất hoặc bị lỗi.
 
-## 3. Hệ thống CQRS Message Bus (Commands & Events)
+### 2.2. Tot Autocomplete / Dropdown
+- **Chế độ**: Hỗ trợ Single Select và Multi Select.
+- **Dữ liệu (Paging Load)**: Hỗ trợ Infinite Scroll. Khi người dùng cuộn tới cuối danh sách, component tự động gọi API lấy trang tiếp theo. Page size mặc định là **25**.
+- **Caching**: Hỗ trợ lưu dữ liệu vào `SessionStorage`. Khi thực hiện phân trang (paging) hoặc tìm kiếm, hệ thống sẽ chỉ thêm các giá trị mới (chưa tồn tại trong cache) vào session hiện có để tối ưu bộ nhớ và hiệu suất.
+- **Trạng thái**: Có loading indicator rõ ràng khi đang fetch dữ liệu.
 
-Frontend triển khai `MessageBusService` để đảm bảo giao tiếp "lỏng lẻo" (decoupled) và nhất quán với kiến trúc Backend.
+### 2.3. Tot Table
+- **Paging**: Hỗ trợ nhảy trang trực tiếp, Next/Prev.
+- **Page Size**: Mặc định là **25**. Cho phép chọn các mức: 5, 10, 20, 25, 50, 100, 200.
+- **Tính năng**: Tích hợp sẵn Sort (đa cột) và Filter (theo text, date, hoặc checkbox).
 
-### Cơ chế Command (Queue):
-- **Tính chất**: FIFO (First In First Out).
-- **Ràng buộc**: Tại một thời điểm, chỉ có **một** process được xử lý cho một `queueName` cụ thể. Các item tiếp theo sẽ phải đợi item trước hoàn thành (Promise-based).
-- **Sử dụng**: `messageBus.execute('UPLOAD_QUEUE', command)`.
+---
 
-### Cơ chế Event (Pub/Sub):
-- **Tính chất**: Phát sóng (Broadcasting).
-- **Sử dụng**: `messageBus.publish('FILE_SELECTED', event)`. Nhiều subscriber có thể cùng lắng nghe một topic.
+## 3. Hệ thống CQRS Message Bus (Event Bus)
 
-## 4. Điều hướng (Navigation) và Menu
+Dựa trên mô hình `Core.Infra.Cqrs` ở Backend, Frontend triển khai `MessageBusService` để điều phối giao tiếp giữa các module.
 
-- **Menu động**: Cấu hình tập trung trong `MenuService` của `@tot/core`.
-- **Breadcrumbs**: Tự động sinh dựa trên cấu trúc routing và `data: { breadcrumb: '...' }`.
-- **Phân quyền**: Menu item tự động ẩn nếu người dùng không có đủ Claim tương ứng.
+### 3.1. Command (Queue)
+- **Cơ chế**: FIFO (First In First Out).
+- **Quy tắc**: Tại một thời điểm, chỉ có **duy nhất 1** process được xử lý cho một `queueName`. Các yêu cầu tiếp theo sẽ được xếp hàng đợi (Queue).
+- **API**: `messageBus.execute(queueName, commandPayload)`
+- **Sử dụng**: Dùng cho các tác vụ cần tuần tự hóa (ví dụ: Upload file hàng loạt, xử lý dữ liệu nặng).
 
-## 5. Quản lý State và Trao đổi dữ liệu
+### 3.2. Event (Pub/Sub)
+- **Cơ chế**: Phát sóng (Broadcasting).
+- **Quy tắc**: Một topic có thể có nhiều Subscriber. Dữ liệu được gửi đi ngay lập tức cho tất cả bên đang lắng nghe.
+- **API**: `messageBus.publish(topicName, eventPayload)` / `messageBus.subscribe(topicName, callback)`
+- **Sử dụng**: Thông báo trạng thái thay đổi (ví dụ: `FILE_UPLOADED`, `USER_LOGGED_OUT`).
 
-### Giữa các Module (Cross-Module):
-- **MessageBusService**: Đây là cơ chế chính để trao đổi dữ liệu mà không gây phụ thuộc vòng.
-- Ví dụ: `business-files` phát sự kiện, `business-dashboard` lắng nghe để cập nhật.
+---
 
-### Trong nội bộ Module:
-- **Angular Signals**: Sử dụng cho local state (computed, effect).
-- **Shared Services**: Service nội bộ của module nghiệp vụ.
+## 4. Điều phối Component chéo (Component Registry)
 
-## 6. Setup Routing và Lazy Loading
+Để một module nghiệp vụ sử dụng UI của module khác (ví dụ: Dashboard hiển thị Widget của Files-Folders) mà không gây phụ thuộc trực tiếp:
 
-Hệ thống sử dụng Lazy Loading để tối ưu hóa tốc độ tải trang:
-- Mỗi module nghiệp vụ có file `*.routes.ts` riêng.
-- App chính import các route này thông qua `loadChildren`.
-- Tất cả các route nghiệp vụ đều được bảo vệ bởi `ClaimGuard`.
+1. **Đăng ký**: Module cung cấp (Provider) đăng ký component vào Registry.
+   ```typescript
+   registry.register(REGISTRY_KEYS.FILES_SELECTOR, FileSelectorComponent);
+   ```
+2. **Sử dụng**: Module tiêu thụ (Consumer) gọi component qua Key.
+   - Sử dụng hằng số `REGISTRY_KEYS` tập trung tại `@tot/core`.
+   - Sử dụng `totComponentHost` directive để render component động.
+3. **Giao tiếp**: Host và Component nhúng trao đổi qua `MessageBusService`.
 
-## 7. Sử dụng Component chéo (Component Registry)
+---
 
-Để một nghiệp vụ sử dụng component của nghiệp vụ khác mà không cần import trực tiếp:
+## 5. Cấu trúc App Shell (Main App)
 
-1. **Đăng ký (Provider Side)**: Nghiệp vụ cung cấp component đăng ký vào `ComponentRegistryService` với một `REGISTRY_KEY`.
-   - `registry.register(REGISTRY_KEYS.FILE_EXPLORER, FileExplorerComponent)`
-2. **Sử dụng (Consumer Side)**: Nghiệp vụ cần dùng sẽ lấy component từ Registry qua key.
-   - Sử dụng `ngComponentOutlet` để hiển thị component động.
-3. **Giao tiếp**: Component được nhúng giao tiếp ngược lại với Host thông qua `MessageBusService`.
+App chính (`src/app`) đóng vai trò là "vỏ" (Shell) điều hướng:
+- **Layout**: Quản lý Theme (Dark/Light), Sidebar, Header, Breadcrumb.
+- **Routing**: Cấu hình **Lazy Loading** cho tất cả các module nghiệp vụ.
+- **Security**: 
+  - `ClaimGuard`: Kiểm tra quyền truy cập URL.
+  - `*totClaimCheck`: Directive ẩn/hiện element dựa trên danh sách Claim của user.
+- **Interceptors**: 
+  - `AuthInterceptor`: Tự động gắn Token.
+  - `ErrorInterceptor`: Bắt lỗi HTTP và hiển thị thông báo tập trung.
 
-*Ví dụ: CKEditor (Shared) cần nút chọn file từ `business-files`. CKEditor sẽ yêu cầu component qua key `FILES_SELECTOR` mà không cần biết `business-files` là gì.*
+---
 
-## 8. Quy trình Phát triển và DX (Developer Experience)
+## 6. Quy trình Phát triển và DX (Developer Experience)
 
 - **Chế độ Watch**: Cấu hình `paths` trong `tsconfig.json` trỏ trực tiếp đến `public-api.ts` của các libs.
   - Khi sửa code ở bất kỳ Lib nào, App chính sẽ tự động reload (HMR).
 - **Lệnh chạy**: `npm start` (hoặc `run-dev.sh`) để watch toàn bộ workspace.
 
-## 9. Đảm bảo các tiêu chí cốt lõi (KISS & Clean Architecture)
+---
+
+## 7. Nguyên tắc KISS & Decoupling
 
 - **Kiểm soát dễ dàng**: Mỗi nghiệp vụ là một đơn vị độc lập.
 - **Không phụ thuộc**: Các module nghiệp vụ tuyệt đối không import chéo code của nhau.
 - **Đồng nhất**: Mọi module đều dùng chung Layout, Auth, và cơ chế HTTP.
 - **Permission tập trung**: Kiểm soát truy cập từ URL đến từng Element nhỏ nhất trên UI.
+- **Dữ liệu nhất quán**: Mọi trao đổi dữ liệu xuyên module phải qua Message Bus.
+- **Không Placeholder**: Khi phát triển, sử dụng dữ liệu mẫu (mock) sát thực tế hoặc các hình ảnh sinh bởi AI để đảm bảo thẩm mỹ.
 
 ---
-*Tài liệu này là hướng dẫn bắt buộc cho mọi thành viên phát triển Frontend TreeOfThought.*
+*Tài liệu này là quy chuẩn bắt buộc cho mọi thành viên phát triển Frontend TreeOfThought.*
