@@ -14,87 +14,28 @@
     </div>
 
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <!-- <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="home"></span>
-        <span><a routerLink="/">{{ 'Trang chủ' | translate }}</a></span>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="info-circle"></span>
-        <span><a routerLink="/about">{{ 'Giới thiệu' | translate }}</a></span>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="phone"></span>
-        <span><a routerLink="/contact">{{ 'Liên hệ' | translate }}</a></span>
-      </li> -->
+      <ng-container *ngFor="let item of menuItems">
+        <!-- Single Menu Item -->
+        <ng-container *ngIf="!item.children">
+          <li nz-menu-item nzMatchRouter *appClaimCheck="item.claim || ''">
+            <span nz-icon [nzType]="item.icon || ''" *ngIf="item.icon"></span>
+            <span><a [routerLink]="item.route">{{ item.label | translate }}</a></span>
+          </li>
+        </ng-container>
 
-      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *appClaimCheck="claims.CQRS_DASHBOARD.VIEW" [(nzOpen)]="openMap['dashboard']">
-        <ng-template #dashboardTitle>
-          <span>{{ 'Dashboard' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/cqrs-dashboard">{{ 'CQRS Dashboard' | translate }}</a>
+        <!-- Submenu Item -->
+        <ng-container *ngIf="item.children">
+          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *appClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
+            <ul>
+              <ng-container *ngFor="let child of item.children">
+                <li nz-menu-item nzMatchRouter *appClaimCheck="child.claim || ''">
+                  <a [routerLink]="child.route">{{ child.label | translate }}</a>
+                </li>
+              </ng-container>
+            </ul>
           </li>
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *appClaimCheck="claims.AUTH.VIEW_USERS" [(nzOpen)]="openMap['auth']">
-        <ng-template #authTitle>
-          <span>{{ 'Core Infra Auth' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/users">{{ 'Người dùng' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/roles">{{ 'Vai trò' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/claims">{{ 'Quyền' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter *appClaimCheck="claims.AUTH.MANAGE_ACL">
-            <a routerLink="/modules/core-infra-auth/acl">{{ 'Quản lý ACL' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/change-password">{{ 'Đổi mật khẩu' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/authorize-info">{{ 'Thông tin phân quyền' | translate }}</a>
-          </li>
-
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="filesFoldersTitle" nzIcon="folder" *appClaimCheck="claims.FILES_FOLDERS.VIEW" [(nzOpen)]="openMap['files']">
-        <ng-template #filesFoldersTitle>
-          <span>{{ 'Quản lý tài liệu' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/files-folders">{{ 'Khám phá tệp tin' | translate }}</a>
-          </li>
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *appClaimCheck="claims.TEST_MODULE.VIEW" [(nzOpen)]="openMap['test']">
-        <ng-template #testTitle>
-          <span>{{ 'Mô-đun thử nghiệm' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/firestore">{{ 'Thử nghiệm Firestore' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/fcm">{{ 'Thử nghiệm FCM' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/cqrs-dashboard/cqrs">{{ 'Thử nghiệm CQRS' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/editor">{{ 'Thử nghiệm CKEditor' | translate }}</a>
-          </li>
-        </ul>
-      </li>
+        </ng-container>
+      </ng-container>
     </ul>
     <div class="resize-handle" (mousedown)="onMouseDown($event)" *ngIf="!isCollapsed"></div>
   </nz-sider>

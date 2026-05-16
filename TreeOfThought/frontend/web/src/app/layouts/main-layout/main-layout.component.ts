@@ -12,6 +12,7 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { Router, ActivatedRoute, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs/operators';
+import { MenuService, MenuItem } from '../../services/menu.service';
 
 @Component({
   selector: 'app-main-layout',
@@ -39,17 +40,14 @@ export class MainLayoutComponent {
   sidebarWidth = 256;
   sidebarBorderRight = '1px solid #303030'; // Configurable border
   breadcrumbs: Array<{ label: string; url: string }> = [];
-  openMap: { [key: string]: boolean } = {
-    dashboard: false,
-    auth: false,
-    test: false,
-    files: false
-  };
 
   private authService = inject(AuthService);
   private translate = inject(TranslateService);
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
+  private menuService = inject(MenuService);
+
+  menuItems: MenuItem[] = [];
 
   user$ = this.authService.currentUser$;
   claims = APP_CLAIMS;
@@ -74,6 +72,7 @@ export class MainLayoutComponent {
     
     // Initial call
     this.breadcrumbs = this.createBreadcrumbs(this.activatedRoute.root);
+    this.menuItems = this.menuService.getMenu();
     this.updateOpenMap();
   }
 
@@ -106,10 +105,11 @@ export class MainLayoutComponent {
 
   private updateOpenMap() {
     const url = this.router.url;
-    this.openMap['dashboard'] = url.includes('/modules/cqrs-dashboard');
-    this.openMap['auth'] = url.includes('/modules/core-infra-auth');
-    this.openMap['test'] = url.includes('/modules/test');
-    this.openMap['files'] = url.includes('/modules/files-folders');
+    this.menuItems.forEach(item => {
+      if (item.children) {
+        item.open = item.children.some(child => child.route && url.includes(child.route));
+      }
+    });
   }
 
   toggleCollapse() {

@@ -9,7 +9,6 @@ export * from './lib/firebase/firebase.service';
 export * from './lib/services/app-notification.service';
 export * from './lib/services/notification-template.service';
 export * from './lib/services/message-bus.service';
-export * from './lib/services/menu.service';
 export * from './lib/services/component-registry.service';
 
 // Constants

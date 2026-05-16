@@ -33,7 +33,7 @@ khi phát triển nghiệp vụ mới, FE cần tạo thư viện là thành fol
 
 tổng kết nhanh về cấu trúc
     lib core 
-        auth, guard, interceptor, const claims, http client, event bus, component register
+        auth, guard, interceptor, const claims, http client, event bus, component register, firebase, pipe ... là wrap các base dùng chung theo 1 cách mà project cần 
     lib shared
         các component share cần bắt đầu với prefix: **tot-** (ví dụ: `tot-button`, `tot-table`, `tot-autocomplete`...)
         một số component hay dùng

@@ -2767,241 +2767,212 @@ var AppClaimDirective = _AppClaimDirective;
   }] });
 })();
 
+// src/app/services/menu.service.ts
+var _MenuService = class _MenuService {
+  constructor() {
+    this.menuItems = [
+      {
+        label: "CQRS Dashboard",
+        icon: "dashboard",
+        route: "/modules/cqrs-dashboard",
+        claim: "fe.cqrs:dashboard:view"
+      },
+      {
+        label: "Qu\u1EA3n tr\u1ECB h\u1EC7 th\u1ED1ng",
+        icon: "lock",
+        claim: ["fe.auth:users:view", "fe.auth:roles:view"],
+        children: [
+          { label: "Ng\u01B0\u1EDDi d\xF9ng", route: "/modules/core-infra-auth/users", claim: "fe.auth:users:view" },
+          { label: "Vai tr\xF2", route: "/modules/core-infra-auth/roles", claim: "fe.auth:roles:view" },
+          { label: "Quy\u1EC1n h\u1EA1n", route: "/modules/core-infra-auth/claims", claim: "fe.auth:claims:view" },
+          { label: "Qu\u1EA3n l\xFD ACL", route: "/modules/core-infra-auth/acl", claim: "fe.auth:acl:manage" },
+          { label: "\u0110\u1ED5i m\u1EADt kh\u1EA9u", route: "/modules/core-infra-auth/change-password" },
+          { label: "Th\xF4ng tin ph\xE2n quy\u1EC1n", route: "/modules/core-infra-auth/authorize-info" }
+        ]
+      },
+      {
+        label: "T\xE0i li\u1EC7u",
+        icon: "folder",
+        route: "/modules/files-folders",
+        claim: "fe.files_folders:view"
+      },
+      {
+        label: "Th\u1EED nghi\u1EC7m",
+        icon: "experiment",
+        claim: "fe.test:view",
+        children: [
+          { label: "Firestore", route: "/modules/test/firestore" },
+          { label: "FCM", route: "/modules/test/fcm" },
+          { label: "CQRS", route: "/modules/cqrs-dashboard/cqrs" },
+          { label: "Editor", route: "/modules/test/editor" }
+        ]
+      }
+    ];
+  }
+  getMenu() {
+    return this.menuItems;
+  }
+};
+_MenuService.\u0275fac = function MenuService_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _MenuService)();
+};
+_MenuService.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _MenuService, factory: _MenuService.\u0275fac, providedIn: "root" });
+var MenuService = _MenuService;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MenuService, [{
+    type: Injectable,
+    args: [{
+      providedIn: "root"
+    }]
+  }], null, null);
+})();
+
 // src/app/layouts/main-layout/main-layout.component.ts
-function MainLayoutComponent_li_8_ng_template_1_Template(rf, ctx) {
+function MainLayoutComponent_ng_container_8_ng_container_1_li_1_span_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span");
-    \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementEnd();
+    \u0275\u0275element(0, "span", 13);
   }
   if (rf & 2) {
+    const item_r2 = \u0275\u0275nextContext(3).$implicit;
+    \u0275\u0275property("nzType", item_r2.icon || "");
+  }
+}
+function MainLayoutComponent_ng_container_8_ng_container_1_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "li", 27);
+    \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_1_li_1_span_1_Template, 1, 1, "span", 28);
+    \u0275\u0275elementStart(2, "span")(3, "a", 29);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const item_r2 = \u0275\u0275nextContext(2).$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "Dashboard"));
-  }
-}
-function MainLayoutComponent_li_8_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "li", 32);
-    \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_li_8_Template_li_nzOpenChange_0_listener($event) {
-      \u0275\u0275restoreView(_r2);
-      const ctx_r2 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r2.openMap["dashboard"], $event) || (ctx_r2.openMap["dashboard"] = $event);
-      return \u0275\u0275resetView($event);
-    });
-    \u0275\u0275template(1, MainLayoutComponent_li_8_ng_template_1_Template, 3, 3, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(3, "ul")(4, "li", 33)(5, "a", 34);
-    \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275elementEnd()()()();
-  }
-  if (rf & 2) {
-    const dashboardTitle_r4 = \u0275\u0275reference(2);
-    const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzTitle", dashboardTitle_r4);
-    \u0275\u0275twoWayProperty("nzOpen", ctx_r2.openMap["dashboard"]);
-    \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 3, "CQRS Dashboard"));
-  }
-}
-function MainLayoutComponent_li_9_ng_template_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "span");
-    \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
+    \u0275\u0275property("ngIf", item_r2.icon);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("routerLink", item_r2.route);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "Core Infra Auth"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 3, item_r2.label));
   }
 }
-function MainLayoutComponent_li_9_li_16_Template(rf, ctx) {
+function MainLayoutComponent_ng_container_8_ng_container_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "li", 33)(1, "a", 42);
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_1_li_1_Template, 6, 5, "li", 26);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const item_r2 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", item_r2.claim || "");
+  }
+}
+function MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "li", 27)(1, "a", 29);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 1, "Qu\u1EA3n l\xFD ACL"));
+    const child_r4 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("routerLink", child_r4.route);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 2, child_r4.label));
   }
 }
-function MainLayoutComponent_li_9_Template(rf, ctx) {
+function MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_li_1_Template, 4, 4, "li", 26);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const child_r4 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", child_r4.claim || "");
+  }
+}
+function MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r3 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "li", 31);
+    \u0275\u0275pipe(1, "translate");
+    \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template_li_nzOpenChange_0_listener($event) {
+      \u0275\u0275restoreView(_r3);
+      const item_r2 = \u0275\u0275nextContext(2).$implicit;
+      \u0275\u0275twoWayBindingSet(item_r2.open, $event) || (item_r2.open = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementStart(2, "ul");
+    \u0275\u0275template(3, MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_Template, 2, 1, "ng-container", 8);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const item_r2 = \u0275\u0275nextContext(2).$implicit;
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(1, 4, item_r2.label))("nzIcon", item_r2.icon || null);
+    \u0275\u0275twoWayProperty("nzOpen", item_r2.open);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("ngForOf", item_r2.children);
+  }
+}
+function MainLayoutComponent_ng_container_8_ng_container_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template, 4, 6, "li", 30);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const item_r2 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("appClaimCheck", item_r2.claim || "");
+  }
+}
+function MainLayoutComponent_ng_container_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_1_Template, 2, 1, "ng-container", 25)(2, MainLayoutComponent_ng_container_8_ng_container_2_Template, 2, 1, "ng-container", 25);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const item_r2 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !item_r2.children);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", item_r2.children);
+  }
+}
+function MainLayoutComponent_div_9_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "li", 35);
-    \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_li_9_Template_li_nzOpenChange_0_listener($event) {
+    \u0275\u0275elementStart(0, "div", 32);
+    \u0275\u0275listener("mousedown", function MainLayoutComponent_div_9_Template_div_mousedown_0_listener($event) {
       \u0275\u0275restoreView(_r5);
-      const ctx_r2 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r2.openMap["auth"], $event) || (ctx_r2.openMap["auth"] = $event);
-      return \u0275\u0275resetView($event);
+      const ctx_r5 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r5.onMouseDown($event));
     });
-    \u0275\u0275template(1, MainLayoutComponent_li_9_ng_template_1_Template, 3, 3, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(3, "ul")(4, "li", 33)(5, "a", 36);
-    \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "li", 33)(9, "a", 37);
-    \u0275\u0275text(10);
-    \u0275\u0275pipe(11, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(12, "li", 33)(13, "a", 38);
-    \u0275\u0275text(14);
-    \u0275\u0275pipe(15, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275template(16, MainLayoutComponent_li_9_li_16_Template, 4, 3, "li", 39);
-    \u0275\u0275elementStart(17, "li", 33)(18, "a", 40);
-    \u0275\u0275text(19);
-    \u0275\u0275pipe(20, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(21, "li", 33)(22, "a", 41);
-    \u0275\u0275text(23);
-    \u0275\u0275pipe(24, "translate");
-    \u0275\u0275elementEnd()()()();
-  }
-  if (rf & 2) {
-    const authTitle_r6 = \u0275\u0275reference(2);
-    const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzTitle", authTitle_r6);
-    \u0275\u0275twoWayProperty("nzOpen", ctx_r2.openMap["auth"]);
-    \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 8, "Ng\u01B0\u1EDDi d\xF9ng"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(11, 10, "Vai tr\xF2"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 12, "Quy\u1EC1n"));
-    \u0275\u0275advance(2);
-    \u0275\u0275property("appClaimCheck", ctx_r2.claims.AUTH.MANAGE_ACL);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(20, 14, "\u0110\u1ED5i m\u1EADt kh\u1EA9u"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(24, 16, "Th\xF4ng tin ph\xE2n quy\u1EC1n"));
-  }
-}
-function MainLayoutComponent_li_10_ng_template_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "span");
-    \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
     \u0275\u0275elementEnd();
   }
-  if (rf & 2) {
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u"));
-  }
 }
-function MainLayoutComponent_li_10_Template(rf, ctx) {
+function MainLayoutComponent_ng_container_29_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "li", 43);
-    \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_li_10_Template_li_nzOpenChange_0_listener($event) {
-      \u0275\u0275restoreView(_r7);
-      const ctx_r2 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r2.openMap["files"], $event) || (ctx_r2.openMap["files"] = $event);
-      return \u0275\u0275resetView($event);
-    });
-    \u0275\u0275template(1, MainLayoutComponent_li_10_ng_template_1_Template, 3, 3, "ng-template", null, 4, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(3, "ul")(4, "li", 33)(5, "a", 44);
-    \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275elementEnd()()()();
-  }
-  if (rf & 2) {
-    const filesFoldersTitle_r8 = \u0275\u0275reference(2);
-    const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzTitle", filesFoldersTitle_r8);
-    \u0275\u0275twoWayProperty("nzOpen", ctx_r2.openMap["files"]);
-    \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 3, "Kh\xE1m ph\xE1 t\u1EC7p tin"));
-  }
-}
-function MainLayoutComponent_li_11_ng_template_1_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "span");
-    \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "M\xF4-\u0111un th\u1EED nghi\u1EC7m"));
-  }
-}
-function MainLayoutComponent_li_11_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r9 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "li", 45);
-    \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_li_11_Template_li_nzOpenChange_0_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r2 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r2.openMap["test"], $event) || (ctx_r2.openMap["test"] = $event);
-      return \u0275\u0275resetView($event);
-    });
-    \u0275\u0275template(1, MainLayoutComponent_li_11_ng_template_1_Template, 3, 3, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(3, "ul")(4, "li", 33)(5, "a", 46);
-    \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "li", 33)(9, "a", 47);
-    \u0275\u0275text(10);
-    \u0275\u0275pipe(11, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(12, "li", 33)(13, "a", 48);
-    \u0275\u0275text(14);
-    \u0275\u0275pipe(15, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(16, "li", 33)(17, "a", 49);
-    \u0275\u0275text(18);
-    \u0275\u0275pipe(19, "translate");
-    \u0275\u0275elementEnd()()()();
-  }
-  if (rf & 2) {
-    const testTitle_r10 = \u0275\u0275reference(2);
-    const ctx_r2 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzTitle", testTitle_r10);
-    \u0275\u0275twoWayProperty("nzOpen", ctx_r2.openMap["test"]);
-    \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 6, "Th\u1EED nghi\u1EC7m Firestore"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(11, 8, "Th\u1EED nghi\u1EC7m FCM"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 10, "Th\u1EED nghi\u1EC7m CQRS"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(19, 12, "Th\u1EED nghi\u1EC7m CKEditor"));
-  }
-}
-function MainLayoutComponent_div_12_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 50);
-    \u0275\u0275listener("mousedown", function MainLayoutComponent_div_12_Template_div_mousedown_0_listener($event) {
-      \u0275\u0275restoreView(_r11);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.onMouseDown($event));
-    });
-    \u0275\u0275elementEnd();
-  }
-}
-function MainLayoutComponent_ng_container_32_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
     \u0275\u0275elementContainerStart(0);
-    \u0275\u0275elementStart(1, "span", 51);
-    \u0275\u0275element(2, "nz-avatar", 52);
-    \u0275\u0275elementStart(3, "div", 53)(4, "span", 54);
+    \u0275\u0275elementStart(1, "span", 33);
+    \u0275\u0275element(2, "nz-avatar", 34);
+    \u0275\u0275elementStart(3, "div", 35)(4, "span", 36);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "span", 55);
+    \u0275\u0275elementStart(6, "span", 37);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(8, "button", 56);
-    \u0275\u0275listener("click", function MainLayoutComponent_ng_container_32_Template_button_click_8_listener() {
-      \u0275\u0275restoreView(_r12);
-      const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.logout());
+    \u0275\u0275elementStart(8, "button", 38);
+    \u0275\u0275listener("click", function MainLayoutComponent_ng_container_29_Template_button_click_8_listener() {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r5 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r5.logout());
     });
     \u0275\u0275text(9);
     \u0275\u0275pipe(10, "translate");
@@ -3009,20 +2980,20 @@ function MainLayoutComponent_ng_container_32_Template(rf, ctx) {
     \u0275\u0275elementContainerEnd();
   }
   if (rf & 2) {
-    const user_r13 = ctx.ngIf;
+    const user_r8 = ctx.ngIf;
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzSrc", user_r13.picture || "");
+    \u0275\u0275property("nzSrc", user_r8.picture || "");
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(user_r13.preferred_username);
+    \u0275\u0275textInterpolate(user_r8.preferred_username);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(user_r13.name);
+    \u0275\u0275textInterpolate(user_r8.name);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 4, "\u0110\u0103ng xu\u1EA5t"));
   }
 }
-function MainLayoutComponent_ng_template_34_Template(rf, ctx) {
+function MainLayoutComponent_ng_template_31_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "button", 57);
+    \u0275\u0275elementStart(0, "button", 39);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "translate");
     \u0275\u0275elementEnd();
@@ -3032,36 +3003,36 @@ function MainLayoutComponent_ng_template_34_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "\u0110\u0103ng nh\u1EADp"));
   }
 }
-function MainLayoutComponent_nz_breadcrumb_38_nz_breadcrumb_item_4_Template(rf, ctx) {
+function MainLayoutComponent_nz_breadcrumb_35_nz_breadcrumb_item_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-breadcrumb-item")(1, "a", 61);
+    \u0275\u0275elementStart(0, "nz-breadcrumb-item")(1, "a", 29);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const item_r14 = ctx.$implicit;
+    const item_r9 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275property("routerLink", item_r14.url);
+    \u0275\u0275property("routerLink", item_r9.url);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 2, item_r14.label));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 2, item_r9.label));
   }
 }
-function MainLayoutComponent_nz_breadcrumb_38_Template(rf, ctx) {
+function MainLayoutComponent_nz_breadcrumb_35_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-breadcrumb", 58)(1, "nz-breadcrumb-item")(2, "a", 9);
-    \u0275\u0275element(3, "span", 59);
+    \u0275\u0275elementStart(0, "nz-breadcrumb", 40)(1, "nz-breadcrumb-item")(2, "a", 5);
+    \u0275\u0275element(3, "span", 41);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(4, MainLayoutComponent_nz_breadcrumb_38_nz_breadcrumb_item_4_Template, 4, 4, "nz-breadcrumb-item", 60);
+    \u0275\u0275template(4, MainLayoutComponent_nz_breadcrumb_35_nz_breadcrumb_item_4_Template, 4, 4, "nz-breadcrumb-item", 8);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const ctx_r2 = \u0275\u0275nextContext();
+    const ctx_r5 = \u0275\u0275nextContext();
     \u0275\u0275advance(4);
-    \u0275\u0275property("ngForOf", ctx_r2.breadcrumbs);
+    \u0275\u0275property("ngForOf", ctx_r5.breadcrumbs);
   }
 }
-function MainLayoutComponent_router_outlet_39_Template(rf, ctx) {
+function MainLayoutComponent_router_outlet_36_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "router-outlet");
   }
@@ -3073,16 +3044,12 @@ var _MainLayoutComponent = class _MainLayoutComponent {
     this.sidebarWidth = 256;
     this.sidebarBorderRight = "1px solid #303030";
     this.breadcrumbs = [];
-    this.openMap = {
-      dashboard: false,
-      auth: false,
-      test: false,
-      files: false
-    };
     this.authService = inject(AuthService);
     this.translate = inject(TranslateService);
     this.router = inject(Router);
     this.activatedRoute = inject(ActivatedRoute);
+    this.menuService = inject(MenuService);
+    this.menuItems = [];
     this.user$ = this.authService.currentUser$;
     this.claims = APP_CLAIMS;
     this.isResizing = false;
@@ -3097,6 +3064,7 @@ var _MainLayoutComponent = class _MainLayoutComponent {
       this.updateOpenMap();
     });
     this.breadcrumbs = this.createBreadcrumbs(this.activatedRoute.root);
+    this.menuItems = this.menuService.getMenu();
     this.updateOpenMap();
   }
   createBreadcrumbs(route, url = "", breadcrumbs = []) {
@@ -3122,10 +3090,11 @@ var _MainLayoutComponent = class _MainLayoutComponent {
   }
   updateOpenMap() {
     const url = this.router.url;
-    this.openMap["dashboard"] = url.includes("/modules/cqrs-dashboard");
-    this.openMap["auth"] = url.includes("/modules/core-infra-auth");
-    this.openMap["test"] = url.includes("/modules/test");
-    this.openMap["files"] = url.includes("/modules/files-folders");
+    this.menuItems.forEach((item) => {
+      if (item.children) {
+        item.open = item.children.some((child) => child.route && url.includes(child.route));
+      }
+    });
   }
   toggleCollapse() {
     this.isCollapsed = !this.isCollapsed;
@@ -3178,59 +3147,59 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onMouseUp();
     }, \u0275\u0275resolveDocument);
   }
-}, decls: 40, vars: 20, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["dashboardTitle", ""], ["authTitle", ""], ["filesFoldersTitle", ""], ["testTitle", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzTitle", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], ["nz-submenu", "", "nzIcon", "dashboard", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["nz-menu-item", "", "nzMatchRouter", ""], ["routerLink", "/modules/cqrs-dashboard"], ["nz-submenu", "", "nzIcon", "lock", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/core-infra-auth/users"], ["routerLink", "/modules/core-infra-auth/roles"], ["routerLink", "/modules/core-infra-auth/claims"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["routerLink", "/modules/core-infra-auth/change-password"], ["routerLink", "/modules/core-infra-auth/authorize-info"], ["routerLink", "/modules/core-infra-auth/acl"], ["nz-submenu", "", "nzIcon", "folder", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/files-folders"], ["nz-submenu", "", "nzIcon", "experiment", 3, "nzOpenChange", "nzTitle", "nzOpen"], ["routerLink", "/modules/test/firestore"], ["routerLink", "/modules/test/fcm"], ["routerLink", "/modules/cqrs-dashboard/cqrs"], ["routerLink", "/modules/test/editor"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [3, "routerLink"]], template: function MainLayoutComponent_Template(rf, ctx) {
+}, decls: 37, vars: 17, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], [4, "ngFor", "ngForOf"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], [4, "ngIf"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["nz-menu-item", "", "nzMatchRouter", ""], ["nz-icon", "", 3, "nzType", 4, "ngIf"], [3, "routerLink"], ["nz-submenu", "", 3, "nzTitle", "nzIcon", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", 3, "nzOpenChange", "nzTitle", "nzIcon", "nzOpen"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"]], template: function MainLayoutComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-layout", 6)(1, "nz-sider", 7);
+    \u0275\u0275elementStart(0, "nz-layout", 2)(1, "nz-sider", 3);
     \u0275\u0275twoWayListener("nzCollapsedChange", function MainLayoutComponent_Template_nz_sider_nzCollapsedChange_1_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.isCollapsed, $event) || (ctx.isCollapsed = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275elementStart(2, "div", 8)(3, "a", 9);
-    \u0275\u0275element(4, "img", 10);
+    \u0275\u0275elementStart(2, "div", 4)(3, "a", 5);
+    \u0275\u0275element(4, "img", 6);
     \u0275\u0275elementStart(5, "h1");
     \u0275\u0275text(6, "Tree Of Thought");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(7, "ul", 11);
-    \u0275\u0275template(8, MainLayoutComponent_li_8_Template, 8, 5, "li", 12)(9, MainLayoutComponent_li_9_Template, 25, 18, "li", 13)(10, MainLayoutComponent_li_10_Template, 8, 5, "li", 14)(11, MainLayoutComponent_li_11_Template, 20, 14, "li", 15);
+    \u0275\u0275elementStart(7, "ul", 7);
+    \u0275\u0275template(8, MainLayoutComponent_ng_container_8_Template, 3, 2, "ng-container", 8);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(12, MainLayoutComponent_div_12_Template, 1, 0, "div", 16);
+    \u0275\u0275template(9, MainLayoutComponent_div_9_Template, 1, 0, "div", 9);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "nz-layout")(14, "nz-header")(15, "div", 17)(16, "div", 18)(17, "span", 19);
-    \u0275\u0275listener("click", function MainLayoutComponent_Template_span_click_17_listener() {
+    \u0275\u0275elementStart(10, "nz-layout")(11, "nz-header")(12, "div", 10)(13, "div", 11)(14, "span", 12);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_span_click_14_listener() {
       return ctx.toggleCollapse();
     });
-    \u0275\u0275element(18, "span", 20);
+    \u0275\u0275element(15, "span", 13);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(19, "div", 21)(20, "div", 22)(21, "a", 23);
-    \u0275\u0275element(22, "span", 24);
-    \u0275\u0275text(23);
-    \u0275\u0275element(24, "span", 25);
+    \u0275\u0275elementStart(16, "div", 14)(17, "div", 15)(18, "a", 16);
+    \u0275\u0275element(19, "span", 17);
+    \u0275\u0275text(20);
+    \u0275\u0275element(21, "span", 18);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(25, "nz-dropdown-menu", null, 0)(27, "ul", 26)(28, "li", 27);
-    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_28_listener() {
+    \u0275\u0275elementStart(22, "nz-dropdown-menu", null, 0)(24, "ul", 19)(25, "li", 20);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_25_listener() {
       return ctx.switchLanguage("vi");
     });
-    \u0275\u0275text(29, "Ti\u1EBFng Vi\u1EC7t");
+    \u0275\u0275text(26, "Ti\u1EBFng Vi\u1EC7t");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "li", 27);
-    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_30_listener() {
+    \u0275\u0275elementStart(27, "li", 20);
+    \u0275\u0275listener("click", function MainLayoutComponent_Template_li_click_27_listener() {
       return ctx.switchLanguage("en");
     });
-    \u0275\u0275text(31, "English");
+    \u0275\u0275text(28, "English");
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275template(32, MainLayoutComponent_ng_container_32_Template, 11, 6, "ng-container", 28);
-    \u0275\u0275pipe(33, "async");
-    \u0275\u0275template(34, MainLayoutComponent_ng_template_34_Template, 3, 3, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(29, MainLayoutComponent_ng_container_29_Template, 11, 6, "ng-container", 21);
+    \u0275\u0275pipe(30, "async");
+    \u0275\u0275template(31, MainLayoutComponent_ng_template_31_Template, 3, 3, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(36, "nz-content")(37, "div", 29);
-    \u0275\u0275template(38, MainLayoutComponent_nz_breadcrumb_38_Template, 5, 1, "nz-breadcrumb", 30)(39, MainLayoutComponent_router_outlet_39_Template, 1, 0, "router-outlet", 31);
+    \u0275\u0275elementStart(33, "nz-content")(34, "div", 22);
+    \u0275\u0275template(35, MainLayoutComponent_nz_breadcrumb_35_Template, 5, 1, "nz-breadcrumb", 23)(36, MainLayoutComponent_router_outlet_36_Template, 1, 0, "router-outlet", 24);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
-    const langMenu_r15 = \u0275\u0275reference(26);
-    const loginBtn_r16 = \u0275\u0275reference(35);
+    const langMenu_r10 = \u0275\u0275reference(23);
+    const loginBtn_r11 = \u0275\u0275reference(32);
     \u0275\u0275advance();
     \u0275\u0275styleProp("border-right", ctx.isCollapsed ? "none" : ctx.sidebarBorderRight);
     \u0275\u0275property("nzWidth", ctx.sidebarWidth)("nzCollapsedWidth", 80);
@@ -3239,23 +3208,17 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275advance(6);
     \u0275\u0275property("nzInlineCollapsed", ctx.isCollapsed);
     \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", ctx.claims.CQRS_DASHBOARD.VIEW);
-    \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", ctx.claims.AUTH.VIEW_USERS);
-    \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", ctx.claims.FILES_FOLDERS.VIEW);
-    \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", ctx.claims.TEST_MODULE.VIEW);
+    \u0275\u0275property("ngForOf", ctx.menuItems);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", !ctx.isCollapsed);
     \u0275\u0275advance(6);
     \u0275\u0275property("nzType", ctx.isCollapsed ? "menu-unfold" : "menu-fold");
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzDropdownMenu", langMenu_r15);
+    \u0275\u0275property("nzDropdownMenu", langMenu_r10);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", ctx.currentLang === "vi" ? "Ti\u1EBFng Vi\u1EC7t" : "English", " ");
     \u0275\u0275advance(9);
-    \u0275\u0275property("ngIf", \u0275\u0275pipeBind1(33, 18, ctx.user$))("ngIfElse", loginBtn_r16);
+    \u0275\u0275property("ngIf", \u0275\u0275pipeBind1(30, 15, ctx.user$))("ngIfElse", loginBtn_r11);
     \u0275\u0275advance(6);
     \u0275\u0275property("ngIf", ctx.breadcrumbs.length > 0);
   }
@@ -3327,87 +3290,28 @@ var MainLayoutComponent = _MainLayoutComponent;
     </div>
 
     <ul nz-menu nzTheme="dark" nzMode="inline" [nzInlineCollapsed]="isCollapsed">
-      <!-- <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="home"></span>
-        <span><a routerLink="/">{{ 'Trang ch\u1EE7' | translate }}</a></span>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="info-circle"></span>
-        <span><a routerLink="/about">{{ 'Gi\u1EDBi thi\u1EC7u' | translate }}</a></span>
-      </li>
-      <li nz-menu-item nzMatchRouter>
-        <span nz-icon nzType="phone"></span>
-        <span><a routerLink="/contact">{{ 'Li\xEAn h\u1EC7' | translate }}</a></span>
-      </li> -->
+      <ng-container *ngFor="let item of menuItems">
+        <!-- Single Menu Item -->
+        <ng-container *ngIf="!item.children">
+          <li nz-menu-item nzMatchRouter *appClaimCheck="item.claim || ''">
+            <span nz-icon [nzType]="item.icon || ''" *ngIf="item.icon"></span>
+            <span><a [routerLink]="item.route">{{ item.label | translate }}</a></span>
+          </li>
+        </ng-container>
 
-      <li nz-submenu [nzTitle]="dashboardTitle" nzIcon="dashboard" *appClaimCheck="claims.CQRS_DASHBOARD.VIEW" [(nzOpen)]="openMap['dashboard']">
-        <ng-template #dashboardTitle>
-          <span>{{ 'Dashboard' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/cqrs-dashboard">{{ 'CQRS Dashboard' | translate }}</a>
+        <!-- Submenu Item -->
+        <ng-container *ngIf="item.children">
+          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *appClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
+            <ul>
+              <ng-container *ngFor="let child of item.children">
+                <li nz-menu-item nzMatchRouter *appClaimCheck="child.claim || ''">
+                  <a [routerLink]="child.route">{{ child.label | translate }}</a>
+                </li>
+              </ng-container>
+            </ul>
           </li>
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="authTitle" nzIcon="lock" *appClaimCheck="claims.AUTH.VIEW_USERS" [(nzOpen)]="openMap['auth']">
-        <ng-template #authTitle>
-          <span>{{ 'Core Infra Auth' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/users">{{ 'Ng\u01B0\u1EDDi d\xF9ng' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/roles">{{ 'Vai tr\xF2' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/claims">{{ 'Quy\u1EC1n' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter *appClaimCheck="claims.AUTH.MANAGE_ACL">
-            <a routerLink="/modules/core-infra-auth/acl">{{ 'Qu\u1EA3n l\xFD ACL' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/change-password">{{ '\u0110\u1ED5i m\u1EADt kh\u1EA9u' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/core-infra-auth/authorize-info">{{ 'Th\xF4ng tin ph\xE2n quy\u1EC1n' | translate }}</a>
-          </li>
-
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="filesFoldersTitle" nzIcon="folder" *appClaimCheck="claims.FILES_FOLDERS.VIEW" [(nzOpen)]="openMap['files']">
-        <ng-template #filesFoldersTitle>
-          <span>{{ 'Qu\u1EA3n l\xFD t\xE0i li\u1EC7u' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/files-folders">{{ 'Kh\xE1m ph\xE1 t\u1EC7p tin' | translate }}</a>
-          </li>
-        </ul>
-      </li>
-
-      <li nz-submenu [nzTitle]="testTitle" nzIcon="experiment" *appClaimCheck="claims.TEST_MODULE.VIEW" [(nzOpen)]="openMap['test']">
-        <ng-template #testTitle>
-          <span>{{ 'M\xF4-\u0111un th\u1EED nghi\u1EC7m' | translate }}</span>
-        </ng-template>
-        <ul>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/firestore">{{ 'Th\u1EED nghi\u1EC7m Firestore' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/fcm">{{ 'Th\u1EED nghi\u1EC7m FCM' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/cqrs-dashboard/cqrs">{{ 'Th\u1EED nghi\u1EC7m CQRS' | translate }}</a>
-          </li>
-          <li nz-menu-item nzMatchRouter>
-            <a routerLink="/modules/test/editor">{{ 'Th\u1EED nghi\u1EC7m CKEditor' | translate }}</a>
-          </li>
-        </ul>
-      </li>
+        </ng-container>
+      </ng-container>
     </ul>
     <div class="resize-handle" (mousedown)="onMouseDown($event)" *ngIf="!isCollapsed"></div>
   </nz-sider>
@@ -3482,7 +3386,7 @@ var MainLayoutComponent = _MainLayoutComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 36 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 37 });
 })();
 
 // src/app/layouts/auth-layout/auth-layout.component.ts
