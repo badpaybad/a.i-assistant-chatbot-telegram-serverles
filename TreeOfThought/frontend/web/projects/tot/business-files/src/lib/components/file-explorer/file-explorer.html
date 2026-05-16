@@ -186,29 +186,31 @@
         </ng-template>
 
         <ng-template #fileActionsTpl let-data>
-          <div class="action-buttons">
+          <div style="display: flex; gap: 4px; flex-direction: column;">
             <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)">
               Chèn
             </button>
-            <a nz-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
-              <span nz-icon nzType="download"></span>
-            </a>
-            <button nz-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
-              <span nz-icon nzType="share-alt"></span>
-            </button>
-            <button 
-              nz-button 
-              nzType="text" 
-              nz-dropdown 
-              [nzDropdownMenu]="fileMenu"
-              nz-popover
-              [nzPopoverContent]="renameTemplate"
-              [nzPopoverTrigger]="null"
-              [nzPopoverVisible]="renamePopoverVisibleId === data.id"
-              [nzPopoverPlacement]="'bottomRight'"
-            >
-              <span nz-icon nzType="more"></span>
-            </button>
+            <div style="display: flex; gap: 4px;">
+              <a nz-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
+                <span nz-icon nzType="download"></span>
+              </a>
+              <button nz-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
+                <span nz-icon nzType="share-alt"></span>
+              </button>
+              <button 
+                nz-button 
+                nzType="text" 
+                nz-dropdown 
+                [nzDropdownMenu]="fileMenu"
+                nz-popover
+                [nzPopoverContent]="renameTemplate"
+                [nzPopoverTrigger]="null"
+                [nzPopoverVisible]="renamePopoverVisibleId === data.id"
+                [nzPopoverPlacement]="'bottomRight'"
+              >
+                <span nz-icon nzType="more"></span>
+              </button>
+            </div>
             <nz-dropdown-menu #fileMenu="nzDropdownMenu">
               <ul nz-menu>
                 <li nz-menu-item (click)="openMoveModal(data, 'file')">Di chuyển</li>

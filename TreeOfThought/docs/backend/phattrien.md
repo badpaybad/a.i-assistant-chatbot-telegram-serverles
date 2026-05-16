@@ -87,6 +87,11 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
     - `OR`: Chỉ cần thỏa mãn 1 trong các claims/roles.
     - `AND`: Phải thỏa mãn tất cả.
 - **ACL**: Sử dụng `ResourceType` và `Action` (Bitmask) để kiểm tra quyền trên resource cụ thể.
+- **Quy chuẩn Paging (Phân trang)**:
+    - Mọi API trả về danh sách (List/Search) bắt buộc hỗ trợ phân trang Server-side.
+    - **Request**: Chấp nhận `pageIndex` (1-based) và `pageSize`. Mặc định `pageSize = 10`.
+    - **Response**: Trả về cấu trúc JSON: `{ "items": [...], "total": 123 }`.
+    - **Lưu ý**: `total` phải là tổng số bản ghi thực tế trong DB sau khi đã áp dụng các bộ lọc (filter), nhưng **không** bị giới hạn bởi `Skip/Take` của paging. Điều này cực kỳ quan trọng để Frontend hiển thị thanh phân trang chính xác.
 
 ---
 

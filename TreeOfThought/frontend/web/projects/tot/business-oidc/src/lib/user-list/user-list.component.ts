@@ -48,7 +48,14 @@ import { ViewChild, TemplateRef } from '@angular/core';
   ],
   template: `
     <div class="page-header">
-      <h2>{{ 'Danh sách người dùng' | translate }}</h2>
+      <nz-space>
+        <tot-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
+          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
+        </tot-button>
+      </nz-space>
+    </div>
+
+    <ng-template #userExtraTpl>
       <nz-space>
         <tot-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
           <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | translate }}
@@ -56,11 +63,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
         <tot-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
           <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
         </tot-button>
-        <tot-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
-          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
-        </tot-button>
       </nz-space>
-    </div>
+    </ng-template>
 
     <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
       <div nz-row [nzGutter]="[16, 16]">
@@ -118,7 +122,14 @@ import { ViewChild, TemplateRef } from '@angular/core';
       </div>
     </nz-card>
 
-    <tot-table [data]="users" [columns]="userColumns" [loading]="loading"></tot-table>
+    <tot-table 
+      [data]="users" 
+      [columns]="userColumns" 
+      [loading]="loading" 
+      [title]="'Danh sách người dùng'"
+      [extra]="userExtraTpl"
+      [frontPagination]="true"
+    ></tot-table>
 
     <ng-template #avatarTpl let-data>
       <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
@@ -169,12 +180,12 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </ng-template>
 
     <ng-template #actionsTpl let-data>
-      <nz-space>
-        <tot-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
-        <tot-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
+      <div style="display: flex; gap: 4px; flex-direction: column;">
+        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.username?.toLowerCase() === 'admin'"
                 (click)="deleteUser(data)">{{ 'Xóa' | translate }}</tot-button>
-      </nz-space>
+      </div>
     </ng-template>
 
     <input type="file" #avatarInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
@@ -368,6 +379,7 @@ export class UserListComponent implements OnInit {
   @ViewChild('claimsTpl', { static: true }) claimsTpl!: TemplateRef<any>;
   @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
   @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+  @ViewChild('userExtraTpl', { static: true }) userExtraTpl!: TemplateRef<any>;
 
   userColumns: TotTableColumn[] = [];
 

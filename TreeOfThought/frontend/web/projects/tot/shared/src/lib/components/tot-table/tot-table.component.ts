@@ -4,6 +4,7 @@ import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { TranslateModule } from '@ngx-translate/core';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
+import { NzCardModule } from 'ng-zorro-antd/card';
 
 export interface TotTableColumn {
   title: string;
@@ -21,95 +22,104 @@ export interface TotTableColumn {
 @Component({
   selector: 'tot-table',
   standalone: true,
-  imports: [CommonModule, NzTableModule, TranslateModule, NzTooltipModule, NzIconModule],
+  imports: [CommonModule, NzTableModule, TranslateModule, NzTooltipModule, NzIconModule, NzCardModule],
   template: `
-    <nz-table
-      #basicTable
-      [nzData]="data"
-      [nzLoading]="loading"
-      [nzTotal]="total"
-      [nzPageIndex]="pageIndex"
-      [nzPageSize]="pageSize"
-      [nzShowSizeChanger]="true"
-      [nzPageSizeOptions]="[5, 10, 20, 25, 50, 100, 200]"
-      [nzFrontPagination]="frontPagination"
-      (nzQueryParams)="onQueryParamsChange($event)"
-      [nzScroll]="scroll"
-      [nzSize]="size"
-      [nzShowPagination]="showPagination"
-      (nzCurrentPageDataChange)="onCurrentPageDataChange($event)"
-    >
-      <thead>
-        <tr>
-          <th
-            *ngIf="showSelection"
-            nzWidth="40px"
-            [nzLeft]="true"
-            [nzShowCheckbox]="true"
-            [nzChecked]="allChecked"
-            [nzIndeterminate]="indeterminate"
-            (nzCheckedChange)="onAllChecked($event)"
-          ></th>
-          <th *ngIf="expandTemplate" nzWidth="40px" [nzLeft]="showSelection ? '40px' : true"></th>
-          <th
-            *ngFor="let col of columns"
-            [nzWidth]="col.width || null"
-            [nzShowSort]="col.sortable"
-            [nzSortFn]="col.sortable ? true : null"
-            [nzColumnKey]="col.key"
-            [nzShowFilter]="col.filterable"
-            [nzFilters]="col.filterOptions || []"
-            [nzFilterFn]="col.filterable ? true : null"
-            [nzAlign]="col.align || 'left'"
-            [nzLeft]="col.left || false"
-            [nzRight]="col.right || false"
-          >
-            {{ col.title | translate }}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <ng-container *ngFor="let item of basicTable.data; let i = index">
+    <ng-container *ngIf="title; else simpleTable">
+      <nz-card [nzTitle]="title | translate" [nzExtra]="extra">
+        <ng-container *ngTemplateOutlet="simpleTable"></ng-container>
+      </nz-card>
+    </ng-container>
+
+    <ng-template #simpleTable>
+      <nz-table
+        #basicTable
+        [nzData]="data"
+        [nzLoading]="loading"
+        [nzTotal]="total"
+        [nzPageIndex]="pageIndex"
+        [nzPageSize]="pageSize"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[5, 10, 20, 25, 50, 100, 200]"
+        [nzFrontPagination]="frontPagination"
+        (nzQueryParams)="onQueryParamsChange($event)"
+        [nzScroll]="scroll"
+        [nzSize]="size"
+        [nzShowPagination]="showPagination"
+        [nzHideOnSinglePage]="false"
+        (nzCurrentPageDataChange)="onCurrentPageDataChange($event)"
+      >
+        <thead>
           <tr>
-            <td
+            <th
               *ngIf="showSelection"
+              nzWidth="40px"
               [nzLeft]="true"
               [nzShowCheckbox]="true"
-              [nzChecked]="setOfCheckedId.has(item[idKey])"
-              (nzCheckedChange)="onItemChecked(item, $event)"
-            ></td>
-            <td
-              *ngIf="expandTemplate"
-              [nzLeft]="showSelection ? '40px' : true"
-              [nzExpand]="item.expand"
-              (nzExpandChange)="onExpandChange(item, $event)"
-            ></td>
-            <td
+              [nzChecked]="allChecked"
+              [nzIndeterminate]="indeterminate"
+              (nzCheckedChange)="onAllChecked($event)"
+            ></th>
+            <th *ngIf="expandTemplate" nzWidth="40px" [nzLeft]="showSelection ? '40px' : true"></th>
+            <th
               *ngFor="let col of columns"
+              [nzWidth]="col.width || null"
+              [nzShowSort]="col.sortable"
+              [nzSortFn]="col.sortable ? true : null"
+              [nzColumnKey]="col.key"
+              [nzShowFilter]="col.filterable"
+              [nzFilters]="col.filterOptions || []"
+              [nzFilterFn]="col.filterable ? true : null"
               [nzAlign]="col.align || 'left'"
               [nzLeft]="col.left || false"
               [nzRight]="col.right || false"
             >
-              <ng-container *ngIf="col.template; else textOnly">
+              {{ col.title | translate }}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let item of basicTable.data; let i = index">
+            <tr>
+              <td
+                *ngIf="showSelection"
+                [nzLeft]="true"
+                [nzShowCheckbox]="true"
+                [nzChecked]="setOfCheckedId.has(item[idKey])"
+                (nzCheckedChange)="onItemChecked(item, $event)"
+              ></td>
+              <td
+                *ngIf="expandTemplate"
+                [nzLeft]="showSelection ? '40px' : true"
+                [nzExpand]="item.expand"
+                (nzExpandChange)="onExpandChange(item, $event)"
+              ></td>
+              <td
+                *ngFor="let col of columns"
+                [nzAlign]="col.align || 'left'"
+                [nzLeft]="col.left || false"
+                [nzRight]="col.right || false"
+              >
+                <ng-container *ngIf="col.template; else textOnly">
+                  <ng-container
+                    *ngTemplateOutlet="col.template; context: { $implicit: item, index: i, key: col.key }"
+                  ></ng-container>
+                </ng-container>
+                <ng-template #textOnly>
+                  {{ getFieldValue(item, col.key) }}
+                </ng-template>
+              </td>
+            </tr>
+            <tr *ngIf="expandTemplate" [nzExpand]="item.expand">
+              <td [attr.colspan]="columns.length + (showSelection ? 1 : 0) + 1">
                 <ng-container
-                  *ngTemplateOutlet="col.template; context: { $implicit: item, index: i, key: col.key }"
+                  *ngTemplateOutlet="expandTemplate; context: { $implicit: item, index: i }"
                 ></ng-container>
-              </ng-container>
-              <ng-template #textOnly>
-                {{ getFieldValue(item, col.key) }}
-              </ng-template>
-            </td>
-          </tr>
-          <tr *ngIf="expandTemplate" [nzExpand]="item.expand">
-            <td [attr.colspan]="columns.length + (showSelection ? 1 : 0) + 1">
-              <ng-container
-                *ngTemplateOutlet="expandTemplate; context: { $implicit: item, index: i }"
-              ></ng-container>
-            </td>
-          </tr>
-        </ng-container>
-      </tbody>
-    </nz-table>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </nz-table>
+    </ng-template>
   `,
   styles: [
     `
@@ -119,6 +129,21 @@ export interface TotTableColumn {
       }
       ::ng-deep .ant-table-thead > tr > th {
         white-space: nowrap;
+        background-color: #fafafa !important;
+      }
+      ::ng-deep .ant-table-cell-fix-left,
+      ::ng-deep .ant-table-cell-fix-right {
+        background-color: #fff !important;
+      }
+      ::ng-deep .ant-table-tbody > tr:hover > td {
+        background-color: #f5f5f5 !important;
+      }
+      ::ng-deep .ant-table-tbody > tr > td {
+        background-color: #fff !important;
+      }
+      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-left,
+      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-right {
+        background-color: #fafafa !important;
       }
     `,
   ],
@@ -135,6 +160,8 @@ export class TotTableComponent {
   @Input() size: 'default' | 'middle' | 'small' = 'default';
   @Input() showPagination = true;
   @Input() expandTemplate?: TemplateRef<any>;
+  @Input() title?: string;
+  @Input() extra?: TemplateRef<any>;
 
   // Selection
   @Input() showSelection = false;

@@ -15,7 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { TotAutocompleteComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
 import { ViewChild, TemplateRef } from '@angular/core';
 
@@ -38,15 +38,15 @@ import { ViewChild, TemplateRef } from '@angular/core';
     NzCardModule,
     TranslateModule,
     TotAutocompleteComponent,
+    TotButtonComponent,
     TotTableComponent
   ],
   template: `
-    <div class="page-header">
-      <h2>{{ 'Vai trò' | translate }}</h2>
-      <button nz-button nzType="primary" (click)="showCreateModal()">
+    <ng-template #roleExtraTpl>
+      <tot-button nzType="primary" (click)="showCreateModal()">
         <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
-      </button>
-    </div>
+      </tot-button>
+    </ng-template>
 
     <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
       <div nz-row [nzGutter]="[16, 16]">
@@ -71,7 +71,14 @@ import { ViewChild, TemplateRef } from '@angular/core';
       </div>
     </nz-card>
 
-    <tot-table [data]="roles" [columns]="roleColumns" [loading]="loading"></tot-table>
+    <tot-table 
+      [data]="roles" 
+      [columns]="roleColumns" 
+      [loading]="loading"
+      [title]="'Vai trò'"
+      [extra]="roleExtraTpl"
+      [frontPagination]="true"
+    ></tot-table>
 
     <ng-template #roleTpl let-data>
       <strong>{{ data.name }}</strong>
@@ -91,12 +98,12 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </ng-template>
 
     <ng-template #actionsTpl let-data>
-      <nz-space>
-        <button *nzSpaceItem nz-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</button>
-        <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+      <div style="display: flex; gap: 4px; flex-direction: column;">
+        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()"
-                (click)="deleteRole(data)">{{ 'Xóa' | translate }}</button>
-      </nz-space>
+                (click)="deleteRole(data)">{{ 'Xóa' | translate }}</tot-button>
+      </div>
     </ng-template>
 
     <!-- Modal Thêm/Sửa Vai trò -->
@@ -195,6 +202,7 @@ export class RoleListComponent implements OnInit {
   @ViewChild('roleTpl', { static: true }) roleTpl!: TemplateRef<any>;
   @ViewChild('claimsTpl', { static: true }) claimsTpl!: TemplateRef<any>;
   @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+  @ViewChild('roleExtraTpl', { static: true }) roleExtraTpl!: TemplateRef<any>;
 
   roleColumns: TotTableColumn[] = [];
 

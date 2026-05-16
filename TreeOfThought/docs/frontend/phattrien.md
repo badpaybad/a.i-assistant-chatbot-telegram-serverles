@@ -42,18 +42,28 @@ Mọi module nghiệp vụ phải sử dụng các component từ `@tot/shared` 
 - **Trạng thái**: Có loading indicator rõ ràng khi đang fetch dữ liệu.
 
 ### 2.3. Tot Table
-Thành phần hiển thị danh sách dữ liệu chuyên sâu, hỗ trợ từ các bảng đơn giản đến các dashboard phức tạp (như CQRS Dashboard).
+Thành phần hiển thị danh sách dữ liệu chuyên sâu, hỗ trợ từ các bảng đơn giản đến các dashboard phức tạp.
+- **Giao diện Cao cấp (Card Wrapper)**:
+    - **Bắt buộc**: Mọi bảng nên được bọc trong một `nz-card` để tạo cảm giác chuyên nghiệp.
+    - **Sử dụng**: Dùng Input `[title]` để hiển thị tiêu đề bảng và `[extra]` (TemplateRef) để đặt các nút chức năng (Thêm mới, Refresh...) vào góc phải header của card.
 - **Phân trang (Paging)**: 
-    - **Bắt buộc có**: Paging tiện lợi (tới trang trước/sau, nhảy trang bất kỳ).
+    - **Bắt buộc hiển thị**: Luôn hiển thị thanh phân trang ngay cả khi chỉ có 1 trang (`nzHideOnSinglePage: false`) để người dùng luôn thấy các tùy chọn size.
     - **Page Size**: Mặc định là **10**. Cho phép chọn các mức: 5, 10, 20, 25, 50, 100, 200.
-    - **Cơ chế**: Hỗ trợ linh hoạt cả Client-side paging (frontPagination) và Server-side paging tùy theo khối lượng dữ liệu.
-- **Sắp xếp & Bộ lọc (Sort & Filter)**: Thường xuyên được sử dụng. Hỗ trợ sắp xếp đa cột và bộ lọc tùy chỉnh (text, date, hoặc checkbox) cho từng cột.
-- **Cột & Hàng Cố định (Fixed Columns & Rows)**: Tùy chọn theo yêu cầu đặc thù. Hỗ trợ định nghĩa các cột cố định bên trái hoặc bên phải để thuận tiện khi scroll ngang, và cố định hàng (fixed header) cho cuộn dọc.
-- **Mở rộng dòng (Expandable Rows)**: Tùy chọn. Cung cấp `expandTemplate` để hiển thị nội dung chi tiết, logs, hoặc dữ liệu JSON phức tạp ngay dưới mỗi dòng mà không cần chuyển trang.
-- **Template tùy chỉnh (Custom Cell Templates)**: Cho phép truyền `nz-template` để render các UI elements phức tạp bên trong cell (ví dụ: Tag màu sắc cho trạng thái, nhóm nút hành động, icon).
-- **Thao tác hàng loạt (Bulk Actions)**: Thường được tích hợp. Hỗ trợ checkbox selection để người dùng thực hiện các tác vụ trên nhiều bản ghi cùng lúc.
-- **Tối ưu hiệu năng**: Tích hợp **Virtual Scroll** để đảm bảo giao diện phản hồi mượt mà ngay cả khi hiển thị danh sách có hàng ngàn bản ghi.
-- **Quy chuẩn**: Mọi bảng danh sách trong toàn bộ hệ thống (nghiệp vụ và app shell) bắt buộc sử dụng `tot-table` để đảm bảo tính đồng nhất. Page size khởi tạo luôn phải là **10**.
+- **Cột Hành động (Action Column)**:
+    - **Vị trí**: Luôn cố định bên phải (`right: true`).
+    - **Độ rộng**: Khuyến nghị **150px**.
+    - **Layout**: Sử dụng **Vertical Layout** (mỗi nút một dòng, `flex-direction: column`) để tiết kiệm chiều ngang và đảm bảo tính thẩm mỹ.
+    - **Component**: Chỉ sử dụng `tot-button` bên trong các template hành động.
+- **Cấu trúc Template (Hoisting)**:
+    - Để tránh lỗi tham chiếu `ViewChild`, tất cả các `ng-template` dùng cho cell/extra phải được định nghĩa ở **CUỐI CÙNG** của file template, sau component `tot-table`.
+- **Màu sắc & Style**:
+    - **Đồng nhất**: Màu nền Header là `#fafafa`. Màu nền các ô (bao gồm cả ô cố định) là `#fff`.
+    - **Hover**: Hiệu ứng hover dòng phải rõ ràng và bao phủ toàn bộ các cột cố định.
+- **Tính năng nâng cao**:
+    - **Sắp xếp & Bộ lọc**: Hỗ trợ sắp xếp đa cột và bộ lọc tùy chỉnh.
+    - **Mở rộng dòng (Expandable Rows)**: Cung cấp `expandTemplate` để hiển thị nội dung chi tiết.
+    - **Virtual Scroll**: Tích hợp sẵn cho danh sách lớn để đảm bảo hiệu năng.
+- **Quy chuẩn**: Mọi bảng danh sách trong toàn bộ hệ thống bắt buộc sử dụng `tot-table`. Page size khởi tạo luôn là **10**.
 ---
 
 ## 3. Hệ thống CQRS Message Bus (Event Bus)

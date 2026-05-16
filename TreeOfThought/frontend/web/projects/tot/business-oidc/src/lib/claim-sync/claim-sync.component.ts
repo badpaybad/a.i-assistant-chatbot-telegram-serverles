@@ -15,7 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 
 @Component({
   selector: 'app-claim-sync',
@@ -34,6 +34,7 @@ import { TotTableComponent, TotTableColumn } from '@tot/shared';
     NzDatePickerModule,
     NzGridModule,
     TranslateModule,
+    TotButtonComponent,
     TotTableComponent
   ],
   template: `
@@ -70,14 +71,14 @@ import { TotTableComponent, TotTableColumn } from '@tot/shared';
       </div>
     </nz-card>
 
-    <tot-table [data]="existingClaims" [columns]="claimColumns" [loading]="loading"></tot-table>
+    <tot-table [data]="existingClaims" [columns]="claimColumns" [loading]="loading" [title]="'Danh sách quyền'" [frontPagination]="true"></tot-table>
 
     <ng-template #actionsTpl let-data>
-      <nz-space>
-        <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+      <div style="display: flex; gap: 4px; flex-direction: column;">
+        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
-                (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
-      </nz-space>
+                (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</tot-button>
+      </div>
     </ng-template>
 
     <ng-template #dateTpl let-data let-key="key">
@@ -149,7 +150,7 @@ export class ClaimSyncComponent implements OnInit {
       { title: 'Quyền', key: 'name' },
       { title: 'Mô tả', key: 'description' },
       { title: 'Ngày tạo', key: 'createdAt', template: this.dateTpl },
-      { title: 'Hành động', width: '120px', template: this.actionsTpl }
+      { title: 'Hành động', width: '120px', template: this.actionsTpl, right: true }
     ];
     this.loadClaims();
   }

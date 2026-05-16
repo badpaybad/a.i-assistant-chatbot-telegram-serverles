@@ -108,6 +108,14 @@ Các app mobi
         cần trao đổi dữ liệu nghiệp vụ khác sẽ qua command event 
         có thể dùng session nếu jwt chưa đủ thông tin 
     tùy vào nhu cầu có thể tạo thêm project api restful, các nghiệp vụ hiện tại để kiểm tra dễ dàng đang đưa vào sử dụng tại TreeOfThought/backend/Core.Web.Api
+    
+    **Quy chuẩn Paging (Phân trang)**:
+        - Mọi API trả về danh sách (List/Search) bắt buộc phải hỗ trợ phân trang.
+        - Tham số đầu vào (Request): Phải hỗ trợ `pageIndex` (mặc định là 1) và `pageSize` (mặc định là 10).
+        - Cấu trúc trả về (Response): Bắt buộc trả về một Object chứa:
+            - `items`: Danh sách dữ liệu của trang hiện tại.
+            - `total`: Tổng số bản ghi thỏa mãn điều kiện lọc (không bị giới hạn bởi paging).
+        - Mục đích: Đảm bảo Frontend luôn có đủ thông tin để hiển thị thanh phân trang chính xác.
 
 
 **đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**

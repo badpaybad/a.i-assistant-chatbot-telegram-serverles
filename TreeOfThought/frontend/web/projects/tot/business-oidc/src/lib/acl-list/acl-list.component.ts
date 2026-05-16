@@ -17,7 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { TotAutocompleteComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
@@ -41,6 +41,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     NzDividerModule,
     TranslateModule,
     TotAutocompleteComponent,
+    TotButtonComponent,
     TotTableComponent
   ],
   template: `
@@ -66,7 +67,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       </nz-card>
     </div>
 
-    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading"></tot-table>
+    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh sách ACL'" [frontPagination]="true"></tot-table>
 
     <ng-template #subjectTpl let-data>
       <div *ngIf="data.userId" class="subject-info">
@@ -97,7 +98,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </ng-template>
 
     <ng-template #actionsTpl let-data>
-      <button nz-button nzType="primary" nzDanger nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | translate }}</button>
+      <tot-button nzType="primary" [nzDanger]="true" nzSize="small" (click)="deleteAcl(data.id)">{{ 'Xóa' | translate }}</tot-button>
     </ng-template>
 
     <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createAcl()">
@@ -242,7 +243,7 @@ export class AclListComponent implements OnInit {
       { title: 'Đối tượng', template: this.subjectTpl },
       { title: 'Tài nguyên', template: this.resourceTpl },
       { title: 'Mặt nạ quyền', template: this.maskTpl },
-      { title: 'Hành động', width: '100px', template: this.actionsTpl }
+      { title: 'Hành động', width: '120px', template: this.actionsTpl, right: true }
     ];
     this.loadMetadata();
   }

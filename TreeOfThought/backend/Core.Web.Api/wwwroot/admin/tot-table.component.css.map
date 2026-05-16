@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;5720151797d9dd282d10d1252ee2ef69f096e1149481213c88eee3850b94de39;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts"],
-  "sourcesContent": ["\n      :host {\n        display: block;\n        width: 100%;\n      }\n      ::ng-deep .ant-table-thead > tr > th {\n        white-space: nowrap;\n      }\n    "],
-  "mappings": ";AACM;AACE,WAAS;AACT,SAAO;AACT;AACA,UAAU,CAAC,gBAAgB,EAAE,GAAG,EAAE;AAChC,eAAa;AACf;",
+  "sources": ["angular:styles/component:css;37b6b59055d6f13eb2dfc9c496885014520bcbd737c66d76ea189c8aa597fe82;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts"],
+  "sourcesContent": ["\n      :host {\n        display: block;\n        width: 100%;\n      }\n      ::ng-deep .ant-table-thead > tr > th {\n        white-space: nowrap;\n        background-color: #fafafa !important;\n      }\n      ::ng-deep .ant-table-cell-fix-left,\n      ::ng-deep .ant-table-cell-fix-right {\n        background-color: #fff !important;\n      }\n      ::ng-deep .ant-table-tbody > tr:hover > td {\n        background-color: #f5f5f5 !important;\n      }\n      ::ng-deep .ant-table-tbody > tr > td {\n        background-color: #fff !important;\n      }\n      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-left,\n      ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-right {\n        background-color: #fafafa !important;\n      }\n    "],
+  "mappings": ";AACM;AACE,WAAS;AACT,SAAO;AACT;AACA,UAAU,CAAC,gBAAgB,EAAE,GAAG,EAAE;AAChC,eAAa;AACb,oBAAkB;AACpB;AACA,UAAU,CAAC;AACX,UAAU,CAAC;AACT,oBAAkB;AACpB;AACA,UAAU,CAAC,gBAAgB,EAAE,EAAE,OAAO,EAAE;AACtC,oBAAkB;AACpB;AACA,UAAU,CAHC,gBAGgB,EAAE,GAAG,EAAE;AAChC,oBAAkB;AACpB;AACA,UAAU,CAdC,gBAcgB,EAAE,GAAG,EAAE,EAAE,CAVzB;AAWX,UAAU,CAfC,gBAegB,EAAE,GAAG,EAAE,EAAE,CAVzB;AAWT,oBAAkB;AACpB;",
   "names": []
 }
