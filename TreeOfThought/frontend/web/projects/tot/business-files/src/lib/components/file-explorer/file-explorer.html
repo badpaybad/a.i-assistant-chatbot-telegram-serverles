@@ -99,53 +99,46 @@
           </div>
         </ng-template>
         
-        <nz-table 
-          #folderTable 
-          [nzData]="folders" 
-          [nzShowPagination]="false" 
-          nzSize="middle"
-        >
-          <thead>
-            <tr>
-              <th nzWidth="40px"></th>
-              <th>Tên</th>
-              <th>Loại</th>
-              <th nzWidth="150px">Hành động</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let folder of folderTable.data">
-              <td><span nz-icon nzType="folder" nzTheme="fill" style="color: #ffca28"></span></td>
-              <td><a (click)="navigateToFolder(folder.id)">{{ folder.name }}</a></td>
-              <td>Thư mục</td>
-              <td>
-                <div class="action-buttons">
-                  <button 
-                    nz-button 
-                    nzType="text" 
-                    nz-dropdown 
-                    [nzDropdownMenu]="folderMenu"
-                    nz-popover
-                    [nzPopoverContent]="renameTemplate"
-                    [nzPopoverTrigger]="null"
-                    [nzPopoverVisible]="renamePopoverVisibleId === folder.id"
-                    [nzPopoverPlacement]="'bottomRight'"
-                  >
-                    <span nz-icon nzType="more"></span>
-                  </button>
-                  <nz-dropdown-menu #folderMenu="nzDropdownMenu">
-                    <ul nz-menu>
-                      <li nz-menu-item (click)="openMoveModal(folder, 'folder')">Di chuyển</li>
-                      <li nz-menu-item (click)="renameItem(folder, 'folder')">Đổi tên</li>
-                      <li nz-menu-divider></li>
-                      <li nz-menu-item nzDanger (click)="deleteFolder(folder.id)">Xóa</li>
-                    </ul>
-                  </nz-dropdown-menu>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <div class="folder-grid">
+          <!-- Up Folder -->
+          <div class="folder-card folder-up" *ngIf="hasParent" (click)="navigateUp()">
+            <div class="folder-icon">
+              <span nz-icon nzType="arrow-up" nzTheme="outline" style="color: #8c8c8c"></span>
+            </div>
+            <div class="folder-name">...</div>
+          </div>
+          <div class="folder-card" *ngFor="let folder of folders" (click)="navigateToFolder(folder.id)">
+            <div class="folder-icon">
+              <span nz-icon nzType="folder" nzTheme="fill"></span>
+            </div>
+            <div class="folder-name" nz-tooltip [nzTooltipTitle]="folder.name">{{ folder.name }}</div>
+            
+            <div class="folder-card-actions" (click)="$event.stopPropagation()">
+              <button 
+                nz-button 
+                nzType="text" 
+                nzSize="small"
+                nz-dropdown 
+                [nzDropdownMenu]="folderMenu"
+                nz-popover
+                [nzPopoverContent]="renameTemplate"
+                [nzPopoverTrigger]="null"
+                [nzPopoverVisible]="renamePopoverVisibleId === folder.id"
+                [nzPopoverPlacement]="'bottomRight'"
+              >
+                <span nz-icon nzType="more"></span>
+              </button>
+              <nz-dropdown-menu #folderMenu="nzDropdownMenu">
+                <ul nz-menu>
+                  <li nz-menu-item (click)="openMoveModal(folder, 'folder')">Di chuyển</li>
+                  <li nz-menu-item (click)="renameItem(folder, 'folder')">Đổi tên</li>
+                  <li nz-menu-divider></li>
+                  <li nz-menu-item nzDanger (click)="deleteFolder(folder.id)">Xóa</li>
+                </ul>
+              </nz-dropdown-menu>
+            </div>
+          </div>
+        </div>
       </nz-collapse-panel>
     </nz-collapse>
 

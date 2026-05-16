@@ -142,7 +142,20 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
 
   navigateToFolder(folderId: string | null): void {
     this.selectedFolderId = folderId;
+    this.filesFoldersService.notifySelectFolder(folderId);
     this.loadContent();
+  }
+
+  get hasParent(): boolean {
+    return this.selectedFolderId !== null;
+  }
+
+  navigateUp(): void {
+    if (!this.hasParent) return;
+    const parentId = (this.breadcrumbs && this.breadcrumbs.length > 1) 
+      ? this.breadcrumbs[this.breadcrumbs.length - 2].id 
+      : null;
+    this.navigateToFolder(parentId);
   }
 
   async onUpload(event: any): Promise<void> {
@@ -153,11 +166,23 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
       this.loadingUpload = true;
       const result: any = await this.filesFoldersService.uploadFile(this.selectedFolderId, file);
       this.message.loading('Đang xử lý upload file...');
-      this.waitForTask(result.trackingId, 'File đã được upload thành công');
+      this.waitForTask(result.trackingId, 'File đã được upload thành công', (data) => {
+        if (data && data.fileId) {
+          // Tự động mở modal thiết lập quyền sau khi upload thành công
+          this.openShareModal({ 
+            id: data.fileId, 
+            name: data.name || file.name,
+            size: data.size || file.size,
+            mimeType: data.mimeType || file.type
+          });
+        }
+      });
     } catch (error) {
       this.message.error('Lỗi khi upload file');
     } finally {
       this.loadingUpload = false;
+      // Clear file input
+      event.target.value = '';
     }
   }
 
@@ -245,7 +270,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     this.renamingItem = null;
   }
 
-  private waitForTask(trackingId: string, successMessage: string): void {
+  private waitForTask(trackingId: string, successMessage: string, onComplete?: (data: any) => void): void {
     if (!trackingId) {
       this.loadContent();
       return;
@@ -256,6 +281,11 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
         this.message.success(data.message || successMessage);
         this.loadContent();
         this.folderCreated.emit(); // To refresh folder tree
+        
+        if (onComplete) {
+          onComplete(data);
+        }
+        
         sub(); // Unsubscribe
       } else if (data.status === 'Error') {
         this.message.error(data.message || 'Thao tác thất bại');

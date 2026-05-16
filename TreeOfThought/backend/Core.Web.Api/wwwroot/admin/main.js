@@ -16,7 +16,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-5A2R6WI6.js";
+} from "./chunk-YSRSJOXE.js";
 import "./chunk-WVLO4HWC.js";
 import {
   NzCheckboxComponent,
@@ -4358,7 +4358,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-Q5VGIQJF.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-EDNIRVTE.js").then((m) => m.FilesFolders)
       }
     ]
   },

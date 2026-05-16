@@ -7642,7 +7642,7 @@ var FileDetailModalComponent = _FileDetailModalComponent;
 function FileExplorerComponent_ng_template_4_span_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "span", 39);
+    \u0275\u0275elementStart(0, "span", 40);
     \u0275\u0275listener("click", function FileExplorerComponent_ng_template_4_span_1_Template_span_click_0_listener() {
       \u0275\u0275restoreView(_r3);
       const ctx_r3 = \u0275\u0275nextContext(2);
@@ -7654,9 +7654,9 @@ function FileExplorerComponent_ng_template_4_span_1_Template(rf, ctx) {
 function FileExplorerComponent_ng_template_4_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 36);
-    \u0275\u0275template(1, FileExplorerComponent_ng_template_4_span_1_Template, 1, 0, "span", 37);
-    \u0275\u0275elementStart(2, "span", 38);
+    \u0275\u0275elementStart(0, "div", 37);
+    \u0275\u0275template(1, FileExplorerComponent_ng_template_4_span_1_Template, 1, 0, "span", 38);
+    \u0275\u0275elementStart(2, "span", 39);
     \u0275\u0275listener("click", function FileExplorerComponent_ng_template_4_Template_span_click_2_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r3 = \u0275\u0275nextContext();
@@ -7675,7 +7675,7 @@ function FileExplorerComponent_ng_template_4_Template(rf, ctx) {
 function FileExplorerComponent_nz_collapse_6_tr_13_button_8_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 48);
+    \u0275\u0275elementStart(0, "button", 49);
     \u0275\u0275listener("click", function FileExplorerComponent_nz_collapse_6_tr_13_button_8_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r7);
       const data_r8 = \u0275\u0275nextContext().$implicit;
@@ -7690,21 +7690,21 @@ function FileExplorerComponent_nz_collapse_6_tr_13_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td");
-    \u0275\u0275element(2, "span", 44);
+    \u0275\u0275element(2, "span", 45);
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "td")(5, "nz-tag");
     \u0275\u0275text(6);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(7, "td");
-    \u0275\u0275template(8, FileExplorerComponent_nz_collapse_6_tr_13_button_8_Template, 2, 0, "button", 45);
-    \u0275\u0275elementStart(9, "button", 46);
+    \u0275\u0275template(8, FileExplorerComponent_nz_collapse_6_tr_13_button_8_Template, 2, 0, "button", 46);
+    \u0275\u0275elementStart(9, "button", 47);
     \u0275\u0275listener("click", function FileExplorerComponent_nz_collapse_6_tr_13_Template_button_click_9_listener() {
       const data_r8 = \u0275\u0275restoreView(_r6).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.goToFolder(data_r8.folderId));
     });
-    \u0275\u0275element(10, "span", 47);
+    \u0275\u0275element(10, "span", 48);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -7721,7 +7721,7 @@ function FileExplorerComponent_nz_collapse_6_tr_13_Template(rf, ctx) {
 function FileExplorerComponent_nz_collapse_6_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-collapse", 40)(1, "nz-collapse-panel", 41)(2, "nz-table", 42, 7);
+    \u0275\u0275elementStart(0, "nz-collapse", 41)(1, "nz-collapse-panel", 42)(2, "nz-table", 43, 6);
     \u0275\u0275listener("nzPageIndexChange", function FileExplorerComponent_nz_collapse_6_Template_nz_table_nzPageIndexChange_2_listener($event) {
       \u0275\u0275restoreView(_r5);
       const ctx_r3 = \u0275\u0275nextContext();
@@ -7733,11 +7733,11 @@ function FileExplorerComponent_nz_collapse_6_Template(rf, ctx) {
     \u0275\u0275elementStart(8, "th");
     \u0275\u0275text(9, "\u0110\u01B0\u1EDDng d\u1EABn");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "th", 43);
+    \u0275\u0275elementStart(10, "th", 44);
     \u0275\u0275text(11, "Thao t\xE1c");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(12, "tbody");
-    \u0275\u0275template(13, FileExplorerComponent_nz_collapse_6_tr_13_Template, 11, 3, "tr", 19);
+    \u0275\u0275template(13, FileExplorerComponent_nz_collapse_6_tr_13_Template, 11, 3, "tr", 18);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -7755,7 +7755,7 @@ function FileExplorerComponent_nz_collapse_6_Template(rf, ctx) {
 function FileExplorerComponent_nz_breadcrumb_item_14_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-breadcrumb-item")(1, "a", 17);
+    \u0275\u0275elementStart(0, "nz-breadcrumb-item")(1, "a", 16);
     \u0275\u0275listener("click", function FileExplorerComponent_nz_breadcrumb_item_14_Template_a_click_1_listener() {
       const item_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
@@ -7772,12 +7772,12 @@ function FileExplorerComponent_nz_breadcrumb_item_14_Template(rf, ctx) {
 }
 function FileExplorerComponent_ng_template_28_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 49);
-    \u0275\u0275element(1, "span", 50);
+    \u0275\u0275elementStart(0, "div", 50);
+    \u0275\u0275element(1, "span", 51);
     \u0275\u0275elementStart(2, "strong");
     \u0275\u0275text(3, "Th\u01B0 m\u1EE5c");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "nz-tag", 51);
+    \u0275\u0275elementStart(4, "nz-tag", 52);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
   }
@@ -7789,71 +7789,92 @@ function FileExplorerComponent_ng_template_28_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r3.folders.length);
   }
 }
-function FileExplorerComponent_tr_42_Template(rf, ctx) {
+function FileExplorerComponent_div_31_Template(rf, ctx) {
   if (rf & 1) {
     const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td");
-    \u0275\u0275element(2, "span", 52);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "td")(4, "a", 17);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_42_Template_a_click_4_listener() {
-      const folder_r14 = \u0275\u0275restoreView(_r13).$implicit;
+    \u0275\u0275elementStart(0, "div", 53);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_31_Template_div_click_0_listener() {
+      \u0275\u0275restoreView(_r13);
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.navigateToFolder(folder_r14.id));
+      return \u0275\u0275resetView(ctx_r3.navigateUp());
     });
-    \u0275\u0275text(5);
+    \u0275\u0275elementStart(1, "div", 54);
+    \u0275\u0275element(2, "span", 55);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 56);
+    \u0275\u0275text(4, "...");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(6, "td");
-    \u0275\u0275text(7, "Th\u01B0 m\u1EE5c");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "td")(9, "div", 53)(10, "button", 54);
-    \u0275\u0275element(11, "span", 55);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(12, "nz-dropdown-menu", null, 8)(14, "ul", 56)(15, "li", 57);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_42_Template_li_click_15_listener() {
-      const folder_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.openMoveModal(folder_r14, "folder"));
-    });
-    \u0275\u0275text(16, "Di chuy\u1EC3n");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(17, "li", 57);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_42_Template_li_click_17_listener() {
-      const folder_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.renameItem(folder_r14, "folder"));
-    });
-    \u0275\u0275text(18, "\u0110\u1ED5i t\xEAn");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(19, "li", 58);
-    \u0275\u0275elementStart(20, "li", 59);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_42_Template_li_click_20_listener() {
-      const folder_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.deleteFolder(folder_r14.id));
-    });
-    \u0275\u0275text(21, "X\xF3a");
-    \u0275\u0275elementEnd()()()()()();
-  }
-  if (rf & 2) {
-    const folder_r14 = ctx.$implicit;
-    const folderMenu_r15 = \u0275\u0275reference(13);
-    const ctx_r3 = \u0275\u0275nextContext();
-    const renameTemplate_r16 = \u0275\u0275reference(67);
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(folder_r14.name);
-    \u0275\u0275advance(5);
-    \u0275\u0275property("nzDropdownMenu", folderMenu_r15)("nzPopoverContent", renameTemplate_r16)("nzPopoverTrigger", null)("nzPopoverVisible", ctx_r3.renamePopoverVisibleId === folder_r14.id)("nzPopoverPlacement", "bottomRight");
   }
 }
-function FileExplorerComponent_ng_template_45_Template(rf, ctx) {
+function FileExplorerComponent_div_32_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 49);
-    \u0275\u0275element(1, "span", 60);
+    const _r14 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 57);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_32_Template_div_click_0_listener() {
+      const folder_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.navigateToFolder(folder_r15.id));
+    });
+    \u0275\u0275elementStart(1, "div", 54);
+    \u0275\u0275element(2, "span", 58);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 59);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(5, "div", 60);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_32_Template_div_click_5_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementStart(6, "button", 61);
+    \u0275\u0275element(7, "span", 62);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(8, "nz-dropdown-menu", null, 7)(10, "ul", 63)(11, "li", 64);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_32_Template_li_click_11_listener() {
+      const folder_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.openMoveModal(folder_r15, "folder"));
+    });
+    \u0275\u0275text(12, "Di chuy\u1EC3n");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(13, "li", 64);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_32_Template_li_click_13_listener() {
+      const folder_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.renameItem(folder_r15, "folder"));
+    });
+    \u0275\u0275text(14, "\u0110\u1ED5i t\xEAn");
+    \u0275\u0275elementEnd();
+    \u0275\u0275element(15, "li", 65);
+    \u0275\u0275elementStart(16, "li", 66);
+    \u0275\u0275listener("click", function FileExplorerComponent_div_32_Template_li_click_16_listener() {
+      const folder_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const ctx_r3 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r3.deleteFolder(folder_r15.id));
+    });
+    \u0275\u0275text(17, "X\xF3a");
+    \u0275\u0275elementEnd()()()()();
+  }
+  if (rf & 2) {
+    const folder_r15 = ctx.$implicit;
+    const folderMenu_r16 = \u0275\u0275reference(9);
+    const ctx_r3 = \u0275\u0275nextContext();
+    const renameTemplate_r17 = \u0275\u0275reference(57);
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzTooltipTitle", folder_r15.name);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(folder_r15.name);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzDropdownMenu", folderMenu_r16)("nzPopoverContent", renameTemplate_r17)("nzPopoverTrigger", null)("nzPopoverVisible", ctx_r3.renamePopoverVisibleId === folder_r15.id)("nzPopoverPlacement", "bottomRight");
+  }
+}
+function FileExplorerComponent_ng_template_35_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 50);
+    \u0275\u0275element(1, "span", 67);
     \u0275\u0275elementStart(2, "strong");
     \u0275\u0275text(3, "T\u1EC7p tin");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "nz-tag", 51);
+    \u0275\u0275elementStart(4, "nz-tag", 52);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
   }
@@ -7865,35 +7886,35 @@ function FileExplorerComponent_ng_template_45_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r3.total);
   }
 }
-function FileExplorerComponent_tr_65_button_18_Template(rf, ctx) {
+function FileExplorerComponent_tr_55_button_18_Template(rf, ctx) {
   if (rf & 1) {
-    const _r19 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 68);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_button_18_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r19);
-      const file_r18 = \u0275\u0275nextContext().$implicit;
+    const _r20 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 77);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_button_18_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r20);
+      const file_r19 = \u0275\u0275nextContext().$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.onSelectFile(file_r18));
+      return \u0275\u0275resetView(ctx_r3.onSelectFile(file_r19));
     });
     \u0275\u0275text(1, " Ch\xE8n ");
     \u0275\u0275elementEnd();
   }
 }
-function FileExplorerComponent_tr_65_Template(rf, ctx) {
+function FileExplorerComponent_tr_55_Template(rf, ctx) {
   if (rf & 1) {
-    const _r17 = \u0275\u0275getCurrentView();
+    const _r18 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td");
-    \u0275\u0275element(2, "span", 61);
+    \u0275\u0275element(2, "span", 68);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "td")(4, "a", 17);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_Template_a_click_4_listener() {
-      const file_r18 = \u0275\u0275restoreView(_r17).$implicit;
+    \u0275\u0275elementStart(3, "td")(4, "a", 16);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_Template_a_click_4_listener() {
+      const file_r19 = \u0275\u0275restoreView(_r18).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.openFileDetail(file_r18));
+      return \u0275\u0275resetView(ctx_r3.openFileDetail(file_r19));
     });
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(6, "td")(7, "nz-tag", 62);
+    \u0275\u0275elementStart(6, "td")(7, "nz-tag", 69);
     \u0275\u0275text(8);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(9, "td");
@@ -7906,83 +7927,83 @@ function FileExplorerComponent_tr_65_Template(rf, ctx) {
     \u0275\u0275text(14);
     \u0275\u0275pipe(15, "date");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "td")(17, "div", 53);
-    \u0275\u0275template(18, FileExplorerComponent_tr_65_button_18_Template, 2, 0, "button", 63);
-    \u0275\u0275elementStart(19, "a", 64);
-    \u0275\u0275element(20, "span", 65);
+    \u0275\u0275elementStart(16, "td")(17, "div", 70);
+    \u0275\u0275template(18, FileExplorerComponent_tr_55_button_18_Template, 2, 0, "button", 71);
+    \u0275\u0275elementStart(19, "a", 72);
+    \u0275\u0275element(20, "span", 73);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(21, "button", 66);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_Template_button_click_21_listener() {
-      const file_r18 = \u0275\u0275restoreView(_r17).$implicit;
+    \u0275\u0275elementStart(21, "button", 74);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_Template_button_click_21_listener() {
+      const file_r19 = \u0275\u0275restoreView(_r18).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.openShareModal(file_r18));
+      return \u0275\u0275resetView(ctx_r3.openShareModal(file_r19));
     });
-    \u0275\u0275element(22, "span", 67);
+    \u0275\u0275element(22, "span", 75);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(23, "button", 54);
-    \u0275\u0275element(24, "span", 55);
+    \u0275\u0275elementStart(23, "button", 76);
+    \u0275\u0275element(24, "span", 62);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(25, "nz-dropdown-menu", null, 9)(27, "ul", 56)(28, "li", 57);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_Template_li_click_28_listener() {
-      const file_r18 = \u0275\u0275restoreView(_r17).$implicit;
+    \u0275\u0275elementStart(25, "nz-dropdown-menu", null, 8)(27, "ul", 63)(28, "li", 64);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_Template_li_click_28_listener() {
+      const file_r19 = \u0275\u0275restoreView(_r18).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.openMoveModal(file_r18, "file"));
+      return \u0275\u0275resetView(ctx_r3.openMoveModal(file_r19, "file"));
     });
     \u0275\u0275text(29, "Di chuy\u1EC3n");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "li", 57);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_Template_li_click_30_listener() {
-      const file_r18 = \u0275\u0275restoreView(_r17).$implicit;
+    \u0275\u0275elementStart(30, "li", 64);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_Template_li_click_30_listener() {
+      const file_r19 = \u0275\u0275restoreView(_r18).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.renameItem(file_r18, "file"));
+      return \u0275\u0275resetView(ctx_r3.renameItem(file_r19, "file"));
     });
     \u0275\u0275text(31, "\u0110\u1ED5i t\xEAn");
     \u0275\u0275elementEnd();
-    \u0275\u0275element(32, "li", 58);
-    \u0275\u0275elementStart(33, "li", 59);
-    \u0275\u0275listener("click", function FileExplorerComponent_tr_65_Template_li_click_33_listener() {
-      const file_r18 = \u0275\u0275restoreView(_r17).$implicit;
+    \u0275\u0275element(32, "li", 65);
+    \u0275\u0275elementStart(33, "li", 66);
+    \u0275\u0275listener("click", function FileExplorerComponent_tr_55_Template_li_click_33_listener() {
+      const file_r19 = \u0275\u0275restoreView(_r18).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r3.deleteFile(file_r18.id));
+      return \u0275\u0275resetView(ctx_r3.deleteFile(file_r19.id));
     });
     \u0275\u0275text(34, "X\xF3a");
     \u0275\u0275elementEnd()()()()()();
   }
   if (rf & 2) {
-    const file_r18 = ctx.$implicit;
-    const fileMenu_r20 = \u0275\u0275reference(26);
+    const file_r19 = ctx.$implicit;
+    const fileMenu_r21 = \u0275\u0275reference(26);
     const ctx_r3 = \u0275\u0275nextContext();
-    const renameTemplate_r16 = \u0275\u0275reference(67);
+    const renameTemplate_r17 = \u0275\u0275reference(57);
     \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(file_r18.name);
+    \u0275\u0275textInterpolate(file_r19.name);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", ctx_r3.getPermissionColor(file_r18.permission));
+    \u0275\u0275property("nzColor", ctx_r3.getPermissionColor(file_r19.permission));
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", ctx_r3.getPermissionLabel(file_r18.permission), " ");
+    \u0275\u0275textInterpolate1(" ", ctx_r3.getPermissionLabel(file_r19.permission), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(ctx_r3.formatSize(file_r18.size));
+    \u0275\u0275textInterpolate(ctx_r3.formatSize(file_r19.size));
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(file_r18.mimeType);
+    \u0275\u0275textInterpolate(file_r19.mimeType);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(15, 13, file_r18.createdAt, "dd/MM/yyyy HH:mm"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(15, 13, file_r19.createdAt, "dd/MM/yyyy HH:mm"));
     \u0275\u0275advance(4);
     \u0275\u0275property("ngIf", ctx_r3.selectionMode);
     \u0275\u0275advance();
-    \u0275\u0275property("href", file_r18.url, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("href", file_r19.url, \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzDropdownMenu", fileMenu_r20)("nzPopoverContent", renameTemplate_r16)("nzPopoverTrigger", null)("nzPopoverVisible", ctx_r3.renamePopoverVisibleId === file_r18.id)("nzPopoverPlacement", "bottomRight");
+    \u0275\u0275property("nzDropdownMenu", fileMenu_r21)("nzPopoverContent", renameTemplate_r17)("nzPopoverTrigger", null)("nzPopoverVisible", ctx_r3.renamePopoverVisibleId === file_r19.id)("nzPopoverPlacement", "bottomRight");
   }
 }
-function FileExplorerComponent_ng_template_66_app_rename_popover_0_Template(rf, ctx) {
+function FileExplorerComponent_ng_template_56_app_rename_popover_0_Template(rf, ctx) {
   if (rf & 1) {
-    const _r21 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "app-rename-popover", 70);
-    \u0275\u0275listener("renamed", function FileExplorerComponent_ng_template_66_app_rename_popover_0_Template_app_rename_popover_renamed_0_listener($event) {
-      \u0275\u0275restoreView(_r21);
+    const _r22 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "app-rename-popover", 79);
+    \u0275\u0275listener("renamed", function FileExplorerComponent_ng_template_56_app_rename_popover_0_Template_app_rename_popover_renamed_0_listener($event) {
+      \u0275\u0275restoreView(_r22);
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.onRenamed($event));
-    })("cancelled", function FileExplorerComponent_ng_template_66_app_rename_popover_0_Template_app_rename_popover_cancelled_0_listener() {
-      \u0275\u0275restoreView(_r21);
+    })("cancelled", function FileExplorerComponent_ng_template_56_app_rename_popover_0_Template_app_rename_popover_cancelled_0_listener() {
+      \u0275\u0275restoreView(_r22);
       const ctx_r3 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r3.onRenameCancelled());
     });
@@ -7993,9 +8014,9 @@ function FileExplorerComponent_ng_template_66_app_rename_popover_0_Template(rf, 
     \u0275\u0275property("itemId", ctx_r3.renamingItem.id)("currentName", ctx_r3.renamingItem.name)("type", ctx_r3.renamingType);
   }
 }
-function FileExplorerComponent_ng_template_66_Template(rf, ctx) {
+function FileExplorerComponent_ng_template_56_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275template(0, FileExplorerComponent_ng_template_66_app_rename_popover_0_Template, 1, 3, "app-rename-popover", 69);
+    \u0275\u0275template(0, FileExplorerComponent_ng_template_56_app_rename_popover_0_Template, 1, 3, "app-rename-popover", 78);
   }
   if (rf & 2) {
     const ctx_r3 = \u0275\u0275nextContext();
@@ -8084,7 +8105,17 @@ var _FileExplorerComponent = class _FileExplorerComponent {
   }
   navigateToFolder(folderId) {
     this.selectedFolderId = folderId;
+    this.filesFoldersService.notifySelectFolder(folderId);
     this.loadContent();
+  }
+  get hasParent() {
+    return this.selectedFolderId !== null;
+  }
+  navigateUp() {
+    if (!this.hasParent)
+      return;
+    const parentId = this.breadcrumbs && this.breadcrumbs.length > 1 ? this.breadcrumbs[this.breadcrumbs.length - 2].id : null;
+    this.navigateToFolder(parentId);
   }
   async onUpload(event) {
     const file = event.target.files[0];
@@ -8094,11 +8125,21 @@ var _FileExplorerComponent = class _FileExplorerComponent {
       this.loadingUpload = true;
       const result = await this.filesFoldersService.uploadFile(this.selectedFolderId, file);
       this.message.loading("\u0110ang x\u1EED l\xFD upload file...");
-      this.waitForTask(result.trackingId, "File \u0111\xE3 \u0111\u01B0\u1EE3c upload th\xE0nh c\xF4ng");
+      this.waitForTask(result.trackingId, "File \u0111\xE3 \u0111\u01B0\u1EE3c upload th\xE0nh c\xF4ng", (data) => {
+        if (data && data.fileId) {
+          this.openShareModal({
+            id: data.fileId,
+            name: data.name || file.name,
+            size: data.size || file.size,
+            mimeType: data.mimeType || file.type
+          });
+        }
+      });
     } catch (error) {
       this.message.error("L\u1ED7i khi upload file");
     } finally {
       this.loadingUpload = false;
+      event.target.value = "";
     }
   }
   openShareModal(file) {
@@ -8176,7 +8217,7 @@ var _FileExplorerComponent = class _FileExplorerComponent {
     this.renamePopoverVisibleId = null;
     this.renamingItem = null;
   }
-  waitForTask(trackingId, successMessage) {
+  waitForTask(trackingId, successMessage, onComplete) {
     if (!trackingId) {
       this.loadContent();
       return;
@@ -8186,6 +8227,9 @@ var _FileExplorerComponent = class _FileExplorerComponent {
         this.message.success(data.message || successMessage);
         this.loadContent();
         this.folderCreated.emit();
+        if (onComplete) {
+          onComplete(data);
+        }
         sub();
       } else if (data.status === "Error") {
         this.message.error(data.message || "Thao t\xE1c th\u1EA5t b\u1EA1i");
@@ -8280,10 +8324,10 @@ var _FileExplorerComponent = class _FileExplorerComponent {
 _FileExplorerComponent.\u0275fac = function FileExplorerComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _FileExplorerComponent)();
 };
-_FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileExplorerComponent, selectors: [["app-file-explorer"]], inputs: { selectedFolderId: "selectedFolderId", selectionMode: "selectionMode" }, outputs: { folderCreated: "folderCreated", fileSelected: "fileSelected" }, features: [\u0275\u0275NgOnChangesFeature], decls: 68, vars: 24, consts: [["suffixTemplate", ""], ["fileInput", ""], ["folderHeader", ""], ["folderTable", ""], ["fileHeader", ""], ["fileTable", ""], ["renameTemplate", ""], ["searchTable", ""], ["folderMenu", "nzDropdownMenu"], ["fileMenu", "nzDropdownMenu"], [1, "explorer-container"], [1, "search-section"], [3, "nzSuffix"], ["type", "text", "nz-input", "", "placeholder", "T\xECm ki\u1EBFm t\xEAn file...", 3, "ngModelChange", "keyup.enter", "ngModel"], ["class", "search-results-collapse", 3, "nzBordered", 4, "ngIf"], [1, "explorer-toolbar"], [1, "toolbar-left"], [3, "click"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [1, "toolbar-right"], ["buttonText", "Th\xEAm m\u1EDBi", "buttonIcon", "folder-add", 2, "margin-right", "8px", 3, "parentId", "currentFolderName"], ["nzType", "default", 2, "margin-right", "8px", 3, "click", "loading"], ["nz-icon", "", "nzType", "upload"], ["type", "file", 2, "display", "none", 3, "change"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], [1, "explorer-content"], [3, "nzBordered"], [1, "folder-panel", 3, "nzHeader", "nzActive"], ["nzSize", "middle", 3, "nzData", "nzShowPagination"], ["nzWidth", "40px"], ["nzWidth", "150px"], [1, "mt-3", 3, "nzBordered"], [1, "file-panel", 3, "nzHeader", "nzActive"], ["nzSize", "middle", 3, "nzPageIndexChange", "nzPageSizeChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize"], [1, "search-actions"], ["nz-icon", "", "nzType", "close-circle", "class", "clear-btn", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 3, "click", 4, "ngIf"], ["nz-icon", "", 1, "search-btn", 3, "click", "nzType"], ["nz-icon", "", "nzType", "close-circle", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 1, "clear-btn", 3, "click"], [1, "search-results-collapse", 3, "nzBordered"], [3, "nzHeader", "nzActive"], ["nzSize", "small", 3, "nzPageIndexChange", "nzData", "nzPageIndex", "nzPageSize"], ["nzWidth", "100px"], ["nz-icon", "", "nzType", "file", 2, "margin-right", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", "style", "margin-right: 8px", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "link", "nzSize", "small", "nz-tooltip", "", "nzTooltipTitle", "\u0110i \u0111\u1EBFn th\u01B0 m\u1EE5c", 3, "click"], ["nz-icon", "", "nzType", "arrow-right"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-right", "8px", 3, "click"], [1, "panel-header"], ["nz-icon", "", "nzType", "folder", 1, "mr-2"], [1, "ml-2", 3, "nzColor"], ["nz-icon", "", "nzType", "folder", "nzTheme", "fill", 2, "color", "#ffca28"], [1, "action-buttons"], ["nz-button", "", "nzType", "text", "nz-dropdown", "", "nz-popover", "", 3, "nzDropdownMenu", "nzPopoverContent", "nzPopoverTrigger", "nzPopoverVisible", "nzPopoverPlacement"], ["nz-icon", "", "nzType", "more"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], ["nz-menu-divider", ""], ["nz-menu-item", "", "nzDanger", "", 3, "click"], ["nz-icon", "", "nzType", "file", 1, "mr-2"], ["nz-icon", "", "nzType", "file", "nzTheme", "outline", 2, "color", "#1890ff"], [3, "nzColor"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "text", "target", "_blank", "nz-tooltip", "", "nzTooltipTitle", "T\u1EA3i v\u1EC1", 3, "href"], ["nz-icon", "", "nzType", "download"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Chia s\u1EBB", 3, "click"], ["nz-icon", "", "nzType", "share-alt"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], [3, "itemId", "currentName", "type", "renamed", "cancelled", 4, "ngIf"], [3, "renamed", "cancelled", "itemId", "currentName", "type"]], template: function FileExplorerComponent_Template(rf, ctx) {
+_FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _FileExplorerComponent, selectors: [["app-file-explorer"]], inputs: { selectedFolderId: "selectedFolderId", selectionMode: "selectionMode" }, outputs: { folderCreated: "folderCreated", fileSelected: "fileSelected" }, features: [\u0275\u0275NgOnChangesFeature], decls: 58, vars: 23, consts: [["suffixTemplate", ""], ["fileInput", ""], ["folderHeader", ""], ["fileHeader", ""], ["fileTable", ""], ["renameTemplate", ""], ["searchTable", ""], ["folderMenu", "nzDropdownMenu"], ["fileMenu", "nzDropdownMenu"], [1, "explorer-container"], [1, "search-section"], [3, "nzSuffix"], ["type", "text", "nz-input", "", "placeholder", "T\xECm ki\u1EBFm t\xEAn file...", 3, "ngModelChange", "keyup.enter", "ngModel"], ["class", "search-results-collapse", 3, "nzBordered", 4, "ngIf"], [1, "explorer-toolbar"], [1, "toolbar-left"], [3, "click"], ["nz-icon", "", "nzType", "home"], [4, "ngFor", "ngForOf"], [1, "toolbar-right"], ["buttonText", "Th\xEAm m\u1EDBi", "buttonIcon", "folder-add", 2, "margin-right", "8px", 3, "parentId", "currentFolderName"], ["nzType", "default", 2, "margin-right", "8px", 3, "click", "loading"], ["nz-icon", "", "nzType", "upload"], ["type", "file", 2, "display", "none", 3, "change"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], [1, "explorer-content"], [3, "nzBordered"], [1, "folder-panel", 3, "nzHeader", "nzActive"], [1, "folder-grid"], ["class", "folder-card folder-up", 3, "click", 4, "ngIf"], ["class", "folder-card", 3, "click", 4, "ngFor", "ngForOf"], [1, "mt-3", 3, "nzBordered"], [1, "file-panel", 3, "nzHeader", "nzActive"], ["nzSize", "middle", 3, "nzPageIndexChange", "nzPageSizeChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize"], ["nzWidth", "40px"], ["nzWidth", "150px"], [1, "search-actions"], ["nz-icon", "", "nzType", "close-circle", "class", "clear-btn", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 3, "click", 4, "ngIf"], ["nz-icon", "", 1, "search-btn", 3, "click", "nzType"], ["nz-icon", "", "nzType", "close-circle", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a t\xECm ki\u1EBFm", 1, "clear-btn", 3, "click"], [1, "search-results-collapse", 3, "nzBordered"], [3, "nzHeader", "nzActive"], ["nzSize", "small", 3, "nzPageIndexChange", "nzData", "nzPageIndex", "nzPageSize"], ["nzWidth", "100px"], ["nz-icon", "", "nzType", "file", 2, "margin-right", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", "style", "margin-right: 8px", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "link", "nzSize", "small", "nz-tooltip", "", "nzTooltipTitle", "\u0110i \u0111\u1EBFn th\u01B0 m\u1EE5c", 3, "click"], ["nz-icon", "", "nzType", "arrow-right"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-right", "8px", 3, "click"], [1, "panel-header"], ["nz-icon", "", "nzType", "folder", 1, "mr-2"], [1, "ml-2", 3, "nzColor"], [1, "folder-card", "folder-up", 3, "click"], [1, "folder-icon"], ["nz-icon", "", "nzType", "arrow-up", "nzTheme", "outline", 2, "color", "#8c8c8c"], [1, "folder-name"], [1, "folder-card", 3, "click"], ["nz-icon", "", "nzType", "folder", "nzTheme", "fill"], ["nz-tooltip", "", 1, "folder-name", 3, "nzTooltipTitle"], [1, "folder-card-actions", 3, "click"], ["nz-button", "", "nzType", "text", "nzSize", "small", "nz-dropdown", "", "nz-popover", "", 3, "nzDropdownMenu", "nzPopoverContent", "nzPopoverTrigger", "nzPopoverVisible", "nzPopoverPlacement"], ["nz-icon", "", "nzType", "more"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], ["nz-menu-divider", ""], ["nz-menu-item", "", "nzDanger", "", 3, "click"], ["nz-icon", "", "nzType", "file", 1, "mr-2"], ["nz-icon", "", "nzType", "file", "nzTheme", "outline", 2, "color", "#1890ff"], [3, "nzColor"], [1, "action-buttons"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzType", "text", "target", "_blank", "nz-tooltip", "", "nzTooltipTitle", "T\u1EA3i v\u1EC1", 3, "href"], ["nz-icon", "", "nzType", "download"], ["nz-button", "", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Chia s\u1EBB", 3, "click"], ["nz-icon", "", "nzType", "share-alt"], ["nz-button", "", "nzType", "text", "nz-dropdown", "", "nz-popover", "", 3, "nzDropdownMenu", "nzPopoverContent", "nzPopoverTrigger", "nzPopoverVisible", "nzPopoverPlacement"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], [3, "itemId", "currentName", "type", "renamed", "cancelled", 4, "ngIf"], [3, "renamed", "cancelled", "itemId", "currentName", "type"]], template: function FileExplorerComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 10)(1, "div", 11)(2, "nz-input-group", 12)(3, "input", 13);
+    \u0275\u0275elementStart(0, "div", 9)(1, "div", 10)(2, "nz-input-group", 11)(3, "input", 12);
     \u0275\u0275twoWayListener("ngModelChange", function FileExplorerComponent_Template_input_ngModelChange_3_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery, $event) || (ctx.searchQuery = $event);
@@ -8293,98 +8337,86 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
       return ctx.onSearch();
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(4, FileExplorerComponent_ng_template_4_Template, 3, 2, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(6, FileExplorerComponent_nz_collapse_6_Template, 14, 7, "nz-collapse", 14);
+    \u0275\u0275template(4, FileExplorerComponent_ng_template_4_Template, 3, 2, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(6, FileExplorerComponent_nz_collapse_6_Template, 14, 7, "nz-collapse", 13);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "div", 15)(8, "div", 16)(9, "nz-breadcrumb")(10, "nz-breadcrumb-item")(11, "a", 17);
+    \u0275\u0275elementStart(7, "div", 14)(8, "div", 15)(9, "nz-breadcrumb")(10, "nz-breadcrumb-item")(11, "a", 16);
     \u0275\u0275listener("click", function FileExplorerComponent_Template_a_click_11_listener() {
       return ctx.navigateToFolder(null);
     });
-    \u0275\u0275element(12, "span", 18);
+    \u0275\u0275element(12, "span", 17);
     \u0275\u0275text(13, " T\xE0i li\u1EC7u c\u1EE7a t\xF4i ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(14, FileExplorerComponent_nz_breadcrumb_item_14_Template, 3, 1, "nz-breadcrumb-item", 19);
+    \u0275\u0275template(14, FileExplorerComponent_nz_breadcrumb_item_14_Template, 3, 1, "nz-breadcrumb-item", 18);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(15, "div", 20);
-    \u0275\u0275element(16, "app-create-folder-popover", 21);
-    \u0275\u0275elementStart(17, "app-button", 22);
+    \u0275\u0275elementStart(15, "div", 19);
+    \u0275\u0275element(16, "app-create-folder-popover", 20);
+    \u0275\u0275elementStart(17, "app-button", 21);
     \u0275\u0275listener("click", function FileExplorerComponent_Template_app_button_click_17_listener() {
       \u0275\u0275restoreView(_r1);
       const fileInput_r12 = \u0275\u0275reference(21);
       return \u0275\u0275resetView(fileInput_r12.click());
     });
-    \u0275\u0275element(18, "span", 23);
+    \u0275\u0275element(18, "span", 22);
     \u0275\u0275text(19, " T\u1EA3i l\xEAn ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(20, "input", 24, 1);
+    \u0275\u0275elementStart(20, "input", 23, 1);
     \u0275\u0275listener("change", function FileExplorerComponent_Template_input_change_20_listener($event) {
       return ctx.onUpload($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(22, "app-button", 25);
+    \u0275\u0275elementStart(22, "app-button", 24);
     \u0275\u0275listener("click", function FileExplorerComponent_Template_app_button_click_22_listener() {
       return ctx.loadContent(true);
     });
-    \u0275\u0275element(23, "span", 26);
+    \u0275\u0275element(23, "span", 25);
     \u0275\u0275text(24, " L\xE0m m\u1EDBi ");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(25, "div", 27)(26, "nz-collapse", 28)(27, "nz-collapse-panel", 29);
+    \u0275\u0275elementStart(25, "div", 26)(26, "nz-collapse", 27)(27, "nz-collapse-panel", 28);
     \u0275\u0275template(28, FileExplorerComponent_ng_template_28_Template, 6, 2, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(30, "nz-table", 30, 3)(32, "thead")(33, "tr");
-    \u0275\u0275element(34, "th", 31);
-    \u0275\u0275elementStart(35, "th");
-    \u0275\u0275text(36, "T\xEAn");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(37, "th");
-    \u0275\u0275text(38, "Lo\u1EA1i");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(39, "th", 32);
-    \u0275\u0275text(40, "H\xE0nh \u0111\u1ED9ng");
+    \u0275\u0275elementStart(30, "div", 29);
+    \u0275\u0275template(31, FileExplorerComponent_div_31_Template, 5, 0, "div", 30)(32, FileExplorerComponent_div_32_Template, 18, 7, "div", 31);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(41, "tbody");
-    \u0275\u0275template(42, FileExplorerComponent_tr_42_Template, 22, 6, "tr", 19);
-    \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(43, "nz-collapse", 33)(44, "nz-collapse-panel", 34);
-    \u0275\u0275template(45, FileExplorerComponent_ng_template_45_Template, 6, 2, "ng-template", null, 4, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(47, "nz-table", 35, 5);
-    \u0275\u0275listener("nzPageIndexChange", function FileExplorerComponent_Template_nz_table_nzPageIndexChange_47_listener($event) {
+    \u0275\u0275elementStart(33, "nz-collapse", 32)(34, "nz-collapse-panel", 33);
+    \u0275\u0275template(35, FileExplorerComponent_ng_template_35_Template, 6, 2, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(37, "nz-table", 34, 4);
+    \u0275\u0275listener("nzPageIndexChange", function FileExplorerComponent_Template_nz_table_nzPageIndexChange_37_listener($event) {
       return ctx.onPageIndexChange($event);
-    })("nzPageSizeChange", function FileExplorerComponent_Template_nz_table_nzPageSizeChange_47_listener($event) {
+    })("nzPageSizeChange", function FileExplorerComponent_Template_nz_table_nzPageSizeChange_37_listener($event) {
       return ctx.onPageSizeChange($event);
     });
-    \u0275\u0275elementStart(49, "thead")(50, "tr");
-    \u0275\u0275element(51, "th", 31);
-    \u0275\u0275elementStart(52, "th");
-    \u0275\u0275text(53, "T\xEAn");
+    \u0275\u0275elementStart(39, "thead")(40, "tr");
+    \u0275\u0275element(41, "th", 35);
+    \u0275\u0275elementStart(42, "th");
+    \u0275\u0275text(43, "T\xEAn");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "th");
-    \u0275\u0275text(55, "Tr\u1EA1ng th\xE1i");
+    \u0275\u0275elementStart(44, "th");
+    \u0275\u0275text(45, "Tr\u1EA1ng th\xE1i");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(56, "th");
-    \u0275\u0275text(57, "K\xEDch th\u01B0\u1EDBc");
+    \u0275\u0275elementStart(46, "th");
+    \u0275\u0275text(47, "K\xEDch th\u01B0\u1EDBc");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(58, "th");
-    \u0275\u0275text(59, "Lo\u1EA1i");
+    \u0275\u0275elementStart(48, "th");
+    \u0275\u0275text(49, "Lo\u1EA1i");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(60, "th");
-    \u0275\u0275text(61, "Ng\xE0y t\u1EA1o");
+    \u0275\u0275elementStart(50, "th");
+    \u0275\u0275text(51, "Ng\xE0y t\u1EA1o");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(62, "th", 32);
-    \u0275\u0275text(63, "H\xE0nh \u0111\u1ED9ng");
+    \u0275\u0275elementStart(52, "th", 36);
+    \u0275\u0275text(53, "H\xE0nh \u0111\u1ED9ng");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(64, "tbody");
-    \u0275\u0275template(65, FileExplorerComponent_tr_65_Template, 35, 16, "tr", 19);
+    \u0275\u0275elementStart(54, "tbody");
+    \u0275\u0275template(55, FileExplorerComponent_tr_55_Template, 35, 16, "tr", 18);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275template(66, FileExplorerComponent_ng_template_66_Template, 1, 1, "ng-template", null, 6, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(56, FileExplorerComponent_ng_template_56_Template, 1, 1, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const suffixTemplate_r22 = \u0275\u0275reference(5);
-    const folderHeader_r23 = \u0275\u0275reference(29);
-    const folderTable_r24 = \u0275\u0275reference(31);
-    const fileHeader_r25 = \u0275\u0275reference(46);
-    const fileTable_r26 = \u0275\u0275reference(48);
+    const suffixTemplate_r23 = \u0275\u0275reference(5);
+    const folderHeader_r24 = \u0275\u0275reference(29);
+    const fileHeader_r25 = \u0275\u0275reference(36);
+    const fileTable_r26 = \u0275\u0275reference(38);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzSuffix", suffixTemplate_r22);
+    \u0275\u0275property("nzSuffix", suffixTemplate_r23);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery);
     \u0275\u0275advance(3);
@@ -8400,11 +8432,11 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
     \u0275\u0275advance(4);
     \u0275\u0275property("nzBordered", false);
     \u0275\u0275advance();
-    \u0275\u0275property("nzHeader", folderHeader_r23)("nzActive", true);
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzData", ctx.folders)("nzShowPagination", false);
-    \u0275\u0275advance(12);
-    \u0275\u0275property("ngForOf", folderTable_r24.data);
+    \u0275\u0275property("nzHeader", folderHeader_r24)("nzActive", true);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("ngIf", ctx.hasParent);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx.folders);
     \u0275\u0275advance();
     \u0275\u0275property("nzBordered", false);
     \u0275\u0275advance();
@@ -8462,7 +8494,7 @@ _FileExplorerComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({
   NzCollapseComponent,
   AppButtonComponent,
   DatePipe
-], styles: ["\n.explorer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  min-height: 100%;\n}\n.search-section[_ngcontent-%COMP%] {\n  margin-bottom: 16px;\n}\n.search-results-collapse[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  border-radius: 8px;\n  overflow: hidden;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n}\n.explorer-toolbar[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n  background: #fff;\n  padding: 12px 16px;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n}\n.explorer-content[_ngcontent-%COMP%] {\n  margin-top: 24px;\n}\n.panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n}\n.mr-2[_ngcontent-%COMP%] {\n  margin-right: 8px;\n}\n.ml-2[_ngcontent-%COMP%] {\n  margin-left: 8px;\n}\n.mt-3[_ngcontent-%COMP%] {\n  margin-top: 12px;\n}\n.folder-panel[_ngcontent-%COMP%], \n.file-panel[_ngcontent-%COMP%] {\n  background: #fff;\n  border-radius: 8px !important;\n  overflow: hidden;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  margin-bottom: 16px;\n}\n  .ant-collapse-header {\n  background-color: #fafafa;\n  border-bottom: 1px solid #f0f0f0 !important;\n}\n.action-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 4px;\n}\n.clear-btn[_ngcontent-%COMP%] {\n  color: #bfbfbf;\n  cursor: pointer;\n  margin-right: 8px;\n}\n.clear-btn[_ngcontent-%COMP%]:hover {\n  color: #ff4d4f;\n}\n.search-btn[_ngcontent-%COMP%] {\n  color: #1890ff;\n  cursor: pointer;\n}\n/*# sourceMappingURL=file-explorer.css.map */"] });
+], styles: ["\n.explorer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  min-height: 100%;\n}\n.search-section[_ngcontent-%COMP%] {\n  margin-bottom: 16px;\n}\n.search-results-collapse[_ngcontent-%COMP%] {\n  margin-top: 8px;\n  border-radius: 8px;\n  overflow: hidden;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n}\n.explorer-toolbar[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n  background: #fff;\n  padding: 12px 16px;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n}\n.explorer-content[_ngcontent-%COMP%] {\n  margin-top: 24px;\n}\n.panel-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  font-size: 13px;\n  line-height: 1;\n}\n.mr-2[_ngcontent-%COMP%] {\n  margin-right: 8px;\n}\n.ml-2[_ngcontent-%COMP%] {\n  margin-left: 8px;\n}\n.mt-3[_ngcontent-%COMP%] {\n  margin-top: 12px;\n}\n.folder-panel[_ngcontent-%COMP%], \n.file-panel[_ngcontent-%COMP%] {\n  background: #fff;\n  border-radius: 8px !important;\n  overflow: hidden;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  margin-bottom: 12px;\n}\n  .ant-collapse-header {\n  background-color: #f8f9fa !important;\n  border-bottom: 1px solid #f0f0f0 !important;\n  padding: 8px 16px !important;\n}\n  .ant-collapse-content-box {\n  padding: 16px !important;\n}\n.folder-grid[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 16px;\n  padding: 4px;\n}\n.folder-card[_ngcontent-%COMP%] {\n  width: 100px;\n  min-height: 110px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  padding: 8px;\n  border-radius: 8px;\n  background: #fff;\n  border: 1px solid #f0f0f0;\n  transition: all 0.3s ease;\n  cursor: pointer;\n  position: relative;\n  text-align: center;\n}\n.folder-card[_ngcontent-%COMP%]:hover {\n  background: #f0f7ff;\n  border-color: #bae7ff;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);\n  transform: translateY(-2px);\n}\n.folder-icon[_ngcontent-%COMP%] {\n  font-size: 36px;\n  margin-bottom: 4px;\n  color: #ffca28;\n}\n.folder-name[_ngcontent-%COMP%] {\n  font-size: 12px;\n  font-weight: 500;\n  color: #262626;\n  width: 100%;\n  word-wrap: break-word;\n  word-break: break-all;\n  line-height: 1.3;\n}\n.folder-card-actions[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 4px;\n  right: 4px;\n  opacity: 0;\n  transition: opacity 0.2s ease;\n}\n.folder-card[_ngcontent-%COMP%]:hover   .folder-card-actions[_ngcontent-%COMP%] {\n  opacity: 1;\n}\n.action-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 4px;\n}\n.folder-up[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border-style: dashed;\n}\n.folder-up[_ngcontent-%COMP%]:hover {\n  background: #f5f5f5;\n  border-color: #d9d9d9;\n  transform: none;\n}\n.clear-btn[_ngcontent-%COMP%] {\n  color: #bfbfbf;\n  cursor: pointer;\n  margin-right: 8px;\n}\n.clear-btn[_ngcontent-%COMP%]:hover {\n  color: #ff4d4f;\n}\n.search-btn[_ngcontent-%COMP%] {\n  color: #1890ff;\n  cursor: pointer;\n}\n/*# sourceMappingURL=file-explorer.css.map */"] });
 var FileExplorerComponent = _FileExplorerComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(FileExplorerComponent, [{
@@ -8585,53 +8617,46 @@ var FileExplorerComponent = _FileExplorerComponent;
           </div>
         </ng-template>
         
-        <nz-table 
-          #folderTable 
-          [nzData]="folders" 
-          [nzShowPagination]="false" 
-          nzSize="middle"
-        >
-          <thead>
-            <tr>
-              <th nzWidth="40px"></th>
-              <th>T\xEAn</th>
-              <th>Lo\u1EA1i</th>
-              <th nzWidth="150px">H\xE0nh \u0111\u1ED9ng</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let folder of folderTable.data">
-              <td><span nz-icon nzType="folder" nzTheme="fill" style="color: #ffca28"></span></td>
-              <td><a (click)="navigateToFolder(folder.id)">{{ folder.name }}</a></td>
-              <td>Th\u01B0 m\u1EE5c</td>
-              <td>
-                <div class="action-buttons">
-                  <button 
-                    nz-button 
-                    nzType="text" 
-                    nz-dropdown 
-                    [nzDropdownMenu]="folderMenu"
-                    nz-popover
-                    [nzPopoverContent]="renameTemplate"
-                    [nzPopoverTrigger]="null"
-                    [nzPopoverVisible]="renamePopoverVisibleId === folder.id"
-                    [nzPopoverPlacement]="'bottomRight'"
-                  >
-                    <span nz-icon nzType="more"></span>
-                  </button>
-                  <nz-dropdown-menu #folderMenu="nzDropdownMenu">
-                    <ul nz-menu>
-                      <li nz-menu-item (click)="openMoveModal(folder, 'folder')">Di chuy\u1EC3n</li>
-                      <li nz-menu-item (click)="renameItem(folder, 'folder')">\u0110\u1ED5i t\xEAn</li>
-                      <li nz-menu-divider></li>
-                      <li nz-menu-item nzDanger (click)="deleteFolder(folder.id)">X\xF3a</li>
-                    </ul>
-                  </nz-dropdown-menu>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <div class="folder-grid">
+          <!-- Up Folder -->
+          <div class="folder-card folder-up" *ngIf="hasParent" (click)="navigateUp()">
+            <div class="folder-icon">
+              <span nz-icon nzType="arrow-up" nzTheme="outline" style="color: #8c8c8c"></span>
+            </div>
+            <div class="folder-name">...</div>
+          </div>
+          <div class="folder-card" *ngFor="let folder of folders" (click)="navigateToFolder(folder.id)">
+            <div class="folder-icon">
+              <span nz-icon nzType="folder" nzTheme="fill"></span>
+            </div>
+            <div class="folder-name" nz-tooltip [nzTooltipTitle]="folder.name">{{ folder.name }}</div>
+            
+            <div class="folder-card-actions" (click)="$event.stopPropagation()">
+              <button 
+                nz-button 
+                nzType="text" 
+                nzSize="small"
+                nz-dropdown 
+                [nzDropdownMenu]="folderMenu"
+                nz-popover
+                [nzPopoverContent]="renameTemplate"
+                [nzPopoverTrigger]="null"
+                [nzPopoverVisible]="renamePopoverVisibleId === folder.id"
+                [nzPopoverPlacement]="'bottomRight'"
+              >
+                <span nz-icon nzType="more"></span>
+              </button>
+              <nz-dropdown-menu #folderMenu="nzDropdownMenu">
+                <ul nz-menu>
+                  <li nz-menu-item (click)="openMoveModal(folder, 'folder')">Di chuy\u1EC3n</li>
+                  <li nz-menu-item (click)="renameItem(folder, 'folder')">\u0110\u1ED5i t\xEAn</li>
+                  <li nz-menu-divider></li>
+                  <li nz-menu-item nzDanger (click)="deleteFolder(folder.id)">X\xF3a</li>
+                </ul>
+              </nz-dropdown-menu>
+            </div>
+          </div>
+        </div>
       </nz-collapse-panel>
     </nz-collapse>
 
@@ -8735,7 +8760,7 @@ var FileExplorerComponent = _FileExplorerComponent;
     ></app-rename-popover>
   </ng-template>
 </div>
-`, styles: ["/* projects/tot/business-files/src/lib/components/file-explorer/file-explorer.css */\n.explorer-container {\n  padding: 16px;\n  background: #fdfdfd;\n  min-height: 100%;\n}\n.search-section {\n  margin-bottom: 16px;\n}\n.search-results-collapse {\n  margin-top: 8px;\n  border-radius: 8px;\n  overflow: hidden;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n}\n.explorer-toolbar {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n  background: #fff;\n  padding: 12px 16px;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n}\n.explorer-content {\n  margin-top: 24px;\n}\n.panel-header {\n  display: flex;\n  align-items: center;\n  width: 100%;\n}\n.mr-2 {\n  margin-right: 8px;\n}\n.ml-2 {\n  margin-left: 8px;\n}\n.mt-3 {\n  margin-top: 12px;\n}\n.folder-panel,\n.file-panel {\n  background: #fff;\n  border-radius: 8px !important;\n  overflow: hidden;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  margin-bottom: 16px;\n}\n::ng-deep .ant-collapse-header {\n  background-color: #fafafa;\n  border-bottom: 1px solid #f0f0f0 !important;\n}\n.action-buttons {\n  display: flex;\n  gap: 4px;\n}\n.clear-btn {\n  color: #bfbfbf;\n  cursor: pointer;\n  margin-right: 8px;\n}\n.clear-btn:hover {\n  color: #ff4d4f;\n}\n.search-btn {\n  color: #1890ff;\n  cursor: pointer;\n}\n/*# sourceMappingURL=file-explorer.css.map */\n"] }]
+`, styles: ["/* projects/tot/business-files/src/lib/components/file-explorer/file-explorer.css */\n.explorer-container {\n  padding: 16px;\n  background: #fdfdfd;\n  min-height: 100%;\n}\n.search-section {\n  margin-bottom: 16px;\n}\n.search-results-collapse {\n  margin-top: 8px;\n  border-radius: 8px;\n  overflow: hidden;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n}\n.explorer-toolbar {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n  background: #fff;\n  padding: 12px 16px;\n  border-radius: 8px;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n}\n.explorer-content {\n  margin-top: 24px;\n}\n.panel-header {\n  display: flex;\n  align-items: center;\n  width: 100%;\n  font-size: 13px;\n  line-height: 1;\n}\n.mr-2 {\n  margin-right: 8px;\n}\n.ml-2 {\n  margin-left: 8px;\n}\n.mt-3 {\n  margin-top: 12px;\n}\n.folder-panel,\n.file-panel {\n  background: #fff;\n  border-radius: 8px !important;\n  overflow: hidden;\n  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);\n  margin-bottom: 12px;\n}\n::ng-deep .ant-collapse-header {\n  background-color: #f8f9fa !important;\n  border-bottom: 1px solid #f0f0f0 !important;\n  padding: 8px 16px !important;\n}\n::ng-deep .ant-collapse-content-box {\n  padding: 16px !important;\n}\n.folder-grid {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 16px;\n  padding: 4px;\n}\n.folder-card {\n  width: 100px;\n  min-height: 110px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: flex-start;\n  padding: 8px;\n  border-radius: 8px;\n  background: #fff;\n  border: 1px solid #f0f0f0;\n  transition: all 0.3s ease;\n  cursor: pointer;\n  position: relative;\n  text-align: center;\n}\n.folder-card:hover {\n  background: #f0f7ff;\n  border-color: #bae7ff;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.1);\n  transform: translateY(-2px);\n}\n.folder-icon {\n  font-size: 36px;\n  margin-bottom: 4px;\n  color: #ffca28;\n}\n.folder-name {\n  font-size: 12px;\n  font-weight: 500;\n  color: #262626;\n  width: 100%;\n  word-wrap: break-word;\n  word-break: break-all;\n  line-height: 1.3;\n}\n.folder-card-actions {\n  position: absolute;\n  top: 4px;\n  right: 4px;\n  opacity: 0;\n  transition: opacity 0.2s ease;\n}\n.folder-card:hover .folder-card-actions {\n  opacity: 1;\n}\n.action-buttons {\n  display: flex;\n  gap: 4px;\n}\n.folder-up {\n  background: #fafafa;\n  border-style: dashed;\n}\n.folder-up:hover {\n  background: #f5f5f5;\n  border-color: #d9d9d9;\n  transform: none;\n}\n.clear-btn {\n  color: #bfbfbf;\n  cursor: pointer;\n  margin-right: 8px;\n}\n.clear-btn:hover {\n  color: #ff4d4f;\n}\n.search-btn {\n  color: #1890ff;\n  cursor: pointer;\n}\n/*# sourceMappingURL=file-explorer.css.map */\n"] }]
   }], null, { selectedFolderId: [{
     type: Input
   }], selectionMode: [{
@@ -8862,4 +8887,4 @@ export {
   FilesFolders,
   provideBusinessFiles
 };
-//# sourceMappingURL=chunk-5A2R6WI6.js.map
+//# sourceMappingURL=chunk-YSRSJOXE.js.map

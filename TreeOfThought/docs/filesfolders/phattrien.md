@@ -26,10 +26,23 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
     - Video/Audio: HTML5 Tags.
 - **Metadata**: Hiển thị rõ Ngày tạo, Dung lượng (format premium), Loại file.
 
-### C. Accordion UI
-- Sử dụng `nz-collapse` với `[nzBordered]="false"`.
-- Hai `nz-collapse-panel` riêng biệt cho "Thư mục" và "Tệp tin".
-- Mặc định `[nzActive]="true"`.
+### D. Post-Upload Permission Modal
+- **Trigger**: Sau khi tác vụ Upload file hoàn tất (status 'Completed' từ Firestore).
+- **Action**: Tự động mở `FileShareModalComponent` cho file vừa upload.
+- **Payload**: Cần đảm bảo backend trả về `fileId` hoặc thông tin file trong payload thông báo Firestore để FE có thể mở đúng file.
+- **UX**: Cho phép người dùng nhanh chóng thiết lập quyền (Private/Public/Shared) ngay khi file sẵn sàng.
+
+### C. Accordion & Folder Grid UI
+- **Accordion**: 
+    - Sử dụng `nz-collapse` với `[nzBordered]="false"`.
+    - Header của accordion được style siêu gọn (compact), chiều cao chỉ vừa đủ chứa 1 dòng text.
+    - Hai `nz-collapse-panel` riêng biệt cho "Thư mục" và "Tệp tin".
+    - Mặc định cả hai đều ở trạng thái expand (`[nzActive]="true"`).
+- **Folder Grid**:
+    - Chuyển danh sách Folder từ dạng bảng (table) sang dạng lưới (grid).
+    - Mỗi folder là một icon ô vuông (square card) xếp cạnh nhau.
+    - Sử dụng Flexbox (`flex-wrap: wrap`) để tự động xuống dòng khi hết chiều rộng.
+    - Tiết kiệm không gian và mang lại cảm giác hiện đại (premium).
 
 ## 3. Kế hoạch triển khai (Tasks)
 1. [x] Cập nhật `HttpClientService` (Core FE) để hỗ trợ TrackingId.
@@ -43,7 +56,10 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
 9. [x] Triển khai API Đổi tên file (Backend).
 10. [ ] Chuyển đổi UI Đổi tên trên Folder Tree sang Popover.
 11. [ ] Chuyển đổi UI Đổi tên trên File List sang Popover.
-12. [ ] Tối ưu hóa Accordion (Tách biệt và style premium).
+12. [x] Tối ưu hóa UI File Explorer:
+    - Triển khai Accordion compact cho Thư mục và Tệp tin.
+    - Chuyển đổi danh sách Folder sang dạng Grid (ô vuông).
+13. [ ] Tự động mở modal thiết lập quyền sau khi upload file thành công.
 
 ## 4. Xác nhận từ người dùng
 - Bạn có đồng ý chuyển sang dùng Popover thay cho Modal khi đổi tên không? (Điều này giúp thao tác nhanh hơn nhưng cần xử lý vị trí hiển thị khéo léo).
