@@ -17,7 +17,9 @@ public class FilesFoldersCommandHandler :
     ICommandHandler<UploadFileCommand>,
     ICommandHandler<DeleteFileCommand>,
     ICommandHandler<MoveFileCommand>,
-    ICommandHandler<SetFilePermissionCommand>
+    ICommandHandler<SetFilePermissionCommand>,
+    ICommandHandler<RenameFolderCommand>,
+    ICommandHandler<RenameFileCommand>
 {
     private readonly FilesFoldersDbContext _db;
     private readonly FirebaseService _firebaseService;
@@ -269,6 +271,67 @@ public class FilesFoldersCommandHandler :
             FileId = command.FileId,
             Permission = command.Permission,
             Message = $"Quyền của file '{file.Name}' đã được cập nhật thành {command.Permission}"
+        });
+    }
+
+    public async Task HandleAsync(RenameFolderCommand command)
+    {
+        var folder = await _db.Folders.FindAsync(command.FolderId);
+        if (folder == null) return;
+
+        var oldName = folder.Name;
+        var oldPath = folder.Path;
+        
+        // Calculate new path based on parent path + new name
+        var parentPath = "";
+        if (folder.ParentId.HasValue)
+        {
+            var parent = await _db.Folders.FindAsync(folder.ParentId.Value);
+            if (parent != null) parentPath = parent.Path;
+        }
+        var newPath = $"{parentPath}{command.NewName}/";
+
+        folder.Name = command.NewName;
+        folder.Path = newPath;
+        folder.UpdatedBy = command.UserId;
+
+        // Update all subfolders paths recursively
+        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(oldPath) && f.Id != folder.Id).ToListAsync();
+        foreach (var sub in subfolders)
+        {
+            sub.Path = sub.Path.Replace(oldPath, newPath);
+        }
+
+        await _db.SaveChangesAsync();
+
+        await _dispatcher.PublishAsync(new FolderRenamedEvent
+        {
+            TrackingId = command.TrackingId,
+            UserId = command.UserId,
+            FolderId = command.FolderId,
+            NewName = command.NewName,
+            Message = $"Thư mục đã được đổi tên từ '{oldName}' thành '{command.NewName}'"
+        });
+    }
+
+    public async Task HandleAsync(RenameFileCommand command)
+    {
+        var file = await _db.Files.FindAsync(command.FileId);
+        if (file == null) return;
+
+        var oldName = file.Name;
+        file.Name = command.NewName;
+        file.UpdatedBy = command.UserId;
+
+        await _db.SaveChangesAsync();
+
+        await _dispatcher.PublishAsync(new FileRenamedEvent
+        {
+            TrackingId = command.TrackingId,
+            UserId = command.UserId,
+            FileId = command.FileId,
+            NewName = command.NewName,
+            Message = $"File đã được đổi tên từ '{oldName}' thành '{command.NewName}'"
         });
     }
 

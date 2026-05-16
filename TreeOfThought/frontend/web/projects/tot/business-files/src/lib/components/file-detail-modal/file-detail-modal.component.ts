@@ -1,16 +1,32 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { NZ_MODAL_DATA, NzModalRef } from 'ng-zorro-antd/modal';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { AppButtonComponent } from '@tot/shared';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
+import { NzMessageService } from 'ng-zorro-antd/message';
 
 @Component({
   selector: 'app-file-detail-modal',
   standalone: true,
-  imports: [CommonModule, NzIconModule, NzButtonModule, NzTagModule],
+  imports: [
+    CommonModule, 
+    NzIconModule, 
+    NzButtonModule, 
+    NzTagModule, 
+    NzTooltipModule, 
+    NzDividerModule, 
+    NzInputModule, 
+    FormsModule,
+    AppButtonComponent
+  ],
   templateUrl: './file-detail-modal.component.html',
   styleUrl: './file-detail-modal.component.css'
 })
@@ -19,6 +35,7 @@ export class FileDetailModalComponent implements OnInit {
   private modalRef = inject(NzModalRef);
   private sanitizer = inject(DomSanitizer);
   private http = inject(HttpClient);
+  private message = inject(NzMessageService);
 
   file = this.nzModalData.file;
   previewType: 'image' | 'pdf' | 'text' | 'video' | 'audio' | 'none' = 'none';
@@ -96,6 +113,17 @@ export class FileDetailModalComponent implements OnInit {
       case 'Shared': return 'processing';
       default: return 'default';
     }
+  }
+
+  copyLink(url: string): void {
+    if (!url) return;
+    navigator.clipboard.writeText(url).then(() => {
+      this.message.success('Đã sao chép đường dẫn');
+    });
+  }
+
+  download(): void {
+    window.open(this.file.url, '_blank');
   }
 
   close(): void {

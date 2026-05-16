@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;b873f6849e5c36a98597426cd128590e5ad5a7655592e64f74f6bba464f94055;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-files/src/lib/components/rename-popover/rename-popover.component.ts"],
+  "sourcesContent": ["\n      .popover-content {\n        min-width: 260px;\n        padding: 4px;\n      }\n      .popover-header {\n        font-size: 14px;\n        border-bottom: 1px solid #f0f0f0;\n        padding-bottom: 8px;\n        display: flex;\n        align-items: center;\n      }\n      .rename-input {\n        width: 100%;\n        margin-top: 4px;\n      }\n      .popover-footer {\n        margin-top: 16px;\n        display: flex;\n        justify-content: flex-end;\n        gap: 8px;\n      }\n      .mr-2 { margin-right: 8px; }\n      .mt-3 { margin-top: 12px; }\n      .mb-1 { margin-bottom: 4px; }\n      .text-secondary { color: #8c8c8c; }\n      .d-block { display: block; }\n    "],
+  "mappings": ";AACM,CAAC;AACC,aAAW;AACX,WAAS;AACX;AACA,CAAC;AACC,aAAW;AACX,iBAAe,IAAI,MAAM;AACzB,kBAAgB;AAChB,WAAS;AACT,eAAa;AACf;AACA,CAAC;AACC,SAAO;AACP,cAAY;AACd;AACA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,mBAAiB;AACjB,OAAK;AACP;AACA,CAAC;AAAO,gBAAc;AAAK;AAC3B,CAAC;AAAO,cAAY;AAAM;AAC1B,CAAC;AAAO,iBAAe;AAAK;AAC5B,CAAC;AAAiB,SAAO;AAAS;AAClC,CAAC;AAAU,WAAS;AAAO;",
+  "names": []
+}

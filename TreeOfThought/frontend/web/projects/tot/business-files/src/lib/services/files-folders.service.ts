@@ -47,6 +47,10 @@ export class FilesFoldersService {
     return this.http.post('/api/folders/move', { folderId, newParentId });
   }
 
+  renameFolder(folderId: string, newName: string) {
+    return this.http.patch(`/api/folders/${folderId}/rename`, { newName });
+  }
+
   uploadFile(folderId: string | null, file: File) {
     const formData = new FormData();
     if (folderId) {
@@ -62,6 +66,10 @@ export class FilesFoldersService {
 
   moveFile(fileId: string, newFolderId: string) {
     return this.http.post('/api/files/move', { fileId, newFolderId });
+  }
+
+  renameFile(fileId: string, newName: string) {
+    return this.http.patch(`/api/files/${fileId}/rename`, { newName });
   }
 
   setFilePermission(fileId: string, permission: number, shareCode?: string, expiredAt?: string) {

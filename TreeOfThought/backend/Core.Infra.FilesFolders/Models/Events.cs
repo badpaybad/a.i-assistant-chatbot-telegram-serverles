@@ -52,3 +52,15 @@ public class FilePermissionSetEvent : FilesFoldersEvent
     public Guid FileId { get; set; }
     public PermissionType Permission { get; set; }
 }
+
+public class FolderRenamedEvent : FilesFoldersEvent
+{
+    public Guid FolderId { get; set; }
+    public string NewName { get; set; } = string.Empty;
+}
+
+public class FileRenamedEvent : FilesFoldersEvent
+{
+    public Guid FileId { get; set; }
+    public string NewName { get; set; } = string.Empty;
+}

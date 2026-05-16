@@ -137,4 +137,17 @@ public class FilesController : BaseController
         return Ok(file);
     }
 
+    [HttpPatch("{id}/rename")]
+    public async Task<IActionResult> Rename(Guid id, [FromBody] RenameRequest request)
+    {
+        var command = new RenameFileCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            FileId = id,
+            NewName = request.NewName
+        };
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Yêu cầu đổi tên file đã được gửi", trackingId = command.TrackingId });
+    }
 }

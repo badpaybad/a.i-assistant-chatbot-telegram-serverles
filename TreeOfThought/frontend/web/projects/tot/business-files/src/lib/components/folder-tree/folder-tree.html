@@ -17,8 +17,34 @@
     (nzClick)="onEvent($any($event))"
     (nzExpandChange)="onEvent($any($event))"
     (nzContextMenu)="onContextMenu($any($event), menu)"
+    [nzTreeTemplate]="nzTreeTemplate"
   >
   </nz-tree>
+
+  <ng-template #nzTreeTemplate let-node let-origin="origin">
+    <div 
+      class="custom-node" 
+      nz-popover 
+      [nzPopoverContent]="renameTemplate" 
+      [nzPopoverTrigger]="null" 
+      [nzPopoverVisible]="renamePopoverVisibleId === node.key"
+      [nzPopoverPlacement]="'right'"
+    >
+      <span nz-icon [nzType]="node.isExpanded ? 'folder-open' : 'folder'" class="node-icon"></span>
+      <span class="node-title">{{ node.title }}</span>
+    </div>
+  </ng-template>
+
+  <ng-template #renameTemplate>
+    <app-rename-popover
+      *ngIf="renamingNode"
+      [itemId]="renamingNode.key"
+      [currentName]="renamingNode.title"
+      [type]="'folder'"
+      (renamed)="onRenamed($event)"
+      (cancelled)="onRenameCancelled()"
+    ></app-rename-popover>
+  </ng-template>
 
   <nz-dropdown-menu #menu="nzDropdownMenu">
     <ul nz-menu>

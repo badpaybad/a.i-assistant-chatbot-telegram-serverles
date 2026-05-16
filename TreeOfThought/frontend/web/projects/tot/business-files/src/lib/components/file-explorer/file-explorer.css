@@ -1,50 +1,18 @@
 .explorer-container {
-  background: #fff;
   padding: 16px;
-  border-radius: 8px;
+  background: #fdfdfd;
   min-height: 100%;
 }
 
 .search-section {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .search-results-collapse {
-  margin-top: 12px;
-  background: #fafafa;
+  margin-top: 8px;
   border-radius: 8px;
-}
-
-.search-btn {
-  cursor: pointer;
-  color: #1890ff;
-  font-size: 16px;
-}
-
-.search-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.clear-btn {
-  cursor: pointer;
-  color: #bfbfbf;
-  font-size: 14px;
-  transition: color 0.3s;
-}
-
-.clear-btn:hover {
-  color: #ff4d4f;
-}
-
-.search-btn.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .explorer-toolbar {
@@ -52,18 +20,37 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.toolbar-left {
-  display: flex;
-  align-items: center;
+.explorer-content {
+  margin-top: 24px;
 }
 
-.toolbar-right {
+.panel-header {
   display: flex;
   align-items: center;
+  width: 100%;
+}
+
+.mr-2 { margin-right: 8px; }
+.ml-2 { margin-left: 8px; }
+.mt-3 { margin-top: 12px; }
+
+.folder-panel, .file-panel {
+  background: #fff;
+  border-radius: 8px !important;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  margin-bottom: 16px;
+}
+
+::ng-deep .ant-collapse-header {
+  background-color: #fafafa;
+  border-bottom: 1px solid #f0f0f0 !important;
 }
 
 .action-buttons {
@@ -71,17 +58,17 @@
   gap: 4px;
 }
 
-[nz-icon] {
-  font-size: 16px;
+.clear-btn {
+  color: #bfbfbf;
+  cursor: pointer;
+  margin-right: 8px;
 }
 
-.text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.clear-btn:hover {
+  color: #ff4d4f;
 }
 
-::v-deep .nz-collapse-header {
-  background: #f0f7ff !important;
-  font-weight: 500;
+.search-btn {
+  color: #1890ff;
+  cursor: pointer;
 }

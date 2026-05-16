@@ -76,4 +76,18 @@ public class FoldersController : BaseController
         await _dispatcher.SendAsync(command, useMemoryMode: true);
         return Ok(new { message = "Thư mục đã được di chuyển", trackingId = command.TrackingId });
     }
+
+    [HttpPatch("{id}/rename")]
+    public async Task<IActionResult> Rename(Guid id, [FromBody] RenameRequest request)
+    {
+        var command = new RenameFolderCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            FolderId = id,
+            NewName = request.NewName
+        };
+        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        return Ok(new { message = "Yêu cầu đổi tên thư mục đã được gửi", trackingId = command.TrackingId });
+    }
 }

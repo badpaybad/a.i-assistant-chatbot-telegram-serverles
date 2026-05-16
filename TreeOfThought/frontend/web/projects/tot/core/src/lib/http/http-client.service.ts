@@ -147,6 +147,25 @@ export class HttpClientService {
     }
   }
 
+  async patch<T = any>(url: string, data?: any, options?: any): Promise<T> {
+    try {
+      const trackingId = options?.trackingId || this.generateTrackingId();
+      const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
+      const result = await firstValueFrom(this.http.patch<T>(fullUrl, data, {
+        headers: this.getHeaders(data, trackingId),
+        withCredentials: true,
+        ...options
+      }) as any);
+
+      if (result && typeof result === 'object') {
+        (result as any).trackingId = trackingId;
+      }
+      return result as T;
+    } catch (error) {
+      this.handleError(error as HttpErrorResponse);
+    }
+  }
+
   postObservable<T = any>(url: string, data?: any, options?: any) {
     const trackingId = options?.trackingId || this.generateTrackingId();
     const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;

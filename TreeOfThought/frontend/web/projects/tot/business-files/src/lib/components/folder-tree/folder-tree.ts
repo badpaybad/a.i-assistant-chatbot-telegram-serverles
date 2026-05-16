@@ -13,6 +13,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { CreateFolderPopoverComponent } from '../create-folder-popover/create-folder-popover.component';
 import { Subscription } from 'rxjs';
+import { RenamePopoverComponent } from '../rename-popover/rename-popover.component';
 
 @Component({
   selector: 'app-folder-tree',
@@ -28,7 +29,8 @@ import { Subscription } from 'rxjs';
     NzIconModule,
     NzTooltipModule,
     NzPopoverModule,
-    CreateFolderPopoverComponent
+    CreateFolderPopoverComponent,
+    RenamePopoverComponent
   ],
   templateUrl: './folder-tree.html',
   styleUrl: './folder-tree.css',
@@ -60,6 +62,11 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
   newFolderName = '';
   creating = false;
   contextNode: NzTreeNode | null = null;
+
+  // Rename properties
+  renamingNode: NzTreeNode | null = null;
+  renamePopoverVisibleId: string | null = null;
+
   private refreshSub?: Subscription;
   private selectFolderSub?: Subscription;
 
@@ -162,7 +169,20 @@ export class FolderTreeComponent implements OnInit, OnDestroy {
 
   renameFolder(node: NzTreeNode): void {
     if (node.key === 'root') return;
-    this.message.info('Tính năng đổi tên đang được cập nhật');
+    this.renamingNode = node;
+    this.renamePopoverVisibleId = node.key;
+  }
+
+  onRenamed(trackingId: string): void {
+    this.renamePopoverVisibleId = null;
+    if (trackingId) {
+      this.filesFoldersService.notifyRefresh();
+    }
+  }
+
+  onRenameCancelled(): void {
+    this.renamePopoverVisibleId = null;
+    this.renamingNode = null;
   }
 
   private selectAndExpandFolder(folderId: string | null): void {

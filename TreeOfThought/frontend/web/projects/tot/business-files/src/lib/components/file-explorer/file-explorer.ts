@@ -20,6 +20,7 @@ import { CreateFolderPopoverComponent } from '../create-folder-popover/create-fo
 import { MoveModalComponent } from '../move-modal/move-modal.component';
 import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subscription } from 'rxjs';
+import { RenamePopoverComponent } from '../rename-popover/rename-popover.component';
 import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal.component';
 
 @Component({
@@ -39,6 +40,7 @@ import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal
     NzInputModule,
     NzPopoverModule,
     CreateFolderPopoverComponent,
+    RenamePopoverComponent,
     NzCollapseModule,
     AppButtonComponent
   ],
@@ -86,6 +88,11 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   searchExpanded = false;
   searchPageIndex = 1;
   searchPageSize = 5;
+
+  // Rename properties
+  renamingItem: any = null;
+  renamingType: 'file' | 'folder' = 'folder';
+  renamePopoverVisibleId: string | null = null;
 
   private refreshSub?: Subscription;
 
@@ -218,6 +225,24 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
         }
       }
     });
+  }
+
+  renameItem(item: any, type: 'file' | 'folder'): void {
+    this.renamingItem = item;
+    this.renamingType = type;
+    this.renamePopoverVisibleId = item.id;
+  }
+
+  onRenamed(trackingId: string): void {
+    this.renamePopoverVisibleId = null;
+    if (trackingId) {
+      this.waitForTask(trackingId, 'Đã gửi yêu cầu đổi tên');
+    }
+  }
+
+  onRenameCancelled(): void {
+    this.renamePopoverVisibleId = null;
+    this.renamingItem = null;
   }
 
   private waitForTask(trackingId: string, successMessage: string): void {

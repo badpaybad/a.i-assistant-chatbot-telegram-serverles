@@ -51,3 +51,20 @@ public class SetFilePermissionCommand : FilesFoldersCommand
     public string? ShareCode { get; set; }
     public DateTime? ExpiredAt { get; set; }
 }
+
+public class RenameFolderCommand : FilesFoldersCommand
+{
+    public Guid FolderId { get; set; }
+    public string NewName { get; set; } = string.Empty;
+}
+
+public class RenameFileCommand : FilesFoldersCommand
+{
+    public Guid FileId { get; set; }
+    public string NewName { get; set; } = string.Empty;
+}
+
+public class RenameRequest
+{
+    public string NewName { get; set; } = string.Empty;
+}
