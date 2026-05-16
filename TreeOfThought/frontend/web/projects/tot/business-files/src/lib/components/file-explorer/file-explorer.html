@@ -10,68 +10,18 @@
       </div>
     </ng-template>
 
-    <nz-collapse [nzBordered]="false" class="search-results-collapse" *ngIf="searchResults.length > 0 || searching">
-      <nz-collapse-panel [nzHeader]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [nzActive]="searchExpanded">
-        <tot-table 
-          [data]="searchResults" 
-          [columns]="searchColumns" 
-          [pageSize]="searchPageSize"
-          [size]="'small'"
-        ></tot-table>
-        
-        <ng-template #searchNameTpl let-data>
-          <span nz-icon nzType="file" style="margin-right: 8px;"></span>
-          {{ data.name }}
-        </ng-template>
-
-        <ng-template #searchPathTpl let-data>
-          <nz-tag>{{ data.folderPath }}</nz-tag>
-        </ng-template>
-
-        <ng-template #searchActionsTpl let-data>
-          <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)" style="margin-right: 8px">
-            Chèn
-          </button>
-          <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
-            <span nz-icon nzType="arrow-right"></span>
-          </button>
-        </ng-template>
-      </nz-collapse-panel>
-    </nz-collapse>
-  </div>
-
-  <div class="explorer-toolbar">
-    <div class="toolbar-left">
-      <nz-breadcrumb>
-        <nz-breadcrumb-item>
-          <a (click)="navigateToFolder(null)">
-            <span nz-icon nzType="home"></span> Tài liệu của tôi
-          </a>
-        </nz-breadcrumb-item>
-        <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
-          <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
-        </nz-breadcrumb-item>
-      </nz-breadcrumb>
-    </div>
-    <div class="toolbar-right">
-      <app-create-folder-popover
-        [parentId]="selectedFolderId"
-        [currentFolderName]="currentFolderName"
-        buttonText="Thêm mới"
-        buttonIcon="folder-add"
-        style="margin-right: 8px"
-      ></app-create-folder-popover>
-
-      <tot-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
-        <span nz-icon nzType="upload"></span> Tải lên
-      </tot-button>
-      <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
-      
-      <tot-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
-        <span nz-icon nzType="reload"></span> Làm mới
-      </tot-button>
+    <div *ngIf="searchResults.length > 0 || searching" class="mt-3">
+      <tot-table 
+        [data]="searchResults" 
+        [columns]="searchColumns" 
+        [pageSize]="searchPageSize"
+        [size]="'small'"
+        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'"
+        [frontPagination]="true"
+      ></tot-table>
     </div>
   </div>
+
 
 
   <div class="explorer-content">
@@ -133,20 +83,7 @@
       </nz-collapse-panel>
     </nz-collapse>
 
-    <nz-collapse [nzBordered]="false" class="mt-3">
-      <!-- Files Section -->
-      <nz-collapse-panel 
-        [nzHeader]="fileHeader" 
-        [nzActive]="true"
-        class="file-panel"
-      >
-        <ng-template #fileHeader>
-          <div class="panel-header">
-            <span nz-icon nzType="file" class="mr-2"></span>
-            <strong>Tệp tin</strong>
-            <nz-tag class="ml-2" [nzColor]="'green'">{{ total }}</nz-tag>
-          </div>
-        </ng-template>
+    <div class="mt-3">
 
         <tot-table 
           [data]="files" 
@@ -157,8 +94,46 @@
           [pageSize]="pageSize" 
           [frontPagination]="false"
           [size]="'small'"
+          [title]="fileTitleTpl"
+          [extra]="fileExtraTpl"
           (queryParamsChange)="onQueryParamsChange($event)"
         ></tot-table>
+
+        <ng-template #fileTitleTpl>
+          <div class="toolbar-left">
+            <nz-breadcrumb>
+              <nz-breadcrumb-item>
+                <a (click)="navigateToFolder(null)">
+                  <span nz-icon nzType="home"></span> {{ 'Tài liệu của tôi' | translate }}
+                </a>
+              </nz-breadcrumb-item>
+              <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
+                <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
+              </nz-breadcrumb-item>
+            </nz-breadcrumb>
+          </div>
+        </ng-template>
+
+        <ng-template #fileExtraTpl>
+          <div class="toolbar-right">
+            <app-create-folder-popover
+              [parentId]="selectedFolderId"
+              [currentFolderName]="currentFolderName"
+              [buttonText]="'Thêm mới' | translate"
+              buttonIcon="folder-add"
+              style="margin-right: 8px"
+            ></app-create-folder-popover>
+
+            <tot-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
+              <span nz-icon nzType="upload"></span> {{ 'Tải lên' | translate }}
+            </tot-button>
+            <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
+            
+            <tot-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
+              <span nz-icon nzType="reload"></span> {{ 'Làm mới' | translate }}
+            </tot-button>
+          </div>
+        </ng-template>
 
         <ng-template #fileNameTpl let-data>
           <div class="file-name-cell" (click)="openFileDetail(data)">
@@ -221,8 +196,7 @@
             </nz-dropdown-menu>
           </div>
         </ng-template>
-      </nz-collapse-panel>
-    </nz-collapse>
+    </div>
   </div>
 
   <ng-template #renameTemplate>
@@ -234,5 +208,25 @@
       (renamed)="onRenamed($event)"
       (cancelled)="onRenameCancelled()"
     ></app-rename-popover>
+  </ng-template>
+
+  <ng-template #searchNameTpl let-data>
+    <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+    {{ data.name }}
+  </ng-template>
+
+  <ng-template #searchPathTpl let-data>
+    <nz-tag>{{ data.folderPath }}</nz-tag>
+  </ng-template>
+
+  <ng-template #searchActionsTpl let-data>
+    <div style="display: flex; gap: 4px;">
+      <tot-button *ngIf="selectionMode" nzType="primary" nzSize="small" (click)="onSelectFile(data)">
+        {{ 'Chèn' | translate }}
+      </tot-button>
+      <tot-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip [nzTooltipTitle]="'Đi đến thư mục' | translate">
+        <span nz-icon nzType="arrow-right"></span>
+      </tot-button>
+    </div>
   </ng-template>
 </div>

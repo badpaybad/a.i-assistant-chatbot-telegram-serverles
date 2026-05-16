@@ -11,6 +11,10 @@ import { AppNotificationService, FirebaseService, HttpClientService } from '@tot
 
 import { v4 as uuidv4 } from 'uuid';
 import { Unsubscribe } from 'firebase/firestore';
+import { TranslateModule } from '@ngx-translate/core';
+
+import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { ViewChild, TemplateRef, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-firestore-test',
@@ -22,12 +26,15 @@ import { Unsubscribe } from 'firebase/firestore';
     NzCardModule,
     NzButtonModule,
     NzInputModule,
-    NzFormModule
+    NzFormModule,
+    TotButtonComponent,
+    TotTableComponent,
+    TranslateModule
   ],
   templateUrl: './firestore-test.component.html',
   styleUrls: ['./firestore-test.component.css']
 })
-export class FirestoreTestComponent implements OnDestroy {
+export class FirestoreTestComponent implements OnDestroy, OnInit {
   private firebase = inject(FirebaseService);
   private http = inject(HttpClientService);
   private notification = inject(AppNotificationService);
@@ -37,6 +44,19 @@ export class FirestoreTestComponent implements OnDestroy {
   loading = false;
   results: any[] = [];
   private unsubscribes: Unsubscribe[] = [];
+
+  @ViewChild('payloadTpl', { static: true }) payloadTpl!: TemplateRef<any>;
+  @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
+
+  resultsColumns: TotTableColumn[] = [];
+
+  ngOnInit() {
+    this.resultsColumns = [
+      { title: 'Request ID', key: 'requestId', width: '200px' },
+      { title: 'Time', key: 'time', width: '180px', template: this.dateTpl, right: true },
+      { title: 'Payload (Result)', template: this.payloadTpl }
+    ];
+  }
 
   async sendCommand() {
     const requestId = uuidv4();

@@ -25,7 +25,15 @@ export interface TotTableColumn {
   imports: [CommonModule, NzTableModule, TranslateModule, NzTooltipModule, NzIconModule, NzCardModule],
   template: `
     <ng-container *ngIf="title; else simpleTable">
-      <nz-card [nzTitle]="title | translate" [nzExtra]="extra">
+      <nz-card [nzTitle]="titleTpl" [nzExtra]="extra">
+        <ng-template #titleTpl>
+          <ng-container *ngIf="isString(title); else templateTitle">
+            {{ title | translate }}
+          </ng-container>
+          <ng-template #templateTitle>
+            <ng-container *ngTemplateOutlet="$any(title)"></ng-container>
+          </ng-template>
+        </ng-template>
         <ng-container *ngTemplateOutlet="simpleTable"></ng-container>
       </nz-card>
     </ng-container>
@@ -47,6 +55,7 @@ export interface TotTableColumn {
         [nzShowPagination]="showPagination"
         [nzHideOnSinglePage]="false"
         (nzCurrentPageDataChange)="onCurrentPageDataChange($event)"
+        nzTableLayout="fixed"
       >
         <thead>
           <tr>
@@ -156,12 +165,16 @@ export class TotTableComponent {
   @Input() pageIndex = 1;
   @Input() pageSize = 10;
   @Input() frontPagination = false;
-  @Input() scroll: { x?: string | null; y?: string | null } = { x: '1000px' };
+  @Input() scroll: { x?: string | null; y?: string | null } = { x: '1200px' };
   @Input() size: 'default' | 'middle' | 'small' = 'default';
   @Input() showPagination = true;
   @Input() expandTemplate?: TemplateRef<any>;
-  @Input() title?: string;
+  @Input() title?: string | TemplateRef<any>;
   @Input() extra?: TemplateRef<any>;
+
+  isString(val: any): val is string {
+    return typeof val === 'string';
+  }
 
   // Selection
   @Input() showSelection = false;

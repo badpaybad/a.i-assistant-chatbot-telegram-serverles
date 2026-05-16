@@ -23,6 +23,7 @@ import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subscription } from 'rxjs';
 import { RenamePopoverComponent } from '../rename-popover/rename-popover.component';
 import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal.component';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-file-explorer',
@@ -44,7 +45,8 @@ import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal
     RenamePopoverComponent,
     NzCollapseModule,
     TotButtonComponent,
-    TotTableComponent
+    TotTableComponent,
+    TranslateModule
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
@@ -120,6 +122,8 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   @ViewChild('searchActionsTpl', { static: true }) searchActionsTpl!: TemplateRef<any>;
   @ViewChild('fileTypeTpl', { static: true }) fileTypeTpl!: TemplateRef<any>;
   @ViewChild('fileDateTpl', { static: true }) fileDateTpl!: TemplateRef<any>;
+  @ViewChild('fileTitleTpl', { static: true }) fileTitleTpl!: TemplateRef<any>;
+  @ViewChild('fileExtraTpl', { static: true }) fileExtraTpl!: TemplateRef<any>;
 
   searchColumns: TotTableColumn[] = [];
 
@@ -127,12 +131,12 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     this.searchColumns = [
       { title: 'Tên file', template: this.searchNameTpl },
       { title: 'Đường dẫn', template: this.searchPathTpl },
-      { title: 'Thao tác', width: '100px', template: this.searchActionsTpl }
+      { title: 'Thao tác', width: '100px', template: this.searchActionsTpl, right: true }
     ];
 
     this.folderColumns = [
       { title: 'Tên thư mục', template: this.folderNameTpl },
-      { title: 'Hành động', width: '150px', template: this.folderActionsTpl }
+      { title: 'Hành động', width: '150px', template: this.folderActionsTpl, right: true }
     ];
 
     this.fileColumns = [
@@ -141,7 +145,7 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
       { title: 'Kích thước', width: '120px', template: this.fileSizeTpl },
       { title: 'Loại', width: '120px', template: this.fileTypeTpl },
       { title: 'Ngày tạo', width: '150px', template: this.fileDateTpl },
-      { title: 'Hành động', width: '150px', template: this.fileActionsTpl }
+      { title: 'Hành động', width: '150px', template: this.fileActionsTpl, right: true }
     ];
   }
 

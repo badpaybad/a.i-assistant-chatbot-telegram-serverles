@@ -22,13 +22,20 @@
     </form>
   </nz-card>
 
-  <nz-card nzTitle="Recent Results" style="margin-top: 24px;">
-    <div *ngFor="let res of results" class="result-item">
-      <p><strong>ID:</strong> {{ res.requestId }}</p>
-      <p><strong>Time:</strong> {{ res.time | date:'medium' }}</p>
-      <pre>{{ res.data | json }}</pre>
-      <hr />
-    </div>
-    <div *ngIf="results.length === 0">No results yet.</div>
-  </nz-card>
+  <tot-table 
+    [data]="results" 
+    [columns]="resultsColumns" 
+    [title]="'Recent Results'" 
+    [pageSize]="5"
+    [frontPagination]="true"
+    style="margin-top: 24px;"
+  ></tot-table>
+
+  <ng-template #dateTpl let-data>
+    {{ data.time | date:'medium' }}
+  </ng-template>
+
+  <ng-template #payloadTpl let-data>
+    <pre style="margin: 0; padding: 8px; background: #fafafa; border-radius: 4px; font-size: 12px;">{{ data.data | json }}</pre>
+  </ng-template>
 </div>
