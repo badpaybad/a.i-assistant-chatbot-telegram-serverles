@@ -171,10 +171,13 @@ import {
   distinctUntilChanged,
   effect,
   filter,
+  finalize,
   first,
   forwardRef,
+  from,
   inject,
   input,
+  isObservable,
   merge,
   of,
   setClassMetadata,
@@ -653,18 +656,127 @@ var AppSelectComponent = _AppSelectComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppSelectComponent, { className: "AppSelectComponent", filePath: "projects/tot/shared/src/lib/components/app-select/app-select.component.ts", lineNumber: 25 });
 })();
 
+// projects/tot/shared/src/lib/components/app-button/app-button.component.ts
+var _c0 = ["*"];
+var _AppButtonComponent = class _AppButtonComponent {
+  constructor() {
+    this.nzType = "default";
+    this.nzSize = "default";
+    this.nzDanger = false;
+    this.nzShape = null;
+    this.nzBlock = false;
+    this.nzGhost = false;
+    this.disabled = false;
+    this.isLoading = false;
+  }
+  set loading(value) {
+    var _a;
+    if (value === null || value === void 0) {
+      this.isLoading = false;
+      return;
+    }
+    if (typeof value === "boolean") {
+      this.isLoading = value;
+      return;
+    }
+    this.isLoading = true;
+    const obs$ = isObservable(value) ? value : from(value);
+    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
+    this.subscription = obs$.pipe(finalize(() => {
+      this.isLoading = false;
+    })).subscribe({
+      error: () => {
+        this.isLoading = false;
+      }
+    });
+  }
+  handleClick(event) {
+    if (this.isLoading) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+  ngOnDestroy() {
+    var _a;
+    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
+  }
+};
+_AppButtonComponent.\u0275fac = function AppButtonComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _AppButtonComponent)();
+};
+_AppButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppButtonComponent, selectors: [["app-button"]], inputs: { nzType: "nzType", nzSize: "nzSize", nzDanger: "nzDanger", nzShape: "nzShape", nzBlock: "nzBlock", nzGhost: "nzGhost", disabled: "disabled", loading: "loading" }, ngContentSelectors: _c0, decls: 2, vars: 8, consts: [["nz-button", "", 3, "click", "nzType", "nzSize", "nzDanger", "nzShape", "nzBlock", "nzGhost", "nzLoading", "disabled"]], template: function AppButtonComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275projectionDef();
+    \u0275\u0275elementStart(0, "button", 0);
+    \u0275\u0275listener("click", function AppButtonComponent_Template_button_click_0_listener($event) {
+      return ctx.handleClick($event);
+    });
+    \u0275\u0275projection(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275property("nzType", ctx.nzType)("nzSize", ctx.nzSize)("nzDanger", ctx.nzDanger)("nzShape", ctx.nzShape)("nzBlock", ctx.nzBlock)("nzGhost", ctx.nzGhost)("nzLoading", ctx.isLoading)("disabled", ctx.disabled || ctx.isLoading);
+  }
+}, dependencies: [CommonModule, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule], encapsulation: 2 });
+var AppButtonComponent = _AppButtonComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppButtonComponent, [{
+    type: Component,
+    args: [{
+      selector: "app-button",
+      standalone: true,
+      imports: [CommonModule, NzButtonModule, NzIconModule],
+      template: `
+    <button
+      nz-button
+      [nzType]="nzType"
+      [nzSize]="nzSize"
+      [nzDanger]="nzDanger"
+      [nzShape]="nzShape"
+      [nzBlock]="nzBlock"
+      [nzGhost]="nzGhost"
+      [nzLoading]="isLoading"
+      [disabled]="disabled || isLoading"
+      (click)="handleClick($event)"
+    >
+      <ng-content></ng-content>
+    </button>
+  `
+    }]
+  }], null, { nzType: [{
+    type: Input
+  }], nzSize: [{
+    type: Input
+  }], nzDanger: [{
+    type: Input
+  }], nzShape: [{
+    type: Input
+  }], nzBlock: [{
+    type: Input
+  }], nzGhost: [{
+    type: Input
+  }], disabled: [{
+    type: Input
+  }], loading: [{
+    type: Input
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppButtonComponent, { className: "AppButtonComponent", filePath: "projects/tot/shared/src/lib/components/app-button/app-button.component.ts", lineNumber: 29 });
+})();
+
 // projects/tot/business-auth/src/lib/user-list/user-list.component.ts
-var _c0 = () => [16, 16];
-function UserListComponent_button_5_Template(rf, ctx) {
+var _c02 = () => [16, 16];
+function UserListComponent_app_button_5_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 28);
-    \u0275\u0275listener("click", function UserListComponent_button_5_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 30);
+    \u0275\u0275listener("click", function UserListComponent_app_button_5_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.showCreateModal());
     });
-    \u0275\u0275element(1, "span", 29);
+    \u0275\u0275element(1, "span", 31);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd();
@@ -674,36 +786,59 @@ function UserListComponent_button_5_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "Th\xEAm ng\u01B0\u1EDDi d\xF9ng"), " ");
   }
 }
-function UserListComponent_button_6_Template(rf, ctx) {
+function UserListComponent_app_button_6_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 30);
-    \u0275\u0275listener("click", function UserListComponent_button_6_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 32);
+    \u0275\u0275listener("click", function UserListComponent_app_button_6_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadUsers());
     });
-    \u0275\u0275element(1, "span", 31);
+    \u0275\u0275element(1, "span", 33);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275property("loading", ctx_r2.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "\u0110\u1ED3ng b\u1ED9"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 2, "\u0110\u1ED3ng b\u1ED9"), " ");
   }
 }
-function UserListComponent_ng_template_14_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275element(0, "span", 32);
-  }
-}
-function UserListComponent_button_42_Template(rf, ctx) {
+function UserListComponent_app_button_7_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 28);
-    \u0275\u0275listener("click", function UserListComponent_button_42_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 34);
+    \u0275\u0275listener("click", function UserListComponent_app_button_7_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r5);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.syncClaims());
+    });
+    \u0275\u0275element(1, "span", 35);
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275property("loading", ctx_r2.syncingClaims);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 2, "Sync Claims (BE)"), " ");
+  }
+}
+function UserListComponent_ng_template_15_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "span", 36);
+  }
+}
+function UserListComponent_app_button_43_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "app-button", 30);
+    \u0275\u0275listener("click", function UserListComponent_app_button_43_Template_app_button_click_0_listener() {
+      \u0275\u0275restoreView(_r6);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadUsers());
     });
@@ -716,12 +851,12 @@ function UserListComponent_button_42_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "T\xECm ki\u1EBFm"));
   }
 }
-function UserListComponent_button_43_Template(rf, ctx) {
+function UserListComponent_app_button_44_Template(rf, ctx) {
   if (rf & 1) {
-    const _r6 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 30);
-    \u0275\u0275listener("click", function UserListComponent_button_43_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r6);
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "app-button", 37);
+    \u0275\u0275listener("click", function UserListComponent_app_button_44_Template_app_button_click_0_listener() {
+      \u0275\u0275restoreView(_r7);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.resetSearch());
     });
@@ -734,57 +869,57 @@ function UserListComponent_button_43_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "\u0110\u1EB7t l\u1EA1i"));
   }
 }
-function UserListComponent_tr_76_nz_tag_19_Template(rf, ctx) {
+function UserListComponent_tr_77_nz_tag_19_Template(rf, ctx) {
   if (rf & 1) {
-    const _r10 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-tag", 45);
-    \u0275\u0275listener("nzOnClose", function UserListComponent_tr_76_nz_tag_19_Template_nz_tag_nzOnClose_0_listener() {
-      const role_r11 = \u0275\u0275restoreView(_r10).$implicit;
-      const data_r8 = \u0275\u0275nextContext().$implicit;
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "nz-tag", 50);
+    \u0275\u0275listener("nzOnClose", function UserListComponent_tr_77_nz_tag_19_Template_nz_tag_nzOnClose_0_listener() {
+      const role_r12 = \u0275\u0275restoreView(_r11).$implicit;
+      const data_r9 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.removeRole(data_r8, role_r11));
+      return \u0275\u0275resetView(ctx_r2.removeRole(data_r9, role_r12));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const role_r11 = ctx.$implicit;
-    const data_r8 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("nzMode", (data_r8.username == null ? null : data_r8.username.toLowerCase()) === "admin" && (role_r11.name == null ? null : role_r11.name.toLowerCase()) === "admin" ? "default" : "closeable");
+    const role_r12 = ctx.$implicit;
+    const data_r9 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("nzMode", (data_r9.username == null ? null : data_r9.username.toLowerCase()) === "admin" && (role_r12.name == null ? null : role_r12.name.toLowerCase()) === "admin" ? "default" : "closeable");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", role_r11.name, " ");
+    \u0275\u0275textInterpolate1(" ", role_r12.name, " ");
   }
 }
-function UserListComponent_tr_76_nz_tag_23_Template(rf, ctx) {
+function UserListComponent_tr_77_nz_tag_23_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-tag", 46);
-    \u0275\u0275listener("nzOnClose", function UserListComponent_tr_76_nz_tag_23_Template_nz_tag_nzOnClose_0_listener() {
-      const claim_r13 = \u0275\u0275restoreView(_r12).$implicit;
-      const data_r8 = \u0275\u0275nextContext().$implicit;
+    const _r13 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "nz-tag", 51);
+    \u0275\u0275listener("nzOnClose", function UserListComponent_tr_77_nz_tag_23_Template_nz_tag_nzOnClose_0_listener() {
+      const claim_r14 = \u0275\u0275restoreView(_r13).$implicit;
+      const data_r9 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.removeClaim(data_r8, claim_r13));
+      return \u0275\u0275resetView(ctx_r2.removeClaim(data_r9, claim_r14));
     });
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const claim_r13 = ctx.$implicit;
-    const data_r8 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("nzMode", (data_r8.username == null ? null : data_r8.username.toLowerCase()) === "admin" && (claim_r13.name == null ? null : claim_r13.name.toLowerCase()) === "admin" ? "default" : "closeable");
+    const claim_r14 = ctx.$implicit;
+    const data_r9 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("nzMode", (data_r9.username == null ? null : data_r9.username.toLowerCase()) === "admin" && (claim_r14.name == null ? null : claim_r14.name.toLowerCase()) === "admin" ? "default" : "closeable");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", claim_r13.name, " ");
+    \u0275\u0275textInterpolate1(" ", claim_r14.name, " ");
   }
 }
-function UserListComponent_tr_76_button_34_Template(rf, ctx) {
+function UserListComponent_tr_77_app_button_34_Template(rf, ctx) {
   if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 47);
-    \u0275\u0275listener("click", function UserListComponent_tr_76_button_34_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r14);
-      const data_r8 = \u0275\u0275nextContext().$implicit;
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "app-button", 52);
+    \u0275\u0275listener("click", function UserListComponent_tr_77_app_button_34_Template_app_button_click_0_listener() {
+      \u0275\u0275restoreView(_r15);
+      const data_r9 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.showEditModal(data_r8));
+      return \u0275\u0275resetView(ctx_r2.showEditModal(data_r9));
     });
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "translate");
@@ -795,74 +930,74 @@ function UserListComponent_tr_76_button_34_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "S\u1EEDa"));
   }
 }
-function UserListComponent_tr_76_button_35_Template(rf, ctx) {
+function UserListComponent_tr_77_app_button_35_Template(rf, ctx) {
   if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 48);
-    \u0275\u0275listener("click", function UserListComponent_tr_76_button_35_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r15);
-      const data_r8 = \u0275\u0275nextContext().$implicit;
+    const _r16 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "app-button", 53);
+    \u0275\u0275listener("click", function UserListComponent_tr_77_app_button_35_Template_app_button_click_0_listener() {
+      \u0275\u0275restoreView(_r16);
+      const data_r9 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.deleteUser(data_r8));
+      return \u0275\u0275resetView(ctx_r2.deleteUser(data_r9));
     });
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "translate");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const data_r8 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("disabled", (data_r8.username == null ? null : data_r8.username.toLowerCase()) === "admin");
+    const data_r9 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("nzDanger", true)("disabled", (data_r9.username == null ? null : data_r9.username.toLowerCase()) === "admin");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 2, "X\xF3a"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 3, "X\xF3a"));
   }
 }
-function UserListComponent_tr_76_Template(rf, ctx) {
+function UserListComponent_tr_77_Template(rf, ctx) {
   if (rf & 1) {
-    const _r7 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 33);
-    \u0275\u0275listener("click", function UserListComponent_tr_76_Template_div_click_2_listener() {
-      const data_r8 = \u0275\u0275restoreView(_r7).$implicit;
+    const _r8 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 38);
+    \u0275\u0275listener("click", function UserListComponent_tr_77_Template_div_click_2_listener() {
+      const data_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      const avatarInput_r9 = \u0275\u0275reference(78);
-      avatarInput_r9.click();
-      return \u0275\u0275resetView(ctx_r2.selectedUserForAvatar = data_r8);
+      const avatarInput_r10 = \u0275\u0275reference(79);
+      avatarInput_r10.click();
+      return \u0275\u0275resetView(ctx_r2.selectedUserForAvatar = data_r9);
     });
-    \u0275\u0275element(3, "nz-avatar", 34);
-    \u0275\u0275elementStart(4, "div", 35);
-    \u0275\u0275element(5, "span", 36);
+    \u0275\u0275element(3, "nz-avatar", 39);
+    \u0275\u0275elementStart(4, "div", 40);
+    \u0275\u0275element(5, "span", 41);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(6, "td")(7, "div", 37)(8, "strong");
+    \u0275\u0275elementStart(6, "td")(7, "div", 42)(8, "strong");
     \u0275\u0275text(9);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "span", 38);
+    \u0275\u0275elementStart(10, "span", 43);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(12, "td");
     \u0275\u0275text(13);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(14, "td")(15, "nz-tag", 39);
+    \u0275\u0275elementStart(14, "td")(15, "nz-tag", 44);
     \u0275\u0275text(16);
     \u0275\u0275pipe(17, "translate");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(18, "td");
-    \u0275\u0275template(19, UserListComponent_tr_76_nz_tag_19_Template, 2, 2, "nz-tag", 40);
-    \u0275\u0275elementStart(20, "button", 41);
-    \u0275\u0275listener("click", function UserListComponent_tr_76_Template_button_click_20_listener() {
-      const data_r8 = \u0275\u0275restoreView(_r7).$implicit;
+    \u0275\u0275template(19, UserListComponent_tr_77_nz_tag_19_Template, 2, 2, "nz-tag", 45);
+    \u0275\u0275elementStart(20, "app-button", 46);
+    \u0275\u0275listener("click", function UserListComponent_tr_77_Template_app_button_click_20_listener() {
+      const data_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.showRoleModal(data_r8));
+      return \u0275\u0275resetView(ctx_r2.showRoleModal(data_r9));
     });
-    \u0275\u0275element(21, "span", 29);
+    \u0275\u0275element(21, "span", 31);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(22, "td");
-    \u0275\u0275template(23, UserListComponent_tr_76_nz_tag_23_Template, 2, 2, "nz-tag", 42);
-    \u0275\u0275elementStart(24, "button", 41);
-    \u0275\u0275listener("click", function UserListComponent_tr_76_Template_button_click_24_listener() {
-      const data_r8 = \u0275\u0275restoreView(_r7).$implicit;
+    \u0275\u0275template(23, UserListComponent_tr_77_nz_tag_23_Template, 2, 2, "nz-tag", 47);
+    \u0275\u0275elementStart(24, "app-button", 46);
+    \u0275\u0275listener("click", function UserListComponent_tr_77_Template_app_button_click_24_listener() {
+      const data_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.showClaimModal(data_r8));
+      return \u0275\u0275resetView(ctx_r2.showClaimModal(data_r9));
     });
-    \u0275\u0275element(25, "span", 29);
+    \u0275\u0275element(25, "span", 31);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(26, "td");
     \u0275\u0275text(27);
@@ -873,43 +1008,43 @@ function UserListComponent_tr_76_Template(rf, ctx) {
     \u0275\u0275pipe(31, "date");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(32, "td")(33, "nz-space");
-    \u0275\u0275template(34, UserListComponent_tr_76_button_34_Template, 3, 3, "button", 43)(35, UserListComponent_tr_76_button_35_Template, 3, 4, "button", 44);
+    \u0275\u0275template(34, UserListComponent_tr_77_app_button_34_Template, 3, 3, "app-button", 48)(35, UserListComponent_tr_77_app_button_35_Template, 3, 5, "app-button", 49);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const data_r8 = ctx.$implicit;
+    const data_r9 = ctx.$implicit;
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzSrc", data_r8.avatarUrl)("nzSize", 48);
+    \u0275\u0275property("nzSrc", data_r9.avatarUrl)("nzSize", 48);
     \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(data_r8.displayName);
+    \u0275\u0275textInterpolate(data_r9.displayName);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(data_r8.username);
+    \u0275\u0275textInterpolate(data_r9.username);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(data_r8.email);
+    \u0275\u0275textInterpolate(data_r9.email);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", data_r8.isEmailVerified ? "success" : "warning");
+    \u0275\u0275property("nzColor", data_r9.isEmailVerified ? "success" : "warning");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(17, 11, data_r8.isEmailVerified ? "\u0110\xE3 x\xE1c minh" : "\u0110ang ch\u1EDD"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(17, 11, data_r9.isEmailVerified ? "\u0110\xE3 x\xE1c minh" : "\u0110ang ch\u1EDD"), " ");
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", data_r8.roles);
+    \u0275\u0275property("ngForOf", data_r9.roles);
     \u0275\u0275advance(4);
-    \u0275\u0275property("ngForOf", data_r8.directClaims);
+    \u0275\u0275property("ngForOf", data_r9.directClaims);
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(28, 13, data_r8.createdAt, "dd/MM/yyyy HH:mm"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(28, 13, data_r9.createdAt, "dd/MM/yyyy HH:mm"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(31, 16, data_r8.updatedAt, "dd/MM/yyyy HH:mm"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(31, 16, data_r9.updatedAt, "dd/MM/yyyy HH:mm"));
   }
 }
-function UserListComponent_ng_container_81_nz_form_item_8_Template(rf, ctx) {
+function UserListComponent_ng_container_82_nz_form_item_8_Template(rf, ctx) {
   if (rf & 1) {
-    const _r17 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-form-item")(1, "nz-form-label", 50);
+    const _r18 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "nz-form-item")(1, "nz-form-label", 55);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "nz-form-control")(5, "input", 58);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_nz_form_item_8_Template_input_ngModelChange_5_listener($event) {
-      \u0275\u0275restoreView(_r17);
+    \u0275\u0275elementStart(4, "nz-form-control")(5, "input", 63);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_nz_form_item_8_Template_input_ngModelChange_5_listener($event) {
+      \u0275\u0275restoreView(_r18);
       const ctx_r2 = \u0275\u0275nextContext(2);
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.password, $event) || (ctx_r2.userForm.password = $event);
       return \u0275\u0275resetView($event);
@@ -924,50 +1059,50 @@ function UserListComponent_ng_container_81_nz_form_item_8_Template(rf, ctx) {
     \u0275\u0275twoWayProperty("ngModel", ctx_r2.userForm.password);
   }
 }
-function UserListComponent_ng_container_81_Template(rf, ctx) {
+function UserListComponent_ng_container_82_Template(rf, ctx) {
   if (rf & 1) {
-    const _r16 = \u0275\u0275getCurrentView();
+    const _r17 = \u0275\u0275getCurrentView();
     \u0275\u0275elementContainerStart(0);
-    \u0275\u0275elementStart(1, "form", 49)(2, "nz-form-item")(3, "nz-form-label", 50);
+    \u0275\u0275elementStart(1, "form", 54)(2, "nz-form-item")(3, "nz-form-label", 55);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "nz-form-control")(7, "input", 51);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_input_ngModelChange_7_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275elementStart(6, "nz-form-control")(7, "input", 56);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_input_ngModelChange_7_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.username, $event) || (ctx_r2.userForm.username = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(8, UserListComponent_ng_container_81_nz_form_item_8_Template, 6, 4, "nz-form-item", 52);
-    \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-label", 50);
+    \u0275\u0275template(8, UserListComponent_ng_container_82_nz_form_item_8_Template, 6, 4, "nz-form-item", 57);
+    \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-label", 55);
     \u0275\u0275text(11);
     \u0275\u0275pipe(12, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "nz-form-control")(14, "input", 53);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_input_ngModelChange_14_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275elementStart(13, "nz-form-control")(14, "input", 58);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_input_ngModelChange_14_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.displayName, $event) || (ctx_r2.userForm.displayName = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-label", 50);
+    \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-label", 55);
     \u0275\u0275text(17);
     \u0275\u0275pipe(18, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "nz-form-control")(20, "input", 54);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_input_ngModelChange_20_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275elementStart(19, "nz-form-control")(20, "input", 59);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_input_ngModelChange_20_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.email, $event) || (ctx_r2.userForm.email = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control")(23, "label", 55);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_label_ngModelChange_23_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control")(23, "label", 60);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_label_ngModelChange_23_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.isEmailVerified, $event) || (ctx_r2.userForm.isEmailVerified = $event);
       return \u0275\u0275resetView($event);
@@ -979,10 +1114,10 @@ function UserListComponent_ng_container_81_Template(rf, ctx) {
     \u0275\u0275text(28);
     \u0275\u0275pipe(29, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "nz-form-control")(31, "app-select", 56);
+    \u0275\u0275elementStart(30, "nz-form-control")(31, "app-select", 61);
     \u0275\u0275pipe(32, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_app_select_ngModelChange_31_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_app_select_ngModelChange_31_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.roleIds, $event) || (ctx_r2.userForm.roleIds = $event);
       return \u0275\u0275resetView($event);
@@ -992,10 +1127,10 @@ function UserListComponent_ng_container_81_Template(rf, ctx) {
     \u0275\u0275text(35);
     \u0275\u0275pipe(36, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(37, "nz-form-control")(38, "app-select", 57);
+    \u0275\u0275elementStart(37, "nz-form-control")(38, "app-select", 62);
     \u0275\u0275pipe(39, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_81_Template_app_select_ngModelChange_38_listener($event) {
-      \u0275\u0275restoreView(_r16);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_82_Template_app_select_ngModelChange_38_listener($event) {
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.userForm.claimIds, $event) || (ctx_r2.userForm.claimIds = $event);
       return \u0275\u0275resetView($event);
@@ -1036,14 +1171,14 @@ function UserListComponent_ng_container_81_Template(rf, ctx) {
     \u0275\u0275twoWayProperty("ngModel", ctx_r2.userForm.claimIds);
   }
 }
-function UserListComponent_ng_container_84_Template(rf, ctx) {
+function UserListComponent_ng_container_85_Template(rf, ctx) {
   if (rf & 1) {
-    const _r18 = \u0275\u0275getCurrentView();
+    const _r19 = \u0275\u0275getCurrentView();
     \u0275\u0275elementContainerStart(0);
-    \u0275\u0275elementStart(1, "app-select", 59);
+    \u0275\u0275elementStart(1, "app-select", 64);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_84_Template_app_select_ngModelChange_1_listener($event) {
-      \u0275\u0275restoreView(_r18);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_85_Template_app_select_ngModelChange_1_listener($event) {
+      \u0275\u0275restoreView(_r19);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.selectedRoleIds, $event) || (ctx_r2.selectedRoleIds = $event);
       return \u0275\u0275resetView($event);
@@ -1058,14 +1193,14 @@ function UserListComponent_ng_container_84_Template(rf, ctx) {
     \u0275\u0275twoWayProperty("ngModel", ctx_r2.selectedRoleIds);
   }
 }
-function UserListComponent_ng_container_87_Template(rf, ctx) {
+function UserListComponent_ng_container_88_Template(rf, ctx) {
   if (rf & 1) {
-    const _r19 = \u0275\u0275getCurrentView();
+    const _r20 = \u0275\u0275getCurrentView();
     \u0275\u0275elementContainerStart(0);
-    \u0275\u0275elementStart(1, "app-select", 60);
+    \u0275\u0275elementStart(1, "app-select", 65);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_87_Template_app_select_ngModelChange_1_listener($event) {
-      \u0275\u0275restoreView(_r19);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_ng_container_88_Template_app_select_ngModelChange_1_listener($event) {
+      \u0275\u0275restoreView(_r20);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.selectedClaimIds, $event) || (ctx_r2.selectedClaimIds = $event);
       return \u0275\u0275resetView($event);
@@ -1088,6 +1223,7 @@ var _UserListComponent = class _UserListComponent {
     this.translate = inject(TranslateService);
     this.users = [];
     this.loading = false;
+    this.syncingClaims = false;
     this.isRoleModalVisible = false;
     this.isClaimModalVisible = false;
     this.isUserModalVisible = false;
@@ -1316,11 +1452,23 @@ var _UserListComponent = class _UserListComponent {
       event.target.value = "";
     }
   }
+  async syncClaims() {
+    this.syncingClaims = true;
+    try {
+      const version = (/* @__PURE__ */ new Date()).getTime().toString();
+      await this.authMgmt.syncClaims(version, []);
+      this.message.success(this.translate.instant("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\xE0nh c\xF4ng"));
+    } catch (e) {
+      this.message.error(this.translate.instant("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
+    } finally {
+      this.syncingClaims = false;
+    }
+  }
 };
 _UserListComponent.\u0275fac = function UserListComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _UserListComponent)();
 };
-_UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UserListComponent, selectors: [["app-user-list"]], decls: 88, vars: 92, consts: [["suffixIconSearch", ""], ["basicTable", ""], ["avatarInput", ""], [1, "page-header"], ["nz-button", "", "nzType", "primary", 3, "click", 4, "nzSpaceItem"], ["nz-button", "", 3, "click", 4, "nzSpaceItem"], [1, "search-card", 3, "nzTitle"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], [3, "nzSuffix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "keyup.enter", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "nzValue", "nzLabel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", 3, "ngModelChange", "valueChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", 3, "ngModelChange", "valueChange", "placeholder", "ngModel"], [2, "width", "100%", 3, "ngModelChange", "ngModel"], ["nzValue", "google", "nzLabel", "Google"], ["nzValue", "ms", "nzLabel", "Microsoft"], ["nzValue", "facebook", "nzLabel", "Facebook"], ["nz-input", "", 3, "ngModelChange", "keyup.enter", "ngModel", "placeholder"], ["nz-col", "", 1, "search-actions", 3, "nzSpan"], [3, "nzData", "nzLoading"], ["nzWidth", "80px"], ["nzWidth", "150px"], [4, "ngFor", "ngForOf"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [3, "nzVisibleChange", "nzOnCancel", "nzOnOk", "nzVisible", "nzTitle"], [4, "nzModalContent"], ["nz-button", "", "nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "plus"], ["nz-button", "", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-icon", "", "nzType", "search"], [1, "avatar-wrapper", 3, "click"], ["nzIcon", "user", 1, "user-avatar", 3, "nzSrc", "nzSize"], [1, "avatar-mask"], ["nz-icon", "", "nzType", "camera"], [1, "user-cell"], [1, "sub-text"], [3, "nzColor"], ["nzColor", "blue", 3, "nzMode", "nzOnClose", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "dashed", "nzSize", "small", 3, "click"], ["nzColor", "purple", 3, "nzMode", "nzOnClose", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "nzSpaceItem"], ["nz-button", "", "nzType", "primary", "nzDanger", "", "nzSize", "small", 3, "disabled", "click", 4, "nzSpaceItem"], ["nzColor", "blue", 3, "nzOnClose", "nzMode"], ["nzColor", "purple", 3, "nzOnClose", "nzMode"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], ["nz-button", "", "nzType", "primary", "nzDanger", "", "nzSize", "small", 3, "click", "disabled"], ["nz-form", "", "nzLayout", "vertical"], ["nzRequired", ""], ["nz-input", "", "name", "username", 3, "ngModelChange", "ngModel", "disabled"], [4, "ngIf"], ["nz-input", "", "name", "displayName", 3, "ngModelChange", "ngModel"], ["nz-input", "", "name", "email", 3, "ngModelChange", "ngModel"], ["nz-checkbox", "", "name", "isEmailVerified", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", "name", "roleIds", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", "name", "claimIds", 3, "ngModelChange", "placeholder", "ngModel"], ["nz-input", "", "type", "password", "name", "password", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", 3, "ngModelChange", "placeholder", "ngModel"]], template: function UserListComponent_Template(rf, ctx) {
+_UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _UserListComponent, selectors: [["app-user-list"]], decls: 89, vars: 92, consts: [["suffixIconSearch", ""], ["basicTable", ""], ["avatarInput", ""], [1, "page-header"], ["nzType", "primary", 3, "click", 4, "nzSpaceItem"], [3, "loading", "click", 4, "nzSpaceItem"], ["nzType", "default", 3, "loading", "click", 4, "nzSpaceItem"], [1, "search-card", 3, "nzTitle"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], [3, "nzSuffix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "keyup.enter", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "nzValue", "nzLabel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", 3, "ngModelChange", "valueChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", 3, "ngModelChange", "valueChange", "placeholder", "ngModel"], [2, "width", "100%", 3, "ngModelChange", "ngModel"], ["nzValue", "google", "nzLabel", "Google"], ["nzValue", "ms", "nzLabel", "Microsoft"], ["nzValue", "facebook", "nzLabel", "Facebook"], ["nz-input", "", 3, "ngModelChange", "keyup.enter", "ngModel", "placeholder"], ["nz-col", "", 1, "search-actions", 3, "nzSpan"], [3, "click", 4, "nzSpaceItem"], [3, "nzData", "nzLoading"], ["nzWidth", "80px"], ["nzWidth", "150px"], [4, "ngFor", "ngForOf"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [3, "nzVisibleChange", "nzOnCancel", "nzOnOk", "nzVisible", "nzTitle"], [4, "nzModalContent"], ["nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "plus"], [3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "sync"], ["nz-icon", "", "nzType", "search"], [3, "click"], [1, "avatar-wrapper", 3, "click"], ["nzIcon", "user", 1, "user-avatar", 3, "nzSrc", "nzSize"], [1, "avatar-mask"], ["nz-icon", "", "nzType", "camera"], [1, "user-cell"], [1, "sub-text"], [3, "nzColor"], ["nzColor", "blue", 3, "nzMode", "nzOnClose", 4, "ngFor", "ngForOf"], ["nzType", "dashed", "nzSize", "small", 3, "click"], ["nzColor", "purple", 3, "nzMode", "nzOnClose", 4, "ngFor", "ngForOf"], ["nzType", "primary", "nzSize", "small", 3, "click", 4, "nzSpaceItem"], ["nzType", "primary", "nzSize", "small", 3, "nzDanger", "disabled", "click", 4, "nzSpaceItem"], ["nzColor", "blue", 3, "nzOnClose", "nzMode"], ["nzColor", "purple", 3, "nzOnClose", "nzMode"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzDanger", "disabled"], ["nz-form", "", "nzLayout", "vertical"], ["nzRequired", ""], ["nz-input", "", "name", "username", 3, "ngModelChange", "ngModel", "disabled"], [4, "ngIf"], ["nz-input", "", "name", "displayName", 3, "ngModelChange", "ngModel"], ["nz-input", "", "name", "email", 3, "ngModelChange", "ngModel"], ["nz-checkbox", "", "name", "isEmailVerified", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", "name", "roleIds", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", "name", "claimIds", 3, "ngModelChange", "placeholder", "ngModel"], ["nz-input", "", "type", "password", "name", "password", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "mode", "multiple", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/claims", "mode", "multiple", 3, "ngModelChange", "placeholder", "ngModel"]], template: function UserListComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 3)(1, "h2");
@@ -1328,208 +1476,208 @@ _UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275pipe(3, "translate");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "nz-space");
-    \u0275\u0275template(5, UserListComponent_button_5_Template, 4, 3, "button", 4)(6, UserListComponent_button_6_Template, 4, 3, "button", 5);
+    \u0275\u0275template(5, UserListComponent_app_button_5_Template, 4, 3, "app-button", 4)(6, UserListComponent_app_button_6_Template, 4, 4, "app-button", 5)(7, UserListComponent_app_button_7_Template, 4, 4, "app-button", 6);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(7, "nz-card", 6);
-    \u0275\u0275pipe(8, "translate");
-    \u0275\u0275elementStart(9, "div", 7)(10, "div", 8)(11, "nz-input-group", 9)(12, "input", 10);
-    \u0275\u0275pipe(13, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_input_ngModelChange_12_listener($event) {
+    \u0275\u0275elementStart(8, "nz-card", 7);
+    \u0275\u0275pipe(9, "translate");
+    \u0275\u0275elementStart(10, "div", 8)(11, "div", 9)(12, "nz-input-group", 10)(13, "input", 11);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_input_ngModelChange_13_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.keyword, $event) || (ctx.searchQuery.keyword = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("keyup.enter", function UserListComponent_Template_input_keyup_enter_12_listener() {
+    \u0275\u0275listener("keyup.enter", function UserListComponent_Template_input_keyup_enter_13_listener() {
       return ctx.loadUsers();
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(14, UserListComponent_ng_template_14_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(15, UserListComponent_ng_template_15_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "div", 8)(17, "nz-select", 11);
-    \u0275\u0275pipe(18, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_select_ngModelChange_17_listener($event) {
+    \u0275\u0275elementStart(17, "div", 9)(18, "nz-select", 12);
+    \u0275\u0275pipe(19, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_select_ngModelChange_18_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.isEmailVerified, $event) || (ctx.searchQuery.isEmailVerified = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275element(19, "nz-option", 12);
-    \u0275\u0275pipe(20, "translate");
-    \u0275\u0275element(21, "nz-option", 12);
-    \u0275\u0275pipe(22, "translate");
+    \u0275\u0275element(20, "nz-option", 13);
+    \u0275\u0275pipe(21, "translate");
+    \u0275\u0275element(22, "nz-option", 13);
+    \u0275\u0275pipe(23, "translate");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(23, "div", 8)(24, "app-select", 13);
-    \u0275\u0275pipe(25, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_app_select_ngModelChange_24_listener($event) {
+    \u0275\u0275elementStart(24, "div", 9)(25, "app-select", 14);
+    \u0275\u0275pipe(26, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_app_select_ngModelChange_25_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.roleIds, $event) || (ctx.searchQuery.roleIds = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("valueChange", function UserListComponent_Template_app_select_valueChange_24_listener() {
+    \u0275\u0275listener("valueChange", function UserListComponent_Template_app_select_valueChange_25_listener() {
       return ctx.loadUsers();
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(26, "div", 8)(27, "app-select", 14);
-    \u0275\u0275pipe(28, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_app_select_ngModelChange_27_listener($event) {
+    \u0275\u0275elementStart(27, "div", 9)(28, "app-select", 15);
+    \u0275\u0275pipe(29, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_app_select_ngModelChange_28_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.claimIds, $event) || (ctx.searchQuery.claimIds = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("valueChange", function UserListComponent_Template_app_select_valueChange_27_listener() {
+    \u0275\u0275listener("valueChange", function UserListComponent_Template_app_select_valueChange_28_listener() {
       return ctx.loadUsers();
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(29, "div", 8)(30, "nz-range-picker", 15);
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_range_picker_ngModelChange_30_listener($event) {
+    \u0275\u0275elementStart(30, "div", 9)(31, "nz-range-picker", 16);
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_range_picker_ngModelChange_31_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.dateRange, $event) || (ctx.searchQuery.dateRange = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(31, "div", 8)(32, "nz-select", 11);
-    \u0275\u0275pipe(33, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_select_ngModelChange_32_listener($event) {
+    \u0275\u0275elementStart(32, "div", 9)(33, "nz-select", 12);
+    \u0275\u0275pipe(34, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_nz_select_ngModelChange_33_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.ssoProvider, $event) || (ctx.searchQuery.ssoProvider = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275element(34, "nz-option", 16)(35, "nz-option", 17)(36, "nz-option", 18);
+    \u0275\u0275element(35, "nz-option", 17)(36, "nz-option", 18)(37, "nz-option", 19);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(37, "div", 8)(38, "input", 19);
-    \u0275\u0275pipe(39, "translate");
-    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_input_ngModelChange_38_listener($event) {
+    \u0275\u0275elementStart(38, "div", 9)(39, "input", 20);
+    \u0275\u0275pipe(40, "translate");
+    \u0275\u0275twoWayListener("ngModelChange", function UserListComponent_Template_input_ngModelChange_39_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.searchQuery.ssoId, $event) || (ctx.searchQuery.ssoId = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("keyup.enter", function UserListComponent_Template_input_keyup_enter_38_listener() {
+    \u0275\u0275listener("keyup.enter", function UserListComponent_Template_input_keyup_enter_39_listener() {
       return ctx.loadUsers();
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(40, "div", 20)(41, "nz-space");
-    \u0275\u0275template(42, UserListComponent_button_42_Template, 3, 3, "button", 4)(43, UserListComponent_button_43_Template, 3, 3, "button", 5);
+    \u0275\u0275elementStart(41, "div", 21)(42, "nz-space");
+    \u0275\u0275template(43, UserListComponent_app_button_43_Template, 3, 3, "app-button", 4)(44, UserListComponent_app_button_44_Template, 3, 3, "app-button", 22);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(44, "nz-table", 21, 1)(46, "thead")(47, "tr")(48, "th", 22);
-    \u0275\u0275text(49);
-    \u0275\u0275pipe(50, "translate");
+    \u0275\u0275elementStart(45, "nz-table", 23, 1)(47, "thead")(48, "tr")(49, "th", 24);
+    \u0275\u0275text(50);
+    \u0275\u0275pipe(51, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(51, "th");
-    \u0275\u0275text(52);
-    \u0275\u0275pipe(53, "translate");
+    \u0275\u0275elementStart(52, "th");
+    \u0275\u0275text(53);
+    \u0275\u0275pipe(54, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "th");
-    \u0275\u0275text(55);
-    \u0275\u0275pipe(56, "translate");
+    \u0275\u0275elementStart(55, "th");
+    \u0275\u0275text(56);
+    \u0275\u0275pipe(57, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(57, "th");
-    \u0275\u0275text(58);
-    \u0275\u0275pipe(59, "translate");
+    \u0275\u0275elementStart(58, "th");
+    \u0275\u0275text(59);
+    \u0275\u0275pipe(60, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(60, "th");
-    \u0275\u0275text(61);
-    \u0275\u0275pipe(62, "translate");
+    \u0275\u0275elementStart(61, "th");
+    \u0275\u0275text(62);
+    \u0275\u0275pipe(63, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(63, "th");
-    \u0275\u0275text(64);
-    \u0275\u0275pipe(65, "translate");
+    \u0275\u0275elementStart(64, "th");
+    \u0275\u0275text(65);
+    \u0275\u0275pipe(66, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(66, "th");
-    \u0275\u0275text(67);
-    \u0275\u0275pipe(68, "translate");
+    \u0275\u0275elementStart(67, "th");
+    \u0275\u0275text(68);
+    \u0275\u0275pipe(69, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(69, "th");
-    \u0275\u0275text(70);
-    \u0275\u0275pipe(71, "translate");
+    \u0275\u0275elementStart(70, "th");
+    \u0275\u0275text(71);
+    \u0275\u0275pipe(72, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(72, "th", 23);
-    \u0275\u0275text(73);
-    \u0275\u0275pipe(74, "translate");
+    \u0275\u0275elementStart(73, "th", 25);
+    \u0275\u0275text(74);
+    \u0275\u0275pipe(75, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(75, "tbody");
-    \u0275\u0275template(76, UserListComponent_tr_76_Template, 36, 19, "tr", 24);
+    \u0275\u0275elementStart(76, "tbody");
+    \u0275\u0275template(77, UserListComponent_tr_77_Template, 36, 19, "tr", 26);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(77, "input", 25, 2);
-    \u0275\u0275listener("change", function UserListComponent_Template_input_change_77_listener($event) {
+    \u0275\u0275elementStart(78, "input", 27, 2);
+    \u0275\u0275listener("change", function UserListComponent_Template_input_change_78_listener($event) {
       return ctx.onFileSelected($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(79, "nz-modal", 26);
-    \u0275\u0275pipe(80, "translate");
-    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_79_listener($event) {
+    \u0275\u0275elementStart(80, "nz-modal", 28);
+    \u0275\u0275pipe(81, "translate");
+    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_80_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.isUserModalVisible, $event) || (ctx.isUserModalVisible = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_79_listener() {
+    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_80_listener() {
       return ctx.isUserModalVisible = false;
-    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_79_listener() {
+    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_80_listener() {
       return ctx.saveUser();
     });
-    \u0275\u0275template(81, UserListComponent_ng_container_81_Template, 40, 32, "ng-container", 27);
+    \u0275\u0275template(82, UserListComponent_ng_container_82_Template, 40, 32, "ng-container", 29);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(82, "nz-modal", 26);
-    \u0275\u0275pipe(83, "translate");
-    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_82_listener($event) {
+    \u0275\u0275elementStart(83, "nz-modal", 28);
+    \u0275\u0275pipe(84, "translate");
+    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_83_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.isRoleModalVisible, $event) || (ctx.isRoleModalVisible = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_82_listener() {
+    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_83_listener() {
       return ctx.isRoleModalVisible = false;
-    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_82_listener() {
+    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_83_listener() {
       return ctx.assignRole();
     });
-    \u0275\u0275template(84, UserListComponent_ng_container_84_Template, 3, 4, "ng-container", 27);
+    \u0275\u0275template(85, UserListComponent_ng_container_85_Template, 3, 4, "ng-container", 29);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(85, "nz-modal", 26);
-    \u0275\u0275pipe(86, "translate");
-    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_85_listener($event) {
+    \u0275\u0275elementStart(86, "nz-modal", 28);
+    \u0275\u0275pipe(87, "translate");
+    \u0275\u0275twoWayListener("nzVisibleChange", function UserListComponent_Template_nz_modal_nzVisibleChange_86_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.isClaimModalVisible, $event) || (ctx.isClaimModalVisible = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_85_listener() {
+    \u0275\u0275listener("nzOnCancel", function UserListComponent_Template_nz_modal_nzOnCancel_86_listener() {
       return ctx.isClaimModalVisible = false;
-    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_85_listener() {
+    })("nzOnOk", function UserListComponent_Template_nz_modal_nzOnOk_86_listener() {
       return ctx.assignClaim();
     });
-    \u0275\u0275template(87, UserListComponent_ng_container_87_Template, 3, 4, "ng-container", 27);
+    \u0275\u0275template(88, UserListComponent_ng_container_88_Template, 3, 4, "ng-container", 29);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const suffixIconSearch_r20 = \u0275\u0275reference(15);
-    const basicTable_r21 = \u0275\u0275reference(45);
+    const suffixIconSearch_r21 = \u0275\u0275reference(16);
+    const basicTable_r22 = \u0275\u0275reference(46);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 47, "Danh s\xE1ch ng\u01B0\u1EDDi d\xF9ng"));
-    \u0275\u0275advance(5);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(8, 49, "T\xECm ki\u1EBFm"));
+    \u0275\u0275advance(6);
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 49, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(91, _c0));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(91, _c02));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance();
-    \u0275\u0275property("nzSuffix", suffixIconSearch_r20);
+    \u0275\u0275property("nzSuffix", suffixIconSearch_r21);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.keyword);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(13, 51, "Username, DisplayName, Email"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 51, "Username, DisplayName, Email"));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.isEmailVerified);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(18, 53, "Tr\u1EA1ng th\xE1i"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(19, 53, "Tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", true)("nzLabel", \u0275\u0275pipeBind1(20, 55, "\u0110\xE3 x\xE1c minh"));
+    \u0275\u0275property("nzValue", true)("nzLabel", \u0275\u0275pipeBind1(21, 55, "\u0110\xE3 x\xE1c minh"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", false)("nzLabel", \u0275\u0275pipeBind1(22, 57, "\u0110ang ch\u1EDD"));
+    \u0275\u0275property("nzValue", false)("nzLabel", \u0275\u0275pipeBind1(23, 57, "\u0110ang ch\u1EDD"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance();
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(25, 59, "Vai tr\xF2"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(26, 59, "Vai tr\xF2"));
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.roleIds);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance();
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(28, 61, "Quy\u1EC1n"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(29, 61, "Quy\u1EC1n"));
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.claimIds);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 8);
@@ -1539,45 +1687,45 @@ _UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.ssoProvider);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(33, 63, "SSO Provider"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(34, 63, "SSO Provider"));
     \u0275\u0275advance(5);
     \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx.searchQuery.ssoId);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(39, 65, "SSO ID"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(40, 65, "SSO ID"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 8);
     \u0275\u0275advance(4);
     \u0275\u0275property("nzData", ctx.users)("nzLoading", ctx.loading);
     \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(50, 67, "Avatar"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(51, 67, "Avatar"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(53, 69, "Ng\u01B0\u1EDDi d\xF9ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(54, 69, "Ng\u01B0\u1EDDi d\xF9ng"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(56, 71, "Email"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(57, 71, "Email"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(59, 73, "Tr\u1EA1ng th\xE1i"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(60, 73, "Tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(62, 75, "Vai tr\xF2"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(63, 75, "Vai tr\xF2"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(65, 77, "Quy\u1EC1n"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(66, 77, "Quy\u1EC1n"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(68, 79, "Ng\xE0y t\u1EA1o"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(69, 79, "Ng\xE0y t\u1EA1o"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(71, 81, "C\u1EADp nh\u1EADt"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(72, 81, "C\u1EADp nh\u1EADt"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(74, 83, "H\xE0nh \u0111\u1ED9ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(75, 83, "H\xE0nh \u0111\u1ED9ng"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", basicTable_r21.data);
+    \u0275\u0275property("ngForOf", basicTable_r22.data);
     \u0275\u0275advance(3);
     \u0275\u0275twoWayProperty("nzVisible", ctx.isUserModalVisible);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(80, 85, ctx.editingUser ? "S\u1EEDa ng\u01B0\u1EDDi d\xF9ng" : "Th\xEAm ng\u01B0\u1EDDi d\xF9ng"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(81, 85, ctx.editingUser ? "S\u1EEDa ng\u01B0\u1EDDi d\xF9ng" : "Th\xEAm ng\u01B0\u1EDDi d\xF9ng"));
     \u0275\u0275advance(3);
     \u0275\u0275twoWayProperty("nzVisible", ctx.isRoleModalVisible);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(83, 87, "Vai tr\xF2"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(84, 87, "Vai tr\xF2"));
     \u0275\u0275advance(3);
     \u0275\u0275twoWayProperty("nzVisible", ctx.isClaimModalVisible);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(86, 89, "Quy\u1EC1n"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(87, 89, "Quy\u1EC1n"));
   }
 }, dependencies: [
   CommonModule,
@@ -1598,9 +1746,7 @@ _UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
   NzTbodyComponent,
   NzTrDirective,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzIconModule,
   NzIconDirective,
   NzTagModule,
@@ -1636,6 +1782,7 @@ _UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
   NzAvatarModule,
   NzAvatarComponent,
   AppSelectComponent,
+  AppButtonComponent,
   TranslateModule,
   DatePipe,
   TranslatePipe
@@ -1662,17 +1809,21 @@ var UserListComponent = _UserListComponent;
       NzCheckboxModule,
       NzAvatarModule,
       AppSelectComponent,
+      AppButtonComponent,
       TranslateModule
     ], template: `
     <div class="page-header">
       <h2>{{ 'Danh s\xE1ch ng\u01B0\u1EDDi d\xF9ng' | translate }}</h2>
       <nz-space>
-        <button *nzSpaceItem nz-button nzType="primary" (click)="showCreateModal()">
+        <app-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
           <span nz-icon nzType="plus"></span> {{ 'Th\xEAm ng\u01B0\u1EDDi d\xF9ng' | translate }}
-        </button>
-        <button *nzSpaceItem nz-button (click)="loadUsers()">
+        </app-button>
+        <app-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
           <span nz-icon nzType="reload"></span> {{ '\u0110\u1ED3ng b\u1ED9' | translate }}
-        </button>
+        </app-button>
+        <app-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
+          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
+        </app-button>
       </nz-space>
     </div>
 
@@ -1725,8 +1876,8 @@ var UserListComponent = _UserListComponent;
         </div>
         <div nz-col [nzSpan]="8" class="search-actions">
           <nz-space>
-            <button *nzSpaceItem nz-button nzType="primary" (click)="loadUsers()">{{ 'T\xECm ki\u1EBFm' | translate }}</button>
-            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ '\u0110\u1EB7t l\u1EA1i' | translate }}</button>
+            <app-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'T\xECm ki\u1EBFm' | translate }}</app-button>
+            <app-button *nzSpaceItem (click)="resetSearch()">{{ '\u0110\u1EB7t l\u1EA1i' | translate }}</app-button>
           </nz-space>
         </div>
       </div>
@@ -1774,9 +1925,9 @@ var UserListComponent = _UserListComponent;
                     (nzOnClose)="removeRole(data, role)">
               {{ role.name }}
             </nz-tag>
-            <button nz-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+            <app-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
               <span nz-icon nzType="plus"></span>
-            </button>
+            </app-button>
           </td>
           <td>
             <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
@@ -1784,18 +1935,18 @@ var UserListComponent = _UserListComponent;
                     (nzOnClose)="removeClaim(data, claim)">
               {{ claim.name }}
             </nz-tag>
-            <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+            <app-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
               <span nz-icon nzType="plus"></span>
-            </button>
+            </app-button>
           </td>
           <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'S\u1EEDa' | translate }}</button>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+              <app-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'S\u1EEDa' | translate }}</app-button>
+              <app-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
                       [disabled]="data.username?.toLowerCase() === 'admin'"
-                      (click)="deleteUser(data)">{{ 'X\xF3a' | translate }}</button>
+                      (click)="deleteUser(data)">{{ 'X\xF3a' | translate }}</app-button>
             </nz-space>
           </td>
         </tr>
@@ -1891,11 +2042,11 @@ var UserListComponent = _UserListComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(UserListComponent, { className: "UserListComponent", filePath: "projects/tot/business-auth/src/lib/user-list/user-list.component.ts", lineNumber: 329 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(UserListComponent, { className: "UserListComponent", filePath: "projects/tot/business-auth/src/lib/user-list/user-list.component.ts", lineNumber: 333 });
 })();
 
 // projects/tot/business-auth/src/lib/role-list/role-list.component.ts
-var _c02 = () => [16, 16];
+var _c03 = () => [16, 16];
 function RoleListComponent_button_19_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
@@ -2363,7 +2514,7 @@ _RoleListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275advance(2);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 26, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(44, _c02));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(44, _c03));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 8);
     \u0275\u0275advance();
@@ -3294,7 +3445,7 @@ var AclListComponent = _AclListComponent;
 })();
 
 // projects/tot/business-auth/src/lib/claim-sync/claim-sync.component.ts
-var _c03 = () => [16, 16];
+var _c04 = () => [16, 16];
 function ClaimSyncComponent_button_18_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
@@ -3630,7 +3781,7 @@ _ClaimSyncComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance(2);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 28, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(46, _c03));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(46, _c04));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 10);
     \u0275\u0275advance();
@@ -4089,7 +4240,7 @@ function NzTabAddButtonComponent_ng_container_0_Template(rf, ctx) {
     \u0275\u0275property("nzType", icon_r1);
   }
 }
-var _c04 = ["nz-tab-body", ""];
+var _c05 = ["nz-tab-body", ""];
 function NzTabBodyComponent_ng_template_0_Template(rf, ctx) {
 }
 function NzTabCloseButtonComponent_ng_container_0_Template(rf, ctx) {
@@ -4633,7 +4784,7 @@ __publicField(_NzTabBodyComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defi
     animated: [1, "animated"]
   },
   exportAs: ["nzTabBody"],
-  attrs: _c04,
+  attrs: _c05,
   decls: 1,
   vars: 1,
   consts: [[3, "ngTemplateOutlet"]],
@@ -7271,4 +7422,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-BDVPXDHL.js.map
+//# sourceMappingURL=chunk-AOGZCW64.js.map

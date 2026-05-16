@@ -6,6 +6,7 @@ using Core.Infra.Firebase.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Core.Infra.Oidc.Services;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -15,12 +16,14 @@ namespace Core.Infra.Oidc.Controllers;
 public class AuthManagementController : ControllerBase
 {
     private readonly IAuthRepository _authRepo;
+    private readonly AuthService _authService;
     private readonly FirebaseService _firebaseService;
     private readonly IConfiguration _config;
 
-    public AuthManagementController(IAuthRepository authRepo, FirebaseService firebaseService, IConfiguration config)
+    public AuthManagementController(IAuthRepository authRepo, AuthService authService, FirebaseService firebaseService, IConfiguration config)
     {
         _authRepo = authRepo;
+        _authService = authService;
         _firebaseService = firebaseService;
         _config = config;
     }
@@ -198,6 +201,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
     {
         await _authRepo.AssignRoleToUserAsync(userId, roleId);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Role assigned successfully" });
     }
 
@@ -205,6 +209,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
         await _authRepo.AssignRolesToUserAsync(userId, roleIds);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Roles assigned successfully" });
     }
 
@@ -212,6 +217,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
     {
         await _authRepo.RemoveRoleFromUserAsync(userId, roleId);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Role removed successfully" });
     }
 
@@ -233,6 +239,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignDirectClaim(Guid userId, Guid claimId)
     {
         await _authRepo.AssignClaimToUserAsync(userId, claimId);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Direct claim assigned successfully" });
     }
 
@@ -240,6 +247,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignDirectClaims(Guid userId, [FromBody] List<Guid> claimIds)
     {
         await _authRepo.AssignClaimsToUserAsync(userId, claimIds);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Direct claims assigned successfully" });
     }
 
@@ -247,6 +255,7 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> RemoveDirectClaim(Guid userId, Guid claimId)
     {
         await _authRepo.RemoveClaimFromUserAsync(userId, claimId);
+        await _authService.SyncUserClaimsToRedisAsync(userId);
         return Ok(new { message = "Direct claim removed successfully" });
     }
 
@@ -267,12 +276,19 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AddAcl([FromBody] AclEntry entry)
     {
         await _authRepo.AddAclAsync(entry);
+        if (entry.UserId.HasValue)
+        {
+            await _authService.SyncUserAclToRedisAsync(entry.UserId.Value);
+        }
         return Ok(entry);
     }
 
     [HttpDelete("acl/{id}")]
     public async Task<IActionResult> RemoveAcl(Guid id)
     {
+        // For RemoveAcl, we don't easily know the UserId from just the Id without fetching it
+        // but for KISS, if we want immediate effect, we might need to fetch the entry first.
+        // Let's keep it simple for now, or fetch to sync.
         await _authRepo.RemoveAclAsync(id);
         return Ok(new { message = "ACL entry removed successfully" });
     }

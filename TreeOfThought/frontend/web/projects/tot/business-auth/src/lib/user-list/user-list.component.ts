@@ -17,7 +17,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
-import { AppSelectComponent } from '@tot/shared';
+import { AppSelectComponent, AppButtonComponent } from '@tot/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({
@@ -41,18 +41,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzCheckboxModule,
     NzAvatarModule,
     AppSelectComponent,
+    AppButtonComponent,
     TranslateModule
   ],
   template: `
     <div class="page-header">
       <h2>{{ 'Danh sách người dùng' | translate }}</h2>
       <nz-space>
-        <button *nzSpaceItem nz-button nzType="primary" (click)="showCreateModal()">
+        <app-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
           <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | translate }}
-        </button>
-        <button *nzSpaceItem nz-button (click)="loadUsers()">
+        </app-button>
+        <app-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
           <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
-        </button>
+        </app-button>
+        <app-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
+          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
+        </app-button>
       </nz-space>
     </div>
 
@@ -105,8 +109,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
         </div>
         <div nz-col [nzSpan]="8" class="search-actions">
           <nz-space>
-            <button *nzSpaceItem nz-button nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | translate }}</button>
-            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ 'Đặt lại' | translate }}</button>
+            <app-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | translate }}</app-button>
+            <app-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | translate }}</app-button>
           </nz-space>
         </div>
       </div>
@@ -154,9 +158,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
                     (nzOnClose)="removeRole(data, role)">
               {{ role.name }}
             </nz-tag>
-            <button nz-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+            <app-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
               <span nz-icon nzType="plus"></span>
-            </button>
+            </app-button>
           </td>
           <td>
             <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
@@ -164,18 +168,18 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
                     (nzOnClose)="removeClaim(data, claim)">
               {{ claim.name }}
             </nz-tag>
-            <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+            <app-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
               <span nz-icon nzType="plus"></span>
-            </button>
+            </app-button>
           </td>
           <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>{{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
           <td>
             <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</button>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+              <app-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</app-button>
+              <app-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
                       [disabled]="data.username?.toLowerCase() === 'admin'"
-                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</button>
+                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</app-button>
             </nz-space>
           </td>
         </tr>
@@ -334,6 +338,7 @@ export class UserListComponent implements OnInit {
 
   users: any[] = [];
   loading = false;
+  syncingClaims = false;
   
   isRoleModalVisible = false;
   isClaimModalVisible = false;
@@ -576,6 +581,21 @@ export class UserListComponent implements OnInit {
     } finally {
       this.message.remove(loadingMsg);
       event.target.value = ''; // Reset file input
+    }
+  }
+
+  async syncClaims() {
+    this.syncingClaims = true;
+    try {
+      // Sync claims from attributes (scanned in BE)
+      // version could be a timestamp or a specific version string
+      const version = new Date().getTime().toString();
+      await this.authMgmt.syncClaims(version, []); 
+      this.message.success(this.translate.instant('Đồng bộ quyền thành công'));
+    } catch (e) {
+      this.message.error(this.translate.instant('Đồng bộ quyền thất bại'));
+    } finally {
+      this.syncingClaims = false;
     }
   }
 }
