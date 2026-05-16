@@ -9,20 +9,20 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
-  selector: 'tot-select',
+  selector: 'tot-autocomplete',
   standalone: true,
   imports: [CommonModule, FormsModule, NzSelectModule, NzCheckboxModule, NzSpinModule, TranslateModule],
-  templateUrl: './tot-select.component.html',
-  styleUrl: './tot-select.component.css',
+  templateUrl: './tot-autocomplete.component.html',
+  styleUrl: './tot-autocomplete.component.css',
   providers: [
     {
       provide: NG_VALUE_ACCESSOR,
-      useExisting: forwardRef(() => TotSelectComponent),
+      useExisting: forwardRef(() => TotAutocompleteComponent),
       multi: true
     }
   ]
 })
-export class TotSelectComponent implements OnInit, OnDestroy, ControlValueAccessor {
+export class TotAutocompleteComponent implements OnInit, OnDestroy, ControlValueAccessor {
   private httpService = inject(HttpClientService);
   private destroy$ = new Subject<void>();
   private search$ = new Subject<string>();
@@ -33,7 +33,7 @@ export class TotSelectComponent implements OnInit, OnDestroy, ControlValueAccess
   @Input() placeholder: string = 'Vui lòng chọn';
   @Input() labelField: string = 'name';
   @Input() valueField: string = 'id';
-  @Input() pageSize: number = 25;
+  @Input() pageSize: number = 10;
 
   @Output() valueChange = new EventEmitter<any>();
 
@@ -49,7 +49,7 @@ export class TotSelectComponent implements OnInit, OnDestroy, ControlValueAccess
 
   private getCacheKey(): string {
     const paramsStr = JSON.stringify(this.params || {});
-    return `tot_select_cache_${this.apiUrl}_${paramsStr}`;
+    return `tot_autocomplete_cache_${this.apiUrl}_${paramsStr}`;
   }
 
   private getCache(): any[] {

@@ -6,7 +6,7 @@ dirs_to_process = ['src/app', 'projects/tot/business-test/src/lib', 'projects/to
 
 # Patterns
 # 1. Claim Directive (Special case - moved to core)
-claim_directive_pattern = re.compile(r"import\s+\{\s*AppClaimDirective\s*\}\s+from\s+'(\.\.?/)+shared/directives/claim\.directive';")
+claim_directive_pattern = re.compile(r"import\s+\{\s*TotClaimDirective\s*\}\s+from\s+'(\.\.?/)+shared/directives/claim\.directive';")
 
 # 2. General shared imports
 shared_pattern = re.compile(r"import\s+\{(.*?)\}\s+from\s+'(\.\.?/)+shared/.*?';")
@@ -22,17 +22,17 @@ for root_dir in dirs_to_process:
                 
                 changed = False
                 
-                # Handle AppClaimDirective first
+                # Handle TotClaimDirective first
                 if claim_directive_pattern.search(content):
                     # Check if @tot/core is already imported
                     core_match = re.search(r"import\s+\{(.*?)\}\s+from\s+'@tot/core';", content)
                     if core_match:
                         existing_core = core_match.group(1)
-                        if 'AppClaimDirective' not in existing_core:
-                            new_core = f"import {{ {existing_core.strip()}, AppClaimDirective }} from '@tot/core';"
+                        if 'TotClaimDirective' not in existing_core:
+                            new_core = f"import {{ {existing_core.strip()}, TotClaimDirective }} from '@tot/core';"
                             content = content.replace(core_match.group(0), new_core)
                     else:
-                        content = "import { AppClaimDirective } from '@tot/core';\n" + content
+                        content = "import { TotClaimDirective } from '@tot/core';\n" + content
                     
                     content = claim_directive_pattern.sub('', content)
                     changed = True

@@ -8,8 +8,9 @@ import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService } from '../services/dashboard.service';
-import { TotButtonComponent } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
+import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
   selector: 'app-message-list',
@@ -21,7 +22,8 @@ import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
     NzIconModule,
     NzTagModule,
     TranslateModule,
-    TotButtonComponent
+    TotButtonComponent,
+    TotTableComponent
   ],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.css']
@@ -43,7 +45,20 @@ export class MessageListComponent implements OnInit {
   pageSize = 10;
   total = 0;
 
+  @ViewChild('timeTpl', { static: true }) timeTpl!: TemplateRef<any>;
+  @ViewChild('contentTpl', { static: true }) contentTpl!: TemplateRef<any>;
+  @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
+  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+
+  msgColumns: TotTableColumn[] = [];
+
   ngOnInit(): void {
+    this.msgColumns = [
+      { title: 'Thời gian', width: '180px', left: '0px', template: this.timeTpl },
+      { title: 'Nội dung tin nhắn', template: this.contentTpl },
+      { title: 'Trạng thái', width: '120px', template: this.statusTpl },
+      { title: 'Hành động', width: '200px', right: '0px', template: this.actionsTpl }
+    ];
     this.queueName = this.inputQueueName || this.modalData?.inputQueueName || '';
     if (this.queueName) {
       this.loadMessages();
@@ -79,8 +94,10 @@ export class MessageListComponent implements OnInit {
     });
   }
 
-  onPageIndexChange(index: number): void {
-    this.pageIndex = index;
+  onQueryParamsChange(params: any): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
     this.loadMessages();
   }
 

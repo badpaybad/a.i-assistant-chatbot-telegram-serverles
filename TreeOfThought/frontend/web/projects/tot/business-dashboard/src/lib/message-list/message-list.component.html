@@ -1,61 +1,63 @@
 <div class="message-list-container">
-  <nz-table #msgTable [nzData]="messages" [nzLoading]="loading" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex" [nzPageSize]="pageSize" (nzPageIndexChange)="onPageIndexChange($event)" [nzScroll]="{ x: '1000px' }">
-    <thead>
-      <tr>
-        <th nzWidth="180px" nzLeft="0px">{{ 'Thời gian' | translate }}</th>
-        <th>{{ 'Nội dung tin nhắn' | translate }}</th>
-        <th nzWidth="120px">{{ 'Trạng thái' | translate }}</th>
-        <th nzWidth="200px" nzRight="0px">{{ 'Hành động' | translate }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      <ng-container *ngFor="let item of msgTable.data">
-        <tr>
-          <td nzLeft="0px">{{ getTime(item) | date:'yyyy-MM-dd HH:mm:ss' }}</td>
-          <td>
-            <div class="msg-preview" (click)="item.expand = !item.expand">
-              {{ item.raw | slice:0:100 }}{{ item.raw.length > 100 ? '...' : '' }}
-            </div>
-          </td>
-          <td>
-            <nz-tag [nzColor]="getStatus(item) === 'error' ? 'error' : getStatus(item) === 'processing' ? 'processing' : 'default'">
-              {{ getStatus(item) | translate }}
-            </nz-tag>
-          </td>
-          <td nzRight="0px">
-            <div style="display: flex; gap: 8px;">
-              <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(item)">
-                <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
-              </tot-button>
-              <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(item)">
-                <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
-              </tot-button>
-              <tot-button nzSize="small" (click)="item.expand = !item.expand">
-                <i nz-icon [nzType]="item.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | translate }}
-              </tot-button>
-            </div>
-          </td>
-        </tr>
-        <tr [nzExpand]="item.expand">
-          <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
-              <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
-                <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
-              </tot-button>
-            </div>
-            <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(item.parsed) }}</pre>
-            
-            <div *ngIf="item.parsed._error" style="margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;">
-              <div style="font-weight: bold; color: #ff4d4f; margin-bottom: 4px;">Error Details:</div>
-              <div style="color: #ffccc7;">{{ item.parsed._error }}</div>
-              <div style="font-size: 11px; color: #a61d24; margin-top: 4px;">Worker: {{ item.parsed._workerId }}</div>
-            </div>
-          </div>
-        </tr>
-      </ng-container>
-    </tbody>
-  </nz-table>
+  <tot-table 
+    [data]="messages" 
+    [columns]="msgColumns" 
+    [loading]="loading" 
+    [total]="total" 
+    [pageIndex]="pageIndex" 
+    [pageSize]="pageSize" 
+    [frontPagination]="false"
+    [expandTemplate]="expandTpl"
+    (queryParamsChange)="onQueryParamsChange($event)"
+  ></tot-table>
+
+  <ng-template #timeTpl let-data>
+    {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
+  </ng-template>
+
+  <ng-template #contentTpl let-data>
+    <div class="msg-preview" (click)="data.expand = !data.expand">
+      {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
+    </div>
+  </ng-template>
+
+  <ng-template #statusTpl let-data>
+    <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
+      {{ getStatus(data) | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #actionsTpl let-data>
+    <div style="display: flex; gap: 8px;">
+      <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
+        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+      </tot-button>
+      <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
+        <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+      </tot-button>
+      <tot-button nzSize="small" (click)="data.expand = !data.expand">
+        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | translate }}
+      </tot-button>
+    </div>
+  </ng-template>
+
+  <ng-template #expandTpl let-data>
+    <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px; width: 100%;">
+      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
+        <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.raw)">
+          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
+        </tot-button>
+      </div>
+      <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(data.parsed) }}</pre>
+      
+      <div *ngIf="data.parsed._error" style="margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;">
+        <div style="font-weight: bold; color: #ff4d4f; margin-bottom: 4px;">Error Details:</div>
+        <div style="color: #ffccc7;">{{ data.parsed._error }}</div>
+        <div style="font-size: 11px; color: #a61d24; margin-top: 4px;">Worker: {{ data.parsed._workerId }}</div>
+      </div>
+    </div>
+  </ng-template>
 </div>
 
 <style>

@@ -6,7 +6,7 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
-import { AuthService, APP_CLAIMS, AppClaimDirective } from '@tot/core';
+import { AuthService, APP_CLAIMS, TotClaimDirective } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
@@ -29,7 +29,7 @@ import { MenuService, MenuItem } from '../../services/menu.service';
     TranslateModule,
     NzDropDownModule,
     NzBreadCrumbModule,
-    AppClaimDirective
+    TotClaimDirective
   ],
   templateUrl: './main-layout.component.html',
   styleUrls: ['./main-layout.component.css']

@@ -143,74 +143,74 @@
           </div>
         </div>
 
-        <nz-table #trackingTable [nzData]="recentTracking" [nzFrontPagination]="false" [nzTotal]="totalTracking" [nzPageIndex]="pageIndex" [nzPageSize]="pageSize" (nzPageIndexChange)="onPageIndexChange($event)" [nzLoading]="loading" [nzScroll]="{ x: '1000px' }">
-          <thead>
-            <tr>
-              <th nzWidth="200px" nzLeft="0px">{{ 'tracking id' | translate }}</th>
-              <th>{{ 'message item' | translate }}</th>
-              <th nzWidth="180px">{{ 'Thời gian' | translate }}</th>
-              <th nzWidth="100px">{{ 'trạng thái' | translate }}</th>
-              <th nzWidth="150px" nzRight="0px">{{ 'hành động' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <ng-container *ngFor="let item of trackingTable.data">
-              <tr>
-                <td nzLeft="0px">
-                  <span class="id-text" nz-tooltip [nzTooltipTitle]="item.id">{{ item.id }}</span>
-                </td>
-                <td>
-                  <button nz-button nzSize="small" (click)="item.expand = !item.expand">
-                    <i nz-icon [nzType]="item.expand ? 'up' : 'down'"></i> {{ 'Xem Payload' | translate }}
-                  </button>
-                </td>
-                <td>{{ item.time | date:'yyyy-MM-dd HH:mm:ss' }}</td>
-                <td>
-                  <nz-tag [nzColor]="item.status === 'success' ? 'success' : item.status === 'error' ? 'error' : 'processing'">
-                    {{ (item.status === 'success' ? 'Thành công' : item.status === 'error' ? 'Lỗi' : 'Đang chạy') | translate }}
-                  </nz-tag>
-                </td>
-                <td nzRight="0px">
-                  <div style="display: flex; gap: 4px;">
-                    <tot-button nzSize="small" nzType="link" (click)="retryTracking(item)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
-                      <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
-                    </tot-button>
-                    <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(item)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
-                      <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
-                    </tot-button>
-                  </div>
-                </td>
-              </tr>
-              <tr [nzExpand]="item.expand">
-                <div class="json-viewer-container">
-                  <div class="json-header">
-                    <span>{{ 'Payload' | translate }}</span>
-                    <button nz-button nzSize="small" (click)="copyToClipboard(item.content)">
-                      <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
-                    </button>
-                  </div>
-                  <pre class="json-content">{{ formatJson(item.content) }}</pre>
-                  
-                  <div style="margin-top: 16px;">
-                    <h4>{{ 'Lịch sử xử lý' | translate }}</h4>
-                    <nz-list [nzDataSource]="item.history" [nzRenderItem]="historyItem">
-                      <ng-template #historyItem let-step>
-                        <nz-list-item>
-                          <div style="display: flex; width: 100%; gap: 16px;">
-                            <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
-                            <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
-                            <span style="flex: 1;">{{ step.details }}</span>
-                            <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
-                          </div>
-                        </nz-list-item>
-                      </ng-template>
-                    </nz-list>
-                  </div>
-                </div>
-              </tr>
-            </ng-container>
-          </tbody>
-        </nz-table>
+        <tot-table 
+          [data]="recentTracking" 
+          [columns]="trackingColumns" 
+          [loading]="loading" 
+          [total]="totalTracking" 
+          [pageIndex]="pageIndex" 
+          [pageSize]="pageSize" 
+          [frontPagination]="false"
+          [expandTemplate]="expandTpl"
+          (queryParamsChange)="onQueryParamsChange($event)"
+        ></tot-table>
+
+        <ng-template #statusTpl let-data>
+          <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
+            {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | translate }}
+          </nz-tag>
+        </ng-template>
+
+        <ng-template #contentTpl let-data>
+          <div class="content-preview">
+            <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
+            <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
+              <span nz-icon nzType="copy"></span>
+            </button>
+          </div>
+        </ng-template>
+
+        <ng-template #actionsTpl let-data>
+          <nz-space>
+            <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
+              <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+            </tot-button>
+            <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
+              <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+            </tot-button>
+            <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
+              <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
+            </tot-button>
+          </nz-space>
+        </ng-template>
+
+        <ng-template #expandTpl let-data>
+          <div class="json-viewer-container" style="width: 100%;">
+            <div class="json-header">
+              <span>{{ 'Payload' | translate }}</span>
+              <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
+                <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
+              </button>
+            </div>
+            <pre class="json-content">{{ formatJson(data.content) }}</pre>
+            
+            <div style="margin-top: 16px;">
+              <h4>{{ 'Lịch sử xử lý' | translate }}</h4>
+              <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
+                <ng-template #historyItem let-step>
+                  <nz-list-item>
+                    <div style="display: flex; width: 100%; gap: 16px;">
+                      <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
+                      <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
+                      <span style="flex: 1;">{{ step.details }}</span>
+                      <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
+                    </div>
+                  </nz-list-item>
+                </ng-template>
+              </nz-list>
+            </div>
+          </div>
+        </ng-template>
       </nz-card>
     </div>
 

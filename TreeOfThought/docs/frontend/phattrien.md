@@ -32,19 +32,28 @@ Mọi module nghiệp vụ phải sử dụng các component từ `@tot/shared` 
 - **Tính năng**: Tự động hiển thị loading icon trên nút khi đang xử lý (async operation).
 - **Sử dụng**: Truyền một `Observable` hoặc `Promise` vào input `[loading]`. Nút sẽ tự động vô hiệu hóa và hiện loading cho đến khi stream hoàn tất hoặc bị lỗi.
 
-### 2.2. Tot Autocomplete / Dropdown
+### 2.2. Tot Autocomplete (Dùng chung cho Dropdown/Select)
+- **Tên Component**: `tot-autocomplete` (Trước đây là `tot-select`).
 - **Chế độ**: Hỗ trợ Single Select và Multi Select.
-- **Dữ liệu (Paging Load)**: Hỗ trợ Infinite Scroll. Khi người dùng cuộn tới cuối danh sách, component tự động gọi API lấy trang tiếp theo. Page size mặc định là **25**.
+- **Dữ liệu (Paging Load)**: Hỗ trợ Infinite Scroll. Khi người dùng cuộn tới cuối danh sách, component tự động gọi API lấy trang tiếp theo. Page size mặc định là **10**.
 - **Caching & Hydration**: 
   - Hỗ trợ lưu dữ liệu vào `SessionStorage`. Khi khởi tạo, component ưu tiên lấy dữ liệu từ cache để hiển thị ngay lập tức (instant feel).
   - Khi thực hiện phân trang (paging) hoặc tìm kiếm, hệ thống sẽ merge các giá trị mới vào cache hiện có, đảm bảo không trùng lặp và tối ưu hóa việc gọi API.
 - **Trạng thái**: Có loading indicator rõ ràng khi đang fetch dữ liệu.
 
 ### 2.3. Tot Table
-- **Paging**: Hỗ trợ nhảy trang trực tiếp, Next/Prev.
-- **Page Size**: Mặc định là **25**. Cho phép chọn các mức: 5, 10, 20, 25, 50, 100, 200.
-- **Tính năng**: Tích hợp sẵn Sort (đa cột) và Filter (theo text, date, hoặc checkbox).
-
+Thành phần hiển thị danh sách dữ liệu chuyên sâu, hỗ trợ từ các bảng đơn giản đến các dashboard phức tạp (như CQRS Dashboard).
+- **Phân trang (Paging)**: 
+    - **Bắt buộc có**: Paging tiện lợi (tới trang trước/sau, nhảy trang bất kỳ).
+    - **Page Size**: Mặc định là **10**. Cho phép chọn các mức: 5, 10, 20, 25, 50, 100, 200.
+    - **Cơ chế**: Hỗ trợ linh hoạt cả Client-side paging (frontPagination) và Server-side paging tùy theo khối lượng dữ liệu.
+- **Sắp xếp & Bộ lọc (Sort & Filter)**: Thường xuyên được sử dụng. Hỗ trợ sắp xếp đa cột và bộ lọc tùy chỉnh (text, date, hoặc checkbox) cho từng cột.
+- **Cột & Hàng Cố định (Fixed Columns & Rows)**: Tùy chọn theo yêu cầu đặc thù. Hỗ trợ định nghĩa các cột cố định bên trái hoặc bên phải để thuận tiện khi scroll ngang, và cố định hàng (fixed header) cho cuộn dọc.
+- **Mở rộng dòng (Expandable Rows)**: Tùy chọn. Cung cấp `expandTemplate` để hiển thị nội dung chi tiết, logs, hoặc dữ liệu JSON phức tạp ngay dưới mỗi dòng mà không cần chuyển trang.
+- **Template tùy chỉnh (Custom Cell Templates)**: Cho phép truyền `nz-template` để render các UI elements phức tạp bên trong cell (ví dụ: Tag màu sắc cho trạng thái, nhóm nút hành động, icon).
+- **Thao tác hàng loạt (Bulk Actions)**: Thường được tích hợp. Hỗ trợ checkbox selection để người dùng thực hiện các tác vụ trên nhiều bản ghi cùng lúc.
+- **Tối ưu hiệu năng**: Tích hợp **Virtual Scroll** để đảm bảo giao diện phản hồi mượt mà ngay cả khi hiển thị danh sách có hàng ngàn bản ghi.
+- **Quy chuẩn**: Mọi bảng danh sách trong toàn bộ hệ thống (nghiệp vụ và app shell) bắt buộc sử dụng `tot-table` để đảm bảo tính đồng nhất. Page size khởi tạo luôn phải là **10**.
 ---
 
 ## 3. Hệ thống CQRS Message Bus (Event Bus)
@@ -97,7 +106,7 @@ App chính (`src/app`) đóng vai trò là "vỏ" (Shell) điều hướng:
 - **Routing**: Cấu hình **Lazy Loading** cho tất cả các module nghiệp vụ.
 - **Security & Permissions**: 
   - `ClaimGuard`: Kiểm tra quyền truy cập URL tập trung.
-  - `*totClaimCheck`: Structural Directive để ẩn/hiện UI elements dựa trên Permission/Claims.
+  - `*totClaimCheck`: Structural Directive (trước đây là `appClaimCheck`) để ẩn/hiện UI elements dựa trên Permission/Claims.
   - Các hằng số Claims được quản lý tập trung tại `@tot/core`.
 - **Interceptors**: 
   - `AuthInterceptor`: Tự động gắn Bearer Token.

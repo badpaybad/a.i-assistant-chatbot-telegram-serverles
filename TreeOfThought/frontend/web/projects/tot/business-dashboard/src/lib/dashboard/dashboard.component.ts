@@ -14,16 +14,18 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzProgressModule } from 'ng-zorro-antd/progress';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
+import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
 import { AppNotificationService, HttpClientService } from '@tot/core';
-import { TotButtonComponent } from '@tot/shared';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
+import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { MessageListComponent } from '../message-list/message-list.component';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ViewChild, TemplateRef } from '@angular/core';
 import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
 import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
 
@@ -45,6 +47,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
     NzInputModule,
     NzProgressModule,
     NzModalModule,
+    NzSpaceModule,
     NzSelectModule,
     NzDatePickerModule,
     NzTooltipModule,
@@ -52,6 +55,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
     FormsModule,
     TranslateModule,
     TotButtonComponent,
+    TotTableComponent,
     CqrsTestComponent
   ],
   templateUrl: './dashboard.component.html',
@@ -102,10 +106,26 @@ export class DashboardComponent implements OnInit {
     worker: ''
   };
 
+  @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
+  @ViewChild('contentTpl', { static: true }) contentTpl!: TemplateRef<any>;
+  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+
+  trackingColumns: TotTableColumn[] = [];
+
   private destroy$ = new Subject<void>();
   private refreshSubscription?: any;
 
   ngOnInit(): void {
+    this.trackingColumns = [
+      { title: 'Tracking ID', key: 'id' },
+      { title: 'Status', template: this.statusTpl },
+      { title: 'Queue/Topic', key: 'queueOrTopic' },
+      { title: 'Handler', key: 'handler' },
+      { title: 'Worker', key: 'workerId' },
+      { title: 'Content', template: this.contentTpl },
+      { title: 'Created', key: 'createdAt' },
+      { title: 'Hành động', width: '100px', template: this.actionsTpl, right: true }
+    ];
     this.refresh();
   }
 
@@ -180,8 +200,10 @@ export class DashboardComponent implements OnInit {
     this.onFilterChange();
   }
 
-  onPageIndexChange(index: number): void {
-    this.pageIndex = index;
+  onQueryParamsChange(params: any): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
     this.loadTracking();
   }
 

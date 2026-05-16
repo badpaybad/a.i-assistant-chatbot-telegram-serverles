@@ -32,6 +32,8 @@ import {
   NZ_SPACE_COMPACT_SIZE,
   NavigationEnd,
   NgControlStatus,
+  NgForOf,
+  NgIf,
   NgModel,
   NgTemplateOutlet,
   NzAnimationCollapseDirective,
@@ -56,6 +58,7 @@ import {
   NzResizeService,
   NzSpaceCompactItemDirective,
   NzStringTemplateOutletDirective,
+  NzTooltipModule,
   NzTransitionPatchDirective,
   NzWaveDirective,
   OverlayModule,
@@ -70,6 +73,8 @@ import {
   TAB,
   TOOLTIP_OFFSET_MAP,
   TemplatePortal,
+  TranslateModule,
+  TranslatePipe,
   UP_ARROW,
   WithConfig,
   _getEventTarget,
@@ -233,6 +238,7 @@ import {
   ɵɵpureFunction0,
   ɵɵpureFunction1,
   ɵɵpureFunction2,
+  ɵɵpureFunction3,
   ɵɵqueryRefresh,
   ɵɵreference,
   ɵɵrepeater,
@@ -23190,6 +23196,400 @@ var TotButtonComponent = _TotButtonComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(TotButtonComponent, { className: "TotButtonComponent", filePath: "projects/tot/shared/src/lib/components/tot-button/tot-button.component.ts", lineNumber: 29 });
 })();
 
+// projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts
+var _c014 = () => [5, 10, 20, 25, 50, 100, 200];
+var _c19 = () => [];
+var _c29 = (a0, a1, a2) => ({ $implicit: a0, index: a1, key: a2 });
+var _c36 = (a0, a1) => ({ $implicit: a0, index: a1 });
+function TotTableComponent_th_4_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "th", 7);
+    \u0275\u0275listener("nzCheckedChange", function TotTableComponent_th_4_Template_th_nzCheckedChange_0_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.onAllChecked($event));
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzLeft", true)("nzShowCheckbox", true)("nzChecked", ctx_r1.allChecked)("nzIndeterminate", ctx_r1.indeterminate);
+  }
+}
+function TotTableComponent_th_5_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "th", 8);
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzLeft", ctx_r1.showSelection ? "40px" : true);
+  }
+}
+function TotTableComponent_th_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "th", 9);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const col_r3 = ctx.$implicit;
+    \u0275\u0275property("nzWidth", col_r3.width || null)("nzShowSort", col_r3.sortable)("nzSortFn", col_r3.sortable ? true : null)("nzColumnKey", col_r3.key)("nzShowFilter", col_r3.filterable)("nzFilters", col_r3.filterOptions || \u0275\u0275pureFunction0(13, _c19))("nzFilterFn", col_r3.filterable ? true : null)("nzAlign", col_r3.align || "left")("nzLeft", col_r3.left || false)("nzRight", col_r3.right || false);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 11, col_r3.title), " ");
+  }
+}
+function TotTableComponent_ng_container_8_td_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "td", 14);
+    \u0275\u0275listener("nzCheckedChange", function TotTableComponent_ng_container_8_td_2_Template_td_nzCheckedChange_0_listener($event) {
+      \u0275\u0275restoreView(_r4);
+      const item_r5 = \u0275\u0275nextContext().$implicit;
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.onItemChecked(item_r5, $event));
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const item_r5 = \u0275\u0275nextContext().$implicit;
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzLeft", true)("nzShowCheckbox", true)("nzChecked", ctx_r1.setOfCheckedId.has(item_r5[ctx_r1.idKey]));
+  }
+}
+function TotTableComponent_ng_container_8_td_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "td", 15);
+    \u0275\u0275listener("nzExpandChange", function TotTableComponent_ng_container_8_td_3_Template_td_nzExpandChange_0_listener($event) {
+      \u0275\u0275restoreView(_r6);
+      const item_r5 = \u0275\u0275nextContext().$implicit;
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.onExpandChange(item_r5, $event));
+    });
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const item_r5 = \u0275\u0275nextContext().$implicit;
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzLeft", ctx_r1.showSelection ? "40px" : true)("nzExpand", item_r5.expand);
+  }
+}
+function TotTableComponent_ng_container_8_td_4_ng_container_1_ng_container_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainer(0);
+  }
+}
+function TotTableComponent_ng_container_8_td_4_ng_container_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275template(1, TotTableComponent_ng_container_8_td_4_ng_container_1_ng_container_1_Template, 1, 0, "ng-container", 18);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const col_r7 = \u0275\u0275nextContext().$implicit;
+    const ctx_r7 = \u0275\u0275nextContext();
+    const item_r5 = ctx_r7.$implicit;
+    const i_r9 = ctx_r7.index;
+    \u0275\u0275advance();
+    \u0275\u0275property("ngTemplateOutlet", col_r7.template)("ngTemplateOutletContext", \u0275\u0275pureFunction3(2, _c29, item_r5, i_r9, col_r7.key));
+  }
+}
+function TotTableComponent_ng_container_8_td_4_ng_template_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275text(0);
+  }
+  if (rf & 2) {
+    const col_r7 = \u0275\u0275nextContext().$implicit;
+    const item_r5 = \u0275\u0275nextContext().$implicit;
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275textInterpolate1(" ", ctx_r1.getFieldValue(item_r5, col_r7.key), " ");
+  }
+}
+function TotTableComponent_ng_container_8_td_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "td", 16);
+    \u0275\u0275template(1, TotTableComponent_ng_container_8_td_4_ng_container_1_Template, 2, 6, "ng-container", 17)(2, TotTableComponent_ng_container_8_td_4_ng_template_2_Template, 1, 1, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const col_r7 = ctx.$implicit;
+    const textOnly_r10 = \u0275\u0275reference(3);
+    \u0275\u0275property("nzAlign", col_r7.align || "left")("nzLeft", col_r7.left || false)("nzRight", col_r7.right || false);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", col_r7.template)("ngIfElse", textOnly_r10);
+  }
+}
+function TotTableComponent_ng_container_8_tr_5_ng_container_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainer(0);
+  }
+}
+function TotTableComponent_ng_container_8_tr_5_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "tr", 19)(1, "td");
+    \u0275\u0275template(2, TotTableComponent_ng_container_8_tr_5_ng_container_2_Template, 1, 0, "ng-container", 18);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r7 = \u0275\u0275nextContext();
+    const item_r5 = ctx_r7.$implicit;
+    const i_r9 = ctx_r7.index;
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzExpand", item_r5.expand);
+    \u0275\u0275advance();
+    \u0275\u0275attribute("colspan", ctx_r1.columns.length + (ctx_r1.showSelection ? 1 : 0) + 1);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngTemplateOutlet", ctx_r1.expandTemplate)("ngTemplateOutletContext", \u0275\u0275pureFunction2(4, _c36, item_r5, i_r9));
+  }
+}
+function TotTableComponent_ng_container_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275elementStart(1, "tr");
+    \u0275\u0275template(2, TotTableComponent_ng_container_8_td_2_Template, 1, 3, "td", 10)(3, TotTableComponent_ng_container_8_td_3_Template, 1, 2, "td", 11)(4, TotTableComponent_ng_container_8_td_4_Template, 4, 5, "td", 12);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(5, TotTableComponent_ng_container_8_tr_5_Template, 3, 7, "tr", 13);
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", ctx_r1.showSelection);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.expandTemplate);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx_r1.columns);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r1.expandTemplate);
+  }
+}
+var _TotTableComponent = class _TotTableComponent {
+  constructor() {
+    this.data = [];
+    this.columns = [];
+    this.loading = false;
+    this.total = 0;
+    this.pageIndex = 1;
+    this.pageSize = 10;
+    this.frontPagination = false;
+    this.scroll = { x: "1000px" };
+    this.size = "default";
+    this.showPagination = true;
+    this.showSelection = false;
+    this.idKey = "id";
+    this.selectionChange = new EventEmitter();
+    this.queryParamsChange = new EventEmitter();
+    this.checked = false;
+    this.indeterminate = false;
+    this.allChecked = false;
+    this.setOfCheckedId = /* @__PURE__ */ new Set();
+    this.currentPageData = [];
+  }
+  onQueryParamsChange(params) {
+    this.queryParamsChange.emit(params);
+  }
+  onCurrentPageDataChange(data) {
+    this.currentPageData = data;
+    this.refreshCheckedStatus();
+  }
+  refreshCheckedStatus() {
+    const listOfEnabledData = this.currentPageData;
+    this.allChecked = listOfEnabledData.length > 0 && listOfEnabledData.every((item) => this.setOfCheckedId.has(item[this.idKey]));
+    this.indeterminate = listOfEnabledData.some((item) => this.setOfCheckedId.has(item[this.idKey])) && !this.allChecked;
+  }
+  onAllChecked(checked) {
+    this.currentPageData.forEach((item) => this.updateCheckedSet(item, checked));
+    this.refreshCheckedStatus();
+    this.emitSelection();
+  }
+  onItemChecked(item, checked) {
+    this.updateCheckedSet(item, checked);
+    this.refreshCheckedStatus();
+    this.emitSelection();
+  }
+  updateCheckedSet(item, checked) {
+    if (checked) {
+      this.setOfCheckedId.add(item[this.idKey]);
+    } else {
+      this.setOfCheckedId.delete(item[this.idKey]);
+    }
+  }
+  emitSelection() {
+    const selectedItems = this.data.filter((item) => this.setOfCheckedId.has(item[this.idKey]));
+    this.selectionChange.emit(selectedItems);
+  }
+  onExpandChange(item, checked) {
+    item.expand = checked;
+  }
+  getFieldValue(item, key) {
+    if (!key || !item)
+      return "";
+    const value = key.split(".").reduce((obj, k) => obj == null ? void 0 : obj[k], item);
+    return value === void 0 || value === null ? "" : value;
+  }
+};
+_TotTableComponent.\u0275fac = function TotTableComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TotTableComponent)();
+};
+_TotTableComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TotTableComponent, selectors: [["tot-table"]], inputs: { data: "data", columns: "columns", loading: "loading", total: "total", pageIndex: "pageIndex", pageSize: "pageSize", frontPagination: "frontPagination", scroll: "scroll", size: "size", showPagination: "showPagination", expandTemplate: "expandTemplate", showSelection: "showSelection", idKey: "idKey" }, outputs: { selectionChange: "selectionChange", queryParamsChange: "queryParamsChange" }, decls: 9, vars: 16, consts: [["basicTable", ""], ["textOnly", ""], [3, "nzQueryParams", "nzCurrentPageDataChange", "nzData", "nzLoading", "nzTotal", "nzPageIndex", "nzPageSize", "nzShowSizeChanger", "nzPageSizeOptions", "nzFrontPagination", "nzScroll", "nzSize", "nzShowPagination"], ["nzWidth", "40px", 3, "nzLeft", "nzShowCheckbox", "nzChecked", "nzIndeterminate", "nzCheckedChange", 4, "ngIf"], ["nzWidth", "40px", 3, "nzLeft", 4, "ngIf"], [3, "nzWidth", "nzShowSort", "nzSortFn", "nzColumnKey", "nzShowFilter", "nzFilters", "nzFilterFn", "nzAlign", "nzLeft", "nzRight", 4, "ngFor", "ngForOf"], [4, "ngFor", "ngForOf"], ["nzWidth", "40px", 3, "nzCheckedChange", "nzLeft", "nzShowCheckbox", "nzChecked", "nzIndeterminate"], ["nzWidth", "40px", 3, "nzLeft"], [3, "nzWidth", "nzShowSort", "nzSortFn", "nzColumnKey", "nzShowFilter", "nzFilters", "nzFilterFn", "nzAlign", "nzLeft", "nzRight"], [3, "nzLeft", "nzShowCheckbox", "nzChecked", "nzCheckedChange", 4, "ngIf"], [3, "nzLeft", "nzExpand", "nzExpandChange", 4, "ngIf"], [3, "nzAlign", "nzLeft", "nzRight", 4, "ngFor", "ngForOf"], [3, "nzExpand", 4, "ngIf"], [3, "nzCheckedChange", "nzLeft", "nzShowCheckbox", "nzChecked"], [3, "nzExpandChange", "nzLeft", "nzExpand"], [3, "nzAlign", "nzLeft", "nzRight"], [4, "ngIf", "ngIfElse"], [4, "ngTemplateOutlet", "ngTemplateOutletContext"], [3, "nzExpand"]], template: function TotTableComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-table", 2, 0);
+    \u0275\u0275listener("nzQueryParams", function TotTableComponent_Template_nz_table_nzQueryParams_0_listener($event) {
+      return ctx.onQueryParamsChange($event);
+    })("nzCurrentPageDataChange", function TotTableComponent_Template_nz_table_nzCurrentPageDataChange_0_listener($event) {
+      return ctx.onCurrentPageDataChange($event);
+    });
+    \u0275\u0275elementStart(2, "thead")(3, "tr");
+    \u0275\u0275template(4, TotTableComponent_th_4_Template, 1, 4, "th", 3)(5, TotTableComponent_th_5_Template, 1, 1, "th", 4)(6, TotTableComponent_th_6_Template, 3, 14, "th", 5);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(7, "tbody");
+    \u0275\u0275template(8, TotTableComponent_ng_container_8_Template, 6, 4, "ng-container", 6);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const basicTable_r11 = \u0275\u0275reference(1);
+    \u0275\u0275property("nzData", ctx.data)("nzLoading", ctx.loading)("nzTotal", ctx.total)("nzPageIndex", ctx.pageIndex)("nzPageSize", ctx.pageSize)("nzShowSizeChanger", true)("nzPageSizeOptions", \u0275\u0275pureFunction0(15, _c014))("nzFrontPagination", ctx.frontPagination)("nzScroll", ctx.scroll)("nzSize", ctx.size)("nzShowPagination", ctx.showPagination);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("ngIf", ctx.showSelection);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx.expandTemplate);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", ctx.columns);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngForOf", basicTable_r11.data);
+  }
+}, dependencies: [CommonModule, NgForOf, NgIf, NgTemplateOutlet, NzTableModule, NzTableComponent, NzThAddOnComponent, NzTableCellDirective, NzThMeasureDirective, NzTdAddOnComponent, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellFixedDirective, NzTrExpandDirective, NzCellAlignDirective, NzTableFixedRowComponent, NzThSelectionComponent, TranslateModule, NzTooltipModule, NzIconModule, TranslatePipe], styles: ["\n[_nghost-%COMP%] {\n  display: block;\n  width: 100%;\n}\n  .ant-table-thead > tr > th {\n  white-space: nowrap;\n}\n/*# sourceMappingURL=tot-table.component.css.map */"] });
+var TotTableComponent = _TotTableComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TotTableComponent, [{
+    type: Component,
+    args: [{ selector: "tot-table", standalone: true, imports: [CommonModule, NzTableModule, TranslateModule, NzTooltipModule, NzIconModule], template: `
+    <nz-table
+      #basicTable
+      [nzData]="data"
+      [nzLoading]="loading"
+      [nzTotal]="total"
+      [nzPageIndex]="pageIndex"
+      [nzPageSize]="pageSize"
+      [nzShowSizeChanger]="true"
+      [nzPageSizeOptions]="[5, 10, 20, 25, 50, 100, 200]"
+      [nzFrontPagination]="frontPagination"
+      (nzQueryParams)="onQueryParamsChange($event)"
+      [nzScroll]="scroll"
+      [nzSize]="size"
+      [nzShowPagination]="showPagination"
+      (nzCurrentPageDataChange)="onCurrentPageDataChange($event)"
+    >
+      <thead>
+        <tr>
+          <th
+            *ngIf="showSelection"
+            nzWidth="40px"
+            [nzLeft]="true"
+            [nzShowCheckbox]="true"
+            [nzChecked]="allChecked"
+            [nzIndeterminate]="indeterminate"
+            (nzCheckedChange)="onAllChecked($event)"
+          ></th>
+          <th *ngIf="expandTemplate" nzWidth="40px" [nzLeft]="showSelection ? '40px' : true"></th>
+          <th
+            *ngFor="let col of columns"
+            [nzWidth]="col.width || null"
+            [nzShowSort]="col.sortable"
+            [nzSortFn]="col.sortable ? true : null"
+            [nzColumnKey]="col.key"
+            [nzShowFilter]="col.filterable"
+            [nzFilters]="col.filterOptions || []"
+            [nzFilterFn]="col.filterable ? true : null"
+            [nzAlign]="col.align || 'left'"
+            [nzLeft]="col.left || false"
+            [nzRight]="col.right || false"
+          >
+            {{ col.title | translate }}
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let item of basicTable.data; let i = index">
+          <tr>
+            <td
+              *ngIf="showSelection"
+              [nzLeft]="true"
+              [nzShowCheckbox]="true"
+              [nzChecked]="setOfCheckedId.has(item[idKey])"
+              (nzCheckedChange)="onItemChecked(item, $event)"
+            ></td>
+            <td
+              *ngIf="expandTemplate"
+              [nzLeft]="showSelection ? '40px' : true"
+              [nzExpand]="item.expand"
+              (nzExpandChange)="onExpandChange(item, $event)"
+            ></td>
+            <td
+              *ngFor="let col of columns"
+              [nzAlign]="col.align || 'left'"
+              [nzLeft]="col.left || false"
+              [nzRight]="col.right || false"
+            >
+              <ng-container *ngIf="col.template; else textOnly">
+                <ng-container
+                  *ngTemplateOutlet="col.template; context: { $implicit: item, index: i, key: col.key }"
+                ></ng-container>
+              </ng-container>
+              <ng-template #textOnly>
+                {{ getFieldValue(item, col.key) }}
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="expandTemplate" [nzExpand]="item.expand">
+            <td [attr.colspan]="columns.length + (showSelection ? 1 : 0) + 1">
+              <ng-container
+                *ngTemplateOutlet="expandTemplate; context: { $implicit: item, index: i }"
+              ></ng-container>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </nz-table>
+  `, styles: ["/* angular:styles/component:css;5720151797d9dd282d10d1252ee2ef69f096e1149481213c88eee3850b94de39;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts */\n:host {\n  display: block;\n  width: 100%;\n}\n::ng-deep .ant-table-thead > tr > th {\n  white-space: nowrap;\n}\n/*# sourceMappingURL=tot-table.component.css.map */\n"] }]
+  }], null, { data: [{
+    type: Input
+  }], columns: [{
+    type: Input
+  }], loading: [{
+    type: Input
+  }], total: [{
+    type: Input
+  }], pageIndex: [{
+    type: Input
+  }], pageSize: [{
+    type: Input
+  }], frontPagination: [{
+    type: Input
+  }], scroll: [{
+    type: Input
+  }], size: [{
+    type: Input
+  }], showPagination: [{
+    type: Input
+  }], expandTemplate: [{
+    type: Input
+  }], showSelection: [{
+    type: Input
+  }], idKey: [{
+    type: Input
+  }], selectionChange: [{
+    type: Output
+  }], queryParamsChange: [{
+    type: Output
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(TotTableComponent, { className: "TotTableComponent", filePath: "projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts", lineNumber: 126 });
+})();
+
 export {
   NzMenuItemComponent,
   NzSubMenuComponent,
@@ -23221,18 +23621,17 @@ export {
   NzCellFixedDirective,
   NzTableCellDirective,
   NzThMeasureDirective,
-  NzTableFixedRowComponent,
   NzTbodyComponent,
   NzTableComponent,
   NzTrDirective,
   NzTheadComponent,
-  NzTrExpandDirective,
   NzTableModule,
   NzTagComponent,
   NzTagModule,
   NzDatePickerComponent,
   NzRangePickerComponent,
   NzDatePickerModule,
-  TotButtonComponent
+  TotButtonComponent,
+  TotTableComponent
 };
-//# sourceMappingURL=chunk-WONYILY4.js.map
+//# sourceMappingURL=chunk-YEPL6FXH.js.map

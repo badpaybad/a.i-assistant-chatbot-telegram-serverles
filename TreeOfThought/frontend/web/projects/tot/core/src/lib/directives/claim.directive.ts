@@ -4,10 +4,10 @@ import { AuthService } from '../auth/auth.service';
 import { Subscription } from 'rxjs';
 
 @Directive({
-  selector: '[appClaimCheck]',
+  selector: '[totClaimCheck]',
   standalone: true
 })
-export class AppClaimDirective implements OnDestroy, OnInit {
+export class TotClaimDirective implements OnDestroy, OnInit {
   private templateRef = inject(TemplateRef<any>);
   private viewContainer = inject(ViewContainerRef);
   private authService = inject(AuthService);
@@ -21,17 +21,17 @@ export class AppClaimDirective implements OnDestroy, OnInit {
   private denialEl: HTMLElement | null = null;
   private claimsSubscription?: Subscription;
 
-  @Input() set appClaimCheck(value: string | string[]) {
+  @Input() set totClaimCheck(value: string | string[]) {
     this.claims = value;
     this.updateView();
   }
 
-  @Input() set appClaimCheckMode(value: 'OR' | 'AND') {
+  @Input() set totClaimCheckMode(value: 'OR' | 'AND') {
     this.mode = value;
     this.updateView();
   }
 
-  @Input() set appClaimCheckHide(value: boolean | string) {
+  @Input() set totClaimCheckHide(value: boolean | string) {
     this.hideOnly = value === '' || value === true || value === 'true';
     this.updateView();
   }

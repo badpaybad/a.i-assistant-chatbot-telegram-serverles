@@ -12,39 +12,30 @@
 
     <nz-collapse [nzBordered]="false" class="search-results-collapse" *ngIf="searchResults.length > 0 || searching">
       <nz-collapse-panel [nzHeader]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [nzActive]="searchExpanded">
-        <nz-table 
-          #searchTable 
-          [nzData]="searchResults" 
-          nzSize="small" 
-          [nzPageIndex]="searchPageIndex"
-          [nzPageSize]="searchPageSize"
-          (nzPageIndexChange)="searchPageIndex = $event"
-        >
-          <thead>
-            <tr>
-              <th>Tên file</th>
-              <th>Đường dẫn</th>
-              <th nzWidth="100px">Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let data of searchTable.data">
-              <td>
-                <span nz-icon nzType="file" style="margin-right: 8px;"></span>
-                {{ data.name }}
-              </td>
-              <td><nz-tag>{{ data.folderPath }}</nz-tag></td>
-              <td>
-                <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)" style="margin-right: 8px">
-                  Chèn
-                </button>
-                <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
-                  <span nz-icon nzType="arrow-right"></span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <tot-table 
+          [data]="searchResults" 
+          [columns]="searchColumns" 
+          [pageSize]="searchPageSize"
+          [size]="'small'"
+        ></tot-table>
+        
+        <ng-template #searchNameTpl let-data>
+          <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+          {{ data.name }}
+        </ng-template>
+
+        <ng-template #searchPathTpl let-data>
+          <nz-tag>{{ data.folderPath }}</nz-tag>
+        </ng-template>
+
+        <ng-template #searchActionsTpl let-data>
+          <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)" style="margin-right: 8px">
+            Chèn
+          </button>
+          <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
+            <span nz-icon nzType="arrow-right"></span>
+          </button>
+        </ng-template>
       </nz-collapse-panel>
     </nz-collapse>
   </div>
@@ -157,80 +148,81 @@
           </div>
         </ng-template>
 
-        <nz-table 
-          #fileTable 
-          [nzData]="files" 
-          [nzLoading]="loading" 
-          nzSize="middle"
-          [nzFrontPagination]="false"
-          [nzTotal]="total"
-          [nzPageIndex]="pageIndex"
-          [nzPageSize]="pageSize"
-          (nzPageIndexChange)="onPageIndexChange($event)"
-          (nzPageSizeChange)="onPageSizeChange($event)"
-        >
-        <thead>
-          <tr>
-            <th nzWidth="40px"></th>
-            <th>Tên</th>
-            <th>Trạng thái</th>
-            <th>Kích thước</th>
-            <th>Loại</th>
-            <th>Ngày tạo</th>
-            <th nzWidth="150px">Hành động</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let file of fileTable.data">
-            <td><span nz-icon nzType="file" nzTheme="outline" style="color: #1890ff"></span></td>
-            <td><a (click)="openFileDetail(file)">{{ file.name }}</a></td>
-            <td>
-              <nz-tag [nzColor]="getPermissionColor(file.permission)">
-                {{ getPermissionLabel(file.permission) }}
-              </nz-tag>
-            </td>
-            <td>{{ formatSize(file.size) }}</td>
-            <td>{{ file.mimeType }}</td>
-            <td>{{ file.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-            <td>
-              <div class="action-buttons">
-                <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(file)">
-                  Chèn
-                </button>
-                <a nz-button nzType="text" [href]="file.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
-                  <span nz-icon nzType="download"></span>
-                </a>
-                <button nz-button nzType="text" (click)="openShareModal(file)" nz-tooltip nzTooltipTitle="Chia sẻ">
-                  <span nz-icon nzType="share-alt"></span>
-                </button>
-                <button 
-                  nz-button 
-                  nzType="text" 
-                  nz-dropdown 
-                  [nzDropdownMenu]="fileMenu"
-                  nz-popover
-                  [nzPopoverContent]="renameTemplate"
-                  [nzPopoverTrigger]="null"
-                  [nzPopoverVisible]="renamePopoverVisibleId === file.id"
-                  [nzPopoverPlacement]="'bottomRight'"
-                >
-                  <span nz-icon nzType="more"></span>
-                </button>
-                <nz-dropdown-menu #fileMenu="nzDropdownMenu">
-                  <ul nz-menu>
-                    <li nz-menu-item (click)="openMoveModal(file, 'file')">Di chuyển</li>
-                    <li nz-menu-item (click)="renameItem(file, 'file')">Đổi tên</li>
-                    <li nz-menu-divider></li>
-                    <li nz-menu-item nzDanger (click)="deleteFile(file.id)">Xóa</li>
-                  </ul>
-                </nz-dropdown-menu>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </nz-table>
-    </nz-collapse-panel>
-  </nz-collapse>
+        <tot-table 
+          [data]="files" 
+          [columns]="fileColumns" 
+          [loading]="loading" 
+          [total]="total" 
+          [pageIndex]="pageIndex" 
+          [pageSize]="pageSize" 
+          [frontPagination]="false"
+          [size]="'small'"
+          (queryParamsChange)="onQueryParamsChange($event)"
+        ></tot-table>
+
+        <ng-template #fileNameTpl let-data>
+          <div class="file-name-cell" (click)="openFileDetail(data)">
+            <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+            {{ data.name }}
+          </div>
+        </ng-template>
+
+        <ng-template #fileStatusTpl let-data>
+          <nz-tag [nzColor]="getPermissionColor(data.permission)">
+            {{ getPermissionLabel(data.permission) }}
+          </nz-tag>
+        </ng-template>
+
+        <ng-template #fileSizeTpl let-data>
+          {{ formatSize(data.size) }}
+        </ng-template>
+
+        <ng-template #fileTypeTpl let-data>
+          {{ data.mimeType }}
+        </ng-template>
+
+        <ng-template #fileDateTpl let-data>
+          {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
+        </ng-template>
+
+        <ng-template #fileActionsTpl let-data>
+          <div class="action-buttons">
+            <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)">
+              Chèn
+            </button>
+            <a nz-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
+              <span nz-icon nzType="download"></span>
+            </a>
+            <button nz-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
+              <span nz-icon nzType="share-alt"></span>
+            </button>
+            <button 
+              nz-button 
+              nzType="text" 
+              nz-dropdown 
+              [nzDropdownMenu]="fileMenu"
+              nz-popover
+              [nzPopoverContent]="renameTemplate"
+              [nzPopoverTrigger]="null"
+              [nzPopoverVisible]="renamePopoverVisibleId === data.id"
+              [nzPopoverPlacement]="'bottomRight'"
+            >
+              <span nz-icon nzType="more"></span>
+            </button>
+            <nz-dropdown-menu #fileMenu="nzDropdownMenu">
+              <ul nz-menu>
+                <li nz-menu-item (click)="openMoveModal(data, 'file')">Di chuyển</li>
+                <li nz-menu-item (click)="renameItem(data, 'file')">Đổi tên</li>
+                <li nz-menu-divider></li>
+                <li nz-menu-item nzDanger (click)="deleteFile(data.id)">Xóa</li>
+              </ul>
+            </nz-dropdown-menu>
+          </div>
+        </ng-template>
+      </nz-collapse-panel>
+    </nz-collapse>
+  </div>
+
   <ng-template #renameTemplate>
     <app-rename-popover
       *ngIf="renamingItem"

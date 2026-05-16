@@ -35,12 +35,18 @@ tổng kết nhanh về cấu trúc
     lib core 
         auth, guard, interceptor, const claims, http client, event bus, component register, firebase, pipe ... là wrap các base dùng chung theo 1 cách mà project cần 
     lib shared
-        các component share cần bắt đầu với prefix: **tot-** (ví dụ: `tot-button`, `tot-table`, `tot-autocomplete`...)
-        một số component hay dùng
-        quy chuẩn các nút thao tác vd button , icon button ... khi click cần có loading trên nút để người dùng biết đã click và đang xử lý cho tới khi có kết quả thì ẩn loading
-        droplist auto complete sẽ cần dạng cho phép chọn nhiều , hoặc chọn signle item, có thể cho phép scroll để paging load khi scroll tới cuối danh sách thì tự động load thêm, cho phép add value vào session storage để lần đầu vào là có dữ liệu đã sẵn, khi paging hoặc tìm kiếm thì sẽ thêm các value lấy được chưa có ở session storage vào session hiện có. cần có loading khi đang lấy dữ liệu. tùy vào yêu cầu mà cần gọi lên server lấy hoặc data sẵn .  page size mặc định 25
-        table cần có paging tiện lợi về việc tới các trang trước sau hoặc nhảy trang bất kỳ, cho phép chọn page size 5, 10, 20 ,25, 50 ,100, 200 có thể có sort, filter tìm kiếm 
-        page size mặc định 25
+        - các component share cần bắt đầu với prefix: **tot-** (ví dụ: `tot-button`, `tot-table`, `tot-autocomplete`...)
+        - một số component hay dùng
+            - quy chuẩn các nút thao tác vd button , icon button ... khi click cần có loading trên nút để người dùng biết đã click và đang xử lý cho tới khi có kết quả thì ẩn loading
+            - droplist auto complete sẽ cần dạng cho phép chọn nhiều , hoặc chọn signle item, có thể cho phép scroll để paging load khi scroll tới cuối danh sách thì tự động load thêm, cho phép add value vào session storage để lần đầu vào là có dữ liệu đã sẵn, khi paging hoặc tìm kiếm thì sẽ thêm các value lấy được chưa có ở session storage vào session hiện có. cần có loading khi đang lấy dữ liệu. tùy vào yêu cầu mà cần gọi lên server lấy hoặc data. page size mặc định 10
+            - table cần có các tính năng cốt lõi và nâng cao sau tùy người dùng có yêu cầu không:
+                - **Paging (Phân trang)**: Paging tiện lợi (tới trang trước/sau, nhảy trang bất kỳ), cho phép chọn page size 5, 10, 20, 25, 50, 100, 200. Mặc định là 10. Hỗ trợ cả front-end và server-side paging. cần phải có 
+                - **Sort & Filter**: Hỗ trợ sắp xếp và bộ lọc tìm kiếm cho từng cột. thường là có 
+                - **Fixed Columns & Rows**: Định nghĩa các cột fixed (trái/phải) để scroll ngang và row fixed cho cuộn dọc. tùy yêu cầu mà có thể có hoặc không
+                - **Expandable Rows**: Mở rộng dòng để hiển thị nội dung chi tiết (JSON payload, logs...) qua `expandTemplate`.  tùy yêu cầu mà có thể có hoặc không
+                - **Custom Cell Templates**: Dùng `nz-template` để tùy chỉnh hiển thị (tag, buttons...).
+                - **Bulk Actions**: Chọn nhiều dòng (checkbox) cho các thao tác hàng loạt. thường là có dùng
+                - **Hiệu năng**: Hỗ trợ Virtual Scroll cho danh sách dữ liệu lớn.
     lib module tên nghiệp vụ (business-dashboard, business-files-folders, ...) tên không bắt buộc bằng business
         dùng core, shared
         không được phép dùng trực tiếp component hay bất kỳ gì của module nghiệp vụ khác
@@ -51,3 +57,4 @@ tổng kết nhanh về cấu trúc
         đăng ký các module nghiệp vụ để dùng 
 
 **suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
+- [x] Cập nhật page size mặc định 10, kiểm tra các bảng danh sách ở các lib nghiệp vụ và app shell xem đã dùng theo chuẩn tot-table.

@@ -10,8 +10,9 @@ import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { CommonModule } from '@angular/common';
-import { TotButtonComponent } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { FileShareModalComponent } from '../file-share-modal/file-share-modal.component';
+import { ViewChild, TemplateRef } from '@angular/core';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { FormsModule } from '@angular/forms';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -42,7 +43,8 @@ import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal
     CreateFolderPopoverComponent,
     RenamePopoverComponent,
     NzCollapseModule,
-    TotButtonComponent
+    TotButtonComponent,
+    TotTableComponent
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',
@@ -97,9 +99,50 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   private refreshSub?: Subscription;
 
   ngOnInit(): void {
+    this.initColumns();
     this.refreshSub = this.filesFoldersService.refresh$.subscribe(() => {
       this.loadContent();
     });
+  }
+
+  @ViewChild('folderNameTpl', { static: true }) folderNameTpl!: TemplateRef<any>;
+  @ViewChild('folderActionsTpl', { static: true }) folderActionsTpl!: TemplateRef<any>;
+  @ViewChild('fileNameTpl', { static: true }) fileNameTpl!: TemplateRef<any>;
+  @ViewChild('fileSizeTpl', { static: true }) fileSizeTpl!: TemplateRef<any>;
+  @ViewChild('fileStatusTpl', { static: true }) fileStatusTpl!: TemplateRef<any>;
+  @ViewChild('fileActionsTpl', { static: true }) fileActionsTpl!: TemplateRef<any>;
+
+  folderColumns: TotTableColumn[] = [];
+  fileColumns: TotTableColumn[] = [];
+
+  @ViewChild('searchNameTpl', { static: true }) searchNameTpl!: TemplateRef<any>;
+  @ViewChild('searchPathTpl', { static: true }) searchPathTpl!: TemplateRef<any>;
+  @ViewChild('searchActionsTpl', { static: true }) searchActionsTpl!: TemplateRef<any>;
+  @ViewChild('fileTypeTpl', { static: true }) fileTypeTpl!: TemplateRef<any>;
+  @ViewChild('fileDateTpl', { static: true }) fileDateTpl!: TemplateRef<any>;
+
+  searchColumns: TotTableColumn[] = [];
+
+  private initColumns() {
+    this.searchColumns = [
+      { title: 'Tên file', template: this.searchNameTpl },
+      { title: 'Đường dẫn', template: this.searchPathTpl },
+      { title: 'Thao tác', width: '100px', template: this.searchActionsTpl }
+    ];
+
+    this.folderColumns = [
+      { title: 'Tên thư mục', template: this.folderNameTpl },
+      { title: 'Hành động', width: '150px', template: this.folderActionsTpl }
+    ];
+
+    this.fileColumns = [
+      { title: 'Tên file', template: this.fileNameTpl },
+      { title: 'Trạng thái', width: '120px', template: this.fileStatusTpl },
+      { title: 'Kích thước', width: '120px', template: this.fileSizeTpl },
+      { title: 'Loại', width: '120px', template: this.fileTypeTpl },
+      { title: 'Ngày tạo', width: '150px', template: this.fileDateTpl },
+      { title: 'Hành động', width: '150px', template: this.fileActionsTpl }
+    ];
   }
 
   ngOnDestroy(): void {
@@ -130,13 +173,10 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
     }
   }
 
-  onPageIndexChange(index: number): void {
-    this.pageIndex = index;
-    this.loadContent();
-  }
-
-  onPageSizeChange(size: number): void {
-    this.pageSize = size;
+  onQueryParamsChange(params: any): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
     this.loadContent();
   }
 

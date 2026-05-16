@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;e3ca547edf929108850c2bc202ac3cc3468f24b5c167eaec397ae441e9f7149a;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts"],
-  "sourcesContent": ["\n    :host {\n      display: block;\n      width: 100%;\n    }\n  "],
-  "mappings": ";AACI;AACE,WAAS;AACT,SAAO;AACT;",
+  "sources": ["angular:styles/component:css;5720151797d9dd282d10d1252ee2ef69f096e1149481213c88eee3850b94de39;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-table/tot-table.component.ts"],
+  "sourcesContent": ["\n      :host {\n        display: block;\n        width: 100%;\n      }\n      ::ng-deep .ant-table-thead > tr > th {\n        white-space: nowrap;\n      }\n    "],
+  "mappings": ";AACM;AACE,WAAS;AACT,SAAO;AACT;AACA,UAAU,CAAC,gBAAgB,EAAE,GAAG,EAAE;AAChC,eAAa;AACf;",
   "names": []
 }

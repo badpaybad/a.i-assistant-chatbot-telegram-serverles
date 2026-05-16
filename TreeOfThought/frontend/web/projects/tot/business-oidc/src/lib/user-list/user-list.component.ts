@@ -17,8 +17,9 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
-import { TotSelectComponent, TotButtonComponent } from '@tot/shared';
+import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
   selector: 'app-user-list',
@@ -40,8 +41,9 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzFormModule,
     NzCheckboxModule,
     NzAvatarModule,
-    TotSelectComponent,
+    TotAutocompleteComponent,
     TotButtonComponent,
+    TotTableComponent,
     TranslateModule
   ],
   template: `
@@ -77,22 +79,22 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           </nz-select>
         </div>
         <div nz-col [nzSpan]="6">
-          <tot-select
+          <tot-autocomplete
             apiUrl="/api/AuthManagement/roles"
             [placeholder]="'Vai trò' | translate"
             mode="multiple"
             [(ngModel)]="searchQuery.roleIds"
             (valueChange)="loadUsers()"
-          ></tot-select>
+          ></tot-autocomplete>
         </div>
         <div nz-col [nzSpan]="6">
-          <tot-select
+          <tot-autocomplete
             apiUrl="/api/AuthManagement/claims"
             [placeholder]="'Quyền' | translate"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
             (valueChange)="loadUsers()"
-          ></tot-select>
+          ></tot-autocomplete>
         </div>
         <div nz-col [nzSpan]="8">
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
@@ -116,75 +118,64 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       </div>
     </nz-card>
 
-    <nz-table #basicTable [nzData]="users" [nzLoading]="loading">
-      <thead>
-        <tr>
-          <th nzWidth="80px">{{ 'Avatar' | translate }}</th>
-          <th>{{ 'Người dùng' | translate }}</th>
-          <th>{{ 'Email' | translate }}</th>
-          <th>{{ 'Trạng thái' | translate }}</th>
-          <th>{{ 'Vai trò' | translate }}</th>
-          <th>{{ 'Quyền' | translate }}</th>
-          <th>{{ 'Ngày tạo' | translate }}</th>
-          <th>{{ 'Cập nhật' | translate }}</th>
-          <th nzWidth="150px">{{ 'Hành động' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let data of basicTable.data">
-          <td>
-            <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
-              <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
-              <div class="avatar-mask">
-                <span nz-icon nzType="camera"></span>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="user-cell">
-              <strong>{{ data.displayName }}</strong>
-              <span class="sub-text">{{ data.username }}</span>
-            </div>
-          </td>
-          <td>{{ data.email }}</td>
-          <td>
-            <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
-              {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | translate }}
-            </nz-tag>
-          </td>
-          <td>
-            <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
-                    [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-                    (nzOnClose)="removeRole(data, role)">
-              {{ role.name }}
-            </nz-tag>
-            <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
-              <span nz-icon nzType="plus"></span>
-            </tot-button>
-          </td>
-          <td>
-            <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
-                    [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-                    (nzOnClose)="removeClaim(data, claim)">
-              {{ claim.name }}
-            </nz-tag>
-            <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
-              <span nz-icon nzType="plus"></span>
-            </tot-button>
-          </td>
-          <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>{{ data.updatedAt | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <nz-space>
-              <tot-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
-              <tot-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
-                      [disabled]="data.username?.toLowerCase() === 'admin'"
-                      (click)="deleteUser(data)">{{ 'Xóa' | translate }}</tot-button>
-            </nz-space>
-          </td>
-        </tr>
-      </tbody>
-    </nz-table>
+    <tot-table [data]="users" [columns]="userColumns" [loading]="loading"></tot-table>
+
+    <ng-template #avatarTpl let-data>
+      <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
+        <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
+        <div class="avatar-mask">
+          <span nz-icon nzType="camera"></span>
+        </div>
+      </div>
+    </ng-template>
+
+    <ng-template #userTpl let-data>
+      <div class="user-cell">
+        <strong>{{ data.displayName }}</strong>
+        <span class="sub-text">{{ data.username }}</span>
+      </div>
+    </ng-template>
+
+    <ng-template #statusTpl let-data>
+      <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
+        {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | translate }}
+      </nz-tag>
+    </ng-template>
+
+    <ng-template #rolesTpl let-data>
+      <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
+              [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
+              (nzOnClose)="removeRole(data, role)">
+        {{ role.name }}
+      </nz-tag>
+      <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
+        <span nz-icon nzType="plus"></span>
+      </tot-button>
+    </ng-template>
+
+    <ng-template #claimsTpl let-data>
+      <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
+              [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
+              (nzOnClose)="removeClaim(data, claim)">
+        {{ claim.name }}
+      </nz-tag>
+      <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+        <span nz-icon nzType="plus"></span>
+      </tot-button>
+    </ng-template>
+
+    <ng-template #dateTpl let-data let-key="key">
+      {{ data[key] | date:'dd/MM/yyyy HH:mm' }}
+    </ng-template>
+
+    <ng-template #actionsTpl let-data>
+      <nz-space>
+        <tot-button *nzSpaceItem nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+        <tot-button *nzSpaceItem nzType="primary" [nzDanger]="true" nzSize="small" 
+                [disabled]="data.username?.toLowerCase() === 'admin'"
+                (click)="deleteUser(data)">{{ 'Xóa' | translate }}</tot-button>
+      </nz-space>
+    </ng-template>
 
     <input type="file" #avatarInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
 
@@ -224,25 +215,25 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
           <nz-form-item>
             <nz-form-label>{{ 'Vai trò' | translate }}</nz-form-label>
             <nz-form-control>
-              <tot-select
+              <tot-autocomplete
                 apiUrl="/api/AuthManagement/roles"
                 [placeholder]="'Chọn vai trò' | translate"
                 mode="multiple"
                 [(ngModel)]="userForm.roleIds"
                 name="roleIds"
-              ></tot-select>
+              ></tot-autocomplete>
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
             <nz-form-label>{{ 'Quyền trực tiếp' | translate }}</nz-form-label>
             <nz-form-control>
-              <tot-select
+              <tot-autocomplete
                 apiUrl="/api/AuthManagement/claims"
                 [placeholder]="'Chọn quyền' | translate"
                 mode="multiple"
                 [(ngModel)]="userForm.claimIds"
                 name="claimIds"
-              ></tot-select>
+              ></tot-autocomplete>
             </nz-form-control>
           </nz-form-item>
         </form>
@@ -252,23 +243,23 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     <!-- Các Modal gán nhanh -->
     <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="'Vai trò' | translate" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
       <ng-container *nzModalContent>
-        <tot-select
+        <tot-autocomplete
           apiUrl="/api/AuthManagement/roles"
           [placeholder]="'Vui lòng chọn' | translate"
           mode="multiple"
           [(ngModel)]="selectedRoleIds"
-        ></tot-select>
+        ></tot-autocomplete>
       </ng-container>
     </nz-modal>
 
     <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
-        <tot-select
+        <tot-autocomplete
           apiUrl="/api/AuthManagement/claims"
           [placeholder]="'Vui lòng chọn' | translate"
           mode="multiple"
           [(ngModel)]="selectedClaimIds"
-        ></tot-select>
+        ></tot-autocomplete>
       </ng-container>
     </nz-modal>
   `,
@@ -370,7 +361,28 @@ export class UserListComponent implements OnInit {
     ssoId: ''
   };
 
+  @ViewChild('avatarTpl', { static: true }) avatarTpl!: TemplateRef<any>;
+  @ViewChild('userTpl', { static: true }) userTpl!: TemplateRef<any>;
+  @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
+  @ViewChild('rolesTpl', { static: true }) rolesTpl!: TemplateRef<any>;
+  @ViewChild('claimsTpl', { static: true }) claimsTpl!: TemplateRef<any>;
+  @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
+  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+
+  userColumns: TotTableColumn[] = [];
+
   ngOnInit(): void {
+    this.userColumns = [
+      { title: 'Avatar', width: '80px', template: this.avatarTpl },
+      { title: 'Người dùng', template: this.userTpl },
+      { title: 'Email', key: 'email' },
+      { title: 'Trạng thái', template: this.statusTpl },
+      { title: 'Vai trò', template: this.rolesTpl },
+      { title: 'Quyền', template: this.claimsTpl },
+      { title: 'Ngày tạo', key: 'createdAt', template: this.dateTpl },
+      { title: 'Cập nhật', key: 'updatedAt', template: this.dateTpl },
+      { title: 'Hành động', width: '150px', template: this.actionsTpl, right: true }
+    ];
     this.loadUsers();
   }
 

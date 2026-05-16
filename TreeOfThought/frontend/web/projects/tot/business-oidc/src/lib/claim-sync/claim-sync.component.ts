@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewChild, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -15,6 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
 
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TotTableComponent, TotTableColumn } from '@tot/shared';
 
 @Component({
   selector: 'app-claim-sync',
@@ -32,7 +33,8 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzSpaceModule,
     NzDatePickerModule,
     NzGridModule,
-    TranslateModule
+    TranslateModule,
+    TotTableComponent
   ],
   template: `
     <div class="page-header">
@@ -68,30 +70,19 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
       </div>
     </nz-card>
 
-    <nz-table #basicTable [nzData]="existingClaims" [nzLoading]="loading">
-      <thead>
-        <tr>
-          <th>{{ 'Quyền' | translate }}</th>
-          <th>{{ 'Mô tả' | translate }}</th>
-          <th>{{ 'Ngày tạo' | translate }}</th>
-          <th nzWidth="120px">{{ 'Hành động' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let data of basicTable.data">
-          <td>{{ data.name }}</td>
-          <td>{{ data.description }}</td>
-          <td>{{ data.createdAt | date:'short' }}</td>
-          <td>
-            <nz-space>
-              <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
-                      [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
-                      (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
-            </nz-space>
-          </td>
-        </tr>
-      </tbody>
-    </nz-table>
+    <tot-table [data]="existingClaims" [columns]="claimColumns" [loading]="loading"></tot-table>
+
+    <ng-template #actionsTpl let-data>
+      <nz-space>
+        <button *nzSpaceItem nz-button nzType="primary" nzDanger nzSize="small" 
+                [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
+                (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</button>
+      </nz-space>
+    </ng-template>
+
+    <ng-template #dateTpl let-data let-key="key">
+      {{ data[key] | date:'short' }}
+    </ng-template>
 
     <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
       <ng-container *nzModalContent>
@@ -148,7 +139,18 @@ export class ClaimSyncComponent implements OnInit {
     dateRange: []
   };
 
+  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
+  @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
+
+  claimColumns: TotTableColumn[] = [];
+
   ngOnInit(): void {
+    this.claimColumns = [
+      { title: 'Quyền', key: 'name' },
+      { title: 'Mô tả', key: 'description' },
+      { title: 'Ngày tạo', key: 'createdAt', template: this.dateTpl },
+      { title: 'Hành động', width: '120px', template: this.actionsTpl }
+    ];
     this.loadClaims();
   }
 

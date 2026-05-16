@@ -16,7 +16,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-EHMU4H5Q.js";
+} from "./chunk-BCVC357O.js";
 import "./chunk-WVLO4HWC.js";
 import {
   NzCheckboxComponent,
@@ -31,7 +31,7 @@ import {
   NzMenuItemComponent,
   NzMenuModule,
   NzSubMenuComponent
-} from "./chunk-WONYILY4.js";
+} from "./chunk-YEPL6FXH.js";
 import {
   FIREBASE_CONFIG,
   NzFormControlComponent,
@@ -2652,16 +2652,16 @@ var errorInterceptor = (req, next) => {
 };
 
 // projects/tot/core/src/lib/directives/claim.directive.ts
-var _AppClaimDirective = class _AppClaimDirective {
-  set appClaimCheck(value) {
+var _TotClaimDirective = class _TotClaimDirective {
+  set totClaimCheck(value) {
     this.claims = value;
     this.updateView();
   }
-  set appClaimCheckMode(value) {
+  set totClaimCheckMode(value) {
     this.mode = value;
     this.updateView();
   }
-  set appClaimCheckHide(value) {
+  set totClaimCheckHide(value) {
     this.hideOnly = value === "" || value === true || value === "true";
     this.updateView();
   }
@@ -2746,23 +2746,23 @@ var _AppClaimDirective = class _AppClaimDirective {
     (_a = this.claimsSubscription) == null ? void 0 : _a.unsubscribe();
   }
 };
-_AppClaimDirective.\u0275fac = function AppClaimDirective_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _AppClaimDirective)();
+_TotClaimDirective.\u0275fac = function TotClaimDirective_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TotClaimDirective)();
 };
-_AppClaimDirective.\u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective({ type: _AppClaimDirective, selectors: [["", "appClaimCheck", ""]], inputs: { appClaimCheck: "appClaimCheck", appClaimCheckMode: "appClaimCheckMode", appClaimCheckHide: "appClaimCheckHide" } });
-var AppClaimDirective = _AppClaimDirective;
+_TotClaimDirective.\u0275dir = /* @__PURE__ */ \u0275\u0275defineDirective({ type: _TotClaimDirective, selectors: [["", "totClaimCheck", ""]], inputs: { totClaimCheck: "totClaimCheck", totClaimCheckMode: "totClaimCheckMode", totClaimCheckHide: "totClaimCheckHide" } });
+var TotClaimDirective = _TotClaimDirective;
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppClaimDirective, [{
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TotClaimDirective, [{
     type: Directive,
     args: [{
-      selector: "[appClaimCheck]",
+      selector: "[totClaimCheck]",
       standalone: true
     }]
-  }], () => [], { appClaimCheck: [{
+  }], () => [], { totClaimCheck: [{
     type: Input
-  }], appClaimCheckMode: [{
+  }], totClaimCheckMode: [{
     type: Input
-  }], appClaimCheckHide: [{
+  }], totClaimCheckHide: [{
     type: Input
   }] });
 })();
@@ -2877,7 +2877,7 @@ function MainLayoutComponent_ng_container_8_ng_container_1_Template(rf, ctx) {
   if (rf & 2) {
     const item_r2 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", item_r2.claim || "");
+    \u0275\u0275property("totClaimCheck", item_r2.claim || "");
   }
 }
 function MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_li_1_Template(rf, ctx) {
@@ -2904,7 +2904,7 @@ function MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_T
   if (rf & 2) {
     const child_r4 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", child_r4.claim || "");
+    \u0275\u0275property("totClaimCheck", child_r4.claim || "");
   }
 }
 function MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template(rf, ctx) {
@@ -2939,7 +2939,7 @@ function MainLayoutComponent_ng_container_8_ng_container_2_Template(rf, ctx) {
   if (rf & 2) {
     const item_r2 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance();
-    \u0275\u0275property("appClaimCheck", item_r2.claim || "");
+    \u0275\u0275property("totClaimCheck", item_r2.claim || "");
   }
 }
 function MainLayoutComponent_ng_container_8_Template(rf, ctx) {
@@ -3159,7 +3159,7 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onMouseUp();
     }, \u0275\u0275resolveDocument);
   }
-}, decls: 37, vars: 17, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], [4, "ngFor", "ngForOf"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "appClaimCheck"], [4, "ngIf"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "appClaimCheck"], ["nz-menu-item", "", "nzMatchRouter", ""], ["nz-icon", "", 3, "nzType", 4, "ngIf"], [3, "routerLink"], ["nz-submenu", "", 3, "nzTitle", "nzIcon", "nzOpen", "nzOpenChange", 4, "appClaimCheck"], ["nz-submenu", "", 3, "nzOpenChange", "nzTitle", "nzIcon", "nzOpen"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"]], template: function MainLayoutComponent_Template(rf, ctx) {
+}, decls: 37, vars: 17, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], [4, "ngFor", "ngForOf"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "totClaimCheck"], [4, "ngIf"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "totClaimCheck"], ["nz-menu-item", "", "nzMatchRouter", ""], ["nz-icon", "", 3, "nzType", 4, "ngIf"], [3, "routerLink"], ["nz-submenu", "", 3, "nzTitle", "nzIcon", "nzOpen", "nzOpenChange", 4, "totClaimCheck"], ["nz-submenu", "", 3, "nzOpenChange", "nzTitle", "nzIcon", "nzOpen"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"]], template: function MainLayoutComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "nz-layout", 2)(1, "nz-sider", 3);
@@ -3265,7 +3265,7 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   NzBreadCrumbModule,
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
-  AppClaimDirective,
+  TotClaimDirective,
   AsyncPipe,
   TranslatePipe
 ], styles: ['\n.app-layout[_ngcontent-%COMP%] {\n  height: 100vh;\n}\n.menu-sidebar[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 10;\n  min-height: 100vh;\n  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);\n}\n.sidebar-logo[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding-left: 24px;\n  overflow: hidden;\n  line-height: 64px;\n  background: #001529;\n  transition: all 0.3s;\n}\n.sidebar-logo[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: inline-block;\n  height: 32px;\n  vertical-align: middle;\n}\n.sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  display: inline-block;\n  margin: 0 0 0 12px;\n  color: #fff;\n  font-weight: 600;\n  font-size: 18px;\n  font-family:\n    Avenir,\n    "Helvetica Neue",\n    Arial,\n    Helvetica,\n    sans-serif;\n  vertical-align: middle;\n  transition: opacity 0.3s, width 0.3s;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  opacity: 0;\n  width: 0;\n  margin: 0;\n  overflow: hidden;\n  display: none;\n}\n.nz-header[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  z-index: 2;\n}\n.app-header[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding: 0;\n  background: #fff;\n  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.header-left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.header-trigger[_ngcontent-%COMP%] {\n  height: 64px;\n  padding: 0 24px;\n  font-size: 18px;\n  cursor: pointer;\n  transition: all 0.3s;\n}\n.header-links[_ngcontent-%COMP%] {\n  margin-left: 12px;\n  display: flex;\n  gap: 20px;\n}\n.nav-link[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  font-weight: 500;\n  transition: color 0.3s;\n}\n.nav-link[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.header-trigger[_ngcontent-%COMP%]:hover {\n  background: rgba(0, 0, 0, 0.025);\n}\n.header-right[_ngcontent-%COMP%] {\n  padding-right: 24px;\n  display: flex;\n  align-items: center;\n  gap: 16px;\n}\n.lang-selector[_ngcontent-%COMP%] {\n  margin-right: 8px;\n  cursor: pointer;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.user-info[_ngcontent-%COMP%] {\n  margin-right: 16px;\n  display: flex;\n  align-items: center;\n}\n.user-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  margin-left: 12px;\n  line-height: 1.2;\n}\n.username[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 14px;\n  color: rgba(0, 0, 0, 0.85);\n}\n.display-name[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: rgba(0, 0, 0, 0.45);\n}\n.inner-content[_ngcontent-%COMP%] {\n  padding: 24px;\n  background: #f0f2f5;\n  min-height: calc(100vh - 64px);\n}\n.app-breadcrumb[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  padding: 0;\n  background: transparent;\n  box-shadow: none;\n  border-radius: 0;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  transition: color 0.3s;\n  font-size: 13px;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   nz-breadcrumb-item[_ngcontent-%COMP%]:last-child   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.85);\n  font-weight: 500;\n  pointer-events: none;\n}\n  .ant-breadcrumb {\n  line-height: 1.2 !important;\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  font-size: 14px;\n}\n  .ant-breadcrumb-link, \n  .ant-breadcrumb-link > a {\n  display: inline-flex;\n  align-items: center;\n}\n  .ant-breadcrumb-separator {\n  margin: 0 4px !important;\n  color: rgba(0, 0, 0, 0.3) !important;\n  vertical-align: middle;\n}\n.resize-handle[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: 6px;\n  cursor: col-resize;\n  z-index: 100;\n  background: transparent;\n  transition: background 0.2s;\n}\n.resize-handle[_ngcontent-%COMP%]:hover {\n  background: rgba(24, 144, 255, 0.5);\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  display: none;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n}\n  .ant-menu-dark .ant-menu-submenu-title, \n  .ant-menu-dark .ant-menu-item, \n  .ant-menu-dark .ant-menu-item a {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title:hover, \n  .ant-menu-dark .ant-menu-item:hover, \n  .ant-menu-dark .ant-menu-item-active, \n  .ant-menu-dark .ant-menu-item:hover a, \n  .ant-menu-dark .ant-menu-item-active a {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-item-selected, \n  .ant-menu-dark .ant-menu-item-selected a {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%], \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  color: inherit;\n}\n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .menu-sidebar[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  transition: none !important;\n}\n/*# sourceMappingURL=main-layout.component.css.map */'] });
@@ -3285,7 +3285,7 @@ var MainLayoutComponent = _MainLayoutComponent;
       TranslateModule,
       NzDropDownModule,
       NzBreadCrumbModule,
-      AppClaimDirective
+      TotClaimDirective
     ], template: `<nz-layout class="app-layout" nzHasSider>
   <nz-sider class="menu-sidebar"
             nzCollapsible
@@ -3305,7 +3305,7 @@ var MainLayoutComponent = _MainLayoutComponent;
       <ng-container *ngFor="let item of menuItems">
         <!-- Single Menu Item -->
         <ng-container *ngIf="!item.children">
-          <li nz-menu-item nzMatchRouter *appClaimCheck="item.claim || ''">
+          <li nz-menu-item nzMatchRouter *totClaimCheck="item.claim || ''">
             <span nz-icon [nzType]="item.icon || ''" *ngIf="item.icon"></span>
             <span><a [routerLink]="item.route">{{ item.label | translate }}</a></span>
           </li>
@@ -3313,10 +3313,10 @@ var MainLayoutComponent = _MainLayoutComponent;
 
         <!-- Submenu Item -->
         <ng-container *ngIf="item.children">
-          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *appClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
+          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *totClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
             <ul>
               <ng-container *ngFor="let child of item.children">
-                <li nz-menu-item nzMatchRouter *appClaimCheck="child.claim || ''">
+                <li nz-menu-item nzMatchRouter *totClaimCheck="child.claim || ''">
                   <a [routerLink]="child.route">{{ child.label | translate }}</a>
                 </li>
               </ng-container>
@@ -3383,7 +3383,7 @@ var MainLayoutComponent = _MainLayoutComponent;
             <a [routerLink]="item.url">{{ item.label | translate }}</a>
           </nz-breadcrumb-item>
         </nz-breadcrumb>
-        <router-outlet *appClaimCheck=""></router-outlet>
+        <router-outlet *totClaimCheck=""></router-outlet>
       </div>
     </nz-content>
   </nz-layout>
@@ -4188,24 +4188,24 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-4YQXDRGI.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-4YQXDRGI.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-4YQXDRGI.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-2DTWVKE5.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-4YQXDRGI.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           }
         ]
@@ -4237,36 +4237,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-M7FWAJ7G.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-ICT7F5IF.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4274,7 +4274,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-AQEGCUWW.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-VK2VYF73.js").then((m) => m.FilesFolders)
       }
     ]
   },

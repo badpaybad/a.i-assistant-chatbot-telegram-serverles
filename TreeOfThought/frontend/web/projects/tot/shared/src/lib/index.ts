@@ -1,1 +1,1 @@
-export * from './components/tot-select/tot-select.component';
+export * from './components/tot-autocomplete/tot-autocomplete.component';
