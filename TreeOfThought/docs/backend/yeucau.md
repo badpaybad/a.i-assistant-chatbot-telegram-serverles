@@ -24,7 +24,8 @@ Core infra base
         abstract, các hàm sẵn theo quy tắc firebase để sử dụng theo nghiệp vụ cần
             FMC noti lên app mobile và web (web fcm qua service worker) với token device id
             firestore dùng để noti lên web theo request id (FE nhận được sẽ xóa luôn theo request id)
-            google cloud storage cho upload file ảnh , tài liệu, video (cần xử lý video ) dạng s3
+            google cloud storage cho upload file ảnh , tài liệu, video ... 
+                việc xử lý 1 số logic như lấy thumb, resize ảnh multi screen ... phụ thuộc vào nghiệp vụ cần hay không.
 
     TreeOfThought/backend/Core.Infra.Auth
         base auth cho toàn bộ solution, chỉ có logic về việc sinh jwt, check jwt đi theo auth attribute nhất quán logic về check quyền theo các thông tin trong jwt
@@ -50,9 +51,10 @@ Các project nghiệp vụ
 
     yêu cầu của 1 nghiệp vụ khi được triển khai :    
         là project riêng biêt     
+        tuyệt đối không gọi code ở các nghiệp vụ khác vào, hoặc tận dùng add reference để dùng lại code của nghiệp vụ khác (để tránh bị lệ thuộc giữa các nghiệp vụ)
         dùng tới các core infra base khi cần
         tuân thủ việc dùng dbcontext nghiệp vụ nào sẽ có riêng dbcontext của nghiệp vụ đó
-        có thể có thêm dbcontext để lấy data của nghiệp vụ khác 
+        có thể có tạo thêm dbcontext để lấy data của nghiệp vụ khác nếu cần thiết (readonly không được xuất hiện code thay đổi dữ liệu)
         cần có command, handler đẻ xử lý nghiệp vụ
         cần có event pub/sub để các nghiệp vụ khác lắng nghe và xử lý nếu cần. 
         các nghiệp vụ nói chuyện với nhau qua command, event để tránh bị lệ thuộc 

@@ -52,7 +52,6 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - [x] **OIDC/SSO**: Cấu hình linh hoạt giữa local và external Authority.
 
 ### 3.2. Các điểm cần bổ sung/hoàn thiện (Gaps):
-- [ ] **Xử lý Video**: Tài liệu yêu cầu "cần xử lý video" (Transcoding/Thumbnail). Hiện `FirebaseService` chỉ mới hỗ trợ Upload/Download thuần túy. Cần bổ sung logic này (có thể dùng Command Handler gọi FFmpeg hoặc Cloud Function).
 - [ ] **Cleanup Firestore**: Cần cơ chế TTL (Time To Live) cho các document trong collection `notify` để tránh rác nếu FE không xóa kịp.
 - [ ] **Auth Sync logic**: Hiện tại `AuthService` có `SyncUserClaimsToRedisAsync`, cần đảm bảo cơ chế này được gọi tự động khi Admin thay đổi quyền của User trong DB.
 
@@ -73,19 +72,20 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
     - Logic nghiệp vụ nằm hoàn toàn ở **Handlers**. 
     - Controller chỉ dùng `IDispatcher` để gửi Command/Event.
     - Để phản hồi realtime cho UI, Event phải triển khai `INotifyUiEvent`.
-- **Firebase**: Sử dụng `FirebaseService` cho thông báo và lưu trữ.
+- **Firebase**: Sử dụng `FirebaseService` cho thông báo và lưu trữ. Việc xử lý logic bổ sung (thumb, resize...) thực hiện tại module nghiệp vụ nếu cần.
 
-### 4.3. Trao đổi liên nghiệp vụ & Query
-- Query dữ liệu đúng phạm vi nghiệp vụ.
-- Tuyệt đối không gọi chéo DbContext. Trao đổi dữ liệu qua **Command/Event** hoặc Shared Services được đăng ký trong DI.
+### 4.3. Cô lập Nghiệp vụ (Strict Isolation)
+- **Tuyệt đối không gọi code hoặc add reference chéo** giữa các project nghiệp vụ để tránh lệ thuộc.
+- Trao đổi dữ liệu giữa các nghiệp vụ thông qua **Command/Event**.
+- Nếu cần truy vấn dữ liệu của nghiệp vụ khác: Tạo thêm `DbContext` phụ trong nghiệp vụ hiện tại nhưng **chỉ được phép Read-only** (không có code thay đổi dữ liệu).
 
 ---
 
 ## 5. Kế hoạch tiếp theo (Khi có lệnh từ User)
 
-1. **Video Processing**: Nghiên cứu tích hợp thư viện xử lý video vào hạ tầng.
-2. **Nghiệp vụ mới**: Sẵn sàng triển khai các module nghiệp vụ tiếp theo dựa trên khung hạ tầng đã vững chắc.
-3. **Refactor**: Cập nhật các Controller cũ (`FilesController`, `FoldersController`) để sử dụng claims cụ thể thay vì chỉ `[AppAuthorize]` chung chung.
+1. **Nghiệp vụ mới**: Sẵn sàng triển khai các module nghiệp vụ tiếp theo dựa trên khung hạ tầng đã vững chắc và quy tắc cô lập nghiêm ngặt.
+2. **Refactor**: Cập nhật các Controller cũ (`FilesController`, `FoldersController`) để sử dụng claims cụ thể thay vì chỉ `[AppAuthorize]` chung chung.
+3. **Firestore Maintenance**: Nghiên cứu cơ chế tự động dọn dẹp các thông báo cũ.
 
 ---
 **Ghi chú**: Hệ thống hiện tại đã đạt độ trưởng thành cao về mặt kiến trúc, cho phép mở rộng nhanh chóng mà vẫn duy trì được tính nhất quán và bảo mật.
