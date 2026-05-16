@@ -18,6 +18,7 @@ cần đảm bảo được:
     - đồng nhất về trao đổi dữ liệu
     - đồng nhất về layout
     - đồng nhất về permission truy cập url , ẩn hiện các component , element ...
+    - **các notify từ backend** vd firestore (commandresults/...) sau khi FE nhận được data, xử lý xong cần xóa luôn trên firestore, để FE chỉ nhận 1 lần duy nhất khi request xử lý, tránh rác, tránh tốn tiền 
 
 các component của các nghiệp vụ mà dùng qua lại của nhau thì cần như thế nào. vd ở ckeditor sẽ cần tới component của file and folder làm nút plugin trên tool bar. tương tự có nghiệp vụ khác cần dùng ckeditor và đưa plugin vào để sử dụng . hoặc dashboard sẽ cần tới các module nghiệp vụ để hiển thị dữ liệu
 

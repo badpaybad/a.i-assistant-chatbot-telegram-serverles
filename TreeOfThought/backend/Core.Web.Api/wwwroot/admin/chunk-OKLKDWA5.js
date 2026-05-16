@@ -13525,11 +13525,15 @@ var _FirebaseService = class _FirebaseService {
     await this.auth.signOut();
   }
   subscribeToRequestId(requestId, callback) {
+    return this.subscribeOnce(requestId, callback);
+  }
+  subscribeOnce(requestId, callback) {
     const docRef = doc(this.db, "commandresults", requestId);
-    return onSnapshot(docRef, async (snapshot) => {
+    const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         callback(data);
+        unsubscribe();
         try {
           await deleteDoc(docRef);
         } catch (e) {
@@ -13537,6 +13541,7 @@ var _FirebaseService = class _FirebaseService {
         }
       }
     });
+    return unsubscribe;
   }
   async getFCMToken() {
     var _a2;
@@ -14701,4 +14706,4 @@ export {
   NzFormLabelComponent,
   NzFormModule
 };
-//# sourceMappingURL=chunk-QJMGBTRY.js.map
+//# sourceMappingURL=chunk-OKLKDWA5.js.map

@@ -34,7 +34,9 @@ Mọi module nghiệp vụ phải sử dụng các component từ `@tot/shared` 
 ### 2.2. Tot Autocomplete / Dropdown
 - **Chế độ**: Hỗ trợ Single Select và Multi Select.
 - **Dữ liệu (Paging Load)**: Hỗ trợ Infinite Scroll. Khi người dùng cuộn tới cuối danh sách, component tự động gọi API lấy trang tiếp theo. Page size mặc định là **25**.
-- **Caching**: Hỗ trợ lưu dữ liệu vào `SessionStorage`. Khi thực hiện phân trang (paging) hoặc tìm kiếm, hệ thống sẽ chỉ thêm các giá trị mới (chưa tồn tại trong cache) vào session hiện có để tối ưu bộ nhớ và hiệu suất.
+- **Caching & Hydration**: 
+  - Hỗ trợ lưu dữ liệu vào `SessionStorage`. Khi khởi tạo, component ưu tiên lấy dữ liệu từ cache để hiển thị ngay lập tức (instant feel).
+  - Khi thực hiện phân trang (paging) hoặc tìm kiếm, hệ thống sẽ merge các giá trị mới vào cache hiện có, đảm bảo không trùng lặp và tối ưu hóa việc gọi API.
 - **Trạng thái**: Có loading indicator rõ ràng khi đang fetch dữ liệu.
 
 ### 2.3. Tot Table
@@ -61,24 +63,29 @@ Dựa trên mô hình `Core.Infra.Cqrs` ở Backend, Frontend triển khai `Mess
 - **Sử dụng**: Thông báo trạng thái thay đổi (ví dụ: `FILE_UPLOADED`, `USER_LOGGED_OUT`).
 
 ### 3.3. Realtime Feedback (Backend to Frontend)
-- **Cơ chế**: Lắng nghe sự kiện từ Backend thông qua Firestore.
-- **Quy tắc**: Khi gửi một Command lên BE, Frontend kèm theo một `trackingId` (hoặc `requestId`). BE xử lý xong sẽ publish kết quả vào Firestore tại path: `commandresults/{trackingId}`.
-- **Sử dụng**: `firebaseService.subscribeToRequestId(trackingId, callback)`. Dùng để cập nhật UI ngay lập tức khi tác vụ bất đồng bộ hoàn tất.
+- **Cơ chế**: Lắng nghe sự kiện từ Backend thông qua Firestore/Realtime DB.
+- **Quy tắc (Once-only Receipt)**:
+  - Khi gửi một Command lên BE, Frontend kèm theo một `trackingId`. 
+  - BE xử lý xong sẽ publish kết quả vào path: `commandresults/{trackingId}`.
+  - **Quan trọng**: Sau khi Frontend nhận được data và xử lý UI xong, phải thực hiện **XÓA NGAY** record tại path đó để tránh rác dữ liệu, đảm bảo mỗi notification chỉ được xử lý đúng một lần và đặc biệt là để **tối ưu chi phí lưu trữ/truy vấn trên Cloud (Firestore)**.
+- **Sử dụng**: `firebaseService.subscribeOnce(trackingId, callback)`.
 
 ---
 
 ## 4. Điều phối Component chéo (Component Registry)
 
-Để một module nghiệp vụ sử dụng UI của module khác (ví dụ: Dashboard hiển thị Widget của Files-Folders) mà không gây phụ thuộc trực tiếp:
+Để các module nghiệp vụ sử dụng UI của nhau mà không gây phụ thuộc trực tiếp (ví dụ: CKEditor cần dùng FileSelector làm plugin):
 
-1. **Đăng ký**: Module cung cấp (Provider) đăng ký component vào Registry.
+1. **Đăng ký**: Module cung cấp (Provider) đăng ký component vào Registry tại `@tot/core`.
    ```typescript
    registry.register(REGISTRY_KEYS.FILES_SELECTOR, FileSelectorComponent);
    ```
 2. **Sử dụng**: Module tiêu thụ (Consumer) gọi component qua Key.
    - Sử dụng hằng số `REGISTRY_KEYS` tập trung tại `@tot/core`.
    - Sử dụng `totComponentHost` directive để render component động.
-3. **Giao tiếp**: Host và Component nhúng trao đổi qua `MessageBusService`.
+3. **Mở rộng (Plugin System)**:
+   - Các component phức tạp như Editor sẽ cung cấp các "Slots" hoặc "Extension Points".
+   - Các module khác có thể đăng ký "Plugin Component" vào các slot này thông qua Registry và Message Bus.
 
 ---
 
@@ -87,12 +94,13 @@ Dựa trên mô hình `Core.Infra.Cqrs` ở Backend, Frontend triển khai `Mess
 App chính (`src/app`) đóng vai trò là "vỏ" (Shell) điều hướng:
 - **Layout**: Quản lý Theme (Dark/Light), Sidebar, Header, Breadcrumb.
 - **Routing**: Cấu hình **Lazy Loading** cho tất cả các module nghiệp vụ.
-- **Security**: 
-  - `ClaimGuard`: Kiểm tra quyền truy cập URL.
-  - `*totClaimCheck`: Directive ẩn/hiện element dựa trên danh sách Claim của user.
+- **Security & Permissions**: 
+  - `ClaimGuard`: Kiểm tra quyền truy cập URL tập trung.
+  - `*totClaimCheck`: Structural Directive để ẩn/hiện UI elements dựa trên Permission/Claims.
+  - Các hằng số Claims được quản lý tập trung tại `@tot/core`.
 - **Interceptors**: 
-  - `AuthInterceptor`: Tự động gắn Token.
-  - `ErrorInterceptor`: Bắt lỗi HTTP và hiển thị thông báo tập trung.
+  - `AuthInterceptor`: Tự động gắn Bearer Token.
+  - `ErrorInterceptor`: Bắt lỗi HTTP và hiển thị thông báo (Notification) tập trung.
 
 ---
 
@@ -106,7 +114,7 @@ App chính (`src/app`) đóng vai trò là "vỏ" (Shell) điều hướng:
 
 ## 7. Nguyên tắc KISS & Decoupling
 
-- **Kiểm soát dễ dàng**: Mỗi nghiệp vụ là một đơn vị độc lập.
+- **Kiểm soát dễ dàng**: Mỗi nghiệp vụ là một đơn vị độc lập (Library).
 - **Không phụ thuộc**: Các module nghiệp vụ tuyệt đối không import chéo code của nhau.
 - **Đồng nhất**: Mọi module đều dùng chung Layout, Auth, và cơ chế HTTP.
 - **Permission tập trung**: Kiểm soát truy cập từ URL đến từng Element nhỏ nhất trên UI.

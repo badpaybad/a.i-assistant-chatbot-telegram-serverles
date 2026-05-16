@@ -33,7 +33,7 @@ export class AppSelectComponent implements OnInit, OnDestroy, ControlValueAccess
   @Input() placeholder: string = 'Vui lòng chọn';
   @Input() labelField: string = 'name';
   @Input() valueField: string = 'id';
-  @Input() pageSize: number = 20;
+  @Input() pageSize: number = 25;
 
   @Output() valueChange = new EventEmitter<any>();
 

@@ -5,7 +5,7 @@ import {
   APP_CLAIMS,
   AuthService,
   CLAIMS_VERSION
-} from "./chunk-YSVCZLAD.js";
+} from "./chunk-VH7HYALT.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
@@ -59,7 +59,7 @@ import {
   NzFormItemComponent,
   NzFormLabelComponent,
   NzFormModule
-} from "./chunk-QJMGBTRY.js";
+} from "./chunk-OKLKDWA5.js";
 import "./chunk-IRGOCD6C.js";
 import {
   A11yModule,
@@ -408,7 +408,7 @@ var _AppSelectComponent = class _AppSelectComponent {
     this.placeholder = "Vui l\xF2ng ch\u1ECDn";
     this.labelField = "name";
     this.valueField = "id";
-    this.pageSize = 20;
+    this.pageSize = 25;
     this.valueChange = new EventEmitter();
     this.options = [];
     this.selectedValue = null;
@@ -7311,4 +7311,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-DOSKRZBO.js.map
+//# sourceMappingURL=chunk-PHSPMYVR.js.map

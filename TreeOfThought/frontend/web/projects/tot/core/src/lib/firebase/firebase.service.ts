@@ -107,19 +107,28 @@ export class FirebaseService {
   }
 
   subscribeToRequestId(requestId: string, callback: (data: any) => void) {
+    return this.subscribeOnce(requestId, callback);
+  }
+
+  subscribeOnce(requestId: string, callback: (data: any) => void) {
     const docRef = doc(this.db, 'commandresults', requestId);
-    return onSnapshot(docRef, async (snapshot) => {
+    const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         callback(data);
         
+        // Stop listening immediately after receiving data
+        unsubscribe();
+        
         try {
+          // Cleanup Firestore record
           await deleteDoc(docRef);
         } catch (e) {
           console.error('Failed to delete Firestore document after receipt', e);
         }
       }
     });
+    return unsubscribe;
   }
 
   async getFCMToken(): Promise<string | null> {
