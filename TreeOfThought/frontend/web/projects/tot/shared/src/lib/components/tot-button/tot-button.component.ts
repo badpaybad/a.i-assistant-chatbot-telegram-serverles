@@ -24,7 +24,7 @@ import { finalize } from 'rxjs/operators';
         [attr.type]="nzHtmlType"
         (click)="handleClick($event)"
       >
-        <ng-content></ng-content>
+        <ng-container *ngTemplateOutlet="contentTpl"></ng-container>
       </button>
     </ng-container>
 
@@ -43,10 +43,14 @@ import { finalize } from 'rxjs/operators';
         [class.ant-btn-disabled]="disabled || isLoading"
         (click)="handleClick($event)"
       >
-        <ng-content></ng-content>
+        <ng-container *ngTemplateOutlet="contentTpl"></ng-container>
       </a>
     </ng-template>
-  `
+
+    <ng-template #contentTpl>
+      <ng-content></ng-content>
+    </ng-template>
+  `,
 })
 export class TotButtonComponent implements OnDestroy {
   @Input() nzType: NzButtonType = 'default';
@@ -57,7 +61,7 @@ export class TotButtonComponent implements OnDestroy {
   @Input() nzGhost = false;
   @Input() disabled = false;
   @Input() nzHtmlType: 'button' | 'submit' | 'reset' = 'button';
-  
+
   @Input() href: string | null = null;
   @Input() target: string | null = null;
 
@@ -75,17 +79,19 @@ export class TotButtonComponent implements OnDestroy {
     // Handle Observable or Promise
     this.isLoading = true;
     const obs$ = isObservable(value) ? value : from(value);
-    
+
     this.subscription?.unsubscribe();
-    this.subscription = obs$.pipe(
-      finalize(() => {
-        this.isLoading = false;
-      })
-    ).subscribe({
-      error: () => {
-        this.isLoading = false;
-      }
-    });
+    this.subscription = obs$
+      .pipe(
+        finalize(() => {
+          this.isLoading = false;
+        }),
+      )
+      .subscribe({
+        error: () => {
+          this.isLoading = false;
+        },
+      });
   }
 
   isLoading = false;
