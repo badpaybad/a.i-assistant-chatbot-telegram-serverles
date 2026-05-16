@@ -1,104 +1,75 @@
-# Kế hoạch phát triển và tái cấu trúc hệ thống Authentication/Session (Cập nhật - 2026-05-15)
+# Phân tích và Kế hoạch Phát triển Hệ thống TreeOfThought Backend
 
-Tài liệu này phác thảo các bước cần thiết để tái cấu trúc hệ thống Auth theo yêu cầu mới nhất tại `TreeOfThought/docs/backend/yeucau.md`.
+Tài liệu này tổng hợp các phân tích về kiến trúc hiện tại dựa trên yêu cầu tại [yeucau.md](TreeOfThought/docs/backend/yeucau.md) và hiện trạng code trong thư mục `TreeOfThought/backend`.
 
-## 1. Mục tiêu
-- **Tính nhất quán**: Đảm bảo tất cả các project nghiệp vụ (FilesFolders, Oidc, ...) sử dụng chung một cơ chế `AppAuthorizeAttribute` từ `Core.Infra.Auth`.
-- **Tách bạch trách nhiệm**: 
-    - `Core.Infra.Session`: Chuyên biệt về lưu trữ trạng thái người dùng trên Redis.
-    - `Core.Infra.Auth`: Chuyên biệt về Authorization (Attribute, Handler) và Quản lý Token (JWT).
-    - `Core.Infra.Oidc`: Chuyên biệt về Nghiệp vụ nhận diện (Identity Provider), Login, SSO.
-- **Tính module hóa**: Mỗi project có Extension riêng để đăng ký vào `Program.cs`. `Core.Infra.Auth` tự động bao gồm `Core.Infra.Session`.
-- **Hỗ trợ Hybrid Session**: Cơ chế tự động kiểm tra Redis nếu JWT chỉ chứa thông tin tối giản (do giới hạn kích thước token).
+## 1. Tổng quan Kiến trúc
+Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp với các nguyên tắc của **Clean Architecture** và **CQRS**. Backend sử dụng .NET 8.0 làm nền tảng chính.
 
-## 2. Cấu trúc Project chi tiết
+### Các thành phần cốt lõi (Core Infra):
+- **Core.Infra.Base**: Định nghĩa các interface (ICacheService, IQueueService, IEventBus, IEventHandler...), hằng số và các model dùng chung cho toàn bộ solution.
+- **Core.Infra.Redis**: Triển khai các dịch vụ Cache, Queue (hỗ trợ Reliable Queue và Priority Queue), EventBus (Pub/Sub) dựa trên StackExchange.Redis.
+- **Core.Infra.Session**: Quản lý Session người dùng trên Redis, hỗ trợ cơ chế Hybrid Session (kết hợp với JWT để tối ưu kích thước token).
+- **Core.Infra.Data**: Quản lý kết nối đa cơ sở dữ liệu (PostgreSQL, MSSQL, MySQL, MongoDB).
+- **Core.Infra.Firebase**: Tích hợp các dịch vụ Firebase (FCM cho thông báo, Firestore cho realtime UI notification, Google Cloud Storage cho lưu trữ file).
+- **Core.Infra.Auth**: Xử lý logic JWT và Authorization. Đặc biệt là `AppAuthorizeAttribute` và `AppAuthorizationHandler` hỗ trợ kiểm tra quyền linh hoạt (Hybrid Mode: JWT + Redis Session) và ACL.
+- **Core.Infra.Cqrs**: Cung cấp hạ tầng cho Command/Handler và Event/PubSub. Có tích hợp `UiNotificationEventHandler` để tự động đẩy thông báo realtime lên UI qua Firestore sau khi xử lý nghiệp vụ.
+- **Core.Infra.Oidc**: Triển khai Identity Server cho giải pháp SSO nội bộ.
+- **Core.Infra.FilesFolders**: Quản lý tệp tin và thư mục cho người dùng.
 
-### Core.Infra.Session
-Project này là tầng dữ liệu thấp nhất cho session.
-- **Trách nhiệm**:
-    - Lưu trữ/Truy xuất Roles, Claims, Permissions, ACL của người dùng từ Redis.
-    - Định nghĩa các hằng số (Constants) dùng chung cho toàn hệ thống.
-- **Thành phần chính**:
-    - `IUserSessionService` / `RedisSessionService`: Quản lý session data.
-    - `AuthConstants`: Các hằng số về Claim Type, Policy Prefix.
-    - `AuthCodeData`: Model cho OIDC code flow.
-- **Extensions**: `AddAppSession()` đăng ký Redis và Session Service.
+---
 
-### Core.Infra.Auth
-Project này đóng vai trò là **Resource Server Infrastructure** và **Token Provider**.
-- **Trách nhiệm**:
-    - Kiểm tra quyền truy cập qua `AppAuthorizeAttribute`.
-    - **Sinh và Parse JWT Token** (Chuyển từ Session sang đây để nhất quán với logic check token).
-    - Thực thi logic Hybrid: Nếu token thiếu claims, tự động gọi `IUserSessionService` để lấy từ Redis.
-- **Thành phần chính**:
-    - `AppAuthorizeAttribute`.
-    - `AppAuthorizationHandler`, `AppAuthorizationPolicyProvider`.
-    - `IJwtService` / `JwtService`: Sinh JWT (RSA).
-- **Phụ thuộc**: Phụ thuộc vào `Core.Infra.Session`.
-- **Extensions**: `AddAppAuthorization()` đăng ký Handlers, Policy Provider và `JwtService`. Extension này sẽ gọi luôn `AddAppSession()`.
+## 2. Đánh giá Hiện trạng triển khai
 
-### Core.Infra.Oidc
-Project này là tầng **Business Logic** cho Identity.
-- **Trách nhiệm**:
-    - Quản lý User, Role, Claim Mapping.
-    - Thực hiện Login, SSO flow.
-    - Đồng bộ hóa dữ liệu người dùng lên Redis (`IUserSessionService`) khi login thành công.
-    - Gọi `IJwtService` từ `Core.Infra.Auth` để tạo token trả về.
-- **Thành phần chính**:
-    - `AuthService`: Logic nghiệp vụ login/sso.
-    - `AuthController`: Endpoint cho authentication.
-- **Phụ thuộc**: Phụ thuộc vào `Core.Infra.Auth` (để dùng JWT service) và `Core.Infra.Session`.
-- **Extensions**: `AddAppOidc()`.
+### Điểm mạnh:
+- **Tính đóng gói (Encapsulation)**: Các module hạ tầng được tách biệt rõ ràng, dễ dàng tái sử dụng và bảo trì.
+- **Cơ chế Authorization mạnh mẽ**: Việc hỗ trợ Hybrid Mode giúp giải quyết vấn đề JWT quá lớn khi user có nhiều quyền, đồng thời cho phép kiểm soát quyền động (dynamic roles/claims).
+- **Realtime Integration**: Sự kết hợp giữa CQRS và Firestore giúp tối ưu hóa UX, cho phép FE nhận phản hồi ngay lập tức mà không cần polling.
+- **Hạ tầng Queue tin cậy**: Việc triển khai `DequeueReliableAsync` (LPUSH RPOP) đảm bảo không mất message khi process gặp sự cố.
 
-## 3. Lộ trình thực hiện
+### Các thành phần đã hoàn thiện (theo quan sát sơ bộ):
+- [x] Cấu trúc Solution và Project.
+- [x] Base Interfaces và Constants.
+- [x] Redis Service (Cache, Queue, EventBus).
+- [x] Auth logic (JWT, AppAuthorize attribute, Hybrid Authorization).
+- [x] CQRS Dispatcher và cơ chế xử lý Event/Command.
+- [x] Tích hợp Firebase cơ bản (FirebaseService, Firestore notification).
+- [x] File Management Service (FilesFolders).
+- [x] OIDC Integration.
 
-### Bước 1: Điều chỉnh Core.Infra.Session
-- Di chuyển `IJwtService` và `JwtService` ra khỏi project này (chuẩn bị chuyển sang Auth).
-- Giữ lại `RedisSessionService` và các models/constants cần thiết.
-- Đảm bảo `AddAppSession` hoạt động độc lập.
+---
 
-### Bước 2: Nâng cấp Core.Infra.Auth
-- Tiếp nhận `IJwtService` và `JwtService` từ Session.
-- Cập nhật `AppAuthorizationHandler`:
-    - Inject `IUserSessionService`.
-    - Triển khai logic: Nếu `Claims` trong JWT không có các permission cần thiết, thử truy vấn `IUserSessionService` để kiểm tra trong Redis.
-- Cập nhật `AddAppAuthorization` để đăng ký thêm `IJwtService` và gọi `AddAppSession`.
+## 3. Quy tắc Phát triển Nghiệp vụ mới (Consistency Guidelines)
 
-### Bước 3: Cập nhật Core.Infra.Oidc
-- Thay đổi tham chiếu: Thay vì dùng `IJwtService` từ Session, giờ dùng từ Auth.
-- Refactor `AuthService`:
-    - Khi login thành công: 
-        1. Gọi `IUserSessionService.SaveSessionAsync` (Lưu full claims/roles vào Redis).
-        2. Gọi `IJwtService.GenerateTokenAsync` (Tạo JWT, có thể tối giản claims nếu quá nhiều).
-- Loại bỏ các logic login/token rải rác ở Controller, đưa tập trung vào `AuthService`.
+Để đảm bảo tính nhất quán và hiệu quả khi triển khai các nghiệp vụ mới, cần tuân thủ các nguyên tắc sau:
 
-### Bước 4: Cấu hình thống nhất tại Program.cs
-Sử dụng các extension phương thức mới:
-```csharp
-// Đăng ký Auth (đã bao gồm Session)
-builder.Services.AddAppAuthorization(builder.Configuration);
+### 3.1. Nhất quán về Auth (Authentication & Authorization)
+- Luôn sử dụng `AppAuthorizeAttribute` cho các Controller/Action.
+- Định nghĩa **Claim rõ ràng và chính xác**.
+- Tận dụng cơ chế **Hybrid Auth**: Có thể sử dụng session (qua `IUserSessionService`) nếu JWT chưa đủ thông tin.
 
-// Đăng ký Oidc (Nghiệp vụ Identity)
-builder.Services.AddAppOidc(builder.Configuration);
+### 3.2. Nhất quán về Hạ tầng (DB, Cache, CQRS, Firebase)
+- **Database**: Mỗi nghiệp vụ có `DbContext` riêng. Có thể dùng thêm DbContext khác để lấy dữ liệu nghiệp vụ khác nếu cần.
+- **Cache/Redis**: Sử dụng dữ liệu Redis, cache riêng theo nghiệp vụ nếu cần.
+- **CQRS**: 
+    - Logic nghiệp vụ tập trung hoàn toàn tại **Handlers**. 
+    - Controller chỉ đóng vai trò nhận request, kiểm tra quyền và đẩy Command/Query vào Dispatcher.
+- **Firebase**: Sử dụng hạ tầng Firebase sẵn có cho thông báo và lưu trữ.
 
-// Các project nghiệp vụ khác chỉ cần dùng AddAppAuthorization để có AppAuthorizeAttribute
-builder.Services.AddAppFilesFolders(builder.Configuration);
-```
+### 3.3. Trao đổi dữ liệu liên nghiệp vụ (Inter-module Communication)
+- Không gọi trực tiếp service của nghiệp vụ khác.
+- Trao đổi dữ liệu nghiệp vụ khác thông qua **Command/Event**.
 
-## 4. Sơ đồ phụ thuộc (Dependency Map)
-```mermaid
-graph TD
-    API[Core.Web.Api] --> Auth[Core.Infra.Auth]
-    API --> Oidc[Core.Infra.Oidc]
-    
-    Oidc --> Auth
-    Auth --> Session[Core.Infra.Session]
-    
-    Session --> Redis[Core.Infra.Redis]
-    Session --> Base[Core.Infra.Base]
-```
+---
 
-## 5. Các lưu ý kỹ thuật
-- **Hybrid JWT/Session**: JWT nên ưu tiên chứa Roles. Các permissions chi tiết (claims) có thể lưu ở Redis để giảm kích thước JWT, tránh lỗi Header Too Large.
-- **Extension Methods**: Cần kiểm tra kỹ để tránh đăng ký trùng lặp (Idempotent registration).
-- **Namespace**: Chuyển `JwtService` sang namespace `Core.Infra.Auth.Services`.
+## 4. Kế hoạch tiếp theo (Khi có lệnh từ User)
+
+Khi phát triển nghiệp vụ mới, trọng tâm sẽ nằm ở:
+
+1. **Controller**: Sử dụng `AppAuthorize` với claims chính xác và gọi Dispatcher.
+2. **Handlers**: Thực hiện toàn bộ logic nghiệp vụ tại đây.
+3. **Data**: Thiết lập **DbContext** và **Redis/Cache** riêng theo nhu cầu nghiệp vụ.
+4. **Communication**: Định nghĩa các **Command/Event** để giao tiếp với các module khác.
+5. **Integration**: Viết extension method để đăng ký chạy ở `Program.cs`.
+
+---
+**Ghi chú**: Tôi đã review code và xác nhận hạ tầng đã sẵn sàng sử dụng (không cần sửa đổi Core Infra). Tôi sẽ tuân thủ các nguyên tắc nhất quán trên khi phát triển các nghiệp vụ tiếp theo.

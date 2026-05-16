@@ -1,53 +1,99 @@
-suy nghĩ về các yêu cầu ở dưới . viết vào TreeOfThought/docs/backend/phattrien.md để tôi xem
+BE sẽ hoạt động ở TreeOfThought/backend
 
-AppAuthorizeAttribute
-    TreeOfThought/backend/Core.Infra.Oidc/Attributes/AppAuthorizeAttribute.cs 
-    TreeOfThought/backend/Core.Infra.Oidc/Handlers/AppAuthorizationHandler.cs
-    TreeOfThought/backend/Core.Infra.Oidc/Handlers/AppAuthorizationPolicyProvider.cs
+sử dụng dotnet core 8.0
 
-tách sang riêng project Core.Infra.Auth 
+Core infra base 
+    TreeOfThought/backend/Core.Infra.Base
+        mức ảnh hưởng toàn bộ solution
+        các interface, const, model, dto... chính cho toàn bộ solution
+        một số hàm dùng chung , hằng số dùng chung 
+        
+    TreeOfThought/backend/Core.Infra.Redis
+        cache, pubsub, queue, eventbus, abstract redis để sử dụng theo nghiệp vụ cần
 
-để các project nghiệp vụ như TreeOfThought/backend/Core.Infra.FilesFolders, TreeOfThought/backend/Core.Infra.Oidc, ... dùng nhất quán về AppAuthorizeAttribute là nơi để đọc jwt và thực hiện authorize claim / role / permission / policy 
+    TreeOfThought/backend/Core.Infra.Session
+        session base trên redis , toàn bộ solution cần nhìn chung 1 server session nếu cần
+        quản lý session dạng hybrid để có thể kết hơp với jwt
 
-đang vướng việc login tạo jwt lại nằm ở controller 
+    TreeOfThought/backend/Core.Infra.Data
+        các dbcontext để kết nối các nguồn data, abstract để sử dụng theo nghiệp vụ cần
+        postgresql, mssql, mysql, mongodb
 
-tách sang riêng project Core.Infra.Session 
-    2 project liên quan 
-        TreeOfThought/backend/Core.Infra.Oidc 
-        TreeOfThought/backend/Core.Infra.Auth
+    TreeOfThought/backend/Core.Infra.Firebase
+        các dịch vụ google firebase cho phép có nhiều firebase admin được instance
+        abstract, các hàm sẵn theo quy tắc firebase để sử dụng theo nghiệp vụ cần
+            FMC noti lên app mobile và web (web fcm qua service worker) với token device id
+            firestore dùng để noti lên web theo request id (FE nhận được sẽ xóa luôn theo request id)
+            google cloud storage cho upload file ảnh , tài liệu, video (cần xử lý video ) dạng s3
 
-    Do việc lưu các thông tin role right claims permision acl lên redis cho user khi login, 
-    cần , việc sinh ra khi login ở TreeOfThought/backend/Core.Infra.Oidc ,việc kiểm tra lại ở 
-        TreeOfThought/backend/Core.Infra.Auth
+    TreeOfThought/backend/Core.Infra.Auth
+        base auth cho toàn bộ solution, chỉ có logic về việc sinh jwt, check jwt đi theo auth attribute nhất quán logic về check quyền theo các thông tin trong jwt
+            policy, role vân hoạt đồng theo chuẩn của microsoft
+            claims được truyền qua constructor của auth attribute là việc dánh dấu 1 đoạn code được phép chạy khi user có claims này
+                vai trò của 1 user sẽ được định nghĩa động
+                vai trò sẽ gom nhiều claims thành 1 vai trò
+                    nếu user có quá nhiều claims thì jwt sẽ nặng , nên có chế độ hybrid khi claims nhiều quá sẽ lấy claims theo vai trò của user trên session, rồi dùng để kiểm tra logic của auth attribute
+                        and thì phải xuất hiện đủ cả claims ( auth attr khai báo 2 cái , thì 2 cái cần phải có trong session theo user)
+                        or thì chỉ cần xuất hiện 1 trong số các claims ( auth attr khai báo 2 cái, mà session chỉ cẩn xuất hiện 1 trong 2 là đủ)
 
-    nên cần suy nghĩ và tách ra project riêng Core.Infra.Session để hybrid jwt và session server khi cần 
-    
-các project đều cần có extension để đăng ký vào program.cs cho web api cần 
+        liên quan FE về check jwt logic tương đồng FE theo BE: 
+            TreeOfThought/frontend/web/projects/tot/core
+        
 
-Core.Infra.Session 
-    như vậy project TreeOfThought/backend/Core.Infra.Session lưu session khi cần xài redis để thống nhất , cấp các const key cho các project khác nếu cần. cần extension để đăng ký vào program.cs cho web api cần . khi hybrid jwt session sẽ cần
+    TreeOfThought/backend/Core.Infra.Cqrs
+        việc xử lý các nghiệp vụ nên quy hoạch về 
+            command là queue, các nghiệp vụ cần tuân thủ việc tạo command và handler
+                thường xử lý xong 1 command có thể là request từ UI convert sang command, handler xử lý xong (handle xong) thường dùng firestore để publish cho UI thực hiện tiếp về UI UX vd đóng waiting progress, load lại data ... rồi xóa luôn theo request id để tránh rác tốn tài nguyên
+            event là pubsub, là kết quả của 1 nghiệp vụ cụ thể sẽ được publish với topic name để các nghiệp vụ khác lắng nghe và xử lý nếu cần. các nghiệp vụ nói chuyện với nhau qua command event để tránh bị lệ thuộc 
 
-    appsettings.json nếu cần cho Session sẽ là "Session": {
-        "key": "value vd key value cho redis , postgresql",
-    }
+Các project nghiệp vụ
 
-Core.Infra.Auth
+    yêu cầu của 1 nghiệp vụ khi được triển khai :    
+        là project riêng biêt     
+        dùng tới các core infra base khi cần
+        tuân thủ việc dùng dbcontext nghiệp vụ nào sẽ có riêng dbcontext của nghiệp vụ đó
+        có thể có thêm dbcontext để lấy data của nghiệp vụ khác 
+        cần có command, handler đẻ xử lý nghiệp vụ
+        cần có event pub/sub để các nghiệp vụ khác lắng nghe và xử lý nếu cần. 
+        các nghiệp vụ nói chuyện với nhau qua command, event để tránh bị lệ thuộc 
+        nếu cần có thể controller 
+        cần có extension để khi cần có thể đăng ký chạy ở program.cs của các app nếu cần 
 
-    việc sinh jwt cũng cần ở project TreeOfThought/backend/Core.Infra.Auth vì logic check jwt , lấy session ra check ở TreeOfThought/backend/Core.Infra.Auth/Handlers/AppAuthorizationHandler.cs 
+    ví dụ về nghiệp vụ 
+        Core infra nghiệp vụ
+            TreeOfThought/backend/Core.Infra.Oidc
+                dùng để quản lý user, vai trò, quyền, acl ... cung cấp oids sso cho các app trong solution
+                cũng sử dụng chung cơ chế auth attribute 
+                cấu hình chính là 1 identity server cho solution, isOidc = true , khi isOidc = false thì sẽ sử dụng cơ chế auth attribute thuần. dùng cho các nghiệp vụ độc lập sso với identity server solution
+                liên quan FE về quản lý và đăng nhập sso, vai trò, quyền 
+                    TreeOfThought/frontend/web/projects/tot/business-auth
+                    TreeOfThought/frontend/web/projects/tot/core
+                    TreeOfThought/frontend/web/src/app/modules/auth
 
-    TreeOfThought/backend/Core.Infra.Auth sinh ra để tất cả các project nghiệp vụ dùng AppAuthorizeAttribute nhất quán về kiểm tra quyền / role / permission / policy / acl ... . cần extension để đăng ký vào program.cs cho web api cần , extension của project Core.Infra.Auth cần có sẵn luôn của Core.Infra.Session  khi hybrid jwt session sẽ cần
-    Các project nghiệp vụ có controller đều cần dùng Core.Infra.Auth AppAuthorizeAttribute
-    cấp các const key cho các project khác nếu cần.
-    
-    appsettings.json nếu cần cho Auth sẽ là "Auth": {
-        "key": "value vd key value cho redis , postgresql",
-    }
+            TreeOfThought/backend/Core.Infra.FilesFolders
+                về quản lý file cho từng người dùng 
+                liên quan FE quản lý 
+                    TreeOfThought/frontend/web/projects/tot/business-files
+Các app , web api
+    là các web cấp api rest full cho các FE tương ứng , hoặc MVC web theo yêu cầu khi cần.
+    chủ yếu để đăng ký các nghiệp vụ để sử dụng 
+    có thể add reference các project cần ( core infra base, các project nghiệp vụ cần)
+    có thể add các nuget cần
 
-Core.Infra.Oidc
-    TreeOfThought/backend/Core.Infra.Oidc Đây là project nghiệp vụ để quản lý user, role, claims sync ..., sso , oidc provider, login ..., 
-        lúc này extension để đăng ký vào program.cs là đã có của Core.Infra.Auth
-    cấp các const key cho các project khác nếu cần.
+    ví dụ về restfulapis 
+        TreeOfThought/backend/Core.Web.Api
+            web api chính core web, kiêm việc mở api restful làm identity server, oidc ...
+            là web chính dể đăng ký nghiệp vụ và sử dụng: oidc , files
+            một số test để hướng đần dùng cqrs , firebase ...
 
-    appsettings.json nếu cần cho Oidc sẽ là "Oidc": {
-        "key": "value vd key value cho redis , postgresql",
-    }
+**đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
+    review code không cần sửa vì code đã sẵn sàng dùng
+        đảm bảo về việc khi phát triển nghiệp vụ mới
+            nhất quán về auth 
+            nhất quán về dùng db cache cqrs firebase
+            phát triển nghiệp vụ chỉ cần quan tâm tới
+                controller ( có dùng tới auth attr với claims rõ ràng và chính xác )
+                các handle (thực hiện các logic nghiệp vụ)
+                có thể dùng session nếu jwt chưa đủ thông tin 
+                db, redis dữ liệu, cache riêng theo nghiệp vụ nếu cần
+                cần trao đổi dữ liệu nghiệp vụ khác sẽ qua command event 
