@@ -55,11 +55,13 @@ Các project nghiệp vụ
         dùng tới các core infra base khi cần
         tuân thủ việc dùng dbcontext nghiệp vụ nào sẽ có riêng dbcontext của nghiệp vụ đó
         có thể có tạo thêm dbcontext để lấy data của nghiệp vụ khác nếu cần thiết (readonly không được xuất hiện code thay đổi dữ liệu)
-        cần có command, handler đẻ xử lý nghiệp vụ
+        cần có command, handler đẻ xử lý nghiệp vụ dạng chạy bất đồng bộ, UI sẽ nhận notify để biết được việc đã xử lý xong chưa kết quả như thế nào 
+            Cân nhắc có thể một số nghiệp vụ hoặc ở trong controller có thể gọi hàm trực tiếp hoặc chạy handle luôn (inmemory) mà không cần qua CQRS, chạy đồng bộ luôn. ví dụ: xử lý upload file 
         cần có event pub/sub để các nghiệp vụ khác lắng nghe và xử lý nếu cần. 
         các nghiệp vụ nói chuyện với nhau qua command, event để tránh bị lệ thuộc 
         nếu cần có thể controller 
         cần có extension để khi cần có thể đăng ký chạy ở program.cs của các app nếu cần 
+        những gì cần const hoặc cần khai báo vào appsettings.json cần cân nhắc kỹ.
 
     ví dụ về nghiệp vụ 
         Core infra nghiệp vụ

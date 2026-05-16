@@ -11,10 +11,10 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - **Core.Infra.Session**: Quản lý Session người dùng trên Redis, hỗ trợ cơ chế Hybrid Session (kết hợp với JWT để tối ưu kích thước token).
 - **Core.Infra.Data**: Quản lý kết nối đa cơ sở dữ liệu (PostgreSQL, MSSQL, MySQL, MongoDB).
 - **Core.Infra.Firebase**: Tích hợp các dịch vụ Firebase (FCM cho thông báo, Firestore cho realtime UI notification, Google Cloud Storage cho lưu trữ file).
-- **Core.Infra.Auth**: Xử lý logic JWT và Authorization. Đặc biệt là `AppAuthorizeAttribute` và `AppAuthorizationHandler` hỗ trợ kiểm tra quyền linh hoạt (Hybrid Mode: JWT + Redis Session) và ACL.
-- **Core.Infra.Cqrs**: Cung cấp hạ tầng cho Command/Handler và Event/PubSub. Có tích hợp `UiNotificationEventHandler` để tự động đẩy thông báo realtime lên UI qua Firestore sau khi xử lý nghiệp vụ.
-- **Core.Infra.Oidc**: Triển khai Identity Server cho giải pháp SSO nội bộ, bao gồm cả `ClaimScannerService` để tự động hóa quản lý quyền.
-- **Core.Infra.FilesFolders**: Quản lý tệp tin và thư mục cho người dùng, minh họa việc tách module nghiệp vụ độc lập.
+- **Core.Infra.Auth**: Xử lý logic JWT và Authorization. Đặc biệt là `AppAuthorizeAttribute` mã hóa thông tin (Mode, Action, ResourceType, Claims) vào Policy string, kết hợp với `AppAuthorizationHandler` để kiểm tra quyền linh hoạt (Hybrid Mode: JWT + Redis Session) và ACL.
+- **Core.Infra.Cqrs**: Cung cấp hạ tầng cho Command/Handler và Event/PubSub. Có tích hợp `UiNotificationEventHandler` để tự động đẩy thông báo realtime lên UI qua Firestore sau khi xử lý nghiệp vụ (dựa trên interface `INotifyUiEvent`).
+- **Core.Infra.Oidc**: Triển khai Identity Server cho giải pháp SSO nội bộ, bao gồm cả `ClaimScannerService` để tự động quét và đồng bộ các quyền khai báo trong code vào DB.
+- **Core.Infra.FilesFolders**: Module nghiệp vụ mẫu quản lý tệp tin và thư mục, minh họa việc tách biệt DbContext và logic Handler.
 
 ---
 
@@ -52,8 +52,9 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - [x] **OIDC/SSO**: Cấu hình linh hoạt giữa local và external Authority.
 
 ### 3.2. Các điểm cần bổ sung/hoàn thiện (Gaps):
-- [ ] **Cleanup Firestore**: Cần cơ chế TTL (Time To Live) cho các document trong collection `notify` để tránh rác nếu FE không xóa kịp.
-- [ ] **Auth Sync logic**: Hiện tại `AuthService` có `SyncUserClaimsToRedisAsync`, cần đảm bảo cơ chế này được gọi tự động khi Admin thay đổi quyền của User trong DB.
+- [ ] **Cleanup Firestore**: Cần cơ chế TTL (Time To Live) cho các document trong collection `notify` để tránh rác nếu FE không xóa kịp. Hiện tại Firestore chưa có config này.
+- [ ] **Refactor Handler Notifications**: Các Handler hiện tại trong `FilesFolders` xử lý xong nhưng chưa phát Event `INotifyUiEvent`. Cần bổ sung để UI nhận được thông báo trạng thái "Hoàn thành" realtime.
+- [ ] **Auth Sync logic**: Đảm bảo `AuthService.SyncUserClaimsToRedisAsync` được kích hoạt ngay khi có thay đổi quyền từ Admin Dashboard.
 
 ---
 
@@ -79,13 +80,20 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - Trao đổi dữ liệu giữa các nghiệp vụ thông qua **Command/Event**.
 - Nếu cần truy vấn dữ liệu của nghiệp vụ khác: Tạo thêm `DbContext` phụ trong nghiệp vụ hiện tại nhưng **chỉ được phép Read-only** (không có code thay đổi dữ liệu).
 
+### 4.4. Chi tiết về AppAuthorize
+- **Claims**: Phải có prefix `be.` (nếu không có sẽ tự động thêm vào). Ví dụ: `[AppAuthorize("files.read")]` tương đương claim `be.files.read`.
+- **Mode**: 
+    - `OR`: Chỉ cần thỏa mãn 1 trong các claims/roles.
+    - `AND`: Phải thỏa mãn tất cả.
+- **ACL**: Sử dụng `ResourceType` và `Action` (Bitmask) để kiểm tra quyền trên resource cụ thể.
+
 ---
 
 ## 5. Kế hoạch tiếp theo (Khi có lệnh từ User)
 
-1. **Nghiệp vụ mới**: Sẵn sàng triển khai các module nghiệp vụ tiếp theo dựa trên khung hạ tầng đã vững chắc và quy tắc cô lập nghiêm ngặt.
-2. **Refactor**: Cập nhật các Controller cũ (`FilesController`, `FoldersController`) để sử dụng claims cụ thể thay vì chỉ `[AppAuthorize]` chung chung.
-3. **Firestore Maintenance**: Nghiên cứu cơ chế tự động dọn dẹp các thông báo cũ.
+1. **Nghiệp vụ mới**: Sẵn sàng triển khai các module nghiệp vụ tiếp theo (ví dụ: Chatbot, Telegram Integration) dựa trên khung hạ tầng đã vững chắc.
+2. **Refactor FilesFolders**: Cập nhật `FilesFoldersCommandHandler` để publish các Event tương ứng (như `FolderCreatedEvent`, `FileUploadedEvent`) triển khai `INotifyUiEvent`.
+3. **Firestore Maintenance**: Cấu hình Cloud Function hoặc cơ chế nội bộ để dọn dẹp Firestore notify collection.
 
 ---
 **Ghi chú**: Hệ thống hiện tại đã đạt độ trưởng thành cao về mặt kiến trúc, cho phép mở rộng nhanh chóng mà vẫn duy trì được tính nhất quán và bảo mật.
