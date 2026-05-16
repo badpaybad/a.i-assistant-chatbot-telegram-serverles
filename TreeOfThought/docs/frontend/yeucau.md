@@ -57,4 +57,8 @@ tổng kết nhanh về cấu trúc
         đăng ký các module nghiệp vụ để dùng 
 
 **suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
-- [x] Cập nhật page size mặc định 10, kiểm tra các bảng danh sách ở các lib nghiệp vụ và app shell xem đã dùng theo chuẩn tot-table.
+
+**cập nhật 2026-05-16 22:22:22**
+- [x] Cập nhật page size mặc định 10.
+- [x] Sử dụng i18n và Transloco cho phần đa ngôn ngữ.
+- [x] Bắt buộc dùng `tot-button` cho các nút và `tot-table` cho danh sách dạng bảng.

@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -13,6 +14,7 @@ import { AppNotificationService, FirebaseService, HttpClientService } from '@tot
   selector: 'app-fcm-test',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     FormsModule,
     NzPageHeaderModule,

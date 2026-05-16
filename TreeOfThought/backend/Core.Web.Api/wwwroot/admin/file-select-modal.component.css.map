@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["angular:styles/component:css;2df31b196f9cc4a1e71928d5763507a7957dc271fa049505ab59c9ffd7a5b1a3;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/file-select-modal/file-select-modal.component.ts"],
-  "sourcesContent": ["\n    .file-select-modal-container {\n      min-height: 400px;\n    }\n  "],
-  "mappings": ";AACI,CAAC;AACC,cAAY;AACd;",
-  "names": []
-}

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { AppNotificationService } from '../services/app-notification.service';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { API_URL } from '../tokens/api-url.token';
@@ -15,7 +15,7 @@ export class HttpClientService {
   private notification = inject(AppNotificationService);
   private router = inject(Router);
   private templateService = inject(NotificationTemplateService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   private apiBaseUrlToken = inject(API_URL);
 
   private get API_BASE_URL(): string {
@@ -53,13 +53,13 @@ export class HttpClientService {
     const message = error.error?.message || error.message || 'Unknown error';
     
     if (status >= 400 || status === 0) {
-      const translatedMessage = this.translate.instant(message);
-      const displayMessage = status === 0 ? this.translate.instant('Lỗi kết nối hoặc server đang bảo trì') : translatedMessage;
-      const linkText = this.translate.instant('Click vào đây để đăng nhập');
+      const translatedMessage = this.translate.translate(message);
+      const displayMessage = status === 0 ? this.translate.translate('Lỗi kết nối hoặc server đang bảo trì') : translatedMessage;
+      const linkText = this.translate.translate('Click vào đây để đăng nhập');
       const htmlContent = `${displayMessage}. <a href="/auth/login" style="color: #1890ff; text-decoration: underline;">${linkText}.</a>`;
       
       const template = this.templateService.getTemplate('html');
-      const errorTitle = this.translate.instant('Thông báo');
+      const errorTitle = this.translate.translate('Thông báo');
       
       if (template) {
         this.notification.create('error', errorTitle, template, { nzData: { content: htmlContent }, nzDuration: 0 });
@@ -71,7 +71,7 @@ export class HttpClientService {
         });
       }
     } else {
-      this.notification.error(this.translate.instant('Thông báo'), message, { nzDuration: 0 });
+      this.notification.error(this.translate.translate('Thông báo'), message, { nzDuration: 0 });
     }
     
     throw error;

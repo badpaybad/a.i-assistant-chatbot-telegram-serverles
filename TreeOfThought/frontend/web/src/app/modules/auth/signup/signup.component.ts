@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -9,12 +10,13 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AppNotificationService, AuthService } from '@tot/core';
 
 import { NzDividerModule } from 'ng-zorro-antd/divider';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-signup',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -23,7 +25,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzButtonModule,
     NzIconModule,
     NzDividerModule,
-    TranslateModule
+    TranslocoModule
   ],
   templateUrl: './signup.component.html',
   styleUrls: ['./signup.component.css']
@@ -33,7 +35,7 @@ export class SignupComponent implements OnInit {
   private authService = inject(AuthService);
   private router = inject(Router);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   validateForm: FormGroup<{
     username: FormControl<string>;
@@ -68,14 +70,14 @@ export class SignupComponent implements OnInit {
   async submitForm(): Promise<void> {
     if (this.validateForm.valid) {
       if (this.validateForm.value.password !== this.validateForm.value.confirmPassword) {
-        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Mật khẩu không khớp'));
+        this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Mật khẩu không khớp'));
         return;
       }
 
       this.loading = true;
       try {
         await this.authService.signup(this.validateForm.value);
-        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đăng ký thành công. Vui lòng kiểm tra email để xác nhận và sau đó đăng nhập.'));
+        this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đăng ký thành công. Vui lòng kiểm tra email để xác nhận và sau đó đăng nhập.'));
         this.router.navigate(['/auth/login']);
       } catch (e) {
         console.error(e);

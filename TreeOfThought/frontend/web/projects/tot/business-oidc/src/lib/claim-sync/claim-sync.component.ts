@@ -14,7 +14,7 @@ import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
 
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 
 @Component({
@@ -33,41 +33,41 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
     NzSpaceModule,
     NzDatePickerModule,
     NzGridModule,
-    TranslateModule,
+    TranslocoModule,
     TotButtonComponent,
     TotTableComponent
   ],
   template: `
     <div class="page-header">
-      <h2>{{ 'Quyền' | translate }}</h2>
-      <button nz-button nzType="primary" (click)="showCreateModal()">
-        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
-      </button>
+      <h2>{{ 'Quyền' | transloco }}</h2>
+      <tot-button nzType="primary" (click)="showCreateModal()">
+        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | transloco }}
+      </tot-button>
     </div>
 
-    <nz-card [nzTitle]="'Tìm kiếm' | translate" class="search-card">
+    <nz-card [nzTitle]="'Tìm kiếm' | transloco" class="search-card">
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="10">
-          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên quyền, mô tả' | translate" (keyup.enter)="loadClaims()" />
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên quyền, mô tả' | transloco" (keyup.enter)="loadClaims()" />
         </div>
         <div nz-col [nzSpan]="8">
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
         </div>
         <div nz-col [nzSpan]="6" class="search-actions">
           <nz-space>
-            <button *nzSpaceItem nz-button nzType="primary" (click)="loadClaims()">{{ 'Tìm kiếm' | translate }}</button>
-            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ 'Đặt lại' | translate }}</button>
+            <tot-button *nzSpaceItem  nzType="primary" (click)="loadClaims()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem  (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
       </div>
     </nz-card>
 
-    <nz-card [nzTitle]="'Đồng bộ quyền' | translate" style="margin-bottom: 16px;">
+    <nz-card [nzTitle]="'Đồng bộ quyền' | transloco" style="margin-bottom: 16px;">
       <p>Version: <strong>{{ version }}</strong> | Count: <strong>{{ claimsCount }}</strong></p>
       <div class="sync-actions">
-        <button nz-button nzType="primary" (click)="sync()" [nzLoading]="loading">
-          <span nz-icon nzType="sync"></span> {{ 'Đồng bộ' | translate }}
-        </button>
+        <tot-button nzType="primary" (click)="sync()" [loading]="loading">
+          <span nz-icon nzType="sync"></span> {{ 'Đồng bộ' | transloco }}
+        </tot-button>
       </div>
     </nz-card>
 
@@ -77,7 +77,7 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
       <div style="display: flex; gap: 4px; flex-direction: column;">
         <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
-                (click)="deleteClaim(data)">{{ 'Xóa' | translate }}</tot-button>
+                (click)="deleteClaim(data)">{{ 'Xóa' | transloco }}</tot-button>
       </div>
     </ng-template>
 
@@ -85,19 +85,19 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
       {{ data[key] | date:'short' }}
     </ng-template>
 
-    <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | translate" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
+    <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | transloco" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">{{ 'Quyền' | translate }}</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Quyền' | transloco }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newClaim.name" name="name" [placeholder]="'Quyền' | translate" />
+              <input nz-input [(ngModel)]="newClaim.name" name="name" [placeholder]="'Quyền' | transloco" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label [nzSpan]="null">{{ 'Mô tả' | translate }}</nz-form-label>
+            <nz-form-label [nzSpan]="null">{{ 'Mô tả' | transloco }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="newClaim.description" name="description" [placeholder]="'Mô tả' | translate" />
+              <input nz-input [(ngModel)]="newClaim.description" name="description" [placeholder]="'Mô tả' | transloco" />
             </nz-form-control>
           </nz-form-item>
         </form>
@@ -122,7 +122,7 @@ export class ClaimSyncComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private notification = inject(AppNotificationService);
   private modal = inject(NzModalService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   
   version = CLAIMS_VERSION;
   claims = ALL_CLAIMS;
@@ -166,7 +166,7 @@ export class ClaimSyncComponent implements OnInit {
       }
       this.existingClaims = await this.authMgmt.getClaims(params);
     } catch (e) {
-      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Không thể tải danh sách quyền'));
+      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Không thể tải danh sách quyền'));
     } finally {
       this.loading = false;
     }
@@ -184,10 +184,10 @@ export class ClaimSyncComponent implements OnInit {
     this.loading = true;
     try {
       await this.authMgmt.syncClaims(this.version, this.claims);
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đồng bộ quyền thành công'));
+      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đồng bộ quyền thành công'));
       this.loadClaims();
     } catch (e) {
-      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Đồng bộ quyền thất bại'));
+      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
     } finally {
       this.loading = false;
     }
@@ -202,31 +202,31 @@ export class ClaimSyncComponent implements OnInit {
     if (!this.newClaim.name) return;
     try {
       await this.authMgmt.createClaim(this.newClaim);
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Thêm quyền thành công'));
+      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Thêm quyền thành công'));
       this.isCreateModalVisible = false;
       this.loadClaims();
     } catch (e) {
-      this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Thêm quyền thất bại'));
+      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Thêm quyền thất bại'));
     }
   }
 
   async deleteClaim(claim: any) {
     if (claim.name?.toLowerCase() === ADMIN_CLAIM) {
-      this.notification.warning(this.translate.instant('Cảnh báo'), `${this.translate.instant('Không thể xóa quyền')} ${ADMIN_CLAIM}`);
+      this.notification.warning(this.translate.translate('Cảnh báo'), `${this.translate.translate('Không thể xóa quyền')} ${ADMIN_CLAIM}`);
       return;
     }
 
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận xóa quyền')} ${claim.name}?`,
-      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
+      nzTitle: `${this.translate.translate('Xác nhận xóa quyền')} ${claim.name}?`,
+      nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
       nzOnOk: async () => {
         try {
           await this.authMgmt.deleteClaim(claim.id);
-          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Xóa quyền thành công'));
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Xóa quyền thành công'));
           this.loadClaims();
         } catch (e: any) {
-          this.notification.error(this.translate.instant('Thất bại'), e.error?.message || this.translate.instant('Xóa quyền thất bại'));
+          this.notification.error(this.translate.translate('Thất bại'), e.error?.message || this.translate.translate('Xóa quyền thất bại'));
         }
       }
     });

@@ -23,7 +23,7 @@ import { NzCollapseModule } from 'ng-zorro-antd/collapse';
 import { Subscription } from 'rxjs';
 import { RenamePopoverComponent } from '../rename-popover/rename-popover.component';
 import { FileDetailModalComponent } from '../file-detail-modal/file-detail-modal.component';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-file-explorer',
@@ -46,7 +46,7 @@ import { TranslateModule } from '@ngx-translate/core';
     NzCollapseModule,
     TotButtonComponent,
     TotTableComponent,
-    TranslateModule
+    TranslocoModule
   ],
   templateUrl: './file-explorer.html',
   styleUrl: './file-explorer.css',

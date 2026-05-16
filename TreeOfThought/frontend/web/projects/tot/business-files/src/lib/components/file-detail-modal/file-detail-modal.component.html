@@ -61,9 +61,9 @@
         <div class="info-label"><span nz-icon nzType="link"></span> Đường dẫn trực tiếp</div>
         <div class="url-box">
           <input nz-input [ngModel]="file.url" readonly />
-          <button nz-button nzType="text" (click)="copyLink(file.url)" nz-tooltip nzTooltipTitle="Sao chép">
+          <tot-button nzType="text" (click)="copyLink(file.url)" nz-tooltip nzTooltipTitle="Sao chép">
             <span nz-icon nzType="copy"></span>
-          </button>
+          </tot-button>
         </div>
       </div>
     </div>

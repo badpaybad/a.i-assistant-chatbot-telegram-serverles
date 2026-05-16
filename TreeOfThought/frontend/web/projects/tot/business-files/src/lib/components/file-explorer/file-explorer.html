@@ -55,8 +55,7 @@
             <div class="folder-name" nz-tooltip [nzTooltipTitle]="folder.name">{{ folder.name }}</div>
             
             <div class="folder-card-actions" (click)="$event.stopPropagation()">
-              <button 
-                nz-button 
+              <tot-button 
                 nzType="text" 
                 nzSize="small"
                 nz-dropdown 
@@ -68,7 +67,7 @@
                 [nzPopoverPlacement]="'bottomRight'"
               >
                 <span nz-icon nzType="more"></span>
-              </button>
+              </tot-button>
               <nz-dropdown-menu #folderMenu="nzDropdownMenu">
                 <ul nz-menu>
                   <li nz-menu-item (click)="openMoveModal(folder, 'folder')">Di chuyển</li>
@@ -104,7 +103,7 @@
             <nz-breadcrumb>
               <nz-breadcrumb-item>
                 <a (click)="navigateToFolder(null)">
-                  <span nz-icon nzType="home"></span> {{ 'Tài liệu của tôi' | translate }}
+                  <span nz-icon nzType="home"></span> {{ 'Tài liệu của tôi' | transloco }}
                 </a>
               </nz-breadcrumb-item>
               <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
@@ -119,18 +118,18 @@
             <app-create-folder-popover
               [parentId]="selectedFolderId"
               [currentFolderName]="currentFolderName"
-              [buttonText]="'Thêm mới' | translate"
+              [buttonText]="'Thêm mới' | transloco"
               buttonIcon="folder-add"
               style="margin-right: 8px"
             ></app-create-folder-popover>
 
             <tot-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
-              <span nz-icon nzType="upload"></span> {{ 'Tải lên' | translate }}
+              <span nz-icon nzType="upload"></span> {{ 'Tải lên' | transloco }}
             </tot-button>
             <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
             
             <tot-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
-              <span nz-icon nzType="reload"></span> {{ 'Làm mới' | translate }}
+              <span nz-icon nzType="reload"></span> {{ 'Làm mới' | transloco }}
             </tot-button>
           </div>
         </ng-template>
@@ -162,18 +161,17 @@
 
         <ng-template #fileActionsTpl let-data>
           <div style="display: flex; gap: 4px; flex-direction: column;">
-            <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)">
+            <tot-button *ngIf="selectionMode"  nzType="primary" nzSize="small" (click)="onSelectFile(data)">
               Chèn
-            </button>
+            </tot-button>
             <div style="display: flex; gap: 4px;">
-              <a nz-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
+              <tot-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
                 <span nz-icon nzType="download"></span>
-              </a>
-              <button nz-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
+              </tot-button>
+              <tot-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
                 <span nz-icon nzType="share-alt"></span>
-              </button>
-              <button 
-                nz-button 
+              </tot-button>
+              <tot-button 
                 nzType="text" 
                 nz-dropdown 
                 [nzDropdownMenu]="fileMenu"
@@ -184,7 +182,7 @@
                 [nzPopoverPlacement]="'bottomRight'"
               >
                 <span nz-icon nzType="more"></span>
-              </button>
+              </tot-button>
             </div>
             <nz-dropdown-menu #fileMenu="nzDropdownMenu">
               <ul nz-menu>
@@ -222,9 +220,9 @@
   <ng-template #searchActionsTpl let-data>
     <div style="display: flex; gap: 4px;">
       <tot-button *ngIf="selectionMode" nzType="primary" nzSize="small" (click)="onSelectFile(data)">
-        {{ 'Chèn' | translate }}
+        {{ 'Chèn' | transloco }}
       </tot-button>
-      <tot-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip [nzTooltipTitle]="'Đi đến thư mục' | translate">
+      <tot-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip [nzTooltipTitle]="'Đi đến thư mục' | transloco">
         <span nz-icon nzType="arrow-right"></span>
       </tot-button>
     </div>

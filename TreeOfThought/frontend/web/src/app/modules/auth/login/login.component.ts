@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
@@ -15,13 +16,14 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { AppNotificationService, AuthService } from '@tot/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 
 @Component({
   selector: 'app-login',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,
@@ -31,7 +33,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
     NzCheckboxModule,
     NzDividerModule,
     NzIconModule,
-    TranslateModule,
+    TranslocoModule,
   ],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.css'],
@@ -42,7 +44,7 @@ export class LoginComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   validateForm: FormGroup<{
     username: FormControl<string>;
@@ -133,8 +135,8 @@ export class LoginComponent implements OnInit {
 
         if (response.mustChangePassword) {
           this.notification.warning(
-            this.translate.instant('Yêu cầu đổi mật khẩu'),
-            this.translate.instant('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục'),
+            this.translate.translate('Yêu cầu đổi mật khẩu'),
+            this.translate.translate('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục'),
           );
           this.router.navigate(['/modules/core-infra-auth/change-password']);
         } else {
@@ -143,8 +145,8 @@ export class LoginComponent implements OnInit {
       } catch (e: any) {
         console.error(e);
         this.notification.error(
-          this.translate.instant('Lỗi'),
-          this.translate.instant(e.error?.message || 'Đăng nhập thất bại'),
+          this.translate.translate('Lỗi'),
+          this.translate.translate(e.error?.message || 'Đăng nhập thất bại'),
         );
       } finally {
         this.loading = false;

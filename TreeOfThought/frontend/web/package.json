@@ -21,6 +21,7 @@
     "@angular/router": "^21.2.0",
     "@ant-design/icons-angular": "^21.0.0",
     "@ckeditor/ckeditor5-angular": "^11.1.2",
+    "@jsverse/transloco": "^8.3.0",
     "@ngx-translate/core": "^17.0.0",
     "@ngx-translate/http-loader": "^17.0.0",
     "@wiris/mathtype-ckeditor5": "^8.15.2",

@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink } from '@angular/router';
@@ -7,7 +8,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthService, APP_CLAIMS, TotClaimDirective } from '@tot/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { Router, ActivatedRoute, NavigationEnd, Event } from '@angular/router';
@@ -18,6 +19,7 @@ import { MenuService, MenuItem } from '../../services/menu.service';
   selector: 'app-main-layout',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     RouterOutlet,
     RouterLink,
@@ -26,7 +28,7 @@ import { MenuService, MenuItem } from '../../services/menu.service';
     NzIconModule,
     NzButtonModule,
     NzAvatarModule,
-    TranslateModule,
+    TranslocoModule,
     NzDropDownModule,
     NzBreadCrumbModule,
     TotClaimDirective
@@ -42,7 +44,7 @@ export class MainLayoutComponent {
   breadcrumbs: Array<{ label: string; url: string }> = [];
 
   private authService = inject(AuthService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   private router = inject(Router);
   private activatedRoute = inject(ActivatedRoute);
   private menuService = inject(MenuService);
@@ -58,9 +60,9 @@ export class MainLayoutComponent {
   private startWidth = 0;
 
   constructor() {
-    this.currentLang = this.translate.currentLang || localStorage.getItem('lang') || 'vi';
-    this.translate.onLangChange.subscribe(event => {
-      this.currentLang = event.lang;
+    this.currentLang = this.translate.getActiveLang() || localStorage.getItem('lang') || 'vi';
+    this.translate.langChanges$.subscribe(lang => {
+      this.currentLang = lang;
     });
 
     this.router.events
@@ -118,7 +120,7 @@ export class MainLayoutComponent {
   }
 
   switchLanguage(lang: string) {
-    this.translate.use(lang);
+    this.translate.setActiveLang(lang);
     this.currentLang = lang;
     localStorage.setItem('lang', lang);
   }

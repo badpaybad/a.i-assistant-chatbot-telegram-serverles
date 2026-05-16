@@ -19,17 +19,17 @@
         <ng-container *ngIf="!item.children">
           <li nz-menu-item nzMatchRouter *totClaimCheck="item.claim || ''">
             <span nz-icon [nzType]="item.icon || ''" *ngIf="item.icon"></span>
-            <span><a [routerLink]="item.route">{{ item.label | translate }}</a></span>
+            <span><a [routerLink]="item.route">{{ item.label | transloco }}</a></span>
           </li>
         </ng-container>
 
         <!-- Submenu Item -->
         <ng-container *ngIf="item.children">
-          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *totClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
+          <li nz-submenu [nzTitle]="item.label | transloco" [nzIcon]="item.icon || null" *totClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
             <ul>
               <ng-container *ngFor="let child of item.children">
                 <li nz-menu-item nzMatchRouter *totClaimCheck="child.claim || ''">
-                  <a [routerLink]="child.route">{{ child.label | translate }}</a>
+                  <a [routerLink]="child.route">{{ child.label | transloco }}</a>
                 </li>
               </ng-container>
             </ul>
@@ -47,9 +47,9 @@
               <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
           </span>
           <!-- <div class="header-links">
-            <a routerLink="/" class="nav-link">{{ 'Trang chủ' | translate }}</a>
-            <a routerLink="/about" class="nav-link">{{ 'Giới thiệu' | translate }}</a>
-            <a routerLink="/contact" class="nav-link">{{ 'Liên hệ' | translate }}</a>
+            <a routerLink="/" class="nav-link">{{ 'Trang chủ' | transloco }}</a>
+            <a routerLink="/about" class="nav-link">{{ 'Giới thiệu' | transloco }}</a>
+            <a routerLink="/contact" class="nav-link">{{ 'Liên hệ' | transloco }}</a>
           </div> -->
         </div>
         <div class="header-right">
@@ -75,10 +75,10 @@
                 <span class="display-name">{{ user.name }}</span>
               </div>
             </span>
-            <button nz-button nzType="link" (click)="logout()">{{ 'Đăng xuất' | translate }}</button>
+            <tot-button nzType="link" (click)="logout()">{{ 'Đăng xuất' | transloco }}</tot-button>
           </ng-container>
           <ng-template #loginBtn>
-            <button nz-button nzType="primary" routerLink="/auth/login">{{ 'Đăng nhập' | translate }}</button>
+            <tot-button nzType="primary" routerLink="/auth/login">{{ 'Đăng nhập' | transloco }}</tot-button>
           </ng-template>
         </div>
       </div>
@@ -92,7 +92,7 @@
             </a>
           </nz-breadcrumb-item>
           <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
-            <a [routerLink]="item.url">{{ item.label | translate }}</a>
+            <a [routerLink]="item.url">{{ item.label | transloco }}</a>
           </nz-breadcrumb-item>
         </nz-breadcrumb>
         <router-outlet *totClaimCheck=""></router-outlet>

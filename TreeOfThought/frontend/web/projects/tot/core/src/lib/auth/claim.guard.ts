@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { AppNotificationService } from '../services/app-notification.service';
 import { NotificationTemplateService } from '../services/notification-template.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslocoService } from '@jsverse/transloco';
 
 export const claimGuard = (claimOrClaims: string | string[], mode: 'OR' | 'AND' = 'OR'): CanActivateFn => {
   return () => {
@@ -11,7 +11,7 @@ export const claimGuard = (claimOrClaims: string | string[], mode: 'OR' | 'AND' 
     const router = inject(Router);
     const notification = inject(AppNotificationService);
     const templateService = inject(NotificationTemplateService);
-    const translate = inject(TranslateService);
+    const translate = inject(TranslocoService);
 
     if (authService.hasClaim(claimOrClaims, mode)) {
       return true;
@@ -22,17 +22,17 @@ export const claimGuard = (claimOrClaims: string | string[], mode: 'OR' | 'AND' 
     const claimListStr = claimsArray.join(', ');
 
     const title = isLoggedIn 
-      ? translate.instant('Truy cập bị từ chối') 
-      : translate.instant('Yêu cầu đăng nhập');
+      ? translate.translate('Truy cập bị từ chối') 
+      : translate.translate('Yêu cầu đăng nhập');
     
     let message = '';
     if (isLoggedIn) {
-      message = translate.instant('Bạn không có quyền truy cập tính năng. Bạn cần các quyền sau: {{claims}} để có thể truy cập tính năng. Vui lòng liên hệ với quản trị viên để yêu cầu cấp quyền.', { claims: claimListStr });
+      message = translate.translate('Bạn không có quyền truy cập tính năng. Bạn cần các quyền sau: {{claims}} để có thể truy cập tính năng. Vui lòng liên hệ với quản trị viên để yêu cầu cấp quyền.', { claims: claimListStr });
     } else {
-      message = translate.instant('Vui lòng đăng nhập để truy cập tài nguyên này');
+      message = translate.translate('Vui lòng đăng nhập để truy cập tài nguyên này');
     }
     
-    const loginLinkText = translate.instant('Click vào đây để đăng nhập');
+    const loginLinkText = translate.translate('Click vào đây để đăng nhập');
     const loginLink = `<a href="/auth/login" style="color: #1890ff; text-decoration: underline;">${loginLinkText}.</a>`;
     const htmlContent = `${message} ${loginLink}`;
 

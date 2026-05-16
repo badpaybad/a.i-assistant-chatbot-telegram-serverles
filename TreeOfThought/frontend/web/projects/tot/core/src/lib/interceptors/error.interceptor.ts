@@ -4,12 +4,12 @@ import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { Router } from '@angular/router';
 import { AppNotificationService } from '../services/app-notification.service';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslocoService } from '@jsverse/transloco';
 
 export const errorInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, next: HttpHandlerFn): Observable<HttpEvent<unknown>> => {
   const notification = inject(AppNotificationService);
   const router = inject(Router);
-  const translate = inject(TranslateService);
+  const translate = inject(TranslocoService);
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -20,7 +20,7 @@ export const errorInterceptor: HttpInterceptorFn = (req: HttpRequest<unknown>, n
       }
       
       const message = error.error?.message || error.message || 'Unknown error';
-      notification.error(translate.instant('Thông báo'), translate.instant(message));
+      notification.error(translate.translate('Thông báo'), translate.translate(message));
       
       return throwError(() => error);
     })

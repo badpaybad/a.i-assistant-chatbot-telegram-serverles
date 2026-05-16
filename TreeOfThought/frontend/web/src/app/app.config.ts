@@ -11,8 +11,8 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { IconDefinition } from '@ant-design/icons-angular';
 import * as AllIcons from '@ant-design/icons-angular/icons';
 
-import { provideTranslateService } from '@ngx-translate/core';
-import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
+import { provideTransloco } from '@jsverse/transloco';
+import { TranslocoHttpLoader } from './transloco-loader';
 import { NZ_CONFIG, NzConfig } from 'ng-zorro-antd/core/config';
 
 import { environment } from '../environments/environment';
@@ -41,12 +41,14 @@ export const appConfig: ApplicationConfig = {
     ),
     { provide: API_URL, useValue: environment.apiBaseUrl },
     { provide: FIREBASE_CONFIG, useValue: environment.firebase },
-    provideTranslateService({
-      fallbackLang: 'vi'
-    }),
-    provideTranslateHttpLoader({
-      prefix: './assets/i18n/',
-      suffix: '.json'
+    provideTransloco({
+      config: {
+        availableLangs: ['en', 'vi'],
+        defaultLang: 'vi',
+        reRenderOnLangChange: true,
+        prodMode: environment.production,
+      },
+      loader: TranslocoHttpLoader
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),

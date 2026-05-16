@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators, AbstractControl, ValidatorFn } from '@angular/forms';
@@ -6,20 +7,21 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AppNotificationService, HttpClientService } from '@tot/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 
 
 @Component({
   selector: 'app-change-password',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     ReactiveFormsModule,
     NzFormModule,
     NzInputModule,
     NzButtonModule,
     NzCardModule,
-    TranslateModule
+    TranslocoModule
   ],
   templateUrl: './change-password.component.html',
   styleUrl: './change-password.component.css'
@@ -28,7 +30,7 @@ export class ChangePasswordComponent {
   private fb = inject(NonNullableFormBuilder);
   private http = inject(HttpClientService);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   loading = false;
 
@@ -57,15 +59,15 @@ export class ChangePasswordComponent {
       try {
         await this.http.post('/api/auth/change-password', this.validateForm.value);
         this.notification.success(
-          this.translate.instant('Thành công'),
-          this.translate.instant('Đổi mật khẩu thành công')
+          this.translate.translate('Thành công'),
+          this.translate.translate('Đổi mật khẩu thành công')
         );
         this.validateForm.reset();
       } catch (e: any) {
         console.error(e);
         this.notification.error(
-          this.translate.instant('Thất bại'),
-          e.error?.message || this.translate.instant('Đổi mật khẩu thất bại')
+          this.translate.translate('Thất bại'),
+          e.error?.message || this.translate.translate('Đổi mật khẩu thất bại')
         );
       } finally {
         this.loading = false;

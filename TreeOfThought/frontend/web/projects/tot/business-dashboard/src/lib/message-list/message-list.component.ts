@@ -6,7 +6,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService } from '../services/dashboard.service';
 import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
@@ -21,7 +21,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     NzButtonModule,
     NzIconModule,
     NzTagModule,
-    TranslateModule,
+    TranslocoModule,
     TotButtonComponent,
     TotTableComponent
   ],
@@ -32,7 +32,7 @@ export class MessageListComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private notification = inject(AppNotificationService);
   private modal = inject(NzModalService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   private modalData = inject(NZ_MODAL_DATA, { optional: true });
 
   @Input() inputQueueName?: string;
@@ -89,7 +89,7 @@ export class MessageListComponent implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.notification.error(this.translate.instant('Lỗi'), this.translate.instant('Không thể tải danh sách tin nhắn'));
+        this.notification.error(this.translate.translate('Lỗi'), this.translate.translate('Không thể tải danh sách tin nhắn'));
       }
     });
   }
@@ -107,17 +107,17 @@ export class MessageListComponent implements OnInit {
 
   copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text).then(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã sao chép vào bộ nhớ tạm'));
+      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đã sao chép vào bộ nhớ tạm'));
     });
   }
 
   resend(item: any): void {
     this.modal.confirm({
-      nzTitle: this.translate.instant('Xác nhận gửi lại'),
-      nzContent: this.translate.instant('Bạn có chắc chắn muốn gửi lại tin nhắn này vào hàng đợi gốc?'),
+      nzTitle: this.translate.translate('Xác nhận gửi lại'),
+      nzContent: this.translate.translate('Bạn có chắc chắn muốn gửi lại tin nhắn này vào hàng đợi gốc?'),
       nzOnOk: () => {
         this.dashboardService.retryCommand(this.queueName, item.raw).subscribe(() => {
-          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã được gửi lại'));
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Tin nhắn đã được gửi lại'));
           this.loadMessages();
         });
       }
@@ -126,11 +126,11 @@ export class MessageListComponent implements OnInit {
 
   delete(item: any): void {
     this.modal.confirm({
-      nzTitle: this.translate.instant('Xác nhận xóa'),
-      nzContent: this.translate.instant('Bạn có chắc chắn muốn xóa tin nhắn này khỏi hàng đợi?'),
+      nzTitle: this.translate.translate('Xác nhận xóa'),
+      nzContent: this.translate.translate('Bạn có chắc chắn muốn xóa tin nhắn này khỏi hàng đợi?'),
       nzOnOk: () => {
         this.dashboardService.removeFromDeadLetter(this.queueName, item.raw).subscribe(() => {
-          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã xóa tin nhắn'));
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đã xóa tin nhắn'));
           this.loadMessages();
         });
       }

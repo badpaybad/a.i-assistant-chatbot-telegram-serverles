@@ -4,9 +4,9 @@
 <div class="test-content">
   <nz-card nzTitle="Device Registration">
     <p>Click below to get this device's FCM token and register for push notifications.</p>
-    <button nz-button nzType="primary" (click)="getDeviceToken()" [nzLoading]="loadingToken">
+    <tot-button nzType="primary" (click)="getDeviceToken()" [loading]="loadingToken">
       Get FCM Token
-    </button>
+    </tot-button>
     <div *ngIf="token" style="margin-top: 16px;">
       <strong>Your Token:</strong>
       <pre style="white-space: pre-wrap; word-break: break-all;">{{ token }}</pre>
@@ -15,8 +15,8 @@
 
   <nz-card nzTitle="Test Notification" style="margin-top: 24px;" *ngIf="token">
     <p>Send a request to the backend to send a push notification back to this device.</p>
-    <button nz-button nzType="default" (click)="sendSampleNotification()" [nzLoading]="sendingSample">
+    <tot-button nzType="default" (click)="sendSampleNotification()" [loading]="sendingSample">
       Send Sample Notification
-    </button>
+    </tot-button>
   </nz-card>
 </div>

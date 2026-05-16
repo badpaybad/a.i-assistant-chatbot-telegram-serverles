@@ -11,7 +11,7 @@ import { AppNotificationService, FirebaseService, HttpClientService } from '@tot
 
 import { v4 as uuidv4 } from 'uuid';
 import { Unsubscribe } from 'firebase/firestore';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@jsverse/transloco';
 
 import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { ViewChild, TemplateRef, OnInit } from '@angular/core';
@@ -29,7 +29,7 @@ import { ViewChild, TemplateRef, OnInit } from '@angular/core';
     NzFormModule,
     TotButtonComponent,
     TotTableComponent,
-    TranslateModule
+    TranslocoModule
   ],
   templateUrl: './firestore-test.component.html',
   styleUrls: ['./firestore-test.component.css']

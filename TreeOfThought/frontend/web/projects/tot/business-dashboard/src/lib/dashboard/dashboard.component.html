@@ -1,15 +1,15 @@
 <div class="dashboard-container">
-  <nz-page-header class="site-page-header" [nzTitle]="'CQRS Dashboard' | translate">
+  <nz-page-header class="site-page-header" [nzTitle]="'CQRS Dashboard' | transloco">
     <nz-page-header-extra>
       <div style="display: flex; align-items: center; gap: 16px;">
         <div style="display: flex; align-items: center; gap: 8px;">
-          <span style="color: #999;">{{ 'Tự động làm mới' | translate }}:</span>
+          <span style="color: #999;">{{ 'Tự động làm mới' | transloco }}:</span>
           <nz-select [(ngModel)]="refreshInterval" (ngModelChange)="onRefreshIntervalChange()" style="width: 120px;">
-            <nz-option *ngFor="let i of refreshIntervals" [nzLabel]="i.label | translate" [nzValue]="i.value"></nz-option>
+            <nz-option *ngFor="let i of refreshIntervals" [nzLabel]="i.label | transloco" [nzValue]="i.value"></nz-option>
           </nz-select>
         </div>
         <tot-button nzType="primary" (click)="refresh()" [loading]="loading">
-          <i nz-icon nzType="reload"></i> {{ 'Làm mới' | translate }}
+          <i nz-icon nzType="reload"></i> {{ 'Làm mới' | transloco }}
         </tot-button>
       </div>
     </nz-page-header-extra>
@@ -18,25 +18,25 @@
   <div nz-row [nzGutter]="16" class="stats-row" style="margin-bottom: 24px;">
     <div nz-col [nzSpan]="6">
       <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:enqueued'] || 0" [nzTitle]="'Tổng tin nhắn vào' | translate" [nzPrefix]="prefixEnqueued"></nz-statistic>
+        <nz-statistic [nzValue]="stats.stats['total:enqueued'] || 0" [nzTitle]="'Tổng tin nhắn vào' | transloco" [nzPrefix]="prefixEnqueued"></nz-statistic>
         <ng-template #prefixEnqueued><i nz-icon nzType="cloud-upload" style="color: #1890ff;"></i></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
       <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:processed'] || 0" [nzTitle]="'Đã xử lý thành công' | translate" [nzPrefix]="prefixProcessed" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
+        <nz-statistic [nzValue]="stats.stats['total:processed'] || 0" [nzTitle]="'Đã xử lý thành công' | transloco" [nzPrefix]="prefixProcessed" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
         <ng-template #prefixProcessed><i nz-icon nzType="check-circle" style="color: #52c41a;"></i></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
       <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:error'] || 0" [nzTitle]="'Lỗi hệ thống' | translate" [nzPrefix]="prefixError" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
+        <nz-statistic [nzValue]="stats.stats['total:error'] || 0" [nzTitle]="'Lỗi hệ thống' | transloco" [nzPrefix]="prefixError" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
         <ng-template #prefixError><i nz-icon nzType="close-circle" style="color: #ff4d4f;"></i></ng-template>
       </nz-card>
     </div>
     <div nz-col [nzSpan]="6">
       <nz-card nzHoverable>
-        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Workers đang chạy' | translate" [nzPrefix]="prefixWorkers"></nz-statistic>
+        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Workers đang chạy' | transloco" [nzPrefix]="prefixWorkers"></nz-statistic>
         <ng-template #prefixWorkers><i nz-icon nzType="cluster" style="color: #722ed1;"></i></ng-template>
       </nz-card>
     </div>
@@ -44,17 +44,17 @@
 
   <div class="tab-actions" style="margin-bottom: 16px; display: flex; justify-content: center;">
     <nz-radio-group [(ngModel)]="activeTab" nzButtonStyle="solid" nzSize="large">
-      <label nz-radio-button nzValue="queues"><i nz-icon nzType="database"></i> {{ 'Hàng đợi & Chủ đề' | translate }}</label>
-      <label nz-radio-button nzValue="tracking"><i nz-icon nzType="history"></i> {{ 'Theo dõi gần đây' | translate }}</label>
-      <label nz-radio-button nzValue="workers"><i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | translate }}</label>
-      <label nz-radio-button nzValue="activity"><i nz-icon nzType="clock-circle"></i> {{ 'Hoạt động cuối' | translate }}</label>
-      <label nz-radio-button nzValue="test"><i nz-icon nzType="experiment"></i> {{ 'Kiểm thử CQRS' | translate }}</label>
+      <label nz-radio-button nzValue="queues"><i nz-icon nzType="database"></i> {{ 'Hàng đợi & Chủ đề' | transloco }}</label>
+      <label nz-radio-button nzValue="tracking"><i nz-icon nzType="history"></i> {{ 'Theo dõi gần đây' | transloco }}</label>
+      <label nz-radio-button nzValue="workers"><i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | transloco }}</label>
+      <label nz-radio-button nzValue="activity"><i nz-icon nzType="clock-circle"></i> {{ 'Hoạt động cuối' | transloco }}</label>
+      <label nz-radio-button nzValue="test"><i nz-icon nzType="experiment"></i> {{ 'Kiểm thử CQRS' | transloco }}</label>
     </nz-radio-group>
   </div>
 
   <ng-container [ngSwitch]="activeTab">
     <div *ngSwitchCase="'queues'">
-      <nz-card [nzTitle]="'Danh sách thực thể CQRS' | translate">
+      <nz-card [nzTitle]="'Danh sách thực thể CQRS' | transloco">
         <tot-table
           [data]="queues"
           [columns]="queueColumns"
@@ -68,30 +68,30 @@
     </div>
 
     <div *ngSwitchCase="'tracking'">
-      <nz-card [nzTitle]="'Lịch sử thực thi' | translate">
+      <nz-card [nzTitle]="'Lịch sử thực thi' | transloco">
         <div class="filters-container" style="margin-bottom: 24px;">
           <div nz-row [nzGutter]="16">
             <div nz-col [nzSpan]="5">
               <nz-input-group [nzPrefix]="prefixSearch">
-                <input type="text" nz-input [(ngModel)]="filters.trackingId" (ngModelChange)="onFilterChange()" [placeholder]="'Tracking ID' | translate" />
+                <input type="text" nz-input [(ngModel)]="filters.trackingId" (ngModelChange)="onFilterChange()" [placeholder]="'Tracking ID' | transloco" />
               </nz-input-group>
               <ng-template #prefixSearch><i nz-icon nzType="search"></i></ng-template>
             </div>
             <div nz-col [nzSpan]="4">
-              <nz-select [(ngModel)]="filters.status" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Trạng thái' | translate" style="width: 100%;" nzAllowClear>
-                <nz-option nzValue="success" [nzLabel]="'Thành công' | translate"></nz-option>
-                <nz-option nzValue="error" [nzLabel]="'Lỗi' | translate"></nz-option>
-                <nz-option nzValue="processing" [nzLabel]="'Đang xử lý' | translate"></nz-option>
+              <nz-select [(ngModel)]="filters.status" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Trạng thái' | transloco" style="width: 100%;" nzAllowClear>
+                <nz-option nzValue="success" [nzLabel]="'Thành công' | transloco"></nz-option>
+                <nz-option nzValue="error" [nzLabel]="'Lỗi' | transloco"></nz-option>
+                <nz-option nzValue="processing" [nzLabel]="'Đang xử lý' | transloco"></nz-option>
               </nz-select>
             </div>
             <div nz-col [nzSpan]="10">
               <div style="display: flex; gap: 8px;">
-                <nz-date-picker [(ngModel)]="filters.fromDate" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Bắt đầu' | translate" style="flex: 1;"></nz-date-picker>
-                <nz-date-picker [(ngModel)]="filters.toDate" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Kết thúc' | translate" style="flex: 1;"></nz-date-picker>
+                <nz-date-picker [(ngModel)]="filters.fromDate" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Bắt đầu' | transloco" style="flex: 1;"></nz-date-picker>
+                <nz-date-picker [(ngModel)]="filters.toDate" (ngModelChange)="onFilterChange()" [nzPlaceHolder]="'Kết thúc' | transloco" style="flex: 1;"></nz-date-picker>
               </div>
             </div>
             <div nz-col [nzSpan]="5">
-              <tot-button [nzBlock]="true" (click)="resetFilters()">{{ 'Đặt lại bộ lọc' | translate }}</tot-button>
+              <tot-button [nzBlock]="true" (click)="resetFilters()">{{ 'Đặt lại bộ lọc' | transloco }}</tot-button>
             </div>
           </div>
         </div>
@@ -111,7 +111,7 @@
     </div>
 
     <div *ngSwitchCase="'workers'">
-      <nz-card [nzTitle]="'Giám sát tiến trình (Workers)' | translate">
+      <nz-card [nzTitle]="'Giám sát tiến trình (Workers)' | transloco">
         <tot-table
           [data]="workerList"
           [columns]="workerColumns"
@@ -122,14 +122,14 @@
         ></tot-table>
       </nz-card>
 
-      <nz-card [nzTitle]="'Phân tích lỗi' | translate" style="margin-top: 24px;">
+      <nz-card [nzTitle]="'Phân tích lỗi' | transloco" style="margin-top: 24px;">
         <div nz-row [nzGutter]="16">
           <div nz-col [nzSpan]="12">
             <nz-list [nzDataSource]="errorStats" [nzRenderItem]="errorItem" nzBordered>
               <ng-template #errorItem let-item>
                 <nz-list-item>
                   <span style="color: #ff4d4f; font-weight: bold;">{{ item.name }}</span>
-                  <nz-tag nzColor="red">{{ item.count }} {{ 'lỗi' | translate }}</nz-tag>
+                  <nz-tag nzColor="red">{{ item.count }} {{ 'lỗi' | transloco }}</nz-tag>
                 </nz-list-item>
               </ng-template>
             </nz-list>
@@ -137,7 +137,7 @@
           <div nz-col [nzSpan]="12">
             <div class="empty-state" *ngIf="errorStats.length === 0">
               <i nz-icon nzType="check-circle" style="font-size: 48px; color: #52c41a;"></i>
-              <p style="margin-top: 16px;">{{ 'Không có lỗi nào được ghi nhận' | translate }}</p>
+              <p style="margin-top: 16px;">{{ 'Không có lỗi nào được ghi nhận' | transloco }}</p>
             </div>
           </div>
         </div>
@@ -145,7 +145,7 @@
     </div>
 
     <div *ngSwitchCase="'activity'">
-      <nz-card [nzTitle]="'Danh sách thời gian hoạt động lần cuối' | translate">
+      <nz-card [nzTitle]="'Danh sách thời gian hoạt động lần cuối' | transloco">
         <tot-table
           [data]="lastActivityList"
           [columns]="activityColumns"
@@ -164,7 +164,7 @@
   <!-- Templates for tot-table -->
   <ng-template #queueTypeTpl let-data>
     <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
-      {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | translate }}
+      {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | transloco }}
     </nz-tag>
   </ng-template>
 
@@ -198,17 +198,17 @@
   <ng-template #queueActionsTpl let-data>
     <div style="display: flex; gap: 4px; flex-direction: column;">
       <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
-        {{ 'Chi tiết' | translate }}
+        {{ 'Chi tiết' | transloco }}
       </tot-button>
       <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
-        {{ 'Xem đang xử lý' | translate }}
+        {{ 'Xem đang xử lý' | transloco }}
       </tot-button>
     </div>
   </ng-template>
 
   <ng-template #statusTpl let-data>
     <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
-      {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | translate }}
+      {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | transloco }}
     </nz-tag>
   </ng-template>
 
@@ -219,22 +219,22 @@
   <ng-template #contentTpl let-data>
     <div class="content-preview">
       <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
-      <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
+      <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
         <span nz-icon nzType="copy"></span>
-      </button>
+      </tot-button>
     </div>
   </ng-template>
 
   <ng-template #actionsTpl let-data>
     <div style="display: flex; gap: 4px; flex-direction: column;">
-      <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
-        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+      <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | transloco">
+        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
       </tot-button>
-      <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
-        <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+      <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | transloco">
+        <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
       </tot-button>
       <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
-        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
+        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | transloco }}
       </tot-button>
     </div>
   </ng-template>
@@ -242,15 +242,15 @@
   <ng-template #expandTpl let-data>
     <div class="json-viewer-container" style="width: 100%;">
       <div class="json-header">
-        <span>{{ 'Payload' | translate }}</span>
-        <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
-          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
-        </button>
+        <span>{{ 'Payload' | transloco }}</span>
+        <tot-button nzSize="small" (click)="copyToClipboard(data.content)">
+          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
+        </tot-button>
       </div>
       <pre class="json-content">{{ formatJson(data.content) }}</pre>
       
       <div style="margin-top: 16px;">
-        <h4>{{ 'Lịch sử xử lý' | translate }}</h4>
+        <h4>{{ 'Lịch sử xử lý' | transloco }}</h4>
         <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
           <ng-template #historyItem let-step>
             <nz-list-item>
@@ -269,19 +269,19 @@
 
   <ng-template #workerStatusTpl let-data>
     <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
-      {{ (data.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | translate }}
+      {{ (data.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | transloco }}
     </nz-tag>
   </ng-template>
 
   <ng-template #workerActionsTpl let-data>
     <tot-button [nzType]="data.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(data.id, data.status)" [nzDanger]="data.status === 'Running'">
-      {{ (data.status === 'Running' ? 'Dừng' : 'Khởi chạy') | translate }}
+      {{ (data.status === 'Running' ? 'Dừng' : 'Khởi chạy') | transloco }}
     </tot-button>
   </ng-template>
 
   <ng-template #activityTypeTpl let-data>
     <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">
-      {{ data.type | translate }}
+      {{ data.type | transloco }}
     </nz-tag>
   </ng-template>
 

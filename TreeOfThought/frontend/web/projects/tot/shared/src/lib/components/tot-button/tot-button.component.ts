@@ -1,4 +1,4 @@
-import { Component, Input, ContentChild, TemplateRef, OnDestroy } from '@angular/core';
+import { Component, Input, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzButtonModule, NzButtonType, NzButtonSize } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
@@ -10,20 +10,42 @@ import { finalize } from 'rxjs/operators';
   standalone: true,
   imports: [CommonModule, NzButtonModule, NzIconModule],
   template: `
-    <button
-      nz-button
-      [nzType]="nzType"
-      [nzSize]="nzSize"
-      [nzDanger]="nzDanger"
-      [nzShape]="nzShape"
-      [nzBlock]="nzBlock"
-      [nzGhost]="nzGhost"
-      [nzLoading]="isLoading"
-      [disabled]="disabled || isLoading"
-      (click)="handleClick($event)"
-    >
-      <ng-content></ng-content>
-    </button>
+    <ng-container *ngIf="!href; else linkTpl">
+      <button
+        nz-button
+        [nzType]="nzType"
+        [nzSize]="nzSize"
+        [nzDanger]="nzDanger"
+        [nzShape]="nzShape"
+        [nzBlock]="nzBlock"
+        [nzGhost]="nzGhost"
+        [nzLoading]="isLoading"
+        [disabled]="disabled || isLoading"
+        [attr.type]="nzHtmlType"
+        (click)="handleClick($event)"
+      >
+        <ng-content></ng-content>
+      </button>
+    </ng-container>
+
+    <ng-template #linkTpl>
+      <a
+        nz-button
+        [href]="href"
+        [target]="target"
+        [nzType]="nzType"
+        [nzSize]="nzSize"
+        [nzDanger]="nzDanger"
+        [nzShape]="nzShape"
+        [nzBlock]="nzBlock"
+        [nzGhost]="nzGhost"
+        [nzLoading]="isLoading"
+        [class.ant-btn-disabled]="disabled || isLoading"
+        (click)="handleClick($event)"
+      >
+        <ng-content></ng-content>
+      </a>
+    </ng-template>
   `
 })
 export class TotButtonComponent implements OnDestroy {
@@ -34,6 +56,10 @@ export class TotButtonComponent implements OnDestroy {
   @Input() nzBlock = false;
   @Input() nzGhost = false;
   @Input() disabled = false;
+  @Input() nzHtmlType: 'button' | 'submit' | 'reset' = 'button';
+  
+  @Input() href: string | null = null;
+  @Input() target: string | null = null;
 
   @Input() set loading(value: boolean | Observable<any> | Promise<any> | null | undefined) {
     if (value === null || value === undefined) {
@@ -66,7 +92,7 @@ export class TotButtonComponent implements OnDestroy {
   private subscription?: Subscription;
 
   handleClick(event: MouseEvent): void {
-    if (this.isLoading) {
+    if (this.isLoading || (this.disabled && this.href)) {
       event.preventDefault();
       event.stopPropagation();
     }

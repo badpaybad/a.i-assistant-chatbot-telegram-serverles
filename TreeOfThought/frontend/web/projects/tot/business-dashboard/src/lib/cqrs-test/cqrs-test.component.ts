@@ -8,7 +8,7 @@ import { AppNotificationService } from '@tot/core';
 import { TotButtonComponent } from '@tot/shared';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService } from '../services/dashboard.service';
 
 @Component({
@@ -22,45 +22,45 @@ import { DashboardService } from '../services/dashboard.service';
     NzInputModule,
     NzGridModule,
     NzIconModule,
-    TranslateModule,
+    TranslocoModule,
     TotButtonComponent
   ],
   template: `
     <div style="padding: 24px;">
-      <h2 style="margin-bottom: 24px;">{{ 'Kiểm thử CQRS' | translate }}</h2>
+      <h2 style="margin-bottom: 24px;">{{ 'Kiểm thử CQRS' | transloco }}</h2>
       
       <div nz-row [nzGutter]="24">
         <div nz-col [nzSpan]="12">
-          <nz-card [nzTitle]="'Gửi SampleCommand' | translate">
-            <p>{{ 'Command này sẽ được Enqueue vào queue sample.command' | translate }}</p>
+          <nz-card [nzTitle]="'Gửi SampleCommand' | transloco">
+            <p>{{ 'Command này sẽ được Enqueue vào queue sample.command' | transloco }}</p>
             <div style="margin-bottom: 16px;">
-              <label>{{ 'Payload dữ liệu' | translate }}</label>
+              <label>{{ 'Payload dữ liệu' | transloco }}</label>
               <textarea nz-input [(ngModel)]="commandPayload" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
             <tot-button nzType="primary" [loading]="loadingCommand" (click)="sendTestCommand()" [nzBlock]="true">
-              <span nz-icon nzType="rocket"></span> {{ 'Gửi Command' | translate }}
+              <span nz-icon nzType="rocket"></span> {{ 'Gửi Command' | transloco }}
             </tot-button>
           </nz-card>
         </div>
         
         <div nz-col [nzSpan]="12">
-          <nz-card [nzTitle]="'Gửi SampleEvent' | translate">
-            <p>{{ 'Sự kiện này sẽ được Publish vào topic sample.event' | translate }}</p>
+          <nz-card [nzTitle]="'Gửi SampleEvent' | transloco">
+            <p>{{ 'Sự kiện này sẽ được Publish vào topic sample.event' | transloco }}</p>
             <div style="margin-bottom: 16px;">
-              <label>{{ 'Nội dung sự kiện' | translate }}</label>
+              <label>{{ 'Nội dung sự kiện' | transloco }}</label>
               <textarea nz-input [(ngModel)]="eventData" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
             <tot-button nzType="primary" [loading]="loadingEvent" (click)="sendTestEvent()" [nzBlock]="true">
-              <span nz-icon nzType="notification"></span> {{ 'Gửi Event' | translate }}
+              <span nz-icon nzType="notification"></span> {{ 'Gửi Event' | transloco }}
             </tot-button>
           </nz-card>
         </div>
       </div>
 
       <div *ngIf="lastTrackingId" style="margin-top: 24px;">
-        <nz-card [nzTitle]="'Kết quả gần nhất' | translate">
+        <nz-card [nzTitle]="'Kết quả gần nhất' | transloco">
           <p><strong>Tracking ID:</strong> <code>{{ lastTrackingId }}</code></p>
-          <p>{{ 'Bạn có thể quay lại Dashboard và tìm kiếm theo ID này để theo dõi luồng xử lý.' | translate }}</p>
+          <p>{{ 'Bạn có thể quay lại Dashboard và tìm kiếm theo ID này để theo dõi luồng xử lý.' | transloco }}</p>
         </nz-card>
       </div>
     </div>
@@ -81,7 +81,7 @@ import { DashboardService } from '../services/dashboard.service';
 export class CqrsTestComponent {
   private dashboardService = inject(DashboardService);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   commandPayload = '{"message": "Hello from UI Test Command", "timestamp": "' + new Date().toISOString() + '"}';
   eventData = '{"message": "Hello from UI Test Event", "timestamp": "' + new Date().toISOString() + '"}';
@@ -95,11 +95,11 @@ export class CqrsTestComponent {
     this.dashboardService.sendTestCommand(this.commandPayload).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('NOTIFICATIONS.SAMPLE_COMMAND_SENT', { id: res.trackingId }));
+        this.notification.success(this.translate.translate('Thành công'), this.translate.translate('NOTIFICATIONS.SAMPLE_COMMAND_SENT', { id: res.trackingId }));
         this.loadingCommand = false;
       },
       error: () => {
-        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Lỗi khi gửi command'));
+        this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi gửi command'));
         this.loadingCommand = false;
       }
     });
@@ -110,11 +110,11 @@ export class CqrsTestComponent {
     this.dashboardService.sendTestEvent(this.eventData).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
-        this.notification.success(this.translate.instant('Thành công'), this.translate.instant('NOTIFICATIONS.SAMPLE_EVENT_PUBLISHED', { id: res.trackingId }));
+        this.notification.success(this.translate.translate('Thành công'), this.translate.translate('NOTIFICATIONS.SAMPLE_EVENT_PUBLISHED', { id: res.trackingId }));
         this.loadingEvent = false;
       },
       error: () => {
-        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Lỗi khi gửi event'));
+        this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi gửi event'));
         this.loadingEvent = false;
       }
     });

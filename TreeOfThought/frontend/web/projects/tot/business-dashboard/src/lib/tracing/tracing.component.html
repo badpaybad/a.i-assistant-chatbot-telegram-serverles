@@ -1,11 +1,11 @@
-<nz-page-header [nzTitle]="'Theo dõi luồng tin nhắn' | translate" [nzSubtitle]="trackingId" (nzBack)="true">
+<nz-page-header [nzTitle]="'Theo dõi luồng tin nhắn' | transloco" [nzSubtitle]="trackingId" (nzBack)="true">
   <nz-page-header-extra>
-    <button nz-button nzType="default" [routerLink]="['/modules/cqrs-dashboard']">{{ 'Quay lại Dashboard' | translate }}</button>
+    <tot-button nzType="default" [routerLink]="['/modules/cqrs-dashboard']">{{ 'Quay lại Dashboard' | transloco }}</tot-button>
   </nz-page-header-extra>
 </nz-page-header>
 
 <div class="tracing-content animate-fade-in">
-  <nz-card [nzTitle]="'Luồng đồ thị trực quan' | translate" class="glass-card">
+  <nz-card [nzTitle]="'Luồng đồ thị trực quan' | transloco" class="glass-card">
     <div class="flow-container" *ngIf="history.length > 0">
       <ng-container *ngFor="let log of history; let last = last">
         <div class="flow-node" [class]="getStepStatus(log.step)">
@@ -19,7 +19,7 @@
           </div>
           <div class="node-badge">
             <nz-tag [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'blue'" nzMode="checkable">
-              {{ (getStepStatus(log.step) === 'error' ? 'Lỗi' : 'Thành công') | translate | uppercase }}
+              {{ (getStepStatus(log.step) === 'error' ? 'Lỗi' : 'Thành công') | transloco | uppercase }}
             </nz-tag>
           </div>
         </div>
@@ -31,11 +31,11 @@
     </div>
 
     <div *ngIf="history.length === 0" class="no-data">
-      <nz-empty nzNotFoundImage="simple" [nzNotFoundContent]="'Không tìm thấy dữ liệu theo dõi cho ID này.' | translate"></nz-empty>
+      <nz-empty nzNotFoundImage="simple" [nzNotFoundContent]="'Không tìm thấy dữ liệu theo dõi cho ID này.' | transloco"></nz-empty>
     </div>
   </nz-card>
 
-  <nz-divider [nzText]="'Lịch sử dòng thời gian sự kiện' | translate"></nz-divider>
+  <nz-divider [nzText]="'Lịch sử dòng thời gian sự kiện' | transloco"></nz-divider>
 
   <nz-card class="glass-card">
     <nz-timeline>

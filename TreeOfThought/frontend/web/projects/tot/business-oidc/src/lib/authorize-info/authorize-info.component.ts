@@ -1,14 +1,14 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ViewChild, TemplateRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { ADMIN_CLAIM, ADMIN_ROLE, APP_CLAIMS, AuthService, CLAIMS_VERSION } from '@tot/core';
 
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@jsverse/transloco';
+import { TotTableComponent, TotTableColumn } from '@tot/shared';
 
 @Component({
   selector: 'app-authorize-info',
@@ -16,77 +16,69 @@ import { TranslateModule } from '@ngx-translate/core';
   imports: [
     CommonModule,
     NzCardModule,
-    NzTableModule,
     NzTagModule,
     NzDescriptionsModule,
     NzTabsModule,
     NzIconModule,
-    TranslateModule
+    TranslocoModule,
+    TotTableComponent
   ],
   template: `
     <div class="authorize-info-container">
       <div class="page-header">
-        <h2>{{ 'Thông tin phân quyền' | translate }}</h2>
-        <p class="subtitle">{{ 'Tổng quan về cơ chế phân quyền đang được áp dụng' | translate }}</p>
+        <h2>{{ 'Thông tin phân quyền' | transloco }}</h2>
+        <p class="subtitle">{{ 'Tổng quan về cơ chế phân quyền đang được áp dụng' | transloco }}</p>
       </div>
 
       <nz-tabs>
-        <nz-tab [nzTitle]="'Quyền của tôi' | translate">
+        <nz-tab [nzTitle]="'Quyền của tôi' | transloco">
           <div class="tab-content">
-            <nz-card [nzTitle]="'Thông tin người dùng' | translate" class="info-card">
+            <nz-card [nzTitle]="'Thông tin người dùng' | transloco" class="info-card">
               <nz-descriptions [nzColumn]="1" nzBordered>
-                <nz-descriptions-item [nzTitle]="'Vai trò (Roles)' | translate">
+                <nz-descriptions-item [nzTitle]="'Vai trò (Roles)' | transloco">
                   <nz-tag *ngFor="let role of userRoles" [nzColor]="role === ADMIN_ROLE ? 'gold' : 'blue'">
                     {{ role }}
                   </nz-tag>
-                  <span *ngIf="userRoles.length === 0" class="empty-text">{{ 'Không có vai trò' | translate }}</span>
+                  <span *ngIf="userRoles.length === 0" class="empty-text">{{ 'Không có vai trò' | transloco }}</span>
                 </nz-descriptions-item>
-                <nz-descriptions-item [nzTitle]="'Quyền hạn (Claims)' | translate">
+                <nz-descriptions-item [nzTitle]="'Quyền hạn (Claims)' | transloco">
                   <div class="claims-list">
                     <nz-tag *ngFor="let claim of userClaims" [nzColor]="claim === ADMIN_CLAIM ? 'volcano' : 'green'">
                       {{ claim }}
                     </nz-tag>
                   </div>
-                  <span *ngIf="userClaims.length === 0" class="empty-text">{{ 'Không có quyền hạn' | translate }}</span>
+                  <span *ngIf="userClaims.length === 0" class="empty-text">{{ 'Không có quyền hạn' | transloco }}</span>
                 </nz-descriptions-item>
               </nz-descriptions>
             </nz-card>
 
-            <nz-card [nzTitle]="'Trạng thái Admin' | translate" class="info-card" *ngIf="isAdmin">
+            <nz-card [nzTitle]="'Trạng thái Admin' | transloco" class="info-card" *ngIf="isAdmin">
               <div class="admin-notice">
                 <span nz-icon nzType="safety-certificate" nzTheme="twotone" [nzTwotoneColor]="'#52c41a'"></span>
-                <p><strong>{{ 'Bạn đang có quyền Admin tối cao.' | translate }}</strong></p>
-                <p>{{ 'Hệ thống sẽ bỏ qua mọi bước kiểm tra quyền hạn và cho phép bạn truy cập tất cả các tính năng.' | translate }}</p>
+                <p><strong>{{ 'Bạn đang có quyền Admin tối cao.' | transloco }}</strong></p>
+                <p>{{ 'Hệ thống sẽ bỏ qua mọi bước kiểm tra quyền hạn và cho phép bạn truy cập tất cả các tính năng.' | transloco }}</p>
               </div>
             </nz-card>
           </div>
         </nz-tab>
 
-        <nz-tab [nzTitle]="'Cấu hình ứng dụng' | translate">
+        <nz-tab [nzTitle]="'Cấu hình ứng dụng' | transloco">
           <div class="tab-content">
-            <nz-card [nzTitle]="'Phiên bản cấu hình' | translate" class="info-card">
-              <p>{{ 'Phiên bản hiện tại:' | translate }} <strong>{{ version }}</strong></p>
-              <p>{{ 'Admin Claim:' | translate }} <nz-tag nzColor="volcano">{{ adminClaim }}</nz-tag></p>
+            <nz-card [nzTitle]="'Phiên bản cấu hình' | transloco" class="info-card">
+              <p>{{ 'Phiên bản hiện tại:' | transloco }} <strong>{{ version }}</strong></p>
+              <p>{{ 'Admin Claim:' | transloco }} <nz-tag nzColor="volcano">{{ adminClaim }}</nz-tag></p>
             </nz-card>
 
-            <nz-card [nzTitle]="'Danh sách Quyền hạn định nghĩa trong FE' | translate" class="info-card">
-              <nz-table #basicTable [nzData]="appClaimsList" nzSize="small" [nzPageSize]="50">
-                <thead>
-                  <tr>
-                    <th>{{ 'Mô-đun' | translate }}</th>
-                    <th>{{ 'Hành động' | translate }}</th>
-                    <th>{{ 'Giá trị Claim' | translate }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let data of basicTable.data">
-                    <td><strong>{{ data.module }}</strong></td>
-                    <td>{{ data.action }}</td>
-                    <td><code>{{ data.value }}</code></td>
-                  </tr>
-                </tbody>
-              </nz-table>
-            </nz-card>
+            <tot-table 
+              [title]="'Danh sách Quyền hạn định nghĩa trong FE' | transloco" 
+              [data]="appClaimsList" 
+              [columns]="claimsColumns"
+              [pageSize]="10"
+            >
+              <ng-template #valueTpl let-data>
+                <code>{{ data.value }}</code>
+              </ng-template>
+            </tot-table>
           </div>
         </nz-tab>
       </nz-tabs>
@@ -138,8 +130,10 @@ import { TranslateModule } from '@ngx-translate/core';
     }
   `]
 })
-export class AuthorizeInfoComponent implements OnInit {
+export class AuthorizeInfoComponent implements OnInit, AfterViewInit {
   private authService = inject(AuthService);
+
+  @ViewChild('valueTpl', { static: true }) valueTpl!: TemplateRef<any>;
 
   userRoles: string[] = [];
   userClaims: string[] = [];
@@ -150,10 +144,19 @@ export class AuthorizeInfoComponent implements OnInit {
   ADMIN_CLAIM = ADMIN_CLAIM;
 
   appClaimsList: Array<{ module: string, action: string, value: string }> = [];
+  claimsColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
     this.loadUserData();
     this.processAppClaims();
+  }
+
+  ngAfterViewInit(): void {
+    this.claimsColumns = [
+      { title: 'Mô-đun', key: 'module', sortable: true },
+      { title: 'Hành động', key: 'action', sortable: true },
+      { title: 'Giá trị Claim', key: 'value', template: this.valueTpl }
+    ];
   }
 
   private loadUserData() {

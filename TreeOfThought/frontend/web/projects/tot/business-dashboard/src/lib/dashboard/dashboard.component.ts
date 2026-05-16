@@ -24,7 +24,7 @@ import { AppNotificationService, HttpClientService } from '@tot/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
 import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { MessageListComponent } from '../message-list/message-list.component';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
 import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
 import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
@@ -53,7 +53,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
     NzTooltipModule,
     NzRadioModule,
     FormsModule,
-    TranslateModule,
+    TranslocoModule,
     TotButtonComponent,
     TotTableComponent,
     CqrsTestComponent
@@ -64,7 +64,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
 export class DashboardComponent implements OnInit {
   private dashboardService = inject(DashboardService);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   private modal = inject(NzModalService);
 
   stats: DashboardStats = { stats: {}, workerStatus: [] };
@@ -270,8 +270,8 @@ export class DashboardComponent implements OnInit {
     action.subscribe(() => {
       const key = currentStatus === 'Running' ? 'NOTIFICATIONS.WORKER_STOPPED' : 'NOTIFICATIONS.WORKER_STARTED';
       this.notification.success(
-        this.translate.instant('Thành công'), 
-        this.translate.instant(key, { id: workerId })
+        this.translate.translate('Thành công'), 
+        this.translate.translate(key, { id: workerId })
       );
       this.refresh();
     });
@@ -280,7 +280,7 @@ export class DashboardComponent implements OnInit {
   viewDetails(queue: QueueInfo): void {
     if (queue.type === 'Topic') {
       this.modal.create({
-        nzTitle: `${this.translate.instant('Chi tiết Topic')}: ${queue.name}`,
+        nzTitle: `${this.translate.translate('Chi tiết Topic')}: ${queue.name}`,
         nzContent: TopicDetailComponent,
         nzData: { topic: queue },
         nzWidth: '80%',
@@ -288,7 +288,7 @@ export class DashboardComponent implements OnInit {
       });
     } else {
       this.modal.create({
-        nzTitle: `${this.translate.instant('Chi tiết Hàng đợi')}: ${queue.name}`,
+        nzTitle: `${this.translate.translate('Chi tiết Hàng đợi')}: ${queue.name}`,
         nzContent: MessageListComponent,
         nzData: { inputQueueName: queue.name },
         nzWidth: '80%',
@@ -300,7 +300,7 @@ export class DashboardComponent implements OnInit {
   viewInProgress(queue: QueueInfo): void {
     if (queue.type === 'Topic') {
       this.modal.create({
-        nzTitle: `${this.translate.instant('Đang xử lý Topic')}: ${queue.name}`,
+        nzTitle: `${this.translate.translate('Đang xử lý Topic')}: ${queue.name}`,
         nzContent: TopicDetailComponent,
         nzData: { topic: queue, showInProgress: true },
         nzWidth: '80%',
@@ -308,7 +308,7 @@ export class DashboardComponent implements OnInit {
       });
     } else {
       this.modal.create({
-        nzTitle: `${this.translate.instant('Đang xử lý Hàng đợi')}: ${queue.name}`,
+        nzTitle: `${this.translate.translate('Đang xử lý Hàng đợi')}: ${queue.name}`,
         nzContent: MessageListComponent,
         nzData: { inputQueueName: `${queue.name}:processing` },
         nzWidth: '80%',
@@ -329,22 +329,22 @@ export class DashboardComponent implements OnInit {
 
   copyToClipboard(text: string): void {
     navigator.clipboard.writeText(text).then(() => {
-      this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã sao chép vào bộ nhớ tạm'));
+      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đã sao chép vào bộ nhớ tạm'));
     });
   }
 
   retryTracking(item: TrackingSummary): void {
     this.modal.confirm({
-      nzTitle: this.translate.instant('Xác nhận gửi lại'),
-      nzContent: this.translate.instant('Bạn có chắc chắn muốn gửi lại tin nhắn này?'),
+      nzTitle: this.translate.translate('Xác nhận gửi lại'),
+      nzContent: this.translate.translate('Bạn có chắc chắn muốn gửi lại tin nhắn này?'),
       nzOnOk: () => {
         this.dashboardService.resendTracking(item.id).subscribe({
           next: () => {
-            this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Tin nhắn đã được gửi lại'));
+            this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Tin nhắn đã được gửi lại'));
             this.refresh();
           },
           error: (err) => {
-            this.notification.error(this.translate.instant('Thất bại'), err.error?.message || 'Lỗi khi gửi lại tin nhắn');
+            this.notification.error(this.translate.translate('Thất bại'), err.error?.message || 'Lỗi khi gửi lại tin nhắn');
           }
         });
       }
@@ -353,11 +353,11 @@ export class DashboardComponent implements OnInit {
 
   deleteTracking(item: TrackingSummary): void {
     this.modal.confirm({
-      nzTitle: this.translate.instant('Xác nhận xóa'),
-      nzContent: this.translate.instant('Bạn có chắc chắn muốn xóa message này? (Dữ liệu log tracking sẽ bị xóa)'),
+      nzTitle: this.translate.translate('Xác nhận xóa'),
+      nzContent: this.translate.translate('Bạn có chắc chắn muốn xóa message này? (Dữ liệu log tracking sẽ bị xóa)'),
       nzOnOk: () => {
         this.dashboardService.deleteTracking(item.id).subscribe(() => {
-          this.notification.success(this.translate.instant('Thành công'), this.translate.instant('Đã xóa log message'));
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đã xóa log message'));
           this.loadTracking();
         });
       }

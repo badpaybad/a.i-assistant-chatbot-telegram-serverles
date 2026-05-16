@@ -18,7 +18,7 @@ import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
@@ -44,13 +44,13 @@ import { ViewChild, TemplateRef } from '@angular/core';
     TotAutocompleteComponent,
     TotButtonComponent,
     TotTableComponent,
-    TranslateModule
+    TranslocoModule
   ],
   template: `
     <div class="page-header">
       <nz-space>
         <tot-button *nzSpaceItem [loading]="syncingClaims" nzType="default" (click)="syncClaims()">
-          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | translate }}
+          <span nz-icon nzType="sync"></span> {{ 'Sync Claims (BE)' | transloco }}
         </tot-button>
       </nz-space>
     </div>
@@ -58,34 +58,34 @@ import { ViewChild, TemplateRef } from '@angular/core';
     <ng-template #userExtraTpl>
       <nz-space>
         <tot-button *nzSpaceItem nzType="primary" (click)="showCreateModal()">
-          <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | translate }}
+          <span nz-icon nzType="plus"></span> {{ 'Thêm người dùng' | transloco }}
         </tot-button>
         <tot-button *nzSpaceItem [loading]="loading" (click)="loadUsers()">
-          <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | translate }}
+          <span nz-icon nzType="reload"></span> {{ 'Đồng bộ' | transloco }}
         </tot-button>
       </nz-space>
     </ng-template>
 
-    <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
+    <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | transloco">
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="6">
           <nz-input-group [nzSuffix]="suffixIconSearch">
-            <input type="text" nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Username, DisplayName, Email' | translate" (keyup.enter)="loadUsers()" />
+            <input type="text" nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Username, DisplayName, Email' | transloco" (keyup.enter)="loadUsers()" />
           </nz-input-group>
           <ng-template #suffixIconSearch>
             <span nz-icon nzType="search"></span>
           </ng-template>
         </div>
         <div nz-col [nzSpan]="6">
-          <nz-select [(ngModel)]="searchQuery.isEmailVerified" [nzPlaceHolder]="'Trạng thái' | translate" nzAllowClear style="width: 100%">
-            <nz-option [nzValue]="true" [nzLabel]="'Đã xác minh' | translate"></nz-option>
-            <nz-option [nzValue]="false" [nzLabel]="'Đang chờ' | translate"></nz-option>
+          <nz-select [(ngModel)]="searchQuery.isEmailVerified" [nzPlaceHolder]="'Trạng thái' | transloco" nzAllowClear style="width: 100%">
+            <nz-option [nzValue]="true" [nzLabel]="'Đã xác minh' | transloco"></nz-option>
+            <nz-option [nzValue]="false" [nzLabel]="'Đang chờ' | transloco"></nz-option>
           </nz-select>
         </div>
         <div nz-col [nzSpan]="6">
           <tot-autocomplete
             apiUrl="/api/AuthManagement/roles"
-            [placeholder]="'Vai trò' | translate"
+            [placeholder]="'Vai trò' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.roleIds"
             (valueChange)="loadUsers()"
@@ -94,7 +94,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         <div nz-col [nzSpan]="6">
           <tot-autocomplete
             apiUrl="/api/AuthManagement/claims"
-            [placeholder]="'Quyền' | translate"
+            [placeholder]="'Quyền' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
             (valueChange)="loadUsers()"
@@ -104,19 +104,19 @@ import { ViewChild, TemplateRef } from '@angular/core';
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
         </div>
         <div nz-col [nzSpan]="4">
-          <nz-select [(ngModel)]="searchQuery.ssoProvider" [nzPlaceHolder]="'SSO Provider' | translate" nzAllowClear style="width: 100%">
+          <nz-select [(ngModel)]="searchQuery.ssoProvider" [nzPlaceHolder]="'SSO Provider' | transloco" nzAllowClear style="width: 100%">
             <nz-option nzValue="google" nzLabel="Google"></nz-option>
             <nz-option nzValue="ms" nzLabel="Microsoft"></nz-option>
             <nz-option nzValue="facebook" nzLabel="Facebook"></nz-option>
           </nz-select>
         </div>
         <div nz-col [nzSpan]="4">
-          <input nz-input [(ngModel)]="searchQuery.ssoId" [placeholder]="'SSO ID' | translate" (keyup.enter)="loadUsers()" />
+          <input nz-input [(ngModel)]="searchQuery.ssoId" [placeholder]="'SSO ID' | transloco" (keyup.enter)="loadUsers()" />
         </div>
         <div nz-col [nzSpan]="8" class="search-actions">
           <nz-space>
-            <tot-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | translate }}</tot-button>
-            <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | translate }}</tot-button>
+            <tot-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
       </div>
@@ -149,7 +149,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
 
     <ng-template #statusTpl let-data>
       <nz-tag [nzColor]="data.isEmailVerified ? 'success' : 'warning'">
-        {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | translate }}
+        {{ (data.isEmailVerified ? 'Đã xác minh' : 'Đang chờ') | transloco }}
       </nz-tag>
     </ng-template>
 
@@ -181,54 +181,54 @@ import { ViewChild, TemplateRef } from '@angular/core';
 
     <ng-template #actionsTpl let-data>
       <div style="display: flex; gap: 4px; flex-direction: column;">
-        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
         <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.username?.toLowerCase() === 'admin'"
-                (click)="deleteUser(data)">{{ 'Xóa' | translate }}</tot-button>
+                (click)="deleteUser(data)">{{ 'Xóa' | transloco }}</tot-button>
       </div>
     </ng-template>
 
     <input type="file" #avatarInput style="display: none" (change)="onFileSelected($event)" accept="image/*" />
 
     <!-- Modal Thêm/Sửa Người dùng -->
-    <nz-modal [(nzVisible)]="isUserModalVisible" [nzTitle]="(editingUser ? 'Sửa người dùng' : 'Thêm người dùng') | translate" (nzOnCancel)="isUserModalVisible = false" (nzOnOk)="saveUser()">
+    <nz-modal [(nzVisible)]="isUserModalVisible" [nzTitle]="(editingUser ? 'Sửa người dùng' : 'Thêm người dùng') | transloco" (nzOnCancel)="isUserModalVisible = false" (nzOnOk)="saveUser()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label nzRequired>{{ 'Tên đăng nhập' | translate }}</nz-form-label>
+            <nz-form-label nzRequired>{{ 'Tên đăng nhập' | transloco }}</nz-form-label>
             <nz-form-control>
               <input nz-input [(ngModel)]="userForm.username" name="username" [disabled]="!!editingUser" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item *ngIf="!editingUser">
-            <nz-form-label nzRequired>{{ 'Mật khẩu' | translate }}</nz-form-label>
+            <nz-form-label nzRequired>{{ 'Mật khẩu' | transloco }}</nz-form-label>
             <nz-form-control>
               <input nz-input type="password" [(ngModel)]="userForm.password" name="password" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label nzRequired>{{ 'Tên hiển thị' | translate }}</nz-form-label>
+            <nz-form-label nzRequired>{{ 'Tên hiển thị' | transloco }}</nz-form-label>
             <nz-form-control>
               <input nz-input [(ngModel)]="userForm.displayName" name="displayName" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label nzRequired>{{ 'Email' | translate }}</nz-form-label>
+            <nz-form-label nzRequired>{{ 'Email' | transloco }}</nz-form-label>
             <nz-form-control>
               <input nz-input [(ngModel)]="userForm.email" name="email" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
             <nz-form-control>
-              <label nz-checkbox [(ngModel)]="userForm.isEmailVerified" name="isEmailVerified">{{ 'Đã xác minh email' | translate }}</label>
+              <label nz-checkbox [(ngModel)]="userForm.isEmailVerified" name="isEmailVerified">{{ 'Đã xác minh email' | transloco }}</label>
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label>{{ 'Vai trò' | translate }}</nz-form-label>
+            <nz-form-label>{{ 'Vai trò' | transloco }}</nz-form-label>
             <nz-form-control>
               <tot-autocomplete
                 apiUrl="/api/AuthManagement/roles"
-                [placeholder]="'Chọn vai trò' | translate"
+                [placeholder]="'Chọn vai trò' | transloco"
                 mode="multiple"
                 [(ngModel)]="userForm.roleIds"
                 name="roleIds"
@@ -236,11 +236,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label>{{ 'Quyền trực tiếp' | translate }}</nz-form-label>
+            <nz-form-label>{{ 'Quyền trực tiếp' | transloco }}</nz-form-label>
             <nz-form-control>
               <tot-autocomplete
                 apiUrl="/api/AuthManagement/claims"
-                [placeholder]="'Chọn quyền' | translate"
+                [placeholder]="'Chọn quyền' | transloco"
                 mode="multiple"
                 [(ngModel)]="userForm.claimIds"
                 name="claimIds"
@@ -252,22 +252,22 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </nz-modal>
 
     <!-- Các Modal gán nhanh -->
-    <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="'Vai trò' | translate" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
+    <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="'Vai trò' | transloco" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="assignRole()">
       <ng-container *nzModalContent>
         <tot-autocomplete
           apiUrl="/api/AuthManagement/roles"
-          [placeholder]="'Vui lòng chọn' | translate"
+          [placeholder]="'Vui lòng chọn' | transloco"
           mode="multiple"
           [(ngModel)]="selectedRoleIds"
         ></tot-autocomplete>
       </ng-container>
     </nz-modal>
 
-    <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
+    <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | transloco" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
         <tot-autocomplete
           apiUrl="/api/AuthManagement/claims"
-          [placeholder]="'Vui lòng chọn' | translate"
+          [placeholder]="'Vui lòng chọn' | transloco"
           mode="multiple"
           [(ngModel)]="selectedClaimIds"
         ></tot-autocomplete>
@@ -336,7 +336,7 @@ export class UserListComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   users: any[] = [];
   loading = false;
@@ -422,7 +422,7 @@ export class UserListComponent implements OnInit {
 
       this.users = await this.authMgmt.getUsers(params);
     } catch (e) {
-      this.message.error(this.translate.instant('Lỗi khi tải người dùng'));
+      this.message.error(this.translate.translate('Lỗi khi tải người dùng'));
     } finally {
       this.loading = false;
     }
@@ -470,7 +470,7 @@ export class UserListComponent implements OnInit {
 
   async saveUser() {
     if (!this.userForm.username || !this.userForm.displayName || !this.userForm.email || (!this.editingUser && !this.userForm.password)) {
-      this.message.warning(this.translate.instant('Vui lòng nhập đầy đủ thông tin bắt buộc'));
+      this.message.warning(this.translate.translate('Vui lòng nhập đầy đủ thông tin bắt buộc'));
       return;
     }
 
@@ -480,7 +480,7 @@ export class UserListComponent implements OnInit {
         // Batch assign roles/claims after update
         await this.authMgmt.assignRolesToUser(this.editingUser.id, this.userForm.roleIds);
         await this.authMgmt.assignClaimsToUser(this.editingUser.id, this.userForm.claimIds);
-        this.message.success(this.translate.instant('Cập nhật người dùng thành công'));
+        this.message.success(this.translate.translate('Cập nhật người dùng thành công'));
       } else {
         const newUser: any = await this.authMgmt.createUser(this.userForm);
         // Assign roles/claims for new user
@@ -488,12 +488,12 @@ export class UserListComponent implements OnInit {
           await this.authMgmt.assignRolesToUser(newUser.id, this.userForm.roleIds);
           await this.authMgmt.assignClaimsToUser(newUser.id, this.userForm.claimIds);
         }
-        this.message.success(this.translate.instant('Thêm người dùng thành công'));
+        this.message.success(this.translate.translate('Thêm người dùng thành công'));
       }
       this.isUserModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error(this.translate.instant('Lỗi khi lưu người dùng'));
+      this.message.error(this.translate.translate('Lỗi khi lưu người dùng'));
     }
   }
 
@@ -506,25 +506,25 @@ export class UserListComponent implements OnInit {
   async assignRole() {
     try {
       await this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds);
-      this.message.success(this.translate.instant('Cập nhật vai trò thành công'));
+      this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
       this.isRoleModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error(this.translate.instant('Cập nhật vai trò thất bại'));
+      this.message.error(this.translate.translate('Cập nhật vai trò thất bại'));
     }
   }
 
   async removeRole(user: any, role: any) {
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận')}?`,
-      nzContent: `${this.translate.instant('Xóa')} ${role.name} ${this.translate.instant('khỏi')} ${user.username}?`,
+      nzTitle: `${this.translate.translate('Xác nhận')}?`,
+      nzContent: `${this.translate.translate('Xóa')} ${role.name} ${this.translate.translate('khỏi')} ${user.username}?`,
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeRoleFromUser(user.id, role.id);
-          this.message.success(this.translate.instant('Xóa vai trò thành công'));
+          this.message.success(this.translate.translate('Xóa vai trò thành công'));
           this.loadUsers();
         } catch (e) {
-          this.message.error(this.translate.instant('Xóa vai trò thất bại'));
+          this.message.error(this.translate.translate('Xóa vai trò thất bại'));
         }
       }
     });
@@ -539,25 +539,25 @@ export class UserListComponent implements OnInit {
   async assignClaim() {
     try {
       await this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds);
-      this.message.success(this.translate.instant('Cập nhật quyền thành công'));
+      this.message.success(this.translate.translate('Cập nhật quyền thành công'));
       this.isClaimModalVisible = false;
       this.loadUsers();
     } catch (e) {
-      this.message.error(this.translate.instant('Cập nhật quyền thất bại'));
+      this.message.error(this.translate.translate('Cập nhật quyền thất bại'));
     }
   }
 
   async removeClaim(user: any, claim: any) {
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận')}?`,
-      nzContent: `${this.translate.instant('Xóa')} ${claim.name} ${this.translate.instant('khỏi')} ${user.username}?`,
+      nzTitle: `${this.translate.translate('Xác nhận')}?`,
+      nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${user.username}?`,
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeClaimFromUser(user.id, claim.id);
-          this.message.success(this.translate.instant('Xóa quyền thành công'));
+          this.message.success(this.translate.translate('Xóa quyền thành công'));
           this.loadUsers();
         } catch (e) {
-          this.message.error(this.translate.instant('Xóa quyền thất bại'));
+          this.message.error(this.translate.translate('Xóa quyền thất bại'));
         }
       }
     });
@@ -565,21 +565,21 @@ export class UserListComponent implements OnInit {
 
   async deleteUser(user: any) {
     if (user.username?.toLowerCase() === 'admin') {
-      this.message.warning(this.translate.instant('Không thể xóa tài khoản admin'));
+      this.message.warning(this.translate.translate('Không thể xóa tài khoản admin'));
       return;
     }
 
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận xóa người dùng')} ${user.username}?`,
-      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
+      nzTitle: `${this.translate.translate('Xác nhận xóa người dùng')} ${user.username}?`,
+      nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
       nzOnOk: async () => {
         try {
           await this.authMgmt.deleteUser(user.id);
-          this.message.success(this.translate.instant('Xóa người dùng thành công'));
+          this.message.success(this.translate.translate('Xóa người dùng thành công'));
           this.loadUsers();
         } catch (e: any) {
-          this.message.error(e.error?.message || this.translate.instant('Xóa người dùng thất bại'));
+          this.message.error(e.error?.message || this.translate.translate('Xóa người dùng thất bại'));
         }
       }
     });
@@ -589,11 +589,11 @@ export class UserListComponent implements OnInit {
     const file = event.target.files[0];
     if (!file || !this.selectedUserForAvatar) return;
 
-    const loadingMsg = this.message.loading(this.translate.instant('Đang tải lên...'), { nzDuration: 0 }).messageId;
+    const loadingMsg = this.message.loading(this.translate.translate('Đang tải lên...'), { nzDuration: 0 }).messageId;
     try {
       const result: any = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
       this.selectedUserForAvatar.avatarUrl = result.url;
-      this.message.success(this.translate.instant('Cập nhật ảnh đại diện thành công'));
+      this.message.success(this.translate.translate('Cập nhật ảnh đại diện thành công'));
       
       // Update the user in the list locally to avoid full reload
       const index = this.users.findIndex(u => u.id === this.selectedUserForAvatar.id);
@@ -601,7 +601,7 @@ export class UserListComponent implements OnInit {
         this.users[index].avatarUrl = result.url;
       }
     } catch (e) {
-      this.message.error(this.translate.instant('Lỗi khi tải lên ảnh đại diện'));
+      this.message.error(this.translate.translate('Lỗi khi tải lên ảnh đại diện'));
     } finally {
       this.message.remove(loadingMsg);
       event.target.value = ''; // Reset file input
@@ -615,9 +615,9 @@ export class UserListComponent implements OnInit {
       // version could be a timestamp or a specific version string
       const version = new Date().getTime().toString();
       await this.authMgmt.syncClaims(version, []); 
-      this.message.success(this.translate.instant('Đồng bộ quyền thành công'));
+      this.message.success(this.translate.translate('Đồng bộ quyền thành công'));
     } catch (e) {
-      this.message.error(this.translate.instant('Đồng bộ quyền thất bại'));
+      this.message.error(this.translate.translate('Đồng bộ quyền thất bại'));
     } finally {
       this.syncingClaims = false;
     }

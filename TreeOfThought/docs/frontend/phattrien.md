@@ -142,4 +142,28 @@ App chính (`src/app`) đóng vai trò là "vỏ" (Shell) điều hướng:
 - **Không Placeholder**: Khi phát triển, sử dụng dữ liệu mẫu (mock) sát thực tế hoặc các hình ảnh sinh bởi AI để đảm bảo thẩm mỹ.
 
 ---
+
+## 8. Hệ thống Đa ngôn ngữ (Internationalization - I18n)
+
+Hệ thống sử dụng **Transloco** (`@jsverse/transloco`) để quản lý đa ngôn ngữ, thay thế cho `ngx-translate`.
+
+### 8.1. Quản lý File ngôn ngữ
+- **Vị trí**: Toàn bộ file JSON ngôn ngữ được đặt tại `src/assets/lang/` (ví dụ: `vi.json`, `en.json`).
+- **Docker Mount**: Thư mục này được thiết kế để có thể **mount volume** trực tiếp từ host vào container Docker (`/usr/share/nginx/html/assets/lang`). Điều này cho phép cập nhật, sửa đổi nội dung ngôn ngữ ngay khi app đang chạy mà không cần build lại container.
+
+### 8.2. Quy chuẩn sử dụng
+- **Pipe**: Sử dụng pipe `| transloco` trong template.
+  ```html
+  <h2>{{ 'TITLE.WELCOME' | transloco }}</h2>
+  ```
+- **Service**: Sử dụng `TranslocoService` trong TypeScript.
+  - Sử dụng phương thức `.translate('KEY')` thay cho `.instant()` cũ.
+  - Sử dụng `.selectTranslate('KEY')` nếu cần một Observable.
+- **Standalone Components**: Bắt buộc import `TranslocoModule` vào mảng `imports` của component.
+
+### 8.3. Cấu hình Runtime
+- **Lazy Loading**: Hệ thống hỗ trợ nạp ngôn ngữ động.
+- **Default Language**: Mặc định là `vi`.
+
+---
 *Tài liệu này là quy chuẩn bắt buộc cho mọi thành viên phát triển Frontend TreeOfThought.*

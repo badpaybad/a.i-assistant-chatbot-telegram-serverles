@@ -1,11 +1,11 @@
 import {
   APP_CLAIMS,
   AuthService
-} from "./chunk-BNKNORGU.js";
+} from "./chunk-JUKFRGEJ.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-I67QUX3J.js";
+} from "./chunk-KCMFCWS5.js";
 import {
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
@@ -16,19 +16,19 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-GHECZDPX.js";
-import "./chunk-WVLO4HWC.js";
+} from "./chunk-QXJWI4J2.js";
+import "./chunk-F2GHQOYI.js";
 import {
   NzDividerComponent,
   NzDividerModule
-} from "./chunk-A7SM5J5J.js";
+} from "./chunk-VPHBR7MT.js";
 import {
   FIREBASE_CONFIG,
   NzFormControlComponent,
   NzFormDirective,
   NzFormItemComponent,
   NzFormModule
-} from "./chunk-IL5PHHM3.js";
+} from "./chunk-SOKWO5JU.js";
 import "./chunk-IRGOCD6C.js";
 import {
   API_URL,
@@ -42,7 +42,6 @@ import {
   FormControlName,
   FormGroupDirective,
   FormsModule,
-  HttpBackend,
   HttpClient,
   NZ_CONFIG,
   NavigationEnd,
@@ -52,7 +51,6 @@ import {
   NgIf,
   NonNullableFormBuilder,
   NotificationTemplateService,
-  NzButtonComponent,
   NzButtonModule,
   NzCheckboxComponent,
   NzCheckboxModule,
@@ -72,15 +70,14 @@ import {
   NzRowDirective,
   NzSubMenuComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   ReactiveFormsModule,
   Router,
   RouterLink,
   RouterOutlet,
-  TranslateLoader,
-  TranslateModule,
-  TranslatePipe,
-  TranslateService,
+  TotButtonComponent,
+  TranslocoModule,
+  TranslocoPipe,
+  TranslocoService,
   Validators,
   ant_design_icons_angular_icons_exports,
   bootstrapApplication,
@@ -88,11 +85,11 @@ import {
   provideHttpClient,
   provideNzI18n,
   provideRouter,
-  provideTranslateService,
+  provideTransloco,
   registerLocaleData,
   withInterceptors,
   ɵNgNoValidate
-} from "./chunk-NCXURSGD.js";
+} from "./chunk-KJFYLMJM.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionScheduler,
@@ -156,10 +153,9 @@ import {
   ɵɵtwoWayListener,
   ɵɵtwoWayProperty,
   ɵɵviewQuery
-} from "./chunk-XW2QAALF.js";
+} from "./chunk-FOY232A2.js";
 import {
-  __publicField,
-  __spreadValues
+  __publicField
 } from "./chunk-MYGOUE3E.js";
 
 // node_modules/zone.js/fesm2015/zone.js
@@ -170,7 +166,7 @@ var __getOwnPropSymbols = Object.getOwnPropertySymbols;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __propIsEnum = Object.prototype.propertyIsEnumerable;
 var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues2 = (a, b) => {
+var __spreadValues = (a, b) => {
   for (var prop in b || (b = {}))
     if (__hasOwnProp.call(b, prop))
       __defNormalProp(a, prop, b[prop]);
@@ -1235,7 +1231,7 @@ function patchEventTarget(_global2, api, apis, patchOptions) {
         return { passive: true };
       }
       if (typeof options === "object" && options.passive !== false) {
-        return __spreadProps(__spreadValues2({}, options), { passive: true });
+        return __spreadProps(__spreadValues({}, options), { passive: true });
       }
       return options;
     }
@@ -1297,7 +1293,7 @@ function patchEventTarget(_global2, api, apis, patchOptions) {
     const passiveEvents = _global2[zoneSymbol("PASSIVE_EVENTS")];
     function copyEventListenerOptions(options) {
       if (typeof options === "object" && options !== null) {
-        const newOptions = __spreadValues2({}, options);
+        const newOptions = __spreadValues({}, options);
         if (options.signal) {
           newOptions.signal = options.signal;
         }
@@ -2587,21 +2583,21 @@ var claimGuard = (claimOrClaims, mode = "OR") => {
     const router = inject(Router);
     const notification = inject(AppNotificationService);
     const templateService = inject(NotificationTemplateService);
-    const translate = inject(TranslateService);
+    const translate = inject(TranslocoService);
     if (authService.hasClaim(claimOrClaims, mode)) {
       return true;
     }
     const isLoggedIn = authService.isLoggedIn();
     const claimsArray = Array.isArray(claimOrClaims) ? claimOrClaims : [claimOrClaims];
     const claimListStr = claimsArray.join(", ");
-    const title = isLoggedIn ? translate.instant("Truy c\u1EADp b\u1ECB t\u1EEB ch\u1ED1i") : translate.instant("Y\xEAu c\u1EA7u \u0111\u0103ng nh\u1EADp");
+    const title = isLoggedIn ? translate.translate("Truy c\u1EADp b\u1ECB t\u1EEB ch\u1ED1i") : translate.translate("Y\xEAu c\u1EA7u \u0111\u0103ng nh\u1EADp");
     let message = "";
     if (isLoggedIn) {
-      message = translate.instant("B\u1EA1n kh\xF4ng c\xF3 quy\u1EC1n truy c\u1EADp t\xEDnh n\u0103ng. B\u1EA1n c\u1EA7n c\xE1c quy\u1EC1n sau: {{claims}} \u0111\u1EC3 c\xF3 th\u1EC3 truy c\u1EADp t\xEDnh n\u0103ng. Vui l\xF2ng li\xEAn h\u1EC7 v\u1EDBi qu\u1EA3n tr\u1ECB vi\xEAn \u0111\u1EC3 y\xEAu c\u1EA7u c\u1EA5p quy\u1EC1n.", { claims: claimListStr });
+      message = translate.translate("B\u1EA1n kh\xF4ng c\xF3 quy\u1EC1n truy c\u1EADp t\xEDnh n\u0103ng. B\u1EA1n c\u1EA7n c\xE1c quy\u1EC1n sau: {{claims}} \u0111\u1EC3 c\xF3 th\u1EC3 truy c\u1EADp t\xEDnh n\u0103ng. Vui l\xF2ng li\xEAn h\u1EC7 v\u1EDBi qu\u1EA3n tr\u1ECB vi\xEAn \u0111\u1EC3 y\xEAu c\u1EA7u c\u1EA5p quy\u1EC1n.", { claims: claimListStr });
     } else {
-      message = translate.instant("Vui l\xF2ng \u0111\u0103ng nh\u1EADp \u0111\u1EC3 truy c\u1EADp t\xE0i nguy\xEAn n\xE0y");
+      message = translate.translate("Vui l\xF2ng \u0111\u0103ng nh\u1EADp \u0111\u1EC3 truy c\u1EADp t\xE0i nguy\xEAn n\xE0y");
     }
-    const loginLinkText = translate.instant("Click v\xE0o \u0111\xE2y \u0111\u1EC3 \u0111\u0103ng nh\u1EADp");
+    const loginLinkText = translate.translate("Click v\xE0o \u0111\xE2y \u0111\u1EC3 \u0111\u0103ng nh\u1EADp");
     const loginLink = `<a href="/auth/login" style="color: #1890ff; text-decoration: underline;">${loginLinkText}.</a>`;
     const htmlContent = `${message} ${loginLink}`;
     const template = templateService.getTemplate("html");
@@ -2638,7 +2634,7 @@ var authInterceptor = (req, next) => {
 var errorInterceptor = (req, next) => {
   const notification = inject(AppNotificationService);
   const router = inject(Router);
-  const translate = inject(TranslateService);
+  const translate = inject(TranslocoService);
   return next(req).pipe(catchError((error) => {
     var _a;
     if (error.status === 401) {
@@ -2646,7 +2642,7 @@ var errorInterceptor = (req, next) => {
       router.navigate(["/auth/login"]);
     }
     const message = ((_a = error.error) == null ? void 0 : _a.message) || error.message || "Unknown error";
-    notification.error(translate.instant("Th\xF4ng b\xE1o"), translate.instant(message));
+    notification.error(translate.translate("Th\xF4ng b\xE1o"), translate.translate(message));
     return throwError(() => error);
   }));
 };
@@ -2855,7 +2851,7 @@ function MainLayoutComponent_ng_container_8_ng_container_1_li_1_Template(rf, ctx
     \u0275\u0275template(1, MainLayoutComponent_ng_container_8_ng_container_1_li_1_span_1_Template, 1, 1, "span", 28);
     \u0275\u0275elementStart(2, "span")(3, "a", 29);
     \u0275\u0275text(4);
-    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -2884,7 +2880,7 @@ function MainLayoutComponent_ng_container_8_ng_container_2_li_1_ng_container_3_l
   if (rf & 1) {
     \u0275\u0275elementStart(0, "li", 27)(1, "a", 29);
     \u0275\u0275text(2);
-    \u0275\u0275pipe(3, "translate");
+    \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -2911,7 +2907,7 @@ function MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template(rf, ctx
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "li", 31);
-    \u0275\u0275pipe(1, "translate");
+    \u0275\u0275pipe(1, "transloco");
     \u0275\u0275twoWayListener("nzOpenChange", function MainLayoutComponent_ng_container_8_ng_container_2_li_1_Template_li_nzOpenChange_0_listener($event) {
       \u0275\u0275restoreView(_r3);
       const item_r2 = \u0275\u0275nextContext(2).$implicit;
@@ -2980,14 +2976,14 @@ function MainLayoutComponent_ng_container_29_Template(rf, ctx) {
     \u0275\u0275elementStart(6, "span", 37);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(8, "button", 38);
-    \u0275\u0275listener("click", function MainLayoutComponent_ng_container_29_Template_button_click_8_listener() {
+    \u0275\u0275elementStart(8, "tot-button", 38);
+    \u0275\u0275listener("click", function MainLayoutComponent_ng_container_29_Template_tot_button_click_8_listener() {
       \u0275\u0275restoreView(_r7);
       const ctx_r5 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r5.logout());
     });
     \u0275\u0275text(9);
-    \u0275\u0275pipe(10, "translate");
+    \u0275\u0275pipe(10, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275elementContainerEnd();
   }
@@ -3005,9 +3001,9 @@ function MainLayoutComponent_ng_container_29_Template(rf, ctx) {
 }
 function MainLayoutComponent_ng_template_31_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "button", 39);
+    \u0275\u0275elementStart(0, "tot-button", 39);
     \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -3019,7 +3015,7 @@ function MainLayoutComponent_nz_breadcrumb_35_nz_breadcrumb_item_4_Template(rf, 
   if (rf & 1) {
     \u0275\u0275elementStart(0, "nz-breadcrumb-item")(1, "a", 29);
     \u0275\u0275text(2);
-    \u0275\u0275pipe(3, "translate");
+    \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -3057,7 +3053,7 @@ var _MainLayoutComponent = class _MainLayoutComponent {
     this.sidebarBorderRight = "1px solid #303030";
     this.breadcrumbs = [];
     this.authService = inject(AuthService);
-    this.translate = inject(TranslateService);
+    this.translate = inject(TranslocoService);
     this.router = inject(Router);
     this.activatedRoute = inject(ActivatedRoute);
     this.menuService = inject(MenuService);
@@ -3067,9 +3063,9 @@ var _MainLayoutComponent = class _MainLayoutComponent {
     this.isResizing = false;
     this.startX = 0;
     this.startWidth = 0;
-    this.currentLang = this.translate.currentLang || localStorage.getItem("lang") || "vi";
-    this.translate.onLangChange.subscribe((event) => {
-      this.currentLang = event.lang;
+    this.currentLang = this.translate.getActiveLang() || localStorage.getItem("lang") || "vi";
+    this.translate.langChanges$.subscribe((lang) => {
+      this.currentLang = lang;
     });
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
       this.breadcrumbs = this.createBreadcrumbs(this.activatedRoute.root);
@@ -3113,7 +3109,7 @@ var _MainLayoutComponent = class _MainLayoutComponent {
     console.log("Sidebar collapsed:", this.isCollapsed);
   }
   switchLanguage(lang) {
-    this.translate.use(lang);
+    this.translate.setActiveLang(lang);
     this.currentLang = lang;
     localStorage.setItem("lang", lang);
   }
@@ -3159,7 +3155,7 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
       return ctx.onMouseUp();
     }, \u0275\u0275resolveDocument);
   }
-}, decls: 37, vars: 17, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], [4, "ngFor", "ngForOf"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "totClaimCheck"], [4, "ngIf"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "totClaimCheck"], ["nz-menu-item", "", "nzMatchRouter", ""], ["nz-icon", "", 3, "nzType", 4, "ngIf"], [3, "routerLink"], ["nz-submenu", "", 3, "nzTitle", "nzIcon", "nzOpen", "nzOpenChange", 4, "totClaimCheck"], ["nz-submenu", "", 3, "nzOpenChange", "nzTitle", "nzIcon", "nzOpen"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nz-button", "", "nzType", "link", 3, "click"], ["nz-button", "", "nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"]], template: function MainLayoutComponent_Template(rf, ctx) {
+}, decls: 37, vars: 17, consts: [["langMenu", "nzDropdownMenu"], ["loginBtn", ""], ["nzHasSider", "", 1, "app-layout"], ["nzCollapsible", "", 1, "menu-sidebar", 3, "nzCollapsedChange", "nzWidth", "nzCollapsedWidth", "nzCollapsed", "nzTrigger"], [1, "sidebar-logo"], ["routerLink", "/"], ["src", "assets/logo.png", "alt", "logo"], ["nz-menu", "", "nzTheme", "dark", "nzMode", "inline", 3, "nzInlineCollapsed"], [4, "ngFor", "ngForOf"], ["class", "resize-handle", 3, "mousedown", 4, "ngIf"], [1, "app-header"], [1, "header-left"], [1, "header-trigger", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "header-right"], [1, "lang-selector"], ["nz-dropdown", "", 3, "nzDropdownMenu"], ["nz-icon", "", "nzType", "global"], ["nz-icon", "", "nzType", "down"], ["nz-menu", ""], ["nz-menu-item", "", 3, "click"], [4, "ngIf", "ngIfElse"], [1, "inner-content", "animate-fade-in"], ["class", "app-breadcrumb", 4, "ngIf"], [4, "totClaimCheck"], [4, "ngIf"], ["nz-menu-item", "", "nzMatchRouter", "", 4, "totClaimCheck"], ["nz-menu-item", "", "nzMatchRouter", ""], ["nz-icon", "", 3, "nzType", 4, "ngIf"], [3, "routerLink"], ["nz-submenu", "", 3, "nzTitle", "nzIcon", "nzOpen", "nzOpenChange", 4, "totClaimCheck"], ["nz-submenu", "", 3, "nzOpenChange", "nzTitle", "nzIcon", "nzOpen"], [1, "resize-handle", 3, "mousedown"], [1, "user-info"], ["nzIcon", "user", 3, "nzSrc"], [1, "user-text"], [1, "username"], [1, "display-name"], ["nzType", "link", 3, "click"], ["nzType", "primary", "routerLink", "/auth/login"], [1, "app-breadcrumb"], ["nz-icon", "", "nzType", "home"]], template: function MainLayoutComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "nz-layout", 2)(1, "nz-sider", 3);
@@ -3235,6 +3231,7 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
     \u0275\u0275property("ngIf", ctx.breadcrumbs.length > 0);
   }
 }, dependencies: [
+  TotButtonComponent,
   CommonModule,
   NgForOf,
   NgIf,
@@ -3252,12 +3249,10 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   NzIconModule,
   NzIconDirective,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzAvatarModule,
   NzAvatarComponent,
-  TranslateModule,
+  TranslocoModule,
   NzDropDownModule,
   NzDropdownDirective,
   NzDropdownADirective,
@@ -3267,13 +3262,14 @@ _MainLayoutComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ t
   NzBreadCrumbItemComponent,
   TotClaimDirective,
   AsyncPipe,
-  TranslatePipe
+  TranslocoPipe
 ], styles: ['\n.app-layout[_ngcontent-%COMP%] {\n  height: 100vh;\n  overflow: hidden;\n}\n.menu-sidebar[_ngcontent-%COMP%] {\n  position: relative;\n  z-index: 10;\n  height: 100vh;\n  box-shadow: 2px 0 6px rgba(0, 21, 41, 0.35);\n  display: flex;\n  flex-direction: column;\n}\n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu[_ngcontent-%COMP%] {\n  flex: 1;\n  overflow-y: auto;\n  overflow-x: hidden;\n}\n.sidebar-logo[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding-left: 24px;\n  overflow: hidden;\n  line-height: 64px;\n  background: #001529;\n  transition: all 0.3s;\n}\n.sidebar-logo[_ngcontent-%COMP%]   img[_ngcontent-%COMP%] {\n  display: inline-block;\n  height: 32px;\n  vertical-align: middle;\n}\n.sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  display: inline-block;\n  margin: 0 0 0 12px;\n  color: #fff;\n  font-weight: 600;\n  font-size: 18px;\n  font-family:\n    Avenir,\n    "Helvetica Neue",\n    Arial,\n    Helvetica,\n    sans-serif;\n  vertical-align: middle;\n  transition: opacity 0.3s, width 0.3s;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  opacity: 0;\n  width: 0;\n  margin: 0;\n  overflow: hidden;\n  display: none;\n}\n.nz-header[_ngcontent-%COMP%] {\n  padding: 0;\n  width: 100%;\n  z-index: 2;\n}\n.app-header[_ngcontent-%COMP%] {\n  position: relative;\n  height: 64px;\n  padding: 0;\n  background: #fff;\n  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.header-left[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.header-trigger[_ngcontent-%COMP%] {\n  height: 64px;\n  padding: 0 24px;\n  font-size: 18px;\n  cursor: pointer;\n  transition: all 0.3s;\n}\n.header-links[_ngcontent-%COMP%] {\n  margin-left: 12px;\n  display: flex;\n  gap: 20px;\n}\n.nav-link[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  font-weight: 500;\n  transition: color 0.3s;\n}\n.nav-link[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.header-trigger[_ngcontent-%COMP%]:hover {\n  background: rgba(0, 0, 0, 0.025);\n}\n.header-right[_ngcontent-%COMP%] {\n  padding-right: 24px;\n  display: flex;\n  align-items: center;\n  gap: 16px;\n}\n.lang-selector[_ngcontent-%COMP%] {\n  margin-right: 8px;\n  cursor: pointer;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.lang-selector[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.user-info[_ngcontent-%COMP%] {\n  margin-right: 16px;\n  display: flex;\n  align-items: center;\n}\n.user-text[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  margin-left: 12px;\n  line-height: 1.2;\n}\n.username[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 14px;\n  color: rgba(0, 0, 0, 0.85);\n}\n.display-name[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: rgba(0, 0, 0, 0.45);\n}\nnz-content[_ngcontent-%COMP%] {\n  overflow-y: auto;\n  background: #f0f2f5;\n}\n.inner-content[_ngcontent-%COMP%] {\n  padding: 24px;\n  min-height: 100%;\n}\n.app-breadcrumb[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  padding: 0;\n  background: transparent;\n  box-shadow: none;\n  border-radius: 0;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  transition: color 0.3s;\n  font-size: 13px;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   a[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n.app-breadcrumb[_ngcontent-%COMP%]   nz-breadcrumb-item[_ngcontent-%COMP%]:last-child   a[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.85);\n  font-weight: 500;\n  pointer-events: none;\n}\n  .ant-breadcrumb {\n  line-height: 1.2 !important;\n  display: flex;\n  align-items: center;\n  flex-wrap: wrap;\n  font-size: 14px;\n}\n  .ant-breadcrumb-link, \n  .ant-breadcrumb-link > a {\n  display: inline-flex;\n  align-items: center;\n}\n  .ant-breadcrumb-separator {\n  margin: 0 4px !important;\n  color: rgba(0, 0, 0, 0.3) !important;\n  vertical-align: middle;\n}\n.resize-handle[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  right: 0;\n  bottom: 0;\n  width: 6px;\n  cursor: col-resize;\n  z-index: 100;\n  background: transparent;\n  transition: background 0.2s;\n}\n.resize-handle[_ngcontent-%COMP%]:hover {\n  background: rgba(24, 144, 255, 0.5);\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  display: none;\n}\n.menu-sidebar.ant-layout-sider-collapsed[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n}\n  .ant-menu-dark .ant-menu-submenu-title, \n  .ant-menu-dark .ant-menu-item, \n  .ant-menu-dark .ant-menu-item a {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title:hover, \n  .ant-menu-dark .ant-menu-item:hover, \n  .ant-menu-dark .ant-menu-item-active, \n  .ant-menu-dark .ant-menu-item:hover a, \n  .ant-menu-dark .ant-menu-item-active a {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-item-selected, \n  .ant-menu-dark .ant-menu-item-selected a {\n  color: #fff !important;\n}\n  .ant-menu-dark .ant-menu-submenu-title .ant-menu-submenu-arrow {\n  color: rgba(255, 255, 255, 0.65) !important;\n}\n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]), \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-item[_ngcontent-%COMP%]   a[_ngcontent-%COMP%], \n.menu-sidebar[_ngcontent-%COMP%]   .ant-menu-submenu-title[_ngcontent-%COMP%]   span[_ngcontent-%COMP%]:not([nz-icon]) {\n  color: inherit;\n}\n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .menu-sidebar[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%], \n.app-layout[_ngcontent-%COMP%]:has(.resize-handle:active)   .sidebar-logo[_ngcontent-%COMP%]   h1[_ngcontent-%COMP%] {\n  transition: none !important;\n}\n/*# sourceMappingURL=main-layout.component.css.map */'] });
 var MainLayoutComponent = _MainLayoutComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MainLayoutComponent, [{
     type: Component,
     args: [{ selector: "app-main-layout", standalone: true, imports: [
+      TotButtonComponent,
       CommonModule,
       RouterOutlet,
       RouterLink,
@@ -3282,7 +3278,7 @@ var MainLayoutComponent = _MainLayoutComponent;
       NzIconModule,
       NzButtonModule,
       NzAvatarModule,
-      TranslateModule,
+      TranslocoModule,
       NzDropDownModule,
       NzBreadCrumbModule,
       TotClaimDirective
@@ -3307,17 +3303,17 @@ var MainLayoutComponent = _MainLayoutComponent;
         <ng-container *ngIf="!item.children">
           <li nz-menu-item nzMatchRouter *totClaimCheck="item.claim || ''">
             <span nz-icon [nzType]="item.icon || ''" *ngIf="item.icon"></span>
-            <span><a [routerLink]="item.route">{{ item.label | translate }}</a></span>
+            <span><a [routerLink]="item.route">{{ item.label | transloco }}</a></span>
           </li>
         </ng-container>
 
         <!-- Submenu Item -->
         <ng-container *ngIf="item.children">
-          <li nz-submenu [nzTitle]="item.label | translate" [nzIcon]="item.icon || null" *totClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
+          <li nz-submenu [nzTitle]="item.label | transloco" [nzIcon]="item.icon || null" *totClaimCheck="item.claim || ''" [(nzOpen)]="item.open">
             <ul>
               <ng-container *ngFor="let child of item.children">
                 <li nz-menu-item nzMatchRouter *totClaimCheck="child.claim || ''">
-                  <a [routerLink]="child.route">{{ child.label | translate }}</a>
+                  <a [routerLink]="child.route">{{ child.label | transloco }}</a>
                 </li>
               </ng-container>
             </ul>
@@ -3335,9 +3331,9 @@ var MainLayoutComponent = _MainLayoutComponent;
               <span nz-icon [nzType]="isCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
           </span>
           <!-- <div class="header-links">
-            <a routerLink="/" class="nav-link">{{ 'Trang ch\u1EE7' | translate }}</a>
-            <a routerLink="/about" class="nav-link">{{ 'Gi\u1EDBi thi\u1EC7u' | translate }}</a>
-            <a routerLink="/contact" class="nav-link">{{ 'Li\xEAn h\u1EC7' | translate }}</a>
+            <a routerLink="/" class="nav-link">{{ 'Trang ch\u1EE7' | transloco }}</a>
+            <a routerLink="/about" class="nav-link">{{ 'Gi\u1EDBi thi\u1EC7u' | transloco }}</a>
+            <a routerLink="/contact" class="nav-link">{{ 'Li\xEAn h\u1EC7' | transloco }}</a>
           </div> -->
         </div>
         <div class="header-right">
@@ -3363,10 +3359,10 @@ var MainLayoutComponent = _MainLayoutComponent;
                 <span class="display-name">{{ user.name }}</span>
               </div>
             </span>
-            <button nz-button nzType="link" (click)="logout()">{{ '\u0110\u0103ng xu\u1EA5t' | translate }}</button>
+            <tot-button nzType="link" (click)="logout()">{{ '\u0110\u0103ng xu\u1EA5t' | transloco }}</tot-button>
           </ng-container>
           <ng-template #loginBtn>
-            <button nz-button nzType="primary" routerLink="/auth/login">{{ '\u0110\u0103ng nh\u1EADp' | translate }}</button>
+            <tot-button nzType="primary" routerLink="/auth/login">{{ '\u0110\u0103ng nh\u1EADp' | transloco }}</tot-button>
           </ng-template>
         </div>
       </div>
@@ -3380,7 +3376,7 @@ var MainLayoutComponent = _MainLayoutComponent;
             </a>
           </nz-breadcrumb-item>
           <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
-            <a [routerLink]="item.url">{{ item.label | translate }}</a>
+            <a [routerLink]="item.url">{{ item.label | transloco }}</a>
           </nz-breadcrumb-item>
         </nz-breadcrumb>
         <router-outlet *totClaimCheck=""></router-outlet>
@@ -3398,7 +3394,7 @@ var MainLayoutComponent = _MainLayoutComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 37 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 39 });
 })();
 
 // src/app/layouts/auth-layout/auth-layout.component.ts
@@ -3434,7 +3430,7 @@ function LoginComponent_div_8_Template(rf, ctx) {
     \u0275\u0275elementStart(3, "div", 26);
     \u0275\u0275element(4, "span", 27);
     \u0275\u0275text(5);
-    \u0275\u0275pipe(6, "translate");
+    \u0275\u0275pipe(6, "transloco");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -3449,10 +3445,10 @@ function LoginComponent_div_37_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 28);
     \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementStart(3, "a", 29);
     \u0275\u0275text(4);
-    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -3466,7 +3462,7 @@ function LoginComponent_ng_template_39_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 30);
     \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -3481,7 +3477,7 @@ var _LoginComponent = class _LoginComponent {
     this.router = inject(Router);
     this.route = inject(ActivatedRoute);
     this.notification = inject(AppNotificationService);
-    this.translate = inject(TranslateService);
+    this.translate = inject(TranslocoService);
     this.validateForm = this.fb.group({
       username: ["", [Validators.required]],
       password: ["", [Validators.required]],
@@ -3545,14 +3541,14 @@ var _LoginComponent = class _LoginComponent {
         if (this.handleRedirect())
           return;
         if (response.mustChangePassword) {
-          this.notification.warning(this.translate.instant("Y\xEAu c\u1EA7u \u0111\u1ED5i m\u1EADt kh\u1EA9u"), this.translate.instant("B\u1EA1n c\u1EA7n \u0111\u1ED5i m\u1EADt kh\u1EA9u m\u1EB7c \u0111\u1ECBnh tr\u01B0\u1EDBc khi ti\u1EBFp t\u1EE5c"));
+          this.notification.warning(this.translate.translate("Y\xEAu c\u1EA7u \u0111\u1ED5i m\u1EADt kh\u1EA9u"), this.translate.translate("B\u1EA1n c\u1EA7n \u0111\u1ED5i m\u1EADt kh\u1EA9u m\u1EB7c \u0111\u1ECBnh tr\u01B0\u1EDBc khi ti\u1EBFp t\u1EE5c"));
           this.router.navigate(["/modules/core-infra-auth/change-password"]);
         } else {
           this.router.navigate(["/"]);
         }
       } catch (e) {
         console.error(e);
-        this.notification.error(this.translate.instant("L\u1ED7i"), this.translate.instant(((_a = e.error) == null ? void 0 : _a.message) || "\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"));
+        this.notification.error(this.translate.translate("L\u1ED7i"), this.translate.translate(((_a = e.error) == null ? void 0 : _a.message) || "\u0110\u0103ng nh\u1EADp th\u1EA5t b\u1EA1i"));
       } finally {
         this.loading = false;
       }
@@ -3605,16 +3601,16 @@ var _LoginComponent = class _LoginComponent {
 _LoginComponent.\u0275fac = function LoginComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _LoginComponent)();
 };
-_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 50, vars: 41, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nz-button", "", "nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "nzLoading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "google", 3, "click"], ["nz-icon", "", "nzType", "google"], ["nz-button", "", "nzBlock", "", "type", "button", 1, "social-btn", "ms", 3, "click"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
+_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 50, vars: 43, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "loading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["type", "button", 1, "social-btn", "google", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "google"], ["type", "button", 1, "social-btn", "ms", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "h2");
     \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
+    \u0275\u0275pipe(4, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(5, "p");
     \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
+    \u0275\u0275pipe(7, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275template(8, LoginComponent_div_8_Template, 7, 4, "div", 3);
     \u0275\u0275elementEnd();
@@ -3625,28 +3621,28 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
       return \u0275\u0275resetView(ctx.submitForm());
     });
     \u0275\u0275elementStart(10, "nz-form-item")(11, "nz-form-control", 5);
-    \u0275\u0275pipe(12, "translate");
+    \u0275\u0275pipe(12, "transloco");
     \u0275\u0275elementStart(13, "nz-input-group", 6);
     \u0275\u0275element(14, "input", 7);
-    \u0275\u0275pipe(15, "translate");
+    \u0275\u0275pipe(15, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(16, "nz-form-item")(17, "nz-form-control", 5);
-    \u0275\u0275pipe(18, "translate");
+    \u0275\u0275pipe(18, "transloco");
     \u0275\u0275elementStart(19, "nz-input-group", 8);
     \u0275\u0275element(20, "input", 9);
-    \u0275\u0275pipe(21, "translate");
+    \u0275\u0275pipe(21, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(22, "div", 10)(23, "div", 11)(24, "label", 12)(25, "span");
     \u0275\u0275text(26);
-    \u0275\u0275pipe(27, "translate");
+    \u0275\u0275pipe(27, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(28, "div", 13)(29, "a", 14);
     \u0275\u0275text(30);
-    \u0275\u0275pipe(31, "translate");
+    \u0275\u0275pipe(31, "transloco");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(32, "button", 15)(33, "span");
+    \u0275\u0275elementStart(32, "tot-button", 15)(33, "span");
     \u0275\u0275text(34);
-    \u0275\u0275pipe(35, "translate");
+    \u0275\u0275pipe(35, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275element(36, "span", 16);
     \u0275\u0275elementEnd();
@@ -3654,63 +3650,68 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
     \u0275\u0275elementEnd();
     \u0275\u0275element(38, "nz-divider", 18);
     \u0275\u0275template(39, LoginComponent_ng_template_39_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(41, "div", 19)(42, "button", 20);
-    \u0275\u0275listener("click", function LoginComponent_Template_button_click_42_listener() {
+    \u0275\u0275elementStart(41, "div", 19)(42, "tot-button", 20);
+    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_42_listener() {
       return ctx.loginWithGoogle();
     });
     \u0275\u0275element(43, "span", 21);
     \u0275\u0275text(44);
-    \u0275\u0275pipe(45, "translate");
+    \u0275\u0275pipe(45, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(46, "button", 22);
-    \u0275\u0275listener("click", function LoginComponent_Template_button_click_46_listener() {
+    \u0275\u0275elementStart(46, "tot-button", 22);
+    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_46_listener() {
       return ctx.loginWithMS();
     });
     \u0275\u0275element(47, "span", 23);
     \u0275\u0275text(48);
-    \u0275\u0275pipe(49, "translate");
+    \u0275\u0275pipe(49, "transloco");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
     const dividerText_r3 = \u0275\u0275reference(40);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 19, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 21, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 21, ctx.ssoClientName ? "B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o" : "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 23, ctx.ssoClientName ? "B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o" : "Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng"));
     \u0275\u0275advance(2);
     \u0275\u0275property("ngIf", ctx.ssoClientName);
     \u0275\u0275advance();
     \u0275\u0275property("formGroup", ctx.validateForm);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(12, 23, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(12, 25, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(15, 25, "T\xEAn \u0111\u0103ng nh\u1EADp"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(15, 27, "T\xEAn \u0111\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(18, 27, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(18, 29, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(21, 29, "M\u1EADt kh\u1EA9u"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(21, 31, "M\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(27, 31, "Ghi nh\u1EDB t\xF4i"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(27, 33, "Ghi nh\u1EDB t\xF4i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(31, 33, "Qu\xEAn m\u1EADt kh\u1EA9u"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(31, 35, "Qu\xEAn m\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
+    \u0275\u0275property("nzType", "primary")("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(35, 35, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(35, 37, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
     \u0275\u0275property("ngIf", !ctx.ssoClientName);
     \u0275\u0275advance();
     \u0275\u0275property("nzText", dividerText_r3);
-    \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 37, "Google"), " ");
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 39, "Microsoft"), " ");
+    \u0275\u0275property("nzBlock", true);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 39, "Google"), " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzBlock", true);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 41, "Microsoft"), " ");
   }
 }, dependencies: [
+  TotButtonComponent,
   CommonModule,
   NgIf,
   ReactiveFormsModule,
@@ -3731,23 +3732,22 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
   NzInputDirective,
   NzInputGroupComponent,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzCheckboxModule,
   NzCheckboxComponent,
   NzDividerModule,
   NzDividerComponent,
   NzIconModule,
   NzIconDirective,
-  TranslateModule,
-  TranslatePipe
+  TranslocoModule,
+  TranslocoPipe
 ], styles: ["\n.login-container[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n}\n.login-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 32px;\n}\n.brand-logo[_ngcontent-%COMP%] {\n  width: 64px;\n  height: 64px;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff 0%,\n      #096dd9 100%);\n  color: white;\n  border-radius: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0 auto 16px;\n  font-size: 32px;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);\n}\n.login-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  font-size: 24px;\n  font-weight: 700;\n  margin-bottom: 8px;\n  color: #262626;\n}\n.login-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: #8c8c8c;\n  margin-bottom: 0;\n}\n.sso-badge[_ngcontent-%COMP%] {\n  margin-top: 16px;\n  padding: 12px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n  border: 1px solid rgba(24, 144, 255, 0.2);\n  background: rgba(24, 144, 255, 0.05);\n}\n.client-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-size: 16px;\n}\n.security-check[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #52c41a;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.premium-input[_ngcontent-%COMP%]     .ant-input-affix-wrapper {\n  padding: 10px 12px;\n  border-radius: 8px;\n  border: 1.5px solid #f0f0f0;\n  transition: all 0.3s;\n}\n.premium-input[_ngcontent-%COMP%]     .ant-input-affix-wrapper-focused {\n  border-color: #1890ff;\n  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);\n}\n.login-form-margin[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.login-btn[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 44px;\n  font-size: 16px;\n  font-weight: 600;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n}\n.register-link[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-top: 16px;\n  color: #8c8c8c;\n}\n.divider-text[_ngcontent-%COMP%] {\n  color: #bfbfbf;\n  font-size: 12px;\n  font-weight: 400;\n}\n.sso-social-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.social-btn[_ngcontent-%COMP%] {\n  height: 40px;\n  border-radius: 8px;\n  border: 1px solid #d9d9d9;\n  font-weight: 500;\n  transition: all 0.2s;\n}\n.social-btn[_ngcontent-%COMP%]:hover {\n  background: #fafafa;\n  border-color: #bfbfbf;\n}\n.social-btn.google[_ngcontent-%COMP%]   [nz-icon][_ngcontent-%COMP%] {\n  color: #db4437;\n}\n.social-btn.ms[_ngcontent-%COMP%]   [nz-icon][_ngcontent-%COMP%] {\n  color: #00a4ef;\n}\n/*# sourceMappingURL=login.component.css.map */"] });
 var LoginComponent = _LoginComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(LoginComponent, [{
     type: Component,
     args: [{ selector: "app-login", standalone: true, imports: [
+      TotButtonComponent,
       CommonModule,
       ReactiveFormsModule,
       RouterLink,
@@ -3757,37 +3757,37 @@ var LoginComponent = _LoginComponent;
       NzCheckboxModule,
       NzDividerModule,
       NzIconModule,
-      TranslateModule
+      TranslocoModule
     ], template: `<div class="login-container animate-fade-in">
   <div class="login-header">
     <!-- <div class="brand-logo">
       <span nz-icon nzType="cluster" nzTheme="outline"></span>
     </div> -->
-    <h2>{{ (ssoClientName ? '\u0110\u0103ng nh\u1EADp SSO' : '\u0110\u0103ng nh\u1EADp') | translate }}</h2>
-    <p>{{ (ssoClientName ? 'B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o' : 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng') | translate }}</p>
+    <h2>{{ (ssoClientName ? '\u0110\u0103ng nh\u1EADp SSO' : '\u0110\u0103ng nh\u1EADp') | transloco }}</h2>
+    <p>{{ (ssoClientName ? 'B\u1EA1n \u0111ang \u0111\u0103ng nh\u1EADp v\xE0o' : 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 truy c\u1EADp h\u1EC7 th\u1ED1ng') | transloco }}</p>
     
     <div *ngIf="ssoClientName" class="sso-badge glass-card">
       <span class="client-name">{{ ssoClientName }}</span>
       <div class="security-check">
         <span nz-icon nzType="safety-certificate" nzTheme="fill"></span>
-        {{ 'K\u1EBFt n\u1ED1i an to\xE0n' | translate }}
+        {{ 'K\u1EBFt n\u1ED1i an to\xE0n' | transloco }}
       </div>
     </div>
   </div>
 
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | transloco">
         <nz-input-group nzPrefixIcon="user" class="premium-input">
-          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | translate" />
+          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | transloco">
         <nz-input-group nzPrefixIcon="lock" class="premium-input">
-          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | translate" />
+          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
@@ -3795,43 +3795,43 @@ var LoginComponent = _LoginComponent;
     <div nz-row class="login-form-margin">
       <div nz-col [nzSpan]="12">
         <label nz-checkbox formControlName="remember">
-          <span>{{ 'Ghi nh\u1EDB t\xF4i' | translate }}</span>
+          <span>{{ 'Ghi nh\u1EDB t\xF4i' | transloco }}</span>
         </label>
       </div>
       <div nz-col [nzSpan]="12" class="text-right">
-        <a class="login-form-forgot">{{ 'Qu\xEAn m\u1EADt kh\u1EA9u' | translate }}</a>
+        <a class="login-form-forgot">{{ 'Qu\xEAn m\u1EADt kh\u1EA9u' | transloco }}</a>
       </div>
     </div>
 
-    <button nz-button nzHtmlType="submit" class="login-btn premium-button" [nzType]="'primary'" [nzLoading]="loading">
-      <span>{{ (ssoClientName ? 'Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp' : '\u0110\u0103ng nh\u1EADp') | translate }}</span>
+    <tot-button nzHtmlType="submit" class="login-btn premium-button" [nzType]="'primary'" [loading]="loading">
+      <span>{{ (ssoClientName ? 'Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp' : '\u0110\u0103ng nh\u1EADp') | transloco }}</span>
       <span nz-icon nzType="arrow-right"></span>
-    </button>
+    </tot-button>
     
     <div class="register-link" *ngIf="!ssoClientName">
-      {{ 'Ho\u1EB7c' | translate }} <a routerLink="/auth/signup">{{ '\u0110\u0103ng k\xFD ngay!' | translate }}</a>
+      {{ 'Ho\u1EB7c' | transloco }} <a routerLink="/auth/signup">{{ '\u0110\u0103ng k\xFD ngay!' | transloco }}</a>
     </div>
   </form>
 
   <nz-divider [nzText]="dividerText"></nz-divider>
   <ng-template #dividerText>
-    <span class="divider-text">{{ 'Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | translate }}</span>
+    <span class="divider-text">{{ 'Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | transloco }}</span>
   </ng-template>
 
   <div class="sso-social-buttons">
-    <button nz-button nzBlock type="button" class="social-btn google" (click)="loginWithGoogle()">
-      <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
-    </button>
-    <button nz-button nzBlock type="button" class="social-btn ms" (click)="loginWithMS()">
-      <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
-    </button>
+    <tot-button [nzBlock]="true" type="button" class="social-btn google" (click)="loginWithGoogle()">
+      <span nz-icon nzType="google"></span> {{ 'Google' | transloco }}
+    </tot-button>
+    <tot-button [nzBlock]="true" type="button" class="social-btn ms" (click)="loginWithMS()">
+      <span nz-icon nzType="windows"></span> {{ 'Microsoft' | transloco }}
+    </tot-button>
   </div>
 </div>
 `, styles: ["/* src/app/modules/auth/login/login.component.css */\n.login-container {\n  display: flex;\n  flex-direction: column;\n}\n.login-header {\n  text-align: center;\n  margin-bottom: 32px;\n}\n.brand-logo {\n  width: 64px;\n  height: 64px;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff 0%,\n      #096dd9 100%);\n  color: white;\n  border-radius: 16px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  margin: 0 auto 16px;\n  font-size: 32px;\n  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.3);\n}\n.login-header h2 {\n  font-size: 24px;\n  font-weight: 700;\n  margin-bottom: 8px;\n  color: #262626;\n}\n.login-header p {\n  color: #8c8c8c;\n  margin-bottom: 0;\n}\n.sso-badge {\n  margin-top: 16px;\n  padding: 12px;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  gap: 4px;\n  border: 1px solid rgba(24, 144, 255, 0.2);\n  background: rgba(24, 144, 255, 0.05);\n}\n.client-name {\n  font-weight: 600;\n  color: #1890ff;\n  font-size: 16px;\n}\n.security-check {\n  font-size: 12px;\n  color: #52c41a;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.premium-input ::ng-deep .ant-input-affix-wrapper {\n  padding: 10px 12px;\n  border-radius: 8px;\n  border: 1.5px solid #f0f0f0;\n  transition: all 0.3s;\n}\n.premium-input ::ng-deep .ant-input-affix-wrapper-focused {\n  border-color: #1890ff;\n  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);\n}\n.login-form-margin {\n  margin-bottom: 24px;\n}\n.login-btn {\n  width: 100%;\n  height: 44px;\n  font-size: 16px;\n  font-weight: 600;\n  border-radius: 8px;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 8px;\n}\n.register-link {\n  text-align: center;\n  margin-top: 16px;\n  color: #8c8c8c;\n}\n.divider-text {\n  color: #bfbfbf;\n  font-size: 12px;\n  font-weight: 400;\n}\n.sso-social-buttons {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.social-btn {\n  height: 40px;\n  border-radius: 8px;\n  border: 1px solid #d9d9d9;\n  font-weight: 500;\n  transition: all 0.2s;\n}\n.social-btn:hover {\n  background: #fafafa;\n  border-color: #bfbfbf;\n}\n.social-btn.google [nz-icon] {\n  color: #db4437;\n}\n.social-btn.ms [nz-icon] {\n  color: #00a4ef;\n}\n/*# sourceMappingURL=login.component.css.map */\n"] }]
   }], () => [], null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(LoginComponent, { className: "LoginComponent", filePath: "src/app/modules/auth/login/login.component.ts", lineNumber: 39 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(LoginComponent, { className: "LoginComponent", filePath: "src/app/modules/auth/login/login.component.ts", lineNumber: 41 });
 })();
 
 // src/app/modules/auth/signup/signup.component.ts
@@ -3841,7 +3841,7 @@ var _SignupComponent = class _SignupComponent {
     this.authService = inject(AuthService);
     this.router = inject(Router);
     this.notification = inject(AppNotificationService);
-    this.translate = inject(TranslateService);
+    this.translate = inject(TranslocoService);
     this.validateForm = this.fb.group({
       username: ["", [Validators.required]],
       email: ["", [Validators.required, Validators.email]],
@@ -3865,13 +3865,13 @@ var _SignupComponent = class _SignupComponent {
   async submitForm() {
     if (this.validateForm.valid) {
       if (this.validateForm.value.password !== this.validateForm.value.confirmPassword) {
-        this.notification.error(this.translate.instant("Th\u1EA5t b\u1EA1i"), this.translate.instant("M\u1EADt kh\u1EA9u kh\xF4ng kh\u1EDBp"));
+        this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("M\u1EADt kh\u1EA9u kh\xF4ng kh\u1EDBp"));
         return;
       }
       this.loading = true;
       try {
         await this.authService.signup(this.validateForm.value);
-        this.notification.success(this.translate.instant("Th\xE0nh c\xF4ng"), this.translate.instant("\u0110\u0103ng k\xFD th\xE0nh c\xF4ng. Vui l\xF2ng ki\u1EC3m tra email \u0111\u1EC3 x\xE1c nh\u1EADn v\xE0 sau \u0111\xF3 \u0111\u0103ng nh\u1EADp."));
+        this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("\u0110\u0103ng k\xFD th\xE0nh c\xF4ng. Vui l\xF2ng ki\u1EC3m tra email \u0111\u1EC3 x\xE1c nh\u1EADn v\xE0 sau \u0111\xF3 \u0111\u0103ng nh\u1EADp."));
         this.router.navigate(["/auth/login"]);
       } catch (e) {
         console.error(e);
@@ -3927,15 +3927,15 @@ var _SignupComponent = class _SignupComponent {
 _SignupComponent.\u0275fac = function SignupComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _SignupComponent)();
 };
-_SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 62, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "mail"], ["type", "email", "nz-input", "", "formControlName", "email", 3, "placeholder"], ["nzPrefixIcon", "idcard"], ["type", "text", "nz-input", "", "formControlName", "displayName", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["type", "password", "nz-input", "", "formControlName", "confirmPassword", 3, "placeholder"], ["nz-button", "", 1, "signup-form-button", 3, "nzType", "nzLoading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nz-button", "", "nzType", "default", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
+_SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 62, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "mail"], ["type", "email", "nz-input", "", "formControlName", "email", 3, "placeholder"], ["nzPrefixIcon", "idcard"], ["type", "text", "nz-input", "", "formControlName", "displayName", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["type", "password", "nz-input", "", "formControlName", "confirmPassword", 3, "placeholder"], [1, "signup-form-button", 3, "nzType", "loading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
     \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
+    \u0275\u0275pipe(4, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(5, "p");
     \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
+    \u0275\u0275pipe(7, "transloco");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(8, "form", 2);
     \u0275\u0275listener("ngSubmit", function SignupComponent_Template_form_ngSubmit_8_listener($event) {
@@ -3943,70 +3943,70 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
       return ctx.submitForm();
     });
     \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-control", 3);
-    \u0275\u0275pipe(11, "translate");
+    \u0275\u0275pipe(11, "transloco");
     \u0275\u0275elementStart(12, "nz-input-group", 4);
     \u0275\u0275element(13, "input", 5);
-    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275pipe(14, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 3);
-    \u0275\u0275pipe(17, "translate");
+    \u0275\u0275pipe(17, "transloco");
     \u0275\u0275elementStart(18, "nz-input-group", 6);
     \u0275\u0275element(19, "input", 7);
-    \u0275\u0275pipe(20, "translate");
+    \u0275\u0275pipe(20, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control", 3);
-    \u0275\u0275pipe(23, "translate");
+    \u0275\u0275pipe(23, "transloco");
     \u0275\u0275elementStart(24, "nz-input-group", 8);
     \u0275\u0275element(25, "input", 9);
-    \u0275\u0275pipe(26, "translate");
+    \u0275\u0275pipe(26, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(27, "nz-form-item")(28, "nz-form-control", 3);
-    \u0275\u0275pipe(29, "translate");
+    \u0275\u0275pipe(29, "transloco");
     \u0275\u0275elementStart(30, "nz-input-group", 10);
     \u0275\u0275element(31, "input", 11);
-    \u0275\u0275pipe(32, "translate");
+    \u0275\u0275pipe(32, "transloco");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(33, "nz-form-item")(34, "nz-form-control", 3);
-    \u0275\u0275pipe(35, "translate");
+    \u0275\u0275pipe(35, "transloco");
     \u0275\u0275elementStart(36, "nz-input-group", 10);
     \u0275\u0275element(37, "input", 12);
-    \u0275\u0275pipe(38, "translate");
+    \u0275\u0275pipe(38, "transloco");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(39, "button", 13);
+    \u0275\u0275elementStart(39, "tot-button", 13);
     \u0275\u0275text(40);
-    \u0275\u0275pipe(41, "translate");
+    \u0275\u0275pipe(41, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275text(42);
-    \u0275\u0275pipe(43, "translate");
+    \u0275\u0275pipe(43, "transloco");
     \u0275\u0275elementStart(44, "a", 14);
     \u0275\u0275text(45);
-    \u0275\u0275pipe(46, "translate");
+    \u0275\u0275pipe(46, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275element(47, "nz-divider", 15);
-    \u0275\u0275pipe(48, "translate");
-    \u0275\u0275elementStart(49, "div", 16)(50, "button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_button_click_50_listener() {
+    \u0275\u0275pipe(48, "transloco");
+    \u0275\u0275elementStart(49, "div", 16)(50, "tot-button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_50_listener() {
       return ctx.signupWithGoogle();
     });
     \u0275\u0275element(51, "span", 18);
     \u0275\u0275text(52);
-    \u0275\u0275pipe(53, "translate");
+    \u0275\u0275pipe(53, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_button_click_54_listener() {
+    \u0275\u0275elementStart(54, "tot-button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_54_listener() {
       return ctx.signupWithMS();
     });
     \u0275\u0275element(55, "span", 19);
     \u0275\u0275text(56);
-    \u0275\u0275pipe(57, "translate");
+    \u0275\u0275pipe(57, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(58, "button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_button_click_58_listener() {
+    \u0275\u0275elementStart(58, "tot-button", 17);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_58_listener() {
       return ctx.signupWithFacebook();
     });
     \u0275\u0275element(59, "span", 20);
     \u0275\u0275text(60);
-    \u0275\u0275pipe(61, "translate");
+    \u0275\u0275pipe(61, "transloco");
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -4037,7 +4037,7 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
     \u0275\u0275advance(3);
     \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(38, 47, "X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzType", "primary")("nzLoading", ctx.loading);
+    \u0275\u0275property("nzType", "primary")("loading", ctx.loading);
     \u0275\u0275advance();
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(41, 49, "\u0110\u0103ng k\xFD"));
     \u0275\u0275advance(2);
@@ -4047,19 +4047,20 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
     \u0275\u0275advance(2);
     \u0275\u0275property("nzText", \u0275\u0275pipeBind1(48, 55, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 57, "Google"), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 59, "Microsoft"), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 61, "Facebook"), " ");
   }
 }, dependencies: [
+  TotButtonComponent,
   CommonModule,
   ReactiveFormsModule,
   \u0275NgNoValidate,
@@ -4079,21 +4080,20 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
   NzInputDirective,
   NzInputGroupComponent,
   NzButtonModule,
-  NzButtonComponent,
   NzTransitionPatchDirective,
-  NzWaveDirective,
   NzIconModule,
   NzIconDirective,
   NzDividerModule,
   NzDividerComponent,
-  TranslateModule,
-  TranslatePipe
+  TranslocoModule,
+  TranslocoPipe
 ], styles: ["\n.signup-header[_ngcontent-%COMP%] {\n  text-align: center;\n  margin-bottom: 24px;\n}\n.signup-header[_ngcontent-%COMP%]   h2[_ngcontent-%COMP%] {\n  margin-bottom: 8px;\n  font-weight: 600;\n}\n.signup-header[_ngcontent-%COMP%]   p[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n}\n.signup-form-button[_ngcontent-%COMP%] {\n  width: 100%;\n  margin-bottom: 16px;\n}\n.sso-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.sso-buttons[_ngcontent-%COMP%]   button[_ngcontent-%COMP%] {\n  width: 100%;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n}\n/*# sourceMappingURL=signup.component.css.map */"] });
 var SignupComponent = _SignupComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(SignupComponent, [{
     type: Component,
     args: [{ selector: "app-signup", standalone: true, imports: [
+      TotButtonComponent,
       CommonModule,
       ReactiveFormsModule,
       RouterLink,
@@ -4102,69 +4102,69 @@ var SignupComponent = _SignupComponent;
       NzButtonModule,
       NzIconModule,
       NzDividerModule,
-      TranslateModule
+      TranslocoModule
     ], template: `<div class="signup-page">
   <div class="signup-header">
-    <h2>{{ '\u0110\u0103ng k\xFD' | translate }}</h2>
-    <p>{{ 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u' | translate }}</p>
+    <h2>{{ '\u0110\u0103ng k\xFD' | transloco }}</h2>
+    <p>{{ 'Nh\u1EADp th\xF4ng tin c\u1EE7a b\u1EA1n \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u' | transloco }}</p>
   </div>
 
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | transloco">
         <nz-input-group nzPrefixIcon="user">
-          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | translate" />
+          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp email!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp email!' | transloco">
         <nz-input-group nzPrefixIcon="mail">
-          <input type="email" nz-input formControlName="email" [placeholder]="'Email' | translate" />
+          <input type="email" nz-input formControlName="email" [placeholder]="'Email' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!' | transloco">
         <nz-input-group nzPrefixIcon="idcard">
-          <input type="text" nz-input formControlName="displayName" [placeholder]="'T\xEAn hi\u1EC3n th\u1ECB' | translate" />
+          <input type="text" nz-input formControlName="displayName" [placeholder]="'T\xEAn hi\u1EC3n th\u1ECB' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | transloco">
         <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | translate" />
+          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
-      <nz-form-control [nzErrorTip]="'Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!' | translate">
+      <nz-form-control [nzErrorTip]="'Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!' | transloco">
         <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | translate" />
+          <input type="password" nz-input formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco" />
         </nz-input-group>
       </nz-form-control>
     </nz-form-item>
 
-    <button nz-button class="signup-form-button" [nzType]="'primary'" [nzLoading]="loading">{{ '\u0110\u0103ng k\xFD' | translate }}</button>
-    {{ '\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?' | translate }} <a routerLink="/auth/login">{{ '\u0110\u0103ng nh\u1EADp' | translate }}</a>
+    <tot-button class="signup-form-button" [nzType]="'primary'" [loading]="loading">{{ '\u0110\u0103ng k\xFD' | transloco }}</tot-button>
+    {{ '\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?' | transloco }} <a routerLink="/auth/login">{{ '\u0110\u0103ng nh\u1EADp' | transloco }}</a>
 
-    <nz-divider [nzText]="('Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | translate)"></nz-divider>
+    <nz-divider [nzText]="('Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi' | transloco)"></nz-divider>
 
     <div class="sso-buttons">
-      <button nz-button nzType="default" (click)="signupWithGoogle()" [nzLoading]="loading">
-        <span nz-icon nzType="google"></span> {{ 'Google' | translate }}
-      </button>
-      <button nz-button nzType="default" (click)="signupWithMS()" [nzLoading]="loading">
-        <span nz-icon nzType="windows"></span> {{ 'Microsoft' | translate }}
-      </button>
-      <button nz-button nzType="default" (click)="signupWithFacebook()" [nzLoading]="loading">
-        <span nz-icon nzType="facebook"></span> {{ 'Facebook' | translate }}
-      </button>
+      <tot-button nzType="default" (click)="signupWithGoogle()" [loading]="loading">
+        <span nz-icon nzType="google"></span> {{ 'Google' | transloco }}
+      </tot-button>
+      <tot-button nzType="default" (click)="signupWithMS()" [loading]="loading">
+        <span nz-icon nzType="windows"></span> {{ 'Microsoft' | transloco }}
+      </tot-button>
+      <tot-button nzType="default" (click)="signupWithFacebook()" [loading]="loading">
+        <span nz-icon nzType="facebook"></span> {{ 'Facebook' | transloco }}
+      </tot-button>
     </div>
   </form>
 </div>
@@ -4172,7 +4172,7 @@ var SignupComponent = _SignupComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(SignupComponent, { className: "SignupComponent", filePath: "src/app/modules/auth/signup/signup.component.ts", lineNumber: 31 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(SignupComponent, { className: "SignupComponent", filePath: "src/app/modules/auth/signup/signup.component.ts", lineNumber: 33 });
 })();
 
 // src/app/app.routes.ts
@@ -4188,24 +4188,24 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-6HXALDWD.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-4ZSR27GI.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-6HXALDWD.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-4ZSR27GI.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-6HXALDWD.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-4ZSR27GI.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-6HXALDWD.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-4ZSR27GI.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           }
         ]
@@ -4216,17 +4216,17 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-JOSYT3I5.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-QKLVFG2B.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-JOSYT3I5.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-QKLVFG2B.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-JOSYT3I5.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-QKLVFG2B.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4237,36 +4237,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-LCSM2ZZY.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-SLJ5ERNU.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4274,7 +4274,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-43XR5YDV.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-IK4IO6O6.js").then((m) => m.FilesFolders)
       }
     ]
   },
@@ -4317,7 +4317,7 @@ var _AsyncAnimationRendererFactory = class _AsyncAnimationRendererFactory {
   loadImpl() {
     const loadFn = () => {
       var _a;
-      return (_a = this.moduleImpl) != null ? _a : import("./chunk-TBIG2EFK.js").then((m) => m);
+      return (_a = this.moduleImpl) != null ? _a : import("./chunk-ZU6JACPD.js").then((m) => m);
     };
     let moduleImplPromise;
     if (this.loadingSchedulerFn) {
@@ -4521,53 +4521,26 @@ function plural(val) {
 }
 var en_default = ["en", [["a", "p"], ["AM", "PM"]], [["AM", "PM"]], [["S", "M", "T", "W", "T", "F", "S"], ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]], u, [["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"], ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"], ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]], u, [["B", "A"], ["BC", "AD"], ["Before Christ", "Anno Domini"]], 0, [6, 0], ["M/d/yy", "MMM d, y", "MMMM d, y", "EEEE, MMMM d, y"], ["h:mm\u202Fa", "h:mm:ss\u202Fa", "h:mm:ss\u202Fa z", "h:mm:ss\u202Fa zzzz"], ["{1}, {0}", u, u, u], [".", ",", ";", "%", "+", "-", "E", "\xD7", "\u2030", "\u221E", "NaN", ":"], ["#,##0.###", "#,##0%", "\xA4#,##0.00", "#E0"], "USD", "$", "US Dollar", {}, "ltr", plural];
 
-// node_modules/@ngx-translate/http-loader/fesm2022/ngx-translate-http-loader.mjs
-var TRANSLATE_HTTP_LOADER_CONFIG = new InjectionToken("TRANSLATE_HTTP_LOADER_CONFIG");
-var _TranslateHttpLoader = class _TranslateHttpLoader {
+// src/app/transloco-loader.ts
+var _TranslocoHttpLoader = class _TranslocoHttpLoader {
   constructor() {
-    __publicField(this, "http");
-    __publicField(this, "config");
-    this.config = __spreadValues({
-      prefix: "/assets/i18n/",
-      suffix: ".json",
-      enforceLoading: false,
-      useHttpBackend: false
-    }, inject(TRANSLATE_HTTP_LOADER_CONFIG));
-    this.http = this.config.useHttpBackend ? new HttpClient(inject(HttpBackend)) : inject(HttpClient);
+    this.http = inject(HttpClient);
   }
-  /**
-   * Gets the translations from the server
-   */
   getTranslation(lang) {
-    const cacheBuster = this.config.enforceLoading ? `?enforceLoading=${Date.now()}` : "";
-    return this.http.get(`${this.config.prefix}${lang}${this.config.suffix}${cacheBuster}`);
+    return this.http.get(`./assets/lang/${lang}.json`);
   }
 };
-__publicField(_TranslateHttpLoader, "\u0275fac", function TranslateHttpLoader_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _TranslateHttpLoader)();
-});
-__publicField(_TranslateHttpLoader, "\u0275prov", /* @__PURE__ */ \u0275\u0275defineInjectable({
-  token: _TranslateHttpLoader,
-  factory: _TranslateHttpLoader.\u0275fac
-}));
-var TranslateHttpLoader = _TranslateHttpLoader;
+_TranslocoHttpLoader.\u0275fac = function TranslocoHttpLoader_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _TranslocoHttpLoader)();
+};
+_TranslocoHttpLoader.\u0275prov = /* @__PURE__ */ \u0275\u0275defineInjectable({ token: _TranslocoHttpLoader, factory: _TranslocoHttpLoader.\u0275fac, providedIn: "root" });
+var TranslocoHttpLoader = _TranslocoHttpLoader;
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TranslateHttpLoader, [{
-    type: Injectable
-  }], () => [], null);
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TranslocoHttpLoader, [{
+    type: Injectable,
+    args: [{ providedIn: "root" }]
+  }], null, null);
 })();
-function provideTranslateHttpLoader(config = {}) {
-  var _a;
-  const useBackend = (_a = config.useHttpBackend) != null ? _a : false;
-  return [{
-    provide: TRANSLATE_HTTP_LOADER_CONFIG,
-    useValue: config
-  }, {
-    provide: TranslateLoader,
-    useClass: TranslateHttpLoader,
-    deps: [useBackend ? HttpBackend : HttpClient, TRANSLATE_HTTP_LOADER_CONFIG]
-  }];
-}
 
 // src/environments/environment.ts
 var environment = {
@@ -4603,12 +4576,14 @@ var appConfig = {
     provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
     { provide: API_URL, useValue: environment.apiBaseUrl },
     { provide: FIREBASE_CONFIG, useValue: environment.firebase },
-    provideTranslateService({
-      fallbackLang: "vi"
-    }),
-    provideTranslateHttpLoader({
-      prefix: "./assets/i18n/",
-      suffix: ".json"
+    provideTransloco({
+      config: {
+        availableLangs: ["en", "vi"],
+        defaultLang: "vi",
+        reRenderOnLangChange: true,
+        prodMode: environment.production
+      },
+      loader: TranslocoHttpLoader
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),
@@ -4630,9 +4605,9 @@ function AppComponent_ng_template_1_Template(rf, ctx) {
 var _AppComponent = class _AppComponent {
   constructor() {
     this.templateService = inject(NotificationTemplateService);
-    this.translate = inject(TranslateService);
+    this.translate = inject(TranslocoService);
     const savedLang = localStorage.getItem("lang") || "vi";
-    this.translate.use(savedLang);
+    this.translate.setActiveLang(savedLang);
   }
   ngAfterViewInit() {
     this.templateService.registerTemplate("html", this.htmlNotificationTemplate);

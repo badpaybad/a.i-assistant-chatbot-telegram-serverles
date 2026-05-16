@@ -1,3 +1,4 @@
+import { TotButtonComponent } from '@tot/shared';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -11,13 +12,14 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
 import { AppNotificationService } from '@tot/core';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService, TrackingStep } from '../services/dashboard.service';
 
 @Component({
   selector: 'app-tracing',
   standalone: true,
   imports: [
+    TotButtonComponent,
     CommonModule,
     RouterLink,
     NzPageHeaderModule,
@@ -29,7 +31,7 @@ import { DashboardService, TrackingStep } from '../services/dashboard.service';
     NzIconModule,
     NzDividerModule,
     NzEmptyModule,
-    TranslateModule
+    TranslocoModule
   ],
   templateUrl: './tracing.component.html',
   styleUrls: ['./tracing.component.css']
@@ -38,7 +40,7 @@ export class TracingComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private dashboardService = inject(DashboardService);
   private notification = inject(AppNotificationService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
 
   trackingId = '';
   history: TrackingStep[] = [];
@@ -61,7 +63,7 @@ export class TracingComponent implements OnInit {
         this.loading = false;
       },
       error: () => {
-        this.notification.error(this.translate.instant('Thất bại'), this.translate.instant('Lỗi khi tải dữ liệu theo dõi'));
+        this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi tải dữ liệu theo dõi'));
         this.loading = false;
       }
     });

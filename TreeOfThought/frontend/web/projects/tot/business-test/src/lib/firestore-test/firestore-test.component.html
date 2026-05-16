@@ -16,9 +16,9 @@
           <textarea nz-input [(ngModel)]="payload" name="payload" [nzAutosize]="{ minRows: 3 }"></textarea>
         </nz-form-control>
       </nz-form-item>
-      <button nz-button nzType="primary" (click)="sendCommand()" [nzLoading]="loading">
+      <tot-button nzType="primary" (click)="sendCommand()" [loading]="loading">
         Send Command
-      </button>
+      </tot-button>
     </form>
   </nz-card>
 
@@ -26,7 +26,7 @@
     [data]="results" 
     [columns]="resultsColumns" 
     [title]="'Recent Results'" 
-    [pageSize]="5"
+    [pageSize]="10"
     [frontPagination]="true"
     style="margin-top: 24px;"
   ></tot-table>

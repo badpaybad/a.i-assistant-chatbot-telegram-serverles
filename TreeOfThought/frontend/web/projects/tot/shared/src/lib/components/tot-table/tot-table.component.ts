@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, TemplateRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@jsverse/transloco';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
@@ -22,13 +22,13 @@ export interface TotTableColumn {
 @Component({
   selector: 'tot-table',
   standalone: true,
-  imports: [CommonModule, NzTableModule, TranslateModule, NzTooltipModule, NzIconModule, NzCardModule],
+  imports: [CommonModule, NzTableModule, TranslocoModule, NzTooltipModule, NzIconModule, NzCardModule],
   template: `
     <ng-container *ngIf="title; else simpleTable">
       <nz-card [nzTitle]="titleTpl" [nzExtra]="extra">
         <ng-template #titleTpl>
           <ng-container *ngIf="isString(title); else templateTitle">
-            {{ title | translate }}
+            {{ title | transloco }}
           </ng-container>
           <ng-template #templateTitle>
             <ng-container *ngTemplateOutlet="$any(title)"></ng-container>
@@ -82,7 +82,7 @@ export interface TotTableColumn {
               [nzLeft]="col.left || false"
               [nzRight]="col.right || false"
             >
-              {{ col.title | translate }}
+              {{ col.title | transloco }}
             </th>
           </tr>
         </thead>

@@ -23,20 +23,20 @@
 
   <ng-template #statusTpl let-data>
     <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
-      {{ getStatus(data) | translate }}
+      {{ getStatus(data) | transloco }}
     </nz-tag>
   </ng-template>
 
   <ng-template #actionsTpl let-data>
     <div style="display: flex; gap: 8px;">
       <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
-        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
       </tot-button>
       <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
-        <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+        <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
       </tot-button>
       <tot-button nzSize="small" (click)="data.expand = !data.expand">
-        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | translate }}
+        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | transloco }}
       </tot-button>
     </div>
   </ng-template>
@@ -46,7 +46,7 @@
       <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
         <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
         <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.raw)">
-          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
+          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
         </tot-button>
       </div>
       <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(data.parsed) }}</pre>

@@ -23,8 +23,7 @@ import { FirebaseService } from '@tot/core';
     TotButtonComponent
   ],
   template: `
-    <button 
-      nz-button 
+    <tot-button 
       [nzType]="buttonType" 
       nz-popover
       [(nzPopoverVisible)]="visible"
@@ -36,7 +35,7 @@ import { FirebaseService } from '@tot/core';
     >
       <span nz-icon [nzType]="buttonIcon"></span>
       <span *ngIf="buttonText">{{ buttonText }}</span>
-    </button>
+    </tot-button>
 
     <ng-template #contentTemplate>
       <div class="popover-content">

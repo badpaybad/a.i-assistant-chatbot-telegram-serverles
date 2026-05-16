@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslocoModule } from '@jsverse/transloco';
 import { FormsModule } from '@angular/forms';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
 import { MessageListComponent } from '../message-list/message-list.component';
@@ -14,7 +14,7 @@ import { QueueInfo } from '../services/dashboard.service';
     CommonModule,
     NzRadioModule,
     FormsModule,
-    TranslateModule,
+    TranslocoModule,
     MessageListComponent
   ],
   template: `
@@ -37,7 +37,7 @@ import { QueueInfo } from '../services/dashboard.service';
       </div>
       <ng-template #noSubs>
         <div style="text-align: center; padding: 24px; color: #999;">
-          {{ 'Không có subscriber nào' | translate }}
+          {{ 'Không có subscriber nào' | transloco }}
         </div>
       </ng-template>
     </div>

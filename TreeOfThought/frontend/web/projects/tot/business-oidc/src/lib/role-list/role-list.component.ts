@@ -14,7 +14,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
 import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
 import { ViewChild, TemplateRef } from '@angular/core';
@@ -36,7 +36,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     NzInputModule,
     NzGridModule,
     NzCardModule,
-    TranslateModule,
+    TranslocoModule,
     TotAutocompleteComponent,
     TotButtonComponent,
     TotTableComponent
@@ -44,19 +44,19 @@ import { ViewChild, TemplateRef } from '@angular/core';
   template: `
     <ng-template #roleExtraTpl>
       <tot-button nzType="primary" (click)="showCreateModal()">
-        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | translate }}
+        <span nz-icon nzType="plus"></span> {{ 'Thêm mới' | transloco }}
       </tot-button>
     </ng-template>
 
-    <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | translate">
+    <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | transloco">
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="8">
-          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | translate" (keyup.enter)="loadRoles()" />
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | transloco" (keyup.enter)="loadRoles()" />
         </div>
         <div nz-col [nzSpan]="10">
           <tot-autocomplete
             apiUrl="/api/AuthManagement/claims"
-            [placeholder]="'Quyền' | translate"
+            [placeholder]="'Quyền' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
             (valueChange)="loadRoles()"
@@ -64,8 +64,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
         </div>
         <div nz-col [nzSpan]="6" class="search-actions">
           <nz-space>
-            <button *nzSpaceItem nz-button nzType="primary" (click)="loadRoles()">{{ 'Tìm kiếm' | translate }}</button>
-            <button *nzSpaceItem nz-button (click)="resetSearch()">{{ 'Đặt lại' | translate }}</button>
+            <tot-button *nzSpaceItem nzType="primary" (click)="loadRoles()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
       </div>
@@ -91,43 +91,43 @@ import { ViewChild, TemplateRef } from '@angular/core';
                 (nzOnClose)="removeClaim(data, claim)">
           {{ claim.name }}
         </nz-tag>
-        <button nz-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
+        <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
           <span nz-icon nzType="plus"></span>
-        </button>
+        </tot-button>
       </div>
     </ng-template>
 
     <ng-template #actionsTpl let-data>
       <div style="display: flex; gap: 4px; flex-direction: column;">
-        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | translate }}</tot-button>
+        <tot-button nzType="primary" nzSize="small" (click)="showEditModal(data)">{{ 'Sửa' | transloco }}</tot-button>
         <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
                 [disabled]="data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()"
-                (click)="deleteRole(data)">{{ 'Xóa' | translate }}</tot-button>
+                (click)="deleteRole(data)">{{ 'Xóa' | transloco }}</tot-button>
       </div>
     </ng-template>
 
     <!-- Modal Thêm/Sửa Vai trò -->
-    <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="(editingRole ? 'Sửa vai trò' : 'Thêm mới') | translate" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="saveRole()">
+    <nz-modal [(nzVisible)]="isRoleModalVisible" [nzTitle]="(editingRole ? 'Sửa vai trò' : 'Thêm mới') | transloco" (nzOnCancel)="isRoleModalVisible = false" (nzOnOk)="saveRole()">
       <ng-container *nzModalContent>
         <form nz-form nzLayout="vertical">
           <nz-form-item>
-            <nz-form-label nzRequired>{{ 'Vai trò' | translate }}</nz-form-label>
+            <nz-form-label nzRequired>{{ 'Vai trò' | transloco }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="roleForm.name" name="name" [placeholder]="'Vai trò' | translate" [disabled]="!!editingRole && editingRole.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()" />
+              <input nz-input [(ngModel)]="roleForm.name" name="name" [placeholder]="'Vai trò' | transloco" [disabled]="!!editingRole && editingRole.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label>{{ 'Mô tả' | translate }}</nz-form-label>
+            <nz-form-label>{{ 'Mô tả' | transloco }}</nz-form-label>
             <nz-form-control>
-              <input nz-input [(ngModel)]="roleForm.description" name="description" [placeholder]="'Mô tả' | translate" />
+              <input nz-input [(ngModel)]="roleForm.description" name="description" [placeholder]="'Mô tả' | transloco" />
             </nz-form-control>
           </nz-form-item>
           <nz-form-item>
-            <nz-form-label>{{ 'Quyền' | translate }}</nz-form-label>
+            <nz-form-label>{{ 'Quyền' | transloco }}</nz-form-label>
             <nz-form-control>
               <tot-autocomplete
                 apiUrl="/api/AuthManagement/claims"
-                [placeholder]="'Chọn quyền' | translate"
+                [placeholder]="'Chọn quyền' | transloco"
                 mode="multiple"
                 [(ngModel)]="roleForm.claimIds"
                 name="claimIds"
@@ -139,11 +139,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
     </nz-modal>
 
     <!-- Modal gán nhanh (Giữ nguyên) -->
-    <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | translate" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
+    <nz-modal [(nzVisible)]="isClaimModalVisible" [nzTitle]="'Quyền' | transloco" (nzOnCancel)="isClaimModalVisible = false" (nzOnOk)="assignClaim()">
       <ng-container *nzModalContent>
         <tot-autocomplete
           apiUrl="/api/AuthManagement/claims"
-          [placeholder]="'Vui lòng chọn' | translate"
+          [placeholder]="'Vui lòng chọn' | transloco"
           mode="multiple"
           [(ngModel)]="selectedClaimIds"
         ></tot-autocomplete>
@@ -173,7 +173,7 @@ export class RoleListComponent implements OnInit {
   private authMgmt = inject(AuthManagementService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
-  private translate = inject(TranslateService);
+  private translate = inject(TranslocoService);
   
   ADMIN_ROLE = ADMIN_ROLE;
   ADMIN_CLAIM = ADMIN_CLAIM;
@@ -226,7 +226,7 @@ export class RoleListComponent implements OnInit {
       }
       this.roles = await this.authMgmt.getRoles(params);
     } catch (e) {
-      this.message.error(this.translate.instant('Lỗi khi tải vai trò'));
+      this.message.error(this.translate.translate('Lỗi khi tải vai trò'));
     } finally {
       this.loading = false;
     }
@@ -262,7 +262,7 @@ export class RoleListComponent implements OnInit {
 
   async saveRole() {
     if (!this.roleForm.name) {
-      this.message.warning(this.translate.instant('Vui lòng nhập tên vai trò'));
+      this.message.warning(this.translate.translate('Vui lòng nhập tên vai trò'));
       return;
     }
 
@@ -271,19 +271,19 @@ export class RoleListComponent implements OnInit {
         await this.authMgmt.updateRole(this.editingRole.id, this.roleForm);
         // Batch assign claims after update
         await this.authMgmt.assignClaimsToRole(this.editingRole.id, this.roleForm.claimIds);
-        this.message.success(this.translate.instant('Cập nhật vai trò thành công'));
+        this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
       } else {
         const newRole: any = await this.authMgmt.createRole(this.roleForm);
         // Assign claims for new role
         if (newRole && newRole.id) {
           await this.authMgmt.assignClaimsToRole(newRole.id, this.roleForm.claimIds);
         }
-        this.message.success(this.translate.instant('Thêm vai trò thành công'));
+        this.message.success(this.translate.translate('Thêm vai trò thành công'));
       }
       this.isRoleModalVisible = false;
       this.loadRoles();
     } catch (e) {
-      this.message.error(this.translate.instant('Lỗi khi lưu vai trò'));
+      this.message.error(this.translate.translate('Lỗi khi lưu vai trò'));
     }
   }
 
@@ -296,25 +296,25 @@ export class RoleListComponent implements OnInit {
   async assignClaim() {
     try {
       await this.authMgmt.assignClaimsToRole(this.selectedRole.id, this.selectedClaimIds);
-      this.message.success(this.translate.instant('Cập nhật quyền thành công'));
+      this.message.success(this.translate.translate('Cập nhật quyền thành công'));
       this.isClaimModalVisible = false;
       this.loadRoles();
     } catch (e) {
-      this.message.error(this.translate.instant('Cập nhật quyền thất bại'));
+      this.message.error(this.translate.translate('Cập nhật quyền thất bại'));
     }
   }
 
   async removeClaim(role: any, claim: any) {
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận')}?`,
-      nzContent: `${this.translate.instant('Xóa')} ${claim.name} ${this.translate.instant('khỏi')} ${role.name}?`,
+      nzTitle: `${this.translate.translate('Xác nhận')}?`,
+      nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${role.name}?`,
       nzOnOk: async () => {
         try {
           await this.authMgmt.removeClaimFromRole(role.id, claim.id);
-          this.message.success(this.translate.instant('Xóa quyền thành công'));
+          this.message.success(this.translate.translate('Xóa quyền thành công'));
           this.loadRoles();
         } catch (e) {
-          this.message.error(this.translate.instant('Xóa quyền thất bại'));
+          this.message.error(this.translate.translate('Xóa quyền thất bại'));
         }
       }
     });
@@ -322,21 +322,21 @@ export class RoleListComponent implements OnInit {
 
   async deleteRole(role: any) {
     if (role.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()) {
-      this.message.warning(this.translate.instant(`Không thể xóa vai trò ${ADMIN_ROLE}`));
+      this.message.warning(this.translate.translate(`Không thể xóa vai trò ${ADMIN_ROLE}`));
       return;
     }
 
     this.modal.confirm({
-      nzTitle: `${this.translate.instant('Xác nhận xóa vai trò')} ${role.name}?`,
-      nzContent: this.translate.instant('Hành động này không thể hoàn tác'),
+      nzTitle: `${this.translate.translate('Xác nhận xóa vai trò')} ${role.name}?`,
+      nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
       nzOnOk: async () => {
         try {
           await this.authMgmt.deleteRole(role.id);
-          this.message.success(this.translate.instant('Xóa vai trò thành công'));
+          this.message.success(this.translate.translate('Xóa vai trò thành công'));
           this.loadRoles();
         } catch (e: any) {
-          this.message.error(e.error?.message || this.translate.instant('Xóa vai trò thất bại'));
+          this.message.error(e.error?.message || this.translate.translate('Xóa vai trò thất bại'));
         }
       }
     });
