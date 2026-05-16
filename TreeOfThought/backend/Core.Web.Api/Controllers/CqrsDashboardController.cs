@@ -5,10 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
 
+using Core.Infra.Auth.Attributes;
+
 namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/cqrs/dashboard")]
+[AppAuthorize("be.infra.dashboard")]
 public class CqrsDashboardController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

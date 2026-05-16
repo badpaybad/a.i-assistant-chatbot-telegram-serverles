@@ -7,10 +7,11 @@ import {
   CLAIMS_VERSION
 } from "./chunk-YV6RVVHB.js";
 import {
+  AppButtonComponent,
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
   NzDescriptionsModule
-} from "./chunk-RBSEN2PV.js";
+} from "./chunk-GJUXBUK6.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -171,13 +172,10 @@ import {
   distinctUntilChanged,
   effect,
   filter,
-  finalize,
   first,
   forwardRef,
-  from,
   inject,
   input,
-  isObservable,
   merge,
   of,
   setClassMetadata,
@@ -656,117 +654,8 @@ var AppSelectComponent = _AppSelectComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppSelectComponent, { className: "AppSelectComponent", filePath: "projects/tot/shared/src/lib/components/app-select/app-select.component.ts", lineNumber: 25 });
 })();
 
-// projects/tot/shared/src/lib/components/app-button/app-button.component.ts
-var _c0 = ["*"];
-var _AppButtonComponent = class _AppButtonComponent {
-  constructor() {
-    this.nzType = "default";
-    this.nzSize = "default";
-    this.nzDanger = false;
-    this.nzShape = null;
-    this.nzBlock = false;
-    this.nzGhost = false;
-    this.disabled = false;
-    this.isLoading = false;
-  }
-  set loading(value) {
-    var _a;
-    if (value === null || value === void 0) {
-      this.isLoading = false;
-      return;
-    }
-    if (typeof value === "boolean") {
-      this.isLoading = value;
-      return;
-    }
-    this.isLoading = true;
-    const obs$ = isObservable(value) ? value : from(value);
-    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
-    this.subscription = obs$.pipe(finalize(() => {
-      this.isLoading = false;
-    })).subscribe({
-      error: () => {
-        this.isLoading = false;
-      }
-    });
-  }
-  handleClick(event) {
-    if (this.isLoading) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-  }
-  ngOnDestroy() {
-    var _a;
-    (_a = this.subscription) == null ? void 0 : _a.unsubscribe();
-  }
-};
-_AppButtonComponent.\u0275fac = function AppButtonComponent_Factory(__ngFactoryType__) {
-  return new (__ngFactoryType__ || _AppButtonComponent)();
-};
-_AppButtonComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AppButtonComponent, selectors: [["app-button"]], inputs: { nzType: "nzType", nzSize: "nzSize", nzDanger: "nzDanger", nzShape: "nzShape", nzBlock: "nzBlock", nzGhost: "nzGhost", disabled: "disabled", loading: "loading" }, ngContentSelectors: _c0, decls: 2, vars: 8, consts: [["nz-button", "", 3, "click", "nzType", "nzSize", "nzDanger", "nzShape", "nzBlock", "nzGhost", "nzLoading", "disabled"]], template: function AppButtonComponent_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275projectionDef();
-    \u0275\u0275elementStart(0, "button", 0);
-    \u0275\u0275listener("click", function AppButtonComponent_Template_button_click_0_listener($event) {
-      return ctx.handleClick($event);
-    });
-    \u0275\u0275projection(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    \u0275\u0275property("nzType", ctx.nzType)("nzSize", ctx.nzSize)("nzDanger", ctx.nzDanger)("nzShape", ctx.nzShape)("nzBlock", ctx.nzBlock)("nzGhost", ctx.nzGhost)("nzLoading", ctx.isLoading)("disabled", ctx.disabled || ctx.isLoading);
-  }
-}, dependencies: [CommonModule, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule], encapsulation: 2 });
-var AppButtonComponent = _AppButtonComponent;
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AppButtonComponent, [{
-    type: Component,
-    args: [{
-      selector: "app-button",
-      standalone: true,
-      imports: [CommonModule, NzButtonModule, NzIconModule],
-      template: `
-    <button
-      nz-button
-      [nzType]="nzType"
-      [nzSize]="nzSize"
-      [nzDanger]="nzDanger"
-      [nzShape]="nzShape"
-      [nzBlock]="nzBlock"
-      [nzGhost]="nzGhost"
-      [nzLoading]="isLoading"
-      [disabled]="disabled || isLoading"
-      (click)="handleClick($event)"
-    >
-      <ng-content></ng-content>
-    </button>
-  `
-    }]
-  }], null, { nzType: [{
-    type: Input
-  }], nzSize: [{
-    type: Input
-  }], nzDanger: [{
-    type: Input
-  }], nzShape: [{
-    type: Input
-  }], nzBlock: [{
-    type: Input
-  }], nzGhost: [{
-    type: Input
-  }], disabled: [{
-    type: Input
-  }], loading: [{
-    type: Input
-  }] });
-})();
-(() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AppButtonComponent, { className: "AppButtonComponent", filePath: "projects/tot/shared/src/lib/components/app-button/app-button.component.ts", lineNumber: 29 });
-})();
-
 // projects/tot/business-oidc/src/lib/user-list/user-list.component.ts
-var _c02 = () => [16, 16];
+var _c0 = () => [16, 16];
 function UserListComponent_app_button_5_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
@@ -1652,7 +1541,7 @@ _UserListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275advance(6);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 49, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(91, _c02));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(91, _c0));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance();
@@ -2046,7 +1935,7 @@ var UserListComponent = _UserListComponent;
 })();
 
 // projects/tot/business-oidc/src/lib/role-list/role-list.component.ts
-var _c03 = () => [16, 16];
+var _c02 = () => [16, 16];
 function RoleListComponent_button_19_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
@@ -2514,7 +2403,7 @@ _RoleListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275advance(2);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 26, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(44, _c03));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(44, _c02));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 8);
     \u0275\u0275advance();
@@ -3445,7 +3334,7 @@ var AclListComponent = _AclListComponent;
 })();
 
 // projects/tot/business-oidc/src/lib/claim-sync/claim-sync.component.ts
-var _c04 = () => [16, 16];
+var _c03 = () => [16, 16];
 function ClaimSyncComponent_button_18_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
@@ -3781,7 +3670,7 @@ _ClaimSyncComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance(2);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(9, 28, "T\xECm ki\u1EBFm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(46, _c04));
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(46, _c03));
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 10);
     \u0275\u0275advance();
@@ -4240,7 +4129,7 @@ function NzTabAddButtonComponent_ng_container_0_Template(rf, ctx) {
     \u0275\u0275property("nzType", icon_r1);
   }
 }
-var _c05 = ["nz-tab-body", ""];
+var _c04 = ["nz-tab-body", ""];
 function NzTabBodyComponent_ng_template_0_Template(rf, ctx) {
 }
 function NzTabCloseButtonComponent_ng_container_0_Template(rf, ctx) {
@@ -4784,7 +4673,7 @@ __publicField(_NzTabBodyComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defi
     animated: [1, "animated"]
   },
   exportAs: ["nzTabBody"],
-  attrs: _c05,
+  attrs: _c04,
   decls: 1,
   vars: 1,
   consts: [[3, "ngTemplateOutlet"]],
@@ -7422,4 +7311,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-PFGDMLDH.js.map
+//# sourceMappingURL=chunk-QR4C23RV.js.map

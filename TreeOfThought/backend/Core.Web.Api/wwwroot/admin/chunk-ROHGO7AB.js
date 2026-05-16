@@ -4,8 +4,9 @@ import {
   NzPageHeaderModule
 } from "./chunk-GJLFPFAM.js";
 import {
+  AppButtonComponent,
   NzDescriptionsModule
-} from "./chunk-RBSEN2PV.js";
+} from "./chunk-GJUXBUK6.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -3215,11 +3216,11 @@ var DashboardService = _DashboardService;
 
 // projects/tot/business-dashboard/src/lib/message-list/message-list.component.ts
 var _c04 = () => ({ x: "1000px" });
-function MessageListComponent_ng_container_18_button_15_Template(rf, ctx) {
+function MessageListComponent_ng_container_18_app_button_15_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 24);
-    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_button_15_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 24);
+    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_app_button_15_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r3);
       const item_r2 = \u0275\u0275nextContext().$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
@@ -3235,11 +3236,11 @@ function MessageListComponent_ng_container_18_button_15_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "G\u1EEDi l\u1EA1i"), " ");
   }
 }
-function MessageListComponent_ng_container_18_button_16_Template(rf, ctx) {
+function MessageListComponent_ng_container_18_app_button_16_Template(rf, ctx) {
   if (rf & 1) {
     const _r5 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 26);
-    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_button_16_Template_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "app-button", 26);
+    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_app_button_16_Template_app_button_click_0_listener() {
       \u0275\u0275restoreView(_r5);
       const item_r2 = \u0275\u0275nextContext().$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
@@ -3251,8 +3252,9 @@ function MessageListComponent_ng_container_18_button_16_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
+    \u0275\u0275property("nzDanger", true);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "X\xF3a"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 2, "X\xF3a"), " ");
   }
 }
 function MessageListComponent_ng_container_18_div_32_Template(rf, ctx) {
@@ -3296,9 +3298,9 @@ function MessageListComponent_ng_container_18_Template(rf, ctx) {
     \u0275\u0275pipe(12, "translate");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(13, "td", 10)(14, "div", 11);
-    \u0275\u0275template(15, MessageListComponent_ng_container_18_button_15_Template, 4, 3, "button", 12)(16, MessageListComponent_ng_container_18_button_16_Template, 4, 3, "button", 13);
-    \u0275\u0275elementStart(17, "button", 14);
-    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_Template_button_click_17_listener() {
+    \u0275\u0275template(15, MessageListComponent_ng_container_18_app_button_15_Template, 4, 3, "app-button", 12)(16, MessageListComponent_ng_container_18_app_button_16_Template, 4, 4, "app-button", 13);
+    \u0275\u0275elementStart(17, "app-button", 14);
+    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_Template_app_button_click_17_listener() {
       const item_r2 = \u0275\u0275restoreView(_r1).$implicit;
       return \u0275\u0275resetView(item_r2.expand = !item_r2.expand);
     });
@@ -3309,8 +3311,8 @@ function MessageListComponent_ng_container_18_Template(rf, ctx) {
     \u0275\u0275elementStart(21, "tr", 16)(22, "div", 17)(23, "div", 18)(24, "span", 19);
     \u0275\u0275text(25, "JSON Content:");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(26, "button", 20);
-    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_Template_button_click_26_listener() {
+    \u0275\u0275elementStart(26, "app-button", 20);
+    \u0275\u0275listener("click", function MessageListComponent_ng_container_18_Template_app_button_click_26_listener() {
       const item_r2 = \u0275\u0275restoreView(_r1).$implicit;
       const ctx_r3 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r3.copyToClipboard(item_r2.raw));
@@ -3464,7 +3466,7 @@ var _MessageListComponent = class _MessageListComponent {
 _MessageListComponent.\u0275fac = function MessageListComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _MessageListComponent)();
 };
-_MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], inputs: { inputQueueName: "inputQueueName" }, decls: 19, vars: 21, consts: [["msgTable", ""], [1, "message-list-container"], [3, "nzPageIndexChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzScroll"], ["nzWidth", "180px", "nzLeft", "0px"], ["nzWidth", "120px"], ["nzWidth", "200px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [1, "msg-preview", 3, "click"], [3, "nzColor"], ["nzRight", "0px"], [2, "display", "flex", "gap", "8px"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click", 4, "ngIf"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "nzExpand"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nz-button", "", "nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
+_MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], inputs: { inputQueueName: "inputQueueName" }, decls: 19, vars: 21, consts: [["msgTable", ""], [1, "message-list-container"], [3, "nzPageIndexChange", "nzData", "nzLoading", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzScroll"], ["nzWidth", "180px", "nzLeft", "0px"], ["nzWidth", "120px"], ["nzWidth", "200px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [1, "msg-preview", 3, "click"], [3, "nzColor"], ["nzRight", "0px"], [2, "display", "flex", "gap", "8px"], ["nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nzSize", "small", 3, "nzDanger", "click", 4, "ngIf"], ["nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "nzExpand"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "delete"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 1)(1, "nz-table", 2, 0);
     \u0275\u0275listener("nzPageIndexChange", function MessageListComponent_Template_nz_table_nzPageIndexChange_1_listener($event) {
@@ -3505,7 +3507,32 @@ _MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
     \u0275\u0275advance(3);
     \u0275\u0275property("ngForOf", msgTable_r6.data);
   }
-}, dependencies: [CommonModule, NgForOf, NgIf, NzTableModule, NzTableComponent, NzTableCellDirective, NzThMeasureDirective, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellFixedDirective, NzTrExpandDirective, NzTableFixedRowComponent, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzIconModule, NzIconDirective, NzTagModule, NzTagComponent, TranslateModule, SlicePipe, DatePipe, TranslatePipe], styles: ["\n.message-list-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.msg-cell[_ngcontent-%COMP%] {\n  font-family: monospace;\n  color: #555;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n/*# sourceMappingURL=message-list.component.css.map */", "\n.msg-preview[_ngcontent-%COMP%] {\n  cursor: pointer;\n  font-family: monospace;\n  font-size: 12px;\n  color: #999;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 500px;\n}\n.msg-preview[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n/*# sourceMappingURL=message-list.component.css.map */"] });
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  NzTableModule,
+  NzTableComponent,
+  NzTableCellDirective,
+  NzThMeasureDirective,
+  NzTheadComponent,
+  NzTbodyComponent,
+  NzTrDirective,
+  NzCellFixedDirective,
+  NzTrExpandDirective,
+  NzTableFixedRowComponent,
+  NzButtonModule,
+  NzTransitionPatchDirective,
+  NzIconModule,
+  NzIconDirective,
+  NzTagModule,
+  NzTagComponent,
+  TranslateModule,
+  AppButtonComponent,
+  SlicePipe,
+  DatePipe,
+  TranslatePipe
+], styles: ["\n.message-list-content[_ngcontent-%COMP%] {\n  padding: 24px;\n}\n.msg-cell[_ngcontent-%COMP%] {\n  font-family: monospace;\n  color: #555;\n}\n.no-data[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n/*# sourceMappingURL=message-list.component.css.map */", "\n.msg-preview[_ngcontent-%COMP%] {\n  cursor: pointer;\n  font-family: monospace;\n  font-size: 12px;\n  color: #999;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 500px;\n}\n.msg-preview[_ngcontent-%COMP%]:hover {\n  color: #1890ff;\n}\n/*# sourceMappingURL=message-list.component.css.map */"] });
 var MessageListComponent = _MessageListComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(MessageListComponent, [{
@@ -3516,7 +3543,8 @@ var MessageListComponent = _MessageListComponent;
       NzButtonModule,
       NzIconModule,
       NzTagModule,
-      TranslateModule
+      TranslateModule,
+      AppButtonComponent
     ], template: `<div class="message-list-container">
   <nz-table #msgTable [nzData]="messages" [nzLoading]="loading" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex" [nzPageSize]="pageSize" (nzPageIndexChange)="onPageIndexChange($event)" [nzScroll]="{ x: '1000px' }">
     <thead>
@@ -3543,15 +3571,15 @@ var MessageListComponent = _MessageListComponent;
           </td>
           <td nzRight="0px">
             <div style="display: flex; gap: 8px;">
-              <button *ngIf="queueName.endsWith(':dead')" nz-button nzType="primary" nzSize="small" (click)="resend(item)">
+              <app-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(item)">
                 <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | translate }}
-              </button>
-              <button *ngIf="queueName.endsWith(':dead')" nz-button nzDanger nzSize="small" (click)="delete(item)">
+              </app-button>
+              <app-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(item)">
                 <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | translate }}
-              </button>
-              <button nz-button nzSize="small" (click)="item.expand = !item.expand">
+              </app-button>
+              <app-button nzSize="small" (click)="item.expand = !item.expand">
                 <i nz-icon [nzType]="item.expand ? 'up' : 'down'"></i> {{ 'Chi ti\u1EBFt' | translate }}
-              </button>
+              </app-button>
             </div>
           </td>
         </tr>
@@ -3559,9 +3587,9 @@ var MessageListComponent = _MessageListComponent;
           <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
-              <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
+              <app-button nzType="text" nzSize="small" (click)="copyToClipboard(item.raw)">
                 <i nz-icon nzType="copy"></i> {{ 'Sao ch\xE9p' | translate }}
-              </button>
+              </app-button>
             </div>
             <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(item.parsed) }}</pre>
             
@@ -3598,7 +3626,7 @@ var MessageListComponent = _MessageListComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageListComponent, { className: "MessageListComponent", filePath: "projects/tot/business-dashboard/src/lib/message-list/message-list.component.ts", lineNumber: 27 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MessageListComponent, { className: "MessageListComponent", filePath: "projects/tot/business-dashboard/src/lib/message-list/message-list.component.ts", lineNumber: 29 });
 })();
 
 // projects/tot/business-dashboard/src/lib/topic-detail/topic-detail.component.ts
@@ -3833,7 +3861,7 @@ var _CqrsTestComponent = class _CqrsTestComponent {
 _CqrsTestComponent.\u0275fac = function CqrsTestComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _CqrsTestComponent)();
 };
-_CqrsTestComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _CqrsTestComponent, selectors: [["app-cqrs-test"]], decls: 36, vars: 39, consts: [[2, "padding", "24px"], [2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], [3, "nzTitle"], [2, "margin-bottom", "16px"], ["nz-input", "", 3, "ngModelChange", "ngModel", "nzAutosize"], ["nz-button", "", "nzType", "primary", "nzBlock", "", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "rocket"], ["nz-icon", "", "nzType", "notification"], ["style", "margin-top: 24px;", 4, "ngIf"], [2, "margin-top", "24px"]], template: function CqrsTestComponent_Template(rf, ctx) {
+_CqrsTestComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _CqrsTestComponent, selectors: [["app-cqrs-test"]], decls: 36, vars: 41, consts: [[2, "padding", "24px"], [2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], [3, "nzTitle"], [2, "margin-bottom", "16px"], ["nz-input", "", 3, "ngModelChange", "ngModel", "nzAutosize"], ["nzType", "primary", 3, "click", "loading", "nzBlock"], ["nz-icon", "", "nzType", "rocket"], ["nz-icon", "", "nzType", "notification"], ["style", "margin-top: 24px;", 4, "ngIf"], [2, "margin-top", "24px"]], template: function CqrsTestComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "h2", 1);
     \u0275\u0275text(2);
@@ -3855,8 +3883,8 @@ _CqrsTestComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
       return $event;
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(16, "button", 7);
-    \u0275\u0275listener("click", function CqrsTestComponent_Template_button_click_16_listener() {
+    \u0275\u0275elementStart(16, "app-button", 7);
+    \u0275\u0275listener("click", function CqrsTestComponent_Template_app_button_click_16_listener() {
       return ctx.sendTestCommand();
     });
     \u0275\u0275element(17, "span", 8);
@@ -3879,8 +3907,8 @@ _CqrsTestComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
       return $event;
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(31, "button", 7);
-    \u0275\u0275listener("click", function CqrsTestComponent_Template_button_click_31_listener() {
+    \u0275\u0275elementStart(31, "app-button", 7);
+    \u0275\u0275listener("click", function CqrsTestComponent_Template_app_button_click_31_listener() {
       return ctx.sendTestEvent();
     });
     \u0275\u0275element(32, "span", 9);
@@ -3892,43 +3920,65 @@ _CqrsTestComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
   }
   if (rf & 2) {
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 19, "Ki\u1EC3m th\u1EED CQRS"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 21, "Ki\u1EC3m th\u1EED CQRS"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzGutter", 24);
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(7, 21, "G\u1EEDi SampleCommand"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(7, 23, "G\u1EEDi SampleCommand"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 23, "Command n\xE0y s\u1EBD \u0111\u01B0\u1EE3c Enqueue v\xE0o queue sample.command"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 25, "Command n\xE0y s\u1EBD \u0111\u01B0\u1EE3c Enqueue v\xE0o queue sample.command"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(14, 25, "Payload d\u1EEF li\u1EC7u"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(14, 27, "Payload d\u1EEF li\u1EC7u"));
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx.commandPayload);
-    \u0275\u0275property("nzAutosize", \u0275\u0275pureFunction0(37, _c05));
+    \u0275\u0275property("nzAutosize", \u0275\u0275pureFunction0(39, _c05));
     \u0275\u0275advance();
-    \u0275\u0275property("nzLoading", ctx.loadingCommand);
+    \u0275\u0275property("loading", ctx.loadingCommand)("nzBlock", true);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(19, 27, "G\u1EEDi Command"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(19, 29, "G\u1EEDi Command"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(22, 29, "G\u1EEDi SampleEvent"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(22, 31, "G\u1EEDi SampleEvent"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(25, 31, "S\u1EF1 ki\u1EC7n n\xE0y s\u1EBD \u0111\u01B0\u1EE3c Publish v\xE0o topic sample.event"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(25, 33, "S\u1EF1 ki\u1EC7n n\xE0y s\u1EBD \u0111\u01B0\u1EE3c Publish v\xE0o topic sample.event"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 33, "N\u1ED9i dung s\u1EF1 ki\u1EC7n"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 35, "N\u1ED9i dung s\u1EF1 ki\u1EC7n"));
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx.eventData);
-    \u0275\u0275property("nzAutosize", \u0275\u0275pureFunction0(38, _c05));
+    \u0275\u0275property("nzAutosize", \u0275\u0275pureFunction0(40, _c05));
     \u0275\u0275advance();
-    \u0275\u0275property("nzLoading", ctx.loadingEvent);
+    \u0275\u0275property("loading", ctx.loadingEvent)("nzBlock", true);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(34, 35, "G\u1EEDi Event"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(34, 37, "G\u1EEDi Event"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("ngIf", ctx.lastTrackingId);
   }
-}, dependencies: [CommonModule, NgIf, FormsModule, DefaultValueAccessor, NgControlStatus, NgModel, NzCardModule, NzCardComponent, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzInputModule, NzInputDirective, NzAutosizeDirective, NzGridModule, NzColDirective, NzRowDirective, NzIconModule, NzIconDirective, TranslateModule, TranslatePipe], styles: ["\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\nlabel[_ngcontent-%COMP%] {\n  display: block;\n  margin-bottom: 8px;\n  font-weight: 500;\n}\n/*# sourceMappingURL=cqrs-test.component.css.map */"] });
+}, dependencies: [
+  CommonModule,
+  NgIf,
+  FormsModule,
+  DefaultValueAccessor,
+  NgControlStatus,
+  NgModel,
+  NzCardModule,
+  NzCardComponent,
+  NzButtonModule,
+  NzTransitionPatchDirective,
+  NzInputModule,
+  NzInputDirective,
+  NzAutosizeDirective,
+  NzGridModule,
+  NzColDirective,
+  NzRowDirective,
+  NzIconModule,
+  NzIconDirective,
+  TranslateModule,
+  AppButtonComponent,
+  TranslatePipe
+], styles: ["\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\nlabel[_ngcontent-%COMP%] {\n  display: block;\n  margin-bottom: 8px;\n  font-weight: 500;\n}\n/*# sourceMappingURL=cqrs-test.component.css.map */"] });
 var CqrsTestComponent = _CqrsTestComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(CqrsTestComponent, [{
@@ -3941,7 +3991,8 @@ var CqrsTestComponent = _CqrsTestComponent;
       NzInputModule,
       NzGridModule,
       NzIconModule,
-      TranslateModule
+      TranslateModule,
+      AppButtonComponent
     ], template: `
     <div style="padding: 24px;">
       <h2 style="margin-bottom: 24px;">{{ 'Ki\u1EC3m th\u1EED CQRS' | translate }}</h2>
@@ -3954,9 +4005,9 @@ var CqrsTestComponent = _CqrsTestComponent;
               <label>{{ 'Payload d\u1EEF li\u1EC7u' | translate }}</label>
               <textarea nz-input [(ngModel)]="commandPayload" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
-            <button nz-button nzType="primary" [nzLoading]="loadingCommand" (click)="sendTestCommand()" nzBlock>
+            <app-button nzType="primary" [loading]="loadingCommand" (click)="sendTestCommand()" [nzBlock]="true">
               <span nz-icon nzType="rocket"></span> {{ 'G\u1EEDi Command' | translate }}
-            </button>
+            </app-button>
           </nz-card>
         </div>
         
@@ -3967,9 +4018,9 @@ var CqrsTestComponent = _CqrsTestComponent;
               <label>{{ 'N\u1ED9i dung s\u1EF1 ki\u1EC7n' | translate }}</label>
               <textarea nz-input [(ngModel)]="eventData" [nzAutosize]="{ minRows: 3, maxRows: 6 }"></textarea>
             </div>
-            <button nz-button nzType="primary" [nzLoading]="loadingEvent" (click)="sendTestEvent()" nzBlock>
+            <app-button nzType="primary" [loading]="loadingEvent" (click)="sendTestEvent()" [nzBlock]="true">
               <span nz-icon nzType="notification"></span> {{ 'G\u1EEDi Event' | translate }}
-            </button>
+            </app-button>
           </nz-card>
         </div>
       </div>
@@ -3985,7 +4036,7 @@ var CqrsTestComponent = _CqrsTestComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(CqrsTestComponent, { className: "CqrsTestComponent", filePath: "projects/tot/business-dashboard/src/lib/cqrs-test/cqrs-test.component.ts", lineNumber: 79 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(CqrsTestComponent, { className: "CqrsTestComponent", filePath: "projects/tot/business-dashboard/src/lib/cqrs-test/cqrs-test.component.ts", lineNumber: 81 });
 })();
 
 // projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts
@@ -4081,8 +4132,8 @@ function DashboardComponent_div_63_tr_35_Template(rf, ctx) {
     \u0275\u0275elementStart(24, "td")(25, "div", 63);
     \u0275\u0275template(26, DashboardComponent_div_63_tr_35_div_26_Template, 5, 2, "div", 64);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(27, "td", 65)(28, "div", 66)(29, "button", 67);
-    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_button_click_29_listener() {
+    \u0275\u0275elementStart(27, "td", 65)(28, "div", 66)(29, "app-button", 67);
+    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_app_button_click_29_listener() {
       const q_r6 = \u0275\u0275restoreView(_r3).$implicit;
       const ctx_r6 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r6.viewDetails(q_r6));
@@ -4090,8 +4141,8 @@ function DashboardComponent_div_63_tr_35_Template(rf, ctx) {
     \u0275\u0275text(30);
     \u0275\u0275pipe(31, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(32, "button", 68);
-    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_button_click_32_listener() {
+    \u0275\u0275elementStart(32, "app-button", 68);
+    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_app_button_click_32_listener() {
       const q_r6 = \u0275\u0275restoreView(_r3).$implicit;
       const ctx_r6 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r6.viewInProgress(q_r6));
@@ -4105,7 +4156,7 @@ function DashboardComponent_div_63_tr_35_Template(rf, ctx) {
     \u0275\u0275advance(2);
     \u0275\u0275property("nzColor", q_r6.type === "Queue" ? "blue" : q_r6.type === "Topic" ? "purple" : "default");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(4, 11, q_r6.type === "Queue" ? "queue" : q_r6.type === "Topic" ? "topic" : "internal"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(4, 12, q_r6.type === "Queue" ? "queue" : q_r6.type === "Topic" ? "topic" : "internal"), " ");
     \u0275\u0275advance(5);
     \u0275\u0275textInterpolate(q_r6.name);
     \u0275\u0275advance(3);
@@ -4120,10 +4171,12 @@ function DashboardComponent_div_63_tr_35_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", q_r6.workers);
     \u0275\u0275advance(3);
     \u0275\u0275property("ngForOf", q_r6.handlers);
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(31, 13, "Chi ti\u1EBFt"), " ");
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(34, 15, "Xem \u0111ang x\u1EED l\xFD"), " ");
+    \u0275\u0275property("nzGhost", true);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(31, 14, "Chi ti\u1EBFt"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(34, 16, "Xem \u0111ang x\u1EED l\xFD"), " ");
   }
 }
 function DashboardComponent_div_63_Template(rf, ctx) {
@@ -4167,7 +4220,7 @@ function DashboardComponent_div_63_Template(rf, ctx) {
     \u0275\u0275pipe(33, "translate");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(34, "tbody");
-    \u0275\u0275template(35, DashboardComponent_div_63_tr_35_Template, 35, 17, "tr", 52);
+    \u0275\u0275template(35, DashboardComponent_div_63_tr_35_Template, 35, 18, "tr", 52);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -4268,9 +4321,9 @@ function DashboardComponent_div_64_ng_container_50_Template(rf, ctx) {
     \u0275\u0275text(15);
     \u0275\u0275pipe(16, "translate");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(17, "td", 65)(18, "div", 90)(19, "button", 91);
+    \u0275\u0275elementStart(17, "td", 65)(18, "div", 90)(19, "app-button", 91);
     \u0275\u0275pipe(20, "translate");
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_container_50_Template_button_click_19_listener() {
+    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_container_50_Template_app_button_click_19_listener() {
       const item_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r6 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r6.retryTracking(item_r11));
@@ -4279,9 +4332,9 @@ function DashboardComponent_div_64_ng_container_50_Template(rf, ctx) {
     \u0275\u0275text(22);
     \u0275\u0275pipe(23, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(24, "button", 93);
+    \u0275\u0275elementStart(24, "app-button", 93);
     \u0275\u0275pipe(25, "translate");
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_container_50_Template_button_click_24_listener() {
+    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_container_50_Template_app_button_click_24_listener() {
       const item_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r6 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r6.deleteTracking(item_r11));
@@ -4327,31 +4380,31 @@ function DashboardComponent_div_64_ng_container_50_Template(rf, ctx) {
     \u0275\u0275advance(3);
     \u0275\u0275property("nzType", item_r11.expand ? "up" : "down");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(9, 18, "Xem Payload"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(9, 19, "Xem Payload"), " ");
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(12, 20, item_r11.time, "yyyy-MM-dd HH:mm:ss"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(12, 21, item_r11.time, "yyyy-MM-dd HH:mm:ss"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzColor", item_r11.status === "success" ? "success" : item_r11.status === "error" ? "error" : "processing");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(16, 23, item_r11.status === "success" ? "Th\xE0nh c\xF4ng" : item_r11.status === "error" ? "L\u1ED7i" : "\u0110ang ch\u1EA1y"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(16, 24, item_r11.status === "success" ? "Th\xE0nh c\xF4ng" : item_r11.status === "error" ? "L\u1ED7i" : "\u0110ang ch\u1EA1y"), " ");
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzTooltipTitle", \u0275\u0275pipeBind1(20, 25, "G\u1EEDi l\u1EA1i"));
+    \u0275\u0275property("nzTooltipTitle", \u0275\u0275pipeBind1(20, 26, "G\u1EEDi l\u1EA1i"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(23, 27, "G\u1EEDi l\u1EA1i"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(23, 28, "G\u1EEDi l\u1EA1i"), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzTooltipTitle", \u0275\u0275pipeBind1(25, 29, "X\xF3a"));
+    \u0275\u0275property("nzDanger", true)("nzTooltipTitle", \u0275\u0275pipeBind1(25, 30, "X\xF3a"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(28, 31, "X\xF3a"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(28, 32, "X\xF3a"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("nzExpand", item_r11.expand);
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(34, 33, "Payload"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(34, 34, "Payload"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(38, 35, "Sao ch\xE9p"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(38, 36, "Sao ch\xE9p"), " ");
     \u0275\u0275advance(3);
     \u0275\u0275textInterpolate(ctx_r6.formatJson(item_r11.content));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(44, 37, "L\u1ECBch s\u1EED x\u1EED l\xFD"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(44, 38, "L\u1ECBch s\u1EED x\u1EED l\xFD"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzDataSource", item_r11.history)("nzRenderItem", historyItem_r13);
   }
@@ -4425,8 +4478,8 @@ function DashboardComponent_div_64_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r6.onFilterChange());
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(26, "div", 21)(27, "button", 82);
-    \u0275\u0275listener("click", function DashboardComponent_div_64_Template_button_click_27_listener() {
+    \u0275\u0275elementStart(26, "div", 21)(27, "app-button", 82);
+    \u0275\u0275listener("click", function DashboardComponent_div_64_Template_app_button_click_27_listener() {
       \u0275\u0275restoreView(_r9);
       const ctx_r6 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r6.resetFilters());
@@ -4461,7 +4514,7 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     \u0275\u0275pipe(48, "translate");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(49, "tbody");
-    \u0275\u0275template(50, DashboardComponent_div_64_ng_container_50_Template, 48, 39, "ng-container", 52);
+    \u0275\u0275template(50, DashboardComponent_div_64_ng_container_50_Template, 48, 40, "ng-container", 52);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -4469,7 +4522,7 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     const trackingTable_r15 = \u0275\u0275reference(31);
     const ctx_r6 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 32, "L\u1ECBch s\u1EED th\u1EF1c thi"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 33, "L\u1ECBch s\u1EED th\u1EF1c thi"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzGutter", 16);
     \u0275\u0275advance();
@@ -4478,42 +4531,44 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     \u0275\u0275property("nzPrefix", prefixSearch_r14);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.trackingId);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(8, 34, "Tracking ID"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(8, 35, "Tracking ID"));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.status);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(13, 36, "Tr\u1EA1ng th\xE1i"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(13, 37, "Tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 38, "Th\xE0nh c\xF4ng"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 39, "Th\xE0nh c\xF4ng"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(17, 40, "L\u1ED7i"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(17, 41, "L\u1ED7i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(19, 42, "\u0110ang x\u1EED l\xFD"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(19, 43, "\u0110ang x\u1EED l\xFD"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 10);
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.fromDate);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(23, 44, "B\u1EAFt \u0111\u1EA7u"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(23, 45, "B\u1EAFt \u0111\u1EA7u"));
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.toDate);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(25, 46, "K\u1EBFt th\xFAc"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(25, 47, "K\u1EBFt th\xFAc"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 5);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzBlock", true);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 49, "\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc"));
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 48, "\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc"));
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzData", ctx_r6.recentTracking)("nzFrontPagination", false)("nzTotal", ctx_r6.totalTracking)("nzPageIndex", ctx_r6.pageIndex)("nzPageSize", ctx_r6.pageSize)("nzLoading", ctx_r6.loading)("nzScroll", \u0275\u0275pureFunction0(60, _c32));
+    \u0275\u0275property("nzData", ctx_r6.recentTracking)("nzFrontPagination", false)("nzTotal", ctx_r6.totalTracking)("nzPageIndex", ctx_r6.pageIndex)("nzPageSize", ctx_r6.pageSize)("nzLoading", ctx_r6.loading)("nzScroll", \u0275\u0275pureFunction0(61, _c32));
     \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(36, 50, "tracking id"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(36, 51, "tracking id"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(39, 52, "message item"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(39, 53, "message item"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(42, 54, "Th\u1EDDi gian"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(42, 55, "Th\u1EDDi gian"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(45, 56, "tr\u1EA1ng th\xE1i"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(45, 57, "tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(48, 58, "h\xE0nh \u0111\u1ED9ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(48, 59, "h\xE0nh \u0111\u1ED9ng"));
     \u0275\u0275advance(3);
     \u0275\u0275property("ngForOf", trackingTable_r15.data);
   }
@@ -4535,8 +4590,8 @@ function DashboardComponent_div_65_tr_23_Template(rf, ctx) {
     \u0275\u0275elementStart(11, "td");
     \u0275\u0275text(12);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "td", 65)(14, "button", 111);
-    \u0275\u0275listener("click", function DashboardComponent_div_65_tr_23_Template_button_click_14_listener() {
+    \u0275\u0275elementStart(13, "td", 65)(14, "app-button", 111);
+    \u0275\u0275listener("click", function DashboardComponent_div_65_tr_23_Template_app_button_click_14_listener() {
       const w_r17 = \u0275\u0275restoreView(_r16).$implicit;
       const ctx_r6 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r6.toggleWorker(w_r17.id, w_r17.status));
@@ -4991,7 +5046,7 @@ var _DashboardComponent = class _DashboardComponent {
 _DashboardComponent.\u0275fac = function DashboardComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _DashboardComponent)();
 };
-_DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 68, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTable", ""], ["prefixSearch", ""], ["trackingTable", ""], ["historyItem", ""], ["workerTable", ""], ["errorItem", ""], ["activityTable", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "primary", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], ["nzSize", "middle", 3, "nzData", "nzLoading", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "80px", "nzLeft", "0px"], ["nzWidth", "200px", "nzLeft", "80px"], ["nzWidth", "100px"], ["nzWidth", "120px"], ["nzWidth", "200px"], ["nzWidth", "150px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [3, "nzColor"], ["nzLeft", "80px"], [1, "queue-name-cell"], [1, "queue-name"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], ["nzRight", "0px"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nz-button", "", "nzType", "primary", "nzGhost", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzType", "default", "nzSize", "small", 3, "click"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nz-button", "", "nzBlock", "", 3, "click"], [3, "nzPageIndexChange", "nzData", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzLoading", "nzScroll"], ["nzWidth", "200px", "nzLeft", "0px"], ["nzWidth", "180px"], ["nz-icon", "", "nzType", "search"], ["nz-tooltip", "", 1, "id-text", 3, "nzTooltipTitle"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [2, "display", "flex", "gap", "4px"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nz-button", "", "nzSize", "small", "nzType", "link", "nzDanger", "", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], [3, "nzExpand"], [1, "json-viewer-container"], [1, "json-header"], ["nz-icon", "", "nzType", "copy"], [1, "json-content"], [2, "margin-top", "16px"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "nzData", "nzPageSize", "nzShowPagination", "nzScroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], ["nz-button", "", 3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], ["nzSize", "middle", 3, "nzData", "nzPageSize", "nzShowPagination"], ["class", "empty-state", "style", "padding: 40px; text-align: center; color: #999;", 4, "ngIf"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "empty-state", 2, "padding", "40px", "text-align", "center", "color", "#999"], ["nz-icon", "", "nzType", "info-circle", 2, "font-size", "24px"]], template: function DashboardComponent_Template(rf, ctx) {
+_DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 68, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTable", ""], ["prefixSearch", ""], ["trackingTable", ""], ["historyItem", ""], ["workerTable", ""], ["errorItem", ""], ["activityTable", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nzType", "primary", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], ["nzSize", "middle", 3, "nzData", "nzLoading", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "80px", "nzLeft", "0px"], ["nzWidth", "200px", "nzLeft", "80px"], ["nzWidth", "100px"], ["nzWidth", "120px"], ["nzWidth", "200px"], ["nzWidth", "150px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [3, "nzColor"], ["nzLeft", "80px"], [1, "queue-name-cell"], [1, "queue-name"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], ["nzRight", "0px"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzGhost"], ["nzType", "default", "nzSize", "small", 3, "click"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "click", "nzBlock"], [3, "nzPageIndexChange", "nzData", "nzFrontPagination", "nzTotal", "nzPageIndex", "nzPageSize", "nzLoading", "nzScroll"], ["nzWidth", "200px", "nzLeft", "0px"], ["nzWidth", "180px"], ["nz-icon", "", "nzType", "search"], ["nz-tooltip", "", 1, "id-text", 3, "nzTooltipTitle"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], [2, "display", "flex", "gap", "4px"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzDanger", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], [3, "nzExpand"], [1, "json-viewer-container"], [1, "json-header"], ["nz-icon", "", "nzType", "copy"], [1, "json-content"], [2, "margin-top", "16px"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "nzData", "nzPageSize", "nzShowPagination", "nzScroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], [3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], ["nzSize", "middle", 3, "nzData", "nzPageSize", "nzShowPagination"], ["class", "empty-state", "style", "padding: 40px; text-align: center; color: #999;", 4, "ngIf"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "empty-state", 2, "padding", "40px", "text-align", "center", "color", "#999"], ["nz-icon", "", "nzType", "info-circle", 2, "font-size", "24px"]], template: function DashboardComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 11)(1, "nz-page-header", 12);
@@ -5011,8 +5066,8 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     });
     \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 17);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(11, "button", 18);
-    \u0275\u0275listener("click", function DashboardComponent_Template_button_click_11_listener() {
+    \u0275\u0275elementStart(11, "app-button", 18);
+    \u0275\u0275listener("click", function DashboardComponent_Template_app_button_click_11_listener() {
       return ctx.refresh();
     });
     \u0275\u0275element(12, "i", 19);
@@ -5071,7 +5126,7 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275pipe(61, "translate");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementContainerStart(62, 37);
-    \u0275\u0275template(63, DashboardComponent_div_63_Template, 36, 37, "div", 38)(64, DashboardComponent_div_64_Template, 51, 61, "div", 38)(65, DashboardComponent_div_65_Template, 33, 33, "div", 38)(66, DashboardComponent_div_66_Template, 22, 20, "div", 38)(67, DashboardComponent_div_67_Template, 2, 0, "div", 38);
+    \u0275\u0275template(63, DashboardComponent_div_63_Template, 36, 37, "div", 38)(64, DashboardComponent_div_64_Template, 51, 62, "div", 38)(65, DashboardComponent_div_65_Template, 33, 33, "div", 38)(66, DashboardComponent_div_66_Template, 22, 20, "div", 38)(67, DashboardComponent_div_67_Template, 2, 0, "div", 38);
     \u0275\u0275elementContainerEnd();
     \u0275\u0275elementEnd();
   }
@@ -5089,7 +5144,7 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance();
     \u0275\u0275property("ngForOf", ctx.refreshIntervals);
     \u0275\u0275advance();
-    \u0275\u0275property("nzLoading", ctx.loading);
+    \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 41, "L\xE0m m\u1EDBi"), " ");
     \u0275\u0275advance(2);
@@ -5194,6 +5249,7 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
   NgControlStatus,
   NgModel,
   TranslateModule,
+  AppButtonComponent,
   CqrsTestComponent,
   DatePipe,
   TranslatePipe
@@ -5223,6 +5279,7 @@ var DashboardComponent = _DashboardComponent;
       NzRadioModule,
       FormsModule,
       TranslateModule,
+      AppButtonComponent,
       CqrsTestComponent
     ], template: `<div class="dashboard-container">
   <nz-page-header class="site-page-header" [nzTitle]="'CQRS Dashboard' | translate">
@@ -5234,9 +5291,9 @@ var DashboardComponent = _DashboardComponent;
             <nz-option *ngFor="let i of refreshIntervals" [nzLabel]="i.label | translate" [nzValue]="i.value"></nz-option>
           </nz-select>
         </div>
-        <button nz-button nzType="primary" (click)="refresh()" [nzLoading]="loading">
+        <app-button nzType="primary" (click)="refresh()" [loading]="loading">
           <i nz-icon nzType="reload"></i> {{ 'L\xE0m m\u1EDBi' | translate }}
-        </button>
+        </app-button>
       </div>
     </nz-page-header-extra>
   </nz-page-header>
@@ -5326,12 +5383,12 @@ var DashboardComponent = _DashboardComponent;
               </td>
               <td nzRight="0px">
                 <div style="display: flex; gap: 4px; flex-direction: column;">
-                  <button nz-button nzType="primary" nzGhost nzSize="small" (click)="viewDetails(q)">
+                  <app-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(q)">
                     {{ 'Chi ti\u1EBFt' | translate }}
-                  </button>
-                  <button nz-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
+                  </app-button>
+                  <app-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
                     {{ 'Xem \u0111ang x\u1EED l\xFD' | translate }}
-                  </button>
+                  </app-button>
                 </div>
               </td>
             </tr>
@@ -5364,7 +5421,7 @@ var DashboardComponent = _DashboardComponent;
               </div>
             </div>
             <div nz-col [nzSpan]="5">
-              <button nz-button nzBlock (click)="resetFilters()">{{ '\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc' | translate }}</button>
+              <app-button [nzBlock]="true" (click)="resetFilters()">{{ '\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc' | translate }}</app-button>
             </div>
           </div>
         </div>
@@ -5398,12 +5455,12 @@ var DashboardComponent = _DashboardComponent;
                 </td>
                 <td nzRight="0px">
                   <div style="display: flex; gap: 4px;">
-                    <button nz-button nzSize="small" nzType="link" (click)="retryTracking(item)" nz-tooltip [nzTooltipTitle]="'G\u1EEDi l\u1EA1i' | translate">
+                    <app-button nzSize="small" nzType="link" (click)="retryTracking(item)" nz-tooltip [nzTooltipTitle]="'G\u1EEDi l\u1EA1i' | translate">
                       <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | translate }}
-                    </button>
-                    <button nz-button nzSize="small" nzType="link" nzDanger (click)="deleteTracking(item)" nz-tooltip [nzTooltipTitle]="'X\xF3a' | translate">
+                    </app-button>
+                    <app-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(item)" nz-tooltip [nzTooltipTitle]="'X\xF3a' | translate">
                       <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | translate }}
-                    </button>
+                    </app-button>
                   </div>
                 </td>
               </tr>
@@ -5463,9 +5520,9 @@ var DashboardComponent = _DashboardComponent;
               <td>{{ w.type | translate }}</td>
               <td>{{ w.queueOrTopicName }}</td>
               <td nzRight="0px">
-                <button nz-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
+                <app-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
                   {{ (w.status === 'Running' ? 'D\u1EEBng' : 'Kh\u1EDFi ch\u1EA1y') | translate }}
-                </button>
+                </app-button>
               </td>
             </tr>
           </tbody>
@@ -5539,7 +5596,7 @@ var DashboardComponent = _DashboardComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(DashboardComponent, { className: "DashboardComponent", filePath: "projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts", lineNumber: 58 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(DashboardComponent, { className: "DashboardComponent", filePath: "projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts", lineNumber: 60 });
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-steps.mjs
@@ -7068,4 +7125,4 @@ export {
   TopicDetailComponent,
   TracingComponent
 };
-//# sourceMappingURL=chunk-XSESXGMW.js.map
+//# sourceMappingURL=chunk-ROHGO7AB.js.map

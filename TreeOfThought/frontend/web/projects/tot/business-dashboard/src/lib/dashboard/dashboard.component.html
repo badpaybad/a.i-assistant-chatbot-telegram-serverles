@@ -8,9 +8,9 @@
             <nz-option *ngFor="let i of refreshIntervals" [nzLabel]="i.label | translate" [nzValue]="i.value"></nz-option>
           </nz-select>
         </div>
-        <button nz-button nzType="primary" (click)="refresh()" [nzLoading]="loading">
+        <app-button nzType="primary" (click)="refresh()" [loading]="loading">
           <i nz-icon nzType="reload"></i> {{ 'Làm mới' | translate }}
-        </button>
+        </app-button>
       </div>
     </nz-page-header-extra>
   </nz-page-header>
@@ -100,12 +100,12 @@
               </td>
               <td nzRight="0px">
                 <div style="display: flex; gap: 4px; flex-direction: column;">
-                  <button nz-button nzType="primary" nzGhost nzSize="small" (click)="viewDetails(q)">
+                  <app-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(q)">
                     {{ 'Chi tiết' | translate }}
-                  </button>
-                  <button nz-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
+                  </app-button>
+                  <app-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
                     {{ 'Xem đang xử lý' | translate }}
-                  </button>
+                  </app-button>
                 </div>
               </td>
             </tr>
@@ -138,7 +138,7 @@
               </div>
             </div>
             <div nz-col [nzSpan]="5">
-              <button nz-button nzBlock (click)="resetFilters()">{{ 'Đặt lại bộ lọc' | translate }}</button>
+              <app-button [nzBlock]="true" (click)="resetFilters()">{{ 'Đặt lại bộ lọc' | translate }}</app-button>
             </div>
           </div>
         </div>
@@ -172,12 +172,12 @@
                 </td>
                 <td nzRight="0px">
                   <div style="display: flex; gap: 4px;">
-                    <button nz-button nzSize="small" nzType="link" (click)="retryTracking(item)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
+                    <app-button nzSize="small" nzType="link" (click)="retryTracking(item)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
                       <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
-                    </button>
-                    <button nz-button nzSize="small" nzType="link" nzDanger (click)="deleteTracking(item)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
+                    </app-button>
+                    <app-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(item)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
                       <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
-                    </button>
+                    </app-button>
                   </div>
                 </td>
               </tr>
@@ -237,9 +237,9 @@
               <td>{{ w.type | translate }}</td>
               <td>{{ w.queueOrTopicName }}</td>
               <td nzRight="0px">
-                <button nz-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
+                <app-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
                   {{ (w.status === 'Running' ? 'Dừng' : 'Khởi chạy') | translate }}
-                </button>
+                </app-button>
               </td>
             </tr>
           </tbody>

@@ -19,7 +19,8 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
-import { AppNotificationService } from '@tot/core';
+import { AppNotificationService, HttpClientService } from '@tot/core';
+import { AppButtonComponent } from '@tot/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
 import { MessageListComponent } from '../message-list/message-list.component';
@@ -50,6 +51,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
     NzRadioModule,
     FormsModule,
     TranslateModule,
+    AppButtonComponent,
     CqrsTestComponent
   ],
   templateUrl: './dashboard.component.html',

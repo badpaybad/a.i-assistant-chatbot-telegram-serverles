@@ -1,6 +1,6 @@
 import { Directive, Input, TemplateRef, ViewContainerRef, inject, Renderer2, ElementRef, OnDestroy, OnInit, SecurityContext } from '@angular/core';
 import { DomSanitizer } from '@angular/platform-browser';
-import { AuthService } from '@tot/core';
+import { AuthService } from '../auth/auth.service';
 import { Subscription } from 'rxjs';
 
 @Directive({
