@@ -1,5 +1,6 @@
 using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Base.Controllers;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;
 using Core.Infra.Firebase.Services;
@@ -7,24 +8,30 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
+using Core.Infra.Firebase.Models;
+
 namespace Core.Infra.FilesFolders.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [AppAuthorize]
-public class FilesController : ControllerBase
+public class FilesController : BaseController
 {
     private readonly FilesFoldersService _filesFoldersService;
     private readonly FirebaseService _firebaseService;
     private readonly IDispatcher _dispatcher;
-    private const string AppName = "Default";
-    private const string BucketName = "dunp-test-gcs";
+    private readonly FirebaseOptions _firebaseOptions;
 
-    public FilesController(FilesFoldersService filesFoldersService, FirebaseService firebaseService, IDispatcher dispatcher)
+    public FilesController(
+        FilesFoldersService filesFoldersService, 
+        FirebaseService firebaseService, 
+        IDispatcher dispatcher,
+        Microsoft.Extensions.Options.IOptions<FirebaseOptions> firebaseOptions)
     {
         _filesFoldersService = filesFoldersService;
         _firebaseService = firebaseService;
         _dispatcher = dispatcher;
+        _firebaseOptions = firebaseOptions.Value;
     }
 
     [HttpPost("upload")]
@@ -35,8 +42,10 @@ public class FilesController : ControllerBase
         using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
 
+        var trackingId = GetTrackingId();
         var command = new UploadFileCommand
         {
+            TrackingId = trackingId,
             FolderId = folderId,
             FileName = file.FileName,
             ContentType = file.ContentType,
@@ -45,31 +54,39 @@ public class FilesController : ControllerBase
         };
 
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "File đã được upload" });
+        return Ok(new { message = "File đã được upload", trackingId });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var command = new DeleteFileCommand { FileId = id, UserId = GetUserId().ToString() };
+        var trackingId = GetTrackingId();
+        var command = new DeleteFileCommand 
+        { 
+            TrackingId = trackingId,
+            FileId = id, 
+            UserId = GetUserId().ToString() 
+        };
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "File đã được xóa" });
+        return Ok(new { message = "File đã được xóa", trackingId });
     }
 
     [HttpPost("move")]
     public async Task<IActionResult> Move([FromBody] MoveFileCommand command)
     {
+        command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "File đã được di chuyển" });
+        return Ok(new { message = "File đã được di chuyển", trackingId = command.TrackingId });
     }
 
     [HttpPost("permission")]
     public async Task<IActionResult> SetPermission([FromBody] SetFilePermissionCommand command)
     {
+        command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "Quyền đã được cập nhật" });
+        return Ok(new { message = "Quyền đã được cập nhật", trackingId = command.TrackingId });
     }
 
     [HttpGet("{id}/share-url")]
@@ -84,7 +101,7 @@ public class FilesController : ControllerBase
         var parts = uri.AbsolutePath.Split('/', 3);
         var objectName = parts.Length > 2 ? parts[2] : file.Name;
 
-        var signedUrl = _firebaseService.GetSignedUrl(AppName, BucketName, objectName, TimeSpan.FromHours(durationHours));
+        var signedUrl = _firebaseService.GetSignedUrl(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, TimeSpan.FromHours(durationHours));
         return Ok(new { url = signedUrl });
     }
 
@@ -120,11 +137,4 @@ public class FilesController : ControllerBase
         return Ok(file);
     }
 
-    private Guid GetUserId()
-    {
-        var userIdStr = User.FindFirst("userId")?.Value;
-        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-            throw new UnauthorizedAccessException();
-        return userId;
-    }
 }

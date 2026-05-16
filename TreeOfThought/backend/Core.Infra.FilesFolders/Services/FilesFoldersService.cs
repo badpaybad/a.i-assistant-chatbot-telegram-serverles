@@ -1,7 +1,9 @@
 using Core.Infra.FilesFolders.Contexts;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.Firebase.Services;
+using Core.Infra.Firebase.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace Core.Infra.FilesFolders.Services;
 
@@ -9,13 +11,13 @@ public class FilesFoldersService
 {
     private readonly FilesFoldersDbContext _db;
     private readonly FirebaseService _firebaseService;
-    private const string AppName = "Default";
-    private const string BucketName = "dunp-test-gcs";
+    private readonly FirebaseOptions _firebaseOptions;
 
-    public FilesFoldersService(FilesFoldersDbContext db, FirebaseService firebaseService)
+    public FilesFoldersService(FilesFoldersDbContext db, FirebaseService firebaseService, IOptions<FirebaseOptions> firebaseOptions)
     {
         _db = db;
         _firebaseService = firebaseService;
+        _firebaseOptions = firebaseOptions.Value;
     }
 
     public async Task<List<FolderDto>> GetFolderTreeAsync(Guid userId)
@@ -146,7 +148,7 @@ public class FilesFoldersService
 
         var objectName = $"{path}{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
-        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType, permission == PermissionType.Public);
+        var url = await _firebaseService.UploadFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, stream, contentType, permission == PermissionType.Public);
 
         var file = new FileItem
         {
@@ -215,7 +217,7 @@ public class FilesFoldersService
     {
         var objectName = $"editor/{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
-        var url = await _firebaseService.UploadFileAsync(AppName, BucketName, objectName, stream, contentType, true);
+        var url = await _firebaseService.UploadFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, stream, contentType, true);
 
         var file = new EditorFileItem
         {

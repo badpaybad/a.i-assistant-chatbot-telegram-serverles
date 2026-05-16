@@ -1,5 +1,6 @@
 using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Base.Controllers;
 using Core.Infra.FilesFolders.Models;
 using Core.Infra.FilesFolders.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -9,7 +10,7 @@ namespace Core.Infra.FilesFolders.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [AppAuthorize]
-public class FoldersController : ControllerBase
+public class FoldersController : BaseController
 {
     private readonly FilesFoldersService _filesFoldersService;
     private readonly IDispatcher _dispatcher;
@@ -47,32 +48,32 @@ public class FoldersController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateFolderCommand command)
     {
+        command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "Thư mục đã được tạo" });
+        return Ok(new { message = "Thư mục đã được tạo", trackingId = command.TrackingId });
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id)
     {
-        var command = new DeleteFolderCommand { FolderId = id, UserId = GetUserId().ToString() };
+        var trackingId = GetTrackingId();
+        var command = new DeleteFolderCommand 
+        { 
+            TrackingId = trackingId,
+            FolderId = id, 
+            UserId = GetUserId().ToString() 
+        };
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "Thư mục đã được xóa" });
+        return Ok(new { message = "Thư mục đã được xóa", trackingId });
     }
 
     [HttpPost("move")]
     public async Task<IActionResult> Move([FromBody] MoveFolderCommand command)
     {
+        command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
         await _dispatcher.SendAsync(command, useMemoryMode: true);
-        return Ok(new { message = "Thư mục đã được di chuyển" });
-    }
-
-    private Guid GetUserId()
-    {
-        var userIdStr = User.FindFirst("userId")?.Value;
-        if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
-            throw new UnauthorizedAccessException();
-        return userId;
+        return Ok(new { message = "Thư mục đã được di chuyển", trackingId = command.TrackingId });
     }
 }

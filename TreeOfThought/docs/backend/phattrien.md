@@ -28,7 +28,7 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
     - `ClaimScannerService` tự động quét các `AppAuthorize` attribute trong code và đồng bộ vào Database khi startup, giúp Admin luôn có danh sách quyền mới nhất để quản lý.
 - **Phản hồi UI thời gian thực (Realtime UI Feedback)**: 
     - Bất kỳ Event nào triển khai `INotifyUiEvent` sẽ tự động được `UiNotificationEventHandler` đẩy lên Firestore. 
-    - FE chỉ cần lắng nghe theo `TrackingId` để cập nhật trạng thái UI (đóng progress, refresh data) ngay khi BE xử lý xong.
+    - **Cơ chế Tự động Đăng ký (Auto-Registration)**: `CqrsAutoRegistrationService` tự động phát hiện mọi Event implement `INotifyUiEvent` và đăng ký generic handler để đẩy notify lên Firestore.
 - **Hạ tầng Queue tin cậy**: Việc triển khai `DequeueReliableAsync` (LPUSH RPOP) đảm bảo không mất message khi process gặp sự cố.
 - **Tính đóng gói (Encapsulation)**: Các module hạ tầng được tách biệt rõ ràng, dễ dàng tái sử dụng qua các Extension methods (`AddAppOidc`, `AddCqrs`, `AddFilesFolders`...).
 
@@ -39,7 +39,7 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - [x] Claim Sync/Scanner (Tự động hóa quản lý permission).
 - [x] CQRS Dispatcher và cơ chế xử lý Event/Command (Background processing).
 - [x] Tích hợp Firebase (Firestore notification, FCM, GCS Storage).
-- [x] Module nghiệp vụ mẫu: `FilesFolders`.
+- [x] Module nghiệp vụ mẫu: `FilesFolders` (Full CQRS + Realtime UI).
 
 ---
 
@@ -48,13 +48,14 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 ### 3.1. Các thành phần đã bám sát tài liệu:
 - [x] **Hạ tầng đa DB**: Hỗ trợ PostgreSQL, MSSQL, MySql và MongoDB.
 - [x] **Hybrid Auth**: Xử lý Claim từ JWT và fallback sang Redis session/ACL.
-- [x] **Realtime UI**: Pattern `INotifyUiEvent` -> `Firestore` đã chạy tốt.
+- [x] **Realtime UI**: Pattern `INotifyUiEvent` -> `Firestore` đã chạy tốt và được tự động hóa.
 - [x] **OIDC/SSO**: Cấu hình linh hoạt giữa local và external Authority.
 
 ### 3.2. Các điểm cần bổ sung/hoàn thiện (Gaps):
-- [ ] **Cleanup Firestore**: Cần cơ chế TTL (Time To Live) cho các document trong collection `notify` để tránh rác nếu FE không xóa kịp. Hiện tại Firestore chưa có config này.
-- [ ] **Refactor Handler Notifications**: Các Handler hiện tại trong `FilesFolders` xử lý xong nhưng chưa phát Event `INotifyUiEvent`. Cần bổ sung để UI nhận được thông báo trạng thái "Hoàn thành" realtime.
-- [ ] **Auth Sync logic**: Đảm bảo `AuthService.SyncUserClaimsToRedisAsync` được kích hoạt ngay khi có thay đổi quyền từ Admin Dashboard.
+- [ ] **Cleanup Firestore**: Cần cơ chế TTL (Time To Live) cho các document trong collection `notify` để tránh rác nếu FE không xóa kịp.
+- [ ] **Auth Sync logic**: Trong `AuthManagementController`, cần gọi `AuthService.SyncUserClaimsToRedisAsync` và `SyncUserAclToRedisAsync` ngay khi Admin thay đổi quyền/role/ACL của user để session có hiệu lực tức thì.
+- [/] **Firebase Config Consolidation**: Chuyển các hằng số AppName, BucketName vào `appsettings.json` (Đang triển khai).
+- [/] **Realtime UI Feedback Hoàn thiện**: Tích hợp TrackingId và Firestore subscription cho module `FilesFolders` (Xem chi tiết tại [FilesFolders phattrien.md](../filesfolders/phattrien.md)).
 
 ---
 
@@ -63,7 +64,7 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 Để đảm bảo tính nhất quán, mọi thay đổi (phát triển nghiệp vụ mới, sửa lỗi, bổ sung logic) cần tuân thủ:
 
 ### 4.1. Nhất quán về Auth
-- Luôn sử dụng `AppAuthorizeAttribute` với claims cụ thể (ví dụ: `[AppAuthorize("be.feature.action")]`).
+- Luôn sử dụng `AppAuthorizeAttribute` with claims cụ thể (ví dụ: `[AppAuthorize("be.feature.action")]`).
 - Tận dụng `ResourceType` và `Action` cho các nghiệp vụ cần ACL chi tiết đến từng bản ghi (ResourceId).
 - Sử dụng session nếu JWT chưa đủ thông tin.
 
@@ -72,7 +73,7 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - **CQRS**: 
     - Logic nghiệp vụ nằm hoàn toàn ở **Handlers**. 
     - Controller chỉ dùng `IDispatcher` để gửi Command/Event.
-    - Để phản hồi realtime cho UI, Event phải triển khai `INotifyUiEvent`.
+    - Để phản hồi realtime cho UI, chỉ cần Event triển khai `INotifyUiEvent`, hệ thống sẽ tự động handle việc đẩy notify lên Firestore.
 - **Firebase**: Sử dụng `FirebaseService` cho thông báo và lưu trữ. Việc xử lý logic bổ sung (thumb, resize...) thực hiện tại module nghiệp vụ nếu cần.
 
 ### 4.3. Cô lập Nghiệp vụ (Strict Isolation)
@@ -92,8 +93,11 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 ## 5. Kế hoạch tiếp theo (Khi có lệnh từ User)
 
 1. **Nghiệp vụ mới**: Sẵn sàng triển khai các module nghiệp vụ tiếp theo (ví dụ: Chatbot, Telegram Integration) dựa trên khung hạ tầng đã vững chắc.
-2. **Refactor FilesFolders**: Cập nhật `FilesFoldersCommandHandler` để publish các Event tương ứng (như `FolderCreatedEvent`, `FileUploadedEvent`) triển khai `INotifyUiEvent`.
-3. **Firestore Maintenance**: Cấu hình Cloud Function hoặc cơ chế nội bộ để dọn dẹp Firestore notify collection.
+2. **Hoàn thiện Infra**: 
+    - Cấu hình Cloud Function hoặc cơ chế nội bộ để dọn dẹp Firestore notify collection.
+    - Refactor `AuthManagementController` để trigger sync session.
+    - Di chuyển toàn bộ cấu hình Firebase vào `appsettings.json`.
+3. **Mở rộng OIDC**: Hỗ trợ thêm các Social Login providers khác nếu cần.
 
 ---
 **Ghi chú**: Hệ thống hiện tại đã đạt độ trưởng thành cao về mặt kiến trúc, cho phép mở rộng nhanh chóng mà vẫn duy trì được tính nhất quán và bảo mật.

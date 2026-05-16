@@ -5,6 +5,9 @@ using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Firestore;
 using Google.Cloud.Storage.V1;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Hosting;
+using Core.Infra.Firebase.Models;
 using System.Text.Json;
 
 namespace Core.Infra.Firebase.Services;
@@ -15,11 +18,31 @@ public class FirebaseService
     private static readonly Dictionary<string, FirestoreDb> _firestoreDbs = new();
     private static readonly Dictionary<string, StorageClient> _storageClients = new();
     private static readonly Dictionary<string, GoogleCredential> _credentials = new();
+    private readonly IOptions<FirebaseOptions> _options;
     private readonly ILogger<FirebaseService> _logger;
 
-    public FirebaseService(ILogger<FirebaseService> logger)
+    public FirebaseService(ILogger<FirebaseService> logger, IOptions<FirebaseOptions> options, IHostEnvironment env)
     {
         _logger = logger;
+        _options = options;
+
+        if (!string.IsNullOrEmpty(_options.Value.CredentialsPath))
+        {
+            var jsonPath = _options.Value.CredentialsPath;
+            if (!Path.IsPathRooted(jsonPath))
+            {
+                jsonPath = Path.Combine(env.ContentRootPath, jsonPath);
+            }
+            
+            if (File.Exists(jsonPath))
+            {
+                InitializeApp(_options.Value.AppName, jsonPath, _options.Value.ProjectId, _options.Value.DatabaseId);
+            }
+            else
+            {
+                _logger.LogWarning("Firebase credentials file not found at: {Path}", jsonPath);
+            }
+        }
     }
 
     private static readonly object _lock = new();
@@ -28,34 +51,48 @@ public class FirebaseService
     {
         lock (_lock)
         {
-            if (_apps.ContainsKey(name)) return;
-
             try
             {
-                var credential = GoogleCredential.FromFile(jsonFilePath);
+                var credential = _credentials.ContainsKey(name) ? _credentials[name] : GoogleCredential.FromFile(jsonFilePath);
                 FirebaseApp app;
-                try
+                if (!_apps.ContainsKey(name))
                 {
-                    app = FirebaseApp.Create(new AppOptions { Credential = credential }, name);
+                    try
+                    {
+                        app = FirebaseApp.Create(new AppOptions { Credential = credential }, name);
+                    }
+                    catch (ArgumentException)
+                    {
+                        app = FirebaseApp.GetInstance(name);
+                    }
+                    _apps[name] = app;
+                    _credentials[name] = credential;
                 }
-                catch (ArgumentException)
+                else
                 {
-                    app = FirebaseApp.GetInstance(name);
+                    app = _apps[name];
                 }
-
-                _apps[name] = app;
-                _credentials[name] = credential;
 
                 if (!string.IsNullOrEmpty(projectId))
                 {
-                    _firestoreDbs[name] = new FirestoreDbBuilder
+                    if (!_firestoreDbs.ContainsKey(name))
                     {
-                        ProjectId = projectId,
-                        Credential = credential,
-                        DatabaseId = databaseId ?? "(default)"
-                    }.Build();
+                        _firestoreDbs[name] = new FirestoreDbBuilder
+                        {
+                            ProjectId = projectId,
+                            Credential = credential,
+                            DatabaseId = databaseId ?? "(default)"
+                        }.Build();
+                    }
 
-                    _storageClients[name] = StorageClient.Create(credential);
+                    if (!_storageClients.ContainsKey(name))
+                    {
+                        _storageClients[name] = StorageClient.Create(credential);
+                    }
+                }
+                else
+                {
+                    _logger.LogWarning("ProjectId is empty for {Name}. Firestore and Storage clients will not be initialized.", name);
                 }
             }
             catch (Exception ex)
@@ -102,10 +139,21 @@ public class FirebaseService
     {
         var db = GetFirestore(appName);
         
-        // Convert JsonElement to Dictionary/List if needed for Firestore serialization
+        // Convert to Firestore-compatible format
         if (data is JsonElement element)
         {
             data = ConvertToFirestoreData(element) ?? new Dictionary<string, object?>();
+        }
+        else if (data != null && !(data is IDictionary<string, object>) && !data.GetType().IsPrimitive && !(data is string))
+        {
+            // For complex objects, serialize to JSON first to ensure camelCase and Firestore compatibility
+            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions 
+            { 
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+            });
+            using var jsonDoc = JsonDocument.Parse(json);
+            data = ConvertToFirestoreData(jsonDoc.RootElement) ?? new Dictionary<string, object?>();
         }
 
         // Path format: collection/docId or collection/docId/subcollection/docId

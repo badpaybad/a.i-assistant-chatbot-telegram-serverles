@@ -21,12 +21,15 @@ using Core.Web.Api.Services;
 using Core.Infra.FilesFolders.Extensions;
 using Core.Infra.FilesFolders.Handlers;
 using Core.Infra.FilesFolders.Contexts;
+using Core.Infra.Firebase.Extensions;
+using Core.Infra.Firebase.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // --- 1. Configuration ---
 var config = builder.Configuration;
 builder.Services.AddMemoryCache();
+builder.Services.AddAppFirebase(config);
 
 // --- Default Redis Service (for general caching) ---
 var defaultRedisConn = config["Redis:ConnectionString"];
@@ -120,12 +123,6 @@ using (var scope = app.Services.CreateScope())
     {
         var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
         await filesDb.EnsureTablesCreatedAsync();
-
-        // Initialize Firebase
-        var firebase = services.GetRequiredService<FirebaseService>();
-        var jsonPath = config["Firebase:JsonFilePath"]!;
-        if (!Path.IsPathRooted(jsonPath)) jsonPath = Path.Combine(app.Environment.ContentRootPath, jsonPath);
-        firebase.InitializeApp("Default", jsonPath, config["Firebase:ProjectId"], config["Firebase:DatabaseId"]);
     }
     catch (Exception ex)
     {

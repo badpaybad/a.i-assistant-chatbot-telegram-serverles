@@ -57,6 +57,7 @@ Các project nghiệp vụ
         có thể có tạo thêm dbcontext để lấy data của nghiệp vụ khác nếu cần thiết (readonly không được xuất hiện code thay đổi dữ liệu)
         cần có command, handler đẻ xử lý nghiệp vụ dạng chạy bất đồng bộ, UI sẽ nhận notify để biết được việc đã xử lý xong chưa kết quả như thế nào 
             Cân nhắc có thể một số nghiệp vụ hoặc ở trong controller có thể gọi hàm trực tiếp hoặc chạy handle luôn (inmemory) mà không cần qua CQRS, chạy đồng bộ luôn. ví dụ: xử lý upload file 
+            Có thể thêm các class để xử lý nghiệp vụ tránh ở handle quá dài 
         cần có event pub/sub để các nghiệp vụ khác lắng nghe và xử lý nếu cần. 
         các nghiệp vụ nói chuyện với nhau qua command, event để tránh bị lệ thuộc 
         nếu cần có thể controller 

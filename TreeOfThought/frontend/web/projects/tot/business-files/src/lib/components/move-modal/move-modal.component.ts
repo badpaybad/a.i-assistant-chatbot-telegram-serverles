@@ -123,17 +123,14 @@ export class MoveModalComponent implements OnInit {
   async submit() {
     this.loading = true;
     try {
+      let result: any;
       if (this.itemType === 'folder') {
-        await this.filesFoldersService.moveFolder(this.itemId, this.selectedFolderId);
+        result = await this.filesFoldersService.moveFolder(this.itemId, this.selectedFolderId);
       } else {
-        // moveFile requires a folderId (cannot be null based on API?)
-        // Let's check API again. If root, maybe it's not supported for files?
-        // Usually files can be in root.
-        await this.filesFoldersService.moveFile(this.itemId, this.selectedFolderId as any);
+        result = await this.filesFoldersService.moveFile(this.itemId, this.selectedFolderId as any);
       }
-      this.message.success('Đã gửi yêu cầu di chuyển');
-      this.filesFoldersService.notifyRefresh();
-      this.modalRef.close(true);
+      this.message.loading('Đang xử lý di chuyển...');
+      this.modalRef.close({ trackingId: result.trackingId });
     } catch (error) {
       this.message.error('Lỗi khi di chuyển');
     } finally {

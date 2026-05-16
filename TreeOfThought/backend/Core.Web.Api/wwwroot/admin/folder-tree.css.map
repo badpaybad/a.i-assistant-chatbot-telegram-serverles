@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;919fdfca84b012487c20dd19b7e07eee72c17eba4f8e8e370f53f96f830c5cdd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-files/src/lib/components/folder-tree/folder-tree.html"],
-  "sourcesContent": ["\n  .popover-content {\n    width: 200px;\n  }\n  .popover-footer {\n    margin-top: 8px;\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n  }\n"],
-  "mappings": ";AACE,CAAC;AACC,SAAO;AACT;AACA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,mBAAiB;AACjB,OAAK;AACP;",
+  "sources": ["projects/tot/business-files/src/lib/components/folder-tree/folder-tree.css"],
+  "sourcesContent": [".tree-container {\n  padding: 16px;\n}\n\n.tree-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 12px;\n}\n\n.tree-header h3 {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n::ng-deep .nz-tree-node-title {\n  font-size: 14px;\n}\n"],
+  "mappings": ";AAAA,CAAC;AACC,WAAS;AACX;AAEA,CAAC;AACC,WAAS;AACT,mBAAiB;AACjB,eAAa;AACb,iBAAe;AACjB;AAEA,CAPC,YAOY;AACX,UAAQ;AACR,aAAW;AACX,eAAa;AACf;AAEA,UAAU,CAAC;AACT,aAAW;AACb;",
   "names": []
 }

@@ -7,6 +7,7 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { FilesFoldersService } from '../../services/files-folders.service';
+import { FirebaseService } from '@tot/core';
 
 @Component({
   selector: 'app-create-folder-popover',
@@ -84,6 +85,7 @@ export class CreateFolderPopoverComponent {
   }
 
   private filesFoldersService = inject(FilesFoldersService);
+  private firebaseService = inject(FirebaseService);
   private message = inject(NzMessageService);
 
   async submit() {
@@ -100,12 +102,28 @@ export class CreateFolderPopoverComponent {
 
     this.loading = true;
     try {
-      await this.filesFoldersService.createFolder(this.name, this.parentId);
-      this.message.success('Đã gửi yêu cầu tạo thư mục');
+      const result: any = await this.filesFoldersService.createFolder(this.name, this.parentId);
+      this.message.loading('Đang xử lý tạo thư mục...');
       this.visible = false;
       this.name = '';
-      this.created.emit();
-      this.filesFoldersService.notifyRefresh();
+
+      if (result.trackingId) {
+        const sub = this.firebaseService.subscribeToRequestId(result.trackingId, (data) => {
+          if (data.status === 'Completed') {
+            this.message.success(data.message || 'Thư mục đã được tạo');
+            this.created.emit();
+            this.filesFoldersService.notifyRefresh();
+            sub();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || 'Lỗi khi tạo thư mục');
+            sub();
+          }
+        });
+      } else {
+        this.message.success('Thư mục đã được tạo');
+        this.created.emit();
+        this.filesFoldersService.notifyRefresh();
+      }
     } catch (error) {
       this.message.error('Lỗi khi tạo thư mục');
     } finally {

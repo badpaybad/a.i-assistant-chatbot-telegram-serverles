@@ -22,7 +22,7 @@ export class HttpClientService {
     return (window as any).env?.API_BASE_URL ?? this.apiBaseUrlToken ?? '';
   }
 
-  private getHeaders(data?: any): HttpHeaders {
+  private getHeaders(data?: any, trackingId?: string): HttpHeaders {
     let headers = new HttpHeaders();
     
     if (!(data instanceof FormData)) {
@@ -34,7 +34,18 @@ export class HttpClientService {
       headers = headers.set('Authorization', `Bearer ${token}`);
     }
 
+    if (trackingId) {
+      headers = headers.set('X-Tracking-Id', trackingId);
+    }
+
     return headers;
+  }
+
+  private generateTrackingId(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
   }
 
   private handleError(error: HttpErrorResponse): never {
@@ -81,12 +92,18 @@ export class HttpClientService {
 
   async post<T = any>(url: string, data?: any, options?: any): Promise<T> {
     try {
+      const trackingId = options?.trackingId || this.generateTrackingId();
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
-      return await firstValueFrom(this.http.post<T>(fullUrl, data, {
-        headers: this.getHeaders(data),
+      const result = await firstValueFrom(this.http.post<T>(fullUrl, data, {
+        headers: this.getHeaders(data, trackingId),
         withCredentials: true,
         ...options
       }) as any);
+      
+      if (result && typeof result === 'object') {
+        (result as any).trackingId = trackingId;
+      }
+      return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }
@@ -94,12 +111,18 @@ export class HttpClientService {
 
   async put<T = any>(url: string, data?: any, options?: any): Promise<T> {
     try {
+      const trackingId = options?.trackingId || this.generateTrackingId();
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
-      return await firstValueFrom(this.http.put<T>(fullUrl, data, {
-        headers: this.getHeaders(data),
+      const result = await firstValueFrom(this.http.put<T>(fullUrl, data, {
+        headers: this.getHeaders(data, trackingId),
         withCredentials: true,
         ...options
       }) as any);
+
+      if (result && typeof result === 'object') {
+        (result as any).trackingId = trackingId;
+      }
+      return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }
@@ -107,12 +130,18 @@ export class HttpClientService {
 
   async delete<T = any>(url: string, options?: any): Promise<T> {
     try {
+      const trackingId = options?.trackingId || this.generateTrackingId();
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
-      return await firstValueFrom(this.http.delete<T>(fullUrl, {
-        headers: this.getHeaders(),
+      const result = await firstValueFrom(this.http.delete<T>(fullUrl, {
+        headers: this.getHeaders(undefined, trackingId),
         withCredentials: true,
         ...options
       }) as any);
+
+      if (result && typeof result === 'object') {
+        (result as any).trackingId = trackingId;
+      }
+      return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }

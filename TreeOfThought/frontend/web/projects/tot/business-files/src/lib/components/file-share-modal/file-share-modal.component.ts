@@ -326,14 +326,14 @@ export class FileShareModalComponent implements OnInit {
         permission = 0;
       }
 
-      await this.filesFoldersService.setFilePermission(
+      const result: any = await this.filesFoldersService.setFilePermission(
         this.file.id,
         permission,
         shareCode,
         expiredAt ? expiredAt.toISOString() : undefined
       );
-      this.message.success('Cập nhật quyền truy cập thành công');
-      this.modal.close(true);
+      this.message.loading('Đang xử lý cập nhật quyền...');
+      this.modal.close({ trackingId: result.trackingId });
     } catch (error) {
       this.message.error('Lỗi khi cập nhật quyền truy cập');
     } finally {
