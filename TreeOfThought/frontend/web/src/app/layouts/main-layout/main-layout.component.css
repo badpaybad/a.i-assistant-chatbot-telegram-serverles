@@ -220,12 +220,23 @@
   justify-content: center;
 }
 
-/* Fix sidemenu text color for non-link elements in dark mode */
-::ng-deep .ant-menu-dark .ant-menu-submenu-title {
+/* Fix sidemenu text color for all elements in dark mode */
+::ng-deep .ant-menu-dark .ant-menu-submenu-title,
+::ng-deep .ant-menu-dark .ant-menu-item,
+::ng-deep .ant-menu-dark .ant-menu-item a {
   color: rgba(255, 255, 255, 0.65) !important;
 }
 
-::ng-deep .ant-menu-dark .ant-menu-submenu-title:hover {
+::ng-deep .ant-menu-dark .ant-menu-submenu-title:hover,
+::ng-deep .ant-menu-dark .ant-menu-item:hover,
+::ng-deep .ant-menu-dark .ant-menu-item-active,
+::ng-deep .ant-menu-dark .ant-menu-item:hover a,
+::ng-deep .ant-menu-dark .ant-menu-item-active a {
+  color: #fff !important;
+}
+
+::ng-deep .ant-menu-dark .ant-menu-item-selected,
+::ng-deep .ant-menu-dark .ant-menu-item-selected a {
   color: #fff !important;
 }
 
@@ -233,8 +244,9 @@
   color: rgba(255, 255, 255, 0.65) !important;
 }
 
-/* Ensure span inside menu items is also styled if it's not a link */
+/* Ensure span and a inside menu items are styled correctly */
 .menu-sidebar .ant-menu-item span:not([nz-icon]),
+.menu-sidebar .ant-menu-item a,
 .menu-sidebar .ant-menu-submenu-title span:not([nz-icon]) {
   color: inherit;
 }
