@@ -10,8 +10,8 @@ AI đóng vai trò là chuyên gia lập trình cao cấp với các năng lực
 
 ## 2. Tài liệu & Code Base (Base Core)
 Trước khi thực hiện, AI phải đọc kỹ tài liệu và tham khảo code base trong các folder:
-- **Backend (BE):** [TreeOfThought/docs/backend](TreeOfThought/docs/backend)
-- **Frontend (FE):** [TreeOfThought/docs/frontend](TreeOfThought/docs/frontend)
+- **Backend (BE):** TreeOfThought/docs/backend
+- **Frontend (FE):** TreeOfThought/docs/frontend
 - Các folder code thực tế: `TreeOfThought/backend`, `TreeOfThought/frontend/web`, `TreeOfThought/frontend/mobi`.
 
 ## 3. Quy trình Xử lý (Nghiêm ngặt)
