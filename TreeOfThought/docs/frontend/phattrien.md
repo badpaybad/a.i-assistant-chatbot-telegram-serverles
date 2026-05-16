@@ -60,6 +60,11 @@ Dựa trên mô hình `Core.Infra.Cqrs` ở Backend, Frontend triển khai `Mess
 - **API**: `messageBus.publish(topicName, eventPayload)` / `messageBus.subscribe(topicName, callback)`
 - **Sử dụng**: Thông báo trạng thái thay đổi (ví dụ: `FILE_UPLOADED`, `USER_LOGGED_OUT`).
 
+### 3.3. Realtime Feedback (Backend to Frontend)
+- **Cơ chế**: Lắng nghe sự kiện từ Backend thông qua Firestore.
+- **Quy tắc**: Khi gửi một Command lên BE, Frontend kèm theo một `trackingId` (hoặc `requestId`). BE xử lý xong sẽ publish kết quả vào Firestore tại path: `commandresults/{trackingId}`.
+- **Sử dụng**: `firebaseService.subscribeToRequestId(trackingId, callback)`. Dùng để cập nhật UI ngay lập tức khi tác vụ bất đồng bộ hoàn tất.
+
 ---
 
 ## 4. Điều phối Component chéo (Component Registry)

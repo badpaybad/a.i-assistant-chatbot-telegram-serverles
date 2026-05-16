@@ -73,7 +73,7 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 - **CQRS**: 
     - Logic nghiệp vụ nằm hoàn toàn ở **Handlers**. 
     - Controller chỉ dùng `IDispatcher` để gửi Command/Event.
-    - Để phản hồi realtime cho UI, chỉ cần Event triển khai `INotifyUiEvent`, hệ thống sẽ tự động handle việc đẩy notify lên Firestore.
+    - Để phản hồi realtime cho UI, chỉ cần Event triển khai `INotifyUiEvent`, hệ thống sẽ tự động handle việc đẩy notify lên Firestore tại path: `commandresults/{TrackingId}`.
 - **Firebase**: Sử dụng `FirebaseService` cho thông báo và lưu trữ. Việc xử lý logic bổ sung (thumb, resize...) thực hiện tại module nghiệp vụ nếu cần.
 
 ### 4.3. Cô lập Nghiệp vụ (Strict Isolation)
