@@ -38,38 +38,52 @@ Hệ thống được xây dựng theo hướng **Modular Monolith** kết hợp
 
 ---
 
-## 3. Quy tắc Phát triển Nghiệp vụ mới (Consistency Guidelines)
+## 3. Kết quả Review Code so với Tài liệu (Gap Analysis)
 
-Để đảm bảo tính nhất quán và hiệu quả khi triển khai các nghiệp vụ mới, cần tuân thủ các nguyên tắc sau:
+Sau khi rà soát chi tiết mã nguồn hiện tại đối chiếu với [yeucau.md](TreeOfThought/docs/backend/yeucau.md), tôi ghi nhận các kết quả sau:
 
-### 3.1. Nhất quán về Auth (Authentication & Authorization)
-- Luôn sử dụng `AppAuthorizeAttribute` cho các Controller/Action.
+### 3.1. Các thành phần đã bám sát tài liệu:
+- [x] **Hạ tầng đa DB**: `BaseDbContext` và `MongoDbContext` hỗ trợ PostgreSQL, MSSQL, MySql và MongoDB.
+- [x] **Hybrid Auth**: `AppAuthorizationHandler` hỗ trợ Claim từ JWT và fallback sang Redis session.
+- [x] **Realtime UI**: `UiNotificationEventHandler` (CQRS) kết hợp Firestore.
+- [x] **OIDC/SSO**: Cấu hình linh hoạt giữa local và external Authority.
+- [x] **Test Clients**: Đã có kế hoạch/thành phần cho MVC test (`webtestoidc`) và Mobile test (`my_pc_assistant`) để kiểm thử SSO.
+
+### 3.2. Các điểm cần bổ sung/hoàn thiện (Gaps):
+- [ ] **Xử lý Video**: Cần bổ sung logic transcoding/thumbnail trong `FirebaseService` (line 27).
+- [ ] **Cleanup Firestore**: Cân nhắc cơ chế TTL cho các message thông báo nếu FE không xóa kịp.
+- [ ] **Đồng bộ Quyền (Auth Sync)**: Cơ chế cập nhật Redis session tức thời khi DB thay đổi quyền.
+
+---
+
+## 4. Quy tắc Phát triển Nghiệp vụ mới (Consistency Guidelines)
+
+Để đảm bảo tính nhất quán, các nghiệp vụ mới cần tuân thủ:
+
+### 4.1. Nhất quán về Auth
+- Luôn sử dụng `AppAuthorizeAttribute`.
 - Định nghĩa **Claim rõ ràng và chính xác**.
-- Tận dụng cơ chế **Hybrid Auth**: Có thể sử dụng session (qua `IUserSessionService`) nếu JWT chưa đủ thông tin.
+- Sử dụng session khi JWT không đủ thông tin.
 
-### 3.2. Nhất quán về Hạ tầng (DB, Cache, CQRS, Firebase)
-- **Database**: Mỗi nghiệp vụ có `DbContext` riêng. Có thể dùng thêm DbContext khác để lấy dữ liệu nghiệp vụ khác nếu cần.
-- **Cache/Redis**: Sử dụng dữ liệu Redis, cache riêng theo nghiệp vụ nếu cần.
-- **CQRS**: 
-    - Logic nghiệp vụ tập trung hoàn toàn tại **Handlers**. 
-    - Controller chỉ đóng vai trò nhận request, kiểm tra quyền và đẩy Command/Query vào Dispatcher.
-- **Firebase**: Sử dụng hạ tầng Firebase sẵn có cho thông báo và lưu trữ.
+### 4.2. Nhất quán về Hạ tầng
+- **Database**: Mỗi nghiệp vụ có `DbContext` riêng.
+- **Cache/Redis**: Sử dụng dữ liệu Redis, cache riêng theo nghiệp vụ.
+- **CQRS**: Tập trung logic tại **Handlers**. Controller chỉ điều phối qua Dispatcher.
+- **Firebase**: Sử dụng hạ tầng sẵn có cho thông báo và lưu trữ.
 
-### 3.3. Trao đổi dữ liệu liên nghiệp vụ (Inter-module Communication)
-- Không gọi trực tiếp service của nghiệp vụ khác.
-- Trao đổi dữ liệu nghiệp vụ khác thông qua **Command/Event**.
+### 4.3. Trao đổi liên nghiệp vụ
+- Sử dụng **Command/Event** để trao đổi dữ liệu.
 
 ---
 
-## 4. Kế hoạch tiếp theo (Khi có lệnh từ User)
+## 5. Kế hoạch tiếp theo (Khi có lệnh từ User)
 
-Khi phát triển nghiệp vụ mới, trọng tâm sẽ nằm ở:
-
-1. **Controller**: Sử dụng `AppAuthorize` với claims chính xác và gọi Dispatcher.
-2. **Handlers**: Thực hiện toàn bộ logic nghiệp vụ tại đây.
-3. **Data**: Thiết lập **DbContext** và **Redis/Cache** riêng theo nhu cầu nghiệp vụ.
-4. **Communication**: Định nghĩa các **Command/Event** để giao tiếp với các module khác.
-5. **Integration**: Viết extension method để đăng ký chạy ở `Program.cs`.
+Khi phát triển nghiệp vụ mới, trọng tâm sẽ là:
+1. **Host Project**: Hiện tại các nghiệp vụ đang được tích hợp vào `Core.Web.Api` để dễ dàng kiểm thử. Tuy nhiên, có thể tạo thêm project API Restful riêng nếu quy mô nghiệp vụ lớn hoặc yêu cầu độc lập.
+2. **Controller**: Gắn `AppAuthorize` với claims chính xác.
+3. **Handlers**: Thực hiện logic nghiệp vụ chính.
+4. **Data**: Thiết lập DbContext/Redis riêng.
+5. **Integration**: Đăng ký extension tại `Program.cs` của host project.
 
 ---
-**Ghi chú**: Tôi đã review code và xác nhận hạ tầng đã sẵn sàng sử dụng (không cần sửa đổi Core Infra). Tôi sẽ tuân thủ các nguyên tắc nhất quán trên khi phát triển các nghiệp vụ tiếp theo.
+**Ghi chú**: Tôi đã ghi nhận thêm các project test (MVC, Mobile) và tính linh hoạt trong việc tạo project API mới. Hệ thống hạ tầng đã sẵn sàng để mở rộng.
