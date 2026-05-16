@@ -35,7 +35,8 @@ Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần c
             Nếu làm đơn giản được thì làm, không được phức tạp vấn đề 
         Khi làm cần đọc yeucau.md để hiểu ý định nếu chưa có cần thông báo người dùng đưa yêu cầu vào yeucau.md, phattrien.md là để xác thực giải pháp, code mới là để thực thi.
             Không được làm lộn xộn logic của người dùng, nếu không biết, không rõ, không chắc chắn thì hỏi
-            nếu phattrien.md đã có trước đó cần đọc để xác định rõ hơn về yêu cầu và ý định  
+        Nếu phattrien.md đã có trước đó cần đọc kết hợp với yeucau.md để xác định rõ hơn về yêu cầu và ý định  
+        File phattrien.md cần đủ để đảm bảo code không tạo ra lộn xộn và không được phép làm mỗi lúc một khác với cùng yêu cầu và ý định của người dùng, cần tuân thủ code base, base infra
         Khi các nghiệp vụ được đưa vào TreeOfThought/backend/Core.Web.Api/ dùng có thể chạy lệnh run-dev.sh ở TreeOfThought/backend/Core.Web.Api/ đọc console log để biết lỗi, và sửa lỗi nếu lỗi.
 
 **Luôn dựa vào yeucau.md để suy nghĩ và đưa ra giải pháp cách làm vào phattrien.md. Luôn cần yêu cầu người dùng xác nhận file phattrien.md trước khi tiến hành**
