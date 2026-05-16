@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { ADMIN_CLAIM, ALL_CLAIMS, AppNotificationService, CLAIMS_VERSION } from '@tot/core';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
@@ -13,7 +13,7 @@ import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzDatePickerModule } from 'ng-zorro-antd/date-picker';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
-import { ALL_CLAIMS, CLAIMS_VERSION, ADMIN_CLAIM } from '../../../core/auth/claims.config';
+
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({

@@ -110,6 +110,110 @@
           "builder": "@angular/build:unit-test"
         }
       }
+    },
+    "@tot/core": {
+      "projectType": "library",
+      "root": "projects/tot/core",
+      "sourceRoot": "projects/tot/core/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/core/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/core/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/core/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@tot/business-test": {
+      "projectType": "library",
+      "root": "projects/tot/business-test",
+      "sourceRoot": "projects/tot/business-test/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/business-test/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/business-test/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/business-test/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@tot/shared": {
+      "projectType": "library",
+      "root": "projects/tot/shared",
+      "sourceRoot": "projects/tot/shared/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/shared/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/shared/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/shared/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@tot/business-files": {
+      "projectType": "library",
+      "root": "projects/tot/business-files",
+      "sourceRoot": "projects/tot/business-files/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/business-files/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/business-files/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/business-files/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

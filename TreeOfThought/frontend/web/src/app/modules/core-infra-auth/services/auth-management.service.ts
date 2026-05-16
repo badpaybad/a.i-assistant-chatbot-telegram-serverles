@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClientService } from '../../../core/http/http-client.service';
+import { HttpClientService } from '@tot/core';
 
 @Injectable({
   providedIn: 'root'

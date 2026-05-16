@@ -10,7 +10,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzEmptyModule } from 'ng-zorro-antd/empty';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, TrackingStep } from '../services/dashboard.service';
 

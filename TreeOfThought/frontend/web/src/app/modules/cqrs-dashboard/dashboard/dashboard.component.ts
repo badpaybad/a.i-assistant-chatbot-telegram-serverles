@@ -19,7 +19,7 @@ import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
 import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService, QueueInfo, DashboardStats, TrackingSummary, WorkerDetail, LastActivity } from '../services/dashboard.service';
 import { MessageListComponent } from '../message-list/message-list.component';

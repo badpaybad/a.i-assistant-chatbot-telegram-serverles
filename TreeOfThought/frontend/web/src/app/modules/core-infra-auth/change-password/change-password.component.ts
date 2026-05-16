@@ -5,9 +5,9 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCardModule } from 'ng-zorro-antd/card';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService, HttpClientService } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { HttpClientService } from '../../../core/http/http-client.service';
+
 
 @Component({
   selector: 'app-change-password',

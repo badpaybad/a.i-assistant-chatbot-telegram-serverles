@@ -1,5 +1,5 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClientService } from '../../../core/http/http-client.service';
+import { HttpClientService } from '@tot/core';
 import { Observable, from } from 'rxjs';
 
 export interface DashboardStats {

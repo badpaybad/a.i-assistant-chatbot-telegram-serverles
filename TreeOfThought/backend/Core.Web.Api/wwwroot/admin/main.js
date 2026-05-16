@@ -1,20 +1,22 @@
 import {
   AuthService,
   NzDescriptionsModule
-} from "./chunk-YP3KBCRE.js";
+} from "./chunk-KKRGUVZ3.js";
 import {
   APP_CLAIMS
-} from "./chunk-F6TGNGA2.js";
+} from "./chunk-UJCY3KJO.js";
 import {
   CqrsTestComponent,
   DashboardService
-} from "./chunk-XQXDXSUQ.js";
+} from "./chunk-YH45WD7F.js";
 import {
   NzPageHeaderComponent,
   NzPageHeaderExtraDirective,
   NzPageHeaderModule
-} from "./chunk-F2HNJKHN.js";
-import "./chunk-BRXGOM47.js";
+} from "./chunk-PC5KZDFE.js";
+import {
+  FIREBASE_CONFIG
+} from "./chunk-NJUCVLCP.js";
 import "./chunk-IRGOCD6C.js";
 import {
   NzBreadCrumbComponent,
@@ -25,34 +27,34 @@ import {
   NzLayoutComponent,
   NzLayoutModule,
   NzSiderComponent
-} from "./chunk-IA42CVZZ.js";
+} from "./chunk-A6ISHOLC.js";
 import {
   NzDividerComponent,
   NzDividerModule
-} from "./chunk-YZJBDBW7.js";
+} from "./chunk-GNG36HQS.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-J2JH5WAC.js";
+} from "./chunk-HDDNX4Q2.js";
 import {
   NzCardComponent,
   NzCardModule,
   NzSkeletonComponent,
   NzSkeletonModule
-} from "./chunk-7RCWUD7A.js";
+} from "./chunk-JXDRQAUC.js";
 import {
   NzDatePickerComponent,
   NzDatePickerModule
-} from "./chunk-IZR5ZOPP.js";
+} from "./chunk-CF2UFJNH.js";
 import {
   NZ_MODAL_DATA,
   NzModalModule,
   NzModalService
-} from "./chunk-BEUTVBBR.js";
+} from "./chunk-PFEQY3QG.js";
 import {
   NzTagComponent,
   NzTagModule
-} from "./chunk-LMDRMSXW.js";
+} from "./chunk-4RPTNRRQ.js";
 import {
   NzCellFixedDirective,
   NzCheckboxComponent,
@@ -85,7 +87,7 @@ import {
   NzTheadComponent,
   NzTrDirective,
   NzTrExpandDirective
-} from "./chunk-F5V5UTFR.js";
+} from "./chunk-OSDGJV5K.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
@@ -93,25 +95,26 @@ import {
   NzFormModule,
   NzTooltipDirective,
   NzTooltipModule
-} from "./chunk-AWLOCL4K.js";
+} from "./chunk-26VYWODA.js";
 import {
   en_US,
   provideNzI18n,
   timeUnits
-} from "./chunk-SPKOZRRR.js";
+} from "./chunk-Z63YUPJA.js";
 import {
   NzColDirective,
   NzGridModule,
   NzRowDirective
-} from "./chunk-7NOM6P4G.js";
-import "./chunk-KMAEKJDE.js";
+} from "./chunk-CPOOBOTL.js";
+import "./chunk-Q6GCGM7I.js";
 import {
   NzInputDirective,
   NzInputGroupComponent,
   NzInputGroupWhitSuffixOrPrefixDirective,
   NzInputModule
-} from "./chunk-OCV5YBAO.js";
+} from "./chunk-GK3L2HWF.js";
 import {
+  API_URL,
   ActivatedRoute,
   AppNotificationService,
   AsyncPipe,
@@ -174,8 +177,9 @@ import {
   registerLocaleData,
   takeUntilDestroyed,
   toBoolean,
+  withInterceptors,
   ɵNgNoValidate
-} from "./chunk-LJSHPVT7.js";
+} from "./chunk-CSQ26TZN.js";
 import {
   ANIMATION_MODULE_TYPE,
   BehaviorSubject,
@@ -215,6 +219,7 @@ import {
   __esDecorate,
   __runInitializers,
   booleanAttribute,
+  catchError,
   defer,
   filter,
   importProvidersFrom,
@@ -230,6 +235,7 @@ import {
   setClassMetadata,
   startWith,
   takeUntil,
+  throwError,
   ɵsetClassDebugInfo,
   ɵɵInheritDefinitionFeature,
   ɵɵNgOnChangesFeature,
@@ -2720,7 +2726,7 @@ var Zone2 = loadZone();
 patchCommon(Zone2);
 patchBrowser(Zone2);
 
-// src/app/core/auth/claim.guard.ts
+// projects/tot/core/src/lib/auth/claim.guard.ts
 var claimGuard = (claimOrClaims, mode = "OR") => {
   return () => {
     const authService = inject(AuthService);
@@ -2758,6 +2764,37 @@ var claimGuard = (claimOrClaims, mode = "OR") => {
     }
     return false;
   };
+};
+
+// projects/tot/core/src/lib/interceptors/auth.interceptor.ts
+var authInterceptor = (req, next) => {
+  const token = localStorage.getItem("jwt_token");
+  if (token) {
+    const cloned = req.clone({
+      setHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return next(cloned);
+  }
+  return next(req);
+};
+
+// projects/tot/core/src/lib/interceptors/error.interceptor.ts
+var errorInterceptor = (req, next) => {
+  const notification = inject(AppNotificationService);
+  const router = inject(Router);
+  const translate = inject(TranslateService);
+  return next(req).pipe(catchError((error) => {
+    var _a;
+    if (error.status === 401) {
+      localStorage.removeItem("jwt_token");
+      router.navigate(["/auth/login"]);
+    }
+    const message = ((_a = error.error) == null ? void 0 : _a.message) || error.message || "Unknown error";
+    notification.error(translate.instant("Th\xF4ng b\xE1o"), translate.instant(message));
+    return throwError(() => error);
+  }));
 };
 
 // src/app/shared/directives/claim.directive.ts
@@ -3591,7 +3628,7 @@ var MainLayoutComponent = _MainLayoutComponent;
   }] });
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 38 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(MainLayoutComponent, { className: "MainLayoutComponent", filePath: "src/app/layouts/main-layout/main-layout.component.ts", lineNumber: 37 });
 })();
 
 // src/app/layouts/auth-layout/auth-layout.component.ts
@@ -10964,22 +11001,22 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-TWP4WJMC.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-ZLZAJWPT.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-5JZTXVJO.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-ZTWJO65D.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-3MUGIEEN.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-JJ2TPI6B.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-IU3NX5VI.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-NJFJJ3BD.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -10990,36 +11027,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-L5HJHUQX.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-ISICD7KN.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-UPZ6JMCA.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-ALQ4EI4A.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-64LJAFZB.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-56KEKJ6N.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-VFBKUPND.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-YHEOQ5KP.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-UARBK3ZR.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-NNV4L6NH.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-GB2HZ5FD.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-4B5CODNH.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -11027,7 +11064,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-S4UROLJO.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-64PJ6VVX.js").then((m) => m.FilesFolders)
       }
     ]
   },
@@ -11322,6 +11359,22 @@ function provideTranslateHttpLoader(config = {}) {
   }];
 }
 
+// src/environments/environment.ts
+var environment = {
+  production: false,
+  apiBaseUrl: "",
+  firebase: {
+    apiKey: "AIzaSyAeOXhZrhaadsOIp1e_0tklcnH8H5KfRZ8",
+    authDomain: "realtimedbtest-d8c6b.firebaseapp.com",
+    databaseURL: "https://realtimedbtest-d8c6b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "realtimedbtest-d8c6b",
+    storageBucket: "realtimedbtest-d8c6b.firebasestorage.app",
+    messagingSenderId: "787425357847",
+    appId: "1:787425357847:web:70987cc599fe6242a92c52",
+    vapidKey: "BBsnw8XbQ0yCpHixy3hKt20NuwTBB_Uqz__TdWPVlAEN6LZekJQCNqDO53JpXO5Q1gJ_3Nfrr28RHvKVtXU1tRw"
+  }
+};
+
 // src/app/app.config.ts
 registerLocaleData(en_default);
 var nzConfig = {
@@ -11337,7 +11390,9 @@ var appConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideNzI18n(en_US),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([authInterceptor, errorInterceptor])),
+    { provide: API_URL, useValue: environment.apiBaseUrl },
+    { provide: FIREBASE_CONFIG, useValue: environment.firebase },
     provideTranslateService({
       fallbackLang: "vi"
     }),

@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
-import { claimGuard } from './core/auth/claim.guard';
-import { APP_CLAIMS } from './core/auth/claims.config';
+import { APP_CLAIMS, claimGuard } from '@tot/core';
+
 
 import { MainLayoutComponent } from './layouts/main-layout/main-layout.component';
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
@@ -45,12 +45,12 @@ export const routes: Routes = [
         children: [
           { 
             path: 'firestore', 
-            loadComponent: () => import('./modules/test/firestore-test/firestore-test.component').then(m => m.FirestoreTestComponent),
+            loadComponent: () => import('@tot/business-test').then(m => m.FirestoreTestComponent),
             data: { breadcrumb: 'Firestore Test' }
           },
           { 
             path: 'fcm', 
-            loadComponent: () => import('./modules/test/fcm-test/fcm-test.component').then(m => m.FcmTestComponent),
+            loadComponent: () => import('@tot/business-test').then(m => m.FcmTestComponent),
             data: { breadcrumb: 'FCM Test' }
           },
           { 
@@ -60,7 +60,7 @@ export const routes: Routes = [
           },
           { 
             path: 'editor', 
-            loadComponent: () => import('./modules/test/editor-test/editor-test.component').then(m => m.EditorTestComponent),
+            loadComponent: () => import('@tot/business-test').then(m => m.EditorTestComponent),
             data: { breadcrumb: 'Editor Test' }
           }
         ]
@@ -109,7 +109,7 @@ export const routes: Routes = [
       {
         path: 'modules/files-folders',
         data: { breadcrumb: 'Quản lý tài liệu' },
-        loadComponent: () => import('./modules/files-folders/components/files-folders/files-folders').then(m => m.FilesFolders)
+        loadComponent: () => import('@tot/business-files').then(m => m.FilesFolders)
       }
 
     ]

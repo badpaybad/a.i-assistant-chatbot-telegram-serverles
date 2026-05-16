@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService } from '@tot/core';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';

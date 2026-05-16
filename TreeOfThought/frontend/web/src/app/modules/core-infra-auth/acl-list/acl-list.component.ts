@@ -17,7 +17,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AppSelectComponent } from '../../../shared';
+import { AppSelectComponent } from '@tot/shared';
 
 @Component({
   selector: 'app-acl-list',

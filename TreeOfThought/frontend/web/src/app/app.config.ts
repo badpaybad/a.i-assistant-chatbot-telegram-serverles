@@ -6,7 +6,7 @@ import { en_US, provideNzI18n } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import en from '@angular/common/locales/en';
 import { FormsModule } from '@angular/forms';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { IconDefinition } from '@ant-design/icons-angular';
 import * as AllIcons from '@ant-design/icons-angular/icons';
@@ -14,6 +14,9 @@ import * as AllIcons from '@ant-design/icons-angular/icons';
 import { provideTranslateService } from '@ngx-translate/core';
 import { provideTranslateHttpLoader } from '@ngx-translate/http-loader';
 import { NZ_CONFIG, NzConfig } from 'ng-zorro-antd/core/config';
+
+import { environment } from '../environments/environment';
+import { authInterceptor, errorInterceptor, API_URL, FIREBASE_CONFIG } from '@tot/core';
 
 registerLocaleData(en);
 
@@ -32,7 +35,11 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideNzI18n(en_US),
-    provideHttpClient(),
+    provideHttpClient(
+      withInterceptors([authInterceptor, errorInterceptor])
+    ),
+    { provide: API_URL, useValue: environment.apiBaseUrl },
+    { provide: FIREBASE_CONFIG, useValue: environment.firebase },
     provideTranslateService({
       fallbackLang: 'vi'
     }),

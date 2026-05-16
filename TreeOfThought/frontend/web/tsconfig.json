@@ -3,6 +3,12 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "paths": {
+      "@tot/business-files": ["./projects/tot/business-files/src/public-api.ts"],
+      "@tot/business-test": ["./projects/tot/business-test/src/public-api.ts"],
+      "@tot/core": ["./projects/tot/core/src/public-api.ts"],
+      "@tot/shared": ["./projects/tot/shared/src/public-api.ts"]
+    },
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -30,6 +36,30 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/core/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/core/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/business-test/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/business-test/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/shared/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/shared/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/business-files/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/business-files/tsconfig.spec.json"
     }
   ]
 }

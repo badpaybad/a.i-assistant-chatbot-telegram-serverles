@@ -14,9 +14,9 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService, AuthService } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AuthService } from '../../../core/auth/auth.service';
+
 
 @Component({
   selector: 'app-login',

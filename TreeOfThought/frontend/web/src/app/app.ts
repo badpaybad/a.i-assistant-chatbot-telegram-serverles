@@ -2,7 +2,7 @@ import { Component, TemplateRef, ViewChild, AfterViewInit, inject } from '@angul
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { TranslateService } from '@ngx-translate/core';
-import { NotificationTemplateService } from './core/services/notification-template.service';
+import { NotificationTemplateService } from '@tot/core';
 
 @Component({
   selector: 'app-root',

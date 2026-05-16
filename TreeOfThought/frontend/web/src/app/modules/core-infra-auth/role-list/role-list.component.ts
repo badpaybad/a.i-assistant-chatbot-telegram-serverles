@@ -15,8 +15,8 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
-import { AppSelectComponent } from '../../../shared';
-import { ADMIN_CLAIM, ADMIN_ROLE } from '../../../core/auth/claims.config';
+import { AppSelectComponent } from '@tot/shared';
+import { ADMIN_CLAIM, ADMIN_ROLE } from '@tot/core';
 
 @Component({
   selector: 'app-role-list',

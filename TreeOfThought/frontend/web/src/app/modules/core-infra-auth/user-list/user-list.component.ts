@@ -17,7 +17,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
-import { AppSelectComponent } from '../../../shared';
+import { AppSelectComponent } from '@tot/shared';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
 @Component({

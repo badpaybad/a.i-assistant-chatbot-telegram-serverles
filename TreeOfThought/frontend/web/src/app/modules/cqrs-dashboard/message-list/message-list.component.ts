@@ -4,7 +4,7 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { DashboardService } from '../services/dashboard.service';

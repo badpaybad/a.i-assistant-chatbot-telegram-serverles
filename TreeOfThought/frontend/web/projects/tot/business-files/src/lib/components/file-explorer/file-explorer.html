@@ -1,0 +1,154 @@
+<div class="explorer-container">
+  <div class="search-section">
+    <nz-input-group [nzSuffix]="suffixTemplate">
+      <input type="text" nz-input placeholder="Tìm kiếm tên file..." [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" />
+    </nz-input-group>
+    <ng-template #suffixTemplate>
+      <div class="search-actions">
+        <span nz-icon nzType="close-circle" class="clear-btn" *ngIf="searchQuery || searchResults.length > 0" (click)="clearSearch()" nz-tooltip nzTooltipTitle="Xóa tìm kiếm"></span>
+        <span nz-icon [nzType]="searching ? 'loading' : 'search'" class="search-btn" (click)="onSearch()"></span>
+      </div>
+    </ng-template>
+
+    <nz-collapse [nzBordered]="false" class="search-results-collapse" *ngIf="searchResults.length > 0 || searching">
+      <nz-collapse-panel [nzHeader]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [nzActive]="searchExpanded">
+        <nz-table 
+          #searchTable 
+          [nzData]="searchResults" 
+          nzSize="small" 
+          [nzPageIndex]="searchPageIndex"
+          [nzPageSize]="searchPageSize"
+          (nzPageIndexChange)="searchPageIndex = $event"
+        >
+          <thead>
+            <tr>
+              <th>Tên file</th>
+              <th>Đường dẫn</th>
+              <th nzWidth="100px">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let data of searchTable.data">
+              <td>
+                <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+                {{ data.name }}
+              </td>
+              <td><nz-tag>{{ data.folderPath }}</nz-tag></td>
+              <td>
+                <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(data)" style="margin-right: 8px">
+                  Chèn
+                </button>
+                <button nz-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip nzTooltipTitle="Đi đến thư mục">
+                  <span nz-icon nzType="arrow-right"></span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </nz-table>
+      </nz-collapse-panel>
+    </nz-collapse>
+  </div>
+
+  <div class="explorer-toolbar">
+    <div class="toolbar-left">
+      <nz-breadcrumb>
+        <nz-breadcrumb-item>
+          <a (click)="navigateToFolder(null)">
+            <span nz-icon nzType="home"></span> Tài liệu của tôi
+          </a>
+        </nz-breadcrumb-item>
+        <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
+          <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
+        </nz-breadcrumb-item>
+      </nz-breadcrumb>
+    </div>
+    <div class="toolbar-right">
+      <app-create-folder-popover
+        [parentId]="selectedFolderId"
+        [currentFolderName]="currentFolderName"
+        buttonText="Thêm mới"
+        buttonIcon="folder-add"
+        style="margin-right: 8px"
+      ></app-create-folder-popover>
+
+      <button nz-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px">
+        <span nz-icon nzType="upload"></span> Tải lên
+      </button>
+      <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
+      
+      <button nz-button nzType="default" (click)="loadContent()">
+        <span nz-icon nzType="reload"></span> Làm mới
+      </button>
+    </div>
+  </div>
+
+
+  <nz-table 
+    #basicTable 
+    [nzData]="files" 
+    [nzLoading]="loading" 
+    nzSize="middle"
+    [nzFrontPagination]="false"
+    [nzTotal]="total"
+    [nzPageIndex]="pageIndex"
+    [nzPageSize]="pageSize"
+    (nzPageIndexChange)="onPageIndexChange($event)"
+    (nzPageSizeChange)="onPageSizeChange($event)"
+  >
+    <thead>
+      <tr>
+        <th nzWidth="40px"></th>
+        <th>Tên</th>
+        <th>Kích thước</th>
+        <th>Loại</th>
+        <th>Ngày tạo</th>
+        <th nzWidth="150px">Hành động</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let folder of folders">
+        <td><span nz-icon nzType="folder" nzTheme="fill" style="color: #ffca28"></span></td>
+        <td><a (click)="selectedFolderId = folder.id; loadContent()">{{ folder.name }}</a></td>
+        <td>--</td>
+        <td>Thư mục</td>
+        <td>--</td>
+        <td>
+          <div class="action-buttons">
+            <button nz-button nzType="text" (click)="openMoveModal(folder, 'folder')" nz-tooltip nzTooltipTitle="Di chuyển">
+              <span nz-icon nzType="drag"></span>
+            </button>
+            <button nz-button nzType="text" nzDanger (click)="deleteFolder(folder.id)" nz-tooltip nzTooltipTitle="Xóa">
+              <span nz-icon nzType="delete"></span>
+            </button>
+          </div>
+        </td>
+      </tr>
+      <tr *ngFor="let file of files">
+        <td><span nz-icon nzType="file" nzTheme="outline" style="color: #1890ff"></span></td>
+        <td><a [href]="file.url" target="_blank">{{ file.name }}</a></td>
+        <td>{{ formatSize(file.size) }}</td>
+        <td>{{ file.mimeType }}</td>
+        <td>{{ file.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+        <td>
+          <div class="action-buttons">
+            <button *ngIf="selectionMode" nz-button nzType="primary" nzSize="small" (click)="onSelectFile(file)">
+              Chèn
+            </button>
+            <a nz-button nzType="text" [href]="file.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
+              <span nz-icon nzType="download"></span>
+            </a>
+            <button nz-button nzType="text" (click)="openShareModal(file)" nz-tooltip nzTooltipTitle="Chia sẻ">
+              <span nz-icon nzType="share-alt"></span>
+            </button>
+            <button nz-button nzType="text" (click)="openMoveModal(file, 'file')" nz-tooltip nzTooltipTitle="Di chuyển">
+              <span nz-icon nzType="drag"></span>
+            </button>
+            <button nz-button nzType="text" nzDanger (click)="deleteFile(file.id)" nz-tooltip nzTooltipTitle="Xóa">
+              <span nz-icon nzType="delete"></span>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</div>

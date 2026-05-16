@@ -6,14 +6,12 @@ import { NzMenuModule } from 'ng-zorro-antd/menu';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
-import { AuthService } from '../../core/auth/auth.service';
-import { APP_CLAIMS } from '../../core/auth/claims.config';
+import { AuthService, APP_CLAIMS, AppClaimDirective } from '@tot/core';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { NzDropDownModule } from 'ng-zorro-antd/dropdown';
 import { NzBreadCrumbModule } from 'ng-zorro-antd/breadcrumb';
 import { Router, ActivatedRoute, NavigationEnd, Event } from '@angular/router';
 import { filter } from 'rxjs/operators';
-import { AppClaimDirective } from '../../shared/directives/claim.directive';
 
 @Component({
   selector: 'app-main-layout',

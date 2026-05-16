@@ -6,8 +6,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDescriptionsModule } from 'ng-zorro-antd/descriptions';
 import { NzTabsModule } from 'ng-zorro-antd/tabs';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { AuthService } from '../../../core/auth/auth.service';
-import { APP_CLAIMS, ADMIN_CLAIM, ADMIN_ROLE, CLAIMS_VERSION } from '../../../core/auth/claims.config';
+import { ADMIN_CLAIM, ADMIN_ROLE, APP_CLAIMS, AuthService, CLAIMS_VERSION } from '@tot/core';
+
 import { TranslateModule } from '@ngx-translate/core';
 
 @Component({

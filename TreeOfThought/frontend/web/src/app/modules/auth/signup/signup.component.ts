@@ -6,8 +6,8 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
-import { AuthService } from '../../../core/auth/auth.service';
-import { AppNotificationService } from '../../../core/services/app-notification.service';
+import { AppNotificationService, AuthService } from '@tot/core';
+
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 
