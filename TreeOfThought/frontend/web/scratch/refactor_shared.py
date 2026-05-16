@@ -2,7 +2,7 @@ import os
 import re
 
 # Directories to process
-dirs_to_process = ['src/app', 'projects/tot/business-test/src/lib']
+dirs_to_process = ['src/app', 'projects/tot/business-test/src/lib', 'projects/tot/business-auth/src/lib', 'projects/tot/business-files/src/lib', 'projects/tot/business-dashboard/src/lib']
 
 # Patterns
 # 1. Claim Directive (Special case - moved to core)

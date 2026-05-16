@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["src/app/modules/files-folders/components/files-folders/files-folders.css"],
+  "sources": ["projects/tot/business-files/src/lib/components/files-folders/files-folders.css"],
   "sourcesContent": [".files-layout {\n  height: calc(100vh - 150px);\n  background: #fff;\n  border-radius: 8px;\n  overflow: hidden;\n  box-shadow: 0 4px 12px rgba(0,0,0,0.05);\n}\n\n.folder-sider {\n  border-right: 1px solid #f0f0f0;\n  height: 100%;\n  overflow-y: auto;\n}\n\n.explorer-content {\n  background: #fff;\n  height: 100%;\n  overflow-y: auto;\n}\n\n.files-layout.selection-mode {\n  height: 600px;\n  box-shadow: none;\n  border: 1px solid #f0f0f0;\n}\n"],
   "mappings": ";AAAA,CAAC;AACC,UAAQ,KAAK,MAAM,EAAE;AACrB,cAAY;AACZ,iBAAe;AACf,YAAU;AACV,cAAY,EAAE,IAAI,KAAK,KAAK,CAAC,EAAC,CAAC,EAAC,CAAC,EAAC;AACpC;AAEA,CAAC;AACC,gBAAc,IAAI,MAAM;AACxB,UAAQ;AACR,cAAY;AACd;AAEA,CAAC;AACC,cAAY;AACZ,UAAQ;AACR,cAAY;AACd;AAEA,CApBC,YAoBY,CAAC;AACZ,UAAQ;AACR,cAAY;AACZ,UAAQ,IAAI,MAAM;AACpB;",
   "names": []

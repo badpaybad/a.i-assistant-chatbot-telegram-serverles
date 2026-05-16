@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;c1be7f8108080fb46e612cf4a6008186d841b4d04e7d60fb3d8e4ffe93bbf65f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/core-infra-auth/role-list/role-list.component.ts"],
+  "sources": ["angular:styles/component:css;c1be7f8108080fb46e612cf4a6008186d841b4d04e7d60fb3d8e4ffe93bbf65f;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-auth/src/lib/role-list/role-list.component.ts"],
   "sourcesContent": ["\n    .search-card {\n      margin-bottom: 16px;\n    }\n    .search-actions {\n      display: flex;\n      justify-content: flex-end;\n      align-items: center;\n    }\n    .claim-tags {\n      display: flex;\n      flex-wrap: wrap;\n      gap: 4px;\n    }\n    nz-tag {\n      margin-bottom: 4px;\n    }\n  "],
   "mappings": ";AACI,CAAC;AACC,iBAAe;AACjB;AACA,CAAC;AACC,WAAS;AACT,mBAAiB;AACjB,eAAa;AACf;AACA,CAAC;AACC,WAAS;AACT,aAAW;AACX,OAAK;AACP;AACA;AACE,iBAAe;AACjB;",
   "names": []

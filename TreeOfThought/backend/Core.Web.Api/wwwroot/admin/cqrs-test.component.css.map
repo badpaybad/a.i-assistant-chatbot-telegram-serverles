@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;1c2784f98fa591517c95b6c32249948c9d56b8b33b8869b5cc3b50156ce3230a;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/cqrs-dashboard/cqrs-test/cqrs-test.component.ts"],
+  "sources": ["angular:styles/component:css;1c2784f98fa591517c95b6c32249948c9d56b8b33b8869b5cc3b50156ce3230a;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-dashboard/src/lib/cqrs-test/cqrs-test.component.ts"],
   "sourcesContent": ["\n    nz-card {\n      margin-bottom: 24px;\n      border-radius: 8px;\n      box-shadow: 0 4px 12px rgba(0,0,0,0.05);\n    }\n    label {\n      display: block;\n      margin-bottom: 8px;\n      font-weight: 500;\n    }\n  "],
   "mappings": ";AACI;AACE,iBAAe;AACf,iBAAe;AACf,cAAY,EAAE,IAAI,KAAK,KAAK,CAAC,EAAC,CAAC,EAAC,CAAC,EAAC;AACpC;AACA;AACE,WAAS;AACT,iBAAe;AACf,eAAa;AACf;",
   "names": []

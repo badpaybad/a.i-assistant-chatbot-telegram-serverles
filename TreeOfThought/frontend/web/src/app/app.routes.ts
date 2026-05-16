@@ -6,9 +6,6 @@ import { MainLayoutComponent } from './layouts/main-layout/main-layout.component
 import { AuthLayoutComponent } from './layouts/auth-layout/auth-layout.component';
 import { LoginComponent } from './modules/auth/login/login.component';
 import { SignupComponent } from './modules/auth/signup/signup.component';
-import { DashboardComponent } from './modules/cqrs-dashboard/dashboard/dashboard.component';
-import { TracingComponent } from './modules/cqrs-dashboard/tracing/tracing.component';
-import { MessageListComponent } from './modules/cqrs-dashboard/message-list/message-list.component';
 
 export const routes: Routes = [
   {
@@ -22,20 +19,25 @@ export const routes: Routes = [
         children: [
           { 
             path: '', 
-            component: DashboardComponent,
+            loadComponent: () => import('@tot/business-dashboard').then(m => m.DashboardComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           { 
             path: 'tracing/:id', 
-            component: TracingComponent,
+            loadComponent: () => import('@tot/business-dashboard').then(m => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Tracing' }
           },
           { 
             path: 'messages/:queueName', 
-            component: MessageListComponent,
+            loadComponent: () => import('@tot/business-dashboard').then(m => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Messages' }
+          },
+          { 
+            path: 'cqrs', 
+            loadComponent: () => import('@tot/business-dashboard').then(m => m.CqrsTestComponent),
+            data: { breadcrumb: 'CQRS Test' }
           }
         ]
       },
@@ -54,11 +56,6 @@ export const routes: Routes = [
             data: { breadcrumb: 'FCM Test' }
           },
           { 
-            path: 'cqrs', 
-            loadComponent: () => import('./modules/cqrs-dashboard/cqrs-test/cqrs-test.component').then(m => m.CqrsTestComponent),
-            data: { breadcrumb: 'CQRS Test' }
-          },
-          { 
             path: 'editor', 
             loadComponent: () => import('@tot/business-test').then(m => m.EditorTestComponent),
             data: { breadcrumb: 'Editor Test' }
@@ -71,39 +68,38 @@ export const routes: Routes = [
         children: [
           {
             path: 'users',
-            loadComponent: () => import('./modules/core-infra-auth/user-list/user-list.component').then(m => m.UserListComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: 'Người dùng' }
           },
           {
             path: 'roles',
-            loadComponent: () => import('./modules/core-infra-auth/role-list/role-list.component').then(m => m.RoleListComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: 'Vai trò' }
           },
           {
             path: 'claims',
-            loadComponent: () => import('./modules/core-infra-auth/claim-sync/claim-sync.component').then(m => m.ClaimSyncComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: 'Quyền' }
           },
           {
             path: 'acl',
-            loadComponent: () => import('./modules/core-infra-auth/acl-list/acl-list.component').then(m => m.AclListComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: 'Quản lý ACL' }
           },
           {
             path: 'change-password',
-            loadComponent: () => import('./modules/core-infra-auth/change-password/change-password.component').then(m => m.ChangePasswordComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.ChangePasswordComponent),
             data: { breadcrumb: 'Đổi mật khẩu' }
           },
           {
             path: 'authorize-info',
-            loadComponent: () => import('./modules/core-infra-auth/authorize-info/authorize-info.component').then(m => m.AuthorizeInfoComponent),
+            loadComponent: () => import('@tot/business-auth').then(m => m.AuthorizeInfoComponent),
             data: { breadcrumb: 'Thông tin phân quyền' }
           }
-
         ]
       },
       {

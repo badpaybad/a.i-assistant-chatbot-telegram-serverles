@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["src/app/modules/cqrs-dashboard/message-list/message-list.component.css"],
+  "sources": ["projects/tot/business-dashboard/src/lib/message-list/message-list.component.css"],
   "sourcesContent": [".message-list-content {\n  padding: 24px;\n}\n\n.msg-cell {\n  font-family: monospace;\n  color: #555;\n}\n\n.no-data {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n"],
   "mappings": ";AAAA,CAAC;AACC,WAAS;AACX;AAEA,CAAC;AACC,eAAa;AACb,SAAO;AACT;AAEA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,SAAO;AACT;",
   "names": []

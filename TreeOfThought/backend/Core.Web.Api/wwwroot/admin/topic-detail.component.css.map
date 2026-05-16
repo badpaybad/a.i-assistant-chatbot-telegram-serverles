@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;0070e35dc6a0f2c9e08fc83dcb214cbeb92a2d4b0d320c393e09e02b9801fc82;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/modules/cqrs-dashboard/topic-detail/topic-detail.component.ts"],
+  "sources": ["angular:styles/component:css;0070e35dc6a0f2c9e08fc83dcb214cbeb92a2d4b0d320c393e09e02b9801fc82;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-dashboard/src/lib/topic-detail/topic-detail.component.ts"],
   "sourcesContent": ["\n    .topic-detail-container {\n      min-height: 400px;\n    }\n  "],
   "mappings": ";AACI,CAAC;AACC,cAAY;AACd;",
   "names": []

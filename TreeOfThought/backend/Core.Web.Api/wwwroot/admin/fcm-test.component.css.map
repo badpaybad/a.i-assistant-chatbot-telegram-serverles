@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "sources": ["src/app/modules/test/fcm-test/fcm-test.component.css"],
+  "sources": ["projects/tot/business-test/src/lib/fcm-test/fcm-test.component.css"],
   "sourcesContent": [".test-content {\n  padding: 24px;\n}\n\npre {\n  background: #f0f0f0;\n  padding: 8px;\n  border-radius: 4px;\n  margin-top: 8px;\n}\n"],
   "mappings": ";AAAA,CAAC;AACC,WAAS;AACX;AAEA;AACE,cAAY;AACZ,WAAS;AACT,iBAAe;AACf,cAAY;AACd;",
   "names": []

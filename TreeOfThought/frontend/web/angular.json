@@ -214,6 +214,58 @@
           }
         }
       }
+    },
+    "@tot/business-auth": {
+      "projectType": "library",
+      "root": "projects/tot/business-auth",
+      "sourceRoot": "projects/tot/business-auth/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/business-auth/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/business-auth/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/business-auth/tsconfig.spec.json"
+          }
+        }
+      }
+    },
+    "@tot/business-dashboard": {
+      "projectType": "library",
+      "root": "projects/tot/business-dashboard",
+      "sourceRoot": "projects/tot/business-dashboard/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/business-dashboard/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/business-dashboard/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/business-dashboard/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

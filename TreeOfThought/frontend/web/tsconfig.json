@@ -4,6 +4,8 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
+      "@tot/business-auth": ["./projects/tot/business-auth/src/public-api.ts"],
+      "@tot/business-dashboard": ["./projects/tot/business-dashboard/src/public-api.ts"],
       "@tot/business-files": ["./projects/tot/business-files/src/public-api.ts"],
       "@tot/business-test": ["./projects/tot/business-test/src/public-api.ts"],
       "@tot/core": ["./projects/tot/core/src/public-api.ts"],
@@ -60,6 +62,18 @@
     },
     {
       "path": "./projects/tot/business-files/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/business-auth/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/business-auth/tsconfig.spec.json"
+    },
+    {
+      "path": "./projects/tot/business-dashboard/tsconfig.lib.json"
+    },
+    {
+      "path": "./projects/tot/business-dashboard/tsconfig.spec.json"
     }
   ]
 }

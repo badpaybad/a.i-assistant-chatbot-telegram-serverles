@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;7d3af1f026fbaab0e36b5e69f1bbc036aa2169a05ff337fbfed09300776c80fc;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/src/app/shared/components/file-select-modal/file-select-modal.component.ts"],
-  "sourcesContent": ["\n    .file-item:hover {\n      background-color: #f5f5f5;\n    }\n    .file-item-content { display: flex; align-items: center; }\n    .mt-3 { margin-top: 1rem; }\n    .ms-2 { margin-left: 0.5rem; }\n    .ms-3 { margin-left: 1rem; }\n    .w-100 { width: 100%; }\n  "],
-  "mappings": ";AACI,CAAC,SAAS;AACR,oBAAkB;AACpB;AACA,CAAC;AAAoB,WAAS;AAAM,eAAa;AAAQ;AACzD,CAAC;AAAO,cAAY;AAAM;AAC1B,CAAC;AAAO,eAAa;AAAQ;AAC7B,CAAC;AAAO,eAAa;AAAM;AAC3B,CAAC;AAAQ,SAAO;AAAM;",
+  "sources": ["angular:styles/component:css;2df31b196f9cc4a1e71928d5763507a7957dc271fa049505ab59c9ffd7a5b1a3;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/file-select-modal/file-select-modal.component.ts"],
+  "sourcesContent": ["\n    .file-select-modal-container {\n      min-height: 400px;\n    }\n  "],
+  "mappings": ";AACI,CAAC;AACC,cAAY;AACd;",
   "names": []
 }
