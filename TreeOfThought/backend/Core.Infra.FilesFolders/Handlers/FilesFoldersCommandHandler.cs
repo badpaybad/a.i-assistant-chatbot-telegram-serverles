@@ -77,15 +77,22 @@ public class FilesFoldersCommandHandler :
         var folder = await _db.Folders.FindAsync(command.FolderId);
         if (folder == null) return;
 
-        // Recursive delete: find all subfolders and files
-        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(folder.Path)).ToListAsync();
+        var folderPath = folder.Path;
+        var folderName = folder.Name;
+
+        // 1. Recursive DB search: find all descendant folders and their files
+        // Path.StartsWith ensures we get the folder itself and all nested subfolders
+        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(folderPath)).ToListAsync();
         var folderIds = subfolders.Select(f => (Guid?)f.Id).ToList();
-        folderIds.Add(folder.Id);
 
-        var files = await _db.Files.Where(f => folderIds.Contains(f.FolderId)).ToListAsync();
+        var filesInDb = await _db.Files.Where(f => folderIds.Contains(f.FolderId)).ToListAsync();
 
-        // Delete files from GCS
-        foreach (var file in files)
+        _logger.LogInformation("Starting thorough deletion for folder '{FolderName}' (ID: {FolderId}, Path: {Path}). Found {SubfolderCount} subfolders and {FileCount} files in DB.", 
+            folderName, command.FolderId, folderPath, subfolders.Count, filesInDb.Count);
+
+        // 2. Individual GCS Deletion (from DB URLs)
+        // Ensures files with diverged paths (due to past moves/renames) are deleted.
+        foreach (var file in filesInDb)
         {
             try 
             {
@@ -94,13 +101,36 @@ public class FilesFoldersCommandHandler :
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting file {FileId} from GCS", file.Id);
+                _logger.LogWarning(ex, "Could not delete file {FileId} from GCS (URL={Url}). It might have been already deleted.", file.Id, file.Url);
             }
         }
 
-        _db.Files.RemoveRange(files);
+        // 3. Prefix-based GCS Cleanup (Thorough cleanup of orphans)
+        // Ensures any files matching the prefix that are NOT in the DB are also removed to avoid storage costs.
+        try
+        {
+            var gcsObjects = await _firebaseService.ListFilesAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, folderPath);
+            foreach (var objectName in gcsObjects)
+            {
+                try
+                {
+                    await _firebaseService.DeleteFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error deleting GCS object during prefix cleanup: {ObjectName}", objectName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during thorough GCS prefix cleanup for path: {Path}", folderPath);
+        }
+
+        // 4. Final DB Wipe
+        _db.Files.RemoveRange(filesInDb);
         _db.Folders.RemoveRange(subfolders);
-        _db.Folders.Remove(folder);
+        
         await _db.SaveChangesAsync();
 
         await _dispatcher.PublishAsync(new FolderDeletedEvent
@@ -108,7 +138,7 @@ public class FilesFoldersCommandHandler :
             TrackingId = command.TrackingId,
             UserId = command.UserId,
             FolderId = command.FolderId,
-            Message = $"Thư mục '{folder.Name}' đã được xóa"
+            Message = $"Thư mục '{folderName}' và toàn bộ nội dung đã được xóa triệt để"
         });
     }
 

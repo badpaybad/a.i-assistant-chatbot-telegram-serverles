@@ -7,6 +7,7 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
 - **Xem chi tiết & Preview:** Tích hợp preview đa định dạng trong Modal chi tiết.
 - **Đổi tên nhanh (Popover):** Chuyển từ Modal sang Popover cho cả Treeview và Listview.
 - **Accordion:** Phân tách danh sách Thư mục và Tệp tin thành các khối có thể đóng/mở độc lập.
+- **Xóa triệt để:** Đảm bảo khi xóa thư mục, toàn bộ tệp tin và thư mục con trong DB và trên Google Cloud Storage (GCS) đều bị xóa sạch để tránh phát sinh chi phí.
 
 ## 2. Giải pháp kỹ thuật
 
@@ -44,6 +45,16 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
     - Sử dụng Flexbox (`flex-wrap: wrap`) để tự động xuống dòng khi hết chiều rộng.
     - Tiết kiệm không gian và mang lại cảm giác hiện đại (premium).
 
+### E. Recursive Deletion & GCS Cleanup
+- **Logic Backend**:
+    - **Bước 1**: Tìm tất cả thư mục con (mọi cấp) dựa trên `Path.StartsWith(folder.Path)`.
+    - **Bước 2**: Tìm tất cả tệp tin thuộc về các thư mục đó trong DB.
+    - **Bước 3 (Xóa GCS)**:
+        - Xóa các tệp tin tìm được ở Bước 2 dựa trên URL (đảm bảo xóa được cả các file đã bị move/rename nhưng chưa đổi path vật lý).
+        - **Bổ sung**: Quét (List) toàn bộ objects trên GCS có prefix là `folder.Path` và xóa nốt (đảm bảo không còn "rác" hay file mồ côi trên Cloud Storage).
+    - **Bước 4 (Xóa DB)**: Xóa Range tệp tin và thư mục trong DB.
+- **Hiệu quả**: Đảm bảo 100% tài nguyên được giải phóng, tối ưu chi phí lưu trữ GCS.
+
 ## 3. Kế hoạch triển khai (Tasks)
 1. [x] Cập nhật `HttpClientService` (Core FE) để hỗ trợ TrackingId.
 2. [x] Cập nhật `FirebaseService` (Core BE) để sử dụng Options pattern.
@@ -60,6 +71,7 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
     - Triển khai Accordion compact cho Thư mục và Tệp tin.
     - Chuyển đổi danh sách Folder sang dạng Grid (ô vuông).
 13. [ ] Tự động mở modal thiết lập quyền sau khi upload file thành công.
+14. [x] Cập nhật logic xóa thư mục triệt để (GCS prefix cleanup).
 
 ## 4. Xác nhận từ người dùng
 - Bạn có đồng ý chuyển sang dùng Popover thay cho Modal khi đổi tên không? (Điều này giúp thao tác nhanh hơn nhưng cần xử lý vị trí hiển thị khéo léo).
