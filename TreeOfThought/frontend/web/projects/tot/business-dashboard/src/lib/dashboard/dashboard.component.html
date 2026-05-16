@@ -55,62 +55,15 @@
   <ng-container [ngSwitch]="activeTab">
     <div *ngSwitchCase="'queues'">
       <nz-card [nzTitle]="'Danh sách thực thể CQRS' | translate">
-        <nz-table #queueTable [nzData]="queues" [nzLoading]="loading" [nzPageSize]="100" [nzShowPagination]="false" nzSize="middle" [nzScroll]="{ x: '1200px' }">
-          <thead>
-            <tr>
-              <th nzWidth="80px" nzLeft="0px">{{ 'Loại' | translate }}</th>
-              <th nzWidth="200px" nzLeft="80px">{{ 'Tên topic/ queue' | translate }}</th>
-              <th nzWidth="100px">{{ 'Đang xử lý' | translate }}</th>
-              <th nzWidth="120px">{{ 'Đã xử lý thành công' | translate }}</th>
-              <th nzWidth="100px">{{ 'Đã xử lý lỗi' | translate }}</th>
-              <th nzWidth="100px">{{ 'Tổng message' | translate }}</th>
-              <th nzWidth="200px">{{ 'Danh sách worker' | translate }}</th>
-              <th>{{ 'Danh sách command handle / event handle' | translate }}</th>
-              <th nzWidth="150px" nzRight="0px">{{ 'Hành động' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let q of queueTable.data">
-              <td nzLeft="0px">
-                <nz-tag [nzColor]="q.type === 'Queue' ? 'blue' : q.type === 'Topic' ? 'purple' : 'default'">
-                  {{ (q.type === 'Queue' ? 'queue' : q.type === 'Topic' ? 'topic' : 'internal') | translate }}
-                </nz-tag>
-              </td>
-              <td nzLeft="80px">
-                <div class="queue-name-cell">
-                  <span class="queue-name">{{ q.name }}</span>
-                </div>
-              </td>
-              <td><nz-tag nzColor="processing">{{ q.activeCount }}</nz-tag></td>
-              <td><nz-tag nzColor="success">{{ q.processedCount }}</nz-tag></td>
-              <td><nz-tag nzColor="error">{{ q.errorCount }}</nz-tag></td>
-              <td><b>{{ q.totalCount }}</b></td>
-              <td>
-                <div class="worker-tags">
-                  <nz-tag *ngFor="let w of q.workers" nzColor="processing">{{ w }}</nz-tag>
-                </div>
-              </td>
-              <td>
-                <div class="handler-grid">
-                  <div *ngFor="let h of q.handlers" class="handler-tag-item">
-                    <span class="h-name">{{ h.handlerName }}</span>
-                    <span class="m-name">{{ h.messageName }}</span>
-                  </div>
-                </div>
-              </td>
-              <td nzRight="0px">
-                <div style="display: flex; gap: 4px; flex-direction: column;">
-                  <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(q)">
-                    {{ 'Chi tiết' | translate }}
-                  </tot-button>
-                  <tot-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
-                    {{ 'Xem đang xử lý' | translate }}
-                  </tot-button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <tot-table
+          [data]="queues"
+          [columns]="queueColumns"
+          [loading]="loading"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          [scroll]="{ x: '1200px' }"
+        ></tot-table>
       </nz-card>
     </div>
 
@@ -154,96 +107,19 @@
           [expandTemplate]="expandTpl"
           (queryParamsChange)="onQueryParamsChange($event)"
         ></tot-table>
-
-        <ng-template #statusTpl let-data>
-          <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
-            {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | translate }}
-          </nz-tag>
-        </ng-template>
-
-        <ng-template #contentTpl let-data>
-          <div class="content-preview">
-            <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
-            <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
-              <span nz-icon nzType="copy"></span>
-            </button>
-          </div>
-        </ng-template>
-
-        <ng-template #actionsTpl let-data>
-          <nz-space>
-            <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
-              <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
-            </tot-button>
-            <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
-              <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
-            </tot-button>
-            <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
-              <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
-            </tot-button>
-          </nz-space>
-        </ng-template>
-
-        <ng-template #expandTpl let-data>
-          <div class="json-viewer-container" style="width: 100%;">
-            <div class="json-header">
-              <span>{{ 'Payload' | translate }}</span>
-              <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
-                <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
-              </button>
-            </div>
-            <pre class="json-content">{{ formatJson(data.content) }}</pre>
-            
-            <div style="margin-top: 16px;">
-              <h4>{{ 'Lịch sử xử lý' | translate }}</h4>
-              <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
-                <ng-template #historyItem let-step>
-                  <nz-list-item>
-                    <div style="display: flex; width: 100%; gap: 16px;">
-                      <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
-                      <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
-                      <span style="flex: 1;">{{ step.details }}</span>
-                      <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
-                    </div>
-                  </nz-list-item>
-                </ng-template>
-              </nz-list>
-            </div>
-          </div>
-        </ng-template>
       </nz-card>
     </div>
 
     <div *ngSwitchCase="'workers'">
       <nz-card [nzTitle]="'Giám sát tiến trình (Workers)' | translate">
-        <nz-table #workerTable [nzData]="workerList" [nzPageSize]="100" [nzShowPagination]="false" [nzScroll]="{ x: '800px' }">
-          <thead>
-            <tr>
-              <th nzWidth="200px" nzLeft="0px">{{ 'Tên Worker' | translate }}</th>
-              <th nzWidth="120px">{{ 'Trạng thái' | translate }}</th>
-              <th nzWidth="100px">{{ 'Loại' | translate }}</th>
-              <th>{{ 'Chi tiết đích' | translate }}</th>
-              <th nzWidth="150px" nzRight="0px">{{ 'Hành động' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let w of workerTable.data">
-              <td nzLeft="0px"><b>{{ w.id }}</b></td>
-              <td>
-                <nz-tag [nzColor]="w.status === 'Running' ? 'success' : 'default'">
-                  {{ (w.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | translate }}
-                </nz-tag>
-              </td>
-              <td>{{ w.type | translate }}</td>
-              <td>{{ w.queueOrTopicName }}</td>
-              <td nzRight="0px">
-                <tot-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
-                  {{ (w.status === 'Running' ? 'Dừng' : 'Khởi chạy') | translate }}
-                </tot-button>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <tot-table
+          [data]="workerList"
+          [columns]="workerColumns"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          [scroll]="{ x: '800px' }"
+        ></tot-table>
       </nz-card>
 
       <nz-card [nzTitle]="'Phân tích lỗi' | translate" style="margin-top: 24px;">
@@ -267,45 +143,154 @@
         </div>
       </nz-card>
     </div>
+
     <div *ngSwitchCase="'activity'">
       <nz-card [nzTitle]="'Danh sách thời gian hoạt động lần cuối' | translate">
-        <nz-table #activityTable [nzData]="lastActivityList" [nzPageSize]="100" [nzShowPagination]="false" nzSize="middle">
-          <thead>
-            <tr>
-              <th nzWidth="120px">{{ 'Loại' | translate }}</th>
-              <th>{{ 'Tên queue / topic' | translate }}</th>
-              <th>{{ 'Subscriber (nếu có)' | translate }}</th>
-              <th nzWidth="200px">{{ 'Hoạt động cuối' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of activityTable.data">
-              <td>
-                <nz-tag [nzColor]="item.type === 'Command' ? 'blue' : item.type === 'Topic' ? 'purple' : 'cyan'">
-                  {{ item.type | translate }}
-                </nz-tag>
-              </td>
-              <td><b>{{ item.mainName }}</b></td>
-              <td>{{ item.subscriberName || '-' }}</td>
-              <td>
-                <span [nz-tooltip]="item.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
-                  {{ item.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
-                </span>
-                <span style="color: #999; font-size: 12px; margin-left: 8px;">
-                  ({{ item.lastActive | date:'HH:mm:ss' }})
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
-        <div *ngIf="lastActivityList.length === 0" class="empty-state" style="padding: 40px; text-align: center; color: #999;">
-          <i nz-icon nzType="info-circle" style="font-size: 24px;"></i>
-          <p>{{ 'Chưa có dữ liệu hoạt động nào' | translate }}</p>
-        </div>
+        <tot-table
+          [data]="lastActivityList"
+          [columns]="activityColumns"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          nzSize="middle"
+        ></tot-table>
       </nz-card>
     </div>
     <div *ngSwitchCase="'test'">
       <app-cqrs-test></app-cqrs-test>
     </div>
   </ng-container>
+
+  <!-- Templates for tot-table -->
+  <ng-template #queueTypeTpl let-data>
+    <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
+      {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #activeCountTpl let-data>
+    <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #successCountTpl let-data>
+    <nz-tag nzColor="success">{{ data.processedCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #errorCountTpl let-data>
+    <nz-tag nzColor="error">{{ data.errorCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #workerTagsTpl let-data>
+    <div class="worker-tags">
+      <nz-tag *ngFor="let w of data.workers" nzColor="processing">{{ w }}</nz-tag>
+    </div>
+  </ng-template>
+
+  <ng-template #handlerGridTpl let-data>
+    <div class="handler-grid">
+      <div *ngFor="let h of data.handlers" class="handler-tag-item">
+        <span class="h-name">{{ h.handlerName }}</span>
+        <span class="m-name">{{ h.messageName }}</span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #queueActionsTpl let-data>
+    <div style="display: flex; gap: 4px; flex-direction: column;">
+      <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
+        {{ 'Chi tiết' | translate }}
+      </tot-button>
+      <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
+        {{ 'Xem đang xử lý' | translate }}
+      </tot-button>
+    </div>
+  </ng-template>
+
+  <ng-template #statusTpl let-data>
+    <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
+      {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #trackingWorkerTpl let-data>
+    {{ data.worker || data.workerId || '-' }}
+  </ng-template>
+
+  <ng-template #contentTpl let-data>
+    <div class="content-preview">
+      <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
+      <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
+        <span nz-icon nzType="copy"></span>
+      </button>
+    </div>
+  </ng-template>
+
+  <ng-template #actionsTpl let-data>
+    <div style="display: flex; gap: 4px; flex-direction: column;">
+      <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'Gửi lại' | translate">
+        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | translate }}
+      </tot-button>
+      <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | translate">
+        <i nz-icon nzType="delete"></i> {{ 'Xóa' | translate }}
+      </tot-button>
+      <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
+        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
+      </tot-button>
+    </div>
+  </ng-template>
+
+  <ng-template #expandTpl let-data>
+    <div class="json-viewer-container" style="width: 100%;">
+      <div class="json-header">
+        <span>{{ 'Payload' | translate }}</span>
+        <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
+          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | translate }}
+        </button>
+      </div>
+      <pre class="json-content">{{ formatJson(data.content) }}</pre>
+      
+      <div style="margin-top: 16px;">
+        <h4>{{ 'Lịch sử xử lý' | translate }}</h4>
+        <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
+          <ng-template #historyItem let-step>
+            <nz-list-item>
+              <div style="display: flex; width: 100%; gap: 16px;">
+                <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
+                <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
+                <span style="flex: 1;">{{ step.details }}</span>
+                <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
+              </div>
+            </nz-list-item>
+          </ng-template>
+        </nz-list>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #workerStatusTpl let-data>
+    <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
+      {{ (data.status === 'Running' ? 'Đang chạy' : 'Đã dừng') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #workerActionsTpl let-data>
+    <tot-button [nzType]="data.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(data.id, data.status)" [nzDanger]="data.status === 'Running'">
+      {{ (data.status === 'Running' ? 'Dừng' : 'Khởi chạy') | translate }}
+    </tot-button>
+  </ng-template>
+
+  <ng-template #activityTypeTpl let-data>
+    <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">
+      {{ data.type | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #lastActiveTpl let-data>
+    <span [nz-tooltip]="data.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
+      {{ data.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
+    </span>
+    <span style="color: #999; font-size: 12px; margin-left: 8px;">
+      ({{ data.lastActive | date:'HH:mm:ss' }})
+    </span>
+  </ng-template>
 </div>

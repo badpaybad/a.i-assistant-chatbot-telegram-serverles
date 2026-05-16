@@ -107,10 +107,29 @@ export class DashboardComponent implements OnInit {
   };
 
   @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
+  @ViewChild('trackingWorkerTpl', { static: true }) trackingWorkerTpl!: TemplateRef<any>;
   @ViewChild('contentTpl', { static: true }) contentTpl!: TemplateRef<any>;
   @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
 
+  @ViewChild('queueTypeTpl', { static: true }) queueTypeTpl!: TemplateRef<any>;
+  @ViewChild('workerTagsTpl', { static: true }) workerTagsTpl!: TemplateRef<any>;
+  @ViewChild('handlerGridTpl', { static: true }) handlerGridTpl!: TemplateRef<any>;
+  @ViewChild('queueActionsTpl', { static: true }) queueActionsTpl!: TemplateRef<any>;
+
+  @ViewChild('workerStatusTpl', { static: true }) workerStatusTpl!: TemplateRef<any>;
+  @ViewChild('workerActionsTpl', { static: true }) workerActionsTpl!: TemplateRef<any>;
+
+  @ViewChild('activityTypeTpl', { static: true }) activityTypeTpl!: TemplateRef<any>;
+  @ViewChild('lastActiveTpl', { static: true }) lastActiveTpl!: TemplateRef<any>;
+
+  @ViewChild('activeCountTpl', { static: true }) activeCountTpl!: TemplateRef<any>;
+  @ViewChild('successCountTpl', { static: true }) successCountTpl!: TemplateRef<any>;
+  @ViewChild('errorCountTpl', { static: true }) errorCountTpl!: TemplateRef<any>;
+
   trackingColumns: TotTableColumn[] = [];
+  queueColumns: TotTableColumn[] = [];
+  workerColumns: TotTableColumn[] = [];
+  activityColumns: TotTableColumn[] = [];
 
   private destroy$ = new Subject<void>();
   private refreshSubscription?: any;
@@ -121,11 +140,39 @@ export class DashboardComponent implements OnInit {
       { title: 'Status', template: this.statusTpl },
       { title: 'Queue/Topic', key: 'queueOrTopic' },
       { title: 'Handler', key: 'handler' },
-      { title: 'Worker', key: 'workerId' },
+      { title: 'Worker', template: this.trackingWorkerTpl },
       { title: 'Content', template: this.contentTpl },
-      { title: 'Created', key: 'createdAt' },
+      { title: 'Created', key: 'time' },
       { title: 'Hành động', width: '100px', template: this.actionsTpl, right: true }
     ];
+
+    this.queueColumns = [
+      { title: 'Loại', width: '80px', template: this.queueTypeTpl, left: true },
+      { title: 'Tên topic/ queue', key: 'name', width: '200px', left: '80px' },
+      { title: 'Đang xử lý', template: this.activeCountTpl, width: '100px', align: 'center' },
+      { title: 'Thành công', template: this.successCountTpl, width: '120px', align: 'center' },
+      { title: 'Lỗi', template: this.errorCountTpl, width: '100px', align: 'center' },
+      { title: 'Tổng', key: 'totalCount', width: '100px', align: 'center' },
+      { title: 'Workers', template: this.workerTagsTpl, width: '200px' },
+      { title: 'Handlers', template: this.handlerGridTpl },
+      { title: 'Hành động', width: '150px', template: this.queueActionsTpl, right: true }
+    ];
+
+    this.workerColumns = [
+      { title: 'Tên Worker', key: 'id', width: '200px', left: true },
+      { title: 'Trạng thái', template: this.workerStatusTpl, width: '120px' },
+      { title: 'Loại', key: 'type', width: '100px' },
+      { title: 'Chi tiết đích', key: 'queueOrTopicName' },
+      { title: 'Hành động', width: '150px', template: this.workerActionsTpl, right: true }
+    ];
+
+    this.activityColumns = [
+      { title: 'Loại', template: this.activityTypeTpl, width: '120px' },
+      { title: 'Tên queue / topic', key: 'mainName' },
+      { title: 'Subscriber', key: 'subscriberName' },
+      { title: 'Hoạt động cuối', template: this.lastActiveTpl, width: '250px' }
+    ];
+
     this.refresh();
   }
 

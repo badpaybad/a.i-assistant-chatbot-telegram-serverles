@@ -17,7 +17,6 @@ import {
   NzSkeletonModule
 } from "./chunk-KN24FRUT.js";
 import {
-  NzCellFixedDirective,
   NzDatePickerComponent,
   NzDatePickerModule,
   NzDividerComponent,
@@ -33,18 +32,12 @@ import {
   NzSelectModule,
   NzSpinComponent,
   NzSpinModule,
-  NzTableCellDirective,
-  NzTableComponent,
   NzTableModule,
   NzTagComponent,
   NzTagModule,
-  NzTbodyComponent,
-  NzThMeasureDirective,
-  NzTheadComponent,
-  NzTrDirective,
   TotButtonComponent,
   TotTableComponent
-} from "./chunk-YEPL6FXH.js";
+} from "./chunk-7FAEKS42.js";
 import {
   ActivatedRoute,
   AppNotificationService,
@@ -78,7 +71,6 @@ import {
   NzModalService,
   NzOutletModule,
   NzRowDirective,
-  NzSpaceComponent,
   NzSpaceModule,
   NzStringTemplateOutletDirective,
   NzTooltipDirective,
@@ -4070,15 +4062,27 @@ var CqrsTestComponent = _CqrsTestComponent;
 
 // projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts
 var _c06 = ["statusTpl"];
-var _c13 = ["contentTpl"];
-var _c23 = ["actionsTpl"];
-var _c33 = () => ({ color: "#3f8600" });
-var _c42 = () => ({ color: "#cf1322" });
-var _c52 = () => ({ x: "1200px" });
-var _c62 = () => ({ x: "800px" });
+var _c13 = ["trackingWorkerTpl"];
+var _c23 = ["contentTpl"];
+var _c33 = ["actionsTpl"];
+var _c42 = ["queueTypeTpl"];
+var _c52 = ["workerTagsTpl"];
+var _c62 = ["handlerGridTpl"];
+var _c72 = ["queueActionsTpl"];
+var _c82 = ["workerStatusTpl"];
+var _c9 = ["workerActionsTpl"];
+var _c10 = ["activityTypeTpl"];
+var _c11 = ["lastActiveTpl"];
+var _c122 = ["activeCountTpl"];
+var _c132 = ["successCountTpl"];
+var _c14 = ["errorCountTpl"];
+var _c15 = () => ({ color: "#3f8600" });
+var _c16 = () => ({ color: "#cf1322" });
+var _c17 = () => ({ x: "1200px" });
+var _c18 = () => ({ x: "800px" });
 function DashboardComponent_nz_option_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "nz-option", 42);
+    \u0275\u0275element(0, "nz-option", 51);
     \u0275\u0275pipe(1, "translate");
   }
   if (rf & 2) {
@@ -4088,469 +4092,134 @@ function DashboardComponent_nz_option_10_Template(rf, ctx) {
 }
 function DashboardComponent_ng_template_20_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 43);
+    \u0275\u0275element(0, "i", 52);
   }
 }
 function DashboardComponent_ng_template_26_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 44);
+    \u0275\u0275element(0, "i", 53);
   }
 }
 function DashboardComponent_ng_template_32_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 45);
+    \u0275\u0275element(0, "i", 54);
   }
 }
 function DashboardComponent_ng_template_38_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 46);
-  }
-}
-function DashboardComponent_div_63_tr_35_nz_tag_23_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 61);
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const w_r4 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(w_r4);
-  }
-}
-function DashboardComponent_div_63_tr_35_div_26_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 72)(1, "span", 73);
-    \u0275\u0275text(2);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 74);
-    \u0275\u0275text(4);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const h_r5 = ctx.$implicit;
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(h_r5.handlerName);
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(h_r5.messageName);
-  }
-}
-function DashboardComponent_div_63_tr_35_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td", 56)(2, "nz-tag", 57);
-    \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "td", 58)(6, "div", 59)(7, "span", 60);
-    \u0275\u0275text(8);
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(9, "td")(10, "nz-tag", 61);
-    \u0275\u0275text(11);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(12, "td")(13, "nz-tag", 62);
-    \u0275\u0275text(14);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(15, "td")(16, "nz-tag", 63);
-    \u0275\u0275text(17);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(18, "td")(19, "b");
-    \u0275\u0275text(20);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(21, "td")(22, "div", 64);
-    \u0275\u0275template(23, DashboardComponent_div_63_tr_35_nz_tag_23_Template, 2, 1, "nz-tag", 65);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(24, "td")(25, "div", 66);
-    \u0275\u0275template(26, DashboardComponent_div_63_tr_35_div_26_Template, 5, 2, "div", 67);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(27, "td", 68)(28, "div", 69)(29, "tot-button", 70);
-    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_tot_button_click_29_listener() {
-      const q_r6 = \u0275\u0275restoreView(_r3).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.viewDetails(q_r6));
-    });
-    \u0275\u0275text(30);
-    \u0275\u0275pipe(31, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(32, "tot-button", 71);
-    \u0275\u0275listener("click", function DashboardComponent_div_63_tr_35_Template_tot_button_click_32_listener() {
-      const q_r6 = \u0275\u0275restoreView(_r3).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.viewInProgress(q_r6));
-    });
-    \u0275\u0275text(33);
-    \u0275\u0275pipe(34, "translate");
-    \u0275\u0275elementEnd()()()();
-  }
-  if (rf & 2) {
-    const q_r6 = ctx.$implicit;
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", q_r6.type === "Queue" ? "blue" : q_r6.type === "Topic" ? "purple" : "default");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(4, 12, q_r6.type === "Queue" ? "queue" : q_r6.type === "Topic" ? "topic" : "internal"), " ");
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(q_r6.name);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(q_r6.activeCount);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(q_r6.processedCount);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(q_r6.errorCount);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(q_r6.totalCount);
-    \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", q_r6.workers);
-    \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", q_r6.handlers);
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzGhost", true);
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(31, 14, "Chi ti\u1EBFt"), " ");
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(34, 16, "Xem \u0111ang x\u1EED l\xFD"), " ");
+    \u0275\u0275element(0, "i", 55);
   }
 }
 function DashboardComponent_div_63_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 47);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 56);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "nz-table", 48, 4)(5, "thead")(6, "tr")(7, "th", 49);
-    \u0275\u0275text(8);
-    \u0275\u0275pipe(9, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "th", 50);
-    \u0275\u0275text(11);
-    \u0275\u0275pipe(12, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "th", 51);
-    \u0275\u0275text(14);
-    \u0275\u0275pipe(15, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "th", 52);
-    \u0275\u0275text(17);
-    \u0275\u0275pipe(18, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "th", 51);
-    \u0275\u0275text(20);
-    \u0275\u0275pipe(21, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(22, "th", 51);
-    \u0275\u0275text(23);
-    \u0275\u0275pipe(24, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(25, "th", 53);
-    \u0275\u0275text(26);
-    \u0275\u0275pipe(27, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(28, "th");
-    \u0275\u0275text(29);
-    \u0275\u0275pipe(30, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(31, "th", 54);
-    \u0275\u0275text(32);
-    \u0275\u0275pipe(33, "translate");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(34, "tbody");
-    \u0275\u0275template(35, DashboardComponent_div_63_tr_35_Template, 35, 18, "tr", 55);
-    \u0275\u0275elementEnd()()()();
+    \u0275\u0275element(3, "tot-table", 57);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const queueTable_r8 = \u0275\u0275reference(4);
-    const ctx_r6 = \u0275\u0275nextContext();
+    const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 16, "Danh s\xE1ch th\u1EF1c th\u1EC3 CQRS"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 8, "Danh s\xE1ch th\u1EF1c th\u1EC3 CQRS"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzData", ctx_r6.queues)("nzLoading", ctx_r6.loading)("nzPageSize", 100)("nzShowPagination", false)("nzScroll", \u0275\u0275pureFunction0(36, _c52));
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(9, 18, "Lo\u1EA1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(12, 20, "T\xEAn topic/ queue"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 22, "\u0110ang x\u1EED l\xFD"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(18, 24, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(21, 26, "\u0110\xE3 x\u1EED l\xFD l\u1ED7i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(24, 28, "T\u1ED5ng message"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(27, 30, "Danh s\xE1ch worker"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(30, 32, "Danh s\xE1ch command handle / event handle"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(33, 34, "H\xE0nh \u0111\u1ED9ng"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", queueTable_r8.data);
+    \u0275\u0275property("data", ctx_r2.queues)("columns", ctx_r2.queueColumns)("loading", ctx_r2.loading)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(10, _c17));
   }
 }
 function DashboardComponent_div_64_ng_template_9_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 87);
-  }
-}
-function DashboardComponent_div_64_ng_template_31_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 57);
-    \u0275\u0275text(1);
-    \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const data_r10 = ctx.$implicit;
-    \u0275\u0275property("nzColor", data_r10.status === "success" ? "success" : data_r10.status === "error" ? "error" : "processing");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r10.status === "success" ? "Th\xE0nh c\xF4ng" : data_r10.status === "error" ? "L\u1ED7i" : "\u0110ang ch\u1EA1y"), " ");
-  }
-}
-function DashboardComponent_div_64_ng_template_33_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 88)(1, "code");
-    \u0275\u0275text(2);
-    \u0275\u0275pipe(3, "slice");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "button", 89);
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_template_33_Template_button_click_4_listener() {
-      const data_r12 = \u0275\u0275restoreView(_r11).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.copyToClipboard(data_r12.content));
-    });
-    \u0275\u0275element(5, "span", 90);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const data_r12 = ctx.$implicit;
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate2("", \u0275\u0275pipeBind3(3, 2, data_r12.content, 0, 50), "", (data_r12.content == null ? null : data_r12.content.length) > 50 ? "..." : "");
-  }
-}
-function DashboardComponent_div_64_ng_template_35_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r13 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "nz-space")(1, "tot-button", 91);
-    \u0275\u0275pipe(2, "translate");
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_template_35_Template_tot_button_click_1_listener() {
-      const data_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.retryTracking(data_r14));
-    });
-    \u0275\u0275element(3, "i", 92);
-    \u0275\u0275text(4);
-    \u0275\u0275pipe(5, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "tot-button", 93);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_template_35_Template_tot_button_click_6_listener() {
-      const data_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.deleteTracking(data_r14));
-    });
-    \u0275\u0275element(8, "i", 94);
-    \u0275\u0275text(9);
-    \u0275\u0275pipe(10, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "tot-button", 95);
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_template_35_Template_tot_button_click_11_listener() {
-      const data_r14 = \u0275\u0275restoreView(_r13).$implicit;
-      return \u0275\u0275resetView(data_r14.expand = !data_r14.expand);
-    });
-    \u0275\u0275element(12, "i", 96);
-    \u0275\u0275text(13);
-    \u0275\u0275pipe(14, "translate");
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const data_r14 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275property("nzTooltipTitle", \u0275\u0275pipeBind1(2, 7, "G\u1EEDi l\u1EA1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(5, 9, "G\u1EEDi l\u1EA1i"), " ");
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzDanger", true)("nzTooltipTitle", \u0275\u0275pipeBind1(7, 11, "X\xF3a"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(10, 13, "X\xF3a"), " ");
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzType", data_r14.expand ? "up" : "down");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 15, "Payload"), " ");
-  }
-}
-function DashboardComponent_div_64_ng_template_37_ng_template_16_nz_tag_9_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 57);
-    \u0275\u0275text(1);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const step_r17 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("nzColor", step_r17.status === "success" ? "success" : "processing");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate(step_r17.status);
-  }
-}
-function DashboardComponent_div_64_ng_template_37_ng_template_16_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-list-item")(1, "div", 103)(2, "span", 104);
-    \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "date");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "span", 105);
-    \u0275\u0275text(6);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "span", 106);
-    \u0275\u0275text(8);
-    \u0275\u0275elementEnd();
-    \u0275\u0275template(9, DashboardComponent_div_64_ng_template_37_ng_template_16_nz_tag_9_Template, 2, 2, "nz-tag", 107);
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    const step_r17 = ctx.$implicit;
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(4, 4, step_r17.time, "HH:mm:ss.SSS"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(step_r17.step);
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(step_r17.details);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngIf", step_r17.status);
-  }
-}
-function DashboardComponent_div_64_ng_template_37_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r15 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 97)(1, "div", 98)(2, "span");
-    \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "button", 99);
-    \u0275\u0275listener("click", function DashboardComponent_div_64_ng_template_37_Template_button_click_5_listener() {
-      const data_r16 = \u0275\u0275restoreView(_r15).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.copyToClipboard(data_r16.content));
-    });
-    \u0275\u0275element(6, "i", 90);
-    \u0275\u0275text(7);
-    \u0275\u0275pipe(8, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(9, "pre", 100);
-    \u0275\u0275text(10);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "div", 101)(12, "h4");
-    \u0275\u0275text(13);
-    \u0275\u0275pipe(14, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(15, "nz-list", 102);
-    \u0275\u0275template(16, DashboardComponent_div_64_ng_template_37_ng_template_16_Template, 10, 7, "ng-template", null, 10, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementEnd()()();
-  }
-  if (rf & 2) {
-    const data_r16 = ctx.$implicit;
-    const historyItem_r18 = \u0275\u0275reference(17);
-    const ctx_r6 = \u0275\u0275nextContext(2);
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 6, "Payload"));
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(8, 8, "Sao ch\xE9p"), " ");
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(ctx_r6.formatJson(data_r16.content));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(14, 10, "L\u1ECBch s\u1EED x\u1EED l\xFD"));
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzDataSource", data_r16.history)("nzRenderItem", historyItem_r18);
+    \u0275\u0275element(0, "i", 70);
   }
 }
 function DashboardComponent_div_64_Template(rf, ctx) {
   if (rf & 1) {
-    const _r9 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 47);
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 56);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "div", 75)(4, "div", 76)(5, "div", 24)(6, "nz-input-group", 77)(7, "input", 78);
+    \u0275\u0275elementStart(3, "div", 58)(4, "div", 59)(5, "div", 33)(6, "nz-input-group", 60)(7, "input", 61);
     \u0275\u0275pipe(8, "translate");
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_64_Template_input_ngModelChange_7_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r6.filters.trackingId, $event) || (ctx_r6.filters.trackingId = $event);
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.filters.trackingId, $event) || (ctx_r2.filters.trackingId = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275listener("ngModelChange", function DashboardComponent_div_64_Template_input_ngModelChange_7_listener() {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.onFilterChange());
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onFilterChange());
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(9, DashboardComponent_div_64_ng_template_9_Template, 1, 0, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(9, DashboardComponent_div_64_ng_template_9_Template, 1, 0, "ng-template", null, 20, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "div", 24)(12, "nz-select", 79);
+    \u0275\u0275elementStart(11, "div", 33)(12, "nz-select", 62);
     \u0275\u0275pipe(13, "translate");
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_64_Template_nz_select_ngModelChange_12_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r6.filters.status, $event) || (ctx_r6.filters.status = $event);
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.filters.status, $event) || (ctx_r2.filters.status = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275listener("ngModelChange", function DashboardComponent_div_64_Template_nz_select_ngModelChange_12_listener() {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.onFilterChange());
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onFilterChange());
     });
-    \u0275\u0275element(14, "nz-option", 80);
+    \u0275\u0275element(14, "nz-option", 63);
     \u0275\u0275pipe(15, "translate");
-    \u0275\u0275element(16, "nz-option", 81);
+    \u0275\u0275element(16, "nz-option", 64);
     \u0275\u0275pipe(17, "translate");
-    \u0275\u0275element(18, "nz-option", 82);
+    \u0275\u0275element(18, "nz-option", 65);
     \u0275\u0275pipe(19, "translate");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(20, "div", 24)(21, "div", 83)(22, "nz-date-picker", 84);
+    \u0275\u0275elementStart(20, "div", 33)(21, "div", 66)(22, "nz-date-picker", 67);
     \u0275\u0275pipe(23, "translate");
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_64_Template_nz_date_picker_ngModelChange_22_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r6.filters.fromDate, $event) || (ctx_r6.filters.fromDate = $event);
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.filters.fromDate, $event) || (ctx_r2.filters.fromDate = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275listener("ngModelChange", function DashboardComponent_div_64_Template_nz_date_picker_ngModelChange_22_listener() {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.onFilterChange());
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onFilterChange());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(24, "nz-date-picker", 84);
+    \u0275\u0275elementStart(24, "nz-date-picker", 67);
     \u0275\u0275pipe(25, "translate");
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_64_Template_nz_date_picker_ngModelChange_24_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      \u0275\u0275twoWayBindingSet(ctx_r6.filters.toDate, $event) || (ctx_r6.filters.toDate = $event);
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.filters.toDate, $event) || (ctx_r2.filters.toDate = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275listener("ngModelChange", function DashboardComponent_div_64_Template_nz_date_picker_ngModelChange_24_listener() {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.onFilterChange());
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onFilterChange());
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(26, "div", 24)(27, "tot-button", 85);
+    \u0275\u0275elementStart(26, "div", 33)(27, "tot-button", 68);
     \u0275\u0275listener("click", function DashboardComponent_div_64_Template_tot_button_click_27_listener() {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.resetFilters());
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.resetFilters());
     });
     \u0275\u0275text(28);
     \u0275\u0275pipe(29, "translate");
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(30, "tot-table", 86);
+    \u0275\u0275elementStart(30, "tot-table", 69);
     \u0275\u0275listener("queryParamsChange", function DashboardComponent_div_64_Template_tot_table_queryParamsChange_30_listener($event) {
-      \u0275\u0275restoreView(_r9);
-      const ctx_r6 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r6.onQueryParamsChange($event));
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.onQueryParamsChange($event));
     });
-    \u0275\u0275elementEnd();
-    \u0275\u0275template(31, DashboardComponent_div_64_ng_template_31_Template, 3, 4, "ng-template", null, 6, \u0275\u0275templateRefExtractor)(33, DashboardComponent_div_64_ng_template_33_Template, 6, 6, "ng-template", null, 7, \u0275\u0275templateRefExtractor)(35, DashboardComponent_div_64_ng_template_35_Template, 15, 17, "ng-template", null, 8, \u0275\u0275templateRefExtractor)(37, DashboardComponent_div_64_ng_template_37_Template, 18, 12, "ng-template", null, 9, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementEnd()();
+    \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const prefixSearch_r19 = \u0275\u0275reference(10);
-    const expandTpl_r20 = \u0275\u0275reference(38);
-    const ctx_r6 = \u0275\u0275nextContext();
+    const prefixSearch_r5 = \u0275\u0275reference(10);
+    const ctx_r2 = \u0275\u0275nextContext();
+    const expandTpl_r6 = \u0275\u0275reference(91);
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 28, "L\u1ECBch s\u1EED th\u1EF1c thi"));
     \u0275\u0275advance(3);
@@ -4558,14 +4227,14 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 5);
     \u0275\u0275advance();
-    \u0275\u0275property("nzPrefix", prefixSearch_r19);
+    \u0275\u0275property("nzPrefix", prefixSearch_r5);
     \u0275\u0275advance();
-    \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.trackingId);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.filters.trackingId);
     \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(8, 30, "Tracking ID"));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance();
-    \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.status);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.filters.status);
     \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(13, 32, "Tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 34, "Th\xE0nh c\xF4ng"));
@@ -4576,10 +4245,10 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 10);
     \u0275\u0275advance(2);
-    \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.fromDate);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.filters.fromDate);
     \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(23, 40, "B\u1EAFt \u0111\u1EA7u"));
     \u0275\u0275advance(2);
-    \u0275\u0275twoWayProperty("ngModel", ctx_r6.filters.toDate);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.filters.toDate);
     \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(25, 42, "K\u1EBFt th\xFAc"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 5);
@@ -4588,77 +4257,32 @@ function DashboardComponent_div_64_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 44, "\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r6.recentTracking)("columns", ctx_r6.trackingColumns)("loading", ctx_r6.loading)("total", ctx_r6.totalTracking)("pageIndex", ctx_r6.pageIndex)("pageSize", ctx_r6.pageSize)("frontPagination", false)("expandTemplate", expandTpl_r20);
+    \u0275\u0275property("data", ctx_r2.recentTracking)("columns", ctx_r2.trackingColumns)("loading", ctx_r2.loading)("total", ctx_r2.totalTracking)("pageIndex", ctx_r2.pageIndex)("pageSize", ctx_r2.pageSize)("frontPagination", false)("expandTemplate", expandTpl_r6);
   }
 }
-function DashboardComponent_div_65_tr_23_Template(rf, ctx) {
+function DashboardComponent_div_65_ng_template_9_Template(rf, ctx) {
   if (rf & 1) {
-    const _r21 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr")(1, "td", 56)(2, "b");
-    \u0275\u0275text(3);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(4, "td")(5, "nz-tag", 57);
-    \u0275\u0275text(6);
-    \u0275\u0275pipe(7, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "td");
-    \u0275\u0275text(9);
-    \u0275\u0275pipe(10, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "td");
-    \u0275\u0275text(12);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "td", 68)(14, "tot-button", 113);
-    \u0275\u0275listener("click", function DashboardComponent_div_65_tr_23_Template_tot_button_click_14_listener() {
-      const w_r22 = \u0275\u0275restoreView(_r21).$implicit;
-      const ctx_r6 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r6.toggleWorker(w_r22.id, w_r22.status));
-    });
-    \u0275\u0275text(15);
-    \u0275\u0275pipe(16, "translate");
-    \u0275\u0275elementEnd()()();
-  }
-  if (rf & 2) {
-    const w_r22 = ctx.$implicit;
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(w_r22.id);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", w_r22.status === "Running" ? "success" : "default");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(7, 8, w_r22.status === "Running" ? "\u0110ang ch\u1EA1y" : "\u0110\xE3 d\u1EEBng"), " ");
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 10, w_r22.type));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(w_r22.queueOrTopicName);
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzType", w_r22.status === "Running" ? "default" : "primary")("nzDanger", w_r22.status === "Running");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(16, 12, w_r22.status === "Running" ? "D\u1EEBng" : "Kh\u1EDFi ch\u1EA1y"), " ");
-  }
-}
-function DashboardComponent_div_65_ng_template_29_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-list-item")(1, "span", 114);
+    \u0275\u0275elementStart(0, "nz-list-item")(1, "span", 75);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "nz-tag", 115);
+    \u0275\u0275elementStart(3, "nz-tag", 76);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "translate");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const item_r23 = ctx.$implicit;
+    const item_r7 = ctx.$implicit;
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(item_r23.name);
+    \u0275\u0275textInterpolate(item_r7.name);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate2("", item_r23.count, " ", \u0275\u0275pipeBind1(5, 3, "l\u1ED7i"));
+    \u0275\u0275textInterpolate2("", item_r7.count, " ", \u0275\u0275pipeBind1(5, 3, "l\u1ED7i"));
   }
 }
-function DashboardComponent_div_65_div_32_Template(rf, ctx) {
+function DashboardComponent_div_65_div_12_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 116);
-    \u0275\u0275element(1, "i", 117);
-    \u0275\u0275elementStart(2, "p", 101);
+    \u0275\u0275elementStart(0, "div", 77);
+    \u0275\u0275element(1, "i", 78);
+    \u0275\u0275elementStart(2, "p", 79);
     \u0275\u0275text(3);
     \u0275\u0275pipe(4, "translate");
     \u0275\u0275elementEnd()();
@@ -4670,173 +4294,53 @@ function DashboardComponent_div_65_div_32_Template(rf, ctx) {
 }
 function DashboardComponent_div_65_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 47);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 56);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "nz-table", 108, 11)(5, "thead")(6, "tr")(7, "th", 109);
-    \u0275\u0275text(8);
-    \u0275\u0275pipe(9, "translate");
+    \u0275\u0275element(3, "tot-table", 71);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "th", 52);
-    \u0275\u0275text(11);
-    \u0275\u0275pipe(12, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "th", 51);
-    \u0275\u0275text(14);
-    \u0275\u0275pipe(15, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "th");
-    \u0275\u0275text(17);
-    \u0275\u0275pipe(18, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "th", 54);
-    \u0275\u0275text(20);
-    \u0275\u0275pipe(21, "translate");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(22, "tbody");
-    \u0275\u0275template(23, DashboardComponent_div_65_tr_23_Template, 17, 14, "tr", 55);
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(24, "nz-card", 110);
-    \u0275\u0275pipe(25, "translate");
-    \u0275\u0275elementStart(26, "div", 76)(27, "div", 24)(28, "nz-list", 111);
-    \u0275\u0275template(29, DashboardComponent_div_65_ng_template_29_Template, 6, 5, "ng-template", null, 12, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(4, "nz-card", 72);
+    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275elementStart(6, "div", 59)(7, "div", 33)(8, "nz-list", 73);
+    \u0275\u0275template(9, DashboardComponent_div_65_ng_template_9_Template, 6, 5, "ng-template", null, 21, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(31, "div", 24);
-    \u0275\u0275template(32, DashboardComponent_div_65_div_32_Template, 5, 3, "div", 112);
+    \u0275\u0275elementStart(11, "div", 33);
+    \u0275\u0275template(12, DashboardComponent_div_65_div_12_Template, 5, 3, "div", 74);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
-    const workerTable_r24 = \u0275\u0275reference(4);
-    const errorItem_r25 = \u0275\u0275reference(30);
-    const ctx_r6 = \u0275\u0275nextContext();
+    const errorItem_r8 = \u0275\u0275reference(10);
+    const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 18, "Gi\xE1m s\xE1t ti\u1EBFn tr\xECnh (Workers)"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 14, "Gi\xE1m s\xE1t ti\u1EBFn tr\xECnh (Workers)"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzData", ctx_r6.workerList)("nzPageSize", 100)("nzShowPagination", false)("nzScroll", \u0275\u0275pureFunction0(32, _c62));
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(9, 20, "T\xEAn Worker"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(12, 22, "Tr\u1EA1ng th\xE1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 24, "Lo\u1EA1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(18, 26, "Chi ti\u1EBFt \u0111\xEDch"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(21, 28, "H\xE0nh \u0111\u1ED9ng"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", workerTable_r24.data);
+    \u0275\u0275property("data", ctx_r2.workerList)("columns", ctx_r2.workerColumns)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(18, _c18));
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(25, 30, "Ph\xE2n t\xEDch l\u1ED7i"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(5, 16, "Ph\xE2n t\xEDch l\u1ED7i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzGutter", 16);
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance();
-    \u0275\u0275property("nzDataSource", ctx_r6.errorStats)("nzRenderItem", errorItem_r25);
+    \u0275\u0275property("nzDataSource", ctx_r2.errorStats)("nzRenderItem", errorItem_r8);
     \u0275\u0275advance(3);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r6.errorStats.length === 0);
-  }
-}
-function DashboardComponent_div_66_tr_20_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "tr")(1, "td")(2, "nz-tag", 57);
-    \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "td")(6, "b");
-    \u0275\u0275text(7);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "td");
-    \u0275\u0275text(9);
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "td")(11, "span", 120);
-    \u0275\u0275pipe(12, "date");
-    \u0275\u0275text(13);
-    \u0275\u0275pipe(14, "date");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(15, "span", 121);
-    \u0275\u0275text(16);
-    \u0275\u0275pipe(17, "date");
-    \u0275\u0275elementEnd()()();
-  }
-  if (rf & 2) {
-    const item_r26 = ctx.$implicit;
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", item_r26.type === "Command" ? "blue" : item_r26.type === "Topic" ? "purple" : "cyan");
-    \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(4, 7, item_r26.type), " ");
-    \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(item_r26.mainName);
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(item_r26.subscriberName || "-");
-    \u0275\u0275advance(2);
-    \u0275\u0275property("nz-tooltip", \u0275\u0275pipeBind2(12, 9, item_r26.lastActive, "yyyy-MM-dd HH:mm:ss.SSS"));
-    \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind2(14, 12, item_r26.lastActive, "yyyy-MM-dd HH:mm:ss"), " ");
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" (", \u0275\u0275pipeBind2(17, 15, item_r26.lastActive, "HH:mm:ss"), ") ");
-  }
-}
-function DashboardComponent_div_66_div_21_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 122);
-    \u0275\u0275element(1, "i", 123);
-    \u0275\u0275elementStart(2, "p");
-    \u0275\u0275text(3);
-    \u0275\u0275pipe(4, "translate");
-    \u0275\u0275elementEnd()();
-  }
-  if (rf & 2) {
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 1, "Ch\u01B0a c\xF3 d\u1EEF li\u1EC7u ho\u1EA1t \u0111\u1ED9ng n\xE0o"));
+    \u0275\u0275property("ngIf", ctx_r2.errorStats.length === 0);
   }
 }
 function DashboardComponent_div_66_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 47);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 56);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "nz-table", 118, 13)(5, "thead")(6, "tr")(7, "th", 52);
-    \u0275\u0275text(8);
-    \u0275\u0275pipe(9, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "th");
-    \u0275\u0275text(11);
-    \u0275\u0275pipe(12, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(13, "th");
-    \u0275\u0275text(14);
-    \u0275\u0275pipe(15, "translate");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(16, "th", 53);
-    \u0275\u0275text(17);
-    \u0275\u0275pipe(18, "translate");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(19, "tbody");
-    \u0275\u0275template(20, DashboardComponent_div_66_tr_20_Template, 18, 18, "tr", 55);
-    \u0275\u0275elementEnd()();
-    \u0275\u0275template(21, DashboardComponent_div_66_div_21_Template, 5, 3, "div", 119);
+    \u0275\u0275element(3, "tot-table", 80);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const activityTable_r27 = \u0275\u0275reference(4);
-    const ctx_r6 = \u0275\u0275nextContext();
+    const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 10, "Danh s\xE1ch th\u1EDDi gian ho\u1EA1t \u0111\u1ED9ng l\u1EA7n cu\u1ED1i"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 6, "Danh s\xE1ch th\u1EDDi gian ho\u1EA1t \u0111\u1ED9ng l\u1EA7n cu\u1ED1i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzData", ctx_r6.lastActivityList)("nzPageSize", 100)("nzShowPagination", false);
-    \u0275\u0275advance(5);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(9, 12, "Lo\u1EA1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(12, 14, "T\xEAn queue / topic"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 16, "Subscriber (n\u1EBFu c\xF3)"));
-    \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(18, 18, "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", activityTable_r27.data);
-    \u0275\u0275advance();
-    \u0275\u0275property("ngIf", ctx_r6.lastActivityList.length === 0);
+    \u0275\u0275property("data", ctx_r2.lastActivityList)("columns", ctx_r2.activityColumns)("pageSize", 10)("frontPagination", true)("showPagination", true);
   }
 }
 function DashboardComponent_div_67_Template(rf, ctx) {
@@ -4844,6 +4348,389 @@ function DashboardComponent_div_67_Template(rf, ctx) {
     \u0275\u0275elementStart(0, "div");
     \u0275\u0275element(1, "app-cqrs-test");
     \u0275\u0275elementEnd();
+  }
+}
+function DashboardComponent_ng_template_68_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 81);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r9 = ctx.$implicit;
+    \u0275\u0275property("nzColor", data_r9.type === "Queue" ? "blue" : data_r9.type === "Topic" ? "purple" : "default");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r9.type === "Queue" ? "queue" : data_r9.type === "Topic" ? "topic" : "internal"), " ");
+  }
+}
+function DashboardComponent_ng_template_70_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 82);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r10 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(data_r10.activeCount);
+  }
+}
+function DashboardComponent_ng_template_72_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 83);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r11 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(data_r11.processedCount);
+  }
+}
+function DashboardComponent_ng_template_74_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 84);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r12 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(data_r12.errorCount);
+  }
+}
+function DashboardComponent_ng_template_76_nz_tag_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 82);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const w_r13 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(w_r13);
+  }
+}
+function DashboardComponent_ng_template_76_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 85);
+    \u0275\u0275template(1, DashboardComponent_ng_template_76_nz_tag_1_Template, 2, 1, "nz-tag", 86);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r14 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", data_r14.workers);
+  }
+}
+function DashboardComponent_ng_template_78_div_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 89)(1, "span", 90);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "span", 91);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const h_r15 = ctx.$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(h_r15.handlerName);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(h_r15.messageName);
+  }
+}
+function DashboardComponent_ng_template_78_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 87);
+    \u0275\u0275template(1, DashboardComponent_ng_template_78_div_1_Template, 5, 2, "div", 88);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r16 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("ngForOf", data_r16.handlers);
+  }
+}
+function DashboardComponent_ng_template_80_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r17 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 92)(1, "tot-button", 93);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_80_Template_tot_button_click_1_listener() {
+      const data_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.viewDetails(data_r18));
+    });
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "tot-button", 94);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_80_Template_tot_button_click_4_listener() {
+      const data_r18 = \u0275\u0275restoreView(_r17).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.viewInProgress(data_r18));
+    });
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "translate");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275property("nzGhost", true);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 3, "Chi ti\u1EBFt"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 5, "Xem \u0111ang x\u1EED l\xFD"), " ");
+  }
+}
+function DashboardComponent_ng_template_82_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 81);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r19 = ctx.$implicit;
+    \u0275\u0275property("nzColor", data_r19.status === "success" ? "success" : data_r19.status === "error" ? "error" : "processing");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r19.status === "success" ? "Th\xE0nh c\xF4ng" : data_r19.status === "error" ? "L\u1ED7i" : "\u0110ang ch\u1EA1y"), " ");
+  }
+}
+function DashboardComponent_ng_template_84_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275text(0);
+  }
+  if (rf & 2) {
+    const data_r20 = ctx.$implicit;
+    \u0275\u0275textInterpolate1(" ", data_r20.worker || data_r20.workerId || "-", " ");
+  }
+}
+function DashboardComponent_ng_template_86_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r21 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 95)(1, "code");
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "slice");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "button", 96);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_86_Template_button_click_4_listener() {
+      const data_r22 = \u0275\u0275restoreView(_r21).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.copyToClipboard(data_r22.content));
+    });
+    \u0275\u0275element(5, "span", 97);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const data_r22 = ctx.$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate2("", \u0275\u0275pipeBind3(3, 2, data_r22.content, 0, 50), "", (data_r22.content == null ? null : data_r22.content.length) > 50 ? "..." : "");
+  }
+}
+function DashboardComponent_ng_template_88_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r23 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 92)(1, "tot-button", 98);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_88_Template_tot_button_click_1_listener() {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.retryTracking(data_r24));
+    });
+    \u0275\u0275element(3, "i", 99);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "tot-button", 100);
+    \u0275\u0275pipe(7, "translate");
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_88_Template_tot_button_click_6_listener() {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.deleteTracking(data_r24));
+    });
+    \u0275\u0275element(8, "i", 101);
+    \u0275\u0275text(9);
+    \u0275\u0275pipe(10, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(11, "tot-button", 102);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_88_Template_tot_button_click_11_listener() {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
+      return \u0275\u0275resetView(data_r24.expand = !data_r24.expand);
+    });
+    \u0275\u0275element(12, "i", 103);
+    \u0275\u0275text(13);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const data_r24 = ctx.$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTooltipTitle", \u0275\u0275pipeBind1(2, 7, "G\u1EEDi l\u1EA1i"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(5, 9, "G\u1EEDi l\u1EA1i"), " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzDanger", true)("nzTooltipTitle", \u0275\u0275pipeBind1(7, 11, "X\xF3a"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(10, 13, "X\xF3a"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzType", data_r24.expand ? "up" : "down");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 15, "Payload"), " ");
+  }
+}
+function DashboardComponent_ng_template_90_ng_template_16_nz_tag_9_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 81);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const step_r27 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("nzColor", step_r27.status === "success" ? "success" : "processing");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(step_r27.status);
+  }
+}
+function DashboardComponent_ng_template_90_ng_template_16_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-list-item")(1, "div", 109)(2, "span", 110);
+    \u0275\u0275text(3);
+    \u0275\u0275pipe(4, "date");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(5, "span", 111);
+    \u0275\u0275text(6);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "span", 112);
+    \u0275\u0275text(8);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(9, DashboardComponent_ng_template_90_ng_template_16_nz_tag_9_Template, 2, 2, "nz-tag", 113);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const step_r27 = ctx.$implicit;
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(4, 4, step_r27.time, "HH:mm:ss.SSS"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(step_r27.step);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(step_r27.details);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", step_r27.status);
+  }
+}
+function DashboardComponent_ng_template_90_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r25 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 104)(1, "div", 105)(2, "span");
+    \u0275\u0275text(3);
+    \u0275\u0275pipe(4, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(5, "button", 106);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_90_Template_button_click_5_listener() {
+      const data_r26 = \u0275\u0275restoreView(_r25).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.copyToClipboard(data_r26.content));
+    });
+    \u0275\u0275element(6, "i", 97);
+    \u0275\u0275text(7);
+    \u0275\u0275pipe(8, "translate");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(9, "pre", 107);
+    \u0275\u0275text(10);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(11, "div", 79)(12, "h4");
+    \u0275\u0275text(13);
+    \u0275\u0275pipe(14, "translate");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(15, "nz-list", 108);
+    \u0275\u0275template(16, DashboardComponent_ng_template_90_ng_template_16_Template, 10, 7, "ng-template", null, 22, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const data_r26 = ctx.$implicit;
+    const historyItem_r28 = \u0275\u0275reference(17);
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 6, "Payload"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(8, 8, "Sao ch\xE9p"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r2.formatJson(data_r26.content));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(14, 10, "L\u1ECBch s\u1EED x\u1EED l\xFD"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzDataSource", data_r26.history)("nzRenderItem", historyItem_r28);
+  }
+}
+function DashboardComponent_ng_template_92_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 81);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r29 = ctx.$implicit;
+    \u0275\u0275property("nzColor", data_r29.status === "Running" ? "success" : "default");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r29.status === "Running" ? "\u0110ang ch\u1EA1y" : "\u0110\xE3 d\u1EEBng"), " ");
+  }
+}
+function DashboardComponent_ng_template_94_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r30 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tot-button", 114);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_94_Template_tot_button_click_0_listener() {
+      const data_r31 = \u0275\u0275restoreView(_r30).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.toggleWorker(data_r31.id, data_r31.status));
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r31 = ctx.$implicit;
+    \u0275\u0275property("nzType", data_r31.status === "Running" ? "default" : "primary")("nzDanger", data_r31.status === "Running");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 3, data_r31.status === "Running" ? "D\u1EEBng" : "Kh\u1EDFi ch\u1EA1y"), " ");
+  }
+}
+function DashboardComponent_ng_template_96_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 81);
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "translate");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r32 = ctx.$implicit;
+    \u0275\u0275property("nzColor", data_r32.type === "Command" ? "blue" : data_r32.type === "Topic" ? "purple" : "cyan");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r32.type), " ");
+  }
+}
+function DashboardComponent_ng_template_98_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "span", 115);
+    \u0275\u0275pipe(1, "date");
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "date");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "span", 116);
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "date");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const data_r33 = ctx.$implicit;
+    \u0275\u0275property("nz-tooltip", \u0275\u0275pipeBind2(1, 3, data_r33.lastActive, "yyyy-MM-dd HH:mm:ss.SSS"));
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind2(3, 6, data_r33.lastActive, "yyyy-MM-dd HH:mm:ss"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" (", \u0275\u0275pipeBind2(6, 9, data_r33.lastActive, "HH:mm:ss"), ") ");
   }
 }
 var _DashboardComponent = class _DashboardComponent {
@@ -4887,6 +4774,9 @@ var _DashboardComponent = class _DashboardComponent {
       worker: ""
     };
     this.trackingColumns = [];
+    this.queueColumns = [];
+    this.workerColumns = [];
+    this.activityColumns = [];
     this.destroy$ = new Subject();
   }
   ngOnInit() {
@@ -4895,10 +4785,34 @@ var _DashboardComponent = class _DashboardComponent {
       { title: "Status", template: this.statusTpl },
       { title: "Queue/Topic", key: "queueOrTopic" },
       { title: "Handler", key: "handler" },
-      { title: "Worker", key: "workerId" },
+      { title: "Worker", template: this.trackingWorkerTpl },
       { title: "Content", template: this.contentTpl },
-      { title: "Created", key: "createdAt" },
+      { title: "Created", key: "time" },
       { title: "H\xE0nh \u0111\u1ED9ng", width: "100px", template: this.actionsTpl, right: true }
+    ];
+    this.queueColumns = [
+      { title: "Lo\u1EA1i", width: "80px", template: this.queueTypeTpl, left: true },
+      { title: "T\xEAn topic/ queue", key: "name", width: "200px", left: "80px" },
+      { title: "\u0110ang x\u1EED l\xFD", template: this.activeCountTpl, width: "100px", align: "center" },
+      { title: "Th\xE0nh c\xF4ng", template: this.successCountTpl, width: "120px", align: "center" },
+      { title: "L\u1ED7i", template: this.errorCountTpl, width: "100px", align: "center" },
+      { title: "T\u1ED5ng", key: "totalCount", width: "100px", align: "center" },
+      { title: "Workers", template: this.workerTagsTpl, width: "200px" },
+      { title: "Handlers", template: this.handlerGridTpl },
+      { title: "H\xE0nh \u0111\u1ED9ng", width: "150px", template: this.queueActionsTpl, right: true }
+    ];
+    this.workerColumns = [
+      { title: "T\xEAn Worker", key: "id", width: "200px", left: true },
+      { title: "Tr\u1EA1ng th\xE1i", template: this.workerStatusTpl, width: "120px" },
+      { title: "Lo\u1EA1i", key: "type", width: "100px" },
+      { title: "Chi ti\u1EBFt \u0111\xEDch", key: "queueOrTopicName" },
+      { title: "H\xE0nh \u0111\u1ED9ng", width: "150px", template: this.workerActionsTpl, right: true }
+    ];
+    this.activityColumns = [
+      { title: "Lo\u1EA1i", template: this.activityTypeTpl, width: "120px" },
+      { title: "T\xEAn queue / topic", key: "mainName" },
+      { title: "Subscriber", key: "subscriberName" },
+      { title: "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i", template: this.lastActiveTpl, width: "250px" }
     ];
     this.refresh();
   }
@@ -5079,24 +4993,36 @@ _DashboardComponent.\u0275fac = function DashboardComponent_Factory(__ngFactoryT
 };
 _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], viewQuery: function DashboardComponent_Query(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275viewQuery(_c06, 7)(_c13, 7)(_c23, 7);
+    \u0275\u0275viewQuery(_c06, 7)(_c13, 7)(_c23, 7)(_c33, 7)(_c42, 7)(_c52, 7)(_c62, 7)(_c72, 7)(_c82, 7)(_c9, 7)(_c10, 7)(_c11, 7)(_c122, 7)(_c132, 7)(_c14, 7);
   }
   if (rf & 2) {
     let _t;
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.statusTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.trackingWorkerTpl = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.contentTpl = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.actionsTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.queueTypeTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.workerTagsTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.handlerGridTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.queueActionsTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.workerStatusTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.workerActionsTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.activityTypeTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.lastActiveTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.activeCountTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.successCountTpl = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.errorCountTpl = _t.first);
   }
-}, decls: 68, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTable", ""], ["prefixSearch", ""], ["statusTpl", ""], ["contentTpl", ""], ["actionsTpl", ""], ["expandTpl", ""], ["historyItem", ""], ["workerTable", ""], ["errorItem", ""], ["activityTable", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nzType", "primary", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], ["nzSize", "middle", 3, "nzData", "nzLoading", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "80px", "nzLeft", "0px"], ["nzWidth", "200px", "nzLeft", "80px"], ["nzWidth", "100px"], ["nzWidth", "120px"], ["nzWidth", "200px"], ["nzWidth", "150px", "nzRight", "0px"], [4, "ngFor", "ngForOf"], ["nzLeft", "0px"], [3, "nzColor"], ["nzLeft", "80px"], [1, "queue-name-cell"], [1, "queue-name"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], ["nzRight", "0px"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzGhost"], ["nzType", "default", "nzSize", "small", 3, "click"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "click", "nzBlock"], [3, "queryParamsChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate"], ["nz-icon", "", "nzType", "search"], [1, "content-preview"], ["nz-button", "", "nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzDanger", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], ["nzSize", "small", "nzType", "link", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "json-viewer-container", 2, "width", "100%"], [1, "json-header"], ["nz-button", "", "nzSize", "small", 3, "click"], [1, "json-content"], [2, "margin-top", "16px"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "nzData", "nzPageSize", "nzShowPagination", "nzScroll"], ["nzWidth", "200px", "nzLeft", "0px"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], [3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], ["nzSize", "middle", 3, "nzData", "nzPageSize", "nzShowPagination"], ["class", "empty-state", "style", "padding: 40px; text-align: center; color: #999;", 4, "ngIf"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "empty-state", 2, "padding", "40px", "text-align", "center", "color", "#999"], ["nz-icon", "", "nzType", "info-circle", 2, "font-size", "24px"]], template: function DashboardComponent_Template(rf, ctx) {
+}, decls: 100, vars: 63, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["queueTypeTpl", ""], ["activeCountTpl", ""], ["successCountTpl", ""], ["errorCountTpl", ""], ["workerTagsTpl", ""], ["handlerGridTpl", ""], ["queueActionsTpl", ""], ["statusTpl", ""], ["trackingWorkerTpl", ""], ["contentTpl", ""], ["actionsTpl", ""], ["expandTpl", ""], ["workerStatusTpl", ""], ["workerActionsTpl", ""], ["activityTypeTpl", ""], ["lastActiveTpl", ""], ["prefixSearch", ""], ["errorItem", ""], ["historyItem", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nzType", "primary", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], ["nz-radio-button", "", "nzValue", "test"], ["nz-icon", "", "nzType", "experiment"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], [3, "data", "columns", "loading", "pageSize", "frontPagination", "showPagination", "scroll"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "click", "nzBlock"], [3, "queryParamsChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate"], ["nz-icon", "", "nzType", "search"], [3, "data", "columns", "pageSize", "frontPagination", "showPagination", "scroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], [2, "margin-top", "16px"], ["nzSize", "middle", 3, "data", "columns", "pageSize", "frontPagination", "showPagination"], [3, "nzColor"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzGhost"], ["nzType", "default", "nzSize", "small", 3, "click"], [1, "content-preview"], ["nz-button", "", "nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzDanger", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], ["nzSize", "small", "nzType", "link", 3, "click"], ["nz-icon", "", 3, "nzType"], [1, "json-viewer-container", 2, "width", "100%"], [1, "json-header"], ["nz-button", "", "nzSize", "small", 3, "click"], [1, "json-content"], [3, "nzDataSource", "nzRenderItem"], [2, "display", "flex", "width", "100%", "gap", "16px"], [2, "width", "150px", "color", "#999"], [2, "width", "100px", "font-weight", "bold"], [2, "flex", "1"], [3, "nzColor", 4, "ngIf"], [3, "click", "nzType", "nzDanger"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"]], template: function DashboardComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 14)(1, "nz-page-header", 15);
+    \u0275\u0275elementStart(0, "div", 23)(1, "nz-page-header", 24);
     \u0275\u0275pipe(2, "translate");
-    \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 16)(5, "div", 17)(6, "span", 18);
+    \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 25)(5, "div", 26)(6, "span", 27);
     \u0275\u0275text(7);
     \u0275\u0275pipe(8, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "nz-select", 19);
+    \u0275\u0275elementStart(9, "nz-select", 28);
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.refreshInterval, $event) || (ctx.refreshInterval = $event);
@@ -5105,77 +5031,78 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275listener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener() {
       return ctx.onRefreshIntervalChange();
     });
-    \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 20);
+    \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 29);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(11, "tot-button", 21);
+    \u0275\u0275elementStart(11, "tot-button", 30);
     \u0275\u0275listener("click", function DashboardComponent_Template_tot_button_click_11_listener() {
       return ctx.refresh();
     });
-    \u0275\u0275element(12, "i", 22);
+    \u0275\u0275element(12, "i", 31);
     \u0275\u0275text(13);
     \u0275\u0275pipe(14, "translate");
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(15, "div", 23)(16, "div", 24)(17, "nz-card", 25);
-    \u0275\u0275element(18, "nz-statistic", 26);
+    \u0275\u0275elementStart(15, "div", 32)(16, "div", 33)(17, "nz-card", 34);
+    \u0275\u0275element(18, "nz-statistic", 35);
     \u0275\u0275pipe(19, "translate");
     \u0275\u0275template(20, DashboardComponent_ng_template_20_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(22, "div", 24)(23, "nz-card", 25);
-    \u0275\u0275element(24, "nz-statistic", 27);
+    \u0275\u0275elementStart(22, "div", 33)(23, "nz-card", 34);
+    \u0275\u0275element(24, "nz-statistic", 36);
     \u0275\u0275pipe(25, "translate");
     \u0275\u0275template(26, DashboardComponent_ng_template_26_Template, 1, 0, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(28, "div", 24)(29, "nz-card", 25);
-    \u0275\u0275element(30, "nz-statistic", 27);
+    \u0275\u0275elementStart(28, "div", 33)(29, "nz-card", 34);
+    \u0275\u0275element(30, "nz-statistic", 36);
     \u0275\u0275pipe(31, "translate");
     \u0275\u0275template(32, DashboardComponent_ng_template_32_Template, 1, 0, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(34, "div", 24)(35, "nz-card", 25);
-    \u0275\u0275element(36, "nz-statistic", 26);
+    \u0275\u0275elementStart(34, "div", 33)(35, "nz-card", 34);
+    \u0275\u0275element(36, "nz-statistic", 35);
     \u0275\u0275pipe(37, "translate");
     \u0275\u0275template(38, DashboardComponent_ng_template_38_Template, 1, 0, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(40, "div", 28)(41, "nz-radio-group", 29);
+    \u0275\u0275elementStart(40, "div", 37)(41, "nz-radio-group", 38);
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_radio_group_ngModelChange_41_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.activeTab, $event) || (ctx.activeTab = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275elementStart(42, "label", 30);
-    \u0275\u0275element(43, "i", 31);
+    \u0275\u0275elementStart(42, "label", 39);
+    \u0275\u0275element(43, "i", 40);
     \u0275\u0275text(44);
     \u0275\u0275pipe(45, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(46, "label", 32);
-    \u0275\u0275element(47, "i", 33);
+    \u0275\u0275elementStart(46, "label", 41);
+    \u0275\u0275element(47, "i", 42);
     \u0275\u0275text(48);
     \u0275\u0275pipe(49, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(50, "label", 34);
-    \u0275\u0275element(51, "i", 35);
+    \u0275\u0275elementStart(50, "label", 43);
+    \u0275\u0275element(51, "i", 44);
     \u0275\u0275text(52);
     \u0275\u0275pipe(53, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "label", 36);
-    \u0275\u0275element(55, "i", 37);
+    \u0275\u0275elementStart(54, "label", 45);
+    \u0275\u0275element(55, "i", 46);
     \u0275\u0275text(56);
     \u0275\u0275pipe(57, "translate");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(58, "label", 38);
-    \u0275\u0275element(59, "i", 39);
+    \u0275\u0275elementStart(58, "label", 47);
+    \u0275\u0275element(59, "i", 48);
     \u0275\u0275text(60);
     \u0275\u0275pipe(61, "translate");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementContainerStart(62, 40);
-    \u0275\u0275template(63, DashboardComponent_div_63_Template, 36, 37, "div", 41)(64, DashboardComponent_div_64_Template, 39, 46, "div", 41)(65, DashboardComponent_div_65_Template, 33, 33, "div", 41)(66, DashboardComponent_div_66_Template, 22, 20, "div", 41)(67, DashboardComponent_div_67_Template, 2, 0, "div", 41);
+    \u0275\u0275elementContainerStart(62, 49);
+    \u0275\u0275template(63, DashboardComponent_div_63_Template, 4, 11, "div", 50)(64, DashboardComponent_div_64_Template, 31, 46, "div", 50)(65, DashboardComponent_div_65_Template, 13, 19, "div", 50)(66, DashboardComponent_div_66_Template, 4, 8, "div", 50)(67, DashboardComponent_div_67_Template, 2, 0, "div", 50);
     \u0275\u0275elementContainerEnd();
+    \u0275\u0275template(68, DashboardComponent_ng_template_68_Template, 3, 4, "ng-template", null, 4, \u0275\u0275templateRefExtractor)(70, DashboardComponent_ng_template_70_Template, 2, 1, "ng-template", null, 5, \u0275\u0275templateRefExtractor)(72, DashboardComponent_ng_template_72_Template, 2, 1, "ng-template", null, 6, \u0275\u0275templateRefExtractor)(74, DashboardComponent_ng_template_74_Template, 2, 1, "ng-template", null, 7, \u0275\u0275templateRefExtractor)(76, DashboardComponent_ng_template_76_Template, 2, 1, "ng-template", null, 8, \u0275\u0275templateRefExtractor)(78, DashboardComponent_ng_template_78_Template, 2, 1, "ng-template", null, 9, \u0275\u0275templateRefExtractor)(80, DashboardComponent_ng_template_80_Template, 7, 7, "ng-template", null, 10, \u0275\u0275templateRefExtractor)(82, DashboardComponent_ng_template_82_Template, 3, 4, "ng-template", null, 11, \u0275\u0275templateRefExtractor)(84, DashboardComponent_ng_template_84_Template, 1, 1, "ng-template", null, 12, \u0275\u0275templateRefExtractor)(86, DashboardComponent_ng_template_86_Template, 6, 6, "ng-template", null, 13, \u0275\u0275templateRefExtractor)(88, DashboardComponent_ng_template_88_Template, 15, 17, "ng-template", null, 14, \u0275\u0275templateRefExtractor)(90, DashboardComponent_ng_template_90_Template, 18, 12, "ng-template", null, 15, \u0275\u0275templateRefExtractor)(92, DashboardComponent_ng_template_92_Template, 3, 4, "ng-template", null, 16, \u0275\u0275templateRefExtractor)(94, DashboardComponent_ng_template_94_Template, 3, 5, "ng-template", null, 17, \u0275\u0275templateRefExtractor)(96, DashboardComponent_ng_template_96_Template, 3, 4, "ng-template", null, 18, \u0275\u0275templateRefExtractor)(98, DashboardComponent_ng_template_98_Template, 7, 12, "ng-template", null, 19, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const prefixEnqueued_r28 = \u0275\u0275reference(21);
-    const prefixProcessed_r29 = \u0275\u0275reference(27);
-    const prefixError_r30 = \u0275\u0275reference(33);
-    const prefixWorkers_r31 = \u0275\u0275reference(39);
+    const prefixEnqueued_r34 = \u0275\u0275reference(21);
+    const prefixProcessed_r35 = \u0275\u0275reference(27);
+    const prefixError_r36 = \u0275\u0275reference(33);
+    const prefixWorkers_r37 = \u0275\u0275reference(39);
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 37, "CQRS Dashboard"));
     \u0275\u0275advance(6);
@@ -5193,19 +5120,19 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance();
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 43, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r28);
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 43, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r34);
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 45, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r29)("nzValueStyle", \u0275\u0275pureFunction0(61, _c33));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 45, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r35)("nzValueStyle", \u0275\u0275pureFunction0(61, _c15));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 47, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r30)("nzValueStyle", \u0275\u0275pureFunction0(62, _c42));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 47, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r36)("nzValueStyle", \u0275\u0275pureFunction0(62, _c16));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(37, 49, "Workers \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkers_r31);
+    \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(37, 49, "Workers \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkers_r37);
     \u0275\u0275advance(5);
     \u0275\u0275twoWayProperty("ngModel", ctx.activeTab);
     \u0275\u0275advance(3);
@@ -5249,13 +5176,6 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
   NzStatisticModule,
   NzStatisticComponent,
   NzTableModule,
-  NzTableComponent,
-  NzTableCellDirective,
-  NzThMeasureDirective,
-  NzTheadComponent,
-  NzTbodyComponent,
-  NzTrDirective,
-  NzCellFixedDirective,
   NzTagModule,
   NzTagComponent,
   NzDividerModule,
@@ -5274,7 +5194,6 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
   NzProgressModule,
   NzModalModule,
   NzSpaceModule,
-  NzSpaceComponent,
   NzSelectModule,
   NzOptionComponent,
   NzSelectComponent,
@@ -5296,7 +5215,7 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
   SlicePipe,
   DatePipe,
   TranslatePipe
-], styles: ['\n.dashboard-container[_ngcontent-%COMP%] {\n  padding: 24px;\n}\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item[_ngcontent-%COMP%] {\n  font-size: 12px;\n}\n.handler-name[_ngcontent-%COMP%] {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name[_ngcontent-%COMP%] {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container[_ngcontent-%COMP%] {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text[_ngcontent-%COMP%] {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content[_ngcontent-%COMP%] {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%] {\n  background: #141414;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%] {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .id-text[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .id-text[_ngcontent-%COMP%] {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */'] });
+], styles: ['\n.dashboard-container[_ngcontent-%COMP%] {\n  padding: 0;\n}\nnz-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item[_ngcontent-%COMP%] {\n  font-size: 12px;\n}\n.handler-name[_ngcontent-%COMP%] {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name[_ngcontent-%COMP%] {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container[_ngcontent-%COMP%] {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text[_ngcontent-%COMP%] {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container[_ngcontent-%COMP%] {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content[_ngcontent-%COMP%] {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .json-viewer-container[_ngcontent-%COMP%] {\n  background: #141414;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .filters-container[_ngcontent-%COMP%] {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n[nz-theme="dark"][_nghost-%COMP%]   .id-text[_ngcontent-%COMP%], [nz-theme="dark"]   [_nghost-%COMP%]   .id-text[_ngcontent-%COMP%] {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */'] });
 var DashboardComponent = _DashboardComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(DashboardComponent, [{
@@ -5383,62 +5302,15 @@ var DashboardComponent = _DashboardComponent;
   <ng-container [ngSwitch]="activeTab">
     <div *ngSwitchCase="'queues'">
       <nz-card [nzTitle]="'Danh s\xE1ch th\u1EF1c th\u1EC3 CQRS' | translate">
-        <nz-table #queueTable [nzData]="queues" [nzLoading]="loading" [nzPageSize]="100" [nzShowPagination]="false" nzSize="middle" [nzScroll]="{ x: '1200px' }">
-          <thead>
-            <tr>
-              <th nzWidth="80px" nzLeft="0px">{{ 'Lo\u1EA1i' | translate }}</th>
-              <th nzWidth="200px" nzLeft="80px">{{ 'T\xEAn topic/ queue' | translate }}</th>
-              <th nzWidth="100px">{{ '\u0110ang x\u1EED l\xFD' | translate }}</th>
-              <th nzWidth="120px">{{ '\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng' | translate }}</th>
-              <th nzWidth="100px">{{ '\u0110\xE3 x\u1EED l\xFD l\u1ED7i' | translate }}</th>
-              <th nzWidth="100px">{{ 'T\u1ED5ng message' | translate }}</th>
-              <th nzWidth="200px">{{ 'Danh s\xE1ch worker' | translate }}</th>
-              <th>{{ 'Danh s\xE1ch command handle / event handle' | translate }}</th>
-              <th nzWidth="150px" nzRight="0px">{{ 'H\xE0nh \u0111\u1ED9ng' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let q of queueTable.data">
-              <td nzLeft="0px">
-                <nz-tag [nzColor]="q.type === 'Queue' ? 'blue' : q.type === 'Topic' ? 'purple' : 'default'">
-                  {{ (q.type === 'Queue' ? 'queue' : q.type === 'Topic' ? 'topic' : 'internal') | translate }}
-                </nz-tag>
-              </td>
-              <td nzLeft="80px">
-                <div class="queue-name-cell">
-                  <span class="queue-name">{{ q.name }}</span>
-                </div>
-              </td>
-              <td><nz-tag nzColor="processing">{{ q.activeCount }}</nz-tag></td>
-              <td><nz-tag nzColor="success">{{ q.processedCount }}</nz-tag></td>
-              <td><nz-tag nzColor="error">{{ q.errorCount }}</nz-tag></td>
-              <td><b>{{ q.totalCount }}</b></td>
-              <td>
-                <div class="worker-tags">
-                  <nz-tag *ngFor="let w of q.workers" nzColor="processing">{{ w }}</nz-tag>
-                </div>
-              </td>
-              <td>
-                <div class="handler-grid">
-                  <div *ngFor="let h of q.handlers" class="handler-tag-item">
-                    <span class="h-name">{{ h.handlerName }}</span>
-                    <span class="m-name">{{ h.messageName }}</span>
-                  </div>
-                </div>
-              </td>
-              <td nzRight="0px">
-                <div style="display: flex; gap: 4px; flex-direction: column;">
-                  <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(q)">
-                    {{ 'Chi ti\u1EBFt' | translate }}
-                  </tot-button>
-                  <tot-button nzType="default" nzSize="small" (click)="viewInProgress(q)">
-                    {{ 'Xem \u0111ang x\u1EED l\xFD' | translate }}
-                  </tot-button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <tot-table
+          [data]="queues"
+          [columns]="queueColumns"
+          [loading]="loading"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          [scroll]="{ x: '1200px' }"
+        ></tot-table>
       </nz-card>
     </div>
 
@@ -5482,96 +5354,19 @@ var DashboardComponent = _DashboardComponent;
           [expandTemplate]="expandTpl"
           (queryParamsChange)="onQueryParamsChange($event)"
         ></tot-table>
-
-        <ng-template #statusTpl let-data>
-          <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
-            {{ (data.status === 'success' ? 'Th\xE0nh c\xF4ng' : data.status === 'error' ? 'L\u1ED7i' : '\u0110ang ch\u1EA1y') | translate }}
-          </nz-tag>
-        </ng-template>
-
-        <ng-template #contentTpl let-data>
-          <div class="content-preview">
-            <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
-            <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
-              <span nz-icon nzType="copy"></span>
-            </button>
-          </div>
-        </ng-template>
-
-        <ng-template #actionsTpl let-data>
-          <nz-space>
-            <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'G\u1EEDi l\u1EA1i' | translate">
-              <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | translate }}
-            </tot-button>
-            <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'X\xF3a' | translate">
-              <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | translate }}
-            </tot-button>
-            <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
-              <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
-            </tot-button>
-          </nz-space>
-        </ng-template>
-
-        <ng-template #expandTpl let-data>
-          <div class="json-viewer-container" style="width: 100%;">
-            <div class="json-header">
-              <span>{{ 'Payload' | translate }}</span>
-              <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
-                <i nz-icon nzType="copy"></i> {{ 'Sao ch\xE9p' | translate }}
-              </button>
-            </div>
-            <pre class="json-content">{{ formatJson(data.content) }}</pre>
-            
-            <div style="margin-top: 16px;">
-              <h4>{{ 'L\u1ECBch s\u1EED x\u1EED l\xFD' | translate }}</h4>
-              <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
-                <ng-template #historyItem let-step>
-                  <nz-list-item>
-                    <div style="display: flex; width: 100%; gap: 16px;">
-                      <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
-                      <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
-                      <span style="flex: 1;">{{ step.details }}</span>
-                      <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
-                    </div>
-                  </nz-list-item>
-                </ng-template>
-              </nz-list>
-            </div>
-          </div>
-        </ng-template>
       </nz-card>
     </div>
 
     <div *ngSwitchCase="'workers'">
       <nz-card [nzTitle]="'Gi\xE1m s\xE1t ti\u1EBFn tr\xECnh (Workers)' | translate">
-        <nz-table #workerTable [nzData]="workerList" [nzPageSize]="100" [nzShowPagination]="false" [nzScroll]="{ x: '800px' }">
-          <thead>
-            <tr>
-              <th nzWidth="200px" nzLeft="0px">{{ 'T\xEAn Worker' | translate }}</th>
-              <th nzWidth="120px">{{ 'Tr\u1EA1ng th\xE1i' | translate }}</th>
-              <th nzWidth="100px">{{ 'Lo\u1EA1i' | translate }}</th>
-              <th>{{ 'Chi ti\u1EBFt \u0111\xEDch' | translate }}</th>
-              <th nzWidth="150px" nzRight="0px">{{ 'H\xE0nh \u0111\u1ED9ng' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let w of workerTable.data">
-              <td nzLeft="0px"><b>{{ w.id }}</b></td>
-              <td>
-                <nz-tag [nzColor]="w.status === 'Running' ? 'success' : 'default'">
-                  {{ (w.status === 'Running' ? '\u0110ang ch\u1EA1y' : '\u0110\xE3 d\u1EEBng') | translate }}
-                </nz-tag>
-              </td>
-              <td>{{ w.type | translate }}</td>
-              <td>{{ w.queueOrTopicName }}</td>
-              <td nzRight="0px">
-                <tot-button [nzType]="w.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(w.id, w.status)" [nzDanger]="w.status === 'Running'">
-                  {{ (w.status === 'Running' ? 'D\u1EEBng' : 'Kh\u1EDFi ch\u1EA1y') | translate }}
-                </tot-button>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
+        <tot-table
+          [data]="workerList"
+          [columns]="workerColumns"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          [scroll]="{ x: '800px' }"
+        ></tot-table>
       </nz-card>
 
       <nz-card [nzTitle]="'Ph\xE2n t\xEDch l\u1ED7i' | translate" style="margin-top: 24px;">
@@ -5595,58 +5390,203 @@ var DashboardComponent = _DashboardComponent;
         </div>
       </nz-card>
     </div>
+
     <div *ngSwitchCase="'activity'">
       <nz-card [nzTitle]="'Danh s\xE1ch th\u1EDDi gian ho\u1EA1t \u0111\u1ED9ng l\u1EA7n cu\u1ED1i' | translate">
-        <nz-table #activityTable [nzData]="lastActivityList" [nzPageSize]="100" [nzShowPagination]="false" nzSize="middle">
-          <thead>
-            <tr>
-              <th nzWidth="120px">{{ 'Lo\u1EA1i' | translate }}</th>
-              <th>{{ 'T\xEAn queue / topic' | translate }}</th>
-              <th>{{ 'Subscriber (n\u1EBFu c\xF3)' | translate }}</th>
-              <th nzWidth="200px">{{ 'Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i' | translate }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let item of activityTable.data">
-              <td>
-                <nz-tag [nzColor]="item.type === 'Command' ? 'blue' : item.type === 'Topic' ? 'purple' : 'cyan'">
-                  {{ item.type | translate }}
-                </nz-tag>
-              </td>
-              <td><b>{{ item.mainName }}</b></td>
-              <td>{{ item.subscriberName || '-' }}</td>
-              <td>
-                <span [nz-tooltip]="item.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
-                  {{ item.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
-                </span>
-                <span style="color: #999; font-size: 12px; margin-left: 8px;">
-                  ({{ item.lastActive | date:'HH:mm:ss' }})
-                </span>
-              </td>
-            </tr>
-          </tbody>
-        </nz-table>
-        <div *ngIf="lastActivityList.length === 0" class="empty-state" style="padding: 40px; text-align: center; color: #999;">
-          <i nz-icon nzType="info-circle" style="font-size: 24px;"></i>
-          <p>{{ 'Ch\u01B0a c\xF3 d\u1EEF li\u1EC7u ho\u1EA1t \u0111\u1ED9ng n\xE0o' | translate }}</p>
-        </div>
+        <tot-table
+          [data]="lastActivityList"
+          [columns]="activityColumns"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          nzSize="middle"
+        ></tot-table>
       </nz-card>
     </div>
     <div *ngSwitchCase="'test'">
       <app-cqrs-test></app-cqrs-test>
     </div>
   </ng-container>
+
+  <!-- Templates for tot-table -->
+  <ng-template #queueTypeTpl let-data>
+    <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
+      {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #activeCountTpl let-data>
+    <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #successCountTpl let-data>
+    <nz-tag nzColor="success">{{ data.processedCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #errorCountTpl let-data>
+    <nz-tag nzColor="error">{{ data.errorCount }}</nz-tag>
+  </ng-template>
+
+  <ng-template #workerTagsTpl let-data>
+    <div class="worker-tags">
+      <nz-tag *ngFor="let w of data.workers" nzColor="processing">{{ w }}</nz-tag>
+    </div>
+  </ng-template>
+
+  <ng-template #handlerGridTpl let-data>
+    <div class="handler-grid">
+      <div *ngFor="let h of data.handlers" class="handler-tag-item">
+        <span class="h-name">{{ h.handlerName }}</span>
+        <span class="m-name">{{ h.messageName }}</span>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #queueActionsTpl let-data>
+    <div style="display: flex; gap: 4px; flex-direction: column;">
+      <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
+        {{ 'Chi ti\u1EBFt' | translate }}
+      </tot-button>
+      <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
+        {{ 'Xem \u0111ang x\u1EED l\xFD' | translate }}
+      </tot-button>
+    </div>
+  </ng-template>
+
+  <ng-template #statusTpl let-data>
+    <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
+      {{ (data.status === 'success' ? 'Th\xE0nh c\xF4ng' : data.status === 'error' ? 'L\u1ED7i' : '\u0110ang ch\u1EA1y') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #trackingWorkerTpl let-data>
+    {{ data.worker || data.workerId || '-' }}
+  </ng-template>
+
+  <ng-template #contentTpl let-data>
+    <div class="content-preview">
+      <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
+      <button nz-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
+        <span nz-icon nzType="copy"></span>
+      </button>
+    </div>
+  </ng-template>
+
+  <ng-template #actionsTpl let-data>
+    <div style="display: flex; gap: 4px; flex-direction: column;">
+      <tot-button nzSize="small" nzType="link" (click)="retryTracking(data)" nz-tooltip [nzTooltipTitle]="'G\u1EEDi l\u1EA1i' | translate">
+        <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | translate }}
+      </tot-button>
+      <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'X\xF3a' | translate">
+        <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | translate }}
+      </tot-button>
+      <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
+        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | translate }}
+      </tot-button>
+    </div>
+  </ng-template>
+
+  <ng-template #expandTpl let-data>
+    <div class="json-viewer-container" style="width: 100%;">
+      <div class="json-header">
+        <span>{{ 'Payload' | translate }}</span>
+        <button nz-button nzSize="small" (click)="copyToClipboard(data.content)">
+          <i nz-icon nzType="copy"></i> {{ 'Sao ch\xE9p' | translate }}
+        </button>
+      </div>
+      <pre class="json-content">{{ formatJson(data.content) }}</pre>
+      
+      <div style="margin-top: 16px;">
+        <h4>{{ 'L\u1ECBch s\u1EED x\u1EED l\xFD' | translate }}</h4>
+        <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
+          <ng-template #historyItem let-step>
+            <nz-list-item>
+              <div style="display: flex; width: 100%; gap: 16px;">
+                <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
+                <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
+                <span style="flex: 1;">{{ step.details }}</span>
+                <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
+              </div>
+            </nz-list-item>
+          </ng-template>
+        </nz-list>
+      </div>
+    </div>
+  </ng-template>
+
+  <ng-template #workerStatusTpl let-data>
+    <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
+      {{ (data.status === 'Running' ? '\u0110ang ch\u1EA1y' : '\u0110\xE3 d\u1EEBng') | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #workerActionsTpl let-data>
+    <tot-button [nzType]="data.status === 'Running' ? 'default' : 'primary'" (click)="toggleWorker(data.id, data.status)" [nzDanger]="data.status === 'Running'">
+      {{ (data.status === 'Running' ? 'D\u1EEBng' : 'Kh\u1EDFi ch\u1EA1y') | translate }}
+    </tot-button>
+  </ng-template>
+
+  <ng-template #activityTypeTpl let-data>
+    <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">
+      {{ data.type | translate }}
+    </nz-tag>
+  </ng-template>
+
+  <ng-template #lastActiveTpl let-data>
+    <span [nz-tooltip]="data.lastActive | date:'yyyy-MM-dd HH:mm:ss.SSS'">
+      {{ data.lastActive | date:'yyyy-MM-dd HH:mm:ss' }}
+    </span>
+    <span style="color: #999; font-size: 12px; margin-left: 8px;">
+      ({{ data.lastActive | date:'HH:mm:ss' }})
+    </span>
+  </ng-template>
 </div>
-`, styles: ['/* projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.css */\n.dashboard-container {\n  padding: 24px;\n}\nnz-card {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item {\n  font-size: 12px;\n}\n.handler-name {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n:host-context([nz-theme="dark"]) .json-viewer-container {\n  background: #141414;\n  border-color: #303030;\n}\n:host-context([nz-theme="dark"]) .filters-container {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n:host-context([nz-theme="dark"]) .id-text {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */\n'] }]
+`, styles: ['/* projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.css */\n.dashboard-container {\n  padding: 0;\n}\nnz-card {\n  margin-bottom: 24px;\n  border-radius: 8px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.queue-name {\n  font-weight: 600;\n  color: #1890ff;\n  font-family: "Consolas", monospace;\n}\n.worker-tags {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 4px;\n}\n.handler-list {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.handler-item {\n  font-size: 12px;\n}\n.handler-name {\n  font-weight: 500;\n  color: #52c41a;\n}\n.message-name {\n  color: #999;\n  margin-left: 4px;\n}\n.filters-container {\n  background: #fbfbfb;\n  padding: 16px;\n  border-radius: 8px;\n  margin-bottom: 16px;\n  border: 1px solid #f0f0f0;\n}\n.id-text {\n  font-family: monospace;\n  font-size: 11px;\n  color: #666;\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 3px;\n  cursor: help;\n}\n.meta-text {\n  font-size: 12px;\n  color: #666;\n  word-break: break-all;\n}\n.json-viewer-container {\n  padding: 16px;\n  background: #fdfdfd;\n  border: 1px solid #f0f0f0;\n  border-top: none;\n}\n.json-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 8px;\n  font-weight: bold;\n  color: #1890ff;\n}\n.json-content {\n  background: #1e1e1e;\n  color: #d4d4d4;\n  padding: 16px;\n  border-radius: 4px;\n  font-family: "Consolas", monospace;\n  font-size: 12px;\n  max-height: 400px;\n  overflow: auto;\n  margin: 0;\n}\n:host-context([nz-theme="dark"]) .json-viewer-container {\n  background: #141414;\n  border-color: #303030;\n}\n:host-context([nz-theme="dark"]) .filters-container {\n  background: #1f1f1f;\n  border-color: #303030;\n}\n:host-context([nz-theme="dark"]) .id-text {\n  background: #262626;\n  color: #aaa;\n}\n/*# sourceMappingURL=dashboard.component.css.map */\n'] }]
   }], null, { statusTpl: [{
     type: ViewChild,
     args: ["statusTpl", { static: true }]
+  }], trackingWorkerTpl: [{
+    type: ViewChild,
+    args: ["trackingWorkerTpl", { static: true }]
   }], contentTpl: [{
     type: ViewChild,
     args: ["contentTpl", { static: true }]
   }], actionsTpl: [{
     type: ViewChild,
     args: ["actionsTpl", { static: true }]
+  }], queueTypeTpl: [{
+    type: ViewChild,
+    args: ["queueTypeTpl", { static: true }]
+  }], workerTagsTpl: [{
+    type: ViewChild,
+    args: ["workerTagsTpl", { static: true }]
+  }], handlerGridTpl: [{
+    type: ViewChild,
+    args: ["handlerGridTpl", { static: true }]
+  }], queueActionsTpl: [{
+    type: ViewChild,
+    args: ["queueActionsTpl", { static: true }]
+  }], workerStatusTpl: [{
+    type: ViewChild,
+    args: ["workerStatusTpl", { static: true }]
+  }], workerActionsTpl: [{
+    type: ViewChild,
+    args: ["workerActionsTpl", { static: true }]
+  }], activityTypeTpl: [{
+    type: ViewChild,
+    args: ["activityTypeTpl", { static: true }]
+  }], lastActiveTpl: [{
+    type: ViewChild,
+    args: ["lastActiveTpl", { static: true }]
+  }], activeCountTpl: [{
+    type: ViewChild,
+    args: ["activeCountTpl", { static: true }]
+  }], successCountTpl: [{
+    type: ViewChild,
+    args: ["successCountTpl", { static: true }]
+  }], errorCountTpl: [{
+    type: ViewChild,
+    args: ["errorCountTpl", { static: true }]
   }] });
 })();
 (() => {
@@ -5655,7 +5595,7 @@ var DashboardComponent = _DashboardComponent;
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-steps.mjs
 var _c07 = ["processDotTemplate"];
-var _c14 = ["itemContainer"];
+var _c19 = ["itemContainer"];
 var _c24 = (a0, a1, a2) => ({
   $implicit: a0,
   status: a1,
@@ -5899,7 +5839,7 @@ __publicField(_NzStepComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineC
   selectors: [["nz-step"]],
   viewQuery: function NzStepComponent_Query(rf, ctx) {
     if (rf & 1) {
-      \u0275\u0275viewQuery(_c07, 5)(_c14, 7);
+      \u0275\u0275viewQuery(_c07, 5)(_c19, 7);
     }
     if (rf & 2) {
       let _t;
@@ -6327,7 +6267,7 @@ var NzStepsModule = _NzStepsModule;
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-timeline.mjs
 var _c08 = ["template"];
-var _c15 = ["*"];
+var _c110 = ["*"];
 function NzTimelineItemComponent_ng_template_0_Conditional_1_ng_container_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementContainerStart(0);
@@ -6556,7 +6496,7 @@ __publicField(_NzTimelineItemComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u027
   },
   exportAs: ["nzTimelineItem"],
   features: [\u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c15,
+  ngContentSelectors: _c110,
   decls: 2,
   vars: 0,
   consts: [["template", ""], [1, "ant-timeline-item"], [1, "ant-timeline-item-label"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"]],
@@ -6723,7 +6663,7 @@ __publicField(_NzTimelineComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275def
   },
   exportAs: ["nzTimeline"],
   features: [\u0275\u0275ProvidersFeature([TimelineService]), \u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c15,
+  ngContentSelectors: _c110,
   decls: 8,
   vars: 14,
   consts: [["pendingTemplate", ""], [1, "ant-timeline"], [3, "ngTemplateOutlet"], [1, "ant-timeline-item", "ant-timeline-item-pending"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head", "ant-timeline-item-head-custom", "ant-timeline-item-head-blue"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"], ["nzType", "loading"]],
@@ -7179,4 +7119,4 @@ export {
   TopicDetailComponent,
   TracingComponent
 };
-//# sourceMappingURL=chunk-4YQXDRGI.js.map
+//# sourceMappingURL=chunk-WJBJ6ZDS.js.map

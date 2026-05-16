@@ -23618,7 +23618,6 @@ export {
   NzSelectModule,
   NzSpinComponent,
   NzSpinModule,
-  NzCellFixedDirective,
   NzTableCellDirective,
   NzThMeasureDirective,
   NzTbodyComponent,
@@ -23634,4 +23633,4 @@ export {
   TotButtonComponent,
   TotTableComponent
 };
-//# sourceMappingURL=chunk-YEPL6FXH.js.map
+//# sourceMappingURL=chunk-7FAEKS42.js.map
