@@ -1,13 +1,21 @@
 import { Injectable, inject } from '@angular/core';
 import { initializeApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, signInWithCustomToken, onAuthStateChanged, User, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import {
+  getAuth,
+  Auth,
+  signInWithCustomToken,
+  onAuthStateChanged,
+  User,
+  signInWithRedirect,
+  getRedirectResult,
+} from 'firebase/auth';
 import { getFirestore, Firestore, doc, onSnapshot, deleteDoc } from 'firebase/firestore';
 import { getMessaging, Messaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { BehaviorSubject } from 'rxjs';
 import { FIREBASE_CONFIG } from '../tokens/firebase-config.token';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class FirebaseService {
   private app: FirebaseApp;
@@ -15,7 +23,7 @@ export class FirebaseService {
   private db: Firestore;
   private messaging?: Messaging;
   private config = inject(FIREBASE_CONFIG);
-  
+
   private firebaseUserSubject = new BehaviorSubject<User | null>(null);
   public user$ = this.firebaseUserSubject.asObservable();
 
@@ -24,14 +32,16 @@ export class FirebaseService {
     this.auth = getAuth(this.app);
     this.db = getFirestore(this.app);
     this.initMessaging();
-    
+
     onAuthStateChanged(this.auth, (user) => {
       this.firebaseUserSubject.next(user);
     });
   }
 
   private isMobile(): boolean {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+      navigator.userAgent,
+    );
   }
 
   private async initMessaging() {
@@ -113,19 +123,20 @@ export class FirebaseService {
   subscribeOnce(requestId: string, callback: (data: any) => void) {
     const docRef = doc(this.db, 'commandresults', requestId);
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
+      
       if (snapshot.exists()) {
         const data = snapshot.data();
         callback(data);
-        
+
         // Stop listening immediately after receiving data
         unsubscribe();
-        
-        try {
-          // Cleanup Firestore record
-          await deleteDoc(docRef);
-        } catch (e) {
-          console.error('Failed to delete Firestore document after receipt', e);
-        }
+      }
+
+      try {
+        // Cleanup Firestore record
+        await deleteDoc(docRef);
+      } catch (e) {
+        console.error('Failed to delete Firestore document after receipt', e);
       }
     });
     return unsubscribe;
@@ -137,11 +148,11 @@ export class FirebaseService {
       if ('serviceWorker' in navigator) {
         const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
         const swPath = `${baseHref}firebase-messaging-sw.js`.replace('//', '/');
-        
+
         const registration = await navigator.serviceWorker.register(swPath, {
-          scope: baseHref
+          scope: baseHref,
         });
-        
+
         if (!registration.active) {
           await new Promise<void>((resolve) => {
             const worker = registration.installing || registration.waiting;
@@ -156,14 +167,14 @@ export class FirebaseService {
             }
           });
         }
-        
-        const token = await getToken(this.messaging, { 
+
+        const token = await getToken(this.messaging, {
           vapidKey: this.config.vapidKey,
-          serviceWorkerRegistration: registration
+          serviceWorkerRegistration: registration,
         });
         return token;
       }
-      
+
       const token = await getToken(this.messaging, { vapidKey: this.config.vapidKey });
       return token;
     } catch (error) {

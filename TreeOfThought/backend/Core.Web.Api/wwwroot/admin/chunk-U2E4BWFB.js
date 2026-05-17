@@ -13534,11 +13534,11 @@ var _FirebaseService = class _FirebaseService {
         const data = snapshot.data();
         callback(data);
         unsubscribe();
-        try {
-          await deleteDoc(docRef);
-        } catch (e) {
-          console.error("Failed to delete Firestore document after receipt", e);
-        }
+      }
+      try {
+        await deleteDoc(docRef);
+      } catch (e) {
+        console.error("Failed to delete Firestore document after receipt", e);
       }
     });
     return unsubscribe;
@@ -14706,4 +14706,4 @@ export {
   NzFormLabelComponent,
   NzFormModule
 };
-//# sourceMappingURL=chunk-KXRTLQ6S.js.map
+//# sourceMappingURL=chunk-U2E4BWFB.js.map

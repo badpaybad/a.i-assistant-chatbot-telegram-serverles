@@ -1,7 +1,7 @@
 import {
   APP_CLAIMS,
   AuthService
-} from "./chunk-KCUV762Z.js";
+} from "./chunk-DU54MS62.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -16,7 +16,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-L6UR6KC7.js";
+} from "./chunk-3CPRV7QE.js";
 import "./chunk-F2GHQOYI.js";
 import {
   NzDividerComponent,
@@ -28,7 +28,7 @@ import {
   NzFormDirective,
   NzFormItemComponent,
   NzFormModule
-} from "./chunk-KXRTLQ6S.js";
+} from "./chunk-U2E4BWFB.js";
 import "./chunk-IRGOCD6C.js";
 import {
   API_URL,
@@ -4250,17 +4250,17 @@ var routes = [
         children: [
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-43QPCQ36.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-NAW6IAG7.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-43QPCQ36.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-NAW6IAG7.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-43QPCQ36.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-NAW6IAG7.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4271,36 +4271,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-4U2OJHV3.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-TW4SZ6KU.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4308,7 +4308,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-6PEEPQWO.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-MWS35CTH.js").then((m) => m.FilesFolders)
       }
     ]
   },

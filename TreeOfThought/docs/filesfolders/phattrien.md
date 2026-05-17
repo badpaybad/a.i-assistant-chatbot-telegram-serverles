@@ -65,8 +65,8 @@ Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ
 7. [/] Xây dựng Modal xem chi tiết và Preview file (Đã có basic, cần optimize).
 8. [x] Triển khai API Đổi tên thư mục (Backend).
 9. [x] Triển khai API Đổi tên file (Backend).
-10. [ ] Chuyển đổi UI Đổi tên trên Folder Tree sang Popover.
-11. [ ] Chuyển đổi UI Đổi tên trên File List sang Popover.
+10. [x] Chuyển đổi UI Đổi tên trên Folder Tree sang Popover.
+11. [x] Chuyển đổi UI Đổi tên trên File List sang Popover.
 12. [x] Tối ưu hóa UI File Explorer:
     - Triển khai Accordion compact cho Thư mục và Tệp tin.
     - Chuyển đổi danh sách Folder sang dạng Grid (ô vuông).
