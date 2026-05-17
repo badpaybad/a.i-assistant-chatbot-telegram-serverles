@@ -75,6 +75,10 @@ sequenceDiagram
 ```
 
 ### 2.4. Quy chuẩn Phân trang bắt buộc (Standard Server-Side Paging)
+
+> [!IMPORTANT]
+> **Cập nhật ngày 2026-05-17 12:46:36**: Paging cho việc lấy danh sách (List/Search) **luôn luôn bắt buộc phải là phân trang ở server (server-side paging)**. Tuyệt đối không được sử dụng cơ chế tải toàn bộ rồi phân trang ở giao diện (client-side paging), nhằm đảm bảo hiệu năng mạng, tối ưu hóa bộ nhớ RAM của thiết bị khách, và sẵn sàng mở rộng khi quy mô dữ liệu tăng lên.
+
 *   **Yêu cầu**: Mọi API trả về danh sách (List/Search) bắt buộc phải hỗ trợ phân trang server-side.
 *   **Tham số đầu vào (Request)**: Bắt buộc hỗ trợ `pageIndex` (1-based, mặc định là 1) và `pageSize` (mặc định là 10).
 *   **Cấu trúc dữ liệu trả về (Response)**: Bắt buộc trả về một Object chứa định dạng JSON chuẩn:
