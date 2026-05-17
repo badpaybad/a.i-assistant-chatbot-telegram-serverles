@@ -86,4 +86,43 @@ Các nghiệp vụ đã được triển khai từ trước có cấu trúc fold
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-oidc`
 
+### C. Bảo vệ các thư mục cốt lõi (Core & Base Infrastructure)
+> [!IMPORTANT]
+> **Tuyệt đối KHÔNG ĐƯỢC XÓA hoặc tự động GHI ĐÈ** 2 thư mục sau khi tạo hoặc cập nhật nghiệp vụ mới:
+> - `TreeOfThought/frontend`
+> - `TreeOfThought/docs/backend`
+> 
+> Hai thư mục này chứa các file yêu cầu/tài liệu cấu trúc để tạo nên base infra core và một số nghiệp vụ ban đầu quan trọng.
+
+Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân thủ:
+
+#### 1. Backend (BE)
+- **Core Infra Base (Cơ sở hạ tầng lõi):**
+  - `TreeOfThought/backend/Core.Infra.Auth`
+  - `TreeOfThought/backend/Core.Infra.Base`
+  - `TreeOfThought/backend/Core.Infra.Cqrs`
+  - `TreeOfThought/backend/Core.Infra.Data`
+  - `TreeOfThought/backend/Core.Infra.Firebase`
+  - `TreeOfThought/backend/Core.Infra.Redis`
+  - `TreeOfThought/backend/Core.Infra.Session`
+- **App Shell:**
+  - `TreeOfThought/backend/Core.Web.Api`
+- **Nghiệp vụ sẵn có:**
+  - `TreeOfThought/backend/Core.Infra.FilesFolders`
+  - `TreeOfThought/backend/Core.Infra.Oidc`
+
+#### 2. Frontend (FE)
+- **Core Base (Hệ thống dùng chung):**
+  - `TreeOfThought/frontend/web/projects/tot/core`
+  - `TreeOfThought/frontend/web/projects/tot/shared`
+- **App Shell (Chứa sẵn giao diện UI OIDC, Auth - SSO, Login, Signup):**
+  - `TreeOfThought/frontend/web/src`
+  - `TreeOfThought/frontend/web/src/app/modules/auth`
+- **Nghiệp vụ sẵn có:**
+  - `TreeOfThought/frontend/web/projects/tot/business-files`
+  - `TreeOfThought/frontend/web/projects/tot/business-oidc`
+  - `TreeOfThought/frontend/web/projects/tot/business-dashboard`
+  - `TreeOfThought/frontend/web/projects/tot/business-test`
+
+
 

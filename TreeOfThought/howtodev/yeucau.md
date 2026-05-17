@@ -63,7 +63,41 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
             - docs là folder TreeOfThought/docs/cqrs-test/yeucau.md
             - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
             - FE là TreeOfThought/frontend/web/projects/tot/business-test
-        module nghiệp vụ oidc     
+        module nghiệp vụ oidc quản lý tài khoản, vai trò, quyền, user với quyền và vai trò 
             - docs là folder TreeOfThought/docs/business-oidc/yeucau.md
             - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
             - FE là TreeOfThought/frontend/web/projects/tot/business-oidc
+    
+    **quan trọng** 2 folder TreeOfThought/frontend và TreeOfThought/docs/backend không được phép xóa và không được phép tự động ghi đè khi tạo nghiệp vụ mới.
+        2 folder này là các file yêu cầu để tạo các base infra core và một số nghiệp vụ ban đầu 
+            BE
+                core infra base
+                    TreeOfThought/backend/Core.Infra.Auth
+                    TreeOfThought/backend/Core.Infra.Base
+                    TreeOfThought/backend/Core.Infra.Cqrs
+                    TreeOfThought/backend/Core.Infra.Data
+                    TreeOfThought/backend/Core.Infra.Firebase
+                    TreeOfThought/backend/Core.Infra.Redis
+                    TreeOfThought/backend/Core.Infra.Session
+                app shell
+                    TreeOfThought/backend/Core.Web.Api
+                nghiệp vụ 
+                    TreeOfThought/backend/Core.Infra.FilesFolders
+                    TreeOfThought/backend/Core.Infra.Oidc
+            FE
+                core base
+                    TreeOfThought/frontend/web/projects/tot/core
+                    TreeOfThought/frontend/web/projects/tot/shared
+                app shell 
+                    TreeOfThought/frontend/web/src
+                        có sẵn UI oidc, auth 
+                            TreeOfThought/frontend/web/src/app/modules/auth
+                                là về oidc , sso ,login , signup 
+                nghiệp vụ 
+                    TreeOfThought/frontend/web/projects/tot/business-files
+                    TreeOfThought/frontend/web/projects/tot/business-oidc
+                    TreeOfThought/frontend/web/projects/tot/business-dashboard
+                    TreeOfThought/frontend/web/projects/tot/business-test
+                    
+
+
