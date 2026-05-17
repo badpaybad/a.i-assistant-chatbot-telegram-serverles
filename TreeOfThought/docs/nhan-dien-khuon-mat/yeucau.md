@@ -1,15 +1,34 @@
 Sau khi đăng nhập người dùng vào chức năng Nhận diện khuôn mặt
-    Kéo 1 folder ảnh lên hoặc ảnh lên, trong folder có rất nhiều ảnh, có thể có cả subfolder
 
-cần làm xử lý tại trên trình duyệt trước. lấy các ảnh có trong folder hiện danh sách cho người dùng thấy các file ảnh đang có
-cần xử lý lần lượt việc nhận ra khuôn mặt trong hình (detect face only) nếu có chuyển sang danh sách để người dùng duyệt
-    danh sách file ảnh có khuôn mặt sẽ có thêm danh sách các khuôn mặt được crop ra từ file ảnh đó
-    người dùng xem trước khuôn mặt được crop có thể chọn không lưu nếu không muốn
+Session làm việc 
 
-dùng js MediaPipe Face Detection để xử lý detect face trên trình duyệt 
+    cho phép tạo session bằng việc 
+        nhờ việc kéo file ảnh, chọn file ảnh, hoặc kéo folder, chọn folder
+            khi kéo file or folder sẽ để ảnh vào danh sách bên trái
+            xử lý face detect xong , dùng MediaPipe Face Detection chạy trên trình duyệt 
+            để ảnh có khuôn mặt sang danh sách bên phải 
+                danh sách ảnh có khuôn mặt sẽ có thêm danh sách các khuôn mặt được crop ra từ file ảnh đó
+                người dùng xem trước khuôn mặt được crop có thể chọn không lưu nếu không muốn
+                người dùng cần chọn xem ảnh gốc nào, ảnh crop nào được đưa lưu
+        có thể kéo thêm file ảnh hoặc folder vào session đã có để xử lý tiếp
 
-duyệt xong cho phép người dùng chọn các khuôn mặt để upload và lưu trữ lên server 
-    lưu file gốc, lưu các mặt crop được chọn
+    Cần cho phép người dùng đặt tên cho session
+    Khi click nút lưu 
+        lưu các file ảnh gốc và các mặt crop được chọn vào session đó
 
-cần kết nối db tạo dbcontext hoặc cần redis riêng thì tạo thêm các class tương ứng trong nghiệp vụ
-    với connectionstring tạo vào appsettings.json của từng nghiệp vụ với key là tên nghiệp vụ (vd: NhanDienKhuonMat:Postgresql or NhanDienKhuonMat:Redis)
+    Lưu xong sẽ reset session làm việc và reload lại Danh sách quản lý
+
+
+Danh sách quản lý 
+
+    danh sách sesion sẽ hiện lần lượt bên dưới với tên, thời gian mỗi phiên upload.
+        mỗi session sẽ có các hành động: xem chi tiết, đặt lại tên, xóa
+            xem chi tiết: mở modal show bảng danh sách các ảnh gốc và các mặt được crop từ file ảnh gốc
+                có cột action xóa từng ảnh crop, xóa ảnh gốc
+                    xóa ảnh gốc sẽ xóa cả các ảnh crop từ file đó
+                    xóa ảnh crop sẽ xóa riêng ảnh crop đó
+
+    do dùng google cloud storage lưu file nên khi xóa cần xóa cả trên GCS
+
+
+

@@ -1,176 +1,156 @@
 # Giải pháp Phát triển Nghiệp vụ Nhận diện Khuôn mặt (nhan-dien-khuon-mat)
 
-Tài liệu này trình bày giải pháp chi tiết cho module **Nhận diện khuôn mặt** nhằm đáp ứng đầy đủ các yêu cầu nghiệp vụ tại [yeucau.md](yeucau.md), tuân thủ nghiêm ngặt cấu trúc và các nguyên tắc thiết kế hiện có của hệ thống **TreeOfThought**.
+Tài liệu này trình bày giải pháp chi tiết và sơ đồ thiết kế cho module **Nhận diện khuôn mặt** nhằm đáp ứng đầy đủ các yêu cầu nghiệp vụ mới và nâng cao tại [yeucau.md](yeucau.md), tuân thủ nghiêm ngặt quy trình và các nguyên tắc thiết kế hiện có của hệ thống **TreeOfThought**.
 
 ---
 
-## 1. Tổng quan Giải pháp Kỹ thuật
+## 1. Tổng quan Kiến trúc Hệ thống
 
-Giải pháp kết hợp xử lý AI hiệu năng cao trên trình duyệt và lưu trữ tập trung trên Backend/Cloud Storage:
-1. **Phía Trình duyệt (Client-side):**
-   - Người dùng tải lên (Drag & Drop) cả một thư mục ảnh (hỗ trợ đọc đệ quy các thư mục con).
-   - Sử dụng thư viện **pico.js** (một thư viện nhận diện khuôn mặt siêu nhẹ khoảng 2KB và cực kỳ nhanh) chạy trực tiếp trên trình duyệt mà không cần cài đặt TensorFlow hay các dependencies nặng nề khác.
-   - File cascade trained model (`facefinder` khoảng 80KB) được tải một lần từ thư mục tài nguyên tĩnh (`src/assets/models/facefinder`) của ứng dụng và lưu trong bộ nhớ.
-   - Các ảnh được xử lý tuần tự (sequential processing) bằng HTML5 Canvas: vẽ ảnh, chuyển đổi sang ảnh xám (grayscale), chạy giải thuật `pico.js` để tìm tọa độ khuôn mặt, sau đó dùng Canvas crop riêng các khuôn mặt được tìm thấy.
-   - Hiển thị giao diện trực quan cho phép người dùng duyệt từng khuôn mặt đã crop, bật/tắt (toggle) trạng thái "Lưu trữ" cho từng khuôn mặt cụ thể.
+Giải pháp kết hợp xử lý trí tuệ nhân tạo (AI) hiệu năng cao trực tiếp trên trình duyệt (Client-side Edge AI) để tối ưu trải nghiệm và bảo mật dữ liệu, đồng thời sử dụng hệ thống lưu trữ và quản lý phiên tập trung trên Backend (Server-side, DB PostgreSQL & Google Cloud Storage):
 
-2. **Phía Server (Backend):**
-   - Triển khai một Module nghiệp vụ cô lập hoàn toàn: `Core.Infra.NhanDienKhuonMat`.
-   - Có cơ sở dữ liệu riêng (kế thừa `BaseDbContext`) quản lý hai bảng: `OriginalImages` (lưu file ảnh gốc) và `CroppedFaces` (lưu ảnh các khuôn mặt được cắt ra và liên kết tới ảnh gốc).
-   - Sử dụng hạ tầng **Firebase/GCS** sẵn có để lưu trữ file nhị phân của ảnh gốc và ảnh mặt đã crop lên Google Cloud Storage, lấy link signed/public URL lưu vào Database.
-   - Áp dụng mô hình **CQRS** (Command/Handler và Event/PubSub) đồng nhất với toàn bộ hệ thống để thực hiện nghiệp vụ lưu trữ bất đồng bộ và trả về kết quả thời gian thực cho UI.
+```mermaid
+graph TD
+    A[Người dùng truy cập Nhận diện khuôn mặt] --> B{Giao diện Workspace Kép}
+    
+    %% Session làm việc %%
+    subgraph Session làm việc (Active Working Session)
+        B --> C[Nạp nguồn: Drag & Drop / Folder Picker / File Picker]
+        C --> D[Cộng dồn vào hàng đợi Tệp tin nguồn - Cột trái]
+        D --> E[Quét MediaPipe Face Detection tuần tự]
+        E --> F[Chuyển ảnh có khuôn mặt sang Cột phải]
+        F --> G[Xem trước Bounding Box & crop 150x150]
+        G --> H[Toggle chọn Lưu/Bỏ ảnh gốc & từng ảnh crop]
+        H --> I[Đặt tên Phiên & nhấn Lưu trữ]
+        I --> J[Upload nhị phân lên GCS & URL vào DB PostgreSQL]
+        J --> K[Realtime Firestore Event: Upload Completed]
+        K --> L[Tự động Reset Session làm việc cục bộ]
+    end
+    
+    %% Danh sách quản lý %%
+    subgraph Danh sách quản lý (Historical Sessions List)
+        B --> M[Bảng lịch sử các phiên upload]
+        M --> N[Hành động: Đổi tên inline]
+        M --> O[Hành động: Xem chi tiết]
+        M --> P[Hành động: Xóa Phiên]
+        
+        O --> Q[Modal: Bảng chi tiết dòng ảnh gốc & mặt crop]
+        Q --> R[Xóa ảnh gốc -> Cascade xóa tệp trên GCS & DB]
+        Q --> S[Xóa ảnh crop -> Xóa riêng tệp trên GCS & DB]
+        P --> T[Xóa Phiên -> Cascade xóa tất cả tệp liên quan trên GCS & DB]
+    end
+```
 
 ---
 
-## 2. Thiết kế Cơ sở Dữ liệu (Database Schema)
+## 2. Thiết kế Chi tiết: Session Làm Việc (Active Working Session)
 
-Chúng ta sẽ tạo hai bảng trong cơ sở dữ liệu `tot_db` (dùng chung PostgreSQL của hệ thống):
+### 2.1. Nạp nguồn đa dạng & Cộng dồn (Multi-Source Input & Cumulative Loading)
+- **Cơ chế nạp nguồn:**
+  - Hỗ trợ **kéo thả (Drag & Drop)** tệp tin hoặc thư mục ảnh trực tiếp vào Dropzone.
+  - Hỗ trợ **hộp thoại chọn (Picker dialog)** qua 2 nút bấm riêng biệt:
+    - *Chọn thư mục ảnh:* Đọc đệ quy tất cả các file hình ảnh trong thư mục con (`webkitdirectory`).
+    - *Chọn tệp tin ảnh:* Cho phép chọn đồng thời nhiều tệp ảnh đơn lẻ (`multiple`, `accept="image/*"`).
+- **Hàng đợi cộng dồn (Cumulative queue):**
+  - **"Có thể kéo thêm file ảnh hoặc folder vào session đã có để xử lý tiếp"**: Khi người dùng kéo thả hoặc picker chọn tệp tin/thư mục mới, hệ thống **không xóa** dữ liệu cũ đang hiển thị.
+  - Các tệp tin mới sẽ được lọc định dạng ảnh (`image/*`) và tự động thêm tiếp (append) vào cuối mảng hàng đợi `sourceFiles` ở trạng thái `waiting` (Chờ quét).
+  - Vòng lặp nhận diện MediaPipe sẽ chỉ chạy quét đối với các tệp tin mới được thêm vào hàng đợi.
 
-### Bảng 1: `OriginalImages` (Lưu thông tin ảnh gốc)
-| Trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
+### 2.2. Quy trình Quét và Trích xuất (Edge AI pipeline)
+1. **Cột trái (Tệp tin nguồn):** Hiển thị danh sách tất cả các file ảnh trong phiên kèm thông số kích thước và trạng thái quét thời gian thực (`Chờ quét`, `Đang quét`, `Hoàn thành`, `Thất bại`).
+2. **Quét MediaPipe:** Sử dụng **js MediaPipe Face Detection** chạy cục bộ qua WebGL/WebAssembly. Quét tuần tự từng ảnh bằng canvas offscreen.
+3. **Cột phải (Ảnh chứa khuôn mặt):** Chỉ hiển thị các ảnh gốc có phát hiện khuôn mặt. Mỗi hàng hiển thị:
+   - Canvas vẽ ảnh gốc cùng các bounding boxes màu xanh neon nổi bật bao quanh khuôn mặt.
+   - Checkbox cho phép người dùng chọn xem có lưu tệp ảnh gốc này hay không (`Lưu ảnh gốc này`).
+   - Lưới (Grid) các khuôn mặt đã crop (padding 15%, resize 150x150 JPEG). Mỗi mặt crop có switch toggle bật/tắt quyền lưu trữ (`Lưu` / `Bỏ`).
+
+### 2.3. Đặt tên, Lưu trữ & Tự động Reset Session
+- **Đặt tên phiên:** Hệ thống tự tạo đề xuất dạng `"Phiên ngày [dd/MM/yyyy HH:mm]"` và cho phép người dùng sửa đổi trực tiếp.
+- **Lưu trữ:** Khi nhấn nút "Lưu trữ lên Server":
+  - Tải nhị phân các tệp ảnh gốc và các ảnh crop được chọn lên Google Cloud Storage (GCS).
+  - Lưu thông tin URL và siêu dữ liệu vào DB PostgreSQL.
+  - Gửi sự kiện realtime Firestore về kênh `commandresults/{trackingId}` báo trạng thái `Completed`.
+- **Reset session làm việc & Reload Danh sách:**
+  - **"Lưu xong sẽ reset session làm việc và reload lại Danh sách quản lý"**: Ngay khi nhận được thông báo lưu trữ thành công, hệ thống sẽ thực thi đồng thời hai hành động:
+    1. **Reload Danh sách:** Gọi `loadUploadSessions()` để tải lại toàn bộ danh sách lịch sử phiên ở bảng quản lý phía dưới, cập nhật tức thời phiên vừa được lưu lên giao diện.
+    2. **Reset Session:** Thực thi hàm `resetAll()` để dọn sạch hoàn toàn không gian làm việc (giải phóng URL Blob cục bộ `URL.revokeObjectURL`, làm trống các danh sách hàng đợi `sourceFiles`, `processedPhotos`, reset bộ đếm `totalDetectedFacesCount` về 0), giúp màn hình trống sẵn sàng cho phiên tải mới.
+
+---
+
+## 3. Thiết kế Chi tiết: Danh Sách Quản Lý & Cascade GCS Cleaners
+
+### 3.1. Danh sách Quản lý Phiên (Historical Session List)
+- Hiển thị bảng danh sách các phiên upload đã lưu trữ của người dùng sắp xếp giảm dần theo thời gian tạo.
+- Cột thông tin bao gồm: Tên phiên, Người tải lên, Thời gian tải lên, Số lượng ảnh gốc.
+- **Hành động Đổi tên inline:** Cho phép người dùng bấm "Đổi tên" để hiện ô input sửa đổi tên trực tiếp, cập nhật ngay lập tức xuống DB PostgreSQL thông qua REST API tối giản (KISS).
+
+### 3.2. Xem Chi tiết & Quản lý dòng (Detailed Session Modal)
+- Khi bấm nút **"Xem"**, một modal premium hiển thị danh sách dạng hàng (Rows). Mỗi hàng gồm:
+  - Cột 1: Ảnh gốc hiển thị preview thu nhỏ kèm tên và dung lượng tệp.
+  - Cột 2: Lưới các khuôn mặt đã crop được trích xuất và lưu trữ của ảnh gốc đó. Mỗi avatar có nút bấm `x` màu đỏ nổi để thực hiện xóa.
+  - Cột 3: Nút hành động **"Xóa ảnh gốc"**.
+- **Cơ chế xóa đơn lẻ trong modal chi tiết:**
+  - **Xóa ảnh gốc:** Tiến hành xóa tệp ảnh gốc vật lý trên GCS, xóa tất cả các tệp ảnh crop vật lý liên kết trên GCS, sau đó xóa bản ghi ảnh gốc trong DB (kích hoạt cascade delete xóa sạch các bản ghi ảnh crop tương ứng ở mức DB).
+  - **Xóa ảnh crop:** Tiến hành xóa tệp ảnh crop vật lý tương ứng trên GCS và xóa bản ghi đơn lẻ trong DB.
+
+### 3.3. Xóa Phiên & Đồng bộ GCS (Cascade GCS Cleanup Lifecycle)
+- **"do dùng google cloud storage lưu file nên khi xóa cần xóa cả trên GCS"**: Khi người dùng nhấn nút "Xóa" một Phiên upload trên bảng quản lý:
+  - Hệ thống truy vấn toàn bộ các ảnh gốc và ảnh crop thuộc phiên đó từ DB.
+  - Gọi bất đồng bộ dịch vụ `FirebaseService.DeleteFileAsync(objectName)` xóa toàn bộ các tệp tin vật lý tương ứng trên Cloud Storage.
+  - Tiến hành xóa bản ghi `UploadSession` trong DB (hệ thống PostgreSQL sẽ tự động cascade dọn sạch các dòng bản ghi trong bảng `OriginalImages` và `CroppedFaces`).
+- **Xử lý an toàn (Try-Catch):** Mọi thao tác xóa tệp trên GCS được bọc trong khối Try-Catch và ghi log cảnh báo (`LogWarning`) nếu gặp sự cố đám mây, đảm bảo không làm gián đoạn hay kẹt giao dịch xóa cơ sở dữ liệu của người dùng.
+
+---
+
+## 4. Thiết kế Thực thể Dữ liệu (Database Schema)
+
+Cơ sở dữ liệu PostgreSQL `tot_db` quản lý 3 bảng thực thể với liên kết chặt chẽ:
+
+```mermaid
+erDiagram
+    UploadSessions ||--o{ OriginalImages : "has (ON DELETE CASCADE)"
+    OriginalImages ||--o{ CroppedFaces : "has (ON DELETE CASCADE)"
+
+    UploadSessions {
+        uuid Id PK
+        varchar Name
+        uuid UserId FK
+        timestamp CreatedAt
+        varchar CreatedBy
+    }
+
+    OriginalImages {
+        uuid Id PK
+        uuid UploadSessionId FK
+        varchar FileName
+        text Url
+        bigint Size
+        uuid UserId FK
+        timestamp CreatedAt
+        varchar CreatedBy
+    }
+
+    CroppedFaces {
+        uuid Id PK
+        uuid OriginalImageId FK
+        text Url
+        text BoundingBox
+        timestamp CreatedAt
+        varchar CreatedBy
+    }
+```
+
+---
+
+## 5. Quy hoạch RESTful API Endpoints (FaceDetectionController.cs)
+
+Các API quản lý trực tiếp qua DbContext được thiết kế tối giản, loại bỏ nợ kỹ thuật:
+
+| Phương thức | API Endpoint | Mô tả | Chi tiết dọn dẹp tệp vật lý |
 | :--- | :--- | :--- | :--- |
-| `Id` | `Guid` | Primary Key | ID duy nhất của ảnh gốc |
-| `FileName` | `VARCHAR(255)` | Not Null | Tên file ảnh gốc |
-| `Url` | `TEXT` | Not Null | Đường dẫn lưu trữ trên GCS |
-| `Size` | `BIGINT` | Not Null | Kích thước file (bytes) |
-| `UserId` | `Guid` | Not Null, Index | ID người dùng tải lên |
-| `CreatedAt` | `TIMESTAMP` | Not Null | Thời gian tạo |
-| `CreatedBy` | `VARCHAR(255)` | Not Null | Người tạo |
-
-### Bảng 2: `CroppedFaces` (Lưu thông tin khuôn mặt được cắt)
-| Trường | Kiểu dữ liệu | Ràng buộc | Mô tả |
-| :--- | :--- | :--- | :--- |
-| `Id` | `Guid` | Primary Key | ID duy nhất của ảnh khuôn mặt |
-| `OriginalImageId` | `Guid` | Foreign Key | Liên kết tới bảng `OriginalImages` (Cascade Delete) |
-| `Url` | `TEXT` | Not Null | Đường dẫn lưu trữ trên GCS |
-| `BoundingBox` | `TEXT` | Not Null | Tọa độ khuôn mặt trong ảnh gốc (định dạng JSON: `{x, y, w, h}`) |
-| `CreatedAt` | `TIMESTAMP` | Not Null | Thời gian tạo |
-| `CreatedBy` | `VARCHAR(255)` | Not Null | Người tạo |
-
----
-
-## 3. Kiến trúc Backend (`Core.Infra.NhanDienKhuonMat`)
-
-Chúng ta sẽ tạo một thư mục mới tại `TreeOfThought/backend/nhan-dien-khuon-mat` chứa class library .NET:
-
-### 3.1. Các lớp dữ liệu & DbContext
-- **`NhanDienKhuonMatDbContext`**: Kế thừa từ `BaseDbContext`.
-  ```csharp
-  public class NhanDienKhuonMatDbContext : BaseDbContext
-  {
-      public DbSet<OriginalImage> OriginalImages { get; set; }
-      public DbSet<CroppedFace> CroppedFaces { get; set; }
-  }
-  ```
-
-### 3.2. CQRS Commands & Events
-- **`SaveFaceDetectionSessionCommand`**: Nhận dữ liệu tải lên từ Controller.
-  ```csharp
-  public class SaveFaceDetectionSessionCommand : ICommand
-  {
-      public string TrackingId { get; set; } = string.Empty;
-      public string? UserId { get; set; }
-      public string OriginalFileName { get; set; } = string.Empty;
-      public byte[] OriginalContent { get; set; } = Array.Empty<byte>();
-      public string OriginalContentType { get; set; } = "image/jpeg";
-      public List<CroppedFaceUploadDto> CroppedFaces { get; set; } = new();
-  }
-  
-  public class CroppedFaceUploadDto
-  {
-      public byte[] Content { get; set; } = Array.Empty<byte>();
-      public string ContentType { get; set; } = "image/jpeg";
-      public string BoundingBox { get; set; } = string.Empty; // JSON {"x":10,"y":20,"w":100,"h":100}
-  }
-  ```
-- **`FaceDetectionSessionSavedEvent`**: Event được publish sau khi xử lý thành công, kế thừa `INotifyUiEvent` để đẩy thông báo thời gian thực lên client thông qua Firestore.
-
-### 3.3. Command Handler (`FaceDetectionCommandHandler`)
-- Nhận command, tiến hành:
-  1. Upload ảnh gốc lên GCS bằng `FirebaseService.UploadFileAsync`.
-  2. Tạo bản ghi `OriginalImage` và lưu vào DB.
-  3. Lặp qua danh sách `CroppedFaces` được chọn, upload từng khuôn mặt crop lên GCS, tạo bản ghi `CroppedFace` liên kết tới ảnh gốc vừa tạo.
-  4. Lưu tất cả vào DbContext và gọi `SaveChanges`.
-  5. Publish `FaceDetectionSessionSavedEvent` để thông báo cho UI biết quá trình lưu trữ hoàn tất.
-
-### 3.4. API Controller (`FaceDetectionController`)
-- Endpoint: `POST /api/face-detection/save` (chấp nhận `multipart/form-data`).
-- Lấy thông tin user đăng nhập qua `GetUserId()`, khởi tạo `TrackingId` qua `GetTrackingId()`.
-- Chuyển đổi các files được tải lên (`originalFile`, `croppedFiles`, `boundingBoxes` tương ứng) thành command và gọi `_dispatcher.SendAsync(command, useMemoryMode: true)`.
-
----
-
-## 4. Kiến trúc Frontend (`@tot/nhan-dien-khuon-mat`)
-
-Tạo một Angular library mới tại `TreeOfThought/frontend/web/projects/tot/nhan-dien-khuon-mat` theo quy chuẩn hệ thống:
-
-### 4.1. Pico.js Integration
-- Tích hợp giải thuật `pico.js` trực tiếp dưới dạng một file TypeScript utility (`pico.ts`) để đảm bảo type-safety và tự đóng gói (self-contained).
-- Viết hàm `rgbaToGrayscale` để tối ưu hóa việc chuyển đổi dữ liệu pixel của canvas sang định dạng 8-bit grayscale mà `pico.js` yêu cầu.
-- Tải cascade model `facefinder` thông qua HTTP client từ `/assets/models/facefinder` tại thời điểm khởi tạo component và chuyển đổi sang `Uint8Array`.
-
-### 4.2. Giao diện Người dùng (UI/UX) Premium & Hiện đại
-- **Khu vực Tải thư mục (Dropzone):**
-  - Thiết kế dạng Glassmorphism card với đường viền gradient chuyển động mượt mà.
-  - Sử dụng thẻ `<input type="file" webkitdirectory directory multiple>` ẩn bên dưới và kích hoạt khi người dùng click hoặc kéo thả thư mục ảnh vào dropzone.
-  - Lọc đệ quy toàn bộ các file được kéo vào, chỉ giữ lại định dạng ảnh hợp lệ (`.jpg`, `.jpeg`, `.png`, `.webp`).
-- **Giao diện Quét ảnh & Nhận diện tự động:**
-  - Hiệu ứng quét laser chuyển động lên xuống trên hình ảnh đang quét.
-  - Xử lý đệ quy/tuần tự từng ảnh để tránh làm đơ trình duyệt.
-  - Vẽ khung bounding box màu xanh neon lên trên khuôn mặt được phát hiện tức thời bằng Canvas.
-- **Khu vực Duyệt ảnh đã phát hiện:**
-  - Sử dụng grid layout 2 cột:
-    - **Cột Trái (Original Image View):** Hiển thị ảnh gốc nguyên bản kèm các bounding box neon.
-    - **Cột Phải (Cropped Faces View):** Hiển thị danh sách các khuôn mặt được crop riêng biệt dưới dạng thẻ card nhỏ. Mỗi khuôn mặt crop sẽ đi kèm một toggle switch Ant Design (`nz-switch`) hoặc checkbox để người dùng chọn bật/tắt chế độ "Lưu trữ".
-- **Tiến trình Upload & Lưu trữ:**
-  - Nút "Lưu lên Server" tích hợp hiệu ứng gradient lấp lánh (pulsing glow).
-  - Khi lưu, một modal tiến trình (Progress overlay) hiển thị số lượng ảnh gốc và số khuôn mặt đang được tải lên server theo thời gian thực (ví dụ: "Đang tải ảnh 3/10 lên hệ thống...").
-  - Đăng ký nhận kết quả bất đồng bộ từ Firestore thông qua `TrackingId` để hiển thị màn hình chúc mừng (Success View) sinh động khi hoàn tất.
-
----
-
-## 5. Các bước Tích hợp Hệ thống
-
-### 5.1. Backend:
-1. Đăng ký Project `Core.Infra.NhanDienKhuonMat` vào Solution `Core.Infra.sln`.
-2. Tham chiếu Project này vào `Core.Web.Api.csproj`.
-3. Khai báo service và DbContext trong `Core.Web.Api/Program.cs`:
-   - `builder.Services.AddNhanDienKhuonMat(config);`
-   - Đăng ký Controller: `.AddNhanDienKhuonMatControllers()` vào pipeline.
-   - Thêm `typeof(FaceDetectionCommandHandler).Assembly` vào lệnh khởi tạo CQRS `AddCqrs(...)`.
-4. Gọi `EnsureTablesCreatedAsync()` cho `NhanDienKhuonMatDbContext` lúc khởi chạy ứng dụng để tự động sinh bảng.
-
-### 5.2. Frontend:
-1. Đăng ký `@tot/nhan-dien-khuon-mat` vào `angular.json` và cấu hình path mapping trong `tsconfig.json`.
-2. Đăng ký provider của nghiệp vụ mới trong `src/app/app.config.ts`: `provideNhanDienKhuonMat()`.
-3. Thêm Router Route trong `src/app/app.routes.ts` để lazy-load component của module:
-   ```typescript
-   {
-     path: 'modules/nhan-dien-khuon-mat',
-     data: { breadcrumb: 'Nhận diện khuôn mặt' },
-     loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.NhanDienKhuonMatComponent)
-   }
-   ```
-4. Cập nhật `MenuService` (`src/app/services/menu.service.ts`) để thêm liên kết menu:
-   ```typescript
-   {
-     label: 'Nhận diện khuôn mặt',
-     icon: 'scan',
-     route: '/modules/nhan-dien-khuon-mat',
-     claim: 'fe.face_detection:view' // Hoặc claim tùy cấu hình
-   }
-   ```
-5. Đặt file cascade model `facefinder` vào thư mục `TreeOfThought/frontend/web/src/assets/models/facefinder` để phục vụ tải tĩnh.
-
----
-
-## 6. Kế hoạch Kiểm thử & Đảm bảo Chất lượng (QA/QC)
-
-1. **Kiểm thử Giải thuật trên Browser:**
-   - Sử dụng các bộ ảnh test gồm: chân dung đơn, tập thể, ảnh thiếu sáng và ảnh góc nghiêng để căn chỉnh ngưỡng nhạy cảm (threshold) của `pico.js` sao cho chính xác nhất.
-2. **Kiểm thử Tải lên & Crop:**
-   - Xác thực việc crop ảnh bằng Canvas giữ đúng độ phân giải của khuôn mặt.
-   - Xác thực việc người dùng toggle bỏ chọn không lưu khuôn mặt sẽ không được upload lên server.
-3. **Kiểm thử Tải lên Server bất đồng bộ:**
-   - Kiểm tra console log của `run-dev.sh` trên Backend để đảm bảo dữ liệu nhị phân nhận diện chính xác, upload thành công lên GCS và sinh các link tương ứng lưu vào PostgreSQL.
-   - Đảm bảo cơ chế Realtime UI nhận diện đúng sự kiện hoàn tất qua Firestore `commandresults/{TrackingId}`.
+| `POST` | `/api/face-detection/save` | Lưu ảnh gốc & mặt crop theo phiên | Tải tệp tin lên GCS |
+| `GET` | `/api/face-detection/sessions` | Lấy danh sách các phiên upload | Không |
+| `GET` | `/api/face-detection/sessions/{id}` | Lấy chi tiết ảnh gốc & crop của phiên | Không |
+| `PUT` | `/api/face-detection/sessions/{id}/rename` | Đổi tên phiên upload | Không |
+| `DELETE` | `/api/face-detection/sessions/{id}` | Xóa toàn bộ phiên upload | **Xóa tất cả** tệp ảnh gốc & crop trên GCS |
+| `DELETE` | `/api/face-detection/images/{id}` | Xóa đơn lẻ ảnh gốc | **Xóa tệp ảnh gốc & các mặt crop** trên GCS |
+| `DELETE` | `/api/face-detection/faces/{id}` | Xóa đơn lẻ ảnh khuôn mặt crop | **Xóa tệp ảnh crop tương ứng** trên GCS |

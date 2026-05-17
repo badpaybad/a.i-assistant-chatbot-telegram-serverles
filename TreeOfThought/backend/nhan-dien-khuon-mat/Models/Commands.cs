@@ -12,6 +12,8 @@ public abstract class NhanDienKhuonMatCommand : BaseMessage, IBaseCommand
 
 public class SaveFaceDetectionSessionCommand : NhanDienKhuonMatCommand
 {
+    public Guid SessionId { get; set; }
+    public string SessionName { get; set; } = string.Empty;
     public string OriginalFileName { get; set; } = string.Empty;
     public byte[] OriginalContent { get; set; } = Array.Empty<byte>();
     public string OriginalContentType { get; set; } = "image/jpeg";

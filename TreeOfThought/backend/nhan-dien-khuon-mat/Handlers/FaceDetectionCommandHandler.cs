@@ -37,6 +37,34 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
         var userId = Guid.Parse(command.UserId ?? Guid.Empty.ToString());
         var timestamp = DateTime.UtcNow;
 
+        // Check if UploadSession exists, if not, create it in a thread-safe manner
+        var session = await _db.UploadSessions.FindAsync(command.SessionId);
+        if (session == null)
+        {
+            try
+            {
+                session = new UploadSession
+                {
+                    Id = command.SessionId,
+                    Name = string.IsNullOrEmpty(command.SessionName) ? "Phiên tải lên" : command.SessionName,
+                    UserId = userId,
+                    CreatedAt = timestamp,
+                    CreatedBy = command.UserId ?? "System"
+                };
+                _db.UploadSessions.Add(session);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                if (session != null)
+                {
+                    _db.Entry(session).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+                }
+                _logger.LogWarning("Session duplicate or concurrent creation: {Message}", ex.Message);
+                session = await _db.UploadSessions.FindAsync(command.SessionId);
+            }
+        }
+
         // 1. Upload original image to GCS
         var originalImageId = Guid.NewGuid();
         var originalPath = $"face-detection/{userId}/{originalImageId}/original_{command.OriginalFileName}";
@@ -48,13 +76,14 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
                 originalPath, 
                 originalStream, 
                 command.OriginalContentType, 
-                false // Private URL (Access via Signed Url if needed, or secure GCS path)
+                false // Private URL
             );
         }
 
         var originalImage = new OriginalImage
         {
             Id = originalImageId,
+            UploadSessionId = command.SessionId,
             FileName = command.OriginalFileName,
             Url = originalUrl,
             Size = command.OriginalContent.Length,
@@ -79,7 +108,7 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
                     facePath, 
                     faceStream, 
                     croppedFaceDto.ContentType, 
-                    false // Keep private or standard permission
+                    false 
                 );
             }
 

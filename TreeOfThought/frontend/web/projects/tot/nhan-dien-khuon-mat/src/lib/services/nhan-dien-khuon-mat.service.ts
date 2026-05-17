@@ -1,41 +1,50 @@
-// This is an Angular TypeScript file (not C#).
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { HttpClientService } from '@tot/core';
-import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
 })
 export class NhanDienKhuonMatService {
   private http = inject(HttpClientService);
-  private rawHttp = inject(HttpClient);
 
-  /**
-   * Loads the static facefinder cascade classifier binary from assets
-   */
-  loadModel(): Observable<ArrayBuffer> {
-    return this.rawHttp.get('/assets/models/facefinder', { responseType: 'arraybuffer' });
-  }
-
-  /**
-   * Saves the original image and selected face crops to the server GCS and database.
-   */
-  saveSession(
-    originalFile: File,
-    croppedFaces: { blob: Blob; boundingBox: string }[],
-    trackingId: string
-  ): Promise<any> {
+  saveSession(sessionId: string, sessionName: string, originalFile: File, croppedFiles: File[], boundingBoxes: string[]) {
     const formData = new FormData();
+    formData.append('sessionId', sessionId);
+    formData.append('sessionName', sessionName);
     formData.append('originalFile', originalFile);
-
-    croppedFaces.forEach((face, idx) => {
-      // Wrap the cropped blob into a File object
-      const faceFile = new File([face.blob], `face_${idx}.jpg`, { type: 'image/jpeg' });
-      formData.append('croppedFiles', faceFile);
-      formData.append('boundingBoxes', face.boundingBox);
+    
+    croppedFiles.forEach(file => {
+      formData.append('croppedFiles', file);
     });
 
-    return this.http.post('/api/face-detection/save', formData, { trackingId });
+    boundingBoxes.forEach(bbox => {
+      formData.append('boundingBoxes', bbox);
+    });
+
+    return this.http.post('/api/face-detection/save', formData);
+  }
+
+  getSessions() {
+    return this.http.get('/api/face-detection/sessions');
+  }
+
+  getSessionDetails(sessionId: string) {
+    return this.http.get(`/api/face-detection/sessions/${sessionId}`);
+  }
+
+  renameSession(sessionId: string, newName: string) {
+    return this.http.put(`/api/face-detection/sessions/${sessionId}/rename`, { newName });
+  }
+
+  deleteSession(sessionId: string) {
+    return this.http.delete(`/api/face-detection/sessions/${sessionId}`);
+  }
+
+  deleteOriginalImage(imageId: string) {
+    return this.http.delete(`/api/face-detection/images/${imageId}`);
+  }
+
+  deleteCroppedFace(faceId: string) {
+    return this.http.delete(`/api/face-detection/faces/${faceId}`);
   }
 }

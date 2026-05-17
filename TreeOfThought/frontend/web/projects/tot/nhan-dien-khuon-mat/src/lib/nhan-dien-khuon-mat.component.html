@@ -1,0 +1,282 @@
+<div class="face-recognition-container">
+  <!-- Top premium title and hero stats -->
+  <div class="workspace-header">
+    <div class="header-content">
+      <h1 class="gradient-title"><i nz-icon nzType="scan" nzTheme="outline"></i> Nhận Diện & Trích Xuất Khuôn Mặt</h1>
+      <p class="subtitle">Hệ thống phân tích và trích xuất khuôn mặt thông minh chạy trực tiếp trên Trình duyệt (Edge AI)</p>
+    </div>
+    <div class="header-actions">
+      <button nz-button nzType="default" (click)="resetWorkspace()" class="glass-btn">
+        <i nz-icon nzType="redo"></i> Làm mới Workspace
+      </button>
+    </div>
+  </div>
+
+  <!-- Dual Workspace Section -->
+  <div class="dual-workspace-grid">
+    <!-- LEFT SIDE: File queue and loading/dropzone -->
+    <div class="workspace-card left-side">
+      <div class="card-header">
+        <span class="card-title"><i nz-icon nzType="unordered-list"></i> Hàng Đợi Nguồn</span>
+        <div class="upload-options">
+          <button nz-button nzType="primary" (click)="triggerFileInput()" class="glow-btn">
+            <i nz-icon nzType="file-image"></i> Chọn Ảnh
+          </button>
+          <button nz-button nzType="default" (click)="triggerFolderInput()" class="glass-btn">
+            <i nz-icon nzType="folder-open"></i> Chọn Thư Mục
+          </button>
+          <input type="file" multiple (change)="onFilesSelected($event)" #fileInput style="display:none">
+          <input type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)" #folderInput style="display:none">
+        </div>
+      </div>
+
+      <!-- Drag & Drop Zone -->
+      <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="triggerFileInput()">
+        <div class="drop-icon">
+          <i nz-icon nzType="cloud-upload"></i>
+        </div>
+        <p class="drop-text">Kéo thả tệp tin ảnh hoặc thư mục vào đây</p>
+        <span class="drop-subtext">Hỗ trợ cộng dồn danh sách</span>
+      </div>
+
+      <!-- Queue list -->
+      <div class="queue-list-container custom-scrollbar">
+        <div *ngIf="queue.length === 0" class="empty-state">
+          <i nz-icon nzType="inbox" class="empty-icon"></i>
+          <p>Chưa có hình ảnh nào trong hàng đợi</p>
+        </div>
+        
+        <div *ngFor="let item of queue" 
+             class="queue-item" 
+             [class.active]="selectedQueueItem?.id === item.id"
+             (click)="selectQueueItem(item)">
+          <img [src]="item.thumbnailUrl" class="item-thumb" alt="thumb">
+          <div class="item-meta">
+            <span class="item-name" [nzTooltipTitle]="item.name" nz-tooltip>{{ item.name }}</span>
+            <span class="item-size">{{ formatBytes(item.size) }}</span>
+          </div>
+          <div class="item-status">
+            <!-- Badges -->
+            <nz-tag *ngIf="item.status === 'Waiting'" nzColor="default">Đang chờ...</nz-tag>
+            <nz-tag *ngIf="item.status === 'Scanning'" nzColor="processing">
+              <i nz-icon nzType="loading"></i> Quét {{ item.progress }}%
+            </nz-tag>
+            <nz-tag *ngIf="item.status === 'Success'" nzColor="success">
+              Đã trích xuất ({{ item.detectedFaces.length }})
+            </nz-tag>
+            <nz-tag *ngIf="item.status === 'NoFace'" nzColor="warning">Không tìm thấy mặt</nz-tag>
+            <nz-tag *ngIf="item.status === 'Error'" nzColor="error">Lỗi quét</nz-tag>
+          </div>
+          <button nz-button nzType="text" nzDanger (click)="removeQueueItem(item, $event)" class="remove-btn">
+            <i nz-icon nzType="delete"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE: Target image canvas and cropped faces grid -->
+    <div class="workspace-card right-side">
+      <div class="card-header">
+        <span class="card-title"><i nz-icon nzType="smile"></i> Kết Quả Quét & Trích Xuất</span>
+        <span *ngIf="selectedQueueItem" class="current-selected-file">{{ selectedQueueItem.name }}</span>
+      </div>
+
+      <div *ngIf="!selectedQueueItem" class="no-selection-state">
+        <i nz-icon nzType="picture" class="large-icon"></i>
+        <p>Chọn một tệp từ hàng đợi bên trái để xem kết quả trích xuất chi tiết</p>
+      </div>
+
+      <div *ngIf="selectedQueueItem" class="results-viewer custom-scrollbar">
+        <!-- Interactive Canvas Image with Neon Boxes -->
+        <div class="canvas-panel-wrapper">
+          <div class="panel-header">
+            <span>Khung ảnh gốc (Vẽ Bounding Box)</span>
+            <div class="select-option">
+              <span class="toggle-label">Đưa vào phiên lưu trữ:</span>
+              <nz-switch [(ngModel)]="selectedQueueItem.selected" (ngModelChange)="toggleOriginalSelection(selectedQueueItem)"></nz-switch>
+            </div>
+          </div>
+          
+          <div class="image-viewport">
+            <div #canvasContainer class="canvas-container">
+              <!-- Dynamically injected Image and divs from TypeScript -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Face crops grid list -->
+        <div class="faces-crop-panel">
+          <div class="panel-header">
+            <span>Danh sách khuôn mặt đã cắt (Kích thước chuẩn 150x150)</span>
+            <nz-tag nzColor="purple">MediaPipe Local AI</nz-tag>
+          </div>
+
+          <div *ngIf="selectedQueueItem.detectedFaces.length === 0" class="empty-faces-crop">
+            <p>Không có khuôn mặt nào được phát hiện từ ảnh này</p>
+          </div>
+
+          <div class="crops-grid">
+            <div *ngFor="let face of selectedQueueItem.detectedFaces; let idx = index" 
+                 class="crop-card" 
+                 [class.selected]="face.selected"
+                 (click)="toggleFaceSelection(selectedQueueItem, face)">
+              <div class="crop-image-wrapper">
+                <img [src]="face.croppedUrl" alt="face-crop">
+                <div class="crop-index-badge">Mặt #{{ idx + 1 }}</div>
+                <div class="checkmark-overlay" *ngIf="face.selected">
+                  <i nz-icon nzType="check-circle" nzTheme="fill"></i>
+                </div>
+              </div>
+              <div class="crop-meta">
+                <span class="bbox-coords">Tọa độ: [x:{{ face.boundingBox.x }}, y:{{ face.boundingBox.y }}]</span>
+                <div class="select-checkbox">
+                  <input type="checkbox" [checked]="face.selected" readonly>
+                  <span>Lưu trữ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Save Settings Panel -->
+  <div class="workspace-card save-session-panel" *ngIf="queue.length > 0">
+    <div class="save-form">
+      <div class="input-group">
+        <label for="sessionName">Tên phiên lưu trữ:</label>
+        <input nz-input id="sessionName" [(ngModel)]="sessionName" placeholder="Nhập tên phiên upload..." class="neon-input" [disabled]="savingSession">
+      </div>
+      <div class="action-group">
+        <button nz-button nzType="primary" (click)="saveFaceDetectionSession()" class="glow-btn large-btn" [nzLoading]="savingSession" [disabled]="savingSession">
+          <i nz-icon nzType="cloud-sync" *ngIf="!savingSession"></i> Lưu trữ lên Server
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress display for API Firestore save notifications -->
+    <div class="progress-bar-overlay" *ngIf="savingSession">
+      <div class="progress-box">
+        <nz-spin nzSimple nzSize="large"></nz-spin>
+        <h3>{{ uploadProgressText }}</h3>
+        <p class="realtime-badge"><i nz-icon nzType="sync" nzSpin></i> Đồng bộ realtime qua Firebase Cloud Firestore...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORICAL MANAGEMENT LIST -->
+  <div class="workspace-card history-panel">
+    <div class="card-header">
+      <span class="card-title"><i nz-icon nzType="history"></i> Lịch Sử Các Phiên Upload</span>
+      <button nz-button nzType="default" (click)="loadSessionsHistory()" class="glass-btn" [nzLoading]="loadingSessions">
+        <i nz-icon nzType="reload"></i> Làm mới lịch sử
+      </button>
+    </div>
+
+    <nz-table #historyTable [nzData]="sessionsList" [nzLoading]="loadingSessions" nzSize="middle" class="glass-table">
+      <thead>
+        <tr>
+          <th>Tên phiên upload</th>
+          <th>Thời gian tạo</th>
+          <th>Người tạo</th>
+          <th>Số lượng ảnh gốc</th>
+          <th nzWidth="250px" nzAlign="right">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of historyTable.data">
+          <td>
+            <div *ngIf="!data.isEditing" class="session-name-view">
+              <span class="s-name">{{ data.name }}</span>
+              <button nz-button nzType="text" (click)="inlineRenameSession(data)" class="edit-btn">
+                <i nz-icon nzType="edit"></i>
+              </button>
+            </div>
+            <div *ngIf="data.isEditing" class="session-name-edit">
+              <input nz-input [(ngModel)]="data.tempName" class="table-input">
+              <button nz-button nzType="primary" nzSize="small" (click)="saveInlineRename(data)"><i nz-icon nzType="check"></i></button>
+              <button nz-button nzType="default" nzSize="small" (click)="cancelInlineRename(data)"><i nz-icon nzType="close"></i></button>
+            </div>
+          </td>
+          <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
+          <td>{{ data.createdBy }}</td>
+          <td>
+            <nz-tag nzColor="geekblue">{{ data.imageCount }} ảnh gốc</nz-tag>
+          </td>
+          <td nzAlign="right">
+            <div class="action-buttons-group">
+              <button nz-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)" class="glow-btn">
+                <i nz-icon nzType="eye"></i> Xem Chi Tiết
+              </button>
+              <button nz-button nzType="default" nzDanger nzSize="small" (click)="deleteSession(data, $event)" class="danger-btn">
+                <i nz-icon nzType="delete"></i> Xóa
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </div>
+
+  <!-- DETAILED MODAL LAYOUT -->
+  <nz-modal [(nzVisible)]="showDetailsModal" 
+            [nzTitle]="'Sơ đồ chi tiết phiên: ' + (selectedSessionDetails?.name || '')" 
+            [nzWidth]="900" 
+            (nzOnCancel)="closeDetailsModal()" 
+            [nzFooter]="null"
+            class="premium-modal">
+    <div *nzModalContent class="modal-content-wrapper">
+      <div *ngIf="loadingDetails" class="modal-spinner">
+        <nz-spin nzSimple nzSize="large"></nz-spin>
+        <p>Đang tải cấu trúc tệp từ server...</p>
+      </div>
+
+      <div *ngIf="!loadingDetails && selectedSessionDetails" class="modal-body custom-scrollbar">
+        <div *ngFor="let img of selectedSessionDetails.images" class="details-image-card">
+          <div class="img-card-header">
+            <div class="img-meta">
+              <span class="file-name"><i nz-icon nzType="file-image"></i> {{ img.fileName }}</span>
+              <nz-tag nzColor="blue">Kích thước: {{ formatBytes(img.size) }}</nz-tag>
+              <span class="upload-time">{{ img.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+            </div>
+            <button nz-button nzType="default" nzDanger nzSize="small" (click)="deleteDetailOriginalImage(img)" class="glass-danger-btn">
+              <i nz-icon nzType="delete"></i> Xóa ảnh gốc & crops
+            </button>
+          </div>
+
+          <div class="img-body-layout">
+            <!-- Original image preview -->
+            <div class="original-image-preview">
+              <img [src]="img.url" alt="original-img" class="detail-main-img">
+            </div>
+
+            <!-- Cropped faces panel inside details -->
+            <div class="cropped-faces-detail-panel">
+              <h4>Khuôn mặt đã trích xuất ({{ img.croppedFaces.length }})</h4>
+              
+              <div *ngIf="img.croppedFaces.length === 0" class="no-crops-placeholder">
+                Không có khuôn mặt nào được lưu trong tệp ảnh này
+              </div>
+
+              <div class="detail-crops-grid">
+                <div *ngFor="let face of img.croppedFaces" class="detail-crop-avatar-card">
+                  <div class="avatar-img-box">
+                    <img [src]="face.url" alt="crop-face">
+                    <button nz-button nzType="text" nzDanger (click)="deleteDetailCroppedFace(face, img)" class="delete-avatar-btn" nz-tooltip nzTooltipTitle="Xóa ảnh khuôn mặt crop này">
+                      <i nz-icon nzType="close-circle" nzTheme="fill"></i>
+                    </button>
+                  </div>
+                  <div class="avatar-meta">
+                    <span>Bounding Box:</span>
+                    <span class="bbox-json">{{ face.boundingBox }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nz-modal>
+</div>

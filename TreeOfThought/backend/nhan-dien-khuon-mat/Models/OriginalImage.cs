@@ -13,6 +13,9 @@ public class OriginalImage
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public string CreatedBy { get; set; } = string.Empty;
 
+    public Guid? UploadSessionId { get; set; }
+    public virtual UploadSession? UploadSession { get; set; }
+
     // Navigation property
     public virtual ICollection<CroppedFace> CroppedFaces { get; set; } = new List<CroppedFace>();
 }
