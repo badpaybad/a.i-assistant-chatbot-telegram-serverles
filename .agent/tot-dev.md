@@ -81,7 +81,7 @@ Các nghiệp vụ đã được triển khai từ trước có cấu trúc fold
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-test`
 
-4. **Module CQRS OIDC:**
+4. **Module OIDC:**
    - **Docs:** `TreeOfThought/docs/business-oidc/yeucau.md`
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-oidc`

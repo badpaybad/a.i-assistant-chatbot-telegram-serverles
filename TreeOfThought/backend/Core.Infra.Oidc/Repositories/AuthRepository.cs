@@ -60,7 +60,7 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<User>> GetAllUsersAsync(UserSearchQuery? query = null)
+    public async Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null)
     {
         var usersQuery = _context.Users.AsQueryable();
 
@@ -110,7 +110,17 @@ public class AuthRepository : IAuthRepository
             }
         }
 
-        return await usersQuery.ToListAsync();
+        var totalCount = await usersQuery.CountAsync();
+
+        if (query != null && query.PageIndex.HasValue && query.PageSize.HasValue)
+        {
+            usersQuery = usersQuery
+                .Skip((query.PageIndex.Value - 1) * query.PageSize.Value)
+                .Take(query.PageSize.Value);
+        }
+
+        var items = await usersQuery.ToListAsync();
+        return (items, totalCount);
     }
 
     public async Task<Role?> GetRoleByNameAsync(string name) => 
@@ -142,7 +152,7 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<Role>> GetAllRolesAsync(RoleSearchQuery? query = null)
+    public async Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null)
     {
         var rolesQuery = _context.Roles.AsQueryable();
 
@@ -161,7 +171,17 @@ public class AuthRepository : IAuthRepository
             }
         }
 
-        return await rolesQuery.ToListAsync();
+        var totalCount = await rolesQuery.CountAsync();
+
+        if (query != null && query.PageIndex.HasValue && query.PageSize.HasValue)
+        {
+            rolesQuery = rolesQuery
+                .Skip((query.PageIndex.Value - 1) * query.PageSize.Value)
+                .Take(query.PageSize.Value);
+        }
+
+        var items = await rolesQuery.ToListAsync();
+        return (items, totalCount);
     }
 
     public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
@@ -193,7 +213,7 @@ public class AuthRepository : IAuthRepository
         }
     }
 
-    public async Task<List<AppClaim>> GetAllClaimsAsync(ClaimSearchQuery? query = null)
+    public async Task<(List<AppClaim> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null)
     {
         var claimsQuery = _context.Claims.AsQueryable();
 
@@ -217,7 +237,17 @@ public class AuthRepository : IAuthRepository
             }
         }
 
-        return await claimsQuery.ToListAsync();
+        var totalCount = await claimsQuery.CountAsync();
+
+        if (query != null && query.PageIndex.HasValue && query.PageSize.HasValue)
+        {
+            claimsQuery = claimsQuery
+                .Skip((query.PageIndex.Value - 1) * query.PageSize.Value)
+                .Take(query.PageSize.Value);
+        }
+
+        var items = await claimsQuery.ToListAsync();
+        return (items, totalCount);
     }
 
     public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
@@ -366,6 +396,16 @@ public class AuthRepository : IAuthRepository
 
         return roleClaims.Concat(directClaims).DistinctBy(p => p.Id).ToList();
     }
+
+    public async Task<List<User>> GetUsersInRoleAsync(Guid roleId)
+    {
+        return await (from ur in _context.UserRoles
+                      join u in _context.Users on ur.UserId equals u.Id
+                      where ur.RoleId == roleId
+                      select u).ToListAsync();
+    }
+
+    public async Task<AclEntry?> GetAclEntryByIdAsync(Guid id) => await _context.AclEntries.FindAsync(id);
 
     public async Task AddAclAsync(AclEntry entry)
     {

@@ -31,7 +31,7 @@ public class AuthManagementController : ControllerBase
     [HttpGet("users")]
     public async Task<IActionResult> GetUsers([FromQuery] UserSearchQuery query)
     {
-        var users = await _authRepo.GetAllUsersAsync(query);
+        var (users, totalCount) = await _authRepo.GetAllUsersAsync(query);
         var result = new List<UserDto>();
         
         foreach (var user in users)
@@ -54,7 +54,7 @@ public class AuthManagementController : ControllerBase
             });
         }
         
-        return Ok(result);
+        return Ok(new { items = result, total = totalCount });
     }
 
     [HttpPost("users")]
@@ -71,13 +71,14 @@ public class AuthManagementController : ControllerBase
     {
         user.Id = id;
         await _authRepo.UpdateUserAsync(user);
+        await _authService.SyncUserClaimsToRedisAsync(id);
         return Ok(user);
     }
 
     [HttpGet("roles")]
     public async Task<IActionResult> GetRoles([FromQuery] RoleSearchQuery query)
     {
-        var roles = await _authRepo.GetAllRolesAsync(query);
+        var (roles, totalCount) = await _authRepo.GetAllRolesAsync(query);
         var result = new List<RoleDto>();
         
         foreach (var role in roles)
@@ -92,7 +93,7 @@ public class AuthManagementController : ControllerBase
             });
         }
         
-        return Ok(result);
+        return Ok(new { items = result, total = totalCount });
     }
 
     [HttpPost("roles")]
@@ -111,7 +112,11 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpGet("claims")]
-    public async Task<IActionResult> GetClaims([FromQuery] ClaimSearchQuery query) => Ok(await _authRepo.GetAllClaimsAsync(query));
+    public async Task<IActionResult> GetClaims([FromQuery] ClaimSearchQuery query)
+    {
+        var (claims, totalCount) = await _authRepo.GetAllClaimsAsync(query);
+        return Ok(new { items = claims, total = totalCount });
+    }
 
     [HttpPost("claims")]
     public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
@@ -134,6 +139,7 @@ public class AuthManagementController : ControllerBase
         try
         {
             await _authRepo.DeleteUserAsync(id);
+            await _authService.RemoveUserClaimsFromRedisAsync(id);
             return Ok(new { message = "User deleted successfully" });
         }
         catch (InvalidOperationException ex)
@@ -225,6 +231,11 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignClaimToRole(Guid roleId, Guid claimId)
     {
         await _authRepo.AssignClaimToRoleAsync(roleId, claimId);
+        var users = await _authRepo.GetUsersInRoleAsync(roleId);
+        foreach (var u in users)
+        {
+            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+        }
         return Ok(new { message = "Claim assigned to role successfully" });
     }
 
@@ -232,6 +243,11 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> AssignClaimsToRole(Guid roleId, [FromBody] List<Guid> claimIds)
     {
         await _authRepo.AssignClaimsToRoleAsync(roleId, claimIds);
+        var users = await _authRepo.GetUsersInRoleAsync(roleId);
+        foreach (var u in users)
+        {
+            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+        }
         return Ok(new { message = "Claims assigned to role successfully" });
     }
 
@@ -263,6 +279,11 @@ public class AuthManagementController : ControllerBase
     public async Task<IActionResult> RemoveClaimFromRole(Guid roleId, Guid claimId)
     {
         await _authRepo.RemoveClaimFromRoleAsync(roleId, claimId);
+        var users = await _authRepo.GetUsersInRoleAsync(roleId);
+        foreach (var u in users)
+        {
+            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+        }
         return Ok(new { message = "Claim removed from role successfully" });
     }
 
@@ -286,10 +307,15 @@ public class AuthManagementController : ControllerBase
     [HttpDelete("acl/{id}")]
     public async Task<IActionResult> RemoveAcl(Guid id)
     {
-        // For RemoveAcl, we don't easily know the UserId from just the Id without fetching it
-        // but for KISS, if we want immediate effect, we might need to fetch the entry first.
-        // Let's keep it simple for now, or fetch to sync.
-        await _authRepo.RemoveAclAsync(id);
+        var entry = await _authRepo.GetAclEntryByIdAsync(id);
+        if (entry != null)
+        {
+            await _authRepo.RemoveAclAsync(id);
+            if (entry.UserId.HasValue)
+            {
+                await _authService.SyncUserAclToRedisAsync(entry.UserId.Value);
+            }
+        }
         return Ok(new { message = "ACL entry removed successfully" });
     }
 

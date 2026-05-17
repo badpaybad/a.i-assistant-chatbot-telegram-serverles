@@ -229,7 +229,7 @@ public class AuthService
             if (!isBeSource && _isFeClaimsSynced) return;
 
             // 1. Get all existing claims from DB to memory for fast checking
-            var existingClaims = await _userRepo.GetAllClaimsAsync();
+            var (existingClaims, _) = await _userRepo.GetAllClaimsAsync();
             var existingNames = new HashSet<string>(existingClaims.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
 
             // 2. Identify missing claims
@@ -270,6 +270,12 @@ public class AuthService
         await _sessionService.SetUserClaimsAsync(userId, claimNames);
         
         Console.WriteLine($"[CLAIMS SYNC] User: {userId}, Synced {claimNames.Count} granular claims to Redis.");
+    }
+
+    public async Task RemoveUserClaimsFromRedisAsync(Guid userId)
+    {
+        await _sessionService.RemoveUserClaimsAsync(userId);
+        Console.WriteLine($"[CLAIMS REMOVE] User: {userId}, Removed granular claims from Redis.");
     }
 
     public async Task SyncUserAclToRedisAsync(Guid userId)

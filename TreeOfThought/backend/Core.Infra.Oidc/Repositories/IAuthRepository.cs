@@ -11,21 +11,21 @@ public interface IAuthRepository
     Task CreateUserAsync(User user);
     Task UpdateUserAsync(User user);
     Task DeleteUserAsync(Guid id);
-    Task<List<User>> GetAllUsersAsync(UserSearchQuery? query = null);
+    Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null);
 
     // Role operations
     Task<Role?> GetRoleByNameAsync(string name);
     Task CreateRoleAsync(Role role);
     Task UpdateRoleAsync(Role role);
     Task DeleteRoleAsync(Guid id);
-    Task<List<Role>> GetAllRolesAsync(RoleSearchQuery? query = null);
+    Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null);
 
     // Claim operations
     Task<AppClaim?> GetClaimByNameAsync(string name);
     Task CreateClaimAsync(AppClaim claim);
     Task UpdateClaimAsync(AppClaim claim);
     Task DeleteClaimAsync(Guid id);
-    Task<List<AppClaim>> GetAllClaimsAsync(ClaimSearchQuery? query = null);
+    Task<(List<AppClaim> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null);
 
     // Mapping operations
     Task AssignRoleToUserAsync(Guid userId, Guid roleId);
@@ -43,8 +43,10 @@ public interface IAuthRepository
     Task<List<AppClaim>> GetRoleClaimsAsync(Guid roleId);
     Task<List<AppClaim>> GetUserDirectClaimsAsync(Guid userId);
     Task<List<AppClaim>> GetUserEffectiveClaimsAsync(Guid userId);
+    Task<List<User>> GetUsersInRoleAsync(Guid roleId);
 
     // ACL operations
+    Task<AclEntry?> GetAclEntryByIdAsync(Guid id);
     Task AddAclAsync(AclEntry entry);
     Task RemoveAclAsync(Guid id);
     Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, int actionMask);

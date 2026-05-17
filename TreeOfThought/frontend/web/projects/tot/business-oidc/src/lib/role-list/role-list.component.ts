@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -52,7 +52,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
     <nz-card class="search-card" [nzTitle]="'Tìm kiếm' | transloco">
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="8">
-          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | transloco" (keyup.enter)="loadRoles()" />
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên vai trò, mô tả' | transloco" (keyup.enter)="search()" />
         </div>
         <div nz-col [nzSpan]="10">
           <tot-autocomplete
@@ -60,12 +60,12 @@ import { ViewChild, TemplateRef } from '@angular/core';
             [placeholder]="'Quyền' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
-            (valueChange)="loadRoles()"
+            (valueChange)="search()"
           ></tot-autocomplete>
         </div>
         <div nz-col [nzSpan]="6" class="search-actions">
           <nz-space>
-            <tot-button *nzSpaceItem nzType="primary" (click)="loadRoles()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem nzType="primary" (click)="search()">{{ 'Tìm kiếm' | transloco }}</tot-button>
             <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
@@ -78,7 +78,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [loading]="loading"
       [title]="'Vai trò' | transloco"
       [extra]="roleExtraTpl"
-      [frontPagination]="true"
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalRoles"
+      (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="role" let-data>
         <strong>{{ data.name }}</strong>
@@ -88,7 +92,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
         <div class="claim-tags">
           <nz-tag *ngFor="let claim of data.claims" nzColor="blue" 
                   [nzMode]="(data.name?.toLowerCase() === ADMIN_ROLE.toLowerCase() && claim.name?.toLowerCase() === ADMIN_CLAIM.toLowerCase()) ? 'default' : 'closeable'" 
-                  (nzOnClose)="removeClaim(data, claim)">
+                  (nzOnClose)="removeClaim($event, data, claim)">
             {{ claim.name }}
           </nz-tag>
           <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
@@ -182,6 +186,10 @@ export class RoleListComponent implements OnInit {
   roles: any[] = [];
   loading = false;
   
+  pageIndex = 1;
+  pageSize = 10;
+  totalRoles = 0;
+  
   isRoleModalVisible = false;
   isClaimModalVisible = false;
   
@@ -216,12 +224,17 @@ export class RoleListComponent implements OnInit {
   async loadRoles() {
     this.loading = true;
     try {
-      const params: any = {};
+      const params: any = {
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize
+      };
       if (this.searchQuery.keyword) params.keyword = this.searchQuery.keyword;
       if (this.searchQuery.claimIds && this.searchQuery.claimIds.length > 0) {
         params.claimIds = this.searchQuery.claimIds;
       }
-      this.roles = await this.authMgmt.getRoles(params);
+      const res: any = await this.authMgmt.getRoles(params);
+      this.roles = res.items || [];
+      this.totalRoles = res.total || 0;
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi tải vai trò'));
     } finally {
@@ -229,7 +242,20 @@ export class RoleListComponent implements OnInit {
     }
   }
 
+  search() {
+    this.pageIndex = 1;
+    this.loadRoles();
+  }
+
+  onQueryParamsChange(params: NzTableQueryParams): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadRoles();
+  }
+
   resetSearch() {
+    this.pageIndex = 1;
     this.searchQuery = {
       keyword: '',
       claimIds: []
@@ -301,7 +327,8 @@ export class RoleListComponent implements OnInit {
     }
   }
 
-  async removeClaim(role: any, claim: any) {
+  async removeClaim(event: MouseEvent, role: any, claim: any) {
+    event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${role.name}?`,

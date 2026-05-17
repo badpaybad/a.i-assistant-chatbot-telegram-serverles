@@ -5,7 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { ADMIN_CLAIM, ALL_CLAIMS, AppNotificationService, CLAIMS_VERSION } from '@tot/core';
-import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -48,14 +48,14 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
     <nz-card [nzTitle]="'Tìm kiếm' | transloco" class="search-card">
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="10">
-          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên quyền, mô tả' | transloco" (keyup.enter)="loadClaims()" />
+          <input nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Tên quyền, mô tả' | transloco" (keyup.enter)="search()" />
         </div>
         <div nz-col [nzSpan]="8">
           <nz-range-picker [(ngModel)]="searchQuery.dateRange" style="width: 100%"></nz-range-picker>
         </div>
         <div nz-col [nzSpan]="6" class="search-actions">
           <nz-space>
-            <tot-button *nzSpaceItem  nzType="primary" (click)="loadClaims()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem  nzType="primary" (click)="search()">{{ 'Tìm kiếm' | transloco }}</tot-button>
             <tot-button *nzSpaceItem  (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
@@ -71,7 +71,17 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
       </div>
     </nz-card>
 
-    <tot-table [data]="existingClaims" [columns]="claimColumns" [loading]="loading" [title]="'Danh sách quyền'" [frontPagination]="true"></tot-table>
+    <tot-table 
+      [data]="existingClaims" 
+      [columns]="claimColumns" 
+      [loading]="loading" 
+      [title]="'Danh sách quyền' | transloco" 
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalClaims"
+      (queryParamsChange)="onQueryParamsChange($event)"
+    ></tot-table>
 
     <ng-template #actionsTpl let-data>
       <div style="display: flex; gap: 4px; flex-direction: column;">
@@ -132,6 +142,10 @@ export class ClaimSyncComponent implements OnInit {
   existingClaims: any[] = [];
   loading = false;
   
+  pageIndex = 1;
+  pageSize = 10;
+  totalClaims = 0;
+  
   isCreateModalVisible = false;
   newClaim = { name: '', description: '' };
 
@@ -158,13 +172,18 @@ export class ClaimSyncComponent implements OnInit {
   async loadClaims() {
     this.loading = true;
     try {
-      const params: any = {};
+      const params: any = {
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize
+      };
       if (this.searchQuery.keyword) params.keyword = this.searchQuery.keyword;
       if (this.searchQuery.dateRange && this.searchQuery.dateRange.length === 2) {
         params.startDate = this.searchQuery.dateRange[0]?.toISOString();
         params.endDate = this.searchQuery.dateRange[1]?.toISOString();
       }
-      this.existingClaims = await this.authMgmt.getClaims(params);
+      const res: any = await this.authMgmt.getClaims(params);
+      this.existingClaims = res.items || [];
+      this.totalClaims = res.total || 0;
     } catch (e) {
       this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Không thể tải danh sách quyền'));
     } finally {
@@ -172,7 +191,20 @@ export class ClaimSyncComponent implements OnInit {
     }
   }
 
+  search() {
+    this.pageIndex = 1;
+    this.loadClaims();
+  }
+
+  onQueryParamsChange(params: NzTableQueryParams): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadClaims();
+  }
+
   resetSearch() {
+    this.pageIndex = 1;
     this.searchQuery = {
       keyword: '',
       dateRange: []

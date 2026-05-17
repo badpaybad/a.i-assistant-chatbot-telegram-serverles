@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -71,7 +71,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       <div nz-row [nzGutter]="[16, 16]">
         <div nz-col [nzSpan]="6">
           <nz-input-group [nzSuffix]="suffixIconSearch">
-            <input type="text" nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Username, DisplayName, Email' | transloco" (keyup.enter)="loadUsers()" />
+            <input type="text" nz-input [(ngModel)]="searchQuery.keyword" [placeholder]="'Username, DisplayName, Email' | transloco" (keyup.enter)="search()" />
           </nz-input-group>
           <ng-template #suffixIconSearch>
             <span nz-icon nzType="search"></span>
@@ -89,7 +89,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
             [placeholder]="'Vai trò' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.roleIds"
-            (valueChange)="loadUsers()"
+            (valueChange)="search()"
           ></tot-autocomplete>
         </div>
         <div nz-col [nzSpan]="6">
@@ -98,7 +98,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
             [placeholder]="'Quyền' | transloco"
             mode="multiple"
             [(ngModel)]="searchQuery.claimIds"
-            (valueChange)="loadUsers()"
+            (valueChange)="search()"
           ></tot-autocomplete>
         </div>
         <div nz-col [nzSpan]="8">
@@ -112,11 +112,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
           </nz-select>
         </div>
         <div nz-col [nzSpan]="4">
-          <input nz-input [(ngModel)]="searchQuery.ssoId" [placeholder]="'SSO ID' | transloco" (keyup.enter)="loadUsers()" />
+          <input nz-input [(ngModel)]="searchQuery.ssoId" [placeholder]="'SSO ID' | transloco" (keyup.enter)="search()" />
         </div>
         <div nz-col [nzSpan]="8" class="search-actions">
           <nz-space>
-            <tot-button *nzSpaceItem nzType="primary" (click)="loadUsers()">{{ 'Tìm kiếm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem nzType="primary" (click)="search()">{{ 'Tìm kiếm' | transloco }}</tot-button>
             <tot-button *nzSpaceItem (click)="resetSearch()">{{ 'Đặt lại' | transloco }}</tot-button>
           </nz-space>
         </div>
@@ -129,7 +129,11 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [loading]="loading" 
       [title]="'Danh sách người dùng' | transloco"
       [extra]="userExtraTpl"
-      [frontPagination]="true"
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalUsers"
+      (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="avatar" let-data>
         <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
@@ -156,7 +160,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       <ng-template totCell="roles" let-data>
         <nz-tag *ngFor="let role of data.roles" nzColor="blue" 
                 [nzMode]="(data.username?.toLowerCase() === 'admin' && role.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-                (nzOnClose)="removeRole(data, role)">
+                (nzOnClose)="removeRole($event, data, role)">
           {{ role.name }}
         </nz-tag>
         <tot-button nzType="dashed" nzSize="small" (click)="showRoleModal(data)">
@@ -167,7 +171,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       <ng-template totCell="claims" let-data>
         <nz-tag *ngFor="let claim of data.directClaims" nzColor="purple" 
                 [nzMode]="(data.username?.toLowerCase() === 'admin' && claim.name?.toLowerCase() === 'admin') ? 'default' : 'closeable'" 
-                (nzOnClose)="removeClaim(data, claim)">
+                (nzOnClose)="removeClaim($event, data, claim)">
           {{ claim.name }}
         </nz-tag>
         <tot-button nzType="dashed" nzSize="small" (click)="showClaimModal(data)">
@@ -347,6 +351,10 @@ export class UserListComponent implements OnInit {
   loading = false;
   syncingClaims = false;
   
+  pageIndex = 1;
+  pageSize = 10;
+  totalUsers = 0;
+  
   isRoleModalVisible = false;
   isClaimModalVisible = false;
   isUserModalVisible = false;
@@ -399,7 +407,10 @@ export class UserListComponent implements OnInit {
   async loadUsers() {
     this.loading = true;
     try {
-      const params: any = {};
+      const params: any = {
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize
+      };
       if (this.searchQuery.keyword) params.keyword = this.searchQuery.keyword;
       if (this.searchQuery.isEmailVerified !== null && this.searchQuery.isEmailVerified !== undefined) {
         params.isEmailVerified = this.searchQuery.isEmailVerified;
@@ -418,7 +429,9 @@ export class UserListComponent implements OnInit {
         params.endDate = this.searchQuery.dateRange[1]?.toISOString();
       }
 
-      this.users = await this.authMgmt.getUsers(params);
+      const res: any = await this.authMgmt.getUsers(params);
+      this.users = res.items || [];
+      this.totalUsers = res.total || 0;
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi tải người dùng'));
     } finally {
@@ -426,7 +439,20 @@ export class UserListComponent implements OnInit {
     }
   }
 
+  search() {
+    this.pageIndex = 1;
+    this.loadUsers();
+  }
+
+  onQueryParamsChange(params: NzTableQueryParams): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadUsers();
+  }
+
   resetSearch() {
+    this.pageIndex = 1;
     this.searchQuery = {
       keyword: '',
       isEmailVerified: null,
@@ -512,7 +538,8 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  async removeRole(user: any, role: any) {
+  async removeRole(event: MouseEvent, user: any, role: any) {
+    event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ${role.name} ${this.translate.translate('khỏi')} ${user.username}?`,
@@ -545,7 +572,8 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  async removeClaim(user: any, claim: any) {
+  async removeClaim(event: MouseEvent, user: any, claim: any) {
+    event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${user.username}?`,

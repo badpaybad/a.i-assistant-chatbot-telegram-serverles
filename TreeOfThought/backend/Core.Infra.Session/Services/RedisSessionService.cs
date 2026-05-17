@@ -26,6 +26,12 @@ public class RedisSessionService : RedisService, IUserSessionService
         return await GetAsync<List<string>>(cacheKey);
     }
 
+    public async Task RemoveUserClaimsAsync(Guid userId)
+    {
+        var cacheKey = $"claims:{userId}";
+        await RemoveAsync(cacheKey);
+    }
+
     public async Task SetUserAclAsync(Guid userId, string resourceType, string resourceId, int mask, TimeSpan? expiry = null)
     {
         var cacheKey = $"acl:{userId}:{resourceType}:{resourceId}";
