@@ -25,20 +25,17 @@ public class FilesFoldersCommandHandler :
     private readonly FirebaseService _firebaseService;
     private readonly IDispatcher _dispatcher;
     private readonly ILogger<FilesFoldersCommandHandler> _logger;
-    private readonly FirebaseOptions _firebaseOptions;
 
     public FilesFoldersCommandHandler(
         FilesFoldersDbContext db, 
         FirebaseService firebaseService,
         IDispatcher dispatcher,
-        ILogger<FilesFoldersCommandHandler> logger,
-        IOptions<FirebaseOptions> firebaseOptions)
+        ILogger<FilesFoldersCommandHandler> logger)
     {
         _db = db;
         _firebaseService = firebaseService;
         _dispatcher = dispatcher;
         _logger = logger;
-        _firebaseOptions = firebaseOptions.Value;
     }
 
     public async Task HandleAsync(CreateFolderCommand command)
@@ -97,7 +94,7 @@ public class FilesFoldersCommandHandler :
             try 
             {
                 var objectName = GetGcsObjectName(file);
-                await _firebaseService.DeleteFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName);
+                await _firebaseService.DeleteFileAsync(objectName);
             }
             catch (Exception ex)
             {
@@ -109,12 +106,12 @@ public class FilesFoldersCommandHandler :
         // Ensures any files matching the prefix that are NOT in the DB are also removed to avoid storage costs.
         try
         {
-            var gcsObjects = await _firebaseService.ListFilesAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, folderPath);
+            var gcsObjects = await _firebaseService.ListFilesAsync(folderPath);
             foreach (var objectName in gcsObjects)
             {
                 try
                 {
-                    await _firebaseService.DeleteFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName);
+                    await _firebaseService.DeleteFileAsync(objectName);
                 }
                 catch (Exception ex)
                 {
@@ -191,7 +188,7 @@ public class FilesFoldersCommandHandler :
 
         var objectName = $"{path}{Guid.NewGuid()}_{command.FileName}";
         using var stream = new MemoryStream(command.Content);
-        var url = await _firebaseService.UploadFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, stream, command.ContentType, false);
+        var url = await _firebaseService.UploadFileAsync(objectName, stream, command.ContentType, false);
 
         var file = new FileItem
         {
@@ -228,7 +225,7 @@ public class FilesFoldersCommandHandler :
         try
         {
             var objectName = GetGcsObjectName(file);
-            await _firebaseService.DeleteFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName);
+            await _firebaseService.DeleteFileAsync(objectName);
         }
         catch (Exception ex)
         {
@@ -285,7 +282,7 @@ public class FilesFoldersCommandHandler :
             var objectName = GetGcsObjectName(file);
             bool isPublic = file.Permission == PermissionType.Public;
             _logger.LogInformation("Updating GCS ACL for {FileId}: ObjectName={ObjectName}, isPublic={IsPublic}", file.Id, objectName, isPublic);
-            await _firebaseService.UpdateObjectAclAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, isPublic);
+            await _firebaseService.UpdateObjectAclAsync(objectName, isPublic);
         }
         catch (Exception ex)
         {

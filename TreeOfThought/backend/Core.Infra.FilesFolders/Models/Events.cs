@@ -1,12 +1,13 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Models;
+using Core.Infra.Base.Constants;
 
 namespace Core.Infra.FilesFolders.Models;
 
 public abstract class FilesFoldersEvent : BaseMessage, INotifyUiEvent
 {
     public string TopicName => GetType().Name;
-    public string NotifyPath => $"commandresults/{TrackingId}";
+    public string NotifyPath => FirestoreConstants.GetNotificationPath(TrackingId);
     public string Status { get; set; } = "Completed";
     public string? Message { get; set; }
     public object? Data { get; set; }

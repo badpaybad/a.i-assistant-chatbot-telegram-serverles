@@ -17,20 +17,16 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
     private readonly FirebaseService _firebaseService;
     private readonly IDispatcher _dispatcher;
     private readonly ILogger<FaceDetectionCommandHandler> _logger;
-    private readonly FirebaseOptions _firebaseOptions;
-
     public FaceDetectionCommandHandler(
         NhanDienKhuonMatDbContext db,
         FirebaseService firebaseService,
         IDispatcher dispatcher,
-        ILogger<FaceDetectionCommandHandler> logger,
-        IOptions<FirebaseOptions> firebaseOptions)
+        ILogger<FaceDetectionCommandHandler> logger)
     {
         _db = db;
         _firebaseService = firebaseService;
         _dispatcher = dispatcher;
         _logger = logger;
-        _firebaseOptions = firebaseOptions.Value;
     }
 
     public async Task HandleAsync(SaveFaceDetectionSessionCommand command)
@@ -49,8 +45,6 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
         using (var originalStream = new MemoryStream(command.OriginalContent))
         {
             originalUrl = await _firebaseService.UploadFileAsync(
-                _firebaseOptions.AppName, 
-                _firebaseOptions.BucketName, 
                 originalPath, 
                 originalStream, 
                 command.OriginalContentType, 
@@ -82,8 +76,6 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
             using (var faceStream = new MemoryStream(croppedFaceDto.Content))
             {
                 faceUrl = await _firebaseService.UploadFileAsync(
-                    _firebaseOptions.AppName, 
-                    _firebaseOptions.BucketName, 
                     facePath, 
                     faceStream, 
                     croppedFaceDto.ContentType, 

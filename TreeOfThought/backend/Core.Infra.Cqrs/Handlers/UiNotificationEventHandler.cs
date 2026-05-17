@@ -30,7 +30,7 @@ public class UiNotificationEventHandler<TEvent> : IEventHandler<TEvent> where TE
         try
         {
             _logger.LogInformation("Notifying UI via Firestore at path: {Path} for event {TrackingId}", @event.NotifyPath, @event.TrackingId);
-            await _firebaseService.PublishToAddressPathAsync("Default", @event.NotifyPath, @event);
+            await _firebaseService.PublishToAddressPathAsync(@event.NotifyPath, @event);
         }
         catch (Exception ex)
         {

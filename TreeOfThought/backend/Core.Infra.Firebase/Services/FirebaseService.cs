@@ -266,4 +266,45 @@ public class FirebaseService
         }
         return result;
     }
+
+    // --- Centralized Configuration Overloads ---
+
+    public async Task<string> CreateCustomTokenAsync(string uid, IDictionary<string, object>? claims = null)
+        => await CreateCustomTokenAsync(_options.Value.AppName, uid, claims);
+
+    public async Task<FirebaseToken> VerifyIdTokenAsync(string idToken)
+        => await VerifyIdTokenAsync(_options.Value.AppName, idToken);
+
+    public async Task SendNotificationAsync(string token, string title, string body)
+        => await SendNotificationAsync(_options.Value.AppName, token, title, body);
+
+    public FirestoreDb GetFirestore() 
+        => GetFirestore(_options.Value.AppName);
+
+    public async Task PublishToAddressPathAsync(string path, object data)
+        => await PublishToAddressPathAsync(_options.Value.AppName, path, data);
+
+    public async Task DeleteAddressPathAsync(string path)
+        => await DeleteAddressPathAsync(_options.Value.AppName, path);
+
+    public async Task<string> UploadFileAsync(string objectName, Stream content, string contentType, bool isPublic = false)
+        => await UploadFileAsync(_options.Value.AppName, _options.Value.StorageBucket, objectName, content, contentType, isPublic);
+
+    public async Task UpdateObjectAclAsync(string objectName, bool isPublic)
+        => await UpdateObjectAclAsync(_options.Value.AppName, _options.Value.StorageBucket, objectName, isPublic);
+
+    public string GetSignedUrl(string objectName, TimeSpan duration)
+        => GetSignedUrl(_options.Value.AppName, _options.Value.StorageBucket, objectName, duration);
+
+    public string GetPublicUrl(string objectName)
+        => GetPublicUrl(_options.Value.StorageBucket, objectName);
+
+    public async Task<byte[]> ReadFileAsync(string objectName)
+        => await ReadFileAsync(_options.Value.AppName, _options.Value.StorageBucket, objectName);
+
+    public async Task DeleteFileAsync(string objectName)
+        => await DeleteFileAsync(_options.Value.AppName, _options.Value.StorageBucket, objectName);
+
+    public async Task<List<string>> ListFilesAsync(string prefix)
+        => await ListFilesAsync(_options.Value.AppName, _options.Value.StorageBucket, prefix);
 }

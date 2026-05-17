@@ -11,12 +11,9 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddNhanDienKhuonMat(this IServiceCollection services, IConfiguration config)
     {
-        var connectionString = config["NhanDienKhuonMat:Postgresql"] 
-            ?? config.GetConnectionString("PostgreSql") 
-            ?? config["Database:Postgres"] 
-            ?? config["Oidc:PostgreSql"];
+        var connectionString = config["NhanDienKhuonMat:Postgresql"];
         if (string.IsNullOrEmpty(connectionString)) 
-            throw new Exception("PostgreSql ConnectionString not found for NhanDienKhuonMat");
+            throw new Exception("ConnectionString for NhanDienKhuonMat:Postgresql not found in appsettings.json.");
 
         services.AddScoped<NhanDienKhuonMatDbContext>(sp => 
             new NhanDienKhuonMatDbContext(connectionString, BaseDbContext.DbProviderType.PostgreSql));

@@ -18,14 +18,12 @@ public class AuthManagementController : ControllerBase
     private readonly IAuthRepository _authRepo;
     private readonly AuthService _authService;
     private readonly FirebaseService _firebaseService;
-    private readonly IConfiguration _config;
 
-    public AuthManagementController(IAuthRepository authRepo, AuthService authService, FirebaseService firebaseService, IConfiguration config)
+    public AuthManagementController(IAuthRepository authRepo, AuthService authService, FirebaseService firebaseService)
     {
         _authRepo = authRepo;
         _authService = authService;
         _firebaseService = firebaseService;
-        _config = config;
     }
     
     [HttpGet("users")]
@@ -172,11 +170,10 @@ public class AuthManagementController : ControllerBase
 
         try
         {
-            var bucketName = _config["Firebase:StorageBucket"] ?? "dunp-test-gcs";
             var fileName = $"avatars/{userId}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
 
             using var stream = file.OpenReadStream();
-            var publicUrl = await _firebaseService.UploadFileAsync("Default", bucketName, fileName, stream, file.ContentType);
+            var publicUrl = await _firebaseService.UploadFileAsync(fileName, stream, file.ContentType);
 
             user.AvatarUrl = publicUrl;
             await _authRepo.UpdateUserAsync(user);

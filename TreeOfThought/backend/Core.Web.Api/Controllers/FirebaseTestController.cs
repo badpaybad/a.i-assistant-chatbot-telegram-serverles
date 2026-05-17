@@ -10,32 +10,32 @@ namespace Core.Web.Api.Controllers;
 public class FirebaseTestController : ControllerBase
 {
     private readonly FirebaseService _firebase;
-    private readonly IConfiguration _config;
 
-    public FirebaseTestController(FirebaseService firebase, IConfiguration config)
+    public FirebaseTestController(FirebaseService firebase)
     {
         _firebase = firebase;
-        _config = config;
     }
 
     [HttpPost("notify")]
     public async Task<IActionResult> SendNotification([FromQuery] string path, [FromBody] object data)
     {
-        await _firebase.PublishToAddressPathAsync("Default", path, data);
+        await _firebase.PublishToAddressPathAsync(path, data);
         return Ok(new { message = "Notification sent" });
     }
 
     [HttpPost("push")]
     public async Task<IActionResult> PushNotification([FromQuery] string token, [FromQuery] string title, [FromQuery] string body)
     {
-        await _firebase.SendNotificationAsync("Default", token, title, body);
+        await _firebase.SendNotificationAsync(token, title, body);
         return Ok(new { message = "Push notification sent" });
     }
 
     [HttpGet("signed-url")]
-    public IActionResult GetSignedUrl([FromQuery] string bucket, [FromQuery] string objectName)
+    public IActionResult GetSignedUrl([FromQuery] string? bucket, [FromQuery] string objectName)
     {
-        var url = _firebase.GetSignedUrl("Default", bucket, objectName, TimeSpan.FromHours(1));
+        var url = string.IsNullOrEmpty(bucket)
+            ? _firebase.GetSignedUrl(objectName, TimeSpan.FromHours(1))
+            : _firebase.GetSignedUrl("Default", bucket, objectName, TimeSpan.FromHours(1));
         return Ok(new { url });
     }
 
@@ -45,11 +45,10 @@ public class FirebaseTestController : ControllerBase
         if (file == null || file.Length == 0)
             return BadRequest("No file uploaded");
 
-        var bucket = _config["Firebase:StorageBucket"] ?? throw new Exception("Firebase:StorageBucket not configured");
         var fileName = $"{Guid.NewGuid()}_{file.FileName}";
         
         using var stream = file.OpenReadStream();
-        var url = await _firebase.UploadFileAsync("Default", bucket, fileName, stream, file.ContentType);
+        var url = await _firebase.UploadFileAsync(fileName, stream, file.ContentType);
 
         return Ok(new { url, fileName });
     }

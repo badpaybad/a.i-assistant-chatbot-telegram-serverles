@@ -13354,6 +13354,7 @@ function onMessage(messaging, nextOrObserver) {
 registerMessagingInWindow();
 
 // projects/tot/core/src/lib/firebase/firebase.service.ts
+var FIRESTORE_NOTIFY_PATH_PREFIX = "commandresults";
 var _FirebaseService = class _FirebaseService {
   constructor() {
     this.config = inject(FIREBASE_CONFIG);
@@ -13439,7 +13440,7 @@ var _FirebaseService = class _FirebaseService {
     return this.subscribeOnce(requestId, callback);
   }
   subscribeOnce(requestId, callback) {
-    const docRef = doc(this.db, "commandresults", requestId);
+    const docRef = doc(this.db, FIRESTORE_NOTIFY_PATH_PREFIX, requestId);
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       if (snapshot.exists()) {
         try {
@@ -13523,4 +13524,4 @@ export {
   FIREBASE_CONFIG,
   FirebaseService
 };
-//# sourceMappingURL=chunk-7EUD2WEX.js.map
+//# sourceMappingURL=chunk-CHGYR3B5.js.map

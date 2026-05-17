@@ -1,6 +1,7 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Firebase.Services;
 using Core.Web.Api.Models;
+using Core.Infra.Base.Constants;
 
 namespace Core.Web.Api.Handlers;
 
@@ -30,7 +31,7 @@ public class SampleCommandHandler : ICommandHandler<SampleCommand>
         await Task.Delay(1000);
 
         // Publish result to Firestore for FE tracking
-        await _firebase.PublishToAddressPathAsync("Default", $"commandresults/{command.TrackingId}", new
+        await _firebase.PublishToAddressPathAsync(FirestoreConstants.GetNotificationPath(command.TrackingId), new
         {
             status = "success",
             message = $"Command processed successfully. Counter: {_counter}",

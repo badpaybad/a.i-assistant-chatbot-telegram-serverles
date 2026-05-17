@@ -14,6 +14,8 @@ import { getMessaging, Messaging, getToken, onMessage, isSupported } from 'fireb
 import { BehaviorSubject } from 'rxjs';
 import { FIREBASE_CONFIG } from '../tokens/firebase-config.token';
 
+export const FIRESTORE_NOTIFY_PATH_PREFIX = 'commandresults';
+
 @Injectable({
   providedIn: 'root',
 })
@@ -121,7 +123,7 @@ export class FirebaseService {
   }
 
   subscribeOnce(requestId: string, callback: (data: any) => void) {
-    const docRef = doc(this.db, 'commandresults', requestId);
+    const docRef = doc(this.db, FIRESTORE_NOTIFY_PATH_PREFIX, requestId);
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
       if (snapshot.exists()) {
         try {

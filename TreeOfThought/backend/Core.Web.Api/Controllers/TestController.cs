@@ -3,6 +3,7 @@ using Core.Infra.Firebase.Services;
 using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using Core.Infra.Base.Constants;
 
 namespace Core.Web.Api.Controllers;
 
@@ -50,7 +51,7 @@ public class TestController : ControllerBase
         // Mocking the completion after a short delay
         _ = Task.Run(async () => {
             await Task.Delay(2000);
-            await _firebase.PublishToAddressPathAsync("Default", $"commandresults/{request.RequestId}", new {
+            await _firebase.PublishToAddressPathAsync(FirestoreConstants.GetNotificationPath(request.RequestId), new {
                 status = "Success",
                 message = "Command processed successfully (Mock)",
                 data = request.Payload,
@@ -64,7 +65,7 @@ public class TestController : ControllerBase
     [HttpPost("fcm-sample")]
     public async Task<IActionResult> SendFcmSample([FromBody] FcmSampleRequest request)
     {
-        await _firebase.SendNotificationAsync("Default", request.Token, request.Title, request.Body);
+        await _firebase.SendNotificationAsync(request.Token, request.Title, request.Body);
         return Ok(new { message = "FCM Notification sent" });
     }
 

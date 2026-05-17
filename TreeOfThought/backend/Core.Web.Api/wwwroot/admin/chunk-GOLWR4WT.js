@@ -5,7 +5,7 @@ import {
   APP_CLAIMS,
   AuthService,
   CLAIMS_VERSION
-} from "./chunk-KE7KMO3C.js";
+} from "./chunk-EMCBTLAP.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
@@ -62,7 +62,7 @@ import {
   TotTableComponent,
   isAnimationEnabled
 } from "./chunk-DNUBIOQT.js";
-import "./chunk-7EUD2WEX.js";
+import "./chunk-CHGYR3B5.js";
 import "./chunk-IRGOCD6C.js";
 import {
   A11yModule,
@@ -7326,4 +7326,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-XNYNNSPT.js.map
+//# sourceMappingURL=chunk-GOLWR4WT.js.map
