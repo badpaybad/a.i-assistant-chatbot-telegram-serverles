@@ -107,6 +107,9 @@ Các app mobi
         db, redis dữ liệu, cache riêng theo nghiệp vụ nếu cần
         cần trao đổi dữ liệu nghiệp vụ khác sẽ qua command event 
         có thể dùng session nếu jwt chưa đủ thông tin 
+        cần kết nối db tạo dbcontext hoặc cần redis riêng thì tạo thêm các class tương ứng trong nghiệp vụ
+            với connectionstring tạo vào appsettings.json của từng nghiệp vụ với key là tên nghiệp vụ (vd: NhanDienKhuonMat:Postgresql or NhanDienKhuonMat:Redis)
+
     tùy vào nhu cầu có thể tạo thêm project api restful, các nghiệp vụ hiện tại để kiểm tra dễ dàng đang đưa vào sử dụng tại TreeOfThought/backend/Core.Web.Api
     
     **Quy chuẩn Paging (Phân trang)**:

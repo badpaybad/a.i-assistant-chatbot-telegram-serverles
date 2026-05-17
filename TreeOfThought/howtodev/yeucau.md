@@ -99,5 +99,5 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
                     TreeOfThought/frontend/web/projects/tot/business-dashboard
                     TreeOfThought/frontend/web/projects/tot/business-test
                     
-
-
+**cập nhật 2026-05-17 12:03:24**
+    khi tạo mới nghiệp vụ cần yeucau.md và phattrien.md trong folder docs của nghiệp vụ đó là chưa có gì. cần **bắt buộc** yêu cầu người dùng tự dưa nội dung srs, requirement, mong muốn, ý định vào yeucau.md 

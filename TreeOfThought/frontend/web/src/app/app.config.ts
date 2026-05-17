@@ -16,6 +16,7 @@ import { NZ_CONFIG, NzConfig } from 'ng-zorro-antd/core/config';
 import { environment } from '../environments/environment';
 import { authInterceptor, errorInterceptor, API_URL, FIREBASE_CONFIG, provideTotI18n } from '@tot/core';
 import { provideBusinessFiles } from '@tot/business-files';
+import { provideNhanDienKhuonMat } from '@tot/nhan-dien-khuon-mat';
 
 registerLocaleData(en);
 
@@ -46,6 +47,7 @@ export const appConfig: ApplicationConfig = {
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),
+    provideNhanDienKhuonMat(),
     importProvidersFrom(
       FormsModule, 
       NzIconModule.forRoot(icons)

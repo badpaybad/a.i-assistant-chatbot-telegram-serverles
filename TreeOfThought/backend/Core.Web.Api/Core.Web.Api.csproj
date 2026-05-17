@@ -21,6 +21,7 @@
     <ProjectReference Include="..\Core.Infra.Oidc\Core.Infra.Oidc.csproj" />
     <ProjectReference Include="..\Core.Infra.FilesFolders\Core.Infra.FilesFolders.csproj" />
     <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
+    <ProjectReference Include="..\nhan-dien-khuon-mat\Core.Infra.NhanDienKhuonMat.csproj" />
   </ItemGroup>
 
 </Project>

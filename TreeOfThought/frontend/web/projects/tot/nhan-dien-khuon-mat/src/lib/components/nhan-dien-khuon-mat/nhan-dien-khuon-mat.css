@@ -1,0 +1,361 @@
+/* Premium Face Detection Stylesheet */
+
+.premium-container {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  min-height: 80vh;
+  animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Glassmorphism Cards */
+.glass-header {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.08);
+  margin-bottom: 24px;
+  padding: 20px 24px;
+}
+
+.glass-card-premium {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.06);
+  padding: 24px;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+  position: relative;
+}
+
+.glass-card-premium:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 48px 0 rgba(31, 38, 135, 0.12);
+  border-color: rgba(24, 144, 255, 0.4);
+}
+
+/* Drag and Drop Zone */
+.dropzone-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed rgba(24, 144, 255, 0.3);
+  border-radius: 16px;
+  padding: 60px 40px;
+  background: rgba(24, 144, 255, 0.02);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 280px;
+}
+
+.dropzone-container:hover, .dropzone-container.drag-active {
+  border-color: #1890ff;
+  background: rgba(24, 144, 255, 0.06);
+  box-shadow: 0 0 20px rgba(24, 144, 255, 0.1) inset;
+}
+
+.dropzone-icon-wrapper {
+  font-size: 48px;
+  color: #1890ff;
+  margin-bottom: 16px;
+  animation: floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.dropzone-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 8px;
+}
+
+.dropzone-subtitle {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* Scanning Area & Laser Animation */
+.scanning-card {
+  border: 1px solid rgba(24, 144, 255, 0.3);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.scanning-visual-box {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  height: 250px;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d9d9d9;
+  background: #1f1f1f;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.scanning-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0.85;
+}
+
+.scanner-laser {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #00f2fe, #4facfe, transparent);
+  box-shadow: 0 0 12px #00f2fe, 0 0 4px #4facfe;
+  animation: laserScan 2.2s linear infinite;
+  z-index: 10;
+}
+
+@keyframes laserScan {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+.scanning-overlay-status {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Dual Column Review Grid */
+.review-item-container {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 24px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 900px) {
+  .review-item-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.review-left-canvas-wrapper {
+  position: relative;
+  background: #141414;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.review-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.review-right-faces {
+  display: flex;
+  flex-direction: column;
+}
+
+.faces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Individual Face Cards */
+.face-card {
+  background: #ffffff;
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+}
+
+.face-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(31, 38, 135, 0.08);
+  border-color: rgba(24, 144, 255, 0.2);
+}
+
+.face-card.excluded {
+  opacity: 0.55;
+  background: #fafafa;
+}
+
+.face-img-wrapper {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #fff;
+  box-shadow: 0 0 10px rgba(0,0,0,0.08);
+  margin-bottom: 12px;
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.face-cropped-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.face-card-toggle {
+  transform: scale(0.9);
+  margin-top: 6px;
+}
+
+/* Neon Overlay for detected bounding boxes */
+.neon-box {
+  position: absolute;
+  border: 2px solid #00ffcc;
+  box-shadow: 0 0 8px #00ffcc, 0 0 2px #00ffcc inset;
+  pointer-events: none;
+}
+
+/* Floating Action Bar */
+.sticky-actions-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  width: 90%;
+  max-width: 800px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.15);
+  border-radius: 20px;
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  animation: slideUpBar 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes slideUpBar {
+  from { transform: translate(-50%, 60px); opacity: 0; }
+  to { transform: translate(-50%, 0); opacity: 1; }
+}
+
+.glowing-btn {
+  background: linear-gradient(135deg, #0072ff, #00c6ff);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 0 24px;
+  height: 42px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 114, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.glowing-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 114, 255, 0.45);
+  background: linear-gradient(135deg, #0080ff, #00d0ff);
+}
+
+.glowing-btn:disabled {
+  background: #d9d9d9;
+  box-shadow: none;
+  color: rgba(0,0,0,0.25);
+}
+
+/* Upload Progress Modal */
+.upload-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-card {
+  width: 100%;
+  max-width: 480px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+  animation: scaleUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Success View Animation */
+.success-checkmark-wrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(82, 196, 26, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+
+.success-icon-animated {
+  font-size: 40px;
+  color: #52c41a;
+  animation: popCheck 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes popCheck {
+  0% { transform: scale(0); }
+  70% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}

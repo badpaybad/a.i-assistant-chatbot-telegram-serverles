@@ -106,6 +106,11 @@ export const routes: Routes = [
         path: 'modules/files-folders',
         data: { breadcrumb: 'Quản lý tài liệu' },
         loadComponent: () => import('@tot/business-files').then(m => m.FilesFolders)
+      },
+      {
+        path: 'modules/nhan-dien-khuon-mat',
+        data: { breadcrumb: 'Nhận diện khuôn mặt' },
+        loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.NhanDienKhuonMatComponent)
       }
 
     ]

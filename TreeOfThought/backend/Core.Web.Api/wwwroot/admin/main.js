@@ -1,11 +1,11 @@
 import {
   APP_CLAIMS,
   AuthService
-} from "./chunk-JK3ZYHUT.js";
+} from "./chunk-KE7KMO3C.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-4LC5WAJF.js";
+} from "./chunk-D5PUA5IY.js";
 import {
   NzBreadCrumbComponent,
   NzBreadCrumbItemComponent,
@@ -16,15 +16,41 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-GLL3YKPZ.js";
+} from "./chunk-CEM3V4UQ.js";
 import "./chunk-F2GHQOYI.js";
 import {
-  FIREBASE_CONFIG,
   NzFormControlComponent,
   NzFormDirective,
   NzFormItemComponent,
   NzFormModule
-} from "./chunk-ERTDCMZS.js";
+} from "./chunk-ZMHTKSAK.js";
+import {
+  NzCheckboxComponent,
+  NzCheckboxModule,
+  NzDividerComponent,
+  NzDividerModule,
+  NzDropDownModule,
+  NzDropdownADirective,
+  NzDropdownDirective,
+  NzDropdownMenuComponent,
+  NzInputDirective,
+  NzInputGroupComponent,
+  NzInputModule,
+  NzMenuDirective,
+  NzMenuItemComponent,
+  NzMenuModule,
+  NzSubMenuComponent,
+  TotButtonComponent,
+  en_US,
+  provideNzI18n
+} from "./chunk-DNUBIOQT.js";
+import {
+  provideNhanDienKhuonMat
+} from "./chunk-SLZJSJTN.js";
+import "./chunk-K72AAJ74.js";
+import {
+  FIREBASE_CONFIG
+} from "./chunk-7EUD2WEX.js";
 import "./chunk-IRGOCD6C.js";
 import {
   API_URL,
@@ -48,46 +74,28 @@ import {
   NonNullableFormBuilder,
   NotificationTemplateService,
   NzButtonModule,
-  NzCheckboxComponent,
-  NzCheckboxModule,
   NzColDirective,
-  NzDividerComponent,
-  NzDividerModule,
-  NzDropDownModule,
-  NzDropdownADirective,
-  NzDropdownDirective,
-  NzDropdownMenuComponent,
   NzIconDirective,
   NzIconModule,
-  NzInputDirective,
-  NzInputGroupComponent,
-  NzInputModule,
-  NzMenuDirective,
-  NzMenuItemComponent,
-  NzMenuModule,
   NzRowDirective,
-  NzSubMenuComponent,
   NzTransitionPatchDirective,
   ReactiveFormsModule,
   Router,
   RouterLink,
   RouterOutlet,
-  TotButtonComponent,
   TranslocoModule,
   TranslocoPipe,
   TranslocoService,
   Validators,
   ant_design_icons_angular_icons_exports,
   bootstrapApplication,
-  en_US,
   provideHttpClient,
-  provideNzI18n,
   provideRouter,
   provideTransloco,
   registerLocaleData,
   withInterceptors,
   ɵNgNoValidate
-} from "./chunk-5ZTAP3TK.js";
+} from "./chunk-ZZKC72UK.js";
 import {
   ANIMATION_MODULE_TYPE,
   ChangeDetectionScheduler,
@@ -2837,6 +2845,11 @@ var _MenuService = class _MenuService {
         claim: "fe.files_folders:view"
       },
       {
+        label: "Nh\u1EADn di\u1EC7n khu\xF4n m\u1EB7t",
+        icon: "smile",
+        route: "/modules/nhan-dien-khuon-mat"
+      },
+      {
         label: "Th\u1EED nghi\u1EC7m",
         icon: "experiment",
         claim: "fe.test:view",
@@ -4220,18 +4233,18 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-D3CVNE2B.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-ZOZOHMP5.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-D3CVNE2B.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-ZOZOHMP5.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-D3CVNE2B.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-ZOZOHMP5.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           }
@@ -4243,22 +4256,22 @@ var routes = [
         children: [
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-4NHHBHYW.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-5RWG6DCM.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-4NHHBHYW.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-5RWG6DCM.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-4NHHBHYW.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-5RWG6DCM.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-4NHHBHYW.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-5RWG6DCM.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4269,36 +4282,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-2OEAJJGC.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-XNYNNSPT.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4306,7 +4319,12 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-TH3L4B46.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-6SJRKXV4.js").then((m) => m.FilesFolders)
+      },
+      {
+        path: "modules/nhan-dien-khuon-mat",
+        data: { breadcrumb: "Nh\u1EADn di\u1EC7n khu\xF4n m\u1EB7t" },
+        loadComponent: () => import("./chunk-VCWC6KMX.js").then((m) => m.NhanDienKhuonMatComponent)
       }
     ]
   },
@@ -4594,6 +4612,7 @@ var appConfig = {
     }),
     { provide: NZ_CONFIG, useValue: nzConfig },
     provideBusinessFiles(),
+    provideNhanDienKhuonMat(),
     importProvidersFrom(FormsModule, NzIconModule.forRoot(icons))
   ]
 };

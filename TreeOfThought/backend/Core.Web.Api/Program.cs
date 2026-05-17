@@ -23,6 +23,9 @@ using Core.Infra.FilesFolders.Handlers;
 using Core.Infra.FilesFolders.Contexts;
 using Core.Infra.Firebase.Extensions;
 using Core.Infra.Firebase.Models;
+using Core.Infra.NhanDienKhuonMat.Extensions;
+using Core.Infra.NhanDienKhuonMat.Handlers;
+using Core.Infra.NhanDienKhuonMat.Contexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,10 +47,11 @@ if (!string.IsNullOrEmpty(defaultRedisConn))
 builder.Services.AddAppOidc(config);
 
 // --- 3. Infra Services (CQRS & Base) ---
-builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly);
+builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly, typeof(FaceDetectionCommandHandler).Assembly);
 
 // --- 4. Database & Auth Repos ---
 builder.Services.AddFilesFolders(config);
+builder.Services.AddNhanDienKhuonMat(config);
 // Registered via AddAppAuth extension
 
 // --- 5. Handlers ---
@@ -56,6 +60,7 @@ builder.Services.AddFilesFolders(config);
 // --- 6. Controllers & Swagger ---
 builder.Services.AddControllers()
     .AddFilesFoldersControllers()
+    .AddNhanDienKhuonMatControllers()
     .AddOidcControllers()
     .AddJsonOptions(options =>
     {
@@ -123,6 +128,9 @@ using (var scope = app.Services.CreateScope())
     {
         var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
         await filesDb.EnsureTablesCreatedAsync();
+
+        var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
+        await faceDb.EnsureTablesCreatedAsync();
     }
     catch (Exception ex)
     {

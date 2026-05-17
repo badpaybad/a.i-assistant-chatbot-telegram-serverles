@@ -266,6 +266,32 @@
           }
         }
       }
+    },
+    "@tot/nhan-dien-khuon-mat": {
+      "projectType": "library",
+      "root": "projects/tot/nhan-dien-khuon-mat",
+      "sourceRoot": "projects/tot/nhan-dien-khuon-mat/src",
+      "prefix": "tot",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:ng-packagr",
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/tot/nhan-dien-khuon-mat/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/tot/nhan-dien-khuon-mat/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular/build:unit-test",
+          "options": {
+            "tsConfig": "projects/tot/nhan-dien-khuon-mat/tsconfig.spec.json"
+          }
+        }
+      }
     }
   }
 }

@@ -52,6 +52,11 @@ export class MenuService {
       claim: 'fe.files_folders:view',
     },
     {
+      label: 'Nhận diện khuôn mặt',
+      icon: 'smile',
+      route: '/modules/nhan-dien-khuon-mat',
+    },
+    {
       label: 'Thử nghiệm',
       icon: 'experiment',
       claim: 'fe.test:view',

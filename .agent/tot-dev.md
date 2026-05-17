@@ -18,7 +18,7 @@ Dùng thông tin này để phát triển, sửa lỗi, hỏi đáp và làm rõ
 
 ### A. Đối với Tính năng / Nghiệp vụ mới
 1.  **Khởi tạo:** Tạo folder tên tính năng trong `TreeOfThought/docs`.
-2.  **Yêu cầu:** Tạo sẵn file `yeucau.md` trong folder đó để người dùng đưa yêu cầu.
+2.  **Yêu cầu & Giải pháp (Khởi tạo trống):** Tạo sẵn các file `yeucau.md` và `phattrien.md` trong folder đó ở trạng thái trống (chưa có nội dung gì). **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `yeucau.md`.
 3.  **Phân tích & Đề xuất:** 
     - Đọc kỹ `yeucau.md` để hiểu rõ ý định. Nếu chưa có hoặc chưa rõ, yêu cầu người dùng bổ sung vào `yeucau.md`.
     - Tạo file `phattrien.md` để người dùng xem trước khi quyết định triển khai.
@@ -123,6 +123,9 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
   - `TreeOfThought/frontend/web/projects/tot/business-oidc`
   - `TreeOfThought/frontend/web/projects/tot/business-dashboard`
   - `TreeOfThought/frontend/web/projects/tot/business-test`
+
+### D. Nhật ký cập nhật quy trình
+- **Cập nhật 2026-05-17 12:03:24:** Khi tạo mới nghiệp vụ, file `yeucau.md` và `phattrien.md` trong folder docs của nghiệp vụ đó ban đầu sẽ trống. **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `yeucau.md` trước khi tiến hành bước tiếp theo.
 
 
 
