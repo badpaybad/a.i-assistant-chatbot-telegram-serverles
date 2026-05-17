@@ -31,6 +31,7 @@ public class MessageTracker : IMessageTracker
         await _db.ListRemoveAsync("infra:recent_tracks", entry.TrackingId.ToString());
         await _db.ListLeftPushAsync("infra:recent_tracks", entry.TrackingId.ToString());
         await _db.ListTrimAsync("infra:recent_tracks", 0, 999); // Keep last 1000 IDs
+        await _db.KeyExpireAsync("infra:recent_tracks", TimeSpan.FromDays(7));
     }
 
     public async Task<List<TrackingEntry>> GetTrackingHistoryAsync(Guid trackingId)

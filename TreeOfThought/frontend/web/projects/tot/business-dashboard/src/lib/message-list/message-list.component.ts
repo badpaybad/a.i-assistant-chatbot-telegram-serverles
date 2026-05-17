@@ -8,9 +8,8 @@ import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService } from '../services/dashboard.service';
-import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
-import { ViewChild, TemplateRef } from '@angular/core';
 
 @Component({
   selector: 'app-message-list',
@@ -23,7 +22,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
     NzTagModule,
     TranslocoModule,
     TotButtonComponent,
-    TotTableComponent
+    TotTableComponent,
+    TotCellDirective
   ],
   templateUrl: './message-list.component.html',
   styleUrls: ['./message-list.component.css']
@@ -45,19 +45,14 @@ export class MessageListComponent implements OnInit {
   pageSize = 10;
   total = 0;
 
-  @ViewChild('timeTpl', { static: true }) timeTpl!: TemplateRef<any>;
-  @ViewChild('contentTpl', { static: true }) contentTpl!: TemplateRef<any>;
-  @ViewChild('statusTpl', { static: true }) statusTpl!: TemplateRef<any>;
-  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
-
   msgColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
     this.msgColumns = [
-      { title: 'Thời gian', width: '180px', left: '0px', template: this.timeTpl },
-      { title: 'Nội dung tin nhắn', template: this.contentTpl },
-      { title: 'Trạng thái', width: '120px', template: this.statusTpl },
-      { title: 'Hành động', width: '200px', right: '0px', template: this.actionsTpl }
+      { title: 'Thời gian', key: 'time', width: '180px', left: '0px' },
+      { title: 'Nội dung tin nhắn', key: 'content' },
+      { title: 'Trạng thái', key: 'status', width: '120px' },
+      { title: 'Hành động', key: 'action', width: '200px', right: '0px' }
     ];
     this.queueName = this.inputQueueName || this.modalData?.inputQueueName || '';
     if (this.queueName) {

@@ -9,37 +9,37 @@
     [frontPagination]="false"
     [expandTemplate]="expandTpl"
     (queryParamsChange)="onQueryParamsChange($event)"
-  ></tot-table>
+  >
+    <ng-template totCell="time" let-data>
+      {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
+    </ng-template>
 
-  <ng-template #timeTpl let-data>
-    {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
-  </ng-template>
+    <ng-template totCell="content" let-data>
+      <div class="msg-preview" (click)="data.expand = !data.expand">
+        {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
+      </div>
+    </ng-template>
 
-  <ng-template #contentTpl let-data>
-    <div class="msg-preview" (click)="data.expand = !data.expand">
-      {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
-    </div>
-  </ng-template>
+    <ng-template totCell="status" let-data>
+      <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
+        {{ getStatus(data) | transloco }}
+      </nz-tag>
+    </ng-template>
 
-  <ng-template #statusTpl let-data>
-    <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
-      {{ getStatus(data) | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #actionsTpl let-data>
-    <div style="display: flex; gap: 8px;">
-      <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
-        <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
-      </tot-button>
-      <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
-        <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
-      </tot-button>
-      <tot-button nzSize="small" (click)="data.expand = !data.expand">
-        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | transloco }}
-      </tot-button>
-    </div>
-  </ng-template>
+    <ng-template totCell="action" let-data>
+      <div style="display: flex; gap: 8px;">
+        <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
+          <i nz-icon nzType="rollback"></i> {{ 'Gửi lại' | transloco }}
+        </tot-button>
+        <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
+          <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
+        </tot-button>
+        <tot-button nzSize="small" (click)="data.expand = !data.expand">
+          <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | transloco }}
+        </tot-button>
+      </div>
+    </ng-template>
+  </tot-table>
 
   <ng-template #expandTpl let-data>
     <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px; width: 100%;">

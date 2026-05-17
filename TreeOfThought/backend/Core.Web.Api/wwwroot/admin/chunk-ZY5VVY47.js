@@ -3763,10 +3763,6 @@ var DashboardService = _DashboardService;
 })();
 
 // projects/tot/business-dashboard/src/lib/message-list/message-list.component.ts
-var _c05 = ["timeTpl"];
-var _c13 = ["contentTpl"];
-var _c22 = ["statusTpl"];
-var _c32 = ["actionsTpl"];
 function MessageListComponent_ng_template_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275text(0);
@@ -3778,11 +3774,11 @@ function MessageListComponent_ng_template_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind2(1, 1, ctx_r1.getTime(data_r1), "yyyy-MM-dd HH:mm:ss"), " ");
   }
 }
-function MessageListComponent_ng_template_4_Template(rf, ctx) {
+function MessageListComponent_ng_template_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 7);
-    \u0275\u0275listener("click", function MessageListComponent_ng_template_4_Template_div_click_0_listener() {
+    \u0275\u0275listener("click", function MessageListComponent_ng_template_3_Template_div_click_0_listener() {
       const data_r4 = \u0275\u0275restoreView(_r3).$implicit;
       return \u0275\u0275resetView(data_r4.expand = !data_r4.expand);
     });
@@ -3796,7 +3792,7 @@ function MessageListComponent_ng_template_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate2(" ", \u0275\u0275pipeBind3(2, 2, data_r4.raw, 0, 100), "", data_r4.raw.length > 100 ? "..." : "", " ");
   }
 }
-function MessageListComponent_ng_template_6_Template(rf, ctx) {
+function MessageListComponent_ng_template_4_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "nz-tag", 8);
     \u0275\u0275text(1);
@@ -3811,11 +3807,11 @@ function MessageListComponent_ng_template_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, ctx_r1.getStatus(data_r5)), " ");
   }
 }
-function MessageListComponent_ng_template_8_tot_button_1_Template(rf, ctx) {
+function MessageListComponent_ng_template_5_tot_button_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tot-button", 14);
-    \u0275\u0275listener("click", function MessageListComponent_ng_template_8_tot_button_1_Template_tot_button_click_0_listener() {
+    \u0275\u0275listener("click", function MessageListComponent_ng_template_5_tot_button_1_Template_tot_button_click_0_listener() {
       \u0275\u0275restoreView(_r7);
       const data_r8 = \u0275\u0275nextContext().$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
@@ -3831,11 +3827,11 @@ function MessageListComponent_ng_template_8_tot_button_1_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "G\u1EEDi l\u1EA1i"), " ");
   }
 }
-function MessageListComponent_ng_template_8_tot_button_2_Template(rf, ctx) {
+function MessageListComponent_ng_template_5_tot_button_2_Template(rf, ctx) {
   if (rf & 1) {
     const _r9 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tot-button", 16);
-    \u0275\u0275listener("click", function MessageListComponent_ng_template_8_tot_button_2_Template_tot_button_click_0_listener() {
+    \u0275\u0275listener("click", function MessageListComponent_ng_template_5_tot_button_2_Template_tot_button_click_0_listener() {
       \u0275\u0275restoreView(_r9);
       const data_r8 = \u0275\u0275nextContext().$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
@@ -3852,13 +3848,13 @@ function MessageListComponent_ng_template_8_tot_button_2_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 2, "X\xF3a"), " ");
   }
 }
-function MessageListComponent_ng_template_8_Template(rf, ctx) {
+function MessageListComponent_ng_template_5_Template(rf, ctx) {
   if (rf & 1) {
     const _r6 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 9);
-    \u0275\u0275template(1, MessageListComponent_ng_template_8_tot_button_1_Template, 4, 3, "tot-button", 10)(2, MessageListComponent_ng_template_8_tot_button_2_Template, 4, 4, "tot-button", 11);
+    \u0275\u0275template(1, MessageListComponent_ng_template_5_tot_button_1_Template, 4, 3, "tot-button", 10)(2, MessageListComponent_ng_template_5_tot_button_2_Template, 4, 4, "tot-button", 11);
     \u0275\u0275elementStart(3, "tot-button", 12);
-    \u0275\u0275listener("click", function MessageListComponent_ng_template_8_Template_tot_button_click_3_listener() {
+    \u0275\u0275listener("click", function MessageListComponent_ng_template_5_Template_tot_button_click_3_listener() {
       const data_r8 = \u0275\u0275restoreView(_r6).$implicit;
       return \u0275\u0275resetView(data_r8.expand = !data_r8.expand);
     });
@@ -3880,7 +3876,7 @@ function MessageListComponent_ng_template_8_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 4, "Chi ti\u1EBFt"), " ");
   }
 }
-function MessageListComponent_ng_template_10_div_10_Template(rf, ctx) {
+function MessageListComponent_ng_template_6_div_10_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 25)(1, "div", 26);
     \u0275\u0275text(2, "Error Details:");
@@ -3900,14 +3896,14 @@ function MessageListComponent_ng_template_10_div_10_Template(rf, ctx) {
     \u0275\u0275textInterpolate1("Worker: ", data_r11.parsed._workerId);
   }
 }
-function MessageListComponent_ng_template_10_Template(rf, ctx) {
+function MessageListComponent_ng_template_6_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 18)(1, "div", 19)(2, "span", 20);
     \u0275\u0275text(3, "JSON Content:");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "tot-button", 21);
-    \u0275\u0275listener("click", function MessageListComponent_ng_template_10_Template_tot_button_click_4_listener() {
+    \u0275\u0275listener("click", function MessageListComponent_ng_template_6_Template_tot_button_click_4_listener() {
       const data_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.copyToClipboard(data_r11.raw));
@@ -3919,7 +3915,7 @@ function MessageListComponent_ng_template_10_Template(rf, ctx) {
     \u0275\u0275elementStart(8, "pre", 23);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(10, MessageListComponent_ng_template_10_div_10_Template, 7, 2, "div", 24);
+    \u0275\u0275template(10, MessageListComponent_ng_template_6_div_10_Template, 7, 2, "div", 24);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -3951,10 +3947,10 @@ var _MessageListComponent = class _MessageListComponent {
   ngOnInit() {
     var _a;
     this.msgColumns = [
-      { title: "Th\u1EDDi gian", width: "180px", left: "0px", template: this.timeTpl },
-      { title: "N\u1ED9i dung tin nh\u1EAFn", template: this.contentTpl },
-      { title: "Tr\u1EA1ng th\xE1i", width: "120px", template: this.statusTpl },
-      { title: "H\xE0nh \u0111\u1ED9ng", width: "200px", right: "0px", template: this.actionsTpl }
+      { title: "Th\u1EDDi gian", key: "time", width: "180px", left: "0px" },
+      { title: "N\u1ED9i dung tin nh\u1EAFn", key: "content" },
+      { title: "Tr\u1EA1ng th\xE1i", key: "status", width: "120px" },
+      { title: "H\xE0nh \u0111\u1ED9ng", key: "action", width: "200px", right: "0px" }
     ];
     this.queueName = this.inputQueueName || ((_a = this.modalData) == null ? void 0 : _a.inputQueueName) || "";
     if (this.queueName) {
@@ -4051,29 +4047,19 @@ var _MessageListComponent = class _MessageListComponent {
 _MessageListComponent.\u0275fac = function MessageListComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _MessageListComponent)();
 };
-_MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], viewQuery: function MessageListComponent_Query(rf, ctx) {
+_MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _MessageListComponent, selectors: [["app-message-list"]], inputs: { inputQueueName: "inputQueueName" }, decls: 8, vars: 8, consts: [["expandTpl", ""], [1, "message-list-container"], [3, "queryParamsChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate"], ["totCell", "time"], ["totCell", "content"], ["totCell", "status"], ["totCell", "action"], [1, "msg-preview", 3, "click"], [3, "nzColor"], [2, "display", "flex", "gap", "8px"], ["nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nzSize", "small", 3, "nzDanger", "click", 4, "ngIf"], ["nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "delete"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px", "width", "100%"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275viewQuery(_c05, 7)(_c13, 7)(_c22, 7)(_c32, 7);
-  }
-  if (rf & 2) {
-    let _t;
-    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.timeTpl = _t.first);
-    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.contentTpl = _t.first);
-    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.statusTpl = _t.first);
-    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.actionsTpl = _t.first);
-  }
-}, inputs: { inputQueueName: "inputQueueName" }, decls: 12, vars: 8, consts: [["timeTpl", ""], ["contentTpl", ""], ["statusTpl", ""], ["actionsTpl", ""], ["expandTpl", ""], [1, "message-list-container"], [3, "queryParamsChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate"], [1, "msg-preview", 3, "click"], [3, "nzColor"], [2, "display", "flex", "gap", "8px"], ["nzType", "primary", "nzSize", "small", 3, "click", 4, "ngIf"], ["nzSize", "small", 3, "nzDanger", "click", 4, "ngIf"], ["nzSize", "small", 3, "click"], ["nz-icon", "", 3, "nzType"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "delete"], [1, "json-viewer-container", 2, "background", "#1f1f1f", "padding", "16px", "border-radius", "4px", "width", "100%"], [2, "display", "flex", "justify-content", "space-between", "margin-bottom", "8px"], [2, "font-weight", "bold", "color", "#1890ff"], ["nzType", "text", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "copy"], [2, "margin", "0", "color", "#ccc", "font-size", "12px", "overflow", "auto", "max-height", "400px"], ["style", "margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;", 4, "ngIf"], [2, "margin-top", "12px", "padding", "12px", "background", "#2a1215", "border-left", "4px solid #ff4d4f"], [2, "font-weight", "bold", "color", "#ff4d4f", "margin-bottom", "4px"], [2, "color", "#ffccc7"], [2, "font-size", "11px", "color", "#a61d24", "margin-top", "4px"]], template: function MessageListComponent_Template(rf, ctx) {
-  if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 5)(1, "tot-table", 6);
+    \u0275\u0275elementStart(0, "div", 1)(1, "tot-table", 2);
     \u0275\u0275listener("queryParamsChange", function MessageListComponent_Template_tot_table_queryParamsChange_1_listener($event) {
       return ctx.onQueryParamsChange($event);
     });
+    \u0275\u0275template(2, MessageListComponent_ng_template_2_Template, 2, 4, "ng-template", 3)(3, MessageListComponent_ng_template_3_Template, 3, 6, "ng-template", 4)(4, MessageListComponent_ng_template_4_Template, 3, 4, "ng-template", 5)(5, MessageListComponent_ng_template_5_Template, 7, 6, "ng-template", 6);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(2, MessageListComponent_ng_template_2_Template, 2, 4, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(4, MessageListComponent_ng_template_4_Template, 3, 6, "ng-template", null, 1, \u0275\u0275templateRefExtractor)(6, MessageListComponent_ng_template_6_Template, 3, 4, "ng-template", null, 2, \u0275\u0275templateRefExtractor)(8, MessageListComponent_ng_template_8_Template, 7, 6, "ng-template", null, 3, \u0275\u0275templateRefExtractor)(10, MessageListComponent_ng_template_10_Template, 11, 5, "ng-template", null, 4, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(6, MessageListComponent_ng_template_6_Template, 11, 5, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const expandTpl_r12 = \u0275\u0275reference(11);
+    const expandTpl_r12 = \u0275\u0275reference(7);
     \u0275\u0275advance();
     \u0275\u0275property("data", ctx.messages)("columns", ctx.msgColumns)("loading", ctx.loading)("total", ctx.total)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("frontPagination", false)("expandTemplate", expandTpl_r12);
   }
@@ -4090,6 +4076,7 @@ _MessageListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ 
   TranslocoModule,
   TotButtonComponent,
   TotTableComponent,
+  TotCellDirective,
   SlicePipe,
   DatePipe,
   TranslocoPipe
@@ -4106,7 +4093,8 @@ var MessageListComponent = _MessageListComponent;
       NzTagModule,
       TranslocoModule,
       TotButtonComponent,
-      TotTableComponent
+      TotTableComponent,
+      TotCellDirective
     ], template: `<div class="message-list-container">
   <tot-table 
     [data]="messages" 
@@ -4118,37 +4106,37 @@ var MessageListComponent = _MessageListComponent;
     [frontPagination]="false"
     [expandTemplate]="expandTpl"
     (queryParamsChange)="onQueryParamsChange($event)"
-  ></tot-table>
+  >
+    <ng-template totCell="time" let-data>
+      {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
+    </ng-template>
 
-  <ng-template #timeTpl let-data>
-    {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
-  </ng-template>
+    <ng-template totCell="content" let-data>
+      <div class="msg-preview" (click)="data.expand = !data.expand">
+        {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
+      </div>
+    </ng-template>
 
-  <ng-template #contentTpl let-data>
-    <div class="msg-preview" (click)="data.expand = !data.expand">
-      {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
-    </div>
-  </ng-template>
+    <ng-template totCell="status" let-data>
+      <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
+        {{ getStatus(data) | transloco }}
+      </nz-tag>
+    </ng-template>
 
-  <ng-template #statusTpl let-data>
-    <nz-tag [nzColor]="getStatus(data) === 'error' ? 'error' : getStatus(data) === 'processing' ? 'processing' : 'default'">
-      {{ getStatus(data) | transloco }}
-    </nz-tag>
-  </ng-template>
-
-  <ng-template #actionsTpl let-data>
-    <div style="display: flex; gap: 8px;">
-      <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
-        <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | transloco }}
-      </tot-button>
-      <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
-        <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | transloco }}
-      </tot-button>
-      <tot-button nzSize="small" (click)="data.expand = !data.expand">
-        <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi ti\u1EBFt' | transloco }}
-      </tot-button>
-    </div>
-  </ng-template>
+    <ng-template totCell="action" let-data>
+      <div style="display: flex; gap: 8px;">
+        <tot-button *ngIf="queueName.endsWith(':dead')" nzType="primary" nzSize="small" (click)="resend(data)">
+          <i nz-icon nzType="rollback"></i> {{ 'G\u1EEDi l\u1EA1i' | transloco }}
+        </tot-button>
+        <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
+          <i nz-icon nzType="delete"></i> {{ 'X\xF3a' | transloco }}
+        </tot-button>
+        <tot-button nzSize="small" (click)="data.expand = !data.expand">
+          <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi ti\u1EBFt' | transloco }}
+        </tot-button>
+      </div>
+    </ng-template>
+  </tot-table>
 
   <ng-template #expandTpl let-data>
     <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px; width: 100%;">
@@ -4187,18 +4175,6 @@ var MessageListComponent = _MessageListComponent;
 `, styles: ["/* projects/tot/business-dashboard/src/lib/message-list/message-list.component.css */\n.message-list-content {\n  padding: 24px;\n}\n.msg-cell {\n  font-family: monospace;\n  color: #555;\n}\n.no-data {\n  text-align: center;\n  padding: 40px;\n  color: #999;\n}\n/*# sourceMappingURL=message-list.component.css.map */\n", "/* angular:styles/component:css;83e7dd69ca1ef731ee791253815c857391ef19343f8043d076218784555af8e1;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-dashboard/src/lib/message-list/message-list.component.html */\n.msg-preview {\n  cursor: pointer;\n  font-family: monospace;\n  font-size: 12px;\n  color: #999;\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  max-width: 500px;\n}\n.msg-preview:hover {\n  color: #1890ff;\n}\n/*# sourceMappingURL=message-list.component.css.map */\n"] }]
   }], null, { inputQueueName: [{
     type: Input
-  }], timeTpl: [{
-    type: ViewChild,
-    args: ["timeTpl", { static: true }]
-  }], contentTpl: [{
-    type: ViewChild,
-    args: ["contentTpl", { static: true }]
-  }], statusTpl: [{
-    type: ViewChild,
-    args: ["statusTpl", { static: true }]
-  }], actionsTpl: [{
-    type: ViewChild,
-    args: ["actionsTpl", { static: true }]
   }] });
 })();
 (() => {
@@ -4368,10 +4344,10 @@ var TopicDetailComponent = _TopicDetailComponent;
 })();
 
 // projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts
-var _c06 = () => ({ color: "#3f8600" });
-var _c14 = () => ({ color: "#cf1322" });
-var _c23 = () => ({ x: "1200px" });
-var _c33 = () => ({ x: "800px" });
+var _c05 = () => ({ color: "#3f8600" });
+var _c13 = () => ({ color: "#cf1322" });
+var _c22 = () => ({ x: "1200px" });
+var _c32 = () => ({ x: "800px" });
 function DashboardComponent_nz_option_10_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "nz-option", 34);
@@ -4549,7 +4525,7 @@ function DashboardComponent_div_59_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 8, "Danh s\xE1ch th\u1EF1c th\u1EC3 CQRS"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r12.queues)("columns", ctx_r12.queueColumns)("loading", ctx_r12.loading)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(10, _c23));
+    \u0275\u0275property("data", ctx_r12.queues)("columns", ctx_r12.queueColumns)("loading", ctx_r12.loading)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(10, _c22));
   }
 }
 function DashboardComponent_div_60_ng_template_9_Template(rf, ctx) {
@@ -4872,7 +4848,7 @@ function DashboardComponent_div_61_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 14, "Gi\xE1m s\xE1t ti\u1EBFn tr\xECnh (Workers)"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r12.workerList)("columns", ctx_r12.workerColumns)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(18, _c33));
+    \u0275\u0275property("data", ctx_r12.workerList)("columns", ctx_r12.workerColumns)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(18, _c32));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(7, 16, "Ph\xE2n t\xEDch l\u1ED7i"));
     \u0275\u0275advance(2);
@@ -5389,11 +5365,11 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 43, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r35)("nzValueStyle", \u0275\u0275pureFunction0(57, _c06));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 43, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r35)("nzValueStyle", \u0275\u0275pureFunction0(57, _c05));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 45, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r36)("nzValueStyle", \u0275\u0275pureFunction0(58, _c14));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 45, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r36)("nzValueStyle", \u0275\u0275pureFunction0(58, _c13));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 6);
     \u0275\u0275advance(2);
@@ -5803,9 +5779,9 @@ var DashboardComponent = _DashboardComponent;
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-steps.mjs
-var _c07 = ["processDotTemplate"];
-var _c15 = ["itemContainer"];
-var _c24 = (a0, a1, a2) => ({
+var _c06 = ["processDotTemplate"];
+var _c14 = ["itemContainer"];
+var _c23 = (a0, a1, a2) => ({
   $implicit: a0,
   status: a1,
   index: a2
@@ -5915,7 +5891,7 @@ function NzStepComponent_Conditional_5_Template(rf, ctx) {
     const processDotTemplate_r3 = \u0275\u0275reference(2);
     const ctx_r0 = \u0275\u0275nextContext();
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngTemplateOutlet", ctx_r0.customProcessTemplate || processDotTemplate_r3)("ngTemplateOutletContext", \u0275\u0275pureFunction3(2, _c24, processDotTemplate_r3, ctx_r0.nzStatus, ctx_r0.index));
+    \u0275\u0275property("ngTemplateOutlet", ctx_r0.customProcessTemplate || processDotTemplate_r3)("ngTemplateOutletContext", \u0275\u0275pureFunction3(2, _c23, processDotTemplate_r3, ctx_r0.nzStatus, ctx_r0.index));
   }
 }
 function NzStepComponent_ng_container_8_Template(rf, ctx) {
@@ -5966,7 +5942,7 @@ function NzStepComponent_ng_container_11_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r0.nzDescription);
   }
 }
-var _c34 = ["*"];
+var _c33 = ["*"];
 var _NzStepComponent = class _NzStepComponent {
   constructor() {
     __publicField(this, "cdr", inject(ChangeDetectorRef));
@@ -6048,7 +6024,7 @@ __publicField(_NzStepComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275defineC
   selectors: [["nz-step"]],
   viewQuery: function NzStepComponent_Query(rf, ctx) {
     if (rf & 1) {
-      \u0275\u0275viewQuery(_c07, 5)(_c15, 7);
+      \u0275\u0275viewQuery(_c06, 5)(_c14, 7);
     }
     if (rf & 2) {
       let _t;
@@ -6381,7 +6357,7 @@ __publicField(_NzStepsComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275define
   },
   exportAs: ["nzSteps"],
   features: [\u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c34,
+  ngContentSelectors: _c33,
   decls: 1,
   vars: 0,
   template: function NzStepsComponent_Template(rf, ctx) {
@@ -6475,8 +6451,8 @@ var NzStepsModule = _NzStepsModule;
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-timeline.mjs
-var _c08 = ["template"];
-var _c16 = ["*"];
+var _c07 = ["template"];
+var _c15 = ["*"];
 function NzTimelineItemComponent_ng_template_0_Conditional_1_ng_container_1_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementContainerStart(0);
@@ -6690,7 +6666,7 @@ __publicField(_NzTimelineItemComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u027
   selectors: [["nz-timeline-item"], ["", "nz-timeline-item", ""]],
   viewQuery: function NzTimelineItemComponent_Query(rf, ctx) {
     if (rf & 1) {
-      \u0275\u0275viewQuery(_c08, 5);
+      \u0275\u0275viewQuery(_c07, 5);
     }
     if (rf & 2) {
       let _t;
@@ -6705,7 +6681,7 @@ __publicField(_NzTimelineItemComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u027
   },
   exportAs: ["nzTimelineItem"],
   features: [\u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c16,
+  ngContentSelectors: _c15,
   decls: 2,
   vars: 0,
   consts: [["template", ""], [1, "ant-timeline-item"], [1, "ant-timeline-item-label"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"]],
@@ -6872,7 +6848,7 @@ __publicField(_NzTimelineComponent, "\u0275cmp", /* @__PURE__ */ \u0275\u0275def
   },
   exportAs: ["nzTimeline"],
   features: [\u0275\u0275ProvidersFeature([TimelineService]), \u0275\u0275NgOnChangesFeature],
-  ngContentSelectors: _c16,
+  ngContentSelectors: _c15,
   decls: 8,
   vars: 14,
   consts: [["pendingTemplate", ""], [1, "ant-timeline"], [3, "ngTemplateOutlet"], [1, "ant-timeline-item", "ant-timeline-item-pending"], [1, "ant-timeline-item-tail"], [1, "ant-timeline-item-head", "ant-timeline-item-head-custom", "ant-timeline-item-head-blue"], [4, "nzStringTemplateOutlet"], [1, "ant-timeline-item-content"], ["nzType", "loading"]],
@@ -7018,7 +6994,7 @@ var NzTimelineModule = _NzTimelineModule;
 })();
 
 // projects/tot/business-dashboard/src/lib/tracing/tracing.component.ts
-var _c09 = () => ["/modules/cqrs-dashboard"];
+var _c08 = () => ["/modules/cqrs-dashboard"];
 function TracingComponent_div_9_ng_container_1_div_17_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 21);
@@ -7205,7 +7181,7 @@ _TracingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type
   if (rf & 2) {
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(1, 9, "Theo d\xF5i lu\u1ED3ng tin nh\u1EAFn"))("nzSubtitle", ctx.trackingId);
     \u0275\u0275advance(3);
-    \u0275\u0275property("routerLink", \u0275\u0275pureFunction0(17, _c09));
+    \u0275\u0275property("routerLink", \u0275\u0275pureFunction0(17, _c08));
     \u0275\u0275advance();
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 11, "Quay l\u1EA1i Dashboard"));
     \u0275\u0275advance(3);
@@ -7332,4 +7308,4 @@ export {
   DashboardComponent,
   TracingComponent
 };
-//# sourceMappingURL=chunk-N27E6RDI.js.map
+//# sourceMappingURL=chunk-ZY5VVY47.js.map

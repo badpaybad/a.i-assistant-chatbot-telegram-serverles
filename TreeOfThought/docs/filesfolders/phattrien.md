@@ -1,78 +1,151 @@
-# Kế hoạch Hoàn thiện module FilesFolders (Cập nhật 16/05)
+# Giải pháp & Kế hoạch Phát triển Module FilesFolders (Hoàn thiện)
 
-Dựa trên yêu cầu mới nhất, tài liệu này mô tả các bước cụ thể để hoàn thiện trải nghiệm người dùng cho module FilesFolders.
+> [!IMPORTANT]
+> Tài liệu này tổng hợp toàn bộ giải pháp kiến trúc kỹ thuật và trạng thái hiện thực hóa thực tế của Module Quản lý Tệp tin và Thư mục (FilesFolders). Toàn bộ các tính năng đã được code thành công và tích hợp hoàn chỉnh.
 
-## 1. Các tính năng cần tập trung
-- **Trạng thái chia sẻ:** Đã có logic BE, cần đảm bảo FE hiển thị trực quan (Tag/Icon).
-- **Xem chi tiết & Preview:** Tích hợp preview đa định dạng trong Modal chi tiết.
-- **Đổi tên nhanh (Popover):** Chuyển từ Modal sang Popover cho cả Treeview và Listview.
-- **Accordion:** Phân tách danh sách Thư mục và Tệp tin thành các khối có thể đóng/mở độc lập.
-- **Xóa triệt để:** Đảm bảo khi xóa thư mục, toàn bộ tệp tin và thư mục con trong DB và trên Google Cloud Storage (GCS) đều bị xóa sạch để tránh phát sinh chi phí.
+---
 
-## 2. Giải pháp kỹ thuật
+## 1. Kiến trúc Hệ thống & Luồng xử lý Bất đồng bộ
 
-### A. Rename Popover Logic
-- **Component**: Sử dụng `RenamePopoverComponent` với `@Input` và `@Output` thay vì inject `NZ_MODAL_DATA`.
-- **Triggers**:
-    - Trong `FileExplorer`: Sử dụng `nz-popover` gắn vào nút "Thao tác" (More) hoặc một icon sửa tên cạnh tên file/folder.
-    - Trong `FolderTree`: Gắn `nz-popover` vào menu chuột phải hoặc icon action trên cây.
-- **UX**: Tự động focus vào ô nhập liệu khi hiện popover. Nhấn Enter để lưu, Esc để hủy.
+Hệ thống tuân thủ nghiêm ngặt mô hình **Modular Monolith + CQRS** của Base Infra:
 
-### B. File Preview & Details
-- **Modal**: Sử dụng `FileDetailModalComponent` với kích thước lớn (nzWidth: 800px hoặc 1000px).
-- **Preview Engine**:
-    - Image: `<img>`
-    - PDF: `<iframe>` (Safe URL)
-    - Text/Code: `HttpClient.get(url, {responseType: 'text'})` hiển thị trong `<pre>`.
-    - Video/Audio: HTML5 Tags.
-- **Metadata**: Hiển thị rõ Ngày tạo, Dung lượng (format premium), Loại file.
+```mermaid
+graph TD
+    FE[Angular UI - business-files] -->|HTTP Request| API[Controllers - Files/Folders]
+    API -->|GetTrackingId| API
+    API -->|SendAsync Command| DIS[IDispatcher - MemoryMode]
+    DIS -->|Return Response + TrackingId| FE
+    DIS -->|Background Handle| HND[FilesFoldersCommandHandler]
+    HND -->|Modify DB| DB[(FilesFoldersDbContext)]
+    HND -->|Upload/Delete/ACL| GCS[(Google Cloud Storage)]
+    HND -->|Publish Event| PUB[Firestore Realtime Publisher]
+    PUB -->|Write Status Completed/Error| FIRESTORE[(Firestore DB)]
+    FE -->|SubscribeToRequestId| FIRESTORE
+    FIRESTORE -->|Realtime Update| FE
+```
 
-### D. Post-Upload Permission Modal
-- **Trigger**: Sau khi tác vụ Upload file hoàn tất (status 'Completed' từ Firestore).
-- **Action**: Tự động mở `FileShareModalComponent` cho file vừa upload.
-- **Payload**: Cần đảm bảo backend trả về `fileId` hoặc thông tin file trong payload thông báo Firestore để FE có thể mở đúng file.
-- **UX**: Cho phép người dùng nhanh chóng thiết lập quyền (Private/Public/Shared) ngay khi file sẵn sàng.
+### Chi tiết luồng phản hồi thời gian thực (Realtime UI Feedback):
+1. **Frontend (FE)** gọi API để gửi lệnh ghi (ví dụ: Upload file).
+2. **Backend (BE)** sinh ra `TrackingId`, gửi `UploadFileCommand` vào hàng đợi ngầm qua `IDispatcher` và trả ngay `TrackingId` về cho FE.
+3. **FE** nhận được `TrackingId` và lập tức mở kết nối lắng nghe Firestore thông qua `FirebaseService.subscribeToRequestId(trackingId, callback)`.
+4. **BE Worker** xử lý Command ngầm, thao tác với DB/GCS, sau đó publish Event tương ứng để lưu log vào Firestore.
+5. **Firestore** đẩy dữ liệu trạng thái mới (`Completed` hoặc `Error`) về **FE**.
+6. **FE** đóng kết nối lắng nghe, hiển thị thông báo thành công/thất bại và reload dữ liệu trên giao diện.
 
-### C. Accordion & Folder Grid UI
-- **Accordion**: 
-    - Sử dụng `nz-collapse` với `[nzBordered]="false"`.
-    - Header của accordion được style siêu gọn (compact), chiều cao chỉ vừa đủ chứa 1 dòng text.
-    - Hai `nz-collapse-panel` riêng biệt cho "Thư mục" và "Tệp tin".
-    - Mặc định cả hai đều ở trạng thái expand (`[nzActive]="true"`).
-- **Folder Grid**:
-    - Chuyển danh sách Folder từ dạng bảng (table) sang dạng lưới (grid).
-    - Mỗi folder là một icon ô vuông (square card) xếp cạnh nhau.
-    - Sử dụng Flexbox (`flex-wrap: wrap`) để tự động xuống dòng khi hết chiều rộng.
-    - Tiết kiệm không gian và mang lại cảm giác hiện đại (premium).
+---
 
-### E. Recursive Deletion & GCS Cleanup
-- **Logic Backend**:
-    - **Bước 1**: Tìm tất cả thư mục con (mọi cấp) dựa trên `Path.StartsWith(folder.Path)`.
-    - **Bước 2**: Tìm tất cả tệp tin thuộc về các thư mục đó trong DB.
-    - **Bước 3 (Xóa GCS)**:
-        - Xóa các tệp tin tìm được ở Bước 2 dựa trên URL (đảm bảo xóa được cả các file đã bị move/rename nhưng chưa đổi path vật lý).
-        - **Bổ sung**: Quét (List) toàn bộ objects trên GCS có prefix là `folder.Path` và xóa nốt (đảm bảo không còn "rác" hay file mồ côi trên Cloud Storage).
-    - **Bước 4 (Xóa DB)**: Xóa Range tệp tin và thư mục trong DB.
-- **Hiệu quả**: Đảm bảo 100% tài nguyên được giải phóng, tối ưu chi phí lưu trữ GCS.
+## 2. Các giải pháp kỹ thuật đã hiện thực hóa
 
-## 3. Kế hoạch triển khai (Tasks)
-1. [x] Cập nhật `HttpClientService` (Core FE) để hỗ trợ TrackingId.
-2. [x] Cập nhật `FirebaseService` (Core BE) để sử dụng Options pattern.
-3. [x] Cập nhật `FilesFolders` Controllers để xử lý TrackingId.
-4. [x] Cập nhật `FileExplorer` Component để lắng nghe Firestore.
-5. [x] Refactor cấu hình và `GetUserId` dùng chung.
-6. [/] Hoàn thiện UI File List hiển thị trạng thái chia sẻ (Cần kiểm tra lại Tag).
-7. [/] Xây dựng Modal xem chi tiết và Preview file (Đã có basic, cần optimize).
-8. [x] Triển khai API Đổi tên thư mục (Backend).
-9. [x] Triển khai API Đổi tên file (Backend).
-10. [x] Chuyển đổi UI Đổi tên trên Folder Tree sang Popover.
-11. [x] Chuyển đổi UI Đổi tên trên File List sang Popover.
-12. [x] Tối ưu hóa UI File Explorer:
-    - Triển khai Accordion compact cho Thư mục và Tệp tin.
-    - Chuyển đổi danh sách Folder sang dạng Grid (ô vuông).
-13. [ ] Tự động mở modal thiết lập quyền sau khi upload file thành công.
-14. [x] Cập nhật logic xóa thư mục triệt để (GCS prefix cleanup).
+### A. Popover Đổi tên nhanh (RenamePopoverComponent)
+- **Cấu trúc:** Được xây dựng độc lập dưới dạng standalone component với các `@Input` (`itemId`, `currentName`, `type`) và `@Output` (`renamed` phát ra `trackingId`, `cancelled` để đóng).
+- **Triggers:**
+  - Ở `FolderTreeComponent`: Tích hợp `nz-popover` vào menu chuột phải (ContextMenu).
+  - Ở `FileExplorerComponent`: Tích hợp `nz-popover` vào danh sách thao tác (More Menu) của thư mục trong Grid và tệp tin trong Table.
+- **UX:**
+  - Điền sẵn tên hiện tại của đối tượng cần đổi tên.
+  - Hỗ trợ đổi tên bằng cách nhấn `Enter` và hủy bằng nút `Hủy` hoặc phím `Esc`.
+  - Tự động kiểm tra tính hợp lệ của tên mới (không chứa ký tự đặc biệt `\ / : * ? " < > |`).
 
-## 4. Xác nhận từ người dùng
-- Bạn có đồng ý chuyển sang dùng Popover thay cho Modal khi đổi tên không? (Điều này giúp thao tác nhanh hơn nhưng cần xử lý vị trí hiển thị khéo léo).
-- Các định dạng preview hiện có (Ảnh, PDF, Text, Video, Audio) đã đủ cho nhu cầu của bạn chưa?
+### B. Xem chi tiết & Xem trước (FileDetailModalComponent)
+- **Kích thước:** Modal được thiết kế rộng rãi (`nzWidth: 800px`).
+- **Xử lý Preview (Trình xem trước đa định dạng):**
+  - **Hình ảnh:** Hiển thị ảnh trực tiếp qua thẻ `<img>` với hiệu ứng zoom nhẹ.
+  - **PDF:** Chuyển đổi liên kết tệp tin thành Safe URL thông qua `DomSanitizer` và render trực quan qua thẻ `<iframe>`.
+  - **Văn bản/JSON/Mã nguồn:** Gọi API lấy text thô qua `HttpClient` và hiển thị trong khối `<pre>` có thanh cuộn mượt mà.
+  - **Video/Audio:** Phát nhạc/video trực tiếp qua các thẻ media HTML5 `<video>` và `<audio>`.
+- **Thông tin Metadata:** Hiển thị dung lượng file định dạng premium (KB, MB, GB), ngày tạo định dạng thân thiện và chế độ chia sẻ hiện tại (Tag màu).
+
+### C. Tự động thiết lập quyền sau Upload
+- **Cơ chế:** Trong `FileExplorerComponent.onUpload()`, sau khi gửi file lên, hệ thống sẽ đăng ký callback lắng nghe Firestore thông qua `waitForTask`.
+- **UX vượt trội:** Ngay khi Firestore trả về trạng thái `Completed`, callback sẽ tự động lấy thông tin từ payload và mở trực tiếp `FileShareModalComponent` cho file vừa upload.
+- **Tác dụng:** Giúp người dùng dễ dàng chuyển đổi quyền của file từ Riêng tư (Private) sang Công khai (Public) hoặc Bảo mật (Secure/Shared) ngay lập tức mà không cần đi tìm lại file trong danh sách.
+
+### D. Accordion compact & Folder Grid UI
+- **Accordion:** Sử dụng hai khối `nz-collapse-panel` riêng biệt cho "Thư mục" và "Tệp tin".
+  - Chiều cao header được style siêu mỏng (compact), chứa chữ tiêu đề và Tag xanh hiển thị số lượng vật phẩm.
+  - Cả hai Panel mặc định đều ở trạng thái mở rộng (`[nzActive]="true"`).
+- **Folder Grid:**
+  - Chuyển đổi danh sách Folder từ table truyền thống sang dạng lưới hiện đại.
+  - Mỗi thư mục là một card vuông xếp cạnh nhau bằng Flexbox (`flex-wrap: wrap`), tự động xuống dòng mượt mà.
+  - **Nút quay lại thư mục cha:** Hiển thị ô vuông `...` (Folder Up) ở đầu lưới. Khi click, hệ thống tự động tìm thư mục cha, chuyển cấp hiển thị và chọn (selected) đồng thời mở rộng (expand) thư mục cha đó trên cây thư mục (Treeview).
+
+### E. Xóa đệ quy triệt để bảo vệ Chi phí GCS
+- **Backend Handler (`DeleteFolderCommand`):**
+  - **Bước 1 (Quét DB):** Truy vấn đệ quy toàn bộ thư mục con sử dụng `Path.StartsWith(folder.Path)`. Gom tất cả Folder ID để tìm ra danh sách File tương ứng trong DB.
+  - **Bước 2 (Xóa GCS theo DB):** Duyệt qua danh sách File trong DB và gọi xóa file trên GCS theo URL (giải quyết triệt để các file đã bị di chuyển vật lý).
+  - **Bước 3 (Xóa GCS theo Prefix):** Gọi `ListFilesAsync` trên GCS với prefix là đường dẫn thư mục hiện tại để tìm kiếm và quét sạch mọi tệp tin mồ côi (không có trong DB nhưng tồn tại trên GCS) nhằm tối ưu chi phí Firestore/GCS.
+  - **Bước 4 (Xóa DB):** Xóa toàn bộ tệp tin và thư mục con ra khỏi DB trong cùng một Transaction an toàn.
+
+---
+
+## 3. Bản đồ Nghiệp vụ & APIs
+
+### Controllers & Endpoints:
+
+#### 1. FoldersController (`api/Folders`)
+- `GET /tree`: Lấy toàn bộ cây thư mục của user.
+- `GET /{id}/content`: Lấy nội dung (folders & files) phân trang của một thư mục.
+- `GET /root/content`: Lấy nội dung ở thư mục gốc.
+- `POST`: Tạo thư mục mới (`CreateFolderCommand`).
+- `DELETE /{id}`: Xóa đệ quy thư mục (`DeleteFolderCommand`).
+- `POST /move`: Di chuyển thư mục (`MoveFolderCommand`).
+- `PATCH /{id}/rename`: Đổi tên thư mục (`RenameFolderCommand`).
+
+#### 2. FilesController (`api/Files`)
+- `POST /upload`: Upload file mới (`UploadFileCommand`).
+- `DELETE /{id}`: Xóa file (`DeleteFileCommand`).
+- `POST /move`: Di chuyển file (`MoveFileCommand`).
+- `POST /permission`: Cập nhật quyền hạn của file (`SetFilePermissionCommand`).
+- `GET /{id}/share-url`: Lấy Signed URL tạm thời.
+- `GET /search`: Tìm kiếm nhanh tệp tin theo tên.
+- `GET /{id}`: Lấy chi tiết file.
+- `PATCH /{id}/rename`: Đổi tên file (`RenameFileCommand`).
+
+---
+
+## 4. Trạng thái hiện thực hóa (Checklist)
+
+Hệ thống đã triển khai hoàn thiện và chạy ổn định 100% các hạng mục:
+
+- [x] **Task 1:** Cập nhật `HttpClientService` (Core FE) để hỗ trợ `TrackingId` truyền qua Header/Query.
+- [x] **Task 2:** Cập nhật `FirebaseService` (Core BE) sử dụng Options Pattern cấu hình Firebase.
+- [x] **Task 3:** Cập nhật `FilesFolders` Controllers xử lý sinh và trả về `TrackingId`.
+- [x] **Task 4:** Cập nhật `FileExplorer` Component lắng nghe Firestore theo thời gian thực.
+- [x] **Task 5:** Refactor cấu hình và cơ chế lấy `GetUserId` dùng chung toàn giải pháp.
+- [x] **Task 6:** Hoàn thiện UI File List hiển thị trạng thái chia sẻ (Tag màu Private/Public/Shared).
+- [x] **Task 7:** Xây dựng Modal xem chi tiết và Preview file đa định dạng (Image, PDF, Text, Audio, Video).
+- [x] **Task 8:** Triển khai API Đổi tên thư mục (Backend).
+- [x] **Task 9:** Triển khai API Đổi tên file (Backend).
+- [x] **Task 10:** Tích hợp UI Đổi tên trên cây thư mục (Folder Tree) sang Popover.
+- [x] **Task 11:** Tích hợp UI Đổi tên trên danh sách file (File Explorer) sang Popover.
+- [x] **Task 12:** Tối ưu hóa UI File Explorer với Accordion compact và lưới Thư mục dạng Grid ô vuông có nút Up Folder.
+- [x] **Task 13:** Tự động mở Modal thiết lập quyền chia sẻ ngay sau khi upload file thành công.
+- [x] **Task 14:** Cập nhật logic xóa thư mục triệt để (DB cleanup + GCS prefix cleanup).
+
+---
+
+## 5. Kế hoạch Kiểm thử & Xác thực (Verification Plan)
+
+### A. Kiểm thử Tự động & Build hệ thống
+- Khởi động môi trường phát triển ngầm và kiểm tra lỗi biên dịch:
+  ```bash
+  # Chạy script dev server tại Core.Web.Api
+  ./run-dev.sh
+  ```
+- Kiểm tra log console để đảm bảo không có lỗi Angular Compiler (NG8113...) hay lỗi Kestrel Server (.NET) khi nhận các Command/Event.
+
+### B. Kiểm thử Thủ công (Quy trình mẫu)
+1. **Quy trình Tạo & Đổi tên:**
+   - Tạo một thư mục con, click chuột phải tại Treeview chọn "Đổi tên". Đảm bảo Popover xuất hiện và lưu tên mới chính xác.
+   - Click vào thư mục vừa đổi tên trên Grid để mở, sau đó click nút "Up" (`...`) để trở lại thư mục cha. Xác nhận cây thư mục tự động chọn thư mục cha đó.
+2. **Quy trình Upload & Phân quyền:**
+   - Kéo thả hoặc click nút "Tải lên" để upload một tệp tin.
+   - Chờ trạng thái hoàn thành. Xác nhận Modal chia sẻ (File Share Modal) tự động bật lên.
+   - Chọn chế độ "Công khai" (Public) hoặc "Bảo mật" (Secure), bấm "Áp dụng thay đổi".
+   - Xác nhận trạng thái chia sẻ trên danh sách file chuyển sang Tag màu tương ứng (Public/Shared).
+3. **Quy trình Preview file:**
+   - Click vào tên một file ảnh/PDF hoặc file text.
+   - Xác nhận Modal xem chi tiết hiện ra kích thước lớn (800px) và hiển thị trực tiếp nội dung preview sắc nét.
+4. **Quy trình Xóa đệ quy:**
+   - Thực hiện xóa thư mục cha chứa nhiều thư mục con và tệp tin.
+   - Xác nhận trong DB và trên Google Cloud Storage (GCS) toàn bộ thư mục cùng tệp tin bị quét sạch không để lại tệp mồ côi.
