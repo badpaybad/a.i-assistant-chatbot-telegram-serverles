@@ -315,9 +315,13 @@ var _AuthManagementService = class _AuthManagementService {
   syncClaims(version, claims) {
     return this.http.post("/api/Auth/claims/sync", { version, claims });
   }
-  // ACL Management
-  getAcl(resourceType, resourceId) {
-    return this.http.get(`${this.BASE_URL}/acl`, { params: { resourceType, resourceId } });
+  getAcl(resourceType, resourceId, pageIndex, pageSize) {
+    const params = { resourceType, resourceId };
+    if (pageIndex)
+      params.pageIndex = pageIndex;
+    if (pageSize)
+      params.pageSize = pageSize;
+    return this.http.get(`${this.BASE_URL}/acl`, { params });
   }
   addAcl(entry) {
     return this.http.post(`${this.BASE_URL}/acl`, entry);
@@ -767,8 +771,8 @@ function UserListComponent_ng_template_44_Template(rf, ctx) {
       const data_r9 = \u0275\u0275restoreView(_r8).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
       const avatarInput_r10 = \u0275\u0275reference(53);
-      avatarInput_r10.click();
-      return \u0275\u0275resetView(ctx_r2.selectedUserForAvatar = data_r9);
+      ctx_r2.selectedUserForAvatar = data_r9;
+      return \u0275\u0275resetView(avatarInput_r10.click());
     });
     \u0275\u0275element(1, "nz-avatar", 44);
     \u0275\u0275elementStart(2, "div", 45);
@@ -1128,6 +1132,7 @@ var _UserListComponent = class _UserListComponent {
     this.message = inject(NzMessageService);
     this.modal = inject(NzModalService);
     this.translate = inject(TranslocoService);
+    this.cdr = inject(ChangeDetectorRef);
     this.users = [];
     this.loading = false;
     this.syncingClaims = false;
@@ -1379,11 +1384,12 @@ var _UserListComponent = class _UserListComponent {
     const loadingMsg = this.message.loading(this.translate.translate("\u0110ang t\u1EA3i l\xEAn..."), { nzDuration: 0 }).messageId;
     try {
       const result = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
-      this.selectedUserForAvatar.avatarUrl = result.url;
       this.message.success(this.translate.translate("C\u1EADp nh\u1EADt \u1EA3nh \u0111\u1EA1i di\u1EC7n th\xE0nh c\xF4ng"));
       const index = this.users.findIndex((u) => u.id === this.selectedUserForAvatar.id);
       if (index !== -1) {
-        this.users[index].avatarUrl = result.url;
+        this.users[index] = __spreadProps(__spreadValues({}, this.users[index]), { avatarUrl: result.url });
+        this.users = [...this.users];
+        this.cdr.detectChanges();
       }
     } catch (e) {
       this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i l\xEAn \u1EA3nh \u0111\u1EA1i di\u1EC7n"));
@@ -1789,7 +1795,7 @@ var UserListComponent = _UserListComponent;
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="avatar" let-data>
-        <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
+        <div class="avatar-wrapper" (click)="selectedUserForAvatar = data; avatarInput.click()">
           <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
           <div class="avatar-mask">
             <span nz-icon nzType="camera"></span>
@@ -2960,6 +2966,9 @@ var _AclListComponent = class _AclListComponent {
     this.translate = inject(TranslocoService);
     this.aclEntries = [];
     this.loading = false;
+    this.pageIndex = 1;
+    this.pageSize = 10;
+    this.totalAcl = 0;
     this.filter = { resourceType: "", resourceId: "" };
     this.isCreateModalVisible = false;
     this.newEntry = { subjectType: "user", userId: "", roleId: "", resourceType: "", resourceId: "", permissionMask: 0 };
@@ -2984,8 +2993,10 @@ var _AclListComponent = class _AclListComponent {
   }
   async loadMetadata() {
     try {
-      this.availableUsers = await this.authMgmt.getUsers();
-      this.availableRoles = await this.authMgmt.getRoles();
+      const usersRes = await this.authMgmt.getUsers();
+      this.availableUsers = usersRes.items || [];
+      const rolesRes = await this.authMgmt.getRoles();
+      this.availableRoles = rolesRes.items || [];
     } catch (e) {
     }
   }
@@ -2999,12 +3010,20 @@ var _AclListComponent = class _AclListComponent {
     }
     this.loading = true;
     try {
-      this.aclEntries = await this.authMgmt.getAcl(this.filter.resourceType, this.filter.resourceId);
+      const res = await this.authMgmt.getAcl(this.filter.resourceType, this.filter.resourceId, this.pageIndex, this.pageSize);
+      this.aclEntries = res.items || [];
+      this.totalAcl = res.total || 0;
     } catch (e) {
       this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i danh s\xE1ch ACL"));
     } finally {
       this.loading = false;
     }
+  }
+  onQueryParamsChange(params) {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadAcl();
   }
   showCreateModal() {
     this.newEntry = { subjectType: "user", userId: "", roleId: "", resourceType: this.filter.resourceType, resourceId: this.filter.resourceId, permissionMask: 0 };
@@ -3058,7 +3077,7 @@ var _AclListComponent = class _AclListComponent {
 _AclListComponent.\u0275fac = function AclListComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _AclListComponent)();
 };
-_AclListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AclListComponent, selectors: [["app-acl-list"]], decls: 35, vars: 34, consts: [[1, "page-header"], [1, "filter-card"], [1, "filter-box"], [1, "filter-item"], [1, "label"], ["nz-input", "", 2, "width", "150px", 3, "ngModelChange", "ngModel", "placeholder"], ["nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "search"], ["nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "plus"], [3, "data", "columns", "loading", "title", "frontPagination"], ["totCell", "subject"], ["totCell", "resource"], ["totCell", "mask"], ["totCell", "action"], [3, "nzVisibleChange", "nzOnCancel", "nzOnOk", "nzVisible", "nzTitle"], [4, "nzModalContent"], ["class", "subject-info", 4, "ngIf"], [1, "subject-info"], ["nz-icon", "", "nzType", "user"], ["nz-icon", "", "nzType", "team"], [1, "mask-display"], [1, "mask-value"], [1, "mask-details"], ["nzColor", "blue", 4, "ngIf"], ["nzColor", "green", 4, "ngIf"], ["nzColor", "red", 4, "ngIf"], ["nzColor", "orange", 4, "ngIf"], ["nzColor", "blue"], ["nzColor", "green"], ["nzColor", "red"], ["nzColor", "orange"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzDanger"], ["nz-form", "", "nzLayout", "vertical"], [3, "nzSpan"], ["name", "subjectType", 3, "ngModelChange", "ngModel"], ["nz-radio", "", "nzValue", "user"], ["nz-radio", "", "nzValue", "role"], [4, "ngIf"], [2, "display", "flex", "gap", "8px"], ["nz-input", "", "name", "resType", 2, "width", "120px", 3, "ngModelChange", "ngModel", "placeholder"], ["nz-input", "", "name", "resId", 2, "flex", "1", 3, "ngModelChange", "ngModel", "placeholder"], ["name", "perms", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/users", "labelField", "username", "name", "userId", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "name", "roleId", 3, "ngModelChange", "placeholder", "ngModel"]], template: function AclListComponent_Template(rf, ctx) {
+_AclListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AclListComponent, selectors: [["app-acl-list"]], decls: 35, vars: 37, consts: [[1, "page-header"], [1, "filter-card"], [1, "filter-box"], [1, "filter-item"], [1, "label"], ["nz-input", "", 2, "width", "150px", 3, "ngModelChange", "ngModel", "placeholder"], ["nzType", "primary", 3, "click"], ["nz-icon", "", "nzType", "search"], ["nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "plus"], [3, "queryParamsChange", "data", "columns", "loading", "title", "frontPagination", "pageIndex", "pageSize", "total"], ["totCell", "subject"], ["totCell", "resource"], ["totCell", "mask"], ["totCell", "action"], [3, "nzVisibleChange", "nzOnCancel", "nzOnOk", "nzVisible", "nzTitle"], [4, "nzModalContent"], ["class", "subject-info", 4, "ngIf"], [1, "subject-info"], ["nz-icon", "", "nzType", "user"], ["nz-icon", "", "nzType", "team"], [1, "mask-display"], [1, "mask-value"], [1, "mask-details"], ["nzColor", "blue", 4, "ngIf"], ["nzColor", "green", 4, "ngIf"], ["nzColor", "red", 4, "ngIf"], ["nzColor", "orange", 4, "ngIf"], ["nzColor", "blue"], ["nzColor", "green"], ["nzColor", "red"], ["nzColor", "orange"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzDanger"], ["nz-form", "", "nzLayout", "vertical"], [3, "nzSpan"], ["name", "subjectType", 3, "ngModelChange", "ngModel"], ["nz-radio", "", "nzValue", "user"], ["nz-radio", "", "nzValue", "role"], [4, "ngIf"], [2, "display", "flex", "gap", "8px"], ["nz-input", "", "name", "resType", 2, "width", "120px", 3, "ngModelChange", "ngModel", "placeholder"], ["nz-input", "", "name", "resId", 2, "flex", "1", 3, "ngModelChange", "ngModel", "placeholder"], ["name", "perms", 3, "ngModelChange", "ngModel"], ["apiUrl", "/api/AuthManagement/users", "labelField", "username", "name", "userId", 3, "ngModelChange", "placeholder", "ngModel"], ["apiUrl", "/api/AuthManagement/roles", "name", "roleId", 3, "ngModelChange", "placeholder", "ngModel"]], template: function AclListComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "h2");
     \u0275\u0275text(2);
@@ -3104,6 +3123,9 @@ _AclListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type
     \u0275\u0275elementEnd()()()();
     \u0275\u0275elementStart(26, "tot-table", 10);
     \u0275\u0275pipe(27, "transloco");
+    \u0275\u0275listener("queryParamsChange", function AclListComponent_Template_tot_table_queryParamsChange_26_listener($event) {
+      return ctx.onQueryParamsChange($event);
+    });
     \u0275\u0275template(28, AclListComponent_ng_template_28_Template, 2, 2, "ng-template", 11)(29, AclListComponent_ng_template_29_Template, 4, 2, "ng-template", 12)(30, AclListComponent_ng_template_30_Template, 8, 5, "ng-template", 13)(31, AclListComponent_ng_template_31_Template, 3, 4, "ng-template", 14);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(32, "nz-modal", 15);
@@ -3122,26 +3144,26 @@ _AclListComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type
   }
   if (rf & 2) {
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 16, "Qu\u1EA3n l\xFD ACL"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 19, "Qu\u1EA3n l\xFD ACL"));
     \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(9, 18, "Lo\u1EA1i t\xE0i nguy\xEAn"), ":");
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(9, 21, "Lo\u1EA1i t\xE0i nguy\xEAn"), ":");
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx.filter.resourceType);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(11, 20, "V\xED d\u1EE5: order"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(11, 23, "V\xED d\u1EE5: order"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(15, 22, "ID t\xE0i nguy\xEAn"), ":");
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(15, 25, "ID t\xE0i nguy\xEAn"), ":");
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx.filter.resourceId);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(17, 24, "V\xED d\u1EE5: 123 ho\u1EB7c *"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(17, 27, "V\xED d\u1EE5: 123 ho\u1EB7c *"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(21, 26, "T\xECm ki\u1EBFm..."), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(21, 29, "T\xECm ki\u1EBFm..."), " ");
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(25, 28, "Th\xEAm m\u1EDBi"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(25, 31, "Th\xEAm m\u1EDBi"), " ");
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx.aclEntries)("columns", ctx.aclColumns)("loading", ctx.loading)("title", \u0275\u0275pipeBind1(27, 30, "Danh s\xE1ch ACL"))("frontPagination", true);
+    \u0275\u0275property("data", ctx.aclEntries)("columns", ctx.aclColumns)("loading", ctx.loading)("title", \u0275\u0275pipeBind1(27, 33, "Danh s\xE1ch ACL"))("frontPagination", false)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("total", ctx.totalAcl);
     \u0275\u0275advance(6);
     \u0275\u0275twoWayProperty("nzVisible", ctx.isCreateModalVisible);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(33, 32, "Th\xEAm m\u1EDBi"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(33, 35, "Th\xEAm m\u1EDBi"));
   }
 }, dependencies: [
   CommonModule,
@@ -3238,7 +3260,17 @@ var AclListComponent = _AclListComponent;
       </nz-card>
     </div>
 
-    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh s\xE1ch ACL' | transloco" [frontPagination]="true">
+    <tot-table 
+      [data]="aclEntries" 
+      [columns]="aclColumns" 
+      [loading]="loading" 
+      [title]="'Danh s\xE1ch ACL' | transloco" 
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalAcl"
+      (queryParamsChange)="onQueryParamsChange($event)"
+    >
       <ng-template totCell="subject" let-data>
         <div *ngIf="data.userId" class="subject-info">
           <span nz-icon nzType="user"></span>
@@ -3335,7 +3367,7 @@ var AclListComponent = _AclListComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AclListComponent, { className: "AclListComponent", filePath: "projects/tot/business-oidc/src/lib/acl-list/acl-list.component.ts", lineNumber: 211 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AclListComponent, { className: "AclListComponent", filePath: "projects/tot/business-oidc/src/lib/acl-list/acl-list.component.ts", lineNumber: 221 });
 })();
 
 // projects/tot/business-oidc/src/lib/claim-sync/claim-sync.component.ts
@@ -7326,4 +7358,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-GOLWR4WT.js.map
+//# sourceMappingURL=chunk-FKA2ZRA4.js.map

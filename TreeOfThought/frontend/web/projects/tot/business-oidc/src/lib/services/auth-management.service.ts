@@ -105,9 +105,11 @@ export class AuthManagementService {
     return this.http.post('/api/Auth/claims/sync', { version, claims });
   }
 
-  // ACL Management
-  getAcl(resourceType: string, resourceId: string) {
-    return this.http.get(`${this.BASE_URL}/acl`, { params: { resourceType, resourceId } });
+  getAcl(resourceType: string, resourceId: string, pageIndex?: number, pageSize?: number) {
+    const params: any = { resourceType, resourceId };
+    if (pageIndex) params.pageIndex = pageIndex;
+    if (pageSize) params.pageSize = pageSize;
+    return this.http.get(`${this.BASE_URL}/acl`, { params });
   }
 
   addAcl(entry: any) {

@@ -454,11 +454,22 @@ public class AuthRepository : IAuthRepository
     }
 
 
-    public async Task<List<AclEntry>> GetAclEntriesAsync(string resourceType, string resourceId)
+    public async Task<(List<AclEntry> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null)
     {
-        return await _context.AclEntries
-            .Where(a => a.ResourceType == resourceType && a.ResourceId == resourceId)
-            .ToListAsync();
+        var query = _context.AclEntries
+            .Where(a => a.ResourceType == resourceType && a.ResourceId == resourceId);
+
+        var totalCount = await query.CountAsync();
+
+        if (pageIndex.HasValue && pageSize.HasValue)
+        {
+            query = query
+                .Skip((pageIndex.Value - 1) * pageSize.Value)
+                .Take(pageSize.Value);
+        }
+
+        var items = await query.ToListAsync();
+        return (items, totalCount);
     }
 
     public async Task<List<AclEntry>> GetUserAclEntriesAsync(Guid userId)

@@ -173,7 +173,7 @@ public class AuthManagementController : ControllerBase
             var fileName = $"avatars/{userId}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
 
             using var stream = file.OpenReadStream();
-            var publicUrl = await _firebaseService.UploadFileAsync(fileName, stream, file.ContentType);
+            var publicUrl = await _firebaseService.UploadFileAsync(fileName, stream, file.ContentType, isPublic: true);
 
             user.AvatarUrl = publicUrl;
             await _authRepo.UpdateUserAsync(user);
@@ -285,9 +285,10 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpGet("acl")]
-    public async Task<IActionResult> GetAcl([FromQuery] string resourceType, [FromQuery] string resourceId)
+    public async Task<IActionResult> GetAcl([FromQuery] string resourceType, [FromQuery] string resourceId, [FromQuery] int? pageIndex = null, [FromQuery] int? pageSize = null)
     {
-        return Ok(await _authRepo.GetAclEntriesAsync(resourceType, resourceId));
+        var (items, totalCount) = await _authRepo.GetAclEntriesAsync(resourceType, resourceId, pageIndex, pageSize);
+        return Ok(new { items, total = totalCount });
     }
 
     [HttpPost("acl")]

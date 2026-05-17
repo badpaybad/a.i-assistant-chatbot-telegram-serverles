@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
@@ -68,7 +68,17 @@ import { ViewChild, TemplateRef } from '@angular/core';
       </nz-card>
     </div>
 
-    <tot-table [data]="aclEntries" [columns]="aclColumns" [loading]="loading" [title]="'Danh sách ACL' | transloco" [frontPagination]="true">
+    <tot-table 
+      [data]="aclEntries" 
+      [columns]="aclColumns" 
+      [loading]="loading" 
+      [title]="'Danh sách ACL' | transloco" 
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalAcl"
+      (queryParamsChange)="onQueryParamsChange($event)"
+    >
       <ng-template totCell="subject" let-data>
         <div *ngIf="data.userId" class="subject-info">
           <span nz-icon nzType="user"></span>
@@ -217,6 +227,10 @@ export class AclListComponent implements OnInit {
   aclEntries: any[] = [];
   loading = false;
   
+  pageIndex = 1;
+  pageSize = 10;
+  totalAcl = 0;
+  
   filter = { resourceType: '', resourceId: '' };
   
   isCreateModalVisible = false;
@@ -246,8 +260,10 @@ export class AclListComponent implements OnInit {
 
   async loadMetadata() {
     try {
-      this.availableUsers = await this.authMgmt.getUsers();
-      this.availableRoles = await this.authMgmt.getRoles();
+      const usersRes: any = await this.authMgmt.getUsers();
+      this.availableUsers = usersRes.items || [];
+      const rolesRes: any = await this.authMgmt.getRoles();
+      this.availableRoles = rolesRes.items || [];
     } catch (e) {}
   }
 
@@ -262,12 +278,21 @@ export class AclListComponent implements OnInit {
     }
     this.loading = true;
     try {
-      this.aclEntries = await this.authMgmt.getAcl(this.filter.resourceType, this.filter.resourceId);
+      const res: any = await this.authMgmt.getAcl(this.filter.resourceType, this.filter.resourceId, this.pageIndex, this.pageSize);
+      this.aclEntries = res.items || [];
+      this.totalAcl = res.total || 0;
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi tải danh sách ACL'));
     } finally {
       this.loading = false;
     }
+  }
+
+  onQueryParamsChange(params: NzTableQueryParams): void {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadAcl();
   }
 
   showCreateModal() {

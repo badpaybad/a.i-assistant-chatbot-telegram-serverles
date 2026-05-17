@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
@@ -136,7 +136,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="avatar" let-data>
-        <div class="avatar-wrapper" (click)="avatarInput.click(); selectedUserForAvatar = data">
+        <div class="avatar-wrapper" (click)="selectedUserForAvatar = data; avatarInput.click()">
           <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="48" class="user-avatar"></nz-avatar>
           <div class="avatar-mask">
             <span nz-icon nzType="camera"></span>
@@ -346,6 +346,7 @@ export class UserListComponent implements OnInit {
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
   private translate = inject(TranslocoService);
+  private cdr = inject(ChangeDetectorRef);
 
   users: any[] = [];
   loading = false;
@@ -618,13 +619,14 @@ export class UserListComponent implements OnInit {
     const loadingMsg = this.message.loading(this.translate.translate('Đang tải lên...'), { nzDuration: 0 }).messageId;
     try {
       const result: any = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
-      this.selectedUserForAvatar.avatarUrl = result.url;
       this.message.success(this.translate.translate('Cập nhật ảnh đại diện thành công'));
       
-      // Update the user in the list locally to avoid full reload
+      // Update the user in the list locally and re-assign array reference to trigger Angular change detection
       const index = this.users.findIndex(u => u.id === this.selectedUserForAvatar.id);
       if (index !== -1) {
-        this.users[index].avatarUrl = result.url;
+        this.users[index] = { ...this.users[index], avatarUrl: result.url };
+        this.users = [...this.users];
+        this.cdr.detectChanges();
       }
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi tải lên ảnh đại diện'));

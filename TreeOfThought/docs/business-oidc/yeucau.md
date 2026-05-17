@@ -135,3 +135,7 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
 - Giao diện đổi mật khẩu cá nhân cho người dùng đang đăng nhập.
 - Yêu cầu nhập: Mật khẩu cũ, Mật khẩu mới (bắt buộc dài tối thiểu 6 ký tự), Xác nhận mật khẩu mới.
 - Hỗ trợ validator so khớp mật khẩu mới và mật khẩu xác nhận tức thì trên UI.
+
+**bug user avartar 2026-05-17 12:49:48**
+Quản lý người dùng, Khi click vào change avatar ảnh đại diện, chọn ảnh nhưng chưa thấy cập nhật 
+cần dùng server side paging
