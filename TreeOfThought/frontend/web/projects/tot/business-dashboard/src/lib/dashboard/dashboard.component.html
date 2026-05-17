@@ -48,7 +48,6 @@
       <label nz-radio-button nzValue="tracking"><i nz-icon nzType="history"></i> {{ 'Theo dõi gần đây' | transloco }}</label>
       <label nz-radio-button nzValue="workers"><i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | transloco }}</label>
       <label nz-radio-button nzValue="activity"><i nz-icon nzType="clock-circle"></i> {{ 'Hoạt động cuối' | transloco }}</label>
-      <label nz-radio-button nzValue="test"><i nz-icon nzType="experiment"></i> {{ 'Kiểm thử CQRS' | transloco }}</label>
     </nz-radio-group>
   </div>
 
@@ -259,9 +258,6 @@
           </ng-template>
         </tot-table>
       </nz-card>
-    </div>
-    <div *ngSwitchCase="'test'">
-      <app-cqrs-test></app-cqrs-test>
     </div>
   </ng-container>
 

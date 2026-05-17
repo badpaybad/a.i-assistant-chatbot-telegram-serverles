@@ -41,3 +41,29 @@ Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần c
         Khi các nghiệp vụ được đưa vào TreeOfThought/backend/Core.Web.Api/ dùng có thể chạy lệnh run-dev.sh ở TreeOfThought/backend/Core.Web.Api/ đọc console log để biết lỗi, và sửa lỗi nếu lỗi.
 
 **Luôn dựa vào yeucau.md để suy nghĩ và đưa ra giải pháp cách làm vào phattrien.md. Luôn cần yêu cầu người dùng xác nhận file phattrien.md trước khi tiến hành**
+
+**cập nhật 2026-05-17 10:45:24**
+việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE vd người dùng dùng skill tot-dev tạo nghiệp vụ: Quản lý version cần tạo quy tắc như sau
+    **quy tắc tạo folder cho module nghiệp vụ**
+        - tên dùng để tạo folder là tiếng việt không dấu vd "Quản lý version" thì sẽ là "quan-ly-version"
+            - docs sẽ có folder TreeOfThought/docs/quan-ly-version
+            - BE sẽ có folder TreeOfThought/backend/quan-ly-version
+            - FE TreeOfThought/frontend/web/projects/tot/quan-ly-version
+
+    ưu tiên **quy tắc tạo folder cho module nghiệp vụ** hơn là trong file docs/yeucau.md cần chỉ ra folder docs, BE, FE là do người dùng quyết định ví dụ, đây là những project có sẵn, các nghiệp vụ mới cần tuân thủ quy tắc tạo folder
+        module nghiệp vụ files and folders    
+            - docs là folder TreeOfThought/docs/filesfolders
+            - BE là folder TreeOfThought/backend/Core.Infra.FilesFolders
+            - FE là TreeOfThought/frontend/web/projects/tot/business-files
+        module nghiệp vụ cqrs dashboard     
+            - docs là folder TreeOfThought/docs/cqrs-dashboard/yeucau.md
+            - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
+            - FE là TreeOfThought/frontend/web/projects/tot/business-dashboard
+        module nghiệp vụ cqrs test     
+            - docs là folder TreeOfThought/docs/cqrs-test/yeucau.md
+            - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
+            - FE là TreeOfThought/frontend/web/projects/tot/business-test
+        module nghiệp vụ cqrs oidc     
+            - docs là folder TreeOfThought/docs/business-oidc/yeucau.md
+            - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
+            - FE là TreeOfThought/frontend/web/projects/tot/business-oidc

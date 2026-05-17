@@ -1,5 +1,10 @@
 # Yêu cầu nghiệp vụ Quản lý Tệp tin và Thư mục (FilesFolders)
 
+    module nghiệp vụ files and folders    
+        - docs là folder TreeOfThought/docs/filesfolders
+        - BE là folder TreeOfThought/backend/Core.Infra.FilesFolders
+        - FE là TreeOfThought/frontend/web/projects/tot/business-files
+        
 ## 1. Mục tiêu
 Xây dựng module quản lý tệp tin và thư mục cá nhân cho người dùng, tích hợp lưu trữ đám mây (Google Cloud Storage) và thông báo trạng thái thời gian thực (Realtime UI Feedback).
 

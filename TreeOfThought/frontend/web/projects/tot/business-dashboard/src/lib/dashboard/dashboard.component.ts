@@ -27,7 +27,6 @@ import { MessageListComponent } from '../message-list/message-list.component';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
 import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
-import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
 
 @Component({
   selector: 'app-dashboard',
@@ -56,8 +55,7 @@ import { CqrsTestComponent } from '../cqrs-test/cqrs-test.component';
     TranslocoModule,
     TotButtonComponent,
     TotTableComponent,
-    TotCellDirective,
-    CqrsTestComponent
+    TotCellDirective
   ],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
@@ -77,7 +75,7 @@ export class DashboardComponent implements OnInit {
   lastActivityList: LastActivity[] = [];
   loading = false;
 
-  activeTab: 'queues' | 'tracking' | 'workers' | 'test' | 'activity' = 'queues';
+  activeTab: 'queues' | 'tracking' | 'workers' | 'activity' = 'queues';
 
   refreshInterval = 0;
   refreshIntervals = [

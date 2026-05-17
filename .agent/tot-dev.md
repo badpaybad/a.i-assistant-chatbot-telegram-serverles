@@ -49,3 +49,41 @@ Dùng thông tin này để phát triển, sửa lỗi, hỏi đáp và làm rõ
 
 **QUAN TRỌNG:** Luôn dựa vào `yeucau.md` để suy nghĩ và đưa ra giải pháp vào `phattrien.md`. **LUÔN LUÔN yêu cầu người dùng xác nhận file `phattrien.md` trước khi tiến hành.**
 
+## 5. Quy tắc đặt tên và cấu trúc Folder Nghiệp vụ
+
+Để đảm bảo tính nhất quán trên toàn bộ hệ thống (Docs, BE, FE), việc tạo folder cho nghiệp vụ mới hoặc tham chiếu đến nghiệp vụ sẵn có phải tuân theo quy định dưới đây:
+
+### A. Quy tắc đặt tên folder nghiệp vụ mới
+- **Tên folder:** Sử dụng tiếng Việt không dấu, các từ nối với nhau bằng dấu gạch ngang `-` (kebab-case).
+  - *Ví dụ:* Nghiệp vụ "Quản lý version" -> tên folder sẽ là `quan-ly-version`.
+- **Cấu trúc lưu trữ:**
+  - **Docs:** `TreeOfThought/docs/quan-ly-version`
+  - **Backend (BE):** `TreeOfThought/backend/quan-ly-version`
+  - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/quan-ly-version`
+
+*Lưu ý:* Quy tắc này được ưu tiên hàng đầu cho các nghiệp vụ mới, thay thế cho bất kỳ chỉ dẫn folder tùy ý nào khác.
+
+### B. Danh sách Module nghiệp vụ sẵn có (Ngoại lệ)
+Các nghiệp vụ đã được triển khai từ trước có cấu trúc folder riêng và cần được giữ nguyên như sau:
+
+1. **Module Files and Folders:**
+   - **Docs:** `TreeOfThought/docs/filesfolders`
+   - **Backend (BE):** `TreeOfThought/backend/Core.Infra.FilesFolders`
+   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-files`
+
+2. **Module CQRS Dashboard:**
+   - **Docs:** `TreeOfThought/docs/cqrs-dashboard/yeucau.md`
+   - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
+   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-dashboard`
+
+3. **Module CQRS Test:**
+   - **Docs:** `TreeOfThought/docs/cqrs-test/yeucau.md`
+   - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
+   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-test`
+
+4. **Module CQRS OIDC:**
+   - **Docs:** `TreeOfThought/docs/business-oidc/yeucau.md`
+   - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
+   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-oidc`
+
+

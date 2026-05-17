@@ -58,7 +58,7 @@ export class MenuService {
       children: [
         { label: 'Firestore', route: '/modules/test/firestore' },
         { label: 'FCM', route: '/modules/test/fcm' },
-        { label: 'CQRS', route: '/modules/cqrs-dashboard/cqrs' },
+        { label: 'CQRS', route: '/modules/test/cqrs' },
         { label: 'Editor', route: '/modules/test/editor' },
       ],
     },

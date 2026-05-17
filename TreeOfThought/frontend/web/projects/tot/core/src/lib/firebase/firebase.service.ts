@@ -123,20 +123,24 @@ export class FirebaseService {
   subscribeOnce(requestId: string, callback: (data: any) => void) {
     const docRef = doc(this.db, 'commandresults', requestId);
     const unsubscribe = onSnapshot(docRef, async (snapshot) => {
-      
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        callback(data);
+        try {
+          // Thực hiện logic
+          const data = snapshot.data();
+          callback(data);
 
-        // Stop listening immediately after receiving data
-        unsubscribe();
-      }
-
-      try {
-        // Cleanup Firestore record
-        await deleteDoc(docRef);
-      } catch (e) {
-        console.error('Failed to delete Firestore document after receipt', e);
+          // Stop listening immediately after receiving data
+          unsubscribe();
+        } catch (error) {
+          console.error('Xử lý lỗi nếu có:', error);
+        } finally {
+          try {
+            // Cleanup Firestore record
+            await deleteDoc(docRef);
+          } catch (e) {
+            console.error('Failed to delete Firestore document after receipt', e);
+          }
+        }
       }
     });
     return unsubscribe;

@@ -33,11 +33,6 @@ export const routes: Routes = [
             loadComponent: () => import('@tot/business-dashboard').then(m => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Messages' }
-          },
-          { 
-            path: 'cqrs', 
-            loadComponent: () => import('@tot/business-dashboard').then(m => m.CqrsTestComponent),
-            data: { breadcrumb: 'CQRS Test' }
           }
         ]
       },
@@ -45,6 +40,11 @@ export const routes: Routes = [
         path: 'modules/test',
         data: { breadcrumb: 'Mô-đun thử nghiệm' },
         children: [
+          { 
+            path: 'cqrs', 
+            loadComponent: () => import('@tot/business-test').then(m => m.CqrsTestComponent),
+            data: { breadcrumb: 'CQRS Test' }
+          },
           { 
             path: 'firestore', 
             loadComponent: () => import('@tot/business-test').then(m => m.FirestoreTestComponent),

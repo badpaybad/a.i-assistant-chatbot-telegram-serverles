@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["projects/tot/business-files/src/lib/components/folder-tree/folder-tree.css"],
-  "sourcesContent": [".tree-container {\n  padding: 16px;\n  height: 100%;\n}\n\n.tree-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  margin-bottom: 16px;\n}\n\n.tree-header h3 {\n  margin: 0;\n  font-size: 16px;\n  font-weight: 600;\n}\n\n.custom-node {\n  display: flex;\n  align-items: center;\n  padding: 4px 8px;\n  border-radius: 4px;\n  transition: all 0.3s;\n  cursor: pointer;\n  width: 100%;\n}\n\n.custom-node:hover {\n  background-color: #f5f5f5;\n}\n\n.node-icon {\n  margin-right: 8px;\n  font-size: 16px;\n  color: #ffca28; /* Folder color */\n}\n\n.node-title {\n  font-size: 14px;\n}\n"],
-  "mappings": ";AAAA,CAAC;AACC,WAAS;AACT,UAAQ;AACV;AAEA,CAAC;AACC,WAAS;AACT,mBAAiB;AACjB,eAAa;AACb,iBAAe;AACjB;AAEA,CAPC,YAOY;AACX,UAAQ;AACR,aAAW;AACX,eAAa;AACf;AAEA,CAAC;AACC,WAAS;AACT,eAAa;AACb,WAAS,IAAI;AACb,iBAAe;AACf,cAAY,IAAI;AAChB,UAAQ;AACR,SAAO;AACT;AAEA,CAVC,WAUW;AACV,oBAAkB;AACpB;AAEA,CAAC;AACC,gBAAc;AACd,aAAW;AACX,SAAO;AACT;AAEA,CAAC;AACC,aAAW;AACb;",
+  "sources": ["angular:styles/component:css;919fdfca84b012487c20dd19b7e07eee72c17eba4f8e8e370f53f96f830c5cdd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-files/src/lib/components/folder-tree/folder-tree.html"],
+  "sourcesContent": ["\n  .popover-content {\n    width: 200px;\n  }\n  .popover-footer {\n    margin-top: 8px;\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n  }\n"],
+  "mappings": ";AACE,CAAC;AACC,SAAO;AACT;AACA,CAAC;AACC,cAAY;AACZ,WAAS;AACT,mBAAiB;AACjB,OAAK;AACP;",
   "names": []
 }
