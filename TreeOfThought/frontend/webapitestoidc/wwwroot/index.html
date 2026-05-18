@@ -428,7 +428,10 @@
                     <label>Password</label>
                     <input type="password" id="password" class="input-control" value="admin123">
                 </div>
-                <button id="btnLogin" class="btn" style="margin-bottom: 1.5rem;">Authenticate</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                    <button id="btnLogin" class="btn">Authenticate</button>
+                    <button id="btnLogout" class="btn btn-outline" style="border-color: var(--status-error); color: #f87171;">Logout</button>
+                </div>
 
                 <div class="token-status">
                     <span id="tokenDot" class="status-dot inactive"></span>
@@ -568,6 +571,20 @@
                 claimsArea.innerText = 'Claims will appear here upon authentication.';
             }
         }
+
+        // Handle logout
+        document.getElementById('btnLogout').addEventListener('click', () => {
+            jwtToken = null;
+            localStorage.removeItem('test_jwt_token');
+            updateTokenDisplay();
+            
+            const responseOutput = document.getElementById('responseOutput');
+            responseOutput.innerText = 'Logging out from OIDC Provider...';
+            
+            // Redirect to OIDC provider front-channel logout endpoint to clear SSO cookie
+            const postLogoutUri = window.location.origin + window.location.pathname;
+            window.location.href = `http://localhost:5000/api/auth/logout?post_logout_redirect_uri=${encodeURIComponent(postLogoutUri)}`;
+        });
 
         // Handle login authentication
         document.getElementById('btnLogin').addEventListener('click', async () => {

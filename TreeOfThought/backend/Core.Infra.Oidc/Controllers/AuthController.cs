@@ -47,7 +47,7 @@ public class AuthController : ControllerBase
             ? $"{Request.Scheme}://{Request.Host}{Request.PathBase}"
             : issuer;
 
-        return Ok(new
+        var config = new
         {
             issuer = issuer ?? $"{Request.Scheme}://{Request.Host}{Request.PathBase}",
             jwks_uri = $"{baseUrl}/api/auth/jwks",
@@ -58,7 +58,14 @@ public class AuthController : ControllerBase
             response_types_supported = new[] { "code", "token", "id_token" },
             subject_types_supported = new[] { "public" },
             id_token_signing_alg_values_supported = new[] { "RS256" }
+        };
+
+        var json = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions
+        {
+            WriteIndented = true
         });
+
+        return Content(json, "application/json");
     }
     [Obsolete("Phòng ngừa việc client gọi trực tiếp JWKS tại /.well-known/openid-configuration/jwks, Client hãy gọi theo trả ra ở uri /.well-known/openid-configuration")]
     [HttpGet("/.well-known/openid-configuration/jwks")]

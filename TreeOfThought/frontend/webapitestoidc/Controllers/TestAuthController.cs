@@ -11,40 +11,6 @@ namespace webapitestoidc.Controllers;
 [Route("api/test-auth")]
 public class TestAuthController : ControllerBase
 {
-    [HttpGet("diagnostic-jwks")]
-    public async Task<IActionResult> GetDiagnosticJwks()
-    {
-        try
-        {
-            using var client = new HttpClient();
-            var json = await client.GetStringAsync("http://localhost:5000/api/auth/jwks");
-            var jwks = new JsonWebKeySet(json);
-            
-            var parsedKeys = jwks.Keys.Select(k => new
-            {
-                k.Kid,
-                k.Kty,
-                k.Alg,
-                k.Use,
-                HasModulus = !string.IsNullOrEmpty(k.N),
-                HasExponent = !string.IsNullOrEmpty(k.E),
-                KeySize = k.KeySize,
-                KeyId = k.KeyId
-            }).ToList();
-
-            return Ok(new
-            {
-                RawJson = json,
-                KeysCount = jwks.Keys.Count,
-                Keys = parsedKeys
-            });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { Error = ex.Message, Stack = ex.StackTrace });
-        }
-    }
-
     // 1. Public Endpoint - No protection
     [HttpGet("public")]
     public IActionResult GetPublic()
