@@ -319,6 +319,138 @@ public static class FirestoreConstants
 Giải pháp trên đảm bảo tuân thủ nghiêm ngặt nguyên tắc KISS, đồng bộ hóa tuyệt đối cấu trúc Firestore ở cả Frontend/Backend và ngăn chặn triệt để lãng phí tài nguyên của Google Cloud Firestore.
 
 ---
+
+## 7. Quy chuẩn Đăng ký và Cấu hình Authorization (Cập nhật 2026-05-18 12:46:36)
+
+Để sử dụng annotation bảo mật `[AppAuthorize]` (thuộc project `Core.Infra.Auth`) trong các project nghiệp vụ Backend (như `nhan-dien-khuon-mat`, `Core.Infra.FilesFolders`, `Core.Infra.Oidc`), các API và Ứng dụng khách bắt buộc phải thực hiện đăng ký dịch vụ thông qua `AuthServiceExtensions.cs` tại `Program.cs` và cấu hình chính xác tệp tin `appsettings.json` tùy theo loại ứng dụng:
+
+### 7.1. Đối với API Restful tiêu thụ Token (Resource Server)
+Các API nghiệp vụ hoạt động như một Resource Server tiêu thụ JWT token được cấp phát từ SSO Server (`Core.Web.Api`), kết hợp kiểm tra phân quyền Hybrid (JWT + Redis Session).
+
+#### 1. Cấu hình `appsettings.json` bắt buộc:
+*   **Session**: Cấu hình kết nối Redis để lưu trữ và tải claims/ACL bổ sung từ Session (hỗ trợ chế độ Hybrid khi lượng claims quá lớn vượt quá kích thước JWT tối ưu).
+*   **Auth**: Cấu hình `IsOidc` thành `false` để hoạt động dưới dạng Resource Server, đồng thời trỏ `Authority` về SSO Server.
+```json
+{
+  "Session": {
+    "Redis": "localhost:6379,defaultDatabase=0,password=Test123456,abortConnect=false"
+  },
+  "Auth": {
+    "Jwt": {
+      "IsOidc": false, // Project API này chỉ là Resource Server tiêu thụ Token
+      "Authority": "http://localhost:5000" // Trỏ tới địa chỉ của SSO Server (Core.Web.Api)
+    }
+  }
+}
+```
+
+#### 2. Đăng ký trong `Program.cs`:
+Kích hoạt phân quyền và xác thực dạng JWT Bearer thông qua extension `AddAppAuthorization`:
+```csharp
+using Core.Infra.Auth.Extensions;
+using Core.Infra.Auth.Models;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Đăng ký dịch vụ Authorization với chế độ JWT Bearer
+builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.JwtBearer);
+
+var app = builder.Build();
+
+app.UseAuthentication();
+app.UseAuthorization();
+```
+
+---
+
+### 7.2. Đối với MVC Web App (Client ứng dụng dùng Cookie & OpenID Connect)
+Khi xây dựng một ứng dụng khách MVC Web (ví dụ: `webtestoidc`) giao tiếp với SSO Server, ứng dụng cần cấu hình cơ chế Cookie Authentication để duy trì trạng thái đăng nhập trên trình duyệt và tích hợp OpenID Connect để thực hiện luồng SSO đăng nhập.
+
+#### 1. Cấu hình `appsettings.json` cho OIDC:
+```json
+{
+  "Oidc": {
+    "Authority": "http://localhost:5000",
+    "ClientId": "WebTestOidc",
+    "ClientSecret": "WebTestOidcSecret"
+  }
+}
+```
+
+#### 2. Đăng ký và Cấu hình chi tiết trong `Program.cs`:
+*   Sử dụng `AppAuthMode.None` khi gọi `AddAppAuthorization()` để bỏ qua việc tự động đăng ký xác thực của Core base và để ứng dụng MVC Web tự định nghĩa cấu hình Cookies & OpenID Connect tùy biến.
+*   Bỏ qua kiểm tra `Nonce` (`RequireNonce = false`) nếu OIDC Server tùy biến chưa hỗ trợ hoàn toàn.
+*   Sử dụng bộ xác thực tiêu chuẩn `TokenValidationParameters` kết nối endpoint JWKS của SSO Backend.
+
+```csharp
+using Core.Infra.Auth.Extensions;
+using Core.Infra.Auth.Models;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Tokens;
+
+var builder = WebApplication.CreateBuilder(args);
+var oidcConfig = builder.Configuration.GetSection("Oidc");
+
+// 1. Đăng ký phần Authorization Core (sử dụng AppAuthMode.None để tự cấu hình Authentication)
+builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.None);
+
+// 2. Cấu hình Authentication kết hợp Cookies và OpenID Connect (SSO)
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+})
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+{
+    options.Cookie.Name = "WebTestOidc_Auth";
+    options.Cookie.SameSite = SameSiteMode.Lax;
+    options.LoginPath = "/Home/Login";
+})
+.AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+{
+    options.Authority = oidcConfig["Authority"];
+    options.ClientId = oidcConfig["ClientId"];
+    options.ClientSecret = oidcConfig["ClientSecret"];
+    options.ResponseType = "code";
+    
+    options.SaveTokens = true;
+    options.RequireHttpsMetadata = false; 
+
+    // Bypass Nonce do Custom OIDC Server chưa hỗ trợ
+    options.ProtocolValidator.RequireNonce = false;
+
+    // Cấu hình xác thực Token tiêu chuẩn qua JWKS endpoint của Backend
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        NameClaimType = "preferred_username",
+        RoleClaimType = "role",
+        ValidateIssuer = true,
+        ValidIssuer = oidcConfig["Authority"],
+        ValidateAudience = true,
+        ValidAudience = oidcConfig["ClientId"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ClockSkew = TimeSpan.FromMinutes(5)
+    };
+});
+
+var app = builder.Build();
+
+app.UseStaticFiles();
+app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller=Home}/{action=Index}/{id?}");
+```
+
+Sự nhất quán trong cách đăng ký này đảm bảo tất cả các ứng dụng trong giải pháp đều sử dụng chung một cơ chế đánh giá quyền lực của `[AppAuthorize]`, đồng thời duy trì khả năng co giãn và chịu tải mượt mà của hệ thống SSO.
+
+---
 **Ghi chú**: Hạ tầng Core Base và tiêu chuẩn thiết kế Modular Monolith hiện tại của solution cực kỳ vững chắc và mạch lạc. Việc tuân thủ nghiêm ngặt các quy tắc trên sẽ giúp giải pháp luôn sạch sẽ, dễ dàng tích hợp thêm các dịch vụ mới mà không sợ phát sinh lỗi dây chuyền.
 
 

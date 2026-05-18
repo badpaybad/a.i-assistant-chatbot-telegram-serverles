@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OIDC Web API Protection Test Suite</title>
+    <!-- Modern Premium Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: rgba(17, 24, 39, 0.7);
+            --surface-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #6366f1; /* Beautiful Indigo */
+            --accent-primary-glow: rgba(99, 102, 241, 0.15);
+            --accent-secondary: #06b6d4; /* Vibrant Cyan */
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --status-success: #10b981;
+            --status-warning: #f59e0b;
+            --status-error: #ef4444;
+            --font-main: 'Outfit', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 10%, rgba(99, 102, 241, 0.1) 0px, transparent 50%),
+                radial-gradient(at 90% 90%, rgba(6, 118, 212, 0.08) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            font-family: var(--font-main);
+            min-height: 100vh;
+            line-height: 1.6;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--text-main) 30%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.03em;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            font-weight: 400;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Glassmorphic Grid Layout */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        @media (max-width: 968px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--surface-border);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            opacity: 0.8;
+        }
+
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .card-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: -1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Inputs & Controls */
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .input-control {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--surface-border);
+            border-radius: 10px;
+            padding: 0.8rem 1rem;
+            color: var(--text-main);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
+        }
+
+        .input-control:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px var(--accent-primary-glow);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-primary) 0%, #4f46e5 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 0.9rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--accent-primary);
+            color: var(--text-main);
+            box-shadow: none;
+        }
+
+        .btn-outline:hover {
+            background: var(--accent-primary-glow);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Token Display Area */
+        .token-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-dot.active {
+            background-color: var(--status-success);
+            box-shadow: 0 0 10px var(--status-success);
+        }
+
+        .status-dot.inactive {
+            background-color: var(--status-error);
+            box-shadow: 0 0 10px var(--status-error);
+        }
+
+        .code-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            max-height: 250px;
+            overflow-y: auto;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: #38bdf8; /* Soft blue */
+        }
+
+        .code-container::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        .code-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+        }
+
+        /* Endpoint Selector & Testing */
+        .endpoint-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .endpoint-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--surface-border);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .endpoint-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateX(4px);
+        }
+
+        .endpoint-item.selected {
+            background: var(--accent-primary-glow);
+            border-color: var(--accent-primary);
+        }
+
+        .endpoint-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .method-badge {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 0.2rem 0.5rem;
+            border-radius: 5px;
+            width: fit-content;
+        }
+
+        .method-badge.get {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--status-success);
+        }
+
+        .endpoint-path {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .endpoint-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Response Panel */
+        .response-panel {
+            grid-column: span 2;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @media (max-width: 968px) {
+            .response-panel {
+                grid-column: span 1;
+            }
+        }
+
+        .response-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .http-status {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.35rem 0.75rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .http-status.ok {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--status-success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .http-status.unauthorized {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--status-error);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .http-status.forbidden {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--status-warning);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        .json-viewer {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid var(--surface-border);
+            border-radius: 15px;
+            padding: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            color: #a7f3d0; /* Soft emerald */
+            min-height: 200px;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OIDC API Protection Test Suite</h1>
+            <p>Sleek and interactive dashboard to authenticate with the OIDC server and test [AppAuthorize] endpoints running on port 5006.</p>
+        </header>
+
+        <div class="grid-layout">
+            <!-- Left Side: Authentication Panel -->
+            <div class="card">
+                <h2 class="card-title">
+                    <svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M12,17A2,2 0 0,0 14,15C14,13.89 13.11,13 12,13A2,2 0 0,0 10,15A2,2 0 0,0 12,17M18,8A2,2 0 0,1 20,10V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V10A2,2 0 0,1 6,8H9V6A3,3 0 0,1 12,3A3,3 0 0,1 15,6V8H18M12,5A1,1 0 0,0 11,6V8H13V6A1,1 0 0,0 12,5Z" /></svg>
+                    OIDC Provider Auth
+                </h2>
+                <div class="card-subtitle">Sign in to http://localhost:5000/api/auth/login to fetch OIDC JWT</div>
+                
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" class="input-control" value="admin">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" class="input-control" value="admin123">
+                </div>
+                <button id="btnLogin" class="btn" style="margin-bottom: 1.5rem;">Authenticate</button>
+
+                <div class="token-status">
+                    <span id="tokenDot" class="status-dot inactive"></span>
+                    <span id="tokenStatusText">No token loaded (Unauthorized)</span>
+                </div>
+                <div class="form-group">
+                    <label>Decoded JWT Claims</label>
+                    <div id="tokenClaims" class="code-container">Claims will appear here upon authentication.</div>
+                </div>
+            </div>
+
+            <!-- Right Side: API Endpoint Selector -->
+            <div class="card">
+                <h2 class="card-title">
+                    <svg style="width:24px;height:24px" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12S6.48 22 12 22 22 17.52 22 12 17.52 2 12 2M11 16H13V18H11V16M11 6H13V14H11V6Z" /></svg>
+                    Test Protected Endpoints
+                </h2>
+                <div class="card-subtitle">Select an API rule configuration to request from port 5006</div>
+
+                <div class="input-row">
+                    <div class="form-group">
+                        <label>Resource ID (Route/Query/Header)</label>
+                        <input type="text" id="resourceId" class="input-control" value="doc_999">
+                    </div>
+                    <div class="form-group">
+                        <label>Resource Type Header</label>
+                        <input type="text" id="resourceType" class="input-control" value="Document">
+                    </div>
+                </div>
+
+                <div class="endpoint-list">
+                    <div class="endpoint-item selected" data-url="/api/test-auth/public" data-requires="None">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/public</span>
+                            <span class="endpoint-desc">Public (Allows anonymous access)</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/secure" data-requires="Auth">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/secure</span>
+                            <span class="endpoint-desc">Requires [AppAuthorize] (Any valid token)</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/admin-role" data-requires="AdminRole">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/admin-role</span>
+                            <span class="endpoint-desc">Requires [AppAuthorize(Roles = "Admin")]</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/admin-claim" data-requires="AdminClaim">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/admin-claim</span>
+                            <span class="endpoint-desc">Requires claim: be.admin ("admin" param)</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/custom-claim" data-requires="CustomClaim">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/custom-claim</span>
+                            <span class="endpoint-desc">Requires claim: be.test.read ("test.read" param)</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/acl-read" data-requires="AclRead">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/acl-read/{id}</span>
+                            <span class="endpoint-desc">Requires Action.Read on ResourceType</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/acl-write" data-requires="AclWrite">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/acl-write/{id}</span>
+                            <span class="endpoint-desc">Requires Action.Write on ResourceType</span>
+                        </div>
+                    </div>
+                    <div class="endpoint-item" data-url="/api/test-auth/user-info" data-requires="Auth">
+                        <div class="endpoint-meta">
+                            <span class="method-badge get">GET</span>
+                            <span class="endpoint-path">/api/test-auth/user-info</span>
+                            <span class="endpoint-desc">Inspect current token claims list</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="btnSendRequest" class="btn" style="margin-top: 1.5rem;">Send Test Request</button>
+            </div>
+
+            <!-- Bottom: Visual Response Display -->
+            <div class="card response-panel">
+                <div class="response-header">
+                    <h2 class="card-title" style="margin-bottom:0;">Response Viewer</h2>
+                    <div id="responseStatus" class="http-status ok" style="display:none;">
+                        <span class="status-dot active" style="background:#10b981;"></span>
+                        <span>HTTP 200 OK</span>
+                    </div>
+                </div>
+                <div id="responseOutput" class="json-viewer">Click "Send Test Request" to query the selected endpoint...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client Script Logic -->
+    <script>
+        let jwtToken = localStorage.getItem('test_jwt_token') || null;
+
+        // On document load, check if token already exists in LocalStorage
+        window.addEventListener('DOMContentLoaded', () => {
+            if (jwtToken) {
+                updateTokenDisplay();
+            }
+        });
+
+        // Update token state in dashboard
+        function updateTokenDisplay() {
+            const dot = document.getElementById('tokenDot');
+            const statusText = document.getElementById('tokenStatusText');
+            const claimsArea = document.getElementById('tokenClaims');
+
+            if (jwtToken) {
+                dot.className = 'status-dot active';
+                statusText.innerText = 'Token Loaded Successfully';
+                
+                try {
+                    const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+                    claimsArea.innerText = JSON.stringify(payload, null, 2);
+                } catch (e) {
+                    claimsArea.innerText = 'Could not parse token: ' + e.message;
+                }
+            } else {
+                dot.className = 'status-dot inactive';
+                statusText.innerText = 'No token loaded (Unauthorized)';
+                claimsArea.innerText = 'Claims will appear here upon authentication.';
+            }
+        }
+
+        // Handle login authentication
+        document.getElementById('btnLogin').addEventListener('click', async () => {
+            const usernameInput = document.getElementById('username').value;
+            const passwordInput = document.getElementById('password').value;
+            const btn = document.getElementById('btnLogin');
+            const responseOutput = document.getElementById('responseOutput');
+
+            btn.innerText = 'Authenticating...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('http://localhost:5000/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: usernameInput, password: passwordInput })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    jwtToken = data.token;
+                    localStorage.setItem('test_jwt_token', jwtToken);
+                    updateTokenDisplay();
+                    responseOutput.innerText = 'Successfully authenticated with OIDC Provider.\nJWT loaded and stored locally.';
+                } else {
+                    const err = await res.json();
+                    responseOutput.innerText = `Authentication Failed (${res.status}): ` + JSON.stringify(err, null, 2);
+                    jwtToken = null;
+                    localStorage.removeItem('test_jwt_token');
+                    updateTokenDisplay();
+                }
+            } catch (e) {
+                responseOutput.innerText = 'Network error contacting http://localhost:5000:\n' + e.message + '\n\nPlease ensure your Auth Server backend (Core.Web.Api) is running on port 5000!';
+            } finally {
+                btn.innerText = 'Authenticate';
+                btn.disabled = false;
+            }
+        });
+
+        // Handle endpoint selections
+        const items = document.querySelectorAll('.endpoint-item');
+        items.forEach(item => {
+            item.addEventListener('click', () => {
+                items.forEach(i => i.classList.remove('selected'));
+                item.classList.add('selected');
+            });
+        });
+
+        // Send request to target secure API
+        document.getElementById('btnSendRequest').addEventListener('click', async () => {
+            const selectedItem = document.querySelector('.endpoint-item.selected');
+            if (!selectedItem) return;
+
+            let path = selectedItem.getAttribute('data-url');
+            const requires = selectedItem.getAttribute('data-requires');
+            
+            const resourceIdVal = document.getElementById('resourceId').value;
+            const resourceTypeVal = document.getElementById('resourceType').value;
+            const responseOutput = document.getElementById('responseOutput');
+            const responseStatus = document.getElementById('responseStatus');
+
+            // Insert route parameter if applicable
+            if (path.includes('acl-read') || path.includes('acl-write')) {
+                path = `${path}/${resourceIdVal}`;
+            }
+
+            const url = `http://localhost:5006${path}`;
+            const headers = {};
+
+            if (jwtToken) {
+                headers['Authorization'] = `Bearer ${jwtToken}`;
+            }
+
+            // Always pass headers to test both header-based and route/query-based ACL
+            if (resourceIdVal) {
+                headers['x-resource-id'] = resourceIdVal;
+            }
+            if (resourceTypeVal) {
+                headers['x-resource-type'] = resourceTypeVal;
+            }
+
+            responseOutput.innerText = `Querying: ${url} ...`;
+            responseStatus.style.display = 'none';
+
+            try {
+                const response = await fetch(url, { method: 'GET', headers });
+                
+                // Show status badge
+                responseStatus.style.display = 'flex';
+                if (response.status === 200) {
+                    responseStatus.className = 'http-status ok';
+                    responseStatus.innerHTML = '<span class="status-dot active"></span><span>HTTP 200 OK</span>';
+                } else if (response.status === 401) {
+                    responseStatus.className = 'http-status unauthorized';
+                    responseStatus.innerHTML = '<span class="status-dot" style="background:#ef4444;box-shadow:0 0 10px #ef4444;"></span><span>HTTP 401 Unauthorized</span>';
+                } else if (response.status === 403) {
+                    responseStatus.className = 'http-status forbidden';
+                    responseStatus.innerHTML = '<span class="status-dot" style="background:#f59e0b;box-shadow:0 0 10px #f59e0b;"></span><span>HTTP 403 Forbidden</span>';
+                } else {
+                    responseStatus.className = 'http-status';
+                    responseStatus.innerHTML = `<span>HTTP ${response.status}</span>`;
+                }
+
+                const text = await response.text();
+                try {
+                    const json = JSON.parse(text);
+                    responseOutput.innerText = JSON.stringify(json, null, 2);
+                } catch {
+                    responseOutput.innerText = text || '(Empty Response)';
+                }
+            } catch (e) {
+                responseStatus.style.display = 'none';
+                responseOutput.innerText = 'Network error querying http://localhost:5006:\n' + e.message + '\n\nPlease ensure your Test API server (webapitestoidc) is running on port 5006!';
+            }
+        });
+    </script>
+</body>
+</html>

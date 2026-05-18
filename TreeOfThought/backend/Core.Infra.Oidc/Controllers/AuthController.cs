@@ -60,7 +60,13 @@ public class AuthController : ControllerBase
             id_token_signing_alg_values_supported = new[] { "RS256" }
         });
     }
-
+    [Obsolete("Phòng ngừa việc client gọi trực tiếp JWKS tại /.well-known/openid-configuration/jwks, Client hãy gọi theo trả ra ở uri /.well-known/openid-configuration")]
+    [HttpGet("/.well-known/openid-configuration/jwks")]
+    public IActionResult Get_well_known_Jwks()
+    {
+        var jwk = _jwtService.GetJwks();
+        return Ok(new { keys = new[] { jwk } });
+    }
     [HttpGet("jwks")]
     public IActionResult GetJwks()
     {
@@ -126,7 +132,7 @@ public class AuthController : ControllerBase
 
             Console.WriteLine("[AUTH] Generating JWT Token...");
             var token = await _authService.GenerateJwtToken(user);
-            
+
             Console.WriteLine("[AUTH] Generating Firebase Token...");
             var firebaseToken = await _authService.GenerateFirebaseToken(user);
 
@@ -207,7 +213,7 @@ public class AuthController : ControllerBase
                 // Already logged in -> Generate code and redirect back to app
                 var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId, request.RedirectUri, request.Nonce);
                 var redirectUrl = $"{request.RedirectUri}{(request.RedirectUri.Contains("?") ? "&" : "?")}code={code}&state={request.State}";
-                
+
                 Console.WriteLine($"[OIDC] Redirecting back to client. RedirectUri: {request.RedirectUri}");
                 Console.WriteLine($"[OIDC] Final Redirect URL: {redirectUrl}");
                 return Redirect(redirectUrl);
@@ -224,13 +230,13 @@ public class AuthController : ControllerBase
         // Ensure we use the actual host the user is using to avoid 0.0.0.0 issues
         var host = Request.Host.Value;
         var scheme = Request.Scheme;
-        var absoluteLoginUrl = loginUrl.StartsWith("http") 
-            ? loginUrl 
+        var absoluteLoginUrl = loginUrl.StartsWith("http")
+            ? loginUrl
             : $"{scheme}://{host}{Request.PathBase}{loginUrl}";
 
         var finalRedirect = $"{absoluteLoginUrl}?returnUrl={WebUtility.UrlEncode(returnUrl)}";
         Console.WriteLine($"[OIDC] Redirecting to: {finalRedirect}");
-        
+
         return Redirect(finalRedirect);
     }
 
@@ -239,7 +245,7 @@ public class AuthController : ControllerBase
     {
         Console.WriteLine($"[OIDC] Logout request received. PostLogoutRedirectUri={postLogoutRedirectUri}");
         await HttpContext.SignOutAsync(AuthConstants.SsoSessionScheme);
-        
+
         if (!string.IsNullOrEmpty(postLogoutRedirectUri))
         {
             Console.WriteLine($"[OIDC] Redirecting back to: {postLogoutRedirectUri}");
@@ -268,7 +274,7 @@ public class AuthController : ControllerBase
         }
         else
         {
-            try 
+            try
             {
                 request = await Request.ReadFromJsonAsync<TokenRequest>();
                 Console.WriteLine("[OIDC] Token request received via JSON.");
