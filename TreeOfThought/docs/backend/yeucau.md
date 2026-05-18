@@ -120,9 +120,31 @@ Các app mobi
             - `total`: Tổng số bản ghi thỏa mãn điều kiện lọc (không bị giới hạn bởi paging).
         - Mục đích: Đảm bảo Frontend luôn có đủ thông tin để hiển thị thanh phân trang chính xác.
 
+BE tổng kết nhanh về mặt cấu trúc
+    - core infra base của dự án
+        - project interface high leve design 
+        - project base abstract connect db , redis 
+        - project eventbus, cqrs cho toàn dự án
+        - project firebase 
+        - project session user cho toàn dự án , khi cần hibrid với prj auth 
+        - project auth (auth attribute) jwt  , dùng cả policy, role, acl , logic sinh và kiểm tra jwt toàn solution, có thể dùng project session. FE cũng cần tuân thủ logic auth này để nhất quán về phân quyền
+    
+    - các nghiệp vụ là project độc lập, phải sử dụng project auth ( auth attribute để nhất quán về logic phân quyền. FE cũng cần tuân thủ logic )
+
+        - project oidc quản lý user role , cấp các api về login , sigout, singin, SSO ...
+            - project nghiệp vụ chính của oidc
+                controller
+                cqrs handler (command, event) 
+                queries
+                db context
+            - project cấp api restful của oidc
+        - project file quản lý file cho từng người dùng, share file ...
+        - ...
 
 **đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
 **cập nhật 202605-17 12:36:36** dùng google firestore để notify lên UI , sau khi đã thực hiện xong 1 nghiệp vụ, UI cần đảm bảo xóa firestore address path đó (tránh tốn tài nguyên và tiền). address path dành cho việc này là cần thành const không được tạo bừa bãi và là duy nhất trong solution . 
 **cập nhật 202605-17 12:46:36**
 paging cho việc lấy danh sách luôn cần là paging ở server 
+
+

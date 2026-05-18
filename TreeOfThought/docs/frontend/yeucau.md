@@ -31,9 +31,9 @@ khi phát triển nghiệp vụ mới, FE cần tạo thư viện là thành fol
     có thể đưa vào app chính TreeOfThought/frontend/web/src/app để dùng hoặc test 
     không nhất thiết các nghiệp vụ sẽ có prefix là business phụ thuộc vào yêu cầu của người dùng cần lấy tên liên quan tương đối chính xác là được
 
-tổng kết nhanh về cấu trúc
+FE tổng kết nhanh về cấu trúc
     lib core 
-        auth, guard, interceptor, const claims, http client, event bus, component register, firebase, i18n/Transloco, pipe ... là wrap các base dùng chung theo 1 cách mà project cần 
+        auth, guard, interceptor, const claims, http client, event bus, component register, firebase, i18n/Transloco, pipe ... là wrap các base dùng chung theo 1 cách mà project cần , (auth cần tuân thủ theo BE auth attribute về logic kiểm tra quyền)
     lib shared
         - các component share cần bắt đầu với prefix: **tot-** (ví dụ: `tot-button`, `tot-table`, `tot-autocomplete`...)
         - một số component hay dùng
@@ -51,7 +51,7 @@ tổng kết nhanh về cấu trúc
         dùng core, shared
         không được phép dùng trực tiếp component hay bất kỳ gì của module nghiệp vụ khác
             dùng thông qua event buss, message buss, component regsiter 
-    app chính 
+    app shell, app chính 
         cấu hình lazy load các module nghiệp vụ , khi cần dùng tới thì mới load 
         layout , theme, style, menu, breadcrum, route ...
         đăng ký các module nghiệp vụ để dùng 
