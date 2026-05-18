@@ -22,7 +22,16 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  String get _baseUrl => 'http://$_selectedIp:5000';
+  String get _baseUrl {
+    String ip = _selectedIp.trim();
+    if (ip.startsWith('http://') || ip.startsWith('https://')) {
+      return ip;
+    }
+    if (ip.contains(':')) {
+      return 'http://$ip';
+    }
+    return 'http://$ip:5000';
+  }
 
   Future<bool> signIn(String email, String password) async {
     _isLoading = true;

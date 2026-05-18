@@ -39,3 +39,6 @@ cần lưu dữ liệu không quan trọng xuống ổ cứng, như cấu hình 
 
 **cập nhật 2026-05-15 12:09:09**
 bổ xung thêm nút sigout ở trong home , ngay cạnh avatar , khi click vào nút logout sẽ log out user và chuyển sang trang login, sigout cả oidc
+
+**cập nhật 2026-05-18 12:09:09**
+dropdown đang cho còn 3 IP , có thể dropdown list cho thêm việc người dùng gõ text dạng IP port vào để test SSO OIDC server ip đó 

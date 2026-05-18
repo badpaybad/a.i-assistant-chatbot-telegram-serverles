@@ -22,6 +22,8 @@ class _SignInPageState extends State<SignInPage> {
   bool _isLoading = false;
   final LocalAuthentication auth = LocalAuthentication();
 
+  static const List<String> _defaultIps = ['192.168.4.248', '10.0.2.2', '118.70.117.208'];
+
   Future<void> _handleFingerprint() async {
     try {
       final bool canAuthenticateWithBiometrics = await auth.canCheckBiometrics;
@@ -72,6 +74,55 @@ class _SignInPageState extends State<SignInPage> {
         );
       }
     }
+  }
+
+  void _showCustomIpDialog(BuildContext context) {
+    final controller = TextEditingController();
+    final authService = context.read<AuthService>();
+    if (!_defaultIps.contains(authService.selectedIp)) {
+      controller.text = authService.selectedIp;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Nhập IP/Port tùy chỉnh'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Nhập IP hoặc tên miền kèm port (nếu có):', style: TextStyle(fontSize: 14)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                hintText: 'Ví dụ: 127.0.0.1:5000 hoặc localhost',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+              autofocus: true,
+              keyboardType: TextInputType.url,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final val = controller.text.trim();
+              if (val.isNotEmpty) {
+                authService.setBaseUrl(val);
+              }
+              Navigator.pop(context);
+            },
+            child: const Text('Xác nhận'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -140,21 +191,36 @@ class _SignInPageState extends State<SignInPage> {
                   border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
                 ),
                 child: Consumer<AuthService>(
-                  builder: (context, authService, child) => DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: authService.selectedIp,
-                      isExpanded: true,
-                      icon: const Icon(Icons.network_wifi),
-                      items: const [
-                        DropdownMenuItem(value: '192.168.4.248', child: Text('IP LAN (192.168.4.248)')),
-                        DropdownMenuItem(value: '10.0.2.2', child: Text('Emulator Host (10.0.2.2)')),
-                        DropdownMenuItem(value: '118.70.117.208', child: Text('Public Server (118.70.117.208)')),
-                      ],
-                      onChanged: (value) {
-                        if (value != null) authService.setBaseUrl(value);
-                      },
-                    ),
-                  ),
+                  builder: (context, authService, child) {
+                    final currentIp = authService.selectedIp;
+                    final List<DropdownMenuItem<String>> dropdownItems = [
+                      const DropdownMenuItem(value: '192.168.4.248', child: Text('IP LAN (192.168.4.248)')),
+                      const DropdownMenuItem(value: '10.0.2.2', child: Text('Emulator Host (10.0.2.2)')),
+                      const DropdownMenuItem(value: '118.70.117.208', child: Text('Public Server (118.70.117.208)')),
+                    ];
+                    
+                    if (!_defaultIps.contains(currentIp)) {
+                      dropdownItems.insert(0, DropdownMenuItem(value: currentIp, child: Text('Custom IP: $currentIp')));
+                    }
+                    
+                    dropdownItems.add(const DropdownMenuItem(value: 'custom_trigger', child: Text('Nhập IP/Port tùy chỉnh...')));
+
+                    return DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: currentIp,
+                        isExpanded: true,
+                        icon: const Icon(Icons.network_wifi),
+                        items: dropdownItems,
+                        onChanged: (value) {
+                          if (value == 'custom_trigger') {
+                            _showCustomIpDialog(context);
+                          } else if (value != null) {
+                            authService.setBaseUrl(value);
+                          }
+                        },
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 20),

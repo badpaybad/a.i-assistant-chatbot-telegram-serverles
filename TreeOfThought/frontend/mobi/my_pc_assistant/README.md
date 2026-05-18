@@ -18,28 +18,53 @@ flutter run
 ```
 
 ### 📱 Máy ảo & Thiết bị (Emulator/Simulator)
-Để kiểm tra danh sách máy ảo và thiết bị đang kết nối:
-```bash
-flutter devices
-```
 
-Để liệt kê các máy ảo có sẵn:
-```bash
-flutter emulators
-```
+#### 1. Lấy danh sách Emulator và Device ID
+*   **Xem các thiết bị/máy ảo đang kết nối** (để lấy `<device_id>` như `emulator-5554`):
+    ```bash
+    flutter devices
+    # Hoặc qua adb
+    adb devices
+    ```
+*   **Xem danh sách các máy ảo sẵn có** (để lấy `<emulator_id>` như `Pixel_7`):
+    ```bash
+    ~/Android/Sdk/emulator/emulator -list-avds
+    ```
 
-Để khởi chạy một máy ảo cụ thể:
-```bash
-flutter emulators --launch <emulator_id>
-flutter run -d emulator-5556
+#### 2. Khởi chạy máy ảo (Run Device)
+*   **Khởi chạy máy ảo trực tiếp qua Android SDK** (Khuyên dùng - giúp tránh lỗi kẹt snapshot như exit code `-6`):
+    ```bash
+    ~/Android/Sdk/emulator/emulator -avd <emulator_id> -no-snapshot-load -no-snapshot-save
+    ```
+    *(Lưu ý: Không nên dùng lệnh `flutter emulators --launch` vì nó không hỗ trợ các cờ xử lý lỗi và rất dễ làm máy ảo bị treo không khởi động được).*
 
-```
+#### 3. Chạy ứng dụng trên thiết bị chỉ định
+*   Chạy ứng dụng bằng cách chỉ định ID thiết bị:
+    ```bash
+    flutter run -d <device_id>
+    # Ví dụ:
+    flutter run -d emulator-5554
+    ```
+
+#### 4. Build và cài đặt thủ công vào máy ảo (trong trường hợp `flutter run` bị treo)
+*   **Bước 1: Build file APK debug**:
+    ```bash
+    flutter build apk --debug
+    ```
+*   **Bước 2: Cài đặt trực tiếp file APK vào máy ảo đang mở**:
+    ```bash
+    adb install build/app/outputs/flutter-apk/app-debug.apk
+    ```
+*   **Bước 3: Khởi chạy ứng dụng**:
+    ```bash
+    adb shell am start -n com.mypcassistant.my_pc_assistant/.MainActivity
+    ```
 
 > [!TIP]
 > Nếu máy ảo không khởi động được hoặc gặp lỗi `Broken pipe (32)` khi cài đặt APK:
 > 1. Xóa file lock: `find ~/.android/avd -name "*.lock" -delete`
-> 2. Chạy máy ảo ở trạng thái sạch (không snapshot): `flutter emulators --launch <id> --no-snapshot`
-> 3. Hoặc xóa trắng dữ liệu máy ảo: `flutter emulators --launch <id> --wipe-data`
+> 2. Chạy máy ảo ở trạng thái sạch (không nạp snapshot cũ): `~/Android/Sdk/emulator/emulator -avd <id> -no-snapshot-load`
+> 3. Hoặc xóa trắng dữ liệu máy ảo (Wipe Data): `~/Android/Sdk/emulator/emulator -avd <id> -wipe-data`
 
 ### 🐞 Debug & Sửa lỗi
 - **Hot Reload**: Nhấn `r` trong terminal khi đang chạy `flutter run` để cập nhật code ngay lập tức.
