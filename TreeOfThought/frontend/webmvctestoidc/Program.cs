@@ -47,7 +47,7 @@ builder.Services.AddAuthentication(options =>
         isLocalhost = uri.IsLoopback || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
     }
 
-    var requireHttpsMetadata = authConfig.GetValue<bool?>("Jwt:RequireHttpsMetadata");
+    var requireHttpsMetadata = builder.Configuration.GetValue<bool?>("OIDC:RequireHttpsMetadata");
     options.RequireHttpsMetadata = requireHttpsMetadata.HasValue ? requireHttpsMetadata.Value : !isLocalhost;
 
     // Fix "Correlation failed" on HTTP localhost
