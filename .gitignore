@@ -96,3 +96,6 @@ gemma4/model/
 TreeOfThought/frontend/webtestoidc/test.db
 TreeOfThought/frontend/webtestoidc/test.db-shm
 TreeOfThought/frontend/webtestoidc/test.db-wal
+TreeOfThought/frontend/webmvctestoidc/test.db
+TreeOfThought/frontend/webmvctestoidc/test.db-shm
+TreeOfThought/frontend/webmvctestoidc/test.db-wal
