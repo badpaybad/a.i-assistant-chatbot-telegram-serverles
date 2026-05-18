@@ -364,15 +364,15 @@ app.UseAuthorization();
 ---
 
 ### 7.2. Đối với MVC Web App (Client ứng dụng dùng Cookie & OpenID Connect)
-Khi xây dựng một ứng dụng khách MVC Web (ví dụ: `webtestoidc`) giao tiếp với SSO Server, ứng dụng cần cấu hình cơ chế Cookie Authentication để duy trì trạng thái đăng nhập trên trình duyệt và tích hợp OpenID Connect để thực hiện luồng SSO đăng nhập.
+Khi xây dựng một ứng dụng khách MVC Web (ví dụ: `webmvctestoidc`) giao tiếp với SSO Server, ứng dụng cần cấu hình cơ chế Cookie Authentication để duy trì trạng thái đăng nhập trên trình duyệt và tích hợp OpenID Connect để thực hiện luồng SSO đăng nhập.
 
 #### 1. Cấu hình `appsettings.json` cho OIDC:
 ```json
 {
   "Oidc": {
     "Authority": "http://localhost:5000",
-    "ClientId": "WebTestOidc",
-    "ClientSecret": "WebTestOidcSecret"
+    "ClientId": "WebMvcTestOidc",
+    "ClientSecret": "WebMvcTestOidcSecret"
   }
 }
 ```
@@ -403,7 +403,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
 {
-    options.Cookie.Name = "WebTestOidc_Auth";
+    options.Cookie.Name = "WebMvcTestOidc_Auth";
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.LoginPath = "/Home/Login";
 })

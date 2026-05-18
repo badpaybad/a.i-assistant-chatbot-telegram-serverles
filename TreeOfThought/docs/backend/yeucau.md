@@ -91,7 +91,7 @@ Các app , web api
             là web chính dể đăng ký nghiệp vụ và sử dụng: oidc , files
             một số test để hướng đần dùng cqrs , firebase ...
         
-        TreeOfThought/frontend/webtestoidc
+        TreeOfThought/frontend/webmvctestoidc
             web mvc dùng để test identity server, oidc sso 
 Các app mobi
     TreeOfThought/frontend/mobi/my_pc_assistant
@@ -180,7 +180,7 @@ paging cho việc lấy danh sách luôn cần là paging ở server
                     })
                     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
                     {
-                        options.Cookie.Name = "WebTestOidc_Auth";
+                        options.Cookie.Name = "WebMvcTestOidc_Auth";
                         options.Cookie.SameSite = SameSiteMode.Lax;
                         options.LoginPath = "/Home/Login";
                     })

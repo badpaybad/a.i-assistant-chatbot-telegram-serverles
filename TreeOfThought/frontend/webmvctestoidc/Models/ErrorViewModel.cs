@@ -1,4 +1,4 @@
-namespace WebTestOidc.Models;
+namespace WebMvcTestOidc.Models;
 
 public class ErrorViewModel
 {

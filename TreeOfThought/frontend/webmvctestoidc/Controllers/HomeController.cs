@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using WebTestOidc.Models;
+using WebMvcTestOidc.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
-using WebTestOidc.Data;
+using WebMvcTestOidc.Data;
 using Core.Infra.Auth.Attributes;
 
-namespace WebTestOidc.Controllers;
+namespace WebMvcTestOidc.Controllers;
 
 public class HomeController : Controller
 {

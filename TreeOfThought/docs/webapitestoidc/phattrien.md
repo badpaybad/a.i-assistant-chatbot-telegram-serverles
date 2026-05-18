@@ -38,7 +38,7 @@ Tham chiếu trực tiếp tới các project hạ tầng cốt lõi:
 - `../../backend/Core.Infra.Session/Core.Infra.Session.csproj`
 
 ### Chi tiết File 2: `appsettings.json`
-Cấu hình Kestrel chạy ở cổng **5006** (tránh xung đột với cổng 5000 của Backend API và 5005 của `webtestoidc`). Cấu hình JWT trỏ Authority về `http://localhost:5000` (hoặc `http://127.0.0.1:5000`) và kết nối Redis Session.
+Cấu hình Kestrel chạy ở cổng **5006** (tránh xung đột với cổng 5000 của Backend API và 5005 của `webmvctestoidc`). Cấu hình JWT trỏ Authority về `http://localhost:5000` (hoặc `http://localhost:5000`) và kết nối Redis Session.
 ```json
 {
   "Logging": {
@@ -58,7 +58,7 @@ Cấu hình Kestrel chạy ở cổng **5006** (tránh xung đột với cổng 
   "Auth": {
     "Jwt": {
       "IsOidc": false,
-      "Authority": "http://127.0.0.1:5000"
+      "Authority": "http://localhost:5000"
     }
   },
   "Session": {

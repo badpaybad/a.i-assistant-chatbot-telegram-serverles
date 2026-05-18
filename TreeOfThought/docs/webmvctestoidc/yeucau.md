@@ -1,7 +1,7 @@
-nghiệp vụ webtestoidc
-    FE: TreeOfThought/frontend/webtestoidc
+nghiệp vụ webmvctestoidc
+    FE: TreeOfThought/frontend/webmvctestoidc
         là asp.net core 8 MVC
-    BE: TreeOfThought/frontend/webtestoidc
+    BE: TreeOfThought/frontend/webmvctestoidc
         là asp.net core 8 MVC
 
 nghiệp vụ này dùng để giả lập bên thứ 3 làm việc với sso oidc không cần theo hết quy chuẩn của tot-dev về BE FE. cần cơ bản đáp ứng các việc sau:
@@ -17,14 +17,6 @@ nghiệp vụ này dùng để giả lập bên thứ 3 làm việc với sso oi
 
             "Auth": {
                 "Jwt": {
-                "Secret": "",
-                "RsaPrivateKey": "",
-
-                "Kid": "",
-                "Algorithm": "RS256",
-                "Issuer": "http://127.0.0.1:5000",
-                "Audience": "TreeOfThought.FE",
-                "ExpiryMinutes": 60,
                 "IsOidc": false,
                 "Authority": "http://localhost:5000"
                 }
@@ -39,4 +31,4 @@ nghiệp vụ này dùng để giả lập bên thứ 3 làm việc với sso oi
                 "Redis": "localhost:6379,defaultDatabase=0,password=Test123456,abortConnect=false"
             }
 
-**chú ý** code đã sẵn có ở TreeOfThought/frontend/webtestoidc cần xem để điều chỉnh phù hợp yêu cầu 
+**chú ý** code đã sẵn có ở TreeOfThought/frontend/webmvctestoidc cần xem để điều chỉnh phù hợp yêu cầu 

@@ -1,4 +1,4 @@
-@model IEnumerable<WebTestOidc.Data.AuditLog>
+@model IEnumerable<WebMvcTestOidc.Data.AuditLog>
 @{
     ViewData["Title"] = "OIDC SSO Portal";
 }
@@ -64,12 +64,12 @@
                 </div>
             </div>
 
-            @if (Model != null && ((IEnumerable<WebTestOidc.Data.AuditLog>)Model).Any())
+            @if (Model != null && ((IEnumerable<WebMvcTestOidc.Data.AuditLog>)Model).Any())
             {
                 <div class="card bg-white p-4 text-start border-0 shadow-sm">
                     <h5 class="fw-bold mb-3 text-secondary small text-uppercase"><i class="bi bi-clock-history me-2"></i>Hoạt động gần đây (SQLite)</h5>
                     <div class="list-group list-group-flush">
-                        @foreach (var log in (IEnumerable<WebTestOidc.Data.AuditLog>)Model)
+                        @foreach (var log in (IEnumerable<WebMvcTestOidc.Data.AuditLog>)Model)
                         {
                             <div class="list-group-item px-0 border-0 d-flex justify-content-between align-items-center">
                                 <span class="small text-main">@log.Message</span>
