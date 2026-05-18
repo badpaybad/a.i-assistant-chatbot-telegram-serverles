@@ -126,7 +126,7 @@ BE tổng kết nhanh về mặt cấu trúc
         - project base abstract connect db , redis 
         - project eventbus, cqrs cho toàn dự án
         - project firebase 
-        - project session user cho toàn dự án , khi cần hibrid với prj auth 
+        - project session user cho toàn dự án , khi cần hybrid với prj auth 
         - project auth (auth attribute) jwt  , dùng cả policy, role, acl , logic sinh và kiểm tra jwt toàn solution, có thể dùng project session. FE cũng cần tuân thủ logic auth này để nhất quán về phân quyền
     
     - các nghiệp vụ là project độc lập, phải sử dụng project auth ( auth attribute để nhất quán về logic phân quyền. FE cũng cần tuân thủ logic )
