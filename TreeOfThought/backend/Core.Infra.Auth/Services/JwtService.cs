@@ -26,7 +26,7 @@ public class JwtService : IJwtService
         authConfig = _config.GetSection("Auth");
     }
 
-    public async Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims, string? avatarUrl = null, string? nonce = null)
+    public async Task<string> GenerateTokenAsync(Guid userId, string username, string email, string displayName, List<string> roles, List<string> claims, string? avatarUrl = null, string? audience = null, string? nonce = null)
     {
         var rsa = RSA.Create();
         var pem = GetRsaPrivateKey();
@@ -73,7 +73,7 @@ public class JwtService : IJwtService
 
         var token = new JwtSecurityToken(
             issuer: authConfig["Jwt:Issuer"],
-            audience: authConfig["Jwt:Audience"],
+            audience: !string.IsNullOrEmpty(audience) ? audience : authConfig["Jwt:Audience"],
             claims: jwtClaims,
             notBefore: DateTime.UtcNow,
             expires: DateTime.UtcNow.AddMinutes(double.Parse(authConfig["Jwt:ExpiryMinutes"] ?? "60")),

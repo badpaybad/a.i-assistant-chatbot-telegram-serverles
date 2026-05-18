@@ -51,16 +51,34 @@ builder.Services.AddAuthentication(options =>
     // Disable strict state/nonce validators for simplicity in test
     options.ProtocolValidator.RequireNonce = false;
 
-    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    options.TokenValidationParameters.NameClaimType = "preferred_username";
+    options.TokenValidationParameters.RoleClaimType = "role";
+    options.TokenValidationParameters.ValidateIssuer = true;
+    options.TokenValidationParameters.ValidateAudience = true;
+    options.TokenValidationParameters.ValidAudience = oidcConfig["ClientId"];
+    options.TokenValidationParameters.ValidateLifetime = false;
+    options.TokenValidationParameters.ValidateIssuerSigningKey = true;
+
+    // Manually pre-load and register JWKS public signing keys to guarantee successful signature validation
+    try
     {
-        NameClaimType = "preferred_username",
-        RoleClaimType = "role",
-        ValidateIssuer = true,
-        ValidateAudience = false,
-        ValidateLifetime = false,
-        ValidateIssuerSigningKey = false, // Bypass signature validation since it's a local test environment
-        SignatureValidator = (token, parameters) => new Microsoft.IdentityModel.JsonWebTokens.JsonWebToken(token)
-    };
+        using var client = new HttpClient();
+        var jwksJson = client.GetStringAsync("http://localhost:5000/api/auth/jwks").GetAwaiter().GetResult();
+        var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet(jwksJson);
+        var keysList = new List<Microsoft.IdentityModel.Tokens.SecurityKey>();
+        foreach (var key in jwks.Keys)
+        {
+            keysList.Add(key);
+        }
+        options.TokenValidationParameters.IssuerSigningKeys = keysList;
+        Console.WriteLine($"[MVC CLIENT] Successfully pre-loaded and registered {keysList.Count} JWKS signing keys at startup!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[MVC CLIENT] Warning: Failed to pre-load JWKS keys at startup: {ex.Message}");
+    }
+
+    options.BackchannelHttpHandler = new LoggingBackchannelHandler { InnerHandler = new HttpClientHandler() };
 
     options.Events = new OpenIdConnectEvents
     {
@@ -86,9 +104,53 @@ builder.Services.AddAuthentication(options =>
         },
         OnTokenResponseReceived = context =>
         {
-            // Safeguard against missing id_token property
+            Console.WriteLine($"[MVC CLIENT DEBUG] Received Token Response. AccessToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken)}, IdToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken)}");
+            
+            try
+            {
+                if (!string.IsNullOrEmpty(LoggingBackchannelHandler.LastResponseBody))
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(LoggingBackchannelHandler.LastResponseBody);
+                    var root = doc.RootElement;
+                    
+                    if (root.TryGetProperty("id_token", out var idTokenProp))
+                    {
+                        var idToken = idTokenProp.GetString();
+                        if (!string.IsNullOrEmpty(idToken))
+                        {
+                            context.TokenEndpointResponse.IdToken = idToken;
+                            Console.WriteLine($"[MVC CLIENT DEBUG] Successfully extracted and injected id_token manually! Len: {idToken.Length}");
+                        }
+                    }
+                    if (root.TryGetProperty("token_type", out var tokenTypeProp))
+                    {
+                        var tokenType = tokenTypeProp.GetString();
+                        if (!string.IsNullOrEmpty(tokenType))
+                        {
+                            context.TokenEndpointResponse.TokenType = tokenType;
+                            Console.WriteLine($"[MVC CLIENT DEBUG] Successfully extracted and injected token_type manually: {tokenType}");
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[MVC CLIENT DEBUG] Error parsing raw JSON manually: {ex.Message}");
+            }
+
+            if (string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken))
+            {
+                Console.WriteLine("[MVC CLIENT DEBUG] IdToken is NULL or EMPTY in TokenEndpointResponse!");
+            }
+            else
+            {
+                Console.WriteLine($"[MVC CLIENT DEBUG] IdToken snippet: {context.TokenEndpointResponse.IdToken.Substring(0, Math.Min(30, context.TokenEndpointResponse.IdToken.Length))}...");
+            }
+            
+            // Safeguard against missing id_token property (as fallback)
             if (string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken) && !string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken))
             {
+                Console.WriteLine("[MVC CLIENT DEBUG] Safeguard activated: Copying AccessToken to IdToken!");
                 context.TokenEndpointResponse.IdToken = context.TokenEndpointResponse.AccessToken;
                 context.TokenEndpointResponse.TokenType = "Bearer";
             }
@@ -147,5 +209,31 @@ namespace WebMvcTestOidc.Data
         public int Id { get; set; }
         public string Message { get; set; } = string.Empty;
         public DateTime Timestamp { get; set; }
+    }
+
+    public class LoggingBackchannelHandler : DelegatingHandler
+    {
+        public static string LastResponseBody { get; set; } = string.Empty;
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Console.WriteLine($"[BACKCHANNEL DEBUG] Outgoing Request: {request.Method} {request.RequestUri}");
+            if (request.Content != null)
+            {
+                var reqContent = await request.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[BACKCHANNEL DEBUG] Request Body: {reqContent}");
+            }
+
+            var response = await base.SendAsync(request, cancellationToken);
+
+            Console.WriteLine($"[BACKCHANNEL DEBUG] Incoming Response Status: {response.StatusCode}");
+            if (response.Content != null)
+            {
+                LastResponseBody = await response.Content.ReadAsStringAsync(cancellationToken);
+                Console.WriteLine($"[BACKCHANNEL DEBUG] Response Body: {LastResponseBody}");
+            }
+
+            return response;
+        }
     }
 }

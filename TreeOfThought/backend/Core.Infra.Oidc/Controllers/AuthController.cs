@@ -307,12 +307,22 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "invalid_grant" });
         }
 
-        Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating tokens with nonce: {nonce}...");
-        var token = await _authService.GenerateJwtToken(user, nonce);
+        Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating separate tokens with nonce: {nonce}...");
+        var accessToken = await _authService.GenerateJwtToken(user, "TreeOfThought.FE", null);
+        var idToken = await _authService.GenerateJwtToken(user, request.ClientId ?? "TreeOfThought.FE", nonce);
 
-        Console.WriteLine("[OIDC] Tokens generated and returned to client.");
-        var jsonResponse = $"{{\"access_token\":\"{token}\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id_token\":\"{token}\"}}";
-        return Content(jsonResponse, "application/json");
+        Console.WriteLine($"[OIDC DEBUG] Generated accessToken len: {accessToken?.Length}, idToken len: {idToken?.Length}");
+        Console.WriteLine("[OIDC] Separate tokens (access_token & id_token) generated and returned to client.");
+        
+        var tokenResponse = new
+        {
+            access_token = accessToken,
+            token_type = "Bearer",
+            expires_in = 3600,
+            id_token = idToken
+        };
+        var json = System.Text.Json.JsonSerializer.Serialize(tokenResponse);
+        return Content(json, "application/json");
     }
 
     [HttpPost("signup")]

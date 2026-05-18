@@ -48,7 +48,7 @@ public static class AuthServiceExtensions
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
-                        ValidateIssuer = false,
+                        ValidateIssuer = true,
                         ValidateAudience = false,
                         ValidateLifetime = false,
                         ValidateIssuerSigningKey = true,
@@ -66,7 +66,7 @@ public static class AuthServiceExtensions
                     options.MapInboundClaims = false;
                     
                     options.TokenValidationParameters.ValidateAudience = false;
-                    options.TokenValidationParameters.ValidateIssuer = false;
+                    options.TokenValidationParameters.ValidateIssuer = true;
                     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
                     options.TokenValidationParameters.NameClaimType = AuthConstants.NameClaim;
                     options.TokenValidationParameters.RoleClaimType = AuthConstants.RoleClaim;

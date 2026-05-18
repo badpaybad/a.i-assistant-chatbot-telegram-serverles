@@ -45,7 +45,7 @@ public class AuthService
         await _userRepo.EnsureAdminExistsAsync(adminUser, adminPass, adminEmail);
     }
 
-    public async Task<string> GenerateJwtToken(User user, string? nonce = null)
+    public async Task<string> GenerateJwtToken(User user, string? audience = null, string? nonce = null)
     {
         var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.Name).ToList();
         var claims = (await _userRepo.GetUserEffectiveClaimsAsync(user.Id)).Select(c => c.Name).ToList();
@@ -60,7 +60,7 @@ public class AuthService
         await SyncUserAclToRedisAsync(user.Id);
 
         // 3. Generate token
-        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl, nonce);
+        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl, audience, nonce);
     }
 
 
