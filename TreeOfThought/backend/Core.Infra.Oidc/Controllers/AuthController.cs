@@ -308,8 +308,9 @@ public class AuthController : ControllerBase
         }
 
         Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating separate tokens with nonce: {nonce}...");
-        var accessToken = await _authService.GenerateJwtToken(user, "TreeOfThought.FE", null);
-        var idToken = await _authService.GenerateJwtToken(user, request.ClientId ?? "TreeOfThought.FE", nonce);
+        var defaultAudience = _config["Auth:Jwt:Audience"] ?? "TreeOfThought.FE";
+        var accessToken = await _authService.GenerateJwtToken(user, defaultAudience, null);
+        var idToken = await _authService.GenerateJwtToken(user, request.ClientId ?? defaultAudience, nonce);
 
         Console.WriteLine($"[OIDC DEBUG] Generated accessToken len: {accessToken?.Length}, idToken len: {idToken?.Length}");
         Console.WriteLine("[OIDC] Separate tokens (access_token & id_token) generated and returned to client.");

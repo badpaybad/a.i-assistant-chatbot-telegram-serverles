@@ -37,6 +37,7 @@ public static class AuthServiceExtensions
         if (authMode == AppAuthMode.JwtBearer)
         {
             var isOidc = authConfig.GetValue<bool>("Jwt:IsOidc");
+            var validateLifetime = authConfig.GetValue<bool?>("Jwt:ValidateLifetime") ?? false;
             services.AddAuthentication(options =>
             {
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -49,9 +50,9 @@ public static class AuthServiceExtensions
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
-                        ValidateAudience = false,
-                        ValidateLifetime = false,
                         ValidateIssuerSigningKey = true,
+                        ValidateAudience = false,
+                        ValidateLifetime = validateLifetime,
                         ValidIssuer = authConfig["Jwt:Issuer"]!,
                         ValidAudience = authConfig["Jwt:Audience"]!,
                         IssuerSigningKey = JwtService.GetJwks(authConfig["Jwt:RsaPrivateKey"]!, authConfig["Jwt:Kid"]!),
@@ -64,42 +65,13 @@ public static class AuthServiceExtensions
                     options.Authority = authConfig["Jwt:Authority"]!;
                     options.RequireHttpsMetadata = false;
                     options.MapInboundClaims = false;
-                    
+
+                    options.TokenValidationParameters.ValidateLifetime = false;
                     options.TokenValidationParameters.ValidateAudience = false;
                     options.TokenValidationParameters.ValidateIssuer = true;
                     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
                     options.TokenValidationParameters.NameClaimType = AuthConstants.NameClaim;
                     options.TokenValidationParameters.RoleClaimType = AuthConstants.RoleClaim;
-                    
-                    options.TokenValidationParameters.IssuerSigningKeyResolver = (token, securityToken, kid, validationParameters) =>
-                    {
-                        try
-                        {
-                            using var client = new HttpClient();
-                            var authority = authConfig["Jwt:Authority"] ?? "http://localhost:5000";
-                            var discoUrl = $"{authority.TrimEnd('/')}/.well-known/openid-configuration";
-                            
-                            var discoJson = client.GetStringAsync(discoUrl).GetAwaiter().GetResult();
-                            var openIdConfig = Microsoft.IdentityModel.Protocols.OpenIdConnect.OpenIdConnectConfiguration.Create(discoJson);
-                            
-                            var jwksUrl = openIdConfig.JwksUri;
-                            if (string.IsNullOrEmpty(jwksUrl))
-                            {
-                                jwksUrl = $"{authority.TrimEnd('/')}/api/auth/jwks";
-                            }
-                            
-                            var jwksJson = client.GetStringAsync(jwksUrl).GetAwaiter().GetResult();
-                            var jwks = new JsonWebKeySet(jwksJson);
-                            
-                            Console.WriteLine($"[JWT AUTH RESOLVER] Dynamically fetched OIDC keys from {jwksUrl}. Found {jwks.Keys.Count} keys.");
-                            return jwks.Keys;
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"[JWT AUTH ERROR] Failed to fetch OIDC signing keys dynamically: {ex.Message}");
-                        }
-                        return Enumerable.Empty<SecurityKey>();
-                    };
                 }
             });
         }

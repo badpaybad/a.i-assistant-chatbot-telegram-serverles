@@ -211,3 +211,24 @@ paging cho việc lấy danh sách luôn cần là paging ở server
                             ClockSkew = TimeSpan.FromMinutes(5)
                         };
                     });
+
+**cập nhật 2026-05-18 12:46:36**
+    single trust về việc coi các client to server, server to server đều cấp tài khoản là user thông qua auth attribute để kiểm tra jwt và quyền. để bỏ sự phức tạp về quản lý client và audience của oidc, cần ValidateIssuer = true, ValidateIssuerSigningKey = true,
+            vd nếu không quản lý = db thì appsettings.jons
+                    "Oidc":{
+                        ...,
+                        "Clients": [
+                            {
+                            "ClientId": "Asp.net_MVC_Test.FE",
+                            "ClientSecret": "secret",
+                            "RedirectUris": ["http://localhost:5005/signin-oidc"],
+                            "TargetAudience": "TreeOfThought.FE" // <-- Ánh xạ Audience cho MVC
+                            },
+                            {
+                            "ClientId": "ReactJS_Test.FE",
+                            "ClientSecret": "secret_react",
+                            "RedirectUris": ["http://localhost:3000/callback"],
+                            "TargetAudience": "Mobile_API.BE" // <-- Ánh xạ Audience cho React
+                            }
+                        ]
+                    }
