@@ -100,13 +100,19 @@ public class FaceDetectionController : BaseController
     }
 
     [HttpGet("sessions")]
-    public async Task<IActionResult> GetSessions()
+    public async Task<IActionResult> GetSessions([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
     {
         var userId = GetUserId();
         
-        var sessions = await _db.UploadSessions
-            .Where(s => s.UserId == userId)
+        var query = _db.UploadSessions
+            .Where(s => s.UserId == userId);
+
+        var totalCount = await query.CountAsync();
+        
+        var sessions = await query
             .OrderByDescending(s => s.CreatedAt)
+            .Skip((pageIndex - 1) * pageSize)
+            .Take(pageSize)
             .Select(s => new
             {
                 s.Id,
@@ -117,7 +123,13 @@ public class FaceDetectionController : BaseController
             })
             .ToListAsync();
 
-        return Ok(sessions);
+        return Ok(new
+        {
+            data = sessions,
+            total = totalCount,
+            pageIndex,
+            pageSize
+        });
     }
 
     [HttpGet("sessions/{sessionId}")]

@@ -892,3 +892,27 @@
   50% { transform: translateY(-4px); }
   100% { transform: translateY(0px); }
 }
+
+/* Bug 1: Table Action Vertical Stack & Width */
+.flex-vertical-stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  align-items: stretch !important;
+  width: 100%;
+  padding: 4px 0;
+}
+
+.flex-vertical-stack tot-button {
+  width: 100% !important;
+}
+
+.full-width {
+  width: 100% !important;
+}
+
+/* Ensure no text overflow for premium table cell rendering */
+::ng-deep .glass-table .ant-table-cell {
+  white-space: normal !important;
+  word-break: break-word !important;
+}

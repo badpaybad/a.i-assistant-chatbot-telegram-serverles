@@ -30,5 +30,7 @@ Danh sách quản lý
 
     do dùng google cloud storage lưu file nên khi xóa cần xóa cả trên GCS
 
-
-
+**bug 1**
+    Cần theo chuẩn TreeOfThought/docs/frontend/phattrien.md 
+    Danh sách quản lý đang hiện từng dòng theo file gốc, trong khi cần hiển thị là session
+    mỗi dòng là 1 session 

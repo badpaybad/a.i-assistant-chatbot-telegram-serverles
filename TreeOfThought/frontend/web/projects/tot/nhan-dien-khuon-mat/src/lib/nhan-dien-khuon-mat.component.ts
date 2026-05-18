@@ -14,6 +14,7 @@ import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { FirebaseService } from '@tot/core';
 import { NhanDienKhuonMatService } from './services/nhan-dien-khuon-mat.service';
+import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 
 interface QueueItem {
   id: string;
@@ -48,7 +49,10 @@ interface QueueItem {
     NzTagModule,
     NzSpinModule,
     NzSwitchModule,
-    NzTooltipModule
+    NzTooltipModule,
+    TotButtonComponent,
+    TotTableComponent,
+    TotCellDirective
   ],
   templateUrl: './nhan-dien-khuon-mat.component.html',
   styleUrl: './nhan-dien-khuon-mat.component.css'
@@ -78,6 +82,12 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   // Historical sessions
   sessionsList: any[] = [];
   loadingSessions: boolean = false;
+  historyColumns: TotTableColumn[] = [];
+  
+  // Pagination state
+  totalSessions: number = 0;
+  pageIndex: number = 1;
+  pageSize: number = 10;
 
   // Detail Modal data
   selectedSessionDetails: any = null;
@@ -88,8 +98,19 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.setDefaultSessionName();
+    this.initColumns();
     this.loadSessionsHistory();
     this.initMediaPipe();
+  }
+
+  private initColumns(): void {
+    this.historyColumns = [
+      { title: 'Tên phiên upload', key: 'name' },
+      { title: 'Thời gian tạo', key: 'createdAt', width: '200px' },
+      { title: 'Người tạo', key: 'createdBy', width: '150px' },
+      { title: 'Số lượng ảnh gốc', key: 'imageCount', width: '150px' },
+      { title: 'Thao tác', key: 'action', width: '250px', right: true }
+    ];
   }
 
   ngOnDestroy(): void {
@@ -402,10 +423,16 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
           await this.listenToRealtimeNotification(result.trackingId);
         }
       }
+
+      this.message.success("Tải lên toàn bộ tệp thành công!");
+      this.completeSessionSave();
     } catch (error: any) {
       console.error("[Save Session] API Failed: ", error);
-      this.message.error(error.error?.message || "Lỗi kết nối hoặc xử lý phía máy chủ.");
+      this.message.error(error.message || error.error?.message || "Lỗi kết nối hoặc xử lý phía máy chủ.");
       this.savingSession = false;
+      this.uploadTrackingId = null;
+      this.cleanupUnsubscribe();
+      this.loadSessionsHistory();
     }
   }
 
@@ -415,13 +442,11 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
 
       this.firestoreUnsubscribe = this.firebase.subscribeToRequestId(trackingId, (data) => {
         if (data.status === 'Completed') {
-          this.message.success(data.message || "Tải lên thành công!");
-          this.completeSessionSave();
+          this.cleanupUnsubscribe();
           resolve();
         } else if (data.status === 'Error') {
-          this.message.error(data.message || "Xử lý lưu trữ thất bại.");
-          this.savingSession = false;
-          reject(new Error(data.message));
+          this.cleanupUnsubscribe();
+          reject(new Error(data.message || "Xử lý lưu trữ thất bại."));
         }
       });
     });
@@ -455,13 +480,20 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   async loadSessionsHistory(): Promise<void> {
     try {
       this.loadingSessions = true;
-      const history: any = await this.api.getSessions();
-      this.sessionsList = history || [];
+      const result: any = await this.api.getSessions(this.pageIndex, this.pageSize);
+      this.sessionsList = result?.data || [];
+      this.totalSessions = result?.total || 0;
     } catch (error) {
       console.error("Lỗi khi tải lịch sử phiên: ", error);
     } finally {
       this.loadingSessions = false;
     }
+  }
+
+  onQueryParamsChange(params: any): void {
+    this.pageIndex = params.pageIndex;
+    this.pageSize = params.pageSize;
+    this.loadSessionsHistory();
   }
 
   inlineRenameSession(session: any): void {

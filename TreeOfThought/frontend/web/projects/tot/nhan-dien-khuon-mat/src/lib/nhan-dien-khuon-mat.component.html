@@ -167,56 +167,67 @@
 
   <!-- HISTORICAL MANAGEMENT LIST -->
   <div class="workspace-card history-panel">
-    <div class="card-header">
-      <span class="card-title"><i nz-icon nzType="history"></i> Lịch Sử Các Phiên Upload</span>
+    <tot-table 
+      [data]="sessionsList" 
+      [columns]="historyColumns" 
+      [loading]="loadingSessions" 
+      [nzSize]="'middle'"
+      [frontPagination]="false"
+      [total]="totalSessions"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      (queryParamsChange)="onQueryParamsChange($event)"
+      [title]="tableTitleTpl"
+      [extra]="tableExtraTpl"
+      class="glass-table"
+    >
+      <ng-template totCell="name" let-data>
+        <div *ngIf="!data.isEditing" class="session-name-view">
+          <span class="s-name">{{ data.name }}</span>
+          <button nz-button nzType="text" (click)="inlineRenameSession(data)" class="edit-btn">
+            <i nz-icon nzType="edit"></i>
+          </button>
+        </div>
+        <div *ngIf="data.isEditing" class="session-name-edit">
+          <input nz-input [(ngModel)]="data.tempName" class="table-input">
+          <button nz-button nzType="primary" nzSize="small" (click)="saveInlineRename(data)"><i nz-icon nzType="check"></i></button>
+          <button nz-button nzType="default" nzSize="small" (click)="cancelInlineRename(data)"><i nz-icon nzType="close"></i></button>
+        </div>
+      </ng-template>
+
+      <ng-template totCell="createdAt" let-data>
+        {{ data.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
+      </ng-template>
+
+      <ng-template totCell="createdBy" let-data>
+        {{ data.createdBy }}
+      </ng-template>
+
+      <ng-template totCell="imageCount" let-data>
+        <nz-tag nzColor="geekblue">{{ data.imageCount }} ảnh gốc</nz-tag>
+      </ng-template>
+
+      <ng-template totCell="action" let-data>
+        <div class="action-buttons-group flex-vertical-stack">
+          <tot-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)" class="glow-btn full-width">
+            <i nz-icon nzType="eye"></i> Xem Chi Tiết
+          </tot-button>
+          <tot-button nzType="default" [nzDanger]="true" nzSize="small" (click)="deleteSession(data, $event)" class="danger-btn full-width">
+            <i nz-icon nzType="delete"></i> Xóa
+          </tot-button>
+        </div>
+      </ng-template>
+    </tot-table>
+
+    <ng-template #tableTitleTpl>
+      <span class="card-title" style="color: #fff; font-size: 16px; font-weight: 600;"><i nz-icon nzType="history"></i> Lịch Sử Các Phiên Upload</span>
+    </ng-template>
+
+    <ng-template #tableExtraTpl>
       <button nz-button nzType="default" (click)="loadSessionsHistory()" class="glass-btn" [nzLoading]="loadingSessions">
         <i nz-icon nzType="reload"></i> Làm mới lịch sử
       </button>
-    </div>
-
-    <nz-table #historyTable [nzData]="sessionsList" [nzLoading]="loadingSessions" nzSize="middle" class="glass-table">
-      <thead>
-        <tr>
-          <th>Tên phiên upload</th>
-          <th>Thời gian tạo</th>
-          <th>Người tạo</th>
-          <th>Số lượng ảnh gốc</th>
-          <th nzWidth="250px" nzAlign="right">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let data of historyTable.data">
-          <td>
-            <div *ngIf="!data.isEditing" class="session-name-view">
-              <span class="s-name">{{ data.name }}</span>
-              <button nz-button nzType="text" (click)="inlineRenameSession(data)" class="edit-btn">
-                <i nz-icon nzType="edit"></i>
-              </button>
-            </div>
-            <div *ngIf="data.isEditing" class="session-name-edit">
-              <input nz-input [(ngModel)]="data.tempName" class="table-input">
-              <button nz-button nzType="primary" nzSize="small" (click)="saveInlineRename(data)"><i nz-icon nzType="check"></i></button>
-              <button nz-button nzType="default" nzSize="small" (click)="cancelInlineRename(data)"><i nz-icon nzType="close"></i></button>
-            </div>
-          </td>
-          <td>{{ data.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</td>
-          <td>{{ data.createdBy }}</td>
-          <td>
-            <nz-tag nzColor="geekblue">{{ data.imageCount }} ảnh gốc</nz-tag>
-          </td>
-          <td nzAlign="right">
-            <div class="action-buttons-group">
-              <button nz-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)" class="glow-btn">
-                <i nz-icon nzType="eye"></i> Xem Chi Tiết
-              </button>
-              <button nz-button nzType="default" nzDanger nzSize="small" (click)="deleteSession(data, $event)" class="danger-btn">
-                <i nz-icon nzType="delete"></i> Xóa
-              </button>
-            </div>
-          </td>
-        </tr>
-      </tbody>
-    </nz-table>
+    </ng-template>
   </div>
 
   <!-- DETAILED MODAL LAYOUT -->

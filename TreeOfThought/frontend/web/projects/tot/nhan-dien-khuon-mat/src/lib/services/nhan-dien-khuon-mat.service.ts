@@ -24,8 +24,8 @@ export class NhanDienKhuonMatService {
     return this.http.post('/api/face-detection/save', formData);
   }
 
-  getSessions() {
-    return this.http.get('/api/face-detection/sessions');
+  getSessions(pageIndex: number = 1, pageSize: number = 10) {
+    return this.http.get(`/api/face-detection/sessions?pageIndex=${pageIndex}&pageSize=${pageSize}`);
   }
 
   getSessionDetails(sessionId: string) {
