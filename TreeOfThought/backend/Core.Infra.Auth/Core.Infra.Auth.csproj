@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Core.Infra.Base\Core.Infra.Base.csproj" />
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
     <ProjectReference Include="..\Core.Infra.Session\Core.Infra.Session.csproj" />

@@ -32,7 +32,6 @@ public static class OidcServiceExtensions
     public static IServiceCollection AddAppOidc(this IServiceCollection services, IConfiguration config, Dictionary<string, Action<AuthorizationPolicyBuilder>>? configurePolicyAdditional = null)
     {
         var oidcConfig = config.GetSection("Oidc");
-
         var authConfig = config.GetSection("Auth");
         // 0. Include Authorization Infrastructure (which includes Session)
         services.AddAppAuthorization(config);
@@ -52,53 +51,17 @@ public static class OidcServiceExtensions
         // 1. HttpContextAccessor
         services.AddHttpContextAccessor();
 
-        // 2. Authentication
-        var isOidc = authConfig.GetValue<bool>("Jwt:IsOidc")!;
-        services.AddAuthentication(options =>
-        {
-            options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-            .AddJwtBearer(options =>
-            {
-                if (isOidc)
-                {
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateLifetime = false,
-                        ValidateIssuerSigningKey = true,
-                        ValidIssuer = authConfig["Jwt:Issuer"]!,
-                        ValidAudience = authConfig["Jwt:Audience"]!,
-                        IssuerSigningKey = JwtService.GetJwks(authConfig["Jwt:RsaPrivateKey"]!, authConfig["Jwt:Kid"]!),
-                        NameClaimType = AuthConstants.NameClaim,
-                        RoleClaimType = AuthConstants.RoleClaim
-                    };
-                }
-                else
-                {
-                    options.Authority = authConfig["Jwt:Authority"]!;
-                    options.RequireHttpsMetadata = false;
-                    options.MapInboundClaims = false;
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateAudience = false,
-                        ValidateIssuer = false,
-                        NameClaimType = AuthConstants.NameClaim,
-                        RoleClaimType = AuthConstants.RoleClaim
-                    };
-                }
-
-            })
+        // 2. Authentication (JWT Bearer is configured as base in AddAppAuthorization)
+        // Add project-specific Cookie Scheme to the existing AuthenticationBuilder
+        services.AddAuthentication()
             .AddCookie(AuthConstants.SsoSessionScheme, options =>
             {
-                options.Cookie.Name = "TOT_SSO_SESSION";
+                options.Cookie.Name = oidcConfig["Cookies:SessionName"];
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax;
                 options.Cookie.SecurePolicy = Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
                 options.ExpireTimeSpan = TimeSpan.FromDays(7);
-                options.LoginPath = "/api/auth/authorize"; // Redirect to authorize if cookie missing
+                options.LoginPath = oidcConfig["Cookies:LoginPath"]; // Redirect to authorize if cookie missing
             });
 
         // 3. Authorization (Additional Policies)

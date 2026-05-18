@@ -11,4 +11,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\backend\Core.Infra.Auth\Core.Infra.Auth.csproj" />
+    <ProjectReference Include="..\..\backend\Core.Infra.Session\Core.Infra.Session.csproj" />
+  </ItemGroup>
+
 </Project>

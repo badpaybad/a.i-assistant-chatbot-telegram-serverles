@@ -1,0 +1,83 @@
+@{
+    ViewData["Title"] = "Đăng xuất thành công";
+}
+
+<div class="container py-5 d-flex justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="card p-5 shadow-lg border-0 text-center animate-fade-in" style="max-width: 500px; border-radius: 16px; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px);">
+        <div class="card-body">
+            <div class="mb-4 position-relative d-inline-block">
+                <div class="bg-success bg-opacity-10 p-4 rounded-circle animate-pulse" style="width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; margin: 0 auto;">
+                    <i class="bi bi-shield-check text-success fs-1"></i>
+                </div>
+            </div>
+            
+            <h2 class="fw-bold mb-3 text-dark">Đăng xuất thành công!</h2>
+            <p class="text-secondary mb-4">Bạn đã được đăng xuất an toàn khỏi hệ sinh thái Single Sign-On (SSO).</p>
+            
+            <div class="p-3 bg-light rounded-3 mb-4 text-start">
+                <div class="d-flex align-items-center small text-muted mb-2">
+                    <i class="bi bi-arrow-repeat me-2 animate-spin"></i>
+                    <span>Tự động chuyển hướng về trang chủ sau <strong class="text-primary fs-5 ms-1" id="countdown">3</strong> giây...</span>
+                </div>
+                <div class="progress" style="height: 6px; border-radius: 3px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated bg-success" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+            </div>
+            
+            <a href="/" class="btn btn-primary w-100 py-2.5 fw-bold" style="border-radius: 8px;">
+                <i class="bi bi-house-door-fill me-2"></i>Về trang chủ ngay
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .animate-spin {
+        animation: spin 2s linear infinite;
+    }
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    .animate-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: .9; transform: scale(1.05); }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        let secondsLeft = 3;
+        const countdownEl = document.getElementById('countdown');
+        const progressBarEl = document.getElementById('progress-bar');
+        
+        // Start from 0%
+        if (progressBarEl) progressBarEl.style.width = '0%';
+        
+        const totalDuration = 3000; // 3 seconds
+        const intervalStep = 100; // update every 100ms for smooth progress bar
+        let elapsed = 0;
+        
+        const interval = setInterval(() => {
+            elapsed += intervalStep;
+            const pct = (elapsed / totalDuration) * 100;
+            
+            if (progressBarEl) {
+                progressBarEl.style.width = Math.min(pct, 100) + '%';
+            }
+            
+            const currentSeconds = Math.ceil((totalDuration - elapsed) / 1000);
+            if (countdownEl && currentSeconds >= 0) {
+                countdownEl.innerText = currentSeconds;
+            }
+            
+            if (elapsed >= totalDuration) {
+                clearInterval(interval);
+                window.location.href = '/';
+            }
+        }, intervalStep);
+    </script>
+}

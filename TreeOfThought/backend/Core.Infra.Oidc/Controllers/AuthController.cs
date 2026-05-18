@@ -284,13 +284,8 @@ public class AuthController : ControllerBase
         var token = await _authService.GenerateJwtToken(user);
 
         Console.WriteLine("[OIDC] Tokens generated and returned to client.");
-        return Ok(new
-        {
-            access_token = token,
-            token_type = "Bearer",
-            expires_in = 3600,
-            id_token = token
-        });
+        var jsonResponse = $"{{\"access_token\":\"{token}\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id_token\":\"{token}\"}}";
+        return Content(jsonResponse, "application/json");
     }
 
     [HttpPost("signup")]

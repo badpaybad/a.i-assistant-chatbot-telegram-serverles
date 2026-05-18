@@ -10,7 +10,10 @@ public static class SessionServiceExtensions
 {
     public static IServiceCollection AddAppSession(this IServiceCollection services, IConfiguration config)
     {
+
         var redisConn = config["Session:Redis"]!;
+        // 1. HttpContextAccessor
+        services.AddHttpContextAccessor();
 
         services.AddSingleton<RedisSessionService>(sp =>
             new RedisSessionService(redisConn, sp.GetRequiredService<ILogger<RedisSessionService>>()));

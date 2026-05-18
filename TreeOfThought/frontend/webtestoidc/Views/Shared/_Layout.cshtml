@@ -41,17 +41,67 @@
                     <ul class="navbar-nav">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item">
-                                <span class="nav-link text-dark">Xin chào, @User.Identity.Name!</span>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-danger" asp-area="" asp-controller="Home" asp-action="Logout">Đăng xuất</a>
+                            var username = User.Identity?.Name ?? User.FindFirst("preferred_username")?.Value ?? "User";
+                            var fullName = User.FindFirst("name")?.Value ?? username;
+                            var pictureUrl = User.FindFirst("picture")?.Value;
+                            var email = User.FindFirst("email")?.Value ?? "";
+                            var initials = string.IsNullOrEmpty(fullName) ? "U" : fullName.Substring(0, 1).ToUpper();
+
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2 py-1" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="border-radius: 8px; transition: all 0.2s;">
+                                    @if (!string.IsNullOrEmpty(pictureUrl))
+                                    {
+                                        <img src="@pictureUrl" class="rounded-circle border border-2 border-primary" style="width: 32px; height: 32px; object-fit: cover;" alt="Avatar" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style="width: 32px; height: 32px; font-size: 14px;">
+                                            @initials
+                                        </div>
+                                    }
+                                    <span class="fw-semibold text-dark d-none d-md-inline">@fullName</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end shadow border-0 p-2 mt-2" aria-labelledby="userDropdown" style="min-width: 240px; border-radius: 12px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(8px);">
+                                    <li class="px-3 py-2.5">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bold text-dark text-truncate">@fullName</span>
+                                            <span class="small text-muted text-truncate">@@@username</span>
+                                            @if (!string.IsNullOrEmpty(email))
+                                            {
+                                                <span class="small text-muted text-truncate mt-0.5"><i class="bi bi-envelope me-1"></i>@email</span>
+                                            }
+                                        </div>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-2"></li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Home" asp-action="Secure" style="border-radius: 6px;">
+                                            <i class="bi bi-shield-lock-fill text-primary"></i>
+                                            <span>Vùng bảo mật</span>
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2" asp-controller="Home" asp-action="Claims" style="border-radius: 6px;">
+                                            <i class="bi bi-list-ul text-secondary"></i>
+                                            <span>Xem Claims</span>
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-2"></li>
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-center gap-2 py-2 text-danger" asp-controller="Home" asp-action="Logout" style="border-radius: 6px;">
+                                            <i class="bi bi-box-arrow-right"></i>
+                                            <span>Đăng xuất SSO</span>
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
                         }
                         else
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-primary" asp-area="" asp-controller="Home" asp-action="Login">Đăng nhập SSO</a>
+                                <a class="nav-link btn btn-primary text-white px-3 py-1.5 d-flex align-items-center gap-2 fw-semibold shadow-sm" asp-controller="Home" asp-action="Login" style="border-radius: 8px; transition: all 0.2s;">
+                                    <i class="bi bi-key-fill"></i>
+                                    <span>Đăng nhập SSO</span>
+                                </a>
                             </li>
                         }
                     </ul>

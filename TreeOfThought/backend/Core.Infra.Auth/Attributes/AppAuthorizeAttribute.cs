@@ -10,6 +10,7 @@ namespace Core.Infra.Auth.Attributes;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = true, Inherited = true)]
 public class AppAuthorizeAttribute : AuthorizeAttribute
 {
+    
     private AuthMode _mode = AuthMode.OR;
     public AuthMode Mode 
     { 

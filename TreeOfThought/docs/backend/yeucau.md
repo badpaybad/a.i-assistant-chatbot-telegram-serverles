@@ -143,8 +143,36 @@ BE tổng kết nhanh về mặt cấu trúc
 
 **đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
-**cập nhật 202605-17 12:36:36** dùng google firestore để notify lên UI , sau khi đã thực hiện xong 1 nghiệp vụ, UI cần đảm bảo xóa firestore address path đó (tránh tốn tài nguyên và tiền). address path dành cho việc này là cần thành const không được tạo bừa bãi và là duy nhất trong solution . 
-**cập nhật 202605-17 12:46:36**
+**cập nhật 2026-05-17 12:36:36** dùng google firestore để notify lên UI , sau khi đã thực hiện xong 1 nghiệp vụ, UI cần đảm bảo xóa firestore address path đó (tránh tốn tài nguyên và tiền). address path dành cho việc này là cần thành const không được tạo bừa bãi và là duy nhất trong solution . 
+**cập nhật 2026-05-17 12:46:36**
 paging cho việc lấy danh sách luôn cần là paging ở server 
 
+**cập nhật 2026-05-18 12:46:36**
+    khi các project nghiệp vụ BE dùng tới TreeOfThought/backend/Core.Infra.Auth/Attributes/AppAuthorizeAttribute.cs cần dùng TreeOfThought/backend/Core.Infra.Auth/Extensions/AuthServiceExtensions.cs đăng ký với program.cs dể dùng
+        cần chú ý về appsettings.json sẽ cần bổ xung 
 
+            cần thêm session vào appsetting để dùng Auth attr với hybrid jwt + redis session 
+            "Session": {
+                "Redis": "localhost:6379,defaultDatabase=0,password=Test123456,abortConnect=false"
+            }
+
+            "Auth": {
+                "Jwt": {
+                "Secret": "",
+                "RsaPrivateKey": "",
+
+                "Kid": "",
+                "Algorithm": "RS256",
+                "Issuer": "",
+                "Audience": "",
+                "ExpiryMinutes": 60,
+                "IsOidc": false,
+                "Authority": "http://localhost:5000"
+                }
+            },
+
+            chủ yếu là Authority để Auth attribute hoạt động như 1 bên thứ 3 sso vào 
+                    "IsOidc": false,
+                    "Authority": "http://localhost:5000"
+
+        
