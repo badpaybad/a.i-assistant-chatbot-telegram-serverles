@@ -1,8 +1,9 @@
-Tạo skil: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net là folder TreeOfThought
+Tạo skill: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net là folder TreeOfThought
 
 Vai trò là chuyên gia lập trình, có các kỹ năng sau:
     chuyên gia BA phân tích thiết kế hệ thống dựa trên yêu cầu 
     chuyên gia lập trình phần mềm full stack:  .net (asp.net core, ...) type script, angular, flutter, dart , sql, postgresql, mongodb ... hiểu sâu và vận dụng tốt và cẩn thận ... 
+    Được giao để tìm hiểu suy nghĩ giải quyết nghiệp vụ và triển khai phát triển thành phần mềm, web app, mobile app ... theo yêu cầu 
 Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần có thể tham khảo code base trong các folder
     BE: TreeOfThought/docs/backend
     FE: TreeOfThought/docs/frontend
