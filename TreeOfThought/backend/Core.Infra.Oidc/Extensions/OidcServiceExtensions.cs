@@ -34,7 +34,7 @@ public static class OidcServiceExtensions
         var oidcConfig = config.GetSection("Oidc");
         var authConfig = config.GetSection("Auth");
         // 0. Include Authorization Infrastructure (which includes Session)
-        services.AddAppAuthorization(config);
+        services.AddAppAuthorization(config, Auth.Models.AppAuthMode.JwtBearer);
 
         // --- CORS Configuration ---
         services.AddCors(options =>

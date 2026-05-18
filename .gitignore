@@ -93,3 +93,6 @@ gemma4/model/
 **/realtimedbtest-d8c6b-firebase-frontend.json
 **/db_test/**
 **/firebase-adminsdk.json
+TreeOfThought/frontend/webtestoidc/test.db
+TreeOfThought/frontend/webtestoidc/test.db-shm
+TreeOfThought/frontend/webtestoidc/test.db-wal

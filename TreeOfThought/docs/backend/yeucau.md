@@ -151,28 +151,63 @@ paging cho việc lấy danh sách luôn cần là paging ở server
     khi các project nghiệp vụ BE dùng tới TreeOfThought/backend/Core.Infra.Auth/Attributes/AppAuthorizeAttribute.cs cần dùng TreeOfThought/backend/Core.Infra.Auth/Extensions/AuthServiceExtensions.cs đăng ký với program.cs dể dùng
         cần chú ý về appsettings.json sẽ cần bổ xung 
 
-            cần thêm session vào appsetting để dùng Auth attr với hybrid jwt + redis session 
-            "Session": {
-                "Redis": "localhost:6379,defaultDatabase=0,password=Test123456,abortConnect=false"
-            }
+            với api restful dùng jwt bearer 
 
-            "Auth": {
-                "Jwt": {
-                "Secret": "",
-                "RsaPrivateKey": "",
-
-                "Kid": "",
-                "Algorithm": "RS256",
-                "Issuer": "",
-                "Audience": "",
-                "ExpiryMinutes": 60,
-                "IsOidc": false,
-                "Authority": "http://localhost:5000"
+                cần thêm session vào appsetting để dùng Auth attr với hybrid jwt + redis session 
+                "Session": {
+                    "Redis": "localhost:6379,defaultDatabase=0,password=Test123456,abortConnect=false"
                 }
-            },
 
-            chủ yếu là Authority để Auth attribute hoạt động như 1 bên thứ 3 sso vào 
-                    "IsOidc": false,
-                    "Authority": "http://localhost:5000"
+                "Auth": {
+                    "Jwt": {
+                    "IsOidc": false, // Project API này chỉ là Resource Server tiêu thụ Token
+                    "Authority": "http://localhost:5000" // Trỏ tới địa chỉ của SSO Server (Core.Web.Api)
+                    }
+                }
 
-        
+                program.cs 
+                    builder.Services.AddAppAuthorization(builder.Configuration, Auth.Models.AppAuthMode.JwtBearer);
+            
+            với MVC web do cần dùng cookies 
+
+                program.cs 
+                    builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.None);
+
+                    builder.Services.AddAuthentication(options =>
+                    {
+                        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+                        options.DefaultChallengeScheme = OpenIdConnectDefaults.AuthenticationScheme;
+                    })
+                    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+                    {
+                        options.Cookie.Name = "WebTestOidc_Auth";
+                        options.Cookie.SameSite = SameSiteMode.Lax;
+                        options.LoginPath = "/Home/Login";
+                    })
+                    .AddOpenIdConnect(OpenIdConnectDefaults.AuthenticationScheme, options =>
+                    {
+                        options.Authority = oidcConfig["Authority"];
+                        options.ClientId = oidcConfig["ClientId"];
+                        options.ClientSecret = oidcConfig["ClientSecret"];
+                        options.ResponseType = "code";
+                        
+                        options.SaveTokens = true;
+                        options.RequireHttpsMetadata = false; 
+
+                        // Bypass Nonce because custom OIDC server doesn't support it yet
+                        options.ProtocolValidator.RequireNonce = false;
+
+                        // Standard validation using the JWKS endpoint of backend
+                        options.TokenValidationParameters = new TokenValidationParameters
+                        {
+                            NameClaimType = "preferred_username",
+                            RoleClaimType = "role",
+                            ValidateIssuer = true,
+                            ValidIssuer = oidcConfig["Authority"],
+                            ValidateAudience = true,
+                            ValidAudience = oidcConfig["ClientId"],
+                            ValidateLifetime = true,
+                            ValidateIssuerSigningKey = true,
+                            ClockSkew = TimeSpan.FromMinutes(5)
+                        };
+                    });

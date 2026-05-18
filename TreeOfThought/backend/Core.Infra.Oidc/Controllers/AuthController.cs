@@ -41,10 +41,14 @@ public class AuthController : ControllerBase
     [HttpGet("/.well-known/openid-configuration")]
     public IActionResult GetDiscoveryDocument()
     {
-        var baseUrl = $"{Request.Scheme}://{Request.Host}{Request.PathBase}";
+        var issuer = _config["Auth:Jwt:Issuer"]?.TrimEnd('/');
+        var baseUrl = string.IsNullOrEmpty(issuer)
+            ? $"{Request.Scheme}://{Request.Host}{Request.PathBase}"
+            : issuer;
+
         return Ok(new
         {
-            issuer = _config["Auth:Jwt:Issuer"],
+            issuer = issuer ?? $"{Request.Scheme}://{Request.Host}{Request.PathBase}",
             jwks_uri = $"{baseUrl}/api/auth/jwks",
             authorization_endpoint = $"{baseUrl}/api/auth/authorize",
             token_endpoint = $"{baseUrl}/api/auth/token",

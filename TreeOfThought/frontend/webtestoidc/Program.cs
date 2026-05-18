@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using WebTestOidc.Data;
 using Core.Infra.Auth.Extensions;
+using Core.Infra.Auth.Models;
 
 System.IdentityModel.Tokens.Jwt.JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
@@ -57,15 +58,13 @@ builder.Services.AddAuthentication(options =>
     {
         NameClaimType = "preferred_username",
         RoleClaimType = "role",
-        ValidateIssuer = false,
-        ValidAudience = "TreeOfThought.FE",
-        ValidateLifetime = false,
-        ValidateIssuerSigningKey = false,
-        SignatureValidator = delegate (string token, TokenValidationParameters parameters)
-        {
-            var jwtHandler = new Microsoft.IdentityModel.JsonWebTokens.JsonWebTokenHandler();
-            return jwtHandler.ReadJsonWebToken(token);
-        }
+        ValidateIssuer = true,
+        ValidIssuer = oidcConfig["Authority"],
+        ValidateAudience = true,
+        ValidAudience = oidcConfig["ClientId"],
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ClockSkew = TimeSpan.FromMinutes(5)
     };
 
     options.Events = new OpenIdConnectEvents
@@ -81,29 +80,15 @@ builder.Services.AddAuthentication(options =>
             });
             await db.SaveChangesAsync();
         },
-        OnRedirectToIdentityProvider = async context =>
+        OnRedirectToIdentityProvider = context =>
         {
-            var config = await context.Options.ConfigurationManager.GetConfigurationAsync(context.HttpContext.RequestAborted);
-            if (config != null)
-            {
-                config.TokenEndpoint = "http://127.0.0.1:5000/api/auth/token";
-                config.UserInfoEndpoint = "http://127.0.0.1:5000/api/auth/me";
-                config.EndSessionEndpoint = "http://127.0.0.1:5000/api/auth/logout";
-                context.Options.Configuration = config;
-            }
             Console.WriteLine($"[OIDC DEBUG] Redirecting to Identity Provider. IssuerAddress: '{context.ProtocolMessage.IssuerAddress}'");
+            return Task.CompletedTask;
         },
-        OnAuthorizationCodeReceived = async context =>
+        OnAuthorizationCodeReceived = context =>
         {
-            var config = await context.Options.ConfigurationManager.GetConfigurationAsync(context.HttpContext.RequestAborted);
-            if (config != null)
-            {
-                config.TokenEndpoint = "http://127.0.0.1:5000/api/auth/token";
-                config.UserInfoEndpoint = "http://127.0.0.1:5000/api/auth/me";
-                config.EndSessionEndpoint = "http://127.0.0.1:5000/api/auth/logout";
-                context.Options.Configuration = config;
-            }
-            Console.WriteLine($"[OIDC DEBUG] Auth Code Received event. Code: '{context.ProtocolMessage.Code}'. TokenEndpoint: '{context.Options.Configuration?.TokenEndpoint}'");
+            Console.WriteLine($"[OIDC DEBUG] Auth Code Received event. Code: '{context.ProtocolMessage.Code}'");
+            return Task.CompletedTask;
         },
         OnTokenResponseReceived = context =>
         {
@@ -131,7 +116,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddAppAuthorization(builder.Configuration);
+builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.None);
 
 // TEST BACKCHANNEL
 Task.Run(async () =>
