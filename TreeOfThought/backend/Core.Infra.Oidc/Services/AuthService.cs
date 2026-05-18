@@ -45,7 +45,7 @@ public class AuthService
         await _userRepo.EnsureAdminExistsAsync(adminUser, adminPass, adminEmail);
     }
 
-    public async Task<string> GenerateJwtToken(User user)
+    public async Task<string> GenerateJwtToken(User user, string? nonce = null)
     {
         var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.Name).ToList();
         var claims = (await _userRepo.GetUserEffectiveClaimsAsync(user.Id)).Select(c => c.Name).ToList();
@@ -60,7 +60,7 @@ public class AuthService
         await SyncUserAclToRedisAsync(user.Id);
 
         // 3. Generate token
-        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl);
+        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl, nonce);
     }
 
 
@@ -315,33 +315,35 @@ public class AuthService
         return true;
     }
 
-    public async Task<string> GenerateAuthorizationCodeAsync(Guid userId, string clientId, string redirectUri)
+    public async Task<string> GenerateAuthorizationCodeAsync(Guid userId, string clientId, string redirectUri, string? nonce = null)
     {
         var code = Guid.NewGuid().ToString("N");
         var data = new AuthCodeData
         {
             UserId = userId,
             ClientId = clientId,
-            RedirectUri = redirectUri
+            RedirectUri = redirectUri,
+            Nonce = nonce
         };
 
         await _sessionService.SaveAuthCodeAsync(code, data);
         return code;
     }
 
-    public async Task<User?> ExchangeCodeForTokenAsync(string code, string clientId)
+    public async Task<(User? User, string? Nonce)> ExchangeCodeForTokenAsync(string code, string clientId)
     {
         var data = await _sessionService.GetAuthCodeAsync<AuthCodeData>(code);
 
         if (data == null || data.ClientId != clientId)
         {
-            return null;
+            return (null, null);
         }
 
         // Remove code after use (One-time use)
         await _sessionService.RemoveAuthCodeAsync(code);
 
-        return await _userRepo.GetUserByIdAsync(data.UserId);
+        var user = await _userRepo.GetUserByIdAsync(data.UserId);
+        return (user, data.Nonce);
     }
 }
 

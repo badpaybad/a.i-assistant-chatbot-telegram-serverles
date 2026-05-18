@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Core.Infra.Auth.Services;
 using Core.Infra.Auth.Interfaces;
 using System.Net;
+using Microsoft.Extensions.Configuration;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -169,6 +170,7 @@ public class AuthController : ControllerBase
         var clientId = request.ClientId ?? Request.Query["client_id"].ToString();
         var redirectUri = request.RedirectUri ?? Request.Query["redirect_uri"].ToString();
         var state = request.State ?? Request.Query["state"].ToString();
+        var nonce = request.Nonce ?? Request.Query["nonce"].ToString();
 
         if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(redirectUri))
         {
@@ -177,14 +179,22 @@ public class AuthController : ControllerBase
             return BadRequest(new { error = "invalid_request", error_description = "client_id and redirect_uri are required." });
         }
 
+        var requireNonce = _config.GetValue<bool>("Oidc:RequireNonce");
+        if (requireNonce && string.IsNullOrEmpty(nonce))
+        {
+            Console.WriteLine($"[OIDC] Rejecting Authorize request: nonce is required under Oidc:RequireNonce = true configuration.");
+            return BadRequest(new { error = "invalid_request", error_description = "nonce is required." });
+        }
+
         var cookies = Request.Cookies.Keys;
-        Console.WriteLine($"[OIDC] Authorize request: ClientId={clientId}, RedirectUri={redirectUri}, State={state}");
+        Console.WriteLine($"[OIDC] Authorize request: ClientId={clientId}, RedirectUri={redirectUri}, State={state}, Nonce={nonce}");
         Console.WriteLine($"[OIDC] Cookies received: {string.Join(", ", cookies)}");
 
         // Update request model to ensure following logic uses corrected values
         request.ClientId = clientId;
         request.RedirectUri = redirectUri;
         request.State = state;
+        request.Nonce = nonce;
 
         // 1. Check if user is already logged in via Session Cookie
         var authenticateResult = await HttpContext.AuthenticateAsync(AuthConstants.SsoSessionScheme);
@@ -195,7 +205,7 @@ public class AuthController : ControllerBase
             {
                 Console.WriteLine($"[OIDC] User {userId} already logged in via SSO Session. Generating code...");
                 // Already logged in -> Generate code and redirect back to app
-                var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId, request.RedirectUri);
+                var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId, request.RedirectUri, request.Nonce);
                 var redirectUrl = $"{request.RedirectUri}{(request.RedirectUri.Contains("?") ? "&" : "?")}code={code}&state={request.State}";
                 
                 Console.WriteLine($"[OIDC] Redirecting back to client. RedirectUri: {request.RedirectUri}");
@@ -277,15 +287,15 @@ public class AuthController : ControllerBase
 
         Console.WriteLine($"[OIDC] Token request details: GrantType={request.GrantType}, ClientId={request.ClientId}, Code={request.Code.Substring(0, Math.Min(4, request.Code.Length))}...");
 
-        var user = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "");
+        var (user, nonce) = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "");
         if (user == null)
         {
             Console.WriteLine($"[OIDC] Token request failed: Invalid code or ClientId. Code: {request.Code}, ClientId: {request.ClientId}");
             return BadRequest(new { error = "invalid_grant" });
         }
 
-        Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating tokens...");
-        var token = await _authService.GenerateJwtToken(user);
+        Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating tokens with nonce: {nonce}...");
+        var token = await _authService.GenerateJwtToken(user, nonce);
 
         Console.WriteLine("[OIDC] Tokens generated and returned to client.");
         var jsonResponse = $"{{\"access_token\":\"{token}\",\"token_type\":\"Bearer\",\"expires_in\":3600,\"id_token\":\"{token}\"}}";

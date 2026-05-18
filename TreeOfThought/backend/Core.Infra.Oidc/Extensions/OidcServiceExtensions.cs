@@ -33,6 +33,7 @@ public static class OidcServiceExtensions
     {
         var oidcConfig = config.GetSection("Oidc");
         var authConfig = config.GetSection("Auth");
+        var requireNonce = oidcConfig.GetValue<bool>("RequireNonce")!;
         // 0. Include Authorization Infrastructure (which includes Session)
         services.AddAppAuthorization(config, Auth.Models.AppAuthMode.JwtBearer);
 

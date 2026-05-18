@@ -36,4 +36,5 @@ public class AuthCodeData
     public Guid UserId { get; set; }
     public string ClientId { get; set; } = string.Empty;
     public string RedirectUri { get; set; } = string.Empty;
+    public string? Nonce { get; set; }
 }
