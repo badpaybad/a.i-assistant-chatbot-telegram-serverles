@@ -62,16 +62,52 @@ public static class AuthServiceExtensions
                 }
                 else
                 {
-                    options.Authority = authConfig["Jwt:Authority"]!;
-                    options.RequireHttpsMetadata = false;
+                    var requireHttpsMetadata = authConfig.GetValue<bool?>("Jwt:RequireHttpsMetadata");
+                    // Detect if the authority is localhost/loopback (development env)
+                    var authority = authConfig["Jwt:Authority"] ?? "http://localhost:5000";
+                    var isLocalhost = false;
+                    if (Uri.TryCreate(authority, UriKind.Absolute, out var uri))
+                    {
+                        isLocalhost = uri.IsLoopback || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+                    }
+
+                    options.Authority = authority;
+                    options.RequireHttpsMetadata = requireHttpsMetadata.HasValue ? requireHttpsMetadata.Value : !isLocalhost;
                     options.MapInboundClaims = false;
 
-                    options.TokenValidationParameters.ValidateLifetime = false;
+                    options.TokenValidationParameters.ValidateLifetime = validateLifetime;
                     options.TokenValidationParameters.ValidateAudience = false;
                     options.TokenValidationParameters.ValidateIssuer = true;
                     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
                     options.TokenValidationParameters.NameClaimType = AuthConstants.NameClaim;
                     options.TokenValidationParameters.RoleClaimType = AuthConstants.RoleClaim;
+
+                    if (isLocalhost)
+                    {
+                        // Pre-load JWKS public keys once at application startup to guarantee successful signature validation on localhost HTTP
+                        try
+                        {
+                            using var client = new HttpClient();
+                            var jwksUrl = $"{authority.TrimEnd('/')}/api/auth/jwks";
+                            var jwksJson = client.GetStringAsync(jwksUrl).GetAwaiter().GetResult();
+                            var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet(jwksJson);
+                            var keysList = new List<Microsoft.IdentityModel.Tokens.SecurityKey>();
+                            foreach (var key in jwks.Keys)
+                            {
+                                keysList.Add(key);
+                            }
+                            options.TokenValidationParameters.IssuerSigningKeys = keysList;
+                            Console.WriteLine($"[JWT AUTH] Localhost environment detected. Successfully pre-loaded {keysList.Count} JWKS keys at startup from {jwksUrl}");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[JWT AUTH] Warning: Failed to pre-load JWKS keys on localhost startup: {ex.Message}");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[JWT AUTH] Production environment detected ({authority}). Relying on standard dynamic OIDC JWKS discovery.");
+                    }
                 }
             });
         }

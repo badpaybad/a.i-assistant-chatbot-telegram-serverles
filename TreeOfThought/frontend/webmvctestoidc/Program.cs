@@ -40,7 +40,15 @@ builder.Services.AddAuthentication(options =>
 
     options.SaveTokens = true;
     options.GetClaimsFromUserInfoEndpoint = true;
-    options.RequireHttpsMetadata = false;
+
+    var isLocalhost = false;
+    if (Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri))
+    {
+        isLocalhost = uri.IsLoopback || uri.Host.Equals("localhost", StringComparison.OrdinalIgnoreCase);
+    }
+
+    var requireHttpsMetadata = authConfig.GetValue<bool?>("Jwt:RequireHttpsMetadata");
+    options.RequireHttpsMetadata = requireHttpsMetadata.HasValue ? requireHttpsMetadata.Value : !isLocalhost;
 
     // Fix "Correlation failed" on HTTP localhost
     options.NonceCookie.SameSite = SameSiteMode.Lax;
@@ -58,24 +66,26 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters.ValidAudience = oidcConfig["ClientId"];
     options.TokenValidationParameters.ValidateLifetime = false;
     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
-
-    // Manually pre-load and register JWKS public signing keys to guarantee successful signature validation
-    try
+    if (isLocalhost)
     {
-        using var client = new HttpClient();
-        var jwksJson = client.GetStringAsync("http://localhost:5000/api/auth/jwks").GetAwaiter().GetResult();
-        var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet(jwksJson);
-        var keysList = new List<Microsoft.IdentityModel.Tokens.SecurityKey>();
-        foreach (var key in jwks.Keys)
+        // Manually pre-load and register JWKS public signing keys to guarantee successful signature validation
+        try
         {
-            keysList.Add(key);
+            using var client = new HttpClient();
+            var jwksJson = client.GetStringAsync("http://localhost:5000/api/auth/jwks").GetAwaiter().GetResult();
+            var jwks = new Microsoft.IdentityModel.Tokens.JsonWebKeySet(jwksJson);
+            var keysList = new List<Microsoft.IdentityModel.Tokens.SecurityKey>();
+            foreach (var key in jwks.Keys)
+            {
+                keysList.Add(key);
+            }
+            options.TokenValidationParameters.IssuerSigningKeys = keysList;
+            Console.WriteLine($"[MVC CLIENT] Successfully pre-loaded and registered {keysList.Count} JWKS signing keys at startup!");
         }
-        options.TokenValidationParameters.IssuerSigningKeys = keysList;
-        Console.WriteLine($"[MVC CLIENT] Successfully pre-loaded and registered {keysList.Count} JWKS signing keys at startup!");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[MVC CLIENT] Warning: Failed to pre-load JWKS keys at startup: {ex.Message}");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[MVC CLIENT] Warning: Failed to pre-load JWKS keys at startup: {ex.Message}");
+        }
     }
 
     options.BackchannelHttpHandler = new LoggingBackchannelHandler { InnerHandler = new HttpClientHandler() };
@@ -105,14 +115,14 @@ builder.Services.AddAuthentication(options =>
         OnTokenResponseReceived = context =>
         {
             Console.WriteLine($"[MVC CLIENT DEBUG] Received Token Response. AccessToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken)}, IdToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken)}");
-            
+
             try
             {
                 if (!string.IsNullOrEmpty(LoggingBackchannelHandler.LastResponseBody))
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(LoggingBackchannelHandler.LastResponseBody);
                     var root = doc.RootElement;
-                    
+
                     if (root.TryGetProperty("id_token", out var idTokenProp))
                     {
                         var idToken = idTokenProp.GetString();
@@ -146,7 +156,7 @@ builder.Services.AddAuthentication(options =>
             {
                 Console.WriteLine($"[MVC CLIENT DEBUG] IdToken snippet: {context.TokenEndpointResponse.IdToken.Substring(0, Math.Min(30, context.TokenEndpointResponse.IdToken.Length))}...");
             }
-            
+
             // Safeguard against missing id_token property (as fallback)
             if (string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken) && !string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken))
             {
