@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_web_auth_2/flutter_web_auth_2.dart';
+import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 
@@ -7,12 +7,14 @@ class AuthService extends ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   bool _isAuthenticated = false;
+  String? _idToken;
 
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
 
   final Dio _dio = Dio();
+  final FlutterAppAuth _appAuth = const FlutterAppAuth();
   
   String _selectedIp = '192.168.4.248';
   String get selectedIp => _selectedIp;
@@ -63,83 +65,53 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
 
       final String callbackUrlScheme = 'my-pc-assistant';
-      final Uri authorizeUri = Uri.parse('$_baseUrl/api/auth/authorize').replace(queryParameters: {
-        'client_id': 'my_pc_assistant',
-        'redirect_uri': '$callbackUrlScheme://callback',
-        'response_type': 'code',
-        'scope': 'openid profile email',
-        'state': 'random_state',
-      });
-      
-      final String authorizeUrl = authorizeUri.toString();
 
-      debugPrint('[SSO] Starting authentication with URL: $authorizeUrl');
-      debugPrint('[SSO] Callback Scheme: $callbackUrlScheme');
+      debugPrint('[SSO] Starting OIDC flow with flutter_appauth...');
 
-      final result = await FlutterWebAuth2.authenticate(
-        url: authorizeUrl,
-        callbackUrlScheme: callbackUrlScheme,
+      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
+        AuthorizationTokenRequest(
+          'my_pc_assistant',
+          '$callbackUrlScheme://callback',
+          serviceConfiguration: AuthorizationServiceConfiguration(
+            authorizationEndpoint: '$_baseUrl/api/auth/authorize',
+            tokenEndpoint: '$_baseUrl/api/auth/token',
+            endSessionEndpoint: '$_baseUrl/api/auth/logout',
+          ),
+          scopes: ['openid', 'profile', 'email'],
+        ),
       );
 
-      debugPrint('[SSO] Authentication result received: $result');
-
-      final Uri callbackUri = Uri.parse(result);
-      final String? code = callbackUri.queryParameters['code'];
-
-      if (code != null) {
-        debugPrint('[SSO] Code received: $code. Exchanging for token...');
+      if (result != null && result.accessToken != null) {
+        final String accessToken = result.accessToken!;
+        _idToken = result.idToken; // Save idToken for signOut
         
-        // Trao đổi code lấy token
-        final response = await _dio.post(
-          '$_baseUrl/api/auth/token',
-          data: {
-            'code': code,
-            'client_id': 'my_pc_assistant',
-            'grant_type': 'authorization_code',
-            'redirect_uri': '$callbackUrlScheme://callback',
-          },
+        debugPrint('[SSO] Access token received. Fetching user info...');
+
+        // Lấy thông tin user (từ /api/auth/me)
+        final userResponse = await _dio.get(
+          '$_baseUrl/api/auth/me',
           options: Options(
-            contentType: Headers.formUrlEncodedContentType,
+            headers: {'Authorization': 'Bearer $accessToken'},
           ),
         );
 
-        debugPrint('[SSO] Token response status: ${response.statusCode}');
-        debugPrint('[SSO] Token response data: ${response.data}');
+        debugPrint('[SSO] User info status: ${userResponse.statusCode}');
 
-        if (response.statusCode == 200) {
-          final data = response.data;
-          final String accessToken = data['access_token'];
-          
-          debugPrint('[SSO] Access token received. Fetching user info...');
-
-          // Lấy thông tin user (từ /api/auth/me)
-          final userResponse = await _dio.get(
-            '$_baseUrl/api/auth/me',
-            options: Options(
-              headers: {'Authorization': 'Bearer $accessToken'},
-            ),
+        if (userResponse.statusCode == 200) {
+          final userData = userResponse.data;
+          final username = userData['preferred_username'] ?? userData['sub'];
+          _currentUser = UserModel(
+            id: 'sso_$username',
+            name: userData['name'] ?? username,
+            email: userData['email'],
+            profileImageUrl: 'https://i.pravatar.cc/150?u=$username',
           );
-
-          debugPrint('[SSO] User info status: ${userResponse.statusCode}');
-
-          if (userResponse.statusCode == 200) {
-            final userData = userResponse.data;
-            final username = userData['preferred_username'] ?? userData['sub'];
-            _currentUser = UserModel(
-              id: 'sso_$username',
-              name: userData['name'] ?? username,
-              email: userData['email'],
-              profileImageUrl: 'https://i.pravatar.cc/150?u=$username',
-            );
-            _isAuthenticated = true;
-            _isLoading = false;
-            notifyListeners();
-            debugPrint('[SSO] Login successful for $username');
-            return true;
-          }
+          _isAuthenticated = true;
+          _isLoading = false;
+          notifyListeners();
+          debugPrint('[SSO] Login successful for $username');
+          return true;
         }
-      } else {
-        debugPrint('[SSO] No code found in callback URL');
       }
       
       _isLoading = false;
@@ -172,24 +144,26 @@ class AuthService extends ChangeNotifier {
     try {
       if (_isAuthenticated) {
         final String callbackUrlScheme = 'my-pc-assistant';
-        final Uri logoutUri = Uri.parse('$_baseUrl/api/auth/logout').replace(queryParameters: {
-          'post_logout_redirect_uri': '$callbackUrlScheme://logout-callback',
-        });
+        debugPrint('[SSO] Starting OIDC logout with flutter_appauth...');
         
-        debugPrint('[SSO] Starting OIDC logout with URL: ${logoutUri.toString()}');
-        
-        // Mở trình duyệt để logout ở phía server (OIDC Provider)
-        await FlutterWebAuth2.authenticate(
-          url: logoutUri.toString(),
-          callbackUrlScheme: callbackUrlScheme,
+        await _appAuth.endSession(
+          EndSessionRequest(
+            idTokenHint: _idToken,
+            postLogoutRedirectUrl: '$callbackUrlScheme://logout-callback',
+            serviceConfiguration: AuthorizationServiceConfiguration(
+              authorizationEndpoint: '$_baseUrl/api/auth/authorize',
+              tokenEndpoint: '$_baseUrl/api/auth/token',
+              endSessionEndpoint: '$_baseUrl/api/auth/logout',
+            ),
+          ),
         );
         debugPrint('[SSO] OIDC logout completed');
       }
     } catch (e) {
       debugPrint('[SSO] OIDC Logout info/error: $e');
-      // Tiếp tục xóa session cục bộ kể cả khi OIDC logout gặp lỗi hoặc bị hủy
     } finally {
       _currentUser = null;
+      _idToken = null;
       _isAuthenticated = false;
       notifyListeners();
     }
