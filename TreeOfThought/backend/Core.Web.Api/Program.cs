@@ -119,7 +119,7 @@ app.MapControllers();
 app.MapFallbackToFile("/admin/{*path:nonfile}", "admin/index.html");
 
 // --- 8. Initialize Infrastructure ---
-await app.UseAppAuth(config, new[] { Assembly.GetExecutingAssembly() });
+await app.UseAppOidc(config, new[] { Assembly.GetExecutingAssembly() });
 
 using (var scope = app.Services.CreateScope())
 {

@@ -37,4 +37,7 @@ public class AuthCodeData
     public string ClientId { get; set; } = string.Empty;
     public string RedirectUri { get; set; } = string.Empty;
     public string? Nonce { get; set; }
+    public string? CodeChallenge { get; set; }
+    public string? CodeChallengeMethod { get; set; }
+    public string? Scopes { get; set; }
 }

@@ -50,14 +50,18 @@ public class AuthController : ControllerBase
         var config = new
         {
             issuer = issuer ?? $"{Request.Scheme}://{Request.Host}{Request.PathBase}",
-            jwks_uri = $"{baseUrl}/api/auth/jwks",
-            authorization_endpoint = $"{baseUrl}/api/auth/authorize",
-            token_endpoint = $"{baseUrl}/api/auth/token",
-            userinfo_endpoint = $"{baseUrl}/api/auth/me",
-            end_session_endpoint = $"{baseUrl}/api/auth/logout",
+            jwks_uri = $"{baseUrl}/.well-known/openid-configuration/jwks",
+            authorization_endpoint = $"{baseUrl}/connect/authorize",
+            token_endpoint = $"{baseUrl}/connect/token",
+            userinfo_endpoint = $"{baseUrl}/connect/userinfo",
+            end_session_endpoint = $"{baseUrl}/connect/endsession",
             response_types_supported = new[] { "code", "token", "id_token" },
             subject_types_supported = new[] { "public" },
-            id_token_signing_alg_values_supported = new[] { "RS256" }
+            id_token_signing_alg_values_supported = new[] { "RS256" },
+            scopes_supported = new[] { "openid", "profile", "email", "roles", "offline_access" },
+            claims_supported = new[] { "sub", "name", "preferred_username", "email", "picture", "role", "claims" },
+            token_endpoint_auth_methods_supported = new[] { "client_secret_post", "client_secret_basic" },
+            code_challenge_methods_supported = new[] { "S256", "plain" }
         };
 
         var json = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions
@@ -82,6 +86,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("me")]
+    [HttpGet("/connect/userinfo")]
     [AppAuthorize]
     public async Task<IActionResult> GetMe()
     {
@@ -177,6 +182,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("authorize")]
+    [HttpGet("/connect/authorize")]
     public async Task<IActionResult> Authorize([Microsoft.AspNetCore.Mvc.FromQuery] AuthorizeRequest request)
     {
         // Manual fallback if binding fails (common with complex models and different binder behaviors)
@@ -218,7 +224,7 @@ public class AuthController : ControllerBase
             {
                 Console.WriteLine($"[OIDC] User {userId} already logged in via SSO Session. Generating code...");
                 // Already logged in -> Generate code and redirect back to app
-                var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId, request.RedirectUri, request.Nonce);
+                var code = await _authService.GenerateAuthorizationCodeAsync(userId, request.ClientId, request.RedirectUri, request.Nonce, request.CodeChallenge, request.CodeChallengeMethod, request.Scope);
                 var redirectUrl = $"{request.RedirectUri}{(request.RedirectUri.Contains("?") ? "&" : "?")}code={code}&state={request.State}";
 
                 Console.WriteLine($"[OIDC] Redirecting back to client. RedirectUri: {request.RedirectUri}");
@@ -248,6 +254,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpGet("logout")]
+    [HttpGet("/connect/endsession")]
     public async Task<IActionResult> Logout([FromQuery(Name = "post_logout_redirect_uri")] string? postLogoutRedirectUri)
     {
         Console.WriteLine($"[OIDC] Logout request received. PostLogoutRedirectUri={postLogoutRedirectUri}");
@@ -263,6 +270,7 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("token")]
+    [HttpPost("/connect/token")]
     public async Task<IActionResult> GetToken()
     {
         TokenRequest? request = null;
@@ -275,7 +283,8 @@ public class AuthController : ControllerBase
                 Code = Request.Form["code"],
                 ClientId = Request.Form["client_id"],
                 RedirectUri = Request.Form["redirect_uri"],
-                ClientSecret = Request.Form["client_secret"]
+                ClientSecret = Request.Form["client_secret"],
+                CodeVerifier = Request.Form["code_verifier"]
             };
             Console.WriteLine("[OIDC] Token request received via Form.");
         }
@@ -300,7 +309,7 @@ public class AuthController : ControllerBase
 
         Console.WriteLine($"[OIDC] Token request details: GrantType={request.GrantType}, ClientId={request.ClientId}, Code={request.Code.Substring(0, Math.Min(4, request.Code.Length))}...");
 
-        var (user, nonce) = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "");
+        var (user, nonce) = await _authService.ExchangeCodeForTokenAsync(request.Code, request.ClientId ?? "", request.CodeVerifier);
         if (user == null)
         {
             Console.WriteLine($"[OIDC] Token request failed: Invalid code or ClientId. Code: {request.Code}, ClientId: {request.ClientId}");
@@ -323,6 +332,7 @@ public class AuthController : ControllerBase
             id_token = idToken
         };
         var json = System.Text.Json.JsonSerializer.Serialize(tokenResponse);
+        Console.WriteLine($"[OIDC DEBUG] Returning JSON: {json.Substring(0, Math.Min(json.Length, 100))}...");
         return Content(json, "application/json");
     }
 

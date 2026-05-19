@@ -315,7 +315,7 @@ public class AuthService
         return true;
     }
 
-    public async Task<string> GenerateAuthorizationCodeAsync(Guid userId, string clientId, string redirectUri, string? nonce = null)
+    public async Task<string> GenerateAuthorizationCodeAsync(Guid userId, string clientId, string redirectUri, string? nonce = null, string? codeChallenge = null, string? codeChallengeMethod = null, string? scopes = null)
     {
         var code = Guid.NewGuid().ToString("N");
         var data = new AuthCodeData
@@ -323,20 +323,54 @@ public class AuthService
             UserId = userId,
             ClientId = clientId,
             RedirectUri = redirectUri,
-            Nonce = nonce
+            Nonce = nonce,
+            CodeChallenge = codeChallenge,
+            CodeChallengeMethod = string.IsNullOrEmpty(codeChallengeMethod) && !string.IsNullOrEmpty(codeChallenge) ? "plain" : codeChallengeMethod,
+            Scopes = scopes
         };
 
         await _sessionService.SaveAuthCodeAsync(code, data);
         return code;
     }
 
-    public async Task<(User? User, string? Nonce)> ExchangeCodeForTokenAsync(string code, string clientId)
+    public async Task<(User? User, string? Nonce)> ExchangeCodeForTokenAsync(string code, string clientId, string? codeVerifier = null)
     {
         var data = await _sessionService.GetAuthCodeAsync<AuthCodeData>(code);
 
         if (data == null || data.ClientId != clientId)
         {
+            Console.WriteLine($"[OIDC PKCE] Token exchange failed: Code not found or ClientId mismatch.");
             return (null, null);
+        }
+
+        // PKCE Validation
+        if (!string.IsNullOrEmpty(data.CodeChallenge))
+        {
+            if (string.IsNullOrEmpty(codeVerifier))
+            {
+                Console.WriteLine($"[OIDC PKCE] Token exchange failed: CodeVerifier is missing but CodeChallenge was provided during authorization.");
+                return (null, null);
+            }
+
+            if (data.CodeChallengeMethod == "S256")
+            {
+                using var sha256 = System.Security.Cryptography.SHA256.Create();
+                var hash = sha256.ComputeHash(System.Text.Encoding.ASCII.GetBytes(codeVerifier));
+                var base64url = Microsoft.IdentityModel.Tokens.Base64UrlEncoder.Encode(hash);
+                if (base64url != data.CodeChallenge)
+                {
+                    Console.WriteLine($"[OIDC PKCE] Token exchange failed: S256 CodeVerifier hash does not match CodeChallenge.");
+                    return (null, null);
+                }
+            }
+            else // "plain"
+            {
+                if (codeVerifier != data.CodeChallenge)
+                {
+                    Console.WriteLine($"[OIDC PKCE] Token exchange failed: plain CodeVerifier does not match CodeChallenge.");
+                    return (null, null);
+                }
+            }
         }
 
         // Remove code after use (One-time use)

@@ -57,6 +57,12 @@ public class AuthorizeRequest
 
     [Microsoft.AspNetCore.Mvc.FromQuery(Name = "nonce")]
     public string? Nonce { get; set; }
+
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "code_challenge")]
+    public string? CodeChallenge { get; set; }
+
+    [Microsoft.AspNetCore.Mvc.FromQuery(Name = "code_challenge_method")]
+    public string? CodeChallengeMethod { get; set; }
 }
 
 public class TokenRequest
@@ -75,6 +81,9 @@ public class TokenRequest
 
     [Microsoft.AspNetCore.Mvc.FromForm(Name = "client_secret")]
     public string? ClientSecret { get; set; }
+
+    [Microsoft.AspNetCore.Mvc.FromForm(Name = "code_verifier")]
+    public string? CodeVerifier { get; set; }
 }
 
 

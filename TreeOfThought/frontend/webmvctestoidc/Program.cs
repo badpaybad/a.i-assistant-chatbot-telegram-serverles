@@ -88,8 +88,6 @@ builder.Services.AddAuthentication(options =>
         }
     }
 
-    options.BackchannelHttpHandler = new LoggingBackchannelHandler { InnerHandler = new HttpClientHandler() };
-
     options.Events = new OpenIdConnectEvents
     {
         OnTokenValidated = async context =>
@@ -105,64 +103,25 @@ builder.Services.AddAuthentication(options =>
         },
         OnAuthorizationCodeReceived = context =>
         {
-            // Dynamically build TokenEndpoint from options.Authority
-            if (context.TokenEndpointRequest != null && !string.IsNullOrEmpty(options.Authority))
+            // Robust patch: If the internal .NET configuration parser drops the token_endpoint, 
+            // guarantee successful standard OIDC redemption by dynamically setting it to the absolute backend URI.
+            if (string.IsNullOrEmpty(context.TokenEndpointRequest?.TokenEndpoint))
             {
-                context.TokenEndpointRequest.TokenEndpoint = $"{options.Authority.TrimEnd('/')}/api/auth/token";
+                var baseUri = context.Options.Authority?.TrimEnd('/') ?? "http://localhost:5000";
+                if (context.TokenEndpointRequest != null)
+                {
+                    context.TokenEndpointRequest.TokenEndpoint = $"{baseUri}/connect/token";
+                    Console.WriteLine($"[MVC CLIENT] Patched missing TokenEndpoint dynamically to: {context.TokenEndpointRequest.TokenEndpoint}");
+                }
             }
             return Task.CompletedTask;
         },
         OnTokenResponseReceived = context =>
         {
-            Console.WriteLine($"[MVC CLIENT DEBUG] Received Token Response. AccessToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken)}, IdToken exists: {!string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken)}");
-
-            try
+            Console.WriteLine("[MVC CLIENT DIAGNOSTIC] Keys in TokenResponse:");
+            foreach(var kvp in context.TokenEndpointResponse.Parameters)
             {
-                if (!string.IsNullOrEmpty(LoggingBackchannelHandler.LastResponseBody))
-                {
-                    using var doc = System.Text.Json.JsonDocument.Parse(LoggingBackchannelHandler.LastResponseBody);
-                    var root = doc.RootElement;
-
-                    if (root.TryGetProperty("id_token", out var idTokenProp))
-                    {
-                        var idToken = idTokenProp.GetString();
-                        if (!string.IsNullOrEmpty(idToken))
-                        {
-                            context.TokenEndpointResponse.IdToken = idToken;
-                            Console.WriteLine($"[MVC CLIENT DEBUG] Successfully extracted and injected id_token manually! Len: {idToken.Length}");
-                        }
-                    }
-                    if (root.TryGetProperty("token_type", out var tokenTypeProp))
-                    {
-                        var tokenType = tokenTypeProp.GetString();
-                        if (!string.IsNullOrEmpty(tokenType))
-                        {
-                            context.TokenEndpointResponse.TokenType = tokenType;
-                            Console.WriteLine($"[MVC CLIENT DEBUG] Successfully extracted and injected token_type manually: {tokenType}");
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[MVC CLIENT DEBUG] Error parsing raw JSON manually: {ex.Message}");
-            }
-
-            if (string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken))
-            {
-                Console.WriteLine("[MVC CLIENT DEBUG] IdToken is NULL or EMPTY in TokenEndpointResponse!");
-            }
-            else
-            {
-                Console.WriteLine($"[MVC CLIENT DEBUG] IdToken snippet: {context.TokenEndpointResponse.IdToken.Substring(0, Math.Min(30, context.TokenEndpointResponse.IdToken.Length))}...");
-            }
-
-            // Safeguard against missing id_token property (as fallback)
-            if (string.IsNullOrEmpty(context.TokenEndpointResponse.IdToken) && !string.IsNullOrEmpty(context.TokenEndpointResponse.AccessToken))
-            {
-                Console.WriteLine("[MVC CLIENT DEBUG] Safeguard activated: Copying AccessToken to IdToken!");
-                context.TokenEndpointResponse.IdToken = context.TokenEndpointResponse.AccessToken;
-                context.TokenEndpointResponse.TokenType = "Bearer";
+                Console.WriteLine($"  {kvp.Key}: {(kvp.Value?.Length ?? 0)} chars");
             }
             return Task.CompletedTask;
         },
@@ -221,29 +180,5 @@ namespace WebMvcTestOidc.Data
         public DateTime Timestamp { get; set; }
     }
 
-    public class LoggingBackchannelHandler : DelegatingHandler
-    {
-        public static string LastResponseBody { get; set; } = string.Empty;
 
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            Console.WriteLine($"[BACKCHANNEL DEBUG] Outgoing Request: {request.Method} {request.RequestUri}");
-            if (request.Content != null)
-            {
-                var reqContent = await request.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine($"[BACKCHANNEL DEBUG] Request Body: {reqContent}");
-            }
-
-            var response = await base.SendAsync(request, cancellationToken);
-
-            Console.WriteLine($"[BACKCHANNEL DEBUG] Incoming Response Status: {response.StatusCode}");
-            if (response.Content != null)
-            {
-                LastResponseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                Console.WriteLine($"[BACKCHANNEL DEBUG] Response Body: {LastResponseBody}");
-            }
-
-            return response;
-        }
-    }
 }

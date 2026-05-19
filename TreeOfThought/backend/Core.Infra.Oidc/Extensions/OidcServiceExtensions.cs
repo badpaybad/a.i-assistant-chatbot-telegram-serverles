@@ -89,7 +89,7 @@ public static class OidcServiceExtensions
     }
 
 
-    public static async Task UseAppAuth(this IApplicationBuilder app, IConfiguration config, Assembly[]? additionalAssembliesToScan = null)
+    public static async Task UseAppOidc(this IApplicationBuilder app, IConfiguration config, Assembly[]? additionalAssembliesToScan = null)
     {
         var oidcConfig = config.GetSection("Oidc");
 
