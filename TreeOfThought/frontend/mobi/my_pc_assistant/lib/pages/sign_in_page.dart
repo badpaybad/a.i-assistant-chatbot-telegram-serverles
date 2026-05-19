@@ -22,7 +22,7 @@ class _SignInPageState extends State<SignInPage> {
   bool _isLoading = false;
   final LocalAuthentication auth = LocalAuthentication();
 
-  static const List<String> _defaultIps = ['192.168.4.248', '10.0.2.2', '118.70.117.208'];
+  static const List<String> _defaultIps = ['localhost:5000', '192.168.4.248', '10.0.2.2', '118.70.117.208'];
 
   Future<void> _handleFingerprint() async {
     try {
@@ -183,6 +183,54 @@ class _SignInPageState extends State<SignInPage> {
                 ),
               ),
               const SizedBox(height: 20),
+              // ADB Reverse Instructions
+              Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade800, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Yêu cầu chạy lệnh adb reverse:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'adb reverse tcp:5000 tcp:5000\nadb reverse --list',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               // IP Selection Dropdown
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -194,6 +242,7 @@ class _SignInPageState extends State<SignInPage> {
                   builder: (context, authService, child) {
                     final currentIp = authService.selectedIp;
                     final List<DropdownMenuItem<String>> dropdownItems = [
+                      const DropdownMenuItem(value: 'localhost:5000', child: Text('Localhost (localhost:5000)')),
                       const DropdownMenuItem(value: '192.168.4.248', child: Text('IP LAN (192.168.4.248)')),
                       const DropdownMenuItem(value: '10.0.2.2', child: Text('Emulator Host (10.0.2.2)')),
                       const DropdownMenuItem(value: '118.70.117.208', child: Text('Public Server (118.70.117.208)')),

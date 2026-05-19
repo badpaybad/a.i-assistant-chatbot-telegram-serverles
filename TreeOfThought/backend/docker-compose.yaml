@@ -19,7 +19,7 @@ services:
       POSTGRES_PASSWORD: Test123456
       POSTGRES_DB: tot_db
     ports:
-      - "5432:5432"
+      - "54321:5432"
     volumes:
       - ./db_test/postgres:/var/lib/postgresql/data
     restart: always

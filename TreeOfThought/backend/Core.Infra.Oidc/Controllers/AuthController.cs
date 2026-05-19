@@ -215,9 +215,12 @@ public class AuthController : ControllerBase
         request.State = state;
         request.Nonce = nonce;
 
-        // 1. Check if user is already logged in via Session Cookie
+        // 1. Check if user is already logged in via Session Cookie (unless prompt=login is requested)
+        var prompt = Request.Query["prompt"].ToString();
+        var forceLogin = prompt.Contains("login", StringComparison.OrdinalIgnoreCase);
+
         var authenticateResult = await HttpContext.AuthenticateAsync(AuthConstants.SsoSessionScheme);
-        if (authenticateResult.Succeeded && authenticateResult.Principal != null)
+        if (!forceLogin && authenticateResult.Succeeded && authenticateResult.Principal != null)
         {
             var userIdStr = authenticateResult.Principal.FindFirst(AuthConstants.UserIdClaim)?.Value;
             if (Guid.TryParse(userIdStr, out var userId))
@@ -238,7 +241,20 @@ public class AuthController : ControllerBase
         // 2. If not logged in, redirect to SPA Login UI
         var loginUrl = _config["Oidc:OidcLoginUiUrl"]!;
         // Use relative path for returnUrl so the frontend can resolve it using window.location.origin
-        var returnUrl = Request.Path + Request.QueryString;
+        // We strip 'prompt' from the returnUrl to prevent an infinite loop once login is completed.
+        var queryParams = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(Request.QueryString.Value);
+        var queryBuilder = new Microsoft.AspNetCore.Http.Extensions.QueryBuilder();
+        foreach (var param in queryParams)
+        {
+            if (!string.Equals(param.Key, "prompt", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var val in param.Value)
+                {
+                    queryBuilder.Add(param.Key, val ?? "");
+                }
+            }
+        }
+        var returnUrl = Request.Path + queryBuilder.ToQueryString();
 
         // Ensure we use the actual host the user is using to avoid 0.0.0.0 issues
         var host = Request.Host.Value;

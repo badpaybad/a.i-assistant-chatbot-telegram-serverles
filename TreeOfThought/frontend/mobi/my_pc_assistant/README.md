@@ -36,7 +36,16 @@ flutter run
     ```bash
     ~/Android/Sdk/emulator/emulator -avd <emulator_id> -no-snapshot-load -no-snapshot-save
     ```
-    *(Lưu ý: Không nên dùng lệnh `flutter emulators --launch` vì nó không hỗ trợ các cờ xử lý lỗi và rất dễ làm máy ảo bị treo không khởi động được).*
+    *   **Lưu ý cho Linux (Wayland):** Nếu gặp lỗi `Could not find the Qt platform plugin "wayland"`, hãy dùng cờ `QT_QPA_PLATFORM=xcb` để ép Emulator sử dụng chế độ X11/XWayland.
+        *   **Cách 1 (Khuyên dùng để Resize & Di chuyển):** Thêm cờ **`-noskin`** để tắt khung vỏ điện thoại giả lập. Cửa sổ máy ảo sẽ hiển thị dưới dạng cửa sổ hệ điều hành tiêu chuẩn, có đầy đủ thanh tiêu đề, viền kéo giãn để dễ dàng di chuyển và thay đổi kích thước:
+            ```bash
+            QT_QPA_PLATFORM=xcb ~/Android/Sdk/emulator/emulator -avd <emulator_id> -noskin -no-snapshot-load -no-snapshot-save
+            ```
+        *   **Cách 2 (Giữ khung điện thoại):** Nếu muốn giữ nguyên khung viền điện thoại giả lập (nhưng cửa sổ sẽ bị cố định kích thước và khó di chuyển trên một số giao diện Wayland):
+            ```bash
+            QT_QPA_PLATFORM=xcb ~/Android/Sdk/emulator/emulator -avd <emulator_id> -no-snapshot-load -no-snapshot-save
+            ```
+    *(Lưu ý chung: Không nên dùng lệnh `flutter emulators --launch` vì nó không hỗ trợ các cờ xử lý lỗi và rất dễ làm máy ảo bị treo không khởi động được).*
 
 #### 3. Chạy ứng dụng trên thiết bị chỉ định
 *   Chạy ứng dụng bằng cách chỉ định ID thiết bị:

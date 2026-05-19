@@ -16,7 +16,7 @@ class AuthService extends ChangeNotifier {
   final Dio _dio = Dio();
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
   
-  String _selectedIp = '192.168.4.248';
+  String _selectedIp = 'localhost:5000';
   String get selectedIp => _selectedIp;
 
   void setBaseUrl(String ip) {
@@ -72,6 +72,8 @@ class AuthService extends ChangeNotifier {
         AuthorizationTokenRequest(
           'my_pc_assistant',
           '$callbackUrlScheme://callback',
+          promptValues: ['login'],
+          allowInsecureConnections: true,
           serviceConfiguration: AuthorizationServiceConfiguration(
             authorizationEndpoint: '$_baseUrl/api/auth/authorize',
             tokenEndpoint: '$_baseUrl/api/auth/token',
@@ -150,6 +152,7 @@ class AuthService extends ChangeNotifier {
           EndSessionRequest(
             idTokenHint: _idToken,
             postLogoutRedirectUrl: '$callbackUrlScheme://logout-callback',
+            allowInsecureConnections: true,
             serviceConfiguration: AuthorizationServiceConfiguration(
               authorizationEndpoint: '$_baseUrl/api/auth/authorize',
               tokenEndpoint: '$_baseUrl/api/auth/token',
