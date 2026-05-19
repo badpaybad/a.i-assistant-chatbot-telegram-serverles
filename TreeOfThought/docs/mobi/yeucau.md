@@ -31,3 +31,6 @@ hỗ trợ android, ios đầy đủ
 **suy nghĩ và câp nhật vào TreeOfThought/docs/mobi/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
     app cũng dùng i18n được à?, nghiệp vụ không nhất thiết phải bắt đầu bằng busines_ mà theo tên người dùng muốn lúc dùng tot-dev yêu cầu , làm ví dụ files folders trước cho module nghiệp vụ . component register có thể trao đổi dữ liệu state qua dùng event bus cqrs . chưa cần làm tot-table mà yêu cầu việc gọi lên server luôn có paging , không cần hỗ trợ lazy load. chưa làm dashboard và chachat_assistantt, làm files folders để làm sample trước UI tính năng như web (code angular TreeOfThought/frontend/web/projects/tot/business-files) làm sang app mobi
+
+**cập nhật 1**
+tất cả việc gọi lên api server cần thông qua HttpClientService ở core , không gọi thẳng dio

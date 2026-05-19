@@ -6,7 +6,7 @@ import '../layout/app_colors.dart';
 import '../app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
-import 'package:dio/dio.dart';
+import 'package:tot_core/tot_core.dart';
 import '../services/auth_service.dart';
 
 class SignInPage extends StatefulWidget {
@@ -344,8 +344,7 @@ class _SignInPageState extends State<SignInPage> {
                         try {
                           final authService = context.read<AuthService>();
                           final targetIp = authService.selectedIp;
-                          final dio = Dio();
-                          final response = await dio.get('http://$targetIp:5000/.well-known/openid-configuration').timeout(const Duration(seconds: 5));
+                          final response = await HttpClientService.instance.get<dynamic>('http://$targetIp:5000/.well-known/openid-configuration').timeout(const Duration(seconds: 5));
                           if (context.mounted) {
                             showDialog(
                               context: context,

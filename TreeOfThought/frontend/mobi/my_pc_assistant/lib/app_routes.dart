@@ -4,6 +4,7 @@ import 'pages/sign_up_page.dart';
 import 'pages/home_page.dart';
 import 'pages/hardware_page.dart';
 import 'pages/vector_search_page.dart';
+import 'package:tot_core/tot_core.dart';
 import 'package:tot_buss_files/tot_buss_files.dart';
 
 class AppRoutes {
@@ -20,7 +21,10 @@ class AppRoutes {
     home: (context) => const HomePage(),
     hardware: (context) => const HardwarePage(),
     vectorSearch: (context) => const VectorSearchPage(),
-    filesFolders: (context) => const FolderContentPage(),
+    filesFolders: (context) => const TotRouteGuard(
+      requiredPermission: 'files.view',
+      child: FolderContentPage(),
+    ),
   };
 
   static String get initialRoute => signIn;

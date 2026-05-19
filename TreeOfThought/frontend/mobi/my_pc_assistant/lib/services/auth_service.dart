@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
-import 'package:dio/dio.dart';
+import 'package:tot_core/tot_core.dart';
 import '../models/user_model.dart';
 
-class AuthService extends ChangeNotifier {
+class AuthService extends ChangeNotifier implements TotAuthService {
   static final AuthService instance = AuthService._internal();
   factory AuthService() => instance;
   AuthService._internal();
@@ -15,11 +15,11 @@ class AuthService extends ChangeNotifier {
   String? _accessToken;
 
   UserModel? get currentUser => _currentUser;
+  @override
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get accessToken => _accessToken;
 
-  final Dio _dio = Dio();
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
   
   String _selectedIp = 'localhost:5000';
@@ -99,17 +99,12 @@ class AuthService extends ChangeNotifier {
         debugPrint('[SSO] Access token received. Fetching user info...');
 
         // Lấy thông tin user (từ /api/auth/me)
-        final userResponse = await _dio.get(
-          '$_baseUrl/api/auth/me',
-          options: Options(
-            headers: {'Authorization': 'Bearer $accessToken'},
-          ),
-        );
+        final userResponse = await HttpClientService.instance.get<Map<String, dynamic>>('/api/auth/me');
 
         debugPrint('[SSO] User info status: ${userResponse.statusCode}');
 
-        if (userResponse.statusCode == 200) {
-          final userData = userResponse.data;
+        if (userResponse.statusCode == 200 && userResponse.data != null) {
+          final userData = userResponse.data!;
           final username = userData['preferred_username'] ?? userData['sub'];
           _currentUser = UserModel(
             id: 'sso_$username',
@@ -180,5 +175,21 @@ class AuthService extends ChangeNotifier {
       _isAuthenticated = false;
       notifyListeners();
     }
+  }
+
+  @override
+  bool hasPermission(String claim) {
+    if (!isAuthenticated) return false;
+    // MOCK: Everyone has view and share permissions. Only admin has super permissions.
+    if (claim == 'files.view' || claim == 'files.share') return true;
+    if (claim == 'admin.super') return _currentUser?.email == 'admin@gmail.com';
+    return false;
+  }
+
+  @override
+  bool hasAnyRole(List<String> roles) {
+    if (!isAuthenticated) return false;
+    final userRoles = _currentUser?.email == 'admin@gmail.com' ? ['admin', 'user'] : ['user'];
+    return roles.any((role) => userRoles.contains(role));
   }
 }

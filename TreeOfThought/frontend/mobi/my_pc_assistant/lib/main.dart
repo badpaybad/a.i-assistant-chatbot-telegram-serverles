@@ -32,6 +32,9 @@ void main() async {
     tokenProvider: () => AuthService.instance.accessToken,
   );
   
+  // Register authentication and authorization provider for generic security guards
+  TotSecurityContext.instance.registerAuthService(AuthService.instance);
+  
   debugPrint('App starting initialization...');
 
   try {

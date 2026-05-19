@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../layout/app_colors.dart';
 import '../app_routes.dart';
+import 'package:tot_core/tot_core.dart';
 import '../widgets/credit_card_widget.dart';
 import '../widgets/feature_item.dart';
 import '../services/auth_service.dart';
@@ -137,11 +138,14 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.purple,
                             onTap: () => Navigator.pushNamed(context, AppRoutes.vectorSearch),
                           ),
-                          FeatureItem(
-                            title: 'Tài liệu của tôi', 
-                            icon: Icons.folder, 
-                            color: Colors.amber.shade800,
-                            onTap: () => Navigator.pushNamed(context, AppRoutes.filesFolders),
+                          TotPermission(
+                            claim: 'files.view',
+                            child: FeatureItem(
+                              title: 'Tài liệu của tôi', 
+                              icon: Icons.folder, 
+                              color: Colors.amber.shade800,
+                              onTap: () => Navigator.pushNamed(context, AppRoutes.filesFolders),
+                            ),
                           ),
                           const FeatureItem(title: 'Transfer', icon: Icons.swap_horiz, color: Colors.red),
                           const FeatureItem(title: 'Withdraw', icon: Icons.account_balance, color: Colors.blueAccent),
