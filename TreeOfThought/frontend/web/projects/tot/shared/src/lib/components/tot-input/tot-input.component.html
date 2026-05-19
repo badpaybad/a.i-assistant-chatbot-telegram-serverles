@@ -1,0 +1,60 @@
+<!-- Trường Mật Khẩu với Nút chuyển đổi mắt Ẩn/Hiện -->
+<ng-container *ngIf="type === 'password'">
+  <nz-input-group [nzPrefixIcon]="prefixIcon || undefined" [nzSuffix]="passwordSuffix">
+    <input
+      [type]="passwordVisible ? 'text' : 'password'"
+      nz-input
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [value]="value"
+      (input)="onInputChange($event)"
+      (blur)="onBlur()"
+    />
+  </nz-input-group>
+  <ng-template #passwordSuffix>
+    <span
+      nz-icon
+      [nzType]="passwordVisible ? 'eye-invisible' : 'eye'"
+      (click)="passwordVisible = !passwordVisible"
+      style="cursor: pointer;"
+    ></span>
+  </ng-template>
+</ng-container>
+
+<!-- Trường Nhập Văn Bản Thông Thường -->
+<ng-container *ngIf="type === 'text'">
+  <nz-input-group *ngIf="prefixIcon; else normalText" [nzPrefixIcon]="prefixIcon">
+    <input
+      type="text"
+      nz-input
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [value]="value"
+      (input)="onInputChange($event)"
+      (blur)="onBlur()"
+    />
+  </nz-input-group>
+  <ng-template #normalText>
+    <input
+      type="text"
+      nz-input
+      [placeholder]="placeholder"
+      [disabled]="disabled"
+      [value]="value"
+      (input)="onInputChange($event)"
+      (blur)="onBlur()"
+    />
+  </ng-template>
+</ng-container>
+
+<!-- Trường Nhập Area (Textarea) -->
+<textarea
+  *ngIf="type === 'textarea'"
+  nz-input
+  [rows]="rows"
+  [placeholder]="placeholder"
+  [disabled]="disabled"
+  [value]="value"
+  (input)="onInputChange($event)"
+  (blur)="onBlur()"
+></textarea>

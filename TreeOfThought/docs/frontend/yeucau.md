@@ -63,5 +63,13 @@ FE tổng kết nhanh về cấu trúc
 - [x] Sử dụng i18n và Transloco cho phần đa ngôn ngữ.
 - [x] Bắt buộc dùng `tot-button` cho các nút và `tot-table` cho danh sách dạng bảng.
 
-**cập nhật 202605-17 12:46:36**
+**cập nhật 2026-05-17 12:46:36**
 paging cho việc lấy danh sách luôn cần là paging ở server, dùng tot-table cột action ( hành động ) luôn cần fixed để người dùng thao tác dễ, nếu có nhiều nút chức năng làm độ rộng cột action rộng quá thì mỗi nút sẽ tự động xuống 1 dòng để hiển thị , không co. tot-table các cell luôn cần hiển thị đủ text không bị overflow che mất 
+
+**cập nhật 2026-05-19 13:46:36**
+cần tạo tot-input vào shared đáp ứng cho việc
+    input cho password cần có icon hiển thị password ( mẳt) khi click vào thì đổi icon và ẩn/hiện nội dung input
+    input text thông thường 
+    input text dạng area 
+
+cần dùng tot-input password cho các nơi cần password trong

@@ -7,41 +7,31 @@
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập tên đăng nhập!' | transloco">
-        <nz-input-group nzPrefixIcon="user">
-          <input type="text" nz-input formControlName="username" [placeholder]="'Tên đăng nhập' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="username" [placeholder]="'Tên đăng nhập' | transloco" prefixIcon="user"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập email!' | transloco">
-        <nz-input-group nzPrefixIcon="mail">
-          <input type="email" nz-input formControlName="email" [placeholder]="'Email' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="email" [placeholder]="'Email' | transloco" prefixIcon="mail"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập tên hiển thị!' | transloco">
-        <nz-input-group nzPrefixIcon="idcard">
-          <input type="text" nz-input formControlName="displayName" [placeholder]="'Tên hiển thị' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="displayName" [placeholder]="'Tên hiển thị' | transloco" prefixIcon="idcard"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập mật khẩu!' | transloco">
-        <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="password" [placeholder]="'Mật khẩu' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="password" [placeholder]="'Mật khẩu' | transloco" prefixIcon="lock"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng xác nhận mật khẩu mới!' | transloco">
-        <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="confirmPassword" [placeholder]="'Xác nhận mật khẩu mới' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="confirmPassword" [placeholder]="'Xác nhận mật khẩu mới' | transloco" prefixIcon="lock"></tot-input>
       </nz-form-control>
     </nz-form-item>
 

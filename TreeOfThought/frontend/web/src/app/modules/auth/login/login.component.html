@@ -18,17 +18,13 @@
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập tên đăng nhập!' | transloco">
-        <nz-input-group nzPrefixIcon="user" class="premium-input">
-          <input type="text" nz-input formControlName="username" [placeholder]="'Tên đăng nhập' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="username" [placeholder]="'Tên đăng nhập' | transloco" prefixIcon="user" class="premium-input"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập mật khẩu!' | transloco">
-        <nz-input-group nzPrefixIcon="lock" class="premium-input">
-          <input type="password" nz-input formControlName="password" [placeholder]="'Mật khẩu' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="password" [placeholder]="'Mật khẩu' | transloco" prefixIcon="lock" class="premium-input"></tot-input>
       </nz-form-control>
     </nz-form-item>
 

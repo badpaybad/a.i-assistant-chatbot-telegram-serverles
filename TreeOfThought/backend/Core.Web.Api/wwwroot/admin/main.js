@@ -1,7 +1,8 @@
 import {
   APP_CLAIMS,
-  AuthService
-} from "./chunk-AHPU6FTX.js";
+  AuthService,
+  TotInputComponent
+} from "./chunk-YSWTRDR3.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -43,7 +44,6 @@ import {
   AppNotificationService,
   AsyncPipe,
   CommonModule,
-  DefaultValueAccessor,
   DomRendererFactory2,
   DomSanitizer,
   FormControlName,
@@ -67,8 +67,6 @@ import {
   NzDropdownMenuComponent,
   NzIconDirective,
   NzIconModule,
-  NzInputDirective,
-  NzInputGroupComponent,
   NzInputModule,
   NzMenuDirective,
   NzMenuItemComponent,
@@ -3468,11 +3466,11 @@ var AuthLayoutComponent = _AuthLayoutComponent;
 // src/app/modules/auth/login/login.component.ts
 function LoginComponent_div_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 24)(1, "span", 25);
+    \u0275\u0275elementStart(0, "div", 22)(1, "span", 23);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 26);
-    \u0275\u0275element(4, "span", 27);
+    \u0275\u0275elementStart(3, "div", 24);
+    \u0275\u0275element(4, "span", 25);
     \u0275\u0275text(5);
     \u0275\u0275pipe(6, "transloco");
     \u0275\u0275elementEnd()();
@@ -3485,12 +3483,12 @@ function LoginComponent_div_8_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 2, "K\u1EBFt n\u1ED1i an to\xE0n"), " ");
   }
 }
-function LoginComponent_div_37_Template(rf, ctx) {
+function LoginComponent_div_35_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 28);
+    \u0275\u0275elementStart(0, "div", 26);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "a", 29);
+    \u0275\u0275elementStart(3, "a", 27);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd()();
@@ -3502,9 +3500,9 @@ function LoginComponent_div_37_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 4, "\u0110\u0103ng k\xFD ngay!"));
   }
 }
-function LoginComponent_ng_template_39_Template(rf, ctx) {
+function LoginComponent_ng_template_37_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 30);
+    \u0275\u0275elementStart(0, "span", 28);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -3645,7 +3643,7 @@ var _LoginComponent = class _LoginComponent {
 _LoginComponent.\u0275fac = function LoginComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _LoginComponent)();
 };
-_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 50, vars: 43, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user", 1, "premium-input"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "lock", 1, "premium-input"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "loading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["type", "button", 1, "social-btn", "google", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "google"], ["type", "button", 1, "social-btn", "ms", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
+_LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _LoginComponent, selectors: [["app-login"]], decls: 48, vars: 43, consts: [["dividerText", ""], [1, "login-container", "animate-fade-in"], [1, "login-header"], ["class", "sso-badge glass-card", 4, "ngIf"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["type", "text", "formControlName", "username", "prefixIcon", "user", 1, "premium-input", 3, "placeholder"], ["type", "password", "formControlName", "password", "prefixIcon", "lock", 1, "premium-input", 3, "placeholder"], ["nz-row", "", 1, "login-form-margin"], ["nz-col", "", 3, "nzSpan"], ["nz-checkbox", "", "formControlName", "remember"], ["nz-col", "", 1, "text-right", 3, "nzSpan"], [1, "login-form-forgot"], ["nzHtmlType", "submit", 1, "login-btn", "premium-button", 3, "nzType", "loading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "register-link", 4, "ngIf"], [3, "nzText"], [1, "sso-social-buttons"], ["type", "button", 1, "social-btn", "google", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "google"], ["type", "button", 1, "social-btn", "ms", 3, "click", "nzBlock"], ["nz-icon", "", "nzType", "windows"], [1, "sso-badge", "glass-card"], [1, "client-name"], [1, "security-check"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "fill"], [1, "register-link"], ["routerLink", "/auth/signup"], [1, "divider-text"]], template: function LoginComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 1)(1, "div", 2)(2, "h2");
@@ -3666,53 +3664,51 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
     });
     \u0275\u0275elementStart(10, "nz-form-item")(11, "nz-form-control", 5);
     \u0275\u0275pipe(12, "transloco");
-    \u0275\u0275elementStart(13, "nz-input-group", 6);
-    \u0275\u0275element(14, "input", 7);
-    \u0275\u0275pipe(15, "transloco");
+    \u0275\u0275element(13, "tot-input", 6);
+    \u0275\u0275pipe(14, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 5);
+    \u0275\u0275pipe(17, "transloco");
+    \u0275\u0275element(18, "tot-input", 7);
+    \u0275\u0275pipe(19, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(20, "div", 8)(21, "div", 9)(22, "label", 10)(23, "span");
+    \u0275\u0275text(24);
+    \u0275\u0275pipe(25, "transloco");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(16, "nz-form-item")(17, "nz-form-control", 5);
-    \u0275\u0275pipe(18, "transloco");
-    \u0275\u0275elementStart(19, "nz-input-group", 8);
-    \u0275\u0275element(20, "input", 9);
-    \u0275\u0275pipe(21, "transloco");
+    \u0275\u0275elementStart(26, "div", 11)(27, "a", 12);
+    \u0275\u0275text(28);
+    \u0275\u0275pipe(29, "transloco");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(22, "div", 10)(23, "div", 11)(24, "label", 12)(25, "span");
-    \u0275\u0275text(26);
-    \u0275\u0275pipe(27, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(28, "div", 13)(29, "a", 14);
-    \u0275\u0275text(30);
-    \u0275\u0275pipe(31, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(32, "tot-button", 15)(33, "span");
-    \u0275\u0275text(34);
-    \u0275\u0275pipe(35, "transloco");
+    \u0275\u0275elementStart(30, "tot-button", 13)(31, "span");
+    \u0275\u0275text(32);
+    \u0275\u0275pipe(33, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275element(36, "span", 16);
+    \u0275\u0275element(34, "span", 14);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(37, LoginComponent_div_37_Template, 6, 6, "div", 17);
+    \u0275\u0275template(35, LoginComponent_div_35_Template, 6, 6, "div", 15);
     \u0275\u0275elementEnd();
-    \u0275\u0275element(38, "nz-divider", 18);
-    \u0275\u0275template(39, LoginComponent_ng_template_39_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(41, "div", 19)(42, "tot-button", 20);
-    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_42_listener() {
+    \u0275\u0275element(36, "nz-divider", 16);
+    \u0275\u0275template(37, LoginComponent_ng_template_37_Template, 3, 3, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(39, "div", 17)(40, "tot-button", 18);
+    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_40_listener() {
       return ctx.loginWithGoogle();
     });
-    \u0275\u0275element(43, "span", 21);
-    \u0275\u0275text(44);
-    \u0275\u0275pipe(45, "transloco");
+    \u0275\u0275element(41, "span", 19);
+    \u0275\u0275text(42);
+    \u0275\u0275pipe(43, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(46, "tot-button", 22);
-    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_46_listener() {
+    \u0275\u0275elementStart(44, "tot-button", 20);
+    \u0275\u0275listener("click", function LoginComponent_Template_tot_button_click_44_listener() {
       return ctx.loginWithMS();
     });
-    \u0275\u0275element(47, "span", 23);
-    \u0275\u0275text(48);
-    \u0275\u0275pipe(49, "transloco");
+    \u0275\u0275element(45, "span", 21);
+    \u0275\u0275text(46);
+    \u0275\u0275pipe(47, "transloco");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const dividerText_r3 = \u0275\u0275reference(40);
+    const dividerText_r3 = \u0275\u0275reference(38);
     \u0275\u0275advance(3);
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 21, ctx.ssoClientName ? "\u0110\u0103ng nh\u1EADp SSO" : "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
@@ -3723,24 +3719,24 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
     \u0275\u0275property("formGroup", ctx.validateForm);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(12, 25, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 27, "T\xEAn \u0111\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(15, 27, "T\xEAn \u0111\u0103ng nh\u1EADp"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(18, 29, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(21, 31, "M\u1EADt kh\u1EA9u"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 29, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(19, 31, "M\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(27, 33, "Ghi nh\u1EDB t\xF4i"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(25, 33, "Ghi nh\u1EDB t\xF4i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 12);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(31, 35, "Qu\xEAn m\u1EADt kh\u1EA9u"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 35, "Qu\xEAn m\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzType", "primary")("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(35, 37, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(33, 37, ctx.ssoClientName ? "Ti\u1EBFp t\u1EE5c \u0111\u0103ng nh\u1EADp" : "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
     \u0275\u0275property("ngIf", !ctx.ssoClientName);
     \u0275\u0275advance();
@@ -3748,19 +3744,19 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
     \u0275\u0275advance(4);
     \u0275\u0275property("nzBlock", true);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 39, "Google"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(43, 39, "Google"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("nzBlock", true);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 41, "Microsoft"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(47, 41, "Microsoft"), " ");
   }
 }, dependencies: [
   TotButtonComponent,
+  TotInputComponent,
   CommonModule,
   NgIf,
   ReactiveFormsModule,
   \u0275NgNoValidate,
-  DefaultValueAccessor,
   NgControlStatus,
   NgControlStatusGroup,
   FormGroupDirective,
@@ -3773,8 +3769,6 @@ _LoginComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: 
   NzFormItemComponent,
   NzFormControlComponent,
   NzInputModule,
-  NzInputDirective,
-  NzInputGroupComponent,
   NzButtonModule,
   NzTransitionPatchDirective,
   NzCheckboxModule,
@@ -3792,6 +3786,7 @@ var LoginComponent = _LoginComponent;
     type: Component,
     args: [{ selector: "app-login", standalone: true, imports: [
       TotButtonComponent,
+      TotInputComponent,
       CommonModule,
       ReactiveFormsModule,
       RouterLink,
@@ -3822,17 +3817,13 @@ var LoginComponent = _LoginComponent;
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | transloco">
-        <nz-input-group nzPrefixIcon="user" class="premium-input">
-          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" prefixIcon="user" class="premium-input"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | transloco">
-        <nz-input-group nzPrefixIcon="lock" class="premium-input">
-          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" prefixIcon="lock" class="premium-input"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
@@ -3875,7 +3866,7 @@ var LoginComponent = _LoginComponent;
   }], () => [], null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(LoginComponent, { className: "LoginComponent", filePath: "src/app/modules/auth/login/login.component.ts", lineNumber: 41 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(LoginComponent, { className: "LoginComponent", filePath: "src/app/modules/auth/login/login.component.ts", lineNumber: 42 });
 })();
 
 // src/app/modules/auth/signup/signup.component.ts
@@ -3971,7 +3962,7 @@ var _SignupComponent = class _SignupComponent {
 _SignupComponent.\u0275fac = function SignupComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _SignupComponent)();
 };
-_SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 62, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["nzPrefixIcon", "user"], ["type", "text", "nz-input", "", "formControlName", "username", 3, "placeholder"], ["nzPrefixIcon", "mail"], ["type", "email", "nz-input", "", "formControlName", "email", 3, "placeholder"], ["nzPrefixIcon", "idcard"], ["type", "text", "nz-input", "", "formControlName", "displayName", 3, "placeholder"], ["nzPrefixIcon", "lock"], ["type", "password", "nz-input", "", "formControlName", "password", 3, "placeholder"], ["type", "password", "nz-input", "", "formControlName", "confirmPassword", 3, "placeholder"], [1, "signup-form-button", 3, "nzType", "loading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
+_SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _SignupComponent, selectors: [["app-signup"]], decls: 57, vars: 63, consts: [[1, "signup-page"], [1, "signup-header"], ["nz-form", "", 3, "ngSubmit", "formGroup"], [3, "nzErrorTip"], ["type", "text", "formControlName", "username", "prefixIcon", "user", 3, "placeholder"], ["type", "text", "formControlName", "email", "prefixIcon", "mail", 3, "placeholder"], ["type", "text", "formControlName", "displayName", "prefixIcon", "idcard", 3, "placeholder"], ["type", "password", "formControlName", "password", "prefixIcon", "lock", 3, "placeholder"], ["type", "password", "formControlName", "confirmPassword", "prefixIcon", "lock", 3, "placeholder"], [1, "signup-form-button", 3, "nzType", "loading"], ["routerLink", "/auth/login"], [3, "nzText"], [1, "sso-buttons"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "google"], ["nz-icon", "", "nzType", "windows"], ["nz-icon", "", "nzType", "facebook"]], template: function SignupComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
     \u0275\u0275text(3);
@@ -3988,69 +3979,64 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
     });
     \u0275\u0275elementStart(9, "nz-form-item")(10, "nz-form-control", 3);
     \u0275\u0275pipe(11, "transloco");
-    \u0275\u0275elementStart(12, "nz-input-group", 4);
-    \u0275\u0275element(13, "input", 5);
-    \u0275\u0275pipe(14, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(15, "nz-form-item")(16, "nz-form-control", 3);
-    \u0275\u0275pipe(17, "transloco");
-    \u0275\u0275elementStart(18, "nz-input-group", 6);
-    \u0275\u0275element(19, "input", 7);
-    \u0275\u0275pipe(20, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(21, "nz-form-item")(22, "nz-form-control", 3);
+    \u0275\u0275element(12, "tot-input", 4);
+    \u0275\u0275pipe(13, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(14, "nz-form-item")(15, "nz-form-control", 3);
+    \u0275\u0275pipe(16, "transloco");
+    \u0275\u0275element(17, "tot-input", 5);
+    \u0275\u0275pipe(18, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(19, "nz-form-item")(20, "nz-form-control", 3);
+    \u0275\u0275pipe(21, "transloco");
+    \u0275\u0275element(22, "tot-input", 6);
     \u0275\u0275pipe(23, "transloco");
-    \u0275\u0275elementStart(24, "nz-input-group", 8);
-    \u0275\u0275element(25, "input", 9);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(24, "nz-form-item")(25, "nz-form-control", 3);
     \u0275\u0275pipe(26, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(27, "nz-form-item")(28, "nz-form-control", 3);
-    \u0275\u0275pipe(29, "transloco");
-    \u0275\u0275elementStart(30, "nz-input-group", 10);
-    \u0275\u0275element(31, "input", 11);
-    \u0275\u0275pipe(32, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(33, "nz-form-item")(34, "nz-form-control", 3);
-    \u0275\u0275pipe(35, "transloco");
-    \u0275\u0275elementStart(36, "nz-input-group", 10);
-    \u0275\u0275element(37, "input", 12);
+    \u0275\u0275element(27, "tot-input", 7);
+    \u0275\u0275pipe(28, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(29, "nz-form-item")(30, "nz-form-control", 3);
+    \u0275\u0275pipe(31, "transloco");
+    \u0275\u0275element(32, "tot-input", 8);
+    \u0275\u0275pipe(33, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(34, "tot-button", 9);
+    \u0275\u0275text(35);
+    \u0275\u0275pipe(36, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(37);
     \u0275\u0275pipe(38, "transloco");
-    \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(39, "tot-button", 13);
+    \u0275\u0275elementStart(39, "a", 10);
     \u0275\u0275text(40);
     \u0275\u0275pipe(41, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275text(42);
+    \u0275\u0275element(42, "nz-divider", 11);
     \u0275\u0275pipe(43, "transloco");
-    \u0275\u0275elementStart(44, "a", 14);
-    \u0275\u0275text(45);
-    \u0275\u0275pipe(46, "transloco");
-    \u0275\u0275elementEnd();
-    \u0275\u0275element(47, "nz-divider", 15);
-    \u0275\u0275pipe(48, "transloco");
-    \u0275\u0275elementStart(49, "div", 16)(50, "tot-button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_50_listener() {
+    \u0275\u0275elementStart(44, "div", 12)(45, "tot-button", 13);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_45_listener() {
       return ctx.signupWithGoogle();
     });
-    \u0275\u0275element(51, "span", 18);
-    \u0275\u0275text(52);
-    \u0275\u0275pipe(53, "transloco");
+    \u0275\u0275element(46, "span", 14);
+    \u0275\u0275text(47);
+    \u0275\u0275pipe(48, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "tot-button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_54_listener() {
+    \u0275\u0275elementStart(49, "tot-button", 13);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_49_listener() {
       return ctx.signupWithMS();
     });
-    \u0275\u0275element(55, "span", 19);
-    \u0275\u0275text(56);
-    \u0275\u0275pipe(57, "transloco");
+    \u0275\u0275element(50, "span", 15);
+    \u0275\u0275text(51);
+    \u0275\u0275pipe(52, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(58, "tot-button", 17);
-    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_58_listener() {
+    \u0275\u0275elementStart(53, "tot-button", 13);
+    \u0275\u0275listener("click", function SignupComponent_Template_tot_button_click_53_listener() {
       return ctx.signupWithFacebook();
     });
-    \u0275\u0275element(59, "span", 20);
-    \u0275\u0275text(60);
-    \u0275\u0275pipe(61, "transloco");
+    \u0275\u0275element(54, "span", 16);
+    \u0275\u0275text(55);
+    \u0275\u0275pipe(56, "transloco");
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -4062,53 +4048,53 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
     \u0275\u0275property("formGroup", ctx.validateForm);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(11, 29, "Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(13, 31, "T\xEAn \u0111\u0103ng nh\u1EADp"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(14, 31, "T\xEAn \u0111\u0103ng nh\u1EADp"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(16, 33, "Vui l\xF2ng nh\u1EADp email!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(18, 35, "Email"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 33, "Vui l\xF2ng nh\u1EADp email!"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(21, 37, "Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(23, 39, "T\xEAn hi\u1EC3n th\u1ECB"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(20, 35, "Email"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(26, 41, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(28, 43, "M\u1EADt kh\u1EA9u"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(23, 37, "Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(26, 39, "T\xEAn hi\u1EC3n th\u1ECB"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(29, 41, "Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(32, 43, "M\u1EADt kh\u1EA9u"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(35, 45, "Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!"));
-    \u0275\u0275advance(3);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(38, 47, "X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi"));
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(31, 45, "Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(33, 47, "X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzType", "primary")("loading", ctx.loading);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(41, 49, "\u0110\u0103ng k\xFD"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(36, 49, "\u0110\u0103ng k\xFD"));
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(43, 51, "\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(38, 51, "\u0110\xE3 c\xF3 t\xE0i kho\u1EA3n?"), " ");
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(46, 53, "\u0110\u0103ng nh\u1EADp"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(41, 53, "\u0110\u0103ng nh\u1EADp"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzText", \u0275\u0275pipeBind1(48, 55, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
+    \u0275\u0275property("nzText", \u0275\u0275pipeBind1(43, 55, "Ho\u1EB7c \u0111\u0103ng nh\u1EADp v\u1EDBi"));
     \u0275\u0275advance(3);
     \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 57, "Google"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(48, 57, "Google"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 59, "Microsoft"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(52, 59, "Microsoft"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 61, "Facebook"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(56, 61, "Facebook"), " ");
   }
 }, dependencies: [
   TotButtonComponent,
+  TotInputComponent,
   CommonModule,
   ReactiveFormsModule,
   \u0275NgNoValidate,
-  DefaultValueAccessor,
   NgControlStatus,
   NgControlStatusGroup,
   FormGroupDirective,
@@ -4121,8 +4107,6 @@ _SignupComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
   NzFormItemComponent,
   NzFormControlComponent,
   NzInputModule,
-  NzInputDirective,
-  NzInputGroupComponent,
   NzButtonModule,
   NzTransitionPatchDirective,
   NzIconModule,
@@ -4138,6 +4122,7 @@ var SignupComponent = _SignupComponent;
     type: Component,
     args: [{ selector: "app-signup", standalone: true, imports: [
       TotButtonComponent,
+      TotInputComponent,
       CommonModule,
       ReactiveFormsModule,
       RouterLink,
@@ -4156,41 +4141,31 @@ var SignupComponent = _SignupComponent;
   <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn \u0111\u0103ng nh\u1EADp!' | transloco">
-        <nz-input-group nzPrefixIcon="user">
-          <input type="text" nz-input formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="username" [placeholder]="'T\xEAn \u0111\u0103ng nh\u1EADp' | transloco" prefixIcon="user"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp email!' | transloco">
-        <nz-input-group nzPrefixIcon="mail">
-          <input type="email" nz-input formControlName="email" [placeholder]="'Email' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="email" [placeholder]="'Email' | transloco" prefixIcon="mail"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp t\xEAn hi\u1EC3n th\u1ECB!' | transloco">
-        <nz-input-group nzPrefixIcon="idcard">
-          <input type="text" nz-input formControlName="displayName" [placeholder]="'T\xEAn hi\u1EC3n th\u1ECB' | transloco" />
-        </nz-input-group>
+        <tot-input type="text" formControlName="displayName" [placeholder]="'T\xEAn hi\u1EC3n th\u1ECB' | transloco" prefixIcon="idcard"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u!' | transloco">
-        <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="password" [placeholder]="'M\u1EADt kh\u1EA9u' | transloco" prefixIcon="lock"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!' | transloco">
-        <nz-input-group nzPrefixIcon="lock">
-          <input type="password" nz-input formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco" />
-        </nz-input-group>
+        <tot-input type="password" formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco" prefixIcon="lock"></tot-input>
       </nz-form-control>
     </nz-form-item>
 
@@ -4216,7 +4191,7 @@ var SignupComponent = _SignupComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(SignupComponent, { className: "SignupComponent", filePath: "src/app/modules/auth/signup/signup.component.ts", lineNumber: 33 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(SignupComponent, { className: "SignupComponent", filePath: "src/app/modules/auth/signup/signup.component.ts", lineNumber: 34 });
 })();
 
 // src/app/app.routes.ts
@@ -4281,36 +4256,36 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-LCDEJFEZ.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-5PUAAEOW.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]

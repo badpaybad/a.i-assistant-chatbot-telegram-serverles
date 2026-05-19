@@ -1,4 +1,4 @@
-import { TotButtonComponent } from '@tot/shared';
+import { TotButtonComponent, TotInputComponent } from '@tot/shared';
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, FormGroup, NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -17,6 +17,7 @@ import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
   standalone: true,
   imports: [
     TotButtonComponent,
+    TotInputComponent,
     CommonModule,
     ReactiveFormsModule,
     RouterLink,

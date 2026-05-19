@@ -4,8 +4,9 @@ import {
   ALL_CLAIMS,
   APP_CLAIMS,
   AuthService,
-  CLAIMS_VERSION
-} from "./chunk-AHPU6FTX.js";
+  CLAIMS_VERSION,
+  TotInputComponent
+} from "./chunk-YSWTRDR3.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
@@ -4014,7 +4015,7 @@ var _ChangePasswordComponent = class _ChangePasswordComponent {
 _ChangePasswordComponent.\u0275fac = function ChangePasswordComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _ChangePasswordComponent)();
 };
-_ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChangePasswordComponent, selectors: [["app-change-password"]], decls: 35, vars: 39, consts: [["passwordErrorTpl", ""], ["confirmErrorTpl", ""], [1, "change-password-container"], [3, "nzTitle"], ["nz-form", "", 3, "ngSubmit", "formGroup"], ["nzRequired", "", 3, "nzSpan"], [3, "nzSpan", "nzErrorTip"], ["nz-input", "", "type", "password", "formControlName", "oldPassword", 3, "placeholder"], ["nz-input", "", "type", "password", "formControlName", "newPassword", 3, "placeholder"], ["nz-input", "", "type", "password", "formControlName", "confirmPassword", 3, "placeholder"], [3, "nzOffset", "nzSpan"], ["nzType", "primary", 3, "loading"], [4, "ngIf"]], template: function ChangePasswordComponent_Template(rf, ctx) {
+_ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _ChangePasswordComponent, selectors: [["app-change-password"]], decls: 35, vars: 39, consts: [["passwordErrorTpl", ""], ["confirmErrorTpl", ""], [1, "change-password-container"], [3, "nzTitle"], ["nz-form", "", 3, "ngSubmit", "formGroup"], ["nzRequired", "", 3, "nzSpan"], [3, "nzSpan", "nzErrorTip"], ["type", "password", "formControlName", "oldPassword", 3, "placeholder"], ["type", "password", "formControlName", "newPassword", 3, "placeholder"], ["type", "password", "formControlName", "confirmPassword", 3, "placeholder"], [3, "nzOffset", "nzSpan"], ["nzType", "primary", 3, "loading"], [4, "ngIf"]], template: function ChangePasswordComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 2)(1, "nz-card", 3);
     \u0275\u0275pipe(2, "transloco");
@@ -4028,7 +4029,7 @@ _ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(8, "nz-form-control", 6);
     \u0275\u0275pipe(9, "transloco");
-    \u0275\u0275element(10, "input", 7);
+    \u0275\u0275element(10, "tot-input", 7);
     \u0275\u0275pipe(11, "transloco");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(12, "nz-form-item")(13, "nz-form-label", 5);
@@ -4036,7 +4037,7 @@ _ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
     \u0275\u0275pipe(15, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(16, "nz-form-control", 6);
-    \u0275\u0275element(17, "input", 8);
+    \u0275\u0275element(17, "tot-input", 8);
     \u0275\u0275pipe(18, "transloco");
     \u0275\u0275template(19, ChangePasswordComponent_ng_template_19_Template, 2, 2, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
@@ -4045,7 +4046,7 @@ _ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
     \u0275\u0275pipe(24, "transloco");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(25, "nz-form-control", 6);
-    \u0275\u0275element(26, "input", 9);
+    \u0275\u0275element(26, "tot-input", 9);
     \u0275\u0275pipe(27, "transloco");
     \u0275\u0275template(28, ChangePasswordComponent_ng_template_28_Template, 2, 2, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
@@ -4094,11 +4095,11 @@ _ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
   }
 }, dependencies: [
   TotButtonComponent,
+  TotInputComponent,
   CommonModule,
   NgIf,
   ReactiveFormsModule,
   \u0275NgNoValidate,
-  DefaultValueAccessor,
   NgControlStatus,
   NgControlStatusGroup,
   FormGroupDirective,
@@ -4111,7 +4112,6 @@ _ChangePasswordComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent
   NzFormLabelComponent,
   NzFormControlComponent,
   NzInputModule,
-  NzInputDirective,
   NzButtonModule,
   NzCardModule,
   NzCardComponent,
@@ -4124,6 +4124,7 @@ var ChangePasswordComponent = _ChangePasswordComponent;
     type: Component,
     args: [{ selector: "app-change-password", standalone: true, imports: [
       TotButtonComponent,
+      TotInputComponent,
       CommonModule,
       ReactiveFormsModule,
       NzFormModule,
@@ -4137,14 +4138,14 @@ var ChangePasswordComponent = _ChangePasswordComponent;
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>{{ 'M\u1EADt kh\u1EA9u c\u0169' | transloco }}</nz-form-label>
         <nz-form-control [nzSpan]="14" [nzErrorTip]="'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u c\u0169!' | transloco">
-          <input nz-input type="password" formControlName="oldPassword" [placeholder]="'M\u1EADt kh\u1EA9u c\u0169' | transloco" />
+          <tot-input type="password" formControlName="oldPassword" [placeholder]="'M\u1EADt kh\u1EA9u c\u0169' | transloco"></tot-input>
         </nz-form-control>
       </nz-form-item>
 
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>{{ 'M\u1EADt kh\u1EA9u m\u1EDBi' | transloco }}</nz-form-label>
         <nz-form-control [nzSpan]="14" [nzErrorTip]="passwordErrorTpl">
-          <input nz-input type="password" formControlName="newPassword" [placeholder]="'M\u1EADt kh\u1EA9u m\u1EDBi' | transloco" />
+          <tot-input type="password" formControlName="newPassword" [placeholder]="'M\u1EADt kh\u1EA9u m\u1EDBi' | transloco"></tot-input>
           <ng-template #passwordErrorTpl let-control>
             <ng-container *ngIf="control.hasError('required')">{{ 'Vui l\xF2ng nh\u1EADp m\u1EADt kh\u1EA9u m\u1EDBi!' | transloco }}</ng-container>
             <ng-container *ngIf="control.hasError('minlength')">{{ 'M\u1EADt kh\u1EA9u ph\u1EA3i c\xF3 \xEDt nh\u1EA5t 6 k\xFD t\u1EF1' | transloco }}</ng-container>
@@ -4155,7 +4156,7 @@ var ChangePasswordComponent = _ChangePasswordComponent;
       <nz-form-item>
         <nz-form-label [nzSpan]="6" nzRequired>{{ 'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco }}</nz-form-label>
         <nz-form-control [nzSpan]="14" [nzErrorTip]="confirmErrorTpl">
-          <input nz-input type="password" formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco" />
+          <tot-input type="password" formControlName="confirmPassword" [placeholder]="'X\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi' | transloco"></tot-input>
           <ng-template #confirmErrorTpl let-control>
             <ng-container *ngIf="control.hasError('required')">{{ 'Vui l\xF2ng x\xE1c nh\u1EADn m\u1EADt kh\u1EA9u m\u1EDBi!' | transloco }}</ng-container>
             <ng-container *ngIf="control.hasError('confirm')">{{ 'M\u1EADt kh\u1EA9u kh\xF4ng kh\u1EDBp' | transloco }}</ng-container>
@@ -4175,7 +4176,7 @@ var ChangePasswordComponent = _ChangePasswordComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChangePasswordComponent, { className: "ChangePasswordComponent", filePath: "projects/tot/business-oidc/src/lib/change-password/change-password.component.ts", lineNumber: 29 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(ChangePasswordComponent, { className: "ChangePasswordComponent", filePath: "projects/tot/business-oidc/src/lib/change-password/change-password.component.ts", lineNumber: 30 });
 })();
 
 // node_modules/ng-zorro-antd/fesm2022/ng-zorro-antd-tabs.mjs
@@ -7358,4 +7359,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-LCDEJFEZ.js.map
+//# sourceMappingURL=chunk-5PUAAEOW.js.map
