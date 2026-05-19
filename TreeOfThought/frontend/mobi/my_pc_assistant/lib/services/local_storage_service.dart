@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class LocalStorageService extends ChangeNotifier {
   static late SharedPreferences _prefs;
+  static SharedPreferences get prefs => _prefs;
 
   // Keys
   static const String _themeKey = 'theme_mode';

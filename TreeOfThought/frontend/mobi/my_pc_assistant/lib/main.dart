@@ -26,6 +26,9 @@ late ObjectBox objectbox;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Khởi tạo Local Storage (SharedPreferences) trước tiên để các dịch vụ truy cập đồng bộ
+  await LocalStorageService.init();
+  
   // Register dynamic Base URL and token providers for core HttpClientService
   HttpClientService.instance.init(
     baseUrlProvider: () => AuthService.instance.baseUrl,
@@ -38,10 +41,7 @@ void main() async {
   debugPrint('App starting initialization...');
 
   try {
-    // Khởi tạo Local Storage (SharedPreferences)
-    debugPrint('Initializing SharedPreferences...');
-    await LocalStorageService.init();
-    debugPrint('SharedPreferences initialized.');
+    debugPrint('SharedPreferences already initialized.');
 
     // Khởi tạo i18n Translation Service
     debugPrint('Initializing I18nService...');
@@ -107,7 +107,7 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeService.themeMode,
-      initialRoute: AppRoutes.initialRoute,
+      initialRoute: AuthService.instance.isAuthenticated ? AppRoutes.home : AppRoutes.signIn,
       routes: AppRoutes.routes,
     );
   }

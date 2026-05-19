@@ -22,4 +22,14 @@ class UserModel {
       profileImageUrl: json['profileImageUrl'],
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'email': email,
+      'phoneNumber': phoneNumber,
+      'profileImageUrl': profileImageUrl,
+    };
+  }
 }

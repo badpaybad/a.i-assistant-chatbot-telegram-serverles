@@ -1,12 +1,62 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:tot_core/tot_core.dart';
 import '../models/user_model.dart';
+import 'local_storage_service.dart';
 
 class AuthService extends ChangeNotifier implements TotAuthService {
   static final AuthService instance = AuthService._internal();
   factory AuthService() => instance;
-  AuthService._internal();
+  AuthService._internal() {
+    tryAutoLogin();
+  }
+
+  void tryAutoLogin() {
+    try {
+      final prefs = LocalStorageService.prefs;
+      _selectedIp = prefs.getString('auth_selected_ip') ?? 'localhost:5000';
+      _accessToken = prefs.getString('auth_access_token');
+      _idToken = prefs.getString('auth_id_token');
+      final userJson = prefs.getString('auth_current_user');
+      if (userJson != null) {
+        _currentUser = UserModel.fromJson(jsonDecode(userJson));
+        _isAuthenticated = true;
+      }
+      debugPrint('[AuthService] tryAutoLogin: isAuthenticated = $_isAuthenticated, ip = $_selectedIp');
+    } catch (e) {
+      debugPrint('[AuthService] tryAutoLogin failed: $e');
+    }
+  }
+
+  Future<void> _saveSession() async {
+    try {
+      final prefs = LocalStorageService.prefs;
+      await prefs.setString('auth_selected_ip', _selectedIp);
+      if (_accessToken != null) {
+        await prefs.setString('auth_access_token', _accessToken!);
+      }
+      if (_idToken != null) {
+        await prefs.setString('auth_id_token', _idToken!);
+      }
+      if (_currentUser != null) {
+        await prefs.setString('auth_current_user', jsonEncode(_currentUser!.toJson()));
+      }
+    } catch (e) {
+      debugPrint('[AuthService] _saveSession failed: $e');
+    }
+  }
+
+  Future<void> _clearSession() async {
+    try {
+      final prefs = LocalStorageService.prefs;
+      await prefs.remove('auth_access_token');
+      await prefs.remove('auth_id_token');
+      await prefs.remove('auth_current_user');
+    } catch (e) {
+      debugPrint('[AuthService] _clearSession failed: $e');
+    }
+  }
 
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -27,6 +77,7 @@ class AuthService extends ChangeNotifier implements TotAuthService {
 
   void setBaseUrl(String ip) {
     _selectedIp = ip;
+    LocalStorageService.prefs.setString('auth_selected_ip', ip);
     notifyListeners();
   }
 
@@ -57,7 +108,9 @@ class AuthService extends ChangeNotifier implements TotAuthService {
         email: email,
         profileImageUrl: 'https://i.pravatar.cc/150?u=john',
       );
+      _accessToken = 'mock_jwt_token_for_test';
       _isAuthenticated = true;
+      await _saveSession();
       _isLoading = false;
       notifyListeners();
       return true;
@@ -113,6 +166,7 @@ class AuthService extends ChangeNotifier implements TotAuthService {
             profileImageUrl: 'https://i.pravatar.cc/150?u=$username',
           );
           _isAuthenticated = true;
+          await _saveSession();
           _isLoading = false;
           notifyListeners();
           debugPrint('[SSO] Login successful for $username');
@@ -142,7 +196,9 @@ class AuthService extends ChangeNotifier implements TotAuthService {
       phoneNumber: phone,
       profileImageUrl: 'https://i.pravatar.cc/150?u=new',
     );
+    _accessToken = 'mock_jwt_token_for_test';
     _isAuthenticated = true;
+    await _saveSession();
     notifyListeners();
   }
 
@@ -173,6 +229,7 @@ class AuthService extends ChangeNotifier implements TotAuthService {
       _idToken = null;
       _accessToken = null; // Clear accessToken
       _isAuthenticated = false;
+      await _clearSession();
       notifyListeners();
     }
   }
