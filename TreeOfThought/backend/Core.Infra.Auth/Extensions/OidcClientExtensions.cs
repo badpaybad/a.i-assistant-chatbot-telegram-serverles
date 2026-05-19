@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System;
 
-namespace Core.Infra.Oidc.Extensions;
+namespace Core.Infra.Auth.Extensions;
 
 public static class OidcClientExtensions
 {
