@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/vector_db_service.dart';
 import '../models/vector_data.dart';
-import '../core/app_colors.dart';
+import '../layout/app_colors.dart';
 
 class VectorSearchPage extends StatefulWidget {
   const VectorSearchPage({super.key});

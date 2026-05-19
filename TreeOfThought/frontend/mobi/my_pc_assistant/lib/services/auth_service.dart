@@ -4,14 +4,20 @@ import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 
 class AuthService extends ChangeNotifier {
+  static final AuthService instance = AuthService._internal();
+  factory AuthService() => instance;
+  AuthService._internal();
+
   UserModel? _currentUser;
   bool _isLoading = false;
   bool _isAuthenticated = false;
   String? _idToken;
+  String? _accessToken;
 
   UserModel? get currentUser => _currentUser;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  String? get accessToken => _accessToken;
 
   final Dio _dio = Dio();
   final FlutterAppAuth _appAuth = const FlutterAppAuth();
@@ -23,6 +29,8 @@ class AuthService extends ChangeNotifier {
     _selectedIp = ip;
     notifyListeners();
   }
+
+  String get baseUrl => _baseUrl;
 
   String get _baseUrl {
     String ip = _selectedIp.trim();
@@ -85,6 +93,7 @@ class AuthService extends ChangeNotifier {
 
       if (result != null && result.accessToken != null) {
         final String accessToken = result.accessToken!;
+        _accessToken = accessToken; // Save accessToken
         _idToken = result.idToken; // Save idToken for signOut
         
         debugPrint('[SSO] Access token received. Fetching user info...');
@@ -167,6 +176,7 @@ class AuthService extends ChangeNotifier {
     } finally {
       _currentUser = null;
       _idToken = null;
+      _accessToken = null; // Clear accessToken
       _isAuthenticated = false;
       notifyListeners();
     }

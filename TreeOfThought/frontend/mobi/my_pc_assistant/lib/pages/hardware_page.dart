@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
-import '../core/app_colors.dart';
+import '../layout/app_colors.dart';
 import '../services/bluetooth_service.dart';
 import '../services/nfc_service.dart';
 import '../services/biometric_service.dart';

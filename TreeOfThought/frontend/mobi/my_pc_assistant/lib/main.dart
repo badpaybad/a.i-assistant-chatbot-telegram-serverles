@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'core/app_theme.dart';
-import 'core/app_routes.dart';
+import 'layout/app_theme.dart';
+import 'app_routes.dart';
 import 'services/auth_service.dart';
 import 'services/notification_service.dart';
 import 'services/bluetooth_service.dart';
@@ -18,6 +18,9 @@ import 'services/device_service.dart';
 import 'services/media_service.dart';
 import 'core/objectbox.dart';
 
+import 'buss/files_folders/files_folders_module.dart';
+import 'core/i18n.dart';
+
 late ObjectBox objectbox;
 
 void main() async {
@@ -30,6 +33,14 @@ void main() async {
     debugPrint('Initializing SharedPreferences...');
     await LocalStorageService.init();
     debugPrint('SharedPreferences initialized.');
+
+    // Khởi tạo i18n Translation Service
+    debugPrint('Initializing I18nService...');
+    await I18nService.instance.init();
+    debugPrint('I18nService initialized.');
+
+    // Khởi tạo module files_folders
+    initFilesFoldersModule();
 
     // Khởi tạo ObjectBox (Vector Database)
     debugPrint('Initializing ObjectBox...');

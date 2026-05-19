@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../core/app_colors.dart';
-import '../core/app_routes.dart';
+import '../layout/app_colors.dart';
+import '../app_routes.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/custom_button.dart';
 import '../services/auth_service.dart';
