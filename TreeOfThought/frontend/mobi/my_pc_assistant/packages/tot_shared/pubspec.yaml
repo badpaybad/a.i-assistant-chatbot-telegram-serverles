@@ -1,0 +1,14 @@
+name: tot_shared
+description: "Shared premium widgets (TotButton, TotAutocomplete)."
+version: 1.0.0
+publish_to: "none"
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  google_fonts: ^6.3.2
+  tot_core:
+    path: ../tot_core

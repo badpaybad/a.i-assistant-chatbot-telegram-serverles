@@ -16,15 +16,21 @@ import 'services/file_service.dart';
 import 'services/vector_db_service.dart';
 import 'services/device_service.dart';
 import 'services/media_service.dart';
-import 'core/objectbox.dart';
+import 'services/objectbox.dart';
 
-import 'buss/files_folders/files_folders_module.dart';
-import 'core/i18n.dart';
+import 'package:tot_core/tot_core.dart';
+import 'package:tot_buss_files/tot_buss_files.dart';
 
 late ObjectBox objectbox;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Register dynamic Base URL and token providers for core HttpClientService
+  HttpClientService.instance.init(
+    baseUrlProvider: () => AuthService.instance.baseUrl,
+    tokenProvider: () => AuthService.instance.accessToken,
+  );
   
   debugPrint('App starting initialization...');
 

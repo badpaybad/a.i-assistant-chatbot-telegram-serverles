@@ -1,0 +1,14 @@
+name: tot_core
+description: "Core utility services including i18n, sequential CQRS dispatcher, component register, and Dynamic Dio HTTP client."
+version: 1.0.0
+publish_to: "none"
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  dio: ^5.8.0+1
+  path: ^1.9.0
+  path_provider: ^2.1.5

@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../../../core/http_client.dart';
+import 'package:tot_core/tot_core.dart';
 import '../models/file_folder_models.dart';
 
 class FilesFoldersApi {

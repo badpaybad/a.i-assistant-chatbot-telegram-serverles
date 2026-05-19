@@ -1,4 +1,4 @@
-import '../../../core/event_bus.dart';
+import 'package:tot_core/tot_core.dart';
 
 class FileItem {
   final String id;

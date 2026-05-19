@@ -1,21 +1,29 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import '../services/auth_service.dart';
 
 class HttpClientService {
   static final HttpClientService _instance = HttpClientService._internal();
   static HttpClientService get instance => _instance;
-  HttpClientService._internal() {
-    _initDio();
-  }
+  HttpClientService._internal();
 
   late Dio _dio;
+  String Function()? _baseUrlProvider;
+  String? Function()? _tokenProvider;
   
   // Busy notifier for global loading overlays
   final ValueNotifier<bool> isBusy = ValueNotifier<bool>(false);
   
   // Stream controller for global API error messages
   final ValueNotifier<String?> errorNotifier = ValueNotifier<String?>(null);
+
+  void init({
+    required String Function() baseUrlProvider,
+    required String? Function() tokenProvider,
+  }) {
+    _baseUrlProvider = baseUrlProvider;
+    _tokenProvider = tokenProvider;
+    _initDio();
+  }
 
   void _initDio() {
     _dio = Dio(BaseOptions(
@@ -28,13 +36,16 @@ class HttpClientService {
       InterceptorsWrapper(
         onRequest: (options, handler) {
           // Dynamic baseUrl update
-          final activeBaseUrl = AuthService.instance.baseUrl;
-          options.baseUrl = activeBaseUrl;
+          if (_baseUrlProvider != null) {
+            options.baseUrl = _baseUrlProvider!();
+          }
           
           // Inject Authorization Bearer token if present
-          final token = AuthService.instance.accessToken;
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
+          if (_tokenProvider != null) {
+            final token = _tokenProvider!();
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
           
           debugPrint('[HTTP] Request: ${options.method} ${options.baseUrl}${options.path}');

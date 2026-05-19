@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/vector_data.dart';
-import '../core/objectbox.dart';
+import 'objectbox.dart';
 import '../objectbox.g.dart';
 
 class VectorDbService extends ChangeNotifier {

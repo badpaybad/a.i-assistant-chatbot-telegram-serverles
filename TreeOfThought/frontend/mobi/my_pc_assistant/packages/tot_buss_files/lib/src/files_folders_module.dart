@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/component_register.dart';
-import '../../core/event_bus.dart';
+import 'package:tot_core/tot_core.dart';
 import 'widgets/file_picker_widget.dart';
 import 'models/file_folder_models.dart';
 

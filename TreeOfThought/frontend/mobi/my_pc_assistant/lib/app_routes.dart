@@ -4,7 +4,7 @@ import 'pages/sign_up_page.dart';
 import 'pages/home_page.dart';
 import 'pages/hardware_page.dart';
 import 'pages/vector_search_page.dart';
-import 'buss/files_folders/pages/folder_content_page.dart';
+import 'package:tot_buss_files/tot_buss_files.dart';
 
 class AppRoutes {
   static const String signIn = '/sign-in';
