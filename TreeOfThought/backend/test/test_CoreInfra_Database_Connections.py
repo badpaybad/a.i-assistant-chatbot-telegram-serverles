@@ -32,18 +32,18 @@ def check_postgres():
         print(f"[ERROR] PostgreSQL check failed: {e}")
         return False
 
-def check_mysql():
-    print("Checking MySQL connection...")
+def check_mariadb():
+    print("Checking MariaDB connection...")
     try:
-        result = subprocess.run(["docker", "exec", "tot-mysql", "mysqladmin", "-u", "root", "-pTest123456", "ping"], capture_output=True, text=True)
-        if "mysqld is alive" in result.stdout:
-            print("[OK] MySQL is up")
+        result = subprocess.run(["docker", "exec", "tot-mariadb", "mysqladmin", "-u", "root", "-pTest123456", "ping"], capture_output=True, text=True)
+        if "is alive" in result.stdout:
+            print("[OK] MariaDB is up")
             return True
         else:
-            print("[FAIL] MySQL is down")
+            print("[FAIL] MariaDB is down")
             return False
     except Exception as e:
-        print(f"[ERROR] MySQL check failed: {e}")
+        print(f"[ERROR] MariaDB check failed: {e}")
         return False
 
 def check_mongodb():
@@ -75,6 +75,21 @@ def check_mssql():
         print(f"[ERROR] SQL Server check failed: {e}")
         return False
 
+def check_oracle():
+    print("Checking Oracle Database connection...")
+    try:
+        # We can run sqlplus to check connection
+        result = subprocess.run(["docker", "exec", "tot-oracle", "sh", "-c", 'echo "SELECT 1 FROM DUAL;" | sqlplus -L -S system/Test123456@localhost:1521/FREEPDB1'], capture_output=True, text=True)
+        if "1" in result.stdout:
+            print("[OK] Oracle Database is up")
+            return True
+        else:
+            print(f"[FAIL] Oracle Database is down. Output: {result.stdout} {result.stderr}")
+            return False
+    except Exception as e:
+        print(f"[ERROR] Oracle Database check failed: {e}")
+        return False
+
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] != "config_dunp":
         print("Usage: python test/test_CoreInfra_Database_Connections.py config_dunp")
@@ -84,9 +99,10 @@ if __name__ == "__main__":
     results = [
         check_redis(),
         check_postgres(),
-        check_mysql(),
+        check_mariadb(),
         check_mongodb(),
-        check_mssql()
+        check_mssql(),
+        check_oracle()
     ]
     
     if all(results):

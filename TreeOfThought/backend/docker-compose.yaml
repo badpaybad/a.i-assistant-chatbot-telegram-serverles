@@ -24,9 +24,9 @@ services:
       - ./db_test/postgres:/var/lib/postgresql/data
     restart: always
 
-  mysql:
-    image: mysql:8.0
-    container_name: tot-mysql
+  mariadb:
+    image: mariadb:10.11
+    container_name: tot-mariadb
     privileged: true
     environment:
       MYSQL_ROOT_PASSWORD: Test123456
@@ -34,7 +34,7 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./db_test/mysql:/var/lib/mysql
+      - ./db_test/mariadb:/var/lib/mysql
     restart: always
 
   mongodb:
@@ -61,4 +61,16 @@ services:
       - "1433:1433"
     volumes:
       - ./db_test/mssql:/var/opt/mssql
+    restart: always
+
+  oracle:
+    image: gvenzl/oracle-free:23-slim
+    container_name: tot-oracle
+    privileged: true
+    environment:
+      ORACLE_PASSWORD: Test123456
+    ports:
+      - "1521:1521"
+    volumes:
+      - ./db_test/oracle:/opt/oracle/oradata
     restart: always
