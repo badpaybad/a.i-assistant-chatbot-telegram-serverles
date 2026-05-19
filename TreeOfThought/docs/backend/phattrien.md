@@ -453,4 +453,163 @@ Sự nhất quán trong cách đăng ký này đảm bảo tất cả các ứng
 ---
 **Ghi chú**: Hạ tầng Core Base và tiêu chuẩn thiết kế Modular Monolith hiện tại của solution cực kỳ vững chắc và mạch lạc. Việc tuân thủ nghiêm ngặt các quy tắc trên sẽ giúp giải pháp luôn sạch sẽ, dễ dàng tích hợp thêm các dịch vụ mới mà không sợ phát sinh lỗi dây chuyền.
 
+---
+
+## 8. Hướng dẫn Phát triển & Tích hợp OIDC SSO dành cho skill `tot-dev`
+
+Để duy trì tính nhất quán bảo mật cho toàn bộ hệ thống TreeOfThought, khi phát triển bất kỳ tính năng Backend mới hoặc xây dựng Client mới (Web/Mobile), nhà phát triển **bắt buộc** phải tuân thủ hướng dẫn chi tiết dưới đây:
+
+### 8.1. Hướng dẫn Sử dụng Chi tiết `[AppAuthorize]` tại Backend (Cơ sở từ `webapitestoidc`)
+
+Project `Core.Infra.Auth` cung cấp annotation `[AppAuthorize]`. Dưới đây là 8 kịch bản áp dụng thực tế được chuẩn hóa từ `TestAuthController.cs`:
+
+#### 1. Endpoint Công cộng (Public Endpoint)
+Không sử dụng bất kỳ attribute bảo mật nào.
+```csharp
+[HttpGet("public")]
+public IActionResult GetPublic() => Ok("Không cần token");
+```
+
+#### 2. Yêu cầu Xác thực Tiêu chuẩn (Standard Secure)
+Chỉ yêu cầu người dùng gửi Token JWT hợp lệ.
+```csharp
+[HttpGet("secure")]
+[AppAuthorize]
+public IActionResult GetSecure() => Ok("Đã xác thực thành công");
+```
+
+#### 3. Yêu cầu Vai trò Ưu tiên (Prioritized Role Check)
+Chỉ định rõ vai trò được truy cập. Hệ thống sẽ kiểm tra nhanh và cho phép bypass nếu thỏa mãn.
+```csharp
+[HttpGet("admin-role")]
+[AppAuthorize(Roles = "Admin")]
+public IActionResult GetAdminRole() => Ok("Yêu cầu vai trò Admin");
+```
+
+#### 4. Quyền hạn Quản trị (Admin Claim Bypass)
+Bypass kiểm tra quyền phức tạp khi user có claim quản trị tối cao (`be.admin`).
+```csharp
+[HttpGet("admin-claim")]
+[AppAuthorize("admin")] // Attribute tự động chuyển thành "be.admin"
+public IActionResult GetAdminClaim() => Ok("Quyền admin tối cao");
+```
+
+#### 5. Quyền hạn Cụ thể (Custom Claim Requirement)
+Khai báo claim cụ thể cần có để thực hiện action.
+```csharp
+[HttpGet("custom-claim")]
+[AppAuthorize("test.read")] // Tự động thêm tiền tố "be." thành "be.test.read"
+public IActionResult GetCustomClaim() => Ok("Có quyền đọc test");
+```
+
+#### 6. Kiểm tra ACL Động - Quyền Đọc (Dynamic ACL Read)
+Yêu cầu quyền Đọc (`ResourceActions.Read` có bitmask là `1`) trên tài nguyên cụ thể.
+```csharp
+[HttpGet("acl-read/{id?}")]
+[AppAuthorize(ResourceType = "Document", Action = ResourceActions.Read)]
+public IActionResult GetAclRead(string? id) => Ok("Đọc tài nguyên thành công");
+```
+> [!NOTE]
+> Hệ thống sẽ trích xuất `ResourceId` theo thứ tự ưu tiên: Header `x-resource-id` -> Route `{id}` -> Query string `?id=...`, sau đó truy vấn Redis Session cache để lấy ACL bitmask kiểm tra.
+
+#### 7. Kiểm tra ACL Động - Quyền Ghi (Dynamic ACL Write)
+Yêu cầu quyền Ghi (`ResourceActions.Write` có bitmask là `2`).
+```csharp
+[HttpGet("acl-write/{id?}")]
+[AppAuthorize(ResourceType = "Document", Action = ResourceActions.Write)]
+public IActionResult GetAclWrite(string? id) => Ok("Ghi tài nguyên thành công");
+```
+
+#### 8. Xem thông tin User (User Info Diagnostic)
+Nhận diện claims và định dạng xác thực để debug.
+```csharp
+[HttpGet("user-info")]
+[AppAuthorize]
+public IActionResult GetUserInfo() => Ok(User.Claims.Select(c => new { c.Type, c.Value }));
+```
+
+---
+
+### 8.2. Tiêu chuẩn cấu hình và tích hợp SSO OIDC phía Client
+
+Mỗi nền tảng Frontend/Client trong giải pháp TreeOfThought bắt buộc phải tuân theo cách cấu hình chuẩn tương ứng dưới đây:
+
+#### A. Mobile Client (Flutter - `mobi/my_pc_assistant`)
+*   **Thư viện sử dụng**: `flutter_appauth`
+*   **Cơ chế**: Authorization Code Flow + PKCE bảo mật cao cho Mobile.
+*   **Quy chuẩn thực thi**:
+    1.  Kích hoạt SSO qua `signInWithSso` bằng cách gọi `_appAuth.authorizeAndExchangeCode()` với cấu hình endpoint:
+        - `authorizationEndpoint`: `$_baseUrl/api/auth/authorize`
+        - `tokenEndpoint`: `$_baseUrl/api/auth/token`
+        - `endSessionEndpoint`: `$_baseUrl/api/auth/logout`
+        - `clientId`: `"my_pc_assistant"`
+        - `redirectUrl`: `"my-pc-assistant://callback"`
+    2.  Sau khi lấy được `accessToken`, bắt buộc gọi GET `$_baseUrl/api/auth/me` để lấy thông tin chi tiết người dùng (`preferred_username`, `email`, `name`).
+    3.  Đăng xuất qua `signOut()` sử dụng `endSession()` truyền kèm `idTokenHint` để kết thúc session trên cả app và SSO Server.
+
+#### B. Web Client SPA (ReactJS - `webreactjstestoidc`)
+*   **Thư viện sử dụng**: `react-oidc-context` (dựa trên `oidc-client-ts`).
+*   **Quy chuẩn thực thi**:
+    1.  Cấu hình `oidcConfig` chuẩn:
+        ```typescript
+        export const oidcConfig = {
+          authority: "http://localhost:5000",
+          client_id: "react_spa",
+          redirect_uri: window.location.origin + "/callback",
+          post_logout_redirect_uri: window.location.origin + "/",
+          response_type: "code",
+          scope: "openid profile email"
+        };
+        ```
+    2.  Bao bọc ứng dụng bằng `<AuthProvider {...oidcConfig}>`.
+    3.  Tạo Component `ProtectedRoute` dùng hook `useAuth()` bảo vệ các router nhạy cảm, hiển thị cảnh báo chưa đăng nhập và điều hướng người dùng về trang chủ để kích hoạt đăng nhập nếu chưa xác thực.
+    4.  Tạo route `/callback` chuyên biệt để xử lý trao đổi Authorization Code nhận được từ OIDC Server và chuyển hướng người dùng mượt mà về trang cá nhân.
+
+#### C. Web Client Server-Side (ASP.NET MVC - `webmvctestoidc`)
+*   **Thư viện sử dụng**: ASP.NET Core OpenID Connect Middleware.
+*   **Quy chuẩn thực thi**:
+    1.  Tách cấu hình xác thực core bằng cách gọi `builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.None)` để tránh chồng chéo.
+    2.  Gọi extension `builder.Services.AddAppOidcClient(builder.Configuration)` để tự động cấu hình Cookies và OIDC Client.
+    3.  Khai báo chính xác trong `appsettings.json` phân đoạn `OidcClient`:
+        ```json
+        "OidcClient": {
+          "Authority": "http://localhost:5000",
+          "ClientId": "WebMvcTestOidc",
+          "ClientSecret": "WebMvcTestOidcSecret",
+          "CookieName": "WebMvcTestOidc_Auth",
+          "LoginPath": "/Home/Login",
+          "RequireNonce": false
+        }
+        ```
+    4.  Nhận diện môi trường Localhost để tự động tải trước các khóa JWKS nhằm tránh lỗi handshake SSL HTTP ở máy phát triển.
+
+#### D. Web API Client / Test Suite (Pure SPA - `webapitestoidc` wwwroot)
+*   **Thư viện sử dụng**: HTML5, Vanilla JavaScript & Standard CSS.
+*   **Quy chuẩn thực thi**:
+    1.  **Đăng nhập và Lấy Token**: Gửi yêu cầu xác thực POST tới SSO Server `http://localhost:5000/api/auth/login` với body:
+        ```json
+        { "username": "admin", "password": "admin123" }
+        ```
+        Nhận về JWT Token dưới định dạng JSON `{ token: "..." }`.
+    2.  **Lưu trữ Token cục bộ**: Lưu trữ Token trong `localStorage` để duy trì trạng thái đăng nhập:
+        ```javascript
+        localStorage.setItem('test_jwt_token', jwtToken);
+        ```
+    3.  **Thực hiện API Requests**: Khi gửi yêu cầu HTTP GET/POST tới API Server (`http://localhost:5006`), đính kèm tiêu đề Authorization:
+        ```javascript
+        const headers = {
+          'Authorization': `Bearer ${jwtToken}`
+        };
+        ```
+    4.  **Truyền tham số kiểm tra ACL**: Đính kèm các tiêu đề tùy chọn để phục vụ việc kiểm tra ACL động:
+        - Tiêu đề `x-resource-id`: Chứa ID của tài nguyên (ví dụ: `doc_999`).
+        - Tiêu đề `x-resource-type`: Chứa loại tài nguyên (ví dụ: `Document`).
+    5.  **Dọn dẹp Session Đăng xuất**: Để xóa session cookie phía SSO Server, dọn dẹp localStorage và điều hướng trình duyệt tới URL đăng xuất:
+        ```javascript
+        localStorage.removeItem('test_jwt_token');
+        window.location.href = `http://localhost:5000/api/auth/logout?post_logout_redirect_uri=${encodeURIComponent(postLogoutUri)}`;
+        ```
+
+
+
 

@@ -232,3 +232,41 @@ paging cho việc lấy danh sách luôn cần là paging ở server
                             }
                         ]
                     }
+
+**cập nhật 2026-05-19 10:30:00**
+    Tiêu chuẩn và hướng dẫn bắt buộc cho skill `tot-dev` khi phát triển backend và frontend client liên quan đến cơ chế Authentication/Authorization sử dụng Auth Attribute `[AppAuthorize]` (từ project `Core.Infra.Auth`) và tích hợp SSO OIDC:
+
+    1. Về phía Backend - Sử dụng `[AppAuthorize]` trong Controllers:
+        - Sử dụng các namespace: `using Core.Infra.Auth.Attributes;` và `using Core.Infra.Session.Models;`.
+        - Hỗ trợ các thuộc tính và cách dùng linh hoạt:
+            * Constructor `[AppAuthorize(params string[] claims)]`: Kiểm tra claims (quyền hạn). Các claim khai báo (ví dụ `"test.read"`) sẽ tự động được thêm tiền tố `"be."` thành `"be.test.read"` khi so khớp với quyền của user.
+            * `Mode` (`AuthMode.OR` / `AuthMode.AND`): Xác định kiểm tra hoặc (mặc định) hay và khi khai báo nhiều claims.
+            * `Roles` (ví dụ `[AppAuthorize(Roles = "Admin")]`): Kiểm tra phân quyền theo vai trò (được ưu tiên kiểm tra trước để bypass/short-circuit).
+            * `Policy` (ví dụ `[AppAuthorize(Policy = "SuperUser")]`): Kiểm tra theo base policy của ASP.NET Core (được ưu tiên kiểm tra trước).
+            * `ResourceType` và `Action` (ví dụ `[AppAuthorize(ResourceType = "Document", Action = ResourceActions.Read)]`): Hỗ trợ kiểm tra quyền động (ACL) thông qua mặt nạ bitmask trong Redis session. `ResourceId` được tự động trích xuất theo thứ tự ưu tiên: Header `x-resource-id` -> Route Parameter `{id}` -> Query String `?id=...`.
+
+    2. Đăng ký Dịch vụ ở Backend (`Program.cs`):
+        - Với RESTful API (Resource Server): Gọi `builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.JwtBearer)` để tự động cấu hình xác thực JWT Bearer & Dynamic Authorization.
+        - Với Web MVC Client: Gọi `builder.Services.AddAppAuthorization(builder.Configuration, AppAuthMode.None)` để chỉ đăng ký Dynamic Authorization, và tự cấu hình Authentication (Cookie & OpenID Connect) thông qua `AddAppOidcClient(builder.Configuration)`.
+
+    3. Các Client Frontend Tích hợp OIDC SSO:
+        - **Mobile Flutter (`mobi/my_pc_assistant`)**: Sử dụng plugin `flutter_appauth` với Authorization Code Flow và PKCE. Cấu hình endpoints trỏ tới SSO Server:
+            * Authorization Endpoint: `$_baseUrl/api/auth/authorize`
+            * Token Endpoint: `$_baseUrl/api/auth/token`
+            * End Session Endpoint: `$_baseUrl/api/auth/logout`
+            * ClientId: `my_pc_assistant`, Callback Scheme: `my-pc-assistant://callback`.
+            * Sau khi lấy được `accessToken`, gọi endpoint `$_baseUrl/api/auth/me` để lấy thông tin chi tiết user (`preferred_username`, `email`, `name`).
+        - **Web ReactJS (`webreactjstestoidc`)**: Sử dụng thư viện `react-oidc-context` (đóng gói từ `oidc-client-ts`).
+            * Cấu hình `oidcConfig` chứa `authority`, `client_id`, `redirect_uri` (`/callback`), `post_logout_redirect_uri`, `response_type: "code"`, `scope: "openid profile email"`.
+            * Sử dụng Hook `useAuth()` để theo dõi trạng thái, bảo vệ các router qua Component `ProtectedRoute` và lấy thông tin user hiển thị trên UI.
+        - **Web MVC C# (`webmvctestoidc`)**: Sử dụng OpenID Connect middleware.
+            * Đăng ký nhanh qua extension `builder.Services.AddAppOidcClient(builder.Configuration)`.
+            * Cấu hình tệp tin `appsettings.json` trong phân đoạn `OidcClient` (chứa `Authority`, `ClientId`, `ClientSecret`, `CookieName`, `LoginPath`, `RequireNonce`, `RequireHttpsMetadata`).
+            * Hỗ trợ tự động pre-load JWKS keys trong môi trường localhost phát triển để tránh lỗi bắt tay SSL/TLS.
+        - **Web API Client / Test Suite (`webapitestoidc` wwwroot)**: Giao diện Client SPA kiểm thử bảo mật chạy trực tiếp trên trình duyệt giao tiếp với API Server (Port 5006) và SSO Server (Port 5000).
+            * Xác thực: Thực hiện POST tới SSO Server `http://localhost:5000/api/auth/login` để lấy JWT token.
+            * Quản lý Session: Token nhận được lưu trong `localStorage.setItem('test_jwt_token', jwtToken)` và đính kèm vào tiêu đề `Authorization: Bearer <jwtToken>` trong các yêu cầu gửi tới API Server `http://localhost:5006`.
+            * Truyền dữ liệu ACL: Để kiểm tra quyền hạn ACL động, Client đính kèm tiêu đề tùy chỉnh `x-resource-id` (hoặc thông qua Route/Query string) và `x-resource-type` lên API.
+            * Luồng đăng xuất: Client xóa token trong LocalStorage và chuyển hướng trình duyệt tới `http://localhost:5000/api/auth/logout?post_logout_redirect_uri=<CallbackUrl>` để hủy hoàn toàn SSO Session cookie trên server.
+
+
