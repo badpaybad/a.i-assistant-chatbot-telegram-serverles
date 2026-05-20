@@ -69,28 +69,7 @@ public static class OidcClientExtensions
             options.TokenValidationParameters.ValidateLifetime = true;
             options.TokenValidationParameters.ValidateIssuerSigningKey = true;
 
-            // Automatically try to preload JWKS keys for local environments where normal discovery might fail
-            if (isLocalhost)
-            {
-                try
-                {
-                    using var client = new HttpClient();
-                    var jwksUri = oidcConfig["JwksUri"] ?? $"{options.Authority?.TrimEnd('/')}/api/auth/jwks";
-                    var jwksJson = client.GetStringAsync(jwksUri).GetAwaiter().GetResult();
-                    var jwks = new JsonWebKeySet(jwksJson);
-                    var keysList = new List<SecurityKey>();
-                    foreach (var key in jwks.Keys)
-                    {
-                        keysList.Add(key);
-                    }
-                    options.TokenValidationParameters.IssuerSigningKeys = keysList;
-                    Console.WriteLine($"[OIDC CLIENT] Successfully pre-loaded and registered {keysList.Count} JWKS signing keys at startup!");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[OIDC CLIENT] Warning: Failed to pre-load JWKS keys at startup: {ex.Message}");
-                }
-            }
+            Console.WriteLine($"[OIDC CLIENT] Relying on standard dynamic OIDC JWKS discovery from authority: {options.Authority}");
 
             options.Events = new OpenIdConnectEvents
             {
