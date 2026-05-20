@@ -85,24 +85,24 @@ public static class AuthServiceExtensions
                 }
             });
         }
-        else if (authMode == AppAuthMode.Cookie)
-        {
-            services.AddAuthentication(options =>
-            {
-                options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            })
-            .AddCookie(options =>
-            {
-                options.Cookie.Name = authConfig["Cookie:Name"] ?? "App_Auth_Session";
-                options.Cookie.HttpOnly = true;
-                options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-                options.ExpireTimeSpan = TimeSpan.FromDays(7);
-                options.LoginPath = authConfig["Cookie:LoginPath"] ?? "/Account/Login";
-                options.AccessDeniedPath = authConfig["Cookie:AccessDeniedPath"] ?? "/Account/AccessDenied";
-            });
-        }
+        // else if (authMode == AppAuthMode.Cookie)
+        // {
+        //     services.AddAuthentication(options =>
+        //     {
+        //         options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        //         options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        //     })
+        //     .AddCookie(options =>
+        //     {
+        //         options.Cookie.Name = authConfig["Cookie:Name"] ?? "App_Auth_Session";
+        //         options.Cookie.HttpOnly = true;
+        //         options.Cookie.SameSite = SameSiteMode.Lax;
+        //         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        //         options.ExpireTimeSpan = TimeSpan.FromDays(7);
+        //         options.LoginPath = authConfig["Cookie:LoginPath"] ?? "/Account/Login";
+        //         options.AccessDeniedPath = authConfig["Cookie:AccessDeniedPath"] ?? "/Account/AccessDenied";
+        //     });
+        // }
         // Nếu authMode == AppAuthMode.None, chúng ta bỏ qua việc gọi AddAuthentication() ở đây.
         // Project gọi hàm này sẽ tự chịu trách nhiệm cấu hình Authentication của riêng nó.
 
