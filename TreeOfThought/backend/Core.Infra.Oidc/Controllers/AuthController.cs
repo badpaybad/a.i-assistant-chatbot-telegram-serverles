@@ -188,20 +188,6 @@ public class AuthController : ControllerBase
     // Manual fallback if binding fails (common with complex models and different binder behaviors)
     var clientId = request.ClientId ?? Request.Query["client_id"].ToString();
     var redirectUri = request.RedirectUri ?? Request.Query["redirect_uri"].ToString();
-    //// todo: checck if redirect_uri in white list
-    // var client = await _clientRepo.GetByIdAsync(clientId);
-    // if (client == null) return BadRequest("Invalid client_id");
-    // var allowedUris = client.AllowedRedirectUris.Split(',');
-    // if (!allowedUris.Contains(redirectUri))
-    // {
-    //   return BadRequest("Invalid redirect_uri. Host is not whitelisted.");
-    // }
-    //// OR check white list url redirect
-    // var allowedUris = _config.GetSection("Oidc:AllowedRedirectUris").Get<List<string>>();
-    // if (!allowedUris.Contains(redirectUri))
-    // {
-    //   return BadRequest("Invalid redirect_uri.");
-    // }
     var state = request.State ?? Request.Query["state"].ToString();
     var nonce = request.Nonce ?? Request.Query["nonce"].ToString();
 
@@ -210,6 +196,13 @@ public class AuthController : ControllerBase
       Console.WriteLine($"[OIDC] Invalid Authorize request (Binding failed?): ClientId={clientId}, RedirectUri={redirectUri}");
       Console.WriteLine($"[OIDC] Raw Query: {Request.QueryString}");
       return BadRequest(new { error = "invalid_request", error_description = "client_id and redirect_uri are required." });
+    }
+
+    // Robust Whitelist Redirect URI Validation
+    if (!IsRedirectUriWhitelisted(redirectUri))
+    {
+      Console.WriteLine($"[OIDC] Rejecting Authorize request: redirect_uri '{redirectUri}' is not in the whitelist.");
+      return BadRequest(new { error = "invalid_request", error_description = "The redirect_uri is not whitelisted." });
     }
 
     var requireNonce = _config.GetValue<bool>("Oidc:RequireNonce");
@@ -439,4 +432,54 @@ public class AuthController : ControllerBase
     }
     return BadRequest(new { message = "Invalid current password" });
   }
+
+  private bool IsRedirectUriWhitelisted(string redirectUri)
+  {
+    var allowedRedirects = _config.GetSection("Oidc:AllowedRedirectUris").Get<List<string>>() ?? new List<string>();
+    if (!allowedRedirects.Any())
+    {
+      // If the whitelist is completely empty, default to allowing all redirects for convenience/backward compatibility
+      return true;
+    }
+
+    if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out var incomingUri))
+    {
+      return false;
+    }
+
+    foreach (var allowed in allowedRedirects)
+    {
+      if (Uri.TryCreate(allowed, UriKind.Absolute, out var allowedUri))
+      {
+        // If both are HTTP/HTTPS, check if their hosts match (port-independent domain validation)
+        if ((incomingUri.Scheme == Uri.UriSchemeHttp || incomingUri.Scheme == Uri.UriSchemeHttps) &&
+            (allowedUri.Scheme == Uri.UriSchemeHttp || allowedUri.Scheme == Uri.UriSchemeHttps))
+        {
+          if (string.Equals(incomingUri.Host, allowedUri.Host, StringComparison.OrdinalIgnoreCase))
+          {
+            return true;
+          }
+        }
+        // For custom schemes (e.g. mobile deep links), do an exact match or prefix match
+        else if (string.Equals(incomingUri.Scheme, allowedUri.Scheme, StringComparison.OrdinalIgnoreCase))
+        {
+          if (redirectUri.StartsWith(allowed, StringComparison.OrdinalIgnoreCase))
+          {
+            return true;
+          }
+        }
+      }
+      else
+      {
+        // If the whitelisted item is just a raw host/domain string (e.g., "127.0.0.1" or "localhost")
+        if (string.Equals(incomingUri.Host, allowed, StringComparison.OrdinalIgnoreCase))
+        {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
 }
+
