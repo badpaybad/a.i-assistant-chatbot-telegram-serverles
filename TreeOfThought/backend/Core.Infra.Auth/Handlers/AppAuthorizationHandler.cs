@@ -88,10 +88,10 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
                 ? requirement.Claims.All(p => userClaims.Contains(p))
                 : requirement.Claims.Any(p => userClaims.Contains(p));
 
-            if (!hasAllInJwt && !string.IsNullOrEmpty(userId))
+            if (!hasAllInJwt && !string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userIdGuid))
             {
                 // Hybrid Mode: JWT lacks required claims, fetch from Redis session
-                var redisClaims = await _sessionService.GetUserClaimsAsync(Guid.Parse(userId));
+                var redisClaims = await _sessionService.GetUserClaimsAsync(userIdGuid);
                 if (redisClaims != null)
                 {
                     userClaims.AddRange(redisClaims);
@@ -121,9 +121,9 @@ public class AppAuthorizationHandler : AuthorizationHandler<AppAuthorizationRequ
             if (string.IsNullOrEmpty(resourceId))
                 resourceId = request.Query["id"].ToString();
 
-            if (!string.IsNullOrEmpty(userId) && !string.IsNullOrEmpty(resourceId) && !string.IsNullOrEmpty(finalResourceType))
+            if (!string.IsNullOrEmpty(userId) && Guid.TryParse(userId, out var userIdGuid) && !string.IsNullOrEmpty(resourceId) && !string.IsNullOrEmpty(finalResourceType))
             {
-                var userActionsMask = await _sessionService.GetUserAclMaskAsync(Guid.Parse(userId), finalResourceType, resourceId);
+                var userActionsMask = await _sessionService.GetUserAclMaskAsync(userIdGuid, finalResourceType, resourceId);
 
                 if (userActionsMask > 0)
                 {
