@@ -75,14 +75,26 @@ public class AuthController : ControllerBase
   [HttpGet("/.well-known/openid-configuration/jwks")]
   public IActionResult Get_well_known_Jwks()
   {
+    return Ok(_gẹtwks());
+  }
+  dynamic _gẹtwks()
+  {
     var jwk = _jwtService.GetJwks();
-    return Ok(new { keys = new[] { jwk } });
+    var cleanKey = new
+    {
+      kty = jwk.Kty,
+      use = jwk.Use,
+      alg = jwk.Alg,
+      kid = jwk.Kid,
+      n = jwk.N,
+      e = jwk.E
+    };
+    return new { keys = new[] { cleanKey } };
   }
   [HttpGet("jwks")]
   public IActionResult GetJwks()
   {
-    var jwk = _jwtService.GetJwks();
-    return Ok(new { keys = new[] { jwk } });
+    return Ok(_gẹtwks());
   }
 
   [HttpGet("me")]

@@ -24,6 +24,9 @@ public static class AuthServiceExtensions
         var sessionConfig = config["Session"]!;
         // 1. HttpContextAccessor
         services.AddHttpContextAccessor();
+#if DEBUG
+        Microsoft.IdentityModel.Logging.IdentityModelEventSource.ShowPII = true;
+#endif
 
         // Include Session Infrastructure
         services.AddAppSession(config);
@@ -74,6 +77,8 @@ public static class AuthServiceExtensions
                     options.Authority = authority;
                     options.RequireHttpsMetadata = requireHttpsMetadata.HasValue ? requireHttpsMetadata.Value : !isLocalhost;
                     options.MapInboundClaims = false;
+                    options.UseSecurityTokenValidators = false;
+
 
                     options.TokenValidationParameters.ValidateLifetime = validateLifetime;
                     options.TokenValidationParameters.ValidateAudience = false;
@@ -81,6 +86,21 @@ public static class AuthServiceExtensions
                     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
                     options.TokenValidationParameters.NameClaimType = AuthConstants.NameClaim;
                     options.TokenValidationParameters.RoleClaimType = AuthConstants.RoleClaim;
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnAuthenticationFailed = context =>
+                        {
+                            Console.WriteLine($"[JWT AUTH ERROR] Authentication failed: {context.Exception?.Message}");
+                            return System.Threading.Tasks.Task.CompletedTask;
+                        },
+                        OnTokenValidated = context =>
+                        {
+                            Console.WriteLine("[JWT AUTH SUCCESS] Token validated successfully.");
+                            return System.Threading.Tasks.Task.CompletedTask;
+                        }
+                    };
+
                     Console.WriteLine($"[JWT AUTH] Relying on standard dynamic OIDC JWKS discovery from authority: {authority}");
                 }
             });
@@ -109,3 +129,4 @@ public static class AuthServiceExtensions
         return services;
     }
 }
+
