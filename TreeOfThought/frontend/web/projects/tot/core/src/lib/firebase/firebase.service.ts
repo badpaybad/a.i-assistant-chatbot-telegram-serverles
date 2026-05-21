@@ -24,6 +24,7 @@ export class FirebaseService {
   private auth: Auth;
   private db: Firestore;
   private messaging?: Messaging;
+  private messagingPromise?: Promise<Messaging | undefined>;
   private config = inject(FIREBASE_CONFIG);
 
   private firebaseUserSubject = new BehaviorSubject<User | null>(null);
@@ -46,16 +47,24 @@ export class FirebaseService {
     );
   }
 
-  private async initMessaging() {
-    try {
-      if (await isSupported()) {
-        this.messaging = getMessaging(this.app);
-      } else {
-        console.warn('Firebase Messaging not supported in this browser/context');
+  private initMessaging(): Promise<Messaging | undefined> {
+    if (this.messagingPromise) return this.messagingPromise;
+
+    this.messagingPromise = (async () => {
+      try {
+        if (await isSupported()) {
+          this.messaging = getMessaging(this.app);
+          return this.messaging;
+        } else {
+          console.warn('Firebase Messaging not supported in this browser/context');
+        }
+      } catch (e) {
+        console.warn('Error checking for Firebase Messaging support', e);
       }
-    } catch (e) {
-      console.warn('Error checking for Firebase Messaging support', e);
-    }
+      return undefined;
+    })();
+
+    return this.messagingPromise;
   }
 
   async loginWithGoogle() {
@@ -149,7 +158,8 @@ export class FirebaseService {
   }
 
   async getFCMToken(): Promise<string | null> {
-    if (!this.messaging) return null;
+    const messaging = await this.initMessaging();
+    if (!messaging) return null;
     try {
       if ('serviceWorker' in navigator) {
         const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
@@ -174,14 +184,14 @@ export class FirebaseService {
           });
         }
 
-        const token = await getToken(this.messaging, {
+        const token = await getToken(messaging, {
           vapidKey: this.config.vapidKey,
           serviceWorkerRegistration: registration,
         });
         return token;
       }
 
-      const token = await getToken(this.messaging, { vapidKey: this.config.vapidKey });
+      const token = await getToken(messaging, { vapidKey: this.config.vapidKey });
       return token;
     } catch (error) {
       console.error('Failed to get FCM token', error);
@@ -189,9 +199,10 @@ export class FirebaseService {
     }
   }
 
-  onMessageReceived(callback: (payload: any) => void) {
-    if (!this.messaging) return;
-    onMessage(this.messaging, (payload) => {
+  async onMessageReceived(callback: (payload: any) => void) {
+    const messaging = await this.initMessaging();
+    if (!messaging) return;
+    onMessage(messaging, (payload) => {
       callback(payload);
     });
   }

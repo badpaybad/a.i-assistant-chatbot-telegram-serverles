@@ -54,8 +54,7 @@ FE tổng kết nhanh về cấu trúc
     app shell, app chính 
         cấu hình lazy load các module nghiệp vụ , khi cần dùng tới thì mới load 
         layout , theme, style, menu, breadcrum, route ...
-        đăng ký các module nghiệp vụ để dùng 
-
+        đăng ký các module nghiệp vụ để dùng , 
 **suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
 **cập nhật 2026-05-16 22:22:22**
@@ -73,3 +72,7 @@ cần tạo tot-input vào shared đáp ứng cho việc
     input text dạng area 
 
 cần dùng tot-input password cho các nơi cần password trong
+
+**cập nhật 2026-05-21 16:46:36**
+
+    đăng ký notification fcm global listener, msg notify display template global, dùng service worker firebase-messaging-sw.js để nhận noti ngay cả khi ko mở trình duyệt  

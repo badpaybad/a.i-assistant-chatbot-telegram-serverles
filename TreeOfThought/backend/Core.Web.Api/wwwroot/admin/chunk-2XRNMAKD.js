@@ -25,7 +25,7 @@ import {
 } from "./chunk-FY72G7LH.js";
 import {
   FirebaseService
-} from "./chunk-CHGYR3B5.js";
+} from "./chunk-ICEMZKP7.js";
 import "./chunk-IRGOCD6C.js";
 import {
   AppNotificationService,
@@ -114612,4 +114612,4 @@ export {
   FcmTestComponent,
   FirestoreTestComponent
 };
-//# sourceMappingURL=chunk-SHIQAPIY.js.map
+//# sourceMappingURL=chunk-2XRNMAKD.js.map

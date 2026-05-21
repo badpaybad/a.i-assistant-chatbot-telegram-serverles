@@ -13371,16 +13371,23 @@ var _FirebaseService = class _FirebaseService {
   isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   }
-  async initMessaging() {
-    try {
-      if (await isWindowSupported()) {
-        this.messaging = getMessagingInWindow(this.app);
-      } else {
-        console.warn("Firebase Messaging not supported in this browser/context");
+  initMessaging() {
+    if (this.messagingPromise)
+      return this.messagingPromise;
+    this.messagingPromise = (async () => {
+      try {
+        if (await isWindowSupported()) {
+          this.messaging = getMessagingInWindow(this.app);
+          return this.messaging;
+        } else {
+          console.warn("Firebase Messaging not supported in this browser/context");
+        }
+      } catch (e) {
+        console.warn("Error checking for Firebase Messaging support", e);
       }
-    } catch (e) {
-      console.warn("Error checking for Firebase Messaging support", e);
-    }
+      return void 0;
+    })();
+    return this.messagingPromise;
   }
   async loginWithGoogle() {
     const { GoogleAuthProvider, signInWithPopup } = await import("./chunk-QX4VAYBX.js");
@@ -13462,7 +13469,8 @@ var _FirebaseService = class _FirebaseService {
   }
   async getFCMToken() {
     var _a;
-    if (!this.messaging)
+    const messaging = await this.initMessaging();
+    if (!messaging)
       return null;
     try {
       if ("serviceWorker" in navigator) {
@@ -13485,23 +13493,24 @@ var _FirebaseService = class _FirebaseService {
             }
           });
         }
-        const token2 = await getToken2(this.messaging, {
+        const token2 = await getToken2(messaging, {
           vapidKey: this.config.vapidKey,
           serviceWorkerRegistration: registration
         });
         return token2;
       }
-      const token = await getToken2(this.messaging, { vapidKey: this.config.vapidKey });
+      const token = await getToken2(messaging, { vapidKey: this.config.vapidKey });
       return token;
     } catch (error) {
       console.error("Failed to get FCM token", error);
       return null;
     }
   }
-  onMessageReceived(callback) {
-    if (!this.messaging)
+  async onMessageReceived(callback) {
+    const messaging = await this.initMessaging();
+    if (!messaging)
       return;
-    onMessage(this.messaging, (payload) => {
+    onMessage(messaging, (payload) => {
       callback(payload);
     });
   }
@@ -13524,4 +13533,4 @@ export {
   FIREBASE_CONFIG,
   FirebaseService
 };
-//# sourceMappingURL=chunk-CHGYR3B5.js.map
+//# sourceMappingURL=chunk-ICEMZKP7.js.map

@@ -166,3 +166,6 @@ Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
         - click gủi noti mở lên modal
             - chọn 1 fcm token device id của user để gửi noti
               - có tiêu đề , nội dung , nút gửi
+
+**cập nhật 2026-05-21 15:20:20**
+xem cập nhật trước **cập nhật 2026-05-21 08:20:20** do khi load trang đã lấy fcm token device id rồi. nếu chưa logout thì sẽ không lấy mới fcm token id nữa, mà dùng cái đang hiện hành dùng 
