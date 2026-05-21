@@ -82,6 +82,9 @@ public static class OidcServiceExtensions
         services.AddScoped<AuthDbContext>(sp => new AuthDbContext(pgConn, BaseDbContext.DbProviderType.PostgreSql));
         services.AddScoped<IAuthRepository, AuthRepository>();
 
+        services.AddScoped<NotifyDbContext>(sp => new NotifyDbContext(pgConn, BaseDbContext.DbProviderType.PostgreSql));
+        services.AddScoped<INotifyRepository, NotifyRepository>();
+
         services.AddScoped<AuthService>();
         services.AddScoped<ClaimScannerService>();
 
@@ -101,6 +104,9 @@ public static class OidcServiceExtensions
                 // 1. Initialize Auth Database
                 var authRepo = services.GetRequiredService<IAuthRepository>();
                 await authRepo.EnsureTablesCreatedAsync();
+
+                var notifyRepo = services.GetRequiredService<INotifyRepository>();
+                await notifyRepo.EnsureTablesCreatedAsync();
                 await authRepo.EnsureAdminExistsAsync(
                     oidcConfig["Admin:Username"]!,
                     oidcConfig["Admin:Password"]!,

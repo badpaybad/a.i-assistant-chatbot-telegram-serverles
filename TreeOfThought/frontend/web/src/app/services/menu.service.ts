@@ -41,6 +41,11 @@ export class MenuService {
           route: '/modules/core-infra-auth/acl',
           claim: 'fe.auth:acl:manage',
         },
+        {
+          label: 'Gửi thông báo',
+          route: '/modules/core-infra-auth/notify',
+          claim: 'fe.auth:users:view',
+        },
         { label: 'Đổi mật khẩu', route: '/modules/core-infra-auth/change-password' },
         { label: 'Thông tin phân quyền', route: '/modules/core-infra-auth/authorize-info' },
       ],

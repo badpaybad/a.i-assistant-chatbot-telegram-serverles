@@ -123,4 +123,12 @@ export class AuthManagementService {
   changePassword(data: any) {
     return this.http.post('/api/Auth/change-password', data);
   }
+
+  getUserFcmTokens(userId: string) {
+    return this.http.get(`${this.BASE_URL}/users/${userId}/fcm-tokens`);
+  }
+
+  sendNotification(payload: { fcmToken: string; title: string; body: string }) {
+    return this.http.post(`${this.BASE_URL}/users/send-notification`, payload);
+  }
 }

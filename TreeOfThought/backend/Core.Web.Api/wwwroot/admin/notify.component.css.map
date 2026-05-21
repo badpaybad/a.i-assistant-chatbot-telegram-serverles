@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;33fa087d22e9625d5997abe7ce2fe82d8769f91bf7c5e84b2ada89978e9ce1bd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/notify/notify.component.ts"],
+  "sourcesContent": ["\n    .page-header {\n      margin-bottom: 16px;\n    }\n    .search-card {\n      margin-bottom: 16px;\n    }\n    .search-actions {\n      display: flex;\n      justify-content: flex-end;\n    }\n    .user-cell {\n      display: flex;\n      flex-direction: column;\n    }\n    .sub-text {\n      font-size: 12px;\n      color: #888;\n    }\n    .no-devices-warning {\n      color: #faad14;\n      font-size: 13px;\n      margin-top: 8px;\n      display: flex;\n      align-items: center;\n      gap: 6px;\n    }\n  "],
+  "mappings": ";AACI,CAAC;AACC,iBAAe;AACjB;AACA,CAAC;AACC,iBAAe;AACjB;AACA,CAAC;AACC,WAAS;AACT,mBAAiB;AACnB;AACA,CAAC;AACC,WAAS;AACT,kBAAgB;AAClB;AACA,CAAC;AACC,aAAW;AACX,SAAO;AACT;AACA,CAAC;AACC,SAAO;AACP,aAAW;AACX,cAAY;AACZ,WAAS;AACT,eAAa;AACb,OAAK;AACP;",
+  "names": []
+}

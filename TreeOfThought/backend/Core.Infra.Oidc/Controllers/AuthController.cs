@@ -17,6 +17,8 @@ using Core.Infra.Auth.Interfaces;
 using System.Net;
 using Microsoft.Extensions.Configuration;
 
+using Core.Infra.Oidc.Repositories;
+
 namespace Core.Infra.Oidc.Controllers;
 
 [ApiController]
@@ -27,17 +29,21 @@ public class AuthController : ControllerBase
   private readonly IUserSessionService _sessionService;
   private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
   private readonly IJwtService _jwtService;
+  private readonly INotifyRepository _notifyRepo;
   public AuthController(
       IJwtService jwtService,
       AuthService authService,
       IUserSessionService sessionService,
-      Microsoft.Extensions.Configuration.IConfiguration config)
+      Microsoft.Extensions.Configuration.IConfiguration config,
+      INotifyRepository notifyRepo)
   {
     _jwtService = jwtService;
     _authService = authService;
     _sessionService = sessionService;
     _config = config;
+    _notifyRepo = notifyRepo;
   }
+
 
   [HttpGet("/.well-known/openid-configuration")]
   public IActionResult GetDiscoveryDocument()
@@ -161,6 +167,18 @@ public class AuthController : ControllerBase
       var firebaseToken = await _authService.GenerateFirebaseToken(user);
 
       Console.WriteLine($"[AUTH] Login completed for {user.Username}. Returning tokens.");
+
+      if (!string.IsNullOrEmpty(request.FcmToken))
+      {
+        try
+        {
+          await _notifyRepo.SaveTokenAsync(user.Id, request.FcmToken, request.DeviceId, request.AppType);
+        }
+        catch (Exception ex)
+        {
+          Console.WriteLine($"[AUTH] Error saving FCM token for user {user.Username}: {ex.Message}");
+        }
+      }
 
       return Ok(new
       {

@@ -96,6 +96,12 @@ export const routes: Routes = [
             data: { breadcrumb: 'Đổi mật khẩu' }
           },
           {
+            path: 'notify',
+            loadComponent: () => import('@tot/business-oidc').then(m => m.NotifyComponent),
+            canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
+            data: { breadcrumb: 'Gửi thông báo' }
+          },
+          {
             path: 'authorize-info',
             loadComponent: () => import('@tot/business-oidc').then(m => m.AuthorizeInfoComponent),
             data: { breadcrumb: 'Thông tin phân quyền' }

@@ -8,6 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Core.Infra.Oidc.Services;
 
+using Core.Infra.Oidc.Repositories;
+
 namespace Core.Infra.Oidc.Controllers;
 
 [ApiController]
@@ -18,12 +20,18 @@ public class AuthManagementController : ControllerBase
     private readonly IAuthRepository _authRepo;
     private readonly AuthService _authService;
     private readonly FirebaseService _firebaseService;
+    private readonly INotifyRepository _notifyRepo;
 
-    public AuthManagementController(IAuthRepository authRepo, AuthService authService, FirebaseService firebaseService)
+    public AuthManagementController(
+        IAuthRepository authRepo, 
+        AuthService authService, 
+        FirebaseService firebaseService,
+        INotifyRepository notifyRepo)
     {
         _authRepo = authRepo;
         _authService = authService;
         _firebaseService = firebaseService;
+        _notifyRepo = notifyRepo;
     }
     
     [HttpGet("users")]
@@ -329,5 +337,24 @@ public class AuthManagementController : ControllerBase
         email.UserId = userId;
         await _authRepo.AddUserEmailAsync(email);
         return Ok(email);
+    }
+
+    [HttpGet("users/{userId}/fcm-tokens")]
+    public async Task<IActionResult> GetUserFcmTokens(Guid userId)
+    {
+        var tokens = await _notifyRepo.GetTokensByUserIdAsync(userId);
+        return Ok(tokens);
+    }
+
+    [HttpPost("users/send-notification")]
+    public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(request.FcmToken))
+        {
+            return BadRequest(new { message = "FCM Token is required." });
+        }
+        
+        await _firebaseService.SendNotificationAsync(request.FcmToken, request.Title, request.Body);
+        return Ok(new { message = "Notification sent successfully." });
     }
 }

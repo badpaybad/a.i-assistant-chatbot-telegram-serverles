@@ -6,23 +6,23 @@ import {
   AuthService,
   CLAIMS_VERSION,
   TotInputComponent
-} from "./chunk-YSWTRDR3.js";
+} from "./chunk-75QNPPCT.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
   NzDescriptionsModule
-} from "./chunk-EPJXIJ5Q.js";
+} from "./chunk-5GYSHPO5.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-W7LLD5QZ.js";
+} from "./chunk-V6SMJRWP.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
   NzFormItemComponent,
   NzFormLabelComponent,
   NzFormModule
-} from "./chunk-EPQ7IIOW.js";
+} from "./chunk-FDGA4VMS.js";
 import {
   NzColDirective,
   NzDatePickerComponent,
@@ -32,7 +32,7 @@ import {
   NzGridModule,
   NzRangePickerComponent,
   NzRowDirective
-} from "./chunk-6L742E37.js";
+} from "./chunk-FY72G7LH.js";
 import "./chunk-CHGYR3B5.js";
 import "./chunk-IRGOCD6C.js";
 import {
@@ -61,6 +61,7 @@ import {
   NgModel,
   NgTemplateOutlet,
   NonNullableFormBuilder,
+  NzAutosizeDirective,
   NzButtonModule,
   NzCardComponent,
   NzCardModule,
@@ -106,6 +107,7 @@ import {
   PREFIX,
   RIGHT_ARROW,
   ReactiveFormsModule,
+  RequiredValidator,
   Router,
   RouterLink,
   SPACE,
@@ -130,7 +132,7 @@ import {
   takeUntilDestroyed,
   wrapIntoObservable,
   ɵNgNoValidate
-} from "./chunk-P56TLK52.js";
+} from "./chunk-H2M3TIKJ.js";
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -332,6 +334,12 @@ var _AuthManagementService = class _AuthManagementService {
   }
   changePassword(data) {
     return this.http.post("/api/Auth/change-password", data);
+  }
+  getUserFcmTokens(userId) {
+    return this.http.get(`${this.BASE_URL}/users/${userId}/fcm-tokens`);
+  }
+  sendNotification(payload) {
+    return this.http.post(`${this.BASE_URL}/users/send-notification`, payload);
   }
 };
 _AuthManagementService.\u0275fac = function AuthManagementService_Factory(__ngFactoryType__) {
@@ -7350,13 +7358,620 @@ var AuthorizeInfoComponent = _AuthorizeInfoComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AuthorizeInfoComponent, { className: "AuthorizeInfoComponent", filePath: "projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts", lineNumber: 134 });
 })();
+
+// projects/tot/business-oidc/src/lib/notify/notify.component.ts
+var _c05 = () => [16, 16];
+var _c15 = () => ({ minRows: 3, maxRows: 6 });
+function NotifyComponent_ng_template_11_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "span", 16);
+  }
+}
+function NotifyComponent_tot_button_15_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r2 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tot-button", 17);
+    \u0275\u0275listener("click", function NotifyComponent_tot_button_15_Template_tot_button_click_0_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.search());
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "T\xECm ki\u1EBFm"));
+  }
+}
+function NotifyComponent_tot_button_16_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tot-button", 18);
+    \u0275\u0275listener("click", function NotifyComponent_tot_button_16_Template_tot_button_click_0_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.resetSearch());
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 1, "\u0110\u1EB7t l\u1EA1i"));
+  }
+}
+function NotifyComponent_ng_template_19_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "nz-avatar", 19);
+  }
+  if (rf & 2) {
+    const data_r5 = ctx.$implicit;
+    \u0275\u0275property("nzSrc", data_r5.avatarUrl)("nzSize", 40);
+  }
+}
+function NotifyComponent_ng_template_20_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 20)(1, "strong");
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "span", 21);
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const data_r6 = ctx.$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(data_r6.displayName);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(data_r6.username);
+  }
+}
+function NotifyComponent_ng_template_21_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "tot-button", 22);
+    \u0275\u0275listener("click", function NotifyComponent_ng_template_21_Template_tot_button_click_0_listener() {
+      const data_r8 = \u0275\u0275restoreView(_r7).$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.openSendModal(data_r8));
+    });
+    \u0275\u0275element(1, "span", 23);
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "transloco");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "G\u1EEDi th\xF4ng b\xE1o"), " ");
+  }
+}
+function NotifyComponent_ng_container_25_nz_option_10_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "nz-option", 32);
+  }
+  if (rf & 2) {
+    const t_r10 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("nzValue", t_r10.fcmToken)("nzLabel", ctx_r2.getDeviceLabel(t_r10));
+  }
+}
+function NotifyComponent_ng_container_25_div_11_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 33);
+    \u0275\u0275element(1, "span", 34);
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "transloco");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(3, 1, "Ng\u01B0\u1EDDi d\xF9ng n\xE0y ch\u01B0a \u0111\u0103ng k\xFD thi\u1EBFt b\u1ECB nh\u1EADn th\xF4ng b\xE1o n\xE0o."), " ");
+  }
+}
+function NotifyComponent_ng_container_25_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r9 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementContainerStart(0);
+    \u0275\u0275elementStart(1, "form", 24)(2, "nz-form-item")(3, "nz-form-label", 25);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "nz-form-control", 26);
+    \u0275\u0275pipe(7, "transloco");
+    \u0275\u0275elementStart(8, "nz-select", 27);
+    \u0275\u0275pipe(9, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function NotifyComponent_ng_container_25_Template_nz_select_ngModelChange_8_listener($event) {
+      \u0275\u0275restoreView(_r9);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.payload.fcmToken, $event) || (ctx_r2.payload.fcmToken = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275template(10, NotifyComponent_ng_container_25_nz_option_10_Template, 1, 2, "nz-option", 28);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(11, NotifyComponent_ng_container_25_div_11_Template, 4, 3, "div", 29);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(12, "nz-form-item")(13, "nz-form-label", 25);
+    \u0275\u0275text(14);
+    \u0275\u0275pipe(15, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(16, "nz-form-control", 26);
+    \u0275\u0275pipe(17, "transloco");
+    \u0275\u0275elementStart(18, "input", 30);
+    \u0275\u0275pipe(19, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function NotifyComponent_ng_container_25_Template_input_ngModelChange_18_listener($event) {
+      \u0275\u0275restoreView(_r9);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.payload.title, $event) || (ctx_r2.payload.title = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(20, "nz-form-item")(21, "nz-form-label", 25);
+    \u0275\u0275text(22);
+    \u0275\u0275pipe(23, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(24, "nz-form-control", 26);
+    \u0275\u0275pipe(25, "transloco");
+    \u0275\u0275elementStart(26, "textarea", 31);
+    \u0275\u0275pipe(27, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function NotifyComponent_ng_container_25_Template_textarea_ngModelChange_26_listener($event) {
+      \u0275\u0275restoreView(_r9);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.payload.body, $event) || (ctx_r2.payload.body = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementContainerEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 16, "Ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(7, 18, "Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn"));
+    \u0275\u0275advance(2);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.payload.fcmToken);
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(9, 20, "Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB"))("nzLoading", ctx_r2.loadingTokens);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngForOf", ctx_r2.fcmTokens);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r2.loadingTokens && ctx_r2.fcmTokens.length === 0);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(15, 22, "Ti\xEAu \u0111\u1EC1 th\xF4ng b\xE1o"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(17, 24, "Vui l\xF2ng nh\u1EADp ti\xEAu \u0111\u1EC1"));
+    \u0275\u0275advance(2);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.payload.title);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(19, 26, "Nh\u1EADp ti\xEAu \u0111\u1EC1"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(23, 28, "N\u1ED9i dung th\xF4ng b\xE1o"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzErrorTip", \u0275\u0275pipeBind1(25, 30, "Vui l\xF2ng nh\u1EADp n\u1ED9i dung"));
+    \u0275\u0275advance(2);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.payload.body);
+    \u0275\u0275property("nzAutosize", \u0275\u0275pureFunction0(34, _c15))("placeholder", \u0275\u0275pipeBind1(27, 32, "Nh\u1EADp n\u1ED9i dung th\xF4ng b\xE1o"));
+  }
+}
+var _NotifyComponent = class _NotifyComponent {
+  constructor() {
+    this.authMgmt = inject(AuthManagementService);
+    this.message = inject(NzMessageService);
+    this.translate = inject(TranslocoService);
+    this.cdr = inject(ChangeDetectorRef);
+    this.users = [];
+    this.loading = false;
+    this.pageIndex = 1;
+    this.pageSize = 10;
+    this.totalUsers = 0;
+    this.searchKeyword = "";
+    this.userColumns = [];
+    this.isModalVisible = false;
+    this.modalTitle = "";
+    this.selectedUser = null;
+    this.loadingTokens = false;
+    this.sending = false;
+    this.fcmTokens = [];
+    this.payload = {
+      fcmToken: "",
+      title: "",
+      body: ""
+    };
+  }
+  ngOnInit() {
+    this.userColumns = [
+      { title: "Avatar", key: "avatar", width: "80px" },
+      { title: "Ng\u01B0\u1EDDi d\xF9ng", key: "user" },
+      { title: "Email", key: "email" },
+      { title: "H\xE0nh \u0111\u1ED9ng", key: "action", width: "180px", right: true }
+    ];
+    this.loadUsers();
+  }
+  async loadUsers() {
+    this.loading = true;
+    try {
+      const params = {
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize
+      };
+      if (this.searchKeyword) {
+        params.keyword = this.searchKeyword.trim();
+      }
+      const res = await this.authMgmt.getUsers(params);
+      this.users = res.items || [];
+      this.totalUsers = res.total || 0;
+    } catch (e) {
+      this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i danh s\xE1ch ng\u01B0\u1EDDi d\xF9ng"));
+    } finally {
+      this.loading = false;
+      this.cdr.markForCheck();
+    }
+  }
+  search() {
+    this.pageIndex = 1;
+    this.loadUsers();
+  }
+  resetSearch() {
+    this.searchKeyword = "";
+    this.pageIndex = 1;
+    this.loadUsers();
+  }
+  onQueryParamsChange(params) {
+    const { pageIndex, pageSize } = params;
+    this.pageIndex = pageIndex;
+    this.pageSize = pageSize;
+    this.loadUsers();
+  }
+  async openSendModal(user) {
+    this.selectedUser = user;
+    this.modalTitle = `${this.translate.translate("G\u1EEDi th\xF4ng b\xE1o t\u1EDBi")} ${user.displayName}`;
+    this.fcmTokens = [];
+    this.payload = {
+      fcmToken: "",
+      title: "",
+      body: ""
+    };
+    this.isModalVisible = true;
+    this.loadingTokens = true;
+    try {
+      const tokens = await this.authMgmt.getUserFcmTokens(user.id);
+      this.fcmTokens = tokens || [];
+      if (this.fcmTokens.length > 0) {
+        this.payload.fcmToken = this.fcmTokens[0].fcmToken;
+      }
+    } catch (e) {
+      this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i danh s\xE1ch thi\u1EBFt b\u1ECB nh\u1EADn"));
+    } finally {
+      this.loadingTokens = false;
+      this.cdr.markForCheck();
+    }
+  }
+  closeModal() {
+    this.isModalVisible = false;
+    this.selectedUser = null;
+  }
+  getDeviceLabel(token) {
+    const appTypeLabel = token.appType ? ` (${token.appType})` : "";
+    if (token.deviceId) {
+      return `Thi\u1EBFt b\u1ECB: ${token.deviceId}${appTypeLabel}`;
+    }
+    return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}`;
+  }
+  async send() {
+    if (!this.payload.fcmToken) {
+      this.message.warning(this.translate.translate("Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn"));
+      return;
+    }
+    if (!this.payload.title.trim()) {
+      this.message.warning(this.translate.translate("Vui l\xF2ng nh\u1EADp ti\xEAu \u0111\u1EC1"));
+      return;
+    }
+    if (!this.payload.body.trim()) {
+      this.message.warning(this.translate.translate("Vui l\xF2ng nh\u1EADp n\u1ED9i dung"));
+      return;
+    }
+    this.sending = true;
+    try {
+      await this.authMgmt.sendNotification({
+        fcmToken: this.payload.fcmToken,
+        title: this.payload.title.trim(),
+        body: this.payload.body.trim()
+      });
+      this.message.success(this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\xE0nh c\xF4ng"));
+      this.closeModal();
+    } catch (e) {
+      this.message.error(this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\u1EA5t b\u1EA1i"));
+    } finally {
+      this.sending = false;
+      this.cdr.markForCheck();
+    }
+  }
+};
+_NotifyComponent.\u0275fac = function NotifyComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _NotifyComponent)();
+};
+_NotifyComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _NotifyComponent, selectors: [["tot-notify"]], decls: 26, vars: 34, consts: [["suffixIconSearch", ""], [1, "page-header"], [1, "search-card", 3, "nzTitle"], ["nz-row", "", "nzAlign", "middle", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], [3, "nzSuffix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "keyup.enter", "ngModel", "placeholder"], ["nz-col", "", 1, "search-actions", 3, "nzSpan"], ["nzType", "primary", 3, "click", 4, "nzSpaceItem"], [3, "click", 4, "nzSpaceItem"], [3, "queryParamsChange", "data", "columns", "loading", "title", "frontPagination", "pageIndex", "pageSize", "total"], ["totCell", "avatar"], ["totCell", "user"], ["totCell", "action"], [3, "nzVisibleChange", "nzOnCancel", "nzOnOk", "nzVisible", "nzTitle", "nzOkText", "nzCancelText", "nzOkLoading"], [4, "nzModalContent"], ["nz-icon", "", "nzType", "search"], ["nzType", "primary", 3, "click"], [3, "click"], ["nzIcon", "user", 3, "nzSrc", "nzSize"], [1, "user-cell"], [1, "sub-text"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "notification"], ["nz-form", "", "nzLayout", "vertical"], ["nzRequired", ""], [3, "nzErrorTip"], ["name", "fcmToken", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder", "nzLoading"], [3, "nzValue", "nzLabel", 4, "ngFor", "ngForOf"], ["class", "no-devices-warning", 4, "ngIf"], ["nz-input", "", "name", "title", "required", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nz-input", "", "name", "body", "required", "", 3, "ngModelChange", "ngModel", "nzAutosize", "placeholder"], [3, "nzValue", "nzLabel"], [1, "no-devices-warning"], ["nz-icon", "", "nzType", "warning", "nzTheme", "outline"]], template: function NotifyComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 1)(1, "h2");
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(4, "nz-card", 2);
+    \u0275\u0275pipe(5, "transloco");
+    \u0275\u0275elementStart(6, "div", 3)(7, "div", 4)(8, "nz-input-group", 5)(9, "input", 6);
+    \u0275\u0275pipe(10, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function NotifyComponent_Template_input_ngModelChange_9_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.searchKeyword, $event) || (ctx.searchKeyword = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275listener("keyup.enter", function NotifyComponent_Template_input_keyup_enter_9_listener() {
+      return ctx.search();
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275template(11, NotifyComponent_ng_template_11_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(13, "div", 7)(14, "nz-space");
+    \u0275\u0275template(15, NotifyComponent_tot_button_15_Template, 3, 3, "tot-button", 8)(16, NotifyComponent_tot_button_16_Template, 3, 3, "tot-button", 9);
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementStart(17, "tot-table", 10);
+    \u0275\u0275pipe(18, "transloco");
+    \u0275\u0275listener("queryParamsChange", function NotifyComponent_Template_tot_table_queryParamsChange_17_listener($event) {
+      return ctx.onQueryParamsChange($event);
+    });
+    \u0275\u0275template(19, NotifyComponent_ng_template_19_Template, 1, 2, "ng-template", 11)(20, NotifyComponent_ng_template_20_Template, 5, 2, "ng-template", 12)(21, NotifyComponent_ng_template_21_Template, 4, 3, "ng-template", 13);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(22, "nz-modal", 14);
+    \u0275\u0275pipe(23, "transloco");
+    \u0275\u0275pipe(24, "transloco");
+    \u0275\u0275twoWayListener("nzVisibleChange", function NotifyComponent_Template_nz_modal_nzVisibleChange_22_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.isModalVisible, $event) || (ctx.isModalVisible = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275listener("nzOnCancel", function NotifyComponent_Template_nz_modal_nzOnCancel_22_listener() {
+      return ctx.closeModal();
+    })("nzOnOk", function NotifyComponent_Template_nz_modal_nzOnOk_22_listener() {
+      return ctx.send();
+    });
+    \u0275\u0275template(25, NotifyComponent_ng_container_25_Template, 28, 35, "ng-container", 15);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const suffixIconSearch_r11 = \u0275\u0275reference(12);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 21, "G\u1EEDi th\xF4ng b\xE1o FCM"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(5, 23, "T\xECm ki\u1EBFm ng\u01B0\u1EDDi d\xF9ng"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(33, _c05));
+    \u0275\u0275advance();
+    \u0275\u0275property("nzSpan", 18);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzSuffix", suffixIconSearch_r11);
+    \u0275\u0275advance();
+    \u0275\u0275twoWayProperty("ngModel", ctx.searchKeyword);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(10, 25, "T\xECm theo Username ho\u1EB7c Email"));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("data", ctx.users)("columns", ctx.userColumns)("loading", ctx.loading)("title", \u0275\u0275pipeBind1(18, 27, "Danh s\xE1ch ng\u01B0\u1EDDi d\xF9ng"))("frontPagination", false)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("total", ctx.totalUsers);
+    \u0275\u0275advance(5);
+    \u0275\u0275twoWayProperty("nzVisible", ctx.isModalVisible);
+    \u0275\u0275property("nzTitle", ctx.modalTitle)("nzOkText", \u0275\u0275pipeBind1(23, 29, "G\u1EEDi"))("nzCancelText", \u0275\u0275pipeBind1(24, 31, "H\u1EE7y"))("nzOkLoading", ctx.sending);
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  FormsModule,
+  \u0275NgNoValidate,
+  DefaultValueAccessor,
+  NgControlStatus,
+  NgControlStatusGroup,
+  RequiredValidator,
+  NgModel,
+  NgForm,
+  NzTableModule,
+  NzButtonModule,
+  NzTransitionPatchDirective,
+  NzIconModule,
+  NzIconDirective,
+  NzTagModule,
+  NzSpaceModule,
+  NzSpaceComponent,
+  NzSpaceItemDirective,
+  NzModalModule,
+  NzModalComponent,
+  NzModalContentDirective,
+  NzSelectModule,
+  NzOptionComponent,
+  NzSelectComponent,
+  NzInputModule,
+  NzInputDirective,
+  NzInputGroupComponent,
+  NzAutosizeDirective,
+  NzInputGroupWhitSuffixOrPrefixDirective,
+  NzGridModule,
+  NzColDirective,
+  NzRowDirective,
+  NzCardModule,
+  NzCardComponent,
+  NzFormModule,
+  NzFormDirective,
+  NzFormItemComponent,
+  NzFormLabelComponent,
+  NzFormControlComponent,
+  NzAvatarModule,
+  NzAvatarComponent,
+  TotButtonComponent,
+  TotTableComponent,
+  TotCellDirective,
+  TranslocoModule,
+  TranslocoPipe
+], styles: ["\n.page-header[_ngcontent-%COMP%] {\n  margin-bottom: 16px;\n}\n.search-card[_ngcontent-%COMP%] {\n  margin-bottom: 16px;\n}\n.search-actions[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: flex-end;\n}\n.user-cell[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n}\n.sub-text[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #888;\n}\n.no-devices-warning[_ngcontent-%COMP%] {\n  color: #faad14;\n  font-size: 13px;\n  margin-top: 8px;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n/*# sourceMappingURL=notify.component.css.map */"] });
+var NotifyComponent = _NotifyComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(NotifyComponent, [{
+    type: Component,
+    args: [{ selector: "tot-notify", standalone: true, imports: [
+      CommonModule,
+      FormsModule,
+      NzTableModule,
+      NzButtonModule,
+      NzIconModule,
+      NzTagModule,
+      NzSpaceModule,
+      NzModalModule,
+      NzSelectModule,
+      NzInputModule,
+      NzGridModule,
+      NzCardModule,
+      NzFormModule,
+      NzAvatarModule,
+      TotButtonComponent,
+      TotTableComponent,
+      TotCellDirective,
+      TranslocoModule
+    ], template: `
+    <div class="page-header">
+      <h2>{{ 'G\u1EEDi th\xF4ng b\xE1o FCM' | transloco }}</h2>
+    </div>
+
+    <nz-card class="search-card" [nzTitle]="'T\xECm ki\u1EBFm ng\u01B0\u1EDDi d\xF9ng' | transloco">
+      <div nz-row [nzGutter]="[16, 16]" nzAlign="middle">
+        <div nz-col [nzSpan]="18">
+          <nz-input-group [nzSuffix]="suffixIconSearch">
+            <input 
+              type="text" 
+              nz-input 
+              [(ngModel)]="searchKeyword" 
+              [placeholder]="'T\xECm theo Username ho\u1EB7c Email' | transloco" 
+              (keyup.enter)="search()" 
+            />
+          </nz-input-group>
+          <ng-template #suffixIconSearch>
+            <span nz-icon nzType="search"></span>
+          </ng-template>
+        </div>
+        <div nz-col [nzSpan]="6" class="search-actions">
+          <nz-space>
+            <tot-button *nzSpaceItem nzType="primary" (click)="search()">{{ 'T\xECm ki\u1EBFm' | transloco }}</tot-button>
+            <tot-button *nzSpaceItem (click)="resetSearch()">{{ '\u0110\u1EB7t l\u1EA1i' | transloco }}</tot-button>
+          </nz-space>
+        </div>
+      </div>
+    </nz-card>
+
+    <tot-table 
+      [data]="users" 
+      [columns]="userColumns" 
+      [loading]="loading" 
+      [title]="'Danh s\xE1ch ng\u01B0\u1EDDi d\xF9ng' | transloco"
+      [frontPagination]="false"
+      [pageIndex]="pageIndex"
+      [pageSize]="pageSize"
+      [total]="totalUsers"
+      (queryParamsChange)="onQueryParamsChange($event)"
+    >
+      <ng-template totCell="avatar" let-data>
+        <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="40"></nz-avatar>
+      </ng-template>
+
+      <ng-template totCell="user" let-data>
+        <div class="user-cell">
+          <strong>{{ data.displayName }}</strong>
+          <span class="sub-text">{{ data.username }}</span>
+        </div>
+      </ng-template>
+
+      <ng-template totCell="action" let-data>
+        <tot-button nzType="primary" nzSize="small" (click)="openSendModal(data)">
+          <span nz-icon nzType="notification"></span> {{ 'G\u1EEDi th\xF4ng b\xE1o' | transloco }}
+        </tot-button>
+      </ng-template>
+    </tot-table>
+
+    <!-- Modal g\u1EEDi th\xF4ng b\xE1o FCM -->
+    <nz-modal 
+      [(nzVisible)]="isModalVisible" 
+      [nzTitle]="modalTitle" 
+      [nzOkText]="'G\u1EEDi' | transloco" 
+      [nzCancelText]="'H\u1EE7y' | transloco"
+      [nzOkLoading]="sending"
+      (nzOnCancel)="closeModal()" 
+      (nzOnOk)="send()"
+    >
+      <ng-container *nzModalContent>
+        <form nz-form nzLayout="vertical">
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'Ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn' | transloco }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="'Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn' | transloco">
+              <nz-select 
+                [(ngModel)]="payload.fcmToken" 
+                name="fcmToken" 
+                [nzPlaceHolder]="'Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB' | transloco" 
+                [nzLoading]="loadingTokens"
+                style="width: 100%"
+              >
+                <nz-option 
+                  *ngFor="let t of fcmTokens" 
+                  [nzValue]="t.fcmToken" 
+                  [nzLabel]="getDeviceLabel(t)"
+                ></nz-option>
+              </nz-select>
+              <div *ngIf="!loadingTokens && fcmTokens.length === 0" class="no-devices-warning">
+                <span nz-icon nzType="warning" nzTheme="outline"></span> 
+                {{ 'Ng\u01B0\u1EDDi d\xF9ng n\xE0y ch\u01B0a \u0111\u0103ng k\xFD thi\u1EBFt b\u1ECB nh\u1EADn th\xF4ng b\xE1o n\xE0o.' | transloco }}
+              </div>
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'Ti\xEAu \u0111\u1EC1 th\xF4ng b\xE1o' | transloco }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp ti\xEAu \u0111\u1EC1' | transloco">
+              <input 
+                nz-input 
+                [(ngModel)]="payload.title" 
+                name="title" 
+                [placeholder]="'Nh\u1EADp ti\xEAu \u0111\u1EC1' | transloco" 
+                required 
+              />
+            </nz-form-control>
+          </nz-form-item>
+
+          <nz-form-item>
+            <nz-form-label nzRequired>{{ 'N\u1ED9i dung th\xF4ng b\xE1o' | transloco }}</nz-form-label>
+            <nz-form-control [nzErrorTip]="'Vui l\xF2ng nh\u1EADp n\u1ED9i dung' | transloco">
+              <textarea 
+                nz-input 
+                [(ngModel)]="payload.body" 
+                name="body" 
+                [nzAutosize]="{ minRows: 3, maxRows: 6 }" 
+                [placeholder]="'Nh\u1EADp n\u1ED9i dung th\xF4ng b\xE1o' | transloco" 
+                required
+              ></textarea>
+            </nz-form-control>
+          </nz-form-item>
+        </form>
+      </ng-container>
+    </nz-modal>
+  `, styles: ["/* angular:styles/component:css;33fa087d22e9625d5997abe7ce2fe82d8769f91bf7c5e84b2ada89978e9ce1bd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/notify/notify.component.ts */\n.page-header {\n  margin-bottom: 16px;\n}\n.search-card {\n  margin-bottom: 16px;\n}\n.search-actions {\n  display: flex;\n  justify-content: flex-end;\n}\n.user-cell {\n  display: flex;\n  flex-direction: column;\n}\n.sub-text {\n  font-size: 12px;\n  color: #888;\n}\n.no-devices-warning {\n  color: #faad14;\n  font-size: 13px;\n  margin-top: 8px;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n}\n/*# sourceMappingURL=notify.component.css.map */\n"] }]
+  }], null, null);
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(NotifyComponent, { className: "NotifyComponent", filePath: "projects/tot/business-oidc/src/lib/notify/notify.component.ts", lineNumber: 197 });
+})();
 export {
   AclListComponent,
   AuthManagementService,
   AuthorizeInfoComponent,
   ChangePasswordComponent,
   ClaimSyncComponent,
+  NotifyComponent,
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-5PUAAEOW.js.map
+//# sourceMappingURL=chunk-BQ3KSRSR.js.map

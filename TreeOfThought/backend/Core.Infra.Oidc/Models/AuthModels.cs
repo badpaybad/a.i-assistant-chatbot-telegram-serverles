@@ -6,7 +6,18 @@ public class LoginRequest
 { 
     public string Username { get; set; } = ""; 
     public string Password { get; set; } = ""; 
+    public string? FcmToken { get; set; }
+    public string? DeviceId { get; set; }
+    public string? AppType { get; set; }
 }
+
+public class SendNotificationRequest
+{
+    public string FcmToken { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
+    public string Body { get; set; } = string.Empty;
+}
+
 
 public class SignupRequest 
 { 

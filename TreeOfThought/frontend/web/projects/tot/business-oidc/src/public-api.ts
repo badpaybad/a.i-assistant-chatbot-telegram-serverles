@@ -9,3 +9,5 @@ export * from './lib/claim-sync/claim-sync.component';
 export * from './lib/change-password/change-password.component';
 export * from './lib/authorize-info/authorize-info.component';
 export * from './lib/services/auth-management.service';
+export * from './lib/notify/notify.component';
+

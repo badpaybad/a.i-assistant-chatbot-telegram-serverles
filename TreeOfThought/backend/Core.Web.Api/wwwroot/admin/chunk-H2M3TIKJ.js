@@ -71205,6 +71205,7 @@ export {
   FormControlDirective,
   FormControlName,
   FormGroupDirective,
+  RequiredValidator,
   FormBuilder,
   NonNullableFormBuilder,
   FormsModule,
@@ -71307,4 +71308,4 @@ export {
   NzTagComponent,
   NzTagModule
 };
-//# sourceMappingURL=chunk-P56TLK52.js.map
+//# sourceMappingURL=chunk-H2M3TIKJ.js.map

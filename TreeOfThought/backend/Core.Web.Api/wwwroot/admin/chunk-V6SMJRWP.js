@@ -3,7 +3,7 @@ import {
   NzIconModule,
   WithConfig,
   toCssPixel
-} from "./chunk-P56TLK52.js";
+} from "./chunk-H2M3TIKJ.js";
 import {
   ChangeDetectionStrategy,
   ChangeDetectorRef,
@@ -450,4 +450,4 @@ export {
   NzAvatarComponent,
   NzAvatarModule
 };
-//# sourceMappingURL=chunk-W7LLD5QZ.js.map
+//# sourceMappingURL=chunk-V6SMJRWP.js.map

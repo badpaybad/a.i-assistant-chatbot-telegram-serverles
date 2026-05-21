@@ -6,7 +6,7 @@ Module OIDC cung cấp giải pháp Xác thực tập trung (Single Sign-On - SS
 
 - **Tài liệu nghiệp vụ (Docs):** [yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/business-oidc/yeucau.md)
 - **Backend (BE):**
-  - Controllers chính: 
+  - Controllers chính:
     - [AuthController.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc/Controllers/AuthController.cs)
     - [AuthManagementController.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc/Controllers/AuthManagementController.cs)
   - Core Module: [Core.Infra.Oidc](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc)
@@ -17,6 +17,7 @@ Module OIDC cung cấp giải pháp Xác thực tập trung (Single Sign-On - SS
 ## 2. Yêu cầu Nghiệp vụ Tổng quan
 
 Hệ thống phân quyền OIDC giải quyết các bài toán cốt lõi sau:
+
 1. **Xác thực tập trung (SSO):** Cho phép người dùng đăng nhập một lần và truy cập vào nhiều ứng dụng trong hệ sinh thái (như App Web, App Mobile, Web Test).
 2. **Ủy quyền phi tập trung (Decentralized Authorization):** Hỗ trợ khai báo quyền trực tiếp trong code BE qua Attribute (`AppAuthorize`). Tự động quét và đồng bộ các quyền này vào Cơ sở dữ liệu.
 3. **Hybrid Authorization (Tối ưu hóa Token):**
@@ -30,6 +31,7 @@ Hệ thống phân quyền OIDC giải quyết các bài toán cốt lõi sau:
 ## 3. Chi tiết Yêu cầu và Tính năng Phân hệ Backend (BE)
 
 ### 3.1. Phân hệ SSO & OIDC Core ([AuthController.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc/Controllers/AuthController.cs))
+
 - **Discovery Endpoint (`/.well-known/openid-configuration`):** Cung cấp tài liệu cấu hình chuẩn OIDC (issuer, jwks_uri, authorization_endpoint, token_endpoint, userinfo_endpoint, end_session_endpoint...).
 - **JWKS Endpoint (`/api/auth/jwks`):** Cung cấp các khóa ký công khai (JSON Web Key Sets) chuẩn RS256 phục vụ client xác thực chữ ký của JWT Token.
 - **Login Endpoint (`/api/auth/login`):**
@@ -49,7 +51,9 @@ Hệ thống phân quyền OIDC giải quyết các bài toán cốt lõi sau:
 - **Đăng xuất (`/api/auth/logout`):** Hủy cookie phiên đăng nhập SSO và chuyển hướng về trang `post_logout_redirect_uri` chỉ định.
 
 ### 3.2. Phân hệ Quản trị Phân quyền ([AuthManagementController.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc/Controllers/AuthManagementController.cs))
+
 Yêu cầu quyền Admin tối cao (`AdminClaim`).
+
 - **Quản lý Người dùng (User Management):**
   - Hỗ trợ API tìm kiếm và lọc danh sách người dùng nâng cao (`UserSearchQuery`) theo: Từ khóa (Username, DisplayName, Email), trạng thái xác minh, khoảng thời gian tạo (`dateRange`), danh sách vai trò, danh sách quyền trực tiếp, nhà cung cấp SSO (`ssoProvider`), SSO ID.
   - Hỗ trợ CRUD người dùng: Thêm mới, cập nhật thông tin, xóa người dùng (không cho phép xóa tài khoản `admin`).
@@ -77,9 +81,11 @@ Yêu cầu quyền Admin tối cao (`AdminClaim`).
 ---
 
 ## 4. Giao diện Người dùng Phân hệ Frontend (FE)
+
 Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-Antd, Transloco (Đa ngôn ngữ), và các component dùng chung đạt chuẩn của dự án (`tot-table`, `tot-button`, `tot-autocomplete`).
 
 ### 4.1. Quản lý Người dùng (`user-list` Component)
+
 - **Bảng danh sách người dùng (`tot-table`):**
   - Hiển thị các cột: Avatar (cho phép click để mở hộp thoại tải ảnh đại diện lên ngay lập tức), Người dùng (Tên hiển thị & Username), Email, Trạng thái xác minh email (Tag màu), Vai trò (Hiển thị các tag màu xanh, có nút xóa nhanh từng vai trò trực tiếp trên tag), Quyền trực tiếp (Hiển thị các tag màu tím, có nút xóa nhanh từng quyền trực tiếp), Ngày tạo, Ngày cập nhật, Hành động (Sửa, Xóa).
 - **Bộ lọc tìm kiếm:**
@@ -99,6 +105,7 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
 - **Modal gán nhanh:** Cho phép gán nhanh danh sách vai trò hoặc quyền cho người dùng bằng autocomplete.
 
 ### 4.2. Quản lý Vai trò (`role-list` Component)
+
 - **Bảng danh sách vai trò (`tot-table`):**
   - Hiển thị các cột: Vai trò, Mô tả, Quyền (Danh sách các tag quyền màu xanh đi kèm nút xóa nhanh quyền trực tiếp), Hành động (Sửa, Xóa).
   - Không cho phép xóa vai trò `Admin`.
@@ -106,6 +113,7 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
 - **Modal Thêm/Sửa vai trò:** Form nhập tên vai trò, mô tả, và chọn danh sách các quyền được gắn cho vai trò đó bằng autocomplete đa chọn.
 
 ### 4.3. Quản lý ACL (`acl-list` Component)
+
 - **Bộ lọc tài nguyên:** Nhập Loại tài nguyên (ví dụ: `order`) và ID tài nguyên (ví dụ: `123` hoặc `*` cho toàn bộ tài nguyên loại đó) để hiển thị danh sách các ACL kiểm soát truy cập đang được áp dụng.
 - **Bảng danh sách ACL (`tot-table`):**
   - Hiển thị các cột: Đối tượng (Người dùng hoặc Vai trò), Tài nguyên (Loại & ID), Mặt nạ quyền (Hiển thị giá trị số mask cùng các Tag phân loại quyền chi tiết: Đọc, Ghi, Xóa, Chia sẻ), Hành động (Xóa).
@@ -116,6 +124,7 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
   - Lựa chọn Mức độ truy cập thông qua Checkbox group (Read - 1, Write - 2, Delete - 4, Share - 8). Giao diện tự động tính toán tổng số Permission Mask (Bitmask) gửi lên BE.
 
 ### 4.4. Đồng bộ quyền (`claim-sync` Component)
+
 - **Thông tin đồng bộ:** Hiển thị phiên bản phân quyền hiện tại (`CLAIMS_VERSION`) và số lượng quyền định nghĩa.
 - **Nút "Đồng bộ":** Gửi danh sách quyền định nghĩa từ FE lên BE để lưu trữ vào database.
 - **Bảng danh sách quyền (`tot-table`):**
@@ -123,6 +132,7 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
 - **Modal Thêm quyền thủ công:** Cho phép Admin tự nhập mã quyền và mô tả quyền mới ngoài hệ thống quét tự động.
 
 ### 4.5. Thông tin Phân quyền cá nhân (`authorize-info` Component)
+
 - **Tab "Quyền của tôi":**
   - Hiển thị chi tiết thông tin Vai trò (Roles) dạng Tag màu vàng (cho Admin) hoặc xanh.
   - Hiển thị chi tiết danh sách Quyền hạn (Claims) dạng Tag màu đỏ (cho Admin) hoặc xanh lá.
@@ -132,10 +142,26 @@ Phát triển dưới dạng Angular Library độc lập, sử dụng Ng-Zorro-
   - Bảng danh sách các quyền hạn được định nghĩa ở phía Client (`APP_CLAIMS`) giúp kiểm tra nhanh cấu hình.
 
 ### 4.6. Đổi mật khẩu (`change-password` Component)
+
 - Giao diện đổi mật khẩu cá nhân cho người dùng đang đăng nhập.
 - Yêu cầu nhập: Mật khẩu cũ, Mật khẩu mới (bắt buộc dài tối thiểu 6 ký tự), Xác nhận mật khẩu mới.
 - Hỗ trợ validator so khớp mật khẩu mới và mật khẩu xác nhận tức thì trên UI.
 
 **bug user avartar 2026-05-17 12:49:48**
-Quản lý người dùng, Khi click vào change avatar ảnh đại diện, chọn ảnh nhưng chưa thấy cập nhật 
+Quản lý người dùng, Khi click vào change avatar ảnh đại diện, chọn ảnh nhưng chưa thấy cập nhật
 cần dùng server side paging
+
+**cập nhật 2026-05-21 08:20:20**
+Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
+  BE: ở folder TreeOfThought/backend/Core.Infra.Oidc
+    - Khi Login cần bổ xung thêm fcm token device id vào request login, allow null or empty
+      - Login thành công sẽ lưu fcm token device id vào database.
+    - Tạo db riêng cho notify để lưu trữ thông tin user và fcm token device id của user đó, AppType
+      - 1 user có thể có nhiều fcm token device id
+      - AppType để chỉ ra là fcm token device id đến từ app nào ( admin, mobi android, reactjsatest ...)
+  FE: ở folder TreeOfThought/frontend/web/projects/tot/business-oidc
+    - Thêm menu để gửi noti cho user, click vào menu vào page
+      - danh sách có paging (server side paging), có thể search user theo username hoặc email
+        - click gủi noti mở lên modal
+            - chọn 1 fcm token device id của user để gửi noti
+              - có tiêu đề , nội dung , nút gửi

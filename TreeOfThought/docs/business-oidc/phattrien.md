@@ -164,5 +164,41 @@ Khi thực hiện nâng cấp hoặc bổ sung tính năng cho module OIDC, bắ
 ## 7. Câu hỏi làm rõ & Xác nhận từ người dùng
 
 Để tiến hành hoàn thiện Phase 2 tối ưu hóa hệ thống, xin vui lòng cho biết ý kiến của bạn về các điểm sau:
-1. **Phân trang Server-side:** Bạn có muốn chúng tôi tiến hành refactor toàn bộ 4 bảng quản trị ở FE (`user-list`, `role-list`, `acl-list`, `claim-sync`) sang chế độ Server-side Paging ngay trong turn này không?
-2. **Đồng bộ hàng loạt khi sửa Role:** Khi cập nhật quyền của một Vai trò (Role), việc quét tất cả users sở hữu vai trò đó để cập nhật Redis có thể gây tốn tài nguyên nếu số lượng users quá lớn. Bạn có đồng ý triển khai giải pháp này dưới dạng một Background Task/Queue tin cậy hay chỉ cần chạy đồng bộ in-memory cho các dự án quy mô vừa và nhỏ?
+  1. **Phân trang Server-side:** Bạn có muốn chúng tôi tiến hành refactor toàn bộ 4 bảng quản trị ở FE (`user-list`, `role-list`, `acl-list`, `claim-sync`) sang chế độ Server-side Paging ngay trong turn này không?
+  2. **Đồng bộ hàng loạt khi sửa Role:** Khi cập nhật quyền của một Vai trò (Role), việc quét tất cả users sở hữu vai trò đó để cập nhật Redis có thể gây tốn tài nguyên nếu số lượng users quá lớn. Bạn có đồng ý triển khai giải pháp này dưới dạng một Background Task/Queue tin cậy hay chỉ cần chạy đồng bộ in-memory cho các dự án quy mô vừa và nhỏ?
+
+---
+
+## 8. Cập nhật 2026-05-21 08:20:20: Giải pháp FCM Notification lên App Mobile
+
+### A. Thiết kế Database riêng cho Notify
+Chúng ta tạo ra một DB Context riêng biệt mang tên `NotifyDbContext` để quản lý việc lưu trữ thiết bị và mã đăng ký FCM của người dùng.
+- **Thực thể `UserFcmToken`:**
+  - `Id` (Guid, Primary Key)
+  - `UserId` (Guid, Foreign Key)
+  - `FcmToken` (string, Required)
+  - `DeviceId` (string, Nullable/Empty)
+  - `AppType` (string, Nullable/Empty) - Chỉ ra FCM token đến từ ứng dụng nào (ví dụ: `admin`, `mobi android`, `reactjsatest`...).
+  - Các trường tracking standard (`CreatedAt`, `UpdatedAt`, `CreatedBy`, `UpdatedBy`).
+- **Cơ chế Duy nhất (Unique constraint):** Thiết lập index phức hợp `(UserId, DeviceId)` làm khóa duy nhất để tự động cập nhật token mới khi đăng nhập trên cùng một thiết bị, và index trên cột `FcmToken` để truy vấn nhanh.
+- **Hạ tầng:** Context này sử dụng chung cấu hình kết nối PostgreSql từ phân vùng OIDC, tự động kích hoạt tạo bảng khi ứng dụng khởi chạy (`EnsureTablesCreatedAsync`).
+
+### B. Tích hợp Đăng nhập và lưu FCM Token
+- **LoginRequest DTO:** Bổ sung thêm ba trường `FcmToken`, `DeviceId` và `AppType` (đều cho phép null hoặc empty).
+- **AuthController:** Khi người dùng thực hiện xác thực đăng nhập thành công:
+  - Kiểm tra xem request có truyền kèm `FcmToken` hay không.
+  - Nếu có, gọi qua `INotifyRepository` thực hiện lưu trữ hoặc cập nhật FCM token kèm DeviceId và AppType cho `UserId` đó.
+  - Tự động dọn dẹp các bản ghi trùng lặp của FCM Token hoặc DeviceId thuộc về tài khoản khác để tránh gửi nhầm thông báo.
+
+### C. Quản lý Giao diện & Điều khiển gửi thông báo
+- **API Backend (`AuthManagementController`):**
+  - `GET /api/AuthManagement/users/{userId}/fcm-tokens`: Trả về danh sách FCM Token kèm Device ID và AppType của một người dùng.
+  - `POST /api/AuthManagement/users/send-notification`: Nhận DTO gồm `{ fcmToken, title, body }`, gọi trực tiếp qua `FirebaseService.SendNotificationAsync` để đẩy thông báo lên thiết bị qua hạ tầng Google FCM.
+- **Menu & Giao diện quản trị (`notify` Component):**
+  - Giao diện dạng trang quản trị nằm dưới menu "Quản trị hệ thống" -> "Gửi thông báo".
+  - Hiển thị danh sách người dùng với phân trang Server-side đầy đủ (`tot-table`), hỗ trợ thanh tìm kiếm tức thời theo Username hoặc Email.
+  - Mỗi dòng có nút "Gửi thông báo" kích hoạt mở Modal:
+    - Modal tự động fetch danh sách thiết bị/token FCM của user đó qua API.
+    - Cho phép Admin chọn 1 trong các thiết bị đã liên kết qua bộ chọn (`nz-select`), hiển thị dạng: `Thiết bị: {DeviceId} ({AppType})`.
+    - Form nhập Tiêu đề, Nội dung thông điệp chi tiết.
+    - Nhấn nút Gửi sẽ gọi API đẩy thông điệp tức thời lên thiết bị di động của họ.
