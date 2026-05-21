@@ -11,8 +11,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddFilesFolders(this IServiceCollection services, IConfiguration config)
     {
-        var connectionString = config.GetConnectionString("FilesFoldersConnection") ?? config["Database:Postgres"];
-        if (string.IsNullOrEmpty(connectionString)) throw new Exception("FilesFoldersConnection not found");
+        var connectionString = config["FilesFolders:Postgres"]!;
+        if (string.IsNullOrEmpty(connectionString)) throw new Exception("FilesFolders:Postgres not found");
 
         services.AddScoped<FilesFoldersDbContext>(sp => new FilesFoldersDbContext(connectionString, BaseDbContext.DbProviderType.PostgreSql));
         services.AddScoped<FilesFoldersService>();

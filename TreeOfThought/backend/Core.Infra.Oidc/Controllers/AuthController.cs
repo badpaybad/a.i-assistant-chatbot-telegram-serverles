@@ -447,7 +447,7 @@ public class AuthController : ControllerBase
 
   private bool IsRedirectUriWhitelisted(string redirectUri)
   {
-    var allowedRedirects = _config.GetSection("Oidc:AllowedRedirectUris").Get<List<string>>() ?? new List<string>();
+    var allowedRedirects = _config.GetSection("Oidc:AllowedClientRedirectUris").Get<List<string>>() ?? new List<string>();
     if (!allowedRedirects.Any())
     {
       // If the whitelist is completely empty, default to allowing all redirects for convenience/backward compatibility
