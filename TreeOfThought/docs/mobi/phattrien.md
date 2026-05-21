@@ -135,7 +135,7 @@ Hệ thống Notification FCM cho Mobile App hoạt động dựa trên các ngu
    - Lưu trữ cả FCM Token và Device ID vào `NotificationService` để sẵn sàng đăng ký khi có user đăng nhập.
 
 2. **Đăng ký Token khi Đăng nhập Thành công**:
-   - Ngay khi luồng SSO Login (`AuthService.signInWithSso()`) hoàn tất thành công và lấy được Access Token, ứng dụng sẽ thực hiện gọi API để đăng ký FCM Token, Device ID và AppType với Backend.
+   - Ngay khi luồng SSO Login (`AuthService.signInWithSso()`) hoàn tất thành công và lấy được Access Token, hoặc khi đăng nhập mật khẩu trực tiếp thành công, ứng dụng sẽ thực hiện gọi API để đăng ký FCM Token, Device ID và AppType với Backend.
    - **API Endpoint**: `POST /api/auth/register-fcm` (endpoint mới bổ sung trên Backend OIDC).
    - **HttpClientService**: Việc gọi API bắt buộc thông qua `HttpClientService.instance` để tự động chèn header Authorization Bearer Token.
    - **AppType**: Chỉ định rõ loại thiết bị (`"mobi android"` hoặc `"mobi ios"` tùy theo hệ điều hành đang chạy).
@@ -151,6 +151,13 @@ Hệ thống Notification FCM cho Mobile App hoạt động dựa trên các ngu
 4. **Tối ưu hóa Chi phí & Dữ liệu Firestore**:
    > [!IMPORTANT]
    > Sau khi Mobile App nhận được thông báo dữ liệu từ Firestore (như kết quả xử lý upload, rename, xóa, v.v.), xử lý logic hoàn tất thì **phải gọi ngay lập tức API xóa dữ liệu thông báo đó trên Firestore**. Tránh tích tụ rác dữ liệu, bảo mật thông tin và tối ưu hóa chi phí Firestore (read/write quota).
+
+5. **Hiển thị thông báo trên Status Bar khi App đang mở (Foreground Status Bar Notification)**:
+   - **Thách thức**: Theo cơ chế mặc định của hệ điều hành Android và iOS, khi ứng dụng đang chạy ở Foreground (đang hiển thị trên màn hình), các thông báo đẩy từ FCM (Notification messages) sẽ bị hệ điều hành bỏ qua việc đưa lên thanh trạng thái (Status Bar) mà chỉ chuyển thẳng vào callback `FirebaseMessaging.onMessage`.
+   - **Giải pháp**: Tích hợp thêm gói `flutter_local_notifications`. Khi nhận được thông báo ở Foreground:
+     - Hiển thị cả **Foreground UI** trong app (ví dụ: Custom SnackBar thiết kế cao cấp).
+     - **ĐỒNG THỜI** tự động phát ra một local notification thông qua `flutter_local_notifications` với độ ưu tiên cao (`Importance.max`, `Priority.high`) để đẩy thông báo lên **Status Bar** của thiết bị (giống như hành vi khi app đang chạy ở Background/Tắt).
+     - Đăng ký callback `onDidReceiveNotificationResponse` của Local Notification để bắt sự kiện click trên thanh Status Bar, tự động định tuyến đến màn hình nghiệp vụ thích hợp (như `/files-folders`).
 
 #### B. Đặc tả Kỹ thuật Triển khai (Flutter Code Skeleton)
 
@@ -173,15 +180,28 @@ class MyApp extends StatelessWidget {
 }
 ```
 
-##### 2. Lấy Device ID & Token khi khởi chạy (`notification_service.dart`)
+##### 2. Lấy Device ID, Token & Tích hợp Status Bar Notification khi khởi chạy (`notification_service.dart`)
 ```dart
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 class NotificationService extends ChangeNotifier {
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+  
   String? _token;
   String? _deviceId;
 
   String? get token => _token;
   String? get deviceId => _deviceId;
+
+  // Cấu hình Kênh thông báo độ ưu tiên cao trên Android
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    'high_importance_channel', // id
+    'High Importance Notifications', // title
+    description: 'This channel is used for important notifications.', // description
+    importance: Importance.high,
+  );
 
   Future<void> initialize() async {
     // 1. Lấy Device ID duy nhất (KISS - Persistent UUID in SharedPreferences)
@@ -192,7 +212,37 @@ class NotificationService extends ChangeNotifier {
       await prefs.setString('device_id', _deviceId!);
     }
 
-    // 2. Yêu cầu quyền thông báo
+    // 2. Cấu hình & Khởi tạo Local Notifications (cho Foreground Status Bar)
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        // Callback kích hoạt khi người dùng click vào notification từ Status Bar khi app đang mở
+        final String? payload = response.payload;
+        if (payload != null && payload.isNotEmpty) {
+          _handlePayloadClick(payload);
+        }
+      },
+    );
+
+    // Đăng ký kênh thông báo trên Android
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_channel);
+
+    // 3. Yêu cầu quyền thông báo từ hệ thống
     NotificationSettings settings = await _fcm.requestPermission(
       alert: true,
       badge: true,
@@ -204,7 +254,7 @@ class NotificationService extends ChangeNotifier {
       debugPrint('[FCM] Token: $_token');
       debugPrint('[FCM] Device ID: $_deviceId');
 
-      // 3. Đăng ký các Listeners
+      // 4. Đăng ký các Listeners
       _setupNotificationListeners();
     }
   }
@@ -213,7 +263,12 @@ class NotificationService extends ChangeNotifier {
     // A. Foreground Listener
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('[FCM] Foreground message received: ${message.notification?.body}');
-      // Có thể hiển thị một custom in-app banner/dialog nếu muốn
+      
+      // 1. Hiển thị UI SnackBar cao cấp trong ứng dụng
+      _showForegroundNotification(message);
+      
+      // 2. ĐỒNG THỜI đẩy lên Status Bar (dưới dạng local notification)
+      _showLocalNotificationOnStatusBar(message);
     });
 
     // B. Background Listener (Khi click từ khay hệ thống khi app đang chạy ngầm)
@@ -223,12 +278,44 @@ class NotificationService extends ChangeNotifier {
     });
   }
 
+  // Đẩy tin nhắn cục bộ lên Status Bar khi app đang ở Foreground
+  Future<void> _showLocalNotificationOnStatusBar(RemoteMessage message) async {
+    final notification = message.notification;
+    final android = message.notification?.android;
+
+    if (notification != null) {
+      // Đóng gói payload để truyền qua click event
+      final String payloadData = message.data['body'] ?? message.data['message'] ?? notification.body ?? '';
+
+      await _localNotifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channel.id,
+            _channel.name,
+            channelDescription: _channel.description,
+            icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payloadData,
+      );
+    }
+  }
+
   // C. Terminated State (Kiểm tra khi app được mở từ trạng thái tắt hoàn toàn)
   Future<void> checkInitialMessage() async {
     RemoteMessage? initialMessage = await _fcm.getInitialMessage();
     if (initialMessage != null) {
       debugPrint('[FCM] App launched from terminated state via notification click!');
-      // Đợi một khoảng thời gian ngắn để router/UI khởi tạo xong rồi điều hướng
       Future.delayed(const Duration(milliseconds: 800), () {
         _handleNotificationClick(initialMessage);
       });
@@ -238,18 +325,14 @@ class NotificationService extends ChangeNotifier {
   void _handleNotificationClick(RemoteMessage message) {
     final String? body = message.notification?.body;
     final String? dataPayload = message.data['body'] ?? message.data['message'];
-    
-    // Kiểm tra xem body hoặc data payload có chứa "files-folders" hay không
-    bool shouldNavigateToFiles = false;
-    if (body != null && body.toLowerCase().contains('files-folders')) {
-      shouldNavigateToFiles = true;
-    } else if (dataPayload != null && dataPayload.toLowerCase().contains('files-folders')) {
-      shouldNavigateToFiles = true;
-    }
+    final String targetText = '${body ?? ''} ${dataPayload ?? ''}';
+    _handlePayloadClick(targetText);
+  }
 
-    if (shouldNavigateToFiles) {
+  void _handlePayloadClick(String text) {
+    // Kiểm tra xem nội dung thông báo có chứa từ khoá "files-folders" hay không
+    if (text.toLowerCase().contains('files-folders')) {
       debugPrint('[FCM] Matching keyword "files-folders". Navigating directly to /files-folders...');
-      // Thực hiện điều hướng bằng Navigator Key toàn cục không cần context
       navigatorKey.currentState?.pushNamed('/files-folders');
     }
   }

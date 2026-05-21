@@ -43,3 +43,4 @@ tất cả việc gọi lên api server cần thông qua HttpClientService ở c
         - do đăng nhập sso lên localhost:5000 thì web ui login hoạt động vẫn đúng, khi quay về app mobi cũng cần đăng ký fcm token device id cho user, cũng cần gọi api để lưu vào database 
     - khi nhận noti khi ấn vào noti message nếu thấy body có text "files-folders" thì mở thẳng vào màn của module files folders
         - noti cần hoạt động cả khi ứng dụng không bật, cả khi ứng dụng đang bật
+    - khi nhận noti nếu app đang mở thì hiện cả forground noti , lẫn background noti, nếu app đang tắt thì chỉ hiện background noti

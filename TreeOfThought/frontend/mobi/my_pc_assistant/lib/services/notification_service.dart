@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../main.dart';
 import 'local_storage_service.dart';
 import 'auth_service.dart';
@@ -12,6 +13,15 @@ class NotificationService extends ChangeNotifier {
   NotificationService._internal();
 
   final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
+
+  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
+    'high_importance_channel',
+    'High Importance Notifications',
+    description: 'This channel is used for important notifications.',
+    importance: Importance.high,
+  );
+
   String? _token;
   String? _deviceId;
   String? _pendingRoute;
@@ -110,6 +120,34 @@ class NotificationService extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
+    // Cấu hình Local Notifications cho Foreground Status Bar
+    const AndroidInitializationSettings initializationSettingsAndroid =
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings initializationSettingsIOS =
+        DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
+    const InitializationSettings initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsIOS,
+    );
+
+    await _localNotifications.initialize(
+      initializationSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse response) {
+        final String? payload = response.payload;
+        if (payload != null && payload.isNotEmpty) {
+          _handleLocalNotificationClick(payload);
+        }
+      },
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(_channel);
+
     // Yêu cầu quyền thông báo (cho iOS)
     NotificationSettings settings = await _fcm.requestPermission(
       alert: true,
@@ -214,6 +252,7 @@ class NotificationService extends ChangeNotifier {
           print('Message also contained a notification: ${message.notification}');
         }
         _showForegroundNotification(message);
+        _showLocalNotification(message); // Đẩy đồng thời lên Status Bar
       }
       notifyListeners();
     });
@@ -244,5 +283,57 @@ class NotificationService extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  // Đẩy tin nhắn cục bộ lên Status Bar khi app đang ở Foreground
+  Future<void> _showLocalNotification(RemoteMessage message) async {
+    final notification = message.notification;
+    final android = message.notification?.android;
+
+    if (notification != null) {
+      final String payloadData = message.data['body'] ?? message.data['message'] ?? notification.body ?? '';
+
+      await _localNotifications.show(
+        notification.hashCode,
+        notification.title,
+        notification.body,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _channel.id,
+            _channel.name,
+            channelDescription: _channel.description,
+            icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+            importance: Importance.max,
+            priority: Priority.high,
+          ),
+          iOS: const DarwinNotificationDetails(
+            presentAlert: true,
+            presentBadge: true,
+            presentSound: true,
+          ),
+        ),
+        payload: payloadData,
+      );
+    }
+  }
+
+  // Xử lý khi người dùng click vào notification trên Status Bar (Foreground)
+  void _handleLocalNotificationClick(String payload) {
+    if (kDebugMode) {
+      print('Local notification clicked in foreground: payload=$payload');
+    }
+    if (payload.toLowerCase().contains('files-folders')) {
+      if (AuthService.instance.isAuthenticated) {
+        if (kDebugMode) {
+          print('User authenticated. Navigating to /files-folders...');
+        }
+        navigatorKey.currentState?.pushNamed('/files-folders');
+      } else {
+        if (kDebugMode) {
+          print('User not authenticated. Setting pending route to /files-folders...');
+        }
+        _pendingRoute = '/files-folders';
+      }
+    }
   }
 }
