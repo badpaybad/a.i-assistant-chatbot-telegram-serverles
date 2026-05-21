@@ -117,7 +117,7 @@ public class FirebaseService
     }
 
     // FCM
-    public async Task SendNotificationAsync(string appName, string token, string title, string body)
+    public async Task<string> SendNotificationAsync(string appName, string token, string title, string body)
     {
         var messaging = FirebaseMessaging.GetMessaging(_apps[appName]);
         var message = new Message
@@ -129,7 +129,7 @@ public class FirebaseService
                 Body = body
             }
         };
-        await messaging.SendAsync(message);
+        return await messaging.SendAsync(message);
     }
 
     // Firestore
@@ -275,7 +275,7 @@ public class FirebaseService
     public async Task<FirebaseToken> VerifyIdTokenAsync(string idToken)
         => await VerifyIdTokenAsync(_options.Value.AppName, idToken);
 
-    public async Task SendNotificationAsync(string token, string title, string body)
+    public async Task<string> SendNotificationAsync(string token, string title, string body)
         => await SendNotificationAsync(_options.Value.AppName, token, title, body);
 
     public FirestoreDb GetFirestore() 

@@ -160,6 +160,7 @@ Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
       - 1 user có thể có nhiều fcm token device id
       - AppType để chỉ ra là fcm token device id đến từ app nào ( admin, mobi android, reactjsatest ...)
   FE: ở folder TreeOfThought/frontend/web/projects/tot/business-oidc
+    - ở page login cần lấy luôn fcm token device id, khi user login cần truyền luôn  apptype,fcm token device id vào request login ...
     - Thêm menu để gửi noti cho user, click vào menu vào page
       - danh sách có paging (server side paging), có thể search user theo username hoặc email
         - click gủi noti mở lên modal

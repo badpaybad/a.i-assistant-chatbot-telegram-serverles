@@ -60,7 +60,47 @@ export class AuthService {
   }
 
   async login(credentials: any) {
-    const response = await this.http.post('/api/auth/login', credentials);
+    let fcmToken: string | null = null;
+    try {
+      fcmToken = await this.firebase.getFCMToken();
+    } catch (e) {
+      console.warn('[Auth] Failed to get FCM token during login:', e);
+    }
+
+    let deviceId = localStorage.getItem('device_id');
+    if (!deviceId) {
+      deviceId = 'web_' + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('device_id', deviceId);
+    }
+
+    let appType = 'admin';
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnUrl = urlParams.get('returnUrl');
+      if (returnUrl) {
+        let fullUrl = returnUrl;
+        if (!returnUrl.startsWith('http')) {
+          fullUrl = window.location.origin + (returnUrl.startsWith('/') ? '' : '/') + returnUrl;
+        }
+        const innerUrl = new URL(fullUrl);
+        const innerParams = new URLSearchParams(innerUrl.search);
+        const clientId = innerParams.get('client_id');
+        if (clientId === 'my_pc_assistant') {
+          appType = 'mobi android';
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Failed to parse returnUrl for appType:', e);
+    }
+
+    const payload = {
+      ...credentials,
+      fcmToken: fcmToken || null,
+      deviceId: deviceId,
+      appType: appType
+    };
+
+    const response = await this.http.post('/api/auth/login', payload);
     const { token, firebaseToken } = response;
     await this.saveSession(token, firebaseToken);
     return response;

@@ -42,6 +42,10 @@ import {
   ɵɵtemplate,
   ɵɵtemplateRefExtractor
 } from "./chunk-FOY232A2.js";
+import {
+  __spreadProps,
+  __spreadValues
+} from "./chunk-MYGOUE3E.js";
 
 // projects/tot/core/src/lib/auth/claims.config.ts
 var AUTH_CONFIG = {
@@ -119,7 +123,42 @@ var _AuthService = class _AuthService {
     return !!localStorage.getItem("jwt_token");
   }
   async login(credentials) {
-    const response = await this.http.post("/api/auth/login", credentials);
+    let fcmToken = null;
+    try {
+      fcmToken = await this.firebase.getFCMToken();
+    } catch (e) {
+      console.warn("[Auth] Failed to get FCM token during login:", e);
+    }
+    let deviceId = localStorage.getItem("device_id");
+    if (!deviceId) {
+      deviceId = "web_" + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem("device_id", deviceId);
+    }
+    let appType = "admin";
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnUrl = urlParams.get("returnUrl");
+      if (returnUrl) {
+        let fullUrl = returnUrl;
+        if (!returnUrl.startsWith("http")) {
+          fullUrl = window.location.origin + (returnUrl.startsWith("/") ? "" : "/") + returnUrl;
+        }
+        const innerUrl = new URL(fullUrl);
+        const innerParams = new URLSearchParams(innerUrl.search);
+        const clientId = innerParams.get("client_id");
+        if (clientId === "my_pc_assistant") {
+          appType = "mobi android";
+        }
+      }
+    } catch (e) {
+      console.warn("[Auth] Failed to parse returnUrl for appType:", e);
+    }
+    const payload = __spreadProps(__spreadValues({}, credentials), {
+      fcmToken: fcmToken || null,
+      deviceId,
+      appType
+    });
+    const response = await this.http.post("/api/auth/login", payload);
     const { token, firebaseToken } = response;
     await this.saveSession(token, firebaseToken);
     return response;
@@ -526,4 +565,4 @@ export {
   AuthService,
   TotInputComponent
 };
-//# sourceMappingURL=chunk-75QNPPCT.js.map
+//# sourceMappingURL=chunk-4SMVBW7Z.js.map

@@ -349,12 +349,26 @@ public class AuthManagementController : ControllerBase
     [HttpPost("users/send-notification")]
     public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest request)
     {
+        Console.WriteLine($"[DEBUG send-notification] FcmToken: '{request.FcmToken}'");
+        Console.WriteLine($"[DEBUG send-notification] Title: '{request.Title}'");
+        Console.WriteLine($"[DEBUG send-notification] Body: '{request.Body}'");
+
         if (string.IsNullOrWhiteSpace(request.FcmToken))
         {
             return BadRequest(new { message = "FCM Token is required." });
         }
         
-        await _firebaseService.SendNotificationAsync(request.FcmToken, request.Title, request.Body);
-        return Ok(new { message = "Notification sent successfully." });
+        try
+        {
+            string messageId = await _firebaseService.SendNotificationAsync(request.FcmToken, request.Title, request.Body);
+            Console.WriteLine($"[DEBUG send-notification] Successfully sent FCM message. Message ID: '{messageId}'");
+            return Ok(new { message = "Notification sent successfully.", messageId = messageId });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR send-notification] Exception: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
+            return StatusCode(500, new { message = "Error sending notification", error = ex.Message, details = ex.ToString() });
+        }
     }
 }
