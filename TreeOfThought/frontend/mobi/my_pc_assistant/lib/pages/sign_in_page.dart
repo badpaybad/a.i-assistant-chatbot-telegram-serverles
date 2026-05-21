@@ -70,7 +70,7 @@ class _SignInPageState extends State<SignInPage> {
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email hoặc mật khẩu không đúng (Thử test@gmail.com / 12345678)')),
+          const SnackBar(content: Text('Đăng nhập thất bại. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu (Thử admin / admin123)')),
         );
       }
     }

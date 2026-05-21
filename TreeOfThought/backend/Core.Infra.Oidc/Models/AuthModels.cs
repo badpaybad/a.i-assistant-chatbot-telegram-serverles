@@ -96,5 +96,9 @@ public class TokenRequest
     [Microsoft.AspNetCore.Mvc.FromForm(Name = "code_verifier")]
     public string? CodeVerifier { get; set; }
 }
-
-
+public class RegisterFcmRequest
+{
+    public string FcmToken { get; set; } = string.Empty;
+    public string? DeviceId { get; set; }
+    public string? AppType { get; set; }
+}

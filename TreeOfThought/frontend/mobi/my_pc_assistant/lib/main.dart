@@ -21,6 +21,8 @@ import 'services/objectbox.dart';
 import 'package:tot_core/tot_core.dart';
 import 'package:tot_buss_files/tot_buss_files.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 late ObjectBox objectbox;
 
 void main() async {
@@ -63,6 +65,11 @@ void main() async {
       return Firebase.app(); // Return default app if already exists or just continue
     });
     debugPrint('Firebase initialized.');
+
+    // Khởi tạo NotificationService (để lấy FCM token ngay khi mở máy)
+    debugPrint('Initializing NotificationService...');
+    NotificationService.instance.initialize();
+    debugPrint('NotificationService initialized in background.');
   } catch (e) {
     debugPrint('Initialization error: $e');
     // Tiếp tục chạy app ngay cả khi có lỗi khởi tạo (để hiển thị UI thông báo lỗi sau)
@@ -102,6 +109,7 @@ class MyApp extends StatelessWidget {
     final themeService = context.watch<ThemeService>();
 
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'My PC Assistant',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

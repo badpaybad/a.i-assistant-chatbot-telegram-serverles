@@ -463,6 +463,31 @@ public class AuthController : ControllerBase
     return BadRequest(new { message = "Invalid current password" });
   }
 
+  [HttpPost("register-fcm")]
+  [AppAuthorize]
+  public async Task<IActionResult> RegisterFcm([FromBody] RegisterFcmRequest request)
+  {
+    var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+      return Unauthorized();
+
+    if (string.IsNullOrWhiteSpace(request.FcmToken))
+    {
+      return BadRequest(new { message = "FcmToken is required." });
+    }
+
+    try
+    {
+      await _notifyRepo.SaveTokenAsync(userId, request.FcmToken, request.DeviceId, request.AppType);
+      return Ok(new { message = "FCM token registered successfully." });
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"[AUTH] Error registering FCM token for user ID {userId}: {ex.Message}");
+      return StatusCode(500, new { message = "Error registering FCM token", error = ex.Message });
+    }
+  }
+
   private bool IsRedirectUriWhitelisted(string redirectUri)
   {
     var allowedRedirects = _config.GetSection("Oidc:AllowedClientRedirectUris").Get<List<string>>() ?? new List<string>();

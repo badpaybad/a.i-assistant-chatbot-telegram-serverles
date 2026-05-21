@@ -1,9 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:tot_core/tot_core.dart';
 import '../models/user_model.dart';
 import 'local_storage_service.dart';
+import 'notification_service.dart';
 
 class AuthService extends ChangeNotifier implements TotAuthService {
   static final AuthService instance = AuthService._internal();
@@ -94,30 +96,66 @@ class AuthService extends ChangeNotifier implements TotAuthService {
     return 'http://$ip:5000';
   }
 
-  Future<bool> signIn(String email, String password) async {
+  Future<bool> signIn(String username, String password) async {
     _isLoading = true;
     notifyListeners();
     
-    // Giả lập gọi API
-    await Future.delayed(const Duration(seconds: 2));
-    
-    if (email == 'test@gmail.com' && password == '12345678') {
-      _currentUser = UserModel(
-        id: '1',
-        name: 'John Smith',
-        email: email,
-        profileImageUrl: 'https://i.pravatar.cc/150?u=john',
+    try {
+      final token = NotificationService.instance.token;
+      final deviceId = NotificationService.instance.deviceId;
+      final String appType = Platform.isAndroid ? 'mobi android' : 'mobi ios';
+
+      debugPrint('[Auth] Attempting password login for $username on $_baseUrl...');
+      final response = await HttpClientService.instance.post(
+        '/api/auth/login',
+        data: {
+          'username': username,
+          'password': password,
+          'fcmToken': token,
+          'deviceId': deviceId,
+          'appType': appType,
+        },
       );
-      _accessToken = 'mock_jwt_token_for_test';
-      _isAuthenticated = true;
-      await _saveSession();
+
+      debugPrint('[Auth] Login response status: ${response.statusCode}');
+
+      if (response.statusCode == 200 && response.data != null) {
+        final responseData = response.data as Map<String, dynamic>;
+        
+        final String jwtToken = responseData['token'] as String;
+        _accessToken = jwtToken;
+        
+        debugPrint('[Auth] Login successful. Fetching detailed user info...');
+        final userResponse = await HttpClientService.instance.get<Map<String, dynamic>>('/api/auth/me');
+        
+        if (userResponse.statusCode == 200 && userResponse.data != null) {
+          final userData = userResponse.data!;
+          final preferredUsername = userData['preferred_username'] ?? userData['sub'];
+          _currentUser = UserModel(
+            id: userData['sub'] ?? 'auth_$preferredUsername',
+            name: userData['name'] ?? preferredUsername,
+            email: userData['email'] ?? '',
+            profileImageUrl: userData['picture'],
+          );
+          _isAuthenticated = true;
+          await _saveSession();
+          _isLoading = false;
+          notifyListeners();
+          
+          debugPrint('[Auth] Password login completed. Session saved for $preferredUsername.');
+          return true;
+        }
+      }
+      
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
+    } catch (e) {
+      debugPrint('[Auth] Password login failed with error: $e');
+      _isLoading = false;
+      notifyListeners();
+      return false;
     }
-    _isLoading = false;
-    notifyListeners();
-    return false;
   }
 
   Future<bool> signInWithSso() async {
@@ -170,6 +208,10 @@ class AuthService extends ChangeNotifier implements TotAuthService {
           _isLoading = false;
           notifyListeners();
           debugPrint('[SSO] Login successful for $username');
+
+          // Đăng ký FCM Token khi đăng nhập thành công
+          await registerFcmTokenWithBackend();
+
           return true;
         }
       }
@@ -231,6 +273,34 @@ class AuthService extends ChangeNotifier implements TotAuthService {
       _isAuthenticated = false;
       await _clearSession();
       notifyListeners();
+    }
+  }
+
+  Future<void> registerFcmTokenWithBackend() async {
+    try {
+      final token = NotificationService.instance.token;
+      final deviceId = NotificationService.instance.deviceId;
+      
+      if (token == null || token.isEmpty) {
+        debugPrint('[Auth] FCM Token is empty or null, skipping registration');
+        return;
+      }
+
+      final String appType = Platform.isAndroid ? 'mobi android' : 'mobi ios';
+
+      debugPrint('[Auth] Registering FCM token with backend...');
+      final response = await HttpClientService.instance.post(
+        '/api/auth/register-fcm',
+        data: {
+          'fcmToken': token,
+          'deviceId': deviceId,
+          'appType': appType,
+        },
+      );
+      
+      debugPrint('[Auth] Register FCM token response status: ${response.statusCode}');
+    } catch (e) {
+      debugPrint('[Auth] FCM Token register failed: $e');
     }
   }
 

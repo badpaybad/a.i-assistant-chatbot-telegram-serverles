@@ -1,9 +1,9 @@
 phát triển app mobi: my_pc_assistant ở folder:  TreeOfThought/frontend/mobi/my_pc_assistant
 
 stack dùng là dart, flutter, ant design mobile ... cần thêm gì thì bổ sung
-hỗ trợ android, ios đầy đủ 
+hỗ trợ android, ios đầy đủ
 
-ý tưởng về kiến trúc FE giống như phát triển web đọc: TreeOfThought/docs/frontend/yeucau.md  tìm hiểu và làm phù hợp với app mobi 
+ý tưởng về kiến trúc FE giống như phát triển web đọc: TreeOfThought/docs/frontend/yeucau.md  tìm hiểu và làm phù hợp với app mobi
 
     FE tổng kết nhanh về cấu trúc
         lib core 
@@ -34,3 +34,12 @@ hỗ trợ android, ios đầy đủ
 
 **cập nhật 1**
 tất cả việc gọi lên api server cần thông qua HttpClientService ở core , không gọi thẳng dio
+
+**cập nhật 2026-05-21 08:20:20**
+ ở TreeOfThought/docs/business-oidc/yeucau.md có cập nhật về việc nhận notify fcm. cần bổ xung cho mobi app ở folder TreeOfThought/frontend/mobi/my_pc_assistant
+    - mở máy lên cũng lấy sẵn fcm token device id
+    - bổ xung màn login gọi auth/login với username password 
+    - lúc login thành công (sso hoặc qua auth/login) cần gọi api để đăng ký fcm token với user
+        - do đăng nhập sso lên localhost:5000 thì web ui login hoạt động vẫn đúng, khi quay về app mobi cũng cần đăng ký fcm token device id cho user, cũng cần gọi api để lưu vào database 
+    - khi nhận noti khi ấn vào noti message nếu thấy body có text "files-folders" thì mở thẳng vào màn của module files folders
+        - noti cần hoạt động cả khi ứng dụng không bật, cả khi ứng dụng đang bật

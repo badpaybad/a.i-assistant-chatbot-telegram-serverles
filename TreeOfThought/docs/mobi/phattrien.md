@@ -62,7 +62,9 @@ graph TD
 Lớp core cung cấp hạ tầng kỹ thuật dùng chung cho toàn bộ dự án.
 
 ### 2.1. Authentication, Guard & Permission (Auth & Guard)
-- **SSO Login & Logout**: Tích hợp OIDC Provider thông qua thư viện `flutter_appauth`. Sau khi login thành công, Token sẽ được lưu trữ an toàn trong `flutter_secure_storage`.
+- **SSO Login & Logout**: Tích hợp OIDC Provider thông qua thư viện `flutter_appauth`. Khi đăng nhập thành công, Token sẽ được lưu trữ cục bộ. Khi đăng nhập thành công, hệ thống tự động đăng ký FCM token + Device ID tương ứng của thiết bị với Backend qua `POST /api/auth/register-fcm`.
+- **Password-Based Authentication (Đăng nhập bằng mật khẩu)**: Hỗ trợ đăng nhập trực tiếp qua form UI bằng cách gửi yêu cầu `POST /api/auth/login` với payload chứa `username`, `password`, `fcmToken`, `deviceId` (persistent UUID được lưu trữ trong SharedPreferences), và `appType`.
+- **Detailed User Profile Sync (Đồng bộ thông tin chi tiết)**: Sau khi đăng nhập thành công (SSO hoặc mật khẩu) và nhận được JWT token, hệ thống thực hiện một truy vấn `GET /api/auth/me` để đồng bộ thông tin chi tiết tài khoản của người dùng (bao gồm ID/Sub, tên hiển thị, email, ảnh đại diện) trước khi kích hoạt phiên làm việc toàn cục.
 - **Interceptors**: Tự động chèn token Bearer vào header của tất cả các API request qua Dio.
 - **Route Guarding**: Định nghĩa `RouteGuard` trong router của Flutter. Trước khi chuyển màn hình (route), hệ thống sẽ check session.
 - **Permission Checking (Claims)**: Tuân thủ logic kiểm tra quyền của Backend (BE Auth Attribute). Tạo một `TotPermission` widget trong Flutter để ẩn/hiển thị UI dựa trên claims của người dùng.
@@ -122,11 +124,169 @@ sequenceDiagram
   }
   ```
 
-### 2.5. Firebase FCM & Tối ưu hóa Dọn dẹp Notification
-- **Thông báo đẩy (FCM)**: Lắng nghe notification ở cả 3 trạng thái: Foreground, Background và Terminated.
-- **Tối ưu hóa Chi phí & Dữ liệu Firestore**:
-  > [!IMPORTANT]
-  > Sau khi Mobile App nhận được thông báo dữ liệu từ Firestore (như kết quả xử lý upload, rename, xóa, v.v.), xử lý logic hoàn tất thì **phải gọi ngay lập tức API xóa dữ liệu thông báo đó trên Firestore**. Tránh tích tụ rác dữ liệu, bảo mật thông tin và tối ưu hóa chi phí Firestore (read/write quota).
+### 2.5. Firebase FCM & Tối ưu hóa Dọn dẹp Notification (Cập nhật 2026-05-21)
+
+#### A. Yêu cầu & Thiết kế Tích hợp FCM
+Hệ thống Notification FCM cho Mobile App hoạt động dựa trên các nguyên tắc và luồng xử lý sau:
+
+1. **Khởi động Ứng dụng & Lấy Token / Device ID**:
+   - Khi ứng dụng khởi chạy (mở máy lên), `NotificationService` lập tức yêu cầu quyền từ hệ thống (Notification Permissions) và lấy FCM Token.
+   - Đồng thời lấy sẵn **Device ID** duy nhất. Vì ứng dụng cần tính di động và hạn chế thư viện native phức tạp (tránh lỗi build), Device ID sẽ được sinh ngẫu nhiên (dạng UUID) ở lần chạy đầu tiên và lưu vĩnh viễn vào `SharedPreferences` (KISS Principle). Nếu cần, có thể dùng kênh native platform `com.mypcassistant/device`.
+   - Lưu trữ cả FCM Token và Device ID vào `NotificationService` để sẵn sàng đăng ký khi có user đăng nhập.
+
+2. **Đăng ký Token khi Đăng nhập Thành công**:
+   - Ngay khi luồng SSO Login (`AuthService.signInWithSso()`) hoàn tất thành công và lấy được Access Token, ứng dụng sẽ thực hiện gọi API để đăng ký FCM Token, Device ID và AppType với Backend.
+   - **API Endpoint**: `POST /api/auth/register-fcm` (endpoint mới bổ sung trên Backend OIDC).
+   - **HttpClientService**: Việc gọi API bắt buộc thông qua `HttpClientService.instance` để tự động chèn header Authorization Bearer Token.
+   - **AppType**: Chỉ định rõ loại thiết bị (`"mobi android"` hoặc `"mobi ios"` tùy theo hệ điều hành đang chạy).
+
+3. **Điều hướng Thông minh khi nhấn vào Notification (Deep Linking / Routing)**:
+   - Khi nhận được thông báo, nếu người dùng ấn vào thông báo đó (hoặc thông báo tự động kích hoạt) và nội dung tin nhắn (`body` hoặc `data`) chứa từ khóa `"files-folders"`, ứng dụng sẽ **mở thẳng vào màn hình module Files/Folders (`/files-folders`)**.
+   - Việc điều hướng không phụ thuộc vào `BuildContext` nhờ sử dụng `GlobalKey<NavigatorState>` đăng ký tại root `MaterialApp` của `main.dart`.
+   - **Xử lý 3 Trạng thái Ứng dụng**:
+     - **Foreground (Đang bật và hoạt động)**: FirebaseMessaging.onMessage nhận thông tin. Tùy thuộc vào thiết kế có thể hiển thị In-app Banner hoặc thông báo dạng Toast, khi click vào sẽ điều hướng.
+     - **Background (Đang chạy ngầm)**: Lắng nghe qua `FirebaseMessaging.onMessageOpenedApp.listen()`. Khi người dùng click vào notification từ khay hệ thống, callback sẽ kích hoạt và thực hiện điều hướng đến `/files-folders`.
+     - **Terminated (Đang tắt hoàn toàn)**: Khi ứng dụng bị kill, việc click vào notification sẽ khởi động lại ứng dụng. Trong `main.dart` hoặc hàm khởi tạo chính, gọi `FirebaseMessaging.instance.getInitialMessage()` để kiểm tra xem ứng dụng có được mở từ việc click notification hay không. Nếu có và body chứa `"files-folders"`, sau khi check session tự động login thành công, ứng dụng sẽ tự động chuyển hướng thẳng tới màn hình `/files-folders` thay vì Home Page.
+
+4. **Tối ưu hóa Chi phí & Dữ liệu Firestore**:
+   > [!IMPORTANT]
+   > Sau khi Mobile App nhận được thông báo dữ liệu từ Firestore (như kết quả xử lý upload, rename, xóa, v.v.), xử lý logic hoàn tất thì **phải gọi ngay lập tức API xóa dữ liệu thông báo đó trên Firestore**. Tránh tích tụ rác dữ liệu, bảo mật thông tin và tối ưu hóa chi phí Firestore (read/write quota).
+
+#### B. Đặc tả Kỹ thuật Triển khai (Flutter Code Skeleton)
+
+##### 1. Thiết lập Điều hướng Toàn cục (`main.dart`)
+```dart
+// Khai báo Navigator Key toàn cục
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      navigatorKey: navigatorKey, // Đăng ký Navigator Key
+      title: 'My PC Assistant',
+      ...
+    );
+  }
+}
+```
+
+##### 2. Lấy Device ID & Token khi khởi chạy (`notification_service.dart`)
+```dart
+class NotificationService extends ChangeNotifier {
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  String? _token;
+  String? _deviceId;
+
+  String? get token => _token;
+  String? get deviceId => _deviceId;
+
+  Future<void> initialize() async {
+    // 1. Lấy Device ID duy nhất (KISS - Persistent UUID in SharedPreferences)
+    final prefs = LocalStorageService.prefs;
+    _deviceId = prefs.getString('device_id');
+    if (_deviceId == null || _deviceId!.isEmpty) {
+      _deviceId = 'mobi_${DateTime.now().millisecondsSinceEpoch}_${Random().nextInt(100000)}';
+      await prefs.setString('device_id', _deviceId!);
+    }
+
+    // 2. Yêu cầu quyền thông báo
+    NotificationSettings settings = await _fcm.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+      _token = await _fcm.getToken();
+      debugPrint('[FCM] Token: $_token');
+      debugPrint('[FCM] Device ID: $_deviceId');
+
+      // 3. Đăng ký các Listeners
+      _setupNotificationListeners();
+    }
+  }
+
+  void _setupNotificationListeners() {
+    // A. Foreground Listener
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      debugPrint('[FCM] Foreground message received: ${message.notification?.body}');
+      // Có thể hiển thị một custom in-app banner/dialog nếu muốn
+    });
+
+    // B. Background Listener (Khi click từ khay hệ thống khi app đang chạy ngầm)
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      debugPrint('[FCM] Background notification clicked!');
+      _handleNotificationClick(message);
+    });
+  }
+
+  // C. Terminated State (Kiểm tra khi app được mở từ trạng thái tắt hoàn toàn)
+  Future<void> checkInitialMessage() async {
+    RemoteMessage? initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      debugPrint('[FCM] App launched from terminated state via notification click!');
+      // Đợi một khoảng thời gian ngắn để router/UI khởi tạo xong rồi điều hướng
+      Future.delayed(const Duration(milliseconds: 800), () {
+        _handleNotificationClick(initialMessage);
+      });
+    }
+  }
+
+  void _handleNotificationClick(RemoteMessage message) {
+    final String? body = message.notification?.body;
+    final String? dataPayload = message.data['body'] ?? message.data['message'];
+    
+    // Kiểm tra xem body hoặc data payload có chứa "files-folders" hay không
+    bool shouldNavigateToFiles = false;
+    if (body != null && body.toLowerCase().contains('files-folders')) {
+      shouldNavigateToFiles = true;
+    } else if (dataPayload != null && dataPayload.toLowerCase().contains('files-folders')) {
+      shouldNavigateToFiles = true;
+    }
+
+    if (shouldNavigateToFiles) {
+      debugPrint('[FCM] Matching keyword "files-folders". Navigating directly to /files-folders...');
+      // Thực hiện điều hướng bằng Navigator Key toàn cục không cần context
+      navigatorKey.currentState?.pushNamed('/files-folders');
+    }
+  }
+}
+```
+
+##### 3. Đăng ký Token khi Đăng nhập Thành công (`auth_service.dart`)
+```dart
+// Gọi sau khi đăng nhập thành công
+Future<void> registerFcmTokenWithBackend() async {
+  try {
+    final token = NotificationService.instance.token;
+    final deviceId = NotificationService.instance.deviceId;
+    
+    if (token == null || token.isEmpty) {
+      debugPrint('[Auth] FCM Token is empty or null, skipping registration');
+      return;
+    }
+
+    final String appType = Platform.isAndroid ? 'mobi android' : 'mobi ios';
+
+    debugPrint('[Auth] Registering FCM token with backend...');
+    final response = await HttpClientService.instance.post(
+      '/api/auth/register-fcm',
+      data: {
+        'fcmToken': token,
+        'deviceId': deviceId,
+        'appType': appType,
+      },
+    );
+    
+    debugPrint('[Auth] Register FCM token response status: ${response.statusCode}');
+  } catch (e) {
+    debugPrint('[Auth] FCM Token register failed: $e');
+  }
+}
+```
 
 ### 2.6. Internationalization (i18n / Localization)
 - Giao diện di động hoàn toàn hỗ trợ i18n cực kỳ mạnh mẽ:
