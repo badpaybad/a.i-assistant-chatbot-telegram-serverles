@@ -74,5 +74,6 @@ cần tạo tot-input vào shared đáp ứng cho việc
 cần dùng tot-input password cho các nơi cần password trong
 
 **cập nhật 2026-05-21 16:46:36**
-
-    đăng ký notification fcm global listener, msg notify display template global, dùng service worker firebase-messaging-sw.js để nhận noti ngay cả khi ko mở trình duyệt  
+cập nhật firebase ở core 
+    cần lấy fcm token device id globaly để dùng cho chỗ khác ví dụ ở login khi login thành công sẽ lưu fcm token device id này cho user đó xem thêm ở TreeOfThought/docs/business-oidc/yeucau.md 
+    đăng ký notification fcm global listener, msg notify display template global, dùng service worker firebase-messaging-sw.js để nhận noti ngay cả khi ko mở trình duyệt .

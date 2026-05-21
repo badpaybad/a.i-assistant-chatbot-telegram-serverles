@@ -202,3 +202,20 @@ Chúng ta tạo ra một DB Context riêng biệt mang tên `NotifyDbContext` đ
     - Cho phép Admin chọn 1 trong các thiết bị đã liên kết qua bộ chọn (`nz-select`), hiển thị dạng: `Thiết bị: {DeviceId} ({AppType})`.
     - Form nhập Tiêu đề, Nội dung thông điệp chi tiết.
     - Nhấn nút Gửi sẽ gọi API đẩy thông điệp tức thời lên thiết bị di động của họ.
+
+### D. Cập nhật 2026-05-21 15:20:20: Tối ưu hóa FCM Token Lifecycle (Caching & Reuse)
+Để tối ưu hóa hiệu năng, giảm thiểu số lượng cuộc gọi API lấy Token không cần thiết từ Firebase, và nâng cao trải nghiệm người dùng (mượt mà, không giật lag khi mở modal gửi thông báo), vòng đời và cơ chế tái sử dụng của FCM Token được thiết lập như sau:
+1. **Lấy Token Toàn cục Tự động (Auto-Fetch on App Init):**
+   - Khi tải trang (Application bootstrap), `FirebaseService` trong `@tot/core` sẽ tự động thực hiện cuộc gọi không đồng bộ lấy `fcm token device id` thông qua phương thức `getFCMToken()`.
+   - Để không chặn hoặc làm chậm quá trình tải giao diện chính, tiến trình này được bọc trong một khối `setTimeout` an toàn (1000ms).
+2. **Cơ chế Cache và Tái Sử Dụng (Caching & Memory Persistence):**
+   - Sau khi lấy token thành công từ Firebase, token sẽ được lưu giữ trực tiếp vào biến bộ nhớ `currentFcmToken` của `FirebaseService`.
+   - **Tối ưu hóa Vòng Đời:** Trừ khi người dùng đăng xuất (Logout) hoặc token bị thu hồi, hệ thống **không** thực hiện yêu cầu lấy mới token từ Firebase ở bất kỳ thời điểm nào sau đó. Mọi yêu cầu lấy token đều truy cập trực tiếp và tức thời vào giá trị đã cache thông qua getter đồng bộ `getCurrentFCMToken()`.
+3. **Đăng ký FCM Token Tự động và Toàn cục (Auto-Registration Flow):**
+   - Khi người dùng đăng nhập thành công (bằng Form đăng nhập Username/Password thông thường hoặc qua SSO/Mạng xã hội), hoặc khi tải trang và phát hiện một phiên làm việc (Session) OIDC hợp lệ đã có sẵn, `AuthService` sẽ tự động lấy token từ cache và thực hiện đăng ký lên Backend qua endpoint `POST /api/auth/register-fcm`.
+   - Việc này đảm bảo thông tin token thiết bị của trình duyệt luôn được cập nhật chính xác và sẵn sàng ở Backend OIDC mà không yêu cầu người dùng phải thực hiện bất kỳ thao tác thủ công nào.
+4. **Trải nghiệm Gửi thông báo Thực tế trong `NotifyComponent`:**
+   - Khi Admin mở Modal gửi thông báo cho một người dùng bất kỳ:
+     - Component sẽ lấy token của trình duyệt hiện tại thông qua `FirebaseService.getCurrentFCMToken()` (đã được cache toàn cục khi tải trang).
+     - Token này sẽ được gắn thẻ đặc biệt `(Thiết bị hiện tại)` và hiển thị ngay trên danh sách lựa chọn thiết bị nhận của Modal.
+     - Nếu token thiết bị hiện tại chưa được đăng ký trong DB của user nhận tin, hệ thống tự động chèn thêm một tùy chọn giả định `Thiết bị hiện tại (Chưa lưu)` lên đầu danh sách. Điều này cho phép gửi thông báo thử nghiệm trực tiếp đến chính trình duyệt đang thao tác một cách tức thì và vô cùng thuận lợi.

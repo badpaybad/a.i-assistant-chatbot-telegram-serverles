@@ -17,6 +17,7 @@ import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
 import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
+import { FirebaseService, AuthService } from '@tot/core';
 
 @Component({
   selector: 'tot-notify',
@@ -199,6 +200,8 @@ export class NotifyComponent implements OnInit {
   private message = inject(NzMessageService);
   private translate = inject(TranslocoService);
   private cdr = inject(ChangeDetectorRef);
+  private firebase = inject(FirebaseService);
+  private auth = inject(AuthService);
 
   users: any[] = [];
   loading = false;
@@ -217,6 +220,7 @@ export class NotifyComponent implements OnInit {
   loadingTokens = false;
   sending = false;
   fcmTokens: any[] = [];
+  currentToken: string | null = null;
   
   payload = {
     fcmToken: '',
@@ -287,10 +291,33 @@ export class NotifyComponent implements OnInit {
     this.loadingTokens = true;
 
     try {
+      try {
+        this.currentToken = await this.firebase.getFCMToken();
+      } catch (e) {
+        console.warn('Failed to get current FCM token', e);
+        this.currentToken = null;
+      }
+
       const tokens: any = await this.authMgmt.getUserFcmTokens(user.id);
-      this.fcmTokens = tokens || [];
+      this.fcmTokens = tokens ? [...tokens] : [];
+
+      const currentUser = this.auth.getCurrentUser();
+      const isSelf = currentUser && currentUser.id === user.id;
+
+      if (this.currentToken && isSelf) {
+        const hasCurrentToken = this.fcmTokens.some(t => t.fcmToken === this.currentToken);
+        if (!hasCurrentToken) {
+          this.fcmTokens.unshift({
+            fcmToken: this.currentToken,
+            deviceId: 'Thiết bị hiện tại (Chưa lưu)',
+            appType: 'web'
+          });
+        }
+      }
+
       if (this.fcmTokens.length > 0) {
-        this.payload.fcmToken = this.fcmTokens[0].fcmToken;
+        const currentTokenObj = this.fcmTokens.find(t => t.fcmToken === this.currentToken);
+        this.payload.fcmToken = currentTokenObj ? currentTokenObj.fcmToken : this.fcmTokens[0].fcmToken;
       }
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi tải danh sách thiết bị nhận'));
@@ -306,11 +333,13 @@ export class NotifyComponent implements OnInit {
   }
 
   getDeviceLabel(token: any): string {
+    const isCurrent = this.currentToken && token.fcmToken === this.currentToken;
+    const currentSuffix = isCurrent ? ` (${this.translate.translate('Thiết bị hiện tại')})` : '';
     const appTypeLabel = token.appType ? ` (${token.appType})` : '';
     if (token.deviceId) {
-      return `Thiết bị: ${token.deviceId}${appTypeLabel}`;
+      return `Thiết bị: ${token.deviceId}${appTypeLabel}${currentSuffix}`;
     }
-    return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}`;
+    return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}${currentSuffix}`;
   }
 
   async send() {

@@ -2,7 +2,7 @@ import {
   APP_CLAIMS,
   AuthService,
   TotInputComponent
-} from "./chunk-4OJCKPON.js";
+} from "./chunk-SQTK734B.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
@@ -17,7 +17,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-MYJU3Y43.js";
+} from "./chunk-G6AWJS3A.js";
 import "./chunk-F2GHQOYI.js";
 import {
   NzFormControlComponent,
@@ -33,11 +33,11 @@ import {
 } from "./chunk-FY72G7LH.js";
 import {
   provideNhanDienKhuonMat
-} from "./chunk-GUCJZTKE.js";
+} from "./chunk-JWHACJCL.js";
 import {
   FIREBASE_CONFIG,
   FirebaseService
-} from "./chunk-ICEMZKP7.js";
+} from "./chunk-XGF6A4WM.js";
 import "./chunk-IRGOCD6C.js";
 import {
   API_URL,
@@ -4236,22 +4236,22 @@ var routes = [
         children: [
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-2XRNMAKD.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-3NIYZSJW.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-2XRNMAKD.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-3NIYZSJW.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-2XRNMAKD.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-3NIYZSJW.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-2XRNMAKD.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-3NIYZSJW.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4262,42 +4262,42 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "notify",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.NotifyComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.NotifyComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "G\u1EEDi th\xF4ng b\xE1o" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-ALVT6ABQ.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-MN6VPWBR.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4305,12 +4305,12 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-BRWAUUBK.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-LIJ56ZKS.js").then((m) => m.FilesFolders)
       },
       {
         path: "modules/nhan-dien-khuon-mat",
         data: { breadcrumb: "Nh\u1EADn di\u1EC7n khu\xF4n m\u1EB7t" },
-        loadComponent: () => import("./chunk-5JTIPQYS.js").then((m) => m.NhanDienKhuonMatComponent)
+        loadComponent: () => import("./chunk-RDSZVYQB.js").then((m) => m.NhanDienKhuonMatComponent)
       }
     ]
   },
@@ -4627,7 +4627,17 @@ var _AppComponent = class _AppComponent {
     this.templateService.registerTemplate("html", this.htmlNotificationTemplate);
     this.firebase.onMessageReceived((payload) => {
       var _a, _b;
-      this.notification.success(((_a = payload.notification) == null ? void 0 : _a.title) || "Th\xF4ng b\xE1o m\u1EDBi", ((_b = payload.notification) == null ? void 0 : _b.body) || "", { nzDuration: 0 });
+      const title = ((_a = payload.notification) == null ? void 0 : _a.title) || "Th\xF4ng b\xE1o m\u1EDBi";
+      const body = ((_b = payload.notification) == null ? void 0 : _b.body) || "";
+      const template = this.templateService.getTemplate("html");
+      if (template) {
+        this.notification.create("success", title, template, {
+          nzData: { content: body },
+          nzDuration: 0
+        });
+      } else {
+        this.notification.success(title, body, { nzDuration: 0 });
+      }
     });
   }
 };

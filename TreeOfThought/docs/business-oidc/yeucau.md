@@ -169,3 +169,5 @@ Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
 
 **cập nhật 2026-05-21 15:20:20**
 xem cập nhật trước **cập nhật 2026-05-21 08:20:20** do khi load trang đã lấy fcm token device id rồi. nếu chưa logout thì sẽ không lấy mới fcm token id nữa, mà dùng cái đang hiện hành dùng 
+
+fcm token device id được lấy ở firbase trong core xem TreeOfThought/docs/frontend/yeucau.md 

@@ -199,6 +199,28 @@ subscribeOnce(requestId: string, callback: (data: any) => void) {
 }
 ```
 
+### 3.3. Tích hợp FCM Token Toàn cục và Background Service Worker
+
+Để tối ưu hóa việc quản lý và đẩy thông báo (FCM Push Notifications), hệ thống triển khai cơ chế thu thập, lưu trữ và đăng ký token toàn cục:
+
+*   **Tự động lấy và cache FCM Token**:
+    - Ngay khi ứng dụng khởi chạy (`FirebaseService` constructor), hệ thống sử dụng một `setTimeout` an toàn để kích hoạt phương thức `getFCMToken()`.
+    - Token lấy được sẽ lưu trữ trực tiếp vào biến bộ nhớ `currentFcmToken` của `FirebaseService`, cho phép các thành phần khác truy cập đồng bộ lập tức qua phương thức `getCurrentFCMToken()` không gây trễ giao diện.
+
+*   **Tự động đăng ký FCM Token lên Backend**:
+    - Để đảm bảo Backend luôn có thông tin thiết bị và token mới nhất phục vụ gửi noti, `AuthService` chịu trách nhiệm tự động gửi token lên API `/api/auth/register-fcm` ngay khi người dùng có phiên làm việc hợp lệ.
+    - Luồng tự động đăng ký diễn ra tại:
+      1.  **Khi tải trang (Startup)**: Nếu người dùng đã đăng nhập (có JWT token), hệ thống tự động đẩy token lên Backend sau khi nạp cấu hình claims (`syncClaims`).
+      2.  **Khi đăng nhập thành công**: Cả luồng đăng nhập Username/Password thông thường và Social SSO đều kích hoạt đăng ký FCM Token lập tức sau khi lưu session cookie.
+
+*   **Nhận thông báo trong nền (Background Messaging)**:
+    - Sử dụng Service Worker `/admin/firebase-messaging-sw.js` (phạm vi scope `/admin/`) hoạt động độc lập dưới nền trình duyệt để lắng nghe sự kiện `onBackgroundMessage`.
+    - Khi có thông báo mới, Service Worker tự động gọi `self.registration.showNotification(...)` hiển thị trực tiếp lên hệ điều hành ngay cả khi người dùng không mở tab trình duyệt.
+
+*   **Hiển thị thông báo khi ứng dụng đang mở (Foreground Template)**:
+    - App Shell (`app.ts`) đăng ký một listener sự kiện foreground `onMessageReceived` toàn cục.
+    - Khi nhận được payload, hệ thống sử dụng `templateService.getTemplate('html')` (khai báo dạng template động chứa `[innerHTML]` tại `app.html`) kết hợp với `AppNotificationService` để hiển thị thông báo toast góc trên bên phải màn hình một cách đồng nhất, thẩm mỹ cao.
+
 ---
 
 ## 🧩 4. Giải pháp Gọi Component chéo (Component Registry)

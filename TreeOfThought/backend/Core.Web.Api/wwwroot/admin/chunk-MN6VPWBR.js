@@ -6,7 +6,7 @@ import {
   AuthService,
   CLAIMS_VERSION,
   TotInputComponent
-} from "./chunk-4OJCKPON.js";
+} from "./chunk-SQTK734B.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
@@ -33,7 +33,9 @@ import {
   NzRangePickerComponent,
   NzRowDirective
 } from "./chunk-FY72G7LH.js";
-import "./chunk-ICEMZKP7.js";
+import {
+  FirebaseService
+} from "./chunk-XGF6A4WM.js";
 import "./chunk-IRGOCD6C.js";
 import {
   A11yModule,
@@ -7560,6 +7562,8 @@ var _NotifyComponent = class _NotifyComponent {
     this.message = inject(NzMessageService);
     this.translate = inject(TranslocoService);
     this.cdr = inject(ChangeDetectorRef);
+    this.firebase = inject(FirebaseService);
+    this.auth = inject(AuthService);
     this.users = [];
     this.loading = false;
     this.pageIndex = 1;
@@ -7573,6 +7577,7 @@ var _NotifyComponent = class _NotifyComponent {
     this.loadingTokens = false;
     this.sending = false;
     this.fcmTokens = [];
+    this.currentToken = null;
     this.payload = {
       fcmToken: "",
       title: "",
@@ -7635,10 +7640,29 @@ var _NotifyComponent = class _NotifyComponent {
     this.isModalVisible = true;
     this.loadingTokens = true;
     try {
+      try {
+        this.currentToken = await this.firebase.getFCMToken();
+      } catch (e) {
+        console.warn("Failed to get current FCM token", e);
+        this.currentToken = null;
+      }
       const tokens = await this.authMgmt.getUserFcmTokens(user.id);
-      this.fcmTokens = tokens || [];
+      this.fcmTokens = tokens ? [...tokens] : [];
+      const currentUser = this.auth.getCurrentUser();
+      const isSelf = currentUser && currentUser.id === user.id;
+      if (this.currentToken && isSelf) {
+        const hasCurrentToken = this.fcmTokens.some((t) => t.fcmToken === this.currentToken);
+        if (!hasCurrentToken) {
+          this.fcmTokens.unshift({
+            fcmToken: this.currentToken,
+            deviceId: "Thi\u1EBFt b\u1ECB hi\u1EC7n t\u1EA1i (Ch\u01B0a l\u01B0u)",
+            appType: "web"
+          });
+        }
+      }
       if (this.fcmTokens.length > 0) {
-        this.payload.fcmToken = this.fcmTokens[0].fcmToken;
+        const currentTokenObj = this.fcmTokens.find((t) => t.fcmToken === this.currentToken);
+        this.payload.fcmToken = currentTokenObj ? currentTokenObj.fcmToken : this.fcmTokens[0].fcmToken;
       }
     } catch (e) {
       this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i danh s\xE1ch thi\u1EBFt b\u1ECB nh\u1EADn"));
@@ -7652,11 +7676,13 @@ var _NotifyComponent = class _NotifyComponent {
     this.selectedUser = null;
   }
   getDeviceLabel(token) {
+    const isCurrent = this.currentToken && token.fcmToken === this.currentToken;
+    const currentSuffix = isCurrent ? ` (${this.translate.translate("Thi\u1EBFt b\u1ECB hi\u1EC7n t\u1EA1i")})` : "";
     const appTypeLabel = token.appType ? ` (${token.appType})` : "";
     if (token.deviceId) {
-      return `Thi\u1EBFt b\u1ECB: ${token.deviceId}${appTypeLabel}`;
+      return `Thi\u1EBFt b\u1ECB: ${token.deviceId}${appTypeLabel}${currentSuffix}`;
     }
-    return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}`;
+    return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}${currentSuffix}`;
   }
   async send() {
     if (!this.payload.fcmToken) {
@@ -7962,7 +7988,7 @@ var NotifyComponent = _NotifyComponent;
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(NotifyComponent, { className: "NotifyComponent", filePath: "projects/tot/business-oidc/src/lib/notify/notify.component.ts", lineNumber: 197 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(NotifyComponent, { className: "NotifyComponent", filePath: "projects/tot/business-oidc/src/lib/notify/notify.component.ts", lineNumber: 198 });
 })();
 export {
   AclListComponent,
@@ -7974,4 +8000,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-ALVT6ABQ.js.map
+//# sourceMappingURL=chunk-MN6VPWBR.js.map

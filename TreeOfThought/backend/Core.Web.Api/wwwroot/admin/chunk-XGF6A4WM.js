@@ -13358,6 +13358,7 @@ var FIRESTORE_NOTIFY_PATH_PREFIX = "commandresults";
 var _FirebaseService = class _FirebaseService {
   constructor() {
     this.config = inject(FIREBASE_CONFIG);
+    this.currentFcmToken = null;
     this.firebaseUserSubject = new BehaviorSubject(null);
     this.user$ = this.firebaseUserSubject.asObservable();
     this.app = initializeApp(this.config);
@@ -13367,6 +13368,17 @@ var _FirebaseService = class _FirebaseService {
     onAuthStateChanged(this.auth, (user) => {
       this.firebaseUserSubject.next(user);
     });
+    if (typeof window !== "undefined") {
+      setTimeout(() => {
+        this.getFCMToken().then((token) => {
+          if (token) {
+            console.log("[FirebaseService] FCM Token auto-fetched and cached globally:", token);
+          }
+        }).catch((err) => {
+          console.warn("[FirebaseService] Failed to auto-fetch FCM token:", err);
+        });
+      }, 1e3);
+    }
   }
   isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -13467,12 +13479,16 @@ var _FirebaseService = class _FirebaseService {
     });
     return unsubscribe;
   }
-  async getFCMToken() {
+  async getFCMToken(forceRefresh = false) {
     var _a;
+    if (this.currentFcmToken && !forceRefresh) {
+      return this.currentFcmToken;
+    }
     const messaging = await this.initMessaging();
     if (!messaging)
       return null;
     try {
+      let token = null;
       if ("serviceWorker" in navigator) {
         const baseHref = ((_a = document.querySelector("base")) == null ? void 0 : _a.getAttribute("href")) || "/";
         const swPath = `${baseHref}firebase-messaging-sw.js`.replace("//", "/");
@@ -13493,18 +13509,24 @@ var _FirebaseService = class _FirebaseService {
             }
           });
         }
-        const token2 = await getToken2(messaging, {
+        token = await getToken2(messaging, {
           vapidKey: this.config.vapidKey,
           serviceWorkerRegistration: registration
         });
-        return token2;
+      } else {
+        token = await getToken2(messaging, { vapidKey: this.config.vapidKey });
       }
-      const token = await getToken2(messaging, { vapidKey: this.config.vapidKey });
+      if (token) {
+        this.currentFcmToken = token;
+      }
       return token;
     } catch (error) {
       console.error("Failed to get FCM token", error);
       return null;
     }
+  }
+  getCurrentFCMToken() {
+    return this.currentFcmToken;
   }
   async onMessageReceived(callback) {
     const messaging = await this.initMessaging();
@@ -13533,4 +13555,4 @@ export {
   FIREBASE_CONFIG,
   FirebaseService
 };
-//# sourceMappingURL=chunk-ICEMZKP7.js.map
+//# sourceMappingURL=chunk-XGF6A4WM.js.map

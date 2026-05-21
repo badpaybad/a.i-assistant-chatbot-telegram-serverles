@@ -28,11 +28,18 @@ export class AppComponent implements AfterViewInit {
 
     // Global FCM listener for foreground messages
     this.firebase.onMessageReceived((payload: any) => {
-      this.notification.success(
-        payload.notification?.title || 'Thông báo mới',
-        payload.notification?.body || '',
-        { nzDuration: 0 }
-      );
+      const title = payload.notification?.title || 'Thông báo mới';
+      const body = payload.notification?.body || '';
+      
+      const template = this.templateService.getTemplate('html');
+      if (template) {
+        this.notification.create('success', title, template, {
+          nzData: { content: body },
+          nzDuration: 0
+        });
+      } else {
+        this.notification.success(title, body, { nzDuration: 0 });
+      }
     });
   }
 }

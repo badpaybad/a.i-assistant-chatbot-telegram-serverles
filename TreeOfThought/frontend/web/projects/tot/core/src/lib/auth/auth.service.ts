@@ -189,6 +189,9 @@ export class AuthService {
       this.currentUserSubject.next(response);
       this.claimsUpdatedSubject.next();
 
+      // Automatically register the current FCM token globally
+      this.registerFcmTokenGlobally();
+
     } catch (e: any) {
       console.error('Failed to sync claims', e);
       if (e.status === 404 || e.status === 401) {
@@ -238,5 +241,54 @@ export class AuthService {
   getCurrentUser() {
     const user = localStorage.getItem('user_profile');
     return user ? JSON.parse(user) : null;
+  }
+
+  async registerFcmTokenGlobally() {
+    try {
+      // 1. Get FCM token from FirebaseService (retrieved instantly from global cache)
+      const fcmToken = await this.firebase.getFCMToken();
+      if (!fcmToken) {
+        console.warn('[AuthService] No FCM Token available to register globally.');
+        return;
+      }
+
+      // 2. Resolve/Get unique Device ID for the browser session
+      let deviceId = localStorage.getItem('device_id');
+      if (!deviceId) {
+        deviceId = 'web_' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('device_id', deviceId);
+      }
+
+      // 3. Resolve appType (defaults to 'admin', checks client_id parameter in returnUrl for others)
+      let appType = 'admin';
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('returnUrl');
+        if (returnUrl) {
+          let fullUrl = returnUrl;
+          if (!returnUrl.startsWith('http')) {
+            fullUrl = window.location.origin + (returnUrl.startsWith('/') ? '' : '/') + returnUrl;
+          }
+          const innerUrl = new URL(fullUrl);
+          const innerParams = new URLSearchParams(innerUrl.search);
+          const clientId = innerParams.get('client_id');
+          if (clientId === 'my_pc_assistant') {
+            appType = 'mobi android';
+          }
+        }
+      } catch (e) {
+        console.warn('[AuthService] Failed to parse returnUrl for appType:', e);
+      }
+
+      // 4. Send HTTP POST to OIDC Auth Controller register-fcm endpoint
+      const response = await this.http.post('/api/auth/register-fcm', {
+        fcmToken: fcmToken,
+        deviceId: deviceId,
+        appType: appType
+      });
+      console.log('[AuthService] FCM Token registered globally successfully:', response);
+    } catch (error) {
+      console.warn('[AuthService] Failed to register FCM token globally:', error);
+    }
   }
 }

@@ -26,6 +26,7 @@ export class FirebaseService {
   private messaging?: Messaging;
   private messagingPromise?: Promise<Messaging | undefined>;
   private config = inject(FIREBASE_CONFIG);
+  private currentFcmToken: string | null = null;
 
   private firebaseUserSubject = new BehaviorSubject<User | null>(null);
   public user$ = this.firebaseUserSubject.asObservable();
@@ -39,6 +40,18 @@ export class FirebaseService {
     onAuthStateChanged(this.auth, (user) => {
       this.firebaseUserSubject.next(user);
     });
+
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        this.getFCMToken().then(token => {
+          if (token) {
+            console.log('[FirebaseService] FCM Token auto-fetched and cached globally:', token);
+          }
+        }).catch(err => {
+          console.warn('[FirebaseService] Failed to auto-fetch FCM token:', err);
+        });
+      }, 1000);
+    }
   }
 
   private isMobile(): boolean {
@@ -157,10 +170,14 @@ export class FirebaseService {
     return unsubscribe;
   }
 
-  async getFCMToken(): Promise<string | null> {
+  async getFCMToken(forceRefresh = false): Promise<string | null> {
+    if (this.currentFcmToken && !forceRefresh) {
+      return this.currentFcmToken;
+    }
     const messaging = await this.initMessaging();
     if (!messaging) return null;
     try {
+      let token: string | null = null;
       if ('serviceWorker' in navigator) {
         const baseHref = document.querySelector('base')?.getAttribute('href') || '/';
         const swPath = `${baseHref}firebase-messaging-sw.js`.replace('//', '/');
@@ -184,19 +201,26 @@ export class FirebaseService {
           });
         }
 
-        const token = await getToken(messaging, {
+        token = await getToken(messaging, {
           vapidKey: this.config.vapidKey,
           serviceWorkerRegistration: registration,
         });
-        return token;
+      } else {
+        token = await getToken(messaging, { vapidKey: this.config.vapidKey });
       }
 
-      const token = await getToken(messaging, { vapidKey: this.config.vapidKey });
+      if (token) {
+        this.currentFcmToken = token;
+      }
       return token;
     } catch (error) {
       console.error('Failed to get FCM token', error);
       return null;
     }
+  }
+
+  getCurrentFCMToken(): string | null {
+    return this.currentFcmToken;
   }
 
   async onMessageReceived(callback: (payload: any) => void) {
