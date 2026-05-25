@@ -78,6 +78,24 @@ public class CqrsDispatcher : IDispatcher
                     continue;
                 }
 
+                // Unwrap nested compiler-generated async state machines to find original controller/handler
+                while (type != null && 
+                       (type.Name.StartsWith("<") || 
+                        type.CustomAttributes.Any(a => a.AttributeType.Name == "CompilerGeneratedAttribute")))
+                {
+                    type = type.DeclaringType;
+                }
+
+                if (type == null) continue;
+
+                // Re-verify after unwrapping
+                if (type.Assembly.FullName?.StartsWith("System") == true ||
+                    type.Assembly.FullName?.StartsWith("Microsoft") == true ||
+                    type.FullName?.StartsWith("Core.Infra.Cqrs") == true)
+                {
+                    continue;
+                }
+
                 return type.FullName;
             }
         }
@@ -97,6 +115,8 @@ public class CqrsDispatcher : IDispatcher
     /// <returns></returns>
     public async Task SendAsync<TCommand>(TCommand command, bool useMemoryMode = false) where TCommand : IBaseCommand
     {
+        var sourceComponent = ResolveSourceComponent();
+
         var queueName = command.QueueName ?? CqrsExtensions.GetQueueNameFromCommand(command.GetType())!;
         if (string.IsNullOrEmpty(queueName)) queueName = command.GetType().FullName!;
 
@@ -122,7 +142,6 @@ public class CqrsDispatcher : IDispatcher
         }
 
         var json = JsonSerializer.Serialize(command, CqrsJsonOptions.Default);
-        var sourceComponent = ResolveSourceComponent();
         var dbLogger = _serviceProvider.GetService<CqrsDbLogger>();
 
         // 2. Redis Telemetry: Total counters
@@ -326,6 +345,8 @@ public class CqrsDispatcher : IDispatcher
     /// <returns></returns>
     public async Task PublishAsync<TEvent>(TEvent @event, bool useMemoryMode = false) where TEvent : IBaseEvent
     {
+        var sourceComponent = ResolveSourceComponent();
+
         var topic = @event.TopicName ?? CqrsExtensions.GetTopicNameFromEvent(@event.GetType())!;
         if (string.IsNullOrEmpty(topic)) topic = @event.GetType().FullName!;
 
@@ -351,7 +372,6 @@ public class CqrsDispatcher : IDispatcher
         }
 
         var json = JsonSerializer.Serialize(@event, CqrsJsonOptions.Default);
-        var sourceComponent = ResolveSourceComponent();
         var dbLogger = _serviceProvider.GetService<CqrsDbLogger>();
 
         // 2. Redis Telemetry: Total counters
