@@ -10,6 +10,11 @@
   border-right: 1px solid #f0f0f0;
   height: 100%;
   overflow-y: auto;
+  transition: border-right 0.3s;
+}
+
+::ng-deep .ant-layout-sider-collapsed.folder-sider {
+  border-right: none !important;
 }
 
 .explorer-content {

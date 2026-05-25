@@ -17,7 +17,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-KSNWXBPO.js";
+} from "./chunk-F7ULWH2Z.js";
 import "./chunk-F2GHQOYI.js";
 import {
   NzFormControlComponent,
@@ -4305,7 +4305,7 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-B2VUPL3J.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-THVRZ6EK.js").then((m) => m.FilesFolders)
       },
       {
         path: "modules/nhan-dien-khuon-mat",

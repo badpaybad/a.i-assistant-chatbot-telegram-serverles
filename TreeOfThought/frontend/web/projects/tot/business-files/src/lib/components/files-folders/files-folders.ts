@@ -27,6 +27,7 @@ export class FilesFolders {
   }
 
   selectedFolderId: string | null = null;
+  isTreeCollapsed = false;
 
   onFolderSelected(folderId: string | null): void {
     this.selectedFolderId = folderId;
@@ -35,5 +36,9 @@ export class FilesFolders {
   onFolderCreated(): void {
     if (this.folderTree) this.folderTree.loadTree();
     if (this.fileExplorer) this.fileExplorer.loadContent();
+  }
+
+  onToggleTree(): void {
+    this.isTreeCollapsed = !this.isTreeCollapsed;
   }
 }

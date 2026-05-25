@@ -76,6 +76,22 @@ graph TD
   - **Bước 3 (Xóa GCS theo Prefix):** Gọi `ListFilesAsync` trên GCS với prefix là đường dẫn thư mục hiện tại để tìm kiếm và quét sạch mọi tệp tin mồ côi (không có trong DB nhưng tồn tại trên GCS) nhằm tối ưu chi phí Firestore/GCS.
   - **Bước 4 (Xóa DB):** Xóa toàn bộ tệp tin và thư mục con ra khỏi DB trong cùng một Transaction an toàn.
 
+### F. Tối ưu Table và hiển thị Tên file trên màn hình hẹp (Cập nhật 2026-05-25)
+- **Cố định cột Hành động (Fixed Column):**
+  - Tích hợp cấu hình `[scroll]="{ x: '1000px' }"` cho `tot-table` hiển thị danh sách file chính, và `[scroll]="{ x: '800px' }"` cho `tot-table` tìm kiếm.
+  - Kích hoạt cơ chế fixed column của `ng-zorro-antd` thông qua thuộc tính `right: true` sẵn có của cột `action`. Khi màn hình bị thu hẹp, thanh cuộn ngang sẽ xuất hiện, cột hành động sẽ được cố định ghim chặt ở phía bên phải để người dùng luôn thao tác được.
+- **Tối ưu hiển thị Tên file:**
+  - Định nghĩa style `.file-name-cell` trong `file-explorer.css` với các thuộc tính `white-space: normal; word-break: break-all; cursor: pointer; color: #1890ff; display: inline-flex; align-items: center;` để đảm bảo tên file luôn tự động xuống dòng và hiển thị đầy đủ, không bị cắt ngắn hoặc hiển thị dấu chấm lửng cẩu thảo khi không gian bị thu hẹp.
+  - Thêm hiệu ứng hover đổi màu (`color: #40a9ff; text-decoration: underline;`) tạo cảm giác premium và dễ nhận biết liên kết click để xem chi tiết.
+
+### G. Hỗ trợ Ẩn/Hiện Cây Thư mục (Folder Treeview) (Cập nhật 2026-05-25)
+- **Nút Toggle Thư mục:**
+  - Bổ sung nút bấm ẩn/hiện folder treeview tại thanh công cụ (Toolbar) cạnh nút "Thêm mới".
+  - Sử dụng icon trực quan `menu-fold` khi cây thư mục đang hiển thị và `menu-unfold` khi đang ẩn, kèm Tooltip động tương ứng ("Ẩn thư mục" / "Hiện thư mục").
+- **Cơ chế Layout Sidebar:**
+  - Liên kết thuộc tính `[nzCollapsed]="isTreeCollapsed"` và `[nzCollapsedWidth]="0"` của `<nz-sider>` để ẩn hoàn toàn cây thư mục (chiều rộng về 0px) khi người dùng toggle hoặc trên thiết bị di động có màn hình nhỏ.
+  - Tự động ghi đè ẩn đường viền phải (`border-right: none !important`) bằng class `.ant-layout-sider-collapsed` khi sidebar bị thu gọn, loại bỏ các chi tiết thừa thô kệch.
+
 ---
 
 ## 3. Bản đồ Nghiệp vụ & APIs
@@ -121,6 +137,8 @@ Hệ thống đã triển khai hoàn thiện và chạy ổn định 100% các h
 - [x] **Task 12:** Tối ưu hóa UI File Explorer với Accordion compact và lưới Thư mục dạng Grid ô vuông có nút Up Folder.
 - [x] **Task 13:** Tự động mở Modal thiết lập quyền chia sẻ ngay sau khi upload file thành công.
 - [x] **Task 14:** Cập nhật logic xóa thư mục triệt để (DB cleanup + GCS prefix cleanup).
+- [x] **Task 15:** Tối ưu hóa UI Table (tot-table) với cột hành động fixed và hiển thị đầy đủ tên file trên màn hình hẹp.
+- [x] **Task 16:** Bổ sung nút Toggle ẩn/hiện cây thư mục (Folder Treeview) linh hoạt trên các thiết bị màn hình nhỏ.
 
 ---
 

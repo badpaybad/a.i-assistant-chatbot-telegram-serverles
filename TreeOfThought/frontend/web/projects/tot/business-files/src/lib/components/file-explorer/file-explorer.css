@@ -150,3 +150,18 @@
   color: #1890ff;
   cursor: pointer;
 }
+
+.file-name-cell {
+  white-space: normal;
+  word-break: break-all;
+  cursor: pointer;
+  color: #1890ff;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.3s ease;
+}
+
+.file-name-cell:hover {
+  color: #40a9ff;
+  text-decoration: underline;
+}

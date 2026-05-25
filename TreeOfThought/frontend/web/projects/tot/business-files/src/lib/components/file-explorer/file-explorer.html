@@ -1,27 +1,25 @@
 <div class="explorer-container">
   <div class="search-section">
     <nz-input-group [nzSuffix]="suffixTemplate">
-      <input type="text" nz-input placeholder="Tìm kiếm tên file..." [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" />
+      <input type="text" nz-input placeholder="Tìm kiếm tên file..." [(ngModel)]="searchQuery"
+        (keyup.enter)="onSearch()" />
     </nz-input-group>
     <ng-template #suffixTemplate>
       <div class="search-actions">
-        <span nz-icon nzType="close-circle" class="clear-btn" *ngIf="searchQuery || searchResults.length > 0" (click)="clearSearch()" nz-tooltip nzTooltipTitle="Xóa tìm kiếm"></span>
+        <span nz-icon nzType="close-circle" class="clear-btn" *ngIf="searchQuery || searchResults.length > 0"
+          (click)="clearSearch()" nz-tooltip nzTooltipTitle="Xóa tìm kiếm"></span>
         <span nz-icon [nzType]="searching ? 'loading' : 'search'" class="search-btn" (click)="onSearch()"></span>
       </div>
     </ng-template>
 
     <div *ngIf="searchResults.length > 0 || searching" class="mt-3">
-      <tot-table 
-        [data]="searchResults" 
-        [columns]="searchColumns" 
-        [pageSize]="searchPageSize"
-        [nzSize]="'small'"
-        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'"
-        [frontPagination]="true"
-      >
+      <tot-table [data]="searchResults" [columns]="searchColumns" [pageSize]="searchPageSize" [nzSize]="'small'"
+        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [frontPagination]="true" [scroll]="{ x: '800px' }">
         <ng-template totCell="Tên file" let-data>
-          <span nz-icon nzType="file" style="margin-right: 8px;"></span>
-          {{ data.name }}
+          <div class="file-name-cell" (click)="openFileDetail(data)">
+            <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+            {{ data.name }}
+          </div>
         </ng-template>
 
         <ng-template totCell="path" let-data>
@@ -33,7 +31,8 @@
             <tot-button *ngIf="selectionMode" nzType="primary" nzSize="small" (click)="onSelectFile(data)">
               {{ 'Chèn' | transloco }}
             </tot-button>
-            <tot-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip [nzTooltipTitle]="'Đi đến thư mục' | transloco">
+            <tot-button nzType="link" nzSize="small" (click)="goToFolder(data.folderId)" nz-tooltip
+              [nzTooltipTitle]="'Đi đến thư mục' | transloco">
               <span nz-icon nzType="arrow-right"></span>
             </tot-button>
           </div>
@@ -47,11 +46,7 @@
   <div class="explorer-content">
     <nz-collapse [nzBordered]="false">
       <!-- Folders Section -->
-      <nz-collapse-panel 
-        [nzHeader]="folderHeader" 
-        [nzActive]="true"
-        class="folder-panel"
-      >
+      <nz-collapse-panel [nzHeader]="folderHeader" [nzActive]="true" class="folder-panel">
         <ng-template #folderHeader>
           <div class="panel-header">
             <span nz-icon nzType="folder" class="mr-2"></span>
@@ -59,7 +54,7 @@
             <nz-tag class="ml-2" [nzColor]="'blue'">{{ folders.length }}</nz-tag>
           </div>
         </ng-template>
-        
+
         <div class="folder-grid">
           <!-- Up Folder -->
           <div class="folder-card folder-up" *ngIf="hasParent" (click)="navigateUp()">
@@ -73,19 +68,11 @@
               <span nz-icon nzType="folder" nzTheme="fill"></span>
             </div>
             <div class="folder-name" nz-tooltip [nzTooltipTitle]="folder.name">{{ folder.name }}</div>
-            
+
             <div class="folder-card-actions" (click)="$event.stopPropagation()">
-              <tot-button 
-                nzType="text" 
-                nzSize="small"
-                nz-dropdown 
-                [nzDropdownMenu]="folderMenu"
-                nz-popover
-                [nzPopoverContent]="renameTemplate"
-                [nzPopoverTrigger]="null"
-                [nzPopoverVisible]="renamePopoverVisibleId === folder.id"
-                [nzPopoverPlacement]="'bottomRight'"
-              >
+              <tot-button nzType="text" nzSize="small" nz-dropdown [nzDropdownMenu]="folderMenu" nz-popover
+                [nzPopoverContent]="renameTemplate" [nzPopoverTrigger]="null"
+                [nzPopoverVisible]="renamePopoverVisibleId === folder.id" [nzPopoverPlacement]="'bottomRight'">
                 <span nz-icon nzType="more"></span>
               </tot-button>
               <nz-dropdown-menu #folderMenu="nzDropdownMenu">
@@ -104,129 +91,106 @@
 
     <div class="mt-3">
 
-        <tot-table 
-          [data]="files" 
-          [columns]="fileColumns" 
-          [loading]="loading" 
-          [total]="total" 
-          [pageIndex]="pageIndex" 
-          [pageSize]="pageSize" 
-          [frontPagination]="false"
-          [nzSize]="'small'"
-          [title]="fileTitleTpl"
-          [extra]="fileExtraTpl"
-          (queryParamsChange)="onQueryParamsChange($event)"
-        >
-          <ng-template totCell="name" let-data>
-            <div class="file-name-cell" (click)="openFileDetail(data)">
-              <span nz-icon nzType="file" style="margin-right: 8px;"></span>
-              {{ data.name }}
-            </div>
-          </ng-template>
+      <tot-table [data]="files" [columns]="fileColumns" [loading]="loading" [total]="total" [pageIndex]="pageIndex"
+        [pageSize]="pageSize" [frontPagination]="false" [nzSize]="'small'" [title]="fileTitleTpl" [extra]="fileExtraTpl"
+        [scroll]="{ x: '1000px' }" (queryParamsChange)="onQueryParamsChange($event)">
+        <ng-template totCell="name" let-data>
+          <div class="file-name-cell" (click)="openFileDetail(data)">
+            <span nz-icon nzType="file" style="margin-right: 8px;"></span>
+            {{ data.name }}
+          </div>
+        </ng-template>
 
-          <ng-template totCell="status" let-data>
-            <nz-tag [nzColor]="getPermissionColor(data.permission)">
-              {{ getPermissionLabel(data.permission) }}
-            </nz-tag>
-          </ng-template>
+        <ng-template totCell="status" let-data>
+          <nz-tag [nzColor]="getPermissionColor(data.permission)">
+            {{ getPermissionLabel(data.permission) }}
+          </nz-tag>
+        </ng-template>
 
-          <ng-template totCell="size" let-data>
-            {{ formatSize(data.size) }}
-          </ng-template>
+        <ng-template totCell="size" let-data>
+          {{ formatSize(data.size) }}
+        </ng-template>
 
-          <ng-template totCell="type" let-data>
-            {{ data.mimeType }}
-          </ng-template>
+        <ng-template totCell="type" let-data>
+          {{ data.mimeType }}
+        </ng-template>
 
-          <ng-template totCell="createdAt" let-data>
-            {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
-          </ng-template>
+        <ng-template totCell="createdAt" let-data>
+          {{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}
+        </ng-template>
 
-          <ng-template totCell="action" let-data>
-            <div style="display: flex; gap: 4px; flex-direction: column;">
-              <tot-button *ngIf="selectionMode"  nzType="primary" nzSize="small" (click)="onSelectFile(data)">
-                Chèn
+        <ng-template totCell="action" let-data>
+          <div style="display: flex; gap: 4px; flex-direction: column;">
+            <tot-button *ngIf="selectionMode" nzType="primary" nzSize="small" (click)="onSelectFile(data)">
+              Chèn
+            </tot-button>
+            <div style="display: flex; gap: 4px;">
+              <tot-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
+                <span nz-icon nzType="download"></span>
               </tot-button>
-              <div style="display: flex; gap: 4px;">
-                <tot-button nzType="text" [href]="data.url" target="_blank" nz-tooltip nzTooltipTitle="Tải về">
-                  <span nz-icon nzType="download"></span>
-                </tot-button>
-                <tot-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
-                  <span nz-icon nzType="share-alt"></span>
-                </tot-button>
-                <tot-button 
-                  nzType="text" 
-                  nz-dropdown 
-                  [nzDropdownMenu]="fileMenu"
-                  nz-popover
-                  [nzPopoverContent]="renameTemplate"
-                  [nzPopoverTrigger]="null"
-                  [nzPopoverVisible]="renamePopoverVisibleId === data.id"
-                  [nzPopoverPlacement]="'bottomRight'"
-                >
-                  <span nz-icon nzType="more"></span>
-                </tot-button>
-              </div>
-              <nz-dropdown-menu #fileMenu="nzDropdownMenu">
-                <ul nz-menu>
-                  <li nz-menu-item (click)="openMoveModal(data, 'file')">Di chuyển</li>
-                  <li nz-menu-item (click)="renameItem(data, 'file')">Đổi tên</li>
-                  <li nz-menu-divider></li>
-                  <li nz-menu-item nzDanger (click)="deleteFile(data.id)">Xóa</li>
-                </ul>
-              </nz-dropdown-menu>
+              <tot-button nzType="text" (click)="openShareModal(data)" nz-tooltip nzTooltipTitle="Chia sẻ">
+                <span nz-icon nzType="share-alt"></span>
+              </tot-button>
+              <tot-button nzType="text" nz-dropdown [nzDropdownMenu]="fileMenu" nz-popover
+                [nzPopoverContent]="renameTemplate" [nzPopoverTrigger]="null"
+                [nzPopoverVisible]="renamePopoverVisibleId === data.id" [nzPopoverPlacement]="'bottomRight'">
+                <span nz-icon nzType="more"></span>
+              </tot-button>
             </div>
-          </ng-template>
-        </tot-table>
-
-        <ng-template #fileTitleTpl>
-          <div class="toolbar-left">
-            <nz-breadcrumb>
-              <nz-breadcrumb-item>
-                <a (click)="navigateToFolder(null)">
-                  <span nz-icon nzType="home"></span> {{ 'Tài liệu của tôi' | transloco }}
-                </a>
-              </nz-breadcrumb-item>
-              <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
-                <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
-              </nz-breadcrumb-item>
-            </nz-breadcrumb>
+            <nz-dropdown-menu #fileMenu="nzDropdownMenu">
+              <ul nz-menu>
+                <li nz-menu-item (click)="openMoveModal(data, 'file')">Di chuyển</li>
+                <li nz-menu-item (click)="renameItem(data, 'file')">Đổi tên</li>
+                <li nz-menu-divider></li>
+                <li nz-menu-item nzDanger (click)="deleteFile(data.id)">Xóa</li>
+              </ul>
+            </nz-dropdown-menu>
           </div>
         </ng-template>
+      </tot-table>
 
-        <ng-template #fileExtraTpl>
-          <div class="toolbar-right">
-            <app-create-folder-popover
-              [parentId]="selectedFolderId"
-              [currentFolderName]="currentFolderName"
-              [buttonText]="'Thêm mới' | transloco"
-              buttonIcon="folder-add"
-              style="margin-right: 8px"
-            ></app-create-folder-popover>
+      <ng-template #fileTitleTpl>
+        <div class="toolbar-left">
+          <nz-breadcrumb>
+            <nz-breadcrumb-item>
+              <a (click)="navigateToFolder(null)">
+                <span nz-icon nzType="home"></span> {{ 'Tài liệu của tôi' | transloco }}
+              </a>
+            </nz-breadcrumb-item>
+            <nz-breadcrumb-item *ngFor="let item of breadcrumbs">
+              <a (click)="navigateToFolder(item.id)">{{ item.name }}</a>
+            </nz-breadcrumb-item>
+          </nz-breadcrumb>
+        </div>
+      </ng-template>
 
-            <tot-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
-              <span nz-icon nzType="upload"></span> {{ 'Tải lên' | transloco }}
-            </tot-button>
-            <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
-            
-            <tot-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
-              <span nz-icon nzType="reload"></span> {{ 'Làm mới' | transloco }}
-            </tot-button>
-          </div>
-        </ng-template>
+      <ng-template #fileExtraTpl>
+        <div class="toolbar-right">
+          <tot-button nzType="default" (click)="toggleTree.emit()" style="margin-right: 8px" nz-tooltip
+            [nzTooltipTitle]="(isTreeCollapsed ? 'Hiện thư mục' : 'Ẩn thư mục') | transloco">
+            <span nz-icon [nzType]="isTreeCollapsed ? 'menu-unfold' : 'menu-fold'"></span>
+          </tot-button>
+          <app-create-folder-popover [parentId]="selectedFolderId" [currentFolderName]="currentFolderName"
+            [buttonText]="'Thêm mới' | transloco" buttonIcon="folder-add"
+            style="margin-right: 8px"></app-create-folder-popover>
+
+          <tot-button nzType="default" (click)="fileInput.click()" style="margin-right: 8px" [loading]="loadingUpload">
+            <span nz-icon nzType="upload"></span> {{ 'Tải lên' | transloco }}
+          </tot-button>
+          <input #fileInput type="file" style="display: none" (change)="onUpload($event)">
+
+          <tot-button nzType="default" (click)="loadContent(true)" [loading]="loadingRefresh">
+            <span nz-icon nzType="reload"></span> {{ 'Làm mới' | transloco }}
+          </tot-button>
+        </div>
+      </ng-template>
 
     </div>
   </div>
 
   <ng-template #renameTemplate>
-    <app-rename-popover
-      *ngIf="renamingItem"
-      [itemId]="renamingItem.id"
-      [currentName]="renamingItem.name"
-      [type]="renamingType"
-      (renamed)="onRenamed($event)"
-      (cancelled)="onRenameCancelled()"
-    ></app-rename-popover>
+    <app-rename-popover *ngIf="renamingItem" [itemId]="renamingItem.id" [currentName]="renamingItem.name"
+      [type]="renamingType" (renamed)="onRenamed($event)" (cancelled)="onRenameCancelled()"></app-rename-popover>
   </ng-template>
 
 </div>

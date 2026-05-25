@@ -1,13 +1,23 @@
 <nz-layout class="files-layout" [class.selection-mode]="selectionMode">
-  <nz-sider nzWidth="280px" nzTheme="light" class="folder-sider">
-    <app-folder-tree (folderSelected)="onFolderSelected($any($event))" (folderCreated)="onFolderCreated()"></app-folder-tree>
+  <nz-sider 
+    nzWidth="280px" 
+    nzTheme="light" 
+    class="folder-sider"
+    [nzCollapsed]="isTreeCollapsed"
+    [nzCollapsedWidth]="0"
+    [nzTrigger]="null"
+  >
+    <app-folder-tree (folderSelected)="onFolderSelected($any($event))" (folderCreated)="onFolderCreated()" (toggleTree)="onToggleTree()"></app-folder-tree>
   </nz-sider>
   <nz-content class="explorer-content">
     <app-file-explorer 
       [selectedFolderId]="selectedFolderId" 
       [selectionMode]="selectionMode" 
+      [isTreeCollapsed]="isTreeCollapsed"
       (fileSelected)="fileSelected.emit($event)"
       (folderCreated)="onFolderCreated()"
+      (toggleTree)="onToggleTree()"
     ></app-file-explorer>
   </nz-content>
 </nz-layout>
+

@@ -14,6 +14,8 @@ import { FormsModule } from '@angular/forms';
 import { CreateFolderPopoverComponent } from '../create-folder-popover/create-folder-popover.component';
 import { Subscription } from 'rxjs';
 import { RenamePopoverComponent } from '../rename-popover/rename-popover.component';
+import { TotButtonComponent } from '@tot/shared';
+import { TranslocoModule } from '@jsverse/transloco';
 
 @Component({
   selector: 'app-folder-tree',
@@ -30,7 +32,9 @@ import { RenamePopoverComponent } from '../rename-popover/rename-popover.compone
     NzTooltipModule,
     NzPopoverModule,
     CreateFolderPopoverComponent,
-    RenamePopoverComponent
+    RenamePopoverComponent,
+    TotButtonComponent,
+    TranslocoModule
   ],
   templateUrl: './folder-tree.html',
   styleUrl: './folder-tree.css',
@@ -38,6 +42,7 @@ import { RenamePopoverComponent } from '../rename-popover/rename-popover.compone
 export class FolderTreeComponent implements OnInit, OnDestroy {
   @Output() folderSelected = new EventEmitter<string | null>();
   @Output() folderCreated = new EventEmitter<void>();
+  @Output() toggleTree = new EventEmitter<void>();
   @ViewChild('treeComponent', { static: false }) treeComponent!: NzTreeComponent;
   @ViewChild(CreateFolderPopoverComponent) createPopover!: CreateFolderPopoverComponent;
 

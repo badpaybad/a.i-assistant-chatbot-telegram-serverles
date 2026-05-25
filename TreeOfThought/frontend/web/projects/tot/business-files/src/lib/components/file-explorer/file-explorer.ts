@@ -55,8 +55,10 @@ import { TranslocoModule } from '@jsverse/transloco';
 export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   @Input() selectedFolderId: string | null = null;
   @Input() selectionMode = false;
+  @Input() isTreeCollapsed = false;
   @Output() folderCreated = new EventEmitter<void>();
   @Output() fileSelected = new EventEmitter<any>();
+  @Output() toggleTree = new EventEmitter<void>();
 
   private filesFoldersService = inject(FilesFoldersService);
   private firebaseService = inject(FirebaseService);
