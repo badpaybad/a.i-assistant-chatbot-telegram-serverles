@@ -1,6 +1,6 @@
 # Tree of Thought
 
-Dùng các folder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng.
+Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng. Nguyên tắc chia ra để trị và K.I.S.S
 
 ## Cách xây dựng teamm làm việc và solution
 
