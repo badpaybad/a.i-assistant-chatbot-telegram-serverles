@@ -1,146 +1,158 @@
-# Phân tích Thiết kế & Kế hoạch Phát triển - Module CQRS Dashboard
+# Phân tích Thiết kế & Kế hoạch Phát triển - Module CQRS Dashboard (Cập nhật PostgreSQL & Redis)
 
-Tài liệu này tổng hợp giải pháp kỹ thuật, sơ đồ kiến trúc luồng dữ liệu, phân tích các khoảng cách kỹ thuật (Gap Analysis), và các nguyên tắc định hướng phát triển dài hạn cho phân hệ **CQRS Dashboard (Hệ thống Giám sát & Quản trị CQRS)** dựa trên tài liệu yêu cầu nghiệp vụ tại [yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/cqrs-dashboard/yeucau.md) và hiện trạng mã nguồn thực tế.
+Tài liệu này cập nhật giải pháp kỹ thuật và kế hoạch triển khai chi tiết cho giao diện **CQRS Dashboard UI** (thư viện Angular `business-dashboard`) nhằm đồng bộ hoàn toàn với hệ thống lưu trữ log tracking mới trên PostgreSQL và các số liệu thống kê telemetry thời gian thực trên Redis.
 
 ---
 
-## 1. Tổng quan Kiến trúc Kỹ thuật
+## 1. Tổng quan Sự thay đổi & Thách thức Kiến trúc UI
 
-CQRS Dashboard được tích hợp trực tiếp vào hạ tầng phân phối tin nhắn trung tâm sử dụng **Redis** làm cơ sở dữ liệu in-memory tốc độ cao cho hàng đợi (Lists), theo dõi trạng thái tin nhắn (Hashes và Sorted Sets), và quản lý log truy vết (Tracking history).
+Trước đây, toàn bộ log tracking được lưu trữ trong Redis dưới dạng Hashes và Sorted Sets. Để tối ưu hóa dung lượng bộ nhớ Redis, hệ thống backend đã được tái cấu trúc:
+- **Redis (Telemetry & Stats)**: Chỉ lưu giữ các key thống kê số lượng tin nhắn thời gian thực (`total:all`, `processed:{queue}`, `error:{queue}`, `processing:{queue}`) phục vụ cho việc hiển thị số liệu nhanh.
+- **PostgreSQL (Append-Only Log Tracing)**: Bảng `cqrs_tracking_logs` lưu trữ toàn bộ lịch sử chi tiết (Audit Trail) của từng thông điệp gồm: `sourceComponent`, `subscriberName`, `destinationQueueName`, qualified full name của `handler` và `messageType`, các bước trạng thái `Step` chi tiết (Enqueue, Publish, Subscribe, Dequeue, Execute), trạng thái lỗi `ErrorMessage`.
 
-```mermaid
-graph TD
-    ClientApp[Client Application UI] -->|1. Request /api/cqrs/dashboard/*| CqrsController[CqrsDashboardController BE]
-    
-    subgraph BE_Core_Cqrs [Core.Web.Api / Core.Infra.Cqrs]
-        CqrsController
-        Dispatcher[IDispatcher / WorkerManager]
-        QueueService[IQueueService / RedisQueue]
-        MessageTracker[IMessageTracker / RedisTracker]
-    end
-    
-    subgraph Redis_Infrastructure [Hạ tầng Redis]
-        RedisStats[(Redis Stats Hash)]
-        RedisQueues[(Redis Lists: Queue/DLQ)]
-        RedisTracking[(Redis ZSets: Success/Error IDs)]
-        RedisHistory[(Redis Hash: tracking_id -> Step Logs)]
-    end
+### Thách thức đối với Giao diện (FE):
+1. **Lọc và phân trang nâng cao (Search & Paginate)**: UI cần gọi API `/api/cqrs/dashboard/tracking/recent` và truyền đầy đủ tham số phân trang (`page`, `pageSize`) kết hợp các bộ lọc (`trackingId`, `content`, `status`) để hiển thị dữ liệu từ DB PostgreSQL một cách mượt mà.
+2. **Namespace đầy đủ (Full qualified names)**: Các trường dữ liệu `SourceComponent` và `Handler` trả về từ DB là tên đầy đủ có namespace (ví dụ: `Core.Infra.FilesFolders.Models.UploadFileCommand`). Hiển thị trực tiếp các chuỗi dài này sẽ làm vỡ giao diện bảng. UI cần cơ chế rút gọn thông minh (hiển thị tên Class ngắn) kết hợp HTML tooltip hiển thị đầy đủ namespace.
+3. **Lazy-loading Step History**: Log tracking đầy đủ của một yêu cầu có thể chứa nhiều dòng milestone. Để tránh quá tải mạng khi tải danh sách tracking gần đây, chúng ta sẽ mở rộng bảng `tot-table` hỗ trợ sự kiện `expandChange` để chỉ khi người dùng click expand dòng thì UI mới gọi API `/api/cqrs/dashboard/tracking/{trackingId}` để tải lịch sử luồng sự kiện chi tiết của message đó.
 
-    CqrsController -->|Get stats/workers| Dispatcher
-    CqrsController -->|Get list range| QueueService
-    CqrsController -->|Query history/recent| MessageTracker
-    
-    QueueService --> RedisQueues
-    MessageTracker --> RedisStats
-    MessageTracker --> RedisTracking
-    MessageTracker --> RedisHistory
-    
-    Dispatcher -->|Trigger Start/Stop Workers| WorkersPool[Background Workers Pool]
+---
+
+## 2. Giải pháp Thiết kế Chi tiết phía Frontend (FE)
+
+### A. Cập nhật Model & Service (`dashboard.service.ts`)
+Cập nhật các interfaces TypeScript để map chính xác các trường dữ liệu mới từ PostgreSQL API:
+- **`TrackingSummary`**:
+  - `id`: string (UUID)
+  - `step`: string (milestone hiện tại: Enqueue, Publish, Subscribe, Dequeue, Execute)
+  - `time`: string (thời gian tạo dưới dạng ISO string)
+  - `content`: string (nội dung JSON gốc)
+  - `status`: string (Success, Error, Pending, Processing)
+  - `queueOrTopic`: string (tên queue hoặc topic gốc)
+  - `subscriberName`?: string (tên subscriber nhận event)
+  - `destinationQueueName`?: string (tên queue thực tế)
+  - `sourceComponent`?: string (tên lớp phát lệnh gọi)
+  - `handler`?: string (tên handler xử lý)
+  - `worker`?: string (worker xử lý)
+  - `errorMessage`?: string (thông điệp lỗi nếu có)
+  - `isRoot`?: boolean (bản ghi gốc của TrackingId)
+  - `history`?: TrackingStep[] (lịch sử đầy đủ)
+  - `expand`?: boolean (trạng thái expand trên UI)
+
+- **`TrackingStep`**:
+  - `timestamp`: string (thời gian ghi nhận)
+  - `step`: string (milestone)
+  - `details`: string (chi tiết bước hoặc ErrorMessage)
+  - `status`?: string (Success, Error, Pending, Processing)
+  - `sourceComponent`?: string
+  - `handlerOrEventName`?: string
+  - `workerName`?: string
+  - `subscriberName`?: string
+  - `destinationQueueName`?: string
+
+---
+
+### B. Mở rộng Shared Component `tot-table`
+Để hỗ trợ Lazy-loading khi người dùng expand dòng, chúng ta thêm sự kiện `@Output() expandChange` trong `tot-table.component.ts`:
+```typescript
+@Output() expandChange = new EventEmitter<{ item: any; expanded: boolean }>();
+
+onExpandChange(item: any, checked: boolean): void {
+  item.expand = checked;
+  this.expandChange.emit({ item, expanded: checked });
+}
+```
+Điều này cho phép dashboard nhận biết chính xác khi nào người dùng bấm nút mở rộng dòng hoặc bấm nút mũi tên mặc định của table để tự động load dữ liệu.
+
+---
+
+### C. Refactor Dashboard Component (`dashboard.component.ts`)
+
+#### 1. Cấu hình Cột hiển thị mới cho Tab Tracking
+```typescript
+this.trackingColumns = [
+  { title: 'Tracking ID', key: 'id', width: '280px' },
+  { title: 'Trạng thái', key: 'status', width: '120px', align: 'center' },
+  { title: 'Bước hiện tại', key: 'step', width: '120px', align: 'center' },
+  { title: 'Nguồn phát (Source)', key: 'sourceComponent', width: '180px' },
+  { title: 'Kênh nhận (Queue/Topic)', key: 'queueOrTopic', width: '180px' },
+  { title: 'Handler', key: 'handler', width: '180px' },
+  { title: 'Thời gian', key: 'time', width: '160px' },
+  { title: 'Hành động', key: 'action', width: '120px', right: true }
+];
 ```
 
-### Các thành phần Công nghệ áp dụng:
-- **Backend:** .NET 8.0, ASP.NET Core Web API, `IDispatcher` quản lý vòng đời worker, `IQueueService` giao tiếp Redis List, `IMessageTracker` theo dõi vòng đời message.
-- **Frontend:** Angular Standalone Components, Ng-Zorro-Antd, Transloco i18n, `@tot/shared` UI Library (gồm `tot-table` và `tot-button`).
-- **Data & Message Tracking Storage:** Redis phục vụ lưu trữ message queue, active processing queue, Dead-Letter Queue (DLQ), sorted sets chứa danh sách trackingId thành công/lỗi, và hashes chứa lịch sử truy vết từng bước.
+#### 2. Xử lý Lazy-loading History khi Expand dòng
+```typescript
+onRowExpand(event: { item: any, expanded: boolean }): void {
+  if (event.expanded && (!event.item.history || event.item.history.length === 0)) {
+    this.dashboardService.getTracking(event.item.id).subscribe(history => {
+      event.item.history = history;
+    });
+  }
+}
+
+toggleExpand(item: any): void {
+  item.expand = !item.expand;
+  this.onRowExpand({ item, expanded: item.expand });
+}
+```
+
+#### 3. Rút gọn Namespace hiển thị
+Tạo một phương thức helper đơn giản để lấy tên Class cuối cùng từ chuỗi namespace dài:
+```typescript
+shortenNamespace(name: string): string {
+  if (!name) return '-';
+  const parts = name.split('.');
+  return parts[parts.length - 1];
+}
+```
 
 ---
 
-## 2. Giải pháp Thiết kế chi tiết & Luồng dữ liệu
+### D. Cải tiến UI hiển thị (`dashboard.component.html` & CSS)
 
-### A. Cơ chế thu thập Metrics & Giám sát Hàng đợi (Queues & Topics)
-- **Stats Aggregation:** `CqrsDashboardController.GetQueues` tự động quét tất cả các hàng đợi và topic đã đăng ký trong `IDispatcher`.
-  - Đối với từng Queue: Gọi `GetQueueLengthAsync(queueName)` để lấy lượng pending, và `GetQueueLengthAsync(queueName:processing)` để lấy lượng active tin nhắn. Đồng thời, lấy số lượng `processed` (thành công) và `error` (lỗi) từ cache thống kê của `MessageTracker`.
-  - Đối với Topic: Lấy danh sách subscribers của topic. Với mỗi subscriber, tính tổng lượng tin nhắn trong queue con (`sub_queue:topic:sub`) và queue xử lý con (`sub_proc:topic:sub`).
+#### 1. Định dạng Cells
+- **`sourceComponent` & `handler`**: Hiển thị tên rút gọn sử dụng helper `shortenNamespace(data.sourceComponent)`. Đặt thẻ span có thuộc tính `title` để hiển thị tooltip tên đầy đủ khi di chuột vào.
+- **`step`**: Hiển thị tag badge màu sắc đặc trưng cho từng bước:
+  - `Enqueue` hoặc `Publish`: Màu xanh dương (`blue`) biểu thị tin nhắn đi vào Event Bus hoặc Hàng đợi.
+  - `Subscribe`: Màu tím (`purple`) biểu thị chia luồng của subscriber.
+  - `Dequeue`: Màu vàng/cam (`orange`) biểu thị worker đã nhận.
+  - `Execute`: Màu xanh lá (`green`) biểu thị xử lý hoàn tất.
 
-### B. Cơ chế Theo dõi Truy vết (Message Tracking History)
-- **Tracking Flow:** Khi một tin nhắn được gửi, hệ thống tự sinh mã `trackingId` (GUID) và nạp bước "Dispatcher" vào Redis Hash `tracking:{trackingId}` qua `IMessageTracker`.
-- **Step Logging:** Mỗi bước xử lý tiếp theo của Worker (Nhận tin nhắn, Gọi Handler, Hoàn thành, Gặp lỗi) được ghi lại dưới dạng một đối tượng log chứa Timestamp, Step, Status, Details, MessageContent và WorkerName.
-- **History Indexing:** Khi tin nhắn kết thúc thành công hoặc thất bại, `trackingId` được lưu vào Sorted Set tương ứng (`tracking:success:{queue}` hoặc `tracking:error:{queue}`) để phục vụ truy vấn danh sách lịch sử tin nhắn gần đây qua API `/api/cqrs/dashboard/tracking/recent`.
-
-### C. Cơ chế Xử lý Lỗi & Gửi lại (Dead-Letter Queue & Retry)
-- **DLQ Retrieval:** Khi tin nhắn gặp lỗi vượt quá số lần retry cho phép, worker di chuyển tin nhắn sang hàng đợi lỗi `queueName:dead`. Dashboard hiển thị các tin nhắn này qua API `/api/cqrs/dashboard/messages/{queueName}:dead` sử dụng phân trang phía server.
-- **Message Retry:** 
-  - Khi gọi `Retry`, API sẽ gửi yêu cầu tới `IDispatcher.RetryCommandAsync(queueName, messageJson)`.
-  - Phương thức này sẽ xóa tin nhắn khỏi DLQ, sửa lại thông số kỹ thuật (ví dụ: đặt lại số lần retry) và đẩy ngược lại hàng đợi gốc để xử lý.
-- **Resend via Tracking:**
-  - Nếu tin nhắn đã bị xóa khỏi hàng đợi nhưng vẫn còn log tracking, API `ResendTracking` sẽ lấy nội dung tin nhắn gốc (`MessageContent`) từ bước đầu tiên trong log tracking và đẩy lại vào `IQueueService` (đối với Command) hoặc `IEventBus` (đối với Event).
-
----
-
-## 3. Cấu trúc và Thiết kế các Component Frontend (FE)
-
-Thư viện [business-dashboard](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-dashboard) được phân bổ thành cấu trúc Standalone Components rõ ràng, tích hợp đa ngôn ngữ qua pipe và directive transloco:
-
-- **`dashboard` Component:**
-  - Layout chính chia làm các cards tổng hợp dữ liệu thống kê bên trên và hệ thống tabs bên dưới.
-  - Tích hợp Dropdown cho phép thay đổi Refresh Interval linh hoạt qua hàm `onRefreshIntervalChange` sử dụng RxJS `interval` và `takeUntil` để tránh rò rỉ bộ nhớ (memory leak).
-  - Tích hợp Modal gửi Command & Event mẫu với bộ soạn thảo JSON đơn giản.
-- **`message-list` Component:**
-  - Được tái sử dụng dưới dạng Modal hiển thị danh sách tin nhắn cho một hàng đợi cụ thể.
-  - Sử dụng `nz-table` / `tot-table` hỗ trợ phân trang Server-side để hiển thị hàng nghìn bản ghi tin nhắn mà không làm treo UI.
-  - Tích hợp `expandTemplate` hiển thị trực quan cấu trúc JSON và stack trace lỗi chi tiết.
-- **`tracing` Component:**
-  - Được mở dưới dạng trang độc lập hoặc modal từ mã `trackingId`.
-  - Sử dụng các step của `NzSteps` kết hợp `NzTimeline` giúp lập trình viên nhanh chóng debug chính xác tin nhắn đang bị lỗi hoặc bị nghẽn ở thành phần nào (Publisher, Dispatcher, Handler, Worker).
-- **`topic-detail` Component:**
-  - Hộp thoại modal hiển thị danh sách các subscribers đang lắng nghe một topic, đo lường tốc độ xử lý tin nhắn của từng sub.
+#### 2. Thiết kế Premium Expand Timeline (`expandTpl`)
+Khi người dùng mở rộng một dòng trong danh sách tracking, chúng ta thiết kế một giao diện cao cấp:
+- **Cấu trúc Tab đôi (Double-Panel)**:
+  - **Bên trái (JSON Payload & Trace Metadata)**: Hiển thị JSON dữ liệu tin nhắn gốc dạng Prettified, có nút Copy nhanh.
+  - **Bên phải (Visual Timeline)**: Một timeline chi tiết sử dụng `nz-timeline`. Mỗi node timeline biểu diễn:
+    - Thời gian chi tiết (`timestamp | date:'HH:mm:ss.SSS'`).
+    - Icon tương ứng với `Step` (Enqueue -> Database, Publish -> Export, Subscribe -> Import, Execute -> Check-circle).
+    - Mô tả hành động cụ thể chỉ ra nguồn gửi (`sourceComponent`), Worker nhận (`workerName`), và Handler xử lý (`handlerOrEventName`).
+    - Nếu bước đó gặp lỗi, hiển thị một banner lỗi màu đỏ gắt nổi bật (`nz-alert` hoặc border đỏ) chứa đầy đủ `details` (Stack Trace lỗi) và nút Copy Stack Trace lỗi nhanh chóng.
 
 ---
 
-## 4. Đánh giá Hiện trạng & Phân tích Gác (Gap Analysis)
+## 3. Kịch bản Xác minh (Verification Plan)
 
-Qua đối chiếu giữa mã nguồn thực tế và các quy chuẩn kiến trúc hiện tại của dự án, chúng tôi ghi nhận một số khoảng cách kỹ thuật (Gaps) cần lưu ý cải tiến trong tương lai:
+### A. Kiểm tra Biên dịch (Build Validation)
+Chạy build Angular để đảm bảo không lỗi cú pháp hoặc thiếu dependencies:
+```bash
+npm run build --tot/business-dashboard
+```
 
-### 4.1. Cách thức định nghĩa Template cho các cột của `tot-table`:
-- **Hiện trạng:** Trong [MessageListComponent](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-dashboard/src/lib/message-list/message-list.component.ts), việc định nghĩa các template hiển thị của cột (`timeTpl`, `contentTpl`, `statusTpl`, `actionsTpl`) đang được thực hiện thông qua việc gán trực tiếp thuộc tính `template` trong file TS (`{ title: 'Thời gian', template: this.timeTpl }`) kết hợp `@ViewChild` để lấy template từ HTML.
-- **Khoảng cách:** Quy chuẩn mới của hệ thống (áp dụng tại [UserListComponent](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/user-list/user-list.component.ts)) là khai báo hoàn toàn động trong HTML sử dụng directive `totCell` (ví dụ: `<ng-template totCell="time" let-data>`) dựa trên `key` cột. Cách làm hiện tại của `business-dashboard` làm tăng sự phụ thuộc chặt chẽ giữa code TS và HTML.
-
-### 4.2. Việc quản lý và dọn dẹp (Cleanup) dữ liệu Log Tracking trên Redis:
-- **Hiện trạng:** `IMessageTracker` lưu trữ toàn bộ các bước log xử lý tin nhắn (`tracking:{trackingId}`) và lưu index thành công/lỗi trong Sorted Sets.
-- **Khoảng cách:** Hiện tại hệ thống chưa có cơ chế cấu hình TTL (Time-To-Live) tự động dọn dẹp cho các key log tracking này trên Redis. Theo thời gian, lượng log tích tụ khổng lồ sẽ gây phình to dung lượng bộ nhớ Redis (Redis Out Of Memory). Cần bổ sung cơ chế tự động hết hạn (Expire) sau 3 đến 7 ngày.
-
----
-
-## 5. Kế hoạch Hoàn thiện & Triển khai (Tasks)
-
-Kế hoạch hoàn thiện và tối ưu hóa hệ thống CQRS Dashboard được chia làm hai giai đoạn:
-
-### Phase 1: Các tính năng đã hoàn thiện (Core Functionality)
-- [x] Backend Controller đầy đủ APIs quản trị stats, queues, last-activity, retry, DLQ, tracking và worker control.
-- [x] Tích hợp phân trang Server-side cho API tin nhắn hàng đợi và nhật ký tracking.
-- [x] Thư viện Angular `business-dashboard` với đầy đủ các component hiển thị UI chuyên nghiệp, responsive.
-- [x] Tích hợp thành công component dùng chung đạt chuẩn của dự án (`tot-table`, `tot-button`).
-- [x] Tích hợp đa ngôn ngữ Transloco và hệ thống tự động làm mới dữ liệu định kỳ trên dashboard.
-
-### Phase 2: Cải tiến & Tối ưu hóa (Pending Refactor)
-- [ ] **Tác vụ 1: Chuẩn hóa việc sử dụng `TotCellDirective`:**
-  - Refactor bảng tin nhắn trong `MessageListComponent` loại bỏ `@ViewChild` và `template` trong định nghĩa cột TS.
-  - Chuyển sang sử dụng directive `<ng-template totCell="key" let-data>` hoàn toàn trong file HTML tương tự module OIDC.
-- [ ] **Tác vụ 2: Bổ sung TTL tự động dọn dẹp Redis Log:**
-  - Cập nhật backend `RedisTracker` tự động thiết lập thời gian hết hạn (ví dụ: `TimeSpan.FromDays(7)`) khi ghi nhận các key `tracking:{trackingId}` để bảo vệ dung lượng tài nguyên Redis.
-- [ ] **Tác vụ 3: Tối ưu hóa UI/UX Tracing:**
-  - Bổ sung nút Copy nhanh nội dung log lỗi chi tiết trực tiếp trên giao diện timeline của `TracingComponent`.
+### B. Kiểm thử Chức năng UI
+1. **Kiểm tra Tab Hàng đợi & Topic**: Xác nhận active processing count, processed, và error count hiển thị đúng theo telemetry từ Redis.
+2. **Kiểm tra Theo dõi gần đây**:
+   - Xác nhận bảng tracking hiển thị các cột `Source Component` và `Handler` dạng rút gọn, di chuột hiển thị full namespace.
+   - Thử tìm kiếm lọc theo `Tracking ID`, `Content`, hoặc `Status` và chuyển trang để xác định server-side pagination hoạt động mượt mà.
+3. **Kiểm tra Row Expand**:
+   - Bấm expand một dòng: verify timeline được load bất đồng bộ thành công.
+   - Kiểm tra sơ đồ timeline có hiển thị đúng chuỗi sự kiện tuần tự từ Controller gốc (`IsRoot = true`) đến các bước Dequeue -> Execute của Worker.
+   - Đối với message lỗi: Verify banner chi tiết Stack Trace hiển thị màu đỏ gắt và nút copy hoạt động.
+4. **Kiểm tra Action**:
+   - Bấm nút "Gửi lại" (Resend) ở một tracking: kiểm tra xem command gốc có được gửi lại thành công và xuất hiện bản ghi mới trong hàng đợi không.
 
 ---
 
-## 6. Quy tắc Phát triển & Bảo trì cho tương lai (Guidelines)
+## 4. Ý kiến đề xuất xác nhận từ người dùng
 
-Khi phát triển thêm tính năng hoặc nâng cấp hệ thống CQRS Dashboard, bắt buộc tuân thủ nghiêm ngặt các quy tắc sau:
-
-1. **Tuyệt đối không can thiệp trực tiếp làm thay đổi logic nghiệp vụ:**
-   - Phân hệ Dashboard chỉ mang tính chất giám sát và hỗ trợ điều phối lỗi (DLQ).
-   - Ngoại trừ các thao tác retry hoặc resend tin nhắn lỗi, tuyệt đối không được tự ý chỉnh sửa nội dung hoặc thay đổi thứ tự hàng đợi tin nhắn của các nghiệp vụ khác.
-2. **Tuân thủ Cơ chế Phân quyền chặt chẽ:**
-   - Toàn bộ API trong `CqrsDashboardController.cs` bắt buộc phải được bảo vệ bởi thuộc tính `[AppAuthorize("be.infra.dashboard")]`.
-   - Bất kỳ API mới nào được thêm vào đều phải xác thực quyền quản trị viên hệ thống để tránh rò rỉ dữ liệu tin nhắn nhạy cảm.
-3. **Sử dụng component dùng chung `@tot/shared`:**
-   - Các bảng hiển thị dữ liệu mới bắt buộc sử dụng `tot-table` và các nút bấm sử dụng `tot-button`.
-   - Giản lược tối đa việc viết code CSS tùy biến, tận dụng hệ thống style tokens và base components có sẵn để đảm bảo giao diện đồng bộ, premium.
-
----
-
-## 7. Câu hỏi làm rõ & Xác nhận từ người dùng
-
-Để tiến hành cải tiến phân hệ theo kế hoạch Phase 2, xin vui lòng cho biết ý kiến của bạn về các điểm sau:
-1. **Chuẩn hóa `totCell` directive:** Bạn có đồng ý tiến hành refactor bảng hiển thị tin nhắn lỗi trong `MessageListComponent` sang cơ chế directive `totCell` ngay trong turn này để đồng bộ 100% với chuẩn viết code của dự án không?
-2. **Cơ chế TTL dọn dẹp Redis:** Bạn muốn cấu hình thời gian hết hạn (TTL) tự động cho log tracking trên Redis mặc định là bao nhiêu ngày (đề xuất là 7 ngày)?
+Vui lòng xem xét giải pháp trên và cho ý kiến đồng ý để chúng tôi tiến hành triển khai sửa đổi UI chi tiết cho phù hợpTurn này.

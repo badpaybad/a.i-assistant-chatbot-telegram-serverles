@@ -23,8 +23,8 @@ public class FilesController : BaseController
     private readonly FirebaseOptions _firebaseOptions;
 
     public FilesController(
-        FilesFoldersService filesFoldersService, 
-        FirebaseService firebaseService, 
+        FilesFoldersService filesFoldersService,
+        FirebaseService firebaseService,
         IDispatcher dispatcher,
         Microsoft.Extensions.Options.IOptions<FirebaseOptions> firebaseOptions)
     {
@@ -53,7 +53,7 @@ public class FilesController : BaseController
             UserId = GetUserId().ToString()
         };
 
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "File đã được upload", trackingId });
     }
 
@@ -61,13 +61,13 @@ public class FilesController : BaseController
     public async Task<IActionResult> Delete(Guid id)
     {
         var trackingId = GetTrackingId();
-        var command = new DeleteFileCommand 
-        { 
+        var command = new DeleteFileCommand
+        {
             TrackingId = trackingId,
-            FileId = id, 
-            UserId = GetUserId().ToString() 
+            FileId = id,
+            UserId = GetUserId().ToString()
         };
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "File đã được xóa", trackingId });
     }
 
@@ -76,7 +76,7 @@ public class FilesController : BaseController
     {
         command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "File đã được di chuyển", trackingId = command.TrackingId });
     }
 
@@ -85,7 +85,7 @@ public class FilesController : BaseController
     {
         command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Quyền đã được cập nhật", trackingId = command.TrackingId });
     }
 
@@ -114,7 +114,7 @@ public class FilesController : BaseController
         await upload.CopyToAsync(ms);
 
         var userId = GetUserId();
-        
+
         var file = await _filesFoldersService.UploadEditorFileAsync(userId, upload.FileName, upload.ContentType, ms.ToArray());
 
         return Ok(new { url = file.Url });
@@ -147,7 +147,7 @@ public class FilesController : BaseController
             FileId = id,
             NewName = request.NewName
         };
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Yêu cầu đổi tên file đã được gửi", trackingId = command.TrackingId });
     }
 }

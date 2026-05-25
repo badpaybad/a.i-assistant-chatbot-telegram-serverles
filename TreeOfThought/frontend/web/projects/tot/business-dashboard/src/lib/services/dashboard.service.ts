@@ -39,14 +39,19 @@ export interface QueueInfo {
 
 export interface TrackingSummary {
   id: string;
-  lastStep: string;
+  step: string;
   time: string;
   content: string;
   status: string;
   queueOrTopic?: string;
+  subscriberName?: string;
+  destinationQueueName?: string;
+  sourceComponent?: string;
   handler?: string;
   worker?: string;
-  history: TrackingStep[];
+  errorMessage?: string;
+  isRoot?: boolean;
+  history?: TrackingStep[];
   expand?: boolean;
 }
 
@@ -56,11 +61,18 @@ export interface TrackingResponse {
 }
 
 export interface TrackingStep {
-  time: string;
+  time?: string;
+  timestamp?: string;
   step: string;
   details: string;
   status?: string;
   messageContent?: string;
+  queueOrTopicName?: string;
+  subscriberName?: string;
+  destinationQueueName?: string;
+  sourceComponent?: string;
+  handlerOrEventName?: string;
+  workerName?: string;
 }
 
 export interface LastActivity {

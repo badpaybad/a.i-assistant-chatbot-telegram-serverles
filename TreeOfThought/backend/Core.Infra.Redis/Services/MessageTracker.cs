@@ -69,6 +69,11 @@ public class MessageTracker : IMessageTracker
         await _db.HashIncrementAsync(CqrsConstants.StatsPrefix.TrimEnd(':'), statKey);
     }
 
+    public async Task DecrementStatAsync(string statKey)
+    {
+        await _db.HashDecrementAsync(CqrsConstants.StatsPrefix.TrimEnd(':'), statKey);
+    }
+
     public async Task UpdateLastActiveAsync(string name)
     {
         var key = CqrsConstants.GetLastActiveKey(name);

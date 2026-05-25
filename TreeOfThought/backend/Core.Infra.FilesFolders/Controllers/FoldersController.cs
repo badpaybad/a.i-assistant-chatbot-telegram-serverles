@@ -50,7 +50,7 @@ public class FoldersController : BaseController
     {
         command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Thư mục đã được tạo", trackingId = command.TrackingId });
     }
 
@@ -58,13 +58,13 @@ public class FoldersController : BaseController
     public async Task<IActionResult> Delete(Guid id)
     {
         var trackingId = GetTrackingId();
-        var command = new DeleteFolderCommand 
-        { 
+        var command = new DeleteFolderCommand
+        {
             TrackingId = trackingId,
-            FolderId = id, 
-            UserId = GetUserId().ToString() 
+            FolderId = id,
+            UserId = GetUserId().ToString()
         };
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Thư mục đã được xóa", trackingId });
     }
 
@@ -73,7 +73,7 @@ public class FoldersController : BaseController
     {
         command.TrackingId = GetTrackingId();
         command.UserId = GetUserId().ToString();
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Thư mục đã được di chuyển", trackingId = command.TrackingId });
     }
 
@@ -87,7 +87,7 @@ public class FoldersController : BaseController
             FolderId = id,
             NewName = request.NewName
         };
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Yêu cầu đổi tên thư mục đã được gửi", trackingId = command.TrackingId });
     }
 }

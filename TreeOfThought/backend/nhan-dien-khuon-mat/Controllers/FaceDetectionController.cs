@@ -27,7 +27,7 @@ public class FaceDetectionController : BaseController
     private readonly ILogger<FaceDetectionController> _logger;
 
     public FaceDetectionController(
-        IDispatcher dispatcher, 
+        IDispatcher dispatcher,
         NhanDienKhuonMatDbContext db,
         FirebaseService firebaseService,
         ILogger<FaceDetectionController> logger)
@@ -94,8 +94,8 @@ public class FaceDetectionController : BaseController
         }
 
         // Dispatch command asynchronously
-        await _dispatcher.SendAsync(command, useMemoryMode: true);
-        
+        await _dispatcher.SendAsync(command);
+
         return Ok(new { message = "Quá trình lưu trữ đang được xử lý.", trackingId = command.TrackingId });
     }
 
@@ -103,12 +103,12 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> GetSessions([FromQuery] int pageIndex = 1, [FromQuery] int pageSize = 10)
     {
         var userId = GetUserId();
-        
+
         var query = _db.UploadSessions
             .Where(s => s.UserId == userId);
 
         var totalCount = await query.CountAsync();
-        
+
         var sessions = await query
             .OrderByDescending(s => s.CreatedAt)
             .Skip((pageIndex - 1) * pageSize)

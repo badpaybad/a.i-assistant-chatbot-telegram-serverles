@@ -147,3 +147,80 @@ nz-card {
 :host-context([nz-theme="dark"]) .m-name {
   color: #bdc3c7;
 }
+
+.namespace-text {
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  background: rgba(24, 144, 255, 0.05);
+  color: #1890ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(24, 144, 255, 0.15);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 160px;
+  display: inline-block;
+  cursor: help;
+  vertical-align: middle;
+}
+
+:host-context([nz-theme="dark"]) .namespace-text {
+  background: rgba(24, 144, 255, 0.08);
+  border-color: rgba(24, 144, 255, 0.25);
+  color: #177ddc;
+}
+
+.context-row code {
+  font-family: 'Consolas', monospace;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+:host-context([nz-theme="dark"]) .context-row code {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.timeline-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.timeline-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.timeline-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.timeline-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+:host-context([nz-theme="dark"]) .timeline-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+:host-context([nz-theme="dark"]) .timeline-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+:host-context([nz-theme="dark"]) .json-viewer-container {
+  background: #141414 !important;
+  border-color: #303030 !important;
+}
+
+:host-context([nz-theme="dark"]) .timeline-body-content {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-left-color: #434343 !important;
+}
+
+:host-context([nz-theme="dark"]) .error-detail-banner {
+  background: #2a1215 !important;
+  border-color: #5c0011 !important;
+  border-left-color: #a61d24 !important;
+}
+

@@ -1,10 +1,17 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Constants;
+using Core.Infra.Base.Utils;
 using Core.Infra.Cqrs.Extensions;
+using Core.Infra.Cqrs.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Cqrs.Dispatchers;
 
@@ -49,6 +56,45 @@ public class CqrsDispatcher : IDispatcher
         _logger = logger;
     }
 
+    private string? ResolveSourceComponent()
+    {
+        try
+        {
+            var stackTrace = new System.Diagnostics.StackTrace();
+            var frames = stackTrace.GetFrames();
+            if (frames == null) return null;
+
+            foreach (var frame in frames)
+            {
+                var method = frame.GetMethod();
+                var type = method?.DeclaringType;
+                if (type == null) continue;
+
+                // Skip system and CQRS base infrastructure namespaces
+                if (type.Assembly.FullName?.StartsWith("System") == true ||
+                    type.Assembly.FullName?.StartsWith("Microsoft") == true ||
+                    type.FullName?.StartsWith("Core.Infra.Cqrs") == true)
+                {
+                    continue;
+                }
+
+                return type.FullName;
+            }
+        }
+        catch
+        {
+            // Graceful fallback
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// enqueue 
+    /// </summary>
+    /// <typeparam name="TCommand"></typeparam>
+    /// <param name="command"></param>
+    /// <param name="useMemoryMode"></param>
+    /// <returns></returns>
     public async Task SendAsync<TCommand>(TCommand command, bool useMemoryMode = false) where TCommand : IBaseCommand
     {
         var queueName = command.QueueName ?? CqrsExtensions.GetQueueNameFromCommand(command.GetType())!;
@@ -57,45 +103,227 @@ public class CqrsDispatcher : IDispatcher
         _allQueues.Add(queueName);
         await _tracker.UpdateLastActiveAsync(queueName);
 
+        // 1. Resolve/Propagate Tracking ID and IsRoot status
+        bool isRoot = false;
+        if (command.TrackingId == Guid.Empty)
+        {
+            command.TrackingId = CqrsTrackerContext.CurrentTrackingId != Guid.Empty
+                ? CqrsTrackerContext.CurrentTrackingId
+                : Guid.NewGuid();
+        }
+        if (CqrsTrackerContext.CurrentTrackingId == Guid.Empty)
+        {
+            isRoot = true;
+        }
+
+        if (command.Timestamp == default)
+        {
+            command.Timestamp = DateTime.UtcNow;
+        }
+
         var json = JsonSerializer.Serialize(command, CqrsJsonOptions.Default);
+        var sourceComponent = ResolveSourceComponent();
+        var dbLogger = _serviceProvider.GetService<CqrsDbLogger>();
+
+        // 2. Redis Telemetry: Total counters
+        await _tracker.IncrementStatAsync("total:all");
+        await _tracker.IncrementStatAsync($"total:{queueName}");
+
         if (useMemoryMode)
         {
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = command.TrackingId, 
-                Step = "Dispatcher", 
-                Details = "Memory Mode: Start",
+            // Write append-only record to PostgreSQL
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    command.TrackingId,
+                    command.GetType().FullName ?? command.GetType().Name,
+                    json,
+                    queueName,
+                    subscriberName: null,
+                    destinationQueueName: queueName,
+                    sourceComponent: sourceComponent,
+                    handlerName: null,
+                    workerId: null,
+                    step: "Enqueue",
+                    status: "Pending",
+                    isRoot: isRoot
+                );
+            }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = command.TrackingId,
+                Step = "Dispatcher",
+                Details = $"Memory Mode: Start. Source: {sourceComponent}",
                 MessageContent = json,
-                QueueOrTopicName = queueName
+                QueueOrTopicName = queueName,
+                HandlerOrEventName = command.GetType().FullName
             });
+
+            _logger.LogInformation("[CQRS Dispatcher] [SendAsync (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Queue: {Queue}, Source: {Source}",
+                command.TrackingId, command.GetType().FullName, queueName, sourceComponent);
+
             using var scope = _serviceProvider.CreateScope();
             var handler = scope.ServiceProvider.GetRequiredService<ICommandHandler<TCommand>>();
-            await handler.HandleAsync(command);
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = command.TrackingId, 
-                Step = "Dispatcher", 
-                Details = "Memory Mode: End",
-                Status = "success"
-            });
+            var handlerName = handler.GetType().FullName ?? handler.GetType().Name;
+
+            // Set active async context
+            var originalTrackingId = CqrsTrackerContext.CurrentTrackingId;
+            CqrsTrackerContext.CurrentTrackingId = command.TrackingId;
+
+            // Active processing telemetry updates
+            await _tracker.IncrementStatAsync("total:processing");
+            await _tracker.IncrementStatAsync($"processing:{queueName}");
+
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    command.TrackingId,
+                    command.GetType().FullName ?? command.GetType().Name,
+                    json,
+                    queueName,
+                    subscriberName: null,
+                    destinationQueueName: queueName,
+                    sourceComponent: sourceComponent,
+                    handlerName: handlerName,
+                    workerId: "InMemoryWorker",
+                    step: "Dequeue",
+                    status: "Processing"
+                );
+            }
+
+            try
+            {
+                await handler.HandleAsync(command);
+
+                // Success stats
+                await _tracker.IncrementStatAsync("total:success");
+                await _tracker.IncrementStatAsync($"success:{queueName}");
+                await _tracker.DecrementStatAsync("total:processing");
+                await _tracker.DecrementStatAsync($"processing:{queueName}");
+
+                if (dbLogger != null)
+                {
+                    await dbLogger.LogAsync(
+                        command.TrackingId,
+                        command.GetType().FullName ?? command.GetType().Name,
+                        json,
+                        queueName,
+                        subscriberName: null,
+                        destinationQueueName: queueName,
+                        sourceComponent: sourceComponent,
+                        handlerName: handlerName,
+                        workerId: "InMemoryWorker",
+                        step: "Execute",
+                        status: "Success"
+                    );
+                }
+
+                await _tracker.TrackAsync(new TrackingEntry
+                {
+                    TrackingId = command.TrackingId,
+                    Step = "Dispatcher",
+                    Details = $"Memory Mode: End (Success). Handler: {handlerName}",
+                    Status = "success"
+                });
+
+                _logger.LogInformation("[CQRS Dispatcher] [Success (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Handler: {Handler}",
+                    command.TrackingId, command.GetType().FullName, handlerName);
+            }
+            catch (Exception ex)
+            {
+                // Error stats
+                await _tracker.IncrementStatAsync("total:error");
+                await _tracker.IncrementStatAsync($"error:{queueName}");
+                await _tracker.DecrementStatAsync("total:processing");
+                await _tracker.DecrementStatAsync($"processing:{queueName}");
+
+                if (dbLogger != null)
+                {
+                    await dbLogger.LogAsync(
+                        command.TrackingId,
+                        command.GetType().FullName ?? command.GetType().Name,
+                        json,
+                        queueName,
+                        subscriberName: null,
+                        destinationQueueName: queueName,
+                        sourceComponent: sourceComponent,
+                        handlerName: handlerName,
+                        workerId: "InMemoryWorker",
+                        step: "Execute",
+                        status: "Error",
+                        errorMessage: ex.Message
+                    );
+                }
+
+                await _tracker.TrackAsync(new TrackingEntry
+                {
+                    TrackingId = command.TrackingId,
+                    Step = "Dispatcher",
+                    Details = $"Memory Mode: End (Error: {ex.Message}). Handler: {handlerName}",
+                    Status = "error"
+                });
+
+                _logger.LogError(ex, "[CQRS Dispatcher] [Error (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Handler: {Handler} failed.",
+                    command.TrackingId, command.GetType().FullName, handlerName);
+
+                throw;
+            }
+            finally
+            {
+                CqrsTrackerContext.CurrentTrackingId = originalTrackingId;
+            }
         }
         else
         {
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = command.TrackingId, 
-                Step = "Dispatcher", 
-                Details = $"Enqueuing to {queueName} (Priority)",
+            // Queue mode
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    command.TrackingId,
+                    command.GetType().FullName ?? command.GetType().Name,
+                    json,
+                    queueName,
+                    subscriberName: null,
+                    destinationQueueName: queueName,
+                    sourceComponent: sourceComponent,
+                    handlerName: null,
+                    workerId: null,
+                    step: "Enqueue",
+                    status: "Pending",
+                    isRoot: isRoot
+                );
+            }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = command.TrackingId,
+                Step = "Dispatcher",
+                Details = $"Enqueuing to {queueName} (Priority). Source: {sourceComponent}",
                 MessageContent = json,
                 QueueOrTopicName = queueName,
+                HandlerOrEventName = command.GetType().FullName,
                 Status = CqrsConstants.StatusPending
             });
+
+            _logger.LogInformation("[CQRS Dispatcher] [SendAsync (Queue Mode)] TrackingId: {TrackingId}, Command: {Type}, Queue: {Queue}, Source: {Source}",
+                command.TrackingId, command.GetType().FullName, queueName, sourceComponent);
 
             await _tracker.IncrementStatAsync($"total:{queueName}");
             await _tracker.IncrementStatAsync("commands_total");
 
-            // Use Ticks for priority (Epoch-like)
+            // Use Ticks for priority
             await _queueService.EnqueuePriorityAsync(queueName, command, DateTime.UtcNow.Ticks);
         }
     }
 
+    /// <summary>
+    /// publish 
+    /// </summary>
+    /// <typeparam name="TEvent"></typeparam>
+    /// <param name="event"></param>
+    /// <param name="useMemoryMode"></param>
+    /// <returns></returns>
     public async Task PublishAsync<TEvent>(TEvent @event, bool useMemoryMode = false) where TEvent : IBaseEvent
     {
         var topic = @event.TopicName ?? CqrsExtensions.GetTopicNameFromEvent(@event.GetType())!;
@@ -104,41 +332,202 @@ public class CqrsDispatcher : IDispatcher
         _allTopics.Add(topic);
         await _tracker.UpdateLastActiveAsync(topic);
 
+        // 1. Resolve/Propagate Tracking ID and IsRoot status
+        bool isRoot = false;
+        if (@event.TrackingId == Guid.Empty)
+        {
+            @event.TrackingId = CqrsTrackerContext.CurrentTrackingId != Guid.Empty
+                ? CqrsTrackerContext.CurrentTrackingId
+                : Guid.NewGuid();
+        }
+        if (CqrsTrackerContext.CurrentTrackingId == Guid.Empty)
+        {
+            isRoot = true;
+        }
+
+        if (@event.Timestamp == default)
+        {
+            @event.Timestamp = DateTime.UtcNow;
+        }
+
         var json = JsonSerializer.Serialize(@event, CqrsJsonOptions.Default);
+        var sourceComponent = ResolveSourceComponent();
+        var dbLogger = _serviceProvider.GetService<CqrsDbLogger>();
+
+        // 2. Redis Telemetry: Total counters
+        await _tracker.IncrementStatAsync("total:all");
+        await _tracker.IncrementStatAsync($"total:topic:{topic}");
 
         if (useMemoryMode)
         {
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = @event.TrackingId, 
-                Step = "Dispatcher", 
-                Details = "Memory Mode: Start",
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    @event.TrackingId,
+                    @event.GetType().FullName ?? @event.GetType().Name,
+                    json,
+                    topic,
+                    subscriberName: null,
+                    destinationQueueName: topic,
+                    sourceComponent: sourceComponent,
+                    handlerName: null,
+                    workerId: null,
+                    step: "Publish",
+                    status: "Pending",
+                    isRoot: isRoot
+                );
+            }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = @event.TrackingId,
+                Step = "Dispatcher",
+                Details = $"Memory Mode: Start (Publish). Source: {sourceComponent}",
                 MessageContent = json,
-                QueueOrTopicName = topic
+                QueueOrTopicName = topic,
+                HandlerOrEventName = @event.GetType().FullName
             });
+
+            _logger.LogInformation("[CQRS Dispatcher] [PublishAsync (Memory Mode)] TrackingId: {TrackingId}, Event: {Type}, Topic: {Topic}, Source: {Source}",
+                @event.TrackingId, @event.GetType().FullName, topic, sourceComponent);
+
             using var scope = _serviceProvider.CreateScope();
             var handlers = scope.ServiceProvider.GetServices<IEventHandler<TEvent>>();
             foreach (var handler in handlers)
             {
-                await handler.HandleAsync(@event);
+                var handlerName = handler.GetType().FullName ?? handler.GetType().Name;
+
+                // Set active context
+                var originalTrackingId = CqrsTrackerContext.CurrentTrackingId;
+                CqrsTrackerContext.CurrentTrackingId = @event.TrackingId;
+
+                await _tracker.IncrementStatAsync("total:processing");
+                await _tracker.IncrementStatAsync($"processing:topic:{topic}");
+
+                if (dbLogger != null)
+                {
+                    await dbLogger.LogAsync(
+                        @event.TrackingId,
+                        @event.GetType().FullName ?? @event.GetType().Name,
+                        json,
+                        topic,
+                        subscriberName: handler.GetType().Name,
+                        destinationQueueName: topic,
+                        sourceComponent: sourceComponent,
+                        handlerName: handlerName,
+                        workerId: "InMemoryWorker",
+                        step: "Dequeue",
+                        status: "Processing"
+                    );
+                }
+
+                try
+                {
+                    await handler.HandleAsync(@event);
+
+                    await _tracker.IncrementStatAsync("total:success");
+                    await _tracker.IncrementStatAsync($"success:topic:{topic}");
+                    await _tracker.DecrementStatAsync("total:processing");
+                    await _tracker.DecrementStatAsync($"processing:topic:{topic}");
+
+                    if (dbLogger != null)
+                    {
+                        await dbLogger.LogAsync(
+                            @event.TrackingId,
+                            @event.GetType().FullName ?? @event.GetType().Name,
+                            json,
+                            topic,
+                            subscriberName: handler.GetType().Name,
+                            destinationQueueName: topic,
+                            sourceComponent: sourceComponent,
+                            handlerName: handlerName,
+                            workerId: "InMemoryWorker",
+                            step: "Execute",
+                            status: "Success"
+                        );
+                    }
+
+                    _logger.LogInformation("[CQRS Dispatcher] [Success (Memory Mode)] TrackingId: {TrackingId}, Event: {Type}, Handler: {Handler}",
+                        @event.TrackingId, @event.GetType().FullName, handlerName);
+                }
+                catch (Exception ex)
+                {
+                    await _tracker.IncrementStatAsync("total:error");
+                    await _tracker.IncrementStatAsync($"error:topic:{topic}");
+                    await _tracker.DecrementStatAsync("total:processing");
+                    await _tracker.DecrementStatAsync($"processing:topic:{topic}");
+
+                    if (dbLogger != null)
+                    {
+                        await dbLogger.LogAsync(
+                            @event.TrackingId,
+                            @event.GetType().FullName ?? @event.GetType().Name,
+                            json,
+                            topic,
+                            subscriberName: handler.GetType().Name,
+                            destinationQueueName: topic,
+                            sourceComponent: sourceComponent,
+                            handlerName: handlerName,
+                            workerId: "InMemoryWorker",
+                            step: "Execute",
+                            status: "Error",
+                            errorMessage: ex.Message
+                        );
+                    }
+
+                    _logger.LogError(ex, "[CQRS Dispatcher] [Error (Memory Mode)] TrackingId: {TrackingId}, Event: {Type}, Handler: {Handler} failed.",
+                        @event.TrackingId, @event.GetType().FullName, handlerName);
+
+                    throw;
+                }
+                finally
+                {
+                    CqrsTrackerContext.CurrentTrackingId = originalTrackingId;
+                }
             }
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = @event.TrackingId, 
-                Step = "Dispatcher", 
-                Details = "Memory Mode: End",
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = @event.TrackingId,
+                Step = "Dispatcher",
+                Details = "Memory Mode: End (Publish)",
                 Status = CqrsConstants.StatusSuccess
             });
         }
         else
         {
-            // Tracking Point 1: Dispatch (Publish)
-            await _tracker.TrackAsync(new TrackingEntry { 
-                TrackingId = @event.TrackingId, 
-                Step = "Dispatcher", 
-                Details = $"Publishing to topic: {topic}",
+            // Queue mode
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    @event.TrackingId,
+                    @event.GetType().FullName ?? @event.GetType().Name,
+                    json,
+                    topic,
+                    subscriberName: null,
+                    destinationQueueName: null,
+                    sourceComponent: sourceComponent,
+                    handlerName: null,
+                    workerId: null,
+                    step: "Publish",
+                    status: "Pending",
+                    isRoot: isRoot
+                );
+            }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = @event.TrackingId,
+                Step = "Dispatcher",
+                Details = $"Publishing to topic: {topic}. Source: {sourceComponent}",
                 MessageContent = json,
                 QueueOrTopicName = topic,
+                HandlerOrEventName = @event.GetType().FullName,
                 Status = CqrsConstants.StatusPending
             });
+
+            _logger.LogInformation("[CQRS Dispatcher] [PublishAsync (Queue Mode)] TrackingId: {TrackingId}, Event: {Type}, Topic: {Topic}, Source: {Source}",
+                @event.TrackingId, @event.GetType().FullName, topic, sourceComponent);
 
             await _tracker.IncrementStatAsync($"total:topic:{topic}");
             await _tracker.IncrementStatAsync("events_total");
@@ -146,17 +535,36 @@ public class CqrsDispatcher : IDispatcher
             // Enqueue to each subscriber and track
             var subscribers = await _queueService.GetSetMembersAsync(CqrsConstants.GetTopicSubsKey(topic));
             long priority = DateTime.UtcNow.Ticks;
-            
+
             foreach (var sub in subscribers)
             {
                 var subQueue = CqrsConstants.GetSubQueueKey(topic, sub);
                 await _queueService.EnqueuePriorityAsync(subQueue, @event, priority);
-                
-                await _tracker.TrackAsync(new TrackingEntry {
+
+                if (dbLogger != null)
+                {
+                    await dbLogger.LogAsync(
+                        @event.TrackingId,
+                        @event.GetType().FullName ?? @event.GetType().Name,
+                        json,
+                        topic,
+                        subscriberName: sub,
+                        destinationQueueName: subQueue,
+                        sourceComponent: sourceComponent,
+                        handlerName: null,
+                        workerId: null,
+                        step: "Subscribe",
+                        status: "Pending"
+                    );
+                }
+
+                await _tracker.TrackAsync(new TrackingEntry
+                {
                     TrackingId = @event.TrackingId,
                     Step = "EventBus",
-                    Details = $"Enqueued to subscriber: {sub}",
+                    Details = $"Enqueued to subscriber: {sub} ({subQueue})",
                     QueueOrTopicName = subQueue,
+                    HandlerOrEventName = @event.GetType().FullName,
                     Status = CqrsConstants.StatusPending,
                     MessageContent = json
                 });
@@ -189,6 +597,18 @@ public class CqrsDispatcher : IDispatcher
                 {
                     var message = dequeued.Value;
                     var json = dequeued.RawJson;
+                    var dbLogger = _serviceProvider.GetService<CqrsDbLogger>();
+
+                    string? subName = null;
+                    if (trackingTargetName != queueName)
+                    {
+                        var parts = queueName.Split(':');
+                        if (parts.Length > 0)
+                        {
+                            subName = parts[parts.Length - 1];
+                        }
+                    }
+
                     try
                     {
                         // Update last active for the specific subscriber queue
@@ -196,35 +616,107 @@ public class CqrsDispatcher : IDispatcher
                         if (trackingTargetName != queueName)
                             await _tracker.UpdateLastActiveAsync(trackingTargetName);
 
+                        // Increment active processing counters
+                        await _tracker.IncrementStatAsync("total:processing");
+                        await _tracker.IncrementStatAsync($"processing:{queueName}");
+                        if (trackingTargetName != queueName)
+                            await _tracker.IncrementStatAsync($"processing:topic:{trackingTargetName}");
+
+                        // PostgreSQL log: Dequeue milestone
+                        if (dbLogger != null)
+                        {
+                            await dbLogger.LogAsync(
+                                message.TrackingId,
+                                message.GetType().FullName ?? message.GetType().Name,
+                                json,
+                                trackingTargetName,
+                                subscriberName: subName,
+                                destinationQueueName: queueName,
+                                sourceComponent: null,
+                                handlerName: handlerName,
+                                workerId: workerId,
+                                step: "Dequeue",
+                                status: "Processing"
+                            );
+                        }
+
                         // Tracking Point 2: Dequeue (Before Invoke)
-                        await _tracker.TrackAsync(new TrackingEntry { 
-                            TrackingId = message.TrackingId, 
-                            Step = "Worker", 
-                            Details = $"Dequeued from {queueName}",
+                        await _tracker.TrackAsync(new TrackingEntry
+                        {
+                            TrackingId = message.TrackingId,
+                            Step = "Worker",
+                            Details = $"Dequeued from {queueName}. Worker: {workerId}",
                             MessageContent = json,
                             QueueOrTopicName = queueName,
                             WorkerName = workerId,
+                            HandlerOrEventName = message.GetType().FullName,
                             Status = CqrsConstants.StatusProcessing
                         });
 
-                        using (var scope = _serviceProvider.CreateScope())
+                        _logger.LogInformation("[CQRS Worker] [Dequeue] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Worker: {Worker}, Handler: {Handler}",
+                            message.TrackingId, message.GetType().FullName, queueName, workerId, handlerName);
+
+                        // Execute within context
+                        var originalTrackingId = CqrsTrackerContext.CurrentTrackingId;
+                        CqrsTrackerContext.CurrentTrackingId = message.TrackingId;
+                        try
                         {
-                            await handlerInvoker(scope.ServiceProvider, message);
+                            using (var scope = _serviceProvider.CreateScope())
+                            {
+                                await handlerInvoker(scope.ServiceProvider, message);
+                            }
+                        }
+                        finally
+                        {
+                            CqrsTrackerContext.CurrentTrackingId = originalTrackingId;
+                        }
+
+                        // Success stats update
+                        await _tracker.IncrementStatAsync("total:success");
+                        await _tracker.IncrementStatAsync($"success:{queueName}");
+                        if (trackingTargetName != queueName)
+                            await _tracker.IncrementStatAsync($"success:topic:{trackingTargetName}");
+
+                        await _tracker.DecrementStatAsync("total:processing");
+                        await _tracker.DecrementStatAsync($"processing:{queueName}");
+                        if (trackingTargetName != queueName)
+                            await _tracker.DecrementStatAsync($"processing:topic:{trackingTargetName}");
+
+                        // PostgreSQL log: Success milestone
+                        if (dbLogger != null)
+                        {
+                            await dbLogger.LogAsync(
+                                message.TrackingId,
+                                message.GetType().FullName ?? message.GetType().Name,
+                                json,
+                                trackingTargetName,
+                                subscriberName: subName,
+                                destinationQueueName: queueName,
+                                sourceComponent: null,
+                                handlerName: handlerName,
+                                workerId: workerId,
+                                step: "Execute",
+                                status: "Success"
+                            );
                         }
 
                         // Tracking Point 3: Success (After Invoke OK)
-                        await _tracker.TrackAsync(new TrackingEntry { 
-                            TrackingId = message.TrackingId, 
-                            Step = "Worker", 
+                        await _tracker.TrackAsync(new TrackingEntry
+                        {
+                            TrackingId = message.TrackingId,
+                            Step = "Worker",
                             Details = $"Handled by {handlerName}",
                             HandlerOrEventName = handlerName,
                             Status = CqrsConstants.StatusSuccess
                         });
 
+                        _logger.LogInformation("[CQRS Worker] [Success] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Handler: {Handler} successfully completed.",
+                            message.TrackingId, message.GetType().FullName, queueName, handlerName);
+
                         await _tracker.IncrementStatAsync($"processed:{queueName}");
-                        if (trackingTargetName != queueName) 
+                        if (trackingTargetName != queueName)
                             await _tracker.IncrementStatAsync($"processed:topic:{trackingTargetName}");
-                        
+
                         await _tracker.IncrementStatAsync("total:processed");
                         await _tracker.LogStatusAsync(queueName, message.TrackingId, CqrsConstants.StatusSuccess);
                         if (trackingTargetName != queueName)
@@ -236,11 +728,43 @@ public class CqrsDispatcher : IDispatcher
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error processing message {TrackingId} in {WorkerId}", message.TrackingId, workerId);
-                        
-                        await _tracker.TrackAsync(new TrackingEntry { 
-                            TrackingId = message.TrackingId, 
-                            Step = "Worker", 
+                        _logger.LogError(ex, "[CQRS Worker] [Error] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Handler: {Handler} failed with error: {Error}",
+                            message.TrackingId, message.GetType().FullName, queueName, handlerName, ex.Message);
+
+                        // Error stats update
+                        await _tracker.IncrementStatAsync("total:error");
+                        await _tracker.IncrementStatAsync($"error:{queueName}");
+                        if (trackingTargetName != queueName)
+                            await _tracker.IncrementStatAsync($"error:topic:{trackingTargetName}");
+
+                        await _tracker.DecrementStatAsync("total:processing");
+                        await _tracker.DecrementStatAsync($"processing:{queueName}");
+                        if (trackingTargetName != queueName)
+                            await _tracker.DecrementStatAsync($"processing:topic:{trackingTargetName}");
+
+                        // PostgreSQL log: Error milestone
+                        if (dbLogger != null)
+                        {
+                            await dbLogger.LogAsync(
+                                message.TrackingId,
+                                message.GetType().FullName ?? message.GetType().Name,
+                                json,
+                                trackingTargetName,
+                                subscriberName: subName,
+                                destinationQueueName: queueName,
+                                sourceComponent: null,
+                                handlerName: handlerName,
+                                workerId: workerId,
+                                step: "Execute",
+                                status: "Error",
+                                errorMessage: ex.Message
+                            );
+                        }
+
+                        await _tracker.TrackAsync(new TrackingEntry
+                        {
+                            TrackingId = message.TrackingId,
+                            Step = "Worker",
                             Details = $"Error: {ex.Message}",
                             HandlerOrEventName = handlerName,
                             Status = CqrsConstants.StatusError
@@ -248,9 +772,9 @@ public class CqrsDispatcher : IDispatcher
                         await _queueService.ZAddAsync(CqrsConstants.GetTrackingKey(CqrsConstants.StatusError, trackingTargetName), message.TrackingId.ToString(), DateTime.UtcNow.Ticks);
 
                         await _tracker.IncrementStatAsync($"error:{queueName}");
-                        if (trackingTargetName != queueName) 
+                        if (trackingTargetName != queueName)
                             await _tracker.IncrementStatAsync($"error:topic:{trackingTargetName}");
-                        
+
                         await _tracker.IncrementStatAsync("total:error");
                         await _tracker.LogStatusAsync(queueName, message.TrackingId, CqrsConstants.StatusError, ex.Message);
                         if (trackingTargetName != queueName)
@@ -289,12 +813,12 @@ public class CqrsDispatcher : IDispatcher
         Func<CancellationToken, Task> startFunc = async (ct) =>
         {
             await ProcessMessagesAsync<TCommand>(
-                qName, 
-                CqrsConstants.GetProcessingKey(qName), 
-                workerId, 
+                qName,
+                CqrsConstants.GetProcessingKey(qName),
+                workerId,
                 qName,
                 async (sp, cmd) => await sp.GetRequiredService<THandler>().HandleAsync(cmd),
-                typeof(THandler).Name,
+                typeof(THandler).FullName ?? typeof(THandler).Name,
                 ct);
         };
 
@@ -309,7 +833,7 @@ public class CqrsDispatcher : IDispatcher
         };
 
         _workers[workerId] = workerInfo;
-        
+
         _registrations.Add(new HandlerRegistrationDto
         {
             MessageName = typeof(TCommand).Name,
@@ -330,7 +854,7 @@ public class CqrsDispatcher : IDispatcher
         _topicSubscribers[topic].Add(subscriberName);
 
         await _queueService.SetAddAsync(CqrsConstants.GetTopicSubsKey(topic), subscriberName);
-        
+
         var workerId = CqrsConstants.GetEventWorkerId(topic, subscriberName);
         var subQueue = CqrsConstants.GetSubQueueKey(topic, subscriberName);
         var processingQueue = CqrsConstants.GetSubProcKey(topic, subscriberName);
@@ -344,12 +868,12 @@ public class CqrsDispatcher : IDispatcher
                 try
                 {
                     await ProcessMessagesAsync<TEvent>(
-                        subQueue, 
-                        processingQueue, 
-                        workerId, 
+                        subQueue,
+                        processingQueue,
+                        workerId,
                         topic,
                         async (sp, @evt) => await sp.GetRequiredService<THandler>().HandleAsync(@evt),
-                        typeof(THandler).Name,
+                        typeof(THandler).FullName ?? typeof(THandler).Name,
                         ct,
                         stopWhenEmpty: true);
                 }
@@ -438,14 +962,14 @@ public class CqrsDispatcher : IDispatcher
 
     public List<string> GetAllQueues() => _allQueues.ToList();
     public List<string> GetAllTopics() => _allTopics.ToList();
-    public List<string> GetTopicSubscribers(string topic) => 
+    public List<string> GetTopicSubscribers(string topic) =>
         _topicSubscribers.TryGetValue(topic, out var subs) ? subs.ToList() : new List<string>();
 
     public async Task RetryCommandAsync(string queueName, string messageJson)
     {
         var deadQueue = queueName.EndsWith(":dead") ? queueName : $"{queueName}:dead";
         await _queueService.RemoveFromListAsync(deadQueue, messageJson);
-        
+
         using var doc = JsonDocument.Parse(messageJson);
         if (doc.RootElement.TryGetProperty("_original", out var original))
         {
@@ -457,7 +981,7 @@ public class CqrsDispatcher : IDispatcher
             var obj = JsonSerializer.Deserialize<JsonElement>(messageJson);
             await _queueService.EnqueueAsync(queueName.Replace(":dead", ""), obj);
         }
-        
+
         _logger.LogInformation("Retried message for queue {Queue}", queueName);
     }
 }

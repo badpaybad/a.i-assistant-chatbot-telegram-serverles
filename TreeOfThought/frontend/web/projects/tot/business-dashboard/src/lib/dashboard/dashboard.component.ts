@@ -18,6 +18,7 @@ import { NzSpaceModule } from 'ng-zorro-antd/space';
 import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
 import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzTimelineModule } from 'ng-zorro-antd/timeline';
 import { FormsModule } from '@angular/forms';
 import { interval, Subject, takeUntil } from 'rxjs';
 import { AppNotificationService, HttpClientService } from '@tot/core';
@@ -27,7 +28,7 @@ import { MessageListComponent } from '../message-list/message-list.component';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
 import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
-
+ 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
@@ -51,6 +52,7 @@ import { TopicDetailComponent } from '../topic-detail/topic-detail.component';
     NzDatePickerModule,
     NzTooltipModule,
     NzRadioModule,
+    NzTimelineModule,
     FormsModule,
     TranslocoModule,
     TotButtonComponent,
@@ -120,14 +122,14 @@ export class DashboardComponent implements OnInit {
 
   private initColumns(): void {
     this.trackingColumns = [
-      { title: 'Tracking ID', key: 'id' },
-      { title: 'Status', key: 'status' },
-      { title: 'Queue/Topic', key: 'queueOrTopic' },
-      { title: 'Handler', key: 'handler' },
-      { title: 'Worker', key: 'worker' },
-      { title: 'Content', key: 'content' },
-      { title: 'Created', key: 'time' },
-      { title: 'Hành động', key: 'action', width: '100px', right: true }
+      { title: 'Tracking ID', key: 'id', width: '280px' },
+      { title: 'Trạng thái', key: 'status', width: '120px', align: 'center' },
+      { title: 'Bước', key: 'step', width: '120px', align: 'center' },
+      { title: 'Nguồn phát (Source)', key: 'sourceComponent', width: '180px' },
+      { title: 'Kênh nhận (Queue/Topic)', key: 'queueOrTopic', width: '180px' },
+      { title: 'Handler', key: 'handler', width: '180px' },
+      { title: 'Thời gian', key: 'time', width: '160px' },
+      { title: 'Hành động', key: 'action', width: '120px', right: true }
     ];
 
     this.queueColumns = [
@@ -344,6 +346,33 @@ export class DashboardComponent implements OnInit {
         });
       }
     });
+  }
+
+  onRowExpand(event: { item: any; expanded: boolean }): void {
+    if (event.expanded && (!event.item.history || event.item.history.length === 0)) {
+      this.dashboardService.getTracking(event.item.id).subscribe({
+        next: (history) => {
+          event.item.history = history;
+        },
+        error: () => {
+          this.notification.error(
+            this.translate.translate('Lỗi'),
+            this.translate.translate('Không thể tải lịch sử chi tiết cho ID này')
+          );
+        }
+      });
+    }
+  }
+
+  toggleExpand(item: any): void {
+    item.expand = !item.expand;
+    this.onRowExpand({ item, expanded: item.expand });
+  }
+
+  shortenNamespace(name: string): string {
+    if (!name) return '-';
+    const parts = name.split('.');
+    return parts[parts.length - 1];
   }
 
   calculateLoad(length: number): number {

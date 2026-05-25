@@ -156,6 +156,7 @@ export class TotTableComponent {
   @Input() expandTemplate: TemplateRef<any> | null = null;
 
   @Output() queryParamsChange = new EventEmitter<NzTableQueryParams>();
+  @Output() expandChange = new EventEmitter<{ item: any; expanded: boolean }>();
 
   @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
 
@@ -200,6 +201,7 @@ export class TotTableComponent {
 
   onExpandChange(item: any, checked: boolean): void {
     item.expand = checked;
+    this.expandChange.emit({ item, expanded: checked });
   }
 
   isString(val: any): boolean {

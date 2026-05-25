@@ -132,6 +132,12 @@ using (var scope = app.Services.CreateScope())
 
         var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
         await faceDb.EnsureTablesCreatedAsync();
+
+        var cqrsDb = services.GetService<Core.Infra.Cqrs.Contexts.CqrsDbContext>();
+        if (cqrsDb != null)
+        {
+            await cqrsDb.EnsureTablesCreatedAsync();
+        }
     }
     catch (Exception ex)
     {

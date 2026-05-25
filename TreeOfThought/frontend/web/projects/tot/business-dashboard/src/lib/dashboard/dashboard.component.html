@@ -149,24 +149,42 @@
           [frontPagination]="false"
           [expandTemplate]="expandTpl"
           (queryParamsChange)="onQueryParamsChange($event)"
+          (expandChange)="onRowExpand($event)"
         >
+          <ng-template totCell="id" let-data>
+            <span class="id-text" [title]="data.id">{{ data.id }}</span>
+          </ng-template>
+
           <ng-template totCell="status" let-data>
-            <nz-tag [nzColor]="data.status === 'success' ? 'success' : data.status === 'error' ? 'error' : 'processing'">
-              {{ (data.status === 'success' ? 'Thành công' : data.status === 'error' ? 'Lỗi' : 'Đang chạy') | transloco }}
+            <nz-tag [nzColor]="data.status?.toLowerCase() === 'success' ? 'success' : data.status?.toLowerCase() === 'error' ? 'error' : 'processing'">
+              {{ (data.status?.toLowerCase() === 'success' ? 'Thành công' : data.status?.toLowerCase() === 'error' ? 'Lỗi' : 'Đang chạy') | transloco }}
             </nz-tag>
           </ng-template>
 
-          <ng-template totCell="worker" let-data>
-            {{ data.worker || data.workerId || '-' }}
+          <ng-template totCell="step" let-data>
+            <nz-tag [nzColor]="data.step === 'Enqueue' ? 'blue' : data.step === 'Publish' ? 'cyan' : data.step === 'Subscribe' ? 'purple' : data.step === 'Dequeue' ? 'orange' : 'green'">
+              {{ data.step }}
+            </nz-tag>
           </ng-template>
 
-          <ng-template totCell="content" let-data>
-            <div class="content-preview">
-              <code>{{ data.content | slice:0:50 }}{{ data.content?.length > 50 ? '...' : '' }}</code>
-              <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.content)">
-                <span nz-icon nzType="copy"></span>
-              </tot-button>
-            </div>
+          <ng-template totCell="sourceComponent" let-data>
+            <span class="namespace-text" [nz-tooltip]="data.sourceComponent">
+              {{ shortenNamespace(data.sourceComponent) }}
+            </span>
+          </ng-template>
+
+          <ng-template totCell="queueOrTopic" let-data>
+            <span class="queue-name" [nz-tooltip]="data.queueOrTopic">{{ shortenNamespace(data.queueOrTopic) }}</span>
+          </ng-template>
+
+          <ng-template totCell="handler" let-data>
+            <span class="namespace-text" [nz-tooltip]="data.handler">
+              {{ shortenNamespace(data.handler) }}
+            </span>
+          </ng-template>
+
+          <ng-template totCell="time" let-data>
+            {{ data.time | date:'yyyy-MM-dd HH:mm:ss' }}
           </ng-template>
 
           <ng-template totCell="action" let-data>
@@ -177,7 +195,7 @@
               <tot-button nzSize="small" nzType="link" [nzDanger]="true" (click)="deleteTracking(data)" nz-tooltip [nzTooltipTitle]="'Xóa' | transloco">
                 <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
               </tot-button>
-              <tot-button nzSize="small" nzType="link" (click)="data.expand = !data.expand">
+              <tot-button nzSize="small" nzType="link" (click)="toggleExpand(data)">
                 <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Payload' | transloco }}
               </tot-button>
             </div>
@@ -262,29 +280,108 @@
   </ng-container>
 
   <ng-template #expandTpl let-data>
-    <div class="json-viewer-container" style="width: 100%;">
-      <div class="json-header">
-        <span>{{ 'Payload' | transloco }}</span>
-        <tot-button nzSize="small" (click)="copyToClipboard(data.content)">
-          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
-        </tot-button>
-      </div>
-      <pre class="json-content">{{ formatJson(data.content) }}</pre>
-      
-      <div style="margin-top: 16px;">
-        <h4>{{ 'Lịch sử xử lý' | transloco }}</h4>
-        <nz-list [nzDataSource]="data.history" [nzRenderItem]="historyItem">
-          <ng-template #historyItem let-step>
-            <nz-list-item>
-              <div style="display: flex; width: 100%; gap: 16px;">
-                <span style="width: 150px; color: #999;">{{ step.time | date:'HH:mm:ss.SSS' }}</span>
-                <span style="width: 100px; font-weight: bold;">{{ step.step }}</span>
-                <span style="flex: 1;">{{ step.details }}</span>
-                <nz-tag *ngIf="step.status" [nzColor]="step.status === 'success' ? 'success' : 'processing'">{{ step.status }}</nz-tag>
+    <div class="json-viewer-container" style="width: 100%; padding: 24px; border-radius: 8px; border: 1px solid #f0f0f0; background: #fff;">
+      <div nz-row [nzGutter]="24">
+        <!-- Left: Prettified JSON Payload -->
+        <div nz-col [nzSpan]="10">
+          <div class="json-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-weight: 600; font-size: 14px; color: #1890ff;">
+              <i nz-icon nzType="code"></i> {{ 'Dữ liệu Tin nhắn (Payload)' | transloco }}
+            </span>
+            <tot-button nzSize="small" nzType="default" (click)="copyToClipboard(data.content)">
+              <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
+            </tot-button>
+          </div>
+          <pre class="json-content" style="max-height: 480px; border-radius: 6px; box-shadow: inset 0 2px 8px rgba(0,0,0,0.15);">{{ formatJson(data.content) }}</pre>
+        </div>
+
+        <!-- Right: Sequential Flow Timeline -->
+        <div nz-col [nzSpan]="14">
+          <h4 style="font-weight: 600; font-size: 15px; margin-bottom: 20px; color: #1890ff;">
+            <i nz-icon nzType="history"></i> {{ 'Lịch sử dòng thời gian sự kiện' | transloco }}
+          </h4>
+          
+          <div class="timeline-wrapper" style="max-height: 480px; overflow-y: auto; padding-right: 8px;">
+            <nz-timeline *ngIf="data.history && data.history.length > 0; else loadingHistory">
+              <nz-timeline-item 
+                *ngFor="let step of data.history" 
+                [nzColor]="step.status?.toLowerCase() === 'error' ? 'red' : step.status?.toLowerCase() === 'success' ? 'green' : 'blue'"
+              >
+                <!-- Timeline Header: Time + Step Tag -->
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+                  <span style="font-weight: bold; font-family: monospace; font-size: 12px; color: #888;">
+                    {{ (step.timestamp || step.time) | date:'yyyy-MM-dd HH:mm:ss.SSS' }}
+                  </span>
+                  <nz-tag [nzColor]="step.step === 'Enqueue' ? 'blue' : step.step === 'Publish' ? 'cyan' : step.step === 'Subscribe' ? 'purple' : step.step === 'Dequeue' ? 'orange' : 'green'">
+                    {{ step.step }}
+                  </nz-tag>
+                  <nz-tag *ngIf="step.status" [nzColor]="step.status.toLowerCase() === 'success' ? 'success' : step.status.toLowerCase() === 'error' ? 'error' : 'processing'">
+                    {{ step.status }}
+                  </nz-tag>
+                </div>
+
+                <!-- Timeline Body: Context & Qualified Entities -->
+                <div class="timeline-body-content" style="background: rgba(0,0,0,0.02); padding: 12px; border-radius: 6px; border-left: 3px solid #d9d9d9; margin-bottom: 12px;">
+                  <!-- Source Component -->
+                  <div *ngIf="step.sourceComponent" class="context-row" style="margin-bottom: 4px; font-size: 12px;">
+                    <span style="color: #666; font-weight: 500;">{{ 'Nguồn phát (Source)' | transloco }}: </span>
+                    <code style="color: #c41d7f;" [nz-tooltip]="step.sourceComponent">{{ shortenNamespace(step.sourceComponent) }}</code>
+                  </div>
+                  
+                  <!-- Topic/Queue Details -->
+                  <div *ngIf="step.queueOrTopicName" class="context-row" style="margin-bottom: 4px; font-size: 12px;">
+                    <span style="color: #666; font-weight: 500;">{{ 'Hàng đợi / Chủ đề' | transloco }}: </span>
+                    <code style="color: #096dd9;">{{ step.queueOrTopicName }}</code>
+                  </div>
+
+                  <!-- Subscriber and Destination Queue Details -->
+                  <div *ngIf="step.subscriberName" class="context-row" style="margin-bottom: 4px; font-size: 12px;">
+                    <span style="color: #666; font-weight: 500;">{{ 'Subscriber' | transloco }}: </span>
+                    <code style="color: #722ed1;">{{ step.subscriberName }}</code>
+                    <span *ngIf="step.destinationQueueName" style="color: #888; font-size: 11px; margin-left: 6px;">
+                      (Queue: <code>{{ step.destinationQueueName }}</code>)
+                    </span>
+                  </div>
+
+                  <!-- Worker -->
+                  <div *ngIf="step.workerName" class="context-row" style="margin-bottom: 4px; font-size: 12px;">
+                    <span style="color: #666; font-weight: 500;">Worker ID: </span>
+                    <code style="color: #d46b08;">{{ step.workerName }}</code>
+                  </div>
+
+                  <!-- Handler -->
+                  <div *ngIf="step.handlerOrEventName" class="context-row" style="margin-bottom: 4px; font-size: 12px;">
+                    <span style="color: #666; font-weight: 500;">Handler: </span>
+                    <code style="color: #389e0d;" [nz-tooltip]="step.handlerOrEventName">{{ shortenNamespace(step.handlerOrEventName) }}</code>
+                  </div>
+
+                  <!-- Step Description / Details -->
+                  <div *ngIf="step.details && step.status?.toLowerCase() !== 'error'" class="details-row" style="margin-top: 6px; font-size: 12px; color: #555;">
+                    <i nz-icon nzType="info-circle" style="color: #1890ff; margin-right: 4px;"></i> {{ step.details }}
+                  </div>
+
+                  <!-- Error Warning Banner -->
+                  <div *ngIf="step.status?.toLowerCase() === 'error'" class="error-detail-banner" style="margin-top: 8px; padding: 12px; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 4px; border-left: 4px solid #ff4d4f;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                      <span style="font-weight: 600; color: #cf1322;"><i nz-icon nzType="warning" nzTheme="fill"></i> {{ 'Chi tiết lỗi (Stack Trace)' | transloco }}</span>
+                      <tot-button nzSize="small" nzType="default" [nzDanger]="true" (click)="copyToClipboard(step.details)">
+                        <i nz-icon nzType="copy"></i> {{ 'Sao chép lỗi' | transloco }}
+                      </tot-button>
+                    </div>
+                    <pre style="margin: 0; padding: 8px; background: #141414; color: #ffccc7; font-size: 11px; max-height: 200px; overflow: auto; border-radius: 4px; font-family: 'Consolas', monospace; white-space: pre-wrap; word-break: break-all;">{{ step.details }}</pre>
+                  </div>
+                </div>
+              </nz-timeline-item>
+            </nz-timeline>
+            
+            <ng-template #loadingHistory>
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; color: #999;">
+                <i nz-icon nzType="loading" style="font-size: 32px; color: #1890ff; margin-bottom: 12px;"></i>
+                <p>{{ 'Đang tải lịch sử chi tiết...' | transloco }}</p>
               </div>
-            </nz-list-item>
-          </ng-template>
-        </nz-list>
+            </ng-template>
+          </div>
+        </div>
       </div>
     </div>
   </ng-template>

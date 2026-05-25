@@ -33,6 +33,17 @@ public static class CqrsExtensions
         // 2. Firebase Service (Used by some CQRS components/handlers)
         services.AddSingleton<FirebaseService>();
 
+        // 2b. PostgreSQL CQRS Logging Layer
+        var postgresConn = config["Cqrs:Postgresql"] ?? config["Cqrs:Postgres"];
+        if (!string.IsNullOrEmpty(postgresConn))
+        {
+            services.AddScoped<Contexts.CqrsDbContext>(sp => new Contexts.CqrsDbContext(
+                postgresConn,
+                Core.Infra.Data.Contexts.BaseDbContext.DbProviderType.PostgreSql
+            ));
+            services.AddSingleton<Services.CqrsDbLogger>();
+        }
+
         // 3. Core CQRS Dispatcher
         services.AddSingleton<IDispatcher, CqrsDispatcher>();
 
