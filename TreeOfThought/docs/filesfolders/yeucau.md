@@ -94,6 +94,7 @@ Thiết lập quyền linh hoạt cho từng tệp tin với các lựa chọn:
 
 Danh sách file UI cần dùng tot-table, cột hành động cần là fixed cố định, kết quả tìm kiếm file cột thao tác cũng cần fixed cố định
    cột tên file cần hiển thị tốt tên file không bị cắt ngắn khi màn hình hẹp có thể dài 25 ký tự có thể wrap xuống dòng
-   
+
 Ở Treeview folder TreeOfThought/frontend/web/projects/tot/business-files/src/lib/components/folder-tree/folder-tree.ts 
    bổ xung thêm nút ẩn hiện folder treeview ngay ở title cạnh nut thêm mới. khi màn hình mobi nhỏ có thể ẩn hiện treeview folder để thao tác với danh sách file và danh sách kết quả tìm kiếm file
+

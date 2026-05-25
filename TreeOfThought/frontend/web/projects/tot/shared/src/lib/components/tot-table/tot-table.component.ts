@@ -138,6 +138,23 @@ export interface TotTableColumn {
       color: #595959;
       font-family: monospace;
     }
+    @media (max-width: 767px) {
+      :host ::ng-deep .ant-table-cell-fix-left,
+      :host ::ng-deep .ant-table-cell-fix-right {
+        position: static !important;
+        left: auto !important;
+        right: auto !important;
+        border-left: none !important;
+        border-right: none !important;
+        box-shadow: none !important;
+      }
+      :host ::ng-deep .ant-table-content {
+        overflow-x: auto !important;
+      }
+      :host ::ng-deep .ant-table table {
+        min-width: 768px;
+      }
+    }
   `]
 })
 export class TotTableComponent {
