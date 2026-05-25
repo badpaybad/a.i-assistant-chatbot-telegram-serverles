@@ -85,8 +85,9 @@ folder TreeOfThought/docs/arch là tổng hợp từ các folder khác trong Tre
 
                 docs/iam/user/yeucau.md (mô tả chi tiết về UI thao tác ... nghiệp vụ khi click nút edit ... về chức năng quản lý user )
 
+                để làm nghiệp vụ mới : tot-dev.md làm nghiệp vụ: quản lý task nội bộ .... khi tạo cấu trúc xong chỉ cần người dùng bổ xung srs vào docs/quan-ly-task-noi-bo/yeucau.md đợi phattrien.md để duyệt và kiểm soát (nếu chưa ưng ý cập nhật yeucau.md ...) rồi khi đã ưng ý. yêu cầu tot-dev.md tiến hành code
 
-                như vậy khi làm việc , chỉ cần goi skill : tot-dev.md cần fix bug iam với lỗi user ....log error ở đây ... là tự nó đọc iam/yeucau.md iam/phattrien.md + iam/user/yeucau.md ...
+                như vậy khi làm việc , chỉ cần gọi skill : tot-dev.md cần fix bug iam với lỗi user ....log error ở đây ... là tự nó đọc iam/yeucau.md iam/phattrien.md + iam/user/yeucau.md ...
 
                 bug thì chat vào box: titan-dev.md sửa lỗi xxx ở nghiệp vụ iam user lỗi như sau : ....
 
