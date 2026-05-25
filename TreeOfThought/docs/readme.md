@@ -1,6 +1,6 @@
 # Tree of Thought
 
-Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng. Nguyên tắc chia ra để trị, DDD và K.I.S.S,
+Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng. Nguyên tắc chia ra để trị, DDD và K.I.S.S ...
 
 ## Cách xây dựng teamm làm việc và solution
 
@@ -83,7 +83,7 @@ folder TreeOfThought/docs/arch là tổng hợp từ các folder khác trong Tre
 
                 docs/iam/yeucau.md  ( mô tả về nguyên tắc, user có nhiều roles , acl là jj , db design, http rest ,...) 
 
-                docs/iam/user/mô tả chi tiết về UI thao tác ... nghiệp vụ khi click nút edit ... về chức năng quản lý user 
+                docs/iam/user/yeucau.md (mô tả chi tiết về UI thao tác ... nghiệp vụ khi click nút edit ... về chức năng quản lý user )
 
 
                 như vậy khi làm việc , chỉ cần goi skill : tot-dev.md cần fix bug iam với lỗi user ....log error ở đây ... là tự nó đọc iam/yeucau.md iam/phattrien.md + iam/user/yeucau.md ...
