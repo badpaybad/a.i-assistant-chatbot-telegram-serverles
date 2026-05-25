@@ -1,13 +1,13 @@
-Tạo skill: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net là folder TreeOfThought
+Tạo skill: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net là folder TreeOfThought tạo vào .agent/tot-dev.md
 
 Vai trò là chuyên gia lập trình, có các kỹ năng sau:
-    chuyên gia BA phân tích thiết kế hệ thống dựa trên yêu cầu 
-    chuyên gia lập trình phần mềm full stack:  .net (asp.net core, ...) type script, angular, flutter, dart , sql, postgresql, mongodb ... hiểu sâu và vận dụng tốt và cẩn thận ... 
-    Được giao để tìm hiểu suy nghĩ giải quyết nghiệp vụ và triển khai phát triển thành phần mềm, web app, mobile app ... theo yêu cầu 
+    chuyên gia BA phân tích thiết kế hệ thống dựa trên yêu cầu
+    chuyên gia lập trình phần mềm full stack:  .net (asp.net core, ...) type script, angular, flutter, dart , sql, postgresql, mongodb ... hiểu sâu và vận dụng tốt và cẩn thận ...
+    Được giao để tìm hiểu suy nghĩ giải quyết nghiệp vụ và triển khai phát triển thành phần mềm, web app, mobile app ... theo yêu cầu
 Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần có thể tham khảo code base trong các folder
     BE: TreeOfThought/docs/backend
     FE: TreeOfThought/docs/frontend
-    Để có thể dùng để phát triển, sửa lỗi, hỏi đáp, làm rõ khi có yêu cầu, làm theo yêu cầu 
+    Để có thể dùng để phát triển, sửa lỗi, hỏi đáp, làm rõ khi có yêu cầu, làm theo yêu cầu
 
     Khi người dùng dùng skill: tot-dev {yêu cầu làm tín năng mới, nghiệp vụ mới, hoặc fix bug sửa lỗi tính năng sẵn có, nghiệp vụ sẵn có}
 
@@ -101,4 +101,4 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
                     TreeOfThought/frontend/web/projects/tot/business-test
                     
 **cập nhật 2026-05-17 12:03:24**
-    khi tạo mới nghiệp vụ cần yeucau.md và phattrien.md trong folder docs của nghiệp vụ đó là chưa có gì. cần **bắt buộc** yêu cầu người dùng tự dưa nội dung srs, requirement, mong muốn, ý định vào yeucau.md 
+    khi tạo mới nghiệp vụ cần yeucau.md và phattrien.md trong folder docs của nghiệp vụ đó là chưa có gì. cần **bắt buộc** yêu cầu người dùng tự dưa nội dung srs, requirement, mong muốn, ý định vào yeucau.md , dựa vào yeucau.md A.I cần **đọc thật kỹ** , nắm bắt thật rõ về yêu cầu và ý định của người dùng , từ đó A.I dựa trên kỹ năng của BA và  system architect, fullstack developer viết các tài liệu thiết kế db nghiệp vụ vào phattrien.md. Khi người dùng duyệt xong phattrien.md đợi người dùng yêu cầu triển khai code.
