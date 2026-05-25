@@ -1,6 +1,6 @@
 # Tree of Thought
 
-Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng. Nguyên tắc chia ra để trị và K.I.S.S
+Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên việc chia ra để trị. Giúp LLM đi từ ngoài vào trong từ trong ra ngoài dễ dàng. Nguyên tắc chia ra để trị, DDD và K.I.S.S,
 
 ## Cách xây dựng teamm làm việc và solution
 
@@ -12,9 +12,14 @@ Dùng các folder,subfolder để chứa tri thức của dự án. Dựa trên 
 
 ### Giải thích
 
-Bước 1,2,3 là viết thành các quy chuẩn code đi theo giải pháp, đảm bảo sự nhất quán về các khái niệm được implement: clean arch, cqrs, kiss ...
+Bước 1,2,3 là viết thành các quy chuẩn code đi theo giải pháp, đảm bảo sự nhất quán về các khái niệm được implement: clean arch, cqrs, kiss, DDD ...
 
-Bước 4,5 là để scale dự án nhanh với nhiều team độc lập
+    Khi đã định hình cấu trúc dự án sẽ không cần developer, hay A.I chỉnh sửa mà chỉ cần sử dụng lại. 
+    Arch đã thiết kế để mở rộng, scale ngang dọc mà không bị lệ thuộc nghiệp vụ, không làm hỏng hệ thống khi có nghiệp vụ lỗi ... 
+
+Bước 4,5 là để scale dự án nhanh với nhiều team độc lập, cho nhiều nghiệp vụ cùng lúc. Kể các nghiệp vụ có liên quan tới nhau cũng không bị chờ đợi hoặc xung đột
+
+    Lúc này dev, hoặc A.I chỉ cần quan tâm tới docs/tên nghiệp vụ/yeucau.md và các subfolder của nghiệp vụ. Việc code đã có A.I triển khai khi người dùng duyệt phattrien.md 
 
 #### BE tổng kết nhanh về mặt cấu trúc
 
