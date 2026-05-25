@@ -45,9 +45,14 @@ việc thống kê về tổng số message vẫn dùng redis
     - tổng số message xử lý thành công
     - tổng số message xử ly lỗi
     - tổng số messagne đang xử lý
+
     - tổng số message theo queue name /topic name
     - tổng số messange đang xử lý theo queuee name / topic name
     - tổng số message xử lý thành công theo queue name/topic name
     - tổng số message xử lý lỗi theo queue name/topic name
+
+    - Tổng số worker đang chạy
+    - Tổng số worker stop
+    - Tổng số worker
 
 **chú ý** đọc file TreeOfThought/backend/Core.Infra.Cqrs/yeucau.md cần tạo file TreeOfThought/backend/Core.Infra.Cqrs/phattrien.md để tôi review trước khi tiến hành code. Khi có cập nhật ở yeucau.md cũng cần cập nhật cho phattrien.md để tôi xem trước khi tiến hành code

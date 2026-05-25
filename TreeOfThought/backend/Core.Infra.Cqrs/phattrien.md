@@ -276,6 +276,35 @@ private string? ResolveSourceComponent()
 }
 ```
 
+### 4.4. Cơ chế Tự phục hồi Đăng ký Sự kiện (Self-Healing Event Subscriptions) - Cập nhật 2026-05-25
+
+#### A. Vấn đề Phát sinh trong Môi trường Phân tán / Docker Local
+Hệ thống CQRS sử dụng cấu trúc lưu trữ tập trung của Redis Set (`topic_subs:<TopicName>`) để định tuyến động (route) các Event đến các Worker đăng ký tương ứng:
+1. Danh sách đăng ký (`UiNotificationHandler` cho `FolderCreatedEvent`, `FilePermissionSetEvent`, v.v.) chỉ được ghi vào Redis **một lần duy nhất** lúc Kestrel khởi chạy (`CqrsAutoRegistrationService.StartAsync`).
+2. Trong môi trường local hoặc staging, container Redis thường xuyên bị restart, flushall, hoặc reset dữ liệu.
+3. Khi Redis bị dọn dẹp, toàn bộ key `topic_subs:*` biến mất vĩnh viễn, trong khi tiến trình Kestrel vẫn tiếp tục hoạt động.
+4. Ở lần gọi sự kiện kế tiếp, `PublishAsync` truy vấn danh sách subscriber từ Redis và nhận về **0 subscribers** -> Tin nhắn sự kiện bị loại bỏ lặng lẽ và không bao giờ được chuyển tiếp tới Handler xử lý UI Notification.
+
+#### B. Giải pháp Khắc phục Tự phục hồi (Self-Healing)
+Chúng tôi triển khai giải pháp tự phục hồi tự động trực tiếp bên trong tiến trình xuất bản sự kiện `PublishAsync` của [CqrsDispatcher.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Cqrs/Dispatchers/CqrsDispatcher.cs):
+*   Khi phát hành một Event, hệ thống sẽ đối chiếu tên Topic với bản đăng ký nội bộ (in-memory) `_topicSubscribers` (được bảo toàn trọn vẹn trong luồng hoạt động của Singleton Dispatcher).
+*   Nếu phát hiện topic có đăng ký local nhưng key Set đăng ký tương ứng trên Redis trống/không tồn tại, Dispatcher sẽ tự động thực hiện ghi nhận lại (`SetAddAsync`) trước khi lấy danh sách.
+*   Giải pháp này giúp hệ thống đạt độ chịu lỗi cực cao (Fault-Tolerant), tự động khôi phục hoàn toàn metadata định tuyến trên Redis mà không cần can thiệp hay khởi động lại Kestrel.
+
+```csharp
+// Self-healing: Đảm bảo các local subscribers được ghi nhận lại vào Redis nếu bị xóa (do Redis bị restart/clear)
+if (_topicSubscribers.TryGetValue(topic, out var localSubs))
+{
+    foreach (var sub in localSubs)
+    {
+        await _queueService.SetAddAsync(CqrsConstants.GetTopicSubsKey(topic), sub);
+    }
+}
+```
+
+#### C. Tại sao không cần thiết áp dụng cho `SendAsync` (Command)?
+Hàng đợi của các Command sử dụng kiến trúc **Định tuyến tĩnh trực tiếp (Point-to-Point static routing)** thẳng đến queue nghiệp vụ được chỉ định (như `CreateFolderCommand`) mà không đi qua cơ chế tra cứu động từ Redis Set. Do đó, ngay cả khi Redis bị xóa sạch, lần gọi `SendAsync` kế tiếp sẽ tự động tái tạo hàng đợi vật lý và đẩy command vào xử lý thành công mà không gặp phải rủi ro định tuyến rỗng.
+
 ---
 
 ## 5. Kịch bản Truy vấn & Tra cứu Đáp ứng Nghiệp vụ
@@ -341,9 +370,19 @@ Cấu trúc DB append-only kết hợp liên kết Subscriber cho phép giải q
     *   API này truy vấn toàn bộ lịch sử các milestones của `TrackingId` đó từ PostgreSQL, sắp xếp nghiêm ngặt theo **`CreatedAt ASC, Id ASC`**.
     *   Việc sắp xếp theo `Id ASC` (Identity Auto-Increment) là chốt chặn đảm bảo thứ tự chronological tăng dần tuyệt đối, ngay cả khi các bước xử lý (ví dụ: `Enqueue` $\rightarrow$ `Dequeue` $\rightarrow$ `Execute`) diễn ra trong cùng một mili giây.
 
-#### C. Trạng thái Workers & Hoạt động cuối (Workers Status & Last Active)
-*   **Workers Status**: Trạng thái bật/tắt của các background worker được lấy trực tiếp từ `IDispatcher.GetWorkerStatus()`. Cho phép quản trị viên bấm nút Bật/Tắt worker trực tiếp từ UI thông qua lệnh gọi POST tương ứng.
+#### C. Trạng thái Workers & Hoạt động cuối (Workers Status & Last Active) - Cập nhật Bổ sung 2026-05-25
+*   **Workers Status & Metrics**: Trạng thái bật/tắt của các background worker được lấy trực tiếp từ `IDispatcher.GetWorkerStatus()`. Cho phép quản trị viên bấm nút Bật/Tắt worker trực tiếp từ UI thông qua lệnh gọi POST tương ứng. 
+    Để nâng cao khả năng quản trị, hệ thống bổ sung **3 thẻ chỉ số tổng quát (Summary Cards)** mới hiển thị ở đầu trang Dashboard:
+    - **Tổng số Worker đang chạy** (Running Workers): Tính từ danh sách worker có trạng thái `Running`.
+    - **Tổng số Worker đã dừng** (Stopped Workers): Tính từ danh sách worker có trạng thái khác `Running`.
+    - **Tổng số Worker đăng ký** (Total Workers): Tổng độ dài danh sách status của toàn bộ workers.
 *   **Hoạt động cuối (Last Active)**: Thời điểm ghi nhận hoạt động cuối cùng của từng queue/topic/subscriber được ghi vào Redis với TTL. API `GetLastActivity` trả về danh sách này, sắp xếp theo thời gian hoạt động giảm dần (`LastActive DESC`) giúp nhanh chóng phát hiện các queue hay subscriber bị ngắt kết nối hoặc không phản hồi.
+
+#### D. Thiết kế Fixed Action Columns trên bảng hiển thị
+Để tối ưu hóa trải nghiệm người dùng (UX) khi thao tác với bảng dữ liệu có nhiều cột:
+- **Theo dõi gần đây (Recent Tracing)** và **Trạng thái Workers (Workers Status)** sẽ được thiết lập cơ chế **Fixed Action Column** (cột Hành động được cố định nổi ở cạnh phải của bảng khi cuộn ngang).
+- Cột `Hành động` được định nghĩa `{ title: 'Hành động', key: 'action', width: '120px', right: true }`.
+- Thiết lập thuộc tính `[scroll]="{ x: '1300px' }"` trên `tot-table` của tab Tracking và `[scroll]="{ x: '1000px' }"` trên tab Workers để kích hoạt thanh cuộn ngang độc lập của bảng, giúp cố định (freeze) cột hành động nằm bên phải cực kỳ trơn tru và nhất quán như tab Hàng đợi & Chủ đề.
 
 ---
 

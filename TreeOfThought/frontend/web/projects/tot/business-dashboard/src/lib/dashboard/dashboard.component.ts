@@ -146,9 +146,9 @@ export class DashboardComponent implements OnInit {
 
     this.workerColumns = [
       { title: 'Tên Worker', key: 'id', width: '200px', left: true },
-      { title: 'Trạng thái', key: 'status', width: '120px' },
-      { title: 'Loại', key: 'type', width: '100px' },
-      { title: 'Chi tiết đích', key: 'queueOrTopicName' },
+      { title: 'Trạng thái', key: 'status', width: '120px', align: 'center' },
+      { title: 'Loại', key: 'type', width: '100px', align: 'center' },
+      { title: 'Chi tiết đích', key: 'queueOrTopicName', width: '380px' },
       { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
 
@@ -236,6 +236,14 @@ export class DashboardComponent implements OnInit {
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadTracking();
+  }
+
+  get runningWorkersCount(): number {
+    return this.workerList.filter(w => w.status === 'Running').length;
+  }
+
+  get stoppedWorkersCount(): number {
+    return this.workerList.filter(w => w.status !== 'Running').length;
   }
 
   updateComputedStats(): void {

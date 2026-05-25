@@ -114,7 +114,12 @@ Trang hiển thị sơ đồ truy vết cho một tin nhắn thông qua mã `tra
 đọc về thiết kế lưu trữ log tracking ở TreeOfThought/backend/Core.Infra.Cqrs/yeucau.md để sửa UI cho phù hợp
   Hàng đợi & Chủ đề  
   Theo dõi gần đây
-    - cần hiện message gốc hiện mới nhất lên trên 
+    - cần hiện message gốc hiện mới nhất lên trên
       - khi expand thì hiện lịch sử xử lý từng bước theo thời gian tăng dần
   Trạng thái Workers
   Hoạt động cuối
+  
+- Bổ xung thêm các tổng số
+
+- Table ở Hàng đợi & chủ đề đang hoạt động tốt
+  - cần sửa lại table cho Theo dõi gần đây, và Trạng thái Workers , bảng hiển thị cần có action fixed 

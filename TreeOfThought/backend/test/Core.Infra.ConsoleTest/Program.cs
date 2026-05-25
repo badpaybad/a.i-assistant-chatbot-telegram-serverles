@@ -72,71 +72,21 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        var config = ConfigurationHelper.LoadConfiguration();
-        var redisConn = config.GetSection("Redis:ConnectionString").Value ?? "localhost:6379,abortConnect=false";
+        var redisConn = "127.0.0.1:6379,password=Test123456,abortConnect=false";
+        Console.WriteLine($"Connecting to Redis: {redisConn}");
+        var redis = StackExchange.Redis.ConnectionMultiplexer.Connect(redisConn);
+        var db = redis.GetDatabase();
 
-        var host = Host.CreateDefaultBuilder(args)
-            .ConfigureServices((context, services) =>
-            {
-                services.AddSingleton<CqrsRedisService>(sp => new CqrsRedisService(redisConn, sp.GetRequiredService<ILogger<CqrsRedisService>>()));
-                services.AddSingleton<IQueueService>(sp => sp.GetRequiredService<CqrsRedisService>());
-                services.AddSingleton<IEventBus>(sp => sp.GetRequiredService<CqrsRedisService>());
-                services.AddSingleton<ICacheService>(sp => sp.GetRequiredService<CqrsRedisService>());
-                
-                services.AddSingleton<IMessageTracker>(sp => new MessageTracker(redisConn));
-                services.AddSingleton<IDispatcher, CqrsDispatcher>();
-                
-                // 3. Auto-register all handlers in this assembly
-                services.AddCqrsHandlers(typeof(Program).Assembly);
-            })
-            .ConfigureLogging(logging =>
-            {
-                logging.ClearProviders();
-                logging.AddConsole();
-            })
-            .Build();
-
-        var dispatcher = host.Services.GetRequiredService<IDispatcher>();
-        var tracker = host.Services.GetRequiredService<IMessageTracker>();
-
-        Console.WriteLine("--- CQRS Simulator Started ---");
-        Console.WriteLine($"Redis Connection: {redisConn}");
-
-        try 
+        var topics = new[] { "FolderCreatedEvent", "FilePermissionSetEvent" };
+        foreach (var t in topics)
         {
-            // 3. Workers are auto-registered via CqrsAutoRegistrationService (IHostedService)
-            await host.StartAsync();
-
-            // 4. Test Command
-            Console.WriteLine("\n[COMMAND TEST]");
-            var cmd = new SampleCommand { Data = "Message via Queue" };
-            Console.WriteLine($"Gửi command ID: {cmd.TrackingId}");
-            await dispatcher.SendAsync(cmd);
-
-            // Wait for workers to process
-            await Task.Delay(3000);
-
-            // 6. Check Worker Management
-            var workerId = "CommandWorker:sample_command_queue";
-            Console.WriteLine("\n--- Thử nghiệm Quản lý Worker ---");
-            var status = dispatcher.GetWorkerStatus();
-            var worker = status.FirstOrDefault(w => w.Id == workerId);
-            if (worker != null)
-                Console.WriteLine($"Trạng thái {workerId}: {worker.Status}");
-
-            // 7. Summary
-            Console.WriteLine("\n--- Kết quả Tracking ---");
-            var cmdHistory = await tracker.GetTrackingHistoryAsync(cmd.TrackingId);
-            Console.WriteLine($"Command History ({cmd.TrackingId}):");
-            foreach (var log in cmdHistory) Console.WriteLine($"  {log.Timestamp:O} | {log.Step} | {log.Details} | Status: {log.Status}");
+            var key = $"topic_subs:{t}";
+            var members = await db.SetMembersAsync(key);
+            Console.WriteLine($"\n[TOPIC SUBS] Key: {key}");
+            foreach (var m in members)
+            {
+                Console.WriteLine($"  - Member: {m}");
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"\n[ERROR] Lỗi thực thi simulator: {ex.Message}");
-            if (ex.InnerException != null) Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
-        }
-
-        Console.WriteLine("\nNhấn phím bất kỳ để kết thúc...");
-        if (!Console.IsInputRedirected) Console.ReadKey();
     }
 }

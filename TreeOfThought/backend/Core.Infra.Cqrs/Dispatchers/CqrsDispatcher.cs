@@ -552,6 +552,15 @@ public class CqrsDispatcher : IDispatcher
             await _tracker.IncrementStatAsync($"total:topic:{topic}");
             await _tracker.IncrementStatAsync("events_total");
 
+            // Self-healing: Ensure local subscribers are registered in Redis (in case of Redis restart/flush)
+            if (_topicSubscribers.TryGetValue(topic, out var localSubs))
+            {
+                foreach (var sub in localSubs)
+                {
+                    await _queueService.SetAddAsync(CqrsConstants.GetTopicSubsKey(topic), sub);
+                }
+            }
+
             // Enqueue to each subscriber and track
             var subscribers = await _queueService.GetSetMembersAsync(CqrsConstants.GetTopicSubsKey(topic));
             long priority = DateTime.UtcNow.Ticks;

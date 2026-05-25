@@ -4891,11 +4891,15 @@ var TopicDetailComponent = _TopicDetailComponent;
 // projects/tot/business-dashboard/src/lib/dashboard/dashboard.component.ts
 var _c06 = () => ({ color: "#3f8600" });
 var _c14 = () => ({ color: "#cf1322" });
-var _c22 = () => ({ x: "1200px" });
-var _c32 = () => ({ x: "800px" });
+var _c22 = () => ({ color: "#722ed1" });
+var _c32 = () => ({ color: "#8c8c8c" });
+var _c42 = () => ({ color: "#13c2c2" });
+var _c52 = () => ({ x: "1200px" });
+var _c62 = () => ({ x: "1300px" });
+var _c72 = () => ({ x: "1000px" });
 function DashboardComponent_nz_option_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "nz-option", 34);
+    \u0275\u0275element(0, "nz-option", 36);
     \u0275\u0275pipe(1, "transloco");
   }
   if (rf & 2) {
@@ -4905,27 +4909,40 @@ function DashboardComponent_nz_option_10_Template(rf, ctx) {
 }
 function DashboardComponent_ng_template_20_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 35);
+    \u0275\u0275element(0, "i", 37);
   }
 }
 function DashboardComponent_ng_template_26_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 36);
+    \u0275\u0275element(0, "i", 38);
   }
 }
 function DashboardComponent_ng_template_32_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 37);
+    \u0275\u0275element(0, "i", 39);
   }
 }
 function DashboardComponent_ng_template_38_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 38);
+    \u0275\u0275element(0, "i", 40);
+  }
+  if (rf & 2) {
+    \u0275\u0275property("nzSpin", true);
   }
 }
-function DashboardComponent_div_59_ng_template_4_Template(rf, ctx) {
+function DashboardComponent_ng_template_44_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275element(0, "i", 41);
+  }
+}
+function DashboardComponent_ng_template_50_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "i", 42);
+  }
+}
+function DashboardComponent_div_71_ng_template_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -4937,9 +4954,9 @@ function DashboardComponent_div_59_ng_template_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r3.type === "Queue" ? "queue" : data_r3.type === "Topic" ? "topic" : "internal"), " ");
   }
 }
-function DashboardComponent_div_59_ng_template_5_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 49);
+    \u0275\u0275elementStart(0, "nz-tag", 53);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -4949,9 +4966,9 @@ function DashboardComponent_div_59_ng_template_5_Template(rf, ctx) {
     \u0275\u0275textInterpolate(data_r4.activeCount);
   }
 }
-function DashboardComponent_div_59_ng_template_6_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 50);
+    \u0275\u0275elementStart(0, "nz-tag", 54);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -4961,9 +4978,9 @@ function DashboardComponent_div_59_ng_template_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate(data_r5.processedCount);
   }
 }
-function DashboardComponent_div_59_ng_template_7_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 51);
+    \u0275\u0275elementStart(0, "nz-tag", 55);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -4973,9 +4990,9 @@ function DashboardComponent_div_59_ng_template_7_Template(rf, ctx) {
     \u0275\u0275textInterpolate(data_r6.errorCount);
   }
 }
-function DashboardComponent_div_59_ng_template_8_nz_tag_1_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_8_nz_tag_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 49);
+    \u0275\u0275elementStart(0, "nz-tag", 53);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -4985,10 +5002,10 @@ function DashboardComponent_div_59_ng_template_8_nz_tag_1_Template(rf, ctx) {
     \u0275\u0275textInterpolate(w_r7);
   }
 }
-function DashboardComponent_div_59_ng_template_8_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 52);
-    \u0275\u0275template(1, DashboardComponent_div_59_ng_template_8_nz_tag_1_Template, 2, 1, "nz-tag", 53);
+    \u0275\u0275elementStart(0, "div", 56);
+    \u0275\u0275template(1, DashboardComponent_div_71_ng_template_8_nz_tag_1_Template, 2, 1, "nz-tag", 57);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -4997,12 +5014,12 @@ function DashboardComponent_div_59_ng_template_8_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", data_r8.workers);
   }
 }
-function DashboardComponent_div_59_ng_template_9_div_1_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_9_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 56)(1, "span", 57);
+    \u0275\u0275elementStart(0, "div", 60)(1, "span", 61);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "span", 58);
+    \u0275\u0275elementStart(3, "span", 62);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -5014,10 +5031,10 @@ function DashboardComponent_div_59_ng_template_9_div_1_Template(rf, ctx) {
     \u0275\u0275textInterpolate(h_r9.messageName);
   }
 }
-function DashboardComponent_div_59_ng_template_9_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_9_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 54);
-    \u0275\u0275template(1, DashboardComponent_div_59_ng_template_9_div_1_Template, 5, 2, "div", 55);
+    \u0275\u0275elementStart(0, "div", 58);
+    \u0275\u0275template(1, DashboardComponent_div_71_ng_template_9_div_1_Template, 5, 2, "div", 59);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -5026,11 +5043,11 @@ function DashboardComponent_div_59_ng_template_9_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", data_r10.handlers);
   }
 }
-function DashboardComponent_div_59_ng_template_10_Template(rf, ctx) {
+function DashboardComponent_div_71_ng_template_10_Template(rf, ctx) {
   if (rf & 1) {
     const _r11 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 59)(1, "tot-button", 60);
-    \u0275\u0275listener("click", function DashboardComponent_div_59_ng_template_10_Template_tot_button_click_1_listener() {
+    \u0275\u0275elementStart(0, "div", 63)(1, "tot-button", 64);
+    \u0275\u0275listener("click", function DashboardComponent_div_71_ng_template_10_Template_tot_button_click_1_listener() {
       const data_r12 = \u0275\u0275restoreView(_r11).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.viewDetails(data_r12));
@@ -5038,8 +5055,8 @@ function DashboardComponent_div_59_ng_template_10_Template(rf, ctx) {
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "tot-button", 61);
-    \u0275\u0275listener("click", function DashboardComponent_div_59_ng_template_10_Template_tot_button_click_4_listener() {
+    \u0275\u0275elementStart(4, "tot-button", 65);
+    \u0275\u0275listener("click", function DashboardComponent_div_71_ng_template_10_Template_tot_button_click_4_listener() {
       const data_r12 = \u0275\u0275restoreView(_r11).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.viewInProgress(data_r12));
@@ -5057,12 +5074,12 @@ function DashboardComponent_div_59_ng_template_10_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(6, 5, "Xem \u0111ang x\u1EED l\xFD"), " ");
   }
 }
-function DashboardComponent_div_59_Template(rf, ctx) {
+function DashboardComponent_div_71_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 39);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 43);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "tot-table", 40);
-    \u0275\u0275template(4, DashboardComponent_div_59_ng_template_4_Template, 3, 4, "ng-template", 41)(5, DashboardComponent_div_59_ng_template_5_Template, 2, 1, "ng-template", 42)(6, DashboardComponent_div_59_ng_template_6_Template, 2, 1, "ng-template", 43)(7, DashboardComponent_div_59_ng_template_7_Template, 2, 1, "ng-template", 44)(8, DashboardComponent_div_59_ng_template_8_Template, 2, 1, "ng-template", 45)(9, DashboardComponent_div_59_ng_template_9_Template, 2, 1, "ng-template", 46)(10, DashboardComponent_div_59_ng_template_10_Template, 7, 7, "ng-template", 47);
+    \u0275\u0275elementStart(3, "tot-table", 44);
+    \u0275\u0275template(4, DashboardComponent_div_71_ng_template_4_Template, 3, 4, "ng-template", 45)(5, DashboardComponent_div_71_ng_template_5_Template, 2, 1, "ng-template", 46)(6, DashboardComponent_div_71_ng_template_6_Template, 2, 1, "ng-template", 47)(7, DashboardComponent_div_71_ng_template_7_Template, 2, 1, "ng-template", 48)(8, DashboardComponent_div_71_ng_template_8_Template, 2, 1, "ng-template", 49)(9, DashboardComponent_div_71_ng_template_9_Template, 2, 1, "ng-template", 50)(10, DashboardComponent_div_71_ng_template_10_Template, 7, 7, "ng-template", 51);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -5070,17 +5087,17 @@ function DashboardComponent_div_59_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 8, "Danh s\xE1ch th\u1EF1c th\u1EC3 CQRS"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r12.queues)("columns", ctx_r12.queueColumns)("loading", ctx_r12.loading)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(10, _c22));
+    \u0275\u0275property("data", ctx_r12.queues)("columns", ctx_r12.queueColumns)("loading", ctx_r12.loading)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(10, _c52));
   }
 }
-function DashboardComponent_div_60_ng_template_9_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_9_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "i", 81);
+    \u0275\u0275element(0, "i", 85);
   }
 }
-function DashboardComponent_div_60_ng_template_31_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_31_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 82);
+    \u0275\u0275elementStart(0, "span", 86);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5091,9 +5108,9 @@ function DashboardComponent_div_60_ng_template_31_Template(rf, ctx) {
     \u0275\u0275textInterpolate(data_r15.id);
   }
 }
-function DashboardComponent_div_60_ng_template_32_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_32_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -5105,9 +5122,9 @@ function DashboardComponent_div_60_ng_template_32_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, (data_r16.status == null ? null : data_r16.status.toLowerCase()) === "success" ? "Th\xE0nh c\xF4ng" : (data_r16.status == null ? null : data_r16.status.toLowerCase()) === "error" ? "L\u1ED7i" : "\u0110ang ch\u1EA1y"), " ");
   }
 }
-function DashboardComponent_div_60_ng_template_33_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_33_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5118,9 +5135,9 @@ function DashboardComponent_div_60_ng_template_33_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", data_r17.step, " ");
   }
 }
-function DashboardComponent_div_60_ng_template_34_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_34_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 83);
+    \u0275\u0275elementStart(0, "span", 87);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5132,9 +5149,9 @@ function DashboardComponent_div_60_ng_template_34_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", ctx_r12.shortenNamespace(data_r18.sourceComponent), " ");
   }
 }
-function DashboardComponent_div_60_ng_template_35_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_35_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 84);
+    \u0275\u0275elementStart(0, "span", 88);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5146,9 +5163,9 @@ function DashboardComponent_div_60_ng_template_35_Template(rf, ctx) {
     \u0275\u0275textInterpolate(ctx_r12.shortenNamespace(data_r19.queueOrTopic));
   }
 }
-function DashboardComponent_div_60_ng_template_36_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_36_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 83);
+    \u0275\u0275elementStart(0, "span", 87);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5160,7 +5177,7 @@ function DashboardComponent_div_60_ng_template_36_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", ctx_r12.shortenNamespace(data_r20.handler), " ");
   }
 }
-function DashboardComponent_div_60_ng_template_37_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_37_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275text(0);
     \u0275\u0275pipe(1, "date");
@@ -5170,38 +5187,38 @@ function DashboardComponent_div_60_ng_template_37_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind2(1, 1, data_r21.time, "yyyy-MM-dd HH:mm:ss"), " ");
   }
 }
-function DashboardComponent_div_60_ng_template_38_Template(rf, ctx) {
+function DashboardComponent_div_72_ng_template_38_Template(rf, ctx) {
   if (rf & 1) {
     const _r22 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 59)(1, "tot-button", 85);
+    \u0275\u0275elementStart(0, "div", 63)(1, "tot-button", 89);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275listener("click", function DashboardComponent_div_60_ng_template_38_Template_tot_button_click_1_listener() {
+    \u0275\u0275listener("click", function DashboardComponent_div_72_ng_template_38_Template_tot_button_click_1_listener() {
       const data_r23 = \u0275\u0275restoreView(_r22).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.retryTracking(data_r23));
     });
-    \u0275\u0275element(3, "i", 86);
+    \u0275\u0275element(3, "i", 90);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "tot-button", 87);
+    \u0275\u0275elementStart(6, "tot-button", 91);
     \u0275\u0275pipe(7, "transloco");
-    \u0275\u0275listener("click", function DashboardComponent_div_60_ng_template_38_Template_tot_button_click_6_listener() {
+    \u0275\u0275listener("click", function DashboardComponent_div_72_ng_template_38_Template_tot_button_click_6_listener() {
       const data_r23 = \u0275\u0275restoreView(_r22).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.deleteTracking(data_r23));
     });
-    \u0275\u0275element(8, "i", 88);
+    \u0275\u0275element(8, "i", 92);
     \u0275\u0275text(9);
     \u0275\u0275pipe(10, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "tot-button", 89);
-    \u0275\u0275listener("click", function DashboardComponent_div_60_ng_template_38_Template_tot_button_click_11_listener() {
+    \u0275\u0275elementStart(11, "tot-button", 93);
+    \u0275\u0275listener("click", function DashboardComponent_div_72_ng_template_38_Template_tot_button_click_11_listener() {
       const data_r23 = \u0275\u0275restoreView(_r22).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.toggleExpand(data_r23));
     });
-    \u0275\u0275element(12, "i", 90);
+    \u0275\u0275element(12, "i", 94);
     \u0275\u0275text(13);
     \u0275\u0275pipe(14, "transloco");
     \u0275\u0275elementEnd()();
@@ -5222,77 +5239,77 @@ function DashboardComponent_div_60_ng_template_38_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 15, "Payload"), " ");
   }
 }
-function DashboardComponent_div_60_Template(rf, ctx) {
+function DashboardComponent_div_72_Template(rf, ctx) {
   if (rf & 1) {
     const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 39);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 43);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "div", 62)(4, "div", 63)(5, "div", 18)(6, "nz-input-group", 64)(7, "input", 65);
+    \u0275\u0275elementStart(3, "div", 66)(4, "div", 67)(5, "div", 20)(6, "nz-input-group", 68)(7, "input", 69);
     \u0275\u0275pipe(8, "transloco");
-    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_60_Template_input_ngModelChange_7_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_72_Template_input_ngModelChange_7_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r12.filters.trackingId, $event) || (ctx_r12.filters.trackingId = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_60_Template_input_ngModelChange_7_listener() {
+    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_72_Template_input_ngModelChange_7_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onFilterChange());
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(9, DashboardComponent_div_60_ng_template_9_Template, 1, 0, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(9, DashboardComponent_div_72_ng_template_9_Template, 1, 0, "ng-template", null, 7, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(11, "div", 18)(12, "nz-select", 66);
+    \u0275\u0275elementStart(11, "div", 20)(12, "nz-select", 70);
     \u0275\u0275pipe(13, "transloco");
-    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_60_Template_nz_select_ngModelChange_12_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_72_Template_nz_select_ngModelChange_12_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r12.filters.status, $event) || (ctx_r12.filters.status = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_60_Template_nz_select_ngModelChange_12_listener() {
+    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_72_Template_nz_select_ngModelChange_12_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onFilterChange());
     });
-    \u0275\u0275element(14, "nz-option", 67);
+    \u0275\u0275element(14, "nz-option", 71);
     \u0275\u0275pipe(15, "transloco");
-    \u0275\u0275element(16, "nz-option", 68);
+    \u0275\u0275element(16, "nz-option", 72);
     \u0275\u0275pipe(17, "transloco");
-    \u0275\u0275element(18, "nz-option", 69);
+    \u0275\u0275element(18, "nz-option", 73);
     \u0275\u0275pipe(19, "transloco");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(20, "div", 18)(21, "div", 70)(22, "nz-date-picker", 71);
+    \u0275\u0275elementStart(20, "div", 20)(21, "div", 74)(22, "nz-date-picker", 75);
     \u0275\u0275pipe(23, "transloco");
-    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_60_Template_nz_date_picker_ngModelChange_22_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_72_Template_nz_date_picker_ngModelChange_22_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r12.filters.fromDate, $event) || (ctx_r12.filters.fromDate = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_60_Template_nz_date_picker_ngModelChange_22_listener() {
+    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_72_Template_nz_date_picker_ngModelChange_22_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onFilterChange());
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(24, "nz-date-picker", 71);
+    \u0275\u0275elementStart(24, "nz-date-picker", 75);
     \u0275\u0275pipe(25, "transloco");
-    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_60_Template_nz_date_picker_ngModelChange_24_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_div_72_Template_nz_date_picker_ngModelChange_24_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r12.filters.toDate, $event) || (ctx_r12.filters.toDate = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_60_Template_nz_date_picker_ngModelChange_24_listener() {
+    \u0275\u0275listener("ngModelChange", function DashboardComponent_div_72_Template_nz_date_picker_ngModelChange_24_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onFilterChange());
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(26, "div", 18)(27, "tot-button", 72);
-    \u0275\u0275listener("click", function DashboardComponent_div_60_Template_tot_button_click_27_listener() {
+    \u0275\u0275elementStart(26, "div", 20)(27, "tot-button", 76);
+    \u0275\u0275listener("click", function DashboardComponent_div_72_Template_tot_button_click_27_listener() {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.resetFilters());
@@ -5300,25 +5317,25 @@ function DashboardComponent_div_60_Template(rf, ctx) {
     \u0275\u0275text(28);
     \u0275\u0275pipe(29, "transloco");
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(30, "tot-table", 73);
-    \u0275\u0275listener("queryParamsChange", function DashboardComponent_div_60_Template_tot_table_queryParamsChange_30_listener($event) {
+    \u0275\u0275elementStart(30, "tot-table", 77);
+    \u0275\u0275listener("queryParamsChange", function DashboardComponent_div_72_Template_tot_table_queryParamsChange_30_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onQueryParamsChange($event));
-    })("expandChange", function DashboardComponent_div_60_Template_tot_table_expandChange_30_listener($event) {
+    })("expandChange", function DashboardComponent_div_72_Template_tot_table_expandChange_30_listener($event) {
       \u0275\u0275restoreView(_r14);
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.onRowExpand($event));
     });
-    \u0275\u0275template(31, DashboardComponent_div_60_ng_template_31_Template, 2, 2, "ng-template", 74)(32, DashboardComponent_div_60_ng_template_32_Template, 3, 4, "ng-template", 75)(33, DashboardComponent_div_60_ng_template_33_Template, 2, 2, "ng-template", 76)(34, DashboardComponent_div_60_ng_template_34_Template, 2, 2, "ng-template", 77)(35, DashboardComponent_div_60_ng_template_35_Template, 2, 2, "ng-template", 78)(36, DashboardComponent_div_60_ng_template_36_Template, 2, 2, "ng-template", 79)(37, DashboardComponent_div_60_ng_template_37_Template, 2, 4, "ng-template", 80)(38, DashboardComponent_div_60_ng_template_38_Template, 15, 17, "ng-template", 47);
+    \u0275\u0275template(31, DashboardComponent_div_72_ng_template_31_Template, 2, 2, "ng-template", 78)(32, DashboardComponent_div_72_ng_template_32_Template, 3, 4, "ng-template", 79)(33, DashboardComponent_div_72_ng_template_33_Template, 2, 2, "ng-template", 80)(34, DashboardComponent_div_72_ng_template_34_Template, 2, 2, "ng-template", 81)(35, DashboardComponent_div_72_ng_template_35_Template, 2, 2, "ng-template", 82)(36, DashboardComponent_div_72_ng_template_36_Template, 2, 2, "ng-template", 83)(37, DashboardComponent_div_72_ng_template_37_Template, 2, 4, "ng-template", 84)(38, DashboardComponent_div_72_ng_template_38_Template, 15, 17, "ng-template", 51);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
     const prefixSearch_r24 = \u0275\u0275reference(10);
     const ctx_r12 = \u0275\u0275nextContext();
-    const expandTpl_r25 = \u0275\u0275reference(64);
+    const expandTpl_r25 = \u0275\u0275reference(76);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 28, "L\u1ECBch s\u1EED th\u1EF1c thi"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 29, "L\u1ECBch s\u1EED th\u1EF1c thi"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzGutter", 16);
     \u0275\u0275advance();
@@ -5327,39 +5344,39 @@ function DashboardComponent_div_60_Template(rf, ctx) {
     \u0275\u0275property("nzPrefix", prefixSearch_r24);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx_r12.filters.trackingId);
-    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(8, 30, "Tracking ID"));
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(8, 31, "Tracking ID"));
     \u0275\u0275advance(4);
     \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance();
     \u0275\u0275twoWayProperty("ngModel", ctx_r12.filters.status);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(13, 32, "Tr\u1EA1ng th\xE1i"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(13, 33, "Tr\u1EA1ng th\xE1i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 34, "Th\xE0nh c\xF4ng"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 35, "Th\xE0nh c\xF4ng"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(17, 36, "L\u1ED7i"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(17, 37, "L\u1ED7i"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(19, 38, "\u0110ang x\u1EED l\xFD"));
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(19, 39, "\u0110ang x\u1EED l\xFD"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 10);
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx_r12.filters.fromDate);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(23, 40, "B\u1EAFt \u0111\u1EA7u"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(23, 41, "B\u1EAFt \u0111\u1EA7u"));
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx_r12.filters.toDate);
-    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(25, 42, "K\u1EBFt th\xFAc"));
+    \u0275\u0275property("nzPlaceHolder", \u0275\u0275pipeBind1(25, 43, "K\u1EBFt th\xFAc"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzSpan", 5);
     \u0275\u0275advance();
     \u0275\u0275property("nzBlock", true);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 44, "\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(29, 45, "\u0110\u1EB7t l\u1EA1i b\u1ED9 l\u1ECDc"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r12.recentTracking)("columns", ctx_r12.trackingColumns)("loading", ctx_r12.loading)("total", ctx_r12.totalTracking)("pageIndex", ctx_r12.pageIndex)("pageSize", ctx_r12.pageSize)("frontPagination", false)("expandTemplate", expandTpl_r25);
+    \u0275\u0275property("data", ctx_r12.recentTracking)("columns", ctx_r12.trackingColumns)("loading", ctx_r12.loading)("total", ctx_r12.totalTracking)("pageIndex", ctx_r12.pageIndex)("pageSize", ctx_r12.pageSize)("frontPagination", false)("expandTemplate", expandTpl_r25)("scroll", \u0275\u0275pureFunction0(47, _c62));
   }
 }
-function DashboardComponent_div_61_ng_template_4_Template(rf, ctx) {
+function DashboardComponent_div_73_ng_template_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -5371,11 +5388,11 @@ function DashboardComponent_div_61_ng_template_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r26.status === "Running" ? "\u0110ang ch\u1EA1y" : "\u0110\xE3 d\u1EEBng"), " ");
   }
 }
-function DashboardComponent_div_61_ng_template_5_Template(rf, ctx) {
+function DashboardComponent_div_73_ng_template_5_Template(rf, ctx) {
   if (rf & 1) {
     const _r27 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tot-button", 95);
-    \u0275\u0275listener("click", function DashboardComponent_div_61_ng_template_5_Template_tot_button_click_0_listener() {
+    \u0275\u0275elementStart(0, "tot-button", 99);
+    \u0275\u0275listener("click", function DashboardComponent_div_73_ng_template_5_Template_tot_button_click_0_listener() {
       const data_r28 = \u0275\u0275restoreView(_r27).$implicit;
       const ctx_r12 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r12.toggleWorker(data_r28.id, data_r28.status));
@@ -5391,12 +5408,12 @@ function DashboardComponent_div_61_ng_template_5_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 3, data_r28.status === "Running" ? "D\u1EEBng" : "Kh\u1EDFi ch\u1EA1y"), " ");
   }
 }
-function DashboardComponent_div_61_ng_template_11_Template(rf, ctx) {
+function DashboardComponent_div_73_ng_template_11_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-list-item")(1, "span", 96);
+    \u0275\u0275elementStart(0, "nz-list-item")(1, "span", 100);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "nz-tag", 97);
+    \u0275\u0275elementStart(3, "nz-tag", 101);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd()();
@@ -5409,11 +5426,11 @@ function DashboardComponent_div_61_ng_template_11_Template(rf, ctx) {
     \u0275\u0275textInterpolate2("", item_r29.count, " ", \u0275\u0275pipeBind1(5, 3, "l\u1ED7i"));
   }
 }
-function DashboardComponent_div_61_div_14_Template(rf, ctx) {
+function DashboardComponent_div_73_div_14_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 98);
-    \u0275\u0275element(1, "i", 99);
-    \u0275\u0275elementStart(2, "p", 100);
+    \u0275\u0275elementStart(0, "div", 102);
+    \u0275\u0275element(1, "i", 103);
+    \u0275\u0275elementStart(2, "p", 104);
     \u0275\u0275text(3);
     \u0275\u0275pipe(4, "transloco");
     \u0275\u0275elementEnd()();
@@ -5423,20 +5440,20 @@ function DashboardComponent_div_61_div_14_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 1, "Kh\xF4ng c\xF3 l\u1ED7i n\xE0o \u0111\u01B0\u1EE3c ghi nh\u1EADn"));
   }
 }
-function DashboardComponent_div_61_Template(rf, ctx) {
+function DashboardComponent_div_73_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 39);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 43);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "tot-table", 91);
-    \u0275\u0275template(4, DashboardComponent_div_61_ng_template_4_Template, 3, 4, "ng-template", 75)(5, DashboardComponent_div_61_ng_template_5_Template, 3, 5, "ng-template", 47);
+    \u0275\u0275elementStart(3, "tot-table", 95);
+    \u0275\u0275template(4, DashboardComponent_div_73_ng_template_4_Template, 3, 4, "ng-template", 79)(5, DashboardComponent_div_73_ng_template_5_Template, 3, 5, "ng-template", 51);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(6, "nz-card", 92);
+    \u0275\u0275elementStart(6, "nz-card", 96);
     \u0275\u0275pipe(7, "transloco");
-    \u0275\u0275elementStart(8, "div", 63)(9, "div", 18)(10, "nz-list", 93);
-    \u0275\u0275template(11, DashboardComponent_div_61_ng_template_11_Template, 6, 5, "ng-template", null, 6, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(8, "div", 67)(9, "div", 20)(10, "nz-list", 97);
+    \u0275\u0275template(11, DashboardComponent_div_73_ng_template_11_Template, 6, 5, "ng-template", null, 8, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(13, "div", 18);
-    \u0275\u0275template(14, DashboardComponent_div_61_div_14_Template, 5, 3, "div", 94);
+    \u0275\u0275elementStart(13, "div", 20);
+    \u0275\u0275template(14, DashboardComponent_div_73_div_14_Template, 5, 3, "div", 98);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -5445,7 +5462,7 @@ function DashboardComponent_div_61_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 14, "Gi\xE1m s\xE1t ti\u1EBFn tr\xECnh (Workers)"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx_r12.workerList)("columns", ctx_r12.workerColumns)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(18, _c32));
+    \u0275\u0275property("data", ctx_r12.workerList)("columns", ctx_r12.workerColumns)("pageSize", 10)("frontPagination", true)("showPagination", true)("scroll", \u0275\u0275pureFunction0(18, _c72));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(7, 16, "Ph\xE2n t\xEDch l\u1ED7i"));
     \u0275\u0275advance(2);
@@ -5460,9 +5477,9 @@ function DashboardComponent_div_61_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r12.errorStats.length === 0);
   }
 }
-function DashboardComponent_div_62_ng_template_4_Template(rf, ctx) {
+function DashboardComponent_div_74_ng_template_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -5474,14 +5491,14 @@ function DashboardComponent_div_62_ng_template_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(2, 2, data_r31.type), " ");
   }
 }
-function DashboardComponent_div_62_ng_template_5_Template(rf, ctx) {
+function DashboardComponent_div_74_ng_template_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 103);
+    \u0275\u0275elementStart(0, "span", 107);
     \u0275\u0275pipe(1, "date");
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "date");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "span", 104);
+    \u0275\u0275elementStart(4, "span", 108);
     \u0275\u0275text(5);
     \u0275\u0275pipe(6, "date");
     \u0275\u0275elementEnd();
@@ -5495,12 +5512,12 @@ function DashboardComponent_div_62_ng_template_5_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" (", \u0275\u0275pipeBind2(6, 9, data_r32.lastActive, "HH:mm:ss"), ") ");
   }
 }
-function DashboardComponent_div_62_Template(rf, ctx) {
+function DashboardComponent_div_74_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-card", 39);
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 43);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "tot-table", 101);
-    \u0275\u0275template(4, DashboardComponent_div_62_ng_template_4_Template, 3, 4, "ng-template", 41)(5, DashboardComponent_div_62_ng_template_5_Template, 7, 12, "ng-template", 102);
+    \u0275\u0275elementStart(3, "tot-table", 105);
+    \u0275\u0275template(4, DashboardComponent_div_74_ng_template_4_Template, 3, 4, "ng-template", 45)(5, DashboardComponent_div_74_ng_template_5_Template, 7, 12, "ng-template", 106);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -5511,9 +5528,9 @@ function DashboardComponent_div_62_Template(rf, ctx) {
     \u0275\u0275property("data", ctx_r12.lastActivityList)("columns", ctx_r12.activityColumns)("pageSize", 10)("frontPagination", true)("showPagination", true);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_nz_tag_7_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_nz_tag_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 48);
+    \u0275\u0275elementStart(0, "nz-tag", 52);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -5524,13 +5541,13 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_nz_
     \u0275\u0275textInterpolate1(" ", step_r35.status, " ");
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_9_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_9_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 123)(1, "span", 124);
+    \u0275\u0275elementStart(0, "div", 127)(1, "span", 128);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "code", 125);
+    \u0275\u0275elementStart(4, "code", 129);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
   }
@@ -5545,13 +5562,13 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(ctx_r12.shortenNamespace(step_r35.sourceComponent));
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_10_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 123)(1, "span", 124);
+    \u0275\u0275elementStart(0, "div", 127)(1, "span", 128);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "code", 126);
+    \u0275\u0275elementStart(4, "code", 130);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
   }
@@ -5563,9 +5580,9 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(step_r35.queueOrTopicName);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_11_span_6_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_11_span_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 129);
+    \u0275\u0275elementStart(0, "span", 133);
     \u0275\u0275text(1, " (Queue: ");
     \u0275\u0275elementStart(2, "code");
     \u0275\u0275text(3);
@@ -5579,16 +5596,16 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(step_r35.destinationQueueName);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_11_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_11_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 123)(1, "span", 124);
+    \u0275\u0275elementStart(0, "div", 127)(1, "span", 128);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "code", 127);
+    \u0275\u0275elementStart(4, "code", 131);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(6, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_11_span_6_Template, 5, 1, "span", 128);
+    \u0275\u0275template(6, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_11_span_6_Template, 5, 1, "span", 132);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -5601,12 +5618,12 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275property("ngIf", step_r35.destinationQueueName);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_12_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_12_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 123)(1, "span", 124);
+    \u0275\u0275elementStart(0, "div", 127)(1, "span", 128);
     \u0275\u0275text(2, "Worker ID: ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "code", 130);
+    \u0275\u0275elementStart(3, "code", 134);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -5616,12 +5633,12 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(step_r35.workerName);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_13_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_13_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 123)(1, "span", 124);
+    \u0275\u0275elementStart(0, "div", 127)(1, "span", 128);
     \u0275\u0275text(2, "Handler: ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "code", 131);
+    \u0275\u0275elementStart(3, "code", 135);
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
@@ -5634,10 +5651,10 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(ctx_r12.shortenNamespace(step_r35.handlerOrEventName));
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_14_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_14_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 132);
-    \u0275\u0275element(1, "i", 133);
+    \u0275\u0275elementStart(0, "div", 136);
+    \u0275\u0275element(1, "i", 137);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
   }
@@ -5647,26 +5664,26 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate1(" ", step_r35.details, " ");
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_15_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_15_Template(rf, ctx) {
   if (rf & 1) {
     const _r36 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 134)(1, "div", 135)(2, "span", 136);
-    \u0275\u0275element(3, "i", 137);
+    \u0275\u0275elementStart(0, "div", 138)(1, "div", 139)(2, "span", 140);
+    \u0275\u0275element(3, "i", 141);
     \u0275\u0275text(4);
     \u0275\u0275pipe(5, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "tot-button", 138);
-    \u0275\u0275listener("click", function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_15_Template_tot_button_click_6_listener() {
+    \u0275\u0275elementStart(6, "tot-button", 142);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_15_Template_tot_button_click_6_listener() {
       \u0275\u0275restoreView(_r36);
       const step_r35 = \u0275\u0275nextContext().$implicit;
       const ctx_r12 = \u0275\u0275nextContext(3);
       return \u0275\u0275resetView(ctx_r12.copyToClipboard(step_r35.details));
     });
-    \u0275\u0275element(7, "i", 110);
+    \u0275\u0275element(7, "i", 114);
     \u0275\u0275text(8);
     \u0275\u0275pipe(9, "transloco");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(10, "pre", 139);
+    \u0275\u0275elementStart(10, "pre", 143);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()();
   }
@@ -5682,19 +5699,19 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div
     \u0275\u0275textInterpolate(step_r35.details);
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-timeline-item", 48)(1, "div", 116)(2, "span", 117);
+    \u0275\u0275elementStart(0, "nz-timeline-item", 52)(1, "div", 120)(2, "span", 121);
     \u0275\u0275text(3);
     \u0275\u0275pipe(4, "date");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "nz-tag", 48);
+    \u0275\u0275elementStart(5, "nz-tag", 52);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(7, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_nz_tag_7_Template, 2, 2, "nz-tag", 118);
+    \u0275\u0275template(7, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_nz_tag_7_Template, 2, 2, "nz-tag", 122);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "div", 119);
-    \u0275\u0275template(9, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_9_Template, 6, 5, "div", 120)(10, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_10_Template, 6, 4, "div", 120)(11, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_11_Template, 7, 5, "div", 120)(12, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_12_Template, 5, 1, "div", 120)(13, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_13_Template, 5, 2, "div", 120)(14, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_14_Template, 3, 1, "div", 121)(15, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_div_15_Template, 12, 8, "div", 122);
+    \u0275\u0275elementStart(8, "div", 123);
+    \u0275\u0275template(9, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_9_Template, 6, 5, "div", 124)(10, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_10_Template, 6, 4, "div", 124)(11, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_11_Template, 7, 5, "div", 124)(12, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_12_Template, 5, 1, "div", 124)(13, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_13_Template, 5, 2, "div", 124)(14, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_14_Template, 3, 1, "div", 125)(15, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_div_15_Template, 12, 8, "div", 126);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -5724,10 +5741,10 @@ function DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_Tem
     \u0275\u0275property("ngIf", (step_r35.status == null ? null : step_r35.status.toLowerCase()) === "error");
   }
 }
-function DashboardComponent_ng_template_63_nz_timeline_20_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_nz_timeline_20_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "nz-timeline");
-    \u0275\u0275template(1, DashboardComponent_ng_template_63_nz_timeline_20_nz_timeline_item_1_Template, 16, 15, "nz-timeline-item", 115);
+    \u0275\u0275template(1, DashboardComponent_ng_template_75_nz_timeline_20_nz_timeline_item_1_Template, 16, 15, "nz-timeline-item", 119);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -5736,10 +5753,10 @@ function DashboardComponent_ng_template_63_nz_timeline_20_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", data_r34.history);
   }
 }
-function DashboardComponent_ng_template_63_ng_template_21_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_ng_template_21_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 140);
-    \u0275\u0275element(1, "i", 141);
+    \u0275\u0275elementStart(0, "div", 144);
+    \u0275\u0275element(1, "i", 145);
     \u0275\u0275elementStart(2, "p");
     \u0275\u0275text(3);
     \u0275\u0275pipe(4, "transloco");
@@ -5750,34 +5767,34 @@ function DashboardComponent_ng_template_63_ng_template_21_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 1, "\u0110ang t\u1EA3i l\u1ECBch s\u1EED chi ti\u1EBFt..."));
   }
 }
-function DashboardComponent_ng_template_63_Template(rf, ctx) {
+function DashboardComponent_ng_template_75_Template(rf, ctx) {
   if (rf & 1) {
     const _r33 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 105)(1, "div", 63)(2, "div", 18)(3, "div", 106)(4, "span", 107);
-    \u0275\u0275element(5, "i", 108);
+    \u0275\u0275elementStart(0, "div", 109)(1, "div", 67)(2, "div", 20)(3, "div", 110)(4, "span", 111);
+    \u0275\u0275element(5, "i", 112);
     \u0275\u0275text(6);
     \u0275\u0275pipe(7, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "tot-button", 109);
-    \u0275\u0275listener("click", function DashboardComponent_ng_template_63_Template_tot_button_click_8_listener() {
+    \u0275\u0275elementStart(8, "tot-button", 113);
+    \u0275\u0275listener("click", function DashboardComponent_ng_template_75_Template_tot_button_click_8_listener() {
       const data_r34 = \u0275\u0275restoreView(_r33).$implicit;
       const ctx_r12 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r12.copyToClipboard(data_r34.content));
     });
-    \u0275\u0275element(9, "i", 110);
+    \u0275\u0275element(9, "i", 114);
     \u0275\u0275text(10);
     \u0275\u0275pipe(11, "transloco");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(12, "pre", 111);
+    \u0275\u0275elementStart(12, "pre", 115);
     \u0275\u0275text(13);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(14, "div", 18)(15, "h4", 112);
-    \u0275\u0275element(16, "i", 27);
+    \u0275\u0275elementStart(14, "div", 20)(15, "h4", 116);
+    \u0275\u0275element(16, "i", 29);
     \u0275\u0275text(17);
     \u0275\u0275pipe(18, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "div", 113);
-    \u0275\u0275template(20, DashboardComponent_ng_template_63_nz_timeline_20_Template, 2, 1, "nz-timeline", 114)(21, DashboardComponent_ng_template_63_ng_template_21_Template, 5, 3, "ng-template", null, 7, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(19, "div", 117);
+    \u0275\u0275template(20, DashboardComponent_ng_template_75_nz_timeline_20_Template, 2, 1, "nz-timeline", 118)(21, DashboardComponent_ng_template_75_ng_template_21_Template, 5, 3, "ng-template", null, 9, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -5876,9 +5893,9 @@ var _DashboardComponent = class _DashboardComponent {
     ];
     this.workerColumns = [
       { title: "T\xEAn Worker", key: "id", width: "200px", left: true },
-      { title: "Tr\u1EA1ng th\xE1i", key: "status", width: "120px" },
-      { title: "Lo\u1EA1i", key: "type", width: "100px" },
-      { title: "Chi ti\u1EBFt \u0111\xEDch", key: "queueOrTopicName" },
+      { title: "Tr\u1EA1ng th\xE1i", key: "status", width: "120px", align: "center" },
+      { title: "Lo\u1EA1i", key: "type", width: "100px", align: "center" },
+      { title: "Chi ti\u1EBFt \u0111\xEDch", key: "queueOrTopicName", width: "380px" },
       { title: "H\xE0nh \u0111\u1ED9ng", key: "action", width: "150px", right: true }
     ];
     this.activityColumns = [
@@ -5953,6 +5970,12 @@ var _DashboardComponent = class _DashboardComponent {
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadTracking();
+  }
+  get runningWorkersCount() {
+    return this.workerList.filter((w) => w.status === "Running").length;
+  }
+  get stoppedWorkersCount() {
+    return this.workerList.filter((w) => w.status !== "Running").length;
   }
   updateComputedStats() {
     this.workerList = this.stats.workerStatus;
@@ -6085,16 +6108,16 @@ var _DashboardComponent = class _DashboardComponent {
 _DashboardComponent.\u0275fac = function DashboardComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _DashboardComponent)();
 };
-_DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 65, vars: 59, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkers", ""], ["expandTpl", ""], ["prefixSearch", ""], ["errorItem", ""], ["loadingHistory", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nzType", "primary", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#722ed1"], [3, "nzTitle"], [3, "data", "columns", "loading", "pageSize", "frontPagination", "showPagination", "scroll"], ["totCell", "type"], ["totCell", "processing"], ["totCell", "success"], ["totCell", "error"], ["totCell", "workers"], ["totCell", "handlers"], ["totCell", "action"], [3, "nzColor"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzGhost"], ["nzType", "default", "nzSize", "small", 3, "click"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "click", "nzBlock"], [3, "queryParamsChange", "expandChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate"], ["totCell", "id"], ["totCell", "status"], ["totCell", "step"], ["totCell", "sourceComponent"], ["totCell", "queueOrTopic"], ["totCell", "handler"], ["totCell", "time"], ["nz-icon", "", "nzType", "search"], [1, "id-text", 3, "title"], [1, "namespace-text", 3, "nz-tooltip"], [1, "queue-name", 3, "nz-tooltip"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzDanger", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], ["nzSize", "small", "nzType", "link", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "data", "columns", "pageSize", "frontPagination", "showPagination", "scroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], [3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], [2, "margin-top", "16px"], ["nzSize", "middle", 3, "data", "columns", "pageSize", "frontPagination", "showPagination"], ["totCell", "lastActive"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "json-viewer-container", 2, "width", "100%", "padding", "24px", "border-radius", "8px", "border", "1px solid #f0f0f0", "background", "#fff"], [1, "json-header", 2, "margin-bottom", "12px", "display", "flex", "justify-content", "space-between", "align-items", "center"], [2, "font-weight", "600", "font-size", "14px", "color", "#1890ff"], ["nz-icon", "", "nzType", "code"], ["nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "copy"], [1, "json-content", 2, "max-height", "480px", "border-radius", "6px", "box-shadow", "inset 0 2px 8px rgba(0,0,0,0.15)"], [2, "font-weight", "600", "font-size", "15px", "margin-bottom", "20px", "color", "#1890ff"], [1, "timeline-wrapper", 2, "max-height", "480px", "overflow-y", "auto", "padding-right", "8px"], [4, "ngIf", "ngIfElse"], [3, "nzColor", 4, "ngFor", "ngForOf"], [2, "display", "flex", "align-items", "center", "gap", "12px", "margin-bottom", "6px"], [2, "font-weight", "bold", "font-family", "monospace", "font-size", "12px", "color", "#888"], [3, "nzColor", 4, "ngIf"], [1, "timeline-body-content", 2, "background", "rgba(0,0,0,0.02)", "padding", "12px", "border-radius", "6px", "border-left", "3px solid #d9d9d9", "margin-bottom", "12px"], ["class", "context-row", "style", "margin-bottom: 4px; font-size: 12px;", 4, "ngIf"], ["class", "details-row", "style", "margin-top: 6px; font-size: 12px; color: #555;", 4, "ngIf"], ["class", "error-detail-banner", "style", "margin-top: 8px; padding: 12px; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 4px; border-left: 4px solid #ff4d4f;", 4, "ngIf"], [1, "context-row", 2, "margin-bottom", "4px", "font-size", "12px"], [2, "color", "#666", "font-weight", "500"], [2, "color", "#c41d7f", 3, "nz-tooltip"], [2, "color", "#096dd9"], [2, "color", "#722ed1"], ["style", "color: #888; font-size: 11px; margin-left: 6px;", 4, "ngIf"], [2, "color", "#888", "font-size", "11px", "margin-left", "6px"], [2, "color", "#d46b08"], [2, "color", "#389e0d", 3, "nz-tooltip"], [1, "details-row", 2, "margin-top", "6px", "font-size", "12px", "color", "#555"], ["nz-icon", "", "nzType", "info-circle", 2, "color", "#1890ff", "margin-right", "4px"], [1, "error-detail-banner", 2, "margin-top", "8px", "padding", "12px", "background", "#fff1f0", "border", "1px solid #ffa39e", "border-radius", "4px", "border-left", "4px solid #ff4d4f"], [2, "display", "flex", "justify-content", "space-between", "align-items", "center", "margin-bottom", "6px"], [2, "font-weight", "600", "color", "#cf1322"], ["nz-icon", "", "nzType", "warning", "nzTheme", "fill"], ["nzSize", "small", "nzType", "default", 3, "click", "nzDanger"], [2, "margin", "0", "padding", "8px", "background", "#141414", "color", "#ffccc7", "font-size", "11px", "max-height", "200px", "overflow", "auto", "border-radius", "4px", "font-family", "'Consolas', monospace", "white-space", "pre-wrap", "word-break", "break-all"], [2, "display", "flex", "flex-direction", "column", "align-items", "center", "justify-content", "center", "height", "200px", "color", "#999"], ["nz-icon", "", "nzType", "loading", 2, "font-size", "32px", "color", "#1890ff", "margin-bottom", "12px"]], template: function DashboardComponent_Template(rf, ctx) {
+_DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _DashboardComponent, selectors: [["app-dashboard"]], decls: 77, vars: 77, consts: [["prefixEnqueued", ""], ["prefixProcessed", ""], ["prefixError", ""], ["prefixWorkersRunning", ""], ["prefixWorkersStopped", ""], ["prefixWorkersTotal", ""], ["expandTpl", ""], ["prefixSearch", ""], ["errorItem", ""], ["loadingHistory", ""], [1, "dashboard-container"], [1, "site-page-header", 3, "nzTitle"], [2, "display", "flex", "align-items", "center", "gap", "16px"], [2, "display", "flex", "align-items", "center", "gap", "8px"], [2, "color", "#999"], [2, "width", "120px", 3, "ngModelChange", "ngModel"], [3, "nzLabel", "nzValue", 4, "ngFor", "ngForOf"], ["nzType", "primary", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], ["nz-row", "", 1, "stats-row", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzSpan"], ["nzHoverable", ""], [3, "nzValue", "nzTitle", "nzPrefix"], [3, "nzValue", "nzTitle", "nzPrefix", "nzValueStyle"], [1, "tab-actions", 2, "margin-bottom", "16px", "display", "flex", "justify-content", "center"], ["nzButtonStyle", "solid", "nzSize", "large", 3, "ngModelChange", "ngModel"], ["nz-radio-button", "", "nzValue", "queues"], ["nz-icon", "", "nzType", "database"], ["nz-radio-button", "", "nzValue", "tracking"], ["nz-icon", "", "nzType", "history"], ["nz-radio-button", "", "nzValue", "workers"], ["nz-icon", "", "nzType", "api"], ["nz-radio-button", "", "nzValue", "activity"], ["nz-icon", "", "nzType", "clock-circle"], [3, "ngSwitch"], [4, "ngSwitchCase"], [3, "nzLabel", "nzValue"], ["nz-icon", "", "nzType", "cloud-upload", 2, "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", 2, "color", "#52c41a"], ["nz-icon", "", "nzType", "close-circle", 2, "color", "#ff4d4f"], ["nz-icon", "", "nzType", "sync", 2, "color", "#722ed1", 3, "nzSpin"], ["nz-icon", "", "nzType", "pause-circle", 2, "color", "#bfbfbf"], ["nz-icon", "", "nzType", "cluster", 2, "color", "#13c2c2"], [3, "nzTitle"], [3, "data", "columns", "loading", "pageSize", "frontPagination", "showPagination", "scroll"], ["totCell", "type"], ["totCell", "processing"], ["totCell", "success"], ["totCell", "error"], ["totCell", "workers"], ["totCell", "handlers"], ["totCell", "action"], [3, "nzColor"], ["nzColor", "processing"], ["nzColor", "success"], ["nzColor", "error"], [1, "worker-tags"], ["nzColor", "processing", 4, "ngFor", "ngForOf"], [1, "handler-grid"], ["class", "handler-tag-item", 4, "ngFor", "ngForOf"], [1, "handler-tag-item"], [1, "h-name"], [1, "m-name"], [2, "display", "flex", "gap", "4px", "flex-direction", "column"], ["nzType", "primary", "nzSize", "small", 3, "click", "nzGhost"], ["nzType", "default", "nzSize", "small", 3, "click"], [1, "filters-container", 2, "margin-bottom", "24px"], ["nz-row", "", 3, "nzGutter"], [3, "nzPrefix"], ["type", "text", "nz-input", "", 3, "ngModelChange", "ngModel", "placeholder"], ["nzAllowClear", "", 2, "width", "100%", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], ["nzValue", "success", 3, "nzLabel"], ["nzValue", "error", 3, "nzLabel"], ["nzValue", "processing", 3, "nzLabel"], [2, "display", "flex", "gap", "8px"], [2, "flex", "1", 3, "ngModelChange", "ngModel", "nzPlaceHolder"], [3, "click", "nzBlock"], [3, "queryParamsChange", "expandChange", "data", "columns", "loading", "total", "pageIndex", "pageSize", "frontPagination", "expandTemplate", "scroll"], ["totCell", "id"], ["totCell", "status"], ["totCell", "step"], ["totCell", "sourceComponent"], ["totCell", "queueOrTopic"], ["totCell", "handler"], ["totCell", "time"], ["nz-icon", "", "nzType", "search"], [1, "id-text", 3, "title"], [1, "namespace-text", 3, "nz-tooltip"], [1, "queue-name", 3, "nz-tooltip"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzTooltipTitle"], ["nz-icon", "", "nzType", "rollback"], ["nzSize", "small", "nzType", "link", "nz-tooltip", "", 3, "click", "nzDanger", "nzTooltipTitle"], ["nz-icon", "", "nzType", "delete"], ["nzSize", "small", "nzType", "link", 3, "click"], ["nz-icon", "", 3, "nzType"], [3, "data", "columns", "pageSize", "frontPagination", "showPagination", "scroll"], [2, "margin-top", "24px", 3, "nzTitle"], ["nzBordered", "", 3, "nzDataSource", "nzRenderItem"], ["class", "empty-state", 4, "ngIf"], [3, "click", "nzType", "nzDanger"], [2, "color", "#ff4d4f", "font-weight", "bold"], ["nzColor", "red"], [1, "empty-state"], ["nz-icon", "", "nzType", "check-circle", 2, "font-size", "48px", "color", "#52c41a"], [2, "margin-top", "16px"], ["nzSize", "middle", 3, "data", "columns", "pageSize", "frontPagination", "showPagination"], ["totCell", "lastActive"], [3, "nz-tooltip"], [2, "color", "#999", "font-size", "12px", "margin-left", "8px"], [1, "json-viewer-container", 2, "width", "100%", "padding", "24px", "border-radius", "8px", "border", "1px solid #f0f0f0", "background", "#fff"], [1, "json-header", 2, "margin-bottom", "12px", "display", "flex", "justify-content", "space-between", "align-items", "center"], [2, "font-weight", "600", "font-size", "14px", "color", "#1890ff"], ["nz-icon", "", "nzType", "code"], ["nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "copy"], [1, "json-content", 2, "max-height", "480px", "border-radius", "6px", "box-shadow", "inset 0 2px 8px rgba(0,0,0,0.15)"], [2, "font-weight", "600", "font-size", "15px", "margin-bottom", "20px", "color", "#1890ff"], [1, "timeline-wrapper", 2, "max-height", "480px", "overflow-y", "auto", "padding-right", "8px"], [4, "ngIf", "ngIfElse"], [3, "nzColor", 4, "ngFor", "ngForOf"], [2, "display", "flex", "align-items", "center", "gap", "12px", "margin-bottom", "6px"], [2, "font-weight", "bold", "font-family", "monospace", "font-size", "12px", "color", "#888"], [3, "nzColor", 4, "ngIf"], [1, "timeline-body-content", 2, "background", "rgba(0,0,0,0.02)", "padding", "12px", "border-radius", "6px", "border-left", "3px solid #d9d9d9", "margin-bottom", "12px"], ["class", "context-row", "style", "margin-bottom: 4px; font-size: 12px;", 4, "ngIf"], ["class", "details-row", "style", "margin-top: 6px; font-size: 12px; color: #555;", 4, "ngIf"], ["class", "error-detail-banner", "style", "margin-top: 8px; padding: 12px; background: #fff1f0; border: 1px solid #ffa39e; border-radius: 4px; border-left: 4px solid #ff4d4f;", 4, "ngIf"], [1, "context-row", 2, "margin-bottom", "4px", "font-size", "12px"], [2, "color", "#666", "font-weight", "500"], [2, "color", "#c41d7f", 3, "nz-tooltip"], [2, "color", "#096dd9"], [2, "color", "#722ed1"], ["style", "color: #888; font-size: 11px; margin-left: 6px;", 4, "ngIf"], [2, "color", "#888", "font-size", "11px", "margin-left", "6px"], [2, "color", "#d46b08"], [2, "color", "#389e0d", 3, "nz-tooltip"], [1, "details-row", 2, "margin-top", "6px", "font-size", "12px", "color", "#555"], ["nz-icon", "", "nzType", "info-circle", 2, "color", "#1890ff", "margin-right", "4px"], [1, "error-detail-banner", 2, "margin-top", "8px", "padding", "12px", "background", "#fff1f0", "border", "1px solid #ffa39e", "border-radius", "4px", "border-left", "4px solid #ff4d4f"], [2, "display", "flex", "justify-content", "space-between", "align-items", "center", "margin-bottom", "6px"], [2, "font-weight", "600", "color", "#cf1322"], ["nz-icon", "", "nzType", "warning", "nzTheme", "fill"], ["nzSize", "small", "nzType", "default", 3, "click", "nzDanger"], [2, "margin", "0", "padding", "8px", "background", "#141414", "color", "#ffccc7", "font-size", "11px", "max-height", "200px", "overflow", "auto", "border-radius", "4px", "font-family", "'Consolas', monospace", "white-space", "pre-wrap", "word-break", "break-all"], [2, "display", "flex", "flex-direction", "column", "align-items", "center", "justify-content", "center", "height", "200px", "color", "#999"], ["nz-icon", "", "nzType", "loading", 2, "font-size", "32px", "color", "#1890ff", "margin-bottom", "12px"]], template: function DashboardComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 8)(1, "nz-page-header", 9);
+    \u0275\u0275elementStart(0, "div", 10)(1, "nz-page-header", 11);
     \u0275\u0275pipe(2, "transloco");
-    \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 10)(5, "div", 11)(6, "span", 12);
+    \u0275\u0275elementStart(3, "nz-page-header-extra")(4, "div", 12)(5, "div", 13)(6, "span", 14);
     \u0275\u0275text(7);
     \u0275\u0275pipe(8, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "nz-select", 13);
+    \u0275\u0275elementStart(9, "nz-select", 15);
     \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.refreshInterval, $event) || (ctx.refreshInterval = $event);
@@ -6103,77 +6126,89 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275listener("ngModelChange", function DashboardComponent_Template_nz_select_ngModelChange_9_listener() {
       return ctx.onRefreshIntervalChange();
     });
-    \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 14);
+    \u0275\u0275template(10, DashboardComponent_nz_option_10_Template, 2, 4, "nz-option", 16);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(11, "tot-button", 15);
+    \u0275\u0275elementStart(11, "tot-button", 17);
     \u0275\u0275listener("click", function DashboardComponent_Template_tot_button_click_11_listener() {
       return ctx.refresh();
     });
-    \u0275\u0275element(12, "i", 16);
+    \u0275\u0275element(12, "i", 18);
     \u0275\u0275text(13);
     \u0275\u0275pipe(14, "transloco");
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(15, "div", 17)(16, "div", 18)(17, "nz-card", 19);
-    \u0275\u0275element(18, "nz-statistic", 20);
+    \u0275\u0275elementStart(15, "div", 19)(16, "div", 20)(17, "nz-card", 21);
+    \u0275\u0275element(18, "nz-statistic", 22);
     \u0275\u0275pipe(19, "transloco");
     \u0275\u0275template(20, DashboardComponent_ng_template_20_Template, 1, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(22, "div", 18)(23, "nz-card", 19);
-    \u0275\u0275element(24, "nz-statistic", 21);
+    \u0275\u0275elementStart(22, "div", 20)(23, "nz-card", 21);
+    \u0275\u0275element(24, "nz-statistic", 23);
     \u0275\u0275pipe(25, "transloco");
     \u0275\u0275template(26, DashboardComponent_ng_template_26_Template, 1, 0, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(28, "div", 18)(29, "nz-card", 19);
-    \u0275\u0275element(30, "nz-statistic", 21);
+    \u0275\u0275elementStart(28, "div", 20)(29, "nz-card", 21);
+    \u0275\u0275element(30, "nz-statistic", 23);
     \u0275\u0275pipe(31, "transloco");
     \u0275\u0275template(32, DashboardComponent_ng_template_32_Template, 1, 0, "ng-template", null, 2, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(34, "div", 18)(35, "nz-card", 19);
-    \u0275\u0275element(36, "nz-statistic", 20);
+    \u0275\u0275elementStart(34, "div", 20)(35, "nz-card", 21);
+    \u0275\u0275element(36, "nz-statistic", 23);
     \u0275\u0275pipe(37, "transloco");
-    \u0275\u0275template(38, DashboardComponent_ng_template_38_Template, 1, 0, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(38, DashboardComponent_ng_template_38_Template, 1, 1, "ng-template", null, 3, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(40, "div", 20)(41, "nz-card", 21);
+    \u0275\u0275element(42, "nz-statistic", 23);
+    \u0275\u0275pipe(43, "transloco");
+    \u0275\u0275template(44, DashboardComponent_ng_template_44_Template, 1, 0, "ng-template", null, 4, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(46, "div", 20)(47, "nz-card", 21);
+    \u0275\u0275element(48, "nz-statistic", 23);
+    \u0275\u0275pipe(49, "transloco");
+    \u0275\u0275template(50, DashboardComponent_ng_template_50_Template, 1, 0, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(40, "div", 22)(41, "nz-radio-group", 23);
-    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_radio_group_ngModelChange_41_listener($event) {
+    \u0275\u0275elementStart(52, "div", 24)(53, "nz-radio-group", 25);
+    \u0275\u0275twoWayListener("ngModelChange", function DashboardComponent_Template_nz_radio_group_ngModelChange_53_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.activeTab, $event) || (ctx.activeTab = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275elementStart(42, "label", 24);
-    \u0275\u0275element(43, "i", 25);
-    \u0275\u0275text(44);
-    \u0275\u0275pipe(45, "transloco");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(46, "label", 26);
-    \u0275\u0275element(47, "i", 27);
-    \u0275\u0275text(48);
-    \u0275\u0275pipe(49, "transloco");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(50, "label", 28);
-    \u0275\u0275element(51, "i", 29);
-    \u0275\u0275text(52);
-    \u0275\u0275pipe(53, "transloco");
-    \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(54, "label", 30);
-    \u0275\u0275element(55, "i", 31);
+    \u0275\u0275elementStart(54, "label", 26);
+    \u0275\u0275element(55, "i", 27);
     \u0275\u0275text(56);
     \u0275\u0275pipe(57, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(58, "label", 28);
+    \u0275\u0275element(59, "i", 29);
+    \u0275\u0275text(60);
+    \u0275\u0275pipe(61, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(62, "label", 30);
+    \u0275\u0275element(63, "i", 31);
+    \u0275\u0275text(64);
+    \u0275\u0275pipe(65, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(66, "label", 32);
+    \u0275\u0275element(67, "i", 33);
+    \u0275\u0275text(68);
+    \u0275\u0275pipe(69, "transloco");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementContainerStart(58, 32);
-    \u0275\u0275template(59, DashboardComponent_div_59_Template, 11, 11, "div", 33)(60, DashboardComponent_div_60_Template, 39, 46, "div", 33)(61, DashboardComponent_div_61_Template, 15, 19, "div", 33)(62, DashboardComponent_div_62_Template, 6, 8, "div", 33);
+    \u0275\u0275elementContainerStart(70, 34);
+    \u0275\u0275template(71, DashboardComponent_div_71_Template, 11, 11, "div", 35)(72, DashboardComponent_div_72_Template, 39, 48, "div", 35)(73, DashboardComponent_div_73_Template, 15, 19, "div", 35)(74, DashboardComponent_div_74_Template, 6, 8, "div", 35);
     \u0275\u0275elementContainerEnd();
-    \u0275\u0275template(63, DashboardComponent_ng_template_63_Template, 23, 15, "ng-template", null, 4, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(75, DashboardComponent_ng_template_75_Template, 23, 15, "ng-template", null, 6, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const prefixEnqueued_r38 = \u0275\u0275reference(21);
     const prefixProcessed_r39 = \u0275\u0275reference(27);
     const prefixError_r40 = \u0275\u0275reference(33);
-    const prefixWorkers_r41 = \u0275\u0275reference(39);
+    const prefixWorkersRunning_r41 = \u0275\u0275reference(39);
+    const prefixWorkersStopped_r42 = \u0275\u0275reference(45);
+    const prefixWorkersTotal_r43 = \u0275\u0275reference(51);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 35, "CQRS Dashboard"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 46, "CQRS Dashboard"));
     \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(8, 37, "T\u1EF1 \u0111\u1ED9ng l\xE0m m\u1EDBi"), ":");
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(8, 48, "T\u1EF1 \u0111\u1ED9ng l\xE0m m\u1EDBi"), ":");
     \u0275\u0275advance(2);
     \u0275\u0275twoWayProperty("ngModel", ctx.refreshInterval);
     \u0275\u0275advance();
@@ -6181,35 +6216,43 @@ _DashboardComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ ty
     \u0275\u0275advance();
     \u0275\u0275property("loading", ctx.loading);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 39, "L\xE0m m\u1EDBi"), " ");
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 50, "L\xE0m m\u1EDBi"), " ");
     \u0275\u0275advance(2);
     \u0275\u0275property("nzGutter", 16);
     \u0275\u0275advance();
-    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 41, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r38);
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:enqueued"] || 0)("nzTitle", \u0275\u0275pipeBind1(19, 52, "T\u1ED5ng tin nh\u1EAFn v\xE0o"))("nzPrefix", prefixEnqueued_r38);
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 43, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r39)("nzValueStyle", \u0275\u0275pureFunction0(57, _c06));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:processed"] || 0)("nzTitle", \u0275\u0275pipeBind1(25, 54, "\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng"))("nzPrefix", prefixProcessed_r39)("nzValueStyle", \u0275\u0275pureFunction0(72, _c06));
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 45, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r40)("nzValueStyle", \u0275\u0275pureFunction0(58, _c14));
+    \u0275\u0275property("nzValue", ctx.stats.stats["total:error"] || 0)("nzTitle", \u0275\u0275pipeBind1(31, 56, "L\u1ED7i h\u1EC7 th\u1ED1ng"))("nzPrefix", prefixError_r40)("nzValueStyle", \u0275\u0275pureFunction0(73, _c14));
     \u0275\u0275advance(4);
-    \u0275\u0275property("nzSpan", 6);
+    \u0275\u0275property("nzSpan", 4);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(37, 47, "Workers \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkers_r41);
+    \u0275\u0275property("nzValue", ctx.runningWorkersCount)("nzTitle", \u0275\u0275pipeBind1(37, 58, "Worker \u0111ang ch\u1EA1y"))("nzPrefix", prefixWorkersRunning_r41)("nzValueStyle", \u0275\u0275pureFunction0(74, _c22));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 4);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.stoppedWorkersCount)("nzTitle", \u0275\u0275pipeBind1(43, 60, "Worker \u0111\xE3 d\u1EEBng"))("nzPrefix", prefixWorkersStopped_r42)("nzValueStyle", \u0275\u0275pureFunction0(75, _c32));
+    \u0275\u0275advance(4);
+    \u0275\u0275property("nzSpan", 4);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzValue", ctx.workerList.length)("nzTitle", \u0275\u0275pipeBind1(49, 62, "T\u1ED5ng s\u1ED1 Worker"))("nzPrefix", prefixWorkersTotal_r43)("nzValueStyle", \u0275\u0275pureFunction0(76, _c42));
     \u0275\u0275advance(5);
     \u0275\u0275twoWayProperty("ngModel", ctx.activeTab);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(45, 49, "H\xE0ng \u0111\u1EE3i & Ch\u1EE7 \u0111\u1EC1"));
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 64, "H\xE0ng \u0111\u1EE3i & Ch\u1EE7 \u0111\u1EC1"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(49, 51, "Theo d\xF5i g\u1EA7n \u0111\xE2y"));
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(61, 66, "Theo d\xF5i g\u1EA7n \u0111\xE2y"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(53, 53, "Tr\u1EA1ng th\xE1i Workers"));
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(65, 68, "Tr\u1EA1ng th\xE1i Workers"));
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(57, 55, "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i"));
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(69, 70, "Ho\u1EA1t \u0111\u1ED9ng cu\u1ED1i"));
     \u0275\u0275advance(2);
     \u0275\u0275property("ngSwitch", ctx.activeTab);
     \u0275\u0275advance();
@@ -6327,28 +6370,40 @@ var DashboardComponent = _DashboardComponent;
   </nz-page-header>
 
   <div nz-row [nzGutter]="16" class="stats-row" style="margin-bottom: 24px;">
-    <div nz-col [nzSpan]="6">
+    <div nz-col [nzSpan]="4">
       <nz-card nzHoverable>
         <nz-statistic [nzValue]="stats.stats['total:enqueued'] || 0" [nzTitle]="'T\u1ED5ng tin nh\u1EAFn v\xE0o' | transloco" [nzPrefix]="prefixEnqueued"></nz-statistic>
         <ng-template #prefixEnqueued><i nz-icon nzType="cloud-upload" style="color: #1890ff;"></i></ng-template>
       </nz-card>
     </div>
-    <div nz-col [nzSpan]="6">
+    <div nz-col [nzSpan]="4">
       <nz-card nzHoverable>
         <nz-statistic [nzValue]="stats.stats['total:processed'] || 0" [nzTitle]="'\u0110\xE3 x\u1EED l\xFD th\xE0nh c\xF4ng' | transloco" [nzPrefix]="prefixProcessed" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
         <ng-template #prefixProcessed><i nz-icon nzType="check-circle" style="color: #52c41a;"></i></ng-template>
       </nz-card>
     </div>
-    <div nz-col [nzSpan]="6">
+    <div nz-col [nzSpan]="4">
       <nz-card nzHoverable>
         <nz-statistic [nzValue]="stats.stats['total:error'] || 0" [nzTitle]="'L\u1ED7i h\u1EC7 th\u1ED1ng' | transloco" [nzPrefix]="prefixError" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
         <ng-template #prefixError><i nz-icon nzType="close-circle" style="color: #ff4d4f;"></i></ng-template>
       </nz-card>
     </div>
-    <div nz-col [nzSpan]="6">
+    <div nz-col [nzSpan]="4">
       <nz-card nzHoverable>
-        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Workers \u0111ang ch\u1EA1y' | transloco" [nzPrefix]="prefixWorkers"></nz-statistic>
-        <ng-template #prefixWorkers><i nz-icon nzType="cluster" style="color: #722ed1;"></i></ng-template>
+        <nz-statistic [nzValue]="runningWorkersCount" [nzTitle]="'Worker \u0111ang ch\u1EA1y' | transloco" [nzPrefix]="prefixWorkersRunning" [nzValueStyle]="{ color: '#722ed1' }"></nz-statistic>
+        <ng-template #prefixWorkersRunning><i nz-icon nzType="sync" [nzSpin]="true" style="color: #722ed1;"></i></ng-template>
+      </nz-card>
+    </div>
+    <div nz-col [nzSpan]="4">
+      <nz-card nzHoverable>
+        <nz-statistic [nzValue]="stoppedWorkersCount" [nzTitle]="'Worker \u0111\xE3 d\u1EEBng' | transloco" [nzPrefix]="prefixWorkersStopped" [nzValueStyle]="{ color: '#8c8c8c' }"></nz-statistic>
+        <ng-template #prefixWorkersStopped><i nz-icon nzType="pause-circle" style="color: #bfbfbf;"></i></ng-template>
+      </nz-card>
+    </div>
+    <div nz-col [nzSpan]="4">
+      <nz-card nzHoverable>
+        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'T\u1ED5ng s\u1ED1 Worker' | transloco" [nzPrefix]="prefixWorkersTotal" [nzValueStyle]="{ color: '#13c2c2' }"></nz-statistic>
+        <ng-template #prefixWorkersTotal><i nz-icon nzType="cluster" style="color: #13c2c2;"></i></ng-template>
       </nz-card>
     </div>
   </div>
@@ -6459,6 +6514,7 @@ var DashboardComponent = _DashboardComponent;
           [pageSize]="pageSize" 
           [frontPagination]="false"
           [expandTemplate]="expandTpl"
+          [scroll]="{ x: '1300px' }"
           (queryParamsChange)="onQueryParamsChange($event)"
           (expandChange)="onRowExpand($event)"
         >
@@ -6523,7 +6579,7 @@ var DashboardComponent = _DashboardComponent;
           [pageSize]="10"
           [frontPagination]="true"
           [showPagination]="true"
-          [scroll]="{ x: '800px' }"
+          [scroll]="{ x: '1000px' }"
         >
           <ng-template totCell="status" let-data>
             <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
@@ -7691,4 +7747,4 @@ export {
   DashboardComponent,
   TracingComponent
 };
-//# sourceMappingURL=chunk-FNNDU4GH.js.map
+//# sourceMappingURL=chunk-H5H3VCPR.js.map
