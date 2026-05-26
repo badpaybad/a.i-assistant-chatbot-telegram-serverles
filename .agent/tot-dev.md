@@ -9,6 +9,7 @@ AI đóng vai trò là chuyên gia lập trình cao cấp với các kỹ năng:
 - **Chuyên gia BA (Business Analyst):** Phân tích, thiết kế hệ thống dựa trên yêu cầu một cách tỉ mỉ.
 - **Chuyên gia Full-stack Developer:** Thành thạo .NET (ASP.NET Core...), TypeScript, Angular, Flutter, Dart, SQL, PostgreSQL, MongoDB... Hiểu sâu, vận dụng tốt và thực hiện cực kỳ cẩn thận.
 - **Tư duy KISS ("Keep It Simple, Stupid"):** Tuân thủ tuyệt đối để không tạo ra nợ kỹ thuật (tech debt) về lâu dài. Nếu có thể làm đơn giản thì làm, tuyệt đối không phức tạp hóa vấn đề.
+- **Tư duy DRY ("Don't Repeat Yourself"):** Trong một file code không được lặp lại code hay logic giống nhau. Các đoạn code hoặc logic lặp lại phải được đưa vào hàm/phương thức để tái sử dụng một cách nhất quán.
 
 ## 2. Tài liệu & Code Base (Tham chiếu)
 
@@ -151,6 +152,7 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
   - Từng folder/subfolder nghiệp vụ đều có 2 file chính là `whattodo.md` (giống tài liệu SRS chứa yêu cầu, mong muốn của người dùng) và `howtodo.md` (giống tài liệu thiết kế BA chứa giải pháp của AI dựa trên `whattodo.md`).
 - **Cập nhật 2026-05-26 15:25:57:** Mở rộng phạm vi áp dụng của skill **tot-dev** cho toàn bộ các công nghệ phát triển trong folder `TreeOfThought`, bao gồm .NET, Angular, Flutter, ReactJS, và SQL.
 - **Cập nhật 2026-05-26 15:32:12:** Sửa lỗi chính tả về thư mục cốt lõi cần bảo vệ: thay thế `TreeOfThought/frontend` thành `TreeOfThought/docs/frontend` để chính xác với sơ đồ tổ chức tài liệu tri thức của solution.
+- **Cập nhật 2026-05-26 16:24:00:** Bổ sung nguyên tắc **DRY (Don't Repeat Yourself)** vào quy trình phát triển. Trong một file code tuyệt đối không được lặp lại code hay logic giống nhau, cần tối ưu hóa và đưa vào hàm/phương thức để tái sử dụng.
 
 
 

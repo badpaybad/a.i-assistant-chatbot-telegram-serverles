@@ -35,6 +35,7 @@ Dựa trên tài liệu và đọc kỹ các tài hệ thống và nếu cần c
         Nếu cần đặt ra câu hỏi thì cần phải đợi người dùng xác nhận
         KISS ("Keep It Simple, Stupid") tuân thủ để tư duy và hành động, để không tạo ra tech debt , nợ kỹ thuật về lâu dài
             Nếu làm đơn giản được thì làm, không được phức tạp vấn đề 
+        DRY (Don't Repeat Yourself) trong 1 file code không được lặp lại code hay logic giống nhau , có thể đưa vào hàm để tái sử dụng
         Khi làm cần đọc whattodo.md để hiểu ý định nếu chưa có cần thông báo người dùng đưa yêu cầu vào whattodo.md, howtodo.md là để xác thực giải pháp, code mới là để thực thi.
             Không được làm lộn xộn logic của người dùng, nếu không biết, không rõ, không chắc chắn thì hỏi
         Nếu howtodo.md đã có trước đó cần đọc kết hợp với whattodo.md để xác định rõ hơn về yêu cầu và ý định  

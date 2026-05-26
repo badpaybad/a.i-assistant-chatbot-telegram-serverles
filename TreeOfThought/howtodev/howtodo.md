@@ -10,7 +10,9 @@ Yêu cầu cốt lõi là thiết lập một bộ quy tắc và quy trình nghi
 
 Các mục tiêu cụ thể:
 1. **Vai trò AI:** Chuyên gia phân tích thiết kế hệ thống (BA) và chuyên gia lập trình Full Stack (.NET Core, Angular, TypeScript, PostgreSQL, MongoDB, Flutter/Dart...).
-2. **Nguyên tắc hành động:** Tuân thủ tư duy **KISS (Keep It Simple, Stupid)** để tránh tạo tech debt; bảo vệ cấu trúc hạ tầng cơ sở (Base Infrastructure) hiện có của dự án.
+2. **Nguyên tắc hành động:**
+   - Tuân thủ tư duy **KISS (Keep It Simple, Stupid)** để tránh tạo tech debt; bảo vệ cấu trúc hạ tầng cơ sở (Base Infrastructure) hiện có của dự án.
+   - Tuân thủ nguyên tắc **DRY (Don't Repeat Yourself)**: Trong một file code không được lặp lại code hay logic giống nhau, có thể đưa vào hàm để tái sử dụng.
 3. **Quy trình Phát triển (Workflow):**
    - Đối với tính năng mới: Tạo folder nghiệp vụ trong `docs`, chuẩn bị sẵn `whattodo.md` (trống) và `howtodo.md` (trống). Đọc `whattodo.md` của người dùng để đề xuất giải pháp vào `howtodo.md`. Luôn yêu cầu người dùng xác nhận giải pháp trong `howtodo.md` trước khi tiến hành viết code.
    - Đối với sửa lỗi (Fix Bug): Tìm đúng tài liệu và code hiện có, phân tích và đề xuất phương án tối ưu nhất vào `howtodo.md` của nghiệp vụ đó, chờ xác nhận từ người dùng trước khi sửa.
@@ -54,12 +56,12 @@ Do not make assumptions about the workflow or repository structure. Read `.agent
 
 ### B. Nội dung Hướng dẫn Trung tâm tại [.agent/tot-dev.md](file:///work/a.i-assistant-chatbot-telegram-serverles/.agent/tot-dev.md)
 File này đã được biên soạn cực kỳ chi tiết, trực quan hóa bằng các GitHub Alert trực quan và chia cấu trúc rõ ràng:
-- **Phần 1:** Vai trò & Năng lực (BA, Fullstack, KISS)
+- **Phần 1:** Vai trò & Năng lực (BA, Fullstack, KISS, DRY)
 - **Phần 2:** Tài liệu & Code Base tham chiếu (BE: `TreeOfThought/docs/backend`, FE: `TreeOfThought/docs/frontend`)
 - **Phần 3:** Quy trình Phát triển Nghiêm ngặt (Tính năng mới, Sửa lỗi, Hỏi đáp)
 - **Phần 4:** Nguyên tắc Hành động & Kiểm thử (Sử dụng `run-dev.sh` tại `TreeOfThought/backend/Core.Web.Api/` để debug)
 - **Phần 5:** Quy tắc đặt tên và cấu trúc Folder Nghiệp vụ (Quy tắc Kebab-case, Danh sách ngoại lệ, Thư mục Core Base cần bảo vệ)
-- **Phần 6:** Nhật ký cập nhật quy trình (Cập nhật 2026-05-17 12:03:24 về việc bắt buộc người dùng nhập SRS vào `whattodo.md` trống).
+- **Phần 6:** Nhật ký cập nhật quy trình (Cập nhật 2026-05-26 về việc bổ sung nguyên tắc DRY vào quy trình).
 
 ---
 
