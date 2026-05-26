@@ -1,6 +1,6 @@
 import { Component, Input, OnChanges, SimpleChanges, inject, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
 import { FilesFoldersService } from '../../services/files-folders.service';
-import { MessageBusService, EVENT_TOPICS, FirebaseService } from '@tot/core';
+import { MessageBusService, EVENT_TOPICS, HttpClientService } from '@tot/core';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { NzModalService, NzModalModule } from 'ng-zorro-antd/modal';
 import { NzTableModule } from 'ng-zorro-antd/table';
@@ -61,10 +61,32 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   @Output() toggleTree = new EventEmitter<void>();
 
   private filesFoldersService = inject(FilesFoldersService);
-  private firebaseService = inject(FirebaseService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
   private messageBus = inject(MessageBusService);
+  private http = inject(HttpClientService);
+
+  private waitForTask(trackingId: string, successMessage: string, onComplete?: (data: any) => void): void {
+    if (!trackingId) {
+      this.loadContent();
+      return;
+    }
+
+    this.http.registerCallback(trackingId, (data: any) => {
+      if (data.status === 'Completed') {
+        this.message.success(data.message || successMessage);
+        this.loadContent();
+        this.folderCreated.emit(); // To refresh folder tree
+        
+        if (onComplete) {
+          onComplete(data);
+        }
+      } else if (data.status === 'Error') {
+        this.message.error(data.message || 'Thao tác thất bại');
+        this.loadContent();
+      }
+    });
+  }
 
   folders: any[] = [];
   files: any[] = [];
@@ -241,9 +263,16 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
       nzContent: 'Bạn có chắc chắn muốn xóa file này?',
       nzOnOk: async () => {
         try {
-          const result: any = await this.filesFoldersService.deleteFile(fileId);
           this.message.loading('Đang xử lý xóa file...');
-          this.waitForTask(result.trackingId, 'File đã được xóa thành công');
+          await this.filesFoldersService.deleteFile(fileId, (data: any) => {
+            if (data.status === 'Completed') {
+              this.message.success(data.message || 'File đã được xóa thành công');
+              this.loadContent();
+            } else if (data.status === 'Error') {
+              this.message.error(data.message || 'Thao tác xóa file thất bại');
+              this.loadContent();
+            }
+          });
         } catch (error) {
           this.message.error('Lỗi khi xóa file');
         }
@@ -276,9 +305,17 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
       nzContent: 'Bạn có chắc chắn muốn xóa thư mục này và toàn bộ nội dung bên trong?',
       nzOnOk: async () => {
         try {
-          const result: any = await this.filesFoldersService.deleteFolder(folderId);
           this.message.loading('Đang xử lý xóa thư mục...');
-          this.waitForTask(result.trackingId, 'Thư mục đã được xóa thành công');
+          await this.filesFoldersService.deleteFolder(folderId, (data: any) => {
+            if (data.status === 'Completed') {
+              this.message.success(data.message || 'Thư mục đã được xóa thành công');
+              this.loadContent();
+              this.folderCreated.emit();
+            } else if (data.status === 'Error') {
+              this.message.error(data.message || 'Thao tác xóa thư mục thất bại');
+              this.loadContent();
+            }
+          });
         } catch (error) {
           this.message.error('Lỗi khi xóa thư mục');
         }
@@ -302,31 +339,6 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   onRenameCancelled(): void {
     this.renamePopoverVisibleId = null;
     this.renamingItem = null;
-  }
-
-  private waitForTask(trackingId: string, successMessage: string, onComplete?: (data: any) => void): void {
-    if (!trackingId) {
-      this.loadContent();
-      return;
-    }
-
-    const sub = this.firebaseService.subscribeToRequestId(trackingId, (data) => {
-      if (data.status === 'Completed') {
-        this.message.success(data.message || successMessage);
-        this.loadContent();
-        this.folderCreated.emit(); // To refresh folder tree
-        
-        if (onComplete) {
-          onComplete(data);
-        }
-        
-        sub(); // Unsubscribe
-      } else if (data.status === 'Error') {
-        this.message.error(data.message || 'Thao tác thất bại');
-        this.loadContent();
-        sub(); // Unsubscribe
-      }
-    });
   }
 
   async onSearch(): Promise<void> {

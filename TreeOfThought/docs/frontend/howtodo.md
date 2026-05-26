@@ -114,35 +114,42 @@ graph TD
 
 ---
 
-## ⚡ 3. Hệ thống CQRS Message Bus (Event Bus)
+## ⚡ 3. Hệ thống CQRS Message Bus & Tự động Theo dõi Yêu cầu (Request Tracking)
 
-Để mô phỏng hoàn hảo cơ chế CQRS từ Backend (`Core.Infra.Cqrs`), Frontend triển khai `MessageBusService` tích hợp sâu trong `@tot/core`.
+Để mô phỏng hoàn hảo cơ chế CQRS từ Backend (`Core.Infra.Cqrs`), Frontend triển khai hệ thống Event Bus chung kết hợp với cơ chế **Tự động theo dõi Yêu cầu realtime (Automated Request Tracking)** tại `HttpClientService`.
 
 ```mermaid
 sequenceDiagram
-    participant FE as Module nghiệp vụ FE
-    participant MB as MessageBusService (Core)
+    participant FE as Component Nghiệp vụ (FE)
+    participant HC as HttpClientService (Core)
     participant BE as REST API Backend
     participant FS as Cloud Firestore
     
-    rect rgb(240, 248, 255)
-    Note over FE, MB: Luồng 1: Xử lý Command (FIFO Queue)
-    FE->>MB: execute(queueName, command)
-    MB->>MB: Xếp hàng đợi (Tuần tự xử lý FIFO)
-    MB->>BE: Gửi HTTP POST request (chứa trackingId)
-    BE-->>MB: HTTP Response nhận yêu cầu (202 Accepted)
-    end
+    FE->>HC: post() / put() / patch() / delete()
+    HC->>HC: Tạo trackingId (FE) hoặc lấy từ (BE)
+    HC->>BE: Gửi HTTP Request (X-Tracking-Id header)
+    BE-->>HC: HTTP Response (200 OK / 202 Accepted)
     
-    rect rgb(255, 240, 245)
-    Note over FE, FS: Luồng 2: Nhận kết quả và Xóa Record ngay lập tức
-    FS-->>FE: Realtime Stream trigger (kết quả tại commandresults/{trackingId})
-    FE->>FE: Xử lý UI (Ẩn loading, refresh data...)
-    FE->>FS: Gửi request XÓA RECORD (deleteDoc)
-    Note over FE, FS: Xóa ngay lập tức để tiết kiệm chi phí & tránh rác!
-    end
+    Note over HC, FS: Tự động lắng nghe Firestore dưới nền
+    HC->>FS: FirebaseService.subscribeToRequestId(trackingId)
+    HC-->>FE: Trả về HTTP Result (chứa trackingId)
+    
+    Note over FE, HC: Đăng ký nhận kết quả cực kỳ đơn giản qua Callback
+    FE->>HC: http.registerCallback(trackingId, callback)
+    
+    Note over BE, FS: BE hoàn thành tác vụ bất đồng bộ
+    BE->>FS: Ghi kết quả tại commandresults/{trackingId}
+    
+    FS-->>HC: Firestore trigger snapshot update
+    HC->>FE: Kích hoạt callback(data) truyền về Component
+    FE->>FE: Xử lý giao diện (Toast, Refresh...)
+    
+    Note over FS, HC: Dọn dẹp tự động & Giải phóng bộ nhớ
+    HC->>FS: Xóa document khỏi Firestore (deleteDoc)
+    HC->>HC: Xóa callback khỏi trackingCallbacks Map
 ```
 
-### 3.1. Phân biệt Command (Queue) và Event (Pub/Sub)
+### 3.1. Phân biệt Command (Queue) và Event (Pub/Sub) tại Message Bus
 
 *   **Command (Xử lý hàng đợi - Queue)**:
     - **Cơ chế**: FIFO (First-In, First-Out).
@@ -163,41 +170,57 @@ sequenceDiagram
       ```
     - **Ứng dụng**: Gửi thông điệp toàn cục (ví dụ: `FILE_UPLOADED`, `THEME_CHANGED`, `USER_LOGGED_OUT`).
 
-### 3.2. Đồng bộ Realtime Feedback và Tối ưu hóa Firestore
+### 3.2. Tích hợp Tự động lắng nghe & Đăng ký Callback (Centralized Realtime Feedback)
 > [!IMPORTANT]
-> **QUY TẮC PHẢI TUÂN THỦ (ONCE-ONLY RECEIPT)**
+> **QUY TẮC CƠ CHẾ THEO DÕI REALTIME (AUTOMATED HTTP TASK TRACKING)**
 > 
-> Khi gửi một Command dài hơi lên Backend, Frontend đính kèm một mã định danh duy nhất `trackingId`. Backend xử lý xong sẽ ghi kết quả vào Google Firestore tại đường dẫn cố định duy nhất trong hệ thống: **`commandresults/{trackingId}`**.
+> Để giảm bớt gánh nặng code lặp và đảm bảo tính đồng bộ, `HttpClientService` ở base đã được tích hợp sẵn cơ chế tự động theo dõi tác vụ realtime thông qua việc nhận callback trực tiếp.
 > 
-> Ngay sau khi Frontend nhận được kết quả realtime và cập nhật giao diện người dùng thành công, Frontend **BẮT BUỘC** phải thực hiện **XÓA NGAY LẬP TỨC** bản ghi tại path đó để giải phóng dữ liệu, tránh phát sinh chi phí lưu trữ/truy vấn đám mây (Firestore billing) và tránh trùng lặp dữ liệu xử lý.
-
-Đoạn code tích hợp trong `FirebaseService` đảm bảo quy tắc này:
-```typescript
-subscribeOnce(requestId: string, callback: (data: any) => void) {
-  // FIRESTORE_NOTIFY_PATH_PREFIX = 'commandresults'
-  const docRef = doc(this.db, FIRESTORE_NOTIFY_PATH_PREFIX, requestId);
-  
-  const unsubscribe = onSnapshot(docRef, async (snapshot) => {
-    if (snapshot.exists()) {
-      try {
-        const data = snapshot.data();
-        callback(data); // Thực thi logic cập nhật giao diện trên FE
-        
-        unsubscribe(); // Hủy lắng nghe realtime ngay lập tức
-      } catch (error) {
-        console.error('Lỗi xử lý kết quả:', error);
-      } finally {
-        try {
-          await deleteDoc(docRef); // BẮT BUỘC: Xóa tài liệu khỏi Firestore
-        } catch (e) {
-          console.error('Không thể xóa Firestore document:', e);
-        }
-      }
-    }
-  });
-  return unsubscribe;
-}
-```
+> 1. **Tự động lắng nghe dưới nền (Auto-Subscribe)**: Mỗi khi có yêu cầu làm thay đổi dữ liệu (POST, PUT, PATCH, DELETE), `HttpClientService` tự động bắt lấy hoặc tạo `trackingId` (gửi qua `X-Tracking-Id` header). Nếu Backend trả về một `trackingId` khác trong response body, hệ thống tự động đồng bộ hóa và chuyển hướng lắng nghe sang `trackingId` mới của Backend.
+> 2. **Tích hợp Callback Trực tiếp (Direct Callback Argument)**: Các hàm `post`, `put`, `patch`, `delete` hỗ trợ nhận callback trực tiếp làm tham số. Điều này giúp loại bỏ hoàn toàn các bước đăng ký thủ công ở bên ngoài, loại bỏ rủi ro rò rỉ bộ nhớ hoặc quên đăng ký.
+> 3. **Cơ chế chống Race Condition (Double Map Protection)**: Nếu kết quả Firestore gửi về *trước* khi component kịp đăng ký callback (ví dụ do mạng cực nhanh), dữ liệu sẽ được lưu tạm trong bản đồ `receivedData` và tự động giải phóng sau 30 giây. Khi callback hoặc `registerCallback` được kích hoạt, hệ thống sẽ trả về dữ liệu lưu tạm này ngay lập tức.
+> 4. **Tự động dọn dẹp (Self-Cleaning)**: Khi callback được kích hoạt, nó tự động dọn dẹp để giải phóng bộ nhớ. Hệ thống tự động dọn dẹp Firestore listener sau 5 phút nếu Backend không trả về kết quả.
+> 5. **Cơ chế dự phòng registerCallback**: Vẫn duy trì phương thức `registerCallback(trackingId, callback)` để giải quyết các kịch bản bất đồng bộ đặc thù (ví dụ: Component nhận `trackingId` phản hồi từ sự kiện đóng của một Modal).
+> 
+> *   **Cách sử dụng Tích hợp Callback trực tiếp (Khuyên dùng)**:
+>     Người lập trình chỉ cần truyền callback vào tham số thứ 3 của hàm `post`, `put`, `patch` (hoặc tham số thứ 2 của hàm `delete`) hoặc thông qua Service trung gian:
+>     ```typescript
+>     // Tại Service trung gian (Wrapper mỏng)
+>     createFolder(name: string, parentId: string | null, callback?: (data: any) => void) {
+>       return this.http.post('/api/folders', { name, parentId }, callback);
+>     }
+>     
+>     // Tại Component nghiệp vụ:
+>     await this.filesFoldersService.createFolder(name, parentId, (data: any) => {
+>       if (data.status === 'Completed') {
+>         this.message.success(data.message || 'Thư mục đã được tạo');
+>         this.loadContent();
+>       } else if (data.status === 'Error') {
+>         this.message.error(data.message || 'Lỗi khi tạo thư mục');
+>       }
+>     });
+>     ```
+> 
+> *   **Cách sử dụng registerCallback dự phòng (Cho kịch bản Modal/Popover bất đồng bộ)**:
+>     ```typescript
+>     const modal = this.modal.create({
+>       nzTitle: 'Di chuyển thư mục',
+>       nzContent: MoveModalComponent,
+>       nzFooter: null
+>     });
+> 
+>     modal.afterClose.subscribe((result: any) => {
+>       if (result && result.trackingId) {
+>         // Đăng ký callback thủ công bằng trackingId nhận về sau khi đóng modal
+>         this.http.registerCallback(result.trackingId, (data) => {
+>           if (data.status === 'Completed') {
+>             this.message.success('Đã di chuyển thành công');
+>             this.loadContent();
+>           }
+>         });
+>       }
+>     });
+>     ```
 
 ### 3.3. Tích hợp FCM Token Toàn cục và Background Service Worker
 

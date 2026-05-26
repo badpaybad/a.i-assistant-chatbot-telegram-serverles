@@ -7,7 +7,7 @@ import { HttpClientService } from '@tot/core';
 export class NhanDienKhuonMatService {
   private http = inject(HttpClientService);
 
-  saveSession(sessionId: string, sessionName: string, originalFile: File, croppedFiles: File[], boundingBoxes: string[]) {
+  saveSession(sessionId: string, sessionName: string, originalFile: File, croppedFiles: File[], boundingBoxes: string[], callback?: (data: any) => void) {
     const formData = new FormData();
     formData.append('sessionId', sessionId);
     formData.append('sessionName', sessionName);
@@ -21,7 +21,7 @@ export class NhanDienKhuonMatService {
       formData.append('boundingBoxes', bbox);
     });
 
-    return this.http.post('/api/face-detection/save', formData);
+    return this.http.post('/api/face-detection/save', formData, callback);
   }
 
   getSessions(pageIndex: number = 1, pageSize: number = 10) {

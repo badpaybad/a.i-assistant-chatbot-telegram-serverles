@@ -6,11 +6,10 @@ import { NzCardModule } from 'ng-zorro-antd/card';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzFormModule } from 'ng-zorro-antd/form';
-import { AppNotificationService, FirebaseService, HttpClientService } from '@tot/core';
+import { AppNotificationService, HttpClientService } from '@tot/core';
 
 
 import { v4 as uuidv4 } from 'uuid';
-import { Unsubscribe } from 'firebase/firestore';
 import { TranslocoModule } from '@jsverse/transloco';
 
 import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
@@ -34,8 +33,7 @@ import { ViewChild, TemplateRef, OnInit } from '@angular/core';
   templateUrl: './firestore-test.component.html',
   styleUrls: ['./firestore-test.component.css']
 })
-export class FirestoreTestComponent implements OnDestroy, OnInit {
-  private firebase = inject(FirebaseService);
+export class FirestoreTestComponent implements OnInit {
   private http = inject(HttpClientService);
   private notification = inject(AppNotificationService);
 
@@ -43,7 +41,6 @@ export class FirestoreTestComponent implements OnDestroy, OnInit {
   payload = '{"message": "Hello from Firestore Test"}';
   loading = false;
   results: any[] = [];
-  private unsubscribes: Unsubscribe[] = [];
 
   @ViewChild('payloadTpl', { static: true }) payloadTpl!: TemplateRef<any>;
   @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
@@ -62,30 +59,27 @@ export class FirestoreTestComponent implements OnDestroy, OnInit {
     const requestId = uuidv4();
     this.loading = true;
 
-    // Subscribe to Firestore for the result
-    const unsub = this.firebase.subscribeToRequestId(requestId, (data) => {
-      this.notification.success('Command Result (Firestore)', `Result for ${requestId}: ${JSON.stringify(data)}`, { nzDuration: 0 });
-      this.results.unshift({ requestId, data, time: new Date() });
-    });
-    this.unsubscribes.push(unsub);
-
     try {
-      // Send command to BE
-      await this.http.post('/api/test/command', {
-        requestId,
-        commandName: this.commandName,
-        payload: JSON.parse(this.payload)
-      });
       this.notification.info('Success', `Command sent. Waiting for Firestore notification... ID: ${requestId}`);
+      
+      // Send command to BE, forwarding the manually generated requestId in options and the callback directly
+      await this.http.post(
+        '/api/test/command', 
+        {
+          requestId,
+          commandName: this.commandName,
+          payload: JSON.parse(this.payload)
+        }, 
+        (data: any) => {
+          this.notification.success('Command Result (Firestore)', `Result for ${requestId}: ${JSON.stringify(data)}`, { nzDuration: 0 });
+          this.results.unshift({ requestId, data, time: new Date() });
+        },
+        { trackingId: requestId }
+      );
     } catch (e) {
       console.error(e);
-      unsub();
     } finally {
       this.loading = false;
     }
-  }
-
-  ngOnDestroy() {
-    this.unsubscribes.forEach(unsub => unsub());
   }
 }

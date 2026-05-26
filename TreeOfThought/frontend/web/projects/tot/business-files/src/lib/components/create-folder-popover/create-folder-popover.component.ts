@@ -8,7 +8,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzMessageService } from 'ng-zorro-antd/message';
 import { TotButtonComponent } from '@tot/shared';
 import { FilesFoldersService } from '../../services/files-folders.service';
-import { FirebaseService } from '@tot/core';
+
 
 @Component({
   selector: 'app-create-folder-popover',
@@ -66,6 +66,7 @@ import { FirebaseService } from '@tot/core';
     </style>
   `
 })
+
 export class CreateFolderPopoverComponent {
   @Input() parentId: string | null = null;
   @Input() currentFolderName: string = 'Tài liệu của tôi';
@@ -86,7 +87,6 @@ export class CreateFolderPopoverComponent {
   }
 
   private filesFoldersService = inject(FilesFoldersService);
-  private firebaseService = inject(FirebaseService);
   private message = inject(NzMessageService);
 
   async submit() {
@@ -103,28 +103,20 @@ export class CreateFolderPopoverComponent {
 
     this.loading = true;
     try {
-      const result: any = await this.filesFoldersService.createFolder(this.name, this.parentId);
       this.message.loading('Đang xử lý tạo thư mục...');
       this.visible = false;
+      const folderName = this.name;
       this.name = '';
 
-      if (result.trackingId) {
-        const sub = this.firebaseService.subscribeToRequestId(result.trackingId, (data) => {
-          if (data.status === 'Completed') {
-            this.message.success(data.message || 'Thư mục đã được tạo');
-            this.created.emit();
-            this.filesFoldersService.notifyRefresh();
-            sub();
-          } else if (data.status === 'Error') {
-            this.message.error(data.message || 'Lỗi khi tạo thư mục');
-            sub();
-          }
-        });
-      } else {
-        this.message.success('Thư mục đã được tạo');
-        this.created.emit();
-        this.filesFoldersService.notifyRefresh();
-      }
+      await this.filesFoldersService.createFolder(folderName, this.parentId, (data: any) => {
+        if (data.status === 'Completed') {
+          this.message.success(data.message || 'Thư mục đã được tạo');
+          this.created.emit();
+          this.filesFoldersService.notifyRefresh();
+        } else if (data.status === 'Error') {
+          this.message.error(data.message || 'Lỗi khi tạo thư mục');
+        }
+      });
     } catch (error) {
       this.message.error('Lỗi khi tạo thư mục');
     } finally {

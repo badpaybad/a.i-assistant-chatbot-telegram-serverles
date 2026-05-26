@@ -140,12 +140,12 @@ export class DashboardService {
     return from(this.http.post(`/api/cqrs/dashboard/workers/${workerId}/start`, {}));
   }
 
-  sendTestCommand(data: any): Observable<any> {
-    return from(this.http.post('/api/Test/cqrs/sample-command', { data }));
+  sendTestCommand(data: any, callback?: (data: any) => void): Observable<any> {
+    return from(this.http.post('/api/Test/cqrs/sample-command', { data }, callback));
   }
 
-  sendTestEvent(data: any): Observable<any> {
-    return from(this.http.post('/api/Test/cqrs/sample-event', { data }));
+  sendTestEvent(data: any, callback?: (data: any) => void): Observable<any> {
+    return from(this.http.post('/api/Test/cqrs/sample-event', { data }, callback));
   }
 
   getLastActivity(): Observable<LastActivity[]> {

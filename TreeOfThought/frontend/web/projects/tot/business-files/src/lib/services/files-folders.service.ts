@@ -35,45 +35,45 @@ export class FilesFoldersService {
     return this.http.get(path);
   }
 
-  createFolder(name: string, parentId: string | null) {
-    return this.http.post('/api/folders', { name, parentId });
+  createFolder(name: string, parentId: string | null, callback?: (data: any) => void) {
+    return this.http.post('/api/folders', { name, parentId }, callback);
   }
-
-  deleteFolder(folderId: string) {
-    return this.http.delete(`/api/folders/${folderId}`);
+ 
+  deleteFolder(folderId: string, callback?: (data: any) => void) {
+    return this.http.delete(`/api/folders/${folderId}`, callback);
   }
-
-  moveFolder(folderId: string, newParentId: string | null) {
-    return this.http.post('/api/folders/move', { folderId, newParentId });
+ 
+  moveFolder(folderId: string, newParentId: string | null, callback?: (data: any) => void) {
+    return this.http.post('/api/folders/move', { folderId, newParentId }, callback);
   }
-
-  renameFolder(folderId: string, newName: string) {
-    return this.http.patch(`/api/folders/${folderId}/rename`, { newName });
+ 
+  renameFolder(folderId: string, newName: string, callback?: (data: any) => void) {
+    return this.http.patch(`/api/folders/${folderId}/rename`, { newName }, callback);
   }
-
-  uploadFile(folderId: string | null, file: File) {
+ 
+  uploadFile(folderId: string | null, file: File, callback?: (data: any) => void) {
     const formData = new FormData();
     if (folderId) {
       formData.append('folderId', folderId);
     }
     formData.append('file', file);
-    return this.http.post('/api/files/upload', formData);
+    return this.http.post('/api/files/upload', formData, callback);
   }
-
-  deleteFile(fileId: string) {
-    return this.http.delete(`/api/files/${fileId}`);
+ 
+  deleteFile(fileId: string, callback?: (data: any) => void) {
+    return this.http.delete(`/api/files/${fileId}`, callback);
   }
-
-  moveFile(fileId: string, newFolderId: string) {
-    return this.http.post('/api/files/move', { fileId, newFolderId });
+ 
+  moveFile(fileId: string, newFolderId: string, callback?: (data: any) => void) {
+    return this.http.post('/api/files/move', { fileId, newFolderId }, callback);
   }
-
-  renameFile(fileId: string, newName: string) {
-    return this.http.patch(`/api/files/${fileId}/rename`, { newName });
+ 
+  renameFile(fileId: string, newName: string, callback?: (data: any) => void) {
+    return this.http.patch(`/api/files/${fileId}/rename`, { newName }, callback);
   }
-
-  setFilePermission(fileId: string, permission: number, shareCode?: string, expiredAt?: string) {
-    return this.http.post('/api/files/permission', { fileId, permission, shareCode, expiredAt });
+ 
+  setFilePermission(fileId: string, permission: number, shareCode?: string, expiredAt?: string, callback?: (data: any) => void) {
+    return this.http.post('/api/files/permission', { fileId, permission, shareCode, expiredAt }, callback);
   }
 
   getShareUrl(fileId: string, durationHours: number = 24) {

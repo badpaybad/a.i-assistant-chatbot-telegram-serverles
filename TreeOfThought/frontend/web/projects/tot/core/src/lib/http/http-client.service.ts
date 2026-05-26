@@ -6,6 +6,7 @@ import { TranslocoService } from '@jsverse/transloco';
 import { AppNotificationService } from '../services/app-notification.service';
 import { NotificationTemplateService } from '../services/notification-template.service';
 import { API_URL } from '../tokens/api-url.token';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable({
   providedIn: 'root'
@@ -17,6 +18,11 @@ export class HttpClientService {
   private templateService = inject(NotificationTemplateService);
   private translate = inject(TranslocoService);
   private apiBaseUrlToken = inject(API_URL);
+  private firebaseService = inject(FirebaseService);
+
+  private trackingCallbacks = new Map<string, (data: any) => void>();
+  private receivedData = new Map<string, any>();
+  private activeSubscriptions = new Map<string, () => void>();
 
   private get API_BASE_URL(): string {
     return (window as any).env?.API_BASE_URL ?? this.apiBaseUrlToken ?? '';
@@ -77,6 +83,76 @@ export class HttpClientService {
     throw error;
   }
 
+  private subscribeToTracking(trackingId: string) {
+    const unsubscribe = this.firebaseService.subscribeToRequestId(trackingId, (data) => {
+      const callback = this.trackingCallbacks.get(trackingId);
+      if (callback) {
+        callback(data);
+        this.trackingCallbacks.delete(trackingId);
+      } else {
+        this.receivedData.set(trackingId, data);
+        setTimeout(() => {
+          this.receivedData.delete(trackingId);
+        }, 30000);
+      }
+      this.activeSubscriptions.delete(trackingId);
+    });
+
+    this.activeSubscriptions.set(trackingId, unsubscribe);
+
+    // Auto cleanup subscription if BE fails to reply in 5 minutes
+    setTimeout(() => {
+      const activeUnsub = this.activeSubscriptions.get(trackingId);
+      if (activeUnsub) {
+        activeUnsub();
+        this.activeSubscriptions.delete(trackingId);
+        this.trackingCallbacks.delete(trackingId);
+      }
+    }, 300000);
+  }
+
+  private handleRequestTracking(
+    trackingId: string,
+    result: any,
+    callback: ((data: any) => void) | undefined
+  ): string {
+    const finalTrackingId = (result && typeof result === 'object' && (result as any).trackingId) || trackingId;
+    if (result && typeof result === 'object') {
+      (result as any).trackingId = finalTrackingId;
+    }
+
+    if (finalTrackingId !== trackingId && callback) {
+      const registered = this.trackingCallbacks.get(trackingId);
+      if (registered) {
+        this.trackingCallbacks.set(finalTrackingId, registered);
+        this.trackingCallbacks.delete(trackingId);
+      }
+      const received = this.receivedData.get(trackingId);
+      if (received) {
+        this.receivedData.set(finalTrackingId, received);
+        this.receivedData.delete(trackingId);
+      }
+      const activeUnsub = this.activeSubscriptions.get(trackingId);
+      if (activeUnsub) {
+        activeUnsub();
+        this.activeSubscriptions.delete(trackingId);
+      }
+    }
+
+    this.subscribeToTracking(finalTrackingId);
+    return finalTrackingId;
+  }
+
+  registerCallback(trackingId: string, callback: (data: any) => void) {
+    if (this.receivedData.has(trackingId)) {
+      const data = this.receivedData.get(trackingId);
+      callback(data);
+      this.receivedData.delete(trackingId);
+    } else {
+      this.trackingCallbacks.set(trackingId, callback);
+    }
+  }
+
   async get<T = any>(url: string, options?: any): Promise<T> {
     try {
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
@@ -90,76 +166,104 @@ export class HttpClientService {
     }
   }
 
-  async post<T = any>(url: string, data?: any, options?: any): Promise<T> {
+  async post<T = any>(url: string, data?: any, callbackOrOptions?: ((data: any) => void) | any, options?: any): Promise<T> {
     try {
-      const trackingId = options?.trackingId || this.generateTrackingId();
+      const isCallback = typeof callbackOrOptions === 'function';
+      const callback = isCallback ? callbackOrOptions as (data: any) => void : undefined;
+      const finalOptions = isCallback ? options : callbackOrOptions;
+
+      const trackingId = finalOptions?.trackingId || this.generateTrackingId();
+      
+      if (callback) {
+        this.registerCallback(trackingId, callback);
+      }
+
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       const result = await firstValueFrom(this.http.post<T>(fullUrl, data, {
         headers: this.getHeaders(data, trackingId),
         withCredentials: true,
-        ...options
+        ...finalOptions
       }) as any);
       
-      if (result && typeof result === 'object') {
-        (result as any).trackingId = trackingId;
-      }
+      this.handleRequestTracking(trackingId, result, callback);
       return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }
   }
 
-  async put<T = any>(url: string, data?: any, options?: any): Promise<T> {
+  async put<T = any>(url: string, data?: any, callbackOrOptions?: ((data: any) => void) | any, options?: any): Promise<T> {
     try {
-      const trackingId = options?.trackingId || this.generateTrackingId();
+      const isCallback = typeof callbackOrOptions === 'function';
+      const callback = isCallback ? callbackOrOptions as (data: any) => void : undefined;
+      const finalOptions = isCallback ? options : callbackOrOptions;
+
+      const trackingId = finalOptions?.trackingId || this.generateTrackingId();
+
+      if (callback) {
+        this.registerCallback(trackingId, callback);
+      }
+
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       const result = await firstValueFrom(this.http.put<T>(fullUrl, data, {
         headers: this.getHeaders(data, trackingId),
         withCredentials: true,
-        ...options
+        ...finalOptions
       }) as any);
 
-      if (result && typeof result === 'object') {
-        (result as any).trackingId = trackingId;
-      }
+      this.handleRequestTracking(trackingId, result, callback);
       return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }
   }
 
-  async delete<T = any>(url: string, options?: any): Promise<T> {
+  async delete<T = any>(url: string, callbackOrOptions?: ((data: any) => void) | any, options?: any): Promise<T> {
     try {
-      const trackingId = options?.trackingId || this.generateTrackingId();
+      const isCallback = typeof callbackOrOptions === 'function';
+      const callback = isCallback ? callbackOrOptions as (data: any) => void : undefined;
+      const finalOptions = isCallback ? options : callbackOrOptions;
+
+      const trackingId = finalOptions?.trackingId || this.generateTrackingId();
+
+      if (callback) {
+        this.registerCallback(trackingId, callback);
+      }
+
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       const result = await firstValueFrom(this.http.delete<T>(fullUrl, {
         headers: this.getHeaders(undefined, trackingId),
         withCredentials: true,
-        ...options
+        ...finalOptions
       }) as any);
 
-      if (result && typeof result === 'object') {
-        (result as any).trackingId = trackingId;
-      }
+      this.handleRequestTracking(trackingId, result, callback);
       return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);
     }
   }
 
-  async patch<T = any>(url: string, data?: any, options?: any): Promise<T> {
+  async patch<T = any>(url: string, data?: any, callbackOrOptions?: ((data: any) => void) | any, options?: any): Promise<T> {
     try {
-      const trackingId = options?.trackingId || this.generateTrackingId();
+      const isCallback = typeof callbackOrOptions === 'function';
+      const callback = isCallback ? callbackOrOptions as (data: any) => void : undefined;
+      const finalOptions = isCallback ? options : callbackOrOptions;
+
+      const trackingId = finalOptions?.trackingId || this.generateTrackingId();
+
+      if (callback) {
+        this.registerCallback(trackingId, callback);
+      }
+
       const fullUrl = url.startsWith('http') ? url : `${this.API_BASE_URL}${url}`;
       const result = await firstValueFrom(this.http.patch<T>(fullUrl, data, {
         headers: this.getHeaders(data, trackingId),
         withCredentials: true,
-        ...options
+        ...finalOptions
       }) as any);
 
-      if (result && typeof result === 'object') {
-        (result as any).trackingId = trackingId;
-      }
+      this.handleRequestTracking(trackingId, result, callback);
       return result as T;
     } catch (error) {
       this.handleError(error as HttpErrorResponse);

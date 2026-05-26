@@ -12,7 +12,7 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
-import { FirebaseService } from '@tot/core';
+
 import { NhanDienKhuonMatService } from './services/nhan-dien-khuon-mat.service';
 import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 
@@ -59,7 +59,6 @@ interface QueueItem {
 })
 export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   private api = inject(NhanDienKhuonMatService);
-  private firebase = inject(FirebaseService);
   private message = inject(NzMessageService);
   private modal = inject(NzModalService);
 
@@ -93,8 +92,7 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   selectedSessionDetails: any = null;
   loadingDetails: boolean = false;
 
-  // Active listeners
-  private firestoreUnsubscribe: (() => void) | null = null;
+
 
   ngOnInit(): void {
     this.setDefaultSessionName();
@@ -114,7 +112,6 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.cleanupUnsubscribe();
     this.queue.forEach(item => URL.revokeObjectURL(item.thumbnailUrl));
   }
 
@@ -410,18 +407,30 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
 
         const bboxes: string[] = selectedCrops.map(crop => JSON.stringify(crop.boundingBox));
 
-        const result: any = await this.api.saveSession(
-          this.sessionId,
-          this.sessionName,
-          item.file,
-          croppedFiles,
-          bboxes
-        );
+        await new Promise<void>(async (resolve, reject) => {
+          try {
+            const result: any = await this.api.saveSession(
+              this.sessionId,
+              this.sessionName,
+              item.file,
+              croppedFiles,
+              bboxes,
+              (data: any) => {
+                if (data.status === 'Completed') {
+                  resolve();
+                } else if (data.status === 'Error') {
+                  reject(new Error(data.message || "Xử lý lưu trữ thất bại."));
+                }
+              }
+            );
 
-        if (result && result.trackingId) {
-          this.uploadTrackingId = result.trackingId;
-          await this.listenToRealtimeNotification(result.trackingId);
-        }
+            if (result && result.trackingId) {
+              this.uploadTrackingId = result.trackingId;
+            }
+          } catch (err) {
+            reject(err);
+          }
+        });
       }
 
       this.message.success("Tải lên toàn bộ tệp thành công!");
@@ -431,40 +440,15 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
       this.message.error(error.message || error.error?.message || "Lỗi kết nối hoặc xử lý phía máy chủ.");
       this.savingSession = false;
       this.uploadTrackingId = null;
-      this.cleanupUnsubscribe();
       this.loadSessionsHistory();
     }
-  }
-
-  private listenToRealtimeNotification(trackingId: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      this.cleanupUnsubscribe();
-
-      this.firestoreUnsubscribe = this.firebase.subscribeToRequestId(trackingId, (data) => {
-        if (data.status === 'Completed') {
-          this.cleanupUnsubscribe();
-          resolve();
-        } else if (data.status === 'Error') {
-          this.cleanupUnsubscribe();
-          reject(new Error(data.message || "Xử lý lưu trữ thất bại."));
-        }
-      });
-    });
   }
 
   private completeSessionSave(): void {
     this.savingSession = false;
     this.uploadTrackingId = null;
-    this.cleanupUnsubscribe();
     this.resetWorkspace();
     this.loadSessionsHistory();
-  }
-
-  private cleanupUnsubscribe(): void {
-    if (this.firestoreUnsubscribe) {
-      this.firestoreUnsubscribe();
-      this.firestoreUnsubscribe = null;
-    }
   }
 
   resetWorkspace(): void {
