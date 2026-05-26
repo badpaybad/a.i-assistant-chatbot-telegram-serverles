@@ -102,3 +102,6 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
                     
 **cập nhật 2026-05-17 12:03:24**
     khi tạo mới nghiệp vụ cần whattodo.md và howtodo.md trong folder docs của nghiệp vụ đó là chưa có gì. cần **bắt buộc** yêu cầu người dùng tự dưa nội dung srs, requirement, mong muốn, ý định vào whattodo.md , dựa vào whattodo.md A.I cần **đọc thật kỹ** , nắm bắt thật rõ về yêu cầu và ý định của người dùng , từ đó A.I dựa trên kỹ năng của BA và  system architect, fullstack developer viết các tài liệu thiết kế db nghiệp vụ vào howtodo.md. Khi người dùng duyệt xong howtodo.md đợi người dùng yêu cầu triển khai code.
+
+**cập nhật 2026-05-26 15:12:09**
+    TreeOfThought/docs gồm folder/subfolder có các file *.md là các tài liệu liên quan tới yêu cầu , thiết kế , triển khai code ở TreeOfThought/backend TreeOfThought/frontend . Khi được yêu cầu fix bug , hỏi đáp cần tìm hiểu đúng nghiệp vụ đúng folder/subfolder . folder TreeOfThought/docs là cây thư mục tri thức, cần phải đọc hiểu các file*.md liên quan tới nghiệp vụ khi cần, đọc từ ngoài vào trong là từ tổng quan tới chi tiết, và ngược lại từ trong ra ngoài là từ chi tiết tới tổng quan
