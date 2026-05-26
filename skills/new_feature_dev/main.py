@@ -46,7 +46,7 @@ Trả lời:
 
 PHATTRIEN_GENERATOR_INSTRUCTION = """
 Bạn là một chuyên gia phát triển phần mềm Fullstack (C# Backend, React Frontend).
-Nhiệm vụ của bạn là đọc yêu cầu người dùng và viết tài liệu giải pháp chi tiết vào file `phattrien.md`.
+Nhiệm vụ của bạn là đọc yêu cầu người dùng và viết tài liệu giải pháp chi tiết vào file `howtodo.md`.
 
 Tài liệu cần bao gồm:
 1. Phân tích yêu cầu.
@@ -100,10 +100,10 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
         os.makedirs(docs_path, exist_ok=True)
         
         yeucau_content = f"# Yêu cầu: {title}\n\n{summary}\n\n## Chi tiết yêu cầu từ người dùng:\n{user_text}"
-        with open(f"{docs_path}/yeucau.md", "w", encoding="utf-8") as f:
+        with open(f"{docs_path}/whattodo.md", "w", encoding="utf-8") as f:
             f.write(yeucau_content)
 
-        # 3. Tạo phattrien.md dùng Gemini
+        # 3. Tạo howtodo.md dùng Gemini
         phattrien_response = clientGemini.models.generate_content(
             model=GEMINI_MODEL,
             config=types.GenerateContentConfig(
@@ -112,7 +112,7 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
             ),
             contents=[types.Content(role="user", parts=[types.Part.from_text(text=yeucau_content)])]
         )
-        with open(f"{docs_path}/phattrien.md", "w", encoding="utf-8") as f:
+        with open(f"{docs_path}/howtodo.md", "w", encoding="utf-8") as f:
             f.write(phattrien_response.text)
 
         # 4. Tạo Backend Project

@@ -141,7 +141,7 @@ BE tổng kết nhanh về mặt cấu trúc
         - project file quản lý file cho từng người dùng, share file ...
         - ...
 
-**đọc file TreeOfThought/docs/backend/yeucau.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
+**đọc file TreeOfThought/docs/backend/whattodo.md và xem code ở các project trong TreeOfThought/backend , suy nghĩ và câp nhật vào TreeOfThought/docs/backend/howtodo.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
 **cập nhật 2026-05-17 12:36:36** dùng google firestore để notify lên UI , sau khi đã thực hiện xong 1 nghiệp vụ, UI cần đảm bảo xóa firestore address path đó (tránh tốn tài nguyên và tiền). address path dành cho việc này là cần thành const không được tạo bừa bãi và là duy nhất trong solution . 
 **cập nhật 2026-05-17 12:46:36**

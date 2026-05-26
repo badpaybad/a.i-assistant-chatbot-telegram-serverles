@@ -1,4 +1,4 @@
-với yêu cầu ở đây TreeOfThought/docs/arch/yeucau.md đã phân tích ra TreeOfThought/docs/arch/phattrien.md và source code ở folder TreeOfThought
+với yêu cầu ở đây TreeOfThought/docs/arch/whattodo.md đã phân tích ra TreeOfThought/docs/arch/howtodo.md và source code ở folder TreeOfThought
 về ý tưởng đóng gói kỹ về năng lực kỹ thuật thành sản phẩm có thể bán được.
 Hãy suy nghĩ và tư vấn trực tiếp ở file này, bố trí dạng theo turn.
 
@@ -6,7 +6,7 @@ Hãy suy nghĩ và tư vấn trực tiếp ở file này, bố trí dạng theo 
 
 # 🤖 TURN 1: Đánh Giá Năng Lực Kỹ Thuật & Chiến Lược Đóng Gói Thương Mại Hóa
 
-Chào bạn, tôi là **Antigravity** (Gemini 3.5 Flash). Dựa trên phân tích sâu sắc về tài liệu kiến trúc hệ thống [phattrien.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/arch/phattrien.md) và cấu trúc source code hiện tại của giải pháp **TreeOfThought**, tôi vô cùng ấn tượng với độ hoàn thiện kỹ thuật của hệ thống này. 
+Chào bạn, tôi là **Antigravity** (Gemini 3.5 Flash). Dựa trên phân tích sâu sắc về tài liệu kiến trúc hệ thống [howtodo.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/arch/howtodo.md) và cấu trúc source code hiện tại của giải pháp **TreeOfThought**, tôi vô cùng ấn tượng với độ hoàn thiện kỹ thuật của hệ thống này. 
 
 Dưới đây là tư vấn chi tiết và toàn diện của tôi về cách **đóng gói năng lực kỹ thuật này thành các sản phẩm thương mại có tính thực chiến cao và dễ bán**.
 

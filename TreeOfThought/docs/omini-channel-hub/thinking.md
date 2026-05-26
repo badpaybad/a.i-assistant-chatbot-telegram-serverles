@@ -394,3 +394,27 @@ Nếu bạn vẫn muốn sở hữu tài khoản developer chính chủ in-house
 * Nếu bạn có người quen, đối tác sở hữu một **Shop Yêu Thích** hoặc **Shop Mall** đang hoạt động trên Shopee:
 * Bạn có thể mượn Username của họ điền vào Bước 2 này để vượt qua bước xác thực và kích hoạt tài khoản nhà phát triển thành công.
 * Sau khi tài khoản Developer của bạn được kích hoạt và bạn tạo App, bạn có thể sử dụng môi trường Sandbox hoặc liên kết ứng dụng với các shop khác (nếu tài khoản liên kết được cấu hình phù hợp). Tuy nhiên, lưu ý là với app Live dạng In-house, bạn chỉ có thể ủy quyền cho chính shop đăng ký đó hoặc các shop thuộc cùng một tài khoản doanh nghiệp sở hữu trên môi trường thật. Do đó, nếu muốn chạy trên môi trường Live thật lâu dài, **Phương án A (đăng ký Third-party Partner)** vẫn là tối ưu nhất.
+
+---
+
+## Câu hỏi 7: Tôi chỉ muốn dùng thử nghiệm (Sandbox) để code thôi, tại sao hệ thống vẫn bắt buộc phải là Preferred Seller hoặc Mall Seller mới cho qua?
+
+### Trả lời:
+
+Quy định này của Shopee thực sự gây bối rối cho lập trình viên, nhưng cơ chế hoạt động của họ bắt buộc như sau:
+
+#### 1. Quy định của Shopee về Sandbox và Duyệt Hồ Sơ
+* Để sử dụng Sandbox, bạn **bắt buộc phải có một tài khoản nhà phát triển đã được phê duyệt hồ sơ (Approved Developer Profile)**. Chỉ khi hồ sơ được duyệt, Shopee mới mở khóa bảng điều khiển (Console) để cho phép bạn tạo ứng dụng test (App Test) và tạo các Sandbox Shop.
+* Do đó, nếu bạn chọn đi theo luồng **Shopee Seller (In-house System)**, hệ thống sẽ tự động quét trạng thái shop của bạn ngay từ Bước 2. Nếu không phải là Mall hoặc Preferred Seller, bạn sẽ bị chặn ngay lập tức và **không thể vào đến trang tạo Sandbox**.
+
+#### 2. Giải pháp để dùng Sandbox mà KHÔNG CẦN Shop Yêu Thích / Shop Mall
+
+Để bypass (bỏ qua) yêu cầu gắt gao này của tài khoản Shopee Seller mà vẫn sử dụng được Sandbox đầy đủ, giải pháp tốt nhất là:
+
+**Đổi hướng đăng ký thành tài khoản "Third-party Partner Platform"**
+* **Tại sao cách này giải quyết được?** 
+  Tài khoản Third-party dành cho doanh nghiệp phần mềm độc lập (ISV). Do đó, Shopee **hoàn toàn không yêu cầu** bạn phải liên kết với một tài khoản Shopee Mall hay Shop Yêu Thích nào ở bước đăng ký profile cả. Hệ thống chỉ yêu cầu bạn điền mã số thuế và tải lên Giấy phép đăng ký kinh doanh doanh nghiệp (GPKD) để xác thực pháp nhân.
+* **Sau khi được duyệt:**
+  Tài khoản Developer của bạn sẽ hoạt động bình thường. Bạn sẽ truy cập được vào Console, tạo App ERP test, tự do tạo các **Sandbox Shop** (shop test giả lập) để viết code, lấy token, gọi API và kiểm tra Webhook mà không gặp bất kỳ rào cản nào từ shop thật.
+
+**Tóm lại:** Bạn bắt buộc phải có một hồ sơ Developer được duyệt thì mới dùng được Sandbox. Nhưng để có hồ sơ được duyệt mà không có shop đạt Preferred/Mall Seller, con đường duy nhất là **đăng ký dưới dạng tài khoản doanh nghiệp "Third-party Partner Platform" (bằng GPKD)**.

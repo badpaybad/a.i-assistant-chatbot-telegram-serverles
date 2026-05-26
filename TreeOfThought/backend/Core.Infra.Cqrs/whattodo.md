@@ -55,4 +55,4 @@ việc thống kê về tổng số message vẫn dùng redis
     - Tổng số worker stop
     - Tổng số worker
 
-**chú ý** đọc file TreeOfThought/backend/Core.Infra.Cqrs/yeucau.md cần tạo file TreeOfThought/backend/Core.Infra.Cqrs/phattrien.md để tôi review trước khi tiến hành code. Khi có cập nhật ở yeucau.md cũng cần cập nhật cho phattrien.md để tôi xem trước khi tiến hành code
+**chú ý** đọc file TreeOfThought/backend/Core.Infra.Cqrs/whattodo.md cần tạo file TreeOfThought/backend/Core.Infra.Cqrs/howtodo.md để tôi review trước khi tiến hành code. Khi có cập nhật ở whattodo.md cũng cần cập nhật cho howtodo.md để tôi xem trước khi tiến hành code

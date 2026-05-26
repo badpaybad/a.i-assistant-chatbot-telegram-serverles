@@ -1,2 +1,2 @@
-Dùng để test các chức năng theo yêu cầu ở TreeOfThought/docs/backend/yeucau.md và TreeOfThought/docs/frontend/yeucau.md về
+Dùng để test các chức năng theo yêu cầu ở TreeOfThought/docs/backend/whattodo.md và TreeOfThought/docs/frontend/whattodo.md về
 cqrs, firebase, fcm, firestore ....

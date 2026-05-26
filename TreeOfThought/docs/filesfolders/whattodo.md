@@ -88,7 +88,7 @@ Thiết lập quyền linh hoạt cho từng tệp tin với các lựa chọn:
   - Lọc toàn bộ dữ liệu truy vấn thư mục, tệp tin và tìm kiếm theo `UserId` của phiên đăng nhập hiện tại để đảm bảo an toàn thông tin tuyệt đối giữa các người dùng.
 - **Cơ sở dữ liệu:** Sử dụng `FilesFoldersDbContext` riêng biệt để cô lập dữ liệu.
 
-**chú ý** cần luôn xem yeucau.md và cập nhật phattrien.md khi có thay đổi. đợi người dùng duyệt phattrien.md trước khi tiếp tục
+**chú ý** cần luôn xem whattodo.md và cập nhật howtodo.md khi có thay đổi. đợi người dùng duyệt howtodo.md trước khi tiếp tục
 
 **cập nhật 2026-05-25 15:09:09**
 

@@ -1,6 +1,6 @@
 # Phân tích Thiết kế & Kế hoạch Phát triển - Module OIDC
 
-Tài liệu này tổng hợp toàn bộ giải pháp kỹ thuật, cấu trúc mã nguồn, thiết kế luồng dữ liệu, phân tích khoảng cách kỹ thuật (Gap Analysis), kế hoạch triển khai và quy tắc bảo trì của module **OIDC (Identity & Decentralized Authorization Management)** dựa trên các yêu cầu nghiệp vụ tại [yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/business-oidc/yeucau.md) và hiện trạng mã nguồn thực tế.
+Tài liệu này tổng hợp toàn bộ giải pháp kỹ thuật, cấu trúc mã nguồn, thiết kế luồng dữ liệu, phân tích khoảng cách kỹ thuật (Gap Analysis), kế hoạch triển khai và quy tắc bảo trì của module **OIDC (Identity & Decentralized Authorization Management)** dựa trên các yêu cầu nghiệp vụ tại [whattodo.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/business-oidc/whattodo.md) và hiện trạng mã nguồn thực tế.
 
 ---
 
@@ -98,7 +98,7 @@ Thư viện [business-oidc](file:///work/a.i-assistant-chatbot-telegram-serverle
 
 ## 4. Đánh giá Hiện trạng & Phân tích Gác (Gap Analysis)
 
-Dựa trên việc đối chiếu giữa mã nguồn thực tế và chuẩn kiến trúc dự án (nêu tại [backend/yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/backend/yeucau.md)), chúng tôi phát hiện một số điểm khoảng cách kỹ thuật (Gaps) cần cải thiện sau:
+Dựa trên việc đối chiếu giữa mã nguồn thực tế và chuẩn kiến trúc dự án (nêu tại [backend/whattodo.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/backend/whattodo.md)), chúng tôi phát hiện một số điểm khoảng cách kỹ thuật (Gaps) cần cải thiện sau:
 
 ### 4.1. Phân trang phía Server (Server-side Pagination) trên FE:
 - **Hiện trạng:** Cả 4 bảng quản trị (`user-list`, `role-list`, `acl-list`, `claim-sync`) ở Frontend đang sử dụng `[frontPagination]="true"`. Nghĩa là dữ liệu được tải toàn bộ về client và phân trang tại client.

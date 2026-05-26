@@ -55,7 +55,7 @@ FE tổng kết nhanh về cấu trúc
         cấu hình lazy load các module nghiệp vụ , khi cần dùng tới thì mới load 
         layout , theme, style, menu, breadcrum, route ...
         đăng ký các module nghiệp vụ để dùng , 
-**suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
+**suy nghĩ và câp nhật vào TreeOfThought/docs/frontend/howtodo.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
 **cập nhật 2026-05-16 22:22:22**
 - [x] Cập nhật page size mặc định 10.
@@ -75,5 +75,5 @@ cần dùng tot-input password cho các nơi cần password trong
 
 **cập nhật 2026-05-21 16:46:36**
 cập nhật firebase ở core 
-    cần lấy fcm token device id globaly để dùng cho chỗ khác ví dụ ở login khi login thành công sẽ lưu fcm token device id này cho user đó xem thêm ở TreeOfThought/docs/business-oidc/yeucau.md 
+    cần lấy fcm token device id globaly để dùng cho chỗ khác ví dụ ở login khi login thành công sẽ lưu fcm token device id này cho user đó xem thêm ở TreeOfThought/docs/business-oidc/whattodo.md 
     đăng ký notification fcm global listener, msg notify display template global, dùng service worker firebase-messaging-sw.js để nhận noti ngay cả khi ko mở trình duyệt .

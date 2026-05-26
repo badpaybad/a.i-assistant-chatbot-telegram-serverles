@@ -1,6 +1,6 @@
 # Kế hoạch phát triển ứng dụng My PC Assistant (Cập nhật liên tục)
 
-Dựa trên các yêu cầu trong `yeucau.md` và các tệp thiết kế trong thư mục `design`, tôi đề xuất kế hoạch triển khai ứng dụng Flutter như sau.
+Dựa trên các yêu cầu trong `whattodo.md` và các tệp thiết kế trong thư mục `design`, tôi đề xuất kế hoạch triển khai ứng dụng Flutter như sau.
 
 ## Tổng quan thiết kế
 Ứng dụng sẽ có giao diện hiện đại, sử dụng bảng màu tím/xanh đậm làm chủ đạo, với các bo góc mềm mại và các thành phần UI cao cấp (glassmorphism nhẹ, gradient).

@@ -19,7 +19,7 @@ class TestNewFeatureDevSkill(unittest.IsolatedAsyncioTestCase):
         mock_resp_slug = MagicMock()
         mock_resp_slug.text = '{"feature_name_slug": "test-feature", "feature_title": "Test Feature", "summary": "A test feature description"}'
         
-        # 2. Mock Gemini response for phattrien.md generation
+        # 2. Mock Gemini response for howtodo.md generation
         mock_resp_plan = MagicMock()
         mock_resp_plan.text = "Chi tiết giải pháp cho Test Feature..."
         
@@ -46,8 +46,8 @@ class TestNewFeatureDevSkill(unittest.IsolatedAsyncioTestCase):
             traceback.print_exc()
         
         # 5. Verify results
-        print(f"Checking path: TreeOfThought/docs/test-feature/yeucau.md")
-        exists = os.path.exists("TreeOfThought/docs/test-feature/yeucau.md")
+        print(f"Checking path: TreeOfThought/docs/test-feature/whattodo.md")
+        exists = os.path.exists("TreeOfThought/docs/test-feature/whattodo.md")
         print(f"Exists: {exists}")
         self.assertTrue(exists)
         

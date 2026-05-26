@@ -3,7 +3,7 @@ phát triển app mobi: my_pc_assistant ở folder:  TreeOfThought/frontend/mobi
 stack dùng là dart, flutter, ant design mobile ... cần thêm gì thì bổ sung
 hỗ trợ android, ios đầy đủ
 
-ý tưởng về kiến trúc FE giống như phát triển web đọc: TreeOfThought/docs/frontend/yeucau.md  tìm hiểu và làm phù hợp với app mobi
+ý tưởng về kiến trúc FE giống như phát triển web đọc: TreeOfThought/docs/frontend/whattodo.md  tìm hiểu và làm phù hợp với app mobi
 
     FE tổng kết nhanh về cấu trúc
         lib core 
@@ -28,7 +28,7 @@ hỗ trợ android, ios đầy đủ
 
 **chú ý** đang có sẵn source code chạy bình thường ở TreeOfThought/frontend/mobi/my_pc_assistant , cần tìm hiểu và điều chỉnh code cho phù hợp không gây lỗi
 
-**suy nghĩ và câp nhật vào TreeOfThought/docs/mobi/phattrien.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
+**suy nghĩ và câp nhật vào TreeOfThought/docs/mobi/howtodo.md để tôi xem, không cần thực hiện cho tới khi tôi bảo**
 
     app cũng dùng i18n được à?, nghiệp vụ không nhất thiết phải bắt đầu bằng busines_ mà theo tên người dùng muốn lúc dùng tot-dev yêu cầu , làm ví dụ files folders trước cho module nghiệp vụ . component register có thể trao đổi dữ liệu state qua dùng event bus cqrs . chưa cần làm tot-table mà yêu cầu việc gọi lên server luôn có paging , không cần hỗ trợ lazy load. chưa làm dashboard và chachat_assistantt, làm files folders để làm sample trước UI tính năng như web (code angular TreeOfThought/frontend/web/projects/tot/business-files) làm sang app mobi
 
@@ -36,7 +36,7 @@ hỗ trợ android, ios đầy đủ
 tất cả việc gọi lên api server cần thông qua HttpClientService ở core , không gọi thẳng dio
 
 **cập nhật 2026-05-21 08:20:20**
- ở TreeOfThought/docs/business-oidc/yeucau.md có cập nhật về việc nhận notify fcm. cần bổ xung cho mobi app ở folder TreeOfThought/frontend/mobi/my_pc_assistant
+ ở TreeOfThought/docs/business-oidc/whattodo.md có cập nhật về việc nhận notify fcm. cần bổ xung cho mobi app ở folder TreeOfThought/frontend/mobi/my_pc_assistant
     - mở máy lên cũng lấy sẵn fcm token device id
     - bổ xung màn login gọi auth/login với username password 
     - lúc login thành công (sso hoặc qua auth/login) cần gọi api để đăng ký fcm token với user

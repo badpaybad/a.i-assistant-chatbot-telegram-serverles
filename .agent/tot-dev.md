@@ -23,39 +23,39 @@ Dùng thông tin này để phát triển, sửa lỗi, hỏi đáp và làm rõ
 ### A. Đối với Tính năng / Nghiệp vụ mới
 
 1. **Khởi tạo:** Tạo folder tên tính năng trong `TreeOfThought/docs`.
-2. **Yêu cầu & Giải pháp (Khởi tạo trống):** Tạo sẵn các file `yeucau.md` và `phattrien.md` trong folder đó ở trạng thái trống (chưa có nội dung gì). **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `yeucau.md`.
+2. **Yêu cầu & Giải pháp (Khởi tạo trống):** Tạo sẵn các file `whattodo.md` và `howtodo.md` trong folder đó ở trạng thái trống (chưa có nội dung gì). **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `whattodo.md`.
 3. **Phân tích & Đề xuất:**
-    - Đọc kỹ `yeucau.md` để hiểu rõ ý định. Nếu chưa có hoặc chưa rõ, yêu cầu người dùng bổ sung vào `yeucau.md`.
-    - Tạo file `phattrien.md` để người dùng xem trước khi quyết định triển khai.
-    - Nếu `phattrien.md` đã có trước đó, phải đọc kết hợp với `yeucau.md` để xác định rõ hơn yêu cầu.
-    - **Yêu cầu quan trọng:** `phattrien.md` phải đủ để đảm bảo code không tạo ra lộn xộn, không được phép làm mỗi lúc một khác với cùng một yêu cầu, phải tuân thủ code base và base infra.
-4. **Xác nhận:** **LUÔN LUÔN** yêu cầu người dùng xác nhận file `phattrien.md` trước khi tiến hành triển khai.
+    - Đọc kỹ `whattodo.md` để hiểu rõ ý định. Nếu chưa có hoặc chưa rõ, yêu cầu người dùng bổ sung vào `whattodo.md`.
+    - Tạo file `howtodo.md` để người dùng xem trước khi quyết định triển khai.
+    - Nếu `howtodo.md` đã có trước đó, phải đọc kết hợp với `whattodo.md` để xác định rõ hơn yêu cầu.
+    - **Yêu cầu quan trọng:** `howtodo.md` phải đủ để đảm bảo code không tạo ra lộn xộn, không được phép làm mỗi lúc một khác với cùng một yêu cầu, phải tuân thủ code base và base infra.
+4. **Xác nhận:** **LUÔN LUÔN** yêu cầu người dùng xác nhận file `howtodo.md` trước khi tiến hành triển khai.
 5. **Triển khai:**
-    - **Backend:** Tạo project là sub-folder của `TreeOfThought/docs/backend`. Xem thêm hướng dẫn tại `TreeOfThought/docs/backend/phattrien.md`.
-    - **Frontend:** Tạo project là thư viện Angular trong folder `TreeOfThought/docs/frontend/web`. Xem thêm hướng dẫn tại `TreeOfThought/docs/frontend/phattrien.md`.
+    - **Backend:** Tạo project là sub-folder của `TreeOfThought/docs/backend`. Xem thêm hướng dẫn tại `TreeOfThought/docs/backend/howtodo.md`.
+    - **Frontend:** Tạo project là thư viện Angular trong folder `TreeOfThought/docs/frontend/web`. Xem thêm hướng dẫn tại `TreeOfThought/docs/frontend/howtodo.md`.
         - **Lưu ý:** Các component trong thư viện `shared` phải bắt đầu với prefix `tot-` (ví dụ: `tot-button`).
 
 ### B. Đối với Sửa lỗi (Fix Bug)
 
 1. **Phân tích:** Tìm đúng tài liệu và code hiện tại trong `TreeOfThought/docs` để đưa ra cách sửa lỗi tối ưu nhất, đơn giản nhất và tốt nhất.
-2. **Đề xuất:** Cập nhật giải pháp vào `phattrien.md` của nghiệp vụ đó.
-3. **Xác nhận:** **LUÔN LUÔN** yêu cầu người dùng xác nhận file `phattrien.md` trước khi tiến hành sửa lỗi.
+2. **Đề xuất:** Cập nhật giải pháp vào `howtodo.md` của nghiệp vụ đó.
+3. **Xác nhận:** **LUÔN LUÔN** yêu cầu người dùng xác nhận file `howtodo.md` trước khi tiến hành sửa lỗi.
 
 ### C. Đối với Tìm hiểu / Hỏi đáp
 
 1. Cung cấp thông tin cần thiết, trả lời chính xác, không bịa đặt.
-2. Đề xuất cách làm, có thể hỏi người dùng để đưa thành tài liệu requirement vào `yeucau.md` của nghiệp vụ đó, sau đó lập giải pháp cẩn thận vào `phattrien.md` để người dùng xác nhận.
+2. Đề xuất cách làm, có thể hỏi người dùng để đưa thành tài liệu requirement vào `whattodo.md` của nghiệp vụ đó, sau đó lập giải pháp cẩn thận vào `howtodo.md` để người dùng xác nhận.
 
 ## 4. Nguyên tắc Hành động & Kiểm thử
 
-- **Luồng dữ liệu:** `yeucau.md` (Ý định) -> `phattrien.md` (Giải pháp) -> **Code** (Thực thi).
+- **Luồng dữ liệu:** `whattodo.md` (Ý định) -> `howtodo.md` (Giải pháp) -> **Code** (Thực thi).
 - **Giao tiếp:** Nếu không biết, không rõ, không chắc chắn thì phải hỏi. Mọi câu hỏi cần đợi người dùng xác nhận.
 - **Thực thi & Debug:**
   - Khi tích hợp vào `TreeOfThought/backend/Core.Web.Api/`, chạy `run-dev.sh` tại đó.
   - Đọc console log để phát hiện và sửa lỗi ngay lập tức.
 - **Tính nhất quán:** Không được làm lộn xộn logic của người dùng. Tuân thủ nghiêm ngặt code base và base infra.
 
-**QUAN TRỌNG:** Luôn dựa vào `yeucau.md` để suy nghĩ và đưa ra giải pháp vào `phattrien.md`. **LUÔN LUÔN yêu cầu người dùng xác nhận file `phattrien.md` trước khi tiến hành.**
+**QUAN TRỌNG:** Luôn dựa vào `whattodo.md` để suy nghĩ và đưa ra giải pháp vào `howtodo.md`. **LUÔN LUÔN yêu cầu người dùng xác nhận file `howtodo.md` trước khi tiến hành.**
 
 ## 5. Quy tắc đặt tên và cấu trúc Folder Nghiệp vụ
 
@@ -82,17 +82,17 @@ Các nghiệp vụ đã được triển khai từ trước có cấu trúc fold
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-files`
 
 2. **Module CQRS Dashboard:**
-   - **Docs:** `TreeOfThought/docs/cqrs-dashboard/yeucau.md`
+   - **Docs:** `TreeOfThought/docs/cqrs-dashboard/whattodo.md`
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-dashboard`
 
 3. **Module CQRS Test:**
-   - **Docs:** `TreeOfThought/docs/cqrs-test/yeucau.md`
+   - **Docs:** `TreeOfThought/docs/cqrs-test/whattodo.md`
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-test`
 
 4. **Module OIDC:**
-   - **Docs:** `TreeOfThought/docs/business-oidc/yeucau.md`
+   - **Docs:** `TreeOfThought/docs/business-oidc/whattodo.md`
    - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
    - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-oidc`
 
@@ -140,4 +140,4 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
 
 ### D. Nhật ký cập nhật quy trình
 
-- **Cập nhật 2026-05-17 12:03:24:** Khi tạo mới nghiệp vụ, file `yeucau.md` và `phattrien.md` trong folder docs của nghiệp vụ đó ban đầu sẽ trống. **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `yeucau.md` trước khi tiến hành bước tiếp theo.
+- **Cập nhật 2026-05-17 12:03:24:** Khi tạo mới nghiệp vụ, file `whattodo.md` và `howtodo.md` trong folder docs của nghiệp vụ đó ban đầu sẽ trống. **Bắt buộc** yêu cầu người dùng tự đưa nội dung SRS, requirement, mong muốn, ý định vào `whattodo.md` trước khi tiến hành bước tiếp theo.

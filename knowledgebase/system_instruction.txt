@@ -21,8 +21,8 @@ Dùng để tự động hóa quy trình phát triển một nghiệp vụ hoặ
 
 ## Các chức năng chính:
 1. Tạo subfolder nghiệp vụ trong `TreeOfThought/docs`.
-2. Tạo file `yeucau.md` để tiếp nhận yêu cầu từ người dùng.
-3. Tự động đọc `yeucau.md` và viết giải pháp vào `phattrien.md`.
+2. Tạo file `whattodo.md` để tiếp nhận yêu cầu từ người dùng.
+3. Tự động đọc `whattodo.md` và viết giải pháp vào `howtodo.md`.
 4. Khởi tạo project Backend (C#) trong `TreeOfThought/backend`.
 5. Khởi tạo folder Frontend trong `TreeOfThought/frontend/web/src/modules`.
 

@@ -4,7 +4,7 @@ Module OIDC cung cấp giải pháp Xác thực tập trung (Single Sign-On - SS
 
 ## 1. Thông tin Cấu trúc Module
 
-- **Tài liệu nghiệp vụ (Docs):** [yeucau.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/business-oidc/yeucau.md)
+- **Tài liệu nghiệp vụ (Docs):** [whattodo.md](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/business-oidc/whattodo.md)
 - **Backend (BE):**
   - Controllers chính:
     - [AuthController.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.Oidc/Controllers/AuthController.cs)
@@ -170,4 +170,4 @@ Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
 **cập nhật 2026-05-21 15:20:20**
 xem cập nhật trước **cập nhật 2026-05-21 08:20:20** do khi load trang đã lấy fcm token device id rồi. nếu chưa logout thì sẽ không lấy mới fcm token id nữa, mà dùng cái đang hiện hành dùng 
 
-fcm token device id được lấy ở firbase trong core xem TreeOfThought/docs/frontend/yeucau.md 
+fcm token device id được lấy ở firbase trong core xem TreeOfThought/docs/frontend/whattodo.md 

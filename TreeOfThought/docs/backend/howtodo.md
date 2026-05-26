@@ -1,6 +1,6 @@
 # Tiêu chuẩn Phát triển và Thiết kế Kiến trúc Backend (TreeOfThought)
 
-Tài liệu này định nghĩa thiết kế kiến trúc tổng quan và các tiêu chuẩn phát triển bắt buộc cho toàn bộ dự án Backend trong thư mục `TreeOfThought/backend`, được đúc kết từ yêu cầu nền tảng tại [yeucau.md](TreeOfThought/docs/backend/yeucau.md) và các quy chuẩn nghiêm ngặt của skill `tot-dev`.
+Tài liệu này định nghĩa thiết kế kiến trúc tổng quan và các tiêu chuẩn phát triển bắt buộc cho toàn bộ dự án Backend trong thư mục `TreeOfThought/backend`, được đúc kết từ yêu cầu nền tảng tại [whattodo.md](TreeOfThought/docs/backend/whattodo.md) và các quy chuẩn nghiêm ngặt của skill `tot-dev`.
 
 ---
 
