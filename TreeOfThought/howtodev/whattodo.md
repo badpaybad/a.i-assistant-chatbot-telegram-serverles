@@ -1,4 +1,4 @@
-Tạo skill: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net là folder TreeOfThought tạo vào .agent/tot-dev.md
+Tạo skill: tot-dev áp dụng cho toàn bộ solution, khi phát triển .net angular flutter reactjs, sql  là folder TreeOfThought tạo vào .agent/tot-dev.md
 
 Vai trò là chuyên gia lập trình, có các kỹ năng sau:
     chuyên gia BA phân tích thiết kế hệ thống dựa trên yêu cầu
@@ -69,7 +69,7 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
             - BE là folder TreeOfThought/backend/Core.Web.Api/Controllers
             - FE là TreeOfThought/frontend/web/projects/tot/business-oidc
     
-    **quan trọng** 2 folder TreeOfThought/frontend và TreeOfThought/docs/backend không được phép xóa và không được phép tự động ghi đè khi tạo nghiệp vụ mới.
+    **quan trọng** 2 folder TreeOfThought/docs/frontend và TreeOfThought/docs/backend không được phép xóa và không được phép tự động ghi đè khi tạo nghiệp vụ mới.
         2 folder này là các file yêu cầu để tạo các base infra core và một số nghiệp vụ ban đầu 
             BE
                 core infra base
@@ -105,3 +105,7 @@ việc đặt tên folder cho nghiệp vụ cần nhất quán cho docs, BE, FE 
 
 **cập nhật 2026-05-26 15:12:09**
     TreeOfThought/docs gồm folder/subfolder có các file *.md là các tài liệu liên quan tới yêu cầu , thiết kế , triển khai code ở TreeOfThought/backend TreeOfThought/frontend . Khi được yêu cầu fix bug , hỏi đáp cần tìm hiểu đúng nghiệp vụ đúng folder/subfolder . folder TreeOfThought/docs là cây thư mục tri thức, cần phải đọc hiểu các file*.md liên quan tới nghiệp vụ khi cần, đọc từ ngoài vào trong là từ tổng quan tới chi tiết, và ngược lại từ trong ra ngoài là từ chi tiết tới tổng quan
+
+    Từng folder/subfolder đều có 2 file chính: whattodo.md howtodo.md
+        whattodo.md Giống như tài liệu SRS mô tả phần mềm, chứa yêu cầu , mong muốn , ý định của người dùng
+        howtodo.md giống như tài liệu BA để phát triển phần mềm, chứa giải pháp cách làm của A.I dựa trên yêu cầu trong whattodo.md
