@@ -39,17 +39,17 @@ public class SampleCommandHandler : ICommandHandler<SampleCommand>
         });
 
         // Publish event to demonstrate command -> event link
-        await _dispatcher.PublishAsync(new SampleEvent 
-        { 
-            TrackingId = command.TrackingId, 
-            Payload = $"Event triggered by command count: {_counter}" 
+        await _dispatcher.PublishAsync(new SampleEvent
+        {
+            TrackingId = command.TrackingId,
+            Payload = $"Event triggered by command count: {_counter}"
         });
     }
 }
 
 public class SampleEventHandler : IEventHandler<SampleEvent>
 {
-    private int _counter = 0;
+    int _counter = 0;
     private readonly ILogger<SampleEventHandler> _logger;
 
     public SampleEventHandler(ILogger<SampleEventHandler> logger)
@@ -67,6 +67,7 @@ public class SampleEventHandler : IEventHandler<SampleEvent>
 
 public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
 {
+    int _counter = 0;
     private readonly ILogger<SampleEventHandlerAlwaysError> _logger;
 
     public SampleEventHandlerAlwaysError(ILogger<SampleEventHandlerAlwaysError> logger)
@@ -76,10 +77,10 @@ public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
 
     public async Task HandleAsync(SampleEvent @event)
     {
+        _counter++;
+        //    _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
         _logger.LogInformation("SampleEventHandlerAlwaysError is about to throw a test error.");
-        throw new Exception("Test error");
-        // _counter++;
-        // _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
+        throw new Exception($"Test error. Count: {_counter} :: {@event.Payload}");
         // await Task.CompletedTask;
     }
 }

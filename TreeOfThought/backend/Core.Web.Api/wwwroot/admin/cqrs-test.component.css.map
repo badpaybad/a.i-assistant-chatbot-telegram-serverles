@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "sources": ["angular:styles/component:css;1c2784f98fa591517c95b6c32249948c9d56b8b33b8869b5cc3b50156ce3230a;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-test/src/lib/cqrs-test/cqrs-test.component.ts"],
-  "sourcesContent": ["\n    nz-card {\n      margin-bottom: 24px;\n      border-radius: 8px;\n      box-shadow: 0 4px 12px rgba(0,0,0,0.05);\n    }\n    label {\n      display: block;\n      margin-bottom: 8px;\n      font-weight: 500;\n    }\n  "],
-  "mappings": ";AACI;AACE,iBAAe;AACf,iBAAe;AACf,cAAY,EAAE,IAAI,KAAK,KAAK,CAAC,EAAC,CAAC,EAAC,CAAC,EAAC;AACpC;AACA;AACE,WAAS;AACT,iBAAe;AACf,eAAa;AACf;",
+  "sources": ["angular:styles/component:css;233a7f5c097ddc75323373477491ef70bfdd8ee0954a1430b3c1e33eae0416b3;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-test/src/lib/cqrs-test/cqrs-test.component.ts"],
+  "sourcesContent": ["\n    nz-card {\n      margin-bottom: 24px;\n      border-radius: 8px;\n      box-shadow: 0 4px 12px rgba(0,0,0,0.05);\n    }\n    label {\n      display: block;\n      margin-bottom: 8px;\n      font-weight: 500;\n    }\n    .error-detail {\n      background: #fff2f0;\n      border: 1px solid #ffccc7;\n      padding: 8px 12px;\n      border-radius: 6px;\n      color: #ff4d4f;\n      margin-top: 8px;\n      font-size: 13px;\n      display: flex;\n      align-items: center;\n      gap: 8px;\n    }\n  "],
+  "mappings": ";AACI;AACE,iBAAe;AACf,iBAAe;AACf,cAAY,EAAE,IAAI,KAAK,KAAK,CAAC,EAAC,CAAC,EAAC,CAAC,EAAC;AACpC;AACA;AACE,WAAS;AACT,iBAAe;AACf,eAAa;AACf;AACA,CAAC;AACC,cAAY;AACZ,UAAQ,IAAI,MAAM;AAClB,WAAS,IAAI;AACb,iBAAe;AACf,SAAO;AACP,cAAY;AACZ,aAAW;AACX,WAAS;AACT,eAAa;AACb,OAAK;AACP;",
   "names": []
 }

@@ -4211,18 +4211,18 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-6HLFZBBI.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-GQF4DOGB.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-6HLFZBBI.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-GQF4DOGB.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-6HLFZBBI.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-GQF4DOGB.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           }
@@ -4234,22 +4234,22 @@ var routes = [
         children: [
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-JRU22KWM.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-A2QK6WXT.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-JRU22KWM.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-A2QK6WXT.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-JRU22KWM.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-A2QK6WXT.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-JRU22KWM.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-A2QK6WXT.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]

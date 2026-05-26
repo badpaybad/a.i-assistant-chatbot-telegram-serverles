@@ -148,37 +148,37 @@ public class CqrsDispatcher : IDispatcher
         await _tracker.IncrementStatAsync("total:all");
         await _tracker.IncrementStatAsync($"total:{queueName}");
 
+        if (dbLogger != null)
+        {
+            await dbLogger.LogAsync(
+                command.TrackingId,
+                command.GetType().FullName ?? command.GetType().Name,
+                json,
+                queueName,
+                subscriberName: null,
+                destinationQueueName: queueName,
+                sourceComponent: sourceComponent,
+                handlerName: null,
+                workerId: null,
+                step: "Sending",
+                status: "Sending",
+                isRoot: isRoot
+            );
+        }
+
+        await _tracker.TrackAsync(new TrackingEntry
+        {
+            TrackingId = command.TrackingId,
+            Step = "Sending",
+            Details = $"Sending command to {queueName}. Source: {sourceComponent}",
+            MessageContent = json,
+            QueueOrTopicName = queueName,
+            HandlerOrEventName = command.GetType().FullName,
+            Status = "Sending"
+        });
+
         if (useMemoryMode)
         {
-            // Write append-only record to PostgreSQL
-            if (dbLogger != null)
-            {
-                await dbLogger.LogAsync(
-                    command.TrackingId,
-                    command.GetType().FullName ?? command.GetType().Name,
-                    json,
-                    queueName,
-                    subscriberName: null,
-                    destinationQueueName: queueName,
-                    sourceComponent: sourceComponent,
-                    handlerName: null,
-                    workerId: null,
-                    step: "Enqueue",
-                    status: "Pending",
-                    isRoot: isRoot
-                );
-            }
-
-            await _tracker.TrackAsync(new TrackingEntry
-            {
-                TrackingId = command.TrackingId,
-                Step = "Dispatcher",
-                Details = $"Memory Mode: Start. Source: {sourceComponent}",
-                MessageContent = json,
-                QueueOrTopicName = queueName,
-                HandlerOrEventName = command.GetType().FullName
-            });
-
             _logger.LogInformation("[CQRS Dispatcher] [SendAsync (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Queue: {Queue}, Source: {Source}",
                 command.TrackingId, command.GetType().FullName, queueName, sourceComponent);
 
@@ -206,10 +206,21 @@ public class CqrsDispatcher : IDispatcher
                     sourceComponent: sourceComponent,
                     handlerName: handlerName,
                     workerId: "InMemoryWorker",
-                    step: "Dequeue",
+                    step: "Processing",
                     status: "Processing"
                 );
             }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = command.TrackingId,
+                Step = "Processing",
+                Details = $"Memory Mode: Processing command. Handler: {handlerName}",
+                MessageContent = json,
+                QueueOrTopicName = queueName,
+                HandlerOrEventName = command.GetType().FullName,
+                Status = "Processing"
+            });
 
             try
             {
@@ -233,7 +244,7 @@ public class CqrsDispatcher : IDispatcher
                         sourceComponent: sourceComponent,
                         handlerName: handlerName,
                         workerId: "InMemoryWorker",
-                        step: "Execute",
+                        step: "Success",
                         status: "Success"
                     );
                 }
@@ -241,9 +252,34 @@ public class CqrsDispatcher : IDispatcher
                 await _tracker.TrackAsync(new TrackingEntry
                 {
                     TrackingId = command.TrackingId,
-                    Step = "Dispatcher",
-                    Details = $"Memory Mode: End (Success). Handler: {handlerName}",
-                    Status = "success"
+                    Step = "Success",
+                    Details = $"Memory Mode: Handled successfully. Handler: {handlerName}",
+                    Status = "Success"
+                });
+
+                if (dbLogger != null)
+                {
+                    await dbLogger.LogAsync(
+                        command.TrackingId,
+                        command.GetType().FullName ?? command.GetType().Name,
+                        json,
+                        queueName,
+                        subscriberName: null,
+                        destinationQueueName: queueName,
+                        sourceComponent: sourceComponent,
+                        handlerName: null,
+                        workerId: null,
+                        step: "Sent",
+                        status: "Sent"
+                    );
+                }
+
+                await _tracker.TrackAsync(new TrackingEntry
+                {
+                    TrackingId = command.TrackingId,
+                    Step = "Sent",
+                    Details = $"Memory Mode: Completed. Command sent and executed.",
+                    Status = "Sent"
                 });
 
                 _logger.LogInformation("[CQRS Dispatcher] [Success (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Handler: {Handler}",
@@ -269,7 +305,7 @@ public class CqrsDispatcher : IDispatcher
                         sourceComponent: sourceComponent,
                         handlerName: handlerName,
                         workerId: "InMemoryWorker",
-                        step: "Execute",
+                        step: "Error",
                         status: "Error",
                         errorMessage: ex.Message
                     );
@@ -278,9 +314,9 @@ public class CqrsDispatcher : IDispatcher
                 await _tracker.TrackAsync(new TrackingEntry
                 {
                     TrackingId = command.TrackingId,
-                    Step = "Dispatcher",
-                    Details = $"Memory Mode: End (Error: {ex.Message}). Handler: {handlerName}",
-                    Status = "error"
+                    Step = "Error",
+                    Details = $"Memory Mode: Failure (Error: {ex.Message}). Handler: {handlerName}",
+                    Status = "Error"
                 });
 
                 _logger.LogError(ex, "[CQRS Dispatcher] [Error (Memory Mode)] TrackingId: {TrackingId}, Command: {Type}, Handler: {Handler} failed.",
@@ -308,21 +344,21 @@ public class CqrsDispatcher : IDispatcher
                     sourceComponent: sourceComponent,
                     handlerName: null,
                     workerId: null,
-                    step: "Enqueue",
-                    status: "Pending",
-                    isRoot: isRoot
+                    step: "Sent",
+                    status: "Sent",
+                    isRoot: false
                 );
             }
 
             await _tracker.TrackAsync(new TrackingEntry
             {
                 TrackingId = command.TrackingId,
-                Step = "Dispatcher",
-                Details = $"Enqueuing to {queueName} (Priority). Source: {sourceComponent}",
+                Step = "Sent",
+                Details = $"Enqueued to {queueName} (Priority). Source: {sourceComponent}",
                 MessageContent = json,
                 QueueOrTopicName = queueName,
                 HandlerOrEventName = command.GetType().FullName,
-                Status = CqrsConstants.StatusPending
+                Status = "Sent"
             });
 
             _logger.LogInformation("[CQRS Dispatcher] [SendAsync (Queue Mode)] TrackingId: {TrackingId}, Command: {Type}, Queue: {Queue}, Source: {Source}",
@@ -378,36 +414,37 @@ public class CqrsDispatcher : IDispatcher
         await _tracker.IncrementStatAsync("total:all");
         await _tracker.IncrementStatAsync($"total:topic:{topic}");
 
+        if (dbLogger != null)
+        {
+            await dbLogger.LogAsync(
+                @event.TrackingId,
+                @event.GetType().FullName ?? @event.GetType().Name,
+                json,
+                topic,
+                subscriberName: null,
+                destinationQueueName: null,
+                sourceComponent: sourceComponent,
+                handlerName: null,
+                workerId: null,
+                step: "Publishing",
+                status: "Publishing",
+                isRoot: isRoot
+            );
+        }
+
+        await _tracker.TrackAsync(new TrackingEntry
+        {
+            TrackingId = @event.TrackingId,
+            Step = "Publishing",
+            Details = $"Publishing event to topic {topic}. Source: {sourceComponent}",
+            MessageContent = json,
+            QueueOrTopicName = topic,
+            HandlerOrEventName = @event.GetType().FullName,
+            Status = "Publishing"
+        });
+
         if (useMemoryMode)
         {
-            if (dbLogger != null)
-            {
-                await dbLogger.LogAsync(
-                    @event.TrackingId,
-                    @event.GetType().FullName ?? @event.GetType().Name,
-                    json,
-                    topic,
-                    subscriberName: null,
-                    destinationQueueName: topic,
-                    sourceComponent: sourceComponent,
-                    handlerName: null,
-                    workerId: null,
-                    step: "Publish",
-                    status: "Pending",
-                    isRoot: isRoot
-                );
-            }
-
-            await _tracker.TrackAsync(new TrackingEntry
-            {
-                TrackingId = @event.TrackingId,
-                Step = "Dispatcher",
-                Details = $"Memory Mode: Start (Publish). Source: {sourceComponent}",
-                MessageContent = json,
-                QueueOrTopicName = topic,
-                HandlerOrEventName = @event.GetType().FullName
-            });
-
             _logger.LogInformation("[CQRS Dispatcher] [PublishAsync (Memory Mode)] TrackingId: {TrackingId}, Event: {Type}, Topic: {Topic}, Source: {Source}",
                 @event.TrackingId, @event.GetType().FullName, topic, sourceComponent);
 
@@ -436,7 +473,7 @@ public class CqrsDispatcher : IDispatcher
                         sourceComponent: sourceComponent,
                         handlerName: handlerName,
                         workerId: "InMemoryWorker",
-                        step: "Dequeue",
+                        step: "Processing",
                         status: "Processing"
                     );
                 }
@@ -462,7 +499,7 @@ public class CqrsDispatcher : IDispatcher
                             sourceComponent: sourceComponent,
                             handlerName: handlerName,
                             workerId: "InMemoryWorker",
-                            step: "Execute",
+                            step: "Success",
                             status: "Success"
                         );
                     }
@@ -489,7 +526,7 @@ public class CqrsDispatcher : IDispatcher
                             sourceComponent: sourceComponent,
                             handlerName: handlerName,
                             workerId: "InMemoryWorker",
-                            step: "Execute",
+                            step: "Error",
                             status: "Error",
                             errorMessage: ex.Message
                         );
@@ -506,17 +543,6 @@ public class CqrsDispatcher : IDispatcher
                 }
             }
 
-            await _tracker.TrackAsync(new TrackingEntry
-            {
-                TrackingId = @event.TrackingId,
-                Step = "Dispatcher",
-                Details = "Memory Mode: End (Publish)",
-                Status = CqrsConstants.StatusSuccess
-            });
-        }
-        else
-        {
-            // Queue mode
             if (dbLogger != null)
             {
                 await dbLogger.LogAsync(
@@ -529,23 +555,22 @@ public class CqrsDispatcher : IDispatcher
                     sourceComponent: sourceComponent,
                     handlerName: null,
                     workerId: null,
-                    step: "Publish",
-                    status: "Pending",
-                    isRoot: isRoot
+                    step: "Published",
+                    status: "Published"
                 );
             }
 
             await _tracker.TrackAsync(new TrackingEntry
             {
                 TrackingId = @event.TrackingId,
-                Step = "Dispatcher",
-                Details = $"Publishing to topic: {topic}. Source: {sourceComponent}",
-                MessageContent = json,
-                QueueOrTopicName = topic,
-                HandlerOrEventName = @event.GetType().FullName,
-                Status = CqrsConstants.StatusPending
+                Step = "Published",
+                Details = "Memory Mode: Published event successfully.",
+                Status = "Published"
             });
-
+        }
+        else
+        {
+            // Queue mode
             _logger.LogInformation("[CQRS Dispatcher] [PublishAsync (Queue Mode)] TrackingId: {TrackingId}, Event: {Type}, Topic: {Topic}, Source: {Source}",
                 @event.TrackingId, @event.GetType().FullName, topic, sourceComponent);
 
@@ -590,7 +615,7 @@ public class CqrsDispatcher : IDispatcher
                 await _tracker.TrackAsync(new TrackingEntry
                 {
                     TrackingId = @event.TrackingId,
-                    Step = "EventBus",
+                    Step = "Subscribe",
                     Details = $"Enqueued to subscriber: {sub} ({subQueue})",
                     QueueOrTopicName = subQueue,
                     HandlerOrEventName = @event.GetType().FullName,
@@ -601,6 +626,31 @@ public class CqrsDispatcher : IDispatcher
 
             // Trigger signal
             await _eventBus.PublishAsync(topic, "new_event");
+
+            if (dbLogger != null)
+            {
+                await dbLogger.LogAsync(
+                    @event.TrackingId,
+                    @event.GetType().FullName ?? @event.GetType().Name,
+                    json,
+                    topic,
+                    subscriberName: null,
+                    destinationQueueName: null,
+                    sourceComponent: sourceComponent,
+                    handlerName: null,
+                    workerId: null,
+                    step: "Published",
+                    status: "Published"
+                );
+            }
+
+            await _tracker.TrackAsync(new TrackingEntry
+            {
+                TrackingId = @event.TrackingId,
+                Step = "Published",
+                Details = $"Published event to topic: {topic}",
+                Status = "Published"
+            });
         }
     }
 
@@ -658,13 +708,13 @@ public class CqrsDispatcher : IDispatcher
                                 message.TrackingId,
                                 message.GetType().FullName ?? message.GetType().Name,
                                 json,
-                                trackingTargetName,
+                                queueName,
                                 subscriberName: subName,
                                 destinationQueueName: queueName,
                                 sourceComponent: null,
                                 handlerName: handlerName,
                                 workerId: workerId,
-                                step: "Dequeue",
+                                step: "Processing",
                                 status: "Processing"
                             );
                         }
@@ -673,16 +723,16 @@ public class CqrsDispatcher : IDispatcher
                         await _tracker.TrackAsync(new TrackingEntry
                         {
                             TrackingId = message.TrackingId,
-                            Step = "Worker",
-                            Details = $"Dequeued from {queueName}. Worker: {workerId}",
+                            Step = "Processing",
+                            Details = $"Processing message from {queueName}. Worker: {workerId}. Handler: {handlerName}",
                             MessageContent = json,
                             QueueOrTopicName = queueName,
                             WorkerName = workerId,
                             HandlerOrEventName = message.GetType().FullName,
-                            Status = CqrsConstants.StatusProcessing
+                            Status = "Processing"
                         });
 
-                        _logger.LogInformation("[CQRS Worker] [Dequeue] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Worker: {Worker}, Handler: {Handler}",
+                        _logger.LogInformation("[CQRS Worker] [Processing] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Worker: {Worker}, Handler: {Handler}",
                             message.TrackingId, message.GetType().FullName, queueName, workerId, handlerName);
 
                         // Execute within context
@@ -718,13 +768,13 @@ public class CqrsDispatcher : IDispatcher
                                 message.TrackingId,
                                 message.GetType().FullName ?? message.GetType().Name,
                                 json,
-                                trackingTargetName,
+                                queueName,
                                 subscriberName: subName,
                                 destinationQueueName: queueName,
                                 sourceComponent: null,
                                 handlerName: handlerName,
                                 workerId: workerId,
-                                step: "Execute",
+                                step: "Success",
                                 status: "Success"
                             );
                         }
@@ -733,10 +783,10 @@ public class CqrsDispatcher : IDispatcher
                         await _tracker.TrackAsync(new TrackingEntry
                         {
                             TrackingId = message.TrackingId,
-                            Step = "Worker",
+                            Step = "Success",
                             Details = $"Handled by {handlerName}",
                             HandlerOrEventName = handlerName,
-                            Status = CqrsConstants.StatusSuccess
+                            Status = "Success"
                         });
 
                         _logger.LogInformation("[CQRS Worker] [Success] TrackingId: {TrackingId}, Message: {Type}, Queue: {Queue}, Handler: {Handler} successfully completed.",
@@ -778,13 +828,13 @@ public class CqrsDispatcher : IDispatcher
                                 message.TrackingId,
                                 message.GetType().FullName ?? message.GetType().Name,
                                 json,
-                                trackingTargetName,
+                                queueName,
                                 subscriberName: subName,
                                 destinationQueueName: queueName,
                                 sourceComponent: null,
                                 handlerName: handlerName,
                                 workerId: workerId,
-                                step: "Execute",
+                                step: "Error",
                                 status: "Error",
                                 errorMessage: ex.Message
                             );
@@ -793,18 +843,13 @@ public class CqrsDispatcher : IDispatcher
                         await _tracker.TrackAsync(new TrackingEntry
                         {
                             TrackingId = message.TrackingId,
-                            Step = "Worker",
-                            Details = $"Error: {ex.Message}",
+                            Step = "Error",
+                            Details = $"Error in handler {handlerName}: {ex.Message}",
                             HandlerOrEventName = handlerName,
-                            Status = CqrsConstants.StatusError
+                            Status = "Error"
                         });
                         await _queueService.ZAddAsync(CqrsConstants.GetTrackingKey(CqrsConstants.StatusError, trackingTargetName), message.TrackingId.ToString(), DateTime.UtcNow.Ticks);
 
-                        await _tracker.IncrementStatAsync($"error:{queueName}");
-                        if (trackingTargetName != queueName)
-                            await _tracker.IncrementStatAsync($"error:topic:{trackingTargetName}");
-
-                        await _tracker.IncrementStatAsync("total:error");
                         await _tracker.LogStatusAsync(queueName, message.TrackingId, CqrsConstants.StatusError, ex.Message);
                         if (trackingTargetName != queueName)
                             await _tracker.LogStatusAsync(trackingTargetName, message.TrackingId, CqrsConstants.StatusError, ex.Message);

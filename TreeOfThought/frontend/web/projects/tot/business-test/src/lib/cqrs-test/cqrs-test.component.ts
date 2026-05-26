@@ -10,6 +10,9 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { DashboardService } from '@tot/business-dashboard';
+import { NzTimelineModule } from 'ng-zorro-antd/timeline';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzDividerModule } from 'ng-zorro-antd/divider';
 
 @Component({
   selector: 'app-cqrs-test',
@@ -23,7 +26,10 @@ import { DashboardService } from '@tot/business-dashboard';
     NzGridModule,
     NzIconModule,
     TranslocoModule,
-    TotButtonComponent
+    TotButtonComponent,
+    NzTimelineModule,
+    NzTagModule,
+    NzDividerModule
   ],
   template: `
     <div style="padding: 24px;">
@@ -58,15 +64,52 @@ import { DashboardService } from '@tot/business-dashboard';
       </div>
 
       <div *ngIf="lastTrackingId" style="margin-top: 24px;">
-        <nz-card [nzTitle]="'Kết quả gần nhất' | transloco">
+        <nz-card [nzTitle]="'Theo dõi luồng xử lý và chi tiết lỗi' | transloco">
           <p><strong>Tracking ID:</strong> <code>{{ lastTrackingId }}</code></p>
-          <p>{{ 'Bạn có thể quay lại Dashboard và tìm kiếm theo ID này để theo dõi luồng xử lý.' | transloco }}</p>
+          
           <div *ngIf="lastResult" style="margin-top: 16px; padding: 16px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px;">
             <h4 style="margin-bottom: 8px; color: #52c41a; display: flex; align-items: center; gap: 8px;">
               <span nz-icon nzType="check-circle" nzTheme="fill"></span>
                {{ 'Kết quả xử lý từ Firestore:' | transloco }}
             </h4>
             <pre style="margin: 0; font-size: 13px; background: #2d3748; color: #f7fafc; padding: 12px; border-radius: 6px; overflow: auto; max-height: 200px;">{{ formatJson(lastResult) }}</pre>
+          </div>
+
+          <nz-divider [nzText]="'Dòng thời gian xử lý chi tiết (Live Tracking)' | transloco"></nz-divider>
+
+          <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+            <span>{{ 'Trạng thái xử lý của các Event Handlers (bao gồm cả lỗi giả lập)' | transloco }}</span>
+            <tot-button nzType="default" [loading]="loadingTracking" (click)="fetchTracking()">
+              <span nz-icon nzType="sync"></span> {{ 'Làm mới dòng thời gian' | transloco }}
+            </tot-button>
+          </div>
+
+          <nz-timeline *ngIf="trackingHistory.length > 0">
+            <nz-timeline-item 
+              *ngFor="let log of trackingHistory" 
+              [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'green'">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div>
+                  <strong style="margin-right: 8px;">{{ log.time | date:'HH:mm:ss' }}</strong>
+                  <nz-tag [nzColor]="getStepStatus(log.step) === 'error' ? 'error' : 'processing'">{{ log.step }}</nz-tag>
+                  <span *ngIf="log.handlerOrEventName" style="font-size: 12px; color: #8c8c8c;">
+                    (Handler: {{ log.handlerOrEventName }})
+                  </span>
+                </div>
+                <div style="font-size: 14px; margin-top: 4px;">{{ log.details }}</div>
+                
+                <!-- Highlight specific errors like SampleEventHandlerAlwaysError -->
+                <div *ngIf="getStepStatus(log.step) === 'error'" class="error-detail">
+                  <span nz-icon nzType="warning" nzTheme="fill"></span>
+                  <strong>{{ 'Phát hiện lỗi xử lý:' | transloco }}</strong> {{ log.details }}
+                </div>
+              </div>
+            </nz-timeline-item>
+          </nz-timeline>
+
+          <div *ngIf="trackingHistory.length === 0" style="padding: 24px; text-align: center; color: #8c8c8c;">
+            <span nz-icon nzType="loading" style="font-size: 24px; margin-bottom: 8px;"></span>
+            <p>{{ 'Đang tải dữ liệu theo dõi hoặc đang đợi worker xử lý...' | transloco }}</p>
           </div>
         </nz-card>
       </div>
@@ -83,6 +126,18 @@ import { DashboardService } from '@tot/business-dashboard';
       margin-bottom: 8px;
       font-weight: 500;
     }
+    .error-detail {
+      background: #fff2f0;
+      border: 1px solid #ffccc7;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #ff4d4f;
+      margin-top: 8px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
   `]
 })
 export class CqrsTestComponent {
@@ -98,9 +153,13 @@ export class CqrsTestComponent {
   lastTrackingId = '';
   lastResult: any = null;
 
+  trackingHistory: any[] = [];
+  loadingTracking = false;
+
   sendTestCommand(): void {
     this.loadingCommand = true;
     this.lastResult = null;
+    this.trackingHistory = [];
     this.dashboardService.sendTestCommand(this.commandPayload, (data) => {
       this.lastResult = data;
       this.notification.success('Command Result (Firestore)', `Result for ${this.lastTrackingId}: ${JSON.stringify(data)}`, { nzDuration: 0 });
@@ -109,6 +168,7 @@ export class CqrsTestComponent {
         this.lastTrackingId = res.trackingId;
         this.notification.success(this.translate.translate('Thành công'), this.translate.translate('NOTIFICATIONS.SAMPLE_COMMAND_SENT', { id: res.trackingId }));
         this.loadingCommand = false;
+        setTimeout(() => this.fetchTracking(), 1500);
       },
       error: () => {
         this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi gửi command'));
@@ -120,17 +180,54 @@ export class CqrsTestComponent {
   sendTestEvent(): void {
     this.loadingEvent = true;
     this.lastResult = null;
+    this.trackingHistory = [];
     this.dashboardService.sendTestEvent(this.eventData).subscribe({
       next: (res) => {
         this.lastTrackingId = res.trackingId;
         this.notification.success(this.translate.translate('Thành công'), this.translate.translate('NOTIFICATIONS.SAMPLE_EVENT_PUBLISHED', { id: res.trackingId }));
         this.loadingEvent = false;
+        setTimeout(() => this.fetchTracking(), 1500);
       },
       error: () => {
         this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi gửi event'));
         this.loadingEvent = false;
       }
     });
+  }
+
+  fetchTracking(): void {
+    if (!this.lastTrackingId) return;
+    this.loadingTracking = true;
+    this.dashboardService.getTracking(this.lastTrackingId).subscribe({
+      next: (res) => {
+        this.trackingHistory = res;
+        this.loadingTracking = false;
+      },
+      error: () => {
+        this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Lỗi khi tải dữ liệu theo dõi'));
+        this.loadingTracking = false;
+      }
+    });
+  }
+
+  getStepStatus(step: string): string {
+    if (!step) return 'wait';
+    const s = step.toLowerCase();
+    if (s.includes('fail') || s.includes('error')) return 'error';
+    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'finish';
+    if (s.includes('start') || s.includes('publish') || s.includes('enqueue')) return 'process';
+    return 'wait';
+  }
+
+  getStepIcon(step: string): string {
+    if (!step) return 'info-circle';
+    const s = step.toLowerCase();
+    if (s.includes('fail') || s.includes('error')) return 'close-circle';
+    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'check-circle';
+    if (s.includes('publish') || s.includes('sent')) return 'export';
+    if (s.includes('receive') || s.includes('handle')) return 'import';
+    if (s.includes('enqueue') || s.includes('queue')) return 'database';
+    return 'info-circle';
   }
 
   formatJson(obj: any): string {

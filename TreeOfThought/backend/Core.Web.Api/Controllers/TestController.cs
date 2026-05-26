@@ -4,11 +4,14 @@ using Core.Web.Api.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Core.Infra.Base.Constants;
+using Core.Infra.Auth.Attributes;
 
 namespace Core.Web.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+
+[AppAuthorize("be.cqrs-test")]
 public class TestController : ControllerBase
 {
     private readonly IDispatcher _dispatcher;

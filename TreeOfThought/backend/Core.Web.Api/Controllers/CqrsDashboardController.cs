@@ -250,8 +250,24 @@ public class CqrsDashboardController : ControllerBase
 
             foreach (var tid in trackingIds)
             {
-                var logs = await db.CqrsTrackingLogs
-                    .Where(l => l.TrackingId == tid)
+                var logsQuery = db.CqrsTrackingLogs.Where(l => l.TrackingId == tid);
+
+                if (queueName.StartsWith("sub_queue:"))
+                {
+                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName);
+                }
+                else if (_dispatcher.GetAllTopics().Contains(queueName))
+                {
+                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName ||
+                        (l.QueueOrTopicName != null && l.QueueOrTopicName.StartsWith("sub_queue:" + queueName + ":")) ||
+                        (l.DestinationQueueName != null && l.DestinationQueueName.StartsWith("sub_queue:" + queueName + ":")));
+                }
+                else
+                {
+                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName);
+                }
+
+                var logs = await logsQuery
                     .OrderBy(l => l.CreatedAt)
                     .ToListAsync();
 
@@ -340,6 +356,7 @@ public class CqrsDashboardController : ControllerBase
                 trackingId = l.TrackingId,
                 step = l.Step,
                 timestamp = l.CreatedAt,
+                time = l.CreatedAt,
                 messageContent = l.MessageData,
                 status = l.Status,
                 queueOrTopicName = l.QueueOrTopicName,

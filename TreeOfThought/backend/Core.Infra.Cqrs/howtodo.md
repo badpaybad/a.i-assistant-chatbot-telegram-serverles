@@ -67,7 +67,7 @@ Mỗi dòng đại diện cho một sự kiện (Send, Publish, Dequeue, Success
 | **SourceComponent** | `varchar(500)` | `NULL` | **Tên lớp đầy đủ kèm namespace** của thành phần gọi Dispatcher (tự động phân tích StackTrace để phát hiện ra Controller hoặc Handler cha thực hiện dispatch). |
 | **HandlerName** | `varchar(500)` | `NULL` | **Tên kiểu đầy đủ kèm namespace** của Handler xử lý thông điệp (ví dụ: `Core.Infra.NhanDienKhuonMat.Handlers.FaceDetectionCommandHandler`). |
 | **WorkerId** | `varchar(255)` | `NULL` | Định danh của Worker xử lý thông điệp. |
-| **Step** | `varchar(50)` | `NOT NULL` | Bước xử lý thông điệp:<br>- **Đối với Command**: `Enqueue` (khi gửi vào hàng đợi), `Dequeue` (khi worker nhận), `Execute` (khi kết thúc xử lý).<br>- **Đối với Event**: `Publish` (khi gửi vào Topic), `Subscribe` (khi EventBus chia về hàng đợi riêng của subscriber), `Dequeue` (khi worker nhận), `Execute` (khi kết thúc xử lý). |
+| **Step** | `varchar(50)` | `NOT NULL` | Bước xử lý thông điệp:<br>- **Đối với Command**: `Sending` (khi bắt đầu gửi), `Sent` (khi gửi thành công), `Processing` (khi worker dequeue xử lý), `Success` / `Error` (khi kết thúc xử lý thành công hoặc lỗi).<br>- **Đối với Event**: `Publishing` (khi bắt đầu gửi), `Published` (khi gửi thành công lên topic và tất cả subscriber), `Processing` (khi subscriber dequeue xử lý), `Success` / `Error` (khi kết thúc xử lý thành công hoặc lỗi). |
 | **Status** | `varchar(50)` | `NOT NULL`, `INDEX` | Trạng thái xử lý (`Pending`, `Processing`, `Success`, `Error`). |
 | **ErrorMessage** | `text` | `NULL` | Chi tiết thông tin ngoại lệ (Exception) nếu xử lý bị lỗi. |
 | **IsRoot** | `boolean` | `NOT NULL` | Đánh dấu `true` cho bản ghi đầu tiên khi TrackingId được khởi tạo ban đầu. |
@@ -368,7 +368,7 @@ Cấu trúc DB append-only kết hợp liên kết Subscriber cho phép giải q
 2.  **Lịch sử xử lý từng bước theo thời gian tăng dần**:
     *   Khi người dùng click expand một dòng, giao diện FE sẽ kích hoạt lazy-load thông qua API `GET /api/cqrs/dashboard/tracking/{trackingId}`.
     *   API này truy vấn toàn bộ lịch sử các milestones của `TrackingId` đó từ PostgreSQL, sắp xếp nghiêm ngặt theo **`CreatedAt ASC, Id ASC`**.
-    *   Việc sắp xếp theo `Id ASC` (Identity Auto-Increment) là chốt chặn đảm bảo thứ tự chronological tăng dần tuyệt đối, ngay cả khi các bước xử lý (ví dụ: `Enqueue` $\rightarrow$ `Dequeue` $\rightarrow$ `Execute`) diễn ra trong cùng một mili giây.
+    *   Việc sắp xếp theo `Id ASC` (Identity Auto-Increment) là chốt chặn đảm bảo thứ tự chronological tăng dần tuyệt đối, ngay cả khi các bước xử lý (ví dụ: `Sending` $\rightarrow$ `Sent` $\rightarrow$ `Processing` $\rightarrow$ `Success`) diễn ra trong cùng một mili giây.
 
 #### C. Trạng thái Workers & Hoạt động cuối (Workers Status & Last Active) - Cập nhật Bổ sung 2026-05-25
 *   **Workers Status & Metrics**: Trạng thái bật/tắt của các background worker được lấy trực tiếp từ `IDispatcher.GetWorkerStatus()`. Cho phép quản trị viên bấm nút Bật/Tắt worker trực tiếp từ UI thông qua lệnh gọi POST tương ứng. 
@@ -384,6 +384,12 @@ Cấu trúc DB append-only kết hợp liên kết Subscriber cho phép giải q
 - Cột `Hành động` được định nghĩa `{ title: 'Hành động', key: 'action', width: '120px', right: true }`.
 - Thiết lập thuộc tính `[scroll]="{ x: '1300px' }"` trên `tot-table` của tab Tracking và `[scroll]="{ x: '1000px' }"` trên tab Workers để kích hoạt thanh cuộn ngang độc lập của bảng, giúp cố định (freeze) cột hành động nằm bên phải cực kỳ trơn tru và nhất quán như tab Hàng đợi & Chủ đề.
 
+#### E. Phân tách Trạng thái Tin nhắn giữa các Subscriber (Subscriber Status Isolation) - Cập nhật 2026-05-26
+Khi truy vấn danh sách thông điệp lịch sử của một Queue, Topic hoặc Subscriber cụ thể thông qua API `GET /api/cqrs/dashboard/messages/{queueName}`, trạng thái cuối cùng (`finalState`) của một `TrackingId` phải được cô lập theo đúng phạm vi của thành phần đang hiển thị để tránh hiện tượng nhiễm trạng thái chéo (ví dụ: một Event Handler lỗi làm ảnh hưởng hiển thị của Event Handler thành công khác có chung `TrackingId`):
+1. **Đối với Subscriber Queue** (tên bắt đầu bằng `sub_queue:`): Chỉ lọc các bản ghi nhật ký thuộc về subscriber cụ thể đó (`QueueOrTopicName == queueName || DestinationQueueName == queueName`).
+2. **Đối với Topic**: Lọc toàn bộ các bản ghi nhật ký của chính Topic đó và các Subscriber Queue thuộc về Topic đó.
+3. **Đối với Command Queue**: Chỉ lọc các bản ghi nhật ký thuộc về Command Queue đó.
+
 ---
 
 ## 6. Kế hoạch xác minh (Verification Plan)
@@ -398,5 +404,5 @@ Cấu trúc DB append-only kết hợp liên kết Subscriber cho phép giải q
 3.  **Kiểm tra tích hợp thực tế**:
     Kích hoạt upload file từ UI Angular để gửi yêu cầu xử lý, sau đó vào Postgres để xác thực:
     - Bản ghi gốc đầu tiên có `IsRoot = true`.
-    - Các bản ghi dequeue, execute có đầy đủ tên Handler (kèm namespace), tên Worker, dữ liệu JSON và `TrackingId` giữ nguyên xuyên suốt.
+    - Các bản ghi processing, success/error có đầy đủ tên Handler (kèm namespace), tên Worker, dữ liệu JSON và `TrackingId` giữ nguyên xuyên suốt.
     - Với luồng Event Pub/Sub, các bản ghi chỉ ra rõ `SubscriberName` và `DestinationQueueName` khớp với Topic tương ứng.
