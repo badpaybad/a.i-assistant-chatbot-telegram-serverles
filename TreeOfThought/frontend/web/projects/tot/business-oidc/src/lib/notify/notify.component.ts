@@ -81,6 +81,7 @@ import { FirebaseService, AuthService } from '@tot/core';
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
       [total]="totalUsers"
+      [scroll]="{ x: '1000px' }"
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="avatar" let-data>
@@ -273,6 +274,9 @@ export class NotifyComponent implements OnInit {
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     const { pageIndex, pageSize } = params;
+    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
+      return;
+    }
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadUsers();

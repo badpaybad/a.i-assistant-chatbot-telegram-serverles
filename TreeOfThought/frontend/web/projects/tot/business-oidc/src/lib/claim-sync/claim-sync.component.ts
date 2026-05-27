@@ -15,7 +15,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AuthManagementService } from '../services/auth-management.service';
 
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 
 @Component({
   selector: 'app-claim-sync',
@@ -35,7 +35,8 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
     NzGridModule,
     TranslocoModule,
     TotButtonComponent,
-    TotTableComponent
+    TotTableComponent,
+    TotCellDirective
   ],
   template: `
     <div class="page-header">
@@ -80,20 +81,21 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn } from '@tot/shar
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
       [total]="totalClaims"
+      [scroll]="{ x: '1000px' }"
       (queryParamsChange)="onQueryParamsChange($event)"
-    ></tot-table>
+    >
+      <ng-template totCell="createdAt" let-data>
+        {{ data.createdAt | date:'short' }}
+      </ng-template>
 
-    <ng-template #actionsTpl let-data>
-      <div style="display: flex; gap: 4px; flex-direction: column;">
-        <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
-                [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
-                (click)="deleteClaim(data)">{{ 'Xóa' | transloco }}</tot-button>
-      </div>
-    </ng-template>
-
-    <ng-template #dateTpl let-data let-key="key">
-      {{ data[key] | date:'short' }}
-    </ng-template>
+      <ng-template totCell="action" let-data>
+        <div style="display: flex; gap: 4px; flex-direction: column;">
+          <tot-button nzType="primary" [nzDanger]="true" nzSize="small" 
+                  [disabled]="data.name?.toLowerCase() === ADMIN_CLAIM"
+                  (click)="deleteClaim(data)">{{ 'Xóa' | transloco }}</tot-button>
+        </div>
+      </ng-template>
+    </tot-table>
 
     <nz-modal [(nzVisible)]="isCreateModalVisible" [nzTitle]="'Thêm mới' | transloco" (nzOnCancel)="isCreateModalVisible = false" (nzOnOk)="createClaim()">
       <ng-container *nzModalContent>
@@ -154,17 +156,14 @@ export class ClaimSyncComponent implements OnInit {
     dateRange: []
   };
 
-  @ViewChild('actionsTpl', { static: true }) actionsTpl!: TemplateRef<any>;
-  @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
-
   claimColumns: TotTableColumn[] = [];
 
   ngOnInit(): void {
     this.claimColumns = [
       { title: 'Quyền', key: 'name' },
       { title: 'Mô tả', key: 'description' },
-      { title: 'Ngày tạo', key: 'createdAt', template: this.dateTpl },
-      { title: 'Hành động', width: '120px', template: this.actionsTpl, right: true }
+      { title: 'Ngày tạo', key: 'createdAt' },
+      { title: 'Hành động', key: 'action', width: '120px', right: true }
     ];
     this.loadClaims();
   }
@@ -198,6 +197,9 @@ export class ClaimSyncComponent implements OnInit {
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     const { pageIndex, pageSize } = params;
+    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
+      return;
+    }
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadClaims();
@@ -212,21 +214,16 @@ export class ClaimSyncComponent implements OnInit {
     this.loadClaims();
   }
 
-  sync() {
+  async sync() {
     this.loading = true;
     try {
-      this.authMgmt.syncClaims(this.version, this.claims, (data: any) => {
-        this.loading = false;
-        if (data.status === 'Completed') {
-          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đồng bộ quyền thành công'));
-          this.loadClaims();
-        } else if (data.status === 'Error') {
-          this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
-        }
-      });
-    } catch (e) {
+      await this.authMgmt.syncClaims(this.version, this.claims);
+      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đồng bộ quyền thành công'));
+      await this.loadClaims();
+    } catch (e: any) {
+      this.notification.error(this.translate.translate('Thất bại'), e?.message || this.translate.translate('Đồng bộ quyền thất bại'));
+    } finally {
       this.loading = false;
-      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
     }
   }
 

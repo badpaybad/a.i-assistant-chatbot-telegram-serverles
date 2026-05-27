@@ -171,3 +171,10 @@ Bổ xung thêm chức năng gửi FCM phục vụ noti lên app mobi.
 xem cập nhật trước **cập nhật 2026-05-21 08:20:20** do khi load trang đã lấy fcm token device id rồi. nếu chưa logout thì sẽ không lấy mới fcm token id nữa, mà dùng cái đang hiện hành dùng 
 
 fcm token device id được lấy ở firbase trong core xem TreeOfThought/docs/frontend/whattodo.md 
+
+**cập nhật 2026-05-27 21:25:21**
+
+nghiệp vụ : business-oidc cần cập nhật việc dùng các component shared tot-button tot-table cho toàn bộ nghiệp vụ business-oidc, tuân thủ về cột hành động (action , thao tác) cần fixed (sticky)
+kiểm tra việc phân trang đã là server side paging chưa và cần sửa theo chuẩn 
+vì sao lúc page load không thấy load data vào bảng dữ liệu kiểm tra và sửa 
+paging của /modules/core-infra-auth/claims không hoạt động kiểm ra và sửa, cùng kiểm tra các paging server side cho các danh sách khác trong nghiệp vụ đảm bảo hoạt động đúng 

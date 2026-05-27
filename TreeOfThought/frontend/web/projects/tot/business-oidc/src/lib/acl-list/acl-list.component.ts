@@ -77,6 +77,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
       [total]="totalAcl"
+      [scroll]="{ x: '1000px' }"
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="subject" let-data>
@@ -290,9 +291,14 @@ export class AclListComponent implements OnInit {
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     const { pageIndex, pageSize } = params;
+    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
+      return;
+    }
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
-    this.loadAcl();
+    if (this.filter.resourceType && this.filter.resourceId) {
+      this.loadAcl();
+    }
   }
 
   showCreateModal() {

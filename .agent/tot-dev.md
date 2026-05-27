@@ -154,6 +154,8 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
 - **Cập nhật 2026-05-26 15:32:12:** Sửa lỗi chính tả về thư mục cốt lõi cần bảo vệ: thay thế `TreeOfThought/frontend` thành `TreeOfThought/docs/frontend` để chính xác với sơ đồ tổ chức tài liệu tri thức của solution.
 - **Cập nhật 2026-05-26 16:24:00:** Bổ sung nguyên tắc **DRY (Don't Repeat Yourself)** vào quy trình phát triển. Trong một file code tuyệt đối không được lặp lại code hay logic giống nhau, cần tối ưu hóa và đưa vào hàm/phương thức để tái sử dụng.
 - **Cập nhật 2026-05-27 20:40:24:** Tái cấu trúc Module CQRS Dashboard: di chuyển backend Controller và Models ra dự án riêng tại `TreeOfThought/backend/cqrs-dashboard`, đồng thời đổi tên Angular Library dùng chung từ `business-dashboard` thành `cqrs-dashboard` để đồng nhất cấu trúc trên toàn solution.
+- **Cập nhật 2026-05-27 21:21:21:** Sửa lỗi giao diện OIDC quản lý claims bị treo loading mãi khi click "Đồng bộ quyền" do API đồng bộ là API đồng bộ thuần (đồng bộ đồng thời/synchronous) chứ không phải bất đồng bộ thông qua CQRS Tracking, chuyển đổi cuộc gọi sang Promise/async-await không dùng callback Firebase và thực hiện tải lại danh sách người dùng/quyền ngay sau khi đồng bộ thành công.
+
 
 
 

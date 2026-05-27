@@ -101,8 +101,8 @@ export class AuthManagementService {
     return this.http.delete(`${this.BASE_URL}/claims/${claimId}`, callback);
   }
 
-  syncClaims(version: string, claims: string[], callback?: (data: any) => void) {
-    return this.http.post('/api/Auth/claims/sync', { version, claims }, callback);
+  syncClaims(version: string, claims: string[]) {
+    return this.http.post('/api/Auth/claims/sync', { version, claims });
   }
 
   getAcl(resourceType: string, resourceId: string, pageIndex?: number, pageSize?: number) {

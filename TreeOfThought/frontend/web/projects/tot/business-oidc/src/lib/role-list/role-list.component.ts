@@ -82,6 +82,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
       [total]="totalRoles"
+      [scroll]="{ x: '1000px' }"
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="role" let-data>
@@ -249,6 +250,9 @@ export class RoleListComponent implements OnInit {
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     const { pageIndex, pageSize } = params;
+    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
+      return;
+    }
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadRoles();

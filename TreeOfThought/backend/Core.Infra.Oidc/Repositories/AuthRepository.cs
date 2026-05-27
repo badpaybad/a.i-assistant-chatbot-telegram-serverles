@@ -62,7 +62,7 @@ public class AuthRepository : IAuthRepository
 
     public async Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null)
     {
-        var usersQuery = _context.Users.AsQueryable();
+        var usersQuery = _context.Users.OrderBy(u => u.Username).AsQueryable();
 
         if (query != null)
         {
@@ -156,7 +156,7 @@ public class AuthRepository : IAuthRepository
 
     public async Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null)
     {
-        var rolesQuery = _context.Roles.AsQueryable();
+        var rolesQuery = _context.Roles.OrderBy(r => r.Name).AsQueryable();
 
         if (query != null)
         {
@@ -219,7 +219,7 @@ public class AuthRepository : IAuthRepository
 
     public async Task<(List<AppClaim> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null)
     {
-        var claimsQuery = _context.Claims.AsQueryable();
+        var claimsQuery = _context.Claims.OrderBy(c => c.Name).AsQueryable();
 
         if (query != null)
         {
@@ -460,10 +460,12 @@ public class AuthRepository : IAuthRepository
 
     public async Task<(List<AclEntry> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null)
     {
-        var query = _context.AclEntries
+        var baseQuery = _context.AclEntries
             .Where(a => a.ResourceType == resourceType && a.ResourceId == resourceId);
 
-        var totalCount = await query.CountAsync();
+        var totalCount = await baseQuery.CountAsync();
+
+        IQueryable<AclEntry> query = baseQuery.OrderBy(a => a.CreatedAt);
 
         if (pageIndex.HasValue && pageSize.HasValue)
         {

@@ -17,6 +17,7 @@ import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzCheckboxModule } from 'ng-zorro-antd/checkbox';
 import { NzAvatarModule } from 'ng-zorro-antd/avatar';
 import { AuthManagementService } from '../services/auth-management.service';
+import { ALL_CLAIMS, CLAIMS_VERSION } from '@tot/core';
 import { TotAutocompleteComponent, TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
 import { ViewChild, TemplateRef } from '@angular/core';
@@ -133,6 +134,7 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
       [total]="totalUsers"
+      [scroll]="{ x: '1300px' }"
       (queryParamsChange)="onQueryParamsChange($event)"
     >
       <ng-template totCell="avatar" let-data>
@@ -447,6 +449,9 @@ export class UserListComponent implements OnInit {
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     const { pageIndex, pageSize } = params;
+    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
+      return;
+    }
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadUsers();
@@ -653,21 +658,16 @@ export class UserListComponent implements OnInit {
     }
   }
 
-  syncClaims() {
+  async syncClaims() {
     this.syncingClaims = true;
     try {
-      const version = new Date().getTime().toString();
-      this.authMgmt.syncClaims(version, [], (data: any) => {
-        this.syncingClaims = false;
-        if (data.status === 'Completed') {
-          this.message.success(this.translate.translate('Đồng bộ quyền thành công'));
-        } else if (data.status === 'Error') {
-          this.message.error(data.message || this.translate.translate('Đồng bộ quyền thất bại'));
-        }
-      });
-    } catch (e) {
+      await this.authMgmt.syncClaims(CLAIMS_VERSION, ALL_CLAIMS);
+      this.message.success(this.translate.translate('Đồng bộ quyền thành công'));
+      await this.loadUsers();
+    } catch (e: any) {
+      this.message.error(e?.message || this.translate.translate('Đồng bộ quyền thất bại'));
+    } finally {
       this.syncingClaims = false;
-      this.message.error(this.translate.translate('Đồng bộ quyền thất bại'));
     }
   }
 }
