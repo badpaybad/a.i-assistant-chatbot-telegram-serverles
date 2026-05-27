@@ -64,32 +64,32 @@ public class MessageTracker : IMessageTracker
         }).ToList();
     }
 
-    public async Task IncrementStatAsync(string statKey)
+    public Task IncrementStatAsync(string statKey)
     {
-        await _db.HashIncrementAsync(CqrsConstants.StatsPrefix.TrimEnd(':'), statKey);
+        // Redis statistics deprecated - stats are computed from PostgreSQL log table
+        return Task.CompletedTask;
     }
 
-    public async Task DecrementStatAsync(string statKey)
+    public Task DecrementStatAsync(string statKey)
     {
-        await _db.HashDecrementAsync(CqrsConstants.StatsPrefix.TrimEnd(':'), statKey);
+        // Redis statistics deprecated - stats are computed from PostgreSQL log table
+        return Task.CompletedTask;
     }
 
-    public async Task UpdateLastActiveAsync(string name)
+    public Task UpdateLastActiveAsync(string name)
     {
         var key = CqrsConstants.GetLastActiveKey(name);
-        await _db.StringSetAsync(key, DateTime.UtcNow.ToString("O"));
+        return _db.StringSetAsync(key, DateTime.UtcNow.ToString("O"));
     }
 
-    public async Task<long> GetStatAsync(string statKey)
+    public Task<long> GetStatAsync(string statKey)
     {
-        var value = await _db.HashGetAsync(CqrsConstants.StatsPrefix.TrimEnd(':'), statKey);
-        return value.HasValue ? (long)value : 0;
+        return Task.FromResult<long>(0);
     }
 
-    public async Task<Dictionary<string, long>> GetStatsAsync()
+    public Task<Dictionary<string, long>> GetStatsAsync()
     {
-        var entries = await _db.HashGetAllAsync(CqrsConstants.StatsPrefix.TrimEnd(':'));
-        return entries.ToDictionary(e => e.Name.ToString(), e => (long)e.Value);
+        return Task.FromResult(new Dictionary<string, long>());
     }
 
     public async Task<List<string>> GetRecentTrackingIdsAsync(int count = 50)

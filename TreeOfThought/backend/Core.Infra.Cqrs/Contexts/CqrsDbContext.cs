@@ -40,6 +40,22 @@ public class CqrsDbContext : BaseDbContext
             // We can safely ignore this exception as the goal is to make sure tables are created.
             Console.WriteLine($"[CqrsDbContext] Table creation skipped or table already exists: {ex.Message}");
         }
+
+        try
+        {
+            // Auto-migrate schema: add 'Type' and 'ElapsedMilliseconds' columns if they do not exist
+            await Database.ExecuteSqlRawAsync(@"
+                ALTER TABLE public.cqrs_tracking_logs 
+                ADD COLUMN IF NOT EXISTS ""Type"" VARCHAR(50) NOT NULL DEFAULT '';
+
+                ALTER TABLE public.cqrs_tracking_logs 
+                ADD COLUMN IF NOT EXISTS ""ElapsedMilliseconds"" BIGINT NULL;
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[CqrsDbContext] Failed to update schema columns: {ex.Message}");
+        }
     }
 
     public DbSet<CqrsTrackingLog> CqrsTrackingLogs { get; set; }
@@ -59,6 +75,8 @@ public class CqrsDbContext : BaseDbContext
             entity.HasIndex(e => e.MessageType);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.ElapsedMilliseconds);
         });
     }
 }

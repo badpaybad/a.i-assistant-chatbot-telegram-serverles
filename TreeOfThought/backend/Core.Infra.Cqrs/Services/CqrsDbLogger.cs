@@ -31,6 +31,8 @@ public class CqrsDbLogger
         string? workerId,
         string step,
         string status,
+        string type,
+        long? elapsedMilliseconds = null,
         string? errorMessage = null,
         bool isRoot = false)
     {
@@ -40,7 +42,6 @@ public class CqrsDbLogger
             var db = scope.ServiceProvider.GetService<CqrsDbContext>();
             if (db == null)
             {
-                // CqrsDbContext is not configured/registered
                 return;
             }
 
@@ -57,6 +58,8 @@ public class CqrsDbLogger
                 WorkerId = workerId,
                 Step = step,
                 Status = status,
+                Type = type,
+                ElapsedMilliseconds = elapsedMilliseconds,
                 ErrorMessage = errorMessage,
                 IsRoot = isRoot,
                 CreatedAt = DateTime.UtcNow

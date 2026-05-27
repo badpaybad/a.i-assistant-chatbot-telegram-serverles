@@ -41,18 +41,61 @@ public class CqrsDashboardController : ControllerBase
         _logger = logger;
     }
 
-    [HttpGet("stats")]
-    public async Task<IActionResult> GetStats()
+    private async Task<Dictionary<string, long>> GetStatsFromDbAsync(CqrsDbContext db)
     {
-        var stats = await _tracker.GetStatsAsync();
+        var stats = new Dictionary<string, long>();
+
+        // 1. General System Stats (Queue / Topic counters)
+        stats["queue_send_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "send" && l.Status == "success");
+        stats["queue_send_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "send" && l.Status == "error");
+        stats["queue_done_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "done" && l.Status == "success");
+        stats["queue_done_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "done" && l.Status == "error");
+
+        stats["topic_send_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "send" && l.Status == "success");
+        stats["topic_send_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "send" && l.Status == "error");
+        stats["topic_done_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "done" && l.Status == "success" && l.SubscriberName != null);
+        stats["topic_done_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "done" && l.Status == "error" && l.SubscriberName != null);
+
+        // 2. Active Processing
+        stats["total:processing"] = await db.CqrsTrackingLogs
+            .Where(p => p.Step == "dequeue")
+            .Where(p => !db.CqrsTrackingLogs.Any(c => 
+                c.TrackingId == p.TrackingId && 
+                c.Step == "done" && 
+                (c.HandlerName == p.HandlerName)))
+            .Select(p => p.TrackingId)
+            .Distinct()
+            .CountAsync();
+
+        // 3. Specific Entity Groups (Group by Name, Step, Status)
+        var groups = await db.CqrsTrackingLogs
+            .Where(l => (l.Step == "send" || l.Step == "done") && (l.Status == "success" || l.Status == "error"))
+            .GroupBy(l => new { l.QueueOrTopicName, l.Step, l.Status })
+            .Select(g => new { g.Key.QueueOrTopicName, g.Key.Step, g.Key.Status, Count = g.Count() })
+            .ToListAsync();
+
+        foreach (var g in groups)
+        {
+            if (string.IsNullOrEmpty(g.QueueOrTopicName)) continue;
+            var key = $"{g.Step}_{g.Status}:{g.QueueOrTopicName}";
+            stats[key] = g.Count;
+        }
+
+        return stats;
+    }
+
+    [HttpGet("stats")]
+    public async Task<IActionResult> GetStats([FromServices] CqrsDbContext db)
+    {
+        var stats = await GetStatsFromDbAsync(db);
         var workerStatus = _dispatcher.GetWorkerStatus();
         return Ok(new { stats, workerStatus });
     }
 
     [HttpGet("queues")]
-    public async Task<IActionResult> GetQueues()
+    public async Task<IActionResult> GetQueues([FromServices] CqrsDbContext db)
     {
-        var stats = await _tracker.GetStatsAsync();
+        var stats = await GetStatsFromDbAsync(db);
         var workerStatus = _dispatcher.GetWorkerStatus();
         var registrations = _dispatcher.GetHandlerRegistrations();
         
@@ -67,9 +110,10 @@ public class CqrsDashboardController : ControllerBase
             var length = await _queueService.GetQueueLengthAsync(q);
             var processingLength = await _queueService.GetQueueLengthAsync($"{q}:processing");
             
-            stats.TryGetValue($"processed:{q}", out long processedCount);
-            stats.TryGetValue($"error:{q}", out long errorCount);
-            stats.TryGetValue($"total:{q}", out long totalCount);
+            stats.TryGetValue($"send_success:{q}", out long sendSuccess);
+            stats.TryGetValue($"send_error:{q}", out long sendError);
+            stats.TryGetValue($"done_success:{q}", out long doneSuccess);
+            stats.TryGetValue($"done_error:{q}", out long doneError);
 
             var workers = workerStatus.Where(w => w.QueueOrTopicName == q).Select(w => w.Id).ToList();
             var handlers = registrations.Where(r => r.QueueOrTopicName == q).Select(r => new { r.HandlerName, r.MessageName }).ToList();
@@ -79,9 +123,10 @@ public class CqrsDashboardController : ControllerBase
                 pendingCount = length,
                 activeCount = processingLength,
                 processingCount = length + processingLength,
-                processedCount = processedCount,
-                errorCount = errorCount,
-                totalCount = totalCount,
+                sendSuccessCount = sendSuccess,
+                sendErrorCount = sendError,
+                doneSuccessCount = doneSuccess,
+                doneErrorCount = doneError,
                 type = "Queue", 
                 workers,
                 handlers
@@ -94,9 +139,11 @@ public class CqrsDashboardController : ControllerBase
             var subscribers = _dispatcher.GetTopicSubscribers(t);
             long totalPending = 0;
             long totalActive = 0;
-            long totalProcessed = 0;
-            long totalError = 0;
-            long totalMsg = 0;
+
+            stats.TryGetValue($"send_success:{t}", out long sendSuccess);
+            stats.TryGetValue($"send_error:{t}", out long sendError);
+            long doneSuccess = 0;
+            long doneError = 0;
 
             var subDetails = new List<object>();
             foreach (var sub in subscribers)
@@ -107,25 +154,25 @@ public class CqrsDashboardController : ControllerBase
                 var pending = await _queueService.GetQueueLengthAsync(subQueue);
                 var active = await _queueService.GetQueueLengthAsync(subProc);
                 
-                stats.TryGetValue($"processed:{subQueue}", out long proc);
-                stats.TryGetValue($"error:{subQueue}", out long err);
+                stats.TryGetValue($"done_success:{subQueue}", out long subDoneSuccess);
+                stats.TryGetValue($"done_error:{subQueue}", out long subDoneError);
                 
                 totalPending += pending;
                 totalActive += active;
-                totalProcessed += proc;
-                totalError += err;
+                doneSuccess += subDoneSuccess;
+                doneError += subDoneError;
 
                 subDetails.Add(new {
                     name = sub,
                     queueName = subQueue,
                     pending,
                     active,
-                    processed = proc,
-                    error = err
+                    sendSuccessCount = sendSuccess, // per subscriber send stats is equal to topic send stats
+                    sendErrorCount = sendError,
+                    doneSuccessCount = subDoneSuccess,
+                    doneErrorCount = subDoneError
                 });
             }
-
-            stats.TryGetValue($"total:topic:{t}", out totalMsg);
 
             var workers = workerStatus.Where(w => w.QueueOrTopicName == t).Select(w => w.Id).ToList();
             var handlers = registrations.Where(r => r.QueueOrTopicName == t).Select(r => new { r.HandlerName, r.MessageName }).ToList();
@@ -135,9 +182,10 @@ public class CqrsDashboardController : ControllerBase
                 pendingCount = totalPending,
                 activeCount = totalActive,
                 processingCount = totalPending + totalActive,
-                processedCount = totalProcessed,
-                errorCount = totalError,
-                totalCount = totalMsg,
+                sendSuccessCount = sendSuccess,
+                sendErrorCount = sendError,
+                doneSuccessCount = doneSuccess,
+                doneErrorCount = doneError,
                 type = "Topic", 
                 workers,
                 handlers,
@@ -273,10 +321,28 @@ public class CqrsDashboardController : ControllerBase
 
                 if (logs.Count > 0)
                 {
-                    var finalState = logs
-                        .OrderByDescending(l => l.Status == "Success" || l.Status == "Error")
-                        .ThenByDescending(l => l.CreatedAt)
-                        .FirstOrDefault();
+                    var doneLog = logs.FirstOrDefault(l => l.Step == "done");
+                    var dequeueLog = logs.FirstOrDefault(l => l.Step == "dequeue");
+                    var sendLog = logs.FirstOrDefault(l => l.Step == "send");
+
+                    string statusStr = "pending";
+                    string detailsStr = "Waiting in queue";
+
+                    if (doneLog != null)
+                    {
+                        statusStr = doneLog.Status.ToLower();
+                        detailsStr = doneLog.ErrorMessage ?? (statusStr == "success" ? "Handled successfully" : "Failed");
+                    }
+                    else if (dequeueLog != null)
+                    {
+                        statusStr = "processing";
+                        detailsStr = "Processing (Dequeued)";
+                    }
+                    else if (sendLog != null)
+                    {
+                        statusStr = sendLog.Status == "success" ? "pending" : "error";
+                        detailsStr = sendLog.Status == "success" ? "Waiting in queue" : (sendLog.ErrorMessage ?? "Failed to send");
+                    }
 
                     var contentEntry = logs.FirstOrDefault(l => !string.IsNullOrEmpty(l.MessageData));
                     
@@ -284,8 +350,8 @@ public class CqrsDashboardController : ControllerBase
                         trackingId = tid,
                         timestamp = logs.Min(l => l.CreatedAt),
                         content = contentEntry?.MessageData ?? "",
-                        status = finalState?.Status ?? CqrsConstants.StatusProcessing,
-                        details = finalState?.ErrorMessage ?? (finalState?.Status == "Success" ? "Handled successfully" : "In Progress")
+                        status = statusStr,
+                        details = detailsStr
                     });
                 }
             }
@@ -308,7 +374,7 @@ public class CqrsDashboardController : ControllerBase
                     mockObj["_trackingId"] = d.trackingId;
                     mockObj["_status"] = d.status;
                     mockObj["timestamp"] = d.timestamp;
-                    if (d.status == CqrsConstants.StatusError) {
+                    if (d.status.Equals("error", StringComparison.OrdinalIgnoreCase)) {
                         mockObj["_error"] = d.details;
                         mockObj["_failedAt"] = d.timestamp;
                     }
@@ -365,6 +431,8 @@ public class CqrsDashboardController : ControllerBase
                 sourceComponent = l.SourceComponent,
                 handlerOrEventName = l.HandlerName ?? "",
                 workerName = l.WorkerId ?? "",
+                type = l.Type,
+                elapsedMilliseconds = l.ElapsedMilliseconds,
                 details = l.ErrorMessage ?? (l.Status == "Success" ? "Handled successfully" : "Processing...")
             })
             .ToListAsync();
@@ -445,6 +513,8 @@ public class CqrsDashboardController : ControllerBase
                 sourceComponent = rootLog.SourceComponent,
                 handler = latestLog.HandlerName ?? "",
                 worker = latestLog.WorkerId ?? "",
+                type = latestLog.Type,
+                elapsedMilliseconds = latestLog.ElapsedMilliseconds,
                 errorMessage = latestLog.ErrorMessage,
                 isRoot = true
             });

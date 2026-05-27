@@ -1,6 +1,9 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { NzRadioModule } from 'ng-zorro-antd/radio';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslocoModule } from '@jsverse/transloco';
 import { FormsModule } from '@angular/forms';
 import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
@@ -12,7 +15,10 @@ import { QueueInfo } from '../services/dashboard.service';
   standalone: true,
   imports: [
     CommonModule,
-    NzRadioModule,
+    NzTableModule,
+    NzTagModule,
+    NzButtonModule,
+    NzIconModule,
     FormsModule,
     TranslocoModule,
     MessageListComponent
@@ -20,24 +26,47 @@ import { QueueInfo } from '../services/dashboard.service';
   template: `
     <div class="topic-detail-container">
       <div *ngIf="topic.subscribers && topic.subscribers.length > 0; else noSubs">
-        <div style="margin-bottom: 16px; border-bottom: 1px solid #333; padding-bottom: 8px;">
-          <nz-radio-group [(ngModel)]="activeSubIndex" nzButtonStyle="solid">
-            <label *ngFor="let sub of topic.subscribers; let i = index" nz-radio-button [nzValue]="i">
-              <span style="font-weight: bold;">{{ sub.queueName }}</span>
-              <span style="margin-left: 8px; font-size: 12px; color: #999;">({{ sub.name }})</span>
-            </label>
-          </nz-radio-group>
-        </div>
-        
-        <div *ngFor="let sub of topic.subscribers; let i = index">
-          <div *ngIf="activeSubIndex === i">
-            <app-message-list [inputQueueName]="showInProgress ? sub.queueName.replace('sub_queue:', 'sub_proc:') : sub.queueName"></app-message-list>
-          </div>
-        </div>
+        <nz-table #subTable [nzData]="topic.subscribers" nzSize="middle" [nzFrontPagination]="false" [nzShowPagination]="false">
+          <thead>
+            <tr>
+              <th>Subscriber</th>
+              <th>Queue Name</th>
+              <th nzAlign="center">Send Success</th>
+              <th nzAlign="center">Send Error</th>
+              <th nzAlign="center">Done Success</th>
+              <th nzAlign="center">Done Error</th>
+              <th nzAlign="center" nzWidth="150px">Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let sub of subTable.data">
+              <tr>
+                <td><strong>{{ sub.name }}</strong></td>
+                <td><code>{{ sub.queueName }}</code></td>
+                <td nzAlign="center"><nz-tag nzColor="success">{{ sub.sendSuccessCount || 0 }}</nz-tag></td>
+                <td nzAlign="center"><nz-tag nzColor="error">{{ sub.sendErrorCount || 0 }}</nz-tag></td>
+                <td nzAlign="center"><nz-tag nzColor="success">{{ sub.doneSuccessCount || 0 }}</nz-tag></td>
+                <td nzAlign="center"><nz-tag nzColor="error">{{ sub.doneErrorCount || 0 }}</nz-tag></td>
+                <td nzAlign="center">
+                  <button nz-button nzType="primary" nzGhost nzSize="small" (click)="sub.expand = !sub.expand">
+                    <i nz-icon [nzType]="sub.expand ? 'up' : 'down'"></i>
+                    {{ (sub.expand ? 'Thu gọn' : 'Xem chi tiết') | transloco }}
+                  </button>
+                </td>
+              </tr>
+              <tr [nzExpand]="sub.expand">
+                <div *ngIf="sub.expand" style="padding: 16px; background: #fafafa; border-radius: 4px;">
+                  <app-message-list [inputQueueName]="showInProgress ? sub.queueName.replace('sub_queue:', 'sub_proc:') : sub.queueName"></app-message-list>
+                </div>
+              </tr>
+            </ng-container>
+          </tbody>
+        </nz-table>
       </div>
       <ng-template #noSubs>
-        <div style="text-align: center; padding: 24px; color: #999;">
-          {{ 'Không có subscriber nào' | transloco }}
+        <div style="text-align: center; padding: 48px 0; color: #999;">
+          <i nz-icon nzType="info-circle" style="font-size: 32px; margin-bottom: 12px; color: #1890ff;"></i>
+          <p>{{ 'Không có subscriber nào cho topic này' | transloco }}</p>
         </div>
       </ng-template>
     </div>
@@ -53,8 +82,12 @@ export class TopicDetailComponent implements OnInit {
   
   topic: QueueInfo = this.modalData.topic;
   showInProgress: boolean = this.modalData.showInProgress || false;
-  activeSubIndex = 0;
 
   ngOnInit(): void {
+    if (this.topic.subscribers) {
+      this.topic.subscribers.forEach((sub: any) => {
+        sub.expand = false;
+      });
+    }
   }
 }

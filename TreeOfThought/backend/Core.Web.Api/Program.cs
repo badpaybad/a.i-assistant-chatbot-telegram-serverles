@@ -125,14 +125,29 @@ await app.UseAppOidc(config, new[] { Assembly.GetExecutingAssembly() });
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    
     try
     {
         var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
         await filesDb.EnsureTablesCreatedAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[STARTUP ERROR] FilesFoldersDbContext table creation failed: {ex.Message}");
+    }
 
+    try
+    {
         var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
         await faceDb.EnsureTablesCreatedAsync();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[STARTUP ERROR] NhanDienKhuonMatDbContext table creation failed: {ex.Message}");
+    }
 
+    try
+    {
         var cqrsDb = services.GetService<Core.Infra.Cqrs.Contexts.CqrsDbContext>();
         if (cqrsDb != null)
         {
@@ -141,7 +156,7 @@ using (var scope = app.Services.CreateScope())
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"[STARTUP ERROR] {ex.Message}");
+        Console.WriteLine($"[STARTUP ERROR] CqrsDbContext table creation failed: {ex.Message}");
     }
 }
 

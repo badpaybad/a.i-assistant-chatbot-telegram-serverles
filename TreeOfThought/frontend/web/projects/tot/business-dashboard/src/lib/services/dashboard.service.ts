@@ -27,13 +27,22 @@ export interface QueueInfo {
   type: string;
   workers: string[];
   handlers: { handlerName: string; messageName: string }[];
+  sendSuccessCount?: number;
+  sendErrorCount?: number;
+  doneSuccessCount?: number;
+  doneErrorCount?: number;
   subscribers?: {
     name: string;
     queueName: string;
     pending: number;
     active: number;
-    processed: number;
-    error: number;
+    sendSuccessCount?: number;
+    sendErrorCount?: number;
+    doneSuccessCount?: number;
+    doneErrorCount?: number;
+    processed?: number;
+    error?: number;
+    expand?: boolean;
   }[];
 }
 

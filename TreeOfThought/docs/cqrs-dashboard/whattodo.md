@@ -122,4 +122,74 @@ Trang hiển thị sơ đồ truy vết cho một tin nhắn thông qua mã `tra
 - Bổ xung thêm các tổng số
 
 - Table ở Hàng đợi & chủ đề đang hoạt động tốt
-  - cần sửa lại table cho Theo dõi gần đây, và Trạng thái Workers , bảng hiển thị cần có action fixed 
+  - cần sửa lại table cho Theo dõi gần đây, và Trạng thái Workers , bảng hiển thị cần có action fixed
+
+**cập nhật 2026-05-27 09:59:24**
+
+Về cách log step statu ở 2 file TreeOfThought/backend/Core.Infra.Cqrs/whattodo.md và TreeOfThought/backend/Core.Infra.Cqrs/howtodo.md đã cũ và ko thống nhất. Cần cập nhật:
+
+Mô tả về step và status trong tracking log (Đã cập nhật tối giản & phân nhánh độc lập):
+    command là dùng queue
+        step: send có status success | error
+        step: dequeue (dequeue và bắt đầu invoke handle) có status success
+        step: done có status success | error dựa vào việc invoke handle có lỗi hay không
+    event là dùng topic pub/sub
+        step: send có status success | error (success: là khi send hết message lên queue cho tất cả các subscriber thành công)
+        từng subscriber có queue data riêng hoạt động độc lập:
+            step: dequeue (dequeue và invoke handle) có status success
+            step: done có status success | error dựa vào việc invoke handle có lỗi hay không
+
+Thống kê tổng chung hệ thống
+
+- tổng số message cho queue
+  - total send success, total send error
+  - total done success, total done error
+- tổng số message cho topic
+  - total send success, total send error
+  - total done success, total done error
+
+Tách Hàng đợi & Chủ đề   thành riêng 2 tab độc lập : queue riêng , topic riêng
+
+Tab Danh sách các queue name, theo từng queue name
+    total send success, total send error, total done succes, total done error, xem chi tiết
+      xem chi tiết click vào mở modal danh sách các message gốc thuộc queue name đó
+        hiện theo thời gian giảm dần, thông tin hiển thị đầy đủ của message gốc.
+          click vào sẽ expand ra log quá trình của message gốc theo thời gian tăng dần
+
+Tab Danh sách các topic name, theo từng topic name
+    total send success, total send error,total done succes, total done error, xem chi tiết
+      xem chi tiết click vào mở modal danh sách các queue data của subsciber của topic đó
+        total send success, total send error,total done succes, total done error, xem chi tiết
+          xem chi tiết click vào expand danh sách các message gốc thuộc queue name của subsriber đó
+            hiện theo thời gian giảm dần, thông tin hiển thị đầy đủ của message gốc.
+              click vào sẽ expand ra log quá trình của message gốc theo thời gian tăng dần
+
+**cập nhật 2026-05-27 10:40:24**
+
+cần cập nhật lại các step và status cho tracking log , mô tả hoạt động vd:
+
+FE UI tạo request test command có trackking id -> BE controller tạo command từ reuqest , command data lúc này là root message với tracking id từ UI -> dispatcher enqueue -> worker dequeue -> invoke handle cho command -> publish event test (có 2 subscriber nên loop và enqueue cho 2 queue data của 2 subscriber -> trigger pub/sub) -> có 2 subscriber chạy song song nhận đc trigger pub/sub
+  - subscriber 1 giả lập thành công
+    loop deuque -> invoke handle  
+  - subscriber 2 event handle giả lập lỗi
+    loop deuque -> invoke handle  
+
+từng step cần ghi nhận: step name, status, data, timestamp , elasped
+  controller gửi lên queue thành công hay không 
+  dequeue thành công hay không 
+  handle xử lý thành công hay không
+  command publish event thành công hay không 
+  từng subscriber dequeue thành công hay không
+  từng subscriber handle thầnh công hay không 
+
+Cần cập nhật và chỉnh cả UI cho phù hợp 
+
+Bảng : cqrs_tracking_logs cũng chưa có 
+
+Chưa chỉ ra được gửi từ source component nào tới source component nào (cần lấy fullname cả namespace của class ) 
+vd cho mesage này, từ handle khi publish event thì cần chỉ ra là từ handle command nào lên topic nào 
+      SELECT "Id", "TrackingId", "MessageType", "MessageData", "QueueOrTopicName", "SubscriberName", "DestinationQueueName", "SourceComponent", "HandlerName", "WorkerId", "Step", "Status", "ErrorMessage", "IsRoot", "CreatedAt", "Type", "ElapsedMilliseconds"
+      FROM public.cqrs_tracking_logs
+      where  "TrackingId" ='5572008f-02a5-47c7-9ddb-1ba92ee6ae66'
+      order by "CreatedAt" asc  ;
+

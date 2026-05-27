@@ -16,6 +16,8 @@ public class CqrsTrackingLog
     public string? WorkerId { get; set; }
     public string Step { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public string Type { get; set; } = string.Empty;
+    public long? ElapsedMilliseconds { get; set; }
     public string? ErrorMessage { get; set; }
     public bool IsRoot { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

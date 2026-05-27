@@ -70,6 +70,8 @@ export class DashboardComponent implements OnInit {
 
   stats: DashboardStats = { stats: {}, workerStatus: [] };
   queues: QueueInfo[] = [];
+  allQueues: QueueInfo[] = [];
+  allTopics: QueueInfo[] = [];
   recentTracking: TrackingSummary[] = [];
   totalTracking = 0;
   workerList: WorkerDetail[] = [];
@@ -77,7 +79,7 @@ export class DashboardComponent implements OnInit {
   lastActivityList: LastActivity[] = [];
   loading = false;
 
-  activeTab: 'queues' | 'tracking' | 'workers' | 'activity' = 'queues';
+  activeTab: 'queues' | 'topics' | 'tracking' | 'workers' | 'activity' = 'queues';
 
   refreshInterval = 0;
   refreshIntervals = [
@@ -109,6 +111,7 @@ export class DashboardComponent implements OnInit {
 
   trackingColumns: TotTableColumn[] = [];
   queueColumns: TotTableColumn[] = [];
+  topicColumns: TotTableColumn[] = [];
   workerColumns: TotTableColumn[] = [];
   activityColumns: TotTableColumn[] = [];
 
@@ -133,14 +136,26 @@ export class DashboardComponent implements OnInit {
     ];
 
     this.queueColumns = [
-      { title: 'Loại', key: 'type', width: '80px', left: true },
-      { title: 'Tên topic/ queue', key: 'name', width: '200px', left: '80px' },
-      { title: 'Đang xử lý', key: 'processing', width: '100px', align: 'center' },
-      { title: 'Thành công', width: '120px', align: 'center' },
-      { title: 'Lỗi', width: '100px', align: 'center' },
-      { title: 'Tổng', key: 'totalCount', width: '100px', align: 'center' },
-      { title: 'Workers', width: '200px' },
-      { title: 'Handlers', width: '250px' },
+      { title: 'Tên hàng đợi (Queue)', key: 'name', width: '220px', left: true },
+      { title: 'Đang xử lý', key: 'activeCount', width: '100px', align: 'center' },
+      { title: 'Gửi TC (Send OK)', key: 'sendSuccessCount', width: '120px', align: 'center' },
+      { title: 'Gửi lỗi (Send Err)', key: 'sendErrorCount', width: '120px', align: 'center' },
+      { title: 'Xử lý TC (Done OK)', key: 'doneSuccessCount', width: '120px', align: 'center' },
+      { title: 'Xử lý lỗi (Done Err)', key: 'doneErrorCount', width: '120px', align: 'center' },
+      { title: 'Workers', key: 'workers', width: '150px' },
+      { title: 'Handlers', key: 'handlers', width: '200px' },
+      { title: 'Hành động', key: 'action', width: '150px', right: true }
+    ];
+
+    this.topicColumns = [
+      { title: 'Tên chủ đề (Topic)', key: 'name', width: '220px', left: true },
+      { title: 'Đang xử lý', key: 'activeCount', width: '100px', align: 'center' },
+      { title: 'Gửi TC (Send OK)', key: 'sendSuccessCount', width: '120px', align: 'center' },
+      { title: 'Gửi lỗi (Send Err)', key: 'sendErrorCount', width: '120px', align: 'center' },
+      { title: 'Xử lý TC (Done OK)', key: 'doneSuccessCount', width: '120px', align: 'center' },
+      { title: 'Xử lý lỗi (Done Err)', key: 'doneErrorCount', width: '120px', align: 'center' },
+      { title: 'Workers', key: 'workers', width: '150px' },
+      { title: 'Handlers', key: 'handlers', width: '200px' },
       { title: 'Hành động', key: 'action', width: '150px', right: true }
     ];
 
@@ -187,6 +202,8 @@ export class DashboardComponent implements OnInit {
 
     this.dashboardService.getQueues().subscribe(res => {
       this.queues = res;
+      this.allQueues = res.filter(q => q.type === 'Queue');
+      this.allTopics = res.filter(q => q.type === 'Topic');
       if (!isAuto) this.loading = false;
     });
 

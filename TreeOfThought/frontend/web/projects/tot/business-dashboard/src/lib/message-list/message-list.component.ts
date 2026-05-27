@@ -4,6 +4,9 @@ import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
+import { NzTimelineModule } from 'ng-zorro-antd/timeline';
+import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzGridModule } from 'ng-zorro-antd/grid';
 import { AppNotificationService } from '@tot/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
@@ -20,6 +23,9 @@ import { NZ_MODAL_DATA } from 'ng-zorro-antd/modal';
     NzButtonModule,
     NzIconModule,
     NzTagModule,
+    NzTimelineModule,
+    NzTooltipModule,
+    NzGridModule,
     TranslocoModule,
     TotButtonComponent,
     TotTableComponent,
@@ -144,5 +150,32 @@ export class MessageListComponent implements OnInit {
     if (item.parsed?.Timestamp) return item.parsed.Timestamp;
     if (item.parsed?._timestamp) return item.parsed._timestamp;
     return '';
+  }
+
+  onRowExpand(event: { item: any; expanded: boolean }): void {
+    if (event.expanded && event.item.parsed?._trackingId && (!event.item.history || event.item.history.length === 0)) {
+      this.dashboardService.getTracking(event.item.parsed._trackingId).subscribe({
+        next: (history) => {
+          event.item.history = history;
+        },
+        error: () => {
+          this.notification.error(
+            this.translate.translate('Lỗi'),
+            this.translate.translate('Không thể tải lịch sử chi tiết cho ID này')
+          );
+        }
+      });
+    }
+  }
+
+  toggleExpand(item: any): void {
+    item.expand = !item.expand;
+    this.onRowExpand({ item, expanded: item.expand });
+  }
+
+  shortenNamespace(name: string): string {
+    if (!name) return '-';
+    const parts = name.split('.');
+    return parts[parts.length - 1];
   }
 }

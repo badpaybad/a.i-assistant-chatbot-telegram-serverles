@@ -9,13 +9,14 @@
     [frontPagination]="false"
     [expandTemplate]="expandTpl"
     (queryParamsChange)="onQueryParamsChange($event)"
+    (expandChange)="onRowExpand($event)"
   >
     <ng-template totCell="time" let-data>
       {{ getTime(data) | date:'yyyy-MM-dd HH:mm:ss' }}
     </ng-template>
 
     <ng-template totCell="content" let-data>
-      <div class="msg-preview" (click)="data.expand = !data.expand">
+      <div class="msg-preview" (click)="toggleExpand(data)">
         {{ data.raw | slice:0:100 }}{{ data.raw.length > 100 ? '...' : '' }}
       </div>
     </ng-template>
@@ -34,7 +35,7 @@
         <tot-button *ngIf="queueName.endsWith(':dead')" [nzDanger]="true" nzSize="small" (click)="delete(data)">
           <i nz-icon nzType="delete"></i> {{ 'Xóa' | transloco }}
         </tot-button>
-        <tot-button nzSize="small" (click)="data.expand = !data.expand">
+        <tot-button nzSize="small" (click)="toggleExpand(data)">
           <i nz-icon [nzType]="data.expand ? 'up' : 'down'"></i> {{ 'Chi tiết' | transloco }}
         </tot-button>
       </div>
@@ -42,19 +43,68 @@
   </tot-table>
 
   <ng-template #expandTpl let-data>
-    <div class="json-viewer-container" style="background: #1f1f1f; padding: 16px; border-radius: 4px; width: 100%;">
-      <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-        <span style="font-weight: bold; color: #1890ff;">JSON Content:</span>
-        <tot-button nzType="text" nzSize="small" (click)="copyToClipboard(data.raw)">
-          <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
-        </tot-button>
-      </div>
-      <pre style="margin: 0; color: #ccc; font-size: 12px; overflow: auto; max-height: 400px;">{{ formatJson(data.parsed) }}</pre>
-      
-      <div *ngIf="data.parsed._error" style="margin-top: 12px; padding: 12px; background: #2a1215; border-left: 4px solid #ff4d4f;">
-        <div style="font-weight: bold; color: #ff4d4f; margin-bottom: 4px;">Error Details:</div>
-        <div style="color: #ffccc7;">{{ data.parsed._error }}</div>
-        <div style="font-size: 11px; color: #a61d24; margin-top: 4px;">Worker: {{ data.parsed._workerId }}</div>
+    <div class="json-viewer-container" style="background: #fff; padding: 20px; border-radius: 6px; width: 100%; border: 1px solid #f0f0f0;">
+      <div nz-row [nzGutter]="16">
+        <!-- Left: prettified JSON -->
+        <div nz-col [nzSpan]="10">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+            <span style="font-weight: bold; color: #1890ff; font-size: 14px;">
+              <i nz-icon nzType="code"></i> {{ 'Dữ liệu Tin nhắn (Payload)' | transloco }}
+            </span>
+            <tot-button nzType="default" nzSize="small" (click)="copyToClipboard(data.raw)">
+              <i nz-icon nzType="copy"></i> {{ 'Sao chép' | transloco }}
+            </tot-button>
+          </div>
+          <pre style="margin: 0; color: #333; background: #fafafa; border: 1px solid #d9d9d9; padding: 12px; border-radius: 4px; font-size: 12px; overflow: auto; max-height: 400px; font-family: monospace; white-space: pre-wrap; word-break: break-all;">{{ formatJson(data.parsed) }}</pre>
+          
+          <div *ngIf="data.parsed._error" style="margin-top: 12px; padding: 12px; background: #fff1f0; border-left: 4px solid #ff4d4f; border-radius: 4px; border: 1px solid #ffa39e; border-left-width: 4px;">
+            <div style="font-weight: bold; color: #cf1322; margin-bottom: 4px;"><i nz-icon nzType="warning"></i> Error Details:</div>
+            <div style="color: #ff4d4f; font-family: monospace; font-size: 11px;">{{ data.parsed._error }}</div>
+          </div>
+        </div>
+
+        <!-- Right: event sequential logs timeline trace -->
+        <div nz-col [nzSpan]="14">
+          <h4 style="font-weight: bold; color: #1890ff; font-size: 14px; margin-bottom: 16px;">
+            <i nz-icon nzType="history"></i> {{ 'Lịch sử dòng thời gian sự kiện (Tracking)' | transloco }}
+          </h4>
+          
+          <div class="timeline-wrapper" style="max-height: 400px; overflow-y: auto; padding-right: 8px;">
+            <nz-timeline *ngIf="data.history && data.history.length > 0; else loadingHistory">
+              <nz-timeline-item 
+                *ngFor="let step of data.history" 
+                [nzColor]="step.status?.toLowerCase() === 'error' ? 'red' : step.status?.toLowerCase() === 'success' ? 'green' : 'blue'"
+              >
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                  <span style="font-weight: bold; font-family: monospace; font-size: 11px; color: #888;">
+                    {{ (step.timestamp || step.time) | date:'yyyy-MM-dd HH:mm:ss.SSS' }}
+                  </span>
+                  <nz-tag [nzColor]="step.step === 'send' ? 'blue' : step.step === 'dequeue' ? 'orange' : step.step === 'done' ? 'green' : 'default'">
+                    {{ step.step }}
+                  </nz-tag>
+                  <nz-tag *ngIf="step.status" [nzColor]="step.status.toLowerCase() === 'success' ? 'success' : 'error'">
+                    {{ step.status }}
+                  </nz-tag>
+                </div>
+
+                <div style="background: #fafafa; padding: 8px; border-radius: 4px; border-left: 3px solid #d9d9d9; margin-bottom: 8px; font-size: 11px;">
+                  <div *ngIf="step.sourceComponent"><span style="color: #666;">Source:</span> <code style="color: #c41d7f;">{{ shortenNamespace(step.sourceComponent) }}</code></div>
+                  <div *ngIf="step.handlerOrEventName"><span style="color: #666;">Handler:</span> <code style="color: #389e0d;">{{ shortenNamespace(step.handlerOrEventName) }}</code></div>
+                  <div *ngIf="step.workerName"><span style="color: #666;">Worker:</span> <code style="color: #d46b08;">{{ step.workerName }}</code></div>
+                  <div *ngIf="step.details && step.status?.toLowerCase() !== 'error'" style="margin-top: 4px; color: #555;"><i nz-icon nzType="info-circle" style="color: #1890ff;"></i> {{ step.details }}</div>
+                  <div *ngIf="step.status?.toLowerCase() === 'error'" style="margin-top: 4px; color: #cf1322; font-family: monospace; font-size: 11px; white-space: pre-wrap; word-break: break-all;">{{ step.details }}</div>
+                </div>
+              </nz-timeline-item>
+            </nz-timeline>
+            
+            <ng-template #loadingHistory>
+              <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 150px; color: #999;">
+                <i nz-icon nzType="loading" style="font-size: 24px; color: #1890ff; margin-bottom: 8px;"></i>
+                <p style="font-size: 12px;">{{ 'Đang tải lịch sử chi tiết...' | transloco }}</p>
+              </div>
+            </ng-template>
+          </div>
+        </div>
       </div>
     </div>
   </ng-template>

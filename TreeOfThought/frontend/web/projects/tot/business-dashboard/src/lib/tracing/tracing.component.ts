@@ -69,21 +69,29 @@ export class TracingComponent implements OnInit {
     });
   }
 
-  getStepStatus(step: string): string {
-    const s = step.toLowerCase();
-    if (s.includes('fail') || s.includes('error')) return 'error';
-    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'finish';
-    if (s.includes('start') || s.includes('publish') || s.includes('enqueue')) return 'process';
+  getStepStatus(step: string, status?: string): string {
+    if (!step) return 'wait';
+    const s = (status || '').toLowerCase();
+    if (s === 'error' || s === 'fail') return 'error';
+    if (s === 'success' || s === 'finish') return 'finish';
+    
+    const stepLower = step.toLowerCase();
+    if (stepLower === 'send') return 'finish';
+    if (stepLower === 'dequeue') return 'process';
+    if (stepLower === 'done') return 'finish';
+    
     return 'wait';
   }
 
-  getStepIcon(step: string): string {
-    const s = step.toLowerCase();
-    if (s.includes('fail') || s.includes('error')) return 'close-circle';
-    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'check-circle';
-    if (s.includes('publish') || s.includes('sent')) return 'export';
-    if (s.includes('receive') || s.includes('handle')) return 'import';
-    if (s.includes('enqueue') || s.includes('queue')) return 'database';
+  getStepIcon(step: string, status?: string): string {
+    if (!step) return 'info-circle';
+    const s = (status || '').toLowerCase();
+    if (s === 'error' || s === 'fail') return 'close-circle';
+    
+    const stepLower = step.toLowerCase();
+    if (stepLower === 'send') return 'export';
+    if (stepLower === 'dequeue') return 'import';
+    if (stepLower === 'done') return 'check-circle';
     return 'info-circle';
   }
 }

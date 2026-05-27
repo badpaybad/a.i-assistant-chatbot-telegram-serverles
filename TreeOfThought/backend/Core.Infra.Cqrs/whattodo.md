@@ -59,19 +59,16 @@ việc thống kê về tổng số message vẫn dùng redis
 
 **cập nhật 2026-05-26 20:12:12**
 
-Cần check lại cập nhật việc ghi nhận tracking và cá bước khi xử lý của cqrs dispatcher:
+Cần check lại cập nhật việc ghi nhận tracking và các bước khi xử lý của cqrs dispatcher (Thống nhất sử dụng các bước viết thường):
     - command / command handler:
-        đầu hàm send ghi là sending lấy type fullname source nào sending queue name nào command nào.
-        send thành công cuối hàm send ghi là sent lấy type fullname source nào sent queue name nào command nào.
-        dequeue xử lý thì là processing lấy type fullname : queue name nào handle nào worker nào command nào.
-        xử lý xong lỗi thì ghi error lấy type fullname : queue name nào handle nào worker nào command nào.
-        xử lý xong thành công ghi success lấy type fullname : queue name nào handle nào worker nào command nào.
-    - event / event handler
-        đầu hàm publish ghi là publishing lấy type fullname source nào publish topic name nào event nào.
-        publish và gửi thành công lên tất cả các queue data của từng subcriber (cùng 1 topic) trigger publish redis ghi published lấy type fullname source nào published topic name nào event nào
-            subscriber dequeue là processing cho queue name của chính subscriber lấy type fullname : handle nào worker nào topic name nào event nào.
-            subscriber invoke xử lý xong lỗi thì ghi error lấy type fullname : handle nào worker nào topic name nào event nào.
-            subscriber invoke xử lý xong thành công ghi success lấy type fullname : handle nào worker nào topic name nào event nào.
+        step: "send" có status "success" | "error" (ghi nhận khi dispatcher đưa command vào queue thành công hoặc lỗi)
+        step: "dequeue" có status "success" (ghi nhận khi worker dequeue và bắt đầu invoke handler)
+        step: "done" có status "success" | "error" (ghi nhận sau khi kết thúc invoke handler thành công hoặc thất bại)
+    - event / event handler (Bỏ hoàn toàn tổng hợp done của Topic gốc để tránh nghẽn DB và race condition):
+        step: "send" có status "success" | "error" cho Topic (ghi nhận khi dispatcher dispatch thành công lên tất cả queue của subscriber)
+        từng subscriber có subscriber queue riêng hoạt động độc lập:
+            step: "dequeue" có status "success" (ghi nhận khi worker dequeue subscriber queue và bắt đầu handle)
+            step: "done" có status "success" | "error" (ghi nhận kết quả invoke handler của subscriber cụ thể đó)
 
 **cập nhật 2026-05-26 20:20:12**
 
@@ -117,3 +114,33 @@ FE post test command TreeOfThought/backend/Core.Web.Api/Controllers/TestControll
             -H 'sec-ch-ua-platform: "Linux"'
 
 cần kiểm tra và sửa đúng
+
+**cập nhật 2026-05-27 09:59:24**
+
+bảng tracking log hiện tại
+
+    SELECT "Id", "TrackingId", "MessageType", "MessageData", "QueueOrTopicName", "SubscriberName", "DestinationQueueName", "SourceComponent", "HandlerName", "WorkerId", "Step", "Status", "ErrorMessage", "IsRoot", "CreatedAt"
+    FROM public.cqrs_tracking_logs;
+
+    cần bổ xung thêm cột
+        type có 1 trong 2 value tương ứng "queue", "topic"
+        elasped milliseconds
+
+    tracking log cần đáp ứng các vấn đề:
+        chỉ ra message gốc 
+        message publish hoặc send từ nguồn nào đến đích nào, thành công hay không
+        message xử lý qua các bước nào, mỗi bước xử lý thành công hay thất bại, mất bao lâu
+        
+
+Bỏ thống kê dùng redis. sẽ dùng bảng tracking log để thống kê
+
+Mô tả về step và status trong tracking log (Đã cập nhật tối giản & phân nhánh độc lập)
+    command là dùng queue
+        step: send có status success | error
+        step: dequeue (dequeue và bắt đầu invoke handle) có status success
+        step: done có status success | error dựa vào việc invoke handle có lỗi hay không
+    event là dùng topic pub/sub
+        step: send có status success | error (success: là khi send hết message lên queue cho tất cả các subscriber thành công)
+        từng subscriber có queue data riêng hoạt động độc lập:
+            step: dequeue (dequeue và invoke handle) có status success
+            step: done có status success | error dựa vào việc invoke handle có lỗi hay không

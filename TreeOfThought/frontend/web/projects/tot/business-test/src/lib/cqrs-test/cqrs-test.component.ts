@@ -87,11 +87,11 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
           <nz-timeline *ngIf="trackingHistory.length > 0">
             <nz-timeline-item 
               *ngFor="let log of trackingHistory" 
-              [nzColor]="getStepStatus(log.step) === 'error' ? 'red' : 'green'">
+              [nzColor]="getStepStatus(log.step, log.status) === 'error' ? 'red' : 'green'">
               <div style="display: flex; flex-direction: column; gap: 4px;">
                 <div>
                   <strong style="margin-right: 8px;">{{ log.time | date:'HH:mm:ss' }}</strong>
-                  <nz-tag [nzColor]="getStepStatus(log.step) === 'error' ? 'error' : 'processing'">{{ log.step }}</nz-tag>
+                  <nz-tag [nzColor]="getStepStatus(log.step, log.status) === 'error' ? 'error' : 'processing'">{{ log.step }}</nz-tag>
                   <span *ngIf="log.handlerOrEventName" style="font-size: 12px; color: #8c8c8c;">
                     (Handler: {{ log.handlerOrEventName }})
                   </span>
@@ -99,7 +99,7 @@ import { NzDividerModule } from 'ng-zorro-antd/divider';
                 <div style="font-size: 14px; margin-top: 4px;">{{ log.details }}</div>
                 
                 <!-- Highlight specific errors like SampleEventHandlerAlwaysError -->
-                <div *ngIf="getStepStatus(log.step) === 'error'" class="error-detail">
+                <div *ngIf="getStepStatus(log.step, log.status) === 'error'" class="error-detail">
                   <span nz-icon nzType="warning" nzTheme="fill"></span>
                   <strong>{{ 'Phát hiện lỗi xử lý:' | transloco }}</strong> {{ log.details }}
                 </div>
@@ -210,23 +210,29 @@ export class CqrsTestComponent {
     });
   }
 
-  getStepStatus(step: string): string {
+  getStepStatus(step: string, status?: string): string {
     if (!step) return 'wait';
-    const s = step.toLowerCase();
-    if (s.includes('fail') || s.includes('error')) return 'error';
-    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'finish';
-    if (s.includes('start') || s.includes('publish') || s.includes('enqueue')) return 'process';
+    const s = (status || '').toLowerCase();
+    if (s === 'error' || s === 'fail') return 'error';
+    if (s === 'success' || s === 'finish') return 'finish';
+    
+    const stepLower = step.toLowerCase();
+    if (stepLower === 'send') return 'finish';
+    if (stepLower === 'dequeue') return 'process';
+    if (stepLower === 'done') return 'finish';
+    
     return 'wait';
   }
 
-  getStepIcon(step: string): string {
+  getStepIcon(step: string, status?: string): string {
     if (!step) return 'info-circle';
-    const s = step.toLowerCase();
-    if (s.includes('fail') || s.includes('error')) return 'close-circle';
-    if (s.includes('success') || s.includes('finish') || s.includes('end')) return 'check-circle';
-    if (s.includes('publish') || s.includes('sent')) return 'export';
-    if (s.includes('receive') || s.includes('handle')) return 'import';
-    if (s.includes('enqueue') || s.includes('queue')) return 'database';
+    const s = (status || '').toLowerCase();
+    if (s === 'error' || s === 'fail') return 'close-circle';
+    
+    const stepLower = step.toLowerCase();
+    if (stepLower === 'send') return 'export';
+    if (stepLower === 'dequeue') return 'import';
+    if (stepLower === 'done') return 'check-circle';
     return 'info-circle';
   }
 

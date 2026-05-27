@@ -67,8 +67,10 @@ Mỗi dòng đại diện cho một sự kiện (Send, Publish, Dequeue, Success
 | **SourceComponent** | `varchar(500)` | `NULL` | **Tên lớp đầy đủ kèm namespace** của thành phần gọi Dispatcher (tự động phân tích StackTrace để phát hiện ra Controller hoặc Handler cha thực hiện dispatch). |
 | **HandlerName** | `varchar(500)` | `NULL` | **Tên kiểu đầy đủ kèm namespace** của Handler xử lý thông điệp (ví dụ: `Core.Infra.NhanDienKhuonMat.Handlers.FaceDetectionCommandHandler`). |
 | **WorkerId** | `varchar(255)` | `NULL` | Định danh của Worker xử lý thông điệp. |
-| **Step** | `varchar(50)` | `NOT NULL` | Bước xử lý thông điệp:<br>- **Đối với Command**: `Sending` (khi bắt đầu gửi), `Sent` (khi gửi thành công), `Processing` (khi worker dequeue xử lý), `Success` / `Error` (khi kết thúc xử lý thành công hoặc lỗi).<br>- **Đối với Event**: `Publishing` (khi bắt đầu gửi), `Published` (khi gửi thành công lên topic và tất cả subscriber), `Processing` (khi subscriber dequeue xử lý), `Success` / `Error` (khi kết thúc xử lý thành công hoặc lỗi). |
-| **Status** | `varchar(50)` | `NOT NULL`, `INDEX` | Trạng thái xử lý (`Pending`, `Processing`, `Success`, `Error`). |
+| **Step** | `varchar(50)` | `NOT NULL` | Bước xử lý thông điệp (chỉ dùng các giá trị viết thường):<br>- **Đối với Command (Queue)**: `send` (gửi lên queue), `dequeue` (worker dequeue và bắt đầu invoke handler), `done` (handler kết thúc thực thi).<br>- **Đối với Event (Topic Pub/Sub)**:<br>  * *Topic*: `send` (khi dispatcher đẩy Event thành công vào hàng đợi của tất cả subscriber).<br>  * *Subscriber*: `dequeue` (khi worker của subscriber dequeue và bắt đầu handle), `done` (khi subscriber handler hoàn thành). |
+| **Status** | `varchar(50)` | `NOT NULL`, `INDEX` | Trạng thái xử lý (chỉ dùng các giá trị viết thường): `success` hoặc `error`. |
+| **Type** | `varchar(50)` | `NOT NULL`, `INDEX` | Phân loại thông điệp (`queue` hoặc `topic`). |
+| **ElapsedMilliseconds** | `bigint` | `NULL`, `INDEX` | Thời gian xử lý của bước đó tính bằng mili giây. |
 | **ErrorMessage** | `text` | `NULL` | Chi tiết thông tin ngoại lệ (Exception) nếu xử lý bị lỗi. |
 | **IsRoot** | `boolean` | `NOT NULL` | Đánh dấu `true` cho bản ghi đầu tiên khi TrackingId được khởi tạo ban đầu. |
 | **CreatedAt** | `timestamp` | `NOT NULL`, `DEFAULT UTC` | Thời điểm ghi nhận log. |
@@ -137,6 +139,8 @@ public class CqrsDbContext : BaseDbContext
             entity.HasIndex(e => e.MessageType);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.ElapsedMilliseconds);
         });
     }
 }
@@ -180,6 +184,8 @@ public class CqrsDbLogger
         string? workerId,
         string step,
         string status,
+        string type,
+        long? elapsedMilliseconds = null,
         string? errorMessage = null,
         bool isRoot = false)
     {
@@ -202,6 +208,8 @@ public class CqrsDbLogger
                 WorkerId = workerId,
                 Step = step,
                 Status = status,
+                Type = type,
+                ElapsedMilliseconds = elapsedMilliseconds,
                 ErrorMessage = errorMessage,
                 IsRoot = isRoot,
                 CreatedAt = DateTime.UtcNow
@@ -364,11 +372,11 @@ Cấu trúc DB append-only kết hợp liên kết Subscriber cho phép giải q
 1.  **Hiện message gốc mới nhất lên trên**:
     *   Truy vấn tại `GET /api/cqrs/dashboard/tracking/recent` sẽ chỉ lấy các bản ghi có **`IsRoot = true`**.
     *   Kết quả được sắp xếp theo **`CreatedAt DESC`** để đưa các yêu cầu gốc mới nhất của người dùng lên đầu trang.
-    *   API tự động kết hợp (join/subquery) với bản ghi có `Id` lớn nhất cùng `TrackingId` để lấy ra trạng thái hiện tại (`Status`: Success/Error/Processing) và bước hiện tại (`Step`) của cả chuỗi xử lý. Trình bày thông tin payload gốc kèm trạng thái mới nhất cực kỳ trực quan.
+    *   API tự động kết hợp (join/subquery) với bản ghi có `Id` lớn nhất cùng `TrackingId` để lấy ra trạng thái hiện tại (`Status`: success/error/processing) và bước hiện tại (`Step`) của cả chuỗi xử lý. Trình bày thông tin payload gốc kèm trạng thái mới nhất cực kỳ trực quan.
 2.  **Lịch sử xử lý từng bước theo thời gian tăng dần**:
     *   Khi người dùng click expand một dòng, giao diện FE sẽ kích hoạt lazy-load thông qua API `GET /api/cqrs/dashboard/tracking/{trackingId}`.
     *   API này truy vấn toàn bộ lịch sử các milestones của `TrackingId` đó từ PostgreSQL, sắp xếp nghiêm ngặt theo **`CreatedAt ASC, Id ASC`**.
-    *   Việc sắp xếp theo `Id ASC` (Identity Auto-Increment) là chốt chặn đảm bảo thứ tự chronological tăng dần tuyệt đối, ngay cả khi các bước xử lý (ví dụ: `Sending` $\rightarrow$ `Sent` $\rightarrow$ `Processing` $\rightarrow$ `Success`) diễn ra trong cùng một mili giây.
+    *   Việc sắp xếp theo `Id ASC` (Identity Auto-Increment) là chốt chặn đảm bảo thứ tự chronological tăng dần tuyệt đối, ngay cả khi các bước xử lý (ví dụ: `send` $\rightarrow$ `processing` $\rightarrow$ `done`) diễn ra trong cùng một mili giây.
 
 #### C. Trạng thái Workers & Hoạt động cuối (Workers Status & Last Active) - Cập nhật Bổ sung 2026-05-25
 *   **Workers Status & Metrics**: Trạng thái bật/tắt của các background worker được lấy trực tiếp từ `IDispatcher.GetWorkerStatus()`. Cho phép quản trị viên bấm nút Bật/Tắt worker trực tiếp từ UI thông qua lệnh gọi POST tương ứng. 

@@ -16,47 +16,83 @@
   </nz-page-header>
 
   <div nz-row [nzGutter]="16" class="stats-row" style="margin-bottom: 24px;">
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:enqueued'] || 0" [nzTitle]="'Tổng tin nhắn vào' | transloco" [nzPrefix]="prefixEnqueued"></nz-statistic>
-        <ng-template #prefixEnqueued><i nz-icon nzType="cloud-upload" style="color: #1890ff;"></i></ng-template>
+    <!-- Queue Overview -->
+    <div nz-col [nzSpan]="9">
+      <nz-card [nzTitle]="titleQueue" nzHoverable>
+        <ng-template #titleQueue>
+          <span style="font-weight: bold; color: #1890ff;">
+            <i nz-icon nzType="database"></i> {{ 'Hàng đợi (Queue)' | transloco }}
+          </span>
+        </ng-template>
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="stats.stats['queue_send_success'] || 0" [nzTitle]="'Gửi thành công' | transloco" [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="stats.stats['queue_send_error'] || 0" [nzTitle]="'Gửi lỗi' | transloco" [nzValueStyle]="{ color: '#ff4d4f' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12">
+            <nz-statistic [nzValue]="stats.stats['queue_done_success'] || 0" [nzTitle]="'Xử lý thành công' | transloco" [nzValueStyle]="{ color: '#2f54eb' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12">
+            <nz-statistic [nzValue]="stats.stats['queue_done_error'] || 0" [nzTitle]="'Xử lý lỗi' | transloco" [nzValueStyle]="{ color: '#f5222d' }"></nz-statistic>
+          </div>
+        </div>
       </nz-card>
     </div>
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:processed'] || 0" [nzTitle]="'Đã xử lý thành công' | transloco" [nzPrefix]="prefixProcessed" [nzValueStyle]="{ color: '#3f8600' }"></nz-statistic>
-        <ng-template #prefixProcessed><i nz-icon nzType="check-circle" style="color: #52c41a;"></i></ng-template>
+
+    <!-- Topic Overview -->
+    <div nz-col [nzSpan]="9">
+      <nz-card [nzTitle]="titleTopic" nzHoverable>
+        <ng-template #titleTopic>
+          <span style="font-weight: bold; color: #722ed1;">
+            <i nz-icon nzType="cluster"></i> {{ 'Chủ đề (Topic)' | transloco }}
+          </span>
+        </ng-template>
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="stats.stats['topic_send_success'] || 0" [nzTitle]="'Gửi thành công' | transloco" [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="stats.stats['topic_send_error'] || 0" [nzTitle]="'Gửi lỗi' | transloco" [nzValueStyle]="{ color: '#ff4d4f' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12">
+            <nz-statistic [nzValue]="stats.stats['topic_done_success'] || 0" [nzTitle]="'Xử lý thành công' | transloco" [nzValueStyle]="{ color: '#2f54eb' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12">
+            <nz-statistic [nzValue]="stats.stats['topic_done_error'] || 0" [nzTitle]="'Xử lý lỗi' | transloco" [nzValueStyle]="{ color: '#f5222d' }"></nz-statistic>
+          </div>
+        </div>
       </nz-card>
     </div>
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stats.stats['total:error'] || 0" [nzTitle]="'Lỗi hệ thống' | transloco" [nzPrefix]="prefixError" [nzValueStyle]="{ color: '#cf1322' }"></nz-statistic>
-        <ng-template #prefixError><i nz-icon nzType="close-circle" style="color: #ff4d4f;"></i></ng-template>
-      </nz-card>
-    </div>
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="runningWorkersCount" [nzTitle]="'Worker đang chạy' | transloco" [nzPrefix]="prefixWorkersRunning" [nzValueStyle]="{ color: '#722ed1' }"></nz-statistic>
-        <ng-template #prefixWorkersRunning><i nz-icon nzType="sync" [nzSpin]="true" style="color: #722ed1;"></i></ng-template>
-      </nz-card>
-    </div>
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="stoppedWorkersCount" [nzTitle]="'Worker đã dừng' | transloco" [nzPrefix]="prefixWorkersStopped" [nzValueStyle]="{ color: '#8c8c8c' }"></nz-statistic>
-        <ng-template #prefixWorkersStopped><i nz-icon nzType="pause-circle" style="color: #bfbfbf;"></i></ng-template>
-      </nz-card>
-    </div>
-    <div nz-col [nzSpan]="4">
-      <nz-card nzHoverable>
-        <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Tổng số Worker' | transloco" [nzPrefix]="prefixWorkersTotal" [nzValueStyle]="{ color: '#13c2c2' }"></nz-statistic>
-        <ng-template #prefixWorkersTotal><i nz-icon nzType="cluster" style="color: #13c2c2;"></i></ng-template>
+
+    <!-- Workers Overview -->
+    <div nz-col [nzSpan]="6">
+      <nz-card [nzTitle]="titleWorkers" nzHoverable>
+        <ng-template #titleWorkers>
+          <span style="font-weight: bold; color: #13c2c2;">
+            <i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | transloco }}
+          </span>
+        </ng-template>
+        <div nz-row [nzGutter]="16">
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="runningWorkersCount" [nzTitle]="'Đang chạy' | transloco" [nzValueStyle]="{ color: '#52c41a' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="12" style="margin-bottom: 8px;">
+            <nz-statistic [nzValue]="stoppedWorkersCount" [nzTitle]="'Đã dừng' | transloco" [nzValueStyle]="{ color: '#bfbfbf' }"></nz-statistic>
+          </div>
+          <div nz-col [nzSpan]="24">
+            <nz-statistic [nzValue]="workerList.length" [nzTitle]="'Tổng số' | transloco" [nzValueStyle]="{ color: '#13c2c2' }"></nz-statistic>
+          </div>
+        </div>
       </nz-card>
     </div>
   </div>
 
   <div class="tab-actions" style="margin-bottom: 16px; display: flex; justify-content: center;">
     <nz-radio-group [(ngModel)]="activeTab" nzButtonStyle="solid" nzSize="large">
-      <label nz-radio-button nzValue="queues"><i nz-icon nzType="database"></i> {{ 'Hàng đợi & Chủ đề' | transloco }}</label>
+      <label nz-radio-button nzValue="queues"><i nz-icon nzType="database"></i> {{ 'Hàng đợi (Queue)' | transloco }}</label>
+      <label nz-radio-button nzValue="topics"><i nz-icon nzType="cluster"></i> {{ 'Chủ đề (Topic)' | transloco }}</label>
       <label nz-radio-button nzValue="tracking"><i nz-icon nzType="history"></i> {{ 'Theo dõi gần đây' | transloco }}</label>
       <label nz-radio-button nzValue="workers"><i nz-icon nzType="api"></i> {{ 'Trạng thái Workers' | transloco }}</label>
       <label nz-radio-button nzValue="activity"><i nz-icon nzType="clock-circle"></i> {{ 'Hoạt động cuối' | transloco }}</label>
@@ -65,32 +101,34 @@
 
   <ng-container [ngSwitch]="activeTab">
     <div *ngSwitchCase="'queues'">
-      <nz-card [nzTitle]="'Danh sách thực thể CQRS' | transloco">
+      <nz-card [nzTitle]="'Danh sách Hàng đợi (Queue)' | transloco">
         <tot-table
-          [data]="queues"
+          [data]="allQueues"
           [columns]="queueColumns"
           [loading]="loading"
           [pageSize]="10"
           [frontPagination]="true"
           [showPagination]="true"
-          [scroll]="{ x: '1200px' }"
+          [scroll]="{ x: '1300px' }"
         >
-          <ng-template totCell="type" let-data>
-            <nz-tag [nzColor]="data.type === 'Queue' ? 'blue' : data.type === 'Topic' ? 'purple' : 'default'">
-              {{ (data.type === 'Queue' ? 'queue' : data.type === 'Topic' ? 'topic' : 'internal') | transloco }}
-            </nz-tag>
-          </ng-template>
-
-          <ng-template totCell="processing" let-data>
+          <ng-template totCell="activeCount" let-data>
             <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
           </ng-template>
 
-          <ng-template totCell="success" let-data>
-            <nz-tag nzColor="success">{{ data.processedCount }}</nz-tag>
+          <ng-template totCell="sendSuccessCount" let-data>
+            <nz-tag nzColor="success">{{ data.sendSuccessCount }}</nz-tag>
           </ng-template>
 
-          <ng-template totCell="error" let-data>
-            <nz-tag nzColor="error">{{ data.errorCount }}</nz-tag>
+          <ng-template totCell="sendErrorCount" let-data>
+            <nz-tag nzColor="error">{{ data.sendErrorCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="doneSuccessCount" let-data>
+            <nz-tag nzColor="success">{{ data.doneSuccessCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="doneErrorCount" let-data>
+            <nz-tag nzColor="error">{{ data.doneErrorCount }}</nz-tag>
           </ng-template>
 
           <ng-template totCell="workers" let-data>
@@ -102,8 +140,68 @@
           <ng-template totCell="handlers" let-data>
             <div class="handler-grid">
               <div *ngFor="let h of data.handlers" class="handler-tag-item">
-                <span class="h-name">{{ h.handlerName }}</span>
-                <span class="m-name">{{ h.messageName }}</span>
+                <span class="h-name" [nz-tooltip]="h.handlerName">{{ shortenNamespace(h.handlerName) }}</span>
+                <span class="m-name" [nz-tooltip]="h.messageName">{{ shortenNamespace(h.messageName) }}</span>
+              </div>
+            </div>
+          </ng-template>
+
+          <ng-template totCell="action" let-data>
+            <div style="display: flex; gap: 4px; flex-direction: column;">
+              <tot-button nzType="primary" [nzGhost]="true" nzSize="small" (click)="viewDetails(data)">
+                {{ 'Chi tiết' | transloco }}
+              </tot-button>
+              <tot-button nzType="default" nzSize="small" (click)="viewInProgress(data)">
+                {{ 'Xem đang xử lý' | transloco }}
+              </tot-button>
+            </div>
+          </ng-template>
+        </tot-table>
+      </nz-card>
+    </div>
+
+    <div *ngSwitchCase="'topics'">
+      <nz-card [nzTitle]="'Danh sách Chủ đề (Topic)' | transloco">
+        <tot-table
+          [data]="allTopics"
+          [columns]="topicColumns"
+          [loading]="loading"
+          [pageSize]="10"
+          [frontPagination]="true"
+          [showPagination]="true"
+          [scroll]="{ x: '1300px' }"
+        >
+          <ng-template totCell="activeCount" let-data>
+            <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="sendSuccessCount" let-data>
+            <nz-tag nzColor="success">{{ data.sendSuccessCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="sendErrorCount" let-data>
+            <nz-tag nzColor="error">{{ data.sendErrorCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="doneSuccessCount" let-data>
+            <nz-tag nzColor="success">{{ data.doneSuccessCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="doneErrorCount" let-data>
+            <nz-tag nzColor="error">{{ data.doneErrorCount }}</nz-tag>
+          </ng-template>
+
+          <ng-template totCell="workers" let-data>
+            <div class="worker-tags">
+              <nz-tag *ngFor="let w of data.workers" nzColor="processing">{{ w }}</nz-tag>
+            </div>
+          </ng-template>
+
+          <ng-template totCell="handlers" let-data>
+            <div class="handler-grid">
+              <div *ngFor="let h of data.handlers" class="handler-tag-item">
+                <span class="h-name" [nz-tooltip]="h.handlerName">{{ shortenNamespace(h.handlerName) }}</span>
+                <span class="m-name" [nz-tooltip]="h.messageName">{{ shortenNamespace(h.messageName) }}</span>
               </div>
             </div>
           </ng-template>
@@ -175,7 +273,7 @@
           </ng-template>
 
           <ng-template totCell="step" let-data>
-            <nz-tag [nzColor]="data.step === 'Enqueue' ? 'blue' : data.step === 'Publish' ? 'cyan' : data.step === 'Subscribe' ? 'purple' : data.step === 'Dequeue' ? 'orange' : 'green'">
+            <nz-tag [nzColor]="data.step === 'send' ? 'blue' : data.step === 'dequeue' ? 'orange' : data.step === 'done' ? 'green' : 'default'">
               {{ data.step }}
             </nz-tag>
           </ng-template>
@@ -325,7 +423,7 @@
                   <span style="font-weight: bold; font-family: monospace; font-size: 12px; color: #888;">
                     {{ (step.timestamp || step.time) | date:'yyyy-MM-dd HH:mm:ss.SSS' }}
                   </span>
-                  <nz-tag [nzColor]="step.step === 'Enqueue' ? 'blue' : step.step === 'Publish' ? 'cyan' : step.step === 'Subscribe' ? 'purple' : step.step === 'Dequeue' ? 'orange' : 'green'">
+                  <nz-tag [nzColor]="step.step === 'send' ? 'blue' : step.step === 'dequeue' ? 'orange' : step.step === 'done' ? 'green' : 'default'">
                     {{ step.step }}
                   </nz-tag>
                   <nz-tag *ngIf="step.status" [nzColor]="step.status.toLowerCase() === 'success' ? 'success' : step.status.toLowerCase() === 'error' ? 'error' : 'processing'">
