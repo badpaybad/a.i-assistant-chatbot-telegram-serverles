@@ -121,43 +121,8 @@ app.MapFallbackToFile("/admin/{*path:nonfile}", "admin/index.html");
 
 // --- 8. Initialize Infrastructure ---
 await app.UseAppOidc(config, new[] { Assembly.GetExecutingAssembly() });
-
-using (var scope = app.Services.CreateScope())
-{
-    var services = scope.ServiceProvider;
-    
-    try
-    {
-        var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
-        await filesDb.EnsureTablesCreatedAsync();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[STARTUP ERROR] FilesFoldersDbContext table creation failed: {ex.Message}");
-    }
-
-    try
-    {
-        var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
-        await faceDb.EnsureTablesCreatedAsync();
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[STARTUP ERROR] NhanDienKhuonMatDbContext table creation failed: {ex.Message}");
-    }
-
-    try
-    {
-        var cqrsDb = services.GetService<Core.Infra.Cqrs.Contexts.CqrsDbContext>();
-        if (cqrsDb != null)
-        {
-            await cqrsDb.EnsureTablesCreatedAsync();
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[STARTUP ERROR] CqrsDbContext table creation failed: {ex.Message}");
-    }
-}
+await app.UseFilesFolders();
+await app.UseNhanDienKhuonMat();
+await app.UseCqrs();
 
 app.Run();

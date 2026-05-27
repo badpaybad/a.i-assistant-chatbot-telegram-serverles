@@ -269,4 +269,6 @@ paging cho việc lấy danh sách luôn cần là paging ở server
             * Truyền dữ liệu ACL: Để kiểm tra quyền hạn ACL động, Client đính kèm tiêu đề tùy chỉnh `x-resource-id` (hoặc thông qua Route/Query string) và `x-resource-type` lên API.
             * Luồng đăng xuất: Client xóa token trong LocalStorage và chuyển hướng trình duyệt tới `http://localhost:5000/api/auth/logout?post_logout_redirect_uri=<CallbackUrl>` để hủy hoàn toàn SSO Session cookie trên server.
 
-
+**cập nhật 2026-05-27 11:40:40**
+tuân thủ về việc nghiệp vụ sinh ra theo cấu trúc folder. việc nghiệp vụ có thể có các dbcontext connect riêng cho nghiệp vụ việc init khởi tạo db, bảng or data ban đầu cần đi theo quy tắc. cần để vào extension để ở app shell gọi. vd ở program.cs gọi extension cho việc build services container và app usage 
+    kiểm tra xem TreeOfThought/backend/Core.Web.Api/Program.cs đã đúng chưa , nếu chưa cần sửa extesion cho các nghiệp vụ chưa đúng 

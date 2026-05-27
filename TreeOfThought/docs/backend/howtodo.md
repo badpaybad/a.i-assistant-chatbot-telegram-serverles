@@ -90,6 +90,59 @@ sequenceDiagram
     ```
     *Lưu ý: `total` phải là tổng số bản ghi thực tế trong cơ sở dữ liệu thỏa mãn điều kiện lọc (filter), không bị giới hạn bởi mệnh đề phân trang (Skip/Take) của truy vấn.*
 
+### 2.5. Quy tắc Đóng gói Khởi tạo Cơ sở Dữ liệu & Đăng ký Dịch vụ (Database Initialization & Extension Encapsulation)
+
+> [!IMPORTANT]
+> **Cập nhật ngày 2026-05-27 11:40:40**: Để duy trì tính độc lập (Decoupling) và nhất quán cấu trúc mã nguồn theo folder nghiệp vụ, việc khởi tạo cơ sở dữ liệu (tạo bảng, sinh dữ liệu mẫu/seed data) hoặc đăng ký dịch vụ (Dependency Injection) của từng nghiệp vụ **bắt buộc phải được đóng gói vào các Extension Methods** của dự án nghiệp vụ đó. App Shell (`Program.cs`) tuyệt đối không được tự ý thực hiện khởi tạo hoặc cấu hình thủ công.
+
+#### 1. Tiêu chuẩn Đặt tên và Định nghĩa Extension Methods
+Mỗi dự án nghiệp vụ (hoặc hạ tầng cốt lõi) cần định nghĩa các phương thức mở rộng theo 2 giai đoạn startup:
+
+*   **Giai đoạn Build Container (Đăng ký dịch vụ)**:
+    *   Sử dụng extension method trên `IServiceCollection` nằm trong namespace của nghiệp vụ.
+    *   Tiền tố đặt tên: `Add...`
+    *   *Ví dụ: `public static IServiceCollection AddNhanDienKhuonMat(this IServiceCollection services, IConfiguration config)`*
+*   **Giai đoạn Pipeline Startup (Khởi tạo và Sử dụng dịch vụ)**:
+    *   Sử dụng extension method trên `IApplicationBuilder` nằm trong namespace của nghiệp vụ.
+    *   Tiền tố đặt tên: `Use...` và kiểu trả về là `async Task`.
+    *   *Ví dụ: `public static async Task UseNhanDienKhuonMat(this IApplicationBuilder app)`*
+
+#### 2. Quy chuẩn An toàn khi Khởi tạo Cơ sở dữ liệu ngầm
+Bên trong phương thức `Use{NghiepVu}`, bắt buộc phải tuân thủ các quy tắc thiết kế an toàn:
+1.  **Quản lý Scope**: Tạo một `IServiceScope` thông qua `app.ApplicationServices.CreateScope()` để đảm bảo lấy ra đúng các dịch vụ Scoped (như `DbContext`) và tự động giải phóng tài nguyên sau khi quá trình khởi tạo kết thúc.
+2.  **Khởi tạo Bất đồng bộ**: Thực hiện tạo bảng hoặc seed dữ liệu một cách bất đồng bộ bằng cách gọi `await dbContext.EnsureTablesCreatedAsync()`.
+3.  **Xử lý Ngoại lệ (Safety Try-Catch)**: Bọc toàn bộ logic khởi tạo trong khối `try-catch`. Nếu xảy ra lỗi khởi tạo DB (ví dụ CSDL chưa sẵn sàng hoặc sai kết nối), ghi nhận log cụ thể qua `Console.WriteLine` hoặc `ILogger` với prefix `[STARTUP ERROR]` và **không** ném ngoại lệ làm sập ứng dụng chính ngay lập tức, giúp ứng dụng App Shell có khả năng phục hồi hoặc ghi nhận lỗi startup rõ ràng.
+
+*Ví dụ minh họa cấu trúc phương thức khởi tạo chuẩn:*
+```csharp
+public static async Task UseNhanDienKhuonMat(this IApplicationBuilder app)
+{
+    using (var scope = app.ApplicationServices.CreateScope())
+    {
+        var services = scope.ServiceProvider;
+        try
+        {
+            var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
+            await faceDb.EnsureTablesCreatedAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[STARTUP ERROR] NhanDienKhuonMatDbContext table creation failed: {ex.Message}");
+        }
+    }
+}
+```
+
+#### 3. Cách tích hợp sạch vào App Shell (`Program.cs`)
+Nhờ có các extension method được chuẩn hóa, file `Program.cs` của App Shell sẽ cực kỳ gọn gàng và không bị phình to (bloated). Chỉ cần thực hiện gọi tuần tự:
+```csharp
+// --- 8. Initialize Infrastructure ---
+await app.UseAppOidc(config, new[] { Assembly.GetExecutingAssembly() });
+await app.UseFilesFolders();
+await app.UseNhanDienKhuonMat();
+await app.UseCqrs();
+```
+
 ---
 
 ## 3. Ví dụ Minh họa về Triển khai Nghiệp vụ đúng chuẩn

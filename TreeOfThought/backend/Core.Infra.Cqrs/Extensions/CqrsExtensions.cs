@@ -8,6 +8,8 @@ using Microsoft.Extensions.Logging;
 using Core.Infra.Redis.Services;
 using Core.Infra.Firebase.Services;
 using Core.Infra.Cqrs.Dispatchers;
+using Microsoft.AspNetCore.Builder;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Cqrs.Extensions;
 
@@ -127,5 +129,25 @@ public static class CqrsExtensions
                 return t.FullName!;
             }
         });
+    }
+
+    public static async Task UseCqrs(this IApplicationBuilder app)
+    {
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            try
+            {
+                var cqrsDb = services.GetService<Contexts.CqrsDbContext>();
+                if (cqrsDb != null)
+                {
+                    await cqrsDb.EnsureTablesCreatedAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[STARTUP ERROR] CqrsDbContext table creation failed: {ex.Message}");
+            }
+        }
     }
 }

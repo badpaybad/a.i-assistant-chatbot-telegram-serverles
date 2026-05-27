@@ -2,8 +2,11 @@ using Core.Infra.Data.Contexts;
 using Core.Infra.FilesFolders.Contexts;
 using Core.Infra.FilesFolders.Controllers;
 using Core.Infra.FilesFolders.Services;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Threading.Tasks;
 
 namespace Core.Infra.FilesFolders.Extensions;
 
@@ -22,5 +25,22 @@ public static class ServiceCollectionExtensions
     public static IMvcBuilder AddFilesFoldersControllers(this IMvcBuilder mvcBuilder)
     {
         return mvcBuilder.AddApplicationPart(typeof(FilesController).Assembly);
+    }
+
+    public static async Task UseFilesFolders(this IApplicationBuilder app)
+    {
+        using (var scope = app.ApplicationServices.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            try
+            {
+                var filesDb = services.GetRequiredService<FilesFoldersDbContext>();
+                await filesDb.EnsureTablesCreatedAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[STARTUP ERROR] FilesFoldersDbContext table creation failed: {ex.Message}");
+            }
+        }
     }
 }
