@@ -5,7 +5,7 @@
   "compilerOptions": {
     "paths": {
       "@tot/business-oidc": ["./projects/tot/business-oidc/src/public-api.ts"],
-      "@tot/business-dashboard": ["./projects/tot/business-dashboard/src/public-api.ts"],
+      "@tot/cqrs-dashboard": ["./projects/tot/cqrs-dashboard/src/public-api.ts"],
       "@tot/business-files": ["./projects/tot/business-files/src/public-api.ts"],
       "@tot/business-test": ["./projects/tot/business-test/src/public-api.ts"],
       "@tot/nhan-dien-khuon-mat": ["./projects/tot/nhan-dien-khuon-mat/src/public-api.ts"],
@@ -71,10 +71,10 @@
       "path": "./projects/tot/business-oidc/tsconfig.spec.json"
     },
     {
-      "path": "./projects/tot/business-dashboard/tsconfig.lib.json"
+      "path": "./projects/tot/cqrs-dashboard/tsconfig.lib.json"
     },
     {
-      "path": "./projects/tot/business-dashboard/tsconfig.spec.json"
+      "path": "./projects/tot/cqrs-dashboard/tsconfig.spec.json"
     },
     {
       "path": "./projects/tot/nhan-dien-khuon-mat/tsconfig.lib.json"

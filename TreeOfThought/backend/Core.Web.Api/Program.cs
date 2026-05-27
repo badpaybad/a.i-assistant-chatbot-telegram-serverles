@@ -2,7 +2,6 @@ using StackExchange.Redis;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Data.Contexts;
 using Core.Infra.Firebase.Services;
-using Core.Web.Api.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Services;
 using Core.Infra.Oidc.Models;
@@ -28,6 +27,7 @@ using Core.Infra.NhanDienKhuonMat.Handlers;
 using Core.Infra.NhanDienKhuonMat.Contexts;
 using Core.Infra.BusinessTest.Extensions;
 using Core.Infra.BusinessTest.Handlers;
+using Core.Infra.CqrsDashboard.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +65,7 @@ builder.Services.AddControllers()
     .AddNhanDienKhuonMatControllers()
     .AddOidcControllers()
     .AddBusinessTestControllers()
+    .AddCqrsDashboardControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;

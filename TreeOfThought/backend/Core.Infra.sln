@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.NhanDienKhuonMat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.BusinessTest", "business-test\Core.Infra.BusinessTest.csproj", "{F22B754E-9F71-4544-AB5C-BEAFE7FD5B10}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core.Infra.CqrsDashboard", "cqrs-dashboard\Core.Infra.CqrsDashboard.csproj", "{B5A50D50-C401-4E1E-B9C4-229C9C28599C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -104,6 +106,10 @@ Global
 		{F22B754E-9F71-4544-AB5C-BEAFE7FD5B10}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F22B754E-9F71-4544-AB5C-BEAFE7FD5B10}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F22B754E-9F71-4544-AB5C-BEAFE7FD5B10}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5A50D50-C401-4E1E-B9C4-229C9C28599C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5A50D50-C401-4E1E-B9C4-229C9C28599C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5A50D50-C401-4E1E-B9C4-229C9C28599C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5A50D50-C401-4E1E-B9C4-229C9C28599C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{FEE4CA80-4B95-4AE3-9EBE-76205BBF53B2} = {D223059C-1823-417D-A6E4-4A49DE3215C8}

@@ -9,7 +9,7 @@ import { TotButtonComponent } from '@tot/shared';
 import { NzGridModule } from 'ng-zorro-antd/grid';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { TranslocoModule, TranslocoService } from '@jsverse/transloco';
-import { DashboardService } from '@tot/business-dashboard';
+import { DashboardService } from '@tot/cqrs-dashboard';
 import { NzTimelineModule } from 'ng-zorro-antd/timeline';
 import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzDividerModule } from 'ng-zorro-antd/divider';

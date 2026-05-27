@@ -241,20 +241,20 @@
         }
       }
     },
-    "@tot/business-dashboard": {
+    "@tot/cqrs-dashboard": {
       "projectType": "library",
-      "root": "projects/tot/business-dashboard",
-      "sourceRoot": "projects/tot/business-dashboard/src",
+      "root": "projects/tot/cqrs-dashboard",
+      "sourceRoot": "projects/tot/cqrs-dashboard/src",
       "prefix": "tot",
       "architect": {
         "build": {
           "builder": "@angular/build:ng-packagr",
           "configurations": {
             "production": {
-              "tsConfig": "projects/tot/business-dashboard/tsconfig.lib.prod.json"
+              "tsConfig": "projects/tot/cqrs-dashboard/tsconfig.lib.prod.json"
             },
             "development": {
-              "tsConfig": "projects/tot/business-dashboard/tsconfig.lib.json"
+              "tsConfig": "projects/tot/cqrs-dashboard/tsconfig.lib.json"
             }
           },
           "defaultConfiguration": "production"
@@ -262,7 +262,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "tsConfig": "projects/tot/business-dashboard/tsconfig.spec.json"
+            "tsConfig": "projects/tot/cqrs-dashboard/tsconfig.spec.json"
           }
         }
       }

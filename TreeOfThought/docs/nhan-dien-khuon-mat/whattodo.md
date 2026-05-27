@@ -38,7 +38,7 @@ Danh sách quản lý
 Tính năng kéo thả hoặc chọn 1 folder chưa làm việc
     - có thể tách thành 2 khu vực:
         - chọn file hoặc kéo thả file
-        - chọn folder hoặc kéo thả folder 
+        - chọn folder hoặc kéo thả folder
             - khi chọn folder họăc kéo thảo thì cần lấy các file ảnh để  xử lý như khi chọn từng file
 
 **cập nhật 2026-05-27 15:39:32**
@@ -46,4 +46,4 @@ Tính năng kéo thả hoặc chọn 1 folder chưa làm việc
 Theme màu cần theo app shell chung
 Các button table cần theo hướng dẫn về dùng shared component tot-...
 
-Giao diện hơi xấu và đang không dùng core shared tot-table tot-button , không tự bịa thêm các css cần dùng ant design nhiều nhất có thể 
+Giao diện hơi xấu và đang không dùng core shared tot-table tot-button , không tự bịa thêm các css cần dùng ant design nhiều nhất có thể

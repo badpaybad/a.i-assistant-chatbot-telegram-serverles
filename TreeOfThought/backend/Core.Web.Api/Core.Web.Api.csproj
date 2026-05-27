@@ -23,6 +23,7 @@
     <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
     <ProjectReference Include="..\nhan-dien-khuon-mat\Core.Infra.NhanDienKhuonMat.csproj" />
     <ProjectReference Include="..\business-test\Core.Infra.BusinessTest.csproj" />
+    <ProjectReference Include="..\cqrs-dashboard\Core.Infra.CqrsDashboard.csproj" />
   </ItemGroup>
 
 </Project>

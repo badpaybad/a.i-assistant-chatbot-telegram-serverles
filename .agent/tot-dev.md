@@ -90,8 +90,8 @@ Các nghiệp vụ đã được triển khai từ trước có cấu trúc fold
 
 2. **Module CQRS Dashboard:**
    - **Docs:** `TreeOfThought/docs/cqrs-dashboard/whattodo.md`
-   - **Backend (BE):** `TreeOfThought/backend/Core.Web.Api/Controllers`
-   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/business-dashboard`
+   - **Backend (BE):** `TreeOfThought/backend/cqrs-dashboard`
+   - **Frontend (FE):** `TreeOfThought/frontend/web/projects/tot/cqrs-dashboard`
 
 3. **Module CQRS Test:**
    - **Docs:** `TreeOfThought/docs/cqrs-test/whattodo.md`
@@ -142,7 +142,7 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
 - **Nghiệp vụ sẵn có:**
   - `TreeOfThought/frontend/web/projects/tot/business-files`
   - `TreeOfThought/frontend/web/projects/tot/business-oidc`
-  - `TreeOfThought/frontend/web/projects/tot/business-dashboard`
+  - `TreeOfThought/frontend/web/projects/tot/cqrs-dashboard`
   - `TreeOfThought/frontend/web/projects/tot/business-test`
 
 ### D. Nhật ký cập nhật quy trình
@@ -153,6 +153,7 @@ Dưới đây là chi tiết cấu trúc hệ thống cần bảo vệ và tuân
 - **Cập nhật 2026-05-26 15:25:57:** Mở rộng phạm vi áp dụng của skill **tot-dev** cho toàn bộ các công nghệ phát triển trong folder `TreeOfThought`, bao gồm .NET, Angular, Flutter, ReactJS, và SQL.
 - **Cập nhật 2026-05-26 15:32:12:** Sửa lỗi chính tả về thư mục cốt lõi cần bảo vệ: thay thế `TreeOfThought/frontend` thành `TreeOfThought/docs/frontend` để chính xác với sơ đồ tổ chức tài liệu tri thức của solution.
 - **Cập nhật 2026-05-26 16:24:00:** Bổ sung nguyên tắc **DRY (Don't Repeat Yourself)** vào quy trình phát triển. Trong một file code tuyệt đối không được lặp lại code hay logic giống nhau, cần tối ưu hóa và đưa vào hàm/phương thức để tái sử dụng.
+- **Cập nhật 2026-05-27 20:40:24:** Tái cấu trúc Module CQRS Dashboard: di chuyển backend Controller và Models ra dự án riêng tại `TreeOfThought/backend/cqrs-dashboard`, đồng thời đổi tên Angular Library dùng chung từ `business-dashboard` thành `cqrs-dashboard` để đồng nhất cấu trúc trên toàn solution.
 
 
 

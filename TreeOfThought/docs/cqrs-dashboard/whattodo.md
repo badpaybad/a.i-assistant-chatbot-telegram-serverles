@@ -193,3 +193,6 @@ vd cho mesage này, từ handle khi publish event thì cần chỉ ra là từ h
       where  "TrackingId" ='5572008f-02a5-47c7-9ddb-1ba92ee6ae66'
       order by "CreatedAt" asc  ;
 
+**cập nhật 2026-05-27 20:40:24**
+folder backend của nghiệp vụ : cqrs-dashboard 
+move TreeOfThought/backend/Core.Web.Api/Controllers/CqrsDashboardController.cs ra project trong folder TreeOfThought/backend/cqrs-dashboard để đồng nhất với folder frontend cũng đổi TreeOfThought/frontend/web/projects/tot/business-dashboard thành TreeOfThought/frontend/web/projects/tot/cqrs-dashboard và docs TreeOfThought/docs/cqrs-dashboard 

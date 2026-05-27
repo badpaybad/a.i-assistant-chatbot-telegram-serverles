@@ -19,18 +19,18 @@ export const routes: Routes = [
         children: [
           { 
             path: '', 
-            loadComponent: () => import('@tot/business-dashboard').then(m => m.DashboardComponent),
+            loadComponent: () => import('@tot/cqrs-dashboard').then(m => m.DashboardComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           { 
             path: 'tracing/:id', 
-            loadComponent: () => import('@tot/business-dashboard').then(m => m.TracingComponent),
+            loadComponent: () => import('@tot/cqrs-dashboard').then(m => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Tracing' }
           },
           { 
             path: 'messages/:queueName', 
-            loadComponent: () => import('@tot/business-dashboard').then(m => m.MessageListComponent),
+            loadComponent: () => import('@tot/cqrs-dashboard').then(m => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: 'Messages' }
           }
