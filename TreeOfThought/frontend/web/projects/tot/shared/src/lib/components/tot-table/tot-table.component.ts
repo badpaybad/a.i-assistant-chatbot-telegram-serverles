@@ -54,7 +54,10 @@ export interface TotTableColumn {
         [nzShowPagination]="showPagination"
         [nzBordered]="true"
         [nzSize]="nzSize"
-        [nzScroll]="scroll"
+        [nzScroll]="tableScroll"
+        [nzShowSizeChanger]="true"
+        [nzPageSizeOptions]="[5, 10, 20, 25, 50, 100, 200]"
+        [nzHideOnSinglePage]="false"
         (nzQueryParamsChange)="onQueryParamsChange($any($event))"
         nzTableLayout="fixed"
       >
@@ -63,12 +66,12 @@ export interface TotTableColumn {
             <th *ngIf="expandTemplate" nzWidth="40px"></th>
             <th
               *ngFor="let col of columns"
-              [nzWidth]="col.width || null"
+              [nzWidth]="col.width || (isActionColumn(col) ? '150px' : null)"
               [nzSortFn]="col.sortable || null"
               [nzShowSort]="col.sortable || false"
               [nzAlign]="col.align || 'left'"
               [nzLeft]="col.left === true ? '0px' : col.left || false"
-              [nzRight]="col.right === true ? '0px' : col.right || false"
+              [nzRight]="(col.right === true || isActionColumn(col)) ? '0px' : col.right || false"
             >
               {{ col.title | transloco }}
             </th>
@@ -82,7 +85,7 @@ export interface TotTableColumn {
                 *ngFor="let col of columns"
                 [nzAlign]="col.align || 'left'"
                 [nzLeft]="col.left === true ? '0px' : col.left || false"
-                [nzRight]="col.right === true ? '0px' : col.right || false"
+                [nzRight]="(col.right === true || isActionColumn(col)) ? '0px' : col.right || false"
               >
                 <ng-container *ngIf="getColTemplate(col); else textOnly">
                   <ng-container
@@ -108,8 +111,39 @@ export interface TotTableColumn {
       font-size: 16px;
     }
     :host ::ng-deep .ant-table-thead > tr > th {
-      background: #fafafa;
+      background: #fafafa !important;
       font-weight: 600;
+      white-space: normal;
+      word-break: break-word;
+    }
+    :host ::ng-deep .ant-table-tbody > tr > td {
+      background: #fff;
+      white-space: normal;
+      word-break: break-word;
+      overflow: visible;
+    }
+    /* Fixed/sticky columns must also have identical background colors and remain solid */
+    :host ::ng-deep .ant-table-cell-fix-left,
+    :host ::ng-deep .ant-table-cell-fix-right {
+      background: #fff !important;
+    }
+    :host ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-left,
+    :host ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-right {
+      background: #fafafa !important;
+    }
+    /* Keep row hover effect uniform and beautiful */
+    :host ::ng-deep .ant-table-tbody > tr:hover > td,
+    :host ::ng-deep .ant-table-tbody > tr:hover > td.ant-table-cell-fix-left,
+    :host ::ng-deep .ant-table-tbody > tr:hover > td.ant-table-cell-fix-right {
+      background: #fafafa !important;
+    }
+    /* Vertical button layout with gap inside action columns */
+    :host ::ng-deep .ant-table-cell-fix-right > div,
+    :host ::ng-deep .ant-table-cell-fix-right .tot-btn-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      width: 100%;
     }
     .worker-tags {
       display: flex;
@@ -139,15 +173,7 @@ export interface TotTableColumn {
       font-family: monospace;
     }
     @media (max-width: 767px) {
-      :host ::ng-deep .ant-table-cell-fix-left,
-      :host ::ng-deep .ant-table-cell-fix-right {
-        position: static !important;
-        left: auto !important;
-        right: auto !important;
-        border-left: none !important;
-        border-right: none !important;
-        box-shadow: none !important;
-      }
+      /* Keep standard display settings for overflow handling on small screens */
       :host ::ng-deep .ant-table-content {
         overflow-x: auto !important;
       }
@@ -166,7 +192,7 @@ export class TotTableComponent {
   @Input() pageSize = 10;
   @Input() title: string | TemplateRef<any> = '';
   @Input() extra: TemplateRef<any> | string | null | undefined = undefined;
-  @Input() frontPagination = true;
+  @Input() frontPagination = false;
   @Input() showPagination = true;
   @Input() nzSize: 'middle' | 'small' | 'default' = 'default';
   @Input() scroll: { x?: string | null; y?: string | null } = { x: null, y: null };
@@ -176,6 +202,36 @@ export class TotTableComponent {
   @Output() expandChange = new EventEmitter<{ item: any; expanded: boolean }>();
 
   @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
+
+  isActionColumn(col: TotTableColumn): boolean {
+    const key = col.key?.toLowerCase();
+    const title = col.title?.toLowerCase();
+    return (
+      key === 'action' ||
+      key === 'actions' ||
+      key === 'operation' ||
+      key === 'operations' ||
+      key === 'thao-tac' ||
+      key === 'thaotac' ||
+      title === 'hành động' ||
+      title === 'thao tác' ||
+      title === 'action' ||
+      title === 'actions' ||
+      title === 'operation' ||
+      title === 'operations'
+    );
+  }
+
+  get tableScroll(): { x?: string | null; y?: string | null } {
+    if (this.scroll && this.scroll.x) {
+      return this.scroll;
+    }
+    const hasSticky = this.columns.some(col => col.left || col.right || this.isActionColumn(col));
+    if (hasSticky) {
+      return { ...this.scroll, x: 'max-content' };
+    }
+    return this.scroll;
+  }
 
   onQueryParamsChange(params: NzTableQueryParams): void {
     this.queryParamsChange.emit(params);

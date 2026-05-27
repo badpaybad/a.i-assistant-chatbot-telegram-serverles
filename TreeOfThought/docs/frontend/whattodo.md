@@ -89,4 +89,7 @@ this.firebaseService.subscribeToRequestId đang để độc lập với httpcli
 
 Cần đưa ra phương án để xử lý và cần kiểm tra các code đang sử dụng để đảm bảo phương án sửa có thể refactor ổn định không lỗi cho những gì đã có
 
-Không cần dùng tới messagebusServices có thể httpclientservices sẽ đưa callback để xử lý khi có notify về . Tích hợp sẵn vào các hàm post put path delete chứ không để riêng tránh lập trình bị rắc rối và quên. Khi dùng chỉ cần dùng httpclientservices 
+Không cần dùng tới messagebusServices có thể httpclientservices sẽ đưa callback để xử lý khi có notify về . Tích hợp sẵn vào các hàm post put path delete chứ không để riêng tránh lập trình bị rắc rối và quên. Khi dùng chỉ cần dùng httpclientservices
+
+**cập nhật 2026-05-2721:50:50**
+tot-table cần quy chuẩn nhất quán dùng server side paging theo yêu càu của BE : TreeOfThought/docs/backend/whattodo.md , cột hành động (thao tác, action) cần là sticky
