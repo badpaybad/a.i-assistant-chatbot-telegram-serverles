@@ -14,7 +14,7 @@
 
     <div *ngIf="searchResults.length > 0 || searching" class="mt-3">
       <tot-table [data]="searchResults" [columns]="searchColumns" [pageSize]="searchPageSize" [nzSize]="'small'"
-        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [frontPagination]="true" [scroll]="{ x: '800px' }">
+        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [frontPagination]="false" [scroll]="{ x: '800px' }">
         <ng-template totCell="Tên file" let-data>
           <div class="file-name-cell" (click)="openFileDetail(data)">
             <span nz-icon nzType="file" style="margin-right: 8px;"></span>

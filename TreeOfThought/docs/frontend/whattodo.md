@@ -93,3 +93,5 @@ Không cần dùng tới messagebusServices có thể httpclientservices sẽ đ
 
 **cập nhật 2026-05-2721:50:50**
 tot-table cần quy chuẩn nhất quán dùng server side paging theo yêu càu của BE : TreeOfThought/docs/backend/whattodo.md , cột hành động (thao tác, action) cần là sticky
+
+Tất cả cần phải dùng [frontPagination]="false" để đảm bảo là server side paging

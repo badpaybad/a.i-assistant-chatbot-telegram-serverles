@@ -17,7 +17,7 @@ import {
   NzLayoutModule,
   NzSiderComponent,
   provideBusinessFiles
-} from "./chunk-H6IMBCF3.js";
+} from "./chunk-BFX3OS25.js";
 import "./chunk-F2GHQOYI.js";
 import {
   NzFormControlComponent,
@@ -31,7 +31,7 @@ import {
 } from "./chunk-PDGIBJGM.js";
 import {
   provideNhanDienKhuonMat
-} from "./chunk-TFBZPCW4.js";
+} from "./chunk-SPMWGLSU.js";
 import {
   API_URL,
   ActivatedRoute,
@@ -4211,18 +4211,18 @@ var routes = [
         children: [
           {
             path: "",
-            loadComponent: () => import("./chunk-BNBFDHEE.js").then((m) => m.DashboardComponent)
+            loadComponent: () => import("./chunk-W267TZU4.js").then((m) => m.DashboardComponent)
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)]
           },
           {
             path: "tracing/:id",
-            loadComponent: () => import("./chunk-BNBFDHEE.js").then((m) => m.TracingComponent),
+            loadComponent: () => import("./chunk-W267TZU4.js").then((m) => m.TracingComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Tracing" }
           },
           {
             path: "messages/:queueName",
-            loadComponent: () => import("./chunk-BNBFDHEE.js").then((m) => m.MessageListComponent),
+            loadComponent: () => import("./chunk-W267TZU4.js").then((m) => m.MessageListComponent),
             // canActivate: [claimGuard(APP_CLAIMS.CQRS_DASHBOARD.VIEW)],
             data: { breadcrumb: "Messages" }
           }
@@ -4234,22 +4234,22 @@ var routes = [
         children: [
           {
             path: "cqrs",
-            loadComponent: () => import("./chunk-VNJ7ID2L.js").then((m) => m.CqrsTestComponent),
+            loadComponent: () => import("./chunk-R5YNTF5A.js").then((m) => m.CqrsTestComponent),
             data: { breadcrumb: "CQRS Test" }
           },
           {
             path: "firestore",
-            loadComponent: () => import("./chunk-VNJ7ID2L.js").then((m) => m.FirestoreTestComponent),
+            loadComponent: () => import("./chunk-R5YNTF5A.js").then((m) => m.FirestoreTestComponent),
             data: { breadcrumb: "Firestore Test" }
           },
           {
             path: "fcm",
-            loadComponent: () => import("./chunk-VNJ7ID2L.js").then((m) => m.FcmTestComponent),
+            loadComponent: () => import("./chunk-R5YNTF5A.js").then((m) => m.FcmTestComponent),
             data: { breadcrumb: "FCM Test" }
           },
           {
             path: "editor",
-            loadComponent: () => import("./chunk-VNJ7ID2L.js").then((m) => m.EditorTestComponent),
+            loadComponent: () => import("./chunk-R5YNTF5A.js").then((m) => m.EditorTestComponent),
             data: { breadcrumb: "Editor Test" }
           }
         ]
@@ -4260,42 +4260,42 @@ var routes = [
         children: [
           {
             path: "users",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.UserListComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.UserListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "Ng\u01B0\u1EDDi d\xF9ng" }
           },
           {
             path: "roles",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.RoleListComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.RoleListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_ROLES)],
             data: { breadcrumb: "Vai tr\xF2" }
           },
           {
             path: "claims",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.ClaimSyncComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.ClaimSyncComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_CLAIMS)],
             data: { breadcrumb: "Quy\u1EC1n" }
           },
           {
             path: "acl",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.AclListComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.AclListComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.MANAGE_ACL)],
             data: { breadcrumb: "Qu\u1EA3n l\xFD ACL" }
           },
           {
             path: "change-password",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.ChangePasswordComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.ChangePasswordComponent),
             data: { breadcrumb: "\u0110\u1ED5i m\u1EADt kh\u1EA9u" }
           },
           {
             path: "notify",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.NotifyComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.NotifyComponent),
             canActivate: [claimGuard(APP_CLAIMS.AUTH.VIEW_USERS)],
             data: { breadcrumb: "G\u1EEDi th\xF4ng b\xE1o" }
           },
           {
             path: "authorize-info",
-            loadComponent: () => import("./chunk-UBHLMFDZ.js").then((m) => m.AuthorizeInfoComponent),
+            loadComponent: () => import("./chunk-CMB6QGHJ.js").then((m) => m.AuthorizeInfoComponent),
             data: { breadcrumb: "Th\xF4ng tin ph\xE2n quy\u1EC1n" }
           }
         ]
@@ -4303,12 +4303,12 @@ var routes = [
       {
         path: "modules/files-folders",
         data: { breadcrumb: "Qu\u1EA3n l\xFD t\xE0i li\u1EC7u" },
-        loadComponent: () => import("./chunk-VITDCZPO.js").then((m) => m.FilesFolders)
+        loadComponent: () => import("./chunk-W5EMAGMO.js").then((m) => m.FilesFolders)
       },
       {
         path: "modules/nhan-dien-khuon-mat",
         data: { breadcrumb: "Nh\u1EADn di\u1EC7n khu\xF4n m\u1EB7t" },
-        loadComponent: () => import("./chunk-IF7QHTEP.js").then((m) => m.NhanDienKhuonMatComponent)
+        loadComponent: () => import("./chunk-FYDSKB7D.js").then((m) => m.NhanDienKhuonMatComponent)
       }
     ]
   },

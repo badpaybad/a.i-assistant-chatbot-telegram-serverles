@@ -75,7 +75,7 @@ import { TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared
               [data]="appClaimsList" 
               [columns]="claimsColumns"
               [pageSize]="10"
-              [frontPagination]="true"
+              [frontPagination]="false"
             >
               <ng-template totCell="value" let-data>
                 <code>{{ data.value }}</code>
