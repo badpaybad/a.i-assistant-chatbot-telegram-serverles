@@ -1,8 +1,9 @@
 using Core.Infra.Firebase.Services;
 using Core.Infra.Auth.Attributes;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http;
 
-namespace Core.Web.Api.Controllers;
+namespace Core.Infra.BusinessTest.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]

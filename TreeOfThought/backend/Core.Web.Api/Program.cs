@@ -2,7 +2,6 @@ using StackExchange.Redis;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Data.Contexts;
 using Core.Infra.Firebase.Services;
-using Core.Web.Api.Handlers;
 using Core.Web.Api.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Services;
@@ -27,6 +26,8 @@ using Core.Infra.Firebase.Models;
 using Core.Infra.NhanDienKhuonMat.Extensions;
 using Core.Infra.NhanDienKhuonMat.Handlers;
 using Core.Infra.NhanDienKhuonMat.Contexts;
+using Core.Infra.BusinessTest.Extensions;
+using Core.Infra.BusinessTest.Handlers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -48,7 +49,7 @@ if (!string.IsNullOrEmpty(defaultRedisConn))
 builder.Services.AddAppOidc(config);
 
 // --- 3. Infra Services (CQRS & Base) ---
-builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly, typeof(FaceDetectionCommandHandler).Assembly, typeof(AuthManagementController).Assembly);
+builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly, typeof(FaceDetectionCommandHandler).Assembly, typeof(AuthManagementController).Assembly, typeof(SampleCommandHandler).Assembly);
 
 // --- 4. Database & Auth Repos ---
 builder.Services.AddFilesFolders(config);
@@ -63,6 +64,7 @@ builder.Services.AddControllers()
     .AddFilesFoldersControllers()
     .AddNhanDienKhuonMatControllers()
     .AddOidcControllers()
+    .AddBusinessTestControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;

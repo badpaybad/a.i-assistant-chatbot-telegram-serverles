@@ -1,7 +1,7 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Models;
 
-namespace Core.Web.Api.Models;
+namespace Core.Infra.BusinessTest.Models;
 
 public class SampleCommand : BaseMessage, IBaseCommand
 {

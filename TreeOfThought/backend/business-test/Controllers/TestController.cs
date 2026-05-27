@@ -1,16 +1,15 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Firebase.Services;
-using Core.Web.Api.Models;
+using Core.Infra.BusinessTest.Models;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 using Core.Infra.Base.Constants;
 using Core.Infra.Auth.Attributes;
 
-namespace Core.Web.Api.Controllers;
+namespace Core.Infra.BusinessTest.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-
 [AppAuthorize("be.cqrs-test")]
 public class TestController : ControllerBase
 {

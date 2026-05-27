@@ -1,9 +1,10 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Firebase.Services;
-using Core.Web.Api.Models;
+using Core.Infra.BusinessTest.Models;
 using Core.Infra.Base.Constants;
+using Microsoft.Extensions.Logging;
 
-namespace Core.Web.Api.Handlers;
+namespace Core.Infra.BusinessTest.Handlers;
 
 public class SampleCommandHandler : ICommandHandler<SampleCommand>
 {
@@ -78,9 +79,7 @@ public class SampleEventHandlerAlwaysError : IEventHandler<SampleEvent>
     public async Task HandleAsync(SampleEvent @event)
     {
         _counter++;
-        //    _logger.LogInformation("SampleEventHandler handled event: {Payload}. Count: {Count}", @event.Payload, _counter);
         _logger.LogInformation("SampleEventHandlerAlwaysError is about to throw a test error.");
         throw new Exception($"Test error. Count: {_counter} :: {@event.Payload}");
-        // await Task.CompletedTask;
     }
 }

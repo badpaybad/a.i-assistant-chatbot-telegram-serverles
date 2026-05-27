@@ -1,4 +1,4 @@
-namespace Core.Web.Api.Models;
+namespace Core.Infra.BusinessTest.Models;
 
 public class TestCommandRequest
 {
