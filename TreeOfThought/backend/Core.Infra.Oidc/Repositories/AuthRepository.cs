@@ -123,6 +123,8 @@ public class AuthRepository : IAuthRepository
         return (items, totalCount);
     }
 
+    public async Task<Role?> GetRoleByIdAsync(Guid id) => await _context.Roles.FindAsync(id);
+
     public async Task<Role?> GetRoleByNameAsync(string name) => 
         await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
 
@@ -183,6 +185,8 @@ public class AuthRepository : IAuthRepository
         var items = await rolesQuery.ToListAsync();
         return (items, totalCount);
     }
+
+    public async Task<AppClaim?> GetClaimByIdAsync(Guid id) => await _context.Claims.FindAsync(id);
 
     public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
         await _context.Claims.FirstOrDefaultAsync(p => p.Name.ToLower() == name.ToLower());

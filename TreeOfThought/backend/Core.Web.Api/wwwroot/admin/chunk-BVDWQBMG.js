@@ -248,75 +248,75 @@ var _AuthManagementService = class _AuthManagementService {
   getUsers(params) {
     return this.http.get(`${this.BASE_URL}/users`, { params });
   }
-  createUser(user) {
-    return this.http.post(`${this.BASE_URL}/users`, user);
+  createUser(user, callback) {
+    return this.http.post(`${this.BASE_URL}/users`, user, callback);
   }
-  updateUser(userId, user) {
-    return this.http.put(`${this.BASE_URL}/users/${userId}`, user);
+  updateUser(userId, user, callback) {
+    return this.http.put(`${this.BASE_URL}/users/${userId}`, user, callback);
   }
-  assignRoleToUser(userId, roleId) {
-    return this.http.post(`${this.BASE_URL}/users/${userId}/roles/${roleId}`);
+  assignRoleToUser(userId, roleId, callback) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/roles/${roleId}`, null, callback);
   }
-  assignRolesToUser(userId, roleIds) {
-    return this.http.post(`${this.BASE_URL}/users/${userId}/roles/batch`, roleIds);
+  assignRolesToUser(userId, roleIds, callback) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/roles/batch`, roleIds, callback);
   }
-  removeRoleFromUser(userId, roleId) {
-    return this.http.delete(`${this.BASE_URL}/users/${userId}/roles/${roleId}`);
+  removeRoleFromUser(userId, roleId, callback) {
+    return this.http.delete(`${this.BASE_URL}/users/${userId}/roles/${roleId}`, callback);
   }
-  assignClaimToUser(userId, claimId) {
-    return this.http.post(`${this.BASE_URL}/users/${userId}/claims/${claimId}`);
+  assignClaimToUser(userId, claimId, callback) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/claims/${claimId}`, null, callback);
   }
-  assignClaimsToUser(userId, claimIds) {
-    return this.http.post(`${this.BASE_URL}/users/${userId}/claims/batch`, claimIds);
+  assignClaimsToUser(userId, claimIds, callback) {
+    return this.http.post(`${this.BASE_URL}/users/${userId}/claims/batch`, claimIds, callback);
   }
-  removeClaimFromUser(userId, claimId) {
-    return this.http.delete(`${this.BASE_URL}/users/${userId}/claims/${claimId}`);
+  removeClaimFromUser(userId, claimId, callback) {
+    return this.http.delete(`${this.BASE_URL}/users/${userId}/claims/${claimId}`, callback);
   }
-  deleteUser(userId) {
-    return this.http.delete(`${this.BASE_URL}/users/${userId}`);
+  deleteUser(userId, callback) {
+    return this.http.delete(`${this.BASE_URL}/users/${userId}`, callback);
   }
-  uploadAvatar(userId, file) {
+  uploadAvatar(userId, file, callback) {
     const formData = new FormData();
     formData.append("file", file);
-    return this.http.post(`${this.BASE_URL}/users/${userId}/avatar`, formData);
+    return this.http.post(`${this.BASE_URL}/users/${userId}/avatar`, formData, callback);
   }
   // Role Management
   getRoles(params) {
     return this.http.get(`${this.BASE_URL}/roles`, { params });
   }
-  createRole(role) {
-    return this.http.post(`${this.BASE_URL}/roles`, role);
+  createRole(role, callback) {
+    return this.http.post(`${this.BASE_URL}/roles`, role, callback);
   }
-  updateRole(roleId, role) {
-    return this.http.put(`${this.BASE_URL}/roles/${roleId}`, role);
+  updateRole(roleId, role, callback) {
+    return this.http.put(`${this.BASE_URL}/roles/${roleId}`, role, callback);
   }
-  deleteRole(roleId) {
-    return this.http.delete(`${this.BASE_URL}/roles/${roleId}`);
+  deleteRole(roleId, callback) {
+    return this.http.delete(`${this.BASE_URL}/roles/${roleId}`, callback);
   }
-  assignClaimToRole(roleId, claimId) {
-    return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/${claimId}`);
+  assignClaimToRole(roleId, claimId, callback) {
+    return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/${claimId}`, null, callback);
   }
-  assignClaimsToRole(roleId, claimIds) {
-    return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/batch`, claimIds);
+  assignClaimsToRole(roleId, claimIds, callback) {
+    return this.http.post(`${this.BASE_URL}/roles/${roleId}/claims/batch`, claimIds, callback);
   }
-  removeClaimFromRole(roleId, claimId) {
-    return this.http.delete(`${this.BASE_URL}/roles/${roleId}/claims/${claimId}`);
+  removeClaimFromRole(roleId, claimId, callback) {
+    return this.http.delete(`${this.BASE_URL}/roles/${roleId}/claims/${claimId}`, callback);
   }
   // Claim Management
   getClaims(params) {
     return this.http.get(`${this.BASE_URL}/claims`, { params });
   }
-  createClaim(claim) {
-    return this.http.post(`${this.BASE_URL}/claims`, claim);
+  createClaim(claim, callback) {
+    return this.http.post(`${this.BASE_URL}/claims`, claim, callback);
   }
-  updateClaim(claimId, claim) {
-    return this.http.put(`${this.BASE_URL}/claims/${claimId}`, claim);
+  updateClaim(claimId, claim, callback) {
+    return this.http.put(`${this.BASE_URL}/claims/${claimId}`, claim, callback);
   }
-  deleteClaim(claimId) {
-    return this.http.delete(`${this.BASE_URL}/claims/${claimId}`);
+  deleteClaim(claimId, callback) {
+    return this.http.delete(`${this.BASE_URL}/claims/${claimId}`, callback);
   }
-  syncClaims(version, claims) {
-    return this.http.post("/api/Auth/claims/sync", { version, claims });
+  syncClaims(version, claims, callback) {
+    return this.http.post("/api/Auth/claims/sync", { version, claims }, callback);
   }
   getAcl(resourceType, resourceId, pageIndex, pageSize) {
     const params = { resourceType, resourceId };
@@ -326,20 +326,20 @@ var _AuthManagementService = class _AuthManagementService {
       params.pageSize = pageSize;
     return this.http.get(`${this.BASE_URL}/acl`, { params });
   }
-  addAcl(entry) {
-    return this.http.post(`${this.BASE_URL}/acl`, entry);
+  addAcl(entry, callback) {
+    return this.http.post(`${this.BASE_URL}/acl`, entry, callback);
   }
-  removeAcl(id) {
-    return this.http.delete(`${this.BASE_URL}/acl/${id}`);
+  removeAcl(id, callback) {
+    return this.http.delete(`${this.BASE_URL}/acl/${id}`, callback);
   }
-  changePassword(data) {
-    return this.http.post("/api/Auth/change-password", data);
+  changePassword(data, callback) {
+    return this.http.post("/api/Auth/change-password", data, callback);
   }
   getUserFcmTokens(userId) {
     return this.http.get(`${this.BASE_URL}/users/${userId}/fcm-tokens`);
   }
-  sendNotification(payload) {
-    return this.http.post(`${this.BASE_URL}/users/send-notification`, payload);
+  sendNotification(payload, callback) {
+    return this.http.post(`${this.BASE_URL}/users/send-notification`, payload, callback);
   }
 };
 _AuthManagementService.\u0275fac = function AuthManagementService_Factory(__ngFactoryType__) {
@@ -1275,28 +1275,38 @@ var _UserListComponent = class _UserListComponent {
     };
     this.isUserModalVisible = true;
   }
-  async saveUser() {
+  saveUser() {
     if (!this.userForm.username || !this.userForm.displayName || !this.userForm.email || !this.editingUser && !this.userForm.password) {
       this.message.warning(this.translate.translate("Vui l\xF2ng nh\u1EADp \u0111\u1EA7y \u0111\u1EE7 th\xF4ng tin b\u1EAFt bu\u1ED9c"));
       return;
     }
+    this.loading = true;
     try {
       if (this.editingUser) {
-        await this.authMgmt.updateUser(this.editingUser.id, this.userForm);
-        await this.authMgmt.assignRolesToUser(this.editingUser.id, this.userForm.roleIds);
-        await this.authMgmt.assignClaimsToUser(this.editingUser.id, this.userForm.claimIds);
-        this.message.success(this.translate.translate("C\u1EADp nh\u1EADt ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
+        this.authMgmt.updateUser(this.editingUser.id, this.userForm, (data) => {
+          this.loading = false;
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("C\u1EADp nh\u1EADt ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
+            this.isUserModalVisible = false;
+            this.loadUsers();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("L\u1ED7i khi c\u1EADp nh\u1EADt ng\u01B0\u1EDDi d\xF9ng"));
+          }
+        });
       } else {
-        const newUser = await this.authMgmt.createUser(this.userForm);
-        if (newUser && newUser.id) {
-          await this.authMgmt.assignRolesToUser(newUser.id, this.userForm.roleIds);
-          await this.authMgmt.assignClaimsToUser(newUser.id, this.userForm.claimIds);
-        }
-        this.message.success(this.translate.translate("Th\xEAm ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
+        this.authMgmt.createUser(this.userForm, (data) => {
+          this.loading = false;
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("Th\xEAm ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
+            this.isUserModalVisible = false;
+            this.loadUsers();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("L\u1ED7i khi th\xEAm ng\u01B0\u1EDDi d\xF9ng"));
+          }
+        });
       }
-      this.isUserModalVisible = false;
-      this.loadUsers();
     } catch (e) {
+      this.loading = false;
       this.message.error(this.translate.translate("L\u1ED7i khi l\u01B0u ng\u01B0\u1EDDi d\xF9ng"));
     }
   }
@@ -1306,29 +1316,31 @@ var _UserListComponent = class _UserListComponent {
     this.selectedRoleIds = ((_a = user.roles) == null ? void 0 : _a.map((r) => r.id)) || [];
     this.isRoleModalVisible = true;
   }
-  async assignRole() {
-    try {
-      await this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds);
-      this.message.success(this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\xE0nh c\xF4ng"));
-      this.isRoleModalVisible = false;
-      this.loadUsers();
-    } catch (e) {
-      this.message.error(this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\u1EA5t b\u1EA1i"));
-    }
+  assignRole() {
+    this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds, (data) => {
+      if (data.status === "Completed") {
+        this.message.success(this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\xE0nh c\xF4ng"));
+        this.isRoleModalVisible = false;
+        this.loadUsers();
+      } else if (data.status === "Error") {
+        this.message.error(data.message || this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\u1EA5t b\u1EA1i"));
+      }
+    });
   }
   async removeRole(event, user, role) {
     event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn")}?`,
       nzContent: `${this.translate.translate("X\xF3a")} ${role.name} ${this.translate.translate("kh\u1ECFi")} ${user.username}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeRoleFromUser(user.id, role.id);
-          this.message.success(this.translate.translate("X\xF3a vai tr\xF2 th\xE0nh c\xF4ng"));
-          this.loadUsers();
-        } catch (e) {
-          this.message.error(this.translate.translate("X\xF3a vai tr\xF2 th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeRoleFromUser(user.id, role.id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("X\xF3a vai tr\xF2 th\xE0nh c\xF4ng"));
+            this.loadUsers();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a vai tr\xF2 th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -1338,29 +1350,31 @@ var _UserListComponent = class _UserListComponent {
     this.selectedClaimIds = ((_a = user.directClaims) == null ? void 0 : _a.map((c) => c.id)) || [];
     this.isClaimModalVisible = true;
   }
-  async assignClaim() {
-    try {
-      await this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds);
-      this.message.success(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\xE0nh c\xF4ng"));
-      this.isClaimModalVisible = false;
-      this.loadUsers();
-    } catch (e) {
-      this.message.error(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\u1EA5t b\u1EA1i"));
-    }
+  assignClaim() {
+    this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds, (data) => {
+      if (data.status === "Completed") {
+        this.message.success(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\xE0nh c\xF4ng"));
+        this.isClaimModalVisible = false;
+        this.loadUsers();
+      } else if (data.status === "Error") {
+        this.message.error(data.message || this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\u1EA5t b\u1EA1i"));
+      }
+    });
   }
   async removeClaim(event, user, claim) {
     event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn")}?`,
       nzContent: `${this.translate.translate("X\xF3a")} ${claim.name} ${this.translate.translate("kh\u1ECFi")} ${user.username}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeClaimFromUser(user.id, claim.id);
-          this.message.success(this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
-          this.loadUsers();
-        } catch (e) {
-          this.message.error(this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeClaimFromUser(user.id, claim.id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
+            this.loadUsers();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -1374,15 +1388,15 @@ var _UserListComponent = class _UserListComponent {
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn x\xF3a ng\u01B0\u1EDDi d\xF9ng")} ${user.username}?`,
       nzContent: this.translate.translate("H\xE0nh \u0111\u1ED9ng n\xE0y kh\xF4ng th\u1EC3 ho\xE0n t\xE1c"),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        var _a2;
-        try {
-          await this.authMgmt.deleteUser(user.id);
-          this.message.success(this.translate.translate("X\xF3a ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
-          this.loadUsers();
-        } catch (e) {
-          this.message.error(((_a2 = e.error) == null ? void 0 : _a2.message) || this.translate.translate("X\xF3a ng\u01B0\u1EDDi d\xF9ng th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteUser(user.id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("X\xF3a ng\u01B0\u1EDDi d\xF9ng th\xE0nh c\xF4ng"));
+            this.loadUsers();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a ng\u01B0\u1EDDi d\xF9ng th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -1392,31 +1406,42 @@ var _UserListComponent = class _UserListComponent {
       return;
     const loadingMsg = this.message.loading(this.translate.translate("\u0110ang t\u1EA3i l\xEAn..."), { nzDuration: 0 }).messageId;
     try {
-      const result = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
-      this.message.success(this.translate.translate("C\u1EADp nh\u1EADt \u1EA3nh \u0111\u1EA1i di\u1EC7n th\xE0nh c\xF4ng"));
-      const index = this.users.findIndex((u) => u.id === this.selectedUserForAvatar.id);
-      if (index !== -1) {
-        this.users[index] = __spreadProps(__spreadValues({}, this.users[index]), { avatarUrl: result.url });
-        this.users = [...this.users];
-        this.cdr.detectChanges();
-      }
+      this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file, (data) => {
+        this.message.remove(loadingMsg);
+        if (data.status === "Completed") {
+          this.message.success(this.translate.translate("C\u1EADp nh\u1EADt \u1EA3nh \u0111\u1EA1i di\u1EC7n th\xE0nh c\xF4ng"));
+          const index = this.users.findIndex((u) => u.id === this.selectedUserForAvatar.id);
+          if (index !== -1) {
+            this.users[index] = __spreadProps(__spreadValues({}, this.users[index]), { avatarUrl: data.data });
+            this.users = [...this.users];
+            this.cdr.detectChanges();
+          }
+        } else if (data.status === "Error") {
+          this.message.error(data.message || this.translate.translate("L\u1ED7i khi t\u1EA3i l\xEAn \u1EA3nh \u0111\u1EA1i di\u1EC7n"));
+        }
+      });
     } catch (e) {
+      this.message.remove(loadingMsg);
       this.message.error(this.translate.translate("L\u1ED7i khi t\u1EA3i l\xEAn \u1EA3nh \u0111\u1EA1i di\u1EC7n"));
     } finally {
-      this.message.remove(loadingMsg);
       event.target.value = "";
     }
   }
-  async syncClaims() {
+  syncClaims() {
     this.syncingClaims = true;
     try {
       const version = (/* @__PURE__ */ new Date()).getTime().toString();
-      await this.authMgmt.syncClaims(version, []);
-      this.message.success(this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\xE0nh c\xF4ng"));
+      this.authMgmt.syncClaims(version, [], (data) => {
+        this.syncingClaims = false;
+        if (data.status === "Completed") {
+          this.message.success(this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\xE0nh c\xF4ng"));
+        } else if (data.status === "Error") {
+          this.message.error(data.message || this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
+        }
+      });
     } catch (e) {
-      this.message.error(this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
-    } finally {
       this.syncingClaims = false;
+      this.message.error(this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
     }
   }
 };
@@ -2287,25 +2312,33 @@ var _RoleListComponent = class _RoleListComponent {
     };
     this.isRoleModalVisible = true;
   }
-  async saveRole() {
+  saveRole() {
     if (!this.roleForm.name) {
       this.message.warning(this.translate.translate("Vui l\xF2ng nh\u1EADp t\xEAn vai tr\xF2"));
       return;
     }
     try {
       if (this.editingRole) {
-        await this.authMgmt.updateRole(this.editingRole.id, this.roleForm);
-        await this.authMgmt.assignClaimsToRole(this.editingRole.id, this.roleForm.claimIds);
-        this.message.success(this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\xE0nh c\xF4ng"));
+        this.authMgmt.updateRole(this.editingRole.id, this.roleForm, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("C\u1EADp nh\u1EADt vai tr\xF2 th\xE0nh c\xF4ng"));
+            this.isRoleModalVisible = false;
+            this.loadRoles();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("L\u1ED7i khi l\u01B0u vai tr\xF2"));
+          }
+        });
       } else {
-        const newRole = await this.authMgmt.createRole(this.roleForm);
-        if (newRole && newRole.id) {
-          await this.authMgmt.assignClaimsToRole(newRole.id, this.roleForm.claimIds);
-        }
-        this.message.success(this.translate.translate("Th\xEAm vai tr\xF2 th\xE0nh c\xF4ng"));
+        this.authMgmt.createRole(this.roleForm, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("Th\xEAm vai tr\xF2 th\xE0nh c\xF4ng"));
+            this.isRoleModalVisible = false;
+            this.loadRoles();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("L\u1ED7i khi l\u01B0u vai tr\xF2"));
+          }
+        });
       }
-      this.isRoleModalVisible = false;
-      this.loadRoles();
     } catch (e) {
       this.message.error(this.translate.translate("L\u1ED7i khi l\u01B0u vai tr\xF2"));
     }
@@ -2316,33 +2349,35 @@ var _RoleListComponent = class _RoleListComponent {
     this.selectedClaimIds = ((_a = role.claims) == null ? void 0 : _a.map((c) => c.id)) || [];
     this.isClaimModalVisible = true;
   }
-  async assignClaim() {
-    try {
-      await this.authMgmt.assignClaimsToRole(this.selectedRole.id, this.selectedClaimIds);
-      this.message.success(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\xE0nh c\xF4ng"));
-      this.isClaimModalVisible = false;
-      this.loadRoles();
-    } catch (e) {
-      this.message.error(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\u1EA5t b\u1EA1i"));
-    }
+  assignClaim() {
+    this.authMgmt.assignClaimsToRole(this.selectedRole.id, this.selectedClaimIds, (data) => {
+      if (data.status === "Completed") {
+        this.message.success(this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\xE0nh c\xF4ng"));
+        this.isClaimModalVisible = false;
+        this.loadRoles();
+      } else if (data.status === "Error") {
+        this.message.error(data.message || this.translate.translate("C\u1EADp nh\u1EADt quy\u1EC1n th\u1EA5t b\u1EA1i"));
+      }
+    });
   }
-  async removeClaim(event, role, claim) {
+  removeClaim(event, role, claim) {
     event.preventDefault();
     this.modal.confirm({
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn")}?`,
       nzContent: `${this.translate.translate("X\xF3a")} ${claim.name} ${this.translate.translate("kh\u1ECFi")} ${role.name}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeClaimFromRole(role.id, claim.id);
-          this.message.success(this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
-          this.loadRoles();
-        } catch (e) {
-          this.message.error(this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeClaimFromRole(role.id, claim.id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
+            this.loadRoles();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
-  async deleteRole(role) {
+  deleteRole(role) {
     var _a;
     if (((_a = role.name) == null ? void 0 : _a.toLowerCase()) === ADMIN_ROLE.toLowerCase()) {
       this.message.warning(this.translate.translate(`Kh\xF4ng th\u1EC3 x\xF3a vai tr\xF2 ${ADMIN_ROLE}`));
@@ -2352,15 +2387,15 @@ var _RoleListComponent = class _RoleListComponent {
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn x\xF3a vai tr\xF2")} ${role.name}?`,
       nzContent: this.translate.translate("H\xE0nh \u0111\u1ED9ng n\xE0y kh\xF4ng th\u1EC3 ho\xE0n t\xE1c"),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        var _a2;
-        try {
-          await this.authMgmt.deleteRole(role.id);
-          this.message.success(this.translate.translate("X\xF3a vai tr\xF2 th\xE0nh c\xF4ng"));
-          this.loadRoles();
-        } catch (e) {
-          this.message.error(((_a2 = e.error) == null ? void 0 : _a2.message) || this.translate.translate("X\xF3a vai tr\xF2 th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteRole(role.id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(this.translate.translate("X\xF3a vai tr\xF2 th\xE0nh c\xF4ng"));
+            this.loadRoles();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a vai tr\xF2 th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -3057,28 +3092,34 @@ var _AclListComponent = class _AclListComponent {
       permissionMask: this.newEntry.permissionMask
     };
     try {
-      await this.authMgmt.addAcl(payload);
-      this.message.success(this.translate.translate("Th\xEAm ACL th\xE0nh c\xF4ng"));
-      this.isCreateModalVisible = false;
-      if (this.filter.resourceType === payload.resourceType && this.filter.resourceId === payload.resourceId) {
-        this.loadAcl();
-      }
+      this.authMgmt.addAcl(payload, (data) => {
+        if (data.status === "Completed") {
+          this.message.success(data.message || this.translate.translate("Th\xEAm ACL th\xE0nh c\xF4ng"));
+          this.isCreateModalVisible = false;
+          if (this.filter.resourceType === payload.resourceType && this.filter.resourceId === payload.resourceId) {
+            this.loadAcl();
+          }
+        } else if (data.status === "Error") {
+          this.message.error(data.message || this.translate.translate("Th\xEAm ACL th\u1EA5t b\u1EA1i"));
+        }
+      });
     } catch (e) {
       this.message.error(this.translate.translate("Th\xEAm ACL th\u1EA5t b\u1EA1i"));
     }
   }
-  async deleteAcl(id) {
+  deleteAcl(id) {
     this.modal.confirm({
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn")}?`,
       nzContent: `${this.translate.translate("X\xF3a")} ACL entry?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeAcl(id);
-          this.message.success(this.translate.translate("X\xF3a ACL th\xE0nh c\xF4ng"));
-          this.loadAcl();
-        } catch (e) {
-          this.message.error(this.translate.translate("X\xF3a ACL th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeAcl(id, (data) => {
+          if (data.status === "Completed") {
+            this.message.success(data.message || this.translate.translate("X\xF3a ACL th\xE0nh c\xF4ng"));
+            this.loadAcl();
+          } else if (data.status === "Error") {
+            this.message.error(data.message || this.translate.translate("X\xF3a ACL th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -3575,30 +3616,40 @@ var _ClaimSyncComponent = class _ClaimSyncComponent {
     };
     this.loadClaims();
   }
-  async sync() {
+  sync() {
     this.loading = true;
     try {
-      await this.authMgmt.syncClaims(this.version, this.claims);
-      this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\xE0nh c\xF4ng"));
-      this.loadClaims();
+      this.authMgmt.syncClaims(this.version, this.claims, (data) => {
+        this.loading = false;
+        if (data.status === "Completed") {
+          this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\xE0nh c\xF4ng"));
+          this.loadClaims();
+        } else if (data.status === "Error") {
+          this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
+        }
+      });
     } catch (e) {
-      this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
-    } finally {
       this.loading = false;
+      this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("\u0110\u1ED3ng b\u1ED9 quy\u1EC1n th\u1EA5t b\u1EA1i"));
     }
   }
   showCreateModal() {
     this.newClaim = { name: "", description: "" };
     this.isCreateModalVisible = true;
   }
-  async createClaim() {
+  createClaim() {
     if (!this.newClaim.name)
       return;
     try {
-      await this.authMgmt.createClaim(this.newClaim);
-      this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("Th\xEAm quy\u1EC1n th\xE0nh c\xF4ng"));
-      this.isCreateModalVisible = false;
-      this.loadClaims();
+      this.authMgmt.createClaim(this.newClaim, (data) => {
+        if (data.status === "Completed") {
+          this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("Th\xEAm quy\u1EC1n th\xE0nh c\xF4ng"));
+          this.isCreateModalVisible = false;
+          this.loadClaims();
+        } else if (data.status === "Error") {
+          this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("Th\xEAm quy\u1EC1n th\u1EA5t b\u1EA1i"));
+        }
+      });
     } catch (e) {
       this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("Th\xEAm quy\u1EC1n th\u1EA5t b\u1EA1i"));
     }
@@ -3613,15 +3664,15 @@ var _ClaimSyncComponent = class _ClaimSyncComponent {
       nzTitle: `${this.translate.translate("X\xE1c nh\u1EADn x\xF3a quy\u1EC1n")} ${claim.name}?`,
       nzContent: this.translate.translate("H\xE0nh \u0111\u1ED9ng n\xE0y kh\xF4ng th\u1EC3 ho\xE0n t\xE1c"),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        var _a2;
-        try {
-          await this.authMgmt.deleteClaim(claim.id);
-          this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
-          this.loadClaims();
-        } catch (e) {
-          this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), ((_a2 = e.error) == null ? void 0 : _a2.message) || this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteClaim(claim.id, (data) => {
+          if (data.status === "Completed") {
+            this.notification.success(this.translate.translate("Th\xE0nh c\xF4ng"), this.translate.translate("X\xF3a quy\u1EC1n th\xE0nh c\xF4ng"));
+            this.loadClaims();
+          } else if (data.status === "Error") {
+            this.notification.error(this.translate.translate("Th\u1EA5t b\u1EA1i"), this.translate.translate("X\xF3a quy\u1EC1n th\u1EA5t b\u1EA1i"));
+          }
+        });
       }
     });
   }
@@ -7682,7 +7733,7 @@ var _NotifyComponent = class _NotifyComponent {
     }
     return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}${currentSuffix}`;
   }
-  async send() {
+  send() {
     if (!this.payload.fcmToken) {
       this.message.warning(this.translate.translate("Vui l\xF2ng ch\u1ECDn thi\u1EBFt b\u1ECB nh\u1EADn"));
       return;
@@ -7697,17 +7748,23 @@ var _NotifyComponent = class _NotifyComponent {
     }
     this.sending = true;
     try {
-      await this.authMgmt.sendNotification({
+      this.authMgmt.sendNotification({
         fcmToken: this.payload.fcmToken,
         title: this.payload.title.trim(),
         body: this.payload.body.trim()
+      }, (data) => {
+        this.sending = false;
+        if (data.status === "Completed") {
+          this.message.success(data.message || this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\xE0nh c\xF4ng"));
+          this.closeModal();
+        } else if (data.status === "Error") {
+          this.message.error(data.message || this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\u1EA5t b\u1EA1i"));
+        }
+        this.cdr.markForCheck();
       });
-      this.message.success(this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\xE0nh c\xF4ng"));
-      this.closeModal();
     } catch (e) {
-      this.message.error(this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\u1EA5t b\u1EA1i"));
-    } finally {
       this.sending = false;
+      this.message.error(this.translate.translate("G\u1EEDi th\xF4ng b\xE1o th\u1EA5t b\u1EA1i"));
       this.cdr.markForCheck();
     }
   }
@@ -7998,4 +8055,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-6PROPQVB.js.map
+//# sourceMappingURL=chunk-BVDWQBMG.js.map

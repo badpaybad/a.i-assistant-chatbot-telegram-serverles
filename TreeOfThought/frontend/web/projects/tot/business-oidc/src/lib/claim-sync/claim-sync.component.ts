@@ -212,16 +212,21 @@ export class ClaimSyncComponent implements OnInit {
     this.loadClaims();
   }
 
-  async sync() {
+  sync() {
     this.loading = true;
     try {
-      await this.authMgmt.syncClaims(this.version, this.claims);
-      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đồng bộ quyền thành công'));
-      this.loadClaims();
+      this.authMgmt.syncClaims(this.version, this.claims, (data: any) => {
+        this.loading = false;
+        if (data.status === 'Completed') {
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Đồng bộ quyền thành công'));
+          this.loadClaims();
+        } else if (data.status === 'Error') {
+          this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
+        }
+      });
     } catch (e) {
-      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
-    } finally {
       this.loading = false;
+      this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Đồng bộ quyền thất bại'));
     }
   }
 
@@ -230,13 +235,18 @@ export class ClaimSyncComponent implements OnInit {
     this.isCreateModalVisible = true;
   }
 
-  async createClaim() {
+  createClaim() {
     if (!this.newClaim.name) return;
     try {
-      await this.authMgmt.createClaim(this.newClaim);
-      this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Thêm quyền thành công'));
-      this.isCreateModalVisible = false;
-      this.loadClaims();
+      this.authMgmt.createClaim(this.newClaim, (data: any) => {
+        if (data.status === 'Completed') {
+          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Thêm quyền thành công'));
+          this.isCreateModalVisible = false;
+          this.loadClaims();
+        } else if (data.status === 'Error') {
+          this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Thêm quyền thất bại'));
+        }
+      });
     } catch (e) {
       this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Thêm quyền thất bại'));
     }
@@ -252,14 +262,15 @@ export class ClaimSyncComponent implements OnInit {
       nzTitle: `${this.translate.translate('Xác nhận xóa quyền')} ${claim.name}?`,
       nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.deleteClaim(claim.id);
-          this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Xóa quyền thành công'));
-          this.loadClaims();
-        } catch (e: any) {
-          this.notification.error(this.translate.translate('Thất bại'), e.error?.message || this.translate.translate('Xóa quyền thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteClaim(claim.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.notification.success(this.translate.translate('Thành công'), this.translate.translate('Xóa quyền thành công'));
+            this.loadClaims();
+          } else if (data.status === 'Error') {
+            this.notification.error(this.translate.translate('Thất bại'), this.translate.translate('Xóa quyền thất bại'));
+          }
+        });
       }
     });
   }

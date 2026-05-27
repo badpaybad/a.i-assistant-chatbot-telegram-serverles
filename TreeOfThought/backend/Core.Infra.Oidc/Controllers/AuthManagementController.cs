@@ -7,31 +7,35 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Core.Infra.Oidc.Services;
-
-using Core.Infra.Oidc.Repositories;
+using Core.Infra.Base.Interfaces;
+using Core.Infra.Base.Controllers;
+using Core.Infra.Base.Models;
 
 namespace Core.Infra.Oidc.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
 [AppAuthorize(AuthConstants.AdminClaim)]
-public class AuthManagementController : ControllerBase
+public class AuthManagementController : BaseController
 {
     private readonly IAuthRepository _authRepo;
     private readonly AuthService _authService;
     private readonly FirebaseService _firebaseService;
     private readonly INotifyRepository _notifyRepo;
+    private readonly IDispatcher _dispatcher;
 
     public AuthManagementController(
         IAuthRepository authRepo, 
         AuthService authService, 
         FirebaseService firebaseService,
-        INotifyRepository notifyRepo)
+        INotifyRepository notifyRepo,
+        IDispatcher dispatcher)
     {
         _authRepo = authRepo;
         _authService = authService;
         _firebaseService = firebaseService;
         _notifyRepo = notifyRepo;
+        _dispatcher = dispatcher;
     }
     
     [HttpGet("users")]
@@ -64,21 +68,23 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpPost("users")]
-
-[AppAuthorize("be.auth.manage.user.create")]
-    public async Task<IActionResult> CreateUser([FromBody] User user)
+    [AppAuthorize("be.auth.manage.user.create")]
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserCommand command)
     {
-        await _authRepo.CreateUserAsync(user);
-        return Ok(user);
+        command.TrackingId = GetTrackingId();
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPut("users/{id}")]
-    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] User user)
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserCommand command)
     {
-        user.Id = id;
-        await _authRepo.UpdateUserAsync(user);
-        await _authService.SyncUserClaimsToRedisAsync(id);
-        return Ok(user);
+        command.Id = id;
+        command.TrackingId = GetTrackingId();
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpGet("roles")]
@@ -103,18 +109,22 @@ public class AuthManagementController : ControllerBase
     }
 
     [HttpPost("roles")]
-    public async Task<IActionResult> CreateRole([FromBody] Role role)
+    public async Task<IActionResult> CreateRole([FromBody] CreateRoleCommand command)
     {
-        await _authRepo.CreateRoleAsync(role);
-        return Ok(role);
+        command.TrackingId = GetTrackingId();
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPut("roles/{id}")]
-    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] Role role)
+    public async Task<IActionResult> UpdateRole(Guid id, [FromBody] UpdateRoleCommand command)
     {
-        role.Id = id;
-        await _authRepo.UpdateRoleAsync(role);
-        return Ok(role);
+        command.Id = id;
+        command.TrackingId = GetTrackingId();
+        command.UserId = GetUserId().ToString();
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpGet("claims")]
@@ -127,169 +137,222 @@ public class AuthManagementController : ControllerBase
     [HttpPost("claims")]
     public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
     {
-        await _authRepo.CreateClaimAsync(claim);
-        return Ok(claim);
+        var command = new CreateClaimCommand
+        {
+            Claim = claim,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPut("claims/{id}")]
     public async Task<IActionResult> UpdateClaim(Guid id, [FromBody] AppClaim claim)
     {
-        claim.Id = id;
-        await _authRepo.UpdateClaimAsync(claim);
-        return Ok(claim);
+        var command = new UpdateClaimCommand
+        {
+            Id = id,
+            Claim = claim,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("users/{id}")]
     public async Task<IActionResult> DeleteUser(Guid id)
     {
-        try
+        var command = new DeleteUserCommand
         {
-            await _authRepo.DeleteUserAsync(id);
-            await _authService.RemoveUserClaimsFromRedisAsync(id);
-            return Ok(new { message = "User deleted successfully" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            Id = id,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("roles/{id}")]
     public async Task<IActionResult> DeleteRole(Guid id)
     {
-        try
+        var command = new DeleteRoleCommand
         {
-            await _authRepo.DeleteRoleAsync(id);
-            return Ok(new { message = "Role deleted successfully" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            Id = id,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("users/{userId}/avatar")]
     public async Task<IActionResult> UploadAvatar(Guid userId, [FromForm] IFormFile file)
     {
-        var user = await _authRepo.GetUserByIdAsync(userId);
-        if (user == null) return NotFound(new { message = "User not found" });
-
         if (file == null || file.Length == 0) return BadRequest(new { message = "No file uploaded" });
 
-        try
+        using var ms = new MemoryStream();
+        await file.CopyToAsync(ms);
+
+        var command = new UploadAvatarCommand
         {
-            var fileName = $"avatars/{userId}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
+            UserId = userId,
+            FileName = $"avatars/{userId}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}",
+            ContentType = file.ContentType,
+            Content = ms.ToArray(),
+            TrackingId = GetTrackingId()
+        };
+        // Explicitly set inherited string? UserId
+        ((BaseMessage)command).UserId = GetUserId().ToString();
 
-            using var stream = file.OpenReadStream();
-            var publicUrl = await _firebaseService.UploadFileAsync(fileName, stream, file.ContentType, isPublic: true);
-
-            user.AvatarUrl = publicUrl;
-            await _authRepo.UpdateUserAsync(user);
-
-            return Ok(new { url = publicUrl });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "Error uploading avatar", detail = ex.Message });
-        }
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("claims/{id}")]
     public async Task<IActionResult> DeleteClaim(Guid id)
     {
-        try
+        var command = new DeleteClaimCommand
         {
-            await _authRepo.DeleteClaimAsync(id);
-            return Ok(new { message = "Claim deleted successfully" });
-        }
-        catch (InvalidOperationException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
+            Id = id,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("users/{userId}/roles/{roleId}")]
     public async Task<IActionResult> AssignRole(Guid userId, Guid roleId)
     {
-        await _authRepo.AssignRoleToUserAsync(userId, roleId);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Role assigned successfully" });
+        var command = new AssignRoleCommand
+        {
+            UserId = userId,
+            RoleId = roleId,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("users/{userId}/roles/batch")]
     public async Task<IActionResult> AssignRoles(Guid userId, [FromBody] List<Guid> roleIds)
     {
-        await _authRepo.AssignRolesToUserAsync(userId, roleIds);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Roles assigned successfully" });
+        var command = new AssignRolesCommand
+        {
+            UserId = userId,
+            RoleIds = roleIds,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("users/{userId}/roles/{roleId}")]
     public async Task<IActionResult> RemoveRole(Guid userId, Guid roleId)
     {
-        await _authRepo.RemoveRoleFromUserAsync(userId, roleId);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Role removed successfully" });
+        var command = new RemoveRoleCommand
+        {
+            UserId = userId,
+            RoleId = roleId,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("roles/{roleId}/claims/{claimId}")]
     public async Task<IActionResult> AssignClaimToRole(Guid roleId, Guid claimId)
     {
-        await _authRepo.AssignClaimToRoleAsync(roleId, claimId);
-        var users = await _authRepo.GetUsersInRoleAsync(roleId);
-        foreach (var u in users)
+        var command = new AssignClaimToRoleCommand
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
-        }
-        return Ok(new { message = "Claim assigned to role successfully" });
+            RoleId = roleId,
+            ClaimId = claimId,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("roles/{roleId}/claims/batch")]
     public async Task<IActionResult> AssignClaimsToRole(Guid roleId, [FromBody] List<Guid> claimIds)
     {
-        await _authRepo.AssignClaimsToRoleAsync(roleId, claimIds);
-        var users = await _authRepo.GetUsersInRoleAsync(roleId);
-        foreach (var u in users)
+        var command = new AssignClaimsToRoleCommand
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
-        }
-        return Ok(new { message = "Claims assigned to role successfully" });
+            RoleId = roleId,
+            ClaimIds = claimIds,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("users/{userId}/claims/{claimId}")]
     public async Task<IActionResult> AssignDirectClaim(Guid userId, Guid claimId)
     {
-        await _authRepo.AssignClaimToUserAsync(userId, claimId);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Direct claim assigned successfully" });
+        var command = new AssignDirectClaimCommand
+        {
+            UserId = userId,
+            ClaimId = claimId,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpPost("users/{userId}/claims/batch")]
     public async Task<IActionResult> AssignDirectClaims(Guid userId, [FromBody] List<Guid> claimIds)
     {
-        await _authRepo.AssignClaimsToUserAsync(userId, claimIds);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Direct claims assigned successfully" });
+        var command = new AssignDirectClaimsCommand
+        {
+            UserId = userId,
+            ClaimIds = claimIds,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("users/{userId}/claims/{claimId}")]
     public async Task<IActionResult> RemoveDirectClaim(Guid userId, Guid claimId)
     {
-        await _authRepo.RemoveClaimFromUserAsync(userId, claimId);
-        await _authService.SyncUserClaimsToRedisAsync(userId);
-        return Ok(new { message = "Direct claim removed successfully" });
+        var command = new RemoveDirectClaimCommand
+        {
+            UserId = userId,
+            ClaimId = claimId,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("roles/{roleId}/claims/{claimId}")]
     public async Task<IActionResult> RemoveClaimFromRole(Guid roleId, Guid claimId)
     {
-        await _authRepo.RemoveClaimFromRoleAsync(roleId, claimId);
-        var users = await _authRepo.GetUsersInRoleAsync(roleId);
-        foreach (var u in users)
+        var command = new RemoveClaimFromRoleCommand
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
-        }
-        return Ok(new { message = "Claim removed from role successfully" });
+            RoleId = roleId,
+            ClaimId = claimId,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpGet("acl")]
@@ -302,27 +365,27 @@ public class AuthManagementController : ControllerBase
     [HttpPost("acl")]
     public async Task<IActionResult> AddAcl([FromBody] AclEntry entry)
     {
-        await _authRepo.AddAclAsync(entry);
-        if (entry.UserId.HasValue)
+        var command = new AddAclCommand
         {
-            await _authService.SyncUserAclToRedisAsync(entry.UserId.Value);
-        }
-        return Ok(entry);
+            Entry = entry,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpDelete("acl/{id}")]
     public async Task<IActionResult> RemoveAcl(Guid id)
     {
-        var entry = await _authRepo.GetAclEntryByIdAsync(id);
-        if (entry != null)
+        var command = new RemoveAclCommand
         {
-            await _authRepo.RemoveAclAsync(id);
-            if (entry.UserId.HasValue)
-            {
-                await _authService.SyncUserAclToRedisAsync(entry.UserId.Value);
-            }
-        }
-        return Ok(new { message = "ACL entry removed successfully" });
+            Id = id,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpGet("users/{userId}/emails")]
@@ -334,9 +397,16 @@ public class AuthManagementController : ControllerBase
     [HttpPost("users/{userId}/emails")]
     public async Task<IActionResult> AddUserEmail(Guid userId, [FromBody] UserEmail email)
     {
-        email.UserId = userId;
-        await _authRepo.AddUserEmailAsync(email);
-        return Ok(email);
+        var command = new AddUserEmailCommand
+        {
+            UserId = userId,
+            Email = email,
+            TrackingId = GetTrackingId()
+        };
+        ((BaseMessage)command).UserId = GetUserId().ToString();
+
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 
     [HttpGet("users/{userId}/fcm-tokens")]
@@ -349,26 +419,13 @@ public class AuthManagementController : ControllerBase
     [HttpPost("users/send-notification")]
     public async Task<IActionResult> SendNotification([FromBody] SendNotificationRequest request)
     {
-        Console.WriteLine($"[DEBUG send-notification] FcmToken: '{request.FcmToken}'");
-        Console.WriteLine($"[DEBUG send-notification] Title: '{request.Title}'");
-        Console.WriteLine($"[DEBUG send-notification] Body: '{request.Body}'");
-
-        if (string.IsNullOrWhiteSpace(request.FcmToken))
+        var command = new SendNotificationCommand
         {
-            return BadRequest(new { message = "FCM Token is required." });
-        }
-        
-        try
-        {
-            string messageId = await _firebaseService.SendNotificationAsync(request.FcmToken, request.Title, request.Body);
-            Console.WriteLine($"[DEBUG send-notification] Successfully sent FCM message. Message ID: '{messageId}'");
-            return Ok(new { message = "Notification sent successfully.", messageId = messageId });
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[ERROR send-notification] Exception: {ex.Message}");
-            Console.WriteLine(ex.StackTrace);
-            return StatusCode(500, new { message = "Error sending notification", error = ex.Message, details = ex.ToString() });
-        }
+            Request = request,
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+        await _dispatcher.SendAsync(command);
+        return Ok(new { trackingId = command.TrackingId });
     }
 }

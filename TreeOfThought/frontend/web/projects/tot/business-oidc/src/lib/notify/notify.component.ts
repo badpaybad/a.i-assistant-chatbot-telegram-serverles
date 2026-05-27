@@ -342,7 +342,7 @@ export class NotifyComponent implements OnInit {
     return `Token: ${token.fcmToken.substring(0, 15)}...${appTypeLabel}${currentSuffix}`;
   }
 
-  async send() {
+  send() {
     if (!this.payload.fcmToken) {
       this.message.warning(this.translate.translate('Vui lòng chọn thiết bị nhận'));
       return;
@@ -358,17 +358,23 @@ export class NotifyComponent implements OnInit {
 
     this.sending = true;
     try {
-      await this.authMgmt.sendNotification({
+      this.authMgmt.sendNotification({
         fcmToken: this.payload.fcmToken,
         title: this.payload.title.trim(),
         body: this.payload.body.trim()
+      }, (data: any) => {
+        this.sending = false;
+        if (data.status === 'Completed') {
+          this.message.success(data.message || this.translate.translate('Gửi thông báo thành công'));
+          this.closeModal();
+        } else if (data.status === 'Error') {
+          this.message.error(data.message || this.translate.translate('Gửi thông báo thất bại'));
+        }
+        this.cdr.markForCheck();
       });
-      this.message.success(this.translate.translate('Gửi thông báo thành công'));
-      this.closeModal();
     } catch (e) {
-      this.message.error(this.translate.translate('Gửi thông báo thất bại'));
-    } finally {
       this.sending = false;
+      this.message.error(this.translate.translate('Gửi thông báo thất bại'));
       this.cdr.markForCheck();
     }
   }

@@ -320,29 +320,35 @@ export class AclListComponent implements OnInit {
     };
 
     try {
-      await this.authMgmt.addAcl(payload);
-      this.message.success(this.translate.translate('Thêm ACL thành công'));
-      this.isCreateModalVisible = false;
-      if (this.filter.resourceType === payload.resourceType && this.filter.resourceId === payload.resourceId) {
-        this.loadAcl();
-      }
+      this.authMgmt.addAcl(payload, (data: any) => {
+        if (data.status === 'Completed') {
+          this.message.success(data.message || this.translate.translate('Thêm ACL thành công'));
+          this.isCreateModalVisible = false;
+          if (this.filter.resourceType === payload.resourceType && this.filter.resourceId === payload.resourceId) {
+            this.loadAcl();
+          }
+        } else if (data.status === 'Error') {
+          this.message.error(data.message || this.translate.translate('Thêm ACL thất bại'));
+        }
+      });
     } catch (e) {
       this.message.error(this.translate.translate('Thêm ACL thất bại'));
     }
   }
 
-  async deleteAcl(id: string) {
+  deleteAcl(id: string) {
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ACL entry?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeAcl(id);
-          this.message.success(this.translate.translate('Xóa ACL thành công'));
-          this.loadAcl();
-        } catch (e) {
-          this.message.error(this.translate.translate('Xóa ACL thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeAcl(id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(data.message || this.translate.translate('Xóa ACL thành công'));
+            this.loadAcl();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa ACL thất bại'));
+          }
+        });
       }
     });
   }

@@ -283,7 +283,7 @@ export class RoleListComponent implements OnInit {
     this.isRoleModalVisible = true;
   }
 
-  async saveRole() {
+  saveRole() {
     if (!this.roleForm.name) {
       this.message.warning(this.translate.translate('Vui lòng nhập tên vai trò'));
       return;
@@ -291,20 +291,26 @@ export class RoleListComponent implements OnInit {
 
     try {
       if (this.editingRole) {
-        await this.authMgmt.updateRole(this.editingRole.id, this.roleForm);
-        // Batch assign claims after update
-        await this.authMgmt.assignClaimsToRole(this.editingRole.id, this.roleForm.claimIds);
-        this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
+        this.authMgmt.updateRole(this.editingRole.id, this.roleForm, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
+            this.isRoleModalVisible = false;
+            this.loadRoles();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Lỗi khi lưu vai trò'));
+          }
+        });
       } else {
-        const newRole: any = await this.authMgmt.createRole(this.roleForm);
-        // Assign claims for new role
-        if (newRole && newRole.id) {
-          await this.authMgmt.assignClaimsToRole(newRole.id, this.roleForm.claimIds);
-        }
-        this.message.success(this.translate.translate('Thêm vai trò thành công'));
+        this.authMgmt.createRole(this.roleForm, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Thêm vai trò thành công'));
+            this.isRoleModalVisible = false;
+            this.loadRoles();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Lỗi khi lưu vai trò'));
+          }
+        });
       }
-      this.isRoleModalVisible = false;
-      this.loadRoles();
     } catch (e) {
       this.message.error(this.translate.translate('Lỗi khi lưu vai trò'));
     }
@@ -316,35 +322,37 @@ export class RoleListComponent implements OnInit {
     this.isClaimModalVisible = true;
   }
 
-  async assignClaim() {
-    try {
-      await this.authMgmt.assignClaimsToRole(this.selectedRole.id, this.selectedClaimIds);
-      this.message.success(this.translate.translate('Cập nhật quyền thành công'));
-      this.isClaimModalVisible = false;
-      this.loadRoles();
-    } catch (e) {
-      this.message.error(this.translate.translate('Cập nhật quyền thất bại'));
-    }
-  }
-
-  async removeClaim(event: MouseEvent, role: any, claim: any) {
-    event.preventDefault();
-    this.modal.confirm({
-      nzTitle: `${this.translate.translate('Xác nhận')}?`,
-      nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${role.name}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeClaimFromRole(role.id, claim.id);
-          this.message.success(this.translate.translate('Xóa quyền thành công'));
-          this.loadRoles();
-        } catch (e) {
-          this.message.error(this.translate.translate('Xóa quyền thất bại'));
-        }
+  assignClaim() {
+    this.authMgmt.assignClaimsToRole(this.selectedRole.id, this.selectedClaimIds, (data: any) => {
+      if (data.status === 'Completed') {
+        this.message.success(this.translate.translate('Cập nhật quyền thành công'));
+        this.isClaimModalVisible = false;
+        this.loadRoles();
+      } else if (data.status === 'Error') {
+        this.message.error(data.message || this.translate.translate('Cập nhật quyền thất bại'));
       }
     });
   }
 
-  async deleteRole(role: any) {
+  removeClaim(event: MouseEvent, role: any, claim: any) {
+    event.preventDefault();
+    this.modal.confirm({
+      nzTitle: `${this.translate.translate('Xác nhận')}?`,
+      nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${role.name}?`,
+      nzOnOk: () => {
+        this.authMgmt.removeClaimFromRole(role.id, claim.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Xóa quyền thành công'));
+            this.loadRoles();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa quyền thất bại'));
+          }
+        });
+      }
+    });
+  }
+
+  deleteRole(role: any) {
     if (role.name?.toLowerCase() === ADMIN_ROLE.toLowerCase()) {
       this.message.warning(this.translate.translate(`Không thể xóa vai trò ${ADMIN_ROLE}`));
       return;
@@ -354,14 +362,15 @@ export class RoleListComponent implements OnInit {
       nzTitle: `${this.translate.translate('Xác nhận xóa vai trò')} ${role.name}?`,
       nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.deleteRole(role.id);
-          this.message.success(this.translate.translate('Xóa vai trò thành công'));
-          this.loadRoles();
-        } catch (e: any) {
-          this.message.error(e.error?.message || this.translate.translate('Xóa vai trò thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteRole(role.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Xóa vai trò thành công'));
+            this.loadRoles();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa vai trò thất bại'));
+          }
+        });
       }
     });
   }

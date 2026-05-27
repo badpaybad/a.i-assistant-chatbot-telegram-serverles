@@ -493,31 +493,39 @@ export class UserListComponent implements OnInit {
     this.isUserModalVisible = true;
   }
 
-  async saveUser() {
+  saveUser() {
     if (!this.userForm.username || !this.userForm.displayName || !this.userForm.email || (!this.editingUser && !this.userForm.password)) {
       this.message.warning(this.translate.translate('Vui lòng nhập đầy đủ thông tin bắt buộc'));
       return;
     }
 
+    this.loading = true;
     try {
       if (this.editingUser) {
-        await this.authMgmt.updateUser(this.editingUser.id, this.userForm);
-        // Batch assign roles/claims after update
-        await this.authMgmt.assignRolesToUser(this.editingUser.id, this.userForm.roleIds);
-        await this.authMgmt.assignClaimsToUser(this.editingUser.id, this.userForm.claimIds);
-        this.message.success(this.translate.translate('Cập nhật người dùng thành công'));
+        this.authMgmt.updateUser(this.editingUser.id, this.userForm, (data: any) => {
+          this.loading = false;
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Cập nhật người dùng thành công'));
+            this.isUserModalVisible = false;
+            this.loadUsers();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Lỗi khi cập nhật người dùng'));
+          }
+        });
       } else {
-        const newUser: any = await this.authMgmt.createUser(this.userForm);
-        // Assign roles/claims for new user
-        if (newUser && newUser.id) {
-          await this.authMgmt.assignRolesToUser(newUser.id, this.userForm.roleIds);
-          await this.authMgmt.assignClaimsToUser(newUser.id, this.userForm.claimIds);
-        }
-        this.message.success(this.translate.translate('Thêm người dùng thành công'));
+        this.authMgmt.createUser(this.userForm, (data: any) => {
+          this.loading = false;
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Thêm người dùng thành công'));
+            this.isUserModalVisible = false;
+            this.loadUsers();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Lỗi khi thêm người dùng'));
+          }
+        });
       }
-      this.isUserModalVisible = false;
-      this.loadUsers();
     } catch (e) {
+      this.loading = false;
       this.message.error(this.translate.translate('Lỗi khi lưu người dùng'));
     }
   }
@@ -528,15 +536,16 @@ export class UserListComponent implements OnInit {
     this.isRoleModalVisible = true;
   }
 
-  async assignRole() {
-    try {
-      await this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds);
-      this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
-      this.isRoleModalVisible = false;
-      this.loadUsers();
-    } catch (e) {
-      this.message.error(this.translate.translate('Cập nhật vai trò thất bại'));
-    }
+  assignRole() {
+    this.authMgmt.assignRolesToUser(this.selectedUser.id, this.selectedRoleIds, (data: any) => {
+      if (data.status === 'Completed') {
+        this.message.success(this.translate.translate('Cập nhật vai trò thành công'));
+        this.isRoleModalVisible = false;
+        this.loadUsers();
+      } else if (data.status === 'Error') {
+        this.message.error(data.message || this.translate.translate('Cập nhật vai trò thất bại'));
+      }
+    });
   }
 
   async removeRole(event: MouseEvent, user: any, role: any) {
@@ -544,14 +553,15 @@ export class UserListComponent implements OnInit {
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ${role.name} ${this.translate.translate('khỏi')} ${user.username}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeRoleFromUser(user.id, role.id);
-          this.message.success(this.translate.translate('Xóa vai trò thành công'));
-          this.loadUsers();
-        } catch (e) {
-          this.message.error(this.translate.translate('Xóa vai trò thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeRoleFromUser(user.id, role.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Xóa vai trò thành công'));
+            this.loadUsers();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa vai trò thất bại'));
+          }
+        });
       }
     });
   }
@@ -562,15 +572,16 @@ export class UserListComponent implements OnInit {
     this.isClaimModalVisible = true;
   }
 
-  async assignClaim() {
-    try {
-      await this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds);
-      this.message.success(this.translate.translate('Cập nhật quyền thành công'));
-      this.isClaimModalVisible = false;
-      this.loadUsers();
-    } catch (e) {
-      this.message.error(this.translate.translate('Cập nhật quyền thất bại'));
-    }
+  assignClaim() {
+    this.authMgmt.assignClaimsToUser(this.selectedUser.id, this.selectedClaimIds, (data: any) => {
+      if (data.status === 'Completed') {
+        this.message.success(this.translate.translate('Cập nhật quyền thành công'));
+        this.isClaimModalVisible = false;
+        this.loadUsers();
+      } else if (data.status === 'Error') {
+        this.message.error(data.message || this.translate.translate('Cập nhật quyền thất bại'));
+      }
+    });
   }
 
   async removeClaim(event: MouseEvent, user: any, claim: any) {
@@ -578,14 +589,15 @@ export class UserListComponent implements OnInit {
     this.modal.confirm({
       nzTitle: `${this.translate.translate('Xác nhận')}?`,
       nzContent: `${this.translate.translate('Xóa')} ${claim.name} ${this.translate.translate('khỏi')} ${user.username}?`,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.removeClaimFromUser(user.id, claim.id);
-          this.message.success(this.translate.translate('Xóa quyền thành công'));
-          this.loadUsers();
-        } catch (e) {
-          this.message.error(this.translate.translate('Xóa quyền thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.removeClaimFromUser(user.id, claim.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Xóa quyền thành công'));
+            this.loadUsers();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa quyền thất bại'));
+          }
+        });
       }
     });
   }
@@ -600,14 +612,15 @@ export class UserListComponent implements OnInit {
       nzTitle: `${this.translate.translate('Xác nhận xóa người dùng')} ${user.username}?`,
       nzContent: this.translate.translate('Hành động này không thể hoàn tác'),
       nzOkDanger: true,
-      nzOnOk: async () => {
-        try {
-          await this.authMgmt.deleteUser(user.id);
-          this.message.success(this.translate.translate('Xóa người dùng thành công'));
-          this.loadUsers();
-        } catch (e: any) {
-          this.message.error(e.error?.message || this.translate.translate('Xóa người dùng thất bại'));
-        }
+      nzOnOk: () => {
+        this.authMgmt.deleteUser(user.id, (data: any) => {
+          if (data.status === 'Completed') {
+            this.message.success(this.translate.translate('Xóa người dùng thành công'));
+            this.loadUsers();
+          } else if (data.status === 'Error') {
+            this.message.error(data.message || this.translate.translate('Xóa người dùng thất bại'));
+          }
+        });
       }
     });
   }
@@ -618,36 +631,43 @@ export class UserListComponent implements OnInit {
 
     const loadingMsg = this.message.loading(this.translate.translate('Đang tải lên...'), { nzDuration: 0 }).messageId;
     try {
-      const result: any = await this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file);
-      this.message.success(this.translate.translate('Cập nhật ảnh đại diện thành công'));
-      
-      // Update the user in the list locally and re-assign array reference to trigger Angular change detection
-      const index = this.users.findIndex(u => u.id === this.selectedUserForAvatar.id);
-      if (index !== -1) {
-        this.users[index] = { ...this.users[index], avatarUrl: result.url };
-        this.users = [...this.users];
-        this.cdr.detectChanges();
-      }
+      this.authMgmt.uploadAvatar(this.selectedUserForAvatar.id, file, (data: any) => {
+        this.message.remove(loadingMsg);
+        if (data.status === 'Completed') {
+          this.message.success(this.translate.translate('Cập nhật ảnh đại diện thành công'));
+          const index = this.users.findIndex(u => u.id === this.selectedUserForAvatar.id);
+          if (index !== -1) {
+            this.users[index] = { ...this.users[index], avatarUrl: data.data };
+            this.users = [...this.users];
+            this.cdr.detectChanges();
+          }
+        } else if (data.status === 'Error') {
+          this.message.error(data.message || this.translate.translate('Lỗi khi tải lên ảnh đại diện'));
+        }
+      });
     } catch (e) {
+      this.message.remove(loadingMsg);
       this.message.error(this.translate.translate('Lỗi khi tải lên ảnh đại diện'));
     } finally {
-      this.message.remove(loadingMsg);
       event.target.value = ''; // Reset file input
     }
   }
 
-  async syncClaims() {
+  syncClaims() {
     this.syncingClaims = true;
     try {
-      // Sync claims from attributes (scanned in BE)
-      // version could be a timestamp or a specific version string
       const version = new Date().getTime().toString();
-      await this.authMgmt.syncClaims(version, []); 
-      this.message.success(this.translate.translate('Đồng bộ quyền thành công'));
+      this.authMgmt.syncClaims(version, [], (data: any) => {
+        this.syncingClaims = false;
+        if (data.status === 'Completed') {
+          this.message.success(this.translate.translate('Đồng bộ quyền thành công'));
+        } else if (data.status === 'Error') {
+          this.message.error(data.message || this.translate.translate('Đồng bộ quyền thất bại'));
+        }
+      });
     } catch (e) {
-      this.message.error(this.translate.translate('Đồng bộ quyền thất bại'));
-    } finally {
       this.syncingClaims = false;
+      this.message.error(this.translate.translate('Đồng bộ quyền thất bại'));
     }
   }
 }

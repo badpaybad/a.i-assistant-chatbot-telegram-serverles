@@ -14,6 +14,7 @@ public interface IAuthRepository
     Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null);
 
     // Role operations
+    Task<Role?> GetRoleByIdAsync(Guid id);
     Task<Role?> GetRoleByNameAsync(string name);
     Task CreateRoleAsync(Role role);
     Task UpdateRoleAsync(Role role);
@@ -21,6 +22,7 @@ public interface IAuthRepository
     Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null);
 
     // Claim operations
+    Task<AppClaim?> GetClaimByIdAsync(Guid id);
     Task<AppClaim?> GetClaimByNameAsync(string name);
     Task CreateClaimAsync(AppClaim claim);
     Task UpdateClaimAsync(AppClaim claim);

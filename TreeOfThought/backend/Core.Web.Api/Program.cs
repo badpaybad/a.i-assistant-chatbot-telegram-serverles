@@ -8,6 +8,7 @@ using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Services;
 using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Contexts;
+using Core.Infra.Oidc.Controllers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -47,7 +48,7 @@ if (!string.IsNullOrEmpty(defaultRedisConn))
 builder.Services.AddAppOidc(config);
 
 // --- 3. Infra Services (CQRS & Base) ---
-builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly, typeof(FaceDetectionCommandHandler).Assembly);
+builder.Services.AddCqrs(config, Assembly.GetExecutingAssembly(), typeof(FilesFoldersCommandHandler).Assembly, typeof(FaceDetectionCommandHandler).Assembly, typeof(AuthManagementController).Assembly);
 
 // --- 4. Database & Auth Repos ---
 builder.Services.AddFilesFolders(config);
