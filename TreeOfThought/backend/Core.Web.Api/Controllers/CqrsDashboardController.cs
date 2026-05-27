@@ -433,7 +433,9 @@ public class CqrsDashboardController : ControllerBase
                 workerName = l.WorkerId ?? "",
                 type = l.Type,
                 elapsedMilliseconds = l.ElapsedMilliseconds,
-                details = l.ErrorMessage ?? (l.Status == "Success" ? "Handled successfully" : "Processing...")
+                details = l.ErrorMessage ?? (l.Status.ToLower() == "success"
+                    ? (l.Step == "send" ? "Sent successfully" : (l.Step == "dequeue" ? "Dequeued successfully" : "Handled successfully"))
+                    : "Processing...")
             })
             .ToListAsync();
 
