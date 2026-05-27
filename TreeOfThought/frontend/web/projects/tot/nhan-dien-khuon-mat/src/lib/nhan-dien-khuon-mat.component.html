@@ -1,172 +1,146 @@
 <div class="face-recognition-container">
-  <!-- Top premium title and hero stats -->
-  <div class="workspace-header">
-    <div class="header-content">
-      <h1 class="gradient-title"><i nz-icon nzType="scan" nzTheme="outline"></i> Nhận Diện & Trích Xuất Khuôn Mặt</h1>
-      <p class="subtitle">Hệ thống phân tích và trích xuất khuôn mặt thông minh chạy trực tiếp trên Trình duyệt (Edge AI)</p>
+  <!-- Top Workspace Title -->
+  <div class="workspace-header" style="margin-bottom: 24px; border-bottom: 1px solid #f0f0f0; padding-bottom: 16px;">
+    <h1 class="gradient-title" style="font-size: 24px; font-weight: 600; margin: 0; color: #262626;"><i nz-icon nzType="scan" nzTheme="outline" style="color: #1890ff; margin-right: 8px;"></i> Nhận Diện & Trích Xuất Khuôn Mặt</h1>
+    <p class="subtitle" style="color: #8c8c8c; margin: 4px 0 0 0; font-size: 13px;">Hệ thống phân tích và quản lý phiên nhận diện khuôn mặt chạy trực tiếp trên Trình duyệt (Edge AI)</p>
+  </div>
+
+  <!-- SECTION 1: Top Panels (Session Name, File Dropzone, Folder Dropzone) -->
+  <div nz-row [nzGutter]="24" style="margin-bottom: 24px;">
+    <!-- Left column: Input session name -->
+    <div nz-col [nzXs]="24" [nzLg]="8">
+      <nz-card nzTitle="Nhập tên phiên đang làm việc" [nzBordered]="true" style="height: 100%; border-radius: 8px;">
+        <input nz-input [(ngModel)]="sessionName" placeholder="Nhập tên phiên làm việc..." [disabled]="savingSession" style="border-radius: 6px;">
+      </nz-card>
     </div>
-    <div class="header-actions">
-      <button nz-button nzType="default" (click)="resetWorkspace()" class="glass-btn">
-        <i nz-icon nzType="redo"></i> Làm mới Workspace
-      </button>
+
+    <!-- Middle column: File Dropzone -->
+    <div nz-col [nzXs]="24" [nzMd]="12" [nzLg]="8">
+      <div class="dropzone-card file-zone" (dragover)="onDragOver($event)" (drop)="onFileDrop($event)" (click)="triggerFileInput()" style="border: 2px dashed #1890ff; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #fafafa; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 116px; transition: background 0.3s;">
+        <div class="dropzone-content">
+          <i nz-icon nzType="file-image" class="drop-icon" style="font-size: 28px; color: #1890ff; margin-bottom: 8px;"></i>
+          <p class="drop-text" style="font-weight: 600; margin: 0; font-size: 14px; color: #262626;">Chọn file hoặc kéo thả file</p>
+          <span class="drop-subtext" style="font-size: 12px; color: #8c8c8c; display: block; margin-top: 4px;">Nhấp hoặc kéo thả nhiều tệp ảnh vào đây</span>
+        </div>
+        <input type="file" multiple (change)="onFilesSelected($event)" #fileInput style="display:none">
+      </div>
+    </div>
+
+    <!-- Right column: Folder Dropzone -->
+    <div nz-col [nzXs]="24" [nzMd]="12" [nzLg]="8">
+      <div class="dropzone-card folder-zone" (dragover)="onDragOver($event)" (drop)="onFolderDrop($event)" (click)="triggerFolderInput()" style="border: 2px dashed #722ed1; border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; background: #fafafa; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 116px; transition: background 0.3s;">
+        <div class="dropzone-content">
+          <i nz-icon nzType="folder-open" class="drop-icon" style="font-size: 28px; color: #722ed1; margin-bottom: 8px;"></i>
+          <p class="drop-text" style="font-weight: 600; margin: 0; font-size: 14px; color: #262626;">Chọn folder hoặc kéo thả folder</p>
+          <span class="drop-subtext" style="font-size: 12px; color: #8c8c8c; display: block; margin-top: 4px;">Nhấp hoặc kéo thả cả folder ảnh vào đây</span>
+        </div>
+        <input type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)" #folderInput style="display:none">
+      </div>
     </div>
   </div>
 
-  <!-- Dual Workspace Section -->
-  <div class="dual-workspace-grid">
-    <!-- LEFT SIDE: File queue and loading/dropzone -->
-    <div class="workspace-card left-side">
-      <div class="card-header">
-        <span class="card-title"><i nz-icon nzType="unordered-list"></i> Hàng Đợi Nguồn</span>
-        <div class="upload-options">
-          <button nz-button nzType="primary" (click)="triggerFileInput()" class="glow-btn">
-            <i nz-icon nzType="file-image"></i> Chọn Ảnh
-          </button>
-          <button nz-button nzType="default" (click)="triggerFolderInput()" class="glass-btn">
-            <i nz-icon nzType="folder-open"></i> Chọn Thư Mục
-          </button>
-          <input type="file" multiple (change)="onFilesSelected($event)" #fileInput style="display:none">
-          <input type="file" webkitdirectory directory multiple (change)="onFolderSelected($event)" #folderInput style="display:none">
+  <!-- SECTION 2: Active Working Session File List (Danh sách file của phiên đang làm việc) -->
+  <div style="margin-bottom: 24px; position: relative;">
+    <tot-table 
+      [data]="queue" 
+      [columns]="activeColumns"
+      [loading]="loadingDetector"
+      [nzSize]="'middle'"
+      [frontPagination]="true"
+      [showPagination]="queue.length > 0"
+      [pageSize]="activePageSize"
+      [title]="activeTableTitleTpl"
+      [extra]="activeTableExtraTpl"
+      class="active-session-table"
+    >
+      <ng-template totCell="name" let-data>
+        <div class="file-name-cell" style="display: flex; align-items: center; gap: 12px;">
+          <label class="custom-checkbox" style="position: relative; display: inline-block; width: 16px; height: 16px; cursor: pointer; user-select: none;">
+            <input type="checkbox" [(ngModel)]="data.selected" (change)="toggleOriginalSelection(data)" style="position: absolute; opacity: 0; cursor: pointer; height: 0; width: 0;">
+            <span class="checkmark" style="position: absolute; top: 0; left: 0; height: 16px; width: 16px; background-color: #fff; border: 1px solid #d9d9d9; border-radius: 4px;"></span>
+          </label>
+          <img [src]="data.thumbnailUrl" class="table-thumb" alt="preview" style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover; border: 1px solid #f0f0f0;">
+          <span class="table-file-name" [nzTooltipTitle]="data.name" nz-tooltip style="font-weight: 500; color: #262626; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px;">{{ data.name }}</span>
         </div>
-      </div>
+      </ng-template>
 
-      <!-- Drag & Drop Zone -->
-      <div class="drop-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="triggerFileInput()">
-        <div class="drop-icon">
-          <i nz-icon nzType="cloud-upload"></i>
-        </div>
-        <p class="drop-text">Kéo thả tệp tin ảnh hoặc thư mục vào đây</p>
-        <span class="drop-subtext">Hỗ trợ cộng dồn danh sách</span>
-      </div>
-
-      <!-- Queue list -->
-      <div class="queue-list-container custom-scrollbar">
-        <div *ngIf="queue.length === 0" class="empty-state">
-          <i nz-icon nzType="inbox" class="empty-icon"></i>
-          <p>Chưa có hình ảnh nào trong hàng đợi</p>
-        </div>
-        
-        <div *ngFor="let item of queue" 
-             class="queue-item" 
-             [class.active]="selectedQueueItem?.id === item.id"
-             (click)="selectQueueItem(item)">
-          <img [src]="item.thumbnailUrl" class="item-thumb" alt="thumb">
-          <div class="item-meta">
-            <span class="item-name" [nzTooltipTitle]="item.name" nz-tooltip>{{ item.name }}</span>
-            <span class="item-size">{{ formatBytes(item.size) }}</span>
-          </div>
-          <div class="item-status">
-            <!-- Badges -->
-            <nz-tag *ngIf="item.status === 'Waiting'" nzColor="default">Đang chờ...</nz-tag>
-            <nz-tag *ngIf="item.status === 'Scanning'" nzColor="processing">
-              <i nz-icon nzType="loading"></i> Quét {{ item.progress }}%
-            </nz-tag>
-            <nz-tag *ngIf="item.status === 'Success'" nzColor="success">
-              Đã trích xuất ({{ item.detectedFaces.length }})
-            </nz-tag>
-            <nz-tag *ngIf="item.status === 'NoFace'" nzColor="warning">Không tìm thấy mặt</nz-tag>
-            <nz-tag *ngIf="item.status === 'Error'" nzColor="error">Lỗi quét</nz-tag>
-          </div>
-          <button nz-button nzType="text" nzDanger (click)="removeQueueItem(item, $event)" class="remove-btn">
-            <i nz-icon nzType="delete"></i>
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- RIGHT SIDE: Target image canvas and cropped faces grid -->
-    <div class="workspace-card right-side">
-      <div class="card-header">
-        <span class="card-title"><i nz-icon nzType="smile"></i> Kết Quả Quét & Trích Xuất</span>
-        <span *ngIf="selectedQueueItem" class="current-selected-file">{{ selectedQueueItem.name }}</span>
-      </div>
-
-      <div *ngIf="!selectedQueueItem" class="no-selection-state">
-        <i nz-icon nzType="picture" class="large-icon"></i>
-        <p>Chọn một tệp từ hàng đợi bên trái để xem kết quả trích xuất chi tiết</p>
-      </div>
-
-      <div *ngIf="selectedQueueItem" class="results-viewer custom-scrollbar">
-        <!-- Interactive Canvas Image with Neon Boxes -->
-        <div class="canvas-panel-wrapper">
-          <div class="panel-header">
-            <span>Khung ảnh gốc (Vẽ Bounding Box)</span>
-            <div class="select-option">
-              <span class="toggle-label">Đưa vào phiên lưu trữ:</span>
-              <nz-switch [(ngModel)]="selectedQueueItem.selected" (ngModelChange)="toggleOriginalSelection(selectedQueueItem)"></nz-switch>
-            </div>
-          </div>
-          
-          <div class="image-viewport">
-            <div #canvasContainer class="canvas-container">
-              <!-- Dynamically injected Image and divs from TypeScript -->
-            </div>
-          </div>
-        </div>
-
-        <!-- Face crops grid list -->
-        <div class="faces-crop-panel">
-          <div class="panel-header">
-            <span>Danh sách khuôn mặt đã cắt (Kích thước chuẩn 150x150)</span>
-            <nz-tag nzColor="purple">MediaPipe Local AI</nz-tag>
+      <ng-template totCell="detectedFaces" let-data>
+        <div class="detected-faces-cell" style="display: flex; align-items: center; min-height: 40px;">
+          <!-- Scanning Loader -->
+          <div *ngIf="data.status === 'Scanning'" class="scanning-inline" style="display: flex; align-items: center; gap: 8px; color: #1890ff; font-weight: 500; font-size: 13px;">
+            <i nz-icon nzType="loading" class="spin-icon"></i>
+            <span>Đang phân tích khuôn mặt... {{ data.progress }}%</span>
           </div>
 
-          <div *ngIf="selectedQueueItem.detectedFaces.length === 0" class="empty-faces-crop">
-            <p>Không có khuôn mặt nào được phát hiện từ ảnh này</p>
+          <!-- Waiting State -->
+          <span *ngIf="data.status === 'Waiting'" class="text-muted" style="color: #bfbfbf; font-style: italic; font-size: 13px;">Đang chờ quét...</span>
+
+          <!-- Error State -->
+          <nz-tag *ngIf="data.status === 'Error'" nzColor="error">Lỗi xử lý tệp</nz-tag>
+
+          <!-- No faces found -->
+          <div *ngIf="data.status === 'NoFace'" class="no-faces-label" style="display: flex; align-items: center; gap: 6px; color: #fa8c16; font-weight: 500; font-size: 13px; background: #fffbe6; padding: 4px 10px; border-radius: 4px; border: 1px solid #ffe58f;">
+            <i nz-icon nzType="info-circle" nzTheme="fill" class="warning-icon"></i>
+            <span>Không có ảnh khuôn mặt</span>
           </div>
 
-          <div class="crops-grid">
-            <div *ngFor="let face of selectedQueueItem.detectedFaces; let idx = index" 
-                 class="crop-card" 
+          <!-- Crop Avatars Grid list -->
+          <div *ngIf="data.status === 'Success' && data.detectedFaces.length > 0" class="avatar-crops-inline-grid" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <div *ngFor="let face of data.detectedFaces; let idx = index" 
+                 class="avatar-crop-card"
                  [class.selected]="face.selected"
-                 (click)="toggleFaceSelection(selectedQueueItem, face)">
-              <div class="crop-image-wrapper">
-                <img [src]="face.croppedUrl" alt="face-crop">
-                <div class="crop-index-badge">Mặt #{{ idx + 1 }}</div>
-                <div class="checkmark-overlay" *ngIf="face.selected">
-                  <i nz-icon nzType="check-circle" nzTheme="fill"></i>
-                </div>
+                 (click)="toggleFaceSelection(data, face)"
+                 [nzTooltipTitle]="'Mặt #' + (idx + 1) + ' - Tọa độ: [' + face.boundingBox.x + ',' + face.boundingBox.y + ']'" 
+                 nz-tooltip
+                 style="position: relative; width: 44px; height: 44px; border-radius: 6px; overflow: hidden; border: 2px solid #f0f0f0; cursor: pointer; transition: all 0.2s; background: #fafafa;">
+              <img [src]="face.croppedUrl" alt="face" style="width: 100%; height: 100%; object-fit: cover;">
+              <div class="checkmark-overlay-mini" *ngIf="face.selected" style="position: absolute; top: 2px; right: 2px; font-size: 11px; color: #1890ff;">
+                <i nz-icon nzType="check-circle" nzTheme="fill"></i>
               </div>
-              <div class="crop-meta">
-                <span class="bbox-coords">Tọa độ: [x:{{ face.boundingBox.x }}, y:{{ face.boundingBox.y }}]</span>
-                <div class="select-checkbox">
-                  <input type="checkbox" [checked]="face.selected" readonly>
-                  <span>Lưu trữ</span>
-                </div>
-              </div>
+              <div class="avatar-index-badge" style="position: absolute; bottom: 2px; left: 2px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 9px; padding: 1px 3px; border-radius: 2px;">#{{ idx + 1 }}</div>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
+      </ng-template>
 
-  <!-- Bottom Save Settings Panel -->
-  <div class="workspace-card save-session-panel" *ngIf="queue.length > 0">
-    <div class="save-form">
-      <div class="input-group">
-        <label for="sessionName">Tên phiên lưu trữ:</label>
-        <input nz-input id="sessionName" [(ngModel)]="sessionName" placeholder="Nhập tên phiên upload..." class="neon-input" [disabled]="savingSession">
-      </div>
-      <div class="action-group">
-        <button nz-button nzType="primary" (click)="saveFaceDetectionSession()" class="glow-btn large-btn" [nzLoading]="savingSession" [disabled]="savingSession">
-          <i nz-icon nzType="cloud-sync" *ngIf="!savingSession"></i> Lưu trữ lên Server
-        </button>
-      </div>
-    </div>
+      <ng-template totCell="simulatedPath" let-data>
+        <span class="simulated-path" style="font-family: monospace; font-size: 12px; color: #595959; background: #fafafa; padding: 3px 8px; border-radius: 4px; border: 1px solid #f0f0f0;">/work/{{ data.name }}</span>
+      </ng-template>
 
-    <!-- Progress display for API Firestore save notifications -->
-    <div class="progress-bar-overlay" *ngIf="savingSession">
-      <div class="progress-box">
+      <ng-template totCell="action" let-data>
+        <tot-button nzType="link" [nzDanger]="true" (click)="removeQueueItem(data, $event)">
+          <i nz-icon nzType="delete"></i> Xóa
+        </tot-button>
+      </ng-template>
+    </tot-table>
+
+    <ng-template #activeTableTitleTpl>
+      <span class="card-title" style="font-size: 16px; font-weight: 600; color: #262626;">
+        <i nz-icon nzType="unordered-list" style="margin-right: 8px;"></i> Danh sách file của phiên đang làm việc
+        <nz-tag nzColor="processing" *ngIf="loadingDetector" style="margin-left: 8px;">
+          <i nz-icon nzType="loading"></i> Đang tải MediaPipe AI...
+        </nz-tag>
+      </span>
+    </ng-template>
+
+    <ng-template #activeTableExtraTpl>
+      <tot-button *ngIf="queue.length > 0" nzType="primary" (click)="saveFaceDetectionSession()" [loading]="savingSession" [disabled]="savingSession">
+        <i nz-icon nzType="save" *ngIf="!savingSession"></i> Lưu phiên làm việc
+      </tot-button>
+    </ng-template>
+
+    <!-- Progress Saving Overlay -->
+    <div class="progress-bar-overlay" *ngIf="savingSession" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 10;">
+      <div class="progress-box" style="text-align: center;">
         <nz-spin nzSimple nzSize="large"></nz-spin>
-        <h3>{{ uploadProgressText }}</h3>
-        <p class="realtime-badge"><i nz-icon nzType="sync" nzSpin></i> Đồng bộ realtime qua Firebase Cloud Firestore...</p>
+        <h3 style="margin-top: 16px; color: #1890ff; font-size: 15px; font-weight: 500;">{{ uploadProgressText }}</h3>
+        <p class="realtime-badge" style="font-size: 12px; color: #722ed1; margin: 4px 0 0 0;"><i nz-icon nzType="sync" nzSpin></i> Đồng bộ realtime qua Firebase Cloud Firestore...</p>
       </div>
     </div>
   </div>
 
-  <!-- HISTORICAL MANAGEMENT LIST -->
-  <div class="workspace-card history-panel">
+  <!-- SECTION 3: HISTORICAL MANAGEMENT LIST (Danh sách các phiên) -->
+  <div class="workspace-card history-panel" style="margin-bottom: 24px;">
     <tot-table 
       [data]="sessionsList" 
       [columns]="historyColumns" 
@@ -179,40 +153,35 @@
       (queryParamsChange)="onQueryParamsChange($event)"
       [title]="tableTitleTpl"
       [extra]="tableExtraTpl"
-      class="glass-table"
     >
       <ng-template totCell="name" let-data>
-        <div *ngIf="!data.isEditing" class="session-name-view">
-          <span class="s-name">{{ data.name }}</span>
-          <button nz-button nzType="text" (click)="inlineRenameSession(data)" class="edit-btn">
+        <div *ngIf="!data.isEditing" class="session-name-view" style="display: flex; align-items: center; gap: 8px;">
+          <span class="s-name" style="font-weight: 500; color: #262626;">{{ data.name }}</span>
+          <tot-button nzType="text" (click)="inlineRenameSession(data)" style="padding: 0 4px; color: #8c8c8c;">
             <i nz-icon nzType="edit"></i>
-          </button>
+          </tot-button>
         </div>
-        <div *ngIf="data.isEditing" class="session-name-edit">
-          <input nz-input [(ngModel)]="data.tempName" class="table-input">
-          <button nz-button nzType="primary" nzSize="small" (click)="saveInlineRename(data)"><i nz-icon nzType="check"></i></button>
-          <button nz-button nzType="default" nzSize="small" (click)="cancelInlineRename(data)"><i nz-icon nzType="close"></i></button>
+        <div *ngIf="data.isEditing" class="session-name-edit" style="display: flex; align-items: center; gap: 4px;">
+          <input nz-input [(ngModel)]="data.tempName" style="border-radius: 4px; width: 180px; padding: 4px 8px;">
+          <tot-button nzType="primary" nzSize="small" (click)="saveInlineRename(data)"><i nz-icon nzType="check"></i></tot-button>
+          <tot-button nzType="default" nzSize="small" (click)="cancelInlineRename(data)"><i nz-icon nzType="close"></i></tot-button>
         </div>
-      </ng-template>
-
-      <ng-template totCell="createdAt" let-data>
-        {{ data.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}
-      </ng-template>
-
-      <ng-template totCell="createdBy" let-data>
-        {{ data.createdBy }}
       </ng-template>
 
       <ng-template totCell="imageCount" let-data>
-        <nz-tag nzColor="geekblue">{{ data.imageCount }} ảnh gốc</nz-tag>
+        <nz-tag nzColor="blue">{{ data.imageCount }} ảnh gốc</nz-tag>
+      </ng-template>
+
+      <ng-template totCell="faceCount" let-data>
+        <nz-tag nzColor="purple">{{ data.faceCount }} khuôn mặt</nz-tag>
       </ng-template>
 
       <ng-template totCell="action" let-data>
-        <div class="action-buttons-group flex-vertical-stack">
-          <tot-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)" class="glow-btn full-width">
+        <div class="action-buttons-group" style="display: flex; gap: 8px;">
+          <tot-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)">
             <i nz-icon nzType="eye"></i> Xem Chi Tiết
           </tot-button>
-          <tot-button nzType="default" [nzDanger]="true" nzSize="small" (click)="deleteSession(data, $event)" class="danger-btn full-width">
+          <tot-button nzType="default" [nzDanger]="true" nzSize="small" (click)="deleteSession(data, $event)">
             <i nz-icon nzType="delete"></i> Xóa
           </tot-button>
         </div>
@@ -220,13 +189,13 @@
     </tot-table>
 
     <ng-template #tableTitleTpl>
-      <span class="card-title" style="color: #fff; font-size: 16px; font-weight: 600;"><i nz-icon nzType="history"></i> Lịch Sử Các Phiên Upload</span>
+      <span class="card-title" style="font-size: 16px; font-weight: 600; color: #262626;"><i nz-icon nzType="history" style="margin-right: 8px;"></i> Lịch Sử Các Phiên Upload</span>
     </ng-template>
 
     <ng-template #tableExtraTpl>
-      <button nz-button nzType="default" (click)="loadSessionsHistory()" class="glass-btn" [nzLoading]="loadingSessions">
+      <tot-button nzType="default" (click)="loadSessionsHistory()" [loading]="loadingSessions">
         <i nz-icon nzType="reload"></i> Làm mới lịch sử
-      </button>
+      </tot-button>
     </ng-template>
   </div>
 
@@ -237,50 +206,57 @@
             (nzOnCancel)="closeDetailsModal()" 
             [nzFooter]="null"
             class="premium-modal">
-    <div *nzModalContent class="modal-content-wrapper">
-      <div *ngIf="loadingDetails" class="modal-spinner">
+    <div *nzModalContent class="modal-content-wrapper" style="padding: 12px 0;">
+      <div *ngIf="loadingDetails" class="modal-spinner" style="text-align: center; padding: 40px 0;">
         <nz-spin nzSimple nzSize="large"></nz-spin>
-        <p>Đang tải cấu trúc tệp từ server...</p>
+        <p style="margin-top: 12px; color: #8c8c8c;">Đang tải cấu trúc tệp từ server...</p>
       </div>
 
-      <div *ngIf="!loadingDetails && selectedSessionDetails" class="modal-body custom-scrollbar">
-        <div *ngFor="let img of selectedSessionDetails.images" class="details-image-card">
-          <div class="img-card-header">
-            <div class="img-meta">
-              <span class="file-name"><i nz-icon nzType="file-image"></i> {{ img.fileName }}</span>
-              <nz-tag nzColor="blue">Kích thước: {{ formatBytes(img.size) }}</nz-tag>
-              <span class="upload-time">{{ img.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
+      <div *ngIf="!loadingDetails && selectedSessionDetails" class="modal-body custom-scrollbar" style="max-height: 550px; overflow-y: auto; padding: 0 12px;">
+        <div *ngFor="let img of selectedSessionDetails.images" class="details-image-card" style="margin-bottom: 24px; border: 1px solid #f0f0f0; border-radius: 8px; padding: 16px; background: #fff;">
+          <div nz-row [nzJustify]="'space-between'" [nzAlign]="'middle'" style="border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 16px;">
+            <div nz-col>
+              <span class="file-name" style="font-weight: 600; font-size: 15px; color: #262626;"><i nz-icon nzType="file-image" style="color: #1890ff;"></i> {{ img.fileName }}</span>
+              <nz-tag nzColor="blue" style="margin-left: 8px;">Kích thước: {{ formatBytes(img.size) }}</nz-tag>
+              <span class="upload-time" style="color: #8c8c8c; font-size: 12px; margin-left: 8px;">{{ img.createdAt | date:'dd/MM/yyyy HH:mm:ss' }}</span>
             </div>
-            <button nz-button nzType="default" nzDanger nzSize="small" (click)="deleteDetailOriginalImage(img)" class="glass-danger-btn">
-              <i nz-icon nzType="delete"></i> Xóa ảnh gốc & crops
-            </button>
+            <div nz-col>
+              <tot-button nzType="default" [nzDanger]="true" nzSize="small" (click)="deleteDetailOriginalImage(img)">
+                <i nz-icon nzType="delete"></i> Xóa ảnh gốc & crops
+              </tot-button>
+            </div>
           </div>
 
-          <div class="img-body-layout">
+          <div nz-row [nzGutter]="24">
             <!-- Original image preview -->
-            <div class="original-image-preview">
-              <img [src]="img.url" alt="original-img" class="detail-main-img">
+            <div nz-col [nzXs]="24" [nzMd]="8" style="margin-bottom: 16px;">
+              <div class="original-image-preview" style="border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden; background: #fafafa; display: flex; justify-content: center; align-items: center; height: 180px;">
+                <img [src]="img.url" alt="original-img" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+              </div>
             </div>
 
             <!-- Cropped faces panel inside details -->
-            <div class="cropped-faces-detail-panel">
-              <h4>Khuôn mặt đã trích xuất ({{ img.croppedFaces.length }})</h4>
-              
-              <div *ngIf="img.croppedFaces.length === 0" class="no-crops-placeholder">
-                Không có khuôn mặt nào được lưu trong tệp ảnh này
-              </div>
+            <div nz-col [nzXs]="24" [nzMd]="16">
+              <div class="cropped-faces-detail-panel">
+                <h4 style="margin-top: 0; margin-bottom: 12px; font-weight: 600; color: #262626;">Khuôn mặt đã trích xuất ({{ img.croppedFaces.length }})</h4>
+                
+                <div *ngIf="img.croppedFaces.length === 0" class="no-crops-placeholder" style="color: #8c8c8c; font-style: italic; font-size: 13px;">
+                  Không có khuôn mặt nào được lưu trong tệp ảnh này
+                </div>
 
-              <div class="detail-crops-grid">
-                <div *ngFor="let face of img.croppedFaces" class="detail-crop-avatar-card">
-                  <div class="avatar-img-box">
-                    <img [src]="face.url" alt="crop-face">
-                    <button nz-button nzType="text" nzDanger (click)="deleteDetailCroppedFace(face, img)" class="delete-avatar-btn" nz-tooltip nzTooltipTitle="Xóa ảnh khuôn mặt crop này">
-                      <i nz-icon nzType="close-circle" nzTheme="fill"></i>
-                    </button>
-                  </div>
-                  <div class="avatar-meta">
-                    <span>Bounding Box:</span>
-                    <span class="bbox-json">{{ face.boundingBox }}</span>
+                <div nz-row [nzGutter]="[12, 12]">
+                  <div nz-col *ngFor="let face of img.croppedFaces" [nzXs]="12" [nzSm]="8" [nzMd]="6">
+                    <div class="detail-crop-avatar-card" style="border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; text-align: center; background: #fafafa; position: relative;">
+                      <div class="avatar-img-box" style="width: 64px; height: 64px; border-radius: 50%; overflow: hidden; margin: 0 auto 8px auto; position: relative; border: 2px solid #e6f7ff;">
+                        <img [src]="face.url" alt="crop-face" style="width: 100%; height: 100%; object-fit: cover;">
+                        <tot-button nzType="text" [nzDanger]="true" (click)="deleteDetailCroppedFace(face, img)" class="delete-avatar-btn" nz-tooltip nzTooltipTitle="Xóa ảnh khuôn mặt crop này" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.7); opacity: 0; display: flex; justify-content: center; align-items: center; transition: opacity 0.2s; border: none; font-size: 20px;">
+                          <i nz-icon nzType="close-circle" nzTheme="fill" style="color: #ff4d4f;"></i>
+                        </tot-button>
+                      </div>
+                      <div class="avatar-meta" style="font-size: 11px; color: #8c8c8c;">
+                        <span class="bbox-json" [nzTooltipTitle]="face.boundingBox" nz-tooltip style="display: block; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">BBox: {{ face.boundingBox }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -119,7 +119,8 @@ public class FaceDetectionController : BaseController
                 s.Name,
                 s.CreatedAt,
                 s.CreatedBy,
-                ImageCount = s.OriginalImages.Count
+                ImageCount = s.OriginalImages.Count,
+                FaceCount = s.OriginalImages.SelectMany(i => i.CroppedFaces).Count()
             })
             .ToListAsync();
 

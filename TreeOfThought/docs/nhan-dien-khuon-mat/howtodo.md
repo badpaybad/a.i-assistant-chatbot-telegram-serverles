@@ -44,60 +44,60 @@ graph TD
 
 ## 2. Thiết kế Chi tiết: Session Làm Việc (Active Working Session)
 
-### 2.1. Nạp nguồn đa dạng & Cộng dồn (Multi-Source Input & Cumulative Loading)
-- **Cơ chế nạp nguồn:**
-  - Hỗ trợ **kéo thả (Drag & Drop)** tệp tin hoặc thư mục ảnh trực tiếp vào Dropzone.
-  - Hỗ trợ **hộp thoại chọn (Picker dialog)** qua 2 nút bấm riêng biệt:
-    - *Chọn thư mục ảnh:* Đọc đệ quy tất cả các file hình ảnh trong thư mục con (`webkitdirectory`).
-    - *Chọn tệp tin ảnh:* Cho phép chọn đồng thời nhiều tệp ảnh đơn lẻ (`multiple`, `accept="image/*"`).
-- **Hàng đợi cộng dồn (Cumulative queue):**
-  - **"Có thể kéo thêm file ảnh hoặc folder vào session đã có để xử lý tiếp"**: Khi người dùng kéo thả hoặc picker chọn tệp tin/thư mục mới, hệ thống **không xóa** dữ liệu cũ đang hiển thị.
-  - Các tệp tin mới sẽ được lọc định dạng ảnh (`image/*`) và tự động thêm tiếp (append) vào cuối mảng hàng đợi `sourceFiles` ở trạng thái `waiting` (Chờ quét).
-  - Vòng lặp nhận diện MediaPipe sẽ chỉ chạy quét đối với các tệp tin mới được thêm vào hàng đợi.
+### 2.1. Bố cục và Nạp nguồn đa dạng (Layout & Multi-Source Input)
+- **Bố cục (Layout):** Tách biệt các khu vực nạp nguồn và cấu trúc thành 3 cột chính nằm ngang (flexbox/grid) tuân thủ sketch và nâng cao UX:
+  - **Khung tiêu đề đầu tiên (3 cột):**
+    - *Cột bên trái:* "Nhập tên phiên đang làm việc" hiển thị ô tiêu đề và ô Input nhập tên phiên.
+    - *Cột ở giữa:* Khu vực `"Chọn file hoặc kéo thả file"` hỗ trợ Drag & Drop ảnh đơn lẻ và mở file picker.
+    - *Cột bên phải:* Khu vực `"Chọn folder hoặc kéo thả folder"` hỗ trợ Drag & Drop thư mục và mở folder picker.
+  - **Khung danh sách file:** Bảng dữ liệu của phiên đang làm việc (`Active Session Files Table`) kèm theo phân trang cục bộ (`Paging ...`) ở góc dưới bên phải, và nút "Lưu phiên làm việc" ở góc dưới bên trái.
+- **Tính nhất quán với Hệ thống (App Shell Alignment):**
+  - **Theme màu sắc:** Tuân thủ 100% theme màu sáng và hệ thống màu của App Shell chung (với nền sáng `#f0f2f5`, sắc xanh chủ đạo `--primary-color: #1890ff`, và các thẻ card mờ kính sáng `rgba(255, 255, 255, 0.7)`).
+  - **Nút bấm dùng chung (Shared tot-button):** Tất cả các nút bấm bên trong bảng (`Active Session Table` và `History Table`) bắt buộc phải sử dụng thẻ component dùng chung `<tot-button>` thay thế cho các thẻ HTML thông thường để đồng bộ hóa thiết kế.
+- **Hàng đợi cộng dồn (Cumulative loading):**
+  - **"Có thể kéo thêm file ảnh hoặc folder vào session đã có để xử lý tiếp"**: Dữ liệu cũ trong bảng làm việc được cộng dồn (append) tiếp và quét song song mà không bị xóa.
+- **Cơ chế quét thư mục đệ quy (Recursive Folder Traversal):**
+  - Khi người dùng kéo thả thư mục vào khu vực Folder, hệ thống sẽ sử dụng API `webkitGetAsEntry()` đệ quy duyệt qua tất cả các file ảnh nằm sâu bên trong thư mục con để nạp vào hàng đợi.
+  - Khi chọn qua Folder Picker, trình duyệt tự động đọc đệ quy và lọc tất cả các tệp hình ảnh để đưa vào xử lý.
 
 ### 2.2. Quy trình Quét và Trích xuất (Edge AI pipeline)
-1. **Cột trái (Tệp tin nguồn):** Hiển thị danh sách tất cả các file ảnh trong phiên kèm thông số kích thước và trạng thái quét thời gian thực (`Chờ quét`, `Đang quét`, `Hoàn thành`, `Thất bại`).
-2. **Quét MediaPipe:** Sử dụng **js MediaPipe Face Detection** chạy cục bộ qua WebGL/WebAssembly. Quét tuần tự từng ảnh bằng canvas offscreen.
-3. **Cột phải (Ảnh chứa khuôn mặt):** Chỉ hiển thị các ảnh gốc có phát hiện khuôn mặt. Mỗi hàng hiển thị:
-   - Canvas vẽ ảnh gốc cùng các bounding boxes màu xanh neon nổi bật bao quanh khuôn mặt.
-   - Checkbox cho phép người dùng chọn xem có lưu tệp ảnh gốc này hay không (`Lưu ảnh gốc này`).
-   - Lưới (Grid) các khuôn mặt đã crop (padding 15%, resize 150x150 JPEG). Mỗi mặt crop có switch toggle bật/tắt quyền lưu trữ (`Lưu` / `Bỏ`).
+1. **Quét MediaPipe:** Sử dụng **MediaPipe Face Detection** chạy cục bộ thông qua WebGL/WebAssembly trên trình duyệt.
+2. **Cập nhật Bảng Session:** Bảng danh sách tệp tin hiển thị kết quả phân tích theo cấu trúc 4 cột chuẩn chỉnh:
+   - **Tên file:** Tên tệp tin gốc của ảnh.
+   - **Khuôn mặt trong ảnh:**
+     - Nếu ảnh phát hiện có khuôn mặt: Hiển thị các avatar ảnh khuôn mặt được crop ra (chuẩn 150x150) kèm theo checkbox tích chọn (`[v] ảnh mặt crop được`) trực quan ngay bên trong ô của bảng. Người dùng có thể click chọn hoặc bỏ chọn từng ảnh khuôn mặt crop này.
+     - Nếu ảnh không phát hiện khuôn mặt: Hiển thị dòng chữ cảnh báo `"Không có ảnh khuôn mặt"`.
+   - **Đường dẫn file:** Hiển thị đường dẫn mô phỏng dạng `/work/[Tên file]` để bảo mật và giữ giao diện nhất quán đúng thiết kế (ví dụ: `/work/dunp.png`).
+   - **Hành động:** Nút bấm `"Xóa"` để loại bỏ nhanh tệp tin này ra khỏi hàng đợi phiên làm việc.
 
 ### 2.3. Đặt tên, Lưu trữ & Tự động Reset Session
-- **Đặt tên phiên:** Hệ thống tự tạo đề xuất dạng `"Phiên ngày [dd/MM/yyyy HH:mm]"` và cho phép người dùng sửa đổi trực tiếp.
-- **Lưu trữ:** Khi nhấn nút "Lưu trữ lên Server":
-  - Tải nhị phân các tệp ảnh gốc và các ảnh crop được chọn lên Google Cloud Storage (GCS).
-  - Lưu thông tin URL và siêu dữ liệu vào DB PostgreSQL.
-  - Gửi sự kiện realtime Firestore về kênh `commandresults/{trackingId}` báo trạng thái `Completed`.
-- **Reset session làm việc & Reload Danh sách:**
-  - **"Lưu xong sẽ reset session làm việc và reload lại Danh sách quản lý"**: Ngay khi nhận được thông báo lưu trữ thành công, hệ thống sẽ thực thi đồng thời hai hành động:
-    1. **Reload Danh sách:** Gọi `loadUploadSessions()` để tải lại toàn bộ danh sách lịch sử phiên ở bảng quản lý phía dưới, cập nhật tức thời phiên vừa được lưu lên giao diện.
-    2. **Reset Session:** Thực thi hàm `resetAll()` để dọn sạch hoàn toàn không gian làm việc (giải phóng URL Blob cục bộ `URL.revokeObjectURL`, làm trống các danh sách hàng đợi `sourceFiles`, `processedPhotos`, reset bộ đếm `totalDetectedFacesCount` về 0), giúp màn hình trống sẵn sàng cho phiên tải mới.
+- **Đặt tên phiên:** Tự động tạo tên gợi ý dạng `"Phiên ngày [dd/MM/yyyy HH:mm]"` trong ô Input để người dùng sửa đổi trực tiếp theo ý muốn.
+- **Lưu trữ công khai (Public GCS):** Khi bấm nút `"Lưu phiên làm việc"`:
+  - Tiến hành tải nhị phân các tệp ảnh gốc được chọn và các ảnh khuôn mặt crop tương ứng lên dịch vụ lưu trữ Google Cloud Storage (GCS) ở chế độ **Public (Mọi người có thể đọc công khai)** bằng cách đặt `isPublic = true` khi gọi `UploadFileAsync` của `FirebaseService`.
+  - Cập nhật URL và Metadata vào DB PostgreSQL.
+  - Reset hoàn toàn Workspace (về trạng thái trống) và tự động kích hoạt reload danh sách lịch sử bên dưới.
 
 ---
 
 ## 3. Thiết kế Chi tiết: Danh Sách Quản Lý & Cascade GCS Cleaners
 
 ### 3.1. Danh sách Quản lý Phiên (Historical Session List)
-- Hiển thị bảng danh sách các phiên upload đã lưu trữ của người dùng sắp xếp giảm dần theo thời gian tạo.
-- Cột thông tin bao gồm: Tên phiên, Người tải lên, Thời gian tải lên, Số lượng ảnh gốc.
-- **Hành động Đổi tên inline:** Cho phép người dùng bấm "Đổi tên" để hiện ô input sửa đổi tên trực tiếp, cập nhật ngay lập tức xuống DB PostgreSQL thông qua REST API tối giản (KISS).
+- Hiển thị bảng danh sách lịch sử các phiên upload đã lưu của người dùng dưới dạng bảng phân trang từ API PostgreSQL. Bảng gồm 4 cột chính xác theo thiết kế:
+  - **Tên phiên:** Hiển thị tên phiên làm việc (cho phép đổi tên inline).
+  - **Số lượng ảnh:** Tổng số ảnh gốc trong phiên đó.
+  - **Số lượng khuôn mặt:** Tổng số khuôn mặt đã crop của toàn bộ ảnh thuộc phiên đó (được đếm và tối ưu hóa truy vấn thông qua `.SelectMany(i => i.CroppedFaces).Count()`).
+  - **Hành động:** Chứa 2 nút bấm `"Xem"` (Xem Chi tiết phiên qua Modal) và `"Xóa"` (Xóa phiên).
 
 ### 3.2. Xem Chi tiết & Quản lý dòng (Detailed Session Modal)
-- Khi bấm nút **"Xem"**, một modal premium hiển thị danh sách dạng hàng (Rows). Mỗi hàng gồm:
-  - Cột 1: Ảnh gốc hiển thị preview thu nhỏ kèm tên và dung lượng tệp.
-  - Cột 2: Lưới các khuôn mặt đã crop được trích xuất và lưu trữ của ảnh gốc đó. Mỗi avatar có nút bấm `x` màu đỏ nổi để thực hiện xóa.
-  - Cột 3: Nút hành động **"Xóa ảnh gốc"**.
+- Khi bấm nút **"Xem"**, hiển thị một Modal Chi tiết chứa bảng hiển thị cấu trúc tương tự để xem ảnh gốc và danh sách khuôn mặt crop.
 - **Cơ chế xóa đơn lẻ trong modal chi tiết:**
-  - **Xóa ảnh gốc:** Tiến hành xóa tệp ảnh gốc vật lý trên GCS, xóa tất cả các tệp ảnh crop vật lý liên kết trên GCS, sau đó xóa bản ghi ảnh gốc trong DB (kích hoạt cascade delete xóa sạch các bản ghi ảnh crop tương ứng ở mức DB).
-  - **Xóa ảnh crop:** Tiến hành xóa tệp ảnh crop vật lý tương ứng trên GCS và xóa bản ghi đơn lẻ trong DB.
+  - *Xóa ảnh gốc:* Xóa file gốc vật lý trên GCS, xóa các file crop vật lý liên kết trên GCS, và cascade xóa dữ liệu trong DB.
+  - *Xóa ảnh crop:* Xóa file crop vật lý tương ứng trên GCS và xóa bản ghi đơn lẻ trong DB.
 
 ### 3.3. Xóa Phiên & Đồng bộ GCS (Cascade GCS Cleanup Lifecycle)
-- **"do dùng google cloud storage lưu file nên khi xóa cần xóa cả trên GCS"**: Khi người dùng nhấn nút "Xóa" một Phiên upload trên bảng quản lý:
-  - Hệ thống truy vấn toàn bộ các ảnh gốc và ảnh crop thuộc phiên đó từ DB.
-  - Gọi bất đồng bộ dịch vụ `FirebaseService.DeleteFileAsync(objectName)` xóa toàn bộ các tệp tin vật lý tương ứng trên Cloud Storage.
-  - Tiến hành xóa bản ghi `UploadSession` trong DB (hệ thống PostgreSQL sẽ tự động cascade dọn sạch các dòng bản ghi trong bảng `OriginalImages` và `CroppedFaces`).
-- **Xử lý an toàn (Try-Catch):** Mọi thao tác xóa tệp trên GCS được bọc trong khối Try-Catch và ghi log cảnh báo (`LogWarning`) nếu gặp sự cố đám mây, đảm bảo không làm gián đoạn hay kẹt giao dịch xóa cơ sở dữ liệu của người dùng.
+- **"do dùng google cloud storage lưu file nên khi xóa cần xóa cả trên GCS"**: Khi xóa phiên từ bảng lịch sử hoặc qua API:
+  - Hệ thống tự động quét toàn bộ file liên kết, xóa tệp vật lý trên GCS của tất cả ảnh gốc và ảnh crop thuộc phiên đó.
+  - Thực thi xóa `UploadSession` trong DB, kích hoạt Cascade Delete xóa sạch toàn bộ OriginalImages và CroppedFaces liên quan.
 
 ---
 

@@ -76,7 +76,7 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
                 originalPath, 
                 originalStream, 
                 command.OriginalContentType, 
-                false // Private URL
+                true // Public URL
             );
         }
 
@@ -108,7 +108,7 @@ public class FaceDetectionCommandHandler : ICommandHandler<SaveFaceDetectionSess
                     facePath, 
                     faceStream, 
                     croppedFaceDto.ContentType, 
-                    false 
+                    true // Public URL
                 );
             }
 

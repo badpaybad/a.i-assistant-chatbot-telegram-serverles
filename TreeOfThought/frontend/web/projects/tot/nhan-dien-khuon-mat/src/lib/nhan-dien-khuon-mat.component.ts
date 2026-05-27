@@ -12,6 +12,8 @@ import { NzTagModule } from 'ng-zorro-antd/tag';
 import { NzSpinModule } from 'ng-zorro-antd/spin';
 import { NzSwitchModule } from 'ng-zorro-antd/switch';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzGridModule } from 'ng-zorro-antd/grid';
+
 
 import { NhanDienKhuonMatService } from './services/nhan-dien-khuon-mat.service';
 import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
@@ -50,6 +52,7 @@ interface QueueItem {
     NzSpinModule,
     NzSwitchModule,
     NzTooltipModule,
+    NzGridModule,
     TotButtonComponent,
     TotTableComponent,
     TotCellDirective
@@ -64,13 +67,11 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
 
   @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
   @ViewChild('folderInput') folderInput!: ElementRef<HTMLInputElement>;
-  @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
 
   // Session Workspace State
   sessionId: string = crypto.randomUUID();
   sessionName: string = '';
   queue: QueueItem[] = [];
-  selectedQueueItem: QueueItem | null = null;
   loadingDetector: boolean = false;
   detectorReady: boolean = false;
   faceDetector: any = null;
@@ -78,12 +79,22 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   uploadTrackingId: string | null = null;
   uploadProgressText: string = '';
 
+  // Local Pagination for Active Session Table
+  activePageIndex: number = 1;
+  activePageSize: number = 5;
+
+  get paginatedQueue(): QueueItem[] {
+    const start = (this.activePageIndex - 1) * this.activePageSize;
+    return this.queue.slice(start, start + this.activePageSize);
+  }
+
   // Historical sessions
+  activeColumns: TotTableColumn[] = [];
   sessionsList: any[] = [];
   loadingSessions: boolean = false;
   historyColumns: TotTableColumn[] = [];
   
-  // Pagination state
+  // Pagination state for history
   totalSessions: number = 0;
   pageIndex: number = 1;
   pageSize: number = 10;
@@ -91,8 +102,7 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   // Detail Modal data
   selectedSessionDetails: any = null;
   loadingDetails: boolean = false;
-
-
+  showDetailsModal: boolean = false;
 
   ngOnInit(): void {
     this.setDefaultSessionName();
@@ -102,12 +112,18 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   }
 
   private initColumns(): void {
+    this.activeColumns = [
+      { title: 'Tên file', key: 'name', width: '30%' },
+      { title: 'Khuôn mặt trong ảnh', key: 'detectedFaces', width: '40%' },
+      { title: 'Đường dẫn file', key: 'simulatedPath', width: '20%' },
+      { title: 'Hành động', key: 'action', width: '10%', align: 'center' }
+    ];
+
     this.historyColumns = [
-      { title: 'Tên phiên upload', key: 'name' },
-      { title: 'Thời gian tạo', key: 'createdAt', width: '200px' },
-      { title: 'Người tạo', key: 'createdBy', width: '150px' },
-      { title: 'Số lượng ảnh gốc', key: 'imageCount', width: '150px' },
-      { title: 'Thao tác', key: 'action', width: '250px', right: true }
+      { title: 'Tên phiên', key: 'name' },
+      { title: 'Số lượng ảnh', key: 'imageCount', width: '150px' },
+      { title: 'Số lượng khuôn mặt', key: 'faceCount', width: '200px' },
+      { title: 'Hành động', key: 'action', width: '200px', right: true }
     ];
   }
 
@@ -175,10 +191,80 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
     event.preventDefault();
   }
 
-  onDrop(event: DragEvent): void {
+  onFileDrop(event: DragEvent): void {
     event.preventDefault();
-    if (event.dataTransfer?.files) {
+    if (event.dataTransfer?.items) {
+      const files: File[] = [];
+      const items = Array.from(event.dataTransfer.items);
+      
+      const promises = items.map(item => {
+        const entry = item.webkitGetAsEntry();
+        if (entry && entry.isFile) {
+          return new Promise<void>((resolve) => {
+            (entry as any).file((f: File) => {
+              if (f.type.startsWith('image/')) {
+                files.push(f);
+              }
+              resolve();
+            }, () => resolve());
+          });
+        }
+        return Promise.resolve();
+      });
+      
+      Promise.all(promises).then(() => {
+        if (files.length > 0) {
+          this.addFilesToQueue(files);
+        } else {
+          this.message.warning("Không tìm thấy tệp ảnh nào hợp lệ.");
+        }
+      });
+    } else if (event.dataTransfer?.files) {
       this.addFilesToQueue(Array.from(event.dataTransfer.files));
+    }
+  }
+
+  onFolderDrop(event: DragEvent): void {
+    event.preventDefault();
+    if (event.dataTransfer?.items) {
+      const files: File[] = [];
+      const items = Array.from(event.dataTransfer.items);
+      
+      const traversePromises = items.map(item => {
+        const entry = item.webkitGetAsEntry();
+        if (entry) {
+          return this.traverseEntryRecursive(entry, files);
+        }
+        return Promise.resolve();
+      });
+      
+      Promise.all(traversePromises).then(() => {
+        if (files.length > 0) {
+          this.addFilesToQueue(files);
+        } else {
+          this.message.warning("Không tìm thấy tệp ảnh nào trong thư mục được kéo thả.");
+        }
+      });
+    }
+  }
+
+  private async traverseEntryRecursive(entry: any, fileList: File[]): Promise<void> {
+    if (entry.isFile) {
+      const file = await new Promise<File>((resolve, reject) => {
+        entry.file(resolve, reject);
+      });
+      if (file.type.startsWith('image/')) {
+        fileList.push(file);
+      }
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const entries = await new Promise<any[]>((resolve, reject) => {
+        reader.readEntries(resolve, reject);
+      });
+      
+      for (const childEntry of entries) {
+        await this.traverseEntryRecursive(childEntry, fileList);
+      }
     }
   }
 
@@ -278,11 +364,6 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
             item.status = 'Success';
             item.progress = 100;
 
-            // If no active selection, select this item automatically
-            if (!this.selectedQueueItem) {
-              this.selectQueueItem(item);
-            }
-
             this.processScanningQueue(); // Process next
           }
         } catch (err) {
@@ -307,57 +388,8 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
     }
   }
 
-  selectQueueItem(item: QueueItem): void {
-    this.selectedQueueItem = item;
-    // Draw neon boxes on view canvas container
-    setTimeout(() => this.drawDetectionsOverlay(), 50);
-  }
-
-  private drawDetectionsOverlay(): void {
-    if (!this.selectedQueueItem || !this.canvasContainer) return;
-
-    const container = this.canvasContainer.nativeElement;
-    container.innerHTML = ''; // Clear
-
-    const img = new Image();
-    img.src = this.selectedQueueItem.thumbnailUrl;
-    img.className = 'canvas-main-img';
-
-    img.onload = () => {
-      container.appendChild(img);
-
-      const overlay = document.createElement('div');
-      overlay.className = 'canvas-overlay';
-      container.appendChild(overlay);
-
-      // Render bounding boxes dynamically scaled to container image size
-      const renderedWidth = img.clientWidth;
-      const renderedHeight = img.clientHeight;
-      const scaleX = renderedWidth / img.naturalWidth;
-      const scaleY = renderedHeight / img.naturalHeight;
-
-      this.selectedQueueItem?.detectedFaces.forEach((face, index) => {
-        const box = face.boundingBox;
-        const div = document.createElement('div');
-        div.className = `neon-box ${face.selected ? 'active' : 'inactive'}`;
-        div.style.left = `${box.x * scaleX}px`;
-        div.style.top = `${box.y * scaleY}px`;
-        div.style.width = `${box.w * scaleX}px`;
-        div.style.height = `${box.h * scaleY}px`;
-
-        const badge = document.createElement('span');
-        badge.className = 'box-badge';
-        badge.innerText = `#${index + 1}`;
-        div.appendChild(badge);
-
-        overlay.appendChild(div);
-      });
-    };
-  }
-
   toggleFaceSelection(item: QueueItem, face: any): void {
     face.selected = !face.selected;
-    this.drawDetectionsOverlay();
   }
 
   toggleOriginalSelection(item: QueueItem): void {
@@ -369,12 +401,6 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
     URL.revokeObjectURL(item.thumbnailUrl);
     item.detectedFaces.forEach(f => URL.revokeObjectURL(f.croppedUrl));
     this.queue = this.queue.filter(i => i.id !== item.id);
-    if (this.selectedQueueItem?.id === item.id) {
-      this.selectedQueueItem = this.queue.length > 0 ? this.queue[0] : null;
-      if (this.selectedQueueItem) {
-        this.selectQueueItem(this.selectedQueueItem);
-      }
-    }
   }
 
   // --- Realtime saving session via REST API & Firestore notification bus ---
@@ -454,8 +480,8 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   resetWorkspace(): void {
     this.queue.forEach(item => URL.revokeObjectURL(item.thumbnailUrl));
     this.queue = [];
-    this.selectedQueueItem = null;
     this.sessionId = crypto.randomUUID();
+    this.activePageIndex = 1;
     this.setDefaultSessionName();
     this.message.info("Không gian làm việc đã được reset.");
   }
@@ -527,41 +553,19 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   async openSessionDetails(session: any): Promise<void> {
     this.selectedSessionDetails = session;
     this.loadingDetails = true;
-    
-    // Open Empty/Spinner modal first for immediate visual feed
-    const modalRef = this.modal.create({
-      nzTitle: `Chi tiết phiên: ${session.name}`,
-      nzContent: this.selectedSessionDetails ? undefined : 'Đang tải dữ liệu...',
-      nzFooter: null,
-      nzWidth: 900
-    });
+    this.showDetailsModal = true;
 
     try {
       const details: any = await this.api.getSessionDetails(session.id);
       this.selectedSessionDetails = details;
-      
-      // Update modal template body content
-      modalRef.updateConfig({
-        nzContent: this.buildDetailsTemplate()
-      });
     } catch (error) {
       this.message.error("Lỗi khi tải chi tiết phiên upload.");
-      modalRef.close();
+      this.showDetailsModal = false;
+      this.selectedSessionDetails = null;
     } finally {
       this.loadingDetails = false;
     }
   }
-
-  private buildDetailsTemplate(): any {
-    // We will bind a template in HTML via standard view children, but since dynamic template ref creation is standard,
-    // we can directly define the detailed modal contents inside the HTML component, and trigger via standard boolean modal bind!
-    // This is much cleaner, less complex and avoids DOM leakages.
-    // Let's implement details modal directly in the component's HTML with `nzVisible`!
-    this.showDetailsModal = true;
-    return null;
-  }
-
-  showDetailsModal: boolean = false;
 
   closeDetailsModal(): void {
     this.showDetailsModal = false;
