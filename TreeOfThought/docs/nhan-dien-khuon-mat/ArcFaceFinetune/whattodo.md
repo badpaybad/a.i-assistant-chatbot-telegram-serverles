@@ -38,4 +38,4 @@ MediaPipe Tasks API để detect face , align face để hỗ trợ cả typescr
 
 Finetune với CPU trước để test thành công finetune ra file onnx, finetune xong cần xuất file .onnx và in ra đường dẫn để có thể dùng bên c# dotnet 
 
-Viết hướng dẫn để khởi tạo môi trường chạy được finetune
+Viết hướng dẫn để khởi tạo môi trường chạy được finetune, các khuyến nghị suggest khi finetune để đạt kết quả tốt nhất về việc nhận dạng khuôn mặt (face embedding)

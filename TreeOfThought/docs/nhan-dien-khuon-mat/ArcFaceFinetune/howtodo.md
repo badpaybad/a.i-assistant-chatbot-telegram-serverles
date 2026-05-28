@@ -71,6 +71,61 @@ DEVICE_CONFIG = "cpu"    # ← Mặc định: CPU (test ổn định trước)
 > **Lưu ý AMD GPU (RDNA3 - gfx1103)**: Code đã tích hợp sẵn `HSA_OVERRIDE_GFX_VERSION=11.0.0`
 > để fix lỗi rocBLAS với chip AMD Radeon RX 7600/7700 (gfx1103). Không cần set thủ công.
 
+### Cấu hình EPOCHS, BATCH_SIZE và dữ liệu
+
+#### Tại sao EPOCHS = 3 mặc định là chưa đủ?
+
+Khi chạy với dữ liệu thực, nếu **Loss = 0.0000 ngay từ Epoch 1** thì đó là dấu hiệu **memorization (học vẹt)**, không phải fine-tune thực sự. Nguyên nhân thường là:
+
+- Chỉ có **1 danh tính (1 user)** — ArcFace cần tối thiểu **2 người** để học phân biệt inter-class
+- Quá ít ảnh (< 5 ảnh/người)
+
+#### Yêu cầu dữ liệu tối thiểu
+
+| Mức độ | Số người | Ảnh/người | Ghi chú |
+|---|---|---|---|
+| ⚠️ Không đủ | 1 | bất kỳ | ArcFace không học được |
+| 🟡 Tối thiểu | ≥ 2 | ≥ 5 | Để pipeline không crash |
+| ✅ Khuyến nghị | ≥ 3 | ≥ 10 | Kết quả embedding tốt hơn |
+| 🚀 Production | ≥ 10 | ≥ 20 | Embedding phân biệt rõ ràng |
+
+Cấu trúc `dataraw/` đúng cho 3 người:
+```
+dataraw/
+├── nguyen_van_a/     ← ít nhất 5–10 ảnh
+│   ├── photo1.jpg
+│   └── ...
+├── tran_thi_b/       ← ít nhất 5–10 ảnh
+│   └── ...
+└── le_van_c/         ← ít nhất 5–10 ảnh
+    └── ...
+```
+
+#### Khuyến nghị EPOCHS theo kích thước dataset
+
+| Tình huống | Số người | Ảnh/người | EPOCHS | BATCH_SIZE | LR |
+|---|---|---|---|---|---|
+| Test nhỏ | 2–5 | 5–10 | **20–30** | 4 | 0.0005 |
+| Production nhỏ | 10–50 | 10–20 | **15–25** | 8 | 0.0005 |
+| Production lớn | 50–500 | 20–50 | **10–15** | 16 | 0.001 |
+| Enterprise | > 500 | 50+ | **5–10** | 32 | 0.001 |
+
+Cập nhật trong `main.py` (dòng 85–88) theo tình huống thực tế:
+
+```python
+# Ví dụ cho dataset nhỏ (2–10 người, 5–20 ảnh/người)
+BATCH_SIZE    = 4       # Nhỏ hơn để phù hợp dataset ít ảnh
+EPOCHS        = 20      # Đủ để loss hội tụ thực sự
+LEARNING_RATE = 0.0005  # Nhỏ hơn để fine-tune mượt hơn
+
+# Ví dụ cho dataset production (10–50 người, 10–50 ảnh/người)
+BATCH_SIZE    = 8
+EPOCHS        = 15
+LEARNING_RATE = 0.0005
+```
+
+> **Dấu hiệu fine-tune tốt**: Loss **bắt đầu từ 3–6** rồi **giảm dần** qua các epoch, không phải 0 ngay từ đầu. Nếu loss vẫn 0 từ epoch 1, hãy kiểm tra lại số lượng người và ảnh trong `dataraw/`.
+
 ### Thư mục model được tải tự động
 
 Khi chạy `python main.py`, các model sau sẽ được **tự động tải về** `./arcfacemodels/`:
@@ -96,6 +151,8 @@ Sau khi chạy thành công, terminal sẽ in ra đường dẫn tuyệt đối:
 ```
 
 ---
+
+
 
 
 ## 1. Tổng quan Kiến trúc Pipeline Hệ thống
