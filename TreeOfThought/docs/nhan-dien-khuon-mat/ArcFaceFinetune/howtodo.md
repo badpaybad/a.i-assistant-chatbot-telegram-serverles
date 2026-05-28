@@ -152,8 +152,163 @@ Sau khi chạy thành công, terminal sẽ in ra đường dẫn tuyệt đối:
 
 ---
 
+### 🏆 Khuyến nghị đạt Face Embedding chất lượng cao nhất
 
+Đây là tổng hợp best practices từ nghiên cứu ArcFace (InsightFace) và kinh nghiệm production thực tế.
 
+---
+
+#### 1. Chất lượng & Đa dạng ảnh đầu vào — Quan trọng nhất
+
+> Embedding chất lượng cao **phụ thuộc 70% vào dữ liệu**, chỉ 30% vào hyperparameter.
+
+| Tiêu chí | ✅ Tốt | ❌ Không tốt |
+|---|---|---|
+| **Góc mặt** | Thẳng mặt, nghiêng ±30°, profile nhẹ | Chỉ có 1 góc duy nhất |
+| **Ánh sáng** | Đa dạng: trong nhà, ngoài trời, ánh đèn | Chỉ chụp 1 điều kiện ánh sáng |
+| **Biểu cảm** | Vui, nghiêm, cười, tự nhiên | Chỉ cười hoặc chỉ nghiêm |
+| **Phân giải** | ≥ 200×200 px (trước khi crop) | Ảnh mờ, nén nhiều |
+| **Che khuất** | ≤ 20% mặt bị che | Đeo khẩu trang, kính đen |
+| **Thời gian** | Nhiều buổi chụp khác nhau | Tất cả từ 1 buổi duy nhất |
+
+**Gợi ý thực tế cho hệ thống đăng ký user:**
+```
+Yêu cầu user chụp 5–10 ảnh từ webcam theo hướng dẫn:
+  1. Nhìn thẳng vào camera
+  2. Xoay mặt nhẹ sang trái (~20°)
+  3. Xoay mặt nhẹ sang phải (~20°)
+  4. Ngước nhìn lên nhẹ
+  5. Cúi xuống nhẹ
+  6. Cười tự nhiên
+```
+
+---
+
+#### 2. Căn chỉnh khuôn mặt — Bắt buộc nhất quán
+
+ArcFace **rất nhạy cảm** với alignment. Một khuôn mặt không căn chỉnh đúng có thể cho cosine similarity < 0.3 dù cùng 1 người.
+
+**Pipeline phải nhất quán:**
+```
+Khi finetune:   ảnh thô → MediaPipe detect → 2-Eye Alignment → 112×112 → embedding
+Khi recognize:  ảnh query → CÙNG MediaPipe detect → CÙNG 2-Eye Alignment → 112×112 → embedding
+```
+
+> ⚠️ **Nguy hiểm**: Dùng thuật toán align khác nhau giữa finetune và recognize sẽ cho kết quả sai hoàn toàn, dù model tốt đến đâu.
+
+Tham số căn chỉnh chuẩn (đã được hardcode trong `main.py` hàm `align_face_python`):
+```python
+target_dist = 35.2372   # khoảng cách 2 mắt (pixel) trong 112×112
+tx = 55.9132            # tâm mắt X trong 112×112
+ty = 51.59885           # tâm mắt Y trong 112×112
+```
+
+---
+
+#### 3. Hyperparameter ArcFace — Tinh chỉnh để embedding tốt hơn
+
+```python
+# Trong main.py — ArcMarginProduct:
+s  = 30.0   # Scale: nên giữ 30–64 (lớn hơn → decision boundary sắc nét hơn)
+m  = 0.50   # Margin: nên giữ 0.3–0.5 (lớn hơn → inter-class separation tốt hơn)
+            # Nếu dataset nhỏ (< 50 người): dùng m = 0.3 để dễ hội tụ hơn
+            # Nếu dataset lớn (> 100 người): dùng m = 0.5 để phân biệt rõ hơn
+```
+
+Cài đặt nhanh theo quy mô:
+
+| Dataset | s | m | EPOCHS | LR | BATCH_SIZE |
+|---|---|---|---|---|---|
+| Nhỏ: 2–10 người, 5–15 ảnh/người | 30 | 0.3 | 20–30 | 0.0005 | 4 |
+| Vừa: 10–50 người, 10–30 ảnh/người | 30 | 0.5 | 15–20 | 0.0005 | 8 |
+| Lớn: 50–500 người, 20+ ảnh/người | 64 | 0.5 | 10–15 | 0.001 | 16–32 |
+
+---
+
+#### 4. L2 Normalization — Bắt buộc khi so sánh embedding
+
+Embedding ra từ ONNX **phải được normalize** trước khi so sánh:
+
+**Python (khi trích xuất để lưu DB):**
+```python
+import numpy as np
+
+embedding = session.run(None, {'input': face_tensor})[0][0]  # shape (512,)
+embedding_normalized = embedding / np.linalg.norm(embedding)  # L2 normalize
+# Lưu embedding_normalized vào PostgreSQL
+```
+
+**C# .NET (khi trích xuất để so sánh):**
+```csharp
+float[] embedding = session.Run(input)[0].AsEnumerable<float>().ToArray();
+
+// L2 normalize
+float norm = (float)Math.Sqrt(embedding.Sum(x => x * x));
+float[] normalized = embedding.Select(x => x / norm).ToArray();
+```
+
+> Sau khi normalize, dùng **cosine similarity** hoặc **dot product** đều cho cùng kết quả (vì vector đã có độ dài = 1).
+
+---
+
+#### 5. Ngưỡng nhận diện (Threshold) — Hiệu chỉnh cho từng môi trường
+
+| Ngưỡng cosine similarity | Ý nghĩa | Dùng khi |
+|---|---|---|
+| `> 0.6` | Cùng người — rất chắc chắn | Hệ thống bảo mật cao |
+| `> 0.5` | Cùng người — khá chắc chắn | Ứng dụng thông thường ✅ |
+| `> 0.4` | Có thể cùng người | Môi trường kiểm soát tốt |
+| `< 0.3` | Khác người | — |
+
+**Khuyến nghị**: Bắt đầu với ngưỡng `0.5` rồi điều chỉnh dựa trên FP/FN thực tế.
+
+```sql
+-- PostgreSQL pgvector: tìm người khớp, ngưỡng cosine similarity > 0.5
+SELECT user_id, 1 - (embedding <=> query_embedding::vector) AS similarity
+FROM face_embeddings
+WHERE 1 - (embedding <=> query_embedding::vector) > 0.5
+ORDER BY similarity DESC
+LIMIT 1;
+```
+
+---
+
+#### 6. Dấu hiệu chẩn đoán chất lượng embedding
+
+Sau fine-tune, kiểm tra chất lượng bằng cách đo cosine similarity:
+
+```python
+# Test nhanh: 2 ảnh cùng người vs 2 ảnh khác người
+import numpy as np
+
+def cosine_sim(a, b):
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+# Mong đợi:
+# cosine_sim(emb_person_A_photo1, emb_person_A_photo2) > 0.6  (cùng người)
+# cosine_sim(emb_person_A_photo1, emb_person_B_photo1) < 0.3  (khác người)
+```
+
+| Kết quả | Chẩn đoán | Giải pháp |
+|---|---|---|
+| Cùng người: 0.8–1.0, Khác người: 0.0–0.2 | 🏆 Xuất sắc | Giữ nguyên |
+| Cùng người: 0.6–0.8, Khác người: 0.1–0.3 | ✅ Tốt | Đủ dùng production |
+| Cùng người: 0.4–0.6, Khác người: 0.2–0.4 | 🟡 Cần cải thiện | Thêm ảnh, tăng EPOCHS |
+| Cùng người: < 0.4 hoặc Khác người: > 0.5 | ❌ Embedding sai | Kiểm tra alignment pipeline |
+
+---
+
+#### 7. Các lỗi phổ biến và cách tránh
+
+| Lỗi | Nguyên nhân | Cách tránh |
+|---|---|---|
+| Loss = 0 ngay từ epoch 1 | Chỉ 1 người trong dataset | Thêm tối thiểu 2 người |
+| Cosine similarity cao với mọi người | Thiếu L2 normalize | Normalize embedding trước khi lưu và so sánh |
+| Recognize sai dù finetune tốt | Align khác nhau giữa train và infer | Dùng cùng `align_face_python()` cho cả 2 bước |
+| Embedding không ổn định | Ảnh chụp điều kiện quá khác nhau | Chuẩn hóa điều kiện chụp hoặc thêm ảnh đa dạng hơn |
+| Model lớn nhưng accuracy thấp | Fine-tune quá ít epochs | Tăng EPOCHS, giảm LR |
+
+---
 
 ## 1. Tổng quan Kiến trúc Pipeline Hệ thống
 
