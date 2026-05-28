@@ -3,7 +3,7 @@ import {
   NhanDienKhuonMatService,
   TrainingComponent,
   provideNhanDienKhuonMat
-} from "./chunk-ROIGWPLG.js";
+} from "./chunk-MODKODCG.js";
 import "./chunk-UAF4BG7N.js";
 import "./chunk-UCSEFF56.js";
 import "./chunk-IRGOCD6C.js";
@@ -15,4 +15,4 @@ export {
   TrainingComponent,
   provideNhanDienKhuonMat
 };
-//# sourceMappingURL=chunk-QXS3AHXX.js.map
+//# sourceMappingURL=chunk-5PLKZTMU.js.map

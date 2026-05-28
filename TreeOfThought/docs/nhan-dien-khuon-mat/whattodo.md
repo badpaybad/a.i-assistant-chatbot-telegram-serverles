@@ -110,3 +110,6 @@ Ngay dưới Log region: sẽ hiện các tên folder theo ngày nằm bên tron
             các subfolder data_dir có tên là {userid_username} , load modal best_model_output_path để lấy embeding từng ảnh bên trong folder {userid_username} và lưu vào db context riêng cho nhận diện khuôn mặt để lưu trữ
                 Cần dùng dbcontext riêng cho nhận diện khuôn mặt để lưu trữ
                     1 user có nhiều embeding vector
+
+khi ở Chọn User để Đào Tạo chọn xong cần bổ xung nút Đào tạo
+    click nút Đào tạo thì tiến hành download ảnh và training

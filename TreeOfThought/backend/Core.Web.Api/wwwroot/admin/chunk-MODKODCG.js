@@ -3994,12 +3994,26 @@ function TrainingComponent_ng_template_4_Template(rf, ctx) {
       return \u0275\u0275resetView(ctx_r1.loadUsersWithDefinitions());
     });
     \u0275\u0275element(6, "span", 35);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "button", 36);
+    \u0275\u0275listener("click", function TrainingComponent_ng_template_4_Template_button_click_7_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r1 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r1.startTraining());
+    });
+    \u0275\u0275element(8, "span", 37);
+    \u0275\u0275text(9, " \u0110\xE0o t\u1EA1o ");
     \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r1 = \u0275\u0275nextContext();
+    \u0275\u0275advance(7);
+    \u0275\u0275property("disabled", ctx_r1.isTraining || ctx_r1.selectedUserIds.size === 0);
   }
 }
 function TrainingComponent_tr_17_img_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 46);
+    \u0275\u0275element(0, "img", 48);
   }
   if (rf & 2) {
     const user_r4 = \u0275\u0275nextContext().$implicit;
@@ -4008,7 +4022,7 @@ function TrainingComponent_tr_17_img_5_Template(rf, ctx) {
 }
 function TrainingComponent_tr_17_div_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 47);
+    \u0275\u0275elementStart(0, "div", 49);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -4021,34 +4035,34 @@ function TrainingComponent_tr_17_div_6_Template(rf, ctx) {
 function TrainingComponent_tr_17_Template(rf, ctx) {
   if (rf & 1) {
     const _r3 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "tr", 36);
+    \u0275\u0275elementStart(0, "tr", 38);
     \u0275\u0275listener("click", function TrainingComponent_tr_17_Template_tr_click_0_listener() {
       const user_r4 = \u0275\u0275restoreView(_r3).$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.toggleUserSelection(user_r4.id));
     });
-    \u0275\u0275elementStart(1, "td", 37);
+    \u0275\u0275elementStart(1, "td", 39);
     \u0275\u0275listener("click", function TrainingComponent_tr_17_Template_td_click_1_listener($event) {
       return $event.stopPropagation();
     });
-    \u0275\u0275elementStart(2, "label", 38);
+    \u0275\u0275elementStart(2, "label", 40);
     \u0275\u0275listener("nzCheckedChange", function TrainingComponent_tr_17_Template_label_nzCheckedChange_2_listener() {
       const user_r4 = \u0275\u0275restoreView(_r3).$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.toggleUserSelection(user_r4.id));
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(3, "td")(4, "div", 39);
-    \u0275\u0275template(5, TrainingComponent_tr_17_img_5_Template, 1, 1, "img", 40)(6, TrainingComponent_tr_17_div_6_Template, 2, 1, "div", 41);
-    \u0275\u0275elementStart(7, "div")(8, "div", 42);
+    \u0275\u0275elementStart(3, "td")(4, "div", 41);
+    \u0275\u0275template(5, TrainingComponent_tr_17_img_5_Template, 1, 1, "img", 42)(6, TrainingComponent_tr_17_div_6_Template, 2, 1, "div", 43);
+    \u0275\u0275elementStart(7, "div")(8, "div", 44);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "div", 43);
+    \u0275\u0275elementStart(10, "div", 45);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()()()();
     \u0275\u0275elementStart(12, "td");
-    \u0275\u0275element(13, "nz-badge", 44);
-    \u0275\u0275elementStart(14, "span", 45);
+    \u0275\u0275element(13, "nz-badge", 46);
+    \u0275\u0275elementStart(14, "span", 47);
     \u0275\u0275text(15, "\xA0 \u1EA3nh \u0111\u1ECBnh ngh\u0129a");
     \u0275\u0275elementEnd()()();
   }
@@ -4072,12 +4086,12 @@ function TrainingComponent_tr_17_Template(rf, ctx) {
 }
 function TrainingComponent_ng_template_18_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 48);
-    \u0275\u0275element(1, "span", 49);
-    \u0275\u0275elementStart(2, "div", 50);
+    \u0275\u0275elementStart(0, "div", 50);
+    \u0275\u0275element(1, "span", 51);
+    \u0275\u0275elementStart(2, "div", 52);
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 user n\xE0o c\xF3 khu\xF4n m\u1EB7t \u0111\u01B0\u1EE3c \u0111\u1ECBnh ngh\u0129a.");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 51);
+    \u0275\u0275elementStart(4, "div", 53);
     \u0275\u0275text(5, "Vui l\xF2ng \u0111\u1ECBnh ngh\u0129a khu\xF4n m\u1EB7t cho user tr\u01B0\u1EDBc khi \u0111\xE0o t\u1EA1o.");
     \u0275\u0275elementEnd()();
   }
@@ -4085,23 +4099,23 @@ function TrainingComponent_ng_template_18_Template(rf, ctx) {
 function TrainingComponent_ng_template_21_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 30);
-    \u0275\u0275element(1, "span", 52);
+    \u0275\u0275element(1, "span", 54);
     \u0275\u0275text(2, "\xA0 \u0110i\u1EC1u Khi\u1EC3n \u0110\xE0o T\u1EA1o");
     \u0275\u0275elementEnd();
   }
 }
 function TrainingComponent_span_27_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 53);
-    \u0275\u0275element(1, "nz-spin", 54);
-    \u0275\u0275elementStart(2, "span", 55);
+    \u0275\u0275elementStart(0, "span", 55);
+    \u0275\u0275element(1, "nz-spin", 56);
+    \u0275\u0275elementStart(2, "span", 57);
     \u0275\u0275text(3, "\u0110ang \u0111\xE0o t\u1EA1o...");
     \u0275\u0275elementEnd()();
   }
 }
 function TrainingComponent_div_33_span_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 61)(1, "nz-tag", 62);
+    \u0275\u0275elementStart(0, "span", 63)(1, "nz-tag", 64);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd()();
   }
@@ -4127,13 +4141,13 @@ function TrainingComponent_div_33_div_6_Template(rf, ctx) {
 }
 function TrainingComponent_div_33_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 56)(1, "div", 57)(2, "span");
+    \u0275\u0275elementStart(0, "div", 58)(1, "div", 59)(2, "span");
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(4, TrainingComponent_div_33_span_4_Template, 3, 1, "span", 58);
+    \u0275\u0275template(4, TrainingComponent_div_33_span_4_Template, 3, 1, "span", 60);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 59);
-    \u0275\u0275template(6, TrainingComponent_div_33_div_6_Template, 2, 3, "div", 60);
+    \u0275\u0275elementStart(5, "div", 61);
+    \u0275\u0275template(6, TrainingComponent_div_33_div_6_Template, 2, 3, "div", 62);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -4149,7 +4163,7 @@ function TrainingComponent_div_33_Template(rf, ctx) {
 function TrainingComponent_ng_template_35_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 30);
-    \u0275\u0275element(1, "span", 63);
+    \u0275\u0275element(1, "span", 65);
     \u0275\u0275text(2, "\xA0 K\u1EBFt Qu\u1EA3 \u0110\xE0o T\u1EA1o & Tr\xEDch Xu\u1EA5t Embedding");
     \u0275\u0275elementEnd();
   }
@@ -4172,20 +4186,20 @@ function TrainingComponent_tr_50_Template(rf, ctx) {
   if (rf & 1) {
     const _r7 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td");
-    \u0275\u0275element(2, "span", 64);
+    \u0275\u0275element(2, "span", 66);
     \u0275\u0275elementStart(3, "strong");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "td", 65)(6, "nz-tag", 18);
+    \u0275\u0275elementStart(5, "td", 67)(6, "nz-tag", 18);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "td", 65)(9, "button", 66);
+    \u0275\u0275elementStart(8, "td", 67)(9, "button", 68);
     \u0275\u0275listener("click", function TrainingComponent_tr_50_Template_button_click_9_listener() {
       const folder_r8 = \u0275\u0275restoreView(_r7).$implicit;
       const ctx_r1 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r1.extractEmbeddings(folder_r8));
     });
-    \u0275\u0275element(10, "span", 67);
+    \u0275\u0275element(10, "span", 69);
     \u0275\u0275text(11, " Tr\xEDch xu\u1EA5t Embedding ");
     \u0275\u0275elementEnd()()();
   }
@@ -4204,16 +4218,16 @@ function TrainingComponent_tr_50_Template(rf, ctx) {
 }
 function TrainingComponent_ng_template_51_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 48);
-    \u0275\u0275element(1, "span", 68);
-    \u0275\u0275elementStart(2, "div", 50);
+    \u0275\u0275elementStart(0, "div", 50);
+    \u0275\u0275element(1, "span", 70);
+    \u0275\u0275elementStart(2, "div", 52);
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 phi\xEAn \u0111\xE0o t\u1EA1o n\xE0o.");
     \u0275\u0275elementEnd()();
   }
 }
 function TrainingComponent_nz_alert_53_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "nz-alert", 69);
+    \u0275\u0275element(0, "nz-alert", 71);
   }
 }
 var _TrainingComponent = class _TrainingComponent {
@@ -4378,10 +4392,10 @@ var _TrainingComponent = class _TrainingComponent {
 _TrainingComponent.\u0275fac = function TrainingComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _TrainingComponent)();
 };
-_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 54, vars: 22, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"]], template: function TrainingComponent_Template(rf, ctx) {
+_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 54, vars: 22, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-left", "8px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "play-circle"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"]], template: function TrainingComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 8)(1, "nz-card", 9);
-    \u0275\u0275template(2, TrainingComponent_ng_template_2_Template, 3, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(4, TrainingComponent_ng_template_4_Template, 7, 0, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(2, TrainingComponent_ng_template_2_Template, 3, 0, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(4, TrainingComponent_ng_template_4_Template, 10, 1, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementStart(6, "nz-spin", 10)(7, "nz-table", 11, 2)(9, "thead")(10, "tr");
     \u0275\u0275element(11, "th", 12);
     \u0275\u0275elementStart(12, "th");
@@ -4544,6 +4558,15 @@ var TrainingComponent = _TrainingComponent;
         <button nz-button nzSize="small" (click)="deselectAll()" style="margin-left: 8px;">B\u1ECF ch\u1ECDn</button>
         <button nz-button nzSize="small" (click)="loadUsersWithDefinitions()" style="margin-left: 8px;">
           <span nz-icon nzType="reload"></span>
+        </button>
+        <button
+          nz-button
+          nzType="primary"
+          nzSize="small"
+          [disabled]="isTraining || selectedUserIds.size === 0"
+          (click)="startTraining()"
+          style="margin-left: 8px;">
+          <span nz-icon nzType="play-circle"></span> \u0110\xE0o t\u1EA1o
         </button>
       </div>
     </ng-template>
@@ -4739,4 +4762,4 @@ export {
   NhanDienKhuonMatComponent,
   TrainingComponent
 };
-//# sourceMappingURL=chunk-ROIGWPLG.js.map
+//# sourceMappingURL=chunk-MODKODCG.js.map

@@ -48,6 +48,29 @@ public static class AuthServiceExtensions
             })
             .AddJwtBearer(options =>
             {
+                options.Events = new JwtBearerEvents
+                {
+                    OnAuthenticationFailed = context =>
+                    {
+                        Console.WriteLine($"[JWT AUTH ERROR] Authentication failed: {context.Exception?.Message}");
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    },
+                    OnTokenValidated = context =>
+                    {
+                        Console.WriteLine("[JWT AUTH SUCCESS] Token validated successfully.");
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    },
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken))
+                        {
+                            context.Token = accessToken;
+                        }
+                        return System.Threading.Tasks.Task.CompletedTask;
+                    }
+                };
+
                 if (isOidc)
                 {
                     options.TokenValidationParameters = new TokenValidationParameters
@@ -86,20 +109,6 @@ public static class AuthServiceExtensions
                     options.TokenValidationParameters.ValidateIssuerSigningKey = true;
                     options.TokenValidationParameters.NameClaimType = AuthConstants.NameClaim;
                     options.TokenValidationParameters.RoleClaimType = AuthConstants.RoleClaim;
-
-                    options.Events = new JwtBearerEvents
-                    {
-                        OnAuthenticationFailed = context =>
-                        {
-                            Console.WriteLine($"[JWT AUTH ERROR] Authentication failed: {context.Exception?.Message}");
-                            return System.Threading.Tasks.Task.CompletedTask;
-                        },
-                        OnTokenValidated = context =>
-                        {
-                            Console.WriteLine("[JWT AUTH SUCCESS] Token validated successfully.");
-                            return System.Threading.Tasks.Task.CompletedTask;
-                        }
-                    };
 
                     Console.WriteLine($"[JWT AUTH] Relying on standard dynamic OIDC JWKS discovery from authority: {authority}");
                 }

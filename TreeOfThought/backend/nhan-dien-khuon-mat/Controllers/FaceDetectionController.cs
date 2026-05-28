@@ -575,9 +575,8 @@ public class FaceDetectionController : BaseController
             }
 
             // 1. Tạo thư mục theo ngày
-            var baseDomain = AppContext.BaseDirectory;
             var dateStr = DateTime.Now.ToString("yyyy-MM-dd");
-            var rootFaceIds = Path.Combine(baseDomain, "facesid");
+            var rootFaceIds = GetRootFaceIdsPath();
             var dateDirPath = Path.Combine(rootFaceIds, dateStr);
             var rawDirPath = Path.Combine(dateDirPath, "dataraw");
             var dataDirPath = Path.Combine(dateDirPath, "data");
@@ -646,9 +645,8 @@ public class FaceDetectionController : BaseController
             }
 
             // 3. Xác định đường dẫn file main.py
-            var arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../../TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune"));
+            var arcfaceDir = GetArcFaceDir();
             var mainPyPath = Path.Combine(arcfaceDir, "main.py");
-            var pythonExe = Path.Combine(arcfaceDir, "venv", "bin", "python3");
 
             if (!System.IO.File.Exists(mainPyPath))
             {
@@ -656,10 +654,15 @@ public class FaceDetectionController : BaseController
                 return;
             }
 
+            var pythonExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../../venv/bin/python3")); // Workspace root venv
             if (!System.IO.File.Exists(pythonExe))
             {
-                pythonExe = "python3"; // Fallback về python3 global
-                await SendSseAsync($"[WARN] Không tìm thấy venv, sử dụng python3 toàn cục.");
+                pythonExe = Path.GetFullPath(Path.Combine(arcfaceDir, "venv", "bin", "python3")); // Local venv
+            }
+            if (!System.IO.File.Exists(pythonExe))
+            {
+                pythonExe = "python3"; // Fallback to global python3
+                await SendSseAsync("[WARN] Không tìm thấy venv, sử dụng python3 toàn cục.");
             }
 
             // 4. Xác định đường dẫn các file model output
@@ -765,8 +768,7 @@ public class FaceDetectionController : BaseController
     [HttpGet("training-folders")]
     public IActionResult GetTrainingFolders()
     {
-        var baseDomain = AppContext.BaseDirectory;
-        var rootFaceIds = Path.Combine(baseDomain, "facesid");
+        var rootFaceIds = GetRootFaceIdsPath();
 
         if (!Directory.Exists(rootFaceIds))
             return Ok(new List<object>());
@@ -795,8 +797,8 @@ public class FaceDetectionController : BaseController
     [HttpPost("training-folders/{folderName}/extract-embeddings")]
     public async Task<IActionResult> ExtractEmbeddings(string folderName)
     {
-        var baseDomain = AppContext.BaseDirectory;
-        var dateDirPath = Path.Combine(baseDomain, "facesid", folderName);
+        var rootFaceIds = GetRootFaceIdsPath();
+        var dateDirPath = Path.Combine(rootFaceIds, folderName);
         var bestModelPath = Path.Combine(dateDirPath, "arcface_model_best.onnx");
         var dataDirPath = Path.Combine(dateDirPath, "data");
 
@@ -948,6 +950,23 @@ public class FaceDetectionController : BaseController
         var norm = (float)Math.Sqrt(vector.Sum(x => x * x));
         if (norm < 1e-10f) return vector;
         return vector.Select(x => x / norm).ToArray();
+    }
+
+    private string GetArcFaceDir()
+    {
+        var baseDomain = AppContext.BaseDirectory;
+        var arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../ArcFaceFinetune")); // For Core.Web.Api/ArcFaceFinetune
+        if (!System.IO.File.Exists(Path.Combine(arcfaceDir, "main.py")))
+        {
+            // Fallback to docs directory inside monorepo structure
+            arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../../../docs/nhan-dien-khuon-mat/ArcFaceFinetune"));
+        }
+        return arcfaceDir;
+    }
+
+    private string GetRootFaceIdsPath()
+    {
+        return Path.Combine(GetArcFaceDir(), "facesid");
     }
 
     /// <summary>
