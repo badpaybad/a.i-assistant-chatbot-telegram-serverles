@@ -299,11 +299,11 @@ def preprocess_dataraw():
         print(f"[!] Lỗi khi nạp MediaPipe ({e}). Sẽ sử dụng OpenCV Haar Cascade làm fallback.")
 
     # OpenCV Haar Cascade (fallback)
-    face_cascade = eye_cascade = None
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
     if not use_mp:
-        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-        eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
         print("[+] Sử dụng OpenCV Haar Cascade làm bộ phát hiện khuôn mặt (fallback).")
+
 
     face_count = 0
     fail_count = 0
