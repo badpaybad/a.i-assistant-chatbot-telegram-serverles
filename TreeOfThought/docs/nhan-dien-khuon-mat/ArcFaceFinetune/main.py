@@ -3,6 +3,7 @@ import sys
 import math
 import shutil
 import urllib.request
+import argparse
 
 # ── Fix AMD GPU gfx1103 (RDNA3) compatibility với PyTorch ROCm ──────────────
 # GPU gfx1103 (RX 7600/7700) chưa có TensileLibrary riêng, override về gfx1100
@@ -11,16 +12,32 @@ if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
     os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Tinh chỉnh mô hình ArcFace với các tham số dòng lệnh.")
+    parser.add_argument("--epochs", type=int, default=100, help="Số lượng Epochs huấn luyện (mặc định: 100)")
+    parser.add_argument("--batch_size", type=int, default=8, help="Kích thước Batch size (mặc định: 8)")
+    parser.add_argument("--learning_rate", type=float, default=0.0001, help="Tốc độ học Learning Rate (mặc định: 0.0001)")
+    parser.add_argument("--align_mode", type=str, default="advanced", choices=["standard", "advanced"], help="Chế độ căn chỉnh khuôn mặt (mặc định: advanced)")
+    parser.add_argument("--raw_dir", type=str, default="./dataraw", help="Thư mục chứa ảnh thô (mặc định: ./dataraw)")
+    parser.add_argument("--data_dir", type=str, default="./data", help="Thư mục chứa ảnh đã căn chỉnh (mặc định: ./data)")
+    parser.add_argument("--model_output_path", type=str, default="./arcface_model_final.onnx", help="Đường dẫn xuất mô hình ONNX final (mặc định: ./arcface_model_final.onnx)")
+    parser.add_argument("--mobile_model_output_path", type=str, default="./arcface_model_final_mobile.onnx", help="Đường dẫn xuất mô hình ONNX final cho di động (mặc định: ./arcface_model_final_mobile.onnx)")
+    parser.add_argument("--best_model_output_path", type=str, default="./arcface_model_best.onnx", help="Đường dẫn xuất mô hình ONNX best (mặc định: ./arcface_model_best.onnx)")
+    parser.add_argument("--best_mobile_model_output_path", type=str, default="./arcface_model_best_mobile.onnx", help="Đường dẫn xuất mô hình ONNX best cho di động (mặc định: ./arcface_model_best_mobile.onnx)")
+    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Thiết bị huấn luyện: auto, cuda, cpu (mặc định: auto)")
+    
+    args, unknown = parser.parse_known_args()
+    return args
+
+args = parse_args()
+
 # Cấu hình thiết bị chạy: 'auto', 'cuda', hoặc 'cpu'
-# - 'auto': Tự động chọn GPU CUDA nếu có, nếu không dùng CPU
-# - 'cpu': Ép buộc chạy bằng CPU (nên dùng để test trước khi chạy GPU)
-# - 'cuda': Ép buộc chạy bằng GPU CUDA
-DEVICE_CONFIG = "cpu"
+DEVICE_CONFIG = args.device
 
 # Lựa chọn chế độ căn chỉnh khuôn mặt (Align Face Mode):
 # - "standard": Chung chung đủ tốt (Dùng MediaPipe BlazeFace nhanh, nhẹ, lý tưởng cho người bình thường)
 # - "advanced": Tăng cường chuyên sâu (Dùng MediaPipe Face Landmarker 3D, tối ưu cực hạn cho các điều kiện khắc nghiệt: khẩu trang, kính mắt, trẻ em, người già, sinh đôi)
-ALIGN_MODE = "advanced"
+ALIGN_MODE = args.align_mode
 
 # Cố gắng import các thư viện cần thiết một cách an toàn để tránh bị Crash Traceback khi thiếu thư viện
 missing_libs = []
@@ -83,17 +100,17 @@ if len(missing_libs) > 0:
 # ==========================================
 # 1. CẤU HÌNH & KHỞI TẠO
 # ==========================================
-RAW_DIR = "./dataraw"
-DATA_DIR = "./data"
-MODEL_OUTPUT_PATH = "./arcface_model_final.onnx"
-MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_final_mobile.onnx"
-BEST_MODEL_OUTPUT_PATH = "./arcface_model_best.onnx"
-BEST_MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_best_mobile.onnx"
+RAW_DIR = args.raw_dir
+DATA_DIR = args.data_dir
+MODEL_OUTPUT_PATH = args.model_output_path
+MOBILE_MODEL_OUTPUT_PATH = args.mobile_model_output_path
+BEST_MODEL_OUTPUT_PATH = args.best_model_output_path
+BEST_MOBILE_MODEL_OUTPUT_PATH = args.best_mobile_model_output_path
 EMBEDDING_SIZE = 512
 IMAGE_SIZE = (112, 112)
-BATCH_SIZE = 8
-EPOCHS = 100
-LEARNING_RATE = 0.0001
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+LEARNING_RATE = args.learning_rate
 
 
 # Đường dẫn thư mục tải mô hình pre-trained ArcFace tốt nhất
@@ -817,7 +834,7 @@ def main():
         correct = 0
         total = 0
         
-        for imgs, labels in dataloader:
+        for batch_idx, (imgs, labels) in enumerate(dataloader):
             imgs = imgs.to(device)
             labels = labels.to(device)
             
@@ -838,11 +855,23 @@ def main():
             
             _, predicted = outputs.max(1)
             total += labels.size(0)
-            correct += predicted.eq(labels).sum().item()
+            correct_batch = predicted.eq(labels).sum().item()
+            correct += correct_batch
+            
+            # Tính độ chính xác của batch hiện tại
+            batch_acc = 100.0 * correct_batch / labels.size(0)
+            
+            # Ghi nhận log tiến trình của batch cho C# parse
+            print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(dataloader)} | Loss: {loss.item():.4f} | Acc: {batch_acc:.2f}%")
+            sys.stdout.flush()
             
         epoch_loss = total_loss / len(dataset)
         epoch_acc = 100.0 * correct / total
+        
+        # Ghi nhận log tiến trình hoàn thành epoch
+        print(f"[EPOCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.2f}%")
         print(f"    Epoch [{epoch+1}/{EPOCHS}] - Loss: {epoch_loss:.4f} - Accuracy: {epoch_acc:.2f}%")
+        sys.stdout.flush()
         
         # Theo dõi loss tốt nhất để lưu checkpoint
         if epoch_loss < best_loss:

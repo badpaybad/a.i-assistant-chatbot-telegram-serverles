@@ -714,14 +714,183 @@ Chúng ta chỉ tiến hành huấn luyện tinh chỉnh (Fine-tune) lại mô h
 
 Tệp `main.py` tự động hóa việc chuẩn bị dữ liệu mẫu, tải mô hình ArcFace tiền huấn luyện ResNet-50 từ Hugging Face về `./arcfacemodels/resnet50_arcface.pth`, huấn luyện tinh chỉnh với ArcFace Margin Loss, và xuất/kiểm định định dạng ONNX.
 
-### 5.1 Cấu hình thiết bị phần cứng (CPU / GPU)
-Ở đầu file `main.py`, bạn có thể chỉ định phần cứng hoạt động thông qua biến cấu hình:
-```python
-# Cấu hình phần cứng chạy: 'auto', 'cuda', hoặc 'cpu'
-DEVICE_CONFIG = 'auto'
+### 5.1 Cấu hình động từ Tham số dòng lệnh (CLI Parameters)
+Bản cập nhật mới nhất hỗ trợ cấu hình động thông qua các tham số dòng lệnh để phục vụ C# gọi tiến trình đa luồng (multi-threaded concurrent processes) cho nhiều collections dữ liệu khác nhau cùng lúc.
+
+#### Danh sách các Tham số hỗ trợ:
+| Tham số | Kiểu dữ liệu | Giá trị mặc định | Mô tả |
+| :--- | :--- | :--- | :--- |
+| `--epochs` | `int` | `100` | Số lượng Epochs huấn luyện |
+| `--batch_size` | `int` | `8` | Kích thước Batch size |
+| `--learning_rate` | `float` | `0.0001` | Tốc độ học (Learning Rate) |
+| `--align_mode` | `string` | `"advanced"` | Chế độ căn chỉnh (`standard` hoặc `advanced`) |
+| `--raw_dir` | `string` | `"./dataraw"` | Đường dẫn thư mục chứa ảnh thô chưa crop |
+| `--data_dir` | `string` | `"./data"` | Đường dẫn thư mục chứa ảnh đã crop/align |
+| `--model_output_path` | `string` | `"./arcface_model_final.onnx"` | Đường dẫn xuất mô hình ONNX cuối cùng |
+| `--mobile_model_output_path` | `string` | `"./arcface_model_final_mobile.onnx"` | Đường dẫn xuất mô hình ONNX di động cuối cùng |
+| `--best_model_output_path` | `string` | `"./arcface_model_best.onnx"` | Đường dẫn xuất mô hình ONNX tốt nhất (best loss) |
+| `--best_mobile_model_output_path` | `string` | `"./arcface_model_best_mobile.onnx"` | Đường dẫn xuất mô hình ONNX di động tốt nhất |
+| `--device` | `string` | `"auto"` | Thiết bị phần cứng hoạt động (`auto`, `cuda`, hoặc `cpu`) |
+
+*Ví dụ chạy thủ công bằng dòng lệnh:*
+```bash
+python main.py --epochs 200 --batch_size 16 --learning_rate 0.0001 --align_mode advanced --raw_dir ./dataraw_col1 --data_dir ./data_col1 --model_output_path ./arcface_model_final_col1.onnx --mobile_model_output_path ./arcface_model_final_mobile_col1.onnx --best_model_output_path ./arcface_model_best_col1.onnx --best_mobile_model_output_path ./arcface_model_best_mobile_col1.onnx --device auto
 ```
 
-### 5.2 Hướng dẫn Khởi tạo Môi trường Chạy (Setup Environment Guide)
+---
+
+### 5.2 Định dạng Logs tiến trình trên stdout (Dùng cho C# Parse)
+Để hỗ trợ C# backend đọc luồng Output và cập nhật thanh tiến trình giao diện hoặc log nghiệp vụ trong thời gian thực, hệ thống in ra các dòng log có cấu trúc đặc biệt được tự động đẩy ngay lập tức qua lệnh `sys.stdout.flush()`:
+
+1. **Log tiến trình Batch (Chạy liên tục trong epoch):**
+   ```text
+   [BATCH_PROGRESS] Epoch: <epoch>/<total_epochs> | Batch: <batch>/<total_batches> | Loss: <loss> | Acc: <accuracy>%
+   ```
+   *Ví dụ:* `[BATCH_PROGRESS] Epoch: 1/200 | Batch: 5/10 | Loss: 0.2345 | Acc: 80.00%`
+
+2. **Log hoàn thành Epoch (In ở cuối mỗi epoch):**
+   ```text
+   [EPOCH_PROGRESS] Epoch: <epoch>/<total_epochs> | Loss: <loss> | Acc: <accuracy>%
+   ```
+   *Ví dụ:* `[EPOCH_PROGRESS] Epoch: 1/200 | Loss: 0.1843 | Acc: 85.50%`
+
+---
+
+### 5.3 Hướng dẫn C# tích hợp gọi Tiến trình Huấn luyện & Đọc tiến độ
+Dưới đây là mã nguồn C# .NET 8.0 chuẩn hóa để khởi chạy tiến trình Python `main.py`, chuyển tiếp các cấu hình dạng tham số động, đồng thời đọc luồng `stdout` không đồng bộ bằng Regex để bóc tách tiến độ:
+
+```csharp
+using System;
+using System.Diagnostics;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+public class FaceFinetuneRunner
+{
+    // Regex chuẩn để phân tích cú pháp tiến trình từ Python stdout
+    private static readonly Regex BatchProgressRegex = new Regex(
+        @"\[BATCH_PROGRESS\] Epoch:\s*(\d+)/(\d+)\s*\|\s*Batch:\s*(\d+)/(\d+)\s*\|\s*Loss:\s*([\d\.]+)\s*\|\s*Acc:\s*([\d\.]+)%", 
+        RegexOptions.Compiled
+    );
+    private static readonly Regex EpochProgressRegex = new Regex(
+        @"\[EPOCH_PROGRESS\] Epoch:\s*(\d+)/(\d+)\s*\|\s*Loss:\s*([\d\.]+)\s*\|\s*Acc:\s*([\d\.]+)%", 
+        RegexOptions.Compiled
+    );
+
+    /// <summary>
+    /// Kích hoạt tiến trình Python fine-tune độc lập cho từng Collection dữ liệu
+    /// </summary>
+    public async Task RunFinetuneAsync(
+        string rawDir, 
+        string dataDir, 
+        string modelOutputPath, 
+        string bestModelOutputPath, 
+        int epochs = 100, 
+        int batchSize = 8, 
+        double learningRate = 0.0001)
+    {
+        // Đường dẫn đến môi trường Python ảo venv
+        string pythonExecutable = "./venv/bin/python3"; 
+        
+        // Tạo chuỗi đối số tham số dòng lệnh động
+        string arguments = $"main.py " +
+                           $"--raw_dir \"{rawDir}\" " +
+                           $"--data_dir \"{dataDir}\" " +
+                           $"--model_output_path \"{modelOutputPath}\" " +
+                           $"--best_model_output_path \"{bestModelOutputPath}\" " +
+                           $"--epochs {epochs} " +
+                           $"--batch_size {batchSize} " +
+                           $"--learning_rate {learningRate} " +
+                           $"--device auto";
+
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = pythonExecutable,
+            Arguments = arguments,
+            WorkingDirectory = "/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using var process = new Process { StartInfo = startInfo };
+        
+        // Xử lý đọc dòng Stdout không đồng bộ (Asynchronous Output Stream)
+        process.OutputDataReceived += (sender, e) =>
+        {
+            if (string.IsNullOrEmpty(e.Data)) return;
+
+            // 1. Khớp tiến độ Batch
+            var batchMatch = BatchProgressRegex.Match(e.Data);
+            if (batchMatch.Success)
+            {
+                int epoch = int.Parse(batchMatch.Groups[1].Value);
+                int totalEpochs = int.Parse(batchMatch.Groups[2].Value);
+                int batch = int.Parse(batchMatch.Groups[3].Value);
+                int totalBatches = int.Parse(batchMatch.Groups[4].Value);
+                double loss = double.Parse(batchMatch.Groups[5].Value);
+                double acc = double.Parse(batchMatch.Groups[6].Value);
+
+                // Tính toán phần trăm tiến độ tổng thể (hoặc theo epoch)
+                double epochProgress = (double)batch / totalBatches * 100.0;
+                Console.WriteLine($"[C# Tiến độ UI] Epoch {epoch}/{totalEpochs} - Tiến trình Batch: {epochProgress:F1}% | Loss: {loss:F4} | Acc: {acc:F2}%");
+                
+                // TODO: Gọi callback cập nhật giao diện (WPF, WinForms, hoặc Blazor SignalR)
+                return;
+            }
+
+            // 2. Khớp hoàn thành Epoch
+            var epochMatch = EpochProgressRegex.Match(e.Data);
+            if (epochMatch.Success)
+            {
+                int epoch = int.Parse(epochMatch.Groups[1].Value);
+                int totalEpochs = int.Parse(epochMatch.Groups[2].Value);
+                double loss = double.Parse(epochMatch.Groups[3].Value);
+                double acc = double.Parse(epochMatch.Groups[4].Value);
+
+                Console.WriteLine($"[C# Hoàn thành Epoch] Epoch {epoch}/{totalEpochs} xong! Loss trung bình: {loss:F4} | Acc trung bình: {acc:F2}%");
+                return;
+            }
+
+            // In log thông thường từ Python
+            Console.WriteLine($"[Python Console Log] {e.Data}");
+        };
+
+        // Xử lý luồng lỗi stderr
+        process.ErrorDataReceived += (sender, e) =>
+        {
+            if (!string.IsNullOrEmpty(e.Data))
+            {
+                Console.WriteLine($"[Python Error] {e.Data}");
+            }
+        };
+
+        Console.WriteLine($"[C#] Bắt đầu gọi Python Finetune cho thư mục raw: {rawDir}...");
+        process.Start();
+        
+        // Kích hoạt đọc bất tuần tự
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+
+        // Chờ tiến trình kết thúc
+        await process.WaitForExitAsync();
+        
+        if (process.ExitCode == 0)
+        {
+            Console.WriteLine("[C# Success] Tinh chỉnh thành công! ONNX model sẵn sàng tại: " + modelOutputPath);
+        }
+        else
+        {
+            Console.WriteLine($"[C# Error] Tiến trình thất bại với mã lỗi: {process.ExitCode}");
+        }
+    }
+}
+```
+
+---
+
+### 5.4 Hướng dẫn Khởi tạo Môi trường Chạy (Setup Environment Guide)
 
 Để khởi tạo môi trường Python sạch sẽ, độc lập và cài đặt đầy đủ các thư viện phụ thuộc, hãy thực thi chính xác các bước sau trong Terminal tại thư mục làm việc:
 
@@ -734,39 +903,24 @@ python3 -m venv venv
 
 # 2. Kích hoạt môi trường ảo
 source venv/bin/activate
-source /work/a.i-assistant-chatbot-telegram-serverles/venv/bin/activate
 
 # 3. Nâng cấp bộ quản lý gói pip lên phiên bản mới nhất
 pip install --upgrade pip
 
 # 4. Cài đặt các gói phụ thuộc cơ bản (Numpy, Pillow, ONNX, OpenCV, MediaPipe)
-pip install numpy pillow onnx onnxruntime opencv-python mediapipe
+pip install numpy pillow onnx onnxruntime opencv-python-headless mediapipe
 
-# 5. Cài đặt PyTorch & Torchvision (Lựa chọn lệnh phù hợp với phần cứng của bạn):
-
-# --- LỰA CHỌN A: Máy chạy CPU thuần (Không có GPU CUDA hoặc chạy trên Docker Serverless) ---
+# 5. Cài đặt PyTorch & Torchvision (Phù hợp với thiết bị của bạn):
+# Máy chạy CPU thuần (Docker hoặc Server không card đồ họa):
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
-# --- LỰA CHỌN B: Máy hỗ trợ GPU NVIDIA CUDA (Tăng tốc huấn luyện nhanh gấp 20-50 lần) ---
-# Lệnh dưới đây cài đặt bản Torch tương thích CUDA 11.8 hoặc 12.1 phổ biến
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
-
-# 6. Chạy chương trình huấn luyện tinh chỉnh và xuất ONNX
-python main.py
+# Máy chạy GPU NVIDIA CUDA:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
 
 > [!WARNING]
-> **Khắc phục lỗi thiếu thư viện hệ thống trên môi trường Linux (Ubuntu/Debian):**
->
-> Nếu bạn chạy chương trình gặp lỗi dạng `ImportError: libGL.so.1: cannot open shared object file` (thường gặp khi chạy docker hoặc server tối giản thiếu GUI), đó là do hệ điều hành thiếu các thư viện liên kết đồ họa của OpenCV. Hãy chạy lệnh sau trên hệ thống để cài đặt bổ sung:
-> ```bash
-> sudo apt-get update && sudo apt-get install -y libgl1-mesa-glx libglib2.0-0
-> ```
-> *Hoặc một giải pháp thay thế nhanh gọn không cần quyền sudo là gỡ bản opencv thường và cài bản headless:*
-> ```bash
-> pip uninstall -y opencv-python
-> pip install opencv-python-headless
-> ```
+> **Sử dụng opencv-python-headless:**
+> Để chạy ổn định trên Server Linux mà không cần cài đặt các thư viện GUI cồng kềnh (như `libGL.so.1`), tài liệu khuyến nghị cài đặt `opencv-python-headless` thay vì `opencv-python` thông thường.
 
 ---
 

@@ -50,3 +50,20 @@ Cần lưu 2 loại .onnx, xong rồi cũng tạo 2 file onnx cho app mobi
     2 là epoch có loss nhỏ nhất 
 
 Learning Rate quá cao (0.001): Fine-tune một mạng lớn như ResNet-50 trên tập dữ liệu nhỏ (116 ảnh) với Learning Rate 0.001 là quá lớn. Giảm Learning Rate xuống 0.0001 hoặc 0.00005
+
+**cập nhật 2026-05-28 16:16:16**
+
+cần đưa một số cấu hình dạng tham số để tinh chỉnh cho từng trường hợp khi finetune, vd python main.py 
+    --epochs 200
+    --batch_size 16
+    --learning_rate 0.0001
+    --align_mode advanced 
+    --raw_dir ./dataraw
+    --data_dir ./data
+    --model_output_path ./arcface_model_final.onnx
+    --mobile_model_output_path ./arcface_model_final_mobile.onnx
+    --best_model_output_path ./arcface_model_best.onnx
+    --best_mobile_model_output_path ./arcface_model_best_mobile.onnx
+    --device auto
+ở c# sau này sẽ connect tới db tạo dữ liệu ra folder và chỉ định --raw_dir --data_dir ... để  gọi process chạy nhiều luồng thành nhiều collection khác nhau cùng 1 lúc, c# cũng có thể đọc stdout để biết được tiến trình các epoch, batch đang chạy và hoàn thành 
+
