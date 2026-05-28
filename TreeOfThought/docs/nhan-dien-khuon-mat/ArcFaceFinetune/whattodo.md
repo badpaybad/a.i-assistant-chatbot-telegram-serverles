@@ -12,15 +12,14 @@ Nếu dùng postgress thì sao, có thuật toán nào so sánh vector tốt nha
 
 Có thể finetune liên tục được không? Tôi có phần quản lý ảnh khuôn mặt theo user, đã dùng mediapipe trên trình duyệt crop ảnh face cho từng user.
 
-Việc căn chỉnh khuôn mặt sau khi crop cần thực hiện đồng nhất khi tạo ảnh để đưa vào finetune, để đưa vào khi trích xuất embedding, để  khi có ảnh cần recoginze khuôn mặt sau này. Cần hỗ trợ python, typescript, c# 
+Việc căn chỉnh khuôn mặt sau khi crop cần thực hiện đồng nhất khi tạo ảnh để đưa vào finetune, để đưa vào khi trích xuất embedding, để  khi có ảnh cần recoginze khuôn mặt sau này. Cần hỗ trợ python, typescript, c#
 
-Tôi có thể tạo folder ./dataraw bên trong là các subfolder theo id của user, mỗi subfolder id theo user là các ảnh của user. Cần bước tạo ./data từ ./dataraw bằng python để có thể dùng finetune 
+Tôi có thể tạo folder ./dataraw bên trong là các subfolder theo id của user, mỗi subfolder id theo user là các ảnh của user. Cần bước tạo ./data từ ./dataraw bằng python để có thể dùng finetune
 
 Finetune có thể hỗ trợ cả CPU GPU dựa vào việc cấu hình chọn chạy bằng CPU hoặc GPU
 
 Tôi luôn cần finetune để tạo ra onnx, và dùng nó để trích xuất embedding từ khuôn mặt của user (sử dụng c# dotnet 8.0 với onnxruntime), sau đó so sánh vector embedding với vector embedding đã lưu trong postgress để tìm kiếm khuôn mặt.
 
-Viết hướng dẫn để khởi tạo môi trường chạy được finetune 
 
 # Các câu hỏi cần trả lời
 
@@ -33,5 +32,10 @@ Mỗi ảnh để đưa vào tổ chức folder có cần tiêu chuẩn gì khô
 
 dùng postgress và thuật toán HNSW
 
-cần download về local folder vd ./arcfacemodels với pretrain arcface tốt nhất có thể để dùng
+cần download tất cả các model về local folder vd ./arcfacemodels với pretrain arcface tốt nhất có thể để dùng
 
+MediaPipe Tasks API để detect face , align face để hỗ trợ cả typescript, python
+
+Finetune với CPU trước để test thành công finetune ra file onnx, finetune xong cần xuất file .onnx và in ra đường dẫn để có thể dùng bên c# dotnet 
+
+Viết hướng dẫn để khởi tạo môi trường chạy được finetune

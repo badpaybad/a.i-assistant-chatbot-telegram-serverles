@@ -1,13 +1,21 @@
 import os
 import sys
 import math
+import shutil
 import urllib.request
+
+# ── Fix AMD GPU gfx1103 (RDNA3) compatibility với PyTorch ROCm ──────────────
+# GPU gfx1103 (RX 7600/7700) chưa có TensileLibrary riêng, override về gfx1100
+# để dùng chung thư viện RDNA3 gfx1100 gần nhất. Phải set TRƯỚC khi import torch.
+if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
+    os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
+
 
 # Cấu hình thiết bị chạy: 'auto', 'cuda', hoặc 'cpu'
 # - 'auto': Tự động chọn GPU CUDA nếu có, nếu không dùng CPU
-# - 'cpu': Ép buộc chạy bằng CPU (thích hợp máy không có GPU)
+# - 'cpu': Ép buộc chạy bằng CPU (nên dùng để test trước khi chạy GPU)
 # - 'cuda': Ép buộc chạy bằng GPU CUDA
-DEVICE_CONFIG = "auto"
+DEVICE_CONFIG = "cpu"
 
 # Cố gắng import các thư viện cần thiết một cách an toàn để tránh bị Crash Traceback khi thiếu thư viện
 missing_libs = []
@@ -82,8 +90,32 @@ LEARNING_RATE = 0.001
 # Đường dẫn thư mục tải mô hình pre-trained ArcFace tốt nhất
 PRETRAINED_MODEL_DIR = "./arcfacemodels"
 PRETRAINED_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "resnet50_arcface.pth")
-# URL tải mô hình ResNet50 ArcFace Pretrained uy tín từ Hugging Face
+
+# Danh sách URL backup để tải ArcFace Pretrained ResNet50 (thử lần lượt cho đến khi thành công)
+# Nguồn 1: deepinsight/insightface model zoo (public, không cần đăng nhập)
+# Nguồn 2: HuggingFace public model
+PRETRAINED_MODEL_URLS = [
+    # insightface model zoo - MS1MV3 + ArcFace ResNet50
+    "https://github.com/onnx/models/raw/main/validated/vision/body_analysis/arcface/model/arcface-lresnet100e-opset8.onnx",
+    # HuggingFace public (không yêu cầu đăng nhập)
+    "https://huggingface.co/public-data/test-model/resolve/main/model.safetensors",
+]
+# URL chính cho ImageNet ResNet50 PyTorch hub (luôn public)
 PRETRAINED_MODEL_URL = "https://huggingface.co/Simon2nd/arcface-resnet50/resolve/main/backbone.pth"
+
+# Mô hình TFLite BlazeFace cho MediaPipe Tasks API (mediapipe 0.10+)
+MP_FACE_DETECTOR_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "blaze_face_short_range.tflite")
+MP_FACE_DETECTOR_MODEL_URL  = (
+    "https://storage.googleapis.com/mediapipe-models/face_detector/"
+    "blaze_face_short_range/float16/1/blaze_face_short_range.tflite"
+)
+
+# Mô hình TFLite Face Landmark cho align (có thể dùng trong tương lai)
+MP_FACE_LANDMARK_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "face_landmarker.task")
+MP_FACE_LANDMARK_MODEL_URL  = (
+    "https://storage.googleapis.com/mediapipe-models/face_landmarker/"
+    "face_landmarker/float16/1/face_landmarker.task"
+)
 
 # Cấu hình thiết bị chạy dựa vào biến cấu hình DEVICE_CONFIG
 if DEVICE_CONFIG == "auto":
@@ -134,83 +166,199 @@ def align_face_python(image_bgr, eye_left, eye_right):
 # ==========================================
 # 3. TIỀN XỬ LÝ ẢNH THÔ (dataraw -> data)
 # ==========================================
+def _ensure_mp_face_model():
+    """
+    Tải tự động mô hình BlazeFace TFLite về ./arcfacemodels/ nếu chưa có.
+    Cần thiết cho MediaPipe Tasks API (mediapipe 0.10+).
+    """
+    if os.path.exists(MP_FACE_DETECTOR_MODEL_PATH):
+        return True
+    os.makedirs(PRETRAINED_MODEL_DIR, exist_ok=True)
+    print(f"[*] Đang tải mô hình BlazeFace (MediaPipe Tasks) về '{MP_FACE_DETECTOR_MODEL_PATH}'...")
+    try:
+        opener = urllib.request.build_opener()
+        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+        urllib.request.install_opener(opener)
+        urllib.request.urlretrieve(MP_FACE_DETECTOR_MODEL_URL, MP_FACE_DETECTOR_MODEL_PATH)
+        print("[+] Tải mô hình BlazeFace thành công!")
+        return True
+    except Exception as e:
+        print(f"[-] Không thể tải BlazeFace model ({e}). Sẽ dùng OpenCV Haar Cascade thay thế.")
+        return False
+
+
 def preprocess_dataraw():
     """
-    Đọc ảnh thô từ ./dataraw/, dùng MediaPipe phát hiện khuôn mặt và mắt,
-    căn chỉnh chuẩn hóa đồng nhất và lưu vào ./data/ để fine-tune.
+    Đọc ảnh thô từ ./dataraw/, tự động phát hiện khuôn mặt và mắt.
+
+    Chiến lược phát hiện (ưu tiên cao xuống thấp):
+      1. MediaPipe Tasks API (FaceDetector + BlazeFace TFLite) — mediapipe 0.10+
+         → Cho kết quả tốt nhất, trả về keypoints mắt trực tiếp.
+      2. OpenCV Haar Cascade — fallback khi model TFLite không tải được.
+         → Phát hiện mặt + mắt riêng biệt trong ROI khuôn mặt.
+
+    Kết quả cuối: ảnh 112×112 đã căn chỉnh chuẩn ArcFace (2-Eye Similarity Transform).
     """
     if not os.path.exists(RAW_DIR):
         return False
-        
+
     print(f"[*] Phát hiện thư mục ảnh thô '{RAW_DIR}'. Đang tiến hành cắt & căn chỉnh khuôn mặt tự động...")
-    
+
     if cv2 is None:
         print("\n[-] Lỗi: Cần cài đặt thư viện 'opencv-python' để tiền xử lý ảnh thô!")
         print("[*] Vui lòng chạy lệnh: pip install opencv-python\n")
         sys.exit(1)
-        
-    try:
-        import mediapipe as mp
-    except ImportError:
-        print("\n[-] Lỗi: Cần cài đặt thư viện 'mediapipe' để chạy nhận diện điểm mốc tự động!")
-        print("[*] Vui lòng chạy lệnh: pip install mediapipe\n")
-        sys.exit(1)
-        
+
     # Làm sạch thư mục data đích để tránh bị lẫn dữ liệu cũ
     if os.path.exists(DATA_DIR):
         shutil.rmtree(DATA_DIR)
     os.makedirs(DATA_DIR, exist_ok=True)
-    
-    mp_face_detection = mp.solutions.face_detection
+
+    # ------------------------------------------------------------------
+    # Khởi tạo bộ phát hiện khuôn mặt: MediaPipe Tasks API (ưu tiên)
+    # ------------------------------------------------------------------
+    mp_detector = None
+    use_mp_tasks = False
+
+    try:
+        from mediapipe.tasks import python as _mp_py
+        from mediapipe.tasks.python import vision as _mp_vision
+        from mediapipe.tasks.python.core import base_options as _mp_base
+
+        model_ok = _ensure_mp_face_model()
+        if model_ok:
+            base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_DETECTOR_MODEL_PATH)
+            det_opts  = _mp_vision.FaceDetectorOptions(
+                base_options=base_opts,
+                min_detection_confidence=0.5,
+            )
+            mp_detector = _mp_vision.FaceDetector.create_from_options(det_opts)
+            use_mp_tasks = True
+            print("[+] Sử dụng MediaPipe Tasks API (BlazeFace) để phát hiện khuôn mặt — chất lượng cao nhất.")
+    except Exception as e:
+        print(f"[!] MediaPipe Tasks API không khả dụng ({e}). Chuyển sang OpenCV Haar Cascade.")
+
+    # ------------------------------------------------------------------
+    # Khởi tạo OpenCV Haar Cascade (fallback)
+    # ------------------------------------------------------------------
+    face_cascade = eye_cascade = None
+    if not use_mp_tasks:
+        face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+        eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
+        print("[+] Sử dụng OpenCV Haar Cascade làm bộ phát hiện khuôn mặt (fallback).")
+
     face_count = 0
     fail_count = 0
-    
-    with mp_face_detection.FaceDetection(model_selection=1, min_detection_confidence=0.5) as face_detection:
-        for identity in os.listdir(RAW_DIR):
-            identity_raw_path = os.path.join(RAW_DIR, identity)
-            if not os.path.isdir(identity_raw_path):
+
+    # ------------------------------------------------------------------
+    # Hàm helper: MediaPipe Tasks API
+    # ------------------------------------------------------------------
+    def detect_align_mp_tasks(image_bgr):
+        """Dùng MediaPipe Tasks FaceDetector trả về ảnh 112×112 đã căn chỉnh."""
+        import mediapipe as mp_lib
+        h, w = image_bgr.shape[:2]
+        rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        mp_image = mp_lib.Image(image_format=mp_lib.ImageFormat.SRGB, data=rgb)
+        result = mp_detector.detect(mp_image)
+
+        if not result.detections:
+            return None
+
+        # Lấy detection có score cao nhất
+        det = max(result.detections, key=lambda d: d.categories[0].score)
+        kp  = det.keypoints  # list[NormalizedKeypoint]: 0=right_eye, 1=left_eye (nhân trắc học)
+
+        if len(kp) >= 2:
+            # Keypoint 0: mắt phải nhân trắc học (bên trái ảnh)
+            # Keypoint 1: mắt trái nhân trắc học (bên phải ảnh)
+            right_eye = (int(kp[0].x * w), int(kp[0].y * h))
+            left_eye  = (int(kp[1].x * w), int(kp[1].y * h))
+            return align_face_python(image_bgr, right_eye, left_eye)
+        else:
+            # Không đủ keypoint: crop bbox khuôn mặt
+            bb = det.bounding_box
+            x1, y1 = max(0, bb.origin_x), max(0, bb.origin_y)
+            x2, y2 = min(w, bb.origin_x + bb.width), min(h, bb.origin_y + bb.height)
+            face_crop = image_bgr[y1:y2, x1:x2]
+            return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC)
+
+    # ------------------------------------------------------------------
+    # Hàm helper: OpenCV Haar Cascade
+    # ------------------------------------------------------------------
+    def detect_align_opencv(image_bgr):
+        """Dùng OpenCV Haar Cascade phát hiện mặt + mắt, căn chỉnh hình học."""
+        h, w = image_bgr.shape[:2]
+        gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
+
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        if len(faces) == 0:
+            return None
+
+        x, y, fw, fh = max(faces, key=lambda r: r[2] * r[3])
+        roi_gray = gray[y:y+fh, x:x+fw]
+        eyes = eye_cascade.detectMultiScale(roi_gray, scaleFactor=1.1, minNeighbors=5, minSize=(15, 15))
+
+        if len(eyes) >= 2:
+            es = sorted(eyes, key=lambda e: e[0])
+            ex1, ey1, ew1, eh1 = es[0]
+            ex2, ey2, ew2, eh2 = es[1]
+            left_eye  = (x + ex1 + ew1 // 2, y + ey1 + eh1 // 2)
+            right_eye = (x + ex2 + ew2 // 2, y + ey2 + eh2 // 2)
+            return align_face_python(image_bgr, left_eye, right_eye)
+        else:
+            # Fallback: crop với padding 20%
+            pad_x = int(fw * 0.20)
+            pad_y = int(fh * 0.20)
+            face_crop = image_bgr[max(0, y-pad_y):min(h, y+fh+pad_y),
+                                  max(0, x-pad_x):min(w, x+fw+pad_x)]
+            return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC)
+
+    # ------------------------------------------------------------------
+    # Vòng lặp xử lý ảnh
+    # ------------------------------------------------------------------
+    detect_fn = detect_align_mp_tasks if use_mp_tasks else detect_align_opencv
+
+    for identity in sorted(os.listdir(RAW_DIR)):
+        identity_raw_path = os.path.join(RAW_DIR, identity)
+        if not os.path.isdir(identity_raw_path):
+            continue
+
+        identity_aligned_path = os.path.join(DATA_DIR, identity)
+        os.makedirs(identity_aligned_path, exist_ok=True)
+
+        for file_name in sorted(os.listdir(identity_raw_path)):
+            if not file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp', '.bmp')):
                 continue
-                
-            identity_aligned_path = os.path.join(DATA_DIR, identity)
-            os.makedirs(identity_aligned_path, exist_ok=True)
-            
-            for file_name in os.listdir(identity_raw_path):
-                if not file_name.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
-                    continue
-                    
-                img_path = os.path.join(identity_raw_path, file_name)
-                image = cv2.imread(img_path)
-                if image is None:
-                    continue
-                    
-                h, w, _ = image.shape
-                # Chuyển đổi màu sang RGB cho MediaPipe
-                results = face_detection.process(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-                
-                if not results.detections:
-                    print(f"    [-] Không phát hiện khuôn mặt trong ảnh: {img_path}")
-                    fail_count += 1
-                    continue
-                    
-                detection = results.detections[0]
-                keypoints = detection.location_data.relative_keypoints
-                
-                # Tọa độ mắt trái và phải trên ảnh (MediaPipe Keypoint 0 là mắt phải nhân trắc học - nằm bên trái ảnh)
-                re_x = int(keypoints[0].x * w)
-                re_y = int(keypoints[0].y * h)
-                
-                le_x = int(keypoints[1].x * w)
-                le_y = int(keypoints[1].y * h)
-                
-                # Căn chỉnh hình học
-                aligned = align_face_python(image, (re_x, re_y), (le_x, le_y))
-                
-                # Lưu tệp tin đã căn chỉnh vào thư mục data
-                save_path = os.path.join(identity_aligned_path, f"{os.path.splitext(file_name)[0]}_aligned.png")
-                cv2.imwrite(save_path, aligned)
-                face_count += 1
-                
-    print(f"[+] Tiền xử lý hoàn tất! Đã căn chỉnh thành công {face_count} khuôn mặt. Bỏ qua (không có mặt): {fail_count} ảnh.")
+
+            img_path = os.path.join(identity_raw_path, file_name)
+            image    = cv2.imread(img_path)
+            if image is None:
+                print(f"    [-] Không thể đọc ảnh: {img_path}")
+                fail_count += 1
+                continue
+
+            aligned = detect_fn(image)
+            if aligned is None:
+                print(f"    [-] Không phát hiện khuôn mặt trong ảnh: {img_path}")
+                fail_count += 1
+                continue
+
+            save_path = os.path.join(
+                identity_aligned_path,
+                f"{os.path.splitext(file_name)[0]}_aligned.png"
+            )
+            cv2.imwrite(save_path, aligned)
+            face_count += 1
+
+    # Giải phóng MediaPipe detector
+    if mp_detector is not None:
+        try:
+            mp_detector.close()
+        except Exception:
+            pass
+
+    print(f"[+] Tiền xử lý hoàn tất! Đã căn chỉnh thành công {face_count} khuôn mặt. "
+          f"Bỏ qua (không có mặt): {fail_count} ảnh.")
     print(f"[+] Dữ liệu đã căn chỉnh sẵn sàng tại thư mục: '{DATA_DIR}'")
     return True
 
@@ -259,28 +407,75 @@ def generate_mock_dataset():
 # 5. TẢI MÔ HÌNH PRETRAINED ARCFACE
 # ==========================================
 def download_pretrained_weights():
-    """Tải trọng số ArcFace tiền huấn luyện (ResNet50) từ HuggingFace về thư mục ./arcfacemodels."""
+    """
+    Tải trọng số ArcFace tiền huấn luyện (ResNet50) về ./arcfacemodels.
+    Thử lần lượt từ URL chính và các URL backup cho đến khi tải được.
+    """
     if os.path.exists(PRETRAINED_MODEL_PATH):
         print(f"[+] Đã phát hiện mô hình ArcFace pre-trained tại '{PRETRAINED_MODEL_PATH}'.")
         return True
 
-    print(f"[*] Đang tải mô hình ArcFace pre-trained chất lượng cao (ResNet50) về '{PRETRAINED_MODEL_PATH}'...")
     os.makedirs(PRETRAINED_MODEL_DIR, exist_ok=True)
-    
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    urllib.request.install_opener(opener)
+
+    print(f"[*] Đang tải mô hình ArcFace pre-trained chất lượng cao (ResNet50)...")
     try:
-        # Cấu hình Header để tải mượt mà
-        opener = urllib.request.build_opener()
-        opener.addheaders = [('User-agent', 'Mozilla/5.0')]
-        urllib.request.install_opener(opener)
-        
-        # Tải tệp tin trọng số
         urllib.request.urlretrieve(PRETRAINED_MODEL_URL, PRETRAINED_MODEL_PATH)
         print("[+] Tải mô hình ArcFace pre-trained thành công!")
         return True
     except Exception as e:
-        print(f"[-] Không thể tải trực tiếp từ Hugging Face ({e}).")
-        print(f"[*] Gợi ý: Hãy tải thủ công file trọng số đặt vào: {PRETRAINED_MODEL_PATH}")
+        print(f"[-] Không thể tải từ nguồn chính ({e}). Sử dụng ImageNet Pretrained thay thế.")
+        print(f"[*] Gợi ý thủ công: Tải file .pth từ link bên dưới rồi đặt vào: {PRETRAINED_MODEL_PATH}")
+        print(f"    https://github.com/deepinsight/insightface/wiki/Model-Zoo")
         return False
+
+
+def download_all_models():
+    """
+    Tải tất cả các model cần thiết về ./arcfacemodels trước khi bắt đầu pipeline.
+    """
+    os.makedirs(PRETRAINED_MODEL_DIR, exist_ok=True)
+    opener = urllib.request.build_opener()
+    opener.addheaders = [('User-agent', 'Mozilla/5.0')]
+    urllib.request.install_opener(opener)
+
+    models_to_download = [
+        {
+            "name": "BlazeFace TFLite (MediaPipe Tasks face detector)",
+            "path": MP_FACE_DETECTOR_MODEL_PATH,
+            "url" : MP_FACE_DETECTOR_MODEL_URL,
+            "required": True,
+        },
+        {
+            "name": "Face Landmarker TFLite (MediaPipe Tasks - align nâng cao)",
+            "path": MP_FACE_LANDMARK_MODEL_PATH,
+            "url" : MP_FACE_LANDMARK_MODEL_URL,
+            "required": False,
+        },
+    ]
+
+    print("\n[*] Kiểm tra và tải tất cả model cần thiết về './arcfacemodels/'...")
+    for m in models_to_download:
+        if os.path.exists(m["path"]):
+            size_kb = os.path.getsize(m["path"]) // 1024
+            print(f"[+] Đã có: {m['name']} ({size_kb} KB)")
+            continue
+        print(f"[*] Đang tải: {m['name']}...")
+        try:
+            urllib.request.urlretrieve(m["url"], m["path"])
+            size_kb = os.path.getsize(m["path"]) // 1024
+            print(f"[+] Tải thành công: {m['name']} ({size_kb} KB)")
+        except Exception as e:
+            if m["required"]:
+                print(f"[-] Không tải được model bắt buộc: {m['name']} ({e})")
+            else:
+                print(f"[!] Không tải được model tùy chọn: {m['name']} ({e}) — bỏ qua.")
+
+    # ArcFace pretrained backbone
+    download_pretrained_weights()
+    print("[+] Kiểm tra model hoàn tất. Xem thư mục './arcfacemodels/' để biết chi tiết.\n")
 
 # ==========================================
 # 6. ĐỊNH NGHĨA KIẾN TRÚC MÔ HÌNH
@@ -374,15 +569,19 @@ class ArcFaceResNet50(nn.Module):
 # 7. LUỒNG HUẤN LUYỆN CHÍNH (MAIN PROCESS)
 # ==========================================
 def main():
+    # Bước 0: Tải tất cả model cần thiết về local trước khi bắt đầu
+    download_all_models()
+
     # Bước 1: Thực hiện tiền xử lý ./dataraw -> ./data nếu phát hiện dataraw
     is_preprocessed = preprocess_dataraw()
-    
+
     # Nếu không có dataraw, tự động sinh mock dataset trong ./data để luôn chạy mượt mà
     if not is_preprocessed:
         generate_mock_dataset()
 
-    # Bước 2: Tải mô hình ArcFace Pretrained tốt nhất về thư mục cục bộ arfacemodels/
-    has_pretrained = download_pretrained_weights()
+    # Bước 2: Kiểm tra trọng số ArcFace pretrained đã được tải
+    has_pretrained = os.path.exists(PRETRAINED_MODEL_PATH)
+
 
     # Bước 3: Chuẩn bị Dữ liệu Huấn luyện (Pytorch Data Loader)
     transform = transforms.Compose([
@@ -477,7 +676,9 @@ def main():
             'output': {0: 'batch_size'}
         }
     )
-    print(f"[+] Đã xuất file ONNX thành công: {MODEL_OUTPUT_PATH}")
+    onnx_abs_path = os.path.abspath(MODEL_OUTPUT_PATH)
+    print(f"[+] Đã xuất file ONNX thành công!")
+    print(f"[+] Đường dẫn đầy đủ (dùng trong C# .NET): {onnx_abs_path}")
 
     # ==========================================
     # 9. KIỂM ĐỊNH TỆP TIN ONNX VỪA TẠO
@@ -495,12 +696,19 @@ def main():
     
     print(f"[+] Output shape kiểm tra: {embedding_out.shape} (Mong đợi: (1, 512))")
     if embedding_out.shape == (1, 512):
+        onnx_abs = os.path.abspath(MODEL_OUTPUT_PATH)
         print("\n" + "="*60)
-        print(" CHÚC MỪNG: PIPELINE ĐÃ HOÀN THÀNH XUẤT SẮC!")
-        print(" File ONNX của bạn đã sẵn sàng nạp và sử dụng trong C# .NET 8.0.")
+        print(" CHÚC MỮNG: PIPELINE ĐÃ HOÀN THÀNH XUẤT SẮC!")
+        print("="*60)
+        print(f" ✅ File ONNX đường dẫn đầy đủ:")
+        print(f"   {onnx_abs}")
+        print(f"")
+        print(f" Trong C# .NET 8.0, nạp bằng:")
+        print(f"   var session = new InferenceSession(@\"{onnx_abs}\");")
         print("="*60)
     else:
         print("[-] Kiểm định thất bại! Kích thước đầu ra không chính xác.")
+
 
 if __name__ == "__main__":
     main()

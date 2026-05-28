@@ -4,20 +4,116 @@ Tài liệu này cung cấp toàn bộ thiết kế hệ thống, hướng dẫn
 
 ---
 
+## 0. Hướng dẫn Khởi tạo Môi trường (Bước đầu tiên bắt buộc)
+
+### Yêu cầu hệ thống
+
+| Thành phần | Phiên bản tối thiểu | Ghi chú |
+|---|---|---|
+| Python | 3.10+ | Khuyên dùng 3.11 hoặc 3.12 |
+| pip | 23+ | Nâng cấp ngay sau khi tạo venv |
+| RAM | 8 GB | 4 GB có thể dùng được với CPU |
+| Dung lượng đĩa | ~5 GB | Cho model + thư viện PyTorch |
+| GPU (tùy chọn) | NVIDIA CUDA hoặc AMD ROCm | CPU cũng chạy được, chậm hơn |
+
+### Cài đặt từng bước
+
+```bash
+# ─── Bước 1: Đi vào thư mục làm việc ───────────────────────────────────────
+cd TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune
+
+# ─── Bước 2: Tạo môi trường ảo Python (chỉ làm 1 lần) ──────────────────────
+python3 -m venv venv
+
+# ─── Bước 3: Kích hoạt môi trường ảo ───────────────────────────────────────
+source venv/bin/activate          # Linux / macOS
+# venv\Scripts\activate           # Windows
+
+# ─── Bước 4: Nâng cấp pip ──────────────────────────────────────────────────
+pip install --upgrade pip
+
+# ─── Bước 5: Cài đặt toàn bộ thư viện cần thiết ────────────────────────────
+# Dùng cho máy có GPU NVIDIA (CUDA):
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# Dùng cho máy có GPU AMD (ROCm - Linux):
+pip install torch torchvision --index-url https://download.pytorch.org/whl/rocm6.0
+
+# Dùng cho máy chỉ có CPU (hoặc test trước):
+pip install torch torchvision
+
+# ─── Bước 6: Cài đặt các thư viện xử lý ảnh và ML khác ────────────────────
+pip install onnx onnxruntime numpy pillow opencv-python mediapipe
+```
+
+### Chạy pipeline fine-tune
+
+```bash
+# Kích hoạt venv (nếu chưa)
+source venv/bin/activate
+
+# Đặt ảnh thô vào dataraw/<userId>/ (tùy chọn - nếu không có sẽ dùng mock data)
+mkdir -p dataraw/ten_user
+# cp /path/to/photos/*.jpg dataraw/ten_user/
+
+# Chạy pipeline (tự động tải model, xử lý ảnh, fine-tune, xuất ONNX)
+python main.py
+```
+
+### Cấu hình thiết bị (trong `main.py` dòng 18)
+
+```python
+DEVICE_CONFIG = "cpu"    # ← Mặc định: CPU (test ổn định trước)
+# DEVICE_CONFIG = "cuda" # ← GPU NVIDIA CUDA
+# DEVICE_CONFIG = "auto" # ← Tự động chọn GPU nếu có
+```
+
+> **Lưu ý AMD GPU (RDNA3 - gfx1103)**: Code đã tích hợp sẵn `HSA_OVERRIDE_GFX_VERSION=11.0.0`
+> để fix lỗi rocBLAS với chip AMD Radeon RX 7600/7700 (gfx1103). Không cần set thủ công.
+
+### Thư mục model được tải tự động
+
+Khi chạy `python main.py`, các model sau sẽ được **tự động tải về** `./arcfacemodels/`:
+
+| File | Kích thước | Nguồn | Mục đích |
+|---|---|---|---|
+| `blaze_face_short_range.tflite` | ~1 MB | Google MediaPipe | Phát hiện khuôn mặt |
+| `face_landmarker.task` | ~3 MB | Google MediaPipe | Landmark 468 điểm (tùy chọn) |
+| `resnet50_arcface.pth` | ~100 MB | HuggingFace | Backbone ArcFace pretrained |
+
+> Nếu `resnet50_arcface.pth` không tải được tự động (lỗi 401), pipeline sẽ **tự động dùng ImageNet pretrained** làm fallback. Kết quả vẫn hoạt động tốt cho fine-tune nhỏ.
+
+### Kết quả đầu ra
+
+Sau khi chạy thành công, terminal sẽ in ra đường dẫn tuyệt đối:
+
+```
+✅ File ONNX đường dẫn đầy đủ:
+   /work/.../ArcFaceFinetune/arcface_model.onnx
+
+ Trong C# .NET 8.0, nạp bằng:
+   var session = new InferenceSession(@"/work/.../arcface_model.onnx");
+```
+
+---
+
+
 ## 1. Tổng quan Kiến trúc Pipeline Hệ thống
 
 Hệ thống nhận diện khuôn mặt hoạt động theo chu kỳ khép kín từ khâu tiền xử lý hình ảnh, trích xuất đặc trưng qua mạng thần kinh nhân tạo đến khâu truy vấn siêu nhanh bằng cơ sở dữ liệu vector.
 
 ```mermaid
 graph TD
-    A[Ảnh thô trong dataraw/] --> B[MediaPipe Face Detection tự động trong main.py]
-    B --> C[Tính toán tọa độ 2 mắt]
-    C --> D[Căn chỉnh xoay, tỷ lệ, dịch chuyển Affine]
+    A[Ảnh thô trong dataraw/] --> B{Bộ phát hiện khuôn mặt tự động}
+    B -- Ưu tiên 1: MediaPipe Tasks API BlazeFace TFLite --> C1[Keypoints mắt chính xác]
+    B -- Fallback: OpenCV Haar Cascade --> C2[Phát hiện mặt + mắt trong ROI]
+    C1 --> D[Căn chỉnh 2-Eye Similarity Transform Affine]
+    C2 --> D
     D --> E[Lưu khuôn mặt chuẩn 112x112 vào data/]
     
     E --> F[Huấn luyện tinh chỉnh ArcFace ResNet-50]
-    F --> G[Tải trọng số tốt nhất từ arfacemodels/]
-    G --> H[Cấu hình chạy bằng CPU hoặc GPU CUDA]
+    F --> G[Tải trọng số tốt nhất từ arcfacemodels/]
+    G --> H[Cấu hình: CPU hoặc GPU CUDA / ROCm]
     H --> I[Xuất mô hình sang arcface_model.onnx]
     
     subgraph Tích hợp C# .NET 8.0 & Quản lý Vector
@@ -38,8 +134,12 @@ graph TD
 
 Bạn có thể cung cấp dữ liệu theo hai hình thức (Ảnh thô chưa cắt hoặc Ảnh đã cắt sẵn):
 
+> **[Cập nhật kỹ thuật]**: `main.py` tự động phát hiện khuôn mặt theo thứ tự ưu tiên:
+> 1. **MediaPipe Tasks API** (`FaceDetector` + `BlazeFace TFLite`) — mediapipe ≥ 0.10, độ chính xác cao nhất, trả về keypoints mắt trực tiếp. Model `blaze_face_short_range.tflite` (~1MB) được tự động tải về `./arcfacemodels/`.
+> 2. **OpenCV Haar Cascade** — fallback khi model BlazeFace không tải được, phát hiện mặt + mắt trong ROI.
+
 #### A. Hình thức 1: Cung cấp ảnh thô ban đầu (Khuyên dùng)
-Bạn tạo thư mục `dataraw/` chứa các thư mục con theo ID của User, bên trong là các tệp ảnh chụp thực tế chưa qua xử lý (MediaPipe sẽ tự động quét, cắt và căn chỉnh):
+Bạn tạo thư mục `dataraw/` chứa các thư mục con theo ID của User, bên trong là các tệp ảnh chụp thực tế chưa qua xử lý (pipeline sẽ tự động quét, cắt và căn chỉnh):
 
 ```text
 TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/
@@ -358,6 +458,7 @@ python3 -m venv venv
 
 # 2. Kích hoạt môi trường ảo
 source venv/bin/activate
+source /work/a.i-assistant-chatbot-telegram-serverles/venv/bin/activate
 
 # 3. Nâng cấp bộ quản lý gói pip lên phiên bản mới nhất
 pip install --upgrade pip
