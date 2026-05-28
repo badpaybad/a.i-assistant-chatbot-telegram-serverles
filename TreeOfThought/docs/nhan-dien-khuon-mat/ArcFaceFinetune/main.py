@@ -85,13 +85,16 @@ if len(missing_libs) > 0:
 # ==========================================
 RAW_DIR = "./dataraw"
 DATA_DIR = "./data"
-MODEL_OUTPUT_PATH = "./arcface_model.onnx"
-MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_mobile.onnx"
+MODEL_OUTPUT_PATH = "./arcface_model_final.onnx"
+MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_final_mobile.onnx"
+BEST_MODEL_OUTPUT_PATH = "./arcface_model_best.onnx"
+BEST_MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_best_mobile.onnx"
 EMBEDDING_SIZE = 512
 IMAGE_SIZE = (112, 112)
 BATCH_SIZE = 8
-EPOCHS = 3
-LEARNING_RATE = 0.001
+EPOCHS = 100
+LEARNING_RATE = 0.0001
+
 
 # Đường dẫn thư mục tải mô hình pre-trained ArcFace tốt nhất
 PRETRAINED_MODEL_DIR = "./arcfacemodels"
@@ -800,6 +803,11 @@ def main():
     ], lr=LEARNING_RATE)
 
     # Bắt đầu vòng lặp huấn luyện Fine-tune
+    import copy
+    best_loss = float('inf')
+    best_model_state = None
+    best_epoch = -1
+
     print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}]...")
     backbone.train()
     arcface_head.train()
@@ -835,89 +843,109 @@ def main():
         epoch_loss = total_loss / len(dataset)
         epoch_acc = 100.0 * correct / total
         print(f"    Epoch [{epoch+1}/{EPOCHS}] - Loss: {epoch_loss:.4f} - Accuracy: {epoch_acc:.2f}%")
+        
+        # Theo dõi loss tốt nhất để lưu checkpoint
+        if epoch_loss < best_loss:
+            best_loss = epoch_loss
+            best_epoch = epoch + 1
+            best_model_state = copy.deepcopy(backbone.state_dict())
 
-    print("[+] Huấn luyện Fine-tune hoàn tất thành công.")
+    print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Loss tốt nhất đạt: {best_loss:.4f} ở Epoch {best_epoch}.")
+
+    # Helper function để xuất và kiểm định ONNX (gốc + mobile)
+    def export_and_validate(model_to_export, onnx_path, mobile_path, label):
+        print(f"\n[*] Đang tiến hành xuất mô hình {label} sang định dạng ONNX...")
+        model_to_export.eval()
+        dummy_input = torch.randn(1, 3, *IMAGE_SIZE, device=device)
+        
+        torch.onnx.export(
+            model_to_export,
+            dummy_input,
+            onnx_path,
+            export_params=True,
+            opset_version=11,
+            do_constant_folding=True,
+            input_names=['input'],
+            output_names=['output'],
+            dynamic_axes={
+                'input': {0: 'batch_size'},
+                'output': {0: 'batch_size'}
+            }
+        )
+        onnx_abs_path = os.path.abspath(onnx_path)
+        print(f"[+] Đã xuất file ONNX {label} thành công!")
+        print(f"[+] Đường dẫn đầy đủ (dùng trong C# .NET): {onnx_abs_path}")
+
+        # Tiến hành lượng tử hóa cho di động
+        quantize_onnx_model(onnx_path, mobile_path)
+
+        # Kiểm định tệp tin ONNX gốc
+        print(f"[*] Đang tự động kiểm định tệp tin ONNX {label} gốc...")
+        onnx_model = onnx.load(onnx_path)
+        onnx.checker.check_model(onnx_model)
+        print(f"[+] Cấu trúc file ONNX {label} gốc hợp lệ!")
+
+        ort_session = ort.InferenceSession(onnx_path)
+        dummy_np = np.random.randn(1, 3, 112, 112).astype(np.float32)
+        outputs = ort_session.run(None, {'input': dummy_np})
+        embedding_out = outputs[0]
+        print(f"[+] Output shape kiểm tra ({label} Gốc): {embedding_out.shape} (Mong đợi: (1, 512))")
+
+        mobile_ok = False
+        if os.path.exists(mobile_path):
+            print(f"[*] Đang tự động kiểm định tệp tin ONNX {label} lượng tử hóa di động...")
+            try:
+                onnx_mobile = onnx.load(mobile_path)
+                onnx.checker.check_model(onnx_mobile)
+                print(f"[+] Cấu trúc file ONNX {label} di động hợp lệ!")
+                
+                ort_session_mobile = ort.InferenceSession(mobile_path)
+                outputs_mobile = ort_session_mobile.run(None, {'input': dummy_np})
+                embedding_out_mobile = outputs_mobile[0]
+                print(f"[+] Output shape kiểm tra ({label} Mobile): {embedding_out_mobile.shape} (Mong đợi: (1, 512))")
+                if embedding_out_mobile.shape == (1, 512):
+                    mobile_ok = True
+            except Exception as e:
+                print(f"[-] Kiểm định mô hình {label} di động thất bại: {e}")
+
+        return embedding_out.shape == (1, 512), mobile_ok
 
     # ==========================================
-    # 8. XUẤT MÔ HÌNH BACKBONE SANG ONNX
+    # 8. XUẤT VÀ KIỂM ĐỊNH MÔ HÌNH EPOCH CUỐI CÙNG (FINAL)
     # ==========================================
-    print(f"\n[*] Đang tiến hành xuất mô hình Backbone sang định dạng ONNX...")
-    backbone.eval()
-    
-    dummy_input = torch.randn(1, 3, *IMAGE_SIZE, device=device)
-    
-    torch.onnx.export(
-        backbone,
-        dummy_input,
-        MODEL_OUTPUT_PATH,
-        export_params=True,
-        opset_version=11,
-        do_constant_folding=True,
-        input_names=['input'],
-        output_names=['output'],
-        dynamic_axes={
-            'input': {0: 'batch_size'},
-            'output': {0: 'batch_size'}
-        }
-    )
-    onnx_abs_path = os.path.abspath(MODEL_OUTPUT_PATH)
-    print(f"[+] Đã xuất file ONNX thành công!")
-    print(f"[+] Đường dẫn đầy đủ (dùng trong C# .NET): {onnx_abs_path}")
-
-    # Tiến hành lượng tử hóa ONNX cho mobile
-    quantize_onnx_model(MODEL_OUTPUT_PATH, MOBILE_MODEL_OUTPUT_PATH)
+    final_ok, final_mobile_ok = export_and_validate(backbone, MODEL_OUTPUT_PATH, MOBILE_MODEL_OUTPUT_PATH, "Epoch cuối cùng (Final)")
 
     # ==========================================
-    # 9. KIỂM ĐỊNH CÁC TỆP TIN ONNX VỪA TẠO
+    # 9. XUẤT VÀ KIỂM ĐỊNH MÔ HÌNH BEST LOSS EPOCH
     # ==========================================
-    print("\n[*] Đang tự động kiểm định tệp tin ONNX gốc...")
-    
-    onnx_model = onnx.load(MODEL_OUTPUT_PATH)
-    onnx.checker.check_model(onnx_model)
-    print("[+] Cấu trúc file ONNX gốc hợp lệ!")
+    best_ok = best_mobile_ok = False
+    if best_model_state is not None:
+        # Nạp lại trọng số tốt nhất vào backbone
+        backbone.load_state_dict(best_model_state)
+        best_ok, best_mobile_ok = export_and_validate(backbone, BEST_MODEL_OUTPUT_PATH, BEST_MOBILE_MODEL_OUTPUT_PATH, f"Epoch {best_epoch} tốt nhất (Best Loss)")
 
-    ort_session = ort.InferenceSession(MODEL_OUTPUT_PATH)
-    dummy_np = np.random.randn(1, 3, 112, 112).astype(np.float32)
-    outputs = ort_session.run(None, {'input': dummy_np})
-    embedding_out = outputs[0]
+    # In kết quả tổng hợp hoành tráng
+    print("\n" + "="*70)
+    print(" KẾT QUẢ XUẤT PIPELINE ONNX & LƯỢNG TỬ HÓA THÀNH CÔNG!")
+    print("="*70)
     
-    print(f"[+] Output shape kiểm tra (Gốc): {embedding_out.shape} (Mong đợi: (1, 512))")
-    
-    mobile_ok = False
-    if os.path.exists(MOBILE_MODEL_OUTPUT_PATH):
-        print("\n[*] Đang tự động kiểm định tệp tin ONNX lượng tử hóa di động...")
-        try:
-            onnx_mobile = onnx.load(MOBILE_MODEL_OUTPUT_PATH)
-            onnx.checker.check_model(onnx_mobile)
-            print("[+] Cấu trúc file ONNX di động hợp lệ!")
+    if final_ok:
+        final_abs = os.path.abspath(MODEL_OUTPUT_PATH)
+        print(f" ✅ 1. Mô hình Epoch Cuối cùng (Final):")
+        print(f"   - ONNX chuẩn (C# Backend):  {final_abs}")
+        if final_mobile_ok:
+            final_mobile_abs = os.path.abspath(MOBILE_MODEL_OUTPUT_PATH)
+            print(f"   - ONNX di động (Flutter):   {final_mobile_abs}")
             
-            ort_session_mobile = ort.InferenceSession(MOBILE_MODEL_OUTPUT_PATH)
-            outputs_mobile = ort_session_mobile.run(None, {'input': dummy_np})
-            embedding_out_mobile = outputs_mobile[0]
-            print(f"[+] Output shape kiểm tra (Mobile): {embedding_out_mobile.shape} (Mong đợi: (1, 512))")
-            if embedding_out_mobile.shape == (1, 512):
-                mobile_ok = True
-        except Exception as e:
-            print(f"[-] Kiểm định mô hình di động thất bại: {e}")
-
-    if embedding_out.shape == (1, 512):
-        onnx_abs = os.path.abspath(MODEL_OUTPUT_PATH)
-        onnx_mobile_abs = os.path.abspath(MOBILE_MODEL_OUTPUT_PATH) if mobile_ok else None
-        print("\n" + "="*60)
-        print(" CHÚC MỮNG: PIPELINE ĐÃ HOÀN THÀNH XUẤT SẮC!")
-        print("="*60)
-        print(f" ✅ File ONNX chuẩn (C# .NET Backend):")
-        print(f"   {onnx_abs}")
-        print(f"   Nạp trong C# .NET 8.0 bằng:")
-        print(f"   var session = new InferenceSession(@\"{onnx_abs}\");")
-        print(f"")
-        if onnx_mobile_abs:
-            print(f" ✅ File ONNX lượng tử hóa (Flutter Mobile):")
-            print(f"   {onnx_mobile_abs}")
-            print(f"   (Dung lượng cực nhẹ ~25MB, tối ưu chạy trên Android/iOS)")
-        print("="*60)
-    else:
-        print("[-] Kiểm định thất bại! Kích thước đầu ra không chính xác.")
+    if best_ok:
+        best_abs = os.path.abspath(BEST_MODEL_OUTPUT_PATH)
+        print(f"\n ✅ 2. Mô hình Epoch Tốt nhất (Best Loss - Epoch {best_epoch}):")
+        print(f"   - ONNX chuẩn (C# Backend):  {best_abs}")
+        if best_mobile_ok:
+            best_mobile_abs = os.path.abspath(BEST_MOBILE_MODEL_OUTPUT_PATH)
+            print(f"   - ONNX di động (Flutter):   {best_mobile_abs}")
+            
+    print("="*70)
 
 
 if __name__ == "__main__":

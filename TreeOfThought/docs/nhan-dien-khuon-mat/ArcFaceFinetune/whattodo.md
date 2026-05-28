@@ -44,3 +44,9 @@ MediaPipe Tasks API để detect face , align face để hỗ trợ cả typescr
 Finetune với CPU trước để test thành công finetune ra file onnx, finetune xong cần xuất file .onnx và in ra đường dẫn để có thể dùng bên c# dotnet
 
 Viết hướng dẫn để khởi tạo môi trường chạy được finetune, các khuyến nghị suggest khi finetune để đạt kết quả tốt nhất về việc nhận dạng khuôn mặt (face embedding)
+
+Cần lưu 2 loại .onnx, xong rồi cũng tạo 2 file onnx cho app mobi 
+    1 là epoch cuối cùng xong
+    2 là epoch có loss nhỏ nhất 
+
+Learning Rate quá cao (0.001): Fine-tune một mạng lớn như ResNet-50 trên tập dữ liệu nhỏ (116 ảnh) với Learning Rate 0.001 là quá lớn. Giảm Learning Rate xuống 0.0001 hoặc 0.00005

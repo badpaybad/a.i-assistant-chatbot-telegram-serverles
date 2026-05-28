@@ -109,26 +109,25 @@ dataraw/
 
 | Tình huống | Số người | Ảnh/người | EPOCHS | BATCH_SIZE | LR |
 |---|---|---|---|---|---|
-| Test nhỏ | 2–5 | 5–10 | **20–30** | 4 | 0.0005 |
-| Production nhỏ | 10–50 | 10–20 | **15–25** | 8 | 0.0005 |
-| Production lớn | 50–500 | 20–50 | **10–15** | 16 | 0.001 |
-| Enterprise | > 500 | 50+ | **5–10** | 32 | 0.001 |
+| Test nhỏ | 2–5 | 5–10 | **20–30** | 4 | 0.0001 |
+| Production nhỏ | 10–50 | 10–20 | **30–50** | 8 | 0.0001 |
+| Production lớn | 50–500 | 20–50 | **50–100** | 16 | 0.00005 - 0.0001 |
+| Enterprise | > 500 | 50+ | **100+** | 32 | 0.0001 |
 
-Cập nhật trong `main.py` (dòng 85–88) theo tình huống thực tế:
+> [!WARNING]
+> **Learning Rate cho Fine-tuning:** 
+> Khi fine-tune một mạng nơ-ron tích chập sâu như ResNet-50 trên tập dữ liệu rất nhỏ (ví dụ 116 ảnh), thiết lập `LEARNING_RATE = 0.001` là **quá cao**. Điều này sẽ gây ra hiện tượng dao động (oscillations) cực mạnh làm mô hình bất ổn định (ví dụ Loss đột ngột tăng vọt từ 0.02 lên 1.5). Khuyên dùng **`LEARNING_RATE = 0.0001`** hoặc **`0.00005`** để quá trình hội tụ diễn ra mượt mà và bảo toàn chất lượng biểu diễn của mô hình ArcFace gốc.
+
+Cập nhật trong `main.py` (dòng 85–95) theo tình huống thực tế:
 
 ```python
-# Ví dụ cho dataset nhỏ (2–10 người, 5–20 ảnh/người)
-BATCH_SIZE    = 4       # Nhỏ hơn để phù hợp dataset ít ảnh
-EPOCHS        = 20      # Đủ để loss hội tụ thực sự
-LEARNING_RATE = 0.0005  # Nhỏ hơn để fine-tune mượt hơn
-
-# Ví dụ cho dataset production (10–50 người, 10–50 ảnh/người)
+# Ví dụ cho dataset nhỏ / trung bình (2–50 người)
 BATCH_SIZE    = 8
-EPOCHS        = 15
-LEARNING_RATE = 0.0005
+EPOCHS        = 100
+LEARNING_RATE = 0.0001  # Thấp để giữ ổn định, chống Catastrophic Forgetting
 ```
 
-> **Dấu hiệu fine-tune tốt**: Loss **bắt đầu từ 3–6** rồi **giảm dần** qua các epoch, không phải 0 ngay từ đầu. Nếu loss vẫn 0 từ epoch 1, hãy kiểm tra lại số lượng người và ảnh trong `dataraw/`.
+> **Dấu hiệu fine-tune tốt**: Loss **bắt đầu lớn (10–30)** rồi **giảm dần mượt mà** qua các epoch, không phải bằng 0 ngay từ Epoch 1. 
 
 ### Thư mục model được tải tự động
 
@@ -142,17 +141,23 @@ Khi chạy `python main.py`, các model sau sẽ được **tự động tải v
 
 > Nếu `resnet50_arcface.pth` không tải được tự động (lỗi 401), pipeline sẽ **tự động dùng ImageNet pretrained** làm fallback. Kết quả vẫn hoạt động tốt cho fine-tune nhỏ.
 
-### Kết quả đầu ra
+### Kết quả đầu ra (Dual-Model Strategy)
 
-Sau khi chạy thành công, terminal sẽ in ra đường dẫn tuyệt đối:
+Để tối ưu hóa ứng dụng thực tế, pipeline sẽ **tự động xuất ra 2 bộ mô hình ONNX độc lập** (mỗi bộ gồm 1 file ONNX chuẩn cho C# và 1 file ONNX lượng tử hóa cho Flutter di động):
 
+1. **Bộ mô hình Epoch cuối cùng (Final Epoch Model):**
+   - ONNX chuẩn: `./arcface_model_final.onnx`
+   - ONNX di động: `./arcface_model_final_mobile.onnx`
+2. **Bộ mô hình có Loss nhỏ nhất (Best Loss Epoch Model - Khuyên dùng):**
+   - ONNX chuẩn: `./arcface_model_best.onnx`
+   - ONNX di động: `./arcface_model_best_mobile.onnx`
+   - *Đây là mô hình đạt được sai số tối thiểu trên tập dữ liệu huấn luyện, đảm bảo độ tổng quát cao nhất mà không bị quá khớp ở các epoch dao động phía sau.*
+
+Trong C# .NET 8.0, nạp mô hình Best Loss bằng:
+```csharp
+var session = new InferenceSession(@"/work/.../arcface_model_best.onnx");
 ```
-✅ File ONNX đường dẫn đầy đủ:
-   /work/.../ArcFaceFinetune/arcface_model.onnx
 
- Trong C# .NET 8.0, nạp bằng:
-   var session = new InferenceSession(@"/work/.../arcface_model.onnx");
-```
 
 ---
 
@@ -371,10 +376,13 @@ graph TD
     E --> F[Huấn luyện tinh chỉnh ArcFace ResNet-50]
     F --> G[Tải trọng số tốt nhất từ arcfacemodels/]
     G --> H[Cấu hình: CPU hoặc GPU CUDA / ROCm]
-    H --> I[Xuất mô hình ONNX]
+    H --> I[Xuất song song 2 bộ mô hình ONNX]
     
-    I --> I1[arcface_model.onnx chuẩn - 100MB]
-    I --> I2[arcface_model_mobile.onnx lượng tử hóa - 25MB]
+    I --> I1[arcface_model_best.onnx chuẩn - 100MB]
+    I --> I2[arcface_model_best_mobile.onnx lượng tử hóa - 25MB]
+    I --> I3[arcface_model_final.onnx chuẩn - 100MB]
+    I --> I4[arcface_model_final_mobile.onnx lượng tử hóa - 25MB]
+
     
     subgraph Tích hợp C# .NET 8.0 Backend
         I1 --> J[Nạp ONNX qua Microsoft.ML.OnnxRuntime]
@@ -782,14 +790,15 @@ sequenceDiagram
     Admin->>Python: Chạy "python main.py" (CPU/GPU)
     Python->>Python: MediaPipe phát hiện, căn chỉnh 2 mắt chuẩn 112x112
     Python->>Python: Fine-tune backbone ResNet-50 ArcFace
-    Python->>Backend: Copy tệp "arcface_model.onnx" sang backend
+    Python->>Backend: Copy tệp "arcface_model_best.onnx" (hoặc final) sang backend
     
     %% GIAI ĐOẠN 2: ĐĂNG KÝ USER
     Note over User, DB: [Giai đoạn 2: Đăng ký & Trích xuất Đặc trưng]
     User->>WebApp: Đăng ký ảnh chân dung
     WebApp->>WebApp: MediaPipe phát hiện mắt, căn chỉnh Affine chuẩn 112x112
     WebApp->>Backend: Gửi nhị phân ảnh khuôn mặt đã căn chỉnh
-    Backend->>Backend: Load "arcface_model.onnx" qua OnnxRuntime
+    Backend->>Backend: Load "arcface_model_best.onnx" qua OnnxRuntime
+
     Backend->>Backend: Trích xuất embedding Vector 512 chiều (Chuẩn hóa L2)
     Backend->>DB: INSERT Vector vào bảng "CroppedFaces" (cột Embedding)
     
@@ -912,7 +921,7 @@ public class MatchedFaceResult
 
 ## 8. Tích hợp Mô hình ONNX vào Ứng dụng Di động Dart Flutter
 
-Để triển khai nhận diện khuôn mặt ngoại tuyến (offline) hoặc trích xuất embedding trực tiếp trên thiết bị di động (Android & iOS), ứng dụng Flutter của bạn sẽ nạp mô hình lượng tử hóa siêu nhẹ **`arcface_model_mobile.onnx` (~25MB)**.
+Để triển khai nhận diện khuôn mặt ngoại tuyến (offline) hoặc trích xuất embedding trực tiếp trên thiết bị di động (Android & iOS), ứng dụng Flutter của bạn sẽ nạp mô hình lượng tử hóa siêu nhẹ **`arcface_model_best_mobile.onnx` (~25MB)** (hoặc `arcface_model_final_mobile.onnx`).
 
 Dưới đây là hướng dẫn toàn diện từ cấu hình đến mã nguồn Dart hoàn chỉnh để tích hợp.
 
@@ -932,12 +941,13 @@ dependencies:
 flutter:
   assets:
     # Khai báo tệp mô hình ONNX lượng tử hóa của bạn
-    - assets/models/arcface_model_mobile.onnx
+    - assets/models/arcface_model_best_mobile.onnx
 ```
 
 > [!NOTE]
 > **Chuẩn bị file model trong dự án Flutter:**
-> Tạo thư mục `assets/models/` trong gốc dự án Flutter của bạn, copy tệp `arcface_model_mobile.onnx` được sinh ra từ pipeline huấn luyện Python vào đó.
+> Tạo thư mục `assets/models/` trong gốc dự án Flutter của bạn, copy tệp `arcface_model_best_mobile.onnx` (được khuyến nghị) được sinh ra từ pipeline huấn luyện Python vào đó.
+
 
 ---
 
@@ -1026,7 +1036,7 @@ class FaceEmbeddingService {
       OrtEnv.instance;
 
       // Đọc file mô hình nhị phân từ assets
-      final modelData = await rootBundle.load('assets/models/arcface_model_mobile.onnx');
+      final modelData = await rootBundle.load('assets/models/arcface_model_best_mobile.onnx');
       final modelBytes = modelData.buffer.asUint8List(
         modelData.offsetInBytes,
         modelData.lengthInBytes,
