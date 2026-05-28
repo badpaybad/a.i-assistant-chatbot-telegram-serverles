@@ -16,7 +16,7 @@ import { NzGridModule } from 'ng-zorro-antd/grid';
 
 
 import { NhanDienKhuonMatService } from './services/nhan-dien-khuon-mat.service';
-import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared';
+import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective, TotAutocompleteComponent } from '@tot/shared';
 
 interface QueueItem {
   id: string;
@@ -55,7 +55,8 @@ interface QueueItem {
     NzGridModule,
     TotButtonComponent,
     TotTableComponent,
-    TotCellDirective
+    TotCellDirective,
+    TotAutocompleteComponent
   ],
   templateUrl: './nhan-dien-khuon-mat.component.html',
   styleUrl: './nhan-dien-khuon-mat.component.css'
@@ -104,6 +105,17 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
   loadingDetails: boolean = false;
   showDetailsModal: boolean = false;
 
+  // Face Definition state variables
+  selectedSessionForDef: any = null;
+  sessionImagesForDef: any[] = [];
+  loadingSessionImages: boolean = false;
+  faceDefColumns: TotTableColumn[] = [];
+
+  // User definitions modal state variables
+  showUserDefModal: boolean = false;
+  selectedUserDefData: any = null;
+  loadingUserDefs: boolean = false;
+
   ngOnInit(): void {
     this.setDefaultSessionName();
     this.initColumns();
@@ -123,7 +135,13 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
       { title: 'Tên phiên', key: 'name' },
       { title: 'Số lượng ảnh', key: 'imageCount', width: '150px' },
       { title: 'Số lượng khuôn mặt', key: 'faceCount', width: '200px' },
-      { title: 'Hành động', key: 'action', width: '200px', right: true }
+      { title: 'Hành động', key: 'action', width: '320px', right: true }
+    ];
+
+    this.faceDefColumns = [
+      { title: 'Tên ảnh gốc', key: 'fileName', width: '25%' },
+      { title: 'Hình ảnh', key: 'imagePreview', width: '20%' },
+      { title: 'Hành động định nghĩa khuôn mặt', key: 'action', width: '55%' }
     ];
   }
 
@@ -622,5 +640,102 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // --- Face Definition Actions ---
+  async selectFaceDefinition(session: any): Promise<void> {
+    this.selectedSessionForDef = session;
+    this.loadingSessionImages = true;
+    this.sessionImagesForDef = [];
+
+    // Scroll to panel
+    setTimeout(() => {
+      const element = document.querySelector('.face-def-panel');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+
+    try {
+      const details: any = await this.api.getSessionDetails(session.id);
+      this.sessionImagesForDef = (details?.images || []).map((img: any) => ({
+        ...img,
+        selectedUserId: null
+      }));
+    } catch (error) {
+      this.message.error("Lỗi khi tải danh sách ảnh của phiên upload.");
+      this.selectedSessionForDef = null;
+    } finally {
+      this.loadingSessionImages = false;
+    }
+  }
+
+  async addFaceDefinition(image: any, force: boolean = false): Promise<void> {
+    if (!image.selectedUserId) {
+      this.message.warning("Vui lòng chọn user trước.");
+      return;
+    }
+
+    try {
+      const res: any = await this.api.addFaceDefinition(image.selectedUserId, image.id, force);
+      this.message.success("Định nghĩa khuôn mặt cho user thành công.");
+    } catch (error: any) {
+      if (error.status === 409) {
+        const errorData = error.error;
+        this.modal.confirm({
+          nzTitle: 'Xác nhận gán đè định nghĩa?',
+          nzContent: errorData.message || 'Ảnh này đã được định nghĩa cho user khác. Bạn có chắc chắn muốn gán đè cho user hiện tại không?',
+          nzOkText: 'Đồng ý',
+          nzCancelText: 'Hủy',
+          nzOkDanger: true,
+          nzOnOk: () => {
+            this.addFaceDefinition(image, true);
+          }
+        });
+      } else {
+        this.message.error(error.error?.message || "Lỗi khi định nghĩa khuôn mặt.");
+      }
+    }
+  }
+
+  async viewUserDefinitions(userId: string): Promise<void> {
+    if (!userId) {
+      this.message.warning("Vui lòng chọn user trước.");
+      return;
+    }
+
+    this.loadingUserDefs = true;
+    this.showUserDefModal = true;
+    this.selectedUserDefData = null;
+
+    try {
+      const res: any = await this.api.getUserDefinitions(userId);
+      this.selectedUserDefData = res;
+    } catch (error) {
+      this.message.error("Lỗi khi tải danh sách khuôn mặt định nghĩa của user.");
+      this.showUserDefModal = false;
+    } finally {
+      this.loadingUserDefs = false;
+    }
+  }
+
+  async deleteUserFaceDefinition(defId: string): Promise<void> {
+    this.modal.confirm({
+      nzTitle: 'Xác nhận xóa ảnh khỏi user?',
+      nzContent: 'Hành động này sẽ gỡ định nghĩa khuôn mặt này khỏi user.',
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          await this.api.deleteFaceDefinition(defId);
+          this.message.success("Xóa định nghĩa khuôn mặt thành công.");
+          
+          if (this.selectedUserDefData?.definitions) {
+            this.selectedUserDefData.definitions = this.selectedUserDefData.definitions.filter((d: any) => d.id !== defId);
+          }
+        } catch (error) {
+          this.message.error("Lỗi khi xóa định nghĩa khuôn mặt.");
+        }
+      }
+    });
   }
 }

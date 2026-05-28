@@ -47,3 +47,66 @@ Theme màu cần theo app shell chung
 Các button table cần theo hướng dẫn về dùng shared component tot-...
 
 Giao diện hơi xấu và đang không dùng core shared tot-table tot-button , không tự bịa thêm các css cần dùng ant design nhiều nhất có thể
+
+**cập nhật 2026-05-28 16:39:32**
+
+ở Lịch Sử Các Phiên Upload ở cột hành động cần bổ xung thêm nút : Chọn định nghĩa khuôn mặt
+    - click nút Chọn định nghĩa khuôn mặt cần load ra component nằm dưới Lịch sử các phiên upload
+        - Hiện ra là bảng danh sách các ảnh gốc , có tên , ảnh , ở cột hành động có
+            - 1 droplist auto complete để chọn user
+                ở BE cần tạo 1 dbcontext riêng để lấy user ( xem user ở TreeOfThought/docs/business-oidc/whattodo.md )
+            - 1 nút để  add định nghĩa cho khuôn mặt cho user được chọn ở droplist auto complete
+                cần tạo dbcontext riêng cho nhận diện khuôn mặt để lưu ánh xạ user với ảnh
+                    1 user có thể có nhiều ảnh nhận diện khuôn mặt
+                        cảnh báo nếu người dùng chọn ảnh đã được định nghĩa cho user khác, nhưng vẫn cho phép làm khi người dùng xác nhận
+            - 1 nút Xem user định nghĩa khuôn mặt
+                click sẽ mở lên modal show danh sách các khuôn mặt định nghĩa cho user và thông tin user
+                    cột hành động sẽ cho phép xóa ảnh khỏi user
+
+**cập nhật 2026-05-28 16:59:32**
+
+ở sidemenu Nhận diện khuôn mặt bổ xung thêm menu : Đào tạo nhận dạng
+    - click vào menu thì load ra component đào tạo nhận dạng
+
+Đào tạo nhận dạng
+
+Là nghiệp vụ liên quan tới TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/whattodo.md . Khi người dùng click nút đào tạo nhận dạng  thì những user được chọn ở danh sách sẽ được dùng ảnh gốc của khuôn mặt để đào tạo
+
+        Nút Đào tạo nhận dạng nằm trên cùng của component này. 
+        
+        Log region: Phía trên danh sách user là box hiện thông tin đọc stdout của process training 
+
+        - Hiện danh sách user đã định nghĩa khuôn mặt và các thông tin của user
+            - bổ xung cột đầu tiên là check box
+
+Mô tả nghiệp vụ khi Nút Đào tạo nhận dạng click
+    Các user được check vào checkbox sẽ được dùng ảnh gốc của khuôn mặt để đào tạo
+    Tạo folder faceids ở c# base domain directory nếu chưa có, var rootfaceids= {basedir}/ArcFaceFinetune/facesid
+        Tạo subfolder tên theo ngày được click {yyyy-MM-dd} bên trong rootfaceids
+            tạo subfolder dataraw bên trong folder dataraw là cá subfolder theo userid_username
+                bên trong subfolder user này là các ảnh gốc download theo user đó
+                    trong quá trình đào tạo cần hiện log lên Log region
+
+        Sau khi download hết ảnh gốc, thì sẽ bắt đầu quá trình đào tạo, khởi tạo c# process để gọi tiến trình python như mô tả ở yêu cầu TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/whattodo.md
+            các args của main.py sẽ dùng folder theo ngày {rootfaceids}/{yyyy-MM-dd} làm gốc 
+
+                --epochs 10
+                --batch_size 16
+                --learning_rate 0.00005
+                --align_mode advanced 
+                --raw_dir {rootfaceids}/{yyyy-MM-dd}/dataraw
+                --data_dir {rootfaceids}/{yyyy-MM-dd}/data
+                --model_output_path {rootfaceids}/{yyyy-MM-dd}/arcface_model_final.onnx
+                --mobile_model_output_path {rootfaceids}/{yyyy-MM-dd}/arcface_model_final_mobile.onnx
+                --best_model_output_path {rootfaceids}/{yyyy-MM-dd}/arcface_model_best.onnx
+                --best_mobile_model_output_path {rootfaceids}/{yyyy-MM-dd}/arcface_model_best_mobile.onnx
+                --device cpu
+
+            trong quá trình đào tạo sẽ đọc stdout đưa vào Log region để theo dõi
+
+Khi file onnx đã tạo xong cần dùng Best Loss Epoch Model để chuẩn bị lấy embeding
+Ngay dưới Log region: sẽ hiện các tên folder theo ngày nằm bên trong folder: {rootfaceids}/{yyyy-MM-dd} , từng folder name là nút để click. Khi click vào tên 1 folder name
+        dùng c# load best_model_output_path của folder đó  và folder data_dir của folder đó
+            các subfolder data_dir có tên là {userid_username} , load modal best_model_output_path để lấy embeding từng ảnh bên trong folder {userid_username} và lưu vào db context riêng cho nhận diện khuôn mặt để lưu trữ
+                Cần dùng dbcontext riêng cho nhận diện khuôn mặt để lưu trữ
+                    1 user có nhiều embeding vector

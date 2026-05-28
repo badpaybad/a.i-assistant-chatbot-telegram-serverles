@@ -20,6 +20,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<NhanDienKhuonMatDbContext>(sp => 
             new NhanDienKhuonMatDbContext(connectionString, BaseDbContext.DbProviderType.PostgreSql));
 
+        services.AddScoped<FaceUserDbContext>(sp => 
+            new FaceUserDbContext(connectionString, BaseDbContext.DbProviderType.PostgreSql));
+
+        services.AddScoped<FaceDefinitionDbContext>(sp => 
+            new FaceDefinitionDbContext(connectionString, BaseDbContext.DbProviderType.PostgreSql));
+
         return services;
     }
 
@@ -37,10 +43,13 @@ public static class ServiceCollectionExtensions
             {
                 var faceDb = services.GetRequiredService<NhanDienKhuonMatDbContext>();
                 await faceDb.EnsureTablesCreatedAsync();
+
+                var defDb = services.GetRequiredService<FaceDefinitionDbContext>();
+                await defDb.EnsureTablesCreatedAsync();
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[STARTUP ERROR] NhanDienKhuonMatDbContext table creation failed: {ex.Message}");
+                Console.WriteLine($"[STARTUP ERROR] NhanDienKhuonMatDbContext/FaceDefinitionDbContext table creation failed: {ex.Message}");
             }
         }
     }

@@ -47,4 +47,48 @@ export class NhanDienKhuonMatService {
   deleteCroppedFace(faceId: string) {
     return this.http.delete(`/api/face-detection/faces/${faceId}`);
   }
+
+  getUsers(keyword: string) {
+    return this.http.get(`/api/face-detection/users?keyword=${keyword}`);
+  }
+
+  addFaceDefinition(userId: string, originalImageId: string, force: boolean = false) {
+    return this.http.post('/api/face-detection/definitions', { userId, originalImageId, force });
+  }
+
+  getUserDefinitions(userId: string) {
+    return this.http.get(`/api/face-detection/users/${userId}/definitions`);
+  }
+
+  deleteFaceDefinition(definitionId: string) {
+    return this.http.delete(`/api/face-detection/definitions/${definitionId}`);
+  }
+
+  // === TRAINING METHODS ===
+
+  getUsersWithDefinitions() {
+    return this.http.get('/api/face-detection/users-with-definitions');
+  }
+
+  getTrainingFolders() {
+    return this.http.get('/api/face-detection/training-folders');
+  }
+
+  extractEmbeddings(folderName: string) {
+    return this.http.post(`/api/face-detection/training-folders/${encodeURIComponent(folderName)}/extract-embeddings`);
+  }
+
+  /**
+   * Tạo một EventSource SSE để stream log đào tạo từ server về trình duyệt.
+   * Caller chịu trách nhiệm đóng EventSource khi không dùng nữa.
+   */
+  streamTraining(userIds: string[]): EventSource {
+    const baseUrl = (window as any).env?.API_BASE_URL ?? '';
+    const token = localStorage.getItem('jwt_token') ?? '';
+    const idsParam = encodeURIComponent(userIds.join(','));
+    // EventSource không hỗ trợ custom headers → truyền token qua query param
+    // Backend nên được cấu hình để chấp nhận Bearer token từ query param cho SSE
+    const url = `${baseUrl}/api/face-detection/train/stream?userIds=${idsParam}&access_token=${token}`;
+    return new EventSource(url);
+  }
 }

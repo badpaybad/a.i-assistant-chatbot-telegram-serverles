@@ -59,7 +59,10 @@ export class MenuService {
     {
       label: 'Nhận diện khuôn mặt',
       icon: 'smile',
-      route: '/modules/nhan-dien-khuon-mat',
+      children: [
+        { label: 'Phiên thu thập ảnh', route: '/modules/nhan-dien-khuon-mat/sessions' },
+        { label: 'Đào tạo nhận dạng', route: '/modules/nhan-dien-khuon-mat/training' },
+      ],
     },
     {
       label: 'Thử nghiệm',

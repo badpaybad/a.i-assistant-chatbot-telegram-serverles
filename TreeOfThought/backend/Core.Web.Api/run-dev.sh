@@ -10,6 +10,11 @@ fuser -k 4200/tcp
 rm -rf wwwroot/admin/*
 mkdir -p wwwroot/admin
 
+# Copy ArcFaceFinetune folder from docs to Core.Web.Api
+echo "Copying ArcFaceFinetune from docs..."
+rm -rf ArcFaceFinetune
+cp -r ../../docs/nhan-dien-khuon-mat/ArcFaceFinetune ArcFaceFinetune
+
 # Start Angular build in watch mode in the background
 echo "Starting Angular build in watch mode..."
 # Using --base-href and --output-path here as well to be sure, 

@@ -219,5 +219,19 @@
   "Bạn đang đăng nhập vào": "Bạn đang đăng nhập vào",
   "Kết nối an toàn": "Kết nối an toàn",
   "Tiếp tục đăng nhập": "Tiếp tục đăng nhập",
-  "My PC Assistant App": "Ứng dụng trợ lý máy tính"
+  "My PC Assistant App": "Ứng dụng trợ lý máy tính",
+  "Quản trị hệ thống": "Quản trị hệ thống",
+  "Quyền hạn": "Quyền hạn",
+  "Gửi thông báo": "Gửi thông báo",
+  "Thông tin phân quyền": "Thông tin phân quyền",
+  "Tài liệu": "Tài liệu",
+  "Nhận diện khuôn mặt": "Nhận diện khuôn mặt",
+  "Phiên thu thập ảnh": "Phiên thu thập ảnh",
+  "Đào tạo nhận dạng": "Đào tạo nhận dạng",
+  "Thử nghiệm": "Thử nghiệm",
+  "Firestore": "Firestore",
+  "FCM": "FCM",
+  "CQRS": "CQRS",
+  "Editor": "Editor",
+  "Editor TinyMCE": "Editor TinyMCE"
 }

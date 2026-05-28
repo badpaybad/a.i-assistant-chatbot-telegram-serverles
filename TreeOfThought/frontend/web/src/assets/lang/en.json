@@ -214,5 +214,19 @@
   "Bạn đang đăng nhập vào": "You are logging into",
   "Kết nối an toàn": "Secure Connection",
   "Tiếp tục đăng nhập": "Continue to Login",
-  "My PC Assistant App": "My PC Assistant App"
+  "My PC Assistant App": "My PC Assistant App",
+  "Quản trị hệ thống": "System Administration",
+  "Quyền hạn": "Claims",
+  "Gửi thông báo": "Send Notification",
+  "Thông tin phân quyền": "Authorization Info",
+  "Tài liệu": "Documents",
+  "Nhận diện khuôn mặt": "Face Recognition",
+  "Phiên thu thập ảnh": "Image Sessions",
+  "Đào tạo nhận dạng": "Train Recognition",
+  "Thử nghiệm": "Experiments",
+  "Firestore": "Firestore",
+  "FCM": "FCM",
+  "CQRS": "CQRS",
+  "Editor": "Editor",
+  "Editor TinyMCE": "Editor TinyMCE"
 }

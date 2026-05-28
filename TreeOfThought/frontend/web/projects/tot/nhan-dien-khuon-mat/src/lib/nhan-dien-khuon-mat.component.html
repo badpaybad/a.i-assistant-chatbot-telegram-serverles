@@ -186,6 +186,9 @@
           <tot-button nzType="primary" nzSize="small" (click)="openSessionDetails(data)">
             <i nz-icon nzType="eye"></i> Xem Chi Tiết
           </tot-button>
+          <tot-button nzType="default" nzSize="small" (click)="selectFaceDefinition(data)">
+            <i nz-icon nzType="smile"></i> Chọn định nghĩa khuôn mặt
+          </tot-button>
           <tot-button nzType="default" [nzDanger]="true" nzSize="small" (click)="deleteSession(data, $event)">
             <i nz-icon nzType="delete"></i> Xóa
           </tot-button>
@@ -202,6 +205,76 @@
         <i nz-icon nzType="reload"></i> Làm mới lịch sử
       </tot-button>
     </ng-template>
+  </div>
+
+  <!-- SECTION 4: FACE DEFINITION PANEL (Hiển thị khi click nút Chọn định nghĩa khuôn mặt) -->
+  <div *ngIf="selectedSessionForDef" class="workspace-card face-def-panel" style="margin-bottom: 24px; border: 1px solid #1890ff; border-radius: 8px; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div nz-row [nzJustify]="'space-between'" [nzAlign]="'middle'" style="border-bottom: 1px solid #f0f0f0; padding-bottom: 12px; margin-bottom: 16px;">
+      <div nz-col>
+        <span class="card-title" style="font-size: 16px; font-weight: 600; color: #262626;">
+          <i nz-icon nzType="smile" style="margin-right: 8px; color: #1890ff;"></i> Định Nghĩa Khuôn Mặt Cho Phiên: <strong style="color: #1890ff;">{{ selectedSessionForDef.name }}</strong>
+        </span>
+      </div>
+      <div nz-col>
+        <tot-button nzType="default" nzSize="small" (click)="selectedSessionForDef = null">
+          <i nz-icon nzType="close"></i> Đóng vùng làm việc
+        </tot-button>
+      </div>
+    </div>
+
+    <tot-table 
+      [data]="sessionImagesForDef" 
+      [columns]="faceDefColumns" 
+      [loading]="loadingSessionImages" 
+      [nzSize]="'middle'"
+      [frontPagination]="true"
+      [showPagination]="sessionImagesForDef.length > 5"
+      [pageSize]="5"
+    >
+      <ng-template totCell="fileName" let-data>
+        <span style="font-weight: 500; color: #262626;">{{ data.fileName }}</span>
+      </ng-template>
+
+      <ng-template totCell="imagePreview" let-data>
+        <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
+          <img [src]="data.url" alt="preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        </div>
+      </ng-template>
+
+      <ng-template totCell="action" let-data>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <!-- Autocomplete user -->
+          <tot-autocomplete
+            [apiUrl]="'/api/face-detection/users'"
+            [labelField]="'displayName'"
+            [valueField]="'id'"
+            [(ngModel)]="data.selectedUserId"
+            placeholder="Tìm chọn user..."
+            style="width: 220px; display: inline-block;"
+          ></tot-autocomplete>
+
+          <!-- Add definition button -->
+          <tot-button 
+            nzType="primary" 
+            nzSize="small" 
+            [disabled]="!data.selectedUserId" 
+            (click)="addFaceDefinition(data)"
+          >
+            <i nz-icon nzType="plus"></i> Gán cho user
+          </tot-button>
+
+          <!-- View definitions button -->
+          <tot-button 
+            nzType="default" 
+            nzSize="small" 
+            [disabled]="!data.selectedUserId" 
+            (click)="viewUserDefinitions(data.selectedUserId)"
+          >
+            <i nz-icon nzType="solution"></i> Xem user định nghĩa khuôn mặt
+          </tot-button>
+        </div>
+      </ng-template>
+    </tot-table>
   </div>
 
   <!-- DETAILED MODAL LAYOUT -->
@@ -268,6 +341,76 @@
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  </nz-modal>
+
+  <!-- MODAL SHOW DANH SÁCH KHUÔN MẶT ĐỊNH NGHĨA CỦA USER -->
+  <nz-modal [(nzVisible)]="showUserDefModal" 
+            [nzTitle]="'Danh sách ảnh định nghĩa khuôn mặt: ' + (selectedUserDefData?.user?.displayName || selectedUserDefData?.user?.username || '')" 
+            [nzWidth]="800" 
+            (nzOnCancel)="showUserDefModal = false" 
+            [nzFooter]="null"
+            class="premium-modal">
+    <div *nzModalContent style="padding: 12px 0;">
+      <div *ngIf="loadingUserDefs" style="text-align: center; padding: 40px 0;">
+        <nz-spin nzSimple nzSize="large"></nz-spin>
+        <p style="margin-top: 12px; color: #8c8c8c;">Đang tải danh sách định nghĩa...</p>
+      </div>
+
+      <div *ngIf="!loadingUserDefs && selectedUserDefData" style="max-height: 500px; overflow-y: auto; padding: 0 12px;">
+        <!-- User Info Panel -->
+        <div style="background: #e6f7ff; border: 1px solid #91d5ff; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px;">
+          <div *ngIf="selectedUserDefData.user.avatarUrl" style="width: 48px; height: 48px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            <img [src]="selectedUserDefData.user.avatarUrl" alt="avatar" style="width: 100%; height: 100%; object-fit: cover;">
+          </div>
+          <div *ngIf="!selectedUserDefData.user.avatarUrl" style="width: 48px; height: 48px; border-radius: 50%; background: #1890ff; color: #fff; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 600;">
+            {{ (selectedUserDefData.user.displayName || selectedUserDefData.user.username)[0].toUpperCase() }}
+          </div>
+          <div>
+            <h4 style="margin: 0; font-size: 15px; font-weight: 600; color: #262626;">{{ selectedUserDefData.user.displayName }} ({{ selectedUserDefData.user.username }})</h4>
+            <span style="font-size: 12px; color: #595959;"><i nz-icon nzType="mail"></i> Email: {{ selectedUserDefData.user.email }}</span>
+          </div>
+        </div>
+
+        <!-- Face list table -->
+        <div *ngIf="selectedUserDefData.definitions.length === 0" style="text-align: center; color: #8c8c8c; padding: 40px 0; font-style: italic;">
+          Chưa có hình ảnh nhận diện khuôn mặt nào được định nghĩa cho user này.
+        </div>
+
+        <tot-table 
+          *ngIf="selectedUserDefData.definitions.length > 0"
+          [data]="selectedUserDefData.definitions" 
+          [columns]="[
+            { title: 'Tên file ảnh gốc', key: 'fileName', width: '35%' },
+            { title: 'Hình ảnh', key: 'imagePreview', width: '25%' },
+            { title: 'Thời gian định nghĩa', key: 'createdAt', width: '25%' },
+            { title: 'Thao tác', key: 'action', width: '15%', align: 'center' }
+          ]"
+          [nzSize]="'middle'"
+          [frontPagination]="true"
+          [pageSize]="5"
+        >
+          <ng-template totCell="fileName" let-data>
+            <span style="font-weight: 500; color: #262626;">{{ data.image?.fileName || 'Ảnh gốc' }}</span>
+          </ng-template>
+
+          <ng-template totCell="imagePreview" let-data>
+            <div style="width: 50px; height: 50px; border-radius: 4px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
+              <img [src]="data.image?.url" alt="preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            </div>
+          </ng-template>
+
+          <ng-template totCell="createdAt" let-data>
+            <span style="font-size: 12px; color: #595959;">{{ data.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+          </ng-template>
+
+          <ng-template totCell="action" let-data>
+            <tot-button nzType="link" [nzDanger]="true" (click)="deleteUserFaceDefinition(data.id)">
+              <i nz-icon nzType="delete"></i> Xóa
+            </tot-button>
+          </ng-template>
+        </tot-table>
       </div>
     </div>
   </nz-modal>

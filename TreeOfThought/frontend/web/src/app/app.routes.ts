@@ -121,7 +121,23 @@ export const routes: Routes = [
       {
         path: 'modules/nhan-dien-khuon-mat',
         data: { breadcrumb: 'Nhận diện khuôn mặt' },
-        loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.NhanDienKhuonMatComponent)
+        children: [
+          {
+            path: 'sessions',
+            data: { breadcrumb: 'Phiên thu thập ảnh' },
+            loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.NhanDienKhuonMatComponent)
+          },
+          {
+            path: 'training',
+            data: { breadcrumb: 'Đào tạo nhận dạng' },
+            loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.TrainingComponent)
+          },
+          {
+            path: '',
+            redirectTo: 'sessions',
+            pathMatch: 'full'
+          }
+        ]
       }
 
     ]

@@ -1,0 +1,195 @@
+<div class="training-page">
+
+  <!-- ========================== SECTION 1: Chọn User Đào Tạo ========================== -->
+  <nz-card class="section-card" [nzTitle]="userSelectTitle" [nzExtra]="userSelectActions">
+    <ng-template #userSelectTitle>
+      <span class="card-title-icon"><span nz-icon nzType="team" nzTheme="outline"></span>&nbsp; Chọn User để Đào Tạo</span>
+    </ng-template>
+    <ng-template #userSelectActions>
+      <div class="card-actions-row">
+        <button nz-button nzSize="small" (click)="selectAll()">Chọn tất cả</button>
+        <button nz-button nzSize="small" (click)="deselectAll()" style="margin-left: 8px;">Bỏ chọn</button>
+        <button nz-button nzSize="small" (click)="loadUsersWithDefinitions()" style="margin-left: 8px;">
+          <span nz-icon nzType="reload"></span>
+        </button>
+      </div>
+    </ng-template>
+
+    <nz-spin [nzSpinning]="loadingUsers">
+      <nz-table
+        #userTable
+        [nzData]="usersWithDefs"
+        [nzShowPagination]="false"
+        nzSize="small"
+        [nzNoResult]="emptyUserTemplate"
+        class="user-table">
+        <thead>
+          <tr>
+            <th nzWidth="48px"></th>
+            <th>User</th>
+            <th nzWidth="160px">Số ảnh định nghĩa</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let user of userTable.data"
+              [class.selected-row]="isUserSelected(user.id)"
+              (click)="toggleUserSelection(user.id)"
+              class="user-row">
+            <td (click)="$event.stopPropagation()">
+              <label nz-checkbox
+                     [nzChecked]="isUserSelected(user.id)"
+                     (nzCheckedChange)="toggleUserSelection(user.id)">
+              </label>
+            </td>
+            <td>
+              <div class="user-info">
+                <img *ngIf="user.avatarUrl" [src]="user.avatarUrl" class="user-avatar" alt="avatar" />
+                <div *ngIf="!user.avatarUrl" class="user-avatar-placeholder">
+                  {{ (user.displayName || user.username || 'U').charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <div class="user-name">{{ user.displayName || user.username }}</div>
+                  <div class="user-email">{{ user.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <nz-badge [nzCount]="user.definitionCount" [nzStyle]="{ backgroundColor: '#52c41a' }"></nz-badge>
+              <span class="def-count-label">&nbsp; ảnh định nghĩa</span>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+      <ng-template #emptyUserTemplate>
+        <div class="empty-state">
+          <span nz-icon nzType="user-add" nzTheme="outline" style="font-size: 36px; color: #bbb;"></span>
+          <div style="margin-top: 8px; color: #999;">Chưa có user nào có khuôn mặt được định nghĩa.</div>
+          <div style="font-size: 12px; color: #ccc;">Vui lòng định nghĩa khuôn mặt cho user trước khi đào tạo.</div>
+        </div>
+      </ng-template>
+    </nz-spin>
+  </nz-card>
+
+  <!-- ========================== SECTION 2: Điều khiển Đào Tạo ========================== -->
+  <nz-card class="section-card" [nzTitle]="trainingControlTitle">
+    <ng-template #trainingControlTitle>
+      <span class="card-title-icon"><span nz-icon nzType="thunderbolt" nzTheme="outline"></span>&nbsp; Điều Khiển Đào Tạo</span>
+    </ng-template>
+
+    <div class="training-controls">
+      <div class="selected-info">
+        <nz-tag [nzColor]="selectedUserIds.size > 0 ? 'blue' : 'default'">
+          {{ selectedUserIds.size }} user được chọn
+        </nz-tag>
+        <span *ngIf="isTraining" class="training-status-indicator">
+          <nz-spin nzSimple nzSize="small"></nz-spin>
+          <span class="training-running-text">Đang đào tạo...</span>
+        </span>
+      </div>
+
+      <div class="control-buttons">
+        <tot-button
+          label="Bắt đầu đào tạo"
+          icon="play-circle"
+          [disabled]="isTraining || selectedUserIds.size === 0"
+          (click)="startTraining()">
+        </tot-button>
+        <button
+          nz-button
+          nzType="default"
+          nzDanger
+          [disabled]="!isTraining"
+          (click)="cancelTraining()"
+          style="margin-left: 12px;">
+          <span nz-icon nzType="stop"></span>
+          Hủy đào tạo
+        </button>
+      </div>
+    </div>
+
+    <!-- Log Panel -->
+    <div *ngIf="trainingLogs.length > 0" class="log-container">
+      <div class="log-header">
+        <span>📋 Log đào tạo ({{ trainingLogs.length }} dòng)</span>
+        <span *ngIf="trainingDoneFolder" class="done-badge">
+          <nz-tag nzColor="success">✅ Hoàn tất: {{ trainingDoneFolder }}</nz-tag>
+        </span>
+      </div>
+      <div id="training-log-panel" class="log-panel">
+        <div *ngFor="let line of trainingLogs" [class]="'log-line ' + getLogLineClass(line)">
+          {{ line }}
+        </div>
+      </div>
+    </div>
+  </nz-card>
+
+  <!-- ========================== SECTION 3: Quản lý Kết Quả Đào Tạo ========================== -->
+  <nz-card class="section-card" [nzTitle]="foldersTitle" [nzExtra]="foldersActions">
+    <ng-template #foldersTitle>
+      <span class="card-title-icon"><span nz-icon nzType="folder-open" nzTheme="outline"></span>&nbsp; Kết Quả Đào Tạo & Trích Xuất Embedding</span>
+    </ng-template>
+    <ng-template #foldersActions>
+      <button nz-button nzSize="small" (click)="loadTrainingFolders()">
+        <span nz-icon nzType="reload"></span> Làm mới
+      </button>
+    </ng-template>
+
+    <nz-spin [nzSpinning]="loadingFolders">
+      <nz-table
+        [nzData]="trainingFolders"
+        [nzShowPagination]="false"
+        nzSize="small"
+        [nzNoResult]="emptyFolderTemplate"
+        class="folders-table">
+        <thead>
+          <tr>
+            <th>Thư mục (Ngày)</th>
+            <th nzWidth="160px" nzAlign="center">Trạng thái mô hình</th>
+            <th nzWidth="180px" nzAlign="center">Hành động</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let folder of trainingFolders">
+            <td>
+              <span nz-icon nzType="calendar" style="margin-right: 6px; color: #1890ff;"></span>
+              <strong>{{ folder.folderName }}</strong>
+            </td>
+            <td nzAlign="center">
+              <nz-tag [nzColor]="folder.hasBestModel ? 'success' : 'warning'">
+                {{ folder.hasBestModel ? '✅ Có best model' : '⏳ Chưa có model' }}
+              </nz-tag>
+            </td>
+            <td nzAlign="center">
+              <button
+                nz-button
+                nzType="primary"
+                nzSize="small"
+                [disabled]="!folder.hasBestModel || extractingFolder === folder.folderName"
+                [nzLoading]="extractingFolder === folder.folderName"
+                (click)="extractEmbeddings(folder)">
+                <span nz-icon nzType="database"></span>
+                Trích xuất Embedding
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+      <ng-template #emptyFolderTemplate>
+        <div class="empty-state">
+          <span nz-icon nzType="inbox" nzTheme="outline" style="font-size: 36px; color: #bbb;"></span>
+          <div style="margin-top: 8px; color: #999;">Chưa có phiên đào tạo nào.</div>
+        </div>
+      </ng-template>
+    </nz-spin>
+
+    <nz-alert
+      *ngIf="trainingFolders.length > 0"
+      nzType="info"
+      nzShowIcon
+      nzMessage="Hướng dẫn"
+      nzDescription="Sau khi đào tạo hoàn tất, nhấn 'Trích xuất Embedding' để lưu vector đặc trưng vào database. Các embedding này sẽ được dùng cho nhận diện thời gian thực."
+      style="margin-top: 16px;">
+    </nz-alert>
+  </nz-card>
+
+</div>
