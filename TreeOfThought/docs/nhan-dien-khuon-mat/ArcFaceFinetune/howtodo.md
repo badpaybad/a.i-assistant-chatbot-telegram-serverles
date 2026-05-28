@@ -326,15 +326,26 @@ graph TD
     E --> F[Huấn luyện tinh chỉnh ArcFace ResNet-50]
     F --> G[Tải trọng số tốt nhất từ arcfacemodels/]
     G --> H[Cấu hình: CPU hoặc GPU CUDA / ROCm]
-    H --> I[Xuất mô hình sang arcface_model.onnx]
+    H --> I[Xuất mô hình ONNX]
     
-    subgraph Tích hợp C# .NET 8.0 & Quản lý Vector
-        I --> J[Nạp ONNX qua Microsoft.ML.OnnxRuntime]
+    I --> I1[arcface_model.onnx chuẩn - 100MB]
+    I --> I2[arcface_model_mobile.onnx lượng tử hóa - 25MB]
+    
+    subgraph Tích hợp C# .NET 8.0 Backend
+        I1 --> J[Nạp ONNX qua Microsoft.ML.OnnxRuntime]
         K[Ảnh truy vấn mới] --> L[Căn chỉnh & Trích xuất Embedding 512-D]
         L --> M[L2 Normalization]
         M --> N{Lưu trữ và So khớp}
-        N -- PostgreSQL + pgvector --> R[Tích hợp sẵn DB PostgreSQL hiện tại: TỐI ƯU NHẤT]
+        N -- PostgreSQL + pgvector --> R[Tích hợp sẵn DB PostgreSQL: TỐI ƯU NHẤT]
         R --> Q[Kết quả nhận diện qua chỉ mục HNSW]
+    end
+    
+    subgraph Tích hợp Dart Flutter Mobile
+        I2 --> F1[Nhúng vào Assets ứng dụng di động]
+        F1 --> F2[Nạp ONNX qua onnxruntime Flutter]
+        F3[Ảnh camera di động] --> F4[Giải mã & Tiền xử lý RGB NCHW 112x112]
+        F4 --> F5[Trích xuất Embedding offline trên thiết bị]
+        F5 --> F6[L2 Normalize & Tính tương đồng Cosine]
     end
 ```
 
@@ -851,3 +862,263 @@ public class MatchedFaceResult
     public float SimilarityScore { get; set; }
 }
 ```
+
+---
+
+## 8. Tích hợp Mô hình ONNX vào Ứng dụng Di động Dart Flutter
+
+Để triển khai nhận diện khuôn mặt ngoại tuyến (offline) hoặc trích xuất embedding trực tiếp trên thiết bị di động (Android & iOS), ứng dụng Flutter của bạn sẽ nạp mô hình lượng tử hóa siêu nhẹ **`arcface_model_mobile.onnx` (~25MB)**.
+
+Dưới đây là hướng dẫn toàn diện từ cấu hình đến mã nguồn Dart hoàn chỉnh để tích hợp.
+
+### 8.1. Cấu hình Dự án Flutter (`pubspec.yaml`)
+
+Thêm các gói thư viện cần thiết cho việc suy luận mô hình học sâu và xử lý hình ảnh trong Flutter:
+
+```yaml
+dependencies:
+  flutter:
+    sdk: flutter
+  # Thư viện ONNX Runtime chính thức từ Microsoft cho Flutter
+  onnxruntime: ^0.2.0
+  # Thư viện xử lý hình ảnh thuần Dart (để resize, crop và lấy pixel RGB)
+  image: ^4.1.3
+
+flutter:
+  assets:
+    # Khai báo tệp mô hình ONNX lượng tử hóa của bạn
+    - assets/models/arcface_model_mobile.onnx
+```
+
+> [!NOTE]
+> **Chuẩn bị file model trong dự án Flutter:**
+> Tạo thư mục `assets/models/` trong gốc dự án Flutter của bạn, copy tệp `arcface_model_mobile.onnx` được sinh ra từ pipeline huấn luyện Python vào đó.
+
+---
+
+### 8.2. Tiền xử lý hình ảnh trong Dart (Định dạng NCHW chuẩn)
+
+Mô hình ArcFace yêu cầu Tensor đầu vào có kích thước `[1, 3, 112, 112]`. Pixel màu phải được chuyển từ thang `[0, 255]` về khoảng `[-1.0, 1.0]`. 
+
+Hơn nữa, định dạng dữ liệu bắt buộc là **NCHW (Channels First)**, nghĩa là các giá trị của kênh màu Đỏ (Red) của toàn bộ ảnh phải được xếp trước, sau đó đến toàn bộ kênh Xanh lá (Green), và cuối cùng là kênh Xanh dương (Blue).
+
+Dưới đây là mã nguồn Dart xử lý chuyển đổi ảnh thô thành mảng Float32List chuẩn hóa:
+
+```dart
+import 'dart:typed_data';
+import 'package:image/image.dart' as img;
+
+class FacePreprocessor {
+  /// Tiền xử lý ảnh khuôn mặt thành cấu trúc dữ liệu NCHW [1, 3, 112, 112]
+  /// Chuẩn hóa giá trị pixel về khoảng [-1.0, 1.0]
+  static Float32List preprocess(Uint8List imageBytes) {
+    // 1. Giải mã hình ảnh thô từ Camera hoặc File
+    img.Image? originalImage = img.decodeImage(imageBytes);
+    if (originalImage == null) {
+      throw Exception("Không thể giải mã hình ảnh chân dung");
+    }
+
+    // 2. Resize ảnh về kích thước chuẩn 112x112 pixel (dùng nội suy chất lượng cao)
+    img.Image resizedImage = img.copyResize(
+      originalImage,
+      width: 112,
+      height: 112,
+      interpolation: img.Interpolation.cubic,
+    );
+
+    // 3. Khởi tạo mảng Float32List chứa 3 * 112 * 112 = 37,632 phần tử
+    final Float32List floatBuffer = Float32List(1 * 3 * 112 * 112);
+
+    int rIndex = 0;
+    int gIndex = 112 * 112;
+    int bIndex = 2 * 112 * 112;
+
+    // 4. Duyệt qua từng pixel để trích xuất RGB và sắp xếp theo định dạng NCHW
+    for (int y = 0; y < 112; y++) {
+      for (int x = 0; x < 112; x++) {
+        // Lấy pixel tại tọa độ (x, y)
+        final pixel = resizedImage.getPixel(x, y);
+
+        // Trích xuất kênh màu R, G, B (image package trả về giá trị 0-255)
+        final double r = pixel.r.toDouble();
+        final double g = pixel.g.toDouble();
+        final double b = pixel.b.toDouble();
+
+        // Chuẩn hóa pixel về khoảng [-1.0, 1.0] theo công thức: (val - 127.5) / 127.5
+        floatBuffer[rIndex++] = (r - 127.5) / 127.5;
+        floatBuffer[gIndex++] = (g - 127.5) / 127.5;
+        floatBuffer[bIndex++] = (b - 127.5) / 127.5;
+      }
+    }
+
+    return floatBuffer;
+  }
+}
+```
+
+---
+
+### 8.3. Chạy suy luận ONNX bằng Dart (Inference)
+
+Dưới đây là Service hoàn chỉnh trong Dart quản lý vòng đời của `OrtSession`, nạp mô hình từ Flutter assets, chạy suy luận trích xuất Vector đặc trưng 512 chiều, và thực thi giải phóng bộ nhớ RAM gốc (Native memory) một cách an toàn để tránh rò rỉ bộ nhớ (Memory leaks) trên thiết bị di động:
+
+```dart
+import 'dart:math';
+import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:onnxruntime/onnxruntime.dart';
+
+class FaceEmbeddingService {
+  OrtSession? _session;
+  bool _isInitialized = false;
+
+  /// Khởi tạo và nạp mô hình ONNX lượng tử hóa từ Assets
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      // Gọi khởi tạo môi trường ONNX Runtime Native
+      OrtEnv.instance;
+
+      // Đọc file mô hình nhị phân từ assets
+      final modelData = await rootBundle.load('assets/models/arcface_model_mobile.onnx');
+      final modelBytes = modelData.buffer.asUint8List(
+        modelData.offsetInBytes,
+        modelData.lengthInBytes,
+      );
+
+      // Cấu hình các tùy chọn tối ưu hóa suy luận trên di động
+      final sessionOptions = OrtSessionOptions();
+      sessionOptions.setAndroidOpenCLExecutionProvider(); // Tăng tốc GPU trên Android (nếu có)
+      
+      // Tạo session thực thi từ mảng byte
+      _session = OrtSession.fromBuffer(modelBytes, sessionOptions);
+      sessionOptions.release(); // Giải phóng cấu hình sau khi tạo xong session
+
+      _isInitialized = true;
+      print("[+] Khởi tạo thành công mô hình ArcFace ONNX Mobile.");
+    } catch (e) {
+      print("[-] Lỗi khởi tạo mô hình ONNX: $e");
+      rethrow;
+    }
+  }
+
+  /// Trích xuất Vector Embedding 512 chiều từ ảnh chân dung
+  Future<List<double>> extractEmbedding(Uint8List rawImageBytes) async {
+    if (!_isInitialized || _session == null) {
+      await initialize();
+    }
+
+    // 1. Chạy tiền xử lý ảnh về dạng NCHW Float32List
+    final Float32List inputData = FacePreprocessor.preprocess(rawImageBytes);
+
+    // 2. Định nghĩa hình dạng (shape) đầu vào cho Tensor [batch_size, channels, width, height]
+    final List<int> inputShape = [1, 3, 112, 112];
+
+    // 3. Tạo OrtValue (Tensor di động) từ dữ liệu
+    final OrtValue inputOrtValue = OrtValue.tensorFromList(inputData, inputShape);
+    final inputs = {'input': inputOrtValue};
+
+    final runOptions = OrtRunOptions();
+    
+    try {
+      // 4. Thực thi chạy suy luận (Inference)
+      final outputs = _session!.run(runOptions, inputs);
+
+      if (outputs.isEmpty || outputs.first == null) {
+        throw Exception("Mô hình không trả về kết quả đầu ra.");
+      }
+
+      // 5. Trích xuất kết quả vector 512 chiều
+      // Kiểu dữ liệu đầu ra từ ONNX cho float là List<List<double>> do batch_size = 1
+      final List<List<double>> outputData = (outputs.first!.value as List).cast<List<double>>();
+      final List<double> rawEmbedding = outputData[0];
+
+      // 6. Thực hiện L2 Normalization cho vector embedding (bắt buộc trước khi so khớp)
+      final List<double> normalizedEmbedding = _l2Normalize(rawEmbedding);
+
+      // 7. Giải phóng bộ nhớ RAM gốc của các đối tượng Tensor vừa tạo
+      inputOrtValue.release();
+      runOptions.release();
+      for (var element in outputs) {
+        element?.release();
+      }
+
+      return normalizedEmbedding;
+    } catch (e) {
+      // Đảm bảo giải phóng tài nguyên kể cả khi gặp lỗi đột ngột
+      inputOrtValue.release();
+      runOptions.release();
+      print("[-] Lỗi trong quá trình suy luận mô hình: $e");
+      rethrow;
+    }
+  }
+
+  /// Thuật toán chuẩn hóa L2 Normalize cho vector embedding
+  List<double> _l2Normalize(List<double> vector) {
+    double sumOfSquares = 0.0;
+    for (var x in vector) {
+      sumOfSquares += x * x;
+    }
+    
+    final double norm = sqrt(sumOfSquares);
+    if (norm == 0.0) return vector;
+
+    return vector.map((x) => x / norm).toList();
+  }
+
+  /// Tính toán độ tương đồng Cosine Similarity giữa 2 vector embedding đã chuẩn hóa
+  double calculateCosineSimilarity(List<double> vectorA, List<double> vectorB) {
+    if (vectorA.length != vectorB.length) {
+      throw ArgumentError("Kích thước hai vector phải bằng nhau.");
+    }
+    
+    double dotProduct = 0.0;
+    for (int i = 0; i < vectorA.length; i++) {
+      dotProduct += vectorA[i] * vectorB[i];
+    }
+    
+    // Vì hai vector đã được L2 Normalize nên Cosine Similarity chính bằng Dot Product!
+    return dotProduct;
+  }
+
+  /// Giải phóng bộ nhớ mô hình khi ứng dụng đóng
+  void dispose() {
+    _session?.release();
+    _session = null;
+    _isInitialized = false;
+  }
+}
+```
+
+---
+
+### 8.4. Ví dụ sử dụng Nhận diện / So khớp offline trên UI
+
+Bạn có thể dễ dàng sử dụng Service trên trong các widget Flutter để trích xuất đặc trưng và so khớp với vector đã lưu trữ:
+
+```dart
+final embeddingService = FaceEmbeddingService();
+
+// 1. Khởi tạo service khi bắt đầu app
+await embeddingService.initialize();
+
+// 2. Khi user chụp ảnh chân dung (dạng byte Uint8List)
+Uint8List capturedFaceBytes = ...; // Ảnh khuôn mặt được chụp
+
+// 3. Trích xuất vector embedding 512 chiều (Đã được L2 Normalize tự động)
+List<double> currentEmbedding = await embeddingService.extractEmbedding(capturedFaceBytes);
+
+// 4. So khớp tương đồng với Vector mẫu đã lưu trong Local Storage hoặc Database
+List<double> savedUserEmbedding = ...; // Tải vector mẫu 512 chiều từ DB SQLite/Postgres
+double similarity = embeddingService.calculateCosineSimilarity(currentEmbedding, savedUserEmbedding);
+
+print("Độ khớp Cosine Similarity: ${(similarity * 100).toStringAsFixed(2)}%");
+
+if (similarity > 0.55) {
+  print("✅ Nhận diện thành công! Chào mừng User.");
+} else {
+  print("❌ Khuôn mặt không khớp. Vui lòng thử lại.");
+}
+```
+

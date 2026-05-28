@@ -20,6 +20,7 @@ Finetune có thể hỗ trợ cả CPU GPU dựa vào việc cấu hình chọn 
 
 Tôi luôn cần finetune để tạo ra onnx, và dùng nó để trích xuất embedding từ khuôn mặt của user (sử dụng c# dotnet 8.0 với onnxruntime), sau đó so sánh vector embedding với vector embedding đã lưu trong postgress để tìm kiếm khuôn mặt.
 
+Bổ xung thêm việc tạo ra file onnx cho app mobi chạy dùng dart flutter 
 
 # Các câu hỏi cần trả lời
 

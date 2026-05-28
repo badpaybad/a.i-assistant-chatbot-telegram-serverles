@@ -81,6 +81,7 @@ if len(missing_libs) > 0:
 RAW_DIR = "./dataraw"
 DATA_DIR = "./data"
 MODEL_OUTPUT_PATH = "./arcface_model.onnx"
+MOBILE_MODEL_OUTPUT_PATH = "./arcface_model_mobile.onnx"
 EMBEDDING_SIZE = 512
 IMAGE_SIZE = (112, 112)
 BATCH_SIZE = 8
@@ -162,6 +163,38 @@ def align_face_python(image_bgr, eye_left, eye_right):
     # Warp hình ảnh về kích thước 112x112
     aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
     return aligned_face
+
+# ==========================================
+# 2.1 THUẬT TOÁN LƯỢNG TỬ HÓA ONNX CHO MOBILE
+# ==========================================
+def quantize_onnx_model(onnx_path, output_path):
+    """
+    Thực hiện lượng tử hóa động (Dynamic Quantization - INT8) cho tệp ONNX.
+    Giúp giảm kích thước mô hình đi 4 lần và tăng tốc độ chạy trên Mobile/CPU.
+    """
+    print(f"[*] Đang tiến hành lượng tử hóa mô hình ONNX về định dạng INT8 cho di động...")
+    try:
+        from onnxruntime.quantization import quantize_dynamic, QuantType
+        
+        quantize_dynamic(
+            model_input=onnx_path,
+            model_output=output_path,
+            weight_type=QuantType.QUInt8
+        )
+        size_original = os.path.getsize(onnx_path) / (1024 * 1024)
+        size_quantized = os.path.getsize(output_path) / (1024 * 1024)
+        print(f"[+] Lượng tử hóa thành công!")
+        print(f"    - Mô hình gốc: {size_original:.2f} MB ({onnx_path})")
+        print(f"    - Mô hình lượng tử hóa di động: {size_quantized:.2f} MB ({output_path})")
+        return True
+    except ImportError:
+        print("[-] Cảnh báo: Không tìm thấy thư viện 'onnxruntime.quantization'.")
+        print("    Vui lòng cài đặt bằng lệnh: pip install onnxruntime (hoặc onnxruntime-tools)")
+        print("    Bỏ qua bước lượng tử hóa.")
+        return False
+    except Exception as e:
+        print(f"[-] Có lỗi trong quá trình lượng tử hóa: {e}")
+        return False
 
 # ==========================================
 # 3. TIỀN XỬ LÝ ẢNH THÔ (dataraw -> data)
@@ -680,31 +713,57 @@ def main():
     print(f"[+] Đã xuất file ONNX thành công!")
     print(f"[+] Đường dẫn đầy đủ (dùng trong C# .NET): {onnx_abs_path}")
 
+    # Tiến hành lượng tử hóa ONNX cho mobile
+    quantize_onnx_model(MODEL_OUTPUT_PATH, MOBILE_MODEL_OUTPUT_PATH)
+
     # ==========================================
-    # 9. KIỂM ĐỊNH TỆP TIN ONNX VỪA TẠO
+    # 9. KIỂM ĐỊNH CÁC TỆP TIN ONNX VỪA TẠO
     # ==========================================
-    print("\n[*] Đang tự động kiểm định tệp tin ONNX vừa tạo bằng ONNX Runtime...")
+    print("\n[*] Đang tự động kiểm định tệp tin ONNX gốc...")
     
     onnx_model = onnx.load(MODEL_OUTPUT_PATH)
     onnx.checker.check_model(onnx_model)
-    print("[+] Cấu trúc file ONNX hợp lệ!")
+    print("[+] Cấu trúc file ONNX gốc hợp lệ!")
 
     ort_session = ort.InferenceSession(MODEL_OUTPUT_PATH)
     dummy_np = np.random.randn(1, 3, 112, 112).astype(np.float32)
     outputs = ort_session.run(None, {'input': dummy_np})
     embedding_out = outputs[0]
     
-    print(f"[+] Output shape kiểm tra: {embedding_out.shape} (Mong đợi: (1, 512))")
+    print(f"[+] Output shape kiểm tra (Gốc): {embedding_out.shape} (Mong đợi: (1, 512))")
+    
+    mobile_ok = False
+    if os.path.exists(MOBILE_MODEL_OUTPUT_PATH):
+        print("\n[*] Đang tự động kiểm định tệp tin ONNX lượng tử hóa di động...")
+        try:
+            onnx_mobile = onnx.load(MOBILE_MODEL_OUTPUT_PATH)
+            onnx.checker.check_model(onnx_mobile)
+            print("[+] Cấu trúc file ONNX di động hợp lệ!")
+            
+            ort_session_mobile = ort.InferenceSession(MOBILE_MODEL_OUTPUT_PATH)
+            outputs_mobile = ort_session_mobile.run(None, {'input': dummy_np})
+            embedding_out_mobile = outputs_mobile[0]
+            print(f"[+] Output shape kiểm tra (Mobile): {embedding_out_mobile.shape} (Mong đợi: (1, 512))")
+            if embedding_out_mobile.shape == (1, 512):
+                mobile_ok = True
+        except Exception as e:
+            print(f"[-] Kiểm định mô hình di động thất bại: {e}")
+
     if embedding_out.shape == (1, 512):
         onnx_abs = os.path.abspath(MODEL_OUTPUT_PATH)
+        onnx_mobile_abs = os.path.abspath(MOBILE_MODEL_OUTPUT_PATH) if mobile_ok else None
         print("\n" + "="*60)
         print(" CHÚC MỮNG: PIPELINE ĐÃ HOÀN THÀNH XUẤT SẮC!")
         print("="*60)
-        print(f" ✅ File ONNX đường dẫn đầy đủ:")
+        print(f" ✅ File ONNX chuẩn (C# .NET Backend):")
         print(f"   {onnx_abs}")
-        print(f"")
-        print(f" Trong C# .NET 8.0, nạp bằng:")
+        print(f"   Nạp trong C# .NET 8.0 bằng:")
         print(f"   var session = new InferenceSession(@\"{onnx_abs}\");")
+        print(f"")
+        if onnx_mobile_abs:
+            print(f" ✅ File ONNX lượng tử hóa (Flutter Mobile):")
+            print(f"   {onnx_mobile_abs}")
+            print(f"   (Dung lượng cực nhẹ ~25MB, tối ưu chạy trên Android/iOS)")
         print("="*60)
     else:
         print("[-] Kiểm định thất bại! Kích thước đầu ra không chính xác.")

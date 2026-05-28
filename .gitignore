@@ -99,3 +99,4 @@ TreeOfThought/frontend/webtestoidc/test.db-wal
 TreeOfThought/frontend/webmvctestoidc/test.db
 TreeOfThought/frontend/webmvctestoidc/test.db-shm
 TreeOfThought/frontend/webmvctestoidc/test.db-wal
+**/**.onnx
