@@ -59,6 +59,11 @@ export const routes: Routes = [
             path: 'editor', 
             loadComponent: () => import('@tot/business-test').then(m => m.EditorTestComponent),
             data: { breadcrumb: 'Editor Test' }
+          },
+          { 
+            path: 'editor-tinymce', 
+            loadComponent: () => import('@tot/business-test').then(m => m.EditorTinymceTestComponent),
+            data: { breadcrumb: 'Editor TinyMCE Test' }
           }
         ]
       },

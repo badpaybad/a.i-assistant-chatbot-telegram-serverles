@@ -70,6 +70,7 @@ export class MenuService {
         { label: 'FCM', route: '/modules/test/fcm' },
         { label: 'CQRS', route: '/modules/test/cqrs' },
         { label: 'Editor', route: '/modules/test/editor' },
+        { label: 'Editor TinyMCE', route: '/modules/test/editor-tinymce' },
       ],
     },
   ];

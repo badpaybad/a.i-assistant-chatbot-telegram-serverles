@@ -36,6 +36,11 @@
                 "glob": "**/*",
                 "input": "./node_modules/ng-zorro-antd/src/assets",
                 "output": "/assets/"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/tinymce",
+                "output": "/tinymce/"
               }
             ],
             "styles": [

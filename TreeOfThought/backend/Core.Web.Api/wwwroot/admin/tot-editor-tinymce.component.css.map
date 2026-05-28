@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;0e7a3fa3c7d0c5a51d14e9e441c58d63b92785b7121b7be49c9f638f1af50966;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/shared/src/lib/components/tot-editor-tinymce/tot-editor-tinymce.component.ts"],
+  "sourcesContent": ["\n    .editor-wrapper {\n      border: 1px solid #d9d9d9;\n      border-radius: 4px;\n    }\n    :host ::ng-deep .tox-tinymce {\n      border: none !important;\n      min-height: 300px;\n    }\n  "],
+  "mappings": ";AACI,CAAC;AACC,UAAQ,IAAI,MAAM;AAClB,iBAAe;AACjB;AACA,MAAM,UAAU,CAAC;AACf,UAAQ;AACR,cAAY;AACd;",
+  "names": []
+}
