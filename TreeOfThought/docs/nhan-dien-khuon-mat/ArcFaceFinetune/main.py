@@ -17,6 +17,11 @@ if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
 # - 'cuda': Ép buộc chạy bằng GPU CUDA
 DEVICE_CONFIG = "cpu"
 
+# Lựa chọn chế độ căn chỉnh khuôn mặt (Align Face Mode):
+# - "standard": Chung chung đủ tốt (Dùng MediaPipe BlazeFace nhanh, nhẹ, lý tưởng cho người bình thường)
+# - "advanced": Tăng cường chuyên sâu (Dùng MediaPipe Face Landmarker 3D, tối ưu cực hạn cho các điều kiện khắc nghiệt: khẩu trang, kính mắt, trẻ em, người già, sinh đôi)
+ALIGN_MODE = "advanced"
+
 # Cố gắng import các thư viện cần thiết một cách an toàn để tránh bị Crash Traceback khi thiếu thư viện
 missing_libs = []
 
@@ -222,20 +227,18 @@ def _ensure_mp_face_model():
 
 def preprocess_dataraw():
     """
-    Đọc ảnh thô từ ./dataraw/, tự động phát hiện khuôn mặt và mắt.
-
-    Chiến lược phát hiện (ưu tiên cao xuống thấp):
-      1. MediaPipe Tasks API (FaceDetector + BlazeFace TFLite) — mediapipe 0.10+
-         → Cho kết quả tốt nhất, trả về keypoints mắt trực tiếp.
-      2. OpenCV Haar Cascade — fallback khi model TFLite không tải được.
-         → Phát hiện mặt + mắt riêng biệt trong ROI khuôn mặt.
-
+    Đọc ảnh thô từ ./dataraw/, tự động phát hiện khuôn mặt và điểm mốc 3D.
+    Hỗ trợ 2 chế độ căn chỉnh khuôn mặt cấu hình qua ALIGN_MODE:
+      - "standard": Chung chung đủ tốt (Dùng MediaPipe BlazeFace nhanh, nhẹ)
+      - "advanced": Tăng cường chuyên sâu (Dùng MediaPipe Face Landmarker 3D, tối ưu cực hạn cho các điều kiện khắc nghiệt)
+    
+    Cả 2 chế độ đều có fallback an toàn về OpenCV Haar Cascade nếu xảy ra lỗi.
     Kết quả cuối: ảnh 112×112 đã căn chỉnh chuẩn ArcFace (2-Eye Similarity Transform).
     """
     if not os.path.exists(RAW_DIR):
         return False
 
-    print(f"[*] Phát hiện thư mục ảnh thô '{RAW_DIR}'. Đang tiến hành cắt & căn chỉnh khuôn mặt tự động...")
+    print(f"[*] Phát hiện thư mục ảnh thô '{RAW_DIR}'. Đang tiến hành tiền xử lý khuôn mặt ở chế độ ALIGN_MODE = '{ALIGN_MODE}'...")
 
     if cv2 is None:
         print("\n[-] Lỗi: Cần cài đặt thư viện 'opencv-python' để tiền xử lý ảnh thô!")
@@ -247,35 +250,57 @@ def preprocess_dataraw():
         shutil.rmtree(DATA_DIR)
     os.makedirs(DATA_DIR, exist_ok=True)
 
-    # ------------------------------------------------------------------
-    # Khởi tạo bộ phát hiện khuôn mặt: MediaPipe Tasks API (ưu tiên)
-    # ------------------------------------------------------------------
+    # Khai báo các biến MediaPipe
+    use_mp = False
     mp_detector = None
-    use_mp_tasks = False
+    mp_landmarker = None
 
     try:
+        import mediapipe as mp_lib
         from mediapipe.tasks import python as _mp_py
         from mediapipe.tasks.python import vision as _mp_vision
         from mediapipe.tasks.python.core import base_options as _mp_base
 
-        model_ok = _ensure_mp_face_model()
-        if model_ok:
-            base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_DETECTOR_MODEL_PATH)
-            det_opts  = _mp_vision.FaceDetectorOptions(
-                base_options=base_opts,
-                min_detection_confidence=0.5,
-            )
-            mp_detector = _mp_vision.FaceDetector.create_from_options(det_opts)
-            use_mp_tasks = True
-            print("[+] Sử dụng MediaPipe Tasks API (BlazeFace) để phát hiện khuôn mặt — chất lượng cao nhất.")
+        if ALIGN_MODE == "standard":
+            # ------------------------------------------------------------------
+            # Khởi tạo bộ phát hiện khuôn mặt BlazeFace TFLite (standard)
+            # ------------------------------------------------------------------
+            model_ok = _ensure_mp_face_model()
+            if model_ok:
+                base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_DETECTOR_MODEL_PATH)
+                det_opts  = _mp_vision.FaceDetectorOptions(
+                    base_options=base_opts,
+                    min_detection_confidence=0.5,
+                )
+                mp_detector = _mp_vision.FaceDetector.create_from_options(det_opts)
+                use_mp = True
+                print("[+] Sử dụng MediaPipe BlazeFace (Standard Align) — chung chung đủ tốt, gọn nhẹ.")
+            else:
+                print(f"[!] Không thể tải mô hình BlazeFace tại '{MP_FACE_DETECTOR_MODEL_PATH}'.")
+                
+        else:
+            # ------------------------------------------------------------------
+            # Khởi tạo bộ phát hiện Face Landmarker 3D (advanced)
+            # ------------------------------------------------------------------
+            if os.path.exists(MP_FACE_LANDMARK_MODEL_PATH):
+                base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_LANDMARK_MODEL_PATH)
+                options = _mp_vision.FaceLandmarkerOptions(
+                    base_options=base_opts,
+                    output_face_blendshapes=False,
+                    output_facial_transformation_matrixes=False,
+                    num_faces=1,
+                )
+                mp_landmarker = _mp_vision.FaceLandmarker.create_from_options(options)
+                use_mp = True
+                print("[+] Sử dụng MediaPipe Face Landmarker (Advanced Align) — tăng cường tối đa cho điều kiện khắc nghiệt.")
+            else:
+                print(f"[!] Không tìm thấy mô hình Face Landmarker tại '{MP_FACE_LANDMARK_MODEL_PATH}'.")
     except Exception as e:
-        print(f"[!] MediaPipe Tasks API không khả dụng ({e}). Chuyển sang OpenCV Haar Cascade.")
+        print(f"[!] Lỗi khi nạp MediaPipe ({e}). Sẽ sử dụng OpenCV Haar Cascade làm fallback.")
 
-    # ------------------------------------------------------------------
-    # Khởi tạo OpenCV Haar Cascade (fallback)
-    # ------------------------------------------------------------------
+    # OpenCV Haar Cascade (fallback)
     face_cascade = eye_cascade = None
-    if not use_mp_tasks:
+    if not use_mp:
         face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         eye_cascade  = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_eye.xml')
         print("[+] Sử dụng OpenCV Haar Cascade làm bộ phát hiện khuôn mặt (fallback).")
@@ -284,10 +309,9 @@ def preprocess_dataraw():
     fail_count = 0
 
     # ------------------------------------------------------------------
-    # Hàm helper: MediaPipe Tasks API
+    # Hàm helper: Chế độ Standard (BlazeFace)
     # ------------------------------------------------------------------
     def detect_align_mp_tasks(image_bgr):
-        """Dùng MediaPipe Tasks FaceDetector trả về ảnh 112×112 đã căn chỉnh."""
         import mediapipe as mp_lib
         h, w = image_bgr.shape[:2]
         rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
@@ -308,7 +332,6 @@ def preprocess_dataraw():
             left_eye  = (int(kp[1].x * w), int(kp[1].y * h))
             return align_face_python(image_bgr, right_eye, left_eye)
         else:
-            # Không đủ keypoint: crop bbox khuôn mặt
             bb = det.bounding_box
             x1, y1 = max(0, bb.origin_x), max(0, bb.origin_y)
             x2, y2 = min(w, bb.origin_x + bb.width), min(h, bb.origin_y + bb.height)
@@ -316,13 +339,49 @@ def preprocess_dataraw():
             return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC)
 
     # ------------------------------------------------------------------
-    # Hàm helper: OpenCV Haar Cascade
+    # Hàm helper: Chế độ Advanced (Face Landmarker 3D)
+    # ------------------------------------------------------------------
+    def detect_align_mp_landmarker(image_bgr):
+        import mediapipe as mp_lib
+        h, w = image_bgr.shape[:2]
+        rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        mp_image = mp_lib.Image(image_format=mp_lib.ImageFormat.SRGB, data=rgb)
+        result = mp_landmarker.detect(mp_image)
+
+        if not result.face_landmarks or len(result.face_landmarks) == 0:
+            return None
+
+        # Lấy khuôn mặt đầu tiên
+        landmarks = result.face_landmarks[0]
+        
+        # Trích xuất tọa độ mắt trái ảnh (bên trái ảnh - mắt phải người)
+        pt33 = landmarks[33]
+        pt133 = landmarks[133]
+        eye_left = (
+            int((pt33.x + pt133.x) / 2.0 * w),
+            int((pt33.y + pt133.y) / 2.0 * h)
+        )
+
+        # Trích xuất tọa độ mắt phải ảnh (bên phải ảnh - mắt trái người)
+        pt362 = landmarks[362]
+        pt263 = landmarks[263]
+        eye_right = (
+            int((pt362.x + pt263.x) / 2.0 * w),
+            int((pt362.y + pt263.y) / 2.0 * h)
+        )
+
+        # Kiểm tra tính hợp lệ của tọa độ mắt
+        if not (0 <= eye_left[0] < w and 0 <= eye_left[1] < h) or not (0 <= eye_right[0] < w and 0 <= eye_right[1] < h):
+            return None
+
+        return align_face_python(image_bgr, eye_left, eye_right)
+
+    # ------------------------------------------------------------------
+    # Hàm helper: Fallback (OpenCV Haar Cascade)
     # ------------------------------------------------------------------
     def detect_align_opencv(image_bgr):
-        """Dùng OpenCV Haar Cascade phát hiện mặt + mắt, căn chỉnh hình học."""
         h, w = image_bgr.shape[:2]
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
-
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
         if len(faces) == 0:
             return None
@@ -339,17 +398,17 @@ def preprocess_dataraw():
             right_eye = (x + ex2 + ew2 // 2, y + ey2 + eh2 // 2)
             return align_face_python(image_bgr, left_eye, right_eye)
         else:
-            # Fallback: crop với padding 20%
             pad_x = int(fw * 0.20)
             pad_y = int(fh * 0.20)
             face_crop = image_bgr[max(0, y-pad_y):min(h, y+fh+pad_y),
                                   max(0, x-pad_x):min(w, x+fw+pad_x)]
             return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC)
 
-    # ------------------------------------------------------------------
-    # Vòng lặp xử lý ảnh
-    # ------------------------------------------------------------------
-    detect_fn = detect_align_mp_tasks if use_mp_tasks else detect_align_opencv
+    # Lựa chọn hàm suy luận dựa trên cấu hình ALIGN_MODE
+    if use_mp:
+        detect_fn = detect_align_mp_tasks if ALIGN_MODE == "standard" else detect_align_mp_landmarker
+    else:
+        detect_fn = detect_align_opencv
 
     for identity in sorted(os.listdir(RAW_DIR)):
         identity_raw_path = os.path.join(RAW_DIR, identity)
@@ -372,9 +431,14 @@ def preprocess_dataraw():
 
             aligned = detect_fn(image)
             if aligned is None:
-                print(f"    [-] Không phát hiện khuôn mặt trong ảnh: {img_path}")
-                fail_count += 1
-                continue
+                # Nếu MediaPipe bị lỗi hoặc không tìm thấy, thử fallback OpenCV Haar Cascade
+                if use_mp:
+                    aligned = detect_align_opencv(image)
+                
+                if aligned is None:
+                    print(f"    [-] Không phát hiện khuôn mặt trong ảnh: {img_path}")
+                    fail_count += 1
+                    continue
 
             save_path = os.path.join(
                 identity_aligned_path,
@@ -383,15 +447,19 @@ def preprocess_dataraw():
             cv2.imwrite(save_path, aligned)
             face_count += 1
 
-    # Giải phóng MediaPipe detector
+    # Giải phóng tài nguyên MediaPipe
     if mp_detector is not None:
         try:
             mp_detector.close()
         except Exception:
             pass
+    if mp_landmarker is not None:
+        try:
+            mp_landmarker.close()
+        except Exception:
+            pass
 
-    print(f"[+] Tiền xử lý hoàn tất! Đã căn chỉnh thành công {face_count} khuôn mặt. "
-          f"Bỏ qua (không có mặt): {fail_count} ảnh.")
+    print(f"[+] Tiền xử lý hoàn tất! Đã căn chỉnh thành công {face_count} khuôn mặt. Bỏ qua (không có mặt): {fail_count} ảnh.")
     print(f"[+] Dữ liệu đã căn chỉnh sẵn sàng tại thư mục: '{DATA_DIR}'")
     return True
 
@@ -599,6 +667,86 @@ class ArcFaceResNet50(nn.Module):
         return self.backbone(x)
 
 # ==========================================
+# 6.1 PYTORCH CUSTOM DATASET TĂNG CƯỜNG LỚN (MASK/GLASS/BLUR AUGMENTATION)
+# ==========================================
+class AdvancedFaceDataset(torch.utils.data.Dataset):
+    """
+    Dataset nâng cao tích hợp tăng cường dữ liệu (Data Augmentation) cho các điều kiện khắc nghiệt:
+    - Trẻ em/Người già: Random Blur, Color Jitter, Noise.
+    - Khẩu trang/Khăn bịt (Occlusion): Tự động tổng hợp khẩu trang giả lập (Mask Synthesis) màu ngẫu nhiên lên 40-50% khuôn mặt dưới.
+    - Kính mắt: Vẽ gọng kính giả lập lên vùng mắt.
+    """
+    def __init__(self, root_dir, transform=None):
+        self.dataset = torchvision.datasets.ImageFolder(root=root_dir)
+        self.transform = transform
+        self.classes = self.dataset.classes
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        img_pil, label = self.dataset[idx]
+        
+        # Áp dụng Custom Occlusion Augmentation trong quá trình huấn luyện với xác suất nhất định
+        img_np = np.array(img_pil).copy()
+        h, w = img_np.shape[:2]
+        
+        import random
+        r_val = random.random()
+        
+        # 1. Giả lập Khẩu trang/Khăn bịt mặt (xác suất 25%)
+        # Vẽ một hình thang/polygon che 40-50% nửa dưới khuôn mặt (y từ ~65 đến 112)
+        if r_val < 0.25:
+            # Chọn màu ngẫu nhiên cho khẩu trang: xanh y tế, trắng, đen hoặc xám
+            mask_colors = [
+                (100, 180, 200),  # Xanh y tế
+                (240, 240, 240),  # Trắng
+                (20, 20, 20),      # Đen
+                (120, 120, 120),  # Xám
+            ]
+            color = random.choice(mask_colors)
+            
+            # Định nghĩa các điểm góc của khẩu trang trên khung 112x112
+            # Điểm bắt đầu che là y = 65, lan rộng ra hai bên má và bao phủ cằm
+            pts = np.array([
+                [int(w * 0.15), int(h * 0.60)], # Góc trên bên trái
+                [int(w * 0.85), int(h * 0.60)], # Góc trên bên phải
+                [w, int(h * 0.80)],             # Má bên phải
+                [int(w * 0.75), h],             # Cằm bên phải
+                [int(w * 0.25), h],             # Cằm bên trái
+                [0, int(h * 0.80)]              # Má bên trái
+            ], np.int32)
+            
+            cv2.fillPoly(img_np, [pts], color)
+            
+        # 2. Giả lập Gọng kính (xác suất 15%)
+        # Vẽ hai hình tròn/oval nhỏ quanh mắt và một thanh nối
+        elif r_val < 0.40:
+            # Mắt trái ảnh nằm quanh x=38, y=52. Mắt phải ảnh nằm quanh x=74, y=52
+            glass_color = (10, 10, 10) # Gọng đen
+            thickness = 2
+            
+            # Mắt trái
+            cv2.circle(img_np, (38, 52), 14, glass_color, thickness)
+            # Mắt phải
+            cv2.circle(img_np, (74, 52), 14, glass_color, thickness)
+            # Thanh nối
+            cv2.line(img_np, (52, 52), (60, 52), glass_color, thickness)
+            # Gọng hai bên tai
+            cv2.line(img_np, (24, 52), (10, 52), glass_color, thickness)
+            cv2.line(img_np, (88, 52), (102, 52), glass_color, thickness)
+
+        # Chuyển đổi ngược lại ảnh PIL để áp dụng Torch transforms chuẩn
+        img_pil = Image.fromarray(img_np)
+        
+        if self.transform:
+            img_tensor = self.transform(img_pil)
+        else:
+            img_tensor = transforms.ToTensor()(img_pil)
+
+        return img_tensor, label
+
+# ==========================================
 # 7. LUỒNG HUẤN LUYỆN CHÍNH (MAIN PROCESS)
 # ==========================================
 def main():
@@ -615,15 +763,16 @@ def main():
     # Bước 2: Kiểm tra trọng số ArcFace pretrained đã được tải
     has_pretrained = os.path.exists(PRETRAINED_MODEL_PATH)
 
-
-    # Bước 3: Chuẩn bị Dữ liệu Huấn luyện (Pytorch Data Loader)
+    # Bước 3: Chuẩn bị Dữ liệu Huấn luyện nâng cao (Gaussian Blur & Color Jitter cho trẻ em & người già)
     transform = transforms.Compose([
         transforms.Resize(IMAGE_SIZE),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
+        transforms.RandomApply([transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))], p=0.3),
         transforms.ToTensor(),
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    dataset = torchvision.datasets.ImageFolder(root=DATA_DIR, transform=transform)
+    dataset = AdvancedFaceDataset(root_dir=DATA_DIR, transform=transform)
     num_classes = len(dataset.classes)
     
     print(f"[+] Số lượng danh tính tìm thấy để Fine-tune: {num_classes}")
@@ -639,7 +788,9 @@ def main():
     # Bước 4: Khởi tạo mạng Backbone ResNet-50 ArcFace và ArcFace Head
     pretrained_path = PRETRAINED_MODEL_PATH if has_pretrained else None
     backbone = ArcFaceResNet50(embedding_size=EMBEDDING_SIZE, pretrained_path=pretrained_path).to(device)
-    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=30.0, m=0.50).to(device)
+    
+    # Nâng cấp s=64.0 mặc định (tối ưu tuyệt đối cho sinh đôi/sinh ba và các trường hợp che khuất)
+    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=64.0, m=0.50).to(device)
 
     # Khởi tạo Optimizer (Tối ưu hóa cả Backbone và ArcFace Head)
     criterion = nn.CrossEntropyLoss()

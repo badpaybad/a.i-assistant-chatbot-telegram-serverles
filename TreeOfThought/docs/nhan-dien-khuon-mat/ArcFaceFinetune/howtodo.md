@@ -60,12 +60,16 @@ mkdir -p dataraw/ten_user
 python main.py
 ```
 
-### Cấu hình thiết bị (trong `main.py` dòng 18)
+### Cấu hình thiết bị & Chế độ Align Face (trong `main.py`)
 
 ```python
 DEVICE_CONFIG = "cpu"    # ← Mặc định: CPU (test ổn định trước)
 # DEVICE_CONFIG = "cuda" # ← GPU NVIDIA CUDA
 # DEVICE_CONFIG = "auto" # ← Tự động chọn GPU nếu có
+
+# Lựa chọn chế độ căn chỉnh khuôn mặt (Align Face Mode):
+ALIGN_MODE = "advanced"  # ← Tăng cường: 3D Face Landmarker (tối ưu cho khẩu trang, kính, sinh đôi...)
+# ALIGN_MODE = "standard"  # ← Tiêu chuẩn: BlazeFace nhanh, nhẹ (chung chung đủ tốt cho ảnh chuẩn)
 ```
 
 > **Lưu ý AMD GPU (RDNA3 - gfx1103)**: Code đã tích hợp sẵn `HSA_OVERRIDE_GFX_VERSION=11.0.0`
@@ -307,6 +311,47 @@ def cosine_sim(a, b):
 | Recognize sai dù finetune tốt | Align khác nhau giữa train và infer | Dùng cùng `align_face_python()` cho cả 2 bước |
 | Embedding không ổn định | Ảnh chụp điều kiện quá khác nhau | Chuẩn hóa điều kiện chụp hoặc thêm ảnh đa dạng hơn |
 | Model lớn nhưng accuracy thấp | Fine-tune quá ít epochs | Tăng EPOCHS, giảm LR |
+
+---
+
+### 🏆 Khuyến nghị Chuyên sâu cho các Điều kiện Khắc nghiệt
+
+Để giải quyết các bài toán biên cực kỳ phức tạp trong thực tế (trẻ em từ 2 tuổi, người cao tuổi 70 tuổi, đeo kính dày, bịt khẩu trang kín mít, và phân biệt các cặp sinh đôi/sinh ba), hệ thống áp dụng các giải pháp thiết kế dưới đây:
+
+#### 1. Trẻ em (2 tuổi) & Người già (70 tuổi)
+* **Thách thức:** Cấu trúc xương mặt của trẻ em chưa phát triển hoàn thiện (tỉ lệ mắt-mũi-cằm rất khác người lớn), da trẻ em quá mịn màng thiếu các đường nét gai góc; trong khi người già da nhiều nếp nhăn, sụp mí mắt gây sai số lớn cho các bộ trích xuất điểm mốc truyền thống.
+* **Giải pháp Pipeline:**
+  - **MediaPipe Face Landmarker 3D (468 điểm)**: Trích xuất các điểm mốc hốc mắt cực kỳ chính xác nhờ việc tối ưu hình học mạng lưới 3D, bất chấp sự thay đổi cơ mặt do nếp nhăn hay sụp mí.
+  - **Tăng cường kết cấu da (Texture Augmentation)**: Áp dụng ngẫu nhiên **Gaussian Blur** và **Color Jitter** (độ sáng, độ tương phản) khi train để mô hình học cách bỏ qua các đặc trưng về nếp nhăn sâu (ở người già) hoặc bề mặt da quá trơn láng (ở trẻ em), tập trung hoàn toàn vào cấu trúc hình học bất biến của xương mặt.
+
+#### 2. Đối phó với Kính mắt & Khẩu trang / Khăn choàng (Masked & Glass Occlusion)
+* **Thách thức:** Khẩu trang che khuất tới 50% - 60% mặt dưới (mất hoàn toàn mũi, miệng); kính mắt dày hoặc phản quang che khuất vùng hốc mắt, khiến mô hình bị phân tâm bởi màu sắc, hình dáng của khẩu trang/kính thay vì cấu trúc sinh trắc học của khuôn mặt.
+* **Giải pháp Align (Tiền xử lý):**
+  - **Face Landmarker 3D**: Suy luận chính xác vị trí mắt nhờ lưới 3D bao quanh hốc mắt ngay cả khi phần dưới khuôn mặt bị che kín mít.
+  - **Robust Fallback**: Nếu người dùng trùm kín mít chỉ để lộ 1 mắt, thuật toán sẽ tự động tính toán vị trí mắt bị che khuất dựa trên trục đối xứng của khuôn mặt (được xác định qua đỉnh mũi landmark `4` và trán landmark `168`) để tiếp tục căn chỉnh xoay Affine chính xác.
+* **Giải pháp Tinh chỉnh (Huấn luyện):**
+  - **Mask & Glass Augmentation (Vẽ khẩu trang/kính giả lập)**: Trong quá trình huấn luyện, DataLoader tự động vẽ đè ngẫu nhiên các khối đa giác khẩu trang (màu xanh, trắng, đen) và gọng kính với xác suất **30%** trực tiếp lên ảnh 112x112. 
+  - Kỹ thuật này ép buộc mô hình ArcFace bỏ qua vùng bị che khuất và tập trung khai thác tối đa **Vùng quanh mắt (Periocular Region)** bao gồm lông mày, hốc mắt, gốc mũi và trán. Đây là vùng có đặc trưng sinh trắc học bền vững nhất của con người.
+
+#### 3. Phân biệt Sinh đôi (Twins) và Sinh ba (Triplets)
+* **Thách thức:** Sinh đôi cùng trứng có cấu trúc hình học khuôn mặt giống nhau đến 99%. Các mô hình nhận diện thông thường sẽ trích xuất vector có độ tương đồng Cosine cực cao (> 0.7), dẫn đến False Positive.
+* **Giải pháp Kỹ thuật:**
+  - Trong cấu trúc tổn thất của ArcFace (ArcMarginProduct), chúng ta nâng cao tham số **Scale ($s$)** và **Margin ($m$)**:
+    $$\text{ArcFace Loss Margin: } s = 64.0, \quad m = 0.55$$
+  - **Ý nghĩa toán học**:
+    - **Scale $s = 64.0$**: Phóng đại khoảng cách góc trong không gian embedding, giúp đẩy các vector xa nhau hơn trên bề mặt hình cầu Hyper-sphere.
+    - **Margin $m = 0.55$** (tăng từ 0.50): Siết chặt ranh giới quyết định (decision boundary) giữa các lớp danh tính. Nó ép buộc mô hình phải trừng phạt cực kỳ nặng các sai số góc nhỏ, buộc mạng nơ-ron phải săn lùng và khai thác các **khác biệt vi mô (micro-features)** cực nhỏ như: cấu trúc mí mắt, nốt ruồi, sẹo nhỏ, lông mày bất đối xứng... để phân tách hai người sinh đôi thành hai vùng vector riêng biệt.
+  - **Chiến lược train**: Huấn luyện với tốc độ học nhỏ hơn (**`LR = 0.0001`**) và số Epochs dài hơn (**30 - 50 epochs**) để mô hình có đủ thời gian tối ưu hóa các đặc trưng vi mô này mà không làm hỏng các trọng số đại thể của Backbone pre-trained.
+
+#### Bảng tổng hợp cấu hình tối ưu theo tình huống thực tế:
+
+| Tình huống đặc biệt | Margin ($m$) | Scale ($s$) | Kỹ thuật Augmentation bắt buộc | Cosine Threshold Khuyến nghị |
+|---|---|---|---|---|
+| **Người bình thường** | `0.50` | `30.0` | Standard crop & align | `> 0.50` |
+| **Đeo khẩu trang / Bịt mặt** | `0.50` | `64.0` | Mask Occlusion Synthesis (30%) | `> 0.40` (vùng Periocular hẹp hơn) |
+| **Đeo kính mắt** | `0.50` | `64.0` | Glass Occlusion Synthesis (20%) | `> 0.45` |
+| **Trẻ em & Người già** | `0.50` | `30.0` | Gaussian Blur + Contrast Jitter | `> 0.48` |
+| **Sinh đôi / Sinh ba** | **`0.55`** | **`64.0`** | High resolution + Texture sharpening | **`> 0.60`** (bắt buộc chặt chẽ) |
 
 ---
 

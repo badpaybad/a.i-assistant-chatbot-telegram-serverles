@@ -20,7 +20,11 @@ Finetune có thể hỗ trợ cả CPU GPU dựa vào việc cấu hình chọn 
 
 Tôi luôn cần finetune để tạo ra onnx, và dùng nó để trích xuất embedding từ khuôn mặt của user (sử dụng c# dotnet 8.0 với onnxruntime), sau đó so sánh vector embedding với vector embedding đã lưu trong postgress để tìm kiếm khuôn mặt.
 
-Bổ xung thêm việc tạo ra file onnx cho app mobi chạy dùng dart flutter 
+Bổ xung thêm việc tạo ra file onnx cho app mobi chạy dùng dart flutter
+
+Bổ xung việc align face từ ./dataraw sang ./data  có thể có cả 2 loại align face để chọn
+    - loại align face chung chung đủ tổt
+    - loại tăng cường cần dựa thêm vào các khuyến nghị để làm finetune tố nhất có thể . finetune để nhận dạng khuôn mặt của user là trê em bé 2 tuổi đến người già 70 tuổi, có đeo kính, không đeo kính, bịt khẩu trang (chỉ lộ nửa mặt), bịt khăn choàng, bịt khăn bịt mũi, sinh đôi, sinh 3 ...
 
 # Các câu hỏi cần trả lời
 
@@ -37,6 +41,6 @@ cần download tất cả các model về local folder vd ./arcfacemodels với 
 
 MediaPipe Tasks API để detect face , align face để hỗ trợ cả typescript, python
 
-Finetune với CPU trước để test thành công finetune ra file onnx, finetune xong cần xuất file .onnx và in ra đường dẫn để có thể dùng bên c# dotnet 
+Finetune với CPU trước để test thành công finetune ra file onnx, finetune xong cần xuất file .onnx và in ra đường dẫn để có thể dùng bên c# dotnet
 
 Viết hướng dẫn để khởi tạo môi trường chạy được finetune, các khuyến nghị suggest khi finetune để đạt kết quả tốt nhất về việc nhận dạng khuôn mặt (face embedding)
