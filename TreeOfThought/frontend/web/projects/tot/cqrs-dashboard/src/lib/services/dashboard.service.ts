@@ -105,8 +105,8 @@ export class DashboardService {
     return from(this.http.get<QueueInfo[]>('/api/cqrs/dashboard/queues'));
   }
 
-  getMessages(queueName: string, page: number = 1, pageSize: number = 10): Observable<{ items: string[], total: number }> {
-    return from(this.http.get<{ items: string[], total: number }>(`/api/cqrs/dashboard/messages/${queueName}?page=${page}&pageSize=${pageSize}`));
+  getMessages(queueName: string, pageIndex: number = 1, pageSize: number = 10): Observable<{ items: string[], total: number }> {
+    return from(this.http.get<{ items: string[], total: number }>(`/api/cqrs/dashboard/messages/${queueName}?pageIndex=${pageIndex}&pageSize=${pageSize}`));
   }
 
   retryCommand(queueName: string, messageJson: string): Observable<any> {

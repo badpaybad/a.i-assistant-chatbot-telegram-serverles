@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzSpaceModule } from 'ng-zorro-antd/space';
@@ -78,7 +78,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [pageSize]="pageSize"
       [total]="totalAcl"
       [scroll]="{ x: '1000px' }"
-      (queryParamsChange)="onQueryParamsChange($event)"
+      (pageIndexChange)="pageIndex = $event; (filter.resourceType && filter.resourceId) ? loadAcl() : null"
+      (pageSizeChange)="pageSize = $event; pageIndex = 1; (filter.resourceType && filter.resourceId) ? loadAcl() : null"
     >
       <ng-template totCell="subject" let-data>
         <div *ngIf="data.userId" class="subject-info">
@@ -289,17 +290,6 @@ export class AclListComponent implements OnInit {
     }
   }
 
-  onQueryParamsChange(params: NzTableQueryParams): void {
-    const { pageIndex, pageSize } = params;
-    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
-      return;
-    }
-    this.pageIndex = pageIndex;
-    this.pageSize = pageSize;
-    if (this.filter.resourceType && this.filter.resourceId) {
-      this.loadAcl();
-    }
-  }
 
   showCreateModal() {
     this.newEntry = { subjectType: 'user', userId: '', roleId: '', resourceType: this.filter.resourceType, resourceId: this.filter.resourceId, permissionMask: 0 };

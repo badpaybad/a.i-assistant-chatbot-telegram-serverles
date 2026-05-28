@@ -42,6 +42,14 @@ export class FirestoreTestComponent implements OnInit {
   loading = false;
   results: any[] = [];
 
+  pageIndex = 1;
+  pageSize = 10;
+
+  get pagedResults(): any[] {
+    const start = (this.pageIndex - 1) * this.pageSize;
+    return this.results.slice(start, start + this.pageSize);
+  }
+
   @ViewChild('payloadTpl', { static: true }) payloadTpl!: TemplateRef<any>;
   @ViewChild('dateTpl', { static: true }) dateTpl!: TemplateRef<any>;
 

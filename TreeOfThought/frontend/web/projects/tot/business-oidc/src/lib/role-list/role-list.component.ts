@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -83,7 +83,8 @@ import { ViewChild, TemplateRef } from '@angular/core';
       [pageSize]="pageSize"
       [total]="totalRoles"
       [scroll]="{ x: '1000px' }"
-      (queryParamsChange)="onQueryParamsChange($event)"
+      (pageIndexChange)="pageIndex = $event; loadRoles()"
+      (pageSizeChange)="pageSize = $event; pageIndex = 1; loadRoles()"
     >
       <ng-template totCell="role" let-data>
         <strong>{{ data.name }}</strong>
@@ -248,15 +249,6 @@ export class RoleListComponent implements OnInit {
     this.loadRoles();
   }
 
-  onQueryParamsChange(params: NzTableQueryParams): void {
-    const { pageIndex, pageSize } = params;
-    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
-      return;
-    }
-    this.pageIndex = pageIndex;
-    this.pageSize = pageSize;
-    this.loadRoles();
-  }
 
   resetSearch() {
     this.pageIndex = 1;

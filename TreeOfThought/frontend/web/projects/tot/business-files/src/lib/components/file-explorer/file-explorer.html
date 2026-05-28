@@ -13,8 +13,9 @@
     </ng-template>
 
     <div *ngIf="searchResults.length > 0 || searching" class="mt-3">
-      <tot-table [data]="searchResults" [columns]="searchColumns" [pageSize]="searchPageSize" [nzSize]="'small'"
-        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [frontPagination]="false" [scroll]="{ x: '800px' }">
+      <tot-table [data]="paginatedSearchResults" [columns]="searchColumns" [total]="searchResults.length" [pageIndex]="searchPageIndex" [pageSize]="searchPageSize" [nzSize]="'small'"
+        [title]="'Kết quả tìm kiếm (' + searchResults.length + ')'" [frontPagination]="false" [scroll]="{ x: '800px' }"
+        (pageIndexChange)="searchPageIndex = $event" (pageSizeChange)="searchPageSize = $event; searchPageIndex = 1">
         <ng-template totCell="Tên file" let-data>
           <div class="file-name-cell" (click)="openFileDetail(data)">
             <span nz-icon nzType="file" style="margin-right: 8px;"></span>
@@ -93,7 +94,7 @@
 
       <tot-table [data]="files" [columns]="fileColumns" [loading]="loading" [total]="total" [pageIndex]="pageIndex"
         [pageSize]="pageSize" [frontPagination]="false" [nzSize]="'small'" [title]="fileTitleTpl" [extra]="fileExtraTpl"
-        [scroll]="{ x: '1000px' }" (queryParamsChange)="onQueryParamsChange($event)">
+        [scroll]="{ x: '1000px' }" (pageIndexChange)="pageIndex = $event; loadContent()" (pageSizeChange)="pageSize = $event; pageIndex = 1; loadContent()">
         <ng-template totCell="name" let-data>
           <div class="file-name-cell" (click)="openFileDetail(data)">
             <span nz-icon nzType="file" style="margin-right: 8px;"></span>

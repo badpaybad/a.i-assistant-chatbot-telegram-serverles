@@ -77,18 +77,57 @@ sequenceDiagram
 ### 2.4. Quy chuẩn Phân trang bắt buộc (Standard Server-Side Paging)
 
 > [!IMPORTANT]
-> **Cập nhật ngày 2026-05-17 12:46:36**: Paging cho việc lấy danh sách (List/Search) **luôn luôn bắt buộc phải là phân trang ở server (server-side paging)**. Tuyệt đối không được sử dụng cơ chế tải toàn bộ rồi phân trang ở giao diện (client-side paging), nhằm đảm bảo hiệu năng mạng, tối ưu hóa bộ nhớ RAM của thiết bị khách, và sẵn sàng mở rộng khi quy mô dữ liệu tăng lên.
+> **Cập nhật ngày 2026-05-28 08:48:10**: Paging cho việc lấy danh sách (List/Search) **luôn luôn bắt buộc phải là phân trang ở server (server-side paging)**. Tuyệt đối không được sử dụng cơ chế tải toàn bộ rồi phân trang ở giao diện (client-side paging), nhằm đảm bảo hiệu năng mạng, tối ưu hóa bộ nhớ RAM của thiết bị khách, và sẵn sàng mở rộng khi quy mô dữ liệu tăng lên.
 
-*   **Yêu cầu**: Mọi API trả về danh sách (List/Search) bắt buộc phải hỗ trợ phân trang server-side.
-*   **Tham số đầu vào (Request)**: Bắt buộc hỗ trợ `pageIndex` (1-based, mặc định là 1) và `pageSize` (mặc định là 10).
-*   **Cấu trúc dữ liệu trả về (Response)**: Bắt buộc trả về một Object chứa định dạng JSON chuẩn:
-    ```json
-    {
-      "items": [ ... ],
-      "total": 123
-    }
-    ```
-    *Lưu ý: `total` phải là tổng số bản ghi thực tế trong cơ sở dữ liệu thỏa mãn điều kiện lọc (filter), không bị giới hạn bởi mệnh đề phân trang (Skip/Take) của truy vấn.*
+#### 1. Quy chuẩn Tham số Đầu vào (Request parameters)
+Mọi API trả về danh sách dạng phân trang bắt buộc phải đặt tên tham số đồng bộ là **`pageIndex`** và **`pageSize`** (cú pháp camelCase ở đầu query string) để tương thích 100% với Frontend `@tot/shared` `tot-table` component:
+*   **`pageIndex`**: 1-based index (Trang đầu tiên luôn luôn bắt đầu bằng `1`). Mặc định khi không truyền là `1`.
+*   **`pageSize`**: Số lượng bản ghi giới hạn trên một trang. Mặc định khi không truyền là `10`.
+
+> [!CAUTION]
+> **SAI LẦM CẤM KỴ**: Tuyệt đối **không** được viết tắt tham số thành `page` hoặc sử dụng chỉ số bắt đầu bằng `0` (0-based) ở mức API, vì điều này sẽ gây sai lệch nghiêm trọng các tham số truyền từ Frontend `tot-table`.
+
+#### 2. Công thức tính toán skip/take trong C# Entity Framework
+Luôn luôn thực hiện skip bản ghi theo công thức 1-based chuẩn xác để tránh lệch dữ liệu:
+```csharp
+var items = await query
+    .Skip((pageIndex - 1) * pageSize)
+    .Take(pageSize)
+    .ToListAsync();
+```
+
+#### 3. Quy chuẩn Cấu trúc Dữ liệu Trả về (Response Payload)
+Tất cả các API phân trang bắt buộc phải trả về một đối tượng JSON chuẩn chứa đúng 2 khóa sau:
+*   **`items`**: Mảng chứa danh sách các bản ghi của trang hiện tại.
+*   **`total`**: Tổng số lượng bản ghi thực tế trong CSDL thỏa mãn điều kiện lọc (không bị giới hạn bởi `Skip` / `Take`).
+
+```json
+{
+  "items": [
+    { "id": "guid-1", "name": "Bản ghi 1" },
+    { "id": "guid-2", "name": "Bản ghi 2" }
+  ],
+  "total": 17
+}
+```
+
+> [!WARNING]
+> **SAI LẦM PHỔ BIẾN**: Tuyệt đối **không** được trả về mảng dữ liệu bọc trong khóa `data` hay viết hoa thành `Items`/`Total` ở JSON trả về (phải luôn giữ chữ thường `items`/`total` thông qua cấu hình CamelCase Serializer mặc định của ASP.NET Core) để Frontend `tot-table` có thể tự động bóc tách dữ liệu nhất quán.
+
+#### 4. Phối hợp Realtime với Frontend (Tránh lỗi Reset trang ngầm)
+*   **Tránh dùng queryParamsChange**: Backend và Frontend thống nhất không sử dụng cơ chế lắng nghe `queryParamsChange` để tải lại trang, nhằm ngăn chặn việc Ng-Zorro Antd tự động phát sự kiện reset về trang 1 khi `items` hoặc `total` thay đổi.
+*   **Bộ lắng nghe chuẩn**: Frontend luôn đăng ký trực tiếp bộ lắng nghe sự kiện `(pageIndexChange)` và `(pageSizeChange)` để gán giá trị và gọi API một cách tường minh.
+
+#### 5. BÀI HỌC KINH NGHIỆM VÀ SỰ THỐNG NHẤT FE - BE
+Để không lặp lại bất kỳ sai lầm nào gây mất phân trang hoặc tải sai trang, cả lập trình viên Backend và Frontend phải nghiêm ngặt tuân thủ bản đối chiếu sau:
+
+| Vấn đề / Sai lầm đã xảy ra | Hậu quả thực tế | Cách thiết kế & Xử lý đúng chuẩn |
+| :--- | :--- | :--- |
+| **Sử dụng sự kiện `queryParamsChange`** | Thiết lập lại `pageIndex = 1` ngầm tạo vòng lặp vô hạn hoặc reset khi chuyển trang. | **CẤM DÙNG** `queryParamsChange`. Thay thế bằng sự kiện độc lập `(pageIndexChange)` và `(pageSizeChange)`. |
+| **Angular Ivy Two-Way Binding Quirk** | Ivy triệt tiêu gán tự động khi dùng `[(pageIndex)]="pageIndex"` chung với `(pageIndexChange)`. | Dùng liên kết 1-way: `[pageIndex]="pageIndex"` và gán tường minh `(pageIndexChange)="pageIndex = $event; loadData()"`. |
+| **Sai lệch cấu trúc JSON Payload** | FE không bóc tách được dữ liệu, bảng trống rỗng hoặc thanh phân trang bị ẩn. | BE trả về đúng khóa chữ thường `items` và `total` (serializer camelCase). FE chỉ đọc đúng cấu trúc này. |
+| **Trượt tên tham số Query String** | Tham số chuyển trang bị bỏ qua, BE trả về trang mặc định liên tục. | Bắt buộc đặt tên tham số API query string là `pageIndex` và `pageSize` (camelCase). |
+| **Lệch công thức EF Skip/Take** | Lặp bản ghi hoặc hiển thị thiếu bản ghi giữa các trang. | Sử dụng công thức 1-based: `.Skip((pageIndex - 1) * pageSize).Take(pageSize)`. |
 
 ### 2.5. Quy tắc Đóng gói Khởi tạo Cơ sở Dữ liệu & Đăng ký Dịch vụ (Database Initialization & Extension Encapsulation)
 

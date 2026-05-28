@@ -50,6 +50,8 @@ export interface TotTableColumn {
         [nzTotal]="total"
         [(nzPageIndex)]="pageIndex"
         [(nzPageSize)]="pageSize"
+        (nzPageIndexChange)="pageIndexChange.emit($event)"
+        (nzPageSizeChange)="pageSizeChange.emit($event)"
         [nzFrontPagination]="frontPagination"
         [nzShowPagination]="showPagination"
         [nzBordered]="true"
@@ -126,10 +128,14 @@ export interface TotTableColumn {
     :host ::ng-deep .ant-table-cell-fix-left,
     :host ::ng-deep .ant-table-cell-fix-right {
       background: #fff !important;
+      position: sticky !important;
+      z-index: 2 !important;
     }
     :host ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-left,
     :host ::ng-deep .ant-table-thead > tr > th.ant-table-cell-fix-right {
       background: #fafafa !important;
+      position: sticky !important;
+      z-index: 3 !important;
     }
     /* Keep row hover effect uniform and beautiful */
     :host ::ng-deep .ant-table-tbody > tr:hover > td,
@@ -200,6 +206,8 @@ export class TotTableComponent {
 
   @Output() queryParamsChange = new EventEmitter<NzTableQueryParams>();
   @Output() expandChange = new EventEmitter<{ item: any; expanded: boolean }>();
+  @Output() pageIndexChange = new EventEmitter<number>();
+  @Output() pageSizeChange = new EventEmitter<number>();
 
   @ContentChildren(TotCellDirective) cellDirectives!: QueryList<TotCellDirective>;
 
@@ -228,7 +236,7 @@ export class TotTableComponent {
     }
     const hasSticky = this.columns.some(col => col.left || col.right || this.isActionColumn(col));
     if (hasSticky) {
-      return { ...this.scroll, x: 'max-content' };
+      return { ...this.scroll, x: '1200px' };
     }
     return this.scroll;
   }

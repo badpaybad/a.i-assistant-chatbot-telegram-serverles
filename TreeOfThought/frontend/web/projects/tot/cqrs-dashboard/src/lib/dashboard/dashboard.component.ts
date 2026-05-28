@@ -97,6 +97,18 @@ export class DashboardComponent implements OnInit {
 
   pageIndex = 1;
   pageSize = 10;
+
+  queuePageIndex = 1;
+  queuePageSize = 10;
+
+  topicPageIndex = 1;
+  topicPageSize = 10;
+
+  workerPageIndex = 1;
+  workerPageSize = 10;
+
+  activityPageIndex = 1;
+  activityPageSize = 10;
   
   filters = {
     trackingId: '',
@@ -216,14 +228,17 @@ export class DashboardComponent implements OnInit {
 
   loadTracking(): void {
     const params: any = {
-      page: this.pageIndex,
+      pageIndex: this.pageIndex,
       pageSize: this.pageSize,
       ...this.filters
     };
     if (params.fromDate) params.fromDate = params.fromDate.toISOString();
     if (params.toDate) params.toDate = params.toDate.toISOString();
 
+    console.log('[DEBUG Frontend loadTracking] Request Params:', params);
+
     this.dashboardService.getRecentTracking(params).subscribe(res => {
+      console.log('[DEBUG Frontend loadTracking] Response Received:', res);
       this.recentTracking = res.items;
       this.totalTracking = res.total;
     });
@@ -250,6 +265,7 @@ export class DashboardComponent implements OnInit {
 
   onQueryParamsChange(params: any): void {
     const { pageIndex, pageSize } = params;
+    console.log('[DEBUG Frontend onQueryParamsChange] Fired with params:', params);
     this.pageIndex = pageIndex;
     this.pageSize = pageSize;
     this.loadTracking();
@@ -398,6 +414,62 @@ export class DashboardComponent implements OnInit {
     if (!name) return '-';
     const parts = name.split('.');
     return parts[parts.length - 1];
+  }
+
+  get pagedQueues(): QueueInfo[] {
+    const start = (this.queuePageIndex - 1) * this.queuePageSize;
+    const end = start + this.queuePageSize;
+    return this.allQueues.slice(start, end);
+  }
+
+  get pagedTopics(): QueueInfo[] {
+    const start = (this.topicPageIndex - 1) * this.topicPageSize;
+    const end = start + this.topicPageSize;
+    return this.allTopics.slice(start, end);
+  }
+
+  get pagedWorkers(): WorkerDetail[] {
+    const start = (this.workerPageIndex - 1) * this.workerPageSize;
+    const end = start + this.workerPageSize;
+    return this.workerList.slice(start, end);
+  }
+
+  get pagedActivities(): LastActivity[] {
+    const start = (this.activityPageIndex - 1) * this.activityPageSize;
+    const end = start + this.activityPageSize;
+    return this.lastActivityList.slice(start, end);
+  }
+
+  onQueuePageChange(index: number): void {
+    this.queuePageIndex = index;
+  }
+  onQueuePageSizeChange(size: number): void {
+    this.queuePageSize = size;
+    this.queuePageIndex = 1;
+  }
+
+  onTopicPageChange(index: number): void {
+    this.topicPageIndex = index;
+  }
+  onTopicPageSizeChange(size: number): void {
+    this.topicPageSize = size;
+    this.topicPageIndex = 1;
+  }
+
+  onWorkerPageChange(index: number): void {
+    this.workerPageIndex = index;
+  }
+  onWorkerPageSizeChange(size: number): void {
+    this.workerPageSize = size;
+    this.workerPageIndex = 1;
+  }
+
+  onActivityPageChange(index: number): void {
+    this.activityPageIndex = index;
+  }
+  onActivityPageSizeChange(size: number): void {
+    this.activityPageSize = size;
+    this.activityPageIndex = 1;
   }
 
   calculateLoad(length: number): number {

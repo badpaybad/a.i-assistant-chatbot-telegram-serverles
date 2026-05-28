@@ -118,6 +118,11 @@ export class FileExplorerComponent implements OnInit, OnDestroy, OnChanges {
   searchPageIndex = 1;
   searchPageSize = 5;
 
+  get paginatedSearchResults(): any[] {
+    const start = (this.searchPageIndex - 1) * this.searchPageSize;
+    return this.searchResults.slice(start, start + this.searchPageSize);
+  }
+
   // Rename properties
   renamingItem: any = null;
   renamingType: 'file' | 'folder' = 'folder';

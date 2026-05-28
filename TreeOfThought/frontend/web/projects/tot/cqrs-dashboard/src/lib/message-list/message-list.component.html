@@ -8,7 +8,8 @@
     [pageSize]="pageSize" 
     [frontPagination]="false"
     [expandTemplate]="expandTpl"
-    (queryParamsChange)="onQueryParamsChange($event)"
+    (pageIndexChange)="pageIndex = $event; loadMessages()"
+    (pageSizeChange)="pageSize = $event; pageIndex = 1; loadMessages()"
     (expandChange)="onRowExpand($event)"
   >
     <ng-template totCell="time" let-data>

@@ -23,11 +23,15 @@
   </nz-card>
 
   <tot-table 
-    [data]="results" 
+    [data]="pagedResults" 
     [columns]="resultsColumns" 
     [title]="'Recent Results'" 
-    [pageSize]="10"
+    [total]="results.length"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
     [frontPagination]="false"
+    (pageIndexChange)="pageIndex = $event"
+    (pageSizeChange)="pageSize = $event; pageIndex = 1"
     style="margin-top: 24px;"
   ></tot-table>
 

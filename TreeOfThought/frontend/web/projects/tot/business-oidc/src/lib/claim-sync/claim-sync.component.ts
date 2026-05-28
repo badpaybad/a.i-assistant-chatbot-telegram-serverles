@@ -5,7 +5,7 @@ import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzCardModule } from 'ng-zorro-antd/card';
 import { ADMIN_CLAIM, ALL_CLAIMS, AppNotificationService, CLAIMS_VERSION } from '@tot/core';
-import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
 import { NzFormModule } from 'ng-zorro-antd/form';
 import { NzInputModule } from 'ng-zorro-antd/input';
@@ -82,7 +82,8 @@ import { TotButtonComponent, TotTableComponent, TotTableColumn, TotCellDirective
       [pageSize]="pageSize"
       [total]="totalClaims"
       [scroll]="{ x: '1000px' }"
-      (queryParamsChange)="onQueryParamsChange($event)"
+      (pageIndexChange)="pageIndex = $event; loadClaims()"
+      (pageSizeChange)="pageSize = $event; pageIndex = 1; loadClaims()"
     >
       <ng-template totCell="createdAt" let-data>
         {{ data.createdAt | date:'short' }}
@@ -195,15 +196,6 @@ export class ClaimSyncComponent implements OnInit {
     this.loadClaims();
   }
 
-  onQueryParamsChange(params: NzTableQueryParams): void {
-    const { pageIndex, pageSize } = params;
-    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
-      return;
-    }
-    this.pageIndex = pageIndex;
-    this.pageSize = pageSize;
-    this.loadClaims();
-  }
 
   resetSearch() {
     this.pageIndex = 1;

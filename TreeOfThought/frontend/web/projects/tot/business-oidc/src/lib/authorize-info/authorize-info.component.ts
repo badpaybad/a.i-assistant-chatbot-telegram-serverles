@@ -72,10 +72,14 @@ import { TotTableComponent, TotTableColumn, TotCellDirective } from '@tot/shared
 
             <tot-table 
               [title]="'Danh sách Quyền hạn định nghĩa trong FE' | transloco" 
-              [data]="appClaimsList" 
+              [data]="pagedClaims" 
               [columns]="claimsColumns"
-              [pageSize]="10"
+              [total]="appClaimsList.length"
+              [pageIndex]="pageIndex"
+              [pageSize]="pageSize"
               [frontPagination]="false"
+              (pageIndexChange)="pageIndex = $event"
+              (pageSizeChange)="pageSize = $event; pageIndex = 1"
             >
               <ng-template totCell="value" let-data>
                 <code>{{ data.value }}</code>
@@ -142,6 +146,14 @@ export class AuthorizeInfoComponent implements OnInit {
   adminClaim = ADMIN_CLAIM;
   ADMIN_ROLE = ADMIN_ROLE;
   ADMIN_CLAIM = ADMIN_CLAIM;
+
+  pageIndex = 1;
+  pageSize = 10;
+
+  get pagedClaims(): Array<{ module: string, action: string, value: string }> {
+    const start = (this.pageIndex - 1) * this.pageSize;
+    return this.appClaimsList.slice(start, start + this.pageSize);
+  }
 
   appClaimsList: Array<{ module: string, action: string, value: string }> = [];
   claimsColumns: TotTableColumn[] = [];

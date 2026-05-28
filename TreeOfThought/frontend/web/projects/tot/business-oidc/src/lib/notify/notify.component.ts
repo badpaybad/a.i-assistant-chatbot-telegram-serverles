@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { NzTableModule, NzTableQueryParams } from 'ng-zorro-antd/table';
+import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzTagModule } from 'ng-zorro-antd/tag';
@@ -82,7 +82,8 @@ import { FirebaseService, AuthService } from '@tot/core';
       [pageSize]="pageSize"
       [total]="totalUsers"
       [scroll]="{ x: '1000px' }"
-      (queryParamsChange)="onQueryParamsChange($event)"
+      (pageIndexChange)="pageIndex = $event; loadUsers()"
+      (pageSizeChange)="pageSize = $event; pageIndex = 1; loadUsers()"
     >
       <ng-template totCell="avatar" let-data>
         <nz-avatar [nzSrc]="data.avatarUrl" nzIcon="user" [nzSize]="40"></nz-avatar>
@@ -272,15 +273,6 @@ export class NotifyComponent implements OnInit {
     this.loadUsers();
   }
 
-  onQueryParamsChange(params: NzTableQueryParams): void {
-    const { pageIndex, pageSize } = params;
-    if (this.pageIndex === pageIndex && this.pageSize === pageSize) {
-      return;
-    }
-    this.pageIndex = pageIndex;
-    this.pageSize = pageSize;
-    this.loadUsers();
-  }
 
   async openSendModal(user: any) {
     this.selectedUser = user;

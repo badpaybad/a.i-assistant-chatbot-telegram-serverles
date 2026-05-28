@@ -42,13 +42,17 @@
   <!-- SECTION 2: Active Working Session File List (Danh sách file của phiên đang làm việc) -->
   <div style="margin-bottom: 24px; position: relative;">
     <tot-table 
-      [data]="queue" 
+      [data]="paginatedQueue" 
       [columns]="activeColumns"
       [loading]="loadingDetector"
       [nzSize]="'middle'"
       [frontPagination]="false"
       [showPagination]="queue.length > 0"
+      [total]="queue.length"
+      [pageIndex]="activePageIndex"
       [pageSize]="activePageSize"
+      (pageIndexChange)="activePageIndex = $event"
+      (pageSizeChange)="activePageSize = $event; activePageIndex = 1"
       [title]="activeTableTitleTpl"
       [extra]="activeTableExtraTpl"
       class="active-session-table"
@@ -150,7 +154,8 @@
       [total]="totalSessions"
       [pageIndex]="pageIndex"
       [pageSize]="pageSize"
-      (queryParamsChange)="onQueryParamsChange($event)"
+      (pageIndexChange)="pageIndex = $event; loadSessionsHistory()"
+      (pageSizeChange)="pageSize = $event; pageIndex = 1; loadSessionsHistory()"
       [title]="tableTitleTpl"
       [extra]="tableExtraTpl"
     >

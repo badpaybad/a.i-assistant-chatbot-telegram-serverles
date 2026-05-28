@@ -103,13 +103,17 @@
     <div *ngSwitchCase="'queues'">
       <nz-card [nzTitle]="'Danh sách Hàng đợi (Queue)' | transloco">
         <tot-table
-          [data]="allQueues"
+          [data]="pagedQueues"
           [columns]="queueColumns"
           [loading]="loading"
-          [pageSize]="10"
+          [total]="allQueues.length"
+          [pageIndex]="queuePageIndex"
+          [pageSize]="queuePageSize"
           [frontPagination]="false"
           [showPagination]="true"
           [scroll]="{ x: '1300px' }"
+          (pageIndexChange)="onQueuePageChange($event)"
+          (pageSizeChange)="onQueuePageSizeChange($event)"
         >
           <ng-template totCell="activeCount" let-data>
             <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
@@ -163,13 +167,17 @@
     <div *ngSwitchCase="'topics'">
       <nz-card [nzTitle]="'Danh sách Chủ đề (Topic)' | transloco">
         <tot-table
-          [data]="allTopics"
+          [data]="pagedTopics"
           [columns]="topicColumns"
           [loading]="loading"
-          [pageSize]="10"
+          [total]="allTopics.length"
+          [pageIndex]="topicPageIndex"
+          [pageSize]="topicPageSize"
           [frontPagination]="false"
           [showPagination]="true"
           [scroll]="{ x: '1300px' }"
+          (pageIndexChange)="onTopicPageChange($event)"
+          (pageSizeChange)="onTopicPageSizeChange($event)"
         >
           <ng-template totCell="activeCount" let-data>
             <nz-tag nzColor="processing">{{ data.activeCount }}</nz-tag>
@@ -259,7 +267,8 @@
           [frontPagination]="false"
           [expandTemplate]="expandTpl"
           [scroll]="{ x: '1300px' }"
-          (queryParamsChange)="onQueryParamsChange($event)"
+          (pageIndexChange)="pageIndex = $event; loadTracking()"
+          (pageSizeChange)="pageSize = $event; pageIndex = 1; loadTracking()"
           (expandChange)="onRowExpand($event)"
         >
           <ng-template totCell="id" let-data>
@@ -318,12 +327,16 @@
     <div *ngSwitchCase="'workers'">
       <nz-card [nzTitle]="'Giám sát tiến trình (Workers)' | transloco">
         <tot-table
-          [data]="workerList"
+          [data]="pagedWorkers"
           [columns]="workerColumns"
-          [pageSize]="10"
+          [total]="workerList.length"
+          [pageIndex]="workerPageIndex"
+          [pageSize]="workerPageSize"
           [frontPagination]="false"
           [showPagination]="true"
           [scroll]="{ x: '1000px' }"
+          (pageIndexChange)="onWorkerPageChange($event)"
+          (pageSizeChange)="onWorkerPageSizeChange($event)"
         >
           <ng-template totCell="status" let-data>
             <nz-tag [nzColor]="data.status === 'Running' ? 'success' : 'default'">
@@ -364,12 +377,16 @@
     <div *ngSwitchCase="'activity'">
       <nz-card [nzTitle]="'Danh sách thời gian hoạt động lần cuối' | transloco">
         <tot-table
-          [data]="lastActivityList"
+          [data]="pagedActivities"
           [columns]="activityColumns"
-          [pageSize]="10"
+          [total]="lastActivityList.length"
+          [pageIndex]="activityPageIndex"
+          [pageSize]="activityPageSize"
           [frontPagination]="false"
           [showPagination]="true"
           nzSize="middle"
+          (pageIndexChange)="onActivityPageChange($event)"
+          (pageSizeChange)="onActivityPageSizeChange($event)"
         >
           <ng-template totCell="type" let-data>
             <nz-tag [nzColor]="data.type === 'Command' ? 'blue' : data.type === 'Topic' ? 'purple' : 'cyan'">

@@ -95,3 +95,8 @@ Không cần dùng tới messagebusServices có thể httpclientservices sẽ đ
 tot-table cần quy chuẩn nhất quán dùng server side paging theo yêu càu của BE : TreeOfThought/docs/backend/whattodo.md , cột hành động (thao tác, action) cần là sticky
 
 Tất cả cần phải dùng [frontPagination]="false" để đảm bảo là server side paging
+Kiểm tra cả code phía backend chưa thấy server side paging hoạt động và UI tot-table không thấy pagination để chuyển trang
+
+**Test và tìm nguyên nhân**
+    <http://localhost:5000/admin/modules/cqrs-dashboard> xem ở tab hàng đợi , không thấy paggination đâu test và xem vì sao? nếu când đăng nhập admin / admin123
+    **khi sửa được cần sửa cho tất cả các bảng khác cập nhật cho howtodo.md để các lần tới không bị lỗi**

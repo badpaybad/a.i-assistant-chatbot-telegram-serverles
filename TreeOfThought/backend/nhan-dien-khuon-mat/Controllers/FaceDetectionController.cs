@@ -126,7 +126,7 @@ public class FaceDetectionController : BaseController
 
         return Ok(new
         {
-            data = sessions,
+            items = sessions,
             total = totalCount,
             pageIndex,
             pageSize

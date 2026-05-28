@@ -491,7 +491,7 @@ export class NhanDienKhuonMatComponent implements OnInit, OnDestroy {
     try {
       this.loadingSessions = true;
       const result: any = await this.api.getSessions(this.pageIndex, this.pageSize);
-      this.sessionsList = result?.data || [];
+      this.sessionsList = result?.items || [];
       this.totalSessions = result?.total || 0;
     } catch (error) {
       console.error("Lỗi khi tải lịch sử phiên: ", error);

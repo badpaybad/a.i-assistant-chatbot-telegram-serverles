@@ -246,14 +246,14 @@ public class CqrsDashboardController : ControllerBase
     public async Task<IActionResult> GetMessages(
         [FromServices] CqrsDbContext db,
         string queueName, 
-        [FromQuery] int page = 1, 
+        [FromQuery] int pageIndex = 1, 
         [FromQuery] int pageSize = 20)
     {
         // If it's a special internal queue (processing or dead letter), read from Redis
         if (queueName.EndsWith(":processing") || queueName.EndsWith(":dead") || queueName.StartsWith("sub_proc:"))
         {
             var total = await _queueService.GetQueueLengthAsync(queueName);
-            var start = (page - 1) * pageSize;
+            var start = (pageIndex - 1) * pageSize;
             var end = start + pageSize - 1;
             var messages = await _queueService.GetListRangeAsync(queueName, start, end);
             return Ok(new { items = messages, total });
@@ -358,7 +358,7 @@ public class CqrsDashboardController : ControllerBase
 
             var sortedResult = resultList.OrderByDescending(x => (DateTime)((dynamic)x).timestamp).ToList();
             var total = sortedResult.Count;
-            var items = sortedResult.Skip((page - 1) * pageSize).Take(pageSize).ToList();
+            var items = sortedResult.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToList();
 
             var resultItems = items.Select(x => {
                 try {
@@ -445,12 +445,13 @@ public class CqrsDashboardController : ControllerBase
     [HttpGet("tracking/recent")]
     public async Task<IActionResult> GetRecentTracking(
         [FromServices] CqrsDbContext db,
-        [FromQuery] int page = 1, 
+        [FromQuery] int pageIndex = 1, 
         [FromQuery] int pageSize = 50, 
         [FromQuery] string? trackingId = null,
         [FromQuery] string? content = null,
         [FromQuery] string? status = null)
     {
+        _logger.LogInformation("[DEBUG Backend GetRecentTracking] Received pageIndex: {PageIndex}, pageSize: {PageSize}", pageIndex, pageSize);
         var query = db.CqrsTrackingLogs.Where(l => l.IsRoot);
 
         if (!string.IsNullOrEmpty(trackingId))
@@ -488,11 +489,13 @@ public class CqrsDashboardController : ControllerBase
         }
 
         var total = await query.CountAsync();
+        _logger.LogInformation("[DEBUG Backend GetRecentTracking] Counted Total: {Total}, Skip: {Skip}, Take: {Take}", total, (pageIndex - 1) * pageSize, pageSize);
         var rootLogs = await query
             .OrderByDescending(l => l.CreatedAt)
-            .Skip((page - 1) * pageSize)
+            .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
+        _logger.LogInformation("[DEBUG Backend GetRecentTracking] Fetched rootLogs count: {Count}", rootLogs.Count);
 
         var resultItems = new List<object>();
 
