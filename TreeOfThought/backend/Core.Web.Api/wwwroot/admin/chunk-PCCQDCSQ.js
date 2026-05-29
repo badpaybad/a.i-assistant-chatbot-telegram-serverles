@@ -9245,6 +9245,7 @@ var _CameraComponent = class _CameraComponent {
   constructor() {
     this.api = inject(NhanDienKhuonMatService);
     this.message = inject(NzMessageService);
+    this.zone = inject(NgZone);
     this.stream = null;
     this.cameraActive = false;
     this.cameraError = null;
@@ -9252,6 +9253,8 @@ var _CameraComponent = class _CameraComponent {
     this.detectorReady = false;
     this.faceDetector = null;
     this.scanTimer = null;
+    this.animationFrameId = null;
+    this.lastCompareTime = 0;
     this.isScanning = false;
     this.scanRateMs = 800;
     this.compareThreshold = 0.5;
@@ -9336,21 +9339,29 @@ var _CameraComponent = class _CameraComponent {
     this.stopScanning();
     this.clearOverlay();
   }
-  // --- Quản lý chu trình tự động quét ---
+  // --- Quản lý chu trình tự động quét (Tối ưu 60 FPS) ---
   startScanning() {
     if (!this.detectorReady || !this.cameraActive)
       return;
     this.isScanning = true;
-    this.scanTimer = setInterval(() => {
-      this.processVideoFrame();
-    }, this.scanRateMs);
+    this.lastCompareTime = 0;
+    this.runDetectionLoop();
   }
   stopScanning() {
     this.isScanning = false;
-    if (this.scanTimer) {
-      clearInterval(this.scanTimer);
-      this.scanTimer = null;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+    this.clearOverlay();
+  }
+  runDetectionLoop() {
+    if (!this.isScanning || !this.cameraActive)
+      return;
+    this.processVideoFrame();
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.runDetectionLoop();
+    });
   }
   toggleScanning() {
     if (this.isScanning) {
@@ -9413,7 +9424,7 @@ var _CameraComponent = class _CameraComponent {
   }
   // --- Trích xuất ảnh và so khớp từ luồng video ---
   async processVideoFrame() {
-    if (!this.detectorReady || !this.faceDetector || this.isComparing || !this.cameraActive)
+    if (!this.detectorReady || !this.faceDetector || !this.cameraActive)
       return;
     const video = this.videoElement.nativeElement;
     if (video.paused || video.ended)
@@ -9436,10 +9447,15 @@ var _CameraComponent = class _CameraComponent {
       this.faceTooSmall = false;
       const det = largeEnoughDetections.reduce((best, cur) => cur.boundingBox.width > best.boundingBox.width ? cur : best);
       this.drawTargetOutline(det.boundingBox);
+      const now = Date.now();
+      if (this.isComparing || now - this.lastCompareTime < this.scanRateMs) {
+        return;
+      }
       const keypoints = det.keypoints || [];
       if (keypoints.length < 2)
         return;
       this.isComparing = true;
+      this.lastCompareTime = now;
       const eyeLeft = {
         x: keypoints[0].x * video.videoWidth,
         y: keypoints[0].y * video.videoHeight
@@ -9460,7 +9476,7 @@ var _CameraComponent = class _CameraComponent {
       const eyeLeftY = (eyeLeft.y - cropY) * clientScale;
       const eyeRightX = (eyeRight.x - cropX) * clientScale;
       const eyeRightY = (eyeRight.y - cropY) * clientScale;
-      const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
+      const paddedBlob = await this.cropFaceWithPadding(video, det.boundingBox, 0.6);
       const alignedCanvasEl = this.alignedCanvas.nativeElement;
       this.alignFaceBrowser(video, eyeLeft, eyeRight, alignedCanvasEl);
       alignedCanvasEl.toBlob((previewBlob) => {
@@ -9479,46 +9495,43 @@ var _CameraComponent = class _CameraComponent {
         this.streamSub.unsubscribe();
         this.streamSub = null;
       }
-      this.streamSub = this.api.compareGlobalStream(
-        file,
-        this.compareThreshold,
-        eyeLeftX,
-        eyeLeftY,
-        eyeRightX,
-        eyeRightY,
-        padX,
-        padY,
-        clientScale
-        // <-- Thêm tham số này vào Service API
-      ).subscribe({
-        next: (event) => {
-          if (event.status === "success") {
-            const result = event;
-            this.compareResults = result;
-            const snapshotUrl = this.alignedPreviewUrl;
-            if (result && result.bestMatch) {
-              this.bestMatchUser = result.bestMatch;
-              this.belowThreshold = false;
-              this.addToHistory(result.bestMatch, snapshotUrl, true);
+      this.zone.runOutsideAngular(() => {
+        this.streamSub = this.api.compareGlobalStream(file, this.compareThreshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale).subscribe({
+          next: (event) => {
+            if (event.status === "success") {
+              const result = event;
+              this.zone.run(() => {
+                this.compareResults = result;
+                const snapshotUrl = this.alignedPreviewUrl;
+                if (result && result.bestMatch) {
+                  this.bestMatchUser = result.bestMatch;
+                  this.belowThreshold = false;
+                  this.addToHistory(result.bestMatch, snapshotUrl, true);
+                } else {
+                  this.bestMatchUser = null;
+                  this.belowThreshold = true;
+                  this.addToHistory(null, snapshotUrl, false);
+                }
+                this.isComparing = false;
+              });
+            } else if (event.status === "error") {
+              this.zone.run(() => {
+                console.error("L\u1ED7i so kh\u1EDBp m\xE1y ch\u1EE7: ", event.message);
+                this.bestMatchUser = null;
+                this.isComparing = false;
+              });
             } else {
-              this.bestMatchUser = null;
-              this.belowThreshold = true;
-              this.addToHistory(null, snapshotUrl, false);
+              console.log(`[SSE Stream Status] ${event.status}`);
             }
-            this.isComparing = false;
-          } else if (event.status === "error") {
-            console.error("L\u1ED7i so kh\u1EDBp m\xE1y ch\u1EE7: ", event.message);
-            this.bestMatchUser = null;
-            this.isComparing = false;
-          } else {
-            console.log(`[SSE Stream Status] ${event.status}`);
+          },
+          error: (err) => {
+            this.zone.run(() => {
+              console.error("L\u1ED7i stream m\xE1y ch\u1EE7: ", err);
+              this.bestMatchUser = null;
+              this.isComparing = false;
+            });
           }
-        },
-        error: (err) => {
-          console.error("L\u1ED7i stream m\xE1y ch\u1EE7: ", err);
-          this.bestMatchUser = null;
-          this.isComparing = false;
-        }
+        });
       });
     } catch (err) {
       console.error("[Scanner Frame] Error: ", err);
@@ -9526,38 +9539,35 @@ var _CameraComponent = class _CameraComponent {
     }
   }
   /**
-   * Crop khuôn mặt với padding lớn từ video stream.
+   * Crop khuôn mặt với padding lớn từ video stream (Bất đồng bộ).
    * Padding = 0.6 nghĩa là mỗi cạnh được mở rộng thêm 60% chiều rộng bbox.
    * Điều này giúp server có đủ vùng để detect + align chính xác.
    */
   cropFaceWithPadding(video, bbox, paddingFactor) {
-    const padX = bbox.width * paddingFactor;
-    const padY = bbox.height * paddingFactor;
-    const x = Math.max(0, bbox.originX - padX);
-    const y = Math.max(0, bbox.originY - padY);
-    const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
-    const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
-    const maxDim = 256;
-    const clientScale = Math.min(maxDim / w, maxDim / h, 1);
-    const outW = Math.round(w * clientScale);
-    const outH = Math.round(h * clientScale);
-    const cropCanvas = document.createElement("canvas");
-    cropCanvas.width = outW;
-    cropCanvas.height = outH;
-    const ctx = cropCanvas.getContext("2d");
-    if (!ctx)
-      return null;
-    ctx.drawImage(video, x, y, w, h, 0, 0, outW, outH);
-    let resultBlob = null;
-    const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.9);
-    const byteString = atob(dataUrl.split(",")[1]);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    resultBlob = new Blob([ab], { type: "image/jpeg" });
-    return resultBlob;
+    return new Promise((resolve) => {
+      const padX = bbox.width * paddingFactor;
+      const padY = bbox.height * paddingFactor;
+      const x = Math.max(0, bbox.originX - padX);
+      const y = Math.max(0, bbox.originY - padY);
+      const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
+      const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
+      const maxDim = 256;
+      const clientScale = Math.min(maxDim / w, maxDim / h, 1);
+      const outW = Math.round(w * clientScale);
+      const outH = Math.round(h * clientScale);
+      const cropCanvas = document.createElement("canvas");
+      cropCanvas.width = outW;
+      cropCanvas.height = outH;
+      const ctx = cropCanvas.getContext("2d");
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
+      ctx.drawImage(video, x, y, w, h, 0, 0, outW, outH);
+      cropCanvas.toBlob((blob) => {
+        resolve(blob);
+      }, "image/jpeg", 0.9);
+    });
   }
   // --- Thuật toán căn chỉnh mắt Affine ---
   alignFaceBrowser(videoEl, eyeLeft, eyeRight, canvas) {
@@ -9993,4 +10003,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-V7REM6YY.js.map
+//# sourceMappingURL=chunk-PCCQDCSQ.js.map

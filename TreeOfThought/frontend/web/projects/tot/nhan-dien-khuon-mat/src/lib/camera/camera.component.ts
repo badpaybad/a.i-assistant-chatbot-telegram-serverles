@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, ViewChild, ElementRef, inject, NgZone } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NzButtonModule } from 'ng-zorro-antd/button';
@@ -40,6 +40,7 @@ import { NhanDienKhuonMatService } from '../services/nhan-dien-khuon-mat.service
 export class CameraComponent implements OnInit, OnDestroy {
   private api = inject(NhanDienKhuonMatService);
   private message = inject(NzMessageService);
+  private zone = inject(NgZone);
 
   @ViewChild('videoElement') videoElement!: ElementRef<HTMLVideoElement>;
   @ViewChild('canvasOverlay') canvasOverlay!: ElementRef<HTMLCanvasElement>;
@@ -57,6 +58,8 @@ export class CameraComponent implements OnInit, OnDestroy {
 
   // Real-Time Scanning Loop
   private scanTimer: any = null;
+  private animationFrameId: any = null;
+  private lastCompareTime: number = 0;
   isScanning: boolean = false;
   scanRateMs: number = 800; // Throttled rate
 
@@ -167,21 +170,31 @@ export class CameraComponent implements OnInit, OnDestroy {
     this.clearOverlay();
   }
 
-  // --- Quản lý chu trình tự động quét ---
+  // --- Quản lý chu trình tự động quét (Tối ưu 60 FPS) ---
   startScanning(): void {
     if (!this.detectorReady || !this.cameraActive) return;
     this.isScanning = true;
-    this.scanTimer = setInterval(() => {
-      this.processVideoFrame();
-    }, this.scanRateMs);
+    this.lastCompareTime = 0;
+    this.runDetectionLoop();
   }
 
   stopScanning(): void {
     this.isScanning = false;
-    if (this.scanTimer) {
-      clearInterval(this.scanTimer);
-      this.scanTimer = null;
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
     }
+    this.clearOverlay();
+  }
+
+  private runDetectionLoop(): void {
+    if (!this.isScanning || !this.cameraActive) return;
+
+    this.processVideoFrame();
+
+    this.animationFrameId = requestAnimationFrame(() => {
+      this.runDetectionLoop();
+    });
   }
 
   toggleScanning(): void {
@@ -263,7 +276,7 @@ export class CameraComponent implements OnInit, OnDestroy {
   }
   // --- Trích xuất ảnh và so khớp từ luồng video ---
   private async processVideoFrame(): Promise<void> {
-    if (!this.detectorReady || !this.faceDetector || this.isComparing || !this.cameraActive) return;
+    if (!this.detectorReady || !this.faceDetector || !this.cameraActive) return;
 
     const video = this.videoElement.nativeElement;
     if (video.paused || video.ended) return;
@@ -297,12 +310,20 @@ export class CameraComponent implements OnInit, OnDestroy {
         cur.boundingBox.width > best.boundingBox.width ? cur : best
       );
 
+      // Vẽ khung quét ở 60 FPS mượt mà
       this.drawTargetOutline(det.boundingBox);
+
+      // Throttling so khớp backend
+      const now = Date.now();
+      if (this.isComparing || (now - this.lastCompareTime < this.scanRateMs)) {
+        return;
+      }
 
       const keypoints = det.keypoints || [];
       if (keypoints.length < 2) return;
 
       this.isComparing = true;
+      this.lastCompareTime = now;
 
       // Chuẩn hóa tọa độ mắt về độ phân giải nguồn video
       const eyeLeft = {
@@ -330,8 +351,8 @@ export class CameraComponent implements OnInit, OnDestroy {
       const eyeRightX = (eyeRight.x - cropX) * clientScale;
       const eyeRightY = (eyeRight.y - cropY) * clientScale;
 
-      // Crop khuôn mặt với padding lớn từ video thô
-      const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
+      // Crop khuôn mặt với padding lớn từ video thô (Bất đồng bộ hoàn toàn)
+      const paddedBlob = await this.cropFaceWithPadding(video, det.boundingBox, 0.6);
 
       // Đồng thời render preview Affine 112x112 cho người dùng theo dõi cục bộ
       const alignedCanvasEl = this.alignedCanvas.nativeElement;
@@ -356,46 +377,56 @@ export class CameraComponent implements OnInit, OnDestroy {
         this.streamSub = null;
       }
 
-      // BỔ SUNG: Truyền thêm `scale` vào hàm gọi API của bạn
-      this.streamSub = this.api.compareGlobalStream(
-        file,
-        this.compareThreshold,
-        eyeLeftX,
-        eyeLeftY,
-        eyeRightX,
-        eyeRightY,
-        padX,
-        padY,
-        clientScale // <-- Thêm tham số này vào Service API
-      ).subscribe({
-        next: (event: any) => {
-          if (event.status === 'success') {
-            const result = event;
-            this.compareResults = result;
-            const snapshotUrl = this.alignedPreviewUrl;
-            if (result && result.bestMatch) {
-              this.bestMatchUser = result.bestMatch;
-              this.belowThreshold = false;
-              this.addToHistory(result.bestMatch, snapshotUrl, true);
+      // Run outside Angular's zone to prevent high frequency change detection triggers
+      this.zone.runOutsideAngular(() => {
+        this.streamSub = this.api.compareGlobalStream(
+          file,
+          this.compareThreshold,
+          eyeLeftX,
+          eyeLeftY,
+          eyeRightX,
+          eyeRightY,
+          padX,
+          padY,
+          clientScale
+        ).subscribe({
+          next: (event: any) => {
+            if (event.status === 'success') {
+              const result = event;
+              this.zone.run(() => {
+                this.compareResults = result;
+                const snapshotUrl = this.alignedPreviewUrl;
+                if (result && result.bestMatch) {
+                  this.bestMatchUser = result.bestMatch;
+                  this.belowThreshold = false;
+                  this.addToHistory(result.bestMatch, snapshotUrl, true);
+                } else {
+                  this.bestMatchUser = null;
+                  this.belowThreshold = true;
+                  this.addToHistory(null, snapshotUrl, false);
+                }
+                this.isComparing = false;
+              });
+            } else if (event.status === 'error') {
+              this.zone.run(() => {
+                console.error("Lỗi so khớp máy chủ: ", event.message);
+                this.bestMatchUser = null;
+                this.isComparing = false;
+              });
             } else {
-              this.bestMatchUser = null;
-              this.belowThreshold = true;
-              this.addToHistory(null, snapshotUrl, false);
+              // intermediate states like aligning, extracting, searching
+              // can just be logged without triggering any CD!
+              console.log(`[SSE Stream Status] ${event.status}`);
             }
-            this.isComparing = false;
-          } else if (event.status === 'error') {
-            console.error("Lỗi so khớp máy chủ: ", event.message);
-            this.bestMatchUser = null;
-            this.isComparing = false;
-          } else {
-            console.log(`[SSE Stream Status] ${event.status}`);
+          },
+          error: (err: any) => {
+            this.zone.run(() => {
+              console.error("Lỗi stream máy chủ: ", err);
+              this.bestMatchUser = null;
+              this.isComparing = false;
+            });
           }
-        },
-        error: (err: any) => {
-          console.error("Lỗi stream máy chủ: ", err);
-          this.bestMatchUser = null;
-          this.isComparing = false;
-        }
+        });
       });
 
     } catch (err) {
@@ -405,43 +436,39 @@ export class CameraComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Crop khuôn mặt với padding lớn từ video stream.
+   * Crop khuôn mặt với padding lớn từ video stream (Bất đồng bộ).
    * Padding = 0.6 nghĩa là mỗi cạnh được mở rộng thêm 60% chiều rộng bbox.
    * Điều này giúp server có đủ vùng để detect + align chính xác.
    */
-  private cropFaceWithPadding(video: HTMLVideoElement, bbox: any, paddingFactor: number): Blob | null {
-    const padX = bbox.width * paddingFactor;
-    const padY = bbox.height * paddingFactor;
-    const x = Math.max(0, bbox.originX - padX);
-    const y = Math.max(0, bbox.originY - padY);
-    const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
-    const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
+  private cropFaceWithPadding(video: HTMLVideoElement, bbox: any, paddingFactor: number): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const padX = bbox.width * paddingFactor;
+      const padY = bbox.height * paddingFactor;
+      const x = Math.max(0, bbox.originX - padX);
+      const y = Math.max(0, bbox.originY - padY);
+      const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
+      const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
 
-    // Tính kích thước output tối đa 256px để tiết kiệm băng thông
-    const maxDim = 256;
-    const clientScale = Math.min(maxDim / w, maxDim / h, 1.0);
-    const outW = Math.round(w * clientScale);
-    const outH = Math.round(h * clientScale);
+      // Tính kích thước output tối đa 256px để tiết kiệm băng thông
+      const maxDim = 256;
+      const clientScale = Math.min(maxDim / w, maxDim / h, 1.0);
+      const outW = Math.round(w * clientScale);
+      const outH = Math.round(h * clientScale);
 
-    const cropCanvas = document.createElement('canvas');
-    cropCanvas.width = outW;
-    cropCanvas.height = outH;
-    const ctx = cropCanvas.getContext('2d');
-    if (!ctx) return null;
+      const cropCanvas = document.createElement('canvas');
+      cropCanvas.width = outW;
+      cropCanvas.height = outH;
+      const ctx = cropCanvas.getContext('2d');
+      if (!ctx) {
+        resolve(null);
+        return;
+      }
 
-    ctx.drawImage(video, x, y, w, h, 0, 0, outW, outH);
-
-    let resultBlob: Blob | null = null;
-    // synchronous toBlob via toDataURL fallback for immediate return
-    const dataUrl = cropCanvas.toDataURL('image/jpeg', 0.9);
-    const byteString = atob(dataUrl.split(',')[1]);
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    for (let i = 0; i < byteString.length; i++) {
-      ia[i] = byteString.charCodeAt(i);
-    }
-    resultBlob = new Blob([ab], { type: 'image/jpeg' });
-    return resultBlob;
+      ctx.drawImage(video, x, y, w, h, 0, 0, outW, outH);
+      cropCanvas.toBlob((blob) => {
+        resolve(blob);
+      }, 'image/jpeg', 0.9);
+    });
   }
 
   // --- Thuật toán căn chỉnh mắt Affine ---

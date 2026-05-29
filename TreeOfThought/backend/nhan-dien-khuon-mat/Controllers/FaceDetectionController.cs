@@ -26,7 +26,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
-using Core.Infra.Base.Constants;
 
 namespace Core.Infra.NhanDienKhuonMat.Controllers;
 
@@ -1516,7 +1515,7 @@ public class FaceDetectionController : BaseController
         {
             var tempDir = Path.Combine(GetArcFaceDir(), "temp");
             Directory.CreateDirectory(tempDir);
-            byte[] tempImgBytes =[];
+            byte[] tempImgBytes = [];
 
             using (var fs = new MemoryStream())
             {
@@ -1956,6 +1955,8 @@ public class FaceDetectionController : BaseController
                 return;
             }
 
+            _logger.LogInformation($"CompareGlobalStream 1: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
+
             string? bestModelPath = await GetBestModelPathAsync();
 
             if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
@@ -1969,6 +1970,7 @@ public class FaceDetectionController : BaseController
             float[] testEmbedding;
             var inferenceSession = GetOrCreateSession(bestModelPath);
 
+            _logger.LogInformation($"CompareGlobalStream 2: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
             if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue && padX.HasValue && padY.HasValue && clientScale.HasValue)
             {
                 try
@@ -1976,7 +1978,7 @@ public class FaceDetectionController : BaseController
                     using (var alignedImage = await AlignFaceToImageCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value))
                     {
                         _logger.LogInformation("[CompareGlobalStream] Server-side face alignment thành công bằng C# (Không nén PNG).");
-                        
+
                         await SendSseAsync(new { status = "extracting" });
                         testEmbedding = ExtractEmbeddingFromImgRgbg24(inferenceSession, alignedImage);
                     }
@@ -2001,6 +2003,7 @@ public class FaceDetectionController : BaseController
                     }
                 }
             }
+            _logger.LogInformation($"CompareGlobalStream 3: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
 
             await SendSseAsync(new { status = "searching" });
 
@@ -2094,6 +2097,7 @@ public class FaceDetectionController : BaseController
             {
                 bestMatch = null;
             }
+            _logger.LogInformation($"CompareGlobalStream 4: {DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff")}");
 
             await SendSseAsync(new
             {

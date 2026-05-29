@@ -346,3 +346,61 @@ graph TD
    - **Backend**: Bổ sung endpoint `[HttpGet("embeddings/{id}/image")]` tại `FaceDetectionController.cs`. Endpoint này đọc đường dẫn ảnh tuyệt đối trong cột `InputImagePath` của bảng `UserFaceEmbeddings` (là ảnh khuôn mặt đã được cropped và aligned trong quá trình chạy finetune) và truyền trực tiếp nhị phân (binary stream) của tệp hình ảnh về phía client.
    - **Frontend**: Nâng cấp giao diện bảng *Danh sách khuôn mặt đã có Embedding*, tái cấu trúc mỗi dòng phần tử `.emb-item` sử dụng layout Flexbox hiện đại để hiển thị ảnh chân dung thu nhỏ (52x52, bo góc 6px, bóng mờ premium) của chính khuôn mặt đã được dùng để trích xuất đặc trưng nằm ở bên trái, bên phải là mã vector và thông tin metadata chi tiết, giúp người dùng đối chiếu cực kỳ trực quan.
 
+---
+
+## 8. Thiết kế Bổ sung: Camera Nhận diện, Tối ưu hóa SSE (NgZone) & Quản lý Bộ đệm (Cập nhật 2026-05-29)
+
+Nhằm nâng cao tối đa trải nghiệm người dùng, loại bỏ hoàn toàn tình trạng giật/lag giao diện thời gian thực và quản lý tài nguyên máy chủ hiệu quả, các cải tiến kỹ thuật sau đã được thiết kế và triển khai:
+
+### 8.1. Luồng xử lý quét ảnh Camera mượt mà (60 FPS Camera Tracking)
+- **Tách biệt luồng dựng hình và đối sánh**: 
+  - Thay thế việc sử dụng `setInterval` bằng `requestAnimationFrame` đệ quy để thực thi hàm quét `processVideoFrame()` của MediaPipe BlazeFace liên tục ở tần số dựng hình tối đa của màn hình (**60 FPS**). 
+  - Khung quét xanh (`drawTargetOutline`) di chuyển cực kỳ nhạy bén bám sát theo cử động khuôn mặt của người dùng thời gian thực.
+  - Luồng gọi API so khớp backend được kiểm soát độc lập bằng kỹ thuật throttling (chỉ gọi khi `isComparing === false` và thời gian trôi qua giữa hai lần quét tối thiểu đạt `scanRateMs` (mặc định 800ms)).
+- **Bất đồng bộ hóa Canvas**:
+  - Loại bỏ hoàn toàn việc chuyển đổi canvas đồng bộ bằng cách gọi `toDataURL()` và giải mã base64 thủ công bằng `atob()` trong Main Thread trình duyệt.
+  - Sử dụng API native bất đồng bộ `cropCanvas.toBlob(...)` trả về một `Promise<Blob | null>`. Trình duyệt xử lý chuyển đổi nhị phân hình ảnh trực tiếp ở tầng native C++ dưới background thread, loại bỏ hiện tượng block luồng dựng hình chính.
+- **Ánh xạ tọa độ không gian (Coordinates Mapping)**:
+  - Để tiết kiệm băng thông mạng, tệp tin tải lên máy chủ được crop mở rộng (paddingFactor = 0.6) tối đa 256px.
+  - Điểm tọa độ hai mắt ($E_L, E_R$) từ không gian video gốc được ánh xạ tuyến tính về hệ tọa độ mới của ảnh crop có padding trước khi truyền lên Backend:
+    $$x_{\text{padded}} = (x_{\text{video}} - x_{\text{crop\_origin}}) \times \text{clientScale}$$
+    $$y_{\text{padded}} = (y_{\text{video}} - y_{\text{crop\_origin}}) \times \text{clientScale}$$
+  - Backend sử dụng thư viện native C# `SixLabors.ImageSharp` để thực hiện crop chuẩn hóa và Affine Alignment trước khi đưa vào mô hình ONNX trích xuất đặc trưng.
+
+### 8.2. Giải pháp triệt tiêu lag SSE trên Frontend (NgZone Optimization)
+- **Vấn đề phát hiện**: Máy chủ xử lý ảnh đối sánh cực nhanh (chỉ **13ms**). Do đó, các chuỗi bản tin SSE trạng thái (`received`, `aligning`, `extracting`, `searching`, `success`) đổ dồn về trình duyệt gần như cùng một thời điểm. Trình duyệt giải mã chuỗi sự kiện và liên tiếp kích hoạt `observer.next(...)` 5 lần liên tiếp. Angular Zone.js nhận dạng sự kiện này và tự động thực thi 5 chu kỳ Change Detection (quét thay đổi giao diện) đồng thời trong một microtask. Việc này vắt kiệt CPU của trình duyệt và gây đông cứng/giật hình camera.
+- **Giải pháp tối ưu hóa Zone**:
+  - Import và tiêm `NgZone` vào `CameraComponent`.
+  - Bao bọc hoàn toàn việc đăng ký luồng SSE `compareGlobalStream` bên trong phương thức chạy ngoài vùng kiểm soát `this.zone.runOutsideAngular(...)`:
+    ```typescript
+    this.zone.runOutsideAngular(() => {
+      this.streamSub = this.api.compareGlobalStream(...).subscribe({
+        next: (event: any) => {
+          if (event.status === 'success') {
+            this.zone.run(() => {
+              this.compareResults = event;
+              this.isComparing = false;
+              // Chỉ chạy Change Detection đúng 1 lần duy nhất khi có kết quả cuối cùng
+            });
+          }
+        }
+      });
+    });
+    ```
+  - Các sự kiện log trung gian được ghi nhận và in ra console ngầm mà không hề chạm vào giao diện, triệt tiêu 100% các chu kỳ Change Detection rác, giữ cho Camera luôn hoạt động siêu mượt ở 60 FPS.
+
+### 8.3. Bộ đệm Vectơ Trong Bộ Nhớ & Làm Nóng Cache (In-Memory HNSW Caching)
+- **Cache RAM đặc trưng**:
+  - Phục vụ việc nhận dạng camera liên tục mỗi 800ms, Backend thực hiện lưu trữ cache toàn bộ danh sách vector đặc trưng trong cơ sở dữ liệu lên bộ nhớ RAM tĩnh của tiến trình thông qua lớp cache thread-safe.
+  - Cache ONNX Session: Khởi tạo ONNX session một lần duy nhất và cache lại để tái sử dụng, loại bỏ hoàn toàn chi phí đọc đĩa cứng và nạp mô hình ở mỗi yêu cầu so khớp.
+- **Tải mô hình động**:
+  - Hệ thống tự động quét và lấy đường dẫn thư mục lưu trữ huấn luyện theo ngày mới nhất dạng `yyyy-MM-dd` sử dụng cơ chế sắp xếp bảng chữ cái giảm dần (`OrderByDescending(d => Path.GetFileName(d))`) để đảm bảo tính nhất quán trên mọi nền tảng hệ điều hành.
+- **Reload Cache**:
+  - Cung cấp nút bấm **Reload Cache** trên giao diện Camera. Khi nhấp, nút bấm gửi yêu cầu `POST /api/face-detection/reload-cache` kích hoạt dọn sạch bộ nhớ đệm cũ và force-load lại mô hình ONNX cùng dữ liệu vector mới nhất từ cơ sở dữ liệu.
+
+### 8.4. Tối ưu UX Menu Đào tạo và Xóa ảnh Định nghĩa (Hover Action Overlays)
+- **Hiển thị Ảnh gốc**: Cột *"Ảnh khuôn mặt đã định nghĩa"* trong danh sách User được chuyển đổi hiển thị ảnh gốc dạng tròn thumbnail (`46px x 46px`) bóng mờ premium sắc nét thay vì các mặt crop biến dạng.
+- **Xóa định nghĩa trực tiếp**:
+  - Tích hợp thêm biểu tượng nút đóng màu đỏ (`close-circle`) nằm ở góc trên bên phải của mỗi ảnh thumbnail, xuất hiện mượt mà bằng hiệu ứng CSS transition khi người dùng hover chuột vào ảnh.
+  - Logic xóa được cô lập bằng cách sử dụng `event.stopPropagation()` để ngăn chặn tuyệt đối việc kích hoạt sự kiện click chọn checkbox dòng của bảng, đi kèm hộp thoại xác nhận `this.modal.confirm` của Ng-Zorro để đảm bảo an toàn thao tác.
+
