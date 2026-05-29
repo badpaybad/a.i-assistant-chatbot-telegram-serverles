@@ -1073,6 +1073,72 @@ public class FaceDetectionController : BaseController
         return null;
     }
 
+    private async Task<Image<Rgb24>> AlignFaceToImageCSharp(IFormFile inputFile, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
+    {
+        if (inputFile == null || inputFile.Length == 0)
+            throw new ArgumentException("File trống hoặc không hợp lệ.");
+
+        using (var ms = new MemoryStream())
+        {
+            await inputFile.CopyToAsync(ms);
+            ms.Position = 0;
+
+            var source = Image.Load<Rgb24>(ms);
+            try
+            {
+                float dx = eyeRightX - eyeLeftX;
+                float dy = eyeRightY - eyeLeftY;
+                float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (currentDist < 1e-5f) currentDist = 1e-5f;
+                float angleRad = (float)Math.Atan2(dy, dx);
+
+                float arcfaceScale = 35.2372f / currentDist;
+                float cosVal = (float)Math.Cos(angleRad);
+                float sinVal = (float)Math.Sin(angleRad);
+
+                var target = new Image<Rgb24>(112, 112);
+                float tx = 55.9132f;
+                float ty = 51.59885f;
+                float cxSrc = (eyeLeftX + eyeRightX) / 2.0f;
+                float cySrc = (eyeLeftY + eyeRightY) / 2.0f;
+
+                target.ProcessPixelRows(accessor =>
+                {
+                    for (int y = 0; y < 112; y++)
+                    {
+                        var row = accessor.GetRowSpan(y);
+                        float y3 = y - ty;
+                        for (int x = 0; x < 112; x++)
+                        {
+                            float x3 = x - tx;
+                            float x2 = x3 / arcfaceScale;
+                            float y2 = y3 / arcfaceScale;
+
+                            float x1 = x2 * cosVal + y2 * sinVal;
+                            float y1 = -x2 * sinVal + y2 * cosVal;
+
+                            float xSrc = x1 + cxSrc;
+                            float ySrc = y1 + cySrc;
+
+                            row[x] = SampleBilinear(source, xSrc, ySrc);
+                        }
+                    }
+                });
+
+                return target;
+            }
+            catch
+            {
+                // Ensure target or source is properly cleaned up in case of failure
+                throw;
+            }
+            finally
+            {
+                source.Dispose();
+            }
+        }
+    }
+
     private async Task<byte[]> AlignFaceCSharp(IFormFile inputFile, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
     {
         return await AlignAndCropFaceCSharp(inputFile, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale);
@@ -1556,6 +1622,48 @@ public class FaceDetectionController : BaseController
     private static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
     private static List<UserFaceEmbedding>? _cachedEmbeddings = null;
     private static readonly object _cacheLock = new();
+    private static string? _cachedBestModelPath = null;
+    private static readonly object _modelPathLock = new();
+
+    private async Task<string?> GetBestModelPathAsync()
+    {
+        if (!string.IsNullOrEmpty(_cachedBestModelPath) && System.IO.File.Exists(_cachedBestModelPath))
+        {
+            return _cachedBestModelPath;
+        }
+
+        string? bestModelPath = null;
+        var rootFaceIds = GetRootFaceIdsPath();
+        if (Directory.Exists(rootFaceIds))
+        {
+            bestModelPath = Directory.GetDirectories(rootFaceIds)
+                .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
+                .Where(System.IO.File.Exists)
+                .OrderByDescending(System.IO.File.GetCreationTime)
+                .FirstOrDefault();
+        }
+
+        if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+        {
+            var anyEmbedding = await _faceDefinitionDb.UserFaceEmbeddings
+                .Where(e => !string.IsNullOrEmpty(e.BestModelPath))
+                .FirstOrDefaultAsync();
+            if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.BestModelPath))
+            {
+                bestModelPath = anyEmbedding.BestModelPath;
+            }
+        }
+
+        if (!string.IsNullOrEmpty(bestModelPath) && System.IO.File.Exists(bestModelPath))
+        {
+            lock (_modelPathLock)
+            {
+                _cachedBestModelPath = bestModelPath;
+            }
+        }
+
+        return bestModelPath;
+    }
 
     private async Task<List<UserFaceEmbedding>> GetCachedEmbeddingsAsync()
     {
@@ -1622,6 +1730,10 @@ public class FaceDetectionController : BaseController
             {
                 RemoveModel(path);
             }
+            lock (_modelPathLock)
+            {
+                _cachedBestModelPath = null;
+            }
 
             // 2. Clear cached embeddings
             lock (_cacheLock)
@@ -1658,33 +1770,7 @@ public class FaceDetectionController : BaseController
         if (image == null || image.Length == 0)
             return BadRequest("Tệp ảnh không hợp lệ.");
 
-        // Find the latest best model in the facesid folders
-        string? bestModelPath = null;
-        var rootFaceIds = GetRootFaceIdsPath();
-        if (Directory.Exists(rootFaceIds))
-        {
-            var latestModel = Directory.GetDirectories(rootFaceIds)
-                .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
-                .Where(System.IO.File.Exists)
-                .OrderByDescending(System.IO.File.GetCreationTime)
-                .FirstOrDefault();
-            if (latestModel != null)
-            {
-                bestModelPath = latestModel;
-            }
-        }
-
-        // Fallback to query existing embeddings for model path
-        if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
-        {
-            var anyEmbedding = await _faceDefinitionDb.UserFaceEmbeddings
-                .Where(e => !string.IsNullOrEmpty(e.BestModelPath))
-                .FirstOrDefaultAsync();
-            if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.BestModelPath))
-            {
-                bestModelPath = anyEmbedding.BestModelPath;
-            }
-        }
+        string? bestModelPath = await GetBestModelPathAsync();
 
         if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
             return BadRequest("Hệ thống chưa có mô hình đào tạo (ONNX) nào. Vui lòng thực hiện đào tạo trước.");
@@ -1693,28 +1779,28 @@ public class FaceDetectionController : BaseController
         float[] testEmbedding;
         try
         {
-            byte[] alignedImageBytes = []; // fallback nếu alignment thất bại
+            var inferenceSession = GetOrCreateSession(bestModelPath);
 
-            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
+            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue && padX.HasValue && padY.HasValue && clientScale.HasValue)
             {
-                try
+                using (var alignedImage = await AlignFaceToImageCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value))
                 {
-                    alignedImageBytes = await AlignFaceCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
-                    _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công bằng C#.");
-                }
-                catch (Exception alignEx)
-                {
-                    _logger.LogError(alignEx, "[CompareGlobal] Lỗi căn chỉnh khuôn mặt bằng C#.");
+                    _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công bằng C# (Không nén PNG).");
+                    testEmbedding = ExtractEmbeddingFromImgRgbg24(inferenceSession, alignedImage);
                 }
             }
-
-            try
+            else
             {
-                var inferenceSession = GetOrCreateSession(bestModelPath);
-                testEmbedding = ExtractEmbeddingFromBytes(inferenceSession, alignedImageBytes);
-            }
-            finally
-            {
+                // Fallback: If alignment parameters are missing, extract from raw uploaded image bytes
+                using (var ms = new MemoryStream())
+                {
+                    await image.CopyToAsync(ms);
+                    ms.Position = 0;
+                    using (var rawImage = Image.Load<Rgb24>(ms))
+                    {
+                        testEmbedding = ExtractEmbeddingFromImgRgbg24(inferenceSession, rawImage);
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -1857,33 +1943,7 @@ public class FaceDetectionController : BaseController
                 return;
             }
 
-            // Find the latest best model in the facesid folders
-            string? bestModelPath = null;
-            var rootFaceIds = GetRootFaceIdsPath();
-            if (Directory.Exists(rootFaceIds))
-            {
-                var latestModel = Directory.GetDirectories(rootFaceIds)
-                    .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
-                    .Where(System.IO.File.Exists)
-                    .OrderByDescending(System.IO.File.GetCreationTime)
-                    .FirstOrDefault();
-                if (latestModel != null)
-                {
-                    bestModelPath = latestModel;
-                }
-            }
-
-            // Fallback to query existing embeddings for model path
-            if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
-            {
-                var anyEmbedding = await _faceDefinitionDb.UserFaceEmbeddings
-                    .Where(e => !string.IsNullOrEmpty(e.BestModelPath))
-                    .FirstOrDefaultAsync();
-                if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.BestModelPath))
-                {
-                    bestModelPath = anyEmbedding.BestModelPath;
-                }
-            }
+            string? bestModelPath = await GetBestModelPathAsync();
 
             if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
             {
@@ -1893,31 +1953,40 @@ public class FaceDetectionController : BaseController
 
             await SendSseAsync(new { status = "aligning" });
 
-            byte[] alignedImageBytes = []; // fallback nếu alignment thất bại
+            float[] testEmbedding;
+            var inferenceSession = GetOrCreateSession(bestModelPath);
 
-            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
+            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue && padX.HasValue && padY.HasValue && clientScale.HasValue)
             {
                 try
                 {
-                    alignedImageBytes = await AlignFaceCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
-                    _logger.LogInformation($"[CompareGlobalStream] Server-side face alignment thành công bằng C#. {alignedImageBytes}");
+                    using (var alignedImage = await AlignFaceToImageCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value))
+                    {
+                        _logger.LogInformation("[CompareGlobalStream] Server-side face alignment thành công bằng C# (Không nén PNG).");
+                        
+                        await SendSseAsync(new { status = "extracting" });
+                        testEmbedding = ExtractEmbeddingFromImgRgbg24(inferenceSession, alignedImage);
+                    }
                 }
                 catch (Exception alignEx)
                 {
                     _logger.LogError(alignEx, "[CompareGlobalStream] Lỗi căn chỉnh khuôn mặt bằng C#.");
+                    await SendSseAsync(new { status = "error", message = $"Lỗi căn chỉnh: {alignEx.Message}" });
+                    return;
                 }
             }
-
-            await SendSseAsync(new { status = "extracting" });
-
-            float[] testEmbedding;
-            try
+            else
             {
-                var inferenceSession = GetOrCreateSession(bestModelPath);
-                testEmbedding = ExtractEmbeddingFromBytes(inferenceSession, alignedImageBytes);
-            }
-            finally
-            {
+                await SendSseAsync(new { status = "extracting" });
+                using (var ms = new MemoryStream())
+                {
+                    await image.CopyToAsync(ms);
+                    ms.Position = 0;
+                    using (var rawImage = Image.Load<Rgb24>(ms))
+                    {
+                        testEmbedding = ExtractEmbeddingFromImgRgbg24(inferenceSession, rawImage);
+                    }
+                }
             }
 
             await SendSseAsync(new { status = "searching" });
