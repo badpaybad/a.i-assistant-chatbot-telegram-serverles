@@ -171,3 +171,12 @@ Thêm UI nút reload cache : khi click nút thì reload lại cache dữ liệu 
     danh sách: Chọn User để Đào Tạo cột Ảnh khuôn mặt đã định nghĩa
         cho phép xóa từng ảnh theo user
         hiển thị ảnh ở đây là ảnh gốc 
+
+
+**2026-05-29 14:35:35**
+Ở nút Đào tạo bổ xung các input cho phép người dùng nhập các thông tin thay đổi các tham số khi train:
+        $"--epochs 100 " +
+        $"--batch_size 16 " +
+        $"--learning_rate 0.00005 " +
+        $"--align_mode advanced " +
+        $"--device cpu";

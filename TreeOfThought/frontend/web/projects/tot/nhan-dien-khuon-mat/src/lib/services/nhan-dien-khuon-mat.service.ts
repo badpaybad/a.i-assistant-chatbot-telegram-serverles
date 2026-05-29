@@ -83,13 +83,25 @@ export class NhanDienKhuonMatService {
    * Tạo một EventSource SSE để stream log đào tạo từ server về trình duyệt.
    * Caller chịu trách nhiệm đóng EventSource khi không dùng nữa.
    */
-  streamTraining(userIds: string[]): EventSource {
+  streamTraining(
+    userIds: string[],
+    epochs?: number,
+    batchSize?: number,
+    learningRate?: number,
+    alignMode?: string,
+    device?: string
+  ): EventSource {
     const baseUrl = (window as any).env?.API_BASE_URL ?? '';
     const token = localStorage.getItem('jwt_token') ?? '';
     const idsParam = encodeURIComponent(userIds.join(','));
-    // EventSource không hỗ trợ custom headers → truyền token qua query param
-    // Backend nên được cấu hình để chấp nhận Bearer token từ query param cho SSE
-    const url = `${baseUrl}/api/face-detection/train/stream?userIds=${idsParam}&access_token=${token}`;
+    let url = `${baseUrl}/api/face-detection/train/stream?userIds=${idsParam}&access_token=${token}`;
+    
+    if (epochs !== undefined) url += `&epochs=${epochs}`;
+    if (batchSize !== undefined) url += `&batchSize=${batchSize}`;
+    if (learningRate !== undefined) url += `&learningRate=${learningRate}`;
+    if (alignMode !== undefined) url += `&alignMode=${encodeURIComponent(alignMode)}`;
+    if (device !== undefined) url += `&device=${encodeURIComponent(device)}`;
+
     return new EventSource(url);
   }
 

@@ -16,6 +16,7 @@ import { NzAlertModule } from 'ng-zorro-antd/alert';
 import { NzSliderModule } from 'ng-zorro-antd/slider';
 import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
 import { NzTooltipModule } from 'ng-zorro-antd/tooltip';
+import { NzSelectModule } from 'ng-zorro-antd/select';
 import { TotButtonComponent } from '@tot/shared';
 import { NhanDienKhuonMatService } from '../services/nhan-dien-khuon-mat.service';
 import { NhanDienKhuonMatComponent } from '../nhan-dien-khuon-mat.component';
@@ -40,6 +41,7 @@ import { NhanDienKhuonMatComponent } from '../nhan-dien-khuon-mat.component';
     NzSliderModule,
     NzInputNumberModule,
     NzTooltipModule,
+    NzSelectModule,
     TotButtonComponent
   ],
   templateUrl: './training.component.html',
@@ -62,6 +64,13 @@ export class TrainingComponent implements OnInit, OnDestroy {
   trainingLogs: string[] = [];
   private eventSource: EventSource | null = null;
   trainingDoneFolder: string | null = null;
+
+  // Training hyper-parameters (configurable by user)
+  epochs: number = 100;
+  batchSize: number = 16;
+  learningRate: number = 0.00005;
+  alignMode: string = 'advanced';
+  device: string = 'cpu';
 
   // Danh sách thư mục đã huấn luyện
   trainingFolders: any[] = [];
@@ -201,7 +210,14 @@ export class TrainingComponent implements OnInit, OnDestroy {
     this.isTraining = true;
 
     const userIds = Array.from(this.selectedUserIds);
-    this.eventSource = this.api.streamTraining(userIds);
+    this.eventSource = this.api.streamTraining(
+      userIds,
+      this.epochs,
+      this.batchSize,
+      this.learningRate,
+      this.alignMode,
+      this.device
+    );
 
     this.eventSource.onmessage = (event) => {
       const line: string = event.data || '';

@@ -582,7 +582,14 @@ public class FaceDetectionController : BaseController
     /// stream stdout thời gian thực về trình duyệt.
     /// </summary>
     [HttpGet("train/stream")]
-    public async Task TrainStream([FromQuery] string userIds, CancellationToken cancellationToken)
+    public async Task TrainStream(
+        [FromQuery] string userIds,
+        [FromQuery] int epochs = 100,
+        [FromQuery] int batchSize = 16,
+        [FromQuery] double learningRate = 0.00005,
+        [FromQuery] string alignMode = "advanced",
+        [FromQuery] string device = "cpu",
+        CancellationToken cancellationToken = default)
     {
         Response.Headers["Content-Type"] = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
@@ -712,17 +719,17 @@ public class FaceDetectionController : BaseController
             var modelBestMobilePath = Path.Combine(dateDirPath, "arcface_model_best_mobile.onnx");
 
             var arguments = $"\"{mainPyPath}\" " +
-                            $"--epochs 10 " +
-                            $"--batch_size 16 " +
-                            $"--learning_rate 0.00005 " +
-                            $"--align_mode advanced " +
+                            $"--epochs {epochs} " +
+                            $"--batch_size {batchSize} " +
+                            $"--learning_rate {learningRate.ToString(System.Globalization.CultureInfo.InvariantCulture)} " +
+                            $"--align_mode {alignMode} " +
                             $"--raw_dir \"{rawDirPath}\" " +
                             $"--data_dir \"{dataDirPath}\" " +
                             $"--model_output_path \"{modelFinalPath}\" " +
                             $"--mobile_model_output_path \"{modelFinalMobilePath}\" " +
                             $"--best_model_output_path \"{modelBestPath}\" " +
                             $"--best_mobile_model_output_path \"{modelBestMobilePath}\" " +
-                            $"--device cpu";
+                            $"--device {device}";
 
             await SendSseAsync($"[INFO] Bắt đầu tiến trình đào tạo ArcFace...");
             await SendSseAsync($"[CMD] {pythonExe} {arguments}");

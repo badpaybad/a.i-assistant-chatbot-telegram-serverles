@@ -101,11 +101,60 @@
     </nz-spin>
   </nz-card>
 
-  <!-- ========================== SECTION 2: Điều khiển Đào Tạo ========================== -->
   <nz-card class="section-card" [nzTitle]="trainingControlTitle">
     <ng-template #trainingControlTitle>
       <span class="card-title-icon"><span nz-icon nzType="thunderbolt" nzTheme="outline"></span>&nbsp; Điều Khiển Đào Tạo</span>
     </ng-template>
+    <!-- Cấu hình tham số Đào tạo -->
+    <div class="training-params-section" style="background: rgba(24, 144, 255, 0.02); border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+      <div style="font-weight: 600; font-size: 13px; margin-bottom: 12px; color: #262626; display: flex; align-items: center; gap: 6px;">
+        <span nz-icon nzType="setting" nzTheme="outline" style="color: #1890ff;"></span>
+        Cấu hình Tham số Huấn luyện ArcFace
+      </div>
+      <div class="params-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+        <!-- Epochs -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Epochs (Số chu kỳ):</label>
+          <nz-input-number [nzMin]="1" [nzMax]="500" [nzStep]="1" [(ngModel)]="epochs" [nzDisabled]="isTraining" style="width: 100%;"></nz-input-number>
+        </div>
+
+        <!-- Batch Size -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Batch Size (Lô):</label>
+          <nz-select [(ngModel)]="batchSize" [nzDisabled]="isTraining" style="width: 100%;">
+            <nz-option [nzValue]="4" nzLabel="4"></nz-option>
+            <nz-option [nzValue]="8" nzLabel="8"></nz-option>
+            <nz-option [nzValue]="16" nzLabel="16"></nz-option>
+            <nz-option [nzValue]="32" nzLabel="32"></nz-option>
+            <nz-option [nzValue]="64" nzLabel="64"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Learning Rate -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Learning Rate (Tốc độ học):</label>
+          <nz-input-number [nzMin]="0.000001" [nzMax]="0.1" [nzStep]="0.00001" [(ngModel)]="learningRate" [nzDisabled]="isTraining" style="width: 100%;"></nz-input-number>
+        </div>
+
+        <!-- Align Mode -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Align Mode (Căn chỉnh):</label>
+          <nz-select [(ngModel)]="alignMode" [nzDisabled]="isTraining" style="width: 100%;">
+            <nz-option nzValue="advanced" nzLabel="Advanced (Nâng cao)"></nz-option>
+            <nz-option nzValue="standard" nzLabel="Standard (Tiêu chuẩn)"></nz-option>
+          </nz-select>
+        </div>
+
+        <!-- Device -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Device (Thiết bị):</label>
+          <nz-select [(ngModel)]="device" [nzDisabled]="isTraining" style="width: 100%;">
+            <nz-option nzValue="cpu" nzLabel="CPU"></nz-option>
+            <nz-option nzValue="cuda" nzLabel="CUDA (GPU)"></nz-option>
+          </nz-select>
+        </div>
+      </div>
+    </div>
 
     <div class="training-controls">
       <div class="selected-info">
