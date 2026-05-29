@@ -32,5 +32,6 @@ cleanup() {
 # Start .NET backend by executing the compiled DLL directly to optimize RAM
 # TreeOfThought/backend/Core.Web.Api
 source ../../../venv/bin/activate
+dotnet build 
 echo "Starting Backend by executing DLL directly to prevent memory exhaustion..."
 dotnet bin/Debug/net8.0/Core.Web.Api.dll

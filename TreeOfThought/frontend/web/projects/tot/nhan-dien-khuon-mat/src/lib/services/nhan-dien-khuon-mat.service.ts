@@ -13,7 +13,7 @@ export class NhanDienKhuonMatService {
     formData.append('sessionId', sessionId);
     formData.append('sessionName', sessionName);
     formData.append('originalFile', originalFile);
-    
+
     croppedFiles.forEach(file => {
       formData.append('croppedFiles', file);
     });
@@ -121,13 +121,16 @@ export class NhanDienKhuonMatService {
     return this.http.post(`/api/face-detection/compare-global${query}`, formData);
   }
 
-  compareGlobalStream(file: File, threshold: number, eyeLeftX: number, eyeLeftY: number, eyeRightX: number, eyeRightY: number): Observable<any> {
+  compareGlobalStream(file: File, threshold: number, eyeLeftX: number, eyeLeftY: number, eyeRightX: number, eyeRightY: number, padX: number, padY: number, clientScale: number): Observable<any> {
     const formData = new FormData();
     formData.append('image', file);
     formData.append('eyeLeftX', eyeLeftX.toString());
     formData.append('eyeLeftY', eyeLeftY.toString());
     formData.append('eyeRightX', eyeRightX.toString());
     formData.append('eyeRightY', eyeRightY.toString());
+    formData.append('padX', padX.toString());
+    formData.append('padY', padY.toString());
+    formData.append('clientScale', clientScale.toString());
 
     const baseUrl = (window as any).env?.API_BASE_URL ?? '';
     const token = localStorage.getItem('jwt_token') ?? '';
@@ -135,7 +138,7 @@ export class NhanDienKhuonMatService {
 
     return new Observable<any>(observer => {
       const controller = new AbortController();
-      
+
       fetch(url, {
         method: 'POST',
         headers: {

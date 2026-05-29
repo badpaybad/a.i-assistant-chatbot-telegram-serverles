@@ -260,7 +260,6 @@ export class CameraComponent implements OnInit, OnDestroy {
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   }
-
   // --- Trích xuất ảnh và so khớp từ luồng video ---
   private async processVideoFrame(): Promise<void> {
     if (!this.detectorReady || !this.faceDetector || this.isComparing || !this.cameraActive) return;
@@ -279,7 +278,7 @@ export class CameraComponent implements OnInit, OnDestroy {
 
       this.noFaceDetected = false;
 
-      // Lọc khuôn mặt đủ rộng (tránh phát hiện nhầm khuôn mặt xa hoặc nhỏ)
+      // Lọc khuôn mặt đủ rộng
       const largeEnoughDetections = detections.filter((d: any) =>
         d.boundingBox.width >= this.minFaceWidthPx
       );
@@ -292,7 +291,7 @@ export class CameraComponent implements OnInit, OnDestroy {
 
       this.faceTooSmall = false;
 
-      // Chọn khuôn mặt lớn nhất (gần camera nhất)
+      // Chọn khuôn mặt lớn nhất
       const det = largeEnoughDetections.reduce((best: any, cur: any) =>
         cur.boundingBox.width > best.boundingBox.width ? cur : best
       );
@@ -323,15 +322,14 @@ export class CameraComponent implements OnInit, OnDestroy {
       const cropH = Math.min(video.videoHeight - cropY, det.boundingBox.height + padY * 2);
 
       const maxDim = 256;
-      const scale = Math.min(maxDim / cropW, maxDim / cropH, 1.0);
+      const clientScale = Math.min(maxDim / cropW, maxDim / cropH, 1.0); // <-- BIẾN SCALE CẦN GỬI
 
-      const eyeLeftX = (eyeLeft.x - cropX) * scale;
-      const eyeLeftY = (eyeLeft.y - cropY) * scale;
-      const eyeRightX = (eyeRight.x - cropX) * scale;
-      const eyeRightY = (eyeRight.y - cropY) * scale;
+      const eyeLeftX = (eyeLeft.x - cropX) * clientScale;
+      const eyeLeftY = (eyeLeft.y - cropY) * clientScale;
+      const eyeRightX = (eyeRight.x - cropX) * clientScale;
+      const eyeRightY = (eyeRight.y - cropY) * clientScale;
 
-      // Crop khuôn mặt với padding lớn từ video thô (gửi lên server để re-align chuẩn xác)
-      // Dùng padding=0.6 để giữ được đủ vùng khuôn mặt nhưng tiết kiệm băng thông so với full frame
+      // Crop khuôn mặt với padding lớn từ video thô
       const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
 
       // Đồng thời render preview Affine 112x112 cho người dùng theo dõi cục bộ
@@ -350,7 +348,6 @@ export class CameraComponent implements OnInit, OnDestroy {
         return;
       }
 
-      // Tạo Preview URL cục bộ để người dùng theo dõi
       const file = new File([paddedBlob], 'face_padded.jpg', { type: 'image/jpeg' });
 
       if (this.streamSub) {
@@ -358,13 +355,17 @@ export class CameraComponent implements OnInit, OnDestroy {
         this.streamSub = null;
       }
 
+      // BỔ SUNG: Truyền thêm `scale` vào hàm gọi API của bạn
       this.streamSub = this.api.compareGlobalStream(
-        file, 
-        this.compareThreshold, 
-        eyeLeftX, 
-        eyeLeftY, 
-        eyeRightX, 
-        eyeRightY
+        file,
+        this.compareThreshold,
+        eyeLeftX,
+        eyeLeftY,
+        eyeRightX,
+        eyeRightY,
+        padX,
+        padY,
+        clientScale // <-- Thêm tham số này vào Service API
       ).subscribe({
         next: (event: any) => {
           if (event.status === 'success') {
@@ -386,7 +387,6 @@ export class CameraComponent implements OnInit, OnDestroy {
             this.bestMatchUser = null;
             this.isComparing = false;
           } else {
-            // Processing status updates: 'received', 'aligning', 'extracting', 'searching'
             console.log(`[SSE Stream Status] ${event.status}`);
           }
         },
@@ -418,9 +418,9 @@ export class CameraComponent implements OnInit, OnDestroy {
 
     // Tính kích thước output tối đa 256px để tiết kiệm băng thông
     const maxDim = 256;
-    const scale = Math.min(maxDim / w, maxDim / h, 1.0);
-    const outW = Math.round(w * scale);
-    const outH = Math.round(h * scale);
+    const clientScale = Math.min(maxDim / w, maxDim / h, 1.0);
+    const outW = Math.round(w * clientScale);
+    const outH = Math.round(h * clientScale);
 
     const cropCanvas = document.createElement('canvas');
     cropCanvas.width = outW;
@@ -446,8 +446,8 @@ export class CameraComponent implements OnInit, OnDestroy {
   // --- Thuật toán căn chỉnh mắt Affine ---
   private alignFaceBrowser(
     videoEl: HTMLVideoElement,
-    eyeLeft: {x: number, y: number},
-    eyeRight: {x: number, y: number},
+    eyeLeft: { x: number, y: number },
+    eyeRight: { x: number, y: number },
     canvas: HTMLCanvasElement
   ): void {
     canvas.width = 112;

@@ -667,7 +667,7 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
     const query = threshold !== void 0 && threshold !== null ? `?threshold=${threshold}` : "";
     return this.http.post(`/api/face-detection/compare-global${query}`, formData);
   }
-  compareGlobalStream(file, threshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY) {
+  compareGlobalStream(file, threshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale) {
     var _a, _b, _c;
     const formData = new FormData();
     formData.append("image", file);
@@ -675,6 +675,9 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
     formData.append("eyeLeftY", eyeLeftY.toString());
     formData.append("eyeRightX", eyeRightX.toString());
     formData.append("eyeRightY", eyeRightY.toString());
+    formData.append("padX", padX.toString());
+    formData.append("padY", padY.toString());
+    formData.append("clientScale", clientScale.toString());
     const baseUrl = (_b = (_a = window.env) == null ? void 0 : _a.API_BASE_URL) != null ? _b : "";
     const token = (_c = localStorage.getItem("jwt_token")) != null ? _c : "";
     const url = `${baseUrl}/api/face-detection/compare-global-stream?threshold=${threshold}`;
@@ -9409,11 +9412,11 @@ var _CameraComponent = class _CameraComponent {
       const cropW = Math.min(video.videoWidth - cropX, det.boundingBox.width + padX * 2);
       const cropH = Math.min(video.videoHeight - cropY, det.boundingBox.height + padY * 2);
       const maxDim = 256;
-      const scale = Math.min(maxDim / cropW, maxDim / cropH, 1);
-      const eyeLeftX = (eyeLeft.x - cropX) * scale;
-      const eyeLeftY = (eyeLeft.y - cropY) * scale;
-      const eyeRightX = (eyeRight.x - cropX) * scale;
-      const eyeRightY = (eyeRight.y - cropY) * scale;
+      const clientScale = Math.min(maxDim / cropW, maxDim / cropH, 1);
+      const eyeLeftX = (eyeLeft.x - cropX) * clientScale;
+      const eyeLeftY = (eyeLeft.y - cropY) * clientScale;
+      const eyeRightX = (eyeRight.x - cropX) * clientScale;
+      const eyeRightY = (eyeRight.y - cropY) * clientScale;
       const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
       const alignedCanvasEl = this.alignedCanvas.nativeElement;
       this.alignFaceBrowser(video, eyeLeft, eyeRight, alignedCanvasEl);
@@ -9433,7 +9436,18 @@ var _CameraComponent = class _CameraComponent {
         this.streamSub.unsubscribe();
         this.streamSub = null;
       }
-      this.streamSub = this.api.compareGlobalStream(file, this.compareThreshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY).subscribe({
+      this.streamSub = this.api.compareGlobalStream(
+        file,
+        this.compareThreshold,
+        eyeLeftX,
+        eyeLeftY,
+        eyeRightX,
+        eyeRightY,
+        padX,
+        padY,
+        clientScale
+        // <-- Thêm tham số này vào Service API
+      ).subscribe({
         next: (event) => {
           if (event.status === "success") {
             const result = event;
@@ -9481,9 +9495,9 @@ var _CameraComponent = class _CameraComponent {
     const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
     const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
     const maxDim = 256;
-    const scale = Math.min(maxDim / w, maxDim / h, 1);
-    const outW = Math.round(w * scale);
-    const outH = Math.round(h * scale);
+    const clientScale = Math.min(maxDim / w, maxDim / h, 1);
+    const outW = Math.round(w * clientScale);
+    const outH = Math.round(h * clientScale);
     const cropCanvas = document.createElement("canvas");
     cropCanvas.width = outW;
     cropCanvas.height = outH;
@@ -9909,4 +9923,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-HJXR6YRP.js.map
+//# sourceMappingURL=chunk-5Q34ZFXG.js.map

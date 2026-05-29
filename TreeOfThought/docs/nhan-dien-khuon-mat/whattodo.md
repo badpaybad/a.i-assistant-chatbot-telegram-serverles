@@ -144,14 +144,23 @@ Danh sách :   Chọn User để Đào Tạo bổ xung cột các ảnh khuôn m
 **cập nhật 2026-05-29 09:30:56**
 
 Thêm submenu cho Nhận diện khuôn mặt: Camera nhận dạng
-    - click vào menu thì load ra component để mở camera , khi nhận dạng được khuôn mặt trên camera , thì hệ thống sẽ lấy khuôn mặt đưa lên so sánh embeding và tìm ra best match người đó là ai, và hiện khuôn mặt của người đó và thông tin tên , cho phép chọn threshhold 
+    - click vào menu thì load ra component để mở camera , khi nhận dạng được khuôn mặt trên camera , thì hệ thống sẽ lấy khuôn mặt đưa lên so sánh embeding và tìm ra best match người đó là ai, và hiện khuôn mặt của người đó và thông tin tên , cho phép chọn threshhold
         Để hỗ trợ nếu 1 khung hình có nhiều người, thêm threshhold về độ rộng ảnh face croped >= threshhold
         Ảnh algign croped trên FE có thể lấy padding lớn để tránh bị mất nhiều diện tích khuôn mặt (gửi lên server cho tiết kiệm băng thông), khi lên server cũng cần căn lấy face và align lại để đúng chuẩn và có kết quả tốt nhất (các chuẩn về align TreeOfThought/docs/nhan-dien-khuon-mat/howtodo.md)
+        cần đưa padding lên BE để BE crop lại ảnh rồi mới align
 
 **cập nhật 2026-05-29 09:50:56**
-        Kết Quả Nhận Dạng (HNSW) 
-            cần giữ history 5 kết quả nhận diện mới nhất 
+        Kết Quả Nhận Dạng (HNSW)
+            cần giữ history 5 kết quả nhận diện mới nhất, hiện các score, thông tin user
 
 **cập nhật 2026-05-29 10:10:56**
-không dùng align_face_helper.py mà dùng c# để căn chỉnh lại khuôn mặt , vơi mode standard khi dùng camera , hoặc kiểm tra so khớp khuôn mặt 
-khi dùng camera để mượt mà UI thì dùng SSE để gửi kết quả nhận diện sau khi xử lý 
+Ở Camera nhận dạng
+BE không dùng align_face_helper.py mà dùng c# dùng onnx session để  detect face , crop lại face rồi căn chỉnh lại khuôn mặt với mode standard khi dùng camera , hoặc kiểm tra so khớp khuôn mặt
+    cần đưa padding lên BE để BE crop lại ảnh rồi mới align
+khi dùng camera để mượt mà UI thì dùng SSE để gửi kết quả nhận diện sau khi xử lý
+
+**cập nhật 2026-05-29 10:10:56**
+Ở Camera nhận dạng
+Khi xử lý thì cần lấy embeding đã được lưu ở cơ sở đữ liệu để so sánh, cần cache dữ liệu trên bộ nhớ
+session onnx sẽ lấy theo folder mới nhất và cũng cần cache trên bộ nhớ để dùng
+Thêm UI nút reload cache : khi click nút thì reload lại cache dữ liệu và force load lại model onnx theo folder mới nhất (đang có tên folder dạng date yyyy-MM-dd)

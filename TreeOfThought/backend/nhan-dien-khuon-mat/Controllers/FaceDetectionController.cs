@@ -24,6 +24,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
 
 namespace Core.Infra.NhanDienKhuonMat.Controllers;
 
@@ -356,7 +357,8 @@ public class FaceDetectionController : BaseController
             userQuery = userQuery.Where(u => u.Username.ToLower().Contains(q) || u.DisplayName.ToLower().Contains(q) || u.Email.ToLower().Contains(q));
         }
 
-        var users = await userQuery.Take(20).Select(u => new {
+        var users = await userQuery.Take(20).Select(u => new
+        {
             u.Id,
             u.Username,
             u.DisplayName,
@@ -447,13 +449,15 @@ public class FaceDetectionController : BaseController
         // Get all original images matching these IDs
         var images = await _db.OriginalImages
             .Where(i => imageIds.Contains(i.Id))
-            .Select(i => new {
+            .Select(i => new
+            {
                 i.Id,
                 i.FileName,
                 i.Url,
                 i.Size,
                 i.CreatedAt,
-                CroppedFaces = i.CroppedFaces.Select(c => new {
+                CroppedFaces = i.CroppedFaces.Select(c => new
+                {
                     c.Id,
                     c.Url,
                     c.BoundingBox
@@ -462,9 +466,11 @@ public class FaceDetectionController : BaseController
             .ToListAsync();
 
         // Map them together
-        var result = definitions.Select(d => {
+        var result = definitions.Select(d =>
+        {
             var img = images.FirstOrDefault(i => i.Id == d.OriginalImageId);
-            return new {
+            return new
+            {
                 d.Id, // Definition mapping Id
                 d.OriginalImageId,
                 d.CreatedAt,
@@ -472,8 +478,10 @@ public class FaceDetectionController : BaseController
             };
         }).Where(r => r.Image != null).ToList();
 
-        return Ok(new {
-            User = new {
+        return Ok(new
+        {
+            User = new
+            {
                 user.Id,
                 user.Username,
                 user.DisplayName,
@@ -517,9 +525,11 @@ public class FaceDetectionController : BaseController
         // Get all original images matching these IDs, along with their cropped faces
         var images = await _db.OriginalImages
             .Where(i => imageIds.Contains(i.Id))
-            .Select(i => new {
+            .Select(i => new
+            {
                 i.Id,
-                CroppedFaces = i.CroppedFaces.Select(c => new {
+                CroppedFaces = i.CroppedFaces.Select(c => new
+                {
                     c.Id,
                     c.Url
                 }).ToList()
@@ -531,13 +541,15 @@ public class FaceDetectionController : BaseController
             .Select(u => new { u.Id, u.Username, u.DisplayName, u.Email, u.AvatarUrl })
             .ToListAsync();
 
-        var result = users.Select(u => {
+        var result = users.Select(u =>
+        {
             var userDefs = definitions.Where(d => d.UserId == u.Id).ToList();
             var userImageIds = userDefs.Select(d => d.OriginalImageId).ToList();
             var userImages = images.Where(i => userImageIds.Contains(i.Id)).ToList();
             var faceUrls = userImages.SelectMany(i => i.CroppedFaces.Select(c => c.Url)).Distinct().ToList();
 
-            return new {
+            return new
+            {
                 u.Id,
                 u.Username,
                 u.DisplayName,
@@ -788,11 +800,13 @@ public class FaceDetectionController : BaseController
             return Ok(new List<object>());
 
         var folders = Directory.GetDirectories(rootFaceIds)
-            .Select(d => {
+            .Select(d =>
+            {
                 var folderName = Path.GetFileName(d);
                 var bestModelPath = Path.Combine(d, "arcface_model_best.onnx");
                 var hasBestModel = System.IO.File.Exists(bestModelPath);
-                return new {
+                return new
+                {
                     FolderName = folderName,
                     Path = d,
                     HasBestModel = hasBestModel,
@@ -827,7 +841,7 @@ public class FaceDetectionController : BaseController
 
         try
         {
-            using var session = new InferenceSession(bestModelPath);
+            var session = GetOrCreateSession(bestModelPath);
 
             // Quét từng subfolder theo dạng {userid_username}
             var userFolders = Directory.GetDirectories(dataDirPath);
@@ -1007,10 +1021,11 @@ public class FaceDetectionController : BaseController
         return null;
     }
 
-    private string AlignFaceCSharp(string inputPath, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY)
+    private string AlignFaceCSharp(string inputPath, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
     {
+        return AlignAndCropFaceCSharp(inputPath, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale);
         var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
-        
+
         using (var source = Image.Load<Rgb24>(inputPath))
         using (var target = new Image<Rgb24>(112, 112))
         {
@@ -1061,6 +1076,85 @@ public class FaceDetectionController : BaseController
         return outputPath;
     }
 
+    private string AlignAndCropFaceCSharp(
+        string inputPath,
+        float eyeLeftX,
+        float eyeLeftY,
+        float eyeRightX,
+        float eyeRightY,
+        float padX,
+        float padY,
+        float clientScale) // Đổi tên để tránh trùng với scale của ArcFace
+    {
+        var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
+
+        using (var source = Image.Load<Rgb24>(inputPath))
+        using (var target = new Image<Rgb24>(112, 112))
+        {
+            // 1. Tính toán khoảng cách và góc dựa trên tọa độ mắt nhận được từ Client
+            float dx = eyeRightX - eyeLeftX;
+            float dy = eyeRightY - eyeLeftY;
+
+            float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (currentDist < 1e-5f) currentDist = 1e-5f;
+            float angleRad = (float)Math.Atan2(dy, dx);
+
+            float angleDeg = angleRad * (180.0f / (float)Math.PI);
+            _logger.LogInformation($"[Debug] Khoảng cách mắt nhận được: {currentDist}px, Góc nghiêng tính được: {angleDeg} độ");
+
+            // 2. TÂM MẮT THỰC TẾ TRÊN ẢNH SOURCE
+            // CHÚ Ý: Vì eyeLeftX, eyeLeftY... truyền từ client lên ĐÃ LÀ tọa độ nằm trên tấm ảnh paddedBlob rồi,
+            // nên tâm mắt trên tấm ảnh source này đơn giản là trung bình cộng của chúng. 
+            // BẠN KHÔNG ĐƯỢC CỘNG THÊM padX, padY vào đây nữa vì sẽ gây lệch tâm.
+            float cxSrc = (eyeLeftX + eyeRightX) / 2.0f;
+            float cySrc = (eyeLeftY + eyeRightY) / 2.0f;
+
+            // 3. Cấu hình các tham số mục tiêu theo chuẩn ArcFace
+            float targetDist = 35.2372f;  // Khoảng cách 2 mắt chuẩn ArcFace trong ảnh 112x112
+            float tx = 55.9132f;          // Tâm X mắt mong muốn trên ảnh 112x112
+            float ty = 51.59885f;         // Tâm Y mắt mong muốn trên ảnh 112x112
+
+            // Tỉ lệ scale để đưa khoảng cách mắt hiện tại về chuẩn 35.2372px của ArcFace
+            float arcfaceScale = targetDist / currentDist;
+
+            float cosVal = (float)Math.Cos(angleRad);
+            float sinVal = (float)Math.Sin(angleRad);
+
+            // 4. Biến đổi Affine ngược để lấy từng pixel cho ảnh 112x112 thẳng góc
+            target.ProcessPixelRows(accessor =>
+            {
+                for (int y = 0; y < 112; y++)
+                {
+                    var row = accessor.GetRowSpan(y);
+                    float y3 = y - ty;
+                    for (int x = 0; x < 112; x++)
+                    {
+                        float x3 = x - tx;
+
+                        // Khôi phục tỉ lệ ArcFace
+                        float x2 = x3 / arcfaceScale;
+                        float y2 = y3 / arcfaceScale;
+
+                        // Xoay ngược góc angleRad để làm thẳng khuôn mặt
+                        float x1 = x2 * cosVal - y2 * sinVal;
+                        float y1 = x2 * sinVal + y2 * cosVal;
+
+                        // Tịnh tiến về đúng tâm mắt thực tế trên ảnh source (đã có sẵn lề padding từ client)
+                        float xSrc = x1 + cxSrc;
+                        float ySrc = y1 + cySrc;
+
+                        // Lấy mẫu nội suy Bilinear từ ảnh nguồn paddedBlob
+                        row[x] = SampleBilinear(source, xSrc, ySrc);
+                    }
+                }
+            });
+            
+
+            target.Save(outputPath);
+        }
+        _logger.LogInformation($"[AlignFaceCSharp] Server-side face alignment thành công (Chuẩn ArcFace 112x112). Output path: {outputPath}");
+        return outputPath;
+    }
     private static Rgb24 SampleBilinear(Image<Rgb24> source, float x, float y)
     {
         int width = source.Width;
@@ -1267,7 +1361,7 @@ public class FaceDetectionController : BaseController
 
             try
             {
-                using var inferenceSession = new InferenceSession(bestModelPath);
+                var inferenceSession = GetOrCreateSession(bestModelPath);
                 testEmbedding = ExtractEmbeddingFromFile(inferenceSession, tempPath);
             }
             finally
@@ -1377,16 +1471,56 @@ public class FaceDetectionController : BaseController
             AllMatches = sortedResults
         });
     }
+    private static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
+    private static void RemoveModel(string modelPath)
+    {
+        if (_sessions.TryRemove(modelPath, out var lazySession))
+        {
+            // Nếu session đó đã từng được khởi tạo, phải Dispose để giải phóng RAM/GPU
+            if (lazySession.IsValueCreated)
+            {
+                lazySession.Value.Dispose();
+            }
+        }
+    }
+    public InferenceSession GetOrCreateSession(string modelPath)
+    {
+        if (string.IsNullOrWhiteSpace(modelPath))
+        {
+            throw new ArgumentException("Model path cannot be null or empty.", nameof(modelPath));
+        }
+
+        // GetOrAdd đảm bảo việc lấy hoặc tạo Lazy là thread-safe
+        var lazySession = _sessions.GetOrAdd(modelPath, path =>
+        {
+            return new Lazy<InferenceSession>(() =>
+            {
+                // Cấu hình Option nếu cần (ví dụ: Sử dụng GPU/CUDA)
+                var options = new SessionOptions();
+                options.AppendExecutionProvider_CPU(0);
+
+                Console.WriteLine($"[Log] Đang khởi tạo InferenceSession mới cho: {path}");
+                return new InferenceSession(path, options);
+            }, LazyThreadSafetyMode.ExecutionAndPublication); // Đảm bảo thread-safe tuyệt đối khi khởi tạo giá trị bên trong
+        });
+
+        // Trả về InferenceSession thực tế (chỉ khởi tạo khi .Value được gọi lần đầu tiên)
+        return lazySession.Value;
+    }
+
 
     [HttpPost("compare-global")]
     [AllowAnonymous]
     public async Task<IActionResult> CompareGlobal(
-        IFormFile image, 
+        IFormFile image,
         [FromQuery] float? threshold,
         [FromForm] float? eyeLeftX,
         [FromForm] float? eyeLeftY,
         [FromForm] float? eyeRightX,
-        [FromForm] float? eyeRightY)
+        [FromForm] float? eyeRightY,
+        [FromForm] float? padX,
+        [FromForm] float? padY,
+        [FromForm] float? clientScale)
     {
         if (image == null || image.Length == 0)
             return BadRequest("Tệp ảnh không hợp lệ.");
@@ -1442,7 +1576,7 @@ public class FaceDetectionController : BaseController
             {
                 try
                 {
-                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value);
+                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
                     _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công bằng C#.");
                 }
                 catch (Exception alignEx)
@@ -1453,7 +1587,7 @@ public class FaceDetectionController : BaseController
 
             try
             {
-                using var inferenceSession = new InferenceSession(bestModelPath);
+                var inferenceSession = GetOrCreateSession(bestModelPath);
                 testEmbedding = ExtractEmbeddingFromFile(inferenceSession, alignedImagePath);
             }
             finally
@@ -1557,12 +1691,15 @@ public class FaceDetectionController : BaseController
     [HttpPost("compare-global-stream")]
     [AllowAnonymous]
     public async Task CompareGlobalStream(
-        IFormFile image, 
+        IFormFile image,
         [FromQuery] float? threshold,
         [FromForm] float? eyeLeftX,
         [FromForm] float? eyeLeftY,
         [FromForm] float? eyeRightX,
-        [FromForm] float? eyeRightY)
+        [FromForm] float? eyeRightY,
+        [FromForm] float? padX,
+        [FromForm] float? padY,
+        [FromForm] float? clientScale)
     {
         Response.Headers["Content-Type"] = "text/event-stream";
         Response.Headers["Cache-Control"] = "no-cache";
@@ -1637,8 +1774,8 @@ public class FaceDetectionController : BaseController
             {
                 try
                 {
-                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value);
-                    _logger.LogInformation("[CompareGlobalStream] Server-side face alignment thành công bằng C#.");
+                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
+                    _logger.LogInformation($"[CompareGlobalStream] Server-side face alignment thành công bằng C#. {alignedImagePath}");
                 }
                 catch (Exception alignEx)
                 {
@@ -1651,7 +1788,7 @@ public class FaceDetectionController : BaseController
             float[] testEmbedding;
             try
             {
-                using var inferenceSession = new InferenceSession(bestModelPath);
+                var inferenceSession = GetOrCreateSession(bestModelPath);
                 testEmbedding = ExtractEmbeddingFromFile(inferenceSession, alignedImagePath);
             }
             finally
