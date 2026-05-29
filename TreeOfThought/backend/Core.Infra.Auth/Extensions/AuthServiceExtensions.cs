@@ -57,7 +57,7 @@ public static class AuthServiceExtensions
                     },
                     OnTokenValidated = context =>
                     {
-                        Console.WriteLine("[JWT AUTH SUCCESS] Token validated successfully.");
+                        // Console.WriteLine("[JWT AUTH SUCCESS] Token validated successfully.");
                         return System.Threading.Tasks.Task.CompletedTask;
                     },
                     OnMessageReceived = context =>

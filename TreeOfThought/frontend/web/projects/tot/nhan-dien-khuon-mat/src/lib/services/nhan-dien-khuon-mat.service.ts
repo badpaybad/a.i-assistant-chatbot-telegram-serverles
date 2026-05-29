@@ -91,4 +91,25 @@ export class NhanDienKhuonMatService {
     const url = `${baseUrl}/api/face-detection/train/stream?userIds=${idsParam}&access_token=${token}`;
     return new EventSource(url);
   }
+
+  // === EMBEDDINGS MANAGEMENT METHODS ===
+
+  getEmbeddings() {
+    return this.http.get('/api/face-detection/embeddings');
+  }
+
+  deleteEmbedding(id: string) {
+    return this.http.delete(`/api/face-detection/embeddings/${id}`);
+  }
+
+  deleteUserEmbeddings(userId: string) {
+    return this.http.delete(`/api/face-detection/embeddings/user/${userId}`);
+  }
+
+  compareEmbedding(id: string, file: File, threshold?: number) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const query = threshold !== undefined && threshold !== null ? `?threshold=${threshold}` : '';
+    return this.http.post(`/api/face-detection/embeddings/${id}/compare${query}`, formData);
+  }
 }

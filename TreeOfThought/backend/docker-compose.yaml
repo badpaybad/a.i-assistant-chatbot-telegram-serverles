@@ -11,7 +11,7 @@ services:
     restart: always
 
   postgres:
-    image: postgres:15-alpine
+    image: ankane/pgvector
     container_name: tot-postgres
     privileged: true
     environment:

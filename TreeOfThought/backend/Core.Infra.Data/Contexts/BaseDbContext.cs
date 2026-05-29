@@ -26,7 +26,7 @@ public abstract class BaseDbContext : DbContext
                 optionsBuilder.UseSqlServer(_connectionString);
                 break;
             case DbProviderType.PostgreSql:
-                optionsBuilder.UseNpgsql(_connectionString);
+                optionsBuilder.UseNpgsql(_connectionString, o => o.UseVector());
                 break;
             case DbProviderType.MySql:
                 optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));

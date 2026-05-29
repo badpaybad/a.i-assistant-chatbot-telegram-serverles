@@ -113,3 +113,30 @@ Ngay dưới Log region: sẽ hiện các tên folder theo ngày nằm bên tron
 
 khi ở Chọn User để Đào Tạo chọn xong cần bổ xung nút Đào tạo
     click nút Đào tạo thì tiến hành download ảnh và training
+
+**cập nhật 2026-05-29 08:08:08**
+
+danh sách: Chọn User để Đào Tạo cần thêm cột Hành động , có nút Thên ảnh định nghĩa
+    - Khi click nút Thêm ảnh định nghĩa : mở modal load component  Lịch Sử Các Phiên Upload, để cho phép chọn định nghĩa khuôn mặt
+
+danh sách Kết Quả Đào Tạo & Trích Xuất Embedding Ngay dưới Log region: sẽ hiện các tên folder theo ngày nằm bên trong folder: {rootfaceids}/{yyyy-MM-dd} cần lấy ra UI để hiện khi load page. Khi Đào tạo xong cần reload danh sách
+
+Khi click vào tên 1 folder name để training trích xuất embedding cần lưu trữ thêm
+    - lưu trữ embeding dùng best_model_output_path nào, ảnh input lấy embeding là ảnh nào (path data_dir theo {userid_username}) , user nào
+
+Bổ xung thêm Danh sách khuôn mặt đã có embding
+    thông tin user , danh sách embeding vector  , cột hành động có nút xóa để xóa user và embeding của user
+        danh sách embeding vector hiện 1 phần và có, nút Copy, nút Xóa, nút Kiểm tra
+            click Nút kiểm tra
+                cho phép mở modal ở modal chọn 1 ảnh bất kỳ đẻ lấy ra khuôn mặt dùng best_model_output_path (đi theo embeding đó) của user để so sánh và hiện ra thông tin của user và khoảng cách với các embeding của các user khác ( có thể thêm ngưỡng so sánh )
+
+Dùng nhận diện qua chỉ mục HNSW + Inner Product, khi lấy ảnh input để kiểm tra cần tuân thủ alig face và các hướng dẫn sử dụng TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/howtodo.md
+
+**cập nhật 2026-05-29 09:10:56**
+Modal Kiểm Tra Đối Sánh Khuôn Mặt (HNSW + Inner Product) khi mở lên chưa cho phép chọn ảnh để so sánh với embeding của user được chọn
+
+Danh Sách Khuôn Mặt Đã Có Embedding
+    trong từng user
+        Danh sách Vector Embedding , từng embeding khi training cần lưu ảnh đã dùng đưa vào lấy vector embeding ( ở đây là face đã croped và align --data_dir {rootfaceids}/{yyyy-MM-dd}/data)
+
+Danh sách :   Chọn User để Đào Tạo bổ xung cột các ảnh khuôn mặt đã định nghĩa

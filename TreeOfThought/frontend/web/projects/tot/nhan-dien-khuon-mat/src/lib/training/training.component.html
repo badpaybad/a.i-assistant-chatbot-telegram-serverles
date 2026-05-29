@@ -36,7 +36,9 @@
           <tr>
             <th nzWidth="48px"></th>
             <th>User</th>
+            <th>Ảnh khuôn mặt đã định nghĩa</th>
             <th nzWidth="160px">Số ảnh định nghĩa</th>
+            <th nzWidth="150px" nzAlign="center">Hành động</th>
           </tr>
         </thead>
         <tbody>
@@ -63,8 +65,23 @@
               </div>
             </td>
             <td>
+              <div class="defined-faces-list" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <div *ngFor="let faceUrl of user.faceUrls" class="defined-face-thumbnail" style="width: 38px; height: 38px; border-radius: 4px; overflow: hidden; border: 1.5px solid #d9d9d9; background: #fafafa; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+                  <img [src]="faceUrl" alt="Face" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/38x38?text=Face'" />
+                </div>
+                <div *ngIf="!user.faceUrls || user.faceUrls.length === 0" style="color: #bbb; font-size: 12px; font-style: italic;">
+                  Không có ảnh
+                </div>
+              </div>
+            </td>
+            <td>
               <nz-badge [nzCount]="user.definitionCount" [nzStyle]="{ backgroundColor: '#52c41a' }"></nz-badge>
               <span class="def-count-label">&nbsp; ảnh định nghĩa</span>
+            </td>
+            <td nzAlign="center" (click)="$event.stopPropagation()">
+              <button nz-button nzSize="small" nzType="default" (click)="openFaceDefModal(user)">
+                <span nz-icon nzType="user-add"></span> Thêm ảnh định nghĩa
+              </button>
             </td>
           </tr>
         </tbody>
@@ -200,5 +217,251 @@
       style="margin-top: 16px;">
     </nz-alert>
   </nz-card>
+
+  <!-- ========================== SECTION 4: Danh Sách Khuôn Mặt Đã Có Embedding ========================== -->
+  <nz-card class="section-card" [nzTitle]="embeddingsTitle" [nzExtra]="embeddingsActions" style="margin-top: 24px;">
+    <ng-template #embeddingsTitle>
+      <span class="card-title-icon"><span nz-icon nzType="idcard" nzTheme="outline"></span>&nbsp; Danh Sách Khuôn Mặt Đã Có Embedding</span>
+    </ng-template>
+    <ng-template #embeddingsActions>
+      <button nz-button nzSize="small" (click)="loadEmbeddings()">
+        <span nz-icon nzType="reload"></span> Làm mới
+      </button>
+    </ng-template>
+
+    <nz-spin [nzSpinning]="loadingEmbeddings">
+      <nz-table
+        #embeddingsTable
+        [nzData]="embeddingsList"
+        [nzShowPagination]="false"
+        nzSize="small"
+        [nzNoResult]="emptyEmbeddingsTemplate"
+        class="embeddings-table">
+        <thead>
+          <tr>
+            <th>Người dùng</th>
+            <th>Danh sách Vector Embedding</th>
+            <th nzWidth="150px" nzAlign="center">Hành động User</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of embeddingsTable.data">
+            <td>
+              <div class="user-info">
+                <img *ngIf="item.user.avatarUrl" [src]="item.user.avatarUrl" class="user-avatar" alt="avatar" />
+                <div *ngIf="!item.user.avatarUrl" class="user-avatar-placeholder">
+                  {{ (item.user.displayName || item.user.username || 'U').charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <div class="user-name">{{ item.user.displayName || item.user.username }}</div>
+                  <div class="user-email">{{ item.user.email }}</div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="emb-list">
+                <div *ngFor="let emb of item.embeddings" class="emb-item" style="display: flex; gap: 14px; align-items: flex-start;">
+                  <!-- Aligned Face Image Preview -->
+                  <div class="emb-face-preview" style="width: 52px; height: 52px; border-radius: 6px; overflow: hidden; border: 1.5px solid #d9d9d9; background: #fafafa; display: flex; justify-content: center; align-items: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                    <img [src]="'/api/face-detection/embeddings/' + emb.id + '/image'" alt="Aligned Face" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/52x52?text=No+Img'" />
+                  </div>
+
+                  <div style="flex: 1; min-width: 0;">
+                    <div class="emb-meta">
+                      <nz-tag nzColor="blue">ONNX</nz-tag>
+                      <span class="emb-date">{{ emb.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+                      <span class="emb-model" nz-tooltip [nzTooltipTitle]="emb.bestModelPath">
+                        Model: {{ emb.bestModelPath ? emb.bestModelPath.split('/').pop() : 'N/A' }}
+                      </span>
+                    </div>
+                    <div class="emb-vector-row">
+                      <code class="vector-preview">
+                        [{{ emb.embedding[0] | number:'1.4-4' }}, {{ emb.embedding[1] | number:'1.4-4' }}, {{ emb.embedding[2] | number:'1.4-4' }}, ...] (512 dims)
+                      </code>
+                      <div class="emb-buttons">
+                        <button nz-button nzSize="small" nzType="text" (click)="copyEmbedding(emb.embedding)" nz-tooltip nzTooltipTitle="Copy vector">
+                          <span nz-icon nzType="copy"></span>
+                        </button>
+                        <button nz-button nzSize="small" nzType="text" (click)="openCompareModal(emb, item.user)" nz-tooltip nzTooltipTitle="Kiểm tra đối sánh">
+                          <span nz-icon nzType="safety-certificate" style="color: #52c41a;"></span> Kiểm tra
+                        </button>
+                        <button nz-button nzSize="small" nzType="text" nzDanger (click)="deleteEmbedding(emb.id)" nz-tooltip nzTooltipTitle="Xóa embedding">
+                          <span nz-icon nzType="delete"></span>
+                        </button>
+                      </div>
+                    </div>
+                    <div *ngIf="emb.inputImagePath" class="emb-source-path">
+                      <span nz-icon nzType="file-image"></span> Nguồn: <code>{{ emb.inputImagePath.split('/').pop() }}</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td nzAlign="center">
+              <button nz-button nzType="default" nzDanger nzSize="small" (click)="deleteUserEmbeddings(item.user.id)">
+                <span nz-icon nzType="delete"></span> Xóa sạch
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </nz-table>
+      <ng-template #emptyEmbeddingsTemplate>
+        <div class="empty-state">
+          <span nz-icon nzType="database" nzTheme="outline" style="font-size: 36px; color: #bbb;"></span>
+          <div style="margin-top: 8px; color: #999;">Chưa có vector embedding nào được trích xuất.</div>
+          <div style="font-size: 12px; color: #ccc;">Huấn luyện xong và bấm 'Trích xuất' để tạo dữ liệu.</div>
+        </div>
+      </ng-template>
+    </nz-spin>
+  </nz-card>
+
+  <!-- ========================== MODAL: KIỂM TRA ĐỐI SÁNH KHUÔN MẶT ========================== -->
+  <nz-modal
+    [(nzVisible)]="showCompareModal"
+    [nzTitle]="compareModalTitle"
+    [nzWidth]="850"
+    (nzOnCancel)="closeCompareModal()"
+    [nzFooter]="compareModalFooter">
+    
+    <ng-template #compareModalTitle>
+      <span nz-icon nzType="safety-certificate" nzTheme="outline" style="color: #1890ff;"></span>
+      <span>&nbsp; Kiểm Tra Đối Sánh Khuôn Mặt (HNSW + Inner Product)</span>
+    </ng-template>
+
+    <div *nzModalContent class="compare-modal-content">
+      <div *ngIf="targetEmbeddingUser">
+        <!-- Target User Box -->
+        <div class="target-user-card">
+          <div class="card-label">🎯 Embedding đích cần kiểm tra:</div>
+          <div class="user-profile-row">
+            <img *ngIf="targetEmbeddingUser.avatarUrl" [src]="targetEmbeddingUser.avatarUrl" class="user-avatar large" alt="avatar" />
+            <div *ngIf="!targetEmbeddingUser.avatarUrl" class="user-avatar-placeholder large">
+              {{ (targetEmbeddingUser.displayName || targetEmbeddingUser.username || 'U').charAt(0).toUpperCase() }}
+            </div>
+            <div>
+              <div class="user-name-large">{{ targetEmbeddingUser.displayName || targetEmbeddingUser.username }}</div>
+              <div class="user-email-large">{{ targetEmbeddingUser.email }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Threshold Slider -->
+        <div class="threshold-panel">
+          <div class="slider-label">
+            <span>Ngưỡng so sánh tối thiểu (Cosine Similarity):</span>
+            <strong>{{ compareThreshold }}</strong>
+          </div>
+          <div class="slider-control-row">
+            <nz-slider [nzMin]="0" [nzMax]="1" [nzStep]="0.01" [(ngModel)]="compareThreshold" style="flex: 1; margin-right: 16px;"></nz-slider>
+            <nz-input-number [nzMin]="0" [nzMax]="1" [nzStep]="0.01" [(ngModel)]="compareThreshold" nzSize="small"></nz-input-number>
+          </div>
+        </div>
+
+        <!-- Upload Test Image & Alignment -->
+        <div class="image-upload-workspace">
+          <div class="workspace-col upload-col">
+            <div class="upload-zone" (click)="testFileInput.click()" (dragover)="onDragOver($event)" (drop)="onCompareFileDrop($event)">
+              <span nz-icon nzType="upload" style="font-size: 32px; color: #1890ff;"></span>
+              <div class="upload-text">Nhấn để chọn hoặc kéo thả ảnh chân dung kiểm tra</div>
+              <div class="upload-hint">Tự động phát hiện & căn chỉnh (Face Alignment 112x112) bằng MediaPipe</div>
+            </div>
+            <input #testFileInput type="file" (change)="onCompareFileSelected($event)" accept="image/*" style="display: none;" />
+          </div>
+          <div class="workspace-col preview-col">
+            <div class="preview-box">
+              <div *ngIf="!compareFilePreview" class="no-preview">
+                <span nz-icon nzType="picture" style="font-size: 36px; color: #ccc;"></span>
+                <div>Chưa có ảnh chân dung căn chỉnh</div>
+              </div>
+              <div *ngIf="compareFilePreview" class="aligned-preview">
+                <img [src]="compareFilePreview" class="aligned-img" alt="Aligned Face Preview" />
+                <div class="aligned-label">Ảnh đã căn chỉnh 112x112</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading comparison -->
+        <div *ngIf="isComparing" class="loading-container">
+          <nz-spin nzSimple nzSize="large"></nz-spin>
+          <div class="loading-msg">Đang xử lý phân tích và so khớp HNSW...</div>
+        </div>
+
+        <!-- Compare Results -->
+        <div *ngIf="compareResults && !isComparing" class="compare-results-area">
+          <nz-divider nzText="Kết quả so khớp"></nz-divider>
+
+          <!-- Top Target Result Match Badge -->
+          <div class="best-match-banner" [class.matched]="compareResults.targetUserBestMatch?.cosineSimilarity >= compareThreshold">
+            <div class="banner-icon">
+              <span nz-icon [nzType]="compareResults.targetUserBestMatch?.cosineSimilarity >= compareThreshold ? 'check-circle' : 'close-circle'" nzTheme="outline"></span>
+            </div>
+            <div>
+              <div class="banner-title">
+                {{ compareResults.targetUserBestMatch?.cosineSimilarity >= compareThreshold ? '✅ Xác thực trùng khớp!' : '❌ Không khớp với người dùng đích!' }}
+              </div>
+              <div class="banner-desc">
+                Độ tương đồng lớn nhất với user <strong>{{ targetEmbeddingUser.displayName || targetEmbeddingUser.username }}</strong> là:
+                <strong>{{ compareResults.targetUserBestMatch?.cosineSimilarity | number:'1.4-4' }}</strong>
+                (Khoảng cách L2: {{ compareResults.targetUserBestMatch?.l2Distance | number:'1.4-4' }}). Ngưỡng yêu cầu: {{ compareThreshold }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Ranking list -->
+          <div class="ranking-list-section" style="margin-top: 16px;">
+            <div class="section-sub-title">📋 Bảng xếp hạng tương đồng chéo (Từ cao xuống thấp sử dụng HNSW):</div>
+            <nz-table [nzData]="compareResults.allMatches" [nzShowPagination]="false" nzSize="small" class="ranking-table">
+              <thead>
+                <tr>
+                  <th nzWidth="60px">Hạng</th>
+                  <th>Người dùng</th>
+                  <th nzAlign="center">Cosine Similarity</th>
+                  <th nzAlign="center">Khoảng cách L2</th>
+                  <th nzAlign="center">Trạng thái</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let match of compareResults.allMatches; let idx = index" [class.target-row]="match.isTarget" [class.matched-row]="match.cosineSimilarity >= compareThreshold">
+                  <td><strong>#{{ idx + 1 }}</strong></td>
+                  <td>
+                    <div class="user-info">
+                      <img *ngIf="match.avatarUrl" [src]="match.avatarUrl" class="user-avatar" alt="avatar" />
+                      <div *ngIf="!match.avatarUrl" class="user-avatar-placeholder">
+                        {{ (match.displayName || match.username || 'U').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="user-name">{{ match.displayName || match.username }}</div>
+                        <div class="user-email" *ngIf="match.isTarget"><nz-tag nzColor="blue">Đích</nz-tag></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td nzAlign="center"><strong>{{ match.cosineSimilarity | number:'1.4-4' }}</strong></td>
+                  <td nzAlign="center">{{ match.l2Distance | number:'1.4-4' }}</td>
+                  <td nzAlign="center">
+                    <nz-tag [nzColor]="match.cosineSimilarity >= compareThreshold ? 'success' : 'default'">
+                      {{ match.cosineSimilarity >= compareThreshold ? 'Khớp' : 'Không khớp' }}
+                    </nz-tag>
+                  </td>
+                </tr>
+              </tbody>
+            </nz-table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <ng-template #compareModalFooter>
+      <button nz-button nzType="default" (click)="closeCompareModal()">Đóng</button>
+      <button
+        nz-button
+        nzType="primary"
+        [disabled]="!selectedCompareFile || isComparing"
+        [nzLoading]="isComparing"
+        (click)="executeComparison()">
+        <span nz-icon nzType="thunderbolt"></span> Bắt đầu so khớp
+      </button>
+    </ng-template>
+  </nz-modal>
 
 </div>

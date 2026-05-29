@@ -5,6 +5,7 @@ using Core.Infra.NhanDienKhuonMat.Models;
 using Core.Infra.NhanDienKhuonMat.Contexts;
 using Core.Infra.Firebase.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -506,16 +507,24 @@ public class FaceDetectionController : BaseController
     [HttpGet("users-with-definitions")]
     public async Task<IActionResult> GetUsersWithDefinitions()
     {
-        // Get all defined user IDs with count
-        var userDefinitionGroups = await _faceDefinitionDb.UserFaceDefinitions
-            .GroupBy(d => d.UserId)
-            .Select(g => new { UserId = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        if (!userDefinitionGroups.Any())
+        var definitions = await _faceDefinitionDb.UserFaceDefinitions.ToListAsync();
+        if (!definitions.Any())
             return Ok(new List<object>());
 
-        var userIds = userDefinitionGroups.Select(g => g.UserId).ToList();
+        var userIds = definitions.Select(d => d.UserId).Distinct().ToList();
+        var imageIds = definitions.Select(d => d.OriginalImageId).Distinct().ToList();
+
+        // Get all original images matching these IDs, along with their cropped faces
+        var images = await _db.OriginalImages
+            .Where(i => imageIds.Contains(i.Id))
+            .Select(i => new {
+                i.Id,
+                CroppedFaces = i.CroppedFaces.Select(c => new {
+                    c.Id,
+                    c.Url
+                }).ToList()
+            })
+            .ToListAsync();
 
         var users = await _faceUserDb.Users
             .Where(u => userIds.Contains(u.Id))
@@ -523,14 +532,19 @@ public class FaceDetectionController : BaseController
             .ToListAsync();
 
         var result = users.Select(u => {
-            var group = userDefinitionGroups.FirstOrDefault(g => g.UserId == u.Id);
+            var userDefs = definitions.Where(d => d.UserId == u.Id).ToList();
+            var userImageIds = userDefs.Select(d => d.OriginalImageId).ToList();
+            var userImages = images.Where(i => userImageIds.Contains(i.Id)).ToList();
+            var faceUrls = userImages.SelectMany(i => i.CroppedFaces.Select(c => c.Url)).Distinct().ToList();
+
             return new {
                 u.Id,
                 u.Username,
                 u.DisplayName,
                 u.Email,
                 u.AvatarUrl,
-                DefinitionCount = group?.Count ?? 0
+                DefinitionCount = userDefs.Count,
+                FaceUrls = faceUrls
             };
         }).OrderBy(u => u.DisplayName).ToList();
 
@@ -859,7 +873,9 @@ public class FaceDetectionController : BaseController
 
                         if (existing != null)
                         {
-                            existing.Embedding = embedding;
+                            existing.Embedding = new Pgvector.Vector(embedding);
+                            existing.BestModelPath = bestModelPath;
+                            existing.InputImagePath = imgFile;
                             existing.CreatedAt = DateTime.UtcNow;
                         }
                         else
@@ -869,7 +885,9 @@ public class FaceDetectionController : BaseController
                                 Id = Guid.NewGuid(),
                                 UserId = userId,
                                 OriginalImageId = originalImage.Id,
-                                Embedding = embedding,
+                                Embedding = new Pgvector.Vector(embedding),
+                                BestModelPath = bestModelPath,
+                                InputImagePath = imgFile,
                                 CreatedAt = DateTime.UtcNow
                             });
                         }
@@ -987,6 +1005,294 @@ public class FaceDetectionController : BaseController
             }
         }
         return null;
+    }
+
+    // ============================================================
+    // === EMBEDDINGS MANAGEMENT AND COMPARISON ENDPOINTS (Added 2026-05-29) ===
+    // ============================================================
+
+    [HttpGet("embeddings")]
+    public async Task<IActionResult> GetEmbeddings()
+    {
+        var embeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+        var userIds = embeddings.Select(e => e.UserId).Distinct().ToList();
+        var imageIds = embeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+
+        var users = await _faceUserDb.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToListAsync();
+
+        var images = await _db.OriginalImages
+            .Where(i => imageIds.Contains(i.Id))
+            .Select(i => new { i.Id, i.Url, i.FileName })
+            .ToListAsync();
+
+        var result = users.Select(u => new
+        {
+            User = new
+            {
+                u.Id,
+                u.Username,
+                u.DisplayName,
+                u.Email,
+                u.AvatarUrl
+            },
+            Embeddings = embeddings.Where(e => e.UserId == u.Id).Select(e =>
+            {
+                var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+                return new
+                {
+                    e.Id,
+                    e.OriginalImageId,
+                    ImageUrl = img?.Url,
+                    ImageName = img?.FileName,
+                    e.BestModelPath,
+                    e.InputImagePath,
+                    Embedding = e.Embedding != null ? e.Embedding.ToArray() : Array.Empty<float>(),
+                    e.CreatedAt
+                };
+            }).ToList()
+        }).OrderBy(u => u.User.DisplayName).ToList();
+
+        return Ok(result);
+    }
+
+    [HttpGet("embeddings/{id}/image")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetEmbeddingImage(Guid id)
+    {
+        var embedding = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
+        if (embedding == null)
+            return NotFound("Không tìm thấy embedding.");
+
+        var imagePath = embedding.InputImagePath;
+        if (string.IsNullOrEmpty(imagePath) || !System.IO.File.Exists(imagePath))
+        {
+            // Fallback: If the path is relative or not found, try to resolve it relative to ArcFaceDir
+            if (!string.IsNullOrEmpty(imagePath))
+            {
+                var resolvedPath = Path.GetFullPath(imagePath);
+                if (!System.IO.File.Exists(resolvedPath))
+                {
+                    var arcfaceDir = GetArcFaceDir();
+                    resolvedPath = Path.Combine(arcfaceDir, imagePath);
+                }
+                if (System.IO.File.Exists(resolvedPath))
+                {
+                    imagePath = resolvedPath;
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(imagePath) || !System.IO.File.Exists(imagePath))
+            return NotFound("Không tìm thấy ảnh nguồn của embedding.");
+
+        var contentType = "image/png";
+        if (imagePath.EndsWith(".jpg") || imagePath.EndsWith(".jpeg"))
+            contentType = "image/jpeg";
+
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(imagePath);
+        return File(fileBytes, contentType);
+    }
+
+    [HttpDelete("embeddings/{id}")]
+    public async Task<IActionResult> DeleteEmbedding(Guid id)
+    {
+        var item = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
+        if (item == null)
+            return NotFound("Không tìm thấy embedding.");
+
+        _faceDefinitionDb.UserFaceEmbeddings.Remove(item);
+        await _faceDefinitionDb.SaveChangesAsync();
+        return Ok(new { message = "Đã xóa embedding thành công." });
+    }
+
+    [HttpDelete("embeddings/user/{userId}")]
+    public async Task<IActionResult> DeleteUserEmbeddings(Guid userId)
+    {
+        var list = await _faceDefinitionDb.UserFaceEmbeddings.Where(e => e.UserId == userId).ToListAsync();
+        if (list.Any())
+        {
+            _faceDefinitionDb.UserFaceEmbeddings.RemoveRange(list);
+            await _faceDefinitionDb.SaveChangesAsync();
+        }
+        return Ok(new { message = "Đã xóa toàn bộ embedding của user thành công." });
+    }
+
+    [HttpPost("embeddings/{id}/compare")]
+    public async Task<IActionResult> CompareEmbedding(Guid id, IFormFile image, [FromQuery] float? threshold)
+    {
+        if (image == null || image.Length == 0)
+            return BadRequest("Tệp ảnh không hợp lệ.");
+
+        var targetEmbedding = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
+        if (targetEmbedding == null)
+            return NotFound("Không tìm thấy embedding đích.");
+
+        var bestModelPath = targetEmbedding.BestModelPath;
+        if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+        {
+            // Fallback to resolve path
+            if (!string.IsNullOrEmpty(bestModelPath))
+            {
+                var resolvedPath = Path.GetFullPath(bestModelPath);
+                if (!System.IO.File.Exists(resolvedPath))
+                {
+                    var arcfaceDir = GetArcFaceDir();
+                    resolvedPath = Path.Combine(arcfaceDir, bestModelPath);
+                }
+                if (System.IO.File.Exists(resolvedPath))
+                {
+                    bestModelPath = resolvedPath;
+                }
+            }
+
+            if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+            {
+                // Fallback to the latest best model
+                var rootFaceIds = GetRootFaceIdsPath();
+                if (Directory.Exists(rootFaceIds))
+                {
+                    var latestModel = Directory.GetDirectories(rootFaceIds)
+                        .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
+                        .Where(System.IO.File.Exists)
+                        .OrderByDescending(System.IO.File.GetCreationTime)
+                        .FirstOrDefault();
+                    if (latestModel != null)
+                    {
+                        bestModelPath = latestModel;
+                    }
+                }
+            }
+        }
+
+        if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+            return BadRequest("Không tìm thấy mô hình ONNX để thực hiện so sánh.");
+
+        // Extract embedding from the uploaded aligned image
+        float[] testEmbedding;
+        try
+        {
+            var tempDir = Path.Combine(GetArcFaceDir(), "temp");
+            Directory.CreateDirectory(tempDir);
+            var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}.png");
+
+            using (var fs = new FileStream(tempPath, FileMode.Create))
+            {
+                await image.CopyToAsync(fs);
+            }
+
+            try
+            {
+                using var inferenceSession = new InferenceSession(bestModelPath);
+                testEmbedding = ExtractEmbeddingFromFile(inferenceSession, tempPath);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(tempPath))
+                {
+                    System.IO.File.Delete(tempPath);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi trích xuất embedding từ ảnh so sánh.");
+            return StatusCode(500, new { message = $"Lỗi trích xuất đặc trưng: {ex.Message}" });
+        }
+
+        // Perform fast vector neighbor comparison using HNSW + Inner Product via raw SQL <#> operator
+        var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+        List<UserFaceEmbedding> closestEmbeddings;
+        try
+        {
+            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
+                .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+                .ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Truy vấn HNSW thất bại, sử dụng fallback đối sánh chéo bộ nhớ.");
+            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+        }
+
+        // Fetch User and Image Info
+        var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();
+        var imageIds = closestEmbeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+
+        var users = await _faceUserDb.Users
+            .Where(u => userIds.Contains(u.Id))
+            .ToListAsync();
+
+        var images = await _db.OriginalImages
+            .Where(i => imageIds.Contains(i.Id))
+            .Select(i => new { i.Id, i.Url, i.FileName })
+            .ToListAsync();
+
+        // Map results and calculate exact metrics
+        var compareResults = closestEmbeddings.Select(e =>
+        {
+            var user = users.FirstOrDefault(u => u.Id == e.UserId);
+            var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+
+            // Cosine Similarity = Inner Product for L2 normalized vectors
+            float cosineSimilarity = 0f;
+            var embArray = e.Embedding?.ToArray();
+            if (embArray != null && embArray.Length == testEmbedding.Length)
+            {
+                for (int i = 0; i < testEmbedding.Length; i++)
+                {
+                    cosineSimilarity += embArray[i] * testEmbedding[i];
+                }
+            }
+
+            // L2 Distance
+            float l2Distance = (float)Math.Sqrt(Math.Max(0f, 2f - 2f * cosineSimilarity));
+
+            return new
+            {
+                EmbeddingId = e.Id,
+                UserId = e.UserId,
+                Username = user?.Username ?? "Unknown",
+                DisplayName = user?.DisplayName ?? "Unknown",
+                Email = user?.Email ?? "",
+                AvatarUrl = user?.AvatarUrl ?? "",
+                OriginalImageId = e.OriginalImageId,
+                ImageUrl = img?.Url,
+                ImageName = img?.FileName,
+                CosineSimilarity = cosineSimilarity,
+                L2Distance = l2Distance,
+                IsTarget = e.UserId == targetEmbedding.UserId
+            };
+        }).ToList();
+
+        var sortedResults = compareResults
+            .OrderByDescending(r => r.CosineSimilarity)
+            .ToList();
+
+        if (threshold.HasValue)
+        {
+            sortedResults = sortedResults.Where(r => r.CosineSimilarity >= threshold.Value).ToList();
+        }
+
+        var targetUser = users.FirstOrDefault(u => u.Id == targetEmbedding.UserId);
+        var targetUserResult = compareResults.Where(r => r.UserId == targetEmbedding.UserId)
+            .OrderByDescending(r => r.CosineSimilarity)
+            .FirstOrDefault();
+
+        return Ok(new
+        {
+            TargetUser = new
+            {
+                Id = targetEmbedding.UserId,
+                Username = targetUser?.Username ?? "Unknown",
+                DisplayName = targetUser?.DisplayName ?? "Unknown",
+                Email = targetUser?.Email ?? "",
+                AvatarUrl = targetUser?.AvatarUrl ?? ""
+            },
+            TargetUserBestMatch = targetUserResult,
+            AllMatches = sortedResults
+        });
     }
 }
 

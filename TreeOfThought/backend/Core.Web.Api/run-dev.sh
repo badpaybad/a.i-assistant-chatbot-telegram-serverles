@@ -12,13 +12,12 @@ mkdir -p wwwroot/admin
 
 # Copy ArcFaceFinetune folder from docs to Core.Web.Api
 echo "Copying ArcFaceFinetune from docs..."
-rm -rf ArcFaceFinetune
-cp -r ../../docs/nhan-dien-khuon-mat/ArcFaceFinetune ArcFaceFinetune
+# # Kết hợp bỏ qua hỏi xác nhận và ghi đè nội dung
+# \cp -r ../../docs/nhan-dien-khuon-mat/ArcFaceFinetune/. ArcFaceFinetune
+rsync -av ../../docs/nhan-dien-khuon-mat/ArcFaceFinetune/ ArcFaceFinetune
 
 # Start Angular build in watch mode in the background
 echo "Starting Angular build in watch mode..."
-# Using --base-href and --output-path here as well to be sure, 
-# although they are in angular.json
 (cd ../../frontend/web && npm run integrated) &
 ANGULAR_PID=$!
 
@@ -28,10 +27,10 @@ cleanup() {
     kill $ANGULAR_PID
     exit
 }
-trap cleanup SIGINT SIGTERM
+# trap cleanup SIGINT SIGTERM
 
-# Start .NET backend in watch mode
-echo "Starting Backend in watch mode (Hot Reload disabled for stability)..."
-# Use --no-hot-reload to avoid crashes when Angular builds many files into wwwroot
-# dotnet watch run --no-hot-reload --urls "http://0.0.0.0:5000"
-dotnet run
+# Start .NET backend by executing the compiled DLL directly to optimize RAM
+# TreeOfThought/backend/Core.Web.Api
+source ../../../venv/bin/activate
+echo "Starting Backend by executing DLL directly to prevent memory exhaustion..."
+dotnet bin/Debug/net8.0/Core.Web.Api.dll
