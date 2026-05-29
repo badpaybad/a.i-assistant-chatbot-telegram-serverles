@@ -1,6 +1,7 @@
 using Core.Infra.Auth.Attributes;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Controllers;
+using Core.Infra.Base.Constants;
 using Core.Infra.NhanDienKhuonMat.Models;
 using Core.Infra.NhanDienKhuonMat.Contexts;
 using Core.Infra.Firebase.Services;
@@ -25,6 +26,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using Core.Infra.Base.Constants;
 
 namespace Core.Infra.NhanDienKhuonMat.Controllers;
 
@@ -936,14 +938,65 @@ public class FaceDetectionController : BaseController
     // === PRIVATE HELPERS ===
     // ============================================================
 
-    /// <summary>
-    /// Đọc file ảnh, chuẩn hóa về tensor NCHW 112x112 và chạy suy luận ONNX.
-    /// Trả về vector embedding 512 chiều đã được L2 Normalize.
-    /// </summary>
+    // /// <summary>
+    // /// Đọc file ảnh, chuẩn hóa về tensor NCHW 112x112 và chạy suy luận ONNX.
+    // /// Trả về vector embedding 512 chiều đã được L2 Normalize.
+    // /// </summary>
     private static float[] ExtractEmbeddingFromFile(InferenceSession session, string imagePath)
     {
         using var image = Image.Load<Rgb24>(imagePath);
-        image.Mutate(x => x.Resize(112, 112));
+
+        return ExtractEmbeddingFromImgRgbg24(session, image);
+
+        // image.Mutate(x => x.Resize(112, 112));
+
+        // // Chuyển thành tensor NCHW [1, 3, 112, 112] và chuẩn hóa về [-1, 1]
+        // var tensor = new DenseTensor<float>(new[] { 1, 3, 112, 112 });
+        // image.ProcessPixelRows(accessor =>
+        // {
+        //     for (int y = 0; y < 112; y++)
+        //     {
+        //         var row = accessor.GetRowSpan(y);
+        //         for (int x = 0; x < 112; x++)
+        //         {
+        //             var pixel = row[x];
+        //             tensor[0, 0, y, x] = (pixel.R - 127.5f) / 127.5f; // R channel
+        //             tensor[0, 1, y, x] = (pixel.G - 127.5f) / 127.5f; // G channel
+        //             tensor[0, 2, y, x] = (pixel.B - 127.5f) / 127.5f; // B channel
+        //         }
+        //     }
+        // });
+
+        // var inputs = new List<NamedOnnxValue>
+        // {
+        //     NamedOnnxValue.CreateFromTensor("input", tensor)
+        // };
+
+        // using var results = session.Run(inputs);
+        // var outputTensor = results.First().AsEnumerable<float>().ToArray();
+
+        // // L2 Normalize (bắt buộc trước khi lưu hoặc so sánh)
+        // return L2Normalize(outputTensor);
+    }
+    private static float[] ExtractEmbeddingFromBytes(InferenceSession session, byte[] alignedImageBytes)
+    {
+        if (alignedImageBytes == null || alignedImageBytes.Length == 0)
+        {
+            throw new ArgumentException("Mảng byte ảnh không được rỗng.");
+        }
+
+        // 1. Load ảnh trực tiếp từ mảng byte trong bộ nhớ RAM
+        using var image = Image.Load<Rgb24>(alignedImageBytes);
+        return ExtractEmbeddingFromImgRgbg24(session, image);
+    }
+    private static float[] ExtractEmbeddingFromImgRgbg24(InferenceSession session, Image<Rgb24> image)
+    {
+        // image.Mutate(x => x.Resize(112, 112));
+        // Phòng hờ nếu ảnh đầu vào chưa đúng 112x112 thì mới cần resize
+        if (image.Width != 112 || image.Height != 112)
+        {
+            image.Mutate(x => x.Resize(112, 112));
+        }
 
         // Chuyển thành tensor NCHW [1, 3, 112, 112] và chuẩn hóa về [-1, 1]
         var tensor = new DenseTensor<float>(new[] { 1, 3, 112, 112 });
@@ -973,7 +1026,6 @@ public class FaceDetectionController : BaseController
         // L2 Normalize (bắt buộc trước khi lưu hoặc so sánh)
         return L2Normalize(outputTensor);
     }
-
     /// <summary>
     /// Chuẩn hóa L2 vector embedding về độ dài đơn vị (unit vector).
     /// </summary>
@@ -1021,106 +1073,139 @@ public class FaceDetectionController : BaseController
         return null;
     }
 
-    private string AlignFaceCSharp(string inputPath, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
+    private async Task<byte[]> AlignFaceCSharp(IFormFile inputFile, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
     {
-        return AlignAndCropFaceCSharp(inputPath, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale);
-        var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
+        return await AlignAndCropFaceCSharp(inputFile, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, padX, padY, clientScale);
+        // var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
 
-        using (var source = Image.Load<Rgb24>(inputPath))
-        using (var target = new Image<Rgb24>(112, 112))
+        // using (var source = Image.Load<Rgb24>(inputPath))
+        // using (var target = new Image<Rgb24>(112, 112))
+        // {
+        //     float cx = (eyeLeftX + eyeRightX) / 2.0f;
+        //     float cy = (eyeLeftY + eyeRightY) / 2.0f;
+        //     float dx = eyeRightX - eyeLeftX;
+        //     float dy = eyeRightY - eyeLeftY;
+
+        //     float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
+        //     if (currentDist < 1e-5f) currentDist = 1e-5f;
+        //     float angleRad = (float)Math.Atan2(dy, dx);
+
+        //     // Target ArcFace coordinates
+        //     float targetDist = 35.2372f;
+        //     float tx = 55.9132f;
+        //     float ty = 51.59885f;
+        //     float scale = targetDist / currentDist;
+
+        //     float cosVal = (float)Math.Cos(angleRad);
+        //     float sinVal = (float)Math.Sin(angleRad);
+
+        //     target.ProcessPixelRows(accessor =>
+        //     {
+        //         for (int y = 0; y < 112; y++)
+        //         {
+        //             var row = accessor.GetRowSpan(y);
+        //             float y3 = y - ty;
+        //             for (int x = 0; x < 112; x++)
+        //             {
+        //                 float x3 = x - tx;
+        //                 float x2 = x3 / scale;
+        //                 float y2 = y3 / scale;
+
+        //                 // Rotate back by +angleRad
+        //                 float x1 = x2 * cosVal - y2 * sinVal;
+        //                 float y1 = x2 * sinVal + y2 * cosVal;
+
+        //                 float xSrc = x1 + cx;
+        //                 float ySrc = y1 + cy;
+
+        //                 row[x] = SampleBilinear(source, xSrc, ySrc);
+        //             }
+        //         }
+        //     });
+
+        //     target.Save(outputPath);
+        // }
+        // return outputPath;
+    }
+    private async Task<byte[]> AlignAndCropFaceCSharp(
+      IFormFile imageFile,
+      float eyeLeftX, float eyeLeftY,
+      float eyeRightX, float eyeRightY,
+      float padX, float padY, float clientScale)
+    {
+        if (imageFile == null || imageFile.Length == 0)
+            throw new ArgumentException("File trống hoặc không hợp lệ.");
+
+        // Dùng MemoryStream để hứng trọn luồng byte hoàn toàn trên RAM
+        using (var ms = new MemoryStream())
         {
-            float cx = (eyeLeftX + eyeRightX) / 2.0f;
-            float cy = (eyeLeftY + eyeRightY) / 2.0f;
+            // Sử dụng CopyToAsync mượt mà theo đúng ý bạn
+            await imageFile.CopyToAsync(ms);
+            ms.Position = 0; // Đặt lại con trỏ stream về đầu để ImageSharp đọc được
+
+            using (var source = Image.Load<Rgb24>(ms))
+            {
+                // Tính toán trước các tham số hình học
+                float dx = eyeRightX - eyeLeftX;
+                float dy = eyeRightY - eyeLeftY;
+                float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
+                if (currentDist < 1e-5f) currentDist = 1e-5f;
+                float angleRad = (float)Math.Atan2(dy, dx);
+
+                float arcfaceScale = 35.2372f / currentDist;
+                float cosVal = (float)Math.Cos(angleRad);
+                float sinVal = (float)Math.Sin(angleRad);
+
+                // Gọi hàm lõi để xử lý
+                return AlignAndCropFaceCore(source, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, arcfaceScale, cosVal, sinVal);
+            }
+        }
+    }
+    private byte[] AlignAndCropFaceCSharp(
+        string inputPath,
+        float eyeLeftX, float eyeLeftY,
+        float eyeRightX, float eyeRightY,
+        float padX, float padY, float clientScale)
+    {
+        if (!System.IO.File.Exists(inputPath))
+            throw new FileNotFoundException("Không tìm thấy file ảnh gốc.", inputPath);
+
+        // Mở file trên ổ cứng ra dưới dạng Stream
+        using (var fs = new FileStream(inputPath, FileMode.Open, FileAccess.Read))
+        using (var source = Image.Load<Rgb24>(fs))
+        {
+            // Tính toán các tham số hình học
             float dx = eyeRightX - eyeLeftX;
             float dy = eyeRightY - eyeLeftY;
-
             float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
             if (currentDist < 1e-5f) currentDist = 1e-5f;
             float angleRad = (float)Math.Atan2(dy, dx);
 
-            // Target ArcFace coordinates
-            float targetDist = 35.2372f;
-            float tx = 55.9132f;
-            float ty = 51.59885f;
-            float scale = targetDist / currentDist;
-
+            float arcfaceScale = 35.2372f / currentDist;
             float cosVal = (float)Math.Cos(angleRad);
             float sinVal = (float)Math.Sin(angleRad);
 
-            target.ProcessPixelRows(accessor =>
-            {
-                for (int y = 0; y < 112; y++)
-                {
-                    var row = accessor.GetRowSpan(y);
-                    float y3 = y - ty;
-                    for (int x = 0; x < 112; x++)
-                    {
-                        float x3 = x - tx;
-                        float x2 = x3 / scale;
-                        float y2 = y3 / scale;
-
-                        // Rotate back by +angleRad
-                        float x1 = x2 * cosVal - y2 * sinVal;
-                        float y1 = x2 * sinVal + y2 * cosVal;
-
-                        float xSrc = x1 + cx;
-                        float ySrc = y1 + cy;
-
-                        row[x] = SampleBilinear(source, xSrc, ySrc);
-                    }
-                }
-            });
-
-            target.Save(outputPath);
+            // Gọi chung vào hàm lõi 
+            return AlignAndCropFaceCore(source, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY, arcfaceScale, cosVal, sinVal);
         }
-        return outputPath;
     }
-
-    private string AlignAndCropFaceCSharp(
-        string inputPath,
-        float eyeLeftX,
-        float eyeLeftY,
-        float eyeRightX,
-        float eyeRightY,
-        float padX,
-        float padY,
-        float clientScale) // Đổi tên để tránh trùng với scale của ArcFace
+    private byte[] AlignAndCropFaceCore(
+        Image<Rgb24> source,
+        float eyeLeftX, float eyeLeftY,
+        float eyeRightX, float eyeRightY,
+        float arcfaceScale, float cosVal, float sinVal)
     {
-        var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
-
-        using (var source = Image.Load<Rgb24>(inputPath))
         using (var target = new Image<Rgb24>(112, 112))
         {
-            // 1. Tính toán khoảng cách và góc dựa trên tọa độ mắt nhận được từ Client
-            float dx = eyeRightX - eyeLeftX;
-            float dy = eyeRightY - eyeLeftY;
+            // Tham số mục tiêu ArcFace 112x112
+            float tx = 55.9132f;
+            float ty = 51.59885f;
 
-            float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
-            if (currentDist < 1e-5f) currentDist = 1e-5f;
-            float angleRad = (float)Math.Atan2(dy, dx);
-
-            float angleDeg = angleRad * (180.0f / (float)Math.PI);
-            _logger.LogInformation($"[Debug] Khoảng cách mắt nhận được: {currentDist}px, Góc nghiêng tính được: {angleDeg} độ");
-
-            // 2. TÂM MẮT THỰC TẾ TRÊN ẢNH SOURCE
-            // CHÚ Ý: Vì eyeLeftX, eyeLeftY... truyền từ client lên ĐÃ LÀ tọa độ nằm trên tấm ảnh paddedBlob rồi,
-            // nên tâm mắt trên tấm ảnh source này đơn giản là trung bình cộng của chúng. 
-            // BẠN KHÔNG ĐƯỢC CỘNG THÊM padX, padY vào đây nữa vì sẽ gây lệch tâm.
+            // Tâm mắt thực tế trên ảnh nguồn
             float cxSrc = (eyeLeftX + eyeRightX) / 2.0f;
             float cySrc = (eyeLeftY + eyeRightY) / 2.0f;
 
-            // 3. Cấu hình các tham số mục tiêu theo chuẩn ArcFace
-            float targetDist = 35.2372f;  // Khoảng cách 2 mắt chuẩn ArcFace trong ảnh 112x112
-            float tx = 55.9132f;          // Tâm X mắt mong muốn trên ảnh 112x112
-            float ty = 51.59885f;         // Tâm Y mắt mong muốn trên ảnh 112x112
-
-            // Tỉ lệ scale để đưa khoảng cách mắt hiện tại về chuẩn 35.2372px của ArcFace
-            float arcfaceScale = targetDist / currentDist;
-
-            float cosVal = (float)Math.Cos(angleRad);
-            float sinVal = (float)Math.Sin(angleRad);
-
-            // 4. Biến đổi Affine ngược để lấy từng pixel cho ảnh 112x112 thẳng góc
+            // Biến đổi Affine ngược (Đã sửa đổi dấu chuẩn đồ họa máy tính)
             target.ProcessPixelRows(accessor =>
             {
                 for (int y = 0; y < 112; y++)
@@ -1131,30 +1216,30 @@ public class FaceDetectionController : BaseController
                     {
                         float x3 = x - tx;
 
-                        // Khôi phục tỉ lệ ArcFace
                         float x2 = x3 / arcfaceScale;
                         float y2 = y3 / arcfaceScale;
 
-                        // Xoay ngược góc angleRad để làm thẳng khuôn mặt
-                        float x1 = x2 * cosVal - y2 * sinVal;
-                        float y1 = x2 * sinVal + y2 * cosVal;
+                        // Xoay ngược góc chuẩn
+                        float x1 = x2 * cosVal + y2 * sinVal;
+                        float y1 = -x2 * sinVal + y2 * cosVal;
 
-                        // Tịnh tiến về đúng tâm mắt thực tế trên ảnh source (đã có sẵn lề padding từ client)
                         float xSrc = x1 + cxSrc;
                         float ySrc = y1 + cySrc;
 
-                        // Lấy mẫu nội suy Bilinear từ ảnh nguồn paddedBlob
                         row[x] = SampleBilinear(source, xSrc, ySrc);
                     }
                 }
             });
-            
 
-            target.Save(outputPath);
+            // Xuất ảnh ra mảng byte lưu trong bộ nhớ RAM
+            using (var outputStream = new MemoryStream())
+            {
+                target.SaveAsPng(outputStream);
+                return outputStream.ToArray();
+            }
         }
-        _logger.LogInformation($"[AlignFaceCSharp] Server-side face alignment thành công (Chuẩn ArcFace 112x112). Output path: {outputPath}");
-        return outputPath;
     }
+
     private static Rgb24 SampleBilinear(Image<Rgb24> source, float x, float y)
     {
         int width = source.Width;
@@ -1352,24 +1437,21 @@ public class FaceDetectionController : BaseController
         {
             var tempDir = Path.Combine(GetArcFaceDir(), "temp");
             Directory.CreateDirectory(tempDir);
-            var tempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}.png");
+            byte[] tempImgBytes =[];
 
-            using (var fs = new FileStream(tempPath, FileMode.Create))
+            using (var fs = new MemoryStream())
             {
                 await image.CopyToAsync(fs);
+                tempImgBytes = fs.ToArray();
             }
 
             try
             {
                 var inferenceSession = GetOrCreateSession(bestModelPath);
-                testEmbedding = ExtractEmbeddingFromFile(inferenceSession, tempPath);
+                testEmbedding = ExtractEmbeddingFromBytes(inferenceSession, tempImgBytes);
             }
             finally
             {
-                if (System.IO.File.Exists(tempPath))
-                {
-                    System.IO.File.Delete(tempPath);
-                }
             }
         }
         catch (Exception ex)
@@ -1472,6 +1554,25 @@ public class FaceDetectionController : BaseController
         });
     }
     private static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
+    private static List<UserFaceEmbedding>? _cachedEmbeddings = null;
+    private static readonly object _cacheLock = new();
+
+    private async Task<List<UserFaceEmbedding>> GetCachedEmbeddingsAsync()
+    {
+        if (_cachedEmbeddings == null)
+        {
+            var embeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+            lock (_cacheLock)
+            {
+                if (_cachedEmbeddings == null)
+                {
+                    _cachedEmbeddings = embeddings;
+                }
+            }
+        }
+        return _cachedEmbeddings;
+    }
+
     private static void RemoveModel(string modelPath)
     {
         if (_sessions.TryRemove(modelPath, out var lazySession))
@@ -1508,6 +1609,38 @@ public class FaceDetectionController : BaseController
         return lazySession.Value;
     }
 
+
+    [HttpPost("reload-cache")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ReloadCache()
+    {
+        try
+        {
+            // 1. Clear ONNX sessions
+            var paths = _sessions.Keys.ToList();
+            foreach (var path in paths)
+            {
+                RemoveModel(path);
+            }
+
+            // 2. Clear cached embeddings
+            lock (_cacheLock)
+            {
+                _cachedEmbeddings = null;
+            }
+
+            // 3. Pre-load embeddings back to memory to warm up cache
+            await GetCachedEmbeddingsAsync();
+
+            _logger.LogInformation("[ReloadCache] Đã xóa cache ONNX session và làm nóng lại cache embeddings.");
+            return Ok(new { message = "Đã tải lại cache thành công." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi tải lại cache.");
+            return StatusCode(500, new { message = $"Lỗi khi tải lại cache: {ex.Message}" });
+        }
+    }
 
     [HttpPost("compare-global")]
     [AllowAnonymous]
@@ -1560,23 +1693,13 @@ public class FaceDetectionController : BaseController
         float[] testEmbedding;
         try
         {
-            var tempDir = Path.Combine(GetArcFaceDir(), "temp");
-            Directory.CreateDirectory(tempDir);
-            var rawTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_raw.jpg");
-            var alignedTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_aligned.png");
-
-            using (var fs = new FileStream(rawTempPath, FileMode.Create))
-            {
-                await image.CopyToAsync(fs);
-            }
-
-            string alignedImagePath = rawTempPath; // fallback nếu alignment thất bại
+            byte[] alignedImageBytes = []; // fallback nếu alignment thất bại
 
             if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
             {
                 try
                 {
-                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
+                    alignedImageBytes = await AlignFaceCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
                     _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công bằng C#.");
                 }
                 catch (Exception alignEx)
@@ -1588,16 +1711,10 @@ public class FaceDetectionController : BaseController
             try
             {
                 var inferenceSession = GetOrCreateSession(bestModelPath);
-                testEmbedding = ExtractEmbeddingFromFile(inferenceSession, alignedImagePath);
+                testEmbedding = ExtractEmbeddingFromBytes(inferenceSession, alignedImageBytes);
             }
             finally
             {
-                if (System.IO.File.Exists(rawTempPath)) System.IO.File.Delete(rawTempPath);
-                if (System.IO.File.Exists(alignedTempPath)) System.IO.File.Delete(alignedTempPath);
-                if (alignedImagePath != rawTempPath && System.IO.File.Exists(alignedImagePath))
-                {
-                    System.IO.File.Delete(alignedImagePath);
-                }
             }
         }
         catch (Exception ex)
@@ -1606,19 +1723,37 @@ public class FaceDetectionController : BaseController
             return StatusCode(500, new { message = $"Lỗi trích xuất đặc trưng: {ex.Message}" });
         }
 
-        // Perform fast vector neighbor comparison using HNSW + Inner Product via raw SQL <#> operator
-        var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+        // Perform fast vector neighbor comparison in-memory using cached embeddings
         List<UserFaceEmbedding> closestEmbeddings;
         try
         {
-            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
-                .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
-                .ToListAsync();
+            var cached = await GetCachedEmbeddingsAsync();
+            var scoredEmbeddings = cached.Select(e =>
+            {
+                float cosineSimilarity = 0f;
+                var embArray = e.Embedding?.ToArray();
+                if (embArray != null && embArray.Length == testEmbedding.Length)
+                {
+                    for (int i = 0; i < testEmbedding.Length; i++)
+                    {
+                        cosineSimilarity += embArray[i] * testEmbedding[i];
+                    }
+                }
+                return new { Embedding = e, Score = cosineSimilarity };
+            })
+            .OrderByDescending(x => x.Score)
+            .Take(20)
+            .ToList();
+
+            closestEmbeddings = scoredEmbeddings.Select(x => x.Embedding).ToList();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Truy vấn HNSW thất bại, sử dụng fallback đối sánh chéo bộ nhớ.");
-            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+            _logger.LogWarning(ex, "Tính toán đối sánh chéo bộ nhớ thất bại, sử dụng fallback HNSW.");
+            var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
+                .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+                .ToListAsync();
         }
 
         // Fetch User and Image Info
@@ -1707,7 +1842,7 @@ public class FaceDetectionController : BaseController
 
         async Task SendSseAsync(object data)
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(data);
+            var json = System.Text.Json.JsonSerializer.Serialize(data, CqrsJsonOptions.Default);
             await Response.WriteAsync($"data: {json}\n\n");
             await Response.Body.FlushAsync();
         }
@@ -1758,24 +1893,14 @@ public class FaceDetectionController : BaseController
 
             await SendSseAsync(new { status = "aligning" });
 
-            var tempDir = Path.Combine(GetArcFaceDir(), "temp");
-            Directory.CreateDirectory(tempDir);
-            var rawTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_raw.jpg");
-            var alignedTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_aligned.png");
-
-            using (var fs = new FileStream(rawTempPath, FileMode.Create))
-            {
-                await image.CopyToAsync(fs);
-            }
-
-            string alignedImagePath = rawTempPath; // fallback nếu alignment thất bại
+            byte[] alignedImageBytes = []; // fallback nếu alignment thất bại
 
             if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
             {
                 try
                 {
-                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
-                    _logger.LogInformation($"[CompareGlobalStream] Server-side face alignment thành công bằng C#. {alignedImagePath}");
+                    alignedImageBytes = await AlignFaceCSharp(image, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value, padX.Value, padY.Value, clientScale.Value);
+                    _logger.LogInformation($"[CompareGlobalStream] Server-side face alignment thành công bằng C#. {alignedImageBytes}");
                 }
                 catch (Exception alignEx)
                 {
@@ -1789,32 +1914,45 @@ public class FaceDetectionController : BaseController
             try
             {
                 var inferenceSession = GetOrCreateSession(bestModelPath);
-                testEmbedding = ExtractEmbeddingFromFile(inferenceSession, alignedImagePath);
+                testEmbedding = ExtractEmbeddingFromBytes(inferenceSession, alignedImageBytes);
             }
             finally
             {
-                if (System.IO.File.Exists(rawTempPath)) System.IO.File.Delete(rawTempPath);
-                if (System.IO.File.Exists(alignedTempPath)) System.IO.File.Delete(alignedTempPath);
-                if (alignedImagePath != rawTempPath && System.IO.File.Exists(alignedImagePath))
-                {
-                    System.IO.File.Delete(alignedImagePath);
-                }
             }
 
             await SendSseAsync(new { status = "searching" });
 
-            var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+            // Perform fast vector neighbor comparison in-memory using cached embeddings
             List<UserFaceEmbedding> closestEmbeddings;
             try
             {
-                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
-                    .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
-                    .ToListAsync();
+                var cached = await GetCachedEmbeddingsAsync();
+                var scoredEmbeddings = cached.Select(e =>
+                {
+                    float cosineSimilarity = 0f;
+                    var embArray = e.Embedding?.ToArray();
+                    if (embArray != null && embArray.Length == testEmbedding.Length)
+                    {
+                        for (int i = 0; i < testEmbedding.Length; i++)
+                        {
+                            cosineSimilarity += embArray[i] * testEmbedding[i];
+                        }
+                    }
+                    return new { Embedding = e, Score = cosineSimilarity };
+                })
+                .OrderByDescending(x => x.Score)
+                .Take(20)
+                .ToList();
+
+                closestEmbeddings = scoredEmbeddings.Select(x => x.Embedding).ToList();
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Truy vấn HNSW thất bại, sử dụng fallback đối sánh chéo bộ nhớ.");
-                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+                _logger.LogWarning(ex, "Tính toán đối sánh chéo bộ nhớ thất bại, sử dụng fallback HNSW.");
+                var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
+                    .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+                    .ToListAsync();
             }
 
             var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();

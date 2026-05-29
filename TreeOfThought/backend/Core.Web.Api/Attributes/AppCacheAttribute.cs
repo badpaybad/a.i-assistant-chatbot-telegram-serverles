@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using Core.Infra.Base.Interfaces;
 using System.Text.Json;
 using Microsoft.Extensions.Caching.Memory;
+using Core.Infra.Base.Constants;
 
 namespace Core.Web.Api.Attributes;
 
@@ -63,7 +64,7 @@ public class AppCacheAttribute : Attribute, IAsyncActionFilter
             var value = okResult.Value;
             if (value != null)
             {
-                var json = JsonSerializer.Serialize(value);
+                var json = JsonSerializer.Serialize(value,CqrsJsonOptions.Default);
                 
                 // Save to Memory (L1)
                 memoryCache?.Set(cacheKey, json, TimeSpan.FromSeconds(_memoryExpirySeconds));

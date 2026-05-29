@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Hosting;
 using Core.Infra.Firebase.Models;
 using System.Text.Json;
+using Core.Infra.Base.Constants;
 
 namespace Core.Infra.Firebase.Services;
 
@@ -147,11 +148,7 @@ public class FirebaseService
         else if (data != null && !(data is IDictionary<string, object>) && !data.GetType().IsPrimitive && !(data is string))
         {
             // For complex objects, serialize to JSON first to ensure camelCase and Firestore compatibility
-            var json = JsonSerializer.Serialize(data, new JsonSerializerOptions 
-            { 
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-            });
+            var json = JsonSerializer.Serialize(data,CqrsJsonOptions.Default);
             using var jsonDoc = JsonDocument.Parse(json);
             data = ConvertToFirestoreData(jsonDoc.RootElement) ?? new Dictionary<string, object?>();
         }

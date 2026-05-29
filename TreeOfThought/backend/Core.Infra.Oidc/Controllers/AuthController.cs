@@ -18,6 +18,7 @@ using System.Net;
 using Microsoft.Extensions.Configuration;
 
 using Core.Infra.Oidc.Repositories;
+using Core.Infra.Base.Constants;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -70,10 +71,7 @@ public class AuthController : ControllerBase
       code_challenge_methods_supported = new[] { "S256", "plain" }
     };
 
-    var json = System.Text.Json.JsonSerializer.Serialize(config, new System.Text.Json.JsonSerializerOptions
-    {
-      WriteIndented = true
-    });
+    var json = System.Text.Json.JsonSerializer.Serialize(config, CqrsJsonOptions.Default);
 
     return Content(json, "application/json");
   }

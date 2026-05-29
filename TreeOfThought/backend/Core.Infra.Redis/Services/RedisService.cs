@@ -43,7 +43,7 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
     {
-        var json = JsonSerializer.Serialize(value);
+        var json = JsonSerializer.Serialize(value,CqrsJsonOptions.Default);
         if (expiry.HasValue)
         {
             await _db.StringSetAsync(key, json, expiry.Value);
@@ -62,7 +62,7 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
     // Queue Implementation
     public async Task EnqueueAsync<T>(string queueName, T message)
     {
-        var json = JsonSerializer.Serialize(message);
+        var json = JsonSerializer.Serialize(message,CqrsJsonOptions.Default);
         await _db.ListLeftPushAsync(queueName, json);
     }
 
