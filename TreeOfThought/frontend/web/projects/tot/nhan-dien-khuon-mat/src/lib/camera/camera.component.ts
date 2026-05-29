@@ -73,6 +73,7 @@ export class CameraComponent implements OnInit, OnDestroy {
   noFaceDetected: boolean = false;
   belowThreshold: boolean = false;
   faceTooSmall: boolean = false;
+  private streamSub: any = null;
 
   // Mini Aligned Preview Blob URL
   alignedPreviewUrl: string | null = null;
@@ -96,6 +97,10 @@ export class CameraComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopCamera();
     this.stopScanning();
+    if (this.streamSub) {
+      this.streamSub.unsubscribe();
+      this.streamSub = null;
+    }
     if (this.alignedPreviewUrl) {
       URL.revokeObjectURL(this.alignedPreviewUrl);
     }
@@ -309,6 +314,22 @@ export class CameraComponent implements OnInit, OnDestroy {
         y: keypoints[1].y * video.videoHeight
       };
 
+      // Map eye coordinates from video space to cropped padded image space
+      const padX = det.boundingBox.width * 0.6;
+      const padY = det.boundingBox.height * 0.6;
+      const cropX = Math.max(0, det.boundingBox.originX - padX);
+      const cropY = Math.max(0, det.boundingBox.originY - padY);
+      const cropW = Math.min(video.videoWidth - cropX, det.boundingBox.width + padX * 2);
+      const cropH = Math.min(video.videoHeight - cropY, det.boundingBox.height + padY * 2);
+
+      const maxDim = 256;
+      const scale = Math.min(maxDim / cropW, maxDim / cropH, 1.0);
+
+      const eyeLeftX = (eyeLeft.x - cropX) * scale;
+      const eyeLeftY = (eyeLeft.y - cropY) * scale;
+      const eyeRightX = (eyeRight.x - cropX) * scale;
+      const eyeRightY = (eyeRight.y - cropY) * scale;
+
       // Crop khuôn mặt với padding lớn từ video thô (gửi lên server để re-align chuẩn xác)
       // Dùng padding=0.6 để giữ được đủ vùng khuôn mặt nhưng tiết kiệm băng thông so với full frame
       const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
@@ -317,7 +338,7 @@ export class CameraComponent implements OnInit, OnDestroy {
       const alignedCanvasEl = this.alignedCanvas.nativeElement;
       this.alignFaceBrowser(video, eyeLeft, eyeRight, alignedCanvasEl);
 
-      alignedCanvasEl.toBlob(async (previewBlob) => {
+      alignedCanvasEl.toBlob((previewBlob) => {
         if (previewBlob) {
           if (this.alignedPreviewUrl) URL.revokeObjectURL(this.alignedPreviewUrl);
           this.alignedPreviewUrl = URL.createObjectURL(previewBlob);
@@ -332,25 +353,49 @@ export class CameraComponent implements OnInit, OnDestroy {
       // Tạo Preview URL cục bộ để người dùng theo dõi
       const file = new File([paddedBlob], 'face_padded.jpg', { type: 'image/jpeg' });
 
-      try {
-        const result: any = await this.api.compareGlobal(file, this.compareThreshold);
-        this.compareResults = result;
-        const snapshotUrl = this.alignedPreviewUrl; // chụp lại URL preview hiện tại
-        if (result && result.bestMatch) {
-          this.bestMatchUser = result.bestMatch;
-          this.belowThreshold = false;
-          this.addToHistory(result.bestMatch, snapshotUrl, true);
-        } else {
-          this.bestMatchUser = null;
-          this.belowThreshold = true;
-          this.addToHistory(null, snapshotUrl, false);
-        }
-      } catch (err) {
-        console.error("Lỗi so khớp máy chủ: ", err);
-        this.bestMatchUser = null;
-      } finally {
-        this.isComparing = false;
+      if (this.streamSub) {
+        this.streamSub.unsubscribe();
+        this.streamSub = null;
       }
+
+      this.streamSub = this.api.compareGlobalStream(
+        file, 
+        this.compareThreshold, 
+        eyeLeftX, 
+        eyeLeftY, 
+        eyeRightX, 
+        eyeRightY
+      ).subscribe({
+        next: (event: any) => {
+          if (event.status === 'success') {
+            const result = event;
+            this.compareResults = result;
+            const snapshotUrl = this.alignedPreviewUrl;
+            if (result && result.bestMatch) {
+              this.bestMatchUser = result.bestMatch;
+              this.belowThreshold = false;
+              this.addToHistory(result.bestMatch, snapshotUrl, true);
+            } else {
+              this.bestMatchUser = null;
+              this.belowThreshold = true;
+              this.addToHistory(null, snapshotUrl, false);
+            }
+            this.isComparing = false;
+          } else if (event.status === 'error') {
+            console.error("Lỗi so khớp máy chủ: ", event.message);
+            this.bestMatchUser = null;
+            this.isComparing = false;
+          } else {
+            // Processing status updates: 'received', 'aligning', 'extracting', 'searching'
+            console.log(`[SSE Stream Status] ${event.status}`);
+          }
+        },
+        error: (err: any) => {
+          console.error("Lỗi stream máy chủ: ", err);
+          this.bestMatchUser = null;
+          this.isComparing = false;
+        }
+      });
 
     } catch (err) {
       console.error("[Scanner Frame] Error: ", err);

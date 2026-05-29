@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClientService } from '@tot/core';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -118,5 +119,73 @@ export class NhanDienKhuonMatService {
     formData.append('image', file);
     const query = threshold !== undefined && threshold !== null ? `?threshold=${threshold}` : '';
     return this.http.post(`/api/face-detection/compare-global${query}`, formData);
+  }
+
+  compareGlobalStream(file: File, threshold: number, eyeLeftX: number, eyeLeftY: number, eyeRightX: number, eyeRightY: number): Observable<any> {
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('eyeLeftX', eyeLeftX.toString());
+    formData.append('eyeLeftY', eyeLeftY.toString());
+    formData.append('eyeRightX', eyeRightX.toString());
+    formData.append('eyeRightY', eyeRightY.toString());
+
+    const baseUrl = (window as any).env?.API_BASE_URL ?? '';
+    const token = localStorage.getItem('jwt_token') ?? '';
+    const url = `${baseUrl}/api/face-detection/compare-global-stream?threshold=${threshold}`;
+
+    return new Observable<any>(observer => {
+      const controller = new AbortController();
+      
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData,
+        signal: controller.signal
+      }).then(async response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const reader = response.body?.getReader();
+        if (!reader) {
+          throw new Error('ReadableStream not supported.');
+        }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() ?? '';
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith('data:')) {
+              const dataContent = trimmed.substring(5).trim();
+              try {
+                const parsed = JSON.parse(dataContent);
+                observer.next(parsed);
+              } catch (e) {
+                observer.next({ status: 'raw', raw: dataContent });
+              }
+            }
+          }
+        }
+        observer.complete();
+      }).catch(err => {
+        if (err.name !== 'AbortError') {
+          observer.error(err);
+        }
+      });
+
+      return () => {
+        controller.abort();
+      };
+    });
   }
 }

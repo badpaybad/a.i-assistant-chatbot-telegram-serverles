@@ -151,3 +151,7 @@ Thêm submenu cho Nhận diện khuôn mặt: Camera nhận dạng
 **cập nhật 2026-05-29 09:50:56**
         Kết Quả Nhận Dạng (HNSW) 
             cần giữ history 5 kết quả nhận diện mới nhất 
+
+**cập nhật 2026-05-29 10:10:56**
+không dùng align_face_helper.py mà dùng c# để căn chỉnh lại khuôn mặt , vơi mode standard khi dùng camera , hoặc kiểm tra so khớp khuôn mặt 
+khi dùng camera để mượt mà UI thì dùng SSE để gửi kết quả nhận diện sau khi xử lý 

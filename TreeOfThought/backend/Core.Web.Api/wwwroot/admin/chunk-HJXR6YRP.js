@@ -111,6 +111,7 @@ import {
   Input,
   NgModule,
   NgZone,
+  Observable,
   Output,
   ViewChild,
   ViewChildren,
@@ -665,6 +666,68 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
     formData.append("image", file);
     const query = threshold !== void 0 && threshold !== null ? `?threshold=${threshold}` : "";
     return this.http.post(`/api/face-detection/compare-global${query}`, formData);
+  }
+  compareGlobalStream(file, threshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY) {
+    var _a, _b, _c;
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("eyeLeftX", eyeLeftX.toString());
+    formData.append("eyeLeftY", eyeLeftY.toString());
+    formData.append("eyeRightX", eyeRightX.toString());
+    formData.append("eyeRightY", eyeRightY.toString());
+    const baseUrl = (_b = (_a = window.env) == null ? void 0 : _a.API_BASE_URL) != null ? _b : "";
+    const token = (_c = localStorage.getItem("jwt_token")) != null ? _c : "";
+    const url = `${baseUrl}/api/face-detection/compare-global-stream?threshold=${threshold}`;
+    return new Observable((observer) => {
+      const controller = new AbortController();
+      fetch(url, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`
+        },
+        body: formData,
+        signal: controller.signal
+      }).then(async (response) => {
+        var _a2, _b2;
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const reader = (_a2 = response.body) == null ? void 0 : _a2.getReader();
+        if (!reader) {
+          throw new Error("ReadableStream not supported.");
+        }
+        const decoder = new TextDecoder();
+        let buffer = "";
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done)
+            break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = (_b2 = lines.pop()) != null ? _b2 : "";
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (trimmed.startsWith("data:")) {
+              const dataContent = trimmed.substring(5).trim();
+              try {
+                const parsed = JSON.parse(dataContent);
+                observer.next(parsed);
+              } catch (e) {
+                observer.next({ status: "raw", raw: dataContent });
+              }
+            }
+          }
+        }
+        observer.complete();
+      }).catch((err) => {
+        if (err.name !== "AbortError") {
+          observer.error(err);
+        }
+      });
+      return () => {
+        controller.abort();
+      };
+    });
   }
 };
 _NhanDienKhuonMatService.\u0275fac = function NhanDienKhuonMatService_Factory(__ngFactoryType__) {
@@ -9154,6 +9217,7 @@ var _CameraComponent = class _CameraComponent {
     this.noFaceDetected = false;
     this.belowThreshold = false;
     this.faceTooSmall = false;
+    this.streamSub = null;
     this.alignedPreviewUrl = null;
     this.recognitionHistory = [];
   }
@@ -9163,6 +9227,10 @@ var _CameraComponent = class _CameraComponent {
   ngOnDestroy() {
     this.stopCamera();
     this.stopScanning();
+    if (this.streamSub) {
+      this.streamSub.unsubscribe();
+      this.streamSub = null;
+    }
     if (this.alignedPreviewUrl) {
       URL.revokeObjectURL(this.alignedPreviewUrl);
     }
@@ -9334,10 +9402,22 @@ var _CameraComponent = class _CameraComponent {
         x: keypoints[1].x * video.videoWidth,
         y: keypoints[1].y * video.videoHeight
       };
+      const padX = det.boundingBox.width * 0.6;
+      const padY = det.boundingBox.height * 0.6;
+      const cropX = Math.max(0, det.boundingBox.originX - padX);
+      const cropY = Math.max(0, det.boundingBox.originY - padY);
+      const cropW = Math.min(video.videoWidth - cropX, det.boundingBox.width + padX * 2);
+      const cropH = Math.min(video.videoHeight - cropY, det.boundingBox.height + padY * 2);
+      const maxDim = 256;
+      const scale = Math.min(maxDim / cropW, maxDim / cropH, 1);
+      const eyeLeftX = (eyeLeft.x - cropX) * scale;
+      const eyeLeftY = (eyeLeft.y - cropY) * scale;
+      const eyeRightX = (eyeRight.x - cropX) * scale;
+      const eyeRightY = (eyeRight.y - cropY) * scale;
       const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
       const alignedCanvasEl = this.alignedCanvas.nativeElement;
       this.alignFaceBrowser(video, eyeLeft, eyeRight, alignedCanvasEl);
-      alignedCanvasEl.toBlob(async (previewBlob) => {
+      alignedCanvasEl.toBlob((previewBlob) => {
         if (previewBlob) {
           if (this.alignedPreviewUrl)
             URL.revokeObjectURL(this.alignedPreviewUrl);
@@ -9349,25 +9429,40 @@ var _CameraComponent = class _CameraComponent {
         return;
       }
       const file = new File([paddedBlob], "face_padded.jpg", { type: "image/jpeg" });
-      try {
-        const result = await this.api.compareGlobal(file, this.compareThreshold);
-        this.compareResults = result;
-        const snapshotUrl = this.alignedPreviewUrl;
-        if (result && result.bestMatch) {
-          this.bestMatchUser = result.bestMatch;
-          this.belowThreshold = false;
-          this.addToHistory(result.bestMatch, snapshotUrl, true);
-        } else {
-          this.bestMatchUser = null;
-          this.belowThreshold = true;
-          this.addToHistory(null, snapshotUrl, false);
-        }
-      } catch (err) {
-        console.error("L\u1ED7i so kh\u1EDBp m\xE1y ch\u1EE7: ", err);
-        this.bestMatchUser = null;
-      } finally {
-        this.isComparing = false;
+      if (this.streamSub) {
+        this.streamSub.unsubscribe();
+        this.streamSub = null;
       }
+      this.streamSub = this.api.compareGlobalStream(file, this.compareThreshold, eyeLeftX, eyeLeftY, eyeRightX, eyeRightY).subscribe({
+        next: (event) => {
+          if (event.status === "success") {
+            const result = event;
+            this.compareResults = result;
+            const snapshotUrl = this.alignedPreviewUrl;
+            if (result && result.bestMatch) {
+              this.bestMatchUser = result.bestMatch;
+              this.belowThreshold = false;
+              this.addToHistory(result.bestMatch, snapshotUrl, true);
+            } else {
+              this.bestMatchUser = null;
+              this.belowThreshold = true;
+              this.addToHistory(null, snapshotUrl, false);
+            }
+            this.isComparing = false;
+          } else if (event.status === "error") {
+            console.error("L\u1ED7i so kh\u1EDBp m\xE1y ch\u1EE7: ", event.message);
+            this.bestMatchUser = null;
+            this.isComparing = false;
+          } else {
+            console.log(`[SSE Stream Status] ${event.status}`);
+          }
+        },
+        error: (err) => {
+          console.error("L\u1ED7i stream m\xE1y ch\u1EE7: ", err);
+          this.bestMatchUser = null;
+          this.isComparing = false;
+        }
+      });
     } catch (err) {
       console.error("[Scanner Frame] Error: ", err);
       this.isComparing = false;
@@ -9814,4 +9909,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-MTJVVLV7.js.map
+//# sourceMappingURL=chunk-HJXR6YRP.js.map

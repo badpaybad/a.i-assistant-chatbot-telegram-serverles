@@ -1007,54 +1007,87 @@ public class FaceDetectionController : BaseController
         return null;
     }
 
-    private string AlignImageOnServer(string inputPath)
+    private string AlignFaceCSharp(string inputPath, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY)
     {
-        var arcfaceDir = GetArcFaceDir();
-        var helperPyPath = Path.Combine(arcfaceDir, "align_face_helper.py");
         var outputPath = Path.Combine(Path.GetDirectoryName(inputPath)!, $"{Guid.NewGuid()}_aligned.png");
         
-        var pythonExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../../venv/bin/python3")); // Workspace root venv
-        if (!System.IO.File.Exists(pythonExe))
+        using (var source = Image.Load<Rgb24>(inputPath))
+        using (var target = new Image<Rgb24>(112, 112))
         {
-            pythonExe = Path.GetFullPath(Path.Combine(arcfaceDir, "venv", "bin", "python3")); // Local venv
-        }
-        if (!System.IO.File.Exists(pythonExe))
-        {
-            pythonExe = "python3"; // Fallback to global python3
-        }
+            float cx = (eyeLeftX + eyeRightX) / 2.0f;
+            float cy = (eyeLeftY + eyeRightY) / 2.0f;
+            float dx = eyeRightX - eyeLeftX;
+            float dy = eyeRightY - eyeLeftY;
 
-        var arguments = $"\"{helperPyPath}\" \"{inputPath}\" \"{outputPath}\"";
-        
-        var psi = new ProcessStartInfo
-        {
-            FileName = pythonExe,
-            Arguments = arguments,
-            WorkingDirectory = arcfaceDir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+            float currentDist = (float)Math.Sqrt(dx * dx + dy * dy);
+            if (currentDist < 1e-5f) currentDist = 1e-5f;
+            float angleRad = (float)Math.Atan2(dy, dx);
 
-        try
-        {
-            using var process = Process.Start(psi);
-            if (process != null)
+            // Target ArcFace coordinates
+            float targetDist = 35.2372f;
+            float tx = 55.9132f;
+            float ty = 51.59885f;
+            float scale = targetDist / currentDist;
+
+            float cosVal = (float)Math.Cos(angleRad);
+            float sinVal = (float)Math.Sin(angleRad);
+
+            target.ProcessPixelRows(accessor =>
             {
-                process.WaitForExit(5000); // 5 seconds max timeout
-                var output = process.StandardOutput.ReadToEnd().Trim();
-                if (output.Contains("SUCCESS") && System.IO.File.Exists(outputPath))
+                for (int y = 0; y < 112; y++)
                 {
-                    return outputPath;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Lỗi thực thi script align_face_helper.py trên server.");
-        }
+                    var row = accessor.GetRowSpan(y);
+                    float y3 = y - ty;
+                    for (int x = 0; x < 112; x++)
+                    {
+                        float x3 = x - tx;
+                        float x2 = x3 / scale;
+                        float y2 = y3 / scale;
 
-        return inputPath; // Fallback to original if alignment fails
+                        // Rotate back by +angleRad
+                        float x1 = x2 * cosVal - y2 * sinVal;
+                        float y1 = x2 * sinVal + y2 * cosVal;
+
+                        float xSrc = x1 + cx;
+                        float ySrc = y1 + cy;
+
+                        row[x] = SampleBilinear(source, xSrc, ySrc);
+                    }
+                }
+            });
+
+            target.Save(outputPath);
+        }
+        return outputPath;
+    }
+
+    private static Rgb24 SampleBilinear(Image<Rgb24> source, float x, float y)
+    {
+        int width = source.Width;
+        int height = source.Height;
+
+        // Clamp coordinates to image boundaries
+        x = Math.Clamp(x, 0f, width - 1f);
+        y = Math.Clamp(y, 0f, height - 1f);
+
+        int xFloor = (int)Math.Floor(x);
+        int yFloor = (int)Math.Floor(y);
+        int xCeil = Math.Min(xFloor + 1, width - 1);
+        int yCeil = Math.Min(yFloor + 1, height - 1);
+
+        float dx = x - xFloor;
+        float dy = y - yFloor;
+
+        Rgb24 p00 = source[xFloor, yFloor];
+        Rgb24 p10 = source[xCeil, yFloor];
+        Rgb24 p01 = source[xFloor, yCeil];
+        Rgb24 p11 = source[xCeil, yCeil];
+
+        float r = (1f - dx) * (1f - dy) * p00.R + dx * (1f - dy) * p10.R + (1f - dx) * dy * p01.R + dx * dy * p11.R;
+        float g = (1f - dx) * (1f - dy) * p00.G + dx * (1f - dy) * p10.G + (1f - dx) * dy * p01.G + dx * dy * p11.G;
+        float b = (1f - dx) * (1f - dy) * p00.B + dx * (1f - dy) * p10.B + (1f - dx) * dy * p01.B + dx * dy * p11.B;
+
+        return new Rgb24((byte)Math.Clamp(r, 0f, 255f), (byte)Math.Clamp(g, 0f, 255f), (byte)Math.Clamp(b, 0f, 255f));
     }
 
     // ============================================================
@@ -1347,7 +1380,13 @@ public class FaceDetectionController : BaseController
 
     [HttpPost("compare-global")]
     [AllowAnonymous]
-    public async Task<IActionResult> CompareGlobal(IFormFile image, [FromQuery] float? threshold)
+    public async Task<IActionResult> CompareGlobal(
+        IFormFile image, 
+        [FromQuery] float? threshold,
+        [FromForm] float? eyeLeftX,
+        [FromForm] float? eyeLeftY,
+        [FromForm] float? eyeRightX,
+        [FromForm] float? eyeRightY)
     {
         if (image == null || image.Length == 0)
             return BadRequest("Tệp ảnh không hợp lệ.");
@@ -1397,39 +1436,18 @@ public class FaceDetectionController : BaseController
                 await image.CopyToAsync(fs);
             }
 
-            // Thử căn chỉnh khuôn mặt phía server bằng align_face_helper.py (MediaPipe/OpenCV fallback)
-            // Điều này cho phép frontend gửi ảnh cắt có padding lớn thay vì phải căn chỉnh chính xác 112x112 trên FE
-            var arcFaceDir = GetArcFaceDir();
-            var alignHelperPath = Path.Combine(arcFaceDir, "align_face_helper.py");
-            var alignedImagePath = rawTempPath; // fallback nếu alignment thất bại
+            string alignedImagePath = rawTempPath; // fallback nếu alignment thất bại
 
-            if (System.IO.File.Exists(alignHelperPath))
+            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
             {
                 try
                 {
-                    using var proc = new System.Diagnostics.Process();
-                    proc.StartInfo.FileName = "python3";
-                    proc.StartInfo.Arguments = $"\"{alignHelperPath}\" \"{rawTempPath}\" \"{alignedTempPath}\"";
-                    proc.StartInfo.UseShellExecute = false;
-                    proc.StartInfo.RedirectStandardOutput = true;
-                    proc.StartInfo.RedirectStandardError = true;
-                    proc.StartInfo.CreateNoWindow = true;
-                    proc.Start();
-                    var output = await proc.StandardOutput.ReadToEndAsync();
-                    await proc.WaitForExitAsync();
-                    if (proc.ExitCode == 0 && output.Trim().Contains("SUCCESS") && System.IO.File.Exists(alignedTempPath))
-                    {
-                        alignedImagePath = alignedTempPath;
-                        _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công.");
-                    }
-                    else
-                    {
-                        _logger.LogWarning("[CompareGlobal] align_face_helper.py không thành công (ExitCode={ExitCode}), dùng resize fallback.", proc.ExitCode);
-                    }
+                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value);
+                    _logger.LogInformation("[CompareGlobal] Server-side face alignment thành công bằng C#.");
                 }
                 catch (Exception alignEx)
                 {
-                    _logger.LogWarning(alignEx, "[CompareGlobal] Không thể gọi align_face_helper.py, dùng resize fallback.");
+                    _logger.LogError(alignEx, "[CompareGlobal] Lỗi căn chỉnh khuôn mặt bằng C#.");
                 }
             }
 
@@ -1442,6 +1460,10 @@ public class FaceDetectionController : BaseController
             {
                 if (System.IO.File.Exists(rawTempPath)) System.IO.File.Delete(rawTempPath);
                 if (System.IO.File.Exists(alignedTempPath)) System.IO.File.Delete(alignedTempPath);
+                if (alignedImagePath != rawTempPath && System.IO.File.Exists(alignedImagePath))
+                {
+                    System.IO.File.Delete(alignedImagePath);
+                }
             }
         }
         catch (Exception ex)
@@ -1530,6 +1552,204 @@ public class FaceDetectionController : BaseController
             BestMatch = bestMatch,
             AllMatches = sortedResults
         });
+    }
+
+    [HttpPost("compare-global-stream")]
+    [AllowAnonymous]
+    public async Task CompareGlobalStream(
+        IFormFile image, 
+        [FromQuery] float? threshold,
+        [FromForm] float? eyeLeftX,
+        [FromForm] float? eyeLeftY,
+        [FromForm] float? eyeRightX,
+        [FromForm] float? eyeRightY)
+    {
+        Response.Headers["Content-Type"] = "text/event-stream";
+        Response.Headers["Cache-Control"] = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";
+
+        async Task SendSseAsync(object data)
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(data);
+            await Response.WriteAsync($"data: {json}\n\n");
+            await Response.Body.FlushAsync();
+        }
+
+        try
+        {
+            await SendSseAsync(new { status = "received" });
+
+            if (image == null || image.Length == 0)
+            {
+                await SendSseAsync(new { status = "error", message = "Tệp ảnh không hợp lệ." });
+                return;
+            }
+
+            // Find the latest best model in the facesid folders
+            string? bestModelPath = null;
+            var rootFaceIds = GetRootFaceIdsPath();
+            if (Directory.Exists(rootFaceIds))
+            {
+                var latestModel = Directory.GetDirectories(rootFaceIds)
+                    .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
+                    .Where(System.IO.File.Exists)
+                    .OrderByDescending(System.IO.File.GetCreationTime)
+                    .FirstOrDefault();
+                if (latestModel != null)
+                {
+                    bestModelPath = latestModel;
+                }
+            }
+
+            // Fallback to query existing embeddings for model path
+            if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+            {
+                var anyEmbedding = await _faceDefinitionDb.UserFaceEmbeddings
+                    .Where(e => !string.IsNullOrEmpty(e.BestModelPath))
+                    .FirstOrDefaultAsync();
+                if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.BestModelPath))
+                {
+                    bestModelPath = anyEmbedding.BestModelPath;
+                }
+            }
+
+            if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
+            {
+                await SendSseAsync(new { status = "error", message = "Hệ thống chưa có mô hình đào tạo (ONNX) nào. Vui lòng thực hiện đào tạo trước." });
+                return;
+            }
+
+            await SendSseAsync(new { status = "aligning" });
+
+            var tempDir = Path.Combine(GetArcFaceDir(), "temp");
+            Directory.CreateDirectory(tempDir);
+            var rawTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_raw.jpg");
+            var alignedTempPath = Path.Combine(tempDir, $"{Guid.NewGuid()}_aligned.png");
+
+            using (var fs = new FileStream(rawTempPath, FileMode.Create))
+            {
+                await image.CopyToAsync(fs);
+            }
+
+            string alignedImagePath = rawTempPath; // fallback nếu alignment thất bại
+
+            if (eyeLeftX.HasValue && eyeLeftY.HasValue && eyeRightX.HasValue && eyeRightY.HasValue)
+            {
+                try
+                {
+                    alignedImagePath = AlignFaceCSharp(rawTempPath, eyeLeftX.Value, eyeLeftY.Value, eyeRightX.Value, eyeRightY.Value);
+                    _logger.LogInformation("[CompareGlobalStream] Server-side face alignment thành công bằng C#.");
+                }
+                catch (Exception alignEx)
+                {
+                    _logger.LogError(alignEx, "[CompareGlobalStream] Lỗi căn chỉnh khuôn mặt bằng C#.");
+                }
+            }
+
+            await SendSseAsync(new { status = "extracting" });
+
+            float[] testEmbedding;
+            try
+            {
+                using var inferenceSession = new InferenceSession(bestModelPath);
+                testEmbedding = ExtractEmbeddingFromFile(inferenceSession, alignedImagePath);
+            }
+            finally
+            {
+                if (System.IO.File.Exists(rawTempPath)) System.IO.File.Delete(rawTempPath);
+                if (System.IO.File.Exists(alignedTempPath)) System.IO.File.Delete(alignedTempPath);
+                if (alignedImagePath != rawTempPath && System.IO.File.Exists(alignedImagePath))
+                {
+                    System.IO.File.Delete(alignedImagePath);
+                }
+            }
+
+            await SendSseAsync(new { status = "searching" });
+
+            var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
+            List<UserFaceEmbedding> closestEmbeddings;
+            try
+            {
+                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
+                    .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Truy vấn HNSW thất bại, sử dụng fallback đối sánh chéo bộ nhớ.");
+                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+            }
+
+            var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();
+            var imageIds = closestEmbeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+
+            var users = await _faceUserDb.Users
+                .Where(u => userIds.Contains(u.Id))
+                .ToListAsync();
+
+            var images = await _db.OriginalImages
+                .Where(i => imageIds.Contains(i.Id))
+                .Select(i => new { i.Id, i.Url, i.FileName })
+                .ToListAsync();
+
+            var compareResults = closestEmbeddings.Select(e =>
+            {
+                var user = users.FirstOrDefault(u => u.Id == e.UserId);
+                var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+
+                // Cosine Similarity = Inner Product for L2 normalized vectors
+                float cosineSimilarity = 0f;
+                var embArray = e.Embedding?.ToArray();
+                if (embArray != null && embArray.Length == testEmbedding.Length)
+                {
+                    for (int i = 0; i < testEmbedding.Length; i++)
+                    {
+                        cosineSimilarity += embArray[i] * testEmbedding[i];
+                    }
+                }
+
+                // L2 Distance
+                float l2Distance = (float)Math.Sqrt(Math.Max(0f, 2f - 2f * cosineSimilarity));
+
+                return new
+                {
+                    EmbeddingId = e.Id,
+                    UserId = e.UserId,
+                    Username = user?.Username ?? "Unknown",
+                    DisplayName = user?.DisplayName ?? "Unknown",
+                    Email = user?.Email ?? "",
+                    AvatarUrl = user?.AvatarUrl ?? "",
+                    OriginalImageId = e.OriginalImageId,
+                    ImageUrl = img?.Url,
+                    ImageName = img?.FileName,
+                    CosineSimilarity = cosineSimilarity,
+                    L2Distance = l2Distance
+                };
+            }).ToList();
+
+            var sortedResults = compareResults
+                .OrderByDescending(r => r.CosineSimilarity)
+                .ToList();
+
+            var reqThreshold = threshold ?? 0.5f;
+            var bestMatch = sortedResults.FirstOrDefault();
+            if (bestMatch != null && bestMatch.CosineSimilarity < reqThreshold)
+            {
+                bestMatch = null;
+            }
+
+            await SendSseAsync(new
+            {
+                status = "success",
+                bestMatch = bestMatch,
+                allMatches = sortedResults
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Lỗi khi xử lý so khớp camera qua SSE.");
+            await SendSseAsync(new { status = "error", message = ex.Message });
+        }
     }
 }
 
