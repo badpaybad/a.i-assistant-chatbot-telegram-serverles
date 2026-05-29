@@ -28,7 +28,7 @@ import {
 import "./chunk-RDD4GU72.js";
 import {
   provideNhanDienKhuonMat
-} from "./chunk-YRJUN6OZ.js";
+} from "./chunk-MTJVVLV7.js";
 import "./chunk-3QJVCMLC.js";
 import {
   API_URL,
@@ -2850,7 +2850,8 @@ var _MenuService = class _MenuService {
         icon: "smile",
         children: [
           { label: "Phi\xEAn thu th\u1EADp \u1EA3nh", route: "/modules/nhan-dien-khuon-mat/sessions" },
-          { label: "\u0110\xE0o t\u1EA1o nh\u1EADn d\u1EA1ng", route: "/modules/nhan-dien-khuon-mat/training" }
+          { label: "\u0110\xE0o t\u1EA1o nh\u1EADn d\u1EA1ng", route: "/modules/nhan-dien-khuon-mat/training" },
+          { label: "Camera nh\u1EADn d\u1EA1ng", route: "/modules/nhan-dien-khuon-mat/camera" }
         ]
       },
       {
@@ -4321,12 +4322,17 @@ var routes = [
           {
             path: "sessions",
             data: { breadcrumb: "Phi\xEAn thu th\u1EADp \u1EA3nh" },
-            loadComponent: () => import("./chunk-7T426NN2.js").then((m) => m.NhanDienKhuonMatComponent)
+            loadComponent: () => import("./chunk-EADXAEFI.js").then((m) => m.NhanDienKhuonMatComponent)
           },
           {
             path: "training",
             data: { breadcrumb: "\u0110\xE0o t\u1EA1o nh\u1EADn d\u1EA1ng" },
-            loadComponent: () => import("./chunk-7T426NN2.js").then((m) => m.TrainingComponent)
+            loadComponent: () => import("./chunk-EADXAEFI.js").then((m) => m.TrainingComponent)
+          },
+          {
+            path: "camera",
+            data: { breadcrumb: "Camera nh\u1EADn d\u1EA1ng" },
+            loadComponent: () => import("./chunk-EADXAEFI.js").then((m) => m.CameraComponent)
           },
           {
             path: "",

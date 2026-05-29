@@ -1,0 +1,264 @@
+<div class="camera-recognition-page">
+  
+  <!-- Loading state when loading model -->
+  <div *ngIf="loadingDetector" class="MP-loading-overlay">
+    <nz-spin nzSimple nzSize="large"></nz-spin>
+    <div class="loading-text">Đang nạp mô hình nhận dạng khuôn mặt MediaPipe (BlazeFace)...</div>
+  </div>
+
+  <div *ngIf="!loadingDetector" class="recognition-grid">
+    
+    <!-- LEFT PANEL: Webcam Stream & Alignment Preview -->
+    <div class="viewport-card">
+      <div class="viewport-header">
+        <span nz-icon nzType="video-camera" style="color: #1890ff; font-size: 18px;"></span>
+        <span class="header-title">&nbsp; Live Camera Scanner</span>
+        <span *ngIf="isScanning" class="status-dot pulsing-green" nz-tooltip nzTooltipTitle="Đang hoạt động quét liên tục"></span>
+        <span *ngIf="!isScanning" class="status-dot dot-yellow" nz-tooltip nzTooltipTitle="Đã tạm dừng"></span>
+      </div>
+
+      <div class="camera-viewport-container">
+        <!-- Live Webcam Video Stream -->
+        <video #videoElement autoplay playsinline muted class="webcam-feed" [class.inactive]="!cameraActive"></video>
+
+        <!-- Canvas overlay for drawing Bounding Box targeting brackets -->
+        <canvas #canvasOverlay class="canvas-overlay"></canvas>
+
+        <!-- Webcam error / permissions overlay -->
+        <div *ngIf="cameraError" class="camera-error-overlay">
+          <span nz-icon nzType="warning" style="font-size: 42px; color: #ff4d4f;"></span>
+          <div class="error-msg">{{ cameraError }}</div>
+          <button nz-button nzType="primary" (click)="startCamera()" style="margin-top: 12px;">Thử lại</button>
+        </div>
+
+        <!-- Scanning scanline sweep effect -->
+        <div *ngIf="cameraActive && isScanning" class="scanline-sweep"></div>
+      </div>
+
+      <!-- Live Controls row directly under the stream -->
+      <div class="viewport-controls">
+        <button
+          nz-button
+          [nzType]="isScanning ? 'default' : 'primary'"
+          [nzDanger]="isScanning"
+          (click)="toggleScanning()"
+          [disabled]="!cameraActive"
+          style="width: 140px;">
+          <span nz-icon [nzType]="isScanning ? 'pause-circle' : 'play-circle'"></span>
+          {{ isScanning ? 'Tạm dừng' : 'Bắt đầu quét' }}
+        </button>
+
+        <button
+          nz-button
+          nzType="default"
+          (click)="cameraActive ? stopCamera() : startCamera()"
+          style="margin-left: 12px;">
+          <span nz-icon [nzType]="cameraActive ? 'poweroff' : 'reload'"></span>
+          {{ cameraActive ? 'Tắt camera' : 'Mở camera' }}
+        </button>
+      </div>
+
+      <!-- Hidden canvas used for face crop alignment -->
+      <canvas #alignedCanvas style="display: none;"></canvas>
+
+      <!-- Miniature aligned crop view -->
+      <div class="aligned-face-preview-section">
+        <div class="preview-title">Khung căn chỉnh Affine (MediaPipe 112x112):</div>
+        <div class="preview-box">
+          <div *ngIf="!alignedPreviewUrl" class="no-preview-thumbnail">
+            <span nz-icon nzType="scan" style="font-size: 20px; color: #ccc;"></span>
+          </div>
+          <img *ngIf="alignedPreviewUrl" [src]="alignedPreviewUrl" class="face-crop-img" alt="Aligned Crop" />
+          <div class="preview-status" *ngIf="isComparing">
+            <nz-spin nzSimple nzSize="small"></nz-spin>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Settings & Face Comparison Match Results -->
+    <div class="results-card">
+      <div class="results-header">
+        <span nz-icon nzType="security-scan" style="color: #1890ff; font-size: 18px;"></span>
+        <span class="header-title">&nbsp; Kết Quả Nhận Dạng (HNSW)</span>
+      </div>
+
+      <!-- Cosine Similarity Threshold Slider -->
+      <div class="threshold-panel-container">
+        <div class="slider-label">
+          <span>Ngưỡng nhận dạng tối thiểu (Cosine Similarity):</span>
+          <strong class="threshold-val">{{ compareThreshold }}</strong>
+        </div>
+        <div class="slider-control-row">
+          <nz-slider [nzMin]="0.3" [nzMax]="0.9" [nzStep]="0.01" [(ngModel)]="compareThreshold" style="flex: 1; margin-right: 12px;"></nz-slider>
+          <nz-input-number [nzMin]="0.3" [nzMax]="0.9" [nzStep]="0.01" [(ngModel)]="compareThreshold" nzSize="small"></nz-input-number>
+        </div>
+      </div>
+
+      <!-- Face Size (Width) Threshold Slider -->
+      <div class="threshold-panel-container" style="margin-top: 10px;">
+        <div class="slider-label">
+          <span>Kích thước tối thiểu khuôn mặt (px rộng, lọc mặt xa/nhỏ):</span>
+          <strong class="threshold-val">{{ minFaceWidthPx }}px</strong>
+        </div>
+        <div class="slider-control-row">
+          <nz-slider [nzMin]="20" [nzMax]="300" [nzStep]="5" [(ngModel)]="minFaceWidthPx" style="flex: 1; margin-right: 12px;"></nz-slider>
+          <nz-input-number [nzMin]="20" [nzMax]="300" [nzStep]="5" [(ngModel)]="minFaceWidthPx" nzSize="small"></nz-input-number>
+        </div>
+        <div style="font-size: 11px; color: #8c8c8c; margin-top: 4px;">💡 Tăng ngưỡng này nếu khung hình có nhiều người — chỉ nhận dạng khuôn mặt đủ gần.</div>
+      </div>
+
+      <nz-divider></nz-divider>
+
+      <!-- DYNAMIC STATE MATCH CARDS -->
+      <div class="state-container">
+        
+        <!-- Comparing Loading state -->
+        <div *ngIf="isComparing" class="scanning-state-card active-eval">
+          <nz-spin nzSimple nzSize="large"></nz-spin>
+          <div class="state-title pulsing-text">Đang so khớp vector đặc trưng...</div>
+          <div class="state-hint">Đang so sánh embedding 512-chiều với PostgreSQL HNSW</div>
+        </div>
+
+        <!-- No face detected in webcam view -->
+        <div *ngIf="noFaceDetected && !isComparing" class="scanning-state-card">
+          <span nz-icon nzType="user" class="state-icon gray-pulse"></span>
+          <div class="state-title">Đang quét tìm khuôn mặt...</div>
+          <div class="state-hint">Vui lòng đứng thẳng trước camera để bắt đầu đối sánh tự động.</div>
+        </div>
+
+        <!-- Face detected but too small/far (below minFaceWidthPx) -->
+        <div *ngIf="faceTooSmall && !noFaceDetected && !isComparing" class="scanning-state-card">
+          <span nz-icon nzType="shrink" class="state-icon" style="color: #faad14;"></span>
+          <div class="state-title" style="color: #d46b08;">Khuôn mặt quá nhỏ hoặc quá xa!</div>
+          <div class="state-hint">Khuôn mặt phát hiện được nhỏ hơn ngưỡng {{ minFaceWidthPx }}px. Hãy lại gần camera hơn hoặc hạ thấp ngưỡng kích thước.</div>
+        </div>
+
+        <!-- Face detected but similarity score falls below required threshold -->
+        <div *ngIf="belowThreshold && !noFaceDetected && !isComparing" class="scanning-state-card alert-fail">
+          <span nz-icon nzType="warning" class="state-icon text-red shadow-pulse"></span>
+          <div class="state-title text-red">Khuôn mặt chưa được đăng ký!</div>
+          <div class="state-hint">Độ tương đồng lớn nhất tìm thấy dưới ngưỡng tối thiểu {{ compareThreshold }}.</div>
+          
+          <div *ngIf="compareResults?.bestMatch" class="failed-best-match-snippet">
+            <span nz-icon nzType="info-circle"></span>&nbsp; Gợi ý: Gần giống nhất với 
+            <strong>{{ compareResults.bestMatch.displayName || compareResults.bestMatch.username }}</strong> 
+            ({{ compareResults.bestMatch.cosineSimilarity | number:'1.2-2' }}). Hãy hạ thấp ngưỡng so sánh nếu muốn kiểm tra.
+          </div>
+        </div>
+
+        <!-- Successful Match found! -->
+        <div *ngIf="bestMatchUser && !noFaceDetected && !isComparing" class="match-success-card">
+          <div class="success-banner">
+            <span nz-icon nzType="check-circle" nzTheme="fill" class="success-check-icon"></span>
+            <span>&nbsp; XÁC THỰC THÀNH CÔNG!</span>
+          </div>
+
+          <!-- Premium Matched Profile details -->
+          <div class="matched-profile-content">
+            <div class="profile-avatar-wrapper">
+              <img *ngIf="bestMatchUser.avatarUrl" [src]="bestMatchUser.avatarUrl" class="matched-profile-avatar" alt="avatar" />
+              <div *ngIf="!bestMatchUser.avatarUrl" class="matched-profile-avatar-placeholder">
+                {{ (bestMatchUser.displayName || bestMatchUser.username || 'U').charAt(0).toUpperCase() }}
+              </div>
+            </div>
+
+            <div class="profile-details-text">
+              <div class="matched-name">{{ bestMatchUser.displayName || bestMatchUser.username }}</div>
+              <div class="matched-email">{{ bestMatchUser.email }}</div>
+              <div class="matched-meta">
+                <nz-tag nzColor="success">Đã Đăng Ký</nz-tag>
+                <span class="matched-timestamp">Đã khớp: {{ scanRateMs }}ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matching stats progress bars -->
+          <div class="stats-panel">
+            <div class="stat-progress-item">
+              <div class="stat-header">
+                <span>Độ tương đồng (Cosine Similarity):</span>
+                <strong class="stat-number text-green">{{ bestMatchUser.cosineSimilarity | number:'1.4-4' }}</strong>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill green-fill" [style.width.%]="bestMatchUser.cosineSimilarity * 100"></div>
+              </div>
+            </div>
+
+            <div class="stat-progress-item" style="margin-top: 12px;">
+              <div class="stat-header">
+                <span>Khoảng cách L2 (Euclidean Distance):</span>
+                <strong class="stat-number text-blue">{{ bestMatchUser.l2Distance | number:'1.4-4' }}</strong>
+              </div>
+              <div class="progress-bar-track">
+                <!-- Euclidean distance max is 2.0 (for unit vectors), lower is closer. Show reverse bar. -->
+                <div class="progress-bar-fill blue-fill" [style.width.%]="(2.0 - bestMatchUser.l2Distance) * 50"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Waiting state / initial state -->
+        <div *ngIf="!cameraActive && !loadingDetector" class="scanning-state-card">
+          <span nz-icon nzType="video-camera" class="state-icon icon-blue"></span>
+          <div class="state-title">Camera Chưa Kích Hoạt</div>
+          <div class="state-hint">Nhấp vào "Mở camera" ở bảng bên trái để khởi động quét đối sánh khuôn mặt.</div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RECOGNITION HISTORY SECTION (5 kết quả gần nhất) -->
+  <div *ngIf="recognitionHistory.length > 0" class="history-section">
+    <div class="history-header">
+      <span nz-icon nzType="history" style="color: #722ed1; font-size: 16px;"></span>
+      <span class="history-title">&nbsp; Lịch Sử Nhận Diện <nz-badge [nzCount]="recognitionHistory.length" nzColor="#722ed1" style="margin-left:6px;"></nz-badge></span>
+      <button nz-button nzType="text" nzSize="small" (click)="clearHistory()" style="margin-left: auto; color: #8c8c8c; font-size: 11px;">
+        <span nz-icon nzType="delete"></span> Xóa lịch sử
+      </button>
+    </div>
+
+    <div class="history-list">
+      <div *ngFor="let entry of recognitionHistory; let i = index" class="history-item" [class.history-matched]="entry.matched" [class.history-unmatched]="!entry.matched">
+        <!-- Index badge -->
+        <div class="history-index">#{{ i + 1 }}</div>
+
+        <!-- Face snapshot thumbnail -->
+        <div class="history-thumbnail">
+          <img *ngIf="entry.previewUrl" [src]="entry.previewUrl" alt="Face snap" class="history-thumb-img" />
+          <span *ngIf="!entry.previewUrl" nz-icon nzType="scan" style="font-size: 18px; color: #ccc;"></span>
+        </div>
+
+        <!-- Match result: avatar + name -->
+        <div class="history-profile">
+          <div *ngIf="entry.matched">
+            <div class="history-avatar-row">
+              <img *ngIf="entry.avatarUrl" [src]="entry.avatarUrl" class="history-avatar" alt="avatar" />
+              <div *ngIf="!entry.avatarUrl" class="history-avatar-placeholder">{{ (entry.displayName || 'U').charAt(0).toUpperCase() }}</div>
+              <div class="history-name-block">
+                <div class="history-name">{{ entry.displayName }}</div>
+                <div class="history-email">{{ entry.email }}</div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!entry.matched" class="history-no-match">
+            <span nz-icon nzType="stop" style="color: #ff4d4f; font-size: 14px;"></span>
+            <span style="margin-left: 6px; font-size: 12px; color: #ff4d4f; font-weight: 600;">Không khớp</span>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="history-metrics">
+          <div *ngIf="entry.matched">
+            <nz-tag nzColor="success" style="font-size: 10.5px;">{{ entry.cosineSimilarity | number:'1.3-3' }}</nz-tag>
+          </div>
+          <div class="history-time">{{ entry.timestamp | date:'HH:mm:ss' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

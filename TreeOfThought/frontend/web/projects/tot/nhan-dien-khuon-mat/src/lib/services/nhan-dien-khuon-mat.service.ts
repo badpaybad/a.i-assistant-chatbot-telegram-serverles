@@ -112,4 +112,11 @@ export class NhanDienKhuonMatService {
     const query = threshold !== undefined && threshold !== null ? `?threshold=${threshold}` : '';
     return this.http.post(`/api/face-detection/embeddings/${id}/compare${query}`, formData);
   }
+
+  compareGlobal(file: File, threshold?: number) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const query = threshold !== undefined && threshold !== null ? `?threshold=${threshold}` : '';
+    return this.http.post(`/api/face-detection/compare-global${query}`, formData);
+  }
 }

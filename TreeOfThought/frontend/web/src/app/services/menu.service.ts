@@ -62,6 +62,7 @@ export class MenuService {
       children: [
         { label: 'Phiên thu thập ảnh', route: '/modules/nhan-dien-khuon-mat/sessions' },
         { label: 'Đào tạo nhận dạng', route: '/modules/nhan-dien-khuon-mat/training' },
+        { label: 'Camera nhận dạng', route: '/modules/nhan-dien-khuon-mat/camera' },
       ],
     },
     {

@@ -133,6 +133,11 @@ export const routes: Routes = [
             loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.TrainingComponent)
           },
           {
+            path: 'camera',
+            data: { breadcrumb: 'Camera nhận dạng' },
+            loadComponent: () => import('@tot/nhan-dien-khuon-mat').then(m => m.CameraComponent)
+          },
+          {
             path: '',
             redirectTo: 'sessions',
             pathMatch: 'full'

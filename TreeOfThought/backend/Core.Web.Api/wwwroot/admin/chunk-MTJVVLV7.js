@@ -660,6 +660,12 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
     const query = threshold !== void 0 && threshold !== null ? `?threshold=${threshold}` : "";
     return this.http.post(`/api/face-detection/embeddings/${id}/compare${query}`, formData);
   }
+  compareGlobal(file, threshold) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const query = threshold !== void 0 && threshold !== null ? `?threshold=${threshold}` : "";
+    return this.http.post(`/api/face-detection/compare-global${query}`, formData);
+  }
 };
 _NhanDienKhuonMatService.\u0275fac = function NhanDienKhuonMatService_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _NhanDienKhuonMatService)();
@@ -8571,10 +8577,1241 @@ var TrainingComponent = _TrainingComponent;
   (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(TrainingComponent, { className: "TrainingComponent", filePath: "projects/tot/nhan-dien-khuon-mat/src/lib/training/training.component.ts", lineNumber: 48 });
 })();
 
+// projects/tot/nhan-dien-khuon-mat/src/lib/camera/camera.component.ts
+var _c08 = ["videoElement"];
+var _c15 = ["canvasOverlay"];
+var _c24 = ["alignedCanvas"];
+function CameraComponent_div_1_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 7);
+    \u0275\u0275element(1, "nz-spin", 8);
+    \u0275\u0275elementStart(2, "div", 9);
+    \u0275\u0275text(3, "\u0110ang n\u1EA1p m\xF4 h\xECnh nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t MediaPipe (BlazeFace)...");
+    \u0275\u0275elementEnd()();
+  }
+}
+function CameraComponent_div_2_span_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "span", 49);
+  }
+}
+function CameraComponent_div_2_span_7_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "span", 50);
+  }
+}
+function CameraComponent_div_2_div_13_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r2 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 51);
+    \u0275\u0275element(1, "span", 52);
+    \u0275\u0275elementStart(2, "div", 53);
+    \u0275\u0275text(3);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "button", 54);
+    \u0275\u0275listener("click", function CameraComponent_div_2_div_13_Template_button_click_4_listener() {
+      \u0275\u0275restoreView(_r2);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.startCamera());
+    });
+    \u0275\u0275text(5, "Th\u1EED l\u1EA1i");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r2.cameraError);
+  }
+}
+function CameraComponent_div_2_div_14_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "div", 55);
+  }
+}
+function CameraComponent_div_2_div_28_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 56);
+    \u0275\u0275element(1, "span", 57);
+    \u0275\u0275elementEnd();
+  }
+}
+function CameraComponent_div_2_img_29_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "img", 58);
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275property("src", ctx_r2.alignedPreviewUrl, \u0275\u0275sanitizeUrl);
+  }
+}
+function CameraComponent_div_2_div_30_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 59);
+    \u0275\u0275element(1, "nz-spin", 60);
+    \u0275\u0275elementEnd();
+  }
+}
+function CameraComponent_div_2_div_58_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 61);
+    \u0275\u0275element(1, "nz-spin", 8);
+    \u0275\u0275elementStart(2, "div", 62);
+    \u0275\u0275text(3, "\u0110ang so kh\u1EDBp vector \u0111\u1EB7c tr\u01B0ng...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275text(5, "\u0110ang so s\xE1nh embedding 512-chi\u1EC1u v\u1EDBi PostgreSQL HNSW");
+    \u0275\u0275elementEnd()();
+  }
+}
+function CameraComponent_div_2_div_59_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 64);
+    \u0275\u0275element(1, "span", 65);
+    \u0275\u0275elementStart(2, "div", 66);
+    \u0275\u0275text(3, "\u0110ang qu\xE9t t\xECm khu\xF4n m\u1EB7t...");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275text(5, "Vui l\xF2ng \u0111\u1EE9ng th\u1EB3ng tr\u01B0\u1EDBc camera \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u \u0111\u1ED1i s\xE1nh t\u1EF1 \u0111\u1ED9ng.");
+    \u0275\u0275elementEnd()();
+  }
+}
+function CameraComponent_div_2_div_60_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 64);
+    \u0275\u0275element(1, "span", 67);
+    \u0275\u0275elementStart(2, "div", 68);
+    \u0275\u0275text(3, "Khu\xF4n m\u1EB7t qu\xE1 nh\u1ECF ho\u1EB7c qu\xE1 xa!");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275text(5);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate1("Khu\xF4n m\u1EB7t ph\xE1t hi\u1EC7n \u0111\u01B0\u1EE3c nh\u1ECF h\u01A1n ng\u01B0\u1EE1ng ", ctx_r2.minFaceWidthPx, "px. H\xE3y l\u1EA1i g\u1EA7n camera h\u01A1n ho\u1EB7c h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng k\xEDch th\u01B0\u1EDBc.");
+  }
+}
+function CameraComponent_div_2_div_61_div_6_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 73);
+    \u0275\u0275element(1, "span", 74);
+    \u0275\u0275text(2, "\xA0 G\u1EE3i \xFD: G\u1EA7n gi\u1ED1ng nh\u1EA5t v\u1EDBi ");
+    \u0275\u0275elementStart(3, "strong");
+    \u0275\u0275text(4);
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "number");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(ctx_r2.compareResults.bestMatch.displayName || ctx_r2.compareResults.bestMatch.username);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" (", \u0275\u0275pipeBind2(6, 2, ctx_r2.compareResults.bestMatch.cosineSimilarity, "1.2-2"), "). H\xE3y h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng so s\xE1nh n\u1EBFu mu\u1ED1n ki\u1EC3m tra. ");
+  }
+}
+function CameraComponent_div_2_div_61_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 69);
+    \u0275\u0275element(1, "span", 70);
+    \u0275\u0275elementStart(2, "div", 71);
+    \u0275\u0275text(3, "Khu\xF4n m\u1EB7t ch\u01B0a \u0111\u01B0\u1EE3c \u0111\u0103ng k\xFD!");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275text(5);
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(6, CameraComponent_div_2_div_61_div_6_Template, 7, 5, "div", 72);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate1("\u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng l\u1EDBn nh\u1EA5t t\xECm th\u1EA5y d\u01B0\u1EDBi ng\u01B0\u1EE1ng t\u1ED1i thi\u1EC3u ", ctx_r2.compareThreshold, ".");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.compareResults == null ? null : ctx_r2.compareResults.bestMatch);
+  }
+}
+function CameraComponent_div_2_div_62_img_7_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "img", 97);
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275property("src", ctx_r2.bestMatchUser.avatarUrl, \u0275\u0275sanitizeUrl);
+  }
+}
+function CameraComponent_div_2_div_62_div_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 98);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", (ctx_r2.bestMatchUser.displayName || ctx_r2.bestMatchUser.username || "U").charAt(0).toUpperCase(), " ");
+  }
+}
+function CameraComponent_div_2_div_62_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 75)(1, "div", 76);
+    \u0275\u0275element(2, "span", 77);
+    \u0275\u0275elementStart(3, "span");
+    \u0275\u0275text(4, "\xA0 X\xC1C TH\u1EF0C TH\xC0NH C\xD4NG!");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(5, "div", 78)(6, "div", 79);
+    \u0275\u0275template(7, CameraComponent_div_2_div_62_img_7_Template, 1, 1, "img", 80)(8, CameraComponent_div_2_div_62_div_8_Template, 2, 1, "div", 81);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(9, "div", 82)(10, "div", 83);
+    \u0275\u0275text(11);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(12, "div", 84);
+    \u0275\u0275text(13);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(14, "div", 85)(15, "nz-tag", 86);
+    \u0275\u0275text(16, "\u0110\xE3 \u0110\u0103ng K\xFD");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(17, "span", 87);
+    \u0275\u0275text(18);
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementStart(19, "div", 88)(20, "div", 89)(21, "div", 90)(22, "span");
+    \u0275\u0275text(23, "\u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng (Cosine Similarity):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(24, "strong", 91);
+    \u0275\u0275text(25);
+    \u0275\u0275pipe(26, "number");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(27, "div", 92);
+    \u0275\u0275element(28, "div", 93);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(29, "div", 94)(30, "div", 90)(31, "span");
+    \u0275\u0275text(32, "Kho\u1EA3ng c\xE1ch L2 (Euclidean Distance):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(33, "strong", 95);
+    \u0275\u0275text(34);
+    \u0275\u0275pipe(35, "number");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(36, "div", 92);
+    \u0275\u0275element(37, "div", 96);
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance(7);
+    \u0275\u0275property("ngIf", ctx_r2.bestMatchUser.avatarUrl);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r2.bestMatchUser.avatarUrl);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(ctx_r2.bestMatchUser.displayName || ctx_r2.bestMatchUser.username);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r2.bestMatchUser.email);
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate1("\u0110\xE3 kh\u1EDBp: ", ctx_r2.scanRateMs, "ms");
+    \u0275\u0275advance(7);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(26, 11, ctx_r2.bestMatchUser.cosineSimilarity, "1.4-4"));
+    \u0275\u0275advance(3);
+    \u0275\u0275styleProp("width", ctx_r2.bestMatchUser.cosineSimilarity * 100, "%");
+    \u0275\u0275advance(6);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(35, 14, ctx_r2.bestMatchUser.l2Distance, "1.4-4"));
+    \u0275\u0275advance(3);
+    \u0275\u0275styleProp("width", (2 - ctx_r2.bestMatchUser.l2Distance) * 50, "%");
+  }
+}
+function CameraComponent_div_2_div_63_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 64);
+    \u0275\u0275element(1, "span", 99);
+    \u0275\u0275elementStart(2, "div", 66);
+    \u0275\u0275text(3, "Camera Ch\u01B0a K\xEDch Ho\u1EA1t");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275text(5, 'Nh\u1EA5p v\xE0o "M\u1EDF camera" \u1EDF b\u1EA3ng b\xEAn tr\xE1i \u0111\u1EC3 kh\u1EDFi \u0111\u1ED9ng qu\xE9t \u0111\u1ED1i s\xE1nh khu\xF4n m\u1EB7t.');
+    \u0275\u0275elementEnd()();
+  }
+}
+function CameraComponent_div_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 10)(1, "div", 11)(2, "div", 12);
+    \u0275\u0275element(3, "span", 13);
+    \u0275\u0275elementStart(4, "span", 14);
+    \u0275\u0275text(5, "\xA0 Live Camera Scanner");
+    \u0275\u0275elementEnd();
+    \u0275\u0275template(6, CameraComponent_div_2_span_6_Template, 1, 0, "span", 15)(7, CameraComponent_div_2_span_7_Template, 1, 0, "span", 16);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(8, "div", 17);
+    \u0275\u0275element(9, "video", 18, 0)(11, "canvas", 19, 1);
+    \u0275\u0275template(13, CameraComponent_div_2_div_13_Template, 6, 1, "div", 20)(14, CameraComponent_div_2_div_14_Template, 1, 0, "div", 21);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(15, "div", 22)(16, "button", 23);
+    \u0275\u0275listener("click", function CameraComponent_div_2_Template_button_click_16_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.toggleScanning());
+    });
+    \u0275\u0275element(17, "span", 24);
+    \u0275\u0275text(18);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(19, "button", 25);
+    \u0275\u0275listener("click", function CameraComponent_div_2_Template_button_click_19_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.cameraActive ? ctx_r2.stopCamera() : ctx_r2.startCamera());
+    });
+    \u0275\u0275element(20, "span", 24);
+    \u0275\u0275text(21);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275element(22, "canvas", 26, 2);
+    \u0275\u0275elementStart(24, "div", 27)(25, "div", 28);
+    \u0275\u0275text(26, "Khung c\u0103n ch\u1EC9nh Affine (MediaPipe 112x112):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(27, "div", 29);
+    \u0275\u0275template(28, CameraComponent_div_2_div_28_Template, 2, 0, "div", 30)(29, CameraComponent_div_2_img_29_Template, 1, 1, "img", 31)(30, CameraComponent_div_2_div_30_Template, 2, 0, "div", 32);
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(31, "div", 33)(32, "div", 34);
+    \u0275\u0275element(33, "span", 35);
+    \u0275\u0275elementStart(34, "span", 14);
+    \u0275\u0275text(35, "\xA0 K\u1EBFt Qu\u1EA3 Nh\u1EADn D\u1EA1ng (HNSW)");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(36, "div", 36)(37, "div", 37)(38, "span");
+    \u0275\u0275text(39, "Ng\u01B0\u1EE1ng nh\u1EADn d\u1EA1ng t\u1ED1i thi\u1EC3u (Cosine Similarity):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(40, "strong", 38);
+    \u0275\u0275text(41);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(42, "div", 39)(43, "nz-slider", 40);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_43_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(44, "nz-input-number", 41);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_44_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(45, "div", 42)(46, "div", 37)(47, "span");
+    \u0275\u0275text(48, "K\xEDch th\u01B0\u1EDBc t\u1ED1i thi\u1EC3u khu\xF4n m\u1EB7t (px r\u1ED9ng, l\u1ECDc m\u1EB7t xa/nh\u1ECF):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(49, "strong", 38);
+    \u0275\u0275text(50);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(51, "div", 39)(52, "nz-slider", 40);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_52_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.minFaceWidthPx, $event) || (ctx_r2.minFaceWidthPx = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(53, "nz-input-number", 41);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_53_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.minFaceWidthPx, $event) || (ctx_r2.minFaceWidthPx = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(54, "div", 43);
+    \u0275\u0275text(55, "\u{1F4A1} T\u0103ng ng\u01B0\u1EE1ng n\xE0y n\u1EBFu khung h\xECnh c\xF3 nhi\u1EC1u ng\u01B0\u1EDDi \u2014 ch\u1EC9 nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t \u0111\u1EE7 g\u1EA7n.");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275element(56, "nz-divider");
+    \u0275\u0275elementStart(57, "div", 44);
+    \u0275\u0275template(58, CameraComponent_div_2_div_58_Template, 6, 0, "div", 45)(59, CameraComponent_div_2_div_59_Template, 6, 0, "div", 46)(60, CameraComponent_div_2_div_60_Template, 6, 1, "div", 46)(61, CameraComponent_div_2_div_61_Template, 7, 2, "div", 47)(62, CameraComponent_div_2_div_62_Template, 38, 17, "div", 48)(63, CameraComponent_div_2_div_63_Template, 6, 0, "div", 46);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance(6);
+    \u0275\u0275property("ngIf", ctx_r2.isScanning);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r2.isScanning);
+    \u0275\u0275advance(2);
+    \u0275\u0275classProp("inactive", !ctx_r2.cameraActive);
+    \u0275\u0275advance(4);
+    \u0275\u0275property("ngIf", ctx_r2.cameraError);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.cameraActive && ctx_r2.isScanning);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzType", ctx_r2.isScanning ? "default" : "primary")("nzDanger", ctx_r2.isScanning)("disabled", !ctx_r2.cameraActive);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzType", ctx_r2.isScanning ? "pause-circle" : "play-circle");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r2.isScanning ? "T\u1EA1m d\u1EEBng" : "B\u1EAFt \u0111\u1EA7u qu\xE9t", " ");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzType", ctx_r2.cameraActive ? "poweroff" : "reload");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", ctx_r2.cameraActive ? "T\u1EAFt camera" : "M\u1EDF camera", " ");
+    \u0275\u0275advance(7);
+    \u0275\u0275property("ngIf", !ctx_r2.alignedPreviewUrl);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.alignedPreviewUrl);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.isComparing);
+    \u0275\u0275advance(11);
+    \u0275\u0275textInterpolate(ctx_r2.compareThreshold);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzMin", 0.3)("nzMax", 0.9)("nzStep", 0.01);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.compareThreshold);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzMin", 0.3)("nzMax", 0.9)("nzStep", 0.01);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.compareThreshold);
+    \u0275\u0275advance(6);
+    \u0275\u0275textInterpolate1("", ctx_r2.minFaceWidthPx, "px");
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzMin", 20)("nzMax", 300)("nzStep", 5);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.minFaceWidthPx);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzMin", 20)("nzMax", 300)("nzStep", 5);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.minFaceWidthPx);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("ngIf", ctx_r2.isComparing);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.noFaceDetected && !ctx_r2.isComparing);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.faceTooSmall && !ctx_r2.noFaceDetected && !ctx_r2.isComparing);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.belowThreshold && !ctx_r2.noFaceDetected && !ctx_r2.isComparing);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.bestMatchUser && !ctx_r2.noFaceDetected && !ctx_r2.isComparing);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx_r2.cameraActive && !ctx_r2.loadingDetector);
+  }
+}
+function CameraComponent_div_3_div_10_img_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "img", 119);
+  }
+  if (rf & 2) {
+    const entry_r5 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("src", entry_r5.previewUrl, \u0275\u0275sanitizeUrl);
+  }
+}
+function CameraComponent_div_3_div_10_span_5_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "span", 120);
+  }
+}
+function CameraComponent_div_3_div_10_div_7_img_2_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275element(0, "img", 127);
+  }
+  if (rf & 2) {
+    const entry_r5 = \u0275\u0275nextContext(2).$implicit;
+    \u0275\u0275property("src", entry_r5.avatarUrl, \u0275\u0275sanitizeUrl);
+  }
+}
+function CameraComponent_div_3_div_10_div_7_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 128);
+    \u0275\u0275text(1);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const entry_r5 = \u0275\u0275nextContext(2).$implicit;
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate((entry_r5.displayName || "U").charAt(0).toUpperCase());
+  }
+}
+function CameraComponent_div_3_div_10_div_7_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div")(1, "div", 121);
+    \u0275\u0275template(2, CameraComponent_div_3_div_10_div_7_img_2_Template, 1, 1, "img", 122)(3, CameraComponent_div_3_div_10_div_7_div_3_Template, 2, 1, "div", 123);
+    \u0275\u0275elementStart(4, "div", 124)(5, "div", 125);
+    \u0275\u0275text(6);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "div", 126);
+    \u0275\u0275text(8);
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const entry_r5 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", entry_r5.avatarUrl);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !entry_r5.avatarUrl);
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate(entry_r5.displayName);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(entry_r5.email);
+  }
+}
+function CameraComponent_div_3_div_10_div_8_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 129);
+    \u0275\u0275element(1, "span", 130);
+    \u0275\u0275elementStart(2, "span", 131);
+    \u0275\u0275text(3, "Kh\xF4ng kh\u1EDBp");
+    \u0275\u0275elementEnd()();
+  }
+}
+function CameraComponent_div_3_div_10_div_10_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div")(1, "nz-tag", 132);
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "number");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const entry_r5 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(3, 1, entry_r5.cosineSimilarity, "1.3-3"));
+  }
+}
+function CameraComponent_div_3_div_10_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 109)(1, "div", 110);
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 111);
+    \u0275\u0275template(4, CameraComponent_div_3_div_10_img_4_Template, 1, 1, "img", 112)(5, CameraComponent_div_3_div_10_span_5_Template, 1, 0, "span", 113);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "div", 114);
+    \u0275\u0275template(7, CameraComponent_div_3_div_10_div_7_Template, 9, 4, "div", 115)(8, CameraComponent_div_3_div_10_div_8_Template, 4, 0, "div", 116);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(9, "div", 117);
+    \u0275\u0275template(10, CameraComponent_div_3_div_10_div_10_Template, 4, 4, "div", 115);
+    \u0275\u0275elementStart(11, "div", 118);
+    \u0275\u0275text(12);
+    \u0275\u0275pipe(13, "date");
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const entry_r5 = ctx.$implicit;
+    const i_r6 = ctx.index;
+    \u0275\u0275classProp("history-matched", entry_r5.matched)("history-unmatched", !entry_r5.matched);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1("#", i_r6 + 1);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", entry_r5.previewUrl);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !entry_r5.previewUrl);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", entry_r5.matched);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !entry_r5.matched);
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", entry_r5.matched);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(13, 11, entry_r5.timestamp, "HH:mm:ss"));
+  }
+}
+function CameraComponent_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r4 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 100)(1, "div", 101);
+    \u0275\u0275element(2, "span", 102);
+    \u0275\u0275elementStart(3, "span", 103);
+    \u0275\u0275text(4, "\xA0 L\u1ECBch S\u1EED Nh\u1EADn Di\u1EC7n ");
+    \u0275\u0275element(5, "nz-badge", 104);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "button", 105);
+    \u0275\u0275listener("click", function CameraComponent_div_3_Template_button_click_6_listener() {
+      \u0275\u0275restoreView(_r4);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.clearHistory());
+    });
+    \u0275\u0275element(7, "span", 106);
+    \u0275\u0275text(8, " X\xF3a l\u1ECBch s\u1EED ");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(9, "div", 107);
+    \u0275\u0275template(10, CameraComponent_div_3_div_10_Template, 14, 14, "div", 108);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance(5);
+    \u0275\u0275property("nzCount", ctx_r2.recognitionHistory.length);
+    \u0275\u0275advance(5);
+    \u0275\u0275property("ngForOf", ctx_r2.recognitionHistory);
+  }
+}
+var _CameraComponent = class _CameraComponent {
+  constructor() {
+    this.api = inject(NhanDienKhuonMatService);
+    this.message = inject(NzMessageService);
+    this.stream = null;
+    this.cameraActive = false;
+    this.cameraError = null;
+    this.loadingDetector = false;
+    this.detectorReady = false;
+    this.faceDetector = null;
+    this.scanTimer = null;
+    this.isScanning = false;
+    this.scanRateMs = 800;
+    this.compareThreshold = 0.5;
+    this.minFaceWidthPx = 80;
+    this.isComparing = false;
+    this.compareResults = null;
+    this.bestMatchUser = null;
+    this.noFaceDetected = false;
+    this.belowThreshold = false;
+    this.faceTooSmall = false;
+    this.alignedPreviewUrl = null;
+    this.recognitionHistory = [];
+  }
+  ngOnInit() {
+    this.initMediaPipe();
+  }
+  ngOnDestroy() {
+    this.stopCamera();
+    this.stopScanning();
+    if (this.alignedPreviewUrl) {
+      URL.revokeObjectURL(this.alignedPreviewUrl);
+    }
+  }
+  // --- Khởi tạo MediaPipe BlazeFace Detector ---
+  async initMediaPipe() {
+    try {
+      this.loadingDetector = true;
+      const visionUrl = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8";
+      const vision = await Function(`return import("${visionUrl}")`)();
+      const filesetResolver = await vision.FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm");
+      this.faceDetector = await vision.FaceDetector.createFromOptions(filesetResolver, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+          delegate: "GPU"
+        },
+        runningMode: "IMAGE"
+      });
+      this.detectorReady = true;
+      this.startCamera();
+    } catch (error) {
+      console.error("[MediaPipe Camera] Init Failed: ", error);
+      this.message.error("Kh\xF4ng th\u1EC3 kh\u1EDFi t\u1EA1o m\xF4 h\xECnh ph\xE1t hi\u1EC7n khu\xF4n m\u1EB7t BlazeFace \u1EDF Client.");
+    } finally {
+      this.loadingDetector = false;
+    }
+  }
+  // --- Kích hoạt Webcam ---
+  async startCamera() {
+    this.cameraError = null;
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: 640, height: 480, facingMode: "user" },
+        audio: false
+      });
+      if (this.videoElement && this.videoElement.nativeElement) {
+        this.videoElement.nativeElement.srcObject = this.stream;
+        this.videoElement.nativeElement.onloadedmetadata = () => {
+          this.videoElement.nativeElement.play();
+          this.cameraActive = true;
+          this.startScanning();
+        };
+      }
+    } catch (err) {
+      console.error("[Webcam] Access Failed: ", err);
+      this.cameraError = "Kh\xF4ng th\u1EC3 truy c\u1EADp camera. Vui l\xF2ng c\u1EA5p quy\u1EC1n camera trong tr\xECnh duy\u1EC7t ho\u1EB7c s\u1EED d\u1EE5ng giao th\u1EE9c HTTPS/Localhost.";
+      this.message.error("L\u1ED7i k\xEDch ho\u1EA1t Webcam.");
+    }
+  }
+  // --- Tắt Webcam ---
+  stopCamera() {
+    if (this.stream) {
+      this.stream.getTracks().forEach((track) => track.stop());
+      this.stream = null;
+    }
+    this.cameraActive = false;
+    this.stopScanning();
+    this.clearOverlay();
+  }
+  // --- Quản lý chu trình tự động quét ---
+  startScanning() {
+    if (!this.detectorReady || !this.cameraActive)
+      return;
+    this.isScanning = true;
+    this.scanTimer = setInterval(() => {
+      this.processVideoFrame();
+    }, this.scanRateMs);
+  }
+  stopScanning() {
+    this.isScanning = false;
+    if (this.scanTimer) {
+      clearInterval(this.scanTimer);
+      this.scanTimer = null;
+    }
+  }
+  toggleScanning() {
+    if (this.isScanning) {
+      this.stopScanning();
+    } else {
+      this.startScanning();
+    }
+  }
+  // --- Vẽ khung quét nhấp nháy trên canvas đè lên video ---
+  drawTargetOutline(bbox) {
+    const video = this.videoElement.nativeElement;
+    const canvas = this.canvasOverlay.nativeElement;
+    const ctx = canvas.getContext("2d");
+    if (!ctx)
+      return;
+    if (canvas.width !== video.clientWidth || canvas.height !== video.clientHeight) {
+      canvas.width = video.clientWidth;
+      canvas.height = video.clientHeight;
+    }
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const scaleX = canvas.width / video.videoWidth;
+    const scaleY = canvas.height / video.videoHeight;
+    const x = bbox.originX * scaleX;
+    const y = bbox.originY * scaleY;
+    const w = bbox.width * scaleX;
+    const h = bbox.height * scaleY;
+    ctx.strokeStyle = this.bestMatchUser ? "#52c41a" : "#1890ff";
+    ctx.lineWidth = 3;
+    const cornerLength = Math.min(w, h) * 0.25;
+    ctx.beginPath();
+    ctx.moveTo(x + cornerLength, y);
+    ctx.lineTo(x, y);
+    ctx.lineTo(x, y + cornerLength);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + w - cornerLength, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + cornerLength);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y + h - cornerLength);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x + cornerLength, y + h);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x + w - cornerLength, y + h);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x + w, y + h - cornerLength);
+    ctx.stroke();
+    ctx.fillStyle = this.bestMatchUser ? "rgba(82, 196, 26, 0.15)" : "rgba(24, 144, 255, 0.1)";
+    ctx.fillRect(x, y, w, h);
+  }
+  clearOverlay() {
+    if (this.canvasOverlay && this.canvasOverlay.nativeElement) {
+      const canvas = this.canvasOverlay.nativeElement;
+      const ctx = canvas.getContext("2d");
+      if (ctx)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+  }
+  // --- Trích xuất ảnh và so khớp từ luồng video ---
+  async processVideoFrame() {
+    if (!this.detectorReady || !this.faceDetector || this.isComparing || !this.cameraActive)
+      return;
+    const video = this.videoElement.nativeElement;
+    if (video.paused || video.ended)
+      return;
+    try {
+      const detections = this.faceDetector.detect(video).detections || [];
+      if (detections.length === 0) {
+        this.noFaceDetected = true;
+        this.faceTooSmall = false;
+        this.clearOverlay();
+        return;
+      }
+      this.noFaceDetected = false;
+      const largeEnoughDetections = detections.filter((d) => d.boundingBox.width >= this.minFaceWidthPx);
+      if (largeEnoughDetections.length === 0) {
+        this.faceTooSmall = true;
+        this.clearOverlay();
+        return;
+      }
+      this.faceTooSmall = false;
+      const det = largeEnoughDetections.reduce((best, cur) => cur.boundingBox.width > best.boundingBox.width ? cur : best);
+      this.drawTargetOutline(det.boundingBox);
+      const keypoints = det.keypoints || [];
+      if (keypoints.length < 2)
+        return;
+      this.isComparing = true;
+      const eyeLeft = {
+        x: keypoints[0].x * video.videoWidth,
+        y: keypoints[0].y * video.videoHeight
+      };
+      const eyeRight = {
+        x: keypoints[1].x * video.videoWidth,
+        y: keypoints[1].y * video.videoHeight
+      };
+      const paddedBlob = this.cropFaceWithPadding(video, det.boundingBox, 0.6);
+      const alignedCanvasEl = this.alignedCanvas.nativeElement;
+      this.alignFaceBrowser(video, eyeLeft, eyeRight, alignedCanvasEl);
+      alignedCanvasEl.toBlob(async (previewBlob) => {
+        if (previewBlob) {
+          if (this.alignedPreviewUrl)
+            URL.revokeObjectURL(this.alignedPreviewUrl);
+          this.alignedPreviewUrl = URL.createObjectURL(previewBlob);
+        }
+      }, "image/jpeg", 0.9);
+      if (!paddedBlob) {
+        this.isComparing = false;
+        return;
+      }
+      const file = new File([paddedBlob], "face_padded.jpg", { type: "image/jpeg" });
+      try {
+        const result = await this.api.compareGlobal(file, this.compareThreshold);
+        this.compareResults = result;
+        const snapshotUrl = this.alignedPreviewUrl;
+        if (result && result.bestMatch) {
+          this.bestMatchUser = result.bestMatch;
+          this.belowThreshold = false;
+          this.addToHistory(result.bestMatch, snapshotUrl, true);
+        } else {
+          this.bestMatchUser = null;
+          this.belowThreshold = true;
+          this.addToHistory(null, snapshotUrl, false);
+        }
+      } catch (err) {
+        console.error("L\u1ED7i so kh\u1EDBp m\xE1y ch\u1EE7: ", err);
+        this.bestMatchUser = null;
+      } finally {
+        this.isComparing = false;
+      }
+    } catch (err) {
+      console.error("[Scanner Frame] Error: ", err);
+      this.isComparing = false;
+    }
+  }
+  /**
+   * Crop khuôn mặt với padding lớn từ video stream.
+   * Padding = 0.6 nghĩa là mỗi cạnh được mở rộng thêm 60% chiều rộng bbox.
+   * Điều này giúp server có đủ vùng để detect + align chính xác.
+   */
+  cropFaceWithPadding(video, bbox, paddingFactor) {
+    const padX = bbox.width * paddingFactor;
+    const padY = bbox.height * paddingFactor;
+    const x = Math.max(0, bbox.originX - padX);
+    const y = Math.max(0, bbox.originY - padY);
+    const w = Math.min(video.videoWidth - x, bbox.width + padX * 2);
+    const h = Math.min(video.videoHeight - y, bbox.height + padY * 2);
+    const maxDim = 256;
+    const scale = Math.min(maxDim / w, maxDim / h, 1);
+    const outW = Math.round(w * scale);
+    const outH = Math.round(h * scale);
+    const cropCanvas = document.createElement("canvas");
+    cropCanvas.width = outW;
+    cropCanvas.height = outH;
+    const ctx = cropCanvas.getContext("2d");
+    if (!ctx)
+      return null;
+    ctx.drawImage(video, x, y, w, h, 0, 0, outW, outH);
+    let resultBlob = null;
+    const dataUrl = cropCanvas.toDataURL("image/jpeg", 0.9);
+    const byteString = atob(dataUrl.split(",")[1]);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+      ia[i] = byteString.charCodeAt(i);
+    }
+    resultBlob = new Blob([ab], { type: "image/jpeg" });
+    return resultBlob;
+  }
+  // --- Thuật toán căn chỉnh mắt Affine ---
+  alignFaceBrowser(videoEl, eyeLeft, eyeRight, canvas) {
+    canvas.width = 112;
+    canvas.height = 112;
+    const ctx = canvas.getContext("2d");
+    if (!ctx)
+      throw new Error("Kh\xF4ng th\u1EC3 kh\u1EDFi t\u1EA1o Canvas 2D Context");
+    const cx = (eyeLeft.x + eyeRight.x) / 2;
+    const cy = (eyeLeft.y + eyeRight.y) / 2;
+    const dx = eyeRight.x - eyeLeft.x;
+    const dy = eyeRight.y - eyeLeft.y;
+    const currentDist = Math.sqrt(dx * dx + dy * dy);
+    const angleRad = Math.atan2(dy, dx);
+    const targetDist = 35.2372;
+    const tx = 55.9132;
+    const ty = 51.59885;
+    const scale = targetDist / currentDist;
+    ctx.save();
+    ctx.translate(tx, ty);
+    ctx.scale(scale, scale);
+    ctx.rotate(-angleRad);
+    ctx.translate(-cx, -cy);
+    ctx.drawImage(videoEl, 0, 0);
+    ctx.restore();
+  }
+  // --- Thêm kết quả vào lịch sử nhận diện ---
+  addToHistory(bestMatch, previewUrl, matched) {
+    var _a, _b;
+    const entry = {
+      timestamp: /* @__PURE__ */ new Date(),
+      previewUrl: previewUrl ? previewUrl : null,
+      matched,
+      displayName: (bestMatch == null ? void 0 : bestMatch.displayName) || (bestMatch == null ? void 0 : bestMatch.username) || "---",
+      email: (bestMatch == null ? void 0 : bestMatch.email) || "",
+      avatarUrl: (bestMatch == null ? void 0 : bestMatch.avatarUrl) || "",
+      cosineSimilarity: (_a = bestMatch == null ? void 0 : bestMatch.cosineSimilarity) != null ? _a : 0,
+      l2Distance: (_b = bestMatch == null ? void 0 : bestMatch.l2Distance) != null ? _b : 0
+    };
+    this.recognitionHistory = [entry, ...this.recognitionHistory].slice(0, 5);
+  }
+  clearHistory() {
+    this.recognitionHistory = [];
+  }
+};
+_CameraComponent.\u0275fac = function CameraComponent_Factory(__ngFactoryType__) {
+  return new (__ngFactoryType__ || _CameraComponent)();
+};
+_CameraComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _CameraComponent, selectors: [["tot-nhan-dien-camera"]], viewQuery: function CameraComponent_Query(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275viewQuery(_c08, 5)(_c15, 5)(_c24, 5);
+  }
+  if (rf & 2) {
+    let _t;
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.videoElement = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.canvasOverlay = _t.first);
+    \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.alignedCanvas = _t.first);
+  }
+}, decls: 4, vars: 3, consts: [["videoElement", ""], ["canvasOverlay", ""], ["alignedCanvas", ""], [1, "camera-recognition-page"], ["class", "MP-loading-overlay", 4, "ngIf"], ["class", "recognition-grid", 4, "ngIf"], ["class", "history-section", 4, "ngIf"], [1, "MP-loading-overlay"], ["nzSimple", "", "nzSize", "large"], [1, "loading-text"], [1, "recognition-grid"], [1, "viewport-card"], [1, "viewport-header"], ["nz-icon", "", "nzType", "video-camera", 2, "color", "#1890ff", "font-size", "18px"], [1, "header-title"], ["class", "status-dot pulsing-green", "nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 4, "ngIf"], ["class", "status-dot dot-yellow", "nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 4, "ngIf"], [1, "camera-viewport-container"], ["autoplay", "", "playsinline", "", "muted", "", 1, "webcam-feed"], [1, "canvas-overlay"], ["class", "camera-error-overlay", 4, "ngIf"], ["class", "scanline-sweep", 4, "ngIf"], [1, "viewport-controls"], ["nz-button", "", 2, "width", "140px", 3, "click", "nzType", "nzDanger", "disabled"], ["nz-icon", "", 3, "nzType"], ["nz-button", "", "nzType", "default", 2, "margin-left", "12px", 3, "click"], [2, "display", "none"], [1, "aligned-face-preview-section"], [1, "preview-title"], [1, "preview-box"], ["class", "no-preview-thumbnail", 4, "ngIf"], ["class", "face-crop-img", "alt", "Aligned Crop", 3, "src", 4, "ngIf"], ["class", "preview-status", 4, "ngIf"], [1, "results-card"], [1, "results-header"], ["nz-icon", "", "nzType", "security-scan", 2, "color", "#1890ff", "font-size", "18px"], [1, "threshold-panel-container"], [1, "slider-label"], [1, "threshold-val"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "12px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "threshold-panel-container", 2, "margin-top", "10px"], [2, "font-size", "11px", "color", "#8c8c8c", "margin-top", "4px"], [1, "state-container"], ["class", "scanning-state-card active-eval", 4, "ngIf"], ["class", "scanning-state-card", 4, "ngIf"], ["class", "scanning-state-card alert-fail", 4, "ngIf"], ["class", "match-success-card", 4, "ngIf"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 1, "status-dot", "pulsing-green"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 1, "status-dot", "dot-yellow"], [1, "camera-error-overlay"], ["nz-icon", "", "nzType", "warning", 2, "font-size", "42px", "color", "#ff4d4f"], [1, "error-msg"], ["nz-button", "", "nzType", "primary", 2, "margin-top", "12px", 3, "click"], [1, "scanline-sweep"], [1, "no-preview-thumbnail"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "20px", "color", "#ccc"], ["alt", "Aligned Crop", 1, "face-crop-img", 3, "src"], [1, "preview-status"], ["nzSimple", "", "nzSize", "small"], [1, "scanning-state-card", "active-eval"], [1, "state-title", "pulsing-text"], [1, "state-hint"], [1, "scanning-state-card"], ["nz-icon", "", "nzType", "user", 1, "state-icon", "gray-pulse"], [1, "state-title"], ["nz-icon", "", "nzType", "shrink", 1, "state-icon", 2, "color", "#faad14"], [1, "state-title", 2, "color", "#d46b08"], [1, "scanning-state-card", "alert-fail"], ["nz-icon", "", "nzType", "warning", 1, "state-icon", "text-red", "shadow-pulse"], [1, "state-title", "text-red"], ["class", "failed-best-match-snippet", 4, "ngIf"], [1, "failed-best-match-snippet"], ["nz-icon", "", "nzType", "info-circle"], [1, "match-success-card"], [1, "success-banner"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill", 1, "success-check-icon"], [1, "matched-profile-content"], [1, "profile-avatar-wrapper"], ["class", "matched-profile-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "matched-profile-avatar-placeholder", 4, "ngIf"], [1, "profile-details-text"], [1, "matched-name"], [1, "matched-email"], [1, "matched-meta"], ["nzColor", "success"], [1, "matched-timestamp"], [1, "stats-panel"], [1, "stat-progress-item"], [1, "stat-header"], [1, "stat-number", "text-green"], [1, "progress-bar-track"], [1, "progress-bar-fill", "green-fill"], [1, "stat-progress-item", 2, "margin-top", "12px"], [1, "stat-number", "text-blue"], [1, "progress-bar-fill", "blue-fill"], ["alt", "avatar", 1, "matched-profile-avatar", 3, "src"], [1, "matched-profile-avatar-placeholder"], ["nz-icon", "", "nzType", "video-camera", 1, "state-icon", "icon-blue"], [1, "history-section"], [1, "history-header"], ["nz-icon", "", "nzType", "history", 2, "color", "#722ed1", "font-size", "16px"], [1, "history-title"], ["nzColor", "#722ed1", 2, "margin-left", "6px", 3, "nzCount"], ["nz-button", "", "nzType", "text", "nzSize", "small", 2, "margin-left", "auto", "color", "#8c8c8c", "font-size", "11px", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "history-list"], ["class", "history-item", 3, "history-matched", "history-unmatched", 4, "ngFor", "ngForOf"], [1, "history-item"], [1, "history-index"], [1, "history-thumbnail"], ["alt", "Face snap", "class", "history-thumb-img", 3, "src", 4, "ngIf"], ["nz-icon", "", "nzType", "scan", "style", "font-size: 18px; color: #ccc;", 4, "ngIf"], [1, "history-profile"], [4, "ngIf"], ["class", "history-no-match", 4, "ngIf"], [1, "history-metrics"], [1, "history-time"], ["alt", "Face snap", 1, "history-thumb-img", 3, "src"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "18px", "color", "#ccc"], [1, "history-avatar-row"], ["class", "history-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "history-avatar-placeholder", 4, "ngIf"], [1, "history-name-block"], [1, "history-name"], [1, "history-email"], ["alt", "avatar", 1, "history-avatar", 3, "src"], [1, "history-avatar-placeholder"], [1, "history-no-match"], ["nz-icon", "", "nzType", "stop", 2, "color", "#ff4d4f", "font-size", "14px"], [2, "margin-left", "6px", "font-size", "12px", "color", "#ff4d4f", "font-weight", "600"], ["nzColor", "success", 2, "font-size", "10.5px"]], template: function CameraComponent_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 3);
+    \u0275\u0275template(1, CameraComponent_div_1_Template, 4, 0, "div", 4)(2, CameraComponent_div_2_Template, 64, 40, "div", 5)(3, CameraComponent_div_3_Template, 11, 2, "div", 6);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx.loadingDetector);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx.loadingDetector);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx.recognitionHistory.length > 0);
+  }
+}, dependencies: [
+  CommonModule,
+  NgForOf,
+  NgIf,
+  FormsModule,
+  NgControlStatus,
+  NgModel,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzCardModule,
+  NzTagModule,
+  NzTagComponent,
+  NzSpinModule,
+  NzSpinComponent,
+  NzSliderModule,
+  NzSliderComponent,
+  NzInputNumberModule,
+  NzInputNumberComponent,
+  NzIconModule,
+  NzIconDirective,
+  NzDividerModule,
+  NzDividerComponent,
+  NzAlertModule,
+  NzBadgeModule,
+  NzBadgeComponent,
+  DecimalPipe,
+  DatePipe
+], styles: ["\n.camera-recognition-page[_ngcontent-%COMP%] {\n  padding: 24px;\n  max-width: 1100px;\n  margin: 0 auto;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.MP-loading-overlay[_ngcontent-%COMP%] {\n  height: 400px;\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center;\n  gap: 16px;\n  background: rgba(255, 255, 255, 0.8);\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);\n}\n.loading-text[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 14px;\n  color: #1890ff;\n  animation: _ngcontent-%COMP%_MPpulse 1.8s ease-in-out infinite;\n}\n@keyframes _ngcontent-%COMP%_MPpulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n}\n.recognition-grid[_ngcontent-%COMP%] {\n  display: grid;\n  grid-template-columns: 1.1fr 0.9fr;\n  gap: 24px;\n  align-items: start;\n}\n@media (max-width: 800px) {\n  .recognition-grid[_ngcontent-%COMP%] {\n    grid-template-columns: 1fr;\n  }\n}\n.viewport-card[_ngcontent-%COMP%], \n.results-card[_ngcontent-%COMP%] {\n  background: #ffffff;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  padding: 20px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n.viewport-header[_ngcontent-%COMP%], \n.results-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  border-bottom: 1px solid #f0f0f0;\n  padding-bottom: 12px;\n  margin-bottom: 4px;\n}\n.header-title[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 15px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.status-dot[_ngcontent-%COMP%] {\n  width: 8px;\n  height: 8px;\n  border-radius: 50%;\n  margin-left: 8px;\n}\n.pulsing-green[_ngcontent-%COMP%] {\n  background: #52c41a;\n  box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);\n  animation: _ngcontent-%COMP%_greenPulse 1.6s infinite;\n}\n.dot-yellow[_ngcontent-%COMP%] {\n  background: #faad14;\n}\n@keyframes _ngcontent-%COMP%_greenPulse {\n  0% {\n    transform: scale(0.95);\n    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);\n  }\n  70% {\n    transform: scale(1);\n    box-shadow: 0 0 0 6px rgba(82, 196, 26, 0);\n  }\n  100% {\n    transform: scale(0.95);\n    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);\n  }\n}\n.camera-viewport-container[_ngcontent-%COMP%] {\n  position: relative;\n  width: 100%;\n  aspect-ratio: 4 / 3;\n  background: #141414;\n  border-radius: 8px;\n  overflow: hidden;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);\n}\n.webcam-feed[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  transform: scaleX(-1);\n  transition: opacity 0.3s ease;\n}\n.webcam-feed.inactive[_ngcontent-%COMP%] {\n  opacity: 0.1;\n}\n.canvas-overlay[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  pointer-events: none;\n  transform: scaleX(-1);\n}\n.camera-error-overlay[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(255, 255, 255, 0.95);\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center;\n  padding: 24px;\n  text-align: center;\n}\n.error-msg[_ngcontent-%COMP%] {\n  margin-top: 12px;\n  font-weight: 500;\n  color: #ff4d4f;\n  font-size: 13px;\n  max-width: 320px;\n}\n.scanline-sweep[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 3px;\n  background:\n    linear-gradient(\n      to bottom,\n      rgba(24, 144, 255, 0),\n      #1890ff,\n      rgba(24, 144, 255, 0));\n  box-shadow: 0 0 8px #1890ff;\n  animation: _ngcontent-%COMP%_sweepLine 3s linear infinite;\n  pointer-events: none;\n}\n@keyframes _ngcontent-%COMP%_sweepLine {\n  0% {\n    top: 0%;\n  }\n  50% {\n    top: 100%;\n  }\n  100% {\n    top: 0%;\n  }\n}\n.viewport-controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  margin-top: 4px;\n}\n.aligned-face-preview-section[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 10px 14px;\n  margin-top: 4px;\n}\n.preview-title[_ngcontent-%COMP%] {\n  font-size: 12px;\n  font-weight: 600;\n  color: #595959;\n}\n.preview-box[_ngcontent-%COMP%] {\n  position: relative;\n  width: 48px;\n  height: 48px;\n  border-radius: 4px;\n  overflow: hidden;\n  border: 1.5px solid #d9d9d9;\n  background: #fafafa;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);\n  flex-shrink: 0;\n}\n.no-preview-thumbnail[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  color: #ccc;\n}\n.face-crop-img[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n.preview-status[_ngcontent-%COMP%] {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(255, 255, 255, 0.7);\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.threshold-panel-container[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 14px;\n}\n.slider-label[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  font-size: 12.5px;\n  color: #595959;\n  margin-bottom: 4px;\n}\n.threshold-val[_ngcontent-%COMP%] {\n  color: #1890ff;\n  font-weight: 700;\n  font-size: 13.5px;\n}\n.slider-control-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.state-container[_ngcontent-%COMP%] {\n  min-height: 220px;\n  display: flex;\n  flex-direction: column;\n}\n.scanning-state-card[_ngcontent-%COMP%] {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  text-align: center;\n  padding: 24px;\n  background: rgba(250, 250, 250, 0.6);\n  border: 1.5px dashed #d9d9d9;\n  border-radius: 8px;\n  transition: all 0.2s ease;\n}\n.scanning-state-card.active-eval[_ngcontent-%COMP%] {\n  background: rgba(230, 247, 255, 0.2);\n  border-color: #1890ff;\n  border-style: solid;\n}\n.scanning-state-card.alert-fail[_ngcontent-%COMP%] {\n  background: rgba(255, 241, 240, 0.6);\n  border-color: #ff4d4f;\n  border-style: solid;\n  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.04);\n}\n.state-icon[_ngcontent-%COMP%] {\n  font-size: 38px;\n  margin-bottom: 12px;\n}\n.icon-blue[_ngcontent-%COMP%] {\n  color: #1890ff;\n}\n.text-red[_ngcontent-%COMP%] {\n  color: #ff4d4f;\n}\n.gray-pulse[_ngcontent-%COMP%] {\n  color: #bfbfbf;\n  animation: _ngcontent-%COMP%_grayPulseKey 1.5s ease-in-out infinite;\n}\n@keyframes _ngcontent-%COMP%_grayPulseKey {\n  0%, 100% {\n    transform: scale(1);\n    color: #bfbfbf;\n  }\n  50% {\n    transform: scale(1.1);\n    color: #1890ff;\n  }\n}\n.shadow-pulse[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_redWarningPulse 1.6s infinite;\n}\n@keyframes _ngcontent-%COMP%_redWarningPulse {\n  0% {\n    transform: scale(1);\n    filter: drop-shadow(0 0 0 rgba(255, 77, 79, 0.4));\n  }\n  50% {\n    transform: scale(1.1);\n    filter: drop-shadow(0 0 6px rgba(255, 77, 79, 0.6));\n  }\n  100% {\n    transform: scale(1);\n    filter: drop-shadow(0 0 0 rgba(255, 77, 79, 0));\n  }\n}\n.state-title[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #262626;\n  margin-bottom: 4px;\n}\n.state-hint[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #8c8c8c;\n  max-width: 250px;\n  line-height: 1.5;\n}\n.pulsing-text[_ngcontent-%COMP%] {\n  color: #1890ff;\n  animation: _ngcontent-%COMP%_pulseScan 1.2s ease-in-out infinite;\n}\n@keyframes _ngcontent-%COMP%_pulseScan {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n}\n.failed-best-match-snippet[_ngcontent-%COMP%] {\n  margin-top: 14px;\n  background: #ffffff;\n  border: 1.5px solid #ffccc7;\n  border-radius: 6px;\n  padding: 8px 10px;\n  font-size: 11.5px;\n  color: #595959;\n  line-height: 1.5;\n}\n.match-success-card[_ngcontent-%COMP%] {\n  flex: 1;\n  background: #f6ffed;\n  border: 1.5px solid #b7eb8f;\n  border-radius: 8px;\n  padding: 16px;\n  display: flex;\n  flex-direction: column;\n  gap: 14px;\n  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.08);\n  animation: _ngcontent-%COMP%_slideInUp 0.3s ease;\n}\n@keyframes _ngcontent-%COMP%_slideInUp {\n  0% {\n    transform: translateY(10px);\n    opacity: 0;\n  }\n  100% {\n    transform: translateY(0);\n    opacity: 1;\n  }\n}\n.success-banner[_ngcontent-%COMP%] {\n  background: #52c41a;\n  color: white;\n  border-radius: 4px;\n  padding: 6px 12px;\n  font-weight: 700;\n  font-size: 12px;\n  letter-spacing: 0.5px;\n  display: flex;\n  align-items: center;\n  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.2);\n}\n.success-check-icon[_ngcontent-%COMP%] {\n  font-size: 15px;\n}\n.matched-profile-content[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  background: white;\n  border: 1px solid #e8e8e8;\n  border-radius: 6px;\n  padding: 12px;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);\n}\n.profile-avatar-wrapper[_ngcontent-%COMP%] {\n  position: relative;\n  flex-shrink: 0;\n}\n.matched-profile-avatar[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #52c41a;\n  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);\n}\n.matched-profile-avatar-placeholder[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #52c41a,\n      #389e0d);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 18px;\n  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);\n}\n.profile-details-text[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n}\n.matched-name[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 15px;\n  color: #262626;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.matched-email[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #8c8c8c;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  margin-top: 1px;\n}\n.matched-meta[_ngcontent-%COMP%] {\n  margin-top: 4px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.matched-timestamp[_ngcontent-%COMP%] {\n  font-size: 10.5px;\n  color: #8c8c8c;\n}\n.stats-panel[_ngcontent-%COMP%] {\n  background: white;\n  border: 1px solid #e8e8e8;\n  border-radius: 6px;\n  padding: 12px;\n}\n.stat-progress-item[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.stat-header[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  font-size: 11.5px;\n  color: #595959;\n}\n.stat-number[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 12px;\n}\n.text-green[_ngcontent-%COMP%] {\n  color: #52c41a;\n}\n.text-blue[_ngcontent-%COMP%] {\n  color: #1890ff;\n}\n.progress-bar-track[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 6px;\n  background: #f0f0f0;\n  border-radius: 3px;\n  overflow: hidden;\n}\n.progress-bar-fill[_ngcontent-%COMP%] {\n  height: 100%;\n  border-radius: 3px;\n  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.green-fill[_ngcontent-%COMP%] {\n  background:\n    linear-gradient(\n      to right,\n      #73d13d,\n      #52c41a);\n}\n.blue-fill[_ngcontent-%COMP%] {\n  background:\n    linear-gradient(\n      to right,\n      #40a9ff,\n      #1890ff);\n}\n.history-section[_ngcontent-%COMP%] {\n  background: #ffffff;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  padding: 16px 20px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);\n  margin-top: 4px;\n}\n.history-header[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  margin-bottom: 12px;\n  border-bottom: 1px solid #f0f0f0;\n  padding-bottom: 10px;\n}\n.history-title[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 14px;\n  color: #1f1f1f;\n}\n.history-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.history-item[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  background: #fafafa;\n  border: 1.5px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 8px 12px;\n  transition: all 0.2s ease;\n}\n.history-item.history-matched[_ngcontent-%COMP%] {\n  border-color: #b7eb8f;\n  background: #f6ffed;\n}\n.history-item.history-unmatched[_ngcontent-%COMP%] {\n  border-color: #ffccc7;\n  background: #fff1f0;\n}\n.history-index[_ngcontent-%COMP%] {\n  font-size: 11px;\n  font-weight: 700;\n  color: #8c8c8c;\n  width: 22px;\n  flex-shrink: 0;\n}\n.history-thumbnail[_ngcontent-%COMP%] {\n  width: 44px;\n  height: 44px;\n  border-radius: 6px;\n  overflow: hidden;\n  background: #f0f0f0;\n  border: 1px solid #d9d9d9;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n.history-thumb-img[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n.history-profile[_ngcontent-%COMP%] {\n  flex: 1;\n  min-width: 0;\n}\n.history-avatar-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.history-avatar[_ngcontent-%COMP%] {\n  width: 32px;\n  height: 32px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 1.5px solid #52c41a;\n  flex-shrink: 0;\n}\n.history-avatar-placeholder[_ngcontent-%COMP%] {\n  width: 32px;\n  height: 32px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #52c41a,\n      #389e0d);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 13px;\n  flex-shrink: 0;\n}\n.history-name-block[_ngcontent-%COMP%] {\n  min-width: 0;\n}\n.history-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 12.5px;\n  color: #262626;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.history-email[_ngcontent-%COMP%] {\n  font-size: 10.5px;\n  color: #8c8c8c;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.history-no-match[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.history-metrics[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 4px;\n  flex-shrink: 0;\n}\n.history-time[_ngcontent-%COMP%] {\n  font-size: 10px;\n  color: #bfbfbf;\n  font-family: monospace;\n}\n/*# sourceMappingURL=camera.component.css.map */"] });
+var CameraComponent = _CameraComponent;
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(CameraComponent, [{
+    type: Component,
+    args: [{ selector: "tot-nhan-dien-camera", standalone: true, imports: [
+      CommonModule,
+      FormsModule,
+      NzButtonModule,
+      NzCardModule,
+      NzTagModule,
+      NzSpinModule,
+      NzSliderModule,
+      NzInputNumberModule,
+      NzIconModule,
+      NzDividerModule,
+      NzAlertModule,
+      NzBadgeModule,
+      TotButtonComponent,
+      DatePipe
+    ], template: `<div class="camera-recognition-page">
+  
+  <!-- Loading state when loading model -->
+  <div *ngIf="loadingDetector" class="MP-loading-overlay">
+    <nz-spin nzSimple nzSize="large"></nz-spin>
+    <div class="loading-text">\u0110ang n\u1EA1p m\xF4 h\xECnh nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t MediaPipe (BlazeFace)...</div>
+  </div>
+
+  <div *ngIf="!loadingDetector" class="recognition-grid">
+    
+    <!-- LEFT PANEL: Webcam Stream & Alignment Preview -->
+    <div class="viewport-card">
+      <div class="viewport-header">
+        <span nz-icon nzType="video-camera" style="color: #1890ff; font-size: 18px;"></span>
+        <span class="header-title">&nbsp; Live Camera Scanner</span>
+        <span *ngIf="isScanning" class="status-dot pulsing-green" nz-tooltip nzTooltipTitle="\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c"></span>
+        <span *ngIf="!isScanning" class="status-dot dot-yellow" nz-tooltip nzTooltipTitle="\u0110\xE3 t\u1EA1m d\u1EEBng"></span>
+      </div>
+
+      <div class="camera-viewport-container">
+        <!-- Live Webcam Video Stream -->
+        <video #videoElement autoplay playsinline muted class="webcam-feed" [class.inactive]="!cameraActive"></video>
+
+        <!-- Canvas overlay for drawing Bounding Box targeting brackets -->
+        <canvas #canvasOverlay class="canvas-overlay"></canvas>
+
+        <!-- Webcam error / permissions overlay -->
+        <div *ngIf="cameraError" class="camera-error-overlay">
+          <span nz-icon nzType="warning" style="font-size: 42px; color: #ff4d4f;"></span>
+          <div class="error-msg">{{ cameraError }}</div>
+          <button nz-button nzType="primary" (click)="startCamera()" style="margin-top: 12px;">Th\u1EED l\u1EA1i</button>
+        </div>
+
+        <!-- Scanning scanline sweep effect -->
+        <div *ngIf="cameraActive && isScanning" class="scanline-sweep"></div>
+      </div>
+
+      <!-- Live Controls row directly under the stream -->
+      <div class="viewport-controls">
+        <button
+          nz-button
+          [nzType]="isScanning ? 'default' : 'primary'"
+          [nzDanger]="isScanning"
+          (click)="toggleScanning()"
+          [disabled]="!cameraActive"
+          style="width: 140px;">
+          <span nz-icon [nzType]="isScanning ? 'pause-circle' : 'play-circle'"></span>
+          {{ isScanning ? 'T\u1EA1m d\u1EEBng' : 'B\u1EAFt \u0111\u1EA7u qu\xE9t' }}
+        </button>
+
+        <button
+          nz-button
+          nzType="default"
+          (click)="cameraActive ? stopCamera() : startCamera()"
+          style="margin-left: 12px;">
+          <span nz-icon [nzType]="cameraActive ? 'poweroff' : 'reload'"></span>
+          {{ cameraActive ? 'T\u1EAFt camera' : 'M\u1EDF camera' }}
+        </button>
+      </div>
+
+      <!-- Hidden canvas used for face crop alignment -->
+      <canvas #alignedCanvas style="display: none;"></canvas>
+
+      <!-- Miniature aligned crop view -->
+      <div class="aligned-face-preview-section">
+        <div class="preview-title">Khung c\u0103n ch\u1EC9nh Affine (MediaPipe 112x112):</div>
+        <div class="preview-box">
+          <div *ngIf="!alignedPreviewUrl" class="no-preview-thumbnail">
+            <span nz-icon nzType="scan" style="font-size: 20px; color: #ccc;"></span>
+          </div>
+          <img *ngIf="alignedPreviewUrl" [src]="alignedPreviewUrl" class="face-crop-img" alt="Aligned Crop" />
+          <div class="preview-status" *ngIf="isComparing">
+            <nz-spin nzSimple nzSize="small"></nz-spin>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL: Settings & Face Comparison Match Results -->
+    <div class="results-card">
+      <div class="results-header">
+        <span nz-icon nzType="security-scan" style="color: #1890ff; font-size: 18px;"></span>
+        <span class="header-title">&nbsp; K\u1EBFt Qu\u1EA3 Nh\u1EADn D\u1EA1ng (HNSW)</span>
+      </div>
+
+      <!-- Cosine Similarity Threshold Slider -->
+      <div class="threshold-panel-container">
+        <div class="slider-label">
+          <span>Ng\u01B0\u1EE1ng nh\u1EADn d\u1EA1ng t\u1ED1i thi\u1EC3u (Cosine Similarity):</span>
+          <strong class="threshold-val">{{ compareThreshold }}</strong>
+        </div>
+        <div class="slider-control-row">
+          <nz-slider [nzMin]="0.3" [nzMax]="0.9" [nzStep]="0.01" [(ngModel)]="compareThreshold" style="flex: 1; margin-right: 12px;"></nz-slider>
+          <nz-input-number [nzMin]="0.3" [nzMax]="0.9" [nzStep]="0.01" [(ngModel)]="compareThreshold" nzSize="small"></nz-input-number>
+        </div>
+      </div>
+
+      <!-- Face Size (Width) Threshold Slider -->
+      <div class="threshold-panel-container" style="margin-top: 10px;">
+        <div class="slider-label">
+          <span>K\xEDch th\u01B0\u1EDBc t\u1ED1i thi\u1EC3u khu\xF4n m\u1EB7t (px r\u1ED9ng, l\u1ECDc m\u1EB7t xa/nh\u1ECF):</span>
+          <strong class="threshold-val">{{ minFaceWidthPx }}px</strong>
+        </div>
+        <div class="slider-control-row">
+          <nz-slider [nzMin]="20" [nzMax]="300" [nzStep]="5" [(ngModel)]="minFaceWidthPx" style="flex: 1; margin-right: 12px;"></nz-slider>
+          <nz-input-number [nzMin]="20" [nzMax]="300" [nzStep]="5" [(ngModel)]="minFaceWidthPx" nzSize="small"></nz-input-number>
+        </div>
+        <div style="font-size: 11px; color: #8c8c8c; margin-top: 4px;">\u{1F4A1} T\u0103ng ng\u01B0\u1EE1ng n\xE0y n\u1EBFu khung h\xECnh c\xF3 nhi\u1EC1u ng\u01B0\u1EDDi \u2014 ch\u1EC9 nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t \u0111\u1EE7 g\u1EA7n.</div>
+      </div>
+
+      <nz-divider></nz-divider>
+
+      <!-- DYNAMIC STATE MATCH CARDS -->
+      <div class="state-container">
+        
+        <!-- Comparing Loading state -->
+        <div *ngIf="isComparing" class="scanning-state-card active-eval">
+          <nz-spin nzSimple nzSize="large"></nz-spin>
+          <div class="state-title pulsing-text">\u0110ang so kh\u1EDBp vector \u0111\u1EB7c tr\u01B0ng...</div>
+          <div class="state-hint">\u0110ang so s\xE1nh embedding 512-chi\u1EC1u v\u1EDBi PostgreSQL HNSW</div>
+        </div>
+
+        <!-- No face detected in webcam view -->
+        <div *ngIf="noFaceDetected && !isComparing" class="scanning-state-card">
+          <span nz-icon nzType="user" class="state-icon gray-pulse"></span>
+          <div class="state-title">\u0110ang qu\xE9t t\xECm khu\xF4n m\u1EB7t...</div>
+          <div class="state-hint">Vui l\xF2ng \u0111\u1EE9ng th\u1EB3ng tr\u01B0\u1EDBc camera \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u \u0111\u1ED1i s\xE1nh t\u1EF1 \u0111\u1ED9ng.</div>
+        </div>
+
+        <!-- Face detected but too small/far (below minFaceWidthPx) -->
+        <div *ngIf="faceTooSmall && !noFaceDetected && !isComparing" class="scanning-state-card">
+          <span nz-icon nzType="shrink" class="state-icon" style="color: #faad14;"></span>
+          <div class="state-title" style="color: #d46b08;">Khu\xF4n m\u1EB7t qu\xE1 nh\u1ECF ho\u1EB7c qu\xE1 xa!</div>
+          <div class="state-hint">Khu\xF4n m\u1EB7t ph\xE1t hi\u1EC7n \u0111\u01B0\u1EE3c nh\u1ECF h\u01A1n ng\u01B0\u1EE1ng {{ minFaceWidthPx }}px. H\xE3y l\u1EA1i g\u1EA7n camera h\u01A1n ho\u1EB7c h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng k\xEDch th\u01B0\u1EDBc.</div>
+        </div>
+
+        <!-- Face detected but similarity score falls below required threshold -->
+        <div *ngIf="belowThreshold && !noFaceDetected && !isComparing" class="scanning-state-card alert-fail">
+          <span nz-icon nzType="warning" class="state-icon text-red shadow-pulse"></span>
+          <div class="state-title text-red">Khu\xF4n m\u1EB7t ch\u01B0a \u0111\u01B0\u1EE3c \u0111\u0103ng k\xFD!</div>
+          <div class="state-hint">\u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng l\u1EDBn nh\u1EA5t t\xECm th\u1EA5y d\u01B0\u1EDBi ng\u01B0\u1EE1ng t\u1ED1i thi\u1EC3u {{ compareThreshold }}.</div>
+          
+          <div *ngIf="compareResults?.bestMatch" class="failed-best-match-snippet">
+            <span nz-icon nzType="info-circle"></span>&nbsp; G\u1EE3i \xFD: G\u1EA7n gi\u1ED1ng nh\u1EA5t v\u1EDBi 
+            <strong>{{ compareResults.bestMatch.displayName || compareResults.bestMatch.username }}</strong> 
+            ({{ compareResults.bestMatch.cosineSimilarity | number:'1.2-2' }}). H\xE3y h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng so s\xE1nh n\u1EBFu mu\u1ED1n ki\u1EC3m tra.
+          </div>
+        </div>
+
+        <!-- Successful Match found! -->
+        <div *ngIf="bestMatchUser && !noFaceDetected && !isComparing" class="match-success-card">
+          <div class="success-banner">
+            <span nz-icon nzType="check-circle" nzTheme="fill" class="success-check-icon"></span>
+            <span>&nbsp; X\xC1C TH\u1EF0C TH\xC0NH C\xD4NG!</span>
+          </div>
+
+          <!-- Premium Matched Profile details -->
+          <div class="matched-profile-content">
+            <div class="profile-avatar-wrapper">
+              <img *ngIf="bestMatchUser.avatarUrl" [src]="bestMatchUser.avatarUrl" class="matched-profile-avatar" alt="avatar" />
+              <div *ngIf="!bestMatchUser.avatarUrl" class="matched-profile-avatar-placeholder">
+                {{ (bestMatchUser.displayName || bestMatchUser.username || 'U').charAt(0).toUpperCase() }}
+              </div>
+            </div>
+
+            <div class="profile-details-text">
+              <div class="matched-name">{{ bestMatchUser.displayName || bestMatchUser.username }}</div>
+              <div class="matched-email">{{ bestMatchUser.email }}</div>
+              <div class="matched-meta">
+                <nz-tag nzColor="success">\u0110\xE3 \u0110\u0103ng K\xFD</nz-tag>
+                <span class="matched-timestamp">\u0110\xE3 kh\u1EDBp: {{ scanRateMs }}ms</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Matching stats progress bars -->
+          <div class="stats-panel">
+            <div class="stat-progress-item">
+              <div class="stat-header">
+                <span>\u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng (Cosine Similarity):</span>
+                <strong class="stat-number text-green">{{ bestMatchUser.cosineSimilarity | number:'1.4-4' }}</strong>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill green-fill" [style.width.%]="bestMatchUser.cosineSimilarity * 100"></div>
+              </div>
+            </div>
+
+            <div class="stat-progress-item" style="margin-top: 12px;">
+              <div class="stat-header">
+                <span>Kho\u1EA3ng c\xE1ch L2 (Euclidean Distance):</span>
+                <strong class="stat-number text-blue">{{ bestMatchUser.l2Distance | number:'1.4-4' }}</strong>
+              </div>
+              <div class="progress-bar-track">
+                <!-- Euclidean distance max is 2.0 (for unit vectors), lower is closer. Show reverse bar. -->
+                <div class="progress-bar-fill blue-fill" [style.width.%]="(2.0 - bestMatchUser.l2Distance) * 50"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Waiting state / initial state -->
+        <div *ngIf="!cameraActive && !loadingDetector" class="scanning-state-card">
+          <span nz-icon nzType="video-camera" class="state-icon icon-blue"></span>
+          <div class="state-title">Camera Ch\u01B0a K\xEDch Ho\u1EA1t</div>
+          <div class="state-hint">Nh\u1EA5p v\xE0o "M\u1EDF camera" \u1EDF b\u1EA3ng b\xEAn tr\xE1i \u0111\u1EC3 kh\u1EDFi \u0111\u1ED9ng qu\xE9t \u0111\u1ED1i s\xE1nh khu\xF4n m\u1EB7t.</div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- RECOGNITION HISTORY SECTION (5 k\u1EBFt qu\u1EA3 g\u1EA7n nh\u1EA5t) -->
+  <div *ngIf="recognitionHistory.length > 0" class="history-section">
+    <div class="history-header">
+      <span nz-icon nzType="history" style="color: #722ed1; font-size: 16px;"></span>
+      <span class="history-title">&nbsp; L\u1ECBch S\u1EED Nh\u1EADn Di\u1EC7n <nz-badge [nzCount]="recognitionHistory.length" nzColor="#722ed1" style="margin-left:6px;"></nz-badge></span>
+      <button nz-button nzType="text" nzSize="small" (click)="clearHistory()" style="margin-left: auto; color: #8c8c8c; font-size: 11px;">
+        <span nz-icon nzType="delete"></span> X\xF3a l\u1ECBch s\u1EED
+      </button>
+    </div>
+
+    <div class="history-list">
+      <div *ngFor="let entry of recognitionHistory; let i = index" class="history-item" [class.history-matched]="entry.matched" [class.history-unmatched]="!entry.matched">
+        <!-- Index badge -->
+        <div class="history-index">#{{ i + 1 }}</div>
+
+        <!-- Face snapshot thumbnail -->
+        <div class="history-thumbnail">
+          <img *ngIf="entry.previewUrl" [src]="entry.previewUrl" alt="Face snap" class="history-thumb-img" />
+          <span *ngIf="!entry.previewUrl" nz-icon nzType="scan" style="font-size: 18px; color: #ccc;"></span>
+        </div>
+
+        <!-- Match result: avatar + name -->
+        <div class="history-profile">
+          <div *ngIf="entry.matched">
+            <div class="history-avatar-row">
+              <img *ngIf="entry.avatarUrl" [src]="entry.avatarUrl" class="history-avatar" alt="avatar" />
+              <div *ngIf="!entry.avatarUrl" class="history-avatar-placeholder">{{ (entry.displayName || 'U').charAt(0).toUpperCase() }}</div>
+              <div class="history-name-block">
+                <div class="history-name">{{ entry.displayName }}</div>
+                <div class="history-email">{{ entry.email }}</div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!entry.matched" class="history-no-match">
+            <span nz-icon nzType="stop" style="color: #ff4d4f; font-size: 14px;"></span>
+            <span style="margin-left: 6px; font-size: 12px; color: #ff4d4f; font-weight: 600;">Kh\xF4ng kh\u1EDBp</span>
+          </div>
+        </div>
+
+        <!-- Metrics -->
+        <div class="history-metrics">
+          <div *ngIf="entry.matched">
+            <nz-tag nzColor="success" style="font-size: 10.5px;">{{ entry.cosineSimilarity | number:'1.3-3' }}</nz-tag>
+          </div>
+          <div class="history-time">{{ entry.timestamp | date:'HH:mm:ss' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+`, styles: ["/* projects/tot/nhan-dien-khuon-mat/src/lib/camera/camera.component.css */\n.camera-recognition-page {\n  padding: 24px;\n  max-width: 1100px;\n  margin: 0 auto;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.MP-loading-overlay {\n  height: 400px;\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center;\n  gap: 16px;\n  background: rgba(255, 255, 255, 0.8);\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);\n}\n.loading-text {\n  font-weight: 600;\n  font-size: 14px;\n  color: #1890ff;\n  animation: MPpulse 1.8s ease-in-out infinite;\n}\n@keyframes MPpulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n}\n.recognition-grid {\n  display: grid;\n  grid-template-columns: 1.1fr 0.9fr;\n  gap: 24px;\n  align-items: start;\n}\n@media (max-width: 800px) {\n  .recognition-grid {\n    grid-template-columns: 1fr;\n  }\n}\n.viewport-card,\n.results-card {\n  background: #ffffff;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  padding: 20px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n.viewport-header,\n.results-header {\n  display: flex;\n  align-items: center;\n  border-bottom: 1px solid #f0f0f0;\n  padding-bottom: 12px;\n  margin-bottom: 4px;\n}\n.header-title {\n  font-weight: 700;\n  font-size: 15px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.status-dot {\n  width: 8px;\n  height: 8px;\n  border-radius: 50%;\n  margin-left: 8px;\n}\n.pulsing-green {\n  background: #52c41a;\n  box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);\n  animation: greenPulse 1.6s infinite;\n}\n.dot-yellow {\n  background: #faad14;\n}\n@keyframes greenPulse {\n  0% {\n    transform: scale(0.95);\n    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0.7);\n  }\n  70% {\n    transform: scale(1);\n    box-shadow: 0 0 0 6px rgba(82, 196, 26, 0);\n  }\n  100% {\n    transform: scale(0.95);\n    box-shadow: 0 0 0 0 rgba(82, 196, 26, 0);\n  }\n}\n.camera-viewport-container {\n  position: relative;\n  width: 100%;\n  aspect-ratio: 4 / 3;\n  background: #141414;\n  border-radius: 8px;\n  overflow: hidden;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);\n}\n.webcam-feed {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n  transform: scaleX(-1);\n  transition: opacity 0.3s ease;\n}\n.webcam-feed.inactive {\n  opacity: 0.1;\n}\n.canvas-overlay {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  pointer-events: none;\n  transform: scaleX(-1);\n}\n.camera-error-overlay {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(255, 255, 255, 0.95);\n  display: flex;\n  flex-direction: column;\n  justify-content: center;\n  align-items: center;\n  padding: 24px;\n  text-align: center;\n}\n.error-msg {\n  margin-top: 12px;\n  font-weight: 500;\n  color: #ff4d4f;\n  font-size: 13px;\n  max-width: 320px;\n}\n.scanline-sweep {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 3px;\n  background:\n    linear-gradient(\n      to bottom,\n      rgba(24, 144, 255, 0),\n      #1890ff,\n      rgba(24, 144, 255, 0));\n  box-shadow: 0 0 8px #1890ff;\n  animation: sweepLine 3s linear infinite;\n  pointer-events: none;\n}\n@keyframes sweepLine {\n  0% {\n    top: 0%;\n  }\n  50% {\n    top: 100%;\n  }\n  100% {\n    top: 0%;\n  }\n}\n.viewport-controls {\n  display: flex;\n  align-items: center;\n  margin-top: 4px;\n}\n.aligned-face-preview-section {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 10px 14px;\n  margin-top: 4px;\n}\n.preview-title {\n  font-size: 12px;\n  font-weight: 600;\n  color: #595959;\n}\n.preview-box {\n  position: relative;\n  width: 48px;\n  height: 48px;\n  border-radius: 4px;\n  overflow: hidden;\n  border: 1.5px solid #d9d9d9;\n  background: #fafafa;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);\n  flex-shrink: 0;\n}\n.no-preview-thumbnail {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  color: #ccc;\n}\n.face-crop-img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n.preview-status {\n  position: absolute;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100%;\n  background: rgba(255, 255, 255, 0.7);\n  display: flex;\n  justify-content: center;\n  align-items: center;\n}\n.threshold-panel-container {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 14px;\n}\n.slider-label {\n  display: flex;\n  justify-content: space-between;\n  font-size: 12.5px;\n  color: #595959;\n  margin-bottom: 4px;\n}\n.threshold-val {\n  color: #1890ff;\n  font-weight: 700;\n  font-size: 13.5px;\n}\n.slider-control-row {\n  display: flex;\n  align-items: center;\n}\n.state-container {\n  min-height: 220px;\n  display: flex;\n  flex-direction: column;\n}\n.scanning-state-card {\n  flex: 1;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  text-align: center;\n  padding: 24px;\n  background: rgba(250, 250, 250, 0.6);\n  border: 1.5px dashed #d9d9d9;\n  border-radius: 8px;\n  transition: all 0.2s ease;\n}\n.scanning-state-card.active-eval {\n  background: rgba(230, 247, 255, 0.2);\n  border-color: #1890ff;\n  border-style: solid;\n}\n.scanning-state-card.alert-fail {\n  background: rgba(255, 241, 240, 0.6);\n  border-color: #ff4d4f;\n  border-style: solid;\n  box-shadow: 0 4px 12px rgba(255, 77, 79, 0.04);\n}\n.state-icon {\n  font-size: 38px;\n  margin-bottom: 12px;\n}\n.icon-blue {\n  color: #1890ff;\n}\n.text-red {\n  color: #ff4d4f;\n}\n.gray-pulse {\n  color: #bfbfbf;\n  animation: grayPulseKey 1.5s ease-in-out infinite;\n}\n@keyframes grayPulseKey {\n  0%, 100% {\n    transform: scale(1);\n    color: #bfbfbf;\n  }\n  50% {\n    transform: scale(1.1);\n    color: #1890ff;\n  }\n}\n.shadow-pulse {\n  animation: redWarningPulse 1.6s infinite;\n}\n@keyframes redWarningPulse {\n  0% {\n    transform: scale(1);\n    filter: drop-shadow(0 0 0 rgba(255, 77, 79, 0.4));\n  }\n  50% {\n    transform: scale(1.1);\n    filter: drop-shadow(0 0 6px rgba(255, 77, 79, 0.6));\n  }\n  100% {\n    transform: scale(1);\n    filter: drop-shadow(0 0 0 rgba(255, 77, 79, 0));\n  }\n}\n.state-title {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #262626;\n  margin-bottom: 4px;\n}\n.state-hint {\n  font-size: 12px;\n  color: #8c8c8c;\n  max-width: 250px;\n  line-height: 1.5;\n}\n.pulsing-text {\n  color: #1890ff;\n  animation: pulseScan 1.2s ease-in-out infinite;\n}\n@keyframes pulseScan {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n}\n.failed-best-match-snippet {\n  margin-top: 14px;\n  background: #ffffff;\n  border: 1.5px solid #ffccc7;\n  border-radius: 6px;\n  padding: 8px 10px;\n  font-size: 11.5px;\n  color: #595959;\n  line-height: 1.5;\n}\n.match-success-card {\n  flex: 1;\n  background: #f6ffed;\n  border: 1.5px solid #b7eb8f;\n  border-radius: 8px;\n  padding: 16px;\n  display: flex;\n  flex-direction: column;\n  gap: 14px;\n  box-shadow: 0 4px 12px rgba(82, 196, 26, 0.08);\n  animation: slideInUp 0.3s ease;\n}\n@keyframes slideInUp {\n  0% {\n    transform: translateY(10px);\n    opacity: 0;\n  }\n  100% {\n    transform: translateY(0);\n    opacity: 1;\n  }\n}\n.success-banner {\n  background: #52c41a;\n  color: white;\n  border-radius: 4px;\n  padding: 6px 12px;\n  font-weight: 700;\n  font-size: 12px;\n  letter-spacing: 0.5px;\n  display: flex;\n  align-items: center;\n  box-shadow: 0 2px 4px rgba(82, 196, 26, 0.2);\n}\n.success-check-icon {\n  font-size: 15px;\n}\n.matched-profile-content {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n  background: white;\n  border: 1px solid #e8e8e8;\n  border-radius: 6px;\n  padding: 12px;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);\n}\n.profile-avatar-wrapper {\n  position: relative;\n  flex-shrink: 0;\n}\n.matched-profile-avatar {\n  width: 52px;\n  height: 52px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #52c41a;\n  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);\n}\n.matched-profile-avatar-placeholder {\n  width: 52px;\n  height: 52px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #52c41a,\n      #389e0d);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 18px;\n  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.2);\n}\n.profile-details-text {\n  flex: 1;\n  min-width: 0;\n}\n.matched-name {\n  font-weight: 700;\n  font-size: 15px;\n  color: #262626;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.matched-email {\n  font-size: 12px;\n  color: #8c8c8c;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  margin-top: 1px;\n}\n.matched-meta {\n  margin-top: 4px;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n}\n.matched-timestamp {\n  font-size: 10.5px;\n  color: #8c8c8c;\n}\n.stats-panel {\n  background: white;\n  border: 1px solid #e8e8e8;\n  border-radius: 6px;\n  padding: 12px;\n}\n.stat-progress-item {\n  display: flex;\n  flex-direction: column;\n  gap: 4px;\n}\n.stat-header {\n  display: flex;\n  justify-content: space-between;\n  font-size: 11.5px;\n  color: #595959;\n}\n.stat-number {\n  font-weight: 700;\n  font-size: 12px;\n}\n.text-green {\n  color: #52c41a;\n}\n.text-blue {\n  color: #1890ff;\n}\n.progress-bar-track {\n  width: 100%;\n  height: 6px;\n  background: #f0f0f0;\n  border-radius: 3px;\n  overflow: hidden;\n}\n.progress-bar-fill {\n  height: 100%;\n  border-radius: 3px;\n  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n}\n.green-fill {\n  background:\n    linear-gradient(\n      to right,\n      #73d13d,\n      #52c41a);\n}\n.blue-fill {\n  background:\n    linear-gradient(\n      to right,\n      #40a9ff,\n      #1890ff);\n}\n.history-section {\n  background: #ffffff;\n  border: 1px solid #f0f0f0;\n  border-radius: 12px;\n  padding: 16px 20px;\n  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);\n  margin-top: 4px;\n}\n.history-header {\n  display: flex;\n  align-items: center;\n  margin-bottom: 12px;\n  border-bottom: 1px solid #f0f0f0;\n  padding-bottom: 10px;\n}\n.history-title {\n  font-weight: 700;\n  font-size: 14px;\n  color: #1f1f1f;\n}\n.history-list {\n  display: flex;\n  flex-direction: column;\n  gap: 8px;\n}\n.history-item {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n  background: #fafafa;\n  border: 1.5px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 8px 12px;\n  transition: all 0.2s ease;\n}\n.history-item.history-matched {\n  border-color: #b7eb8f;\n  background: #f6ffed;\n}\n.history-item.history-unmatched {\n  border-color: #ffccc7;\n  background: #fff1f0;\n}\n.history-index {\n  font-size: 11px;\n  font-weight: 700;\n  color: #8c8c8c;\n  width: 22px;\n  flex-shrink: 0;\n}\n.history-thumbnail {\n  width: 44px;\n  height: 44px;\n  border-radius: 6px;\n  overflow: hidden;\n  background: #f0f0f0;\n  border: 1px solid #d9d9d9;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  flex-shrink: 0;\n}\n.history-thumb-img {\n  width: 100%;\n  height: 100%;\n  object-fit: cover;\n}\n.history-profile {\n  flex: 1;\n  min-width: 0;\n}\n.history-avatar-row {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.history-avatar {\n  width: 32px;\n  height: 32px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 1.5px solid #52c41a;\n  flex-shrink: 0;\n}\n.history-avatar-placeholder {\n  width: 32px;\n  height: 32px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #52c41a,\n      #389e0d);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 13px;\n  flex-shrink: 0;\n}\n.history-name-block {\n  min-width: 0;\n}\n.history-name {\n  font-weight: 600;\n  font-size: 12.5px;\n  color: #262626;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.history-email {\n  font-size: 10.5px;\n  color: #8c8c8c;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n.history-no-match {\n  display: flex;\n  align-items: center;\n}\n.history-metrics {\n  display: flex;\n  flex-direction: column;\n  align-items: flex-end;\n  gap: 4px;\n  flex-shrink: 0;\n}\n.history-time {\n  font-size: 10px;\n  color: #bfbfbf;\n  font-family: monospace;\n}\n/*# sourceMappingURL=camera.component.css.map */\n"] }]
+  }], null, { videoElement: [{
+    type: ViewChild,
+    args: ["videoElement"]
+  }], canvasOverlay: [{
+    type: ViewChild,
+    args: ["canvasOverlay"]
+  }], alignedCanvas: [{
+    type: ViewChild,
+    args: ["alignedCanvas"]
+  }] });
+})();
+(() => {
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(CameraComponent, { className: "CameraComponent", filePath: "projects/tot/nhan-dien-khuon-mat/src/lib/camera/camera.component.ts", lineNumber: 40 });
+})();
+
 export {
   provideNhanDienKhuonMat,
   NhanDienKhuonMatService,
   NhanDienKhuonMatComponent,
-  TrainingComponent
+  TrainingComponent,
+  CameraComponent
 };
-//# sourceMappingURL=chunk-YRJUN6OZ.js.map
+//# sourceMappingURL=chunk-MTJVVLV7.js.map

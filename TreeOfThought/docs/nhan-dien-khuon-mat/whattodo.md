@@ -140,3 +140,14 @@ Danh Sách Khuôn Mặt Đã Có Embedding
         Danh sách Vector Embedding , từng embeding khi training cần lưu ảnh đã dùng đưa vào lấy vector embeding ( ở đây là face đã croped và align --data_dir {rootfaceids}/{yyyy-MM-dd}/data)
 
 Danh sách :   Chọn User để Đào Tạo bổ xung cột các ảnh khuôn mặt đã định nghĩa
+
+**cập nhật 2026-05-29 09:30:56**
+
+Thêm submenu cho Nhận diện khuôn mặt: Camera nhận dạng
+    - click vào menu thì load ra component để mở camera , khi nhận dạng được khuôn mặt trên camera , thì hệ thống sẽ lấy khuôn mặt đưa lên so sánh embeding và tìm ra best match người đó là ai, và hiện khuôn mặt của người đó và thông tin tên , cho phép chọn threshhold 
+        Để hỗ trợ nếu 1 khung hình có nhiều người, thêm threshhold về độ rộng ảnh face croped >= threshhold
+        Ảnh algign croped trên FE có thể lấy padding lớn để tránh bị mất nhiều diện tích khuôn mặt (gửi lên server cho tiết kiệm băng thông), khi lên server cũng cần căn lấy face và align lại để đúng chuẩn và có kết quả tốt nhất (các chuẩn về align TreeOfThought/docs/nhan-dien-khuon-mat/howtodo.md)
+
+**cập nhật 2026-05-29 09:50:56**
+        Kết Quả Nhận Dạng (HNSW) 
+            cần giữ history 5 kết quả nhận diện mới nhất 
