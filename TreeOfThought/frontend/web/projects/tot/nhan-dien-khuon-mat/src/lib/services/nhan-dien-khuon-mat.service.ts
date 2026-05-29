@@ -191,4 +191,9 @@ export class NhanDienKhuonMatService {
       };
     });
   }
+
+  reloadCache() {
+    return this.http.post('/api/face-detection/reload-cache', {});
+  }
 }
+

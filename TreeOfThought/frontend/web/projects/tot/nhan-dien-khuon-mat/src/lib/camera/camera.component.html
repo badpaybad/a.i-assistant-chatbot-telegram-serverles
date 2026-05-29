@@ -81,6 +81,18 @@
       <div class="results-header">
         <span nz-icon nzType="security-scan" style="color: #1890ff; font-size: 18px;"></span>
         <span class="header-title">&nbsp; Kết Quả Nhận Dạng (HNSW)</span>
+        <button
+          nz-button
+          nzType="default"
+          nzSize="small"
+          [nzLoading]="reloadingCache"
+          (click)="reloadCache()"
+          nz-tooltip
+          nzTooltipTitle="Làm nóng lại cache vector database & force nạp lại ONNX model mới nhất"
+          style="display: flex; align-items: center; gap: 4px; border-radius: 6px; margin-left: auto;">
+          <span nz-icon nzType="sync"></span>
+          Reload Cache
+        </button>
       </div>
 
       <!-- Cosine Similarity Threshold Slider -->

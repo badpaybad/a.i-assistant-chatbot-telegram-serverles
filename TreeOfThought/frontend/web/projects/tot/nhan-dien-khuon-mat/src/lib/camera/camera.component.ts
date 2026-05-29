@@ -68,6 +68,7 @@ export class CameraComponent implements OnInit, OnDestroy {
 
   // Matching State & Results
   isComparing: boolean = false;
+  reloadingCache: boolean = false;
   compareResults: any = null;
   bestMatchUser: any = null;
   noFaceDetected: boolean = false;
@@ -493,5 +494,19 @@ export class CameraComponent implements OnInit, OnDestroy {
 
   clearHistory(): void {
     this.recognitionHistory = [];
+  }
+
+  async reloadCache(): Promise<void> {
+    if (this.reloadingCache) return;
+    this.reloadingCache = true;
+    try {
+      const res: any = await this.api.reloadCache();
+      this.message.success(res?.message || "Tải lại cache thành công.");
+    } catch (err: any) {
+      console.error("[Reload Cache] Failed: ", err);
+      this.message.error(err.error?.message || err.message || "Lỗi khi tải lại cache.");
+    } finally {
+      this.reloadingCache = false;
+    }
   }
 }

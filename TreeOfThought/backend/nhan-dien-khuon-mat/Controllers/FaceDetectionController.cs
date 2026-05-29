@@ -1482,9 +1482,9 @@ public class FaceDetectionController : BaseController
                 if (Directory.Exists(rootFaceIds))
                 {
                     var latestModel = Directory.GetDirectories(rootFaceIds)
+                        .OrderByDescending(d => Path.GetFileName(d)) // Sắp xếp theo tên thư mục yyyy-MM-dd giảm dần
                         .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
                         .Where(System.IO.File.Exists)
-                        .OrderByDescending(System.IO.File.GetCreationTime)
                         .FirstOrDefault();
                     if (latestModel != null)
                     {
@@ -1637,9 +1637,9 @@ public class FaceDetectionController : BaseController
         if (Directory.Exists(rootFaceIds))
         {
             bestModelPath = Directory.GetDirectories(rootFaceIds)
+                .OrderByDescending(d => Path.GetFileName(d)) // Sắp xếp theo tên thư mục yyyy-MM-dd giảm dần
                 .Select(d => Path.Combine(d, "arcface_model_best.onnx"))
                 .Where(System.IO.File.Exists)
-                .OrderByDescending(System.IO.File.GetCreationTime)
                 .FirstOrDefault();
         }
 

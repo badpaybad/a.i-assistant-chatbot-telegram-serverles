@@ -732,6 +732,9 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
       };
     });
   }
+  reloadCache() {
+    return this.http.post("/api/face-detection/reload-cache", {});
+  }
 };
 _NhanDienKhuonMatService.\u0275fac = function NhanDienKhuonMatService_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _NhanDienKhuonMatService)();
@@ -8658,23 +8661,23 @@ function CameraComponent_div_1_Template(rf, ctx) {
 }
 function CameraComponent_div_2_span_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "span", 49);
+    \u0275\u0275element(0, "span", 51);
   }
 }
 function CameraComponent_div_2_span_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "span", 50);
+    \u0275\u0275element(0, "span", 52);
   }
 }
 function CameraComponent_div_2_div_13_Template(rf, ctx) {
   if (rf & 1) {
     const _r2 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 51);
-    \u0275\u0275element(1, "span", 52);
-    \u0275\u0275elementStart(2, "div", 53);
+    \u0275\u0275elementStart(0, "div", 53);
+    \u0275\u0275element(1, "span", 54);
+    \u0275\u0275elementStart(2, "div", 55);
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "button", 54);
+    \u0275\u0275elementStart(4, "button", 56);
     \u0275\u0275listener("click", function CameraComponent_div_2_div_13_Template_button_click_4_listener() {
       \u0275\u0275restoreView(_r2);
       const ctx_r2 = \u0275\u0275nextContext(2);
@@ -8691,19 +8694,19 @@ function CameraComponent_div_2_div_13_Template(rf, ctx) {
 }
 function CameraComponent_div_2_div_14_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "div", 55);
+    \u0275\u0275element(0, "div", 57);
   }
 }
 function CameraComponent_div_2_div_28_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 56);
-    \u0275\u0275element(1, "span", 57);
+    \u0275\u0275elementStart(0, "div", 58);
+    \u0275\u0275element(1, "span", 59);
     \u0275\u0275elementEnd();
   }
 }
 function CameraComponent_div_2_img_29_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 58);
+    \u0275\u0275element(0, "img", 60);
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(2);
@@ -8712,43 +8715,43 @@ function CameraComponent_div_2_img_29_Template(rf, ctx) {
 }
 function CameraComponent_div_2_div_30_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 59);
-    \u0275\u0275element(1, "nz-spin", 60);
+    \u0275\u0275elementStart(0, "div", 61);
+    \u0275\u0275element(1, "nz-spin", 62);
     \u0275\u0275elementEnd();
   }
 }
-function CameraComponent_div_2_div_58_Template(rf, ctx) {
+function CameraComponent_div_2_div_61_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 61);
+    \u0275\u0275elementStart(0, "div", 63);
     \u0275\u0275element(1, "nz-spin", 8);
-    \u0275\u0275elementStart(2, "div", 62);
+    \u0275\u0275elementStart(2, "div", 64);
     \u0275\u0275text(3, "\u0110ang so kh\u1EDBp vector \u0111\u1EB7c tr\u01B0ng...");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275elementStart(4, "div", 65);
     \u0275\u0275text(5, "\u0110ang so s\xE1nh embedding 512-chi\u1EC1u v\u1EDBi PostgreSQL HNSW");
     \u0275\u0275elementEnd()();
   }
 }
-function CameraComponent_div_2_div_59_Template(rf, ctx) {
+function CameraComponent_div_2_div_62_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 64);
-    \u0275\u0275element(1, "span", 65);
-    \u0275\u0275elementStart(2, "div", 66);
+    \u0275\u0275elementStart(0, "div", 66);
+    \u0275\u0275element(1, "span", 67);
+    \u0275\u0275elementStart(2, "div", 68);
     \u0275\u0275text(3, "\u0110ang qu\xE9t t\xECm khu\xF4n m\u1EB7t...");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275elementStart(4, "div", 65);
     \u0275\u0275text(5, "Vui l\xF2ng \u0111\u1EE9ng th\u1EB3ng tr\u01B0\u1EDBc camera \u0111\u1EC3 b\u1EAFt \u0111\u1EA7u \u0111\u1ED1i s\xE1nh t\u1EF1 \u0111\u1ED9ng.");
     \u0275\u0275elementEnd()();
   }
 }
-function CameraComponent_div_2_div_60_Template(rf, ctx) {
+function CameraComponent_div_2_div_63_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 64);
-    \u0275\u0275element(1, "span", 67);
-    \u0275\u0275elementStart(2, "div", 68);
+    \u0275\u0275elementStart(0, "div", 66);
+    \u0275\u0275element(1, "span", 69);
+    \u0275\u0275elementStart(2, "div", 70);
     \u0275\u0275text(3, "Khu\xF4n m\u1EB7t qu\xE1 nh\u1ECF ho\u1EB7c qu\xE1 xa!");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275elementStart(4, "div", 65);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd()();
   }
@@ -8758,10 +8761,10 @@ function CameraComponent_div_2_div_60_Template(rf, ctx) {
     \u0275\u0275textInterpolate1("Khu\xF4n m\u1EB7t ph\xE1t hi\u1EC7n \u0111\u01B0\u1EE3c nh\u1ECF h\u01A1n ng\u01B0\u1EE1ng ", ctx_r2.minFaceWidthPx, "px. H\xE3y l\u1EA1i g\u1EA7n camera h\u01A1n ho\u1EB7c h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng k\xEDch th\u01B0\u1EDBc.");
   }
 }
-function CameraComponent_div_2_div_61_div_6_Template(rf, ctx) {
+function CameraComponent_div_2_div_64_div_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 73);
-    \u0275\u0275element(1, "span", 74);
+    \u0275\u0275elementStart(0, "div", 75);
+    \u0275\u0275element(1, "span", 76);
     \u0275\u0275text(2, "\xA0 G\u1EE3i \xFD: G\u1EA7n gi\u1ED1ng nh\u1EA5t v\u1EDBi ");
     \u0275\u0275elementStart(3, "strong");
     \u0275\u0275text(4);
@@ -8778,17 +8781,17 @@ function CameraComponent_div_2_div_61_div_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" (", \u0275\u0275pipeBind2(6, 2, ctx_r2.compareResults.bestMatch.cosineSimilarity, "1.2-2"), "). H\xE3y h\u1EA1 th\u1EA5p ng\u01B0\u1EE1ng so s\xE1nh n\u1EBFu mu\u1ED1n ki\u1EC3m tra. ");
   }
 }
-function CameraComponent_div_2_div_61_Template(rf, ctx) {
+function CameraComponent_div_2_div_64_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 69);
-    \u0275\u0275element(1, "span", 70);
-    \u0275\u0275elementStart(2, "div", 71);
+    \u0275\u0275elementStart(0, "div", 71);
+    \u0275\u0275element(1, "span", 72);
+    \u0275\u0275elementStart(2, "div", 73);
     \u0275\u0275text(3, "Khu\xF4n m\u1EB7t ch\u01B0a \u0111\u01B0\u1EE3c \u0111\u0103ng k\xFD!");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275elementStart(4, "div", 65);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(6, CameraComponent_div_2_div_61_div_6_Template, 7, 5, "div", 72);
+    \u0275\u0275template(6, CameraComponent_div_2_div_64_div_6_Template, 7, 5, "div", 74);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -8799,18 +8802,18 @@ function CameraComponent_div_2_div_61_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r2.compareResults == null ? null : ctx_r2.compareResults.bestMatch);
   }
 }
-function CameraComponent_div_2_div_62_img_7_Template(rf, ctx) {
+function CameraComponent_div_2_div_65_img_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 97);
+    \u0275\u0275element(0, "img", 99);
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(3);
     \u0275\u0275property("src", ctx_r2.bestMatchUser.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
-function CameraComponent_div_2_div_62_div_8_Template(rf, ctx) {
+function CameraComponent_div_2_div_65_div_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 98);
+    \u0275\u0275elementStart(0, "div", 100);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -8820,47 +8823,47 @@ function CameraComponent_div_2_div_62_div_8_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", (ctx_r2.bestMatchUser.displayName || ctx_r2.bestMatchUser.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
-function CameraComponent_div_2_div_62_Template(rf, ctx) {
+function CameraComponent_div_2_div_65_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 75)(1, "div", 76);
-    \u0275\u0275element(2, "span", 77);
+    \u0275\u0275elementStart(0, "div", 77)(1, "div", 78);
+    \u0275\u0275element(2, "span", 79);
     \u0275\u0275elementStart(3, "span");
     \u0275\u0275text(4, "\xA0 X\xC1C TH\u1EF0C TH\xC0NH C\xD4NG!");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "div", 78)(6, "div", 79);
-    \u0275\u0275template(7, CameraComponent_div_2_div_62_img_7_Template, 1, 1, "img", 80)(8, CameraComponent_div_2_div_62_div_8_Template, 2, 1, "div", 81);
+    \u0275\u0275elementStart(5, "div", 80)(6, "div", 81);
+    \u0275\u0275template(7, CameraComponent_div_2_div_65_img_7_Template, 1, 1, "img", 82)(8, CameraComponent_div_2_div_65_div_8_Template, 2, 1, "div", 83);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "div", 82)(10, "div", 83);
+    \u0275\u0275elementStart(9, "div", 84)(10, "div", 85);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(12, "div", 84);
+    \u0275\u0275elementStart(12, "div", 86);
     \u0275\u0275text(13);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(14, "div", 85)(15, "nz-tag", 86);
+    \u0275\u0275elementStart(14, "div", 87)(15, "nz-tag", 88);
     \u0275\u0275text(16, "\u0110\xE3 \u0110\u0103ng K\xFD");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(17, "span", 87);
+    \u0275\u0275elementStart(17, "span", 89);
     \u0275\u0275text(18);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(19, "div", 88)(20, "div", 89)(21, "div", 90)(22, "span");
+    \u0275\u0275elementStart(19, "div", 90)(20, "div", 91)(21, "div", 92)(22, "span");
     \u0275\u0275text(23, "\u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng (Cosine Similarity):");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(24, "strong", 91);
+    \u0275\u0275elementStart(24, "strong", 93);
     \u0275\u0275text(25);
     \u0275\u0275pipe(26, "number");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(27, "div", 92);
-    \u0275\u0275element(28, "div", 93);
+    \u0275\u0275elementStart(27, "div", 94);
+    \u0275\u0275element(28, "div", 95);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(29, "div", 94)(30, "div", 90)(31, "span");
+    \u0275\u0275elementStart(29, "div", 96)(30, "div", 92)(31, "span");
     \u0275\u0275text(32, "Kho\u1EA3ng c\xE1ch L2 (Euclidean Distance):");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(33, "strong", 95);
+    \u0275\u0275elementStart(33, "strong", 97);
     \u0275\u0275text(34);
     \u0275\u0275pipe(35, "number");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(36, "div", 92);
-    \u0275\u0275element(37, "div", 96);
+    \u0275\u0275elementStart(36, "div", 94);
+    \u0275\u0275element(37, "div", 98);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -8885,14 +8888,14 @@ function CameraComponent_div_2_div_62_Template(rf, ctx) {
     \u0275\u0275styleProp("width", (2 - ctx_r2.bestMatchUser.l2Distance) * 50, "%");
   }
 }
-function CameraComponent_div_2_div_63_Template(rf, ctx) {
+function CameraComponent_div_2_div_66_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 64);
-    \u0275\u0275element(1, "span", 99);
-    \u0275\u0275elementStart(2, "div", 66);
+    \u0275\u0275elementStart(0, "div", 66);
+    \u0275\u0275element(1, "span", 101);
+    \u0275\u0275elementStart(2, "div", 68);
     \u0275\u0275text(3, "Camera Ch\u01B0a K\xEDch Ho\u1EA1t");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 63);
+    \u0275\u0275elementStart(4, "div", 65);
     \u0275\u0275text(5, 'Nh\u1EA5p v\xE0o "M\u1EDF camera" \u1EDF b\u1EA3ng b\xEAn tr\xE1i \u0111\u1EC3 kh\u1EDFi \u0111\u1ED9ng qu\xE9t \u0111\u1ED1i s\xE1nh khu\xF4n m\u1EB7t.');
     \u0275\u0275elementEnd()();
   }
@@ -8940,57 +8943,66 @@ function CameraComponent_div_2_Template(rf, ctx) {
     \u0275\u0275element(33, "span", 35);
     \u0275\u0275elementStart(34, "span", 14);
     \u0275\u0275text(35, "\xA0 K\u1EBFt Qu\u1EA3 Nh\u1EADn D\u1EA1ng (HNSW)");
-    \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(36, "div", 36)(37, "div", 37)(38, "span");
-    \u0275\u0275text(39, "Ng\u01B0\u1EE1ng nh\u1EADn d\u1EA1ng t\u1ED1i thi\u1EC3u (Cosine Similarity):");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(40, "strong", 38);
-    \u0275\u0275text(41);
+    \u0275\u0275elementStart(36, "button", 36);
+    \u0275\u0275listener("click", function CameraComponent_div_2_Template_button_click_36_listener() {
+      \u0275\u0275restoreView(_r1);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.reloadCache());
+    });
+    \u0275\u0275element(37, "span", 37);
+    \u0275\u0275text(38, " Reload Cache ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(42, "div", 39)(43, "nz-slider", 40);
-    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_43_listener($event) {
+    \u0275\u0275elementStart(39, "div", 38)(40, "div", 39)(41, "span");
+    \u0275\u0275text(42, "Ng\u01B0\u1EE1ng nh\u1EADn d\u1EA1ng t\u1ED1i thi\u1EC3u (Cosine Similarity):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(43, "strong", 40);
+    \u0275\u0275text(44);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(45, "div", 41)(46, "nz-slider", 42);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_46_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(44, "nz-input-number", 41);
-    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_44_listener($event) {
+    \u0275\u0275elementStart(47, "nz-input-number", 43);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_47_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(45, "div", 42)(46, "div", 37)(47, "span");
-    \u0275\u0275text(48, "K\xEDch th\u01B0\u1EDBc t\u1ED1i thi\u1EC3u khu\xF4n m\u1EB7t (px r\u1ED9ng, l\u1ECDc m\u1EB7t xa/nh\u1ECF):");
+    \u0275\u0275elementStart(48, "div", 44)(49, "div", 39)(50, "span");
+    \u0275\u0275text(51, "K\xEDch th\u01B0\u1EDBc t\u1ED1i thi\u1EC3u khu\xF4n m\u1EB7t (px r\u1ED9ng, l\u1ECDc m\u1EB7t xa/nh\u1ECF):");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(49, "strong", 38);
-    \u0275\u0275text(50);
+    \u0275\u0275elementStart(52, "strong", 40);
+    \u0275\u0275text(53);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(51, "div", 39)(52, "nz-slider", 40);
-    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_52_listener($event) {
+    \u0275\u0275elementStart(54, "div", 41)(55, "nz-slider", 42);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_slider_ngModelChange_55_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.minFaceWidthPx, $event) || (ctx_r2.minFaceWidthPx = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(53, "nz-input-number", 41);
-    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_53_listener($event) {
+    \u0275\u0275elementStart(56, "nz-input-number", 43);
+    \u0275\u0275twoWayListener("ngModelChange", function CameraComponent_div_2_Template_nz_input_number_ngModelChange_56_listener($event) {
       \u0275\u0275restoreView(_r1);
       const ctx_r2 = \u0275\u0275nextContext();
       \u0275\u0275twoWayBindingSet(ctx_r2.minFaceWidthPx, $event) || (ctx_r2.minFaceWidthPx = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(54, "div", 43);
-    \u0275\u0275text(55, "\u{1F4A1} T\u0103ng ng\u01B0\u1EE1ng n\xE0y n\u1EBFu khung h\xECnh c\xF3 nhi\u1EC1u ng\u01B0\u1EDDi \u2014 ch\u1EC9 nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t \u0111\u1EE7 g\u1EA7n.");
+    \u0275\u0275elementStart(57, "div", 45);
+    \u0275\u0275text(58, "\u{1F4A1} T\u0103ng ng\u01B0\u1EE1ng n\xE0y n\u1EBFu khung h\xECnh c\xF3 nhi\u1EC1u ng\u01B0\u1EDDi \u2014 ch\u1EC9 nh\u1EADn d\u1EA1ng khu\xF4n m\u1EB7t \u0111\u1EE7 g\u1EA7n.");
     \u0275\u0275elementEnd()();
-    \u0275\u0275element(56, "nz-divider");
-    \u0275\u0275elementStart(57, "div", 44);
-    \u0275\u0275template(58, CameraComponent_div_2_div_58_Template, 6, 0, "div", 45)(59, CameraComponent_div_2_div_59_Template, 6, 0, "div", 46)(60, CameraComponent_div_2_div_60_Template, 6, 1, "div", 46)(61, CameraComponent_div_2_div_61_Template, 7, 2, "div", 47)(62, CameraComponent_div_2_div_62_Template, 38, 17, "div", 48)(63, CameraComponent_div_2_div_63_Template, 6, 0, "div", 46);
+    \u0275\u0275element(59, "nz-divider");
+    \u0275\u0275elementStart(60, "div", 46);
+    \u0275\u0275template(61, CameraComponent_div_2_div_61_Template, 6, 0, "div", 47)(62, CameraComponent_div_2_div_62_Template, 6, 0, "div", 48)(63, CameraComponent_div_2_div_63_Template, 6, 1, "div", 48)(64, CameraComponent_div_2_div_64_Template, 7, 2, "div", 49)(65, CameraComponent_div_2_div_65_Template, 38, 17, "div", 50)(66, CameraComponent_div_2_div_66_Template, 6, 0, "div", 48);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
@@ -9021,7 +9033,9 @@ function CameraComponent_div_2_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r2.alignedPreviewUrl);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx_r2.isComparing);
-    \u0275\u0275advance(11);
+    \u0275\u0275advance(6);
+    \u0275\u0275property("nzLoading", ctx_r2.reloadingCache);
+    \u0275\u0275advance(8);
     \u0275\u0275textInterpolate(ctx_r2.compareThreshold);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzMin", 0.3)("nzMax", 0.9)("nzStep", 0.01);
@@ -9053,7 +9067,7 @@ function CameraComponent_div_2_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_img_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 119);
+    \u0275\u0275element(0, "img", 121);
   }
   if (rf & 2) {
     const entry_r5 = \u0275\u0275nextContext().$implicit;
@@ -9062,12 +9076,12 @@ function CameraComponent_div_3_div_10_img_4_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_span_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "span", 120);
+    \u0275\u0275element(0, "span", 122);
   }
 }
 function CameraComponent_div_3_div_10_div_7_img_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 127);
+    \u0275\u0275element(0, "img", 129);
   }
   if (rf & 2) {
     const entry_r5 = \u0275\u0275nextContext(2).$implicit;
@@ -9076,7 +9090,7 @@ function CameraComponent_div_3_div_10_div_7_img_2_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_div_7_div_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 128);
+    \u0275\u0275elementStart(0, "div", 130);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -9088,12 +9102,12 @@ function CameraComponent_div_3_div_10_div_7_div_3_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_div_7_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "div", 121);
-    \u0275\u0275template(2, CameraComponent_div_3_div_10_div_7_img_2_Template, 1, 1, "img", 122)(3, CameraComponent_div_3_div_10_div_7_div_3_Template, 2, 1, "div", 123);
-    \u0275\u0275elementStart(4, "div", 124)(5, "div", 125);
+    \u0275\u0275elementStart(0, "div")(1, "div", 123);
+    \u0275\u0275template(2, CameraComponent_div_3_div_10_div_7_img_2_Template, 1, 1, "img", 124)(3, CameraComponent_div_3_div_10_div_7_div_3_Template, 2, 1, "div", 125);
+    \u0275\u0275elementStart(4, "div", 126)(5, "div", 127);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "div", 126);
+    \u0275\u0275elementStart(7, "div", 128);
     \u0275\u0275text(8);
     \u0275\u0275elementEnd()()()();
   }
@@ -9111,16 +9125,16 @@ function CameraComponent_div_3_div_10_div_7_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_div_8_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 129);
-    \u0275\u0275element(1, "span", 130);
-    \u0275\u0275elementStart(2, "span", 131);
+    \u0275\u0275elementStart(0, "div", 131);
+    \u0275\u0275element(1, "span", 132);
+    \u0275\u0275elementStart(2, "span", 133);
     \u0275\u0275text(3, "Kh\xF4ng kh\u1EDBp");
     \u0275\u0275elementEnd()();
   }
 }
 function CameraComponent_div_3_div_10_div_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div")(1, "nz-tag", 132);
+    \u0275\u0275elementStart(0, "div")(1, "nz-tag", 134);
     \u0275\u0275text(2);
     \u0275\u0275pipe(3, "number");
     \u0275\u0275elementEnd()();
@@ -9133,18 +9147,18 @@ function CameraComponent_div_3_div_10_div_10_Template(rf, ctx) {
 }
 function CameraComponent_div_3_div_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 109)(1, "div", 110);
+    \u0275\u0275elementStart(0, "div", 111)(1, "div", 112);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 111);
-    \u0275\u0275template(4, CameraComponent_div_3_div_10_img_4_Template, 1, 1, "img", 112)(5, CameraComponent_div_3_div_10_span_5_Template, 1, 0, "span", 113);
+    \u0275\u0275elementStart(3, "div", 113);
+    \u0275\u0275template(4, CameraComponent_div_3_div_10_img_4_Template, 1, 1, "img", 114)(5, CameraComponent_div_3_div_10_span_5_Template, 1, 0, "span", 115);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "div", 114);
-    \u0275\u0275template(7, CameraComponent_div_3_div_10_div_7_Template, 9, 4, "div", 115)(8, CameraComponent_div_3_div_10_div_8_Template, 4, 0, "div", 116);
+    \u0275\u0275elementStart(6, "div", 116);
+    \u0275\u0275template(7, CameraComponent_div_3_div_10_div_7_Template, 9, 4, "div", 117)(8, CameraComponent_div_3_div_10_div_8_Template, 4, 0, "div", 118);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(9, "div", 117);
-    \u0275\u0275template(10, CameraComponent_div_3_div_10_div_10_Template, 4, 4, "div", 115);
-    \u0275\u0275elementStart(11, "div", 118);
+    \u0275\u0275elementStart(9, "div", 119);
+    \u0275\u0275template(10, CameraComponent_div_3_div_10_div_10_Template, 4, 4, "div", 117);
+    \u0275\u0275elementStart(11, "div", 120);
     \u0275\u0275text(12);
     \u0275\u0275pipe(13, "date");
     \u0275\u0275elementEnd()()();
@@ -9172,23 +9186,23 @@ function CameraComponent_div_3_div_10_Template(rf, ctx) {
 function CameraComponent_div_3_Template(rf, ctx) {
   if (rf & 1) {
     const _r4 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 100)(1, "div", 101);
-    \u0275\u0275element(2, "span", 102);
-    \u0275\u0275elementStart(3, "span", 103);
+    \u0275\u0275elementStart(0, "div", 102)(1, "div", 103);
+    \u0275\u0275element(2, "span", 104);
+    \u0275\u0275elementStart(3, "span", 105);
     \u0275\u0275text(4, "\xA0 L\u1ECBch S\u1EED Nh\u1EADn Di\u1EC7n ");
-    \u0275\u0275element(5, "nz-badge", 104);
+    \u0275\u0275element(5, "nz-badge", 106);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "button", 105);
+    \u0275\u0275elementStart(6, "button", 107);
     \u0275\u0275listener("click", function CameraComponent_div_3_Template_button_click_6_listener() {
       \u0275\u0275restoreView(_r4);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.clearHistory());
     });
-    \u0275\u0275element(7, "span", 106);
+    \u0275\u0275element(7, "span", 108);
     \u0275\u0275text(8, " X\xF3a l\u1ECBch s\u1EED ");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(9, "div", 107);
-    \u0275\u0275template(10, CameraComponent_div_3_div_10_Template, 14, 14, "div", 108);
+    \u0275\u0275elementStart(9, "div", 109);
+    \u0275\u0275template(10, CameraComponent_div_3_div_10_Template, 14, 14, "div", 110);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -9215,6 +9229,7 @@ var _CameraComponent = class _CameraComponent {
     this.compareThreshold = 0.5;
     this.minFaceWidthPx = 80;
     this.isComparing = false;
+    this.reloadingCache = false;
     this.compareResults = null;
     this.bestMatchUser = null;
     this.noFaceDetected = false;
@@ -9559,6 +9574,21 @@ var _CameraComponent = class _CameraComponent {
   clearHistory() {
     this.recognitionHistory = [];
   }
+  async reloadCache() {
+    var _a;
+    if (this.reloadingCache)
+      return;
+    this.reloadingCache = true;
+    try {
+      const res = await this.api.reloadCache();
+      this.message.success((res == null ? void 0 : res.message) || "T\u1EA3i l\u1EA1i cache th\xE0nh c\xF4ng.");
+    } catch (err) {
+      console.error("[Reload Cache] Failed: ", err);
+      this.message.error(((_a = err.error) == null ? void 0 : _a.message) || err.message || "L\u1ED7i khi t\u1EA3i l\u1EA1i cache.");
+    } finally {
+      this.reloadingCache = false;
+    }
+  }
 };
 _CameraComponent.\u0275fac = function CameraComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _CameraComponent)();
@@ -9573,10 +9603,10 @@ _CameraComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type:
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.canvasOverlay = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.alignedCanvas = _t.first);
   }
-}, decls: 4, vars: 3, consts: [["videoElement", ""], ["canvasOverlay", ""], ["alignedCanvas", ""], [1, "camera-recognition-page"], ["class", "MP-loading-overlay", 4, "ngIf"], ["class", "recognition-grid", 4, "ngIf"], ["class", "history-section", 4, "ngIf"], [1, "MP-loading-overlay"], ["nzSimple", "", "nzSize", "large"], [1, "loading-text"], [1, "recognition-grid"], [1, "viewport-card"], [1, "viewport-header"], ["nz-icon", "", "nzType", "video-camera", 2, "color", "#1890ff", "font-size", "18px"], [1, "header-title"], ["class", "status-dot pulsing-green", "nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 4, "ngIf"], ["class", "status-dot dot-yellow", "nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 4, "ngIf"], [1, "camera-viewport-container"], ["autoplay", "", "playsinline", "", "muted", "", 1, "webcam-feed"], [1, "canvas-overlay"], ["class", "camera-error-overlay", 4, "ngIf"], ["class", "scanline-sweep", 4, "ngIf"], [1, "viewport-controls"], ["nz-button", "", 2, "width", "140px", 3, "click", "nzType", "nzDanger", "disabled"], ["nz-icon", "", 3, "nzType"], ["nz-button", "", "nzType", "default", 2, "margin-left", "12px", 3, "click"], [2, "display", "none"], [1, "aligned-face-preview-section"], [1, "preview-title"], [1, "preview-box"], ["class", "no-preview-thumbnail", 4, "ngIf"], ["class", "face-crop-img", "alt", "Aligned Crop", 3, "src", 4, "ngIf"], ["class", "preview-status", 4, "ngIf"], [1, "results-card"], [1, "results-header"], ["nz-icon", "", "nzType", "security-scan", 2, "color", "#1890ff", "font-size", "18px"], [1, "threshold-panel-container"], [1, "slider-label"], [1, "threshold-val"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "12px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "threshold-panel-container", 2, "margin-top", "10px"], [2, "font-size", "11px", "color", "#8c8c8c", "margin-top", "4px"], [1, "state-container"], ["class", "scanning-state-card active-eval", 4, "ngIf"], ["class", "scanning-state-card", 4, "ngIf"], ["class", "scanning-state-card alert-fail", 4, "ngIf"], ["class", "match-success-card", 4, "ngIf"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 1, "status-dot", "pulsing-green"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 1, "status-dot", "dot-yellow"], [1, "camera-error-overlay"], ["nz-icon", "", "nzType", "warning", 2, "font-size", "42px", "color", "#ff4d4f"], [1, "error-msg"], ["nz-button", "", "nzType", "primary", 2, "margin-top", "12px", 3, "click"], [1, "scanline-sweep"], [1, "no-preview-thumbnail"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "20px", "color", "#ccc"], ["alt", "Aligned Crop", 1, "face-crop-img", 3, "src"], [1, "preview-status"], ["nzSimple", "", "nzSize", "small"], [1, "scanning-state-card", "active-eval"], [1, "state-title", "pulsing-text"], [1, "state-hint"], [1, "scanning-state-card"], ["nz-icon", "", "nzType", "user", 1, "state-icon", "gray-pulse"], [1, "state-title"], ["nz-icon", "", "nzType", "shrink", 1, "state-icon", 2, "color", "#faad14"], [1, "state-title", 2, "color", "#d46b08"], [1, "scanning-state-card", "alert-fail"], ["nz-icon", "", "nzType", "warning", 1, "state-icon", "text-red", "shadow-pulse"], [1, "state-title", "text-red"], ["class", "failed-best-match-snippet", 4, "ngIf"], [1, "failed-best-match-snippet"], ["nz-icon", "", "nzType", "info-circle"], [1, "match-success-card"], [1, "success-banner"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill", 1, "success-check-icon"], [1, "matched-profile-content"], [1, "profile-avatar-wrapper"], ["class", "matched-profile-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "matched-profile-avatar-placeholder", 4, "ngIf"], [1, "profile-details-text"], [1, "matched-name"], [1, "matched-email"], [1, "matched-meta"], ["nzColor", "success"], [1, "matched-timestamp"], [1, "stats-panel"], [1, "stat-progress-item"], [1, "stat-header"], [1, "stat-number", "text-green"], [1, "progress-bar-track"], [1, "progress-bar-fill", "green-fill"], [1, "stat-progress-item", 2, "margin-top", "12px"], [1, "stat-number", "text-blue"], [1, "progress-bar-fill", "blue-fill"], ["alt", "avatar", 1, "matched-profile-avatar", 3, "src"], [1, "matched-profile-avatar-placeholder"], ["nz-icon", "", "nzType", "video-camera", 1, "state-icon", "icon-blue"], [1, "history-section"], [1, "history-header"], ["nz-icon", "", "nzType", "history", 2, "color", "#722ed1", "font-size", "16px"], [1, "history-title"], ["nzColor", "#722ed1", 2, "margin-left", "6px", 3, "nzCount"], ["nz-button", "", "nzType", "text", "nzSize", "small", 2, "margin-left", "auto", "color", "#8c8c8c", "font-size", "11px", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "history-list"], ["class", "history-item", 3, "history-matched", "history-unmatched", 4, "ngFor", "ngForOf"], [1, "history-item"], [1, "history-index"], [1, "history-thumbnail"], ["alt", "Face snap", "class", "history-thumb-img", 3, "src", 4, "ngIf"], ["nz-icon", "", "nzType", "scan", "style", "font-size: 18px; color: #ccc;", 4, "ngIf"], [1, "history-profile"], [4, "ngIf"], ["class", "history-no-match", 4, "ngIf"], [1, "history-metrics"], [1, "history-time"], ["alt", "Face snap", 1, "history-thumb-img", 3, "src"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "18px", "color", "#ccc"], [1, "history-avatar-row"], ["class", "history-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "history-avatar-placeholder", 4, "ngIf"], [1, "history-name-block"], [1, "history-name"], [1, "history-email"], ["alt", "avatar", 1, "history-avatar", 3, "src"], [1, "history-avatar-placeholder"], [1, "history-no-match"], ["nz-icon", "", "nzType", "stop", 2, "color", "#ff4d4f", "font-size", "14px"], [2, "margin-left", "6px", "font-size", "12px", "color", "#ff4d4f", "font-weight", "600"], ["nzColor", "success", 2, "font-size", "10.5px"]], template: function CameraComponent_Template(rf, ctx) {
+}, decls: 4, vars: 3, consts: [["videoElement", ""], ["canvasOverlay", ""], ["alignedCanvas", ""], [1, "camera-recognition-page"], ["class", "MP-loading-overlay", 4, "ngIf"], ["class", "recognition-grid", 4, "ngIf"], ["class", "history-section", 4, "ngIf"], [1, "MP-loading-overlay"], ["nzSimple", "", "nzSize", "large"], [1, "loading-text"], [1, "recognition-grid"], [1, "viewport-card"], [1, "viewport-header"], ["nz-icon", "", "nzType", "video-camera", 2, "color", "#1890ff", "font-size", "18px"], [1, "header-title"], ["class", "status-dot pulsing-green", "nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 4, "ngIf"], ["class", "status-dot dot-yellow", "nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 4, "ngIf"], [1, "camera-viewport-container"], ["autoplay", "", "playsinline", "", "muted", "", 1, "webcam-feed"], [1, "canvas-overlay"], ["class", "camera-error-overlay", 4, "ngIf"], ["class", "scanline-sweep", 4, "ngIf"], [1, "viewport-controls"], ["nz-button", "", 2, "width", "140px", 3, "click", "nzType", "nzDanger", "disabled"], ["nz-icon", "", 3, "nzType"], ["nz-button", "", "nzType", "default", 2, "margin-left", "12px", 3, "click"], [2, "display", "none"], [1, "aligned-face-preview-section"], [1, "preview-title"], [1, "preview-box"], ["class", "no-preview-thumbnail", 4, "ngIf"], ["class", "face-crop-img", "alt", "Aligned Crop", 3, "src", 4, "ngIf"], ["class", "preview-status", 4, "ngIf"], [1, "results-card"], [1, "results-header"], ["nz-icon", "", "nzType", "security-scan", 2, "color", "#1890ff", "font-size", "18px"], ["nz-button", "", "nzType", "default", "nzSize", "small", "nz-tooltip", "", "nzTooltipTitle", "L\xE0m n\xF3ng l\u1EA1i cache vector database & force n\u1EA1p l\u1EA1i ONNX model m\u1EDBi nh\u1EA5t", 2, "display", "flex", "align-items", "center", "gap", "4px", "border-radius", "6px", "margin-left", "auto", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "sync"], [1, "threshold-panel-container"], [1, "slider-label"], [1, "threshold-val"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "12px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "threshold-panel-container", 2, "margin-top", "10px"], [2, "font-size", "11px", "color", "#8c8c8c", "margin-top", "4px"], [1, "state-container"], ["class", "scanning-state-card active-eval", 4, "ngIf"], ["class", "scanning-state-card", 4, "ngIf"], ["class", "scanning-state-card alert-fail", 4, "ngIf"], ["class", "match-success-card", 4, "ngIf"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110ang ho\u1EA1t \u0111\u1ED9ng qu\xE9t li\xEAn t\u1EE5c", 1, "status-dot", "pulsing-green"], ["nz-tooltip", "", "nzTooltipTitle", "\u0110\xE3 t\u1EA1m d\u1EEBng", 1, "status-dot", "dot-yellow"], [1, "camera-error-overlay"], ["nz-icon", "", "nzType", "warning", 2, "font-size", "42px", "color", "#ff4d4f"], [1, "error-msg"], ["nz-button", "", "nzType", "primary", 2, "margin-top", "12px", 3, "click"], [1, "scanline-sweep"], [1, "no-preview-thumbnail"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "20px", "color", "#ccc"], ["alt", "Aligned Crop", 1, "face-crop-img", 3, "src"], [1, "preview-status"], ["nzSimple", "", "nzSize", "small"], [1, "scanning-state-card", "active-eval"], [1, "state-title", "pulsing-text"], [1, "state-hint"], [1, "scanning-state-card"], ["nz-icon", "", "nzType", "user", 1, "state-icon", "gray-pulse"], [1, "state-title"], ["nz-icon", "", "nzType", "shrink", 1, "state-icon", 2, "color", "#faad14"], [1, "state-title", 2, "color", "#d46b08"], [1, "scanning-state-card", "alert-fail"], ["nz-icon", "", "nzType", "warning", 1, "state-icon", "text-red", "shadow-pulse"], [1, "state-title", "text-red"], ["class", "failed-best-match-snippet", 4, "ngIf"], [1, "failed-best-match-snippet"], ["nz-icon", "", "nzType", "info-circle"], [1, "match-success-card"], [1, "success-banner"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill", 1, "success-check-icon"], [1, "matched-profile-content"], [1, "profile-avatar-wrapper"], ["class", "matched-profile-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "matched-profile-avatar-placeholder", 4, "ngIf"], [1, "profile-details-text"], [1, "matched-name"], [1, "matched-email"], [1, "matched-meta"], ["nzColor", "success"], [1, "matched-timestamp"], [1, "stats-panel"], [1, "stat-progress-item"], [1, "stat-header"], [1, "stat-number", "text-green"], [1, "progress-bar-track"], [1, "progress-bar-fill", "green-fill"], [1, "stat-progress-item", 2, "margin-top", "12px"], [1, "stat-number", "text-blue"], [1, "progress-bar-fill", "blue-fill"], ["alt", "avatar", 1, "matched-profile-avatar", 3, "src"], [1, "matched-profile-avatar-placeholder"], ["nz-icon", "", "nzType", "video-camera", 1, "state-icon", "icon-blue"], [1, "history-section"], [1, "history-header"], ["nz-icon", "", "nzType", "history", 2, "color", "#722ed1", "font-size", "16px"], [1, "history-title"], ["nzColor", "#722ed1", 2, "margin-left", "6px", 3, "nzCount"], ["nz-button", "", "nzType", "text", "nzSize", "small", 2, "margin-left", "auto", "color", "#8c8c8c", "font-size", "11px", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "history-list"], ["class", "history-item", 3, "history-matched", "history-unmatched", 4, "ngFor", "ngForOf"], [1, "history-item"], [1, "history-index"], [1, "history-thumbnail"], ["alt", "Face snap", "class", "history-thumb-img", 3, "src", 4, "ngIf"], ["nz-icon", "", "nzType", "scan", "style", "font-size: 18px; color: #ccc;", 4, "ngIf"], [1, "history-profile"], [4, "ngIf"], ["class", "history-no-match", 4, "ngIf"], [1, "history-metrics"], [1, "history-time"], ["alt", "Face snap", 1, "history-thumb-img", 3, "src"], ["nz-icon", "", "nzType", "scan", 2, "font-size", "18px", "color", "#ccc"], [1, "history-avatar-row"], ["class", "history-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "history-avatar-placeholder", 4, "ngIf"], [1, "history-name-block"], [1, "history-name"], [1, "history-email"], ["alt", "avatar", 1, "history-avatar", 3, "src"], [1, "history-avatar-placeholder"], [1, "history-no-match"], ["nz-icon", "", "nzType", "stop", 2, "color", "#ff4d4f", "font-size", "14px"], [2, "margin-left", "6px", "font-size", "12px", "color", "#ff4d4f", "font-weight", "600"], ["nzColor", "success", 2, "font-size", "10.5px"]], template: function CameraComponent_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 3);
-    \u0275\u0275template(1, CameraComponent_div_1_Template, 4, 0, "div", 4)(2, CameraComponent_div_2_Template, 64, 40, "div", 5)(3, CameraComponent_div_3_Template, 11, 2, "div", 6);
+    \u0275\u0275template(1, CameraComponent_div_1_Template, 4, 0, "div", 4)(2, CameraComponent_div_2_Template, 67, 41, "div", 5)(3, CameraComponent_div_3_Template, 11, 2, "div", 6);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -9719,6 +9749,18 @@ var CameraComponent = _CameraComponent;
       <div class="results-header">
         <span nz-icon nzType="security-scan" style="color: #1890ff; font-size: 18px;"></span>
         <span class="header-title">&nbsp; K\u1EBFt Qu\u1EA3 Nh\u1EADn D\u1EA1ng (HNSW)</span>
+        <button
+          nz-button
+          nzType="default"
+          nzSize="small"
+          [nzLoading]="reloadingCache"
+          (click)="reloadCache()"
+          nz-tooltip
+          nzTooltipTitle="L\xE0m n\xF3ng l\u1EA1i cache vector database & force n\u1EA1p l\u1EA1i ONNX model m\u1EDBi nh\u1EA5t"
+          style="display: flex; align-items: center; gap: 4px; border-radius: 6px; margin-left: auto;">
+          <span nz-icon nzType="sync"></span>
+          Reload Cache
+        </button>
       </div>
 
       <!-- Cosine Similarity Threshold Slider -->
@@ -9923,4 +9965,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-5Q34ZFXG.js.map
+//# sourceMappingURL=chunk-OWE6MULV.js.map
