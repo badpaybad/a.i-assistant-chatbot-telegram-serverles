@@ -296,6 +296,27 @@ export class TrainingComponent implements OnInit, OnDestroy {
     });
   }
 
+  deleteUserFaceDefinition(definitionId: string, user: any, event: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    this.modal.confirm({
+      nzTitle: 'Xác nhận gỡ ảnh định nghĩa?',
+      nzContent: `Bạn có chắc chắn muốn gỡ ảnh định nghĩa này khỏi user "${user.displayName || user.username}" không?`,
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          await this.api.deleteFaceDefinition(definitionId);
+          this.message.success('Đã gỡ ảnh định nghĩa khuôn mặt thành công.');
+          this.loadUsersWithDefinitions();
+        } catch (error) {
+          this.message.error('Lỗi khi gỡ ảnh định nghĩa khuôn mặt.');
+        }
+      }
+    });
+  }
+
   // --- Quản lý Xóa Vector Embedding ---
   async deleteUserEmbeddings(userId: string): Promise<void> {
     this.modal.confirm({

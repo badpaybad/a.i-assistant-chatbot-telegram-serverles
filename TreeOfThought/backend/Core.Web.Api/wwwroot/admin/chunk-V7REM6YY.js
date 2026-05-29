@@ -1158,66 +1158,59 @@ function NhanDienKhuonMatComponent_ng_template_50_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_52_ng_template_13_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 113);
-    \u0275\u0275text(1);
+    \u0275\u0275elementStart(0, "div", 112);
+    \u0275\u0275element(1, "img", 113);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(2, "span", 114);
+    \u0275\u0275text(3);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
     const data_r22 = ctx.$implicit;
     \u0275\u0275advance();
+    \u0275\u0275property("src", data_r22.url, \u0275\u0275sanitizeUrl);
+    \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(data_r22.fileName);
   }
 }
 function NhanDienKhuonMatComponent_div_52_ng_template_14_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 114);
-    \u0275\u0275element(1, "img", 115);
-    \u0275\u0275elementEnd();
-  }
-  if (rf & 2) {
-    const data_r23 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275property("src", data_r23.url, \u0275\u0275sanitizeUrl);
-  }
-}
-function NhanDienKhuonMatComponent_div_52_ng_template_15_Template(rf, ctx) {
-  if (rf & 1) {
-    const _r24 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 116)(1, "tot-autocomplete", 117);
-    \u0275\u0275twoWayListener("ngModelChange", function NhanDienKhuonMatComponent_div_52_ng_template_15_Template_tot_autocomplete_ngModelChange_1_listener($event) {
-      const data_r25 = \u0275\u0275restoreView(_r24).$implicit;
-      \u0275\u0275twoWayBindingSet(data_r25.selectedUserId, $event) || (data_r25.selectedUserId = $event);
+    const _r23 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 115)(1, "tot-autocomplete", 116);
+    \u0275\u0275twoWayListener("ngModelChange", function NhanDienKhuonMatComponent_div_52_ng_template_14_Template_tot_autocomplete_ngModelChange_1_listener($event) {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
+      \u0275\u0275twoWayBindingSet(data_r24.selectedUserId, $event) || (data_r24.selectedUserId = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "tot-button", 118);
-    \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_52_ng_template_15_Template_tot_button_click_2_listener() {
-      const data_r25 = \u0275\u0275restoreView(_r24).$implicit;
+    \u0275\u0275elementStart(2, "tot-button", 117);
+    \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_52_ng_template_14_Template_tot_button_click_2_listener() {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.addFaceDefinition(data_r25));
+      return \u0275\u0275resetView(ctx_r3.addFaceDefinition(data_r24));
     });
-    \u0275\u0275element(3, "i", 119);
+    \u0275\u0275element(3, "i", 118);
     \u0275\u0275text(4, " G\xE1n cho user ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "tot-button", 120);
-    \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_52_ng_template_15_Template_tot_button_click_5_listener() {
-      const data_r25 = \u0275\u0275restoreView(_r24).$implicit;
+    \u0275\u0275elementStart(5, "tot-button", 119);
+    \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_52_ng_template_14_Template_tot_button_click_5_listener() {
+      const data_r24 = \u0275\u0275restoreView(_r23).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r3.viewUserDefinitions(data_r25.selectedUserId));
+      return \u0275\u0275resetView(ctx_r3.viewUserDefinitions(data_r24.selectedUserId));
     });
-    \u0275\u0275element(6, "i", 121);
+    \u0275\u0275element(6, "i", 120);
     \u0275\u0275text(7, " Xem user \u0111\u1ECBnh ngh\u0129a khu\xF4n m\u1EB7t ");
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const data_r25 = ctx.$implicit;
+    const data_r24 = ctx.$implicit;
     \u0275\u0275advance();
     \u0275\u0275property("apiUrl", "/api/face-detection/users")("labelField", "displayName")("valueField", "id");
-    \u0275\u0275twoWayProperty("ngModel", data_r25.selectedUserId);
+    \u0275\u0275twoWayProperty("ngModel", data_r24.selectedUserId);
     \u0275\u0275advance();
-    \u0275\u0275property("disabled", !data_r25.selectedUserId);
+    \u0275\u0275property("disabled", !data_r24.selectedUserId);
     \u0275\u0275advance(3);
-    \u0275\u0275property("disabled", !data_r25.selectedUserId);
+    \u0275\u0275property("disabled", !data_r24.selectedUserId);
   }
 }
 function NhanDienKhuonMatComponent_div_52_Template(rf, ctx) {
@@ -1239,7 +1232,7 @@ function NhanDienKhuonMatComponent_div_52_Template(rf, ctx) {
     \u0275\u0275text(11, " \u0110\xF3ng v\xF9ng l\xE0m vi\u1EC7c ");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(12, "tot-table", 110);
-    \u0275\u0275template(13, NhanDienKhuonMatComponent_div_52_ng_template_13_Template, 2, 1, "ng-template", 111)(14, NhanDienKhuonMatComponent_div_52_ng_template_14_Template, 2, 1, "ng-template", 112)(15, NhanDienKhuonMatComponent_div_52_ng_template_15_Template, 8, 6, "ng-template", 30);
+    \u0275\u0275template(13, NhanDienKhuonMatComponent_div_52_ng_template_13_Template, 4, 2, "ng-template", 111)(14, NhanDienKhuonMatComponent_div_52_ng_template_14_Template, 8, 6, "ng-template", 30);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -1254,96 +1247,96 @@ function NhanDienKhuonMatComponent_div_52_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_54_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 125);
+    \u0275\u0275elementStart(0, "div", 124);
     \u0275\u0275element(1, "nz-spin", 80);
-    \u0275\u0275elementStart(2, "p", 126);
+    \u0275\u0275elementStart(2, "p", 125);
     \u0275\u0275text(3, "\u0110ang t\u1EA3i c\u1EA5u tr\xFAc t\u1EC7p t\u1EEB server...");
     \u0275\u0275elementEnd()();
   }
 }
 function NhanDienKhuonMatComponent_div_54_div_2_div_1_div_23_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 143);
+    \u0275\u0275elementStart(0, "div", 142);
     \u0275\u0275text(1, " Kh\xF4ng c\xF3 khu\xF4n m\u1EB7t n\xE0o \u0111\u01B0\u1EE3c l\u01B0u trong t\u1EC7p \u1EA3nh n\xE0y ");
     \u0275\u0275elementEnd();
   }
 }
 function NhanDienKhuonMatComponent_div_54_div_2_div_1_div_25_Template(rf, ctx) {
   if (rf & 1) {
-    const _r28 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 144)(1, "div", 145)(2, "div", 146);
-    \u0275\u0275element(3, "img", 147);
-    \u0275\u0275elementStart(4, "tot-button", 148);
+    const _r27 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 143)(1, "div", 144)(2, "div", 145);
+    \u0275\u0275element(3, "img", 146);
+    \u0275\u0275elementStart(4, "tot-button", 147);
     \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_54_div_2_div_1_div_25_Template_tot_button_click_4_listener() {
-      const face_r29 = \u0275\u0275restoreView(_r28).$implicit;
-      const img_r27 = \u0275\u0275nextContext().$implicit;
+      const face_r28 = \u0275\u0275restoreView(_r27).$implicit;
+      const img_r26 = \u0275\u0275nextContext().$implicit;
       const ctx_r3 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r3.deleteDetailCroppedFace(face_r29, img_r27));
+      return \u0275\u0275resetView(ctx_r3.deleteDetailCroppedFace(face_r28, img_r26));
     });
-    \u0275\u0275element(5, "i", 149);
+    \u0275\u0275element(5, "i", 148);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(6, "div", 150)(7, "span", 151);
+    \u0275\u0275elementStart(6, "div", 149)(7, "span", 150);
     \u0275\u0275text(8);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
-    const face_r29 = ctx.$implicit;
+    const face_r28 = ctx.$implicit;
     \u0275\u0275property("nzXs", 12)("nzSm", 8)("nzMd", 6);
     \u0275\u0275advance(3);
-    \u0275\u0275property("src", face_r29.url, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", face_r28.url, \u0275\u0275sanitizeUrl);
     \u0275\u0275advance();
     \u0275\u0275property("nzDanger", true);
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzTooltipTitle", face_r29.boundingBox);
+    \u0275\u0275property("nzTooltipTitle", face_r28.boundingBox);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1("BBox: ", face_r29.boundingBox);
+    \u0275\u0275textInterpolate1("BBox: ", face_r28.boundingBox);
   }
 }
 function NhanDienKhuonMatComponent_div_54_div_2_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    const _r26 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 129)(1, "div", 106)(2, "div", 107)(3, "span", 130);
-    \u0275\u0275element(4, "i", 131);
+    const _r25 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 128)(1, "div", 106)(2, "div", 107)(3, "span", 129);
+    \u0275\u0275element(4, "i", 130);
     \u0275\u0275text(5);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(6, "nz-tag", 132);
+    \u0275\u0275elementStart(6, "nz-tag", 131);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "span", 133);
+    \u0275\u0275elementStart(8, "span", 132);
     \u0275\u0275text(9);
     \u0275\u0275pipe(10, "date");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(11, "div", 107)(12, "tot-button", 101);
     \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_54_div_2_div_1_Template_tot_button_click_12_listener() {
-      const img_r27 = \u0275\u0275restoreView(_r26).$implicit;
+      const img_r26 = \u0275\u0275restoreView(_r25).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(3);
-      return \u0275\u0275resetView(ctx_r3.deleteDetailOriginalImage(img_r27));
+      return \u0275\u0275resetView(ctx_r3.deleteDetailOriginalImage(img_r26));
     });
     \u0275\u0275element(13, "i", 68);
     \u0275\u0275text(14, " X\xF3a \u1EA3nh g\u1ED1c & crops ");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(15, "div", 134)(16, "div", 135)(17, "div", 136);
-    \u0275\u0275element(18, "img", 137);
+    \u0275\u0275elementStart(15, "div", 133)(16, "div", 134)(17, "div", 135);
+    \u0275\u0275element(18, "img", 136);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(19, "div", 138)(20, "div", 139)(21, "h4", 140);
+    \u0275\u0275elementStart(19, "div", 137)(20, "div", 138)(21, "h4", 139);
     \u0275\u0275text(22);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(23, NhanDienKhuonMatComponent_div_54_div_2_div_1_div_23_Template, 2, 0, "div", 141);
-    \u0275\u0275elementStart(24, "div", 134);
-    \u0275\u0275template(25, NhanDienKhuonMatComponent_div_54_div_2_div_1_div_25_Template, 9, 7, "div", 142);
+    \u0275\u0275template(23, NhanDienKhuonMatComponent_div_54_div_2_div_1_div_23_Template, 2, 0, "div", 140);
+    \u0275\u0275elementStart(24, "div", 133);
+    \u0275\u0275template(25, NhanDienKhuonMatComponent_div_54_div_2_div_1_div_25_Template, 9, 7, "div", 141);
     \u0275\u0275elementEnd()()()()();
   }
   if (rf & 2) {
-    const img_r27 = ctx.$implicit;
+    const img_r26 = ctx.$implicit;
     const ctx_r3 = \u0275\u0275nextContext(3);
     \u0275\u0275advance();
     \u0275\u0275property("nzJustify", "space-between")("nzAlign", "middle");
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate1(" ", img_r27.fileName);
+    \u0275\u0275textInterpolate1(" ", img_r26.fileName);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1("K\xEDch th\u01B0\u1EDBc: ", ctx_r3.formatBytes(img_r27.size));
+    \u0275\u0275textInterpolate1("K\xEDch th\u01B0\u1EDBc: ", ctx_r3.formatBytes(img_r26.size));
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(10, 16, img_r27.createdAt, "dd/MM/yyyy HH:mm:ss"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(10, 16, img_r26.createdAt, "dd/MM/yyyy HH:mm:ss"));
     \u0275\u0275advance(3);
     \u0275\u0275property("nzDanger", true);
     \u0275\u0275advance(3);
@@ -1351,23 +1344,23 @@ function NhanDienKhuonMatComponent_div_54_div_2_div_1_Template(rf, ctx) {
     \u0275\u0275advance();
     \u0275\u0275property("nzXs", 24)("nzMd", 8);
     \u0275\u0275advance(2);
-    \u0275\u0275property("src", img_r27.url, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", img_r26.url, \u0275\u0275sanitizeUrl);
     \u0275\u0275advance();
     \u0275\u0275property("nzXs", 24)("nzMd", 16);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1("Khu\xF4n m\u1EB7t \u0111\xE3 tr\xEDch xu\u1EA5t (", img_r27.croppedFaces.length, ")");
+    \u0275\u0275textInterpolate1("Khu\xF4n m\u1EB7t \u0111\xE3 tr\xEDch xu\u1EA5t (", img_r26.croppedFaces.length, ")");
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", img_r27.croppedFaces.length === 0);
+    \u0275\u0275property("ngIf", img_r26.croppedFaces.length === 0);
     \u0275\u0275advance();
     \u0275\u0275property("nzGutter", \u0275\u0275pureFunction0(19, _c2));
     \u0275\u0275advance();
-    \u0275\u0275property("ngForOf", img_r27.croppedFaces);
+    \u0275\u0275property("ngForOf", img_r26.croppedFaces);
   }
 }
 function NhanDienKhuonMatComponent_div_54_div_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 127);
-    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_54_div_2_div_1_Template, 26, 20, "div", 128);
+    \u0275\u0275elementStart(0, "div", 126);
+    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_54_div_2_div_1_Template, 26, 20, "div", 127);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -1378,8 +1371,8 @@ function NhanDienKhuonMatComponent_div_54_div_2_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_54_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 122);
-    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_54_div_1_Template, 4, 0, "div", 123)(2, NhanDienKhuonMatComponent_div_54_div_2_Template, 2, 1, "div", 124);
+    \u0275\u0275elementStart(0, "div", 121);
+    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_54_div_1_Template, 4, 0, "div", 122)(2, NhanDienKhuonMatComponent_div_54_div_2_Template, 2, 1, "div", 123);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -1392,17 +1385,17 @@ function NhanDienKhuonMatComponent_div_54_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_56_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 155);
+    \u0275\u0275elementStart(0, "div", 154);
     \u0275\u0275element(1, "nz-spin", 80);
-    \u0275\u0275elementStart(2, "p", 126);
+    \u0275\u0275elementStart(2, "p", 125);
     \u0275\u0275text(3, "\u0110ang t\u1EA3i danh s\xE1ch \u0111\u1ECBnh ngh\u0129a...");
     \u0275\u0275elementEnd()();
   }
 }
 function NhanDienKhuonMatComponent_div_56_div_2_div_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 165);
-    \u0275\u0275element(1, "img", 166);
+    \u0275\u0275elementStart(0, "div", 164);
+    \u0275\u0275element(1, "img", 165);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -1413,7 +1406,7 @@ function NhanDienKhuonMatComponent_div_56_div_2_div_2_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_56_div_2_div_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 167);
+    \u0275\u0275elementStart(0, "div", 166);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -1425,56 +1418,56 @@ function NhanDienKhuonMatComponent_div_56_div_2_div_3_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_56_div_2_div_10_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 168);
+    \u0275\u0275elementStart(0, "div", 167);
     \u0275\u0275text(1, " Ch\u01B0a c\xF3 h\xECnh \u1EA3nh nh\u1EADn di\u1EC7n khu\xF4n m\u1EB7t n\xE0o \u0111\u01B0\u1EE3c \u0111\u1ECBnh ngh\u0129a cho user n\xE0y. ");
     \u0275\u0275elementEnd();
   }
 }
 function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_1_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 113);
+    \u0275\u0275elementStart(0, "span", 114);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const data_r30 = ctx.$implicit;
+    const data_r29 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate((data_r30.image == null ? null : data_r30.image.fileName) || "\u1EA2nh g\u1ED1c");
+    \u0275\u0275textInterpolate((data_r29.image == null ? null : data_r29.image.fileName) || "\u1EA2nh g\u1ED1c");
   }
 }
 function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_2_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 171);
-    \u0275\u0275element(1, "img", 115);
+    \u0275\u0275element(1, "img", 113);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const data_r31 = ctx.$implicit;
+    const data_r30 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275property("src", data_r31.image == null ? null : data_r31.image.url, \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", data_r30.image == null ? null : data_r30.image.url, \u0275\u0275sanitizeUrl);
   }
 }
 function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_3_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 161);
+    \u0275\u0275elementStart(0, "span", 160);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "date");
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const data_r32 = ctx.$implicit;
+    const data_r31 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(2, 1, data_r32.createdAt, "dd/MM/yyyy HH:mm"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(2, 1, data_r31.createdAt, "dd/MM/yyyy HH:mm"));
   }
 }
 function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_4_Template(rf, ctx) {
   if (rf & 1) {
-    const _r33 = \u0275\u0275getCurrentView();
+    const _r32 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tot-button", 67);
     \u0275\u0275listener("click", function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_4_Template_tot_button_click_0_listener() {
-      const data_r34 = \u0275\u0275restoreView(_r33).$implicit;
+      const data_r33 = \u0275\u0275restoreView(_r32).$implicit;
       const ctx_r3 = \u0275\u0275nextContext(4);
-      return \u0275\u0275resetView(ctx_r3.deleteUserFaceDefinition(data_r34.id));
+      return \u0275\u0275resetView(ctx_r3.deleteUserFaceDefinition(data_r33.id));
     });
     \u0275\u0275element(1, "i", 68);
     \u0275\u0275text(2, " X\xF3a ");
@@ -1486,8 +1479,8 @@ function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_4_Templ
 }
 function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "tot-table", 169);
-    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_1_Template, 2, 1, "ng-template", 111)(2, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_2_Template, 2, 1, "ng-template", 112)(3, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_3_Template, 3, 4, "ng-template", 170)(4, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_4_Template, 3, 1, "ng-template", 30);
+    \u0275\u0275elementStart(0, "tot-table", 168);
+    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_1_Template, 2, 1, "ng-template", 111)(2, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_2_Template, 2, 1, "ng-template", 169)(3, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_3_Template, 3, 4, "ng-template", 170)(4, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_ng_template_4_Template, 3, 1, "ng-template", 30);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -1497,16 +1490,16 @@ function NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_56_div_2_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 156)(1, "div", 157);
-    \u0275\u0275template(2, NhanDienKhuonMatComponent_div_56_div_2_div_2_Template, 2, 1, "div", 158)(3, NhanDienKhuonMatComponent_div_56_div_2_div_3_Template, 2, 1, "div", 159);
-    \u0275\u0275elementStart(4, "div")(5, "h4", 160);
+    \u0275\u0275elementStart(0, "div", 155)(1, "div", 156);
+    \u0275\u0275template(2, NhanDienKhuonMatComponent_div_56_div_2_div_2_Template, 2, 1, "div", 157)(3, NhanDienKhuonMatComponent_div_56_div_2_div_3_Template, 2, 1, "div", 158);
+    \u0275\u0275elementStart(4, "div")(5, "h4", 159);
     \u0275\u0275text(6);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "span", 161);
-    \u0275\u0275element(8, "i", 162);
+    \u0275\u0275elementStart(7, "span", 160);
+    \u0275\u0275element(8, "i", 161);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(10, NhanDienKhuonMatComponent_div_56_div_2_div_10_Template, 2, 0, "div", 163)(11, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_Template, 5, 14, "tot-table", 164);
+    \u0275\u0275template(10, NhanDienKhuonMatComponent_div_56_div_2_div_10_Template, 2, 0, "div", 162)(11, NhanDienKhuonMatComponent_div_56_div_2_tot_table_11_Template, 5, 14, "tot-table", 163);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -1527,8 +1520,8 @@ function NhanDienKhuonMatComponent_div_56_div_2_Template(rf, ctx) {
 }
 function NhanDienKhuonMatComponent_div_56_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 152);
-    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_56_div_1_Template, 4, 0, "div", 153)(2, NhanDienKhuonMatComponent_div_56_div_2_Template, 12, 7, "div", 154);
+    \u0275\u0275elementStart(0, "div", 151);
+    \u0275\u0275template(1, NhanDienKhuonMatComponent_div_56_div_1_Template, 4, 0, "div", 152)(2, NhanDienKhuonMatComponent_div_56_div_2_Template, 12, 7, "div", 153);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -2125,7 +2118,7 @@ _NhanDienKhuonMatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.fileInput = _t.first);
     \u0275\u0275queryRefresh(_t = \u0275\u0275loadQuery()) && (ctx.folderInput = _t.first);
   }
-}, decls: 57, vars: 43, consts: [["fileInput", ""], ["folderInput", ""], ["activeTableTitleTpl", ""], ["activeTableExtraTpl", ""], ["tableTitleTpl", ""], ["tableExtraTpl", ""], [1, "face-recognition-container"], [1, "workspace-header", 2, "margin-bottom", "24px", "border-bottom", "1px solid #f0f0f0", "padding-bottom", "16px"], [1, "gradient-title", 2, "font-size", "24px", "font-weight", "600", "margin", "0", "color", "#262626"], ["nz-icon", "", "nzType", "scan", "nzTheme", "outline", 2, "color", "#1890ff", "margin-right", "8px"], [1, "subtitle", 2, "color", "#8c8c8c", "margin", "4px 0 0 0", "font-size", "13px"], ["nz-row", "", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzXs", "nzLg"], ["nzTitle", "Nh\u1EADp t\xEAn phi\xEAn \u0111ang l\xE0m vi\u1EC7c", 2, "height", "100%", "border-radius", "8px", 3, "nzBordered"], ["nz-input", "", "placeholder", "Nh\u1EADp t\xEAn phi\xEAn l\xE0m vi\u1EC7c...", 2, "border-radius", "6px", 3, "ngModelChange", "ngModel", "disabled"], ["nz-col", "", 3, "nzXs", "nzMd", "nzLg"], [1, "dropzone-card", "file-zone", 2, "border", "2px dashed #1890ff", "border-radius", "8px", "padding", "20px", "text-align", "center", "cursor", "pointer", "background", "#fafafa", "height", "100%", "display", "flex", "flex-direction", "column", "justify-content", "center", "align-items", "center", "min-height", "116px", "transition", "background 0.3s", 3, "dragover", "drop", "click"], [1, "dropzone-content"], ["nz-icon", "", "nzType", "file-image", 1, "drop-icon", 2, "font-size", "28px", "color", "#1890ff", "margin-bottom", "8px"], [1, "drop-text", 2, "font-weight", "600", "margin", "0", "font-size", "14px", "color", "#262626"], [1, "drop-subtext", 2, "font-size", "12px", "color", "#8c8c8c", "display", "block", "margin-top", "4px"], ["type", "file", "multiple", "", 2, "display", "none", 3, "change"], [1, "dropzone-card", "folder-zone", 2, "border", "2px dashed #722ed1", "border-radius", "8px", "padding", "20px", "text-align", "center", "cursor", "pointer", "background", "#fafafa", "height", "100%", "display", "flex", "flex-direction", "column", "justify-content", "center", "align-items", "center", "min-height", "116px", "transition", "background 0.3s", 3, "dragover", "drop", "click"], ["nz-icon", "", "nzType", "folder-open", 1, "drop-icon", 2, "font-size", "28px", "color", "#722ed1", "margin-bottom", "8px"], ["type", "file", "webkitdirectory", "", "directory", "", "multiple", "", 2, "display", "none", 3, "change"], [2, "margin-bottom", "24px", "position", "relative"], [1, "active-session-table", 3, "pageIndexChange", "pageSizeChange", "data", "columns", "loading", "nzSize", "frontPagination", "showPagination", "total", "pageIndex", "pageSize", "title", "extra"], ["totCell", "name"], ["totCell", "detectedFaces"], ["totCell", "simulatedPath"], ["totCell", "action"], ["class", "progress-bar-overlay", "style", "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 10;", 4, "ngIf"], [1, "workspace-card", "history-panel", 2, "margin-bottom", "24px"], [3, "pageIndexChange", "pageSizeChange", "data", "columns", "loading", "nzSize", "frontPagination", "total", "pageIndex", "pageSize", "title", "extra"], ["totCell", "imageCount"], ["totCell", "faceCount"], ["class", "workspace-card face-def-panel", "style", "margin-bottom: 24px; border: 1px solid #1890ff; border-radius: 8px; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);", 4, "ngIf"], [1, "premium-modal", 3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "modal-content-wrapper", "style", "padding: 12px 0;", 4, "nzModalContent"], ["style", "padding: 12px 0;", 4, "nzModalContent"], [1, "file-name-cell", 2, "display", "flex", "align-items", "center", "gap", "12px"], [1, "custom-checkbox", 2, "position", "relative", "display", "inline-block", "width", "16px", "height", "16px", "cursor", "pointer", "user-select", "none"], ["type", "checkbox", 2, "position", "absolute", "opacity", "0", "cursor", "pointer", "height", "0", "width", "0", 3, "ngModelChange", "change", "ngModel"], [1, "checkmark", 2, "position", "absolute", "top", "0", "left", "0", "height", "16px", "width", "16px", "background-color", "#fff", "border", "1px solid #d9d9d9", "border-radius", "4px"], ["alt", "preview", 1, "table-thumb", 2, "width", "40px", "height", "40px", "border-radius", "6px", "object-fit", "cover", "border", "1px solid #f0f0f0", 3, "src"], ["nz-tooltip", "", 1, "table-file-name", 2, "font-weight", "500", "color", "#262626", "white-space", "nowrap", "overflow", "hidden", "text-overflow", "ellipsis", "max-width", "220px", 3, "nzTooltipTitle"], [1, "detected-faces-cell", 2, "display", "flex", "align-items", "center", "min-height", "40px"], ["class", "scanning-inline", "style", "display: flex; align-items: center; gap: 8px; color: #1890ff; font-weight: 500; font-size: 13px;", 4, "ngIf"], ["class", "text-muted", "style", "color: #bfbfbf; font-style: italic; font-size: 13px;", 4, "ngIf"], ["nzColor", "error", 4, "ngIf"], ["class", "no-faces-label", "style", "display: flex; align-items: center; gap: 6px; color: #fa8c16; font-weight: 500; font-size: 13px; background: #fffbe6; padding: 4px 10px; border-radius: 4px; border: 1px solid #ffe58f;", 4, "ngIf"], ["class", "avatar-crops-inline-grid", "style", "display: flex; gap: 8px; flex-wrap: wrap;", 4, "ngIf"], [1, "scanning-inline", 2, "display", "flex", "align-items", "center", "gap", "8px", "color", "#1890ff", "font-weight", "500", "font-size", "13px"], ["nz-icon", "", "nzType", "loading", 1, "spin-icon"], [1, "text-muted", 2, "color", "#bfbfbf", "font-style", "italic", "font-size", "13px"], ["nzColor", "error"], [1, "no-faces-label", 2, "display", "flex", "align-items", "center", "gap", "6px", "color", "#fa8c16", "font-weight", "500", "font-size", "13px", "background", "#fffbe6", "padding", "4px 10px", "border-radius", "4px", "border", "1px solid #ffe58f"], ["nz-icon", "", "nzType", "info-circle", "nzTheme", "fill", 1, "warning-icon"], [1, "avatar-crops-inline-grid", 2, "display", "flex", "gap", "8px", "flex-wrap", "wrap"], ["class", "avatar-crop-card", "nz-tooltip", "", "style", "position: relative; width: 44px; height: 44px; border-radius: 6px; overflow: hidden; border: 2px solid #f0f0f0; cursor: pointer; transition: all 0.2s; background: #fafafa;", 3, "selected", "nzTooltipTitle", "click", 4, "ngFor", "ngForOf"], ["nz-tooltip", "", 1, "avatar-crop-card", 2, "position", "relative", "width", "44px", "height", "44px", "border-radius", "6px", "overflow", "hidden", "border", "2px solid #f0f0f0", "cursor", "pointer", "transition", "all 0.2s", "background", "#fafafa", 3, "click", "nzTooltipTitle"], ["alt", "face", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["class", "checkmark-overlay-mini", "style", "position: absolute; top: 2px; right: 2px; font-size: 11px; color: #1890ff;", 4, "ngIf"], [1, "avatar-index-badge", 2, "position", "absolute", "bottom", "2px", "left", "2px", "background", "rgba(0, 0, 0, 0.6)", "color", "#fff", "font-size", "9px", "padding", "1px 3px", "border-radius", "2px"], [1, "checkmark-overlay-mini", 2, "position", "absolute", "top", "2px", "right", "2px", "font-size", "11px", "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill"], [1, "simulated-path", 2, "font-family", "monospace", "font-size", "12px", "color", "#595959", "background", "#fafafa", "padding", "3px 8px", "border-radius", "4px", "border", "1px solid #f0f0f0"], ["nzType", "link", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "delete"], [1, "card-title", 2, "font-size", "16px", "font-weight", "600", "color", "#262626"], ["nz-icon", "", "nzType", "unordered-list", 2, "margin-right", "8px"], ["nzColor", "processing", "style", "margin-left: 8px;", 4, "ngIf"], ["nzColor", "processing", 2, "margin-left", "8px"], ["nz-icon", "", "nzType", "loading"], ["nzType", "primary", 3, "loading", "disabled", "click", 4, "ngIf"], ["nzType", "primary", 3, "click", "loading", "disabled"], ["nz-icon", "", "nzType", "save", 4, "ngIf"], ["nz-icon", "", "nzType", "save"], [1, "progress-bar-overlay", 2, "position", "absolute", "top", "0", "left", "0", "width", "100%", "height", "100%", "background", "rgba(255, 255, 255, 0.85)", "display", "flex", "justify-content", "center", "align-items", "center", "z-index", "10"], [1, "progress-box", 2, "text-align", "center"], ["nzSimple", "", "nzSize", "large"], [2, "margin-top", "16px", "color", "#1890ff", "font-size", "15px", "font-weight", "500"], [1, "realtime-badge", 2, "font-size", "12px", "color", "#722ed1", "margin", "4px 0 0 0"], ["nz-icon", "", "nzType", "sync", "nzSpin", ""], ["class", "session-name-view", "style", "display: flex; align-items: center; gap: 8px;", 4, "ngIf"], ["class", "session-name-edit", "style", "display: flex; align-items: center; gap: 4px;", 4, "ngIf"], [1, "session-name-view", 2, "display", "flex", "align-items", "center", "gap", "8px"], [1, "s-name", 2, "font-weight", "500", "color", "#262626"], ["nzType", "text", 2, "padding", "0 4px", "color", "#8c8c8c", 3, "click"], ["nz-icon", "", "nzType", "edit"], [1, "session-name-edit", 2, "display", "flex", "align-items", "center", "gap", "4px"], ["nz-input", "", 2, "border-radius", "4px", "width", "180px", "padding", "4px 8px", 3, "ngModelChange", "ngModel"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "check"], ["nzType", "default", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "close"], ["nzColor", "blue"], ["nzColor", "purple"], [1, "action-buttons-group", 2, "display", "flex", "gap", "8px"], ["nz-icon", "", "nzType", "eye"], ["nz-icon", "", "nzType", "smile"], ["nzType", "default", "nzSize", "small", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "history", 2, "margin-right", "8px"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], [1, "workspace-card", "face-def-panel", 2, "margin-bottom", "24px", "border", "1px solid #1890ff", "border-radius", "8px", "padding", "20px", "background", "#fff", "box-shadow", "0 4px 12px rgba(0,0,0,0.05)"], ["nz-row", "", 2, "border-bottom", "1px solid #f0f0f0", "padding-bottom", "12px", "margin-bottom", "16px", 3, "nzJustify", "nzAlign"], ["nz-col", ""], ["nz-icon", "", "nzType", "smile", 2, "margin-right", "8px", "color", "#1890ff"], [2, "color", "#1890ff"], [3, "data", "columns", "loading", "nzSize", "frontPagination", "showPagination", "pageSize"], ["totCell", "fileName"], ["totCell", "imagePreview"], [2, "font-weight", "500", "color", "#262626"], [2, "width", "60px", "height", "60px", "border-radius", "6px", "overflow", "hidden", "border", "1px solid #f0f0f0", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center"], ["alt", "preview", 2, "max-width", "100%", "max-height", "100%", "object-fit", "contain", 3, "src"], [2, "display", "flex", "align-items", "center", "gap", "12px"], ["placeholder", "T\xECm ch\u1ECDn user...", 2, "width", "220px", "display", "inline-block", 3, "ngModelChange", "apiUrl", "labelField", "valueField", "ngModel"], ["nzType", "primary", "nzSize", "small", 3, "click", "disabled"], ["nz-icon", "", "nzType", "plus"], ["nzType", "default", "nzSize", "small", 3, "click", "disabled"], ["nz-icon", "", "nzType", "solution"], [1, "modal-content-wrapper", 2, "padding", "12px 0"], ["class", "modal-spinner", "style", "text-align: center; padding: 40px 0;", 4, "ngIf"], ["class", "modal-body custom-scrollbar", "style", "max-height: 550px; overflow-y: auto; padding: 0 12px;", 4, "ngIf"], [1, "modal-spinner", 2, "text-align", "center", "padding", "40px 0"], [2, "margin-top", "12px", "color", "#8c8c8c"], [1, "modal-body", "custom-scrollbar", 2, "max-height", "550px", "overflow-y", "auto", "padding", "0 12px"], ["class", "details-image-card", "style", "margin-bottom: 24px; border: 1px solid #f0f0f0; border-radius: 8px; padding: 16px; background: #fff;", 4, "ngFor", "ngForOf"], [1, "details-image-card", 2, "margin-bottom", "24px", "border", "1px solid #f0f0f0", "border-radius", "8px", "padding", "16px", "background", "#fff"], [1, "file-name", 2, "font-weight", "600", "font-size", "15px", "color", "#262626"], ["nz-icon", "", "nzType", "file-image", 2, "color", "#1890ff"], ["nzColor", "blue", 2, "margin-left", "8px"], [1, "upload-time", 2, "color", "#8c8c8c", "font-size", "12px", "margin-left", "8px"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 2, "margin-bottom", "16px", 3, "nzXs", "nzMd"], [1, "original-image-preview", 2, "border", "1px solid #f0f0f0", "border-radius", "8px", "overflow", "hidden", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "height", "180px"], ["alt", "original-img", 2, "max-width", "100%", "max-height", "100%", "object-fit", "contain", 3, "src"], ["nz-col", "", 3, "nzXs", "nzMd"], [1, "cropped-faces-detail-panel"], [2, "margin-top", "0", "margin-bottom", "12px", "font-weight", "600", "color", "#262626"], ["class", "no-crops-placeholder", "style", "color: #8c8c8c; font-style: italic; font-size: 13px;", 4, "ngIf"], ["nz-col", "", 3, "nzXs", "nzSm", "nzMd", 4, "ngFor", "ngForOf"], [1, "no-crops-placeholder", 2, "color", "#8c8c8c", "font-style", "italic", "font-size", "13px"], ["nz-col", "", 3, "nzXs", "nzSm", "nzMd"], [1, "detail-crop-avatar-card", 2, "border", "1px solid #f0f0f0", "border-radius", "8px", "padding", "12px", "text-align", "center", "background", "#fafafa", "position", "relative"], [1, "avatar-img-box", 2, "width", "64px", "height", "64px", "border-radius", "50%", "overflow", "hidden", "margin", "0 auto 8px auto", "position", "relative", "border", "2px solid #e6f7ff"], ["alt", "crop-face", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a \u1EA3nh khu\xF4n m\u1EB7t crop n\xE0y", 1, "delete-avatar-btn", 2, "position", "absolute", "top", "0", "left", "0", "width", "100%", "height", "100%", "background", "rgba(255, 255, 255, 0.7)", "opacity", "0", "display", "flex", "justify-content", "center", "align-items", "center", "transition", "opacity 0.2s", "border", "none", "font-size", "20px", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "close-circle", "nzTheme", "fill", 2, "color", "#ff4d4f"], [1, "avatar-meta", 2, "font-size", "11px", "color", "#8c8c8c"], ["nz-tooltip", "", 1, "bbox-json", 2, "display", "block", "font-family", "monospace", "overflow", "hidden", "text-overflow", "ellipsis", "white-space", "nowrap", 3, "nzTooltipTitle"], [2, "padding", "12px 0"], ["style", "text-align: center; padding: 40px 0;", 4, "ngIf"], ["style", "max-height: 500px; overflow-y: auto; padding: 0 12px;", 4, "ngIf"], [2, "text-align", "center", "padding", "40px 0"], [2, "max-height", "500px", "overflow-y", "auto", "padding", "0 12px"], [2, "background", "#e6f7ff", "border", "1px solid #91d5ff", "border-radius", "8px", "padding", "12px 16px", "margin-bottom", "20px", "display", "flex", "align-items", "center", "gap", "16px"], ["style", "width: 48px; height: 48px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);", 4, "ngIf"], ["style", "width: 48px; height: 48px; border-radius: 50%; background: #1890ff; color: #fff; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 600;", 4, "ngIf"], [2, "margin", "0", "font-size", "15px", "font-weight", "600", "color", "#262626"], [2, "font-size", "12px", "color", "#595959"], ["nz-icon", "", "nzType", "mail"], ["style", "text-align: center; color: #8c8c8c; padding: 40px 0; font-style: italic;", 4, "ngIf"], [3, "data", "columns", "nzSize", "frontPagination", "pageSize", 4, "ngIf"], [2, "width", "48px", "height", "48px", "border-radius", "50%", "overflow", "hidden", "border", "2px solid #fff", "box-shadow", "0 2px 8px rgba(0,0,0,0.1)"], ["alt", "avatar", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "width", "48px", "height", "48px", "border-radius", "50%", "background", "#1890ff", "color", "#fff", "display", "flex", "justify-content", "center", "align-items", "center", "font-size", "20px", "font-weight", "600"], [2, "text-align", "center", "color", "#8c8c8c", "padding", "40px 0", "font-style", "italic"], [3, "data", "columns", "nzSize", "frontPagination", "pageSize"], ["totCell", "createdAt"], [2, "width", "50px", "height", "50px", "border-radius", "4px", "overflow", "hidden", "border", "1px solid #f0f0f0", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center"]], template: function NhanDienKhuonMatComponent_Template(rf, ctx) {
+}, decls: 57, vars: 43, consts: [["fileInput", ""], ["folderInput", ""], ["activeTableTitleTpl", ""], ["activeTableExtraTpl", ""], ["tableTitleTpl", ""], ["tableExtraTpl", ""], [1, "face-recognition-container"], [1, "workspace-header", 2, "margin-bottom", "24px", "border-bottom", "1px solid #f0f0f0", "padding-bottom", "16px"], [1, "gradient-title", 2, "font-size", "24px", "font-weight", "600", "margin", "0", "color", "#262626"], ["nz-icon", "", "nzType", "scan", "nzTheme", "outline", 2, "color", "#1890ff", "margin-right", "8px"], [1, "subtitle", 2, "color", "#8c8c8c", "margin", "4px 0 0 0", "font-size", "13px"], ["nz-row", "", 2, "margin-bottom", "24px", 3, "nzGutter"], ["nz-col", "", 3, "nzXs", "nzLg"], ["nzTitle", "Nh\u1EADp t\xEAn phi\xEAn \u0111ang l\xE0m vi\u1EC7c", 2, "height", "100%", "border-radius", "8px", 3, "nzBordered"], ["nz-input", "", "placeholder", "Nh\u1EADp t\xEAn phi\xEAn l\xE0m vi\u1EC7c...", 2, "border-radius", "6px", 3, "ngModelChange", "ngModel", "disabled"], ["nz-col", "", 3, "nzXs", "nzMd", "nzLg"], [1, "dropzone-card", "file-zone", 2, "border", "2px dashed #1890ff", "border-radius", "8px", "padding", "20px", "text-align", "center", "cursor", "pointer", "background", "#fafafa", "height", "100%", "display", "flex", "flex-direction", "column", "justify-content", "center", "align-items", "center", "min-height", "116px", "transition", "background 0.3s", 3, "dragover", "drop", "click"], [1, "dropzone-content"], ["nz-icon", "", "nzType", "file-image", 1, "drop-icon", 2, "font-size", "28px", "color", "#1890ff", "margin-bottom", "8px"], [1, "drop-text", 2, "font-weight", "600", "margin", "0", "font-size", "14px", "color", "#262626"], [1, "drop-subtext", 2, "font-size", "12px", "color", "#8c8c8c", "display", "block", "margin-top", "4px"], ["type", "file", "multiple", "", 2, "display", "none", 3, "change"], [1, "dropzone-card", "folder-zone", 2, "border", "2px dashed #722ed1", "border-radius", "8px", "padding", "20px", "text-align", "center", "cursor", "pointer", "background", "#fafafa", "height", "100%", "display", "flex", "flex-direction", "column", "justify-content", "center", "align-items", "center", "min-height", "116px", "transition", "background 0.3s", 3, "dragover", "drop", "click"], ["nz-icon", "", "nzType", "folder-open", 1, "drop-icon", 2, "font-size", "28px", "color", "#722ed1", "margin-bottom", "8px"], ["type", "file", "webkitdirectory", "", "directory", "", "multiple", "", 2, "display", "none", 3, "change"], [2, "margin-bottom", "24px", "position", "relative"], [1, "active-session-table", 3, "pageIndexChange", "pageSizeChange", "data", "columns", "loading", "nzSize", "frontPagination", "showPagination", "total", "pageIndex", "pageSize", "title", "extra"], ["totCell", "name"], ["totCell", "detectedFaces"], ["totCell", "simulatedPath"], ["totCell", "action"], ["class", "progress-bar-overlay", "style", "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); display: flex; justify-content: center; align-items: center; z-index: 10;", 4, "ngIf"], [1, "workspace-card", "history-panel", 2, "margin-bottom", "24px"], [3, "pageIndexChange", "pageSizeChange", "data", "columns", "loading", "nzSize", "frontPagination", "total", "pageIndex", "pageSize", "title", "extra"], ["totCell", "imageCount"], ["totCell", "faceCount"], ["class", "workspace-card face-def-panel", "style", "margin-bottom: 24px; border: 1px solid #1890ff; border-radius: 8px; padding: 20px; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05);", 4, "ngIf"], [1, "premium-modal", 3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "modal-content-wrapper", "style", "padding: 12px 0;", 4, "nzModalContent"], ["style", "padding: 12px 0;", 4, "nzModalContent"], [1, "file-name-cell", 2, "display", "flex", "align-items", "center", "gap", "12px"], [1, "custom-checkbox", 2, "position", "relative", "display", "inline-block", "width", "16px", "height", "16px", "cursor", "pointer", "user-select", "none"], ["type", "checkbox", 2, "position", "absolute", "opacity", "0", "cursor", "pointer", "height", "0", "width", "0", 3, "ngModelChange", "change", "ngModel"], [1, "checkmark", 2, "position", "absolute", "top", "0", "left", "0", "height", "16px", "width", "16px", "background-color", "#fff", "border", "1px solid #d9d9d9", "border-radius", "4px"], ["alt", "preview", 1, "table-thumb", 2, "width", "40px", "height", "40px", "border-radius", "6px", "object-fit", "cover", "border", "1px solid #f0f0f0", 3, "src"], ["nz-tooltip", "", 1, "table-file-name", 2, "font-weight", "500", "color", "#262626", "white-space", "nowrap", "overflow", "hidden", "text-overflow", "ellipsis", "max-width", "220px", 3, "nzTooltipTitle"], [1, "detected-faces-cell", 2, "display", "flex", "align-items", "center", "min-height", "40px"], ["class", "scanning-inline", "style", "display: flex; align-items: center; gap: 8px; color: #1890ff; font-weight: 500; font-size: 13px;", 4, "ngIf"], ["class", "text-muted", "style", "color: #bfbfbf; font-style: italic; font-size: 13px;", 4, "ngIf"], ["nzColor", "error", 4, "ngIf"], ["class", "no-faces-label", "style", "display: flex; align-items: center; gap: 6px; color: #fa8c16; font-weight: 500; font-size: 13px; background: #fffbe6; padding: 4px 10px; border-radius: 4px; border: 1px solid #ffe58f;", 4, "ngIf"], ["class", "avatar-crops-inline-grid", "style", "display: flex; gap: 8px; flex-wrap: wrap;", 4, "ngIf"], [1, "scanning-inline", 2, "display", "flex", "align-items", "center", "gap", "8px", "color", "#1890ff", "font-weight", "500", "font-size", "13px"], ["nz-icon", "", "nzType", "loading", 1, "spin-icon"], [1, "text-muted", 2, "color", "#bfbfbf", "font-style", "italic", "font-size", "13px"], ["nzColor", "error"], [1, "no-faces-label", 2, "display", "flex", "align-items", "center", "gap", "6px", "color", "#fa8c16", "font-weight", "500", "font-size", "13px", "background", "#fffbe6", "padding", "4px 10px", "border-radius", "4px", "border", "1px solid #ffe58f"], ["nz-icon", "", "nzType", "info-circle", "nzTheme", "fill", 1, "warning-icon"], [1, "avatar-crops-inline-grid", 2, "display", "flex", "gap", "8px", "flex-wrap", "wrap"], ["class", "avatar-crop-card", "nz-tooltip", "", "style", "position: relative; width: 44px; height: 44px; border-radius: 6px; overflow: hidden; border: 2px solid #f0f0f0; cursor: pointer; transition: all 0.2s; background: #fafafa;", 3, "selected", "nzTooltipTitle", "click", 4, "ngFor", "ngForOf"], ["nz-tooltip", "", 1, "avatar-crop-card", 2, "position", "relative", "width", "44px", "height", "44px", "border-radius", "6px", "overflow", "hidden", "border", "2px solid #f0f0f0", "cursor", "pointer", "transition", "all 0.2s", "background", "#fafafa", 3, "click", "nzTooltipTitle"], ["alt", "face", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["class", "checkmark-overlay-mini", "style", "position: absolute; top: 2px; right: 2px; font-size: 11px; color: #1890ff;", 4, "ngIf"], [1, "avatar-index-badge", 2, "position", "absolute", "bottom", "2px", "left", "2px", "background", "rgba(0, 0, 0, 0.6)", "color", "#fff", "font-size", "9px", "padding", "1px 3px", "border-radius", "2px"], [1, "checkmark-overlay-mini", 2, "position", "absolute", "top", "2px", "right", "2px", "font-size", "11px", "color", "#1890ff"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill"], [1, "simulated-path", 2, "font-family", "monospace", "font-size", "12px", "color", "#595959", "background", "#fafafa", "padding", "3px 8px", "border-radius", "4px", "border", "1px solid #f0f0f0"], ["nzType", "link", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "delete"], [1, "card-title", 2, "font-size", "16px", "font-weight", "600", "color", "#262626"], ["nz-icon", "", "nzType", "unordered-list", 2, "margin-right", "8px"], ["nzColor", "processing", "style", "margin-left: 8px;", 4, "ngIf"], ["nzColor", "processing", 2, "margin-left", "8px"], ["nz-icon", "", "nzType", "loading"], ["nzType", "primary", 3, "loading", "disabled", "click", 4, "ngIf"], ["nzType", "primary", 3, "click", "loading", "disabled"], ["nz-icon", "", "nzType", "save", 4, "ngIf"], ["nz-icon", "", "nzType", "save"], [1, "progress-bar-overlay", 2, "position", "absolute", "top", "0", "left", "0", "width", "100%", "height", "100%", "background", "rgba(255, 255, 255, 0.85)", "display", "flex", "justify-content", "center", "align-items", "center", "z-index", "10"], [1, "progress-box", 2, "text-align", "center"], ["nzSimple", "", "nzSize", "large"], [2, "margin-top", "16px", "color", "#1890ff", "font-size", "15px", "font-weight", "500"], [1, "realtime-badge", 2, "font-size", "12px", "color", "#722ed1", "margin", "4px 0 0 0"], ["nz-icon", "", "nzType", "sync", "nzSpin", ""], ["class", "session-name-view", "style", "display: flex; align-items: center; gap: 8px;", 4, "ngIf"], ["class", "session-name-edit", "style", "display: flex; align-items: center; gap: 4px;", 4, "ngIf"], [1, "session-name-view", 2, "display", "flex", "align-items", "center", "gap", "8px"], [1, "s-name", 2, "font-weight", "500", "color", "#262626"], ["nzType", "text", 2, "padding", "0 4px", "color", "#8c8c8c", 3, "click"], ["nz-icon", "", "nzType", "edit"], [1, "session-name-edit", 2, "display", "flex", "align-items", "center", "gap", "4px"], ["nz-input", "", 2, "border-radius", "4px", "width", "180px", "padding", "4px 8px", 3, "ngModelChange", "ngModel"], ["nzType", "primary", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "check"], ["nzType", "default", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "close"], ["nzColor", "blue"], ["nzColor", "purple"], [1, "action-buttons-group", 2, "display", "flex", "gap", "8px"], ["nz-icon", "", "nzType", "eye"], ["nz-icon", "", "nzType", "smile"], ["nzType", "default", "nzSize", "small", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "history", 2, "margin-right", "8px"], ["nzType", "default", 3, "click", "loading"], ["nz-icon", "", "nzType", "reload"], [1, "workspace-card", "face-def-panel", 2, "margin-bottom", "24px", "border", "1px solid #1890ff", "border-radius", "8px", "padding", "20px", "background", "#fff", "box-shadow", "0 4px 12px rgba(0,0,0,0.05)"], ["nz-row", "", 2, "border-bottom", "1px solid #f0f0f0", "padding-bottom", "12px", "margin-bottom", "16px", 3, "nzJustify", "nzAlign"], ["nz-col", ""], ["nz-icon", "", "nzType", "smile", 2, "margin-right", "8px", "color", "#1890ff"], [2, "color", "#1890ff"], [3, "data", "columns", "loading", "nzSize", "frontPagination", "showPagination", "pageSize"], ["totCell", "fileName"], [2, "width", "60px", "height", "60px", "border-radius", "6px", "overflow", "hidden", "border", "1px solid #f0f0f0", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center"], ["alt", "preview", 2, "max-width", "100%", "max-height", "100%", "object-fit", "contain", 3, "src"], [2, "font-weight", "500", "color", "#262626"], [2, "display", "flex", "align-items", "center", "gap", "12px"], ["placeholder", "T\xECm ch\u1ECDn user...", 2, "width", "220px", "display", "inline-block", 3, "ngModelChange", "apiUrl", "labelField", "valueField", "ngModel"], ["nzType", "primary", "nzSize", "small", 3, "click", "disabled"], ["nz-icon", "", "nzType", "plus"], ["nzType", "default", "nzSize", "small", 3, "click", "disabled"], ["nz-icon", "", "nzType", "solution"], [1, "modal-content-wrapper", 2, "padding", "12px 0"], ["class", "modal-spinner", "style", "text-align: center; padding: 40px 0;", 4, "ngIf"], ["class", "modal-body custom-scrollbar", "style", "max-height: 550px; overflow-y: auto; padding: 0 12px;", 4, "ngIf"], [1, "modal-spinner", 2, "text-align", "center", "padding", "40px 0"], [2, "margin-top", "12px", "color", "#8c8c8c"], [1, "modal-body", "custom-scrollbar", 2, "max-height", "550px", "overflow-y", "auto", "padding", "0 12px"], ["class", "details-image-card", "style", "margin-bottom: 24px; border: 1px solid #f0f0f0; border-radius: 8px; padding: 16px; background: #fff;", 4, "ngFor", "ngForOf"], [1, "details-image-card", 2, "margin-bottom", "24px", "border", "1px solid #f0f0f0", "border-radius", "8px", "padding", "16px", "background", "#fff"], [1, "file-name", 2, "font-weight", "600", "font-size", "15px", "color", "#262626"], ["nz-icon", "", "nzType", "file-image", 2, "color", "#1890ff"], ["nzColor", "blue", 2, "margin-left", "8px"], [1, "upload-time", 2, "color", "#8c8c8c", "font-size", "12px", "margin-left", "8px"], ["nz-row", "", 3, "nzGutter"], ["nz-col", "", 2, "margin-bottom", "16px", 3, "nzXs", "nzMd"], [1, "original-image-preview", 2, "border", "1px solid #f0f0f0", "border-radius", "8px", "overflow", "hidden", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "height", "180px"], ["alt", "original-img", 2, "max-width", "100%", "max-height", "100%", "object-fit", "contain", 3, "src"], ["nz-col", "", 3, "nzXs", "nzMd"], [1, "cropped-faces-detail-panel"], [2, "margin-top", "0", "margin-bottom", "12px", "font-weight", "600", "color", "#262626"], ["class", "no-crops-placeholder", "style", "color: #8c8c8c; font-style: italic; font-size: 13px;", 4, "ngIf"], ["nz-col", "", 3, "nzXs", "nzSm", "nzMd", 4, "ngFor", "ngForOf"], [1, "no-crops-placeholder", 2, "color", "#8c8c8c", "font-style", "italic", "font-size", "13px"], ["nz-col", "", 3, "nzXs", "nzSm", "nzMd"], [1, "detail-crop-avatar-card", 2, "border", "1px solid #f0f0f0", "border-radius", "8px", "padding", "12px", "text-align", "center", "background", "#fafafa", "position", "relative"], [1, "avatar-img-box", 2, "width", "64px", "height", "64px", "border-radius", "50%", "overflow", "hidden", "margin", "0 auto 8px auto", "position", "relative", "border", "2px solid #e6f7ff"], ["alt", "crop-face", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a \u1EA3nh khu\xF4n m\u1EB7t crop n\xE0y", 1, "delete-avatar-btn", 2, "position", "absolute", "top", "0", "left", "0", "width", "100%", "height", "100%", "background", "rgba(255, 255, 255, 0.7)", "opacity", "0", "display", "flex", "justify-content", "center", "align-items", "center", "transition", "opacity 0.2s", "border", "none", "font-size", "20px", 3, "click", "nzDanger"], ["nz-icon", "", "nzType", "close-circle", "nzTheme", "fill", 2, "color", "#ff4d4f"], [1, "avatar-meta", 2, "font-size", "11px", "color", "#8c8c8c"], ["nz-tooltip", "", 1, "bbox-json", 2, "display", "block", "font-family", "monospace", "overflow", "hidden", "text-overflow", "ellipsis", "white-space", "nowrap", 3, "nzTooltipTitle"], [2, "padding", "12px 0"], ["style", "text-align: center; padding: 40px 0;", 4, "ngIf"], ["style", "max-height: 500px; overflow-y: auto; padding: 0 12px;", 4, "ngIf"], [2, "text-align", "center", "padding", "40px 0"], [2, "max-height", "500px", "overflow-y", "auto", "padding", "0 12px"], [2, "background", "#e6f7ff", "border", "1px solid #91d5ff", "border-radius", "8px", "padding", "12px 16px", "margin-bottom", "20px", "display", "flex", "align-items", "center", "gap", "16px"], ["style", "width: 48px; height: 48px; border-radius: 50%; overflow: hidden; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1);", 4, "ngIf"], ["style", "width: 48px; height: 48px; border-radius: 50%; background: #1890ff; color: #fff; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: 600;", 4, "ngIf"], [2, "margin", "0", "font-size", "15px", "font-weight", "600", "color", "#262626"], [2, "font-size", "12px", "color", "#595959"], ["nz-icon", "", "nzType", "mail"], ["style", "text-align: center; color: #8c8c8c; padding: 40px 0; font-style: italic;", 4, "ngIf"], [3, "data", "columns", "nzSize", "frontPagination", "pageSize", 4, "ngIf"], [2, "width", "48px", "height", "48px", "border-radius", "50%", "overflow", "hidden", "border", "2px solid #fff", "box-shadow", "0 2px 8px rgba(0,0,0,0.1)"], ["alt", "avatar", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "width", "48px", "height", "48px", "border-radius", "50%", "background", "#1890ff", "color", "#fff", "display", "flex", "justify-content", "center", "align-items", "center", "font-size", "20px", "font-weight", "600"], [2, "text-align", "center", "color", "#8c8c8c", "padding", "40px 0", "font-style", "italic"], [3, "data", "columns", "nzSize", "frontPagination", "pageSize"], ["totCell", "imagePreview"], ["totCell", "createdAt"], [2, "width", "50px", "height", "50px", "border-radius", "4px", "overflow", "hidden", "border", "1px solid #f0f0f0", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center"]], template: function NhanDienKhuonMatComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 6)(1, "div", 7)(2, "h1", 8);
@@ -2211,7 +2204,7 @@ _NhanDienKhuonMatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275elementEnd();
     \u0275\u0275template(48, NhanDienKhuonMatComponent_ng_template_48_Template, 3, 0, "ng-template", null, 4, \u0275\u0275templateRefExtractor)(50, NhanDienKhuonMatComponent_ng_template_50_Template, 3, 1, "ng-template", null, 5, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(52, NhanDienKhuonMatComponent_div_52_Template, 16, 10, "div", 36);
+    \u0275\u0275template(52, NhanDienKhuonMatComponent_div_52_Template, 15, 10, "div", 36);
     \u0275\u0275elementStart(53, "nz-modal", 37);
     \u0275\u0275twoWayListener("nzVisibleChange", function NhanDienKhuonMatComponent_Template_nz_modal_nzVisibleChange_53_listener($event) {
       \u0275\u0275restoreView(_r1);
@@ -2236,10 +2229,10 @@ _NhanDienKhuonMatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const activeTableTitleTpl_r35 = \u0275\u0275reference(38);
-    const activeTableExtraTpl_r36 = \u0275\u0275reference(40);
-    const tableTitleTpl_r37 = \u0275\u0275reference(49);
-    const tableExtraTpl_r38 = \u0275\u0275reference(51);
+    const activeTableTitleTpl_r34 = \u0275\u0275reference(38);
+    const activeTableExtraTpl_r35 = \u0275\u0275reference(40);
+    const tableTitleTpl_r36 = \u0275\u0275reference(49);
+    const tableExtraTpl_r37 = \u0275\u0275reference(51);
     \u0275\u0275advance(7);
     \u0275\u0275property("nzGutter", 24);
     \u0275\u0275advance();
@@ -2254,11 +2247,11 @@ _NhanDienKhuonMatComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineCompone
     \u0275\u0275advance(10);
     \u0275\u0275property("nzXs", 24)("nzMd", 12)("nzLg", 8);
     \u0275\u0275advance(11);
-    \u0275\u0275property("data", ctx.paginatedQueue)("columns", ctx.activeColumns)("loading", ctx.loadingDetector)("nzSize", "middle")("frontPagination", false)("showPagination", ctx.queue.length > 0)("total", ctx.queue.length)("pageIndex", ctx.activePageIndex)("pageSize", ctx.activePageSize)("title", activeTableTitleTpl_r35)("extra", activeTableExtraTpl_r36);
+    \u0275\u0275property("data", ctx.paginatedQueue)("columns", ctx.activeColumns)("loading", ctx.loadingDetector)("nzSize", "middle")("frontPagination", false)("showPagination", ctx.queue.length > 0)("total", ctx.queue.length)("pageIndex", ctx.activePageIndex)("pageSize", ctx.activePageSize)("title", activeTableTitleTpl_r34)("extra", activeTableExtraTpl_r35);
     \u0275\u0275advance(9);
     \u0275\u0275property("ngIf", ctx.savingSession);
     \u0275\u0275advance(2);
-    \u0275\u0275property("data", ctx.sessionsList)("columns", ctx.historyColumns)("loading", ctx.loadingSessions)("nzSize", "middle")("frontPagination", false)("total", ctx.totalSessions)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("title", tableTitleTpl_r37)("extra", tableExtraTpl_r38);
+    \u0275\u0275property("data", ctx.sessionsList)("columns", ctx.historyColumns)("loading", ctx.loadingSessions)("nzSize", "middle")("frontPagination", false)("total", ctx.totalSessions)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("title", tableTitleTpl_r36)("extra", tableExtraTpl_r37);
     \u0275\u0275advance(9);
     \u0275\u0275property("ngIf", ctx.selectedSessionForDef);
     \u0275\u0275advance();
@@ -2561,15 +2554,12 @@ var NhanDienKhuonMatComponent = _NhanDienKhuonMatComponent;
       [pageSize]="5"
     >
       <ng-template totCell="fileName" let-data>
-        <span style="font-weight: 500; color: #262626;">{{ data.fileName }}</span>
-      </ng-template>
-
-      <ng-template totCell="imagePreview" let-data>
-        <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
+         <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
           <img [src]="data.url" alt="preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
         </div>
-      </ng-template>
 
+        <span style="font-weight: 500; color: #262626;">{{ data.fileName }}</span>
+      </ng-template>
       <ng-template totCell="action" let-data>
         <div style="display: flex; align-items: center; gap: 12px;">
           <!-- Autocomplete user -->
@@ -6832,19 +6822,33 @@ function TrainingComponent_tr_21_div_6_Template(rf, ctx) {
 }
 function TrainingComponent_tr_21_div_14_Template(rf, ctx) {
   if (rf & 1) {
+    const _r6 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 68);
-    \u0275\u0275element(1, "img", 69);
+    \u0275\u0275listener("click", function TrainingComponent_tr_21_div_14_Template_div_click_0_listener($event) {
+      return $event.stopPropagation();
+    });
+    \u0275\u0275elementStart(1, "div", 69);
+    \u0275\u0275element(2, "img", 70);
     \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 71);
+    \u0275\u0275listener("click", function TrainingComponent_tr_21_div_14_Template_div_click_3_listener($event) {
+      const def_r7 = \u0275\u0275restoreView(_r6).$implicit;
+      const user_r5 = \u0275\u0275nextContext().$implicit;
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.deleteUserFaceDefinition(def_r7.definitionId, user_r5, $event));
+    });
+    \u0275\u0275element(4, "span", 72);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const faceUrl_r6 = ctx.$implicit;
-    \u0275\u0275advance();
-    \u0275\u0275property("src", faceUrl_r6, \u0275\u0275sanitizeUrl);
+    const def_r7 = ctx.$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275property("src", def_r7.originalImageUrl, \u0275\u0275sanitizeUrl);
   }
 }
 function TrainingComponent_tr_21_div_15_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 70);
+    \u0275\u0275elementStart(0, "div", 73);
     \u0275\u0275text(1, " Kh\xF4ng c\xF3 \u1EA3nh ");
     \u0275\u0275elementEnd();
   }
@@ -6878,7 +6882,7 @@ function TrainingComponent_tr_21_Template(rf, ctx) {
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()()()();
     \u0275\u0275elementStart(12, "td")(13, "div", 58);
-    \u0275\u0275template(14, TrainingComponent_tr_21_div_14_Template, 2, 1, "div", 59)(15, TrainingComponent_tr_21_div_15_Template, 2, 0, "div", 60);
+    \u0275\u0275template(14, TrainingComponent_tr_21_div_14_Template, 5, 1, "div", 59)(15, TrainingComponent_tr_21_div_15_Template, 2, 0, "div", 60);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(16, "td");
     \u0275\u0275element(17, "nz-badge", 61);
@@ -6914,21 +6918,21 @@ function TrainingComponent_tr_21_Template(rf, ctx) {
     \u0275\u0275advance(2);
     \u0275\u0275textInterpolate(user_r5.email);
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", user_r5.faceUrls);
+    \u0275\u0275property("ngForOf", user_r5.definitions);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", !user_r5.faceUrls || user_r5.faceUrls.length === 0);
+    \u0275\u0275property("ngIf", !user_r5.definitions || user_r5.definitions.length === 0);
     \u0275\u0275advance(2);
     \u0275\u0275property("nzCount", user_r5.definitionCount)("nzStyle", \u0275\u0275pureFunction0(11, _c07));
   }
 }
 function TrainingComponent_ng_template_22_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 71);
-    \u0275\u0275element(1, "span", 72);
-    \u0275\u0275elementStart(2, "div", 73);
+    \u0275\u0275elementStart(0, "div", 74);
+    \u0275\u0275element(1, "span", 75);
+    \u0275\u0275elementStart(2, "div", 76);
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 user n\xE0o c\xF3 khu\xF4n m\u1EB7t \u0111\u01B0\u1EE3c \u0111\u1ECBnh ngh\u0129a.");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 74);
+    \u0275\u0275elementStart(4, "div", 77);
     \u0275\u0275text(5, "Vui l\xF2ng \u0111\u1ECBnh ngh\u0129a khu\xF4n m\u1EB7t cho user tr\u01B0\u1EDBc khi \u0111\xE0o t\u1EA1o.");
     \u0275\u0275elementEnd()();
   }
@@ -6936,23 +6940,23 @@ function TrainingComponent_ng_template_22_Template(rf, ctx) {
 function TrainingComponent_ng_template_25_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 42);
-    \u0275\u0275element(1, "span", 75);
+    \u0275\u0275element(1, "span", 78);
     \u0275\u0275text(2, "\xA0 \u0110i\u1EC1u Khi\u1EC3n \u0110\xE0o T\u1EA1o");
     \u0275\u0275elementEnd();
   }
 }
 function TrainingComponent_span_31_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 76);
-    \u0275\u0275element(1, "nz-spin", 77);
-    \u0275\u0275elementStart(2, "span", 78);
+    \u0275\u0275elementStart(0, "span", 79);
+    \u0275\u0275element(1, "nz-spin", 80);
+    \u0275\u0275elementStart(2, "span", 81);
     \u0275\u0275text(3, "\u0110ang \u0111\xE0o t\u1EA1o...");
     \u0275\u0275elementEnd()();
   }
 }
 function TrainingComponent_div_37_span_4_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 84)(1, "nz-tag", 85);
+    \u0275\u0275elementStart(0, "span", 87)(1, "nz-tag", 88);
     \u0275\u0275text(2);
     \u0275\u0275elementEnd()();
   }
@@ -6969,22 +6973,22 @@ function TrainingComponent_div_37_div_6_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const line_r7 = ctx.$implicit;
+    const line_r8 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext(2);
-    \u0275\u0275classMap("log-line " + ctx_r2.getLogLineClass(line_r7));
+    \u0275\u0275classMap("log-line " + ctx_r2.getLogLineClass(line_r8));
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", line_r7, " ");
+    \u0275\u0275textInterpolate1(" ", line_r8, " ");
   }
 }
 function TrainingComponent_div_37_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 79)(1, "div", 80)(2, "span");
+    \u0275\u0275elementStart(0, "div", 82)(1, "div", 83)(2, "span");
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(4, TrainingComponent_div_37_span_4_Template, 3, 1, "span", 81);
+    \u0275\u0275template(4, TrainingComponent_div_37_span_4_Template, 3, 1, "span", 84);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div", 82);
-    \u0275\u0275template(6, TrainingComponent_div_37_div_6_Template, 2, 3, "div", 83);
+    \u0275\u0275elementStart(5, "div", 85);
+    \u0275\u0275template(6, TrainingComponent_div_37_div_6_Template, 2, 3, "div", 86);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -7000,17 +7004,17 @@ function TrainingComponent_div_37_Template(rf, ctx) {
 function TrainingComponent_ng_template_39_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 42);
-    \u0275\u0275element(1, "span", 86);
+    \u0275\u0275element(1, "span", 89);
     \u0275\u0275text(2, "\xA0 K\u1EBFt Qu\u1EA3 \u0110\xE0o T\u1EA1o & Tr\xEDch Xu\u1EA5t Embedding");
     \u0275\u0275elementEnd();
   }
 }
 function TrainingComponent_ng_template_41_Template(rf, ctx) {
   if (rf & 1) {
-    const _r8 = \u0275\u0275getCurrentView();
+    const _r9 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 45);
     \u0275\u0275listener("click", function TrainingComponent_ng_template_41_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r8);
+      \u0275\u0275restoreView(_r9);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadTrainingFolders());
     });
@@ -7021,66 +7025,66 @@ function TrainingComponent_ng_template_41_Template(rf, ctx) {
 }
 function TrainingComponent_tr_54_Template(rf, ctx) {
   if (rf & 1) {
-    const _r9 = \u0275\u0275getCurrentView();
+    const _r10 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td");
-    \u0275\u0275element(2, "span", 87);
+    \u0275\u0275element(2, "span", 90);
     \u0275\u0275elementStart(3, "strong");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(5, "td", 88)(6, "nz-tag", 26);
+    \u0275\u0275elementStart(5, "td", 91)(6, "nz-tag", 26);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "td", 88)(9, "button", 89);
+    \u0275\u0275elementStart(8, "td", 91)(9, "button", 92);
     \u0275\u0275listener("click", function TrainingComponent_tr_54_Template_button_click_9_listener() {
-      const folder_r10 = \u0275\u0275restoreView(_r9).$implicit;
+      const folder_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.extractEmbeddings(folder_r10));
+      return \u0275\u0275resetView(ctx_r2.extractEmbeddings(folder_r11));
     });
-    \u0275\u0275element(10, "span", 90);
+    \u0275\u0275element(10, "span", 93);
     \u0275\u0275text(11, " Tr\xEDch xu\u1EA5t Embedding ");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const folder_r10 = ctx.$implicit;
+    const folder_r11 = ctx.$implicit;
     const ctx_r2 = \u0275\u0275nextContext();
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(folder_r10.folderName);
+    \u0275\u0275textInterpolate(folder_r11.folderName);
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzColor", folder_r10.hasBestModel ? "success" : "warning");
+    \u0275\u0275property("nzColor", folder_r11.hasBestModel ? "success" : "warning");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", folder_r10.hasBestModel ? "\u2705 C\xF3 best model" : "\u23F3 Ch\u01B0a c\xF3 model", " ");
+    \u0275\u0275textInterpolate1(" ", folder_r11.hasBestModel ? "\u2705 C\xF3 best model" : "\u23F3 Ch\u01B0a c\xF3 model", " ");
     \u0275\u0275advance(2);
-    \u0275\u0275property("disabled", !folder_r10.hasBestModel || ctx_r2.extractingFolder === folder_r10.folderName)("nzLoading", ctx_r2.extractingFolder === folder_r10.folderName);
+    \u0275\u0275property("disabled", !folder_r11.hasBestModel || ctx_r2.extractingFolder === folder_r11.folderName)("nzLoading", ctx_r2.extractingFolder === folder_r11.folderName);
   }
 }
 function TrainingComponent_ng_template_55_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 71);
-    \u0275\u0275element(1, "span", 91);
-    \u0275\u0275elementStart(2, "div", 73);
+    \u0275\u0275elementStart(0, "div", 74);
+    \u0275\u0275element(1, "span", 94);
+    \u0275\u0275elementStart(2, "div", 76);
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 phi\xEAn \u0111\xE0o t\u1EA1o n\xE0o.");
     \u0275\u0275elementEnd()();
   }
 }
 function TrainingComponent_nz_alert_57_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "nz-alert", 92);
+    \u0275\u0275element(0, "nz-alert", 95);
   }
 }
 function TrainingComponent_ng_template_59_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 42);
-    \u0275\u0275element(1, "span", 93);
+    \u0275\u0275element(1, "span", 96);
     \u0275\u0275text(2, "\xA0 Danh S\xE1ch Khu\xF4n M\u1EB7t \u0110\xE3 C\xF3 Embedding");
     \u0275\u0275elementEnd();
   }
 }
 function TrainingComponent_ng_template_61_Template(rf, ctx) {
   if (rf & 1) {
-    const _r11 = \u0275\u0275getCurrentView();
+    const _r12 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 45);
     \u0275\u0275listener("click", function TrainingComponent_ng_template_61_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r11);
+      \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadEmbeddings());
     });
@@ -7094,8 +7098,8 @@ function TrainingComponent_tr_75_img_3_Template(rf, ctx) {
     \u0275\u0275element(0, "img", 66);
   }
   if (rf & 2) {
-    const item_r13 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("src", item_r13.user.avatarUrl, \u0275\u0275sanitizeUrl);
+    const item_r14 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("src", item_r14.user.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
 function TrainingComponent_tr_75_div_4_Template(rf, ctx) {
@@ -7105,96 +7109,96 @@ function TrainingComponent_tr_75_div_4_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const item_r13 = \u0275\u0275nextContext().$implicit;
+    const item_r14 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", (item_r13.user.displayName || item_r13.user.username || "U").charAt(0).toUpperCase(), " ");
+    \u0275\u0275textInterpolate1(" ", (item_r14.user.displayName || item_r14.user.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
 function TrainingComponent_tr_75_div_12_div_26_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 115);
-    \u0275\u0275element(1, "span", 116);
+    \u0275\u0275elementStart(0, "div", 118);
+    \u0275\u0275element(1, "span", 119);
     \u0275\u0275text(2, " Ngu\u1ED3n: ");
     \u0275\u0275elementStart(3, "code");
     \u0275\u0275text(4);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const emb_r15 = \u0275\u0275nextContext().$implicit;
+    const emb_r16 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance(4);
-    \u0275\u0275textInterpolate(emb_r15.inputImagePath.split("/").pop());
+    \u0275\u0275textInterpolate(emb_r16.inputImagePath.split("/").pop());
   }
 }
 function TrainingComponent_tr_75_div_12_Template(rf, ctx) {
   if (rf & 1) {
-    const _r14 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div", 98)(1, "div", 99);
-    \u0275\u0275element(2, "img", 100);
+    const _r15 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 101)(1, "div", 102);
+    \u0275\u0275element(2, "img", 103);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(3, "div", 101)(4, "div", 102)(5, "nz-tag", 103);
+    \u0275\u0275elementStart(3, "div", 104)(4, "div", 105)(5, "nz-tag", 106);
     \u0275\u0275text(6, "ONNX");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(7, "span", 104);
+    \u0275\u0275elementStart(7, "span", 107);
     \u0275\u0275text(8);
     \u0275\u0275pipe(9, "date");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "span", 105);
+    \u0275\u0275elementStart(10, "span", 108);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(12, "div", 106)(13, "code", 107);
+    \u0275\u0275elementStart(12, "div", 109)(13, "code", 110);
     \u0275\u0275text(14);
     \u0275\u0275pipe(15, "number");
     \u0275\u0275pipe(16, "number");
     \u0275\u0275pipe(17, "number");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(18, "div", 108)(19, "button", 109);
+    \u0275\u0275elementStart(18, "div", 111)(19, "button", 112);
     \u0275\u0275listener("click", function TrainingComponent_tr_75_div_12_Template_button_click_19_listener() {
-      const emb_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.copyEmbedding(emb_r15.embedding));
+      return \u0275\u0275resetView(ctx_r2.copyEmbedding(emb_r16.embedding));
     });
-    \u0275\u0275element(20, "span", 110);
+    \u0275\u0275element(20, "span", 113);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(21, "button", 111);
+    \u0275\u0275elementStart(21, "button", 114);
     \u0275\u0275listener("click", function TrainingComponent_tr_75_div_12_Template_button_click_21_listener() {
-      const emb_r15 = \u0275\u0275restoreView(_r14).$implicit;
-      const item_r13 = \u0275\u0275nextContext().$implicit;
+      const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
+      const item_r14 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.openCompareModal(emb_r15, item_r13.user));
+      return \u0275\u0275resetView(ctx_r2.openCompareModal(emb_r16, item_r14.user));
     });
-    \u0275\u0275element(22, "span", 112);
+    \u0275\u0275element(22, "span", 115);
     \u0275\u0275text(23, " Ki\u1EC3m tra ");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(24, "button", 113);
+    \u0275\u0275elementStart(24, "button", 116);
     \u0275\u0275listener("click", function TrainingComponent_tr_75_div_12_Template_button_click_24_listener() {
-      const emb_r15 = \u0275\u0275restoreView(_r14).$implicit;
+      const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
-      return \u0275\u0275resetView(ctx_r2.deleteEmbedding(emb_r15.id));
+      return \u0275\u0275resetView(ctx_r2.deleteEmbedding(emb_r16.id));
     });
-    \u0275\u0275element(25, "span", 97);
+    \u0275\u0275element(25, "span", 100);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(26, TrainingComponent_tr_75_div_12_div_26_Template, 5, 1, "div", 114);
+    \u0275\u0275template(26, TrainingComponent_tr_75_div_12_div_26_Template, 5, 1, "div", 117);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const emb_r15 = ctx.$implicit;
+    const emb_r16 = ctx.$implicit;
     \u0275\u0275advance(2);
-    \u0275\u0275property("src", "/api/face-detection/embeddings/" + emb_r15.id + "/image", \u0275\u0275sanitizeUrl);
+    \u0275\u0275property("src", "/api/face-detection/embeddings/" + emb_r16.id + "/image", \u0275\u0275sanitizeUrl);
     \u0275\u0275advance(6);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(9, 8, emb_r15.createdAt, "dd/MM/yyyy HH:mm"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(9, 8, emb_r16.createdAt, "dd/MM/yyyy HH:mm"));
     \u0275\u0275advance(2);
-    \u0275\u0275property("nzTooltipTitle", emb_r15.bestModelPath);
+    \u0275\u0275property("nzTooltipTitle", emb_r16.bestModelPath);
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" Model: ", emb_r15.bestModelPath ? emb_r15.bestModelPath.split("/").pop() : "N/A", " ");
+    \u0275\u0275textInterpolate1(" Model: ", emb_r16.bestModelPath ? emb_r16.bestModelPath.split("/").pop() : "N/A", " ");
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate3(" [", \u0275\u0275pipeBind2(15, 11, emb_r15.embedding[0], "1.4-4"), ", ", \u0275\u0275pipeBind2(16, 14, emb_r15.embedding[1], "1.4-4"), ", ", \u0275\u0275pipeBind2(17, 17, emb_r15.embedding[2], "1.4-4"), ", ...] (512 dims) ");
+    \u0275\u0275textInterpolate3(" [", \u0275\u0275pipeBind2(15, 11, emb_r16.embedding[0], "1.4-4"), ", ", \u0275\u0275pipeBind2(16, 14, emb_r16.embedding[1], "1.4-4"), ", ", \u0275\u0275pipeBind2(17, 17, emb_r16.embedding[2], "1.4-4"), ", ...] (512 dims) ");
     \u0275\u0275advance(12);
-    \u0275\u0275property("ngIf", emb_r15.inputImagePath);
+    \u0275\u0275property("ngIf", emb_r16.inputImagePath);
   }
 }
 function TrainingComponent_tr_75_Template(rf, ctx) {
   if (rf & 1) {
-    const _r12 = \u0275\u0275getCurrentView();
+    const _r13 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 53);
     \u0275\u0275template(3, TrainingComponent_tr_75_img_3_Template, 1, 1, "img", 54)(4, TrainingComponent_tr_75_div_4_Template, 2, 1, "div", 55);
     \u0275\u0275elementStart(5, "div")(6, "div", 56);
@@ -7203,48 +7207,48 @@ function TrainingComponent_tr_75_Template(rf, ctx) {
     \u0275\u0275elementStart(8, "div", 57);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(10, "td")(11, "div", 94);
-    \u0275\u0275template(12, TrainingComponent_tr_75_div_12_Template, 27, 20, "div", 95);
+    \u0275\u0275elementStart(10, "td")(11, "div", 97);
+    \u0275\u0275template(12, TrainingComponent_tr_75_div_12_Template, 27, 20, "div", 98);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(13, "td", 88)(14, "button", 96);
+    \u0275\u0275elementStart(13, "td", 91)(14, "button", 99);
     \u0275\u0275listener("click", function TrainingComponent_tr_75_Template_button_click_14_listener() {
-      const item_r13 = \u0275\u0275restoreView(_r12).$implicit;
+      const item_r14 = \u0275\u0275restoreView(_r13).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
-      return \u0275\u0275resetView(ctx_r2.deleteUserEmbeddings(item_r13.user.id));
+      return \u0275\u0275resetView(ctx_r2.deleteUserEmbeddings(item_r14.user.id));
     });
-    \u0275\u0275element(15, "span", 97);
+    \u0275\u0275element(15, "span", 100);
     \u0275\u0275text(16, " X\xF3a s\u1EA1ch ");
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const item_r13 = ctx.$implicit;
+    const item_r14 = ctx.$implicit;
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngIf", item_r13.user.avatarUrl);
+    \u0275\u0275property("ngIf", item_r14.user.avatarUrl);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", !item_r13.user.avatarUrl);
+    \u0275\u0275property("ngIf", !item_r14.user.avatarUrl);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(item_r13.user.displayName || item_r13.user.username);
+    \u0275\u0275textInterpolate(item_r14.user.displayName || item_r14.user.username);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate(item_r13.user.email);
+    \u0275\u0275textInterpolate(item_r14.user.email);
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngForOf", item_r13.embeddings);
+    \u0275\u0275property("ngForOf", item_r14.embeddings);
   }
 }
 function TrainingComponent_ng_template_76_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 71);
-    \u0275\u0275element(1, "span", 117);
-    \u0275\u0275elementStart(2, "div", 73);
+    \u0275\u0275elementStart(0, "div", 74);
+    \u0275\u0275element(1, "span", 120);
+    \u0275\u0275elementStart(2, "div", 76);
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 vector embedding n\xE0o \u0111\u01B0\u1EE3c tr\xEDch xu\u1EA5t.");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 74);
+    \u0275\u0275elementStart(4, "div", 77);
     \u0275\u0275text(5, "Hu\u1EA5n luy\u1EC7n xong v\xE0 b\u1EA5m 'Tr\xEDch xu\u1EA5t' \u0111\u1EC3 t\u1EA1o d\u1EEF li\u1EC7u.");
     \u0275\u0275elementEnd()();
   }
 }
 function TrainingComponent_ng_template_79_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "span", 118);
+    \u0275\u0275element(0, "span", 121);
     \u0275\u0275elementStart(1, "span");
     \u0275\u0275text(2, "\xA0 Ki\u1EC3m Tra \u0110\u1ED1i S\xE1nh Khu\xF4n M\u1EB7t (HNSW + Inner Product)");
     \u0275\u0275elementEnd();
@@ -7252,7 +7256,7 @@ function TrainingComponent_ng_template_79_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_img_5_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275element(0, "img", 146);
+    \u0275\u0275element(0, "img", 149);
   }
   if (rf & 2) {
     const ctx_r2 = \u0275\u0275nextContext(3);
@@ -7261,7 +7265,7 @@ function TrainingComponent_div_81_div_1_img_5_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_div_6_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 147);
+    \u0275\u0275elementStart(0, "div", 150);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
@@ -7273,8 +7277,8 @@ function TrainingComponent_div_81_div_1_div_6_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_div_33_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 148);
-    \u0275\u0275element(1, "span", 149);
+    \u0275\u0275elementStart(0, "div", 151);
+    \u0275\u0275element(1, "span", 152);
     \u0275\u0275elementStart(2, "div");
     \u0275\u0275text(3, "Ch\u01B0a c\xF3 \u1EA3nh ch\xE2n dung c\u0103n ch\u1EC9nh");
     \u0275\u0275elementEnd()();
@@ -7282,9 +7286,9 @@ function TrainingComponent_div_81_div_1_div_33_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_div_34_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 150);
-    \u0275\u0275element(1, "img", 151);
-    \u0275\u0275elementStart(2, "div", 152);
+    \u0275\u0275elementStart(0, "div", 153);
+    \u0275\u0275element(1, "img", 154);
+    \u0275\u0275elementStart(2, "div", 155);
     \u0275\u0275text(3, "\u1EA2nh \u0111\xE3 c\u0103n ch\u1EC9nh 112x112");
     \u0275\u0275elementEnd()();
   }
@@ -7296,9 +7300,9 @@ function TrainingComponent_div_81_div_1_div_34_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_div_35_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 153);
-    \u0275\u0275element(1, "nz-spin", 154);
-    \u0275\u0275elementStart(2, "div", 155);
+    \u0275\u0275elementStart(0, "div", 156);
+    \u0275\u0275element(1, "nz-spin", 157);
+    \u0275\u0275elementStart(2, "div", 158);
     \u0275\u0275text(3, "\u0110ang x\u1EED l\xFD ph\xE2n t\xEDch v\xE0 so kh\u1EDBp HNSW...");
     \u0275\u0275elementEnd()();
   }
@@ -7308,8 +7312,8 @@ function TrainingComponent_div_81_div_1_div_36_tr_35_img_6_Template(rf, ctx) {
     \u0275\u0275element(0, "img", 66);
   }
   if (rf & 2) {
-    const match_r18 = \u0275\u0275nextContext().$implicit;
-    \u0275\u0275property("src", match_r18.avatarUrl, \u0275\u0275sanitizeUrl);
+    const match_r19 = \u0275\u0275nextContext().$implicit;
+    \u0275\u0275property("src", match_r19.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
 function TrainingComponent_div_81_div_1_div_36_tr_35_div_7_Template(rf, ctx) {
@@ -7319,14 +7323,14 @@ function TrainingComponent_div_81_div_1_div_36_tr_35_div_7_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const match_r18 = \u0275\u0275nextContext().$implicit;
+    const match_r19 = \u0275\u0275nextContext().$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", (match_r18.displayName || match_r18.username || "U").charAt(0).toUpperCase(), " ");
+    \u0275\u0275textInterpolate1(" ", (match_r19.displayName || match_r19.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
 function TrainingComponent_div_81_div_1_div_36_tr_35_div_11_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 57)(1, "nz-tag", 103);
+    \u0275\u0275elementStart(0, "div", 57)(1, "nz-tag", 106);
     \u0275\u0275text(2, "\u0110\xEDch");
     \u0275\u0275elementEnd()();
   }
@@ -7341,56 +7345,56 @@ function TrainingComponent_div_81_div_1_div_36_tr_35_Template(rf, ctx) {
     \u0275\u0275elementStart(8, "div")(9, "div", 56);
     \u0275\u0275text(10);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(11, TrainingComponent_div_81_div_1_div_36_tr_35_div_11_Template, 3, 0, "div", 168);
+    \u0275\u0275template(11, TrainingComponent_div_81_div_1_div_36_tr_35_div_11_Template, 3, 0, "div", 171);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(12, "td", 88)(13, "strong");
+    \u0275\u0275elementStart(12, "td", 91)(13, "strong");
     \u0275\u0275text(14);
     \u0275\u0275pipe(15, "number");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(16, "td", 88);
+    \u0275\u0275elementStart(16, "td", 91);
     \u0275\u0275text(17);
     \u0275\u0275pipe(18, "number");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "td", 88)(20, "nz-tag", 26);
+    \u0275\u0275elementStart(19, "td", 91)(20, "nz-tag", 26);
     \u0275\u0275text(21);
     \u0275\u0275elementEnd()()();
   }
   if (rf & 2) {
-    const match_r18 = ctx.$implicit;
-    const idx_r19 = ctx.index;
+    const match_r19 = ctx.$implicit;
+    const idx_r20 = ctx.index;
     const ctx_r2 = \u0275\u0275nextContext(4);
-    \u0275\u0275classProp("target-row", match_r18.isTarget)("matched-row", match_r18.cosineSimilarity >= ctx_r2.compareThreshold);
+    \u0275\u0275classProp("target-row", match_r19.isTarget)("matched-row", match_r19.cosineSimilarity >= ctx_r2.compareThreshold);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1("#", idx_r19 + 1);
+    \u0275\u0275textInterpolate1("#", idx_r20 + 1);
     \u0275\u0275advance(3);
-    \u0275\u0275property("ngIf", match_r18.avatarUrl);
+    \u0275\u0275property("ngIf", match_r19.avatarUrl);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", !match_r18.avatarUrl);
+    \u0275\u0275property("ngIf", !match_r19.avatarUrl);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(match_r18.displayName || match_r18.username);
+    \u0275\u0275textInterpolate(match_r19.displayName || match_r19.username);
     \u0275\u0275advance();
-    \u0275\u0275property("ngIf", match_r18.isTarget);
+    \u0275\u0275property("ngIf", match_r19.isTarget);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(15, 13, match_r18.cosineSimilarity, "1.4-4"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(15, 13, match_r19.cosineSimilarity, "1.4-4"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(18, 16, match_r18.l2Distance, "1.4-4"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind2(18, 16, match_r19.l2Distance, "1.4-4"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzColor", match_r18.cosineSimilarity >= ctx_r2.compareThreshold ? "success" : "default");
+    \u0275\u0275property("nzColor", match_r19.cosineSimilarity >= ctx_r2.compareThreshold ? "success" : "default");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", match_r18.cosineSimilarity >= ctx_r2.compareThreshold ? "Kh\u1EDBp" : "Kh\xF4ng kh\u1EDBp", " ");
+    \u0275\u0275textInterpolate1(" ", match_r19.cosineSimilarity >= ctx_r2.compareThreshold ? "Kh\u1EDBp" : "Kh\xF4ng kh\u1EDBp", " ");
   }
 }
 function TrainingComponent_div_81_div_1_div_36_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 156);
-    \u0275\u0275element(1, "nz-divider", 157);
-    \u0275\u0275elementStart(2, "div", 158)(3, "div", 159);
-    \u0275\u0275element(4, "span", 160);
+    \u0275\u0275elementStart(0, "div", 159);
+    \u0275\u0275element(1, "nz-divider", 160);
+    \u0275\u0275elementStart(2, "div", 161)(3, "div", 162);
+    \u0275\u0275element(4, "span", 163);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "div")(6, "div", 161);
+    \u0275\u0275elementStart(5, "div")(6, "div", 164);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(8, "div", 162);
+    \u0275\u0275elementStart(8, "div", 165);
     \u0275\u0275text(9, " \u0110\u1ED9 t\u01B0\u01A1ng \u0111\u1ED3ng l\u1EDBn nh\u1EA5t v\u1EDBi user ");
     \u0275\u0275elementStart(10, "strong");
     \u0275\u0275text(11);
@@ -7403,26 +7407,26 @@ function TrainingComponent_div_81_div_1_div_36_Template(rf, ctx) {
     \u0275\u0275text(16);
     \u0275\u0275pipe(17, "number");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(18, "div", 163)(19, "div", 164);
+    \u0275\u0275elementStart(18, "div", 166)(19, "div", 167);
     \u0275\u0275text(20, "\u{1F4CB} B\u1EA3ng x\u1EBFp h\u1EA1ng t\u01B0\u01A1ng \u0111\u1ED3ng ch\xE9o (T\u1EEB cao xu\u1ED1ng th\u1EA5p s\u1EED d\u1EE5ng HNSW):");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(21, "nz-table", 165)(22, "thead")(23, "tr")(24, "th", 166);
+    \u0275\u0275elementStart(21, "nz-table", 168)(22, "thead")(23, "tr")(24, "th", 169);
     \u0275\u0275text(25, "H\u1EA1ng");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(26, "th");
     \u0275\u0275text(27, "Ng\u01B0\u1EDDi d\xF9ng");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(28, "th", 88);
+    \u0275\u0275elementStart(28, "th", 91);
     \u0275\u0275text(29, "Cosine Similarity");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(30, "th", 88);
+    \u0275\u0275elementStart(30, "th", 91);
     \u0275\u0275text(31, "Kho\u1EA3ng c\xE1ch L2");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(32, "th", 88);
+    \u0275\u0275elementStart(32, "th", 91);
     \u0275\u0275text(33, "Tr\u1EA1ng th\xE1i");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(34, "tbody");
-    \u0275\u0275template(35, TrainingComponent_div_81_div_1_div_36_tr_35_Template, 22, 19, "tr", 167);
+    \u0275\u0275template(35, TrainingComponent_div_81_div_1_div_36_tr_35_Template, 22, 19, "tr", 170);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -7447,72 +7451,72 @@ function TrainingComponent_div_81_div_1_div_36_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_div_1_Template(rf, ctx) {
   if (rf & 1) {
-    const _r16 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "div")(1, "div", 121)(2, "div", 122);
+    const _r17 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div")(1, "div", 124)(2, "div", 125);
     \u0275\u0275text(3, "\u{1F3AF} Embedding \u0111\xEDch c\u1EA7n ki\u1EC3m tra:");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(4, "div", 123);
-    \u0275\u0275template(5, TrainingComponent_div_81_div_1_img_5_Template, 1, 1, "img", 124)(6, TrainingComponent_div_81_div_1_div_6_Template, 2, 1, "div", 125);
-    \u0275\u0275elementStart(7, "div")(8, "div", 126);
+    \u0275\u0275elementStart(4, "div", 126);
+    \u0275\u0275template(5, TrainingComponent_div_81_div_1_img_5_Template, 1, 1, "img", 127)(6, TrainingComponent_div_81_div_1_div_6_Template, 2, 1, "div", 128);
+    \u0275\u0275elementStart(7, "div")(8, "div", 129);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(10, "div", 127);
+    \u0275\u0275elementStart(10, "div", 130);
     \u0275\u0275text(11);
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(12, "div", 128)(13, "div", 129)(14, "span");
+    \u0275\u0275elementStart(12, "div", 131)(13, "div", 132)(14, "span");
     \u0275\u0275text(15, "Ng\u01B0\u1EE1ng so s\xE1nh t\u1ED1i thi\u1EC3u (Cosine Similarity):");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(16, "strong");
     \u0275\u0275text(17);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(18, "div", 130)(19, "nz-slider", 131);
+    \u0275\u0275elementStart(18, "div", 133)(19, "nz-slider", 134);
     \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_81_div_1_Template_nz_slider_ngModelChange_19_listener($event) {
-      \u0275\u0275restoreView(_r16);
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(20, "nz-input-number", 132);
+    \u0275\u0275elementStart(20, "nz-input-number", 135);
     \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_81_div_1_Template_nz_input_number_ngModelChange_20_listener($event) {
-      \u0275\u0275restoreView(_r16);
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(21, "div", 133)(22, "div", 134)(23, "div", 135);
+    \u0275\u0275elementStart(21, "div", 136)(22, "div", 137)(23, "div", 138);
     \u0275\u0275listener("click", function TrainingComponent_div_81_div_1_Template_div_click_23_listener() {
-      \u0275\u0275restoreView(_r16);
-      const testFileInput_r17 = \u0275\u0275reference(30);
-      return \u0275\u0275resetView(testFileInput_r17.click());
+      \u0275\u0275restoreView(_r17);
+      const testFileInput_r18 = \u0275\u0275reference(30);
+      return \u0275\u0275resetView(testFileInput_r18.click());
     })("dragover", function TrainingComponent_div_81_div_1_Template_div_dragover_23_listener($event) {
-      \u0275\u0275restoreView(_r16);
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDragOver($event));
     })("drop", function TrainingComponent_div_81_div_1_Template_div_drop_23_listener($event) {
-      \u0275\u0275restoreView(_r16);
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onCompareFileDrop($event));
     });
-    \u0275\u0275element(24, "span", 136);
-    \u0275\u0275elementStart(25, "div", 137);
+    \u0275\u0275element(24, "span", 139);
+    \u0275\u0275elementStart(25, "div", 140);
     \u0275\u0275text(26, "Nh\u1EA5n \u0111\u1EC3 ch\u1ECDn ho\u1EB7c k\xE9o th\u1EA3 \u1EA3nh ch\xE2n dung ki\u1EC3m tra");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(27, "div", 138);
+    \u0275\u0275elementStart(27, "div", 141);
     \u0275\u0275text(28, "T\u1EF1 \u0111\u1ED9ng ph\xE1t hi\u1EC7n & c\u0103n ch\u1EC9nh (Face Alignment 112x112) b\u1EB1ng MediaPipe");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(29, "input", 139, 14);
+    \u0275\u0275elementStart(29, "input", 142, 14);
     \u0275\u0275listener("change", function TrainingComponent_div_81_div_1_Template_input_change_29_listener($event) {
-      \u0275\u0275restoreView(_r16);
+      \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onCompareFileSelected($event));
     });
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(31, "div", 140)(32, "div", 141);
-    \u0275\u0275template(33, TrainingComponent_div_81_div_1_div_33_Template, 4, 0, "div", 142)(34, TrainingComponent_div_81_div_1_div_34_Template, 4, 1, "div", 143);
+    \u0275\u0275elementStart(31, "div", 143)(32, "div", 144);
+    \u0275\u0275template(33, TrainingComponent_div_81_div_1_div_33_Template, 4, 0, "div", 145)(34, TrainingComponent_div_81_div_1_div_34_Template, 4, 1, "div", 146);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(35, TrainingComponent_div_81_div_1_div_35_Template, 4, 0, "div", 144)(36, TrainingComponent_div_81_div_1_div_36_Template, 36, 17, "div", 145);
+    \u0275\u0275template(35, TrainingComponent_div_81_div_1_div_35_Template, 4, 0, "div", 147)(36, TrainingComponent_div_81_div_1_div_36_Template, 36, 17, "div", 148);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -7545,8 +7549,8 @@ function TrainingComponent_div_81_div_1_Template(rf, ctx) {
 }
 function TrainingComponent_div_81_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 119);
-    \u0275\u0275template(1, TrainingComponent_div_81_div_1_Template, 37, 17, "div", 120);
+    \u0275\u0275elementStart(0, "div", 122);
+    \u0275\u0275template(1, TrainingComponent_div_81_div_1_Template, 37, 17, "div", 123);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -7557,22 +7561,22 @@ function TrainingComponent_div_81_Template(rf, ctx) {
 }
 function TrainingComponent_ng_template_82_Template(rf, ctx) {
   if (rf & 1) {
-    const _r20 = \u0275\u0275getCurrentView();
-    \u0275\u0275elementStart(0, "button", 169);
+    const _r21 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 172);
     \u0275\u0275listener("click", function TrainingComponent_ng_template_82_Template_button_click_0_listener() {
-      \u0275\u0275restoreView(_r20);
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.closeCompareModal());
     });
     \u0275\u0275text(1, "\u0110\xF3ng");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(2, "button", 170);
+    \u0275\u0275elementStart(2, "button", 173);
     \u0275\u0275listener("click", function TrainingComponent_ng_template_82_Template_button_click_2_listener() {
-      \u0275\u0275restoreView(_r20);
+      \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.executeComparison());
     });
-    \u0275\u0275element(3, "span", 171);
+    \u0275\u0275element(3, "span", 174);
     \u0275\u0275text(4, " B\u1EAFt \u0111\u1EA7u so kh\u1EDBp ");
     \u0275\u0275elementEnd();
   }
@@ -7792,6 +7796,25 @@ var _TrainingComponent = class _TrainingComponent {
       this.loadUsersWithDefinitions();
     });
   }
+  deleteUserFaceDefinition(definitionId, user, event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.modal.confirm({
+      nzTitle: "X\xE1c nh\u1EADn g\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a?",
+      nzContent: `B\u1EA1n c\xF3 ch\u1EAFc ch\u1EAFn mu\u1ED1n g\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a n\xE0y kh\u1ECFi user "${user.displayName || user.username}" kh\xF4ng?`,
+      nzOkDanger: true,
+      nzOnOk: async () => {
+        try {
+          await this.api.deleteFaceDefinition(definitionId);
+          this.message.success("\u0110\xE3 g\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a khu\xF4n m\u1EB7t th\xE0nh c\xF4ng.");
+          this.loadUsersWithDefinitions();
+        } catch (error) {
+          this.message.error("L\u1ED7i khi g\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a khu\xF4n m\u1EB7t.");
+        }
+      }
+    });
+  }
   // --- Quản lý Xóa Vector Embedding ---
   async deleteUserEmbeddings(userId) {
     this.modal.confirm({
@@ -7999,7 +8022,7 @@ var _TrainingComponent = class _TrainingComponent {
 _TrainingComponent.\u0275fac = function TrainingComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _TrainingComponent)();
 };
-_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 84, vars: 33, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], ["embeddingsTitle", ""], ["embeddingsActions", ""], ["embeddingsTable", ""], ["emptyEmbeddingsTemplate", ""], ["compareModalTitle", ""], ["compareModalFooter", ""], ["testFileInput", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["nzWidth", "150px", "nzAlign", "center"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "section-card", 2, "margin-top", "24px", 3, "nzTitle", "nzExtra"], ["nzSize", "small", 1, "embeddings-table", 3, "nzData", "nzShowPagination", "nzNoResult"], [3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "compare-modal-content", 4, "nzModalContent"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-left", "8px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "play-circle"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [1, "defined-faces-list", 2, "display", "flex", "gap", "6px", "flex-wrap", "wrap"], ["class", "defined-face-thumbnail", "style", "width: 38px; height: 38px; border-radius: 4px; overflow: hidden; border: 1.5px solid #d9d9d9; background: #fafafa; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.04);", 4, "ngFor", "ngForOf"], ["style", "color: #bbb; font-size: 12px; font-style: italic;", 4, "ngIf"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["nzAlign", "center", 3, "click"], ["nz-button", "", "nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "user-add"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "defined-face-thumbnail", 2, "width", "38px", "height", "38px", "border-radius", "4px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "box-shadow", "0 2px 4px rgba(0,0,0,0.04)"], ["alt", "Face", "onerror", "this.src='https://placehold.co/38x38?text=Face'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "color", "#bbb", "font-size", "12px", "font-style", "italic"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"], ["nz-icon", "", "nzType", "idcard", "nzTheme", "outline"], [1, "emb-list"], ["class", "emb-item", "style", "display: flex; gap: 14px; align-items: flex-start;", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "default", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "emb-item", 2, "display", "flex", "gap", "14px", "align-items", "flex-start"], [1, "emb-face-preview", 2, "width", "52px", "height", "52px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "flex-shrink", "0", "box-shadow", "0 2px 6px rgba(0,0,0,0.05)"], ["alt", "Aligned Face", "onerror", "this.src='https://placehold.co/52x52?text=No+Img'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "flex", "1", "min-width", "0"], [1, "emb-meta"], ["nzColor", "blue"], [1, "emb-date"], ["nz-tooltip", "", 1, "emb-model", 3, "nzTooltipTitle"], [1, "emb-vector-row"], [1, "vector-preview"], [1, "emb-buttons"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Copy vector", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Ki\u1EC3m tra \u0111\u1ED1i s\xE1nh", 3, "click"], ["nz-icon", "", "nzType", "safety-certificate", 2, "color", "#52c41a"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a embedding", 3, "click"], ["class", "emb-source-path", 4, "ngIf"], [1, "emb-source-path"], ["nz-icon", "", "nzType", "file-image"], ["nz-icon", "", "nzType", "database", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "compare-modal-content"], [4, "ngIf"], [1, "target-user-card"], [1, "card-label"], [1, "user-profile-row"], ["class", "user-avatar large", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder large", 4, "ngIf"], [1, "user-name-large"], [1, "user-email-large"], [1, "threshold-panel"], [1, "slider-label"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "16px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "image-upload-workspace"], [1, "workspace-col", "upload-col"], [1, "upload-zone", 3, "click", "dragover", "drop"], ["nz-icon", "", "nzType", "upload", 2, "font-size", "32px", "color", "#1890ff"], [1, "upload-text"], [1, "upload-hint"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [1, "workspace-col", "preview-col"], [1, "preview-box"], ["class", "no-preview", 4, "ngIf"], ["class", "aligned-preview", 4, "ngIf"], ["class", "loading-container", 4, "ngIf"], ["class", "compare-results-area", 4, "ngIf"], ["alt", "avatar", 1, "user-avatar", "large", 3, "src"], [1, "user-avatar-placeholder", "large"], [1, "no-preview"], ["nz-icon", "", "nzType", "picture", 2, "font-size", "36px", "color", "#ccc"], [1, "aligned-preview"], ["alt", "Aligned Face Preview", 1, "aligned-img", 3, "src"], [1, "aligned-label"], [1, "loading-container"], ["nzSimple", "", "nzSize", "large"], [1, "loading-msg"], [1, "compare-results-area"], ["nzText", "K\u1EBFt qu\u1EA3 so kh\u1EDBp"], [1, "best-match-banner"], [1, "banner-icon"], ["nz-icon", "", "nzTheme", "outline", 3, "nzType"], [1, "banner-title"], [1, "banner-desc"], [1, "ranking-list-section", 2, "margin-top", "16px"], [1, "section-sub-title"], ["nzSize", "small", 1, "ranking-table", 3, "nzData", "nzShowPagination"], ["nzWidth", "60px"], [3, "target-row", "matched-row", 4, "ngFor", "ngForOf"], ["class", "user-email", 4, "ngIf"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "thunderbolt"]], template: function TrainingComponent_Template(rf, ctx) {
+_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 84, vars: 33, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], ["embeddingsTitle", ""], ["embeddingsActions", ""], ["embeddingsTable", ""], ["emptyEmbeddingsTemplate", ""], ["compareModalTitle", ""], ["compareModalFooter", ""], ["testFileInput", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["nzWidth", "150px", "nzAlign", "center"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "section-card", 2, "margin-top", "24px", 3, "nzTitle", "nzExtra"], ["nzSize", "small", 1, "embeddings-table", 3, "nzData", "nzShowPagination", "nzNoResult"], [3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "compare-modal-content", 4, "nzModalContent"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-left", "8px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "play-circle"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [1, "defined-faces-list", 2, "display", "flex", "gap", "8px", "flex-wrap", "wrap"], ["class", "defined-face-wrapper", 3, "click", 4, "ngFor", "ngForOf"], ["style", "color: #bbb; font-size: 12px; font-style: italic;", 4, "ngIf"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["nzAlign", "center", 3, "click"], ["nz-button", "", "nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "user-add"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "defined-face-wrapper", 3, "click"], [1, "defined-face-thumbnail", 2, "width", "46px", "height", "46px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "box-shadow", "0 2px 4px rgba(0,0,0,0.04)"], ["alt", "Face", "onerror", "this.src='https://placehold.co/46x46?text=Face'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["nz-tooltip", "", "nzTooltipTitle", "G\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a", 1, "delete-face-btn", 3, "click"], ["nz-icon", "", "nzType", "close"], [2, "color", "#bbb", "font-size", "12px", "font-style", "italic"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"], ["nz-icon", "", "nzType", "idcard", "nzTheme", "outline"], [1, "emb-list"], ["class", "emb-item", "style", "display: flex; gap: 14px; align-items: flex-start;", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "default", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "emb-item", 2, "display", "flex", "gap", "14px", "align-items", "flex-start"], [1, "emb-face-preview", 2, "width", "52px", "height", "52px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "flex-shrink", "0", "box-shadow", "0 2px 6px rgba(0,0,0,0.05)"], ["alt", "Aligned Face", "onerror", "this.src='https://placehold.co/52x52?text=No+Img'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "flex", "1", "min-width", "0"], [1, "emb-meta"], ["nzColor", "blue"], [1, "emb-date"], ["nz-tooltip", "", 1, "emb-model", 3, "nzTooltipTitle"], [1, "emb-vector-row"], [1, "vector-preview"], [1, "emb-buttons"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Copy vector", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Ki\u1EC3m tra \u0111\u1ED1i s\xE1nh", 3, "click"], ["nz-icon", "", "nzType", "safety-certificate", 2, "color", "#52c41a"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a embedding", 3, "click"], ["class", "emb-source-path", 4, "ngIf"], [1, "emb-source-path"], ["nz-icon", "", "nzType", "file-image"], ["nz-icon", "", "nzType", "database", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "compare-modal-content"], [4, "ngIf"], [1, "target-user-card"], [1, "card-label"], [1, "user-profile-row"], ["class", "user-avatar large", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder large", 4, "ngIf"], [1, "user-name-large"], [1, "user-email-large"], [1, "threshold-panel"], [1, "slider-label"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "16px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "image-upload-workspace"], [1, "workspace-col", "upload-col"], [1, "upload-zone", 3, "click", "dragover", "drop"], ["nz-icon", "", "nzType", "upload", 2, "font-size", "32px", "color", "#1890ff"], [1, "upload-text"], [1, "upload-hint"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [1, "workspace-col", "preview-col"], [1, "preview-box"], ["class", "no-preview", 4, "ngIf"], ["class", "aligned-preview", 4, "ngIf"], ["class", "loading-container", 4, "ngIf"], ["class", "compare-results-area", 4, "ngIf"], ["alt", "avatar", 1, "user-avatar", "large", 3, "src"], [1, "user-avatar-placeholder", "large"], [1, "no-preview"], ["nz-icon", "", "nzType", "picture", 2, "font-size", "36px", "color", "#ccc"], [1, "aligned-preview"], ["alt", "Aligned Face Preview", 1, "aligned-img", 3, "src"], [1, "aligned-label"], [1, "loading-container"], ["nzSimple", "", "nzSize", "large"], [1, "loading-msg"], [1, "compare-results-area"], ["nzText", "K\u1EBFt qu\u1EA3 so kh\u1EDBp"], [1, "best-match-banner"], [1, "banner-icon"], ["nz-icon", "", "nzTheme", "outline", 3, "nzType"], [1, "banner-title"], [1, "banner-desc"], [1, "ranking-list-section", 2, "margin-top", "16px"], [1, "section-sub-title"], ["nzSize", "small", 1, "ranking-table", 3, "nzData", "nzShowPagination"], ["nzWidth", "60px"], [3, "target-row", "matched-row", 4, "ngFor", "ngForOf"], ["class", "user-email", 4, "ngIf"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "thunderbolt"]], template: function TrainingComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 15)(1, "nz-card", 16);
@@ -8091,30 +8114,30 @@ _TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
-    const userSelectTitle_r21 = \u0275\u0275reference(3);
-    const userSelectActions_r22 = \u0275\u0275reference(5);
-    const userTable_r23 = \u0275\u0275reference(8);
-    const emptyUserTemplate_r24 = \u0275\u0275reference(23);
-    const trainingControlTitle_r25 = \u0275\u0275reference(26);
-    const foldersTitle_r26 = \u0275\u0275reference(40);
-    const foldersActions_r27 = \u0275\u0275reference(42);
-    const emptyFolderTemplate_r28 = \u0275\u0275reference(56);
-    const embeddingsTitle_r29 = \u0275\u0275reference(60);
-    const embeddingsActions_r30 = \u0275\u0275reference(62);
-    const embeddingsTable_r31 = \u0275\u0275reference(65);
-    const emptyEmbeddingsTemplate_r32 = \u0275\u0275reference(77);
-    const compareModalTitle_r33 = \u0275\u0275reference(80);
-    const compareModalFooter_r34 = \u0275\u0275reference(83);
+    const userSelectTitle_r22 = \u0275\u0275reference(3);
+    const userSelectActions_r23 = \u0275\u0275reference(5);
+    const userTable_r24 = \u0275\u0275reference(8);
+    const emptyUserTemplate_r25 = \u0275\u0275reference(23);
+    const trainingControlTitle_r26 = \u0275\u0275reference(26);
+    const foldersTitle_r27 = \u0275\u0275reference(40);
+    const foldersActions_r28 = \u0275\u0275reference(42);
+    const emptyFolderTemplate_r29 = \u0275\u0275reference(56);
+    const embeddingsTitle_r30 = \u0275\u0275reference(60);
+    const embeddingsActions_r31 = \u0275\u0275reference(62);
+    const embeddingsTable_r32 = \u0275\u0275reference(65);
+    const emptyEmbeddingsTemplate_r33 = \u0275\u0275reference(77);
+    const compareModalTitle_r34 = \u0275\u0275reference(80);
+    const compareModalFooter_r35 = \u0275\u0275reference(83);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", userSelectTitle_r21)("nzExtra", userSelectActions_r22);
+    \u0275\u0275property("nzTitle", userSelectTitle_r22)("nzExtra", userSelectActions_r23);
     \u0275\u0275advance(5);
     \u0275\u0275property("nzSpinning", ctx.loadingUsers);
     \u0275\u0275advance();
-    \u0275\u0275property("nzData", ctx.usersWithDefs)("nzShowPagination", false)("nzNoResult", emptyUserTemplate_r24);
+    \u0275\u0275property("nzData", ctx.usersWithDefs)("nzShowPagination", false)("nzNoResult", emptyUserTemplate_r25);
     \u0275\u0275advance(14);
-    \u0275\u0275property("ngForOf", userTable_r23.data);
+    \u0275\u0275property("ngForOf", userTable_r24.data);
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzTitle", trainingControlTitle_r25);
+    \u0275\u0275property("nzTitle", trainingControlTitle_r26);
     \u0275\u0275advance(5);
     \u0275\u0275property("nzColor", ctx.selectedUserIds.size > 0 ? "blue" : "default");
     \u0275\u0275advance();
@@ -8128,28 +8151,28 @@ _TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275advance(3);
     \u0275\u0275property("ngIf", ctx.trainingLogs.length > 0);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", foldersTitle_r26)("nzExtra", foldersActions_r27);
+    \u0275\u0275property("nzTitle", foldersTitle_r27)("nzExtra", foldersActions_r28);
     \u0275\u0275advance(5);
     \u0275\u0275property("nzSpinning", ctx.loadingFolders);
     \u0275\u0275advance();
-    \u0275\u0275property("nzData", ctx.trainingFolders)("nzShowPagination", false)("nzNoResult", emptyFolderTemplate_r28);
+    \u0275\u0275property("nzData", ctx.trainingFolders)("nzShowPagination", false)("nzNoResult", emptyFolderTemplate_r29);
     \u0275\u0275advance(10);
     \u0275\u0275property("ngForOf", ctx.trainingFolders);
     \u0275\u0275advance(3);
     \u0275\u0275property("ngIf", ctx.trainingFolders.length > 0);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", embeddingsTitle_r29)("nzExtra", embeddingsActions_r30);
+    \u0275\u0275property("nzTitle", embeddingsTitle_r30)("nzExtra", embeddingsActions_r31);
     \u0275\u0275advance(5);
     \u0275\u0275property("nzSpinning", ctx.loadingEmbeddings);
     \u0275\u0275advance();
-    \u0275\u0275property("nzData", ctx.embeddingsList)("nzShowPagination", false)("nzNoResult", emptyEmbeddingsTemplate_r32);
+    \u0275\u0275property("nzData", ctx.embeddingsList)("nzShowPagination", false)("nzNoResult", emptyEmbeddingsTemplate_r33);
     \u0275\u0275advance(11);
-    \u0275\u0275property("ngForOf", embeddingsTable_r31.data);
+    \u0275\u0275property("ngForOf", embeddingsTable_r32.data);
     \u0275\u0275advance(3);
     \u0275\u0275twoWayProperty("nzVisible", ctx.showCompareModal);
-    \u0275\u0275property("nzTitle", compareModalTitle_r33)("nzWidth", 850)("nzFooter", compareModalFooter_r34);
+    \u0275\u0275property("nzTitle", compareModalTitle_r34)("nzWidth", 850)("nzFooter", compareModalFooter_r35);
   }
-}, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgControlStatus, NgModel, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzCardModule, NzCardComponent, NzTagModule, NzTagComponent, NzSpinModule, NzSpinComponent, NzTableModule, NzTableComponent, NzTableCellDirective, NzThMeasureDirective, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellAlignDirective, NzCheckboxModule, NzCheckboxComponent, NzModalModule, NzModalComponent, NzModalContentDirective, NzIconModule, NzIconDirective, NzDividerModule, NzDividerComponent, NzBadgeModule, NzBadgeComponent, NzAlertModule, NzAlertComponent, NzSliderModule, NzSliderComponent, NzInputNumberModule, NzInputNumberComponent, NzTooltipModule, NzTooltipDirective, TotButtonComponent, DecimalPipe, DatePipe], styles: ['\n.training-page[_ngcontent-%COMP%] {\n  padding: 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  max-width: 1100px;\n  margin: 0 auto;\n}\n.card-title-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  font-weight: 600;\n  font-size: 15px;\n  gap: 4px;\n}\n.card-actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.user-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.user-row[_ngcontent-%COMP%] {\n  cursor: pointer;\n  transition: background 0.15s ease;\n}\n.user-row[_ngcontent-%COMP%]:hover {\n  background: #f0f7ff !important;\n}\n.selected-row[_ngcontent-%COMP%] {\n  background: #e6f4ff !important;\n}\n.user-info[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.user-avatar[_ngcontent-%COMP%] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #d0e9ff;\n}\n.user-avatar-placeholder[_ngcontent-%COMP%] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff,\n      #096dd9);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 15px;\n}\n.user-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 14px;\n  color: #262626;\n}\n.user-email[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #8c8c8c;\n}\n.def-count-label[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #595959;\n}\n.training-controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.selected-info[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.control-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.training-status-indicator[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.training-running-text[_ngcontent-%COMP%] {\n  color: #1890ff;\n  font-weight: 600;\n  animation: _ngcontent-%COMP%_pulse 1.5s ease-in-out infinite;\n}\n@keyframes _ngcontent-%COMP%_pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n.log-container[_ngcontent-%COMP%] {\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  overflow: hidden;\n  margin-top: 4px;\n}\n.log-header[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border-bottom: 1px solid #d9d9d9;\n  padding: 8px 12px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 13px;\n  color: #595959;\n}\n.done-badge[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.log-panel[_ngcontent-%COMP%] {\n  background: #0d1117;\n  height: 360px;\n  overflow-y: auto;\n  padding: 12px;\n  font-family:\n    "Consolas",\n    "Monaco",\n    "Courier New",\n    monospace;\n  font-size: 12.5px;\n  line-height: 1.7;\n  scroll-behavior: smooth;\n}\n.log-line[_ngcontent-%COMP%] {\n  display: block;\n  word-break: break-all;\n  padding: 1px 0;\n}\n.log-error[_ngcontent-%COMP%] {\n  color: #ff7875;\n}\n.log-warn[_ngcontent-%COMP%] {\n  color: #ffa940;\n}\n.log-success[_ngcontent-%COMP%] {\n  color: #73d13d;\n  font-weight: 600;\n}\n.log-cmd[_ngcontent-%COMP%] {\n  color: #69c0ff;\n  font-style: italic;\n}\n.log-system[_ngcontent-%COMP%] {\n  color: #b37feb;\n}\n.log-info[_ngcontent-%COMP%] {\n  color: #e6e6e6;\n}\n.folders-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.empty-state[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 28px 0;\n}\n.section-card[_ngcontent-%COMP%] {\n  border-radius: 12px;\n  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);\n  border: 1px solid #f0f0f0;\n}\n.embeddings-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.emb-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.emb-item[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.6);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid #e8e8e8;\n  border-radius: 8px;\n  padding: 10px 12px;\n  transition: all 0.2s ease;\n}\n.emb-item[_ngcontent-%COMP%]:hover {\n  border-color: #1890ff;\n  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);\n}\n.emb-meta[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 6px;\n  font-size: 11px;\n}\n.emb-date[_ngcontent-%COMP%] {\n  color: #8c8c8c;\n}\n.emb-model[_ngcontent-%COMP%] {\n  color: #595959;\n  background: #f5f5f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n  font-family: monospace;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  max-width: 250px;\n}\n.emb-vector-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n}\n.vector-preview[_ngcontent-%COMP%] {\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.emb-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 6px;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: #f9f9f9;\n  padding: 1px 4px;\n  border-radius: 3px;\n  font-size: 10.5px;\n}\n.compare-modal-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.target-user-card[_ngcontent-%COMP%] {\n  background: #f0f7ff;\n  border: 1px solid #bae7ff;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.card-label[_ngcontent-%COMP%] {\n  font-size: 11.5px;\n  color: #0050b3;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.user-profile-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n}\n.user-avatar.large[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  border: 2.5px solid #1890ff;\n}\n.user-avatar-placeholder.large[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  font-size: 20px;\n}\n.user-name-large[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 16px;\n  color: #002c8c;\n}\n.user-email-large[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: #595959;\n}\n.threshold-panel[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.slider-label[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 6px;\n}\n.slider-control-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.image-upload-workspace[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 16px;\n}\n.workspace-col[_ngcontent-%COMP%] {\n  flex: 1;\n  display: flex;\n}\n.upload-zone[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 140px;\n  border: 2px dashed #1890ff;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  padding: 16px;\n}\n.upload-zone[_ngcontent-%COMP%]:hover {\n  background: #e6f7ff;\n  border-color: #096dd9;\n}\n.upload-text[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #262626;\n  margin-top: 8px;\n  font-size: 13px;\n}\n.upload-hint[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 4px;\n  text-align: center;\n}\n.preview-box[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 140px;\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n}\n.no-preview[_ngcontent-%COMP%] {\n  text-align: center;\n  color: #bfbfbf;\n  font-size: 12px;\n}\n.no-preview[_ngcontent-%COMP%]   div[_ngcontent-%COMP%] {\n  margin-top: 6px;\n}\n.aligned-preview[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n}\n.aligned-img[_ngcontent-%COMP%] {\n  width: 90px;\n  height: 90px;\n  border-radius: 8px;\n  border: 2px solid #52c41a;\n  object-fit: cover;\n}\n.aligned-label[_ngcontent-%COMP%] {\n  font-size: 10.5px;\n  color: #52c41a;\n  font-weight: 600;\n}\n.loading-container[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 24px 0;\n}\n.loading-msg[_ngcontent-%COMP%] {\n  margin-top: 10px;\n  color: #1890ff;\n  font-weight: 600;\n}\n.best-match-banner[_ngcontent-%COMP%] {\n  background: #fff2f0;\n  border: 1px solid #ffccc7;\n  border-radius: 8px;\n  padding: 12px 16px;\n  display: flex;\n  gap: 12px;\n}\n.best-match-banner.matched[_ngcontent-%COMP%] {\n  background: #f6ffed;\n  border: 1px solid #b7eb8f;\n}\n.banner-icon[_ngcontent-%COMP%] {\n  font-size: 24px;\n  color: #ff4d4f;\n  margin-top: 2px;\n}\n.best-match-banner.matched[_ngcontent-%COMP%]   .banner-icon[_ngcontent-%COMP%] {\n  color: #52c41a;\n}\n.banner-title[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #d32029;\n}\n.best-match-banner.matched[_ngcontent-%COMP%]   .banner-title[_ngcontent-%COMP%] {\n  color: #389e0d;\n}\n.banner-desc[_ngcontent-%COMP%] {\n  font-size: 12.5px;\n  color: #595959;\n  margin-top: 4px;\n}\n.section-sub-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 8px;\n}\n.ranking-table[_ngcontent-%COMP%] {\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  overflow: hidden;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.target-row[_ngcontent-%COMP%] {\n  background: rgba(24, 144, 255, 0.05) !important;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.target-row[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  border-top: 1px solid #91d5ff;\n  border-bottom: 1px solid #91d5ff;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.matched-row[_ngcontent-%COMP%] {\n  background: rgba(82, 196, 26, 0.03);\n}\n/*# sourceMappingURL=training.component.css.map */'] });
+}, dependencies: [CommonModule, NgForOf, NgIf, FormsModule, NgControlStatus, NgModel, NzButtonModule, NzButtonComponent, NzTransitionPatchDirective, NzWaveDirective, NzCardModule, NzCardComponent, NzTagModule, NzTagComponent, NzSpinModule, NzSpinComponent, NzTableModule, NzTableComponent, NzTableCellDirective, NzThMeasureDirective, NzTheadComponent, NzTbodyComponent, NzTrDirective, NzCellAlignDirective, NzCheckboxModule, NzCheckboxComponent, NzModalModule, NzModalComponent, NzModalContentDirective, NzIconModule, NzIconDirective, NzDividerModule, NzDividerComponent, NzBadgeModule, NzBadgeComponent, NzAlertModule, NzAlertComponent, NzSliderModule, NzSliderComponent, NzInputNumberModule, NzInputNumberComponent, NzTooltipModule, NzTooltipDirective, TotButtonComponent, DecimalPipe, DatePipe], styles: ['\n.training-page[_ngcontent-%COMP%] {\n  padding: 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  max-width: 1100px;\n  margin: 0 auto;\n}\n.card-title-icon[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  font-weight: 600;\n  font-size: 15px;\n  gap: 4px;\n}\n.card-actions-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.user-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.user-row[_ngcontent-%COMP%] {\n  cursor: pointer;\n  transition: background 0.15s ease;\n}\n.user-row[_ngcontent-%COMP%]:hover {\n  background: #f0f7ff !important;\n}\n.selected-row[_ngcontent-%COMP%] {\n  background: #e6f4ff !important;\n}\n.user-info[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.user-avatar[_ngcontent-%COMP%] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #d0e9ff;\n}\n.user-avatar-placeholder[_ngcontent-%COMP%] {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff,\n      #096dd9);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 15px;\n}\n.user-name[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 14px;\n  color: #262626;\n}\n.user-email[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #8c8c8c;\n}\n.def-count-label[_ngcontent-%COMP%] {\n  font-size: 12px;\n  color: #595959;\n}\n.training-controls[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.selected-info[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.control-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.training-status-indicator[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.training-running-text[_ngcontent-%COMP%] {\n  color: #1890ff;\n  font-weight: 600;\n  animation: _ngcontent-%COMP%_pulse 1.5s ease-in-out infinite;\n}\n@keyframes _ngcontent-%COMP%_pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n.log-container[_ngcontent-%COMP%] {\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  overflow: hidden;\n  margin-top: 4px;\n}\n.log-header[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border-bottom: 1px solid #d9d9d9;\n  padding: 8px 12px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 13px;\n  color: #595959;\n}\n.done-badge[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.log-panel[_ngcontent-%COMP%] {\n  background: #0d1117;\n  height: 360px;\n  overflow-y: auto;\n  padding: 12px;\n  font-family:\n    "Consolas",\n    "Monaco",\n    "Courier New",\n    monospace;\n  font-size: 12.5px;\n  line-height: 1.7;\n  scroll-behavior: smooth;\n}\n.log-line[_ngcontent-%COMP%] {\n  display: block;\n  word-break: break-all;\n  padding: 1px 0;\n}\n.log-error[_ngcontent-%COMP%] {\n  color: #ff7875;\n}\n.log-warn[_ngcontent-%COMP%] {\n  color: #ffa940;\n}\n.log-success[_ngcontent-%COMP%] {\n  color: #73d13d;\n  font-weight: 600;\n}\n.log-cmd[_ngcontent-%COMP%] {\n  color: #69c0ff;\n  font-style: italic;\n}\n.log-system[_ngcontent-%COMP%] {\n  color: #b37feb;\n}\n.log-info[_ngcontent-%COMP%] {\n  color: #e6e6e6;\n}\n.folders-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.empty-state[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 28px 0;\n}\n.section-card[_ngcontent-%COMP%] {\n  border-radius: 12px;\n  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);\n  border: 1px solid #f0f0f0;\n}\n.embeddings-table[_ngcontent-%COMP%] {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.emb-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.emb-item[_ngcontent-%COMP%] {\n  background: rgba(255, 255, 255, 0.6);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid #e8e8e8;\n  border-radius: 8px;\n  padding: 10px 12px;\n  transition: all 0.2s ease;\n}\n.emb-item[_ngcontent-%COMP%]:hover {\n  border-color: #1890ff;\n  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);\n}\n.emb-meta[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 6px;\n  font-size: 11px;\n}\n.emb-date[_ngcontent-%COMP%] {\n  color: #8c8c8c;\n}\n.emb-model[_ngcontent-%COMP%] {\n  color: #595959;\n  background: #f5f5f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n  font-family: monospace;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  max-width: 250px;\n}\n.emb-vector-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n}\n.vector-preview[_ngcontent-%COMP%] {\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.emb-buttons[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 6px;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: #f9f9f9;\n  padding: 1px 4px;\n  border-radius: 3px;\n  font-size: 10.5px;\n}\n.compare-modal-content[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.target-user-card[_ngcontent-%COMP%] {\n  background: #f0f7ff;\n  border: 1px solid #bae7ff;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.card-label[_ngcontent-%COMP%] {\n  font-size: 11.5px;\n  color: #0050b3;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.user-profile-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n}\n.user-avatar.large[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  border: 2.5px solid #1890ff;\n}\n.user-avatar-placeholder.large[_ngcontent-%COMP%] {\n  width: 52px;\n  height: 52px;\n  font-size: 20px;\n}\n.user-name-large[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 16px;\n  color: #002c8c;\n}\n.user-email-large[_ngcontent-%COMP%] {\n  font-size: 13px;\n  color: #595959;\n}\n.threshold-panel[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.slider-label[_ngcontent-%COMP%] {\n  display: flex;\n  justify-content: space-between;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 6px;\n}\n.slider-control-row[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n}\n.image-upload-workspace[_ngcontent-%COMP%] {\n  display: flex;\n  gap: 16px;\n}\n.workspace-col[_ngcontent-%COMP%] {\n  flex: 1;\n  display: flex;\n}\n.upload-zone[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 140px;\n  border: 2px dashed #1890ff;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  padding: 16px;\n}\n.upload-zone[_ngcontent-%COMP%]:hover {\n  background: #e6f7ff;\n  border-color: #096dd9;\n}\n.upload-text[_ngcontent-%COMP%] {\n  font-weight: 600;\n  color: #262626;\n  margin-top: 8px;\n  font-size: 13px;\n}\n.upload-hint[_ngcontent-%COMP%] {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 4px;\n  text-align: center;\n}\n.preview-box[_ngcontent-%COMP%] {\n  width: 100%;\n  height: 140px;\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n}\n.no-preview[_ngcontent-%COMP%] {\n  text-align: center;\n  color: #bfbfbf;\n  font-size: 12px;\n}\n.no-preview[_ngcontent-%COMP%]   div[_ngcontent-%COMP%] {\n  margin-top: 6px;\n}\n.aligned-preview[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n}\n.aligned-img[_ngcontent-%COMP%] {\n  width: 90px;\n  height: 90px;\n  border-radius: 8px;\n  border: 2px solid #52c41a;\n  object-fit: cover;\n}\n.aligned-label[_ngcontent-%COMP%] {\n  font-size: 10.5px;\n  color: #52c41a;\n  font-weight: 600;\n}\n.loading-container[_ngcontent-%COMP%] {\n  text-align: center;\n  padding: 24px 0;\n}\n.loading-msg[_ngcontent-%COMP%] {\n  margin-top: 10px;\n  color: #1890ff;\n  font-weight: 600;\n}\n.best-match-banner[_ngcontent-%COMP%] {\n  background: #fff2f0;\n  border: 1px solid #ffccc7;\n  border-radius: 8px;\n  padding: 12px 16px;\n  display: flex;\n  gap: 12px;\n}\n.best-match-banner.matched[_ngcontent-%COMP%] {\n  background: #f6ffed;\n  border: 1px solid #b7eb8f;\n}\n.banner-icon[_ngcontent-%COMP%] {\n  font-size: 24px;\n  color: #ff4d4f;\n  margin-top: 2px;\n}\n.best-match-banner.matched[_ngcontent-%COMP%]   .banner-icon[_ngcontent-%COMP%] {\n  color: #52c41a;\n}\n.banner-title[_ngcontent-%COMP%] {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #d32029;\n}\n.best-match-banner.matched[_ngcontent-%COMP%]   .banner-title[_ngcontent-%COMP%] {\n  color: #389e0d;\n}\n.banner-desc[_ngcontent-%COMP%] {\n  font-size: 12.5px;\n  color: #595959;\n  margin-top: 4px;\n}\n.section-sub-title[_ngcontent-%COMP%] {\n  font-weight: 600;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 8px;\n}\n.ranking-table[_ngcontent-%COMP%] {\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  overflow: hidden;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.target-row[_ngcontent-%COMP%] {\n  background: rgba(24, 144, 255, 0.05) !important;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.target-row[_ngcontent-%COMP%]   td[_ngcontent-%COMP%] {\n  border-top: 1px solid #91d5ff;\n  border-bottom: 1px solid #91d5ff;\n}\n.ranking-table[_ngcontent-%COMP%]   tr.matched-row[_ngcontent-%COMP%] {\n  background: rgba(82, 196, 26, 0.03);\n}\n.defined-face-wrapper[_ngcontent-%COMP%] {\n  position: relative;\n  display: inline-block;\n}\n.defined-face-thumbnail[_ngcontent-%COMP%] {\n  transition: all 0.2s ease;\n}\n.defined-face-wrapper[_ngcontent-%COMP%]:hover   .defined-face-thumbnail[_ngcontent-%COMP%] {\n  border-color: #ff4d4f;\n  transform: scale(1.05);\n}\n.delete-face-btn[_ngcontent-%COMP%] {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  width: 16px;\n  height: 16px;\n  background: #ff4d4f;\n  color: white;\n  border-radius: 50%;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  font-size: 10px;\n  cursor: pointer;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);\n  opacity: 0;\n  transition: opacity 0.2s ease;\n  z-index: 10;\n}\n.defined-face-wrapper[_ngcontent-%COMP%]:hover   .delete-face-btn[_ngcontent-%COMP%] {\n  opacity: 1;\n}\n.delete-face-btn[_ngcontent-%COMP%]:hover {\n  background: #d32029;\n  transform: scale(1.1);\n}\n/*# sourceMappingURL=training.component.css.map */'] });
 var TrainingComponent = _TrainingComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(TrainingComponent, [{
@@ -8239,11 +8262,16 @@ var TrainingComponent = _TrainingComponent;
               </div>
             </td>
             <td>
-              <div class="defined-faces-list" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <div *ngFor="let faceUrl of user.faceUrls" class="defined-face-thumbnail" style="width: 38px; height: 38px; border-radius: 4px; overflow: hidden; border: 1.5px solid #d9d9d9; background: #fafafa; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
-                  <img [src]="faceUrl" alt="Face" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/38x38?text=Face'" />
+              <div class="defined-faces-list" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <div *ngFor="let def of user.definitions" class="defined-face-wrapper" (click)="$event.stopPropagation()">
+                  <div class="defined-face-thumbnail" style="width: 46px; height: 46px; border-radius: 6px; overflow: hidden; border: 1.5px solid #d9d9d9; background: #fafafa; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+                    <img [src]="def.originalImageUrl" alt="Face" style="width: 100%; height: 100%; object-fit: cover;" onerror="this.src='https://placehold.co/46x46?text=Face'" />
+                  </div>
+                  <div class="delete-face-btn" (click)="deleteUserFaceDefinition(def.definitionId, user, $event)" nz-tooltip nzTooltipTitle="G\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a">
+                    <span nz-icon nzType="close"></span>
+                  </div>
                 </div>
-                <div *ngIf="!user.faceUrls || user.faceUrls.length === 0" style="color: #bbb; font-size: 12px; font-style: italic;">
+                <div *ngIf="!user.definitions || user.definitions.length === 0" style="color: #bbb; font-size: 12px; font-style: italic;">
                   Kh\xF4ng c\xF3 \u1EA3nh
                 </div>
               </div>
@@ -8639,7 +8667,7 @@ var TrainingComponent = _TrainingComponent;
   </nz-modal>
 
 </div>
-`, styles: ['/* projects/tot/nhan-dien-khuon-mat/src/lib/training/training.component.css */\n.training-page {\n  padding: 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  max-width: 1100px;\n  margin: 0 auto;\n}\n.card-title-icon {\n  display: flex;\n  align-items: center;\n  font-weight: 600;\n  font-size: 15px;\n  gap: 4px;\n}\n.card-actions-row {\n  display: flex;\n  align-items: center;\n}\n.user-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.user-row {\n  cursor: pointer;\n  transition: background 0.15s ease;\n}\n.user-row:hover {\n  background: #f0f7ff !important;\n}\n.selected-row {\n  background: #e6f4ff !important;\n}\n.user-info {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.user-avatar {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #d0e9ff;\n}\n.user-avatar-placeholder {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff,\n      #096dd9);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 15px;\n}\n.user-name {\n  font-weight: 600;\n  font-size: 14px;\n  color: #262626;\n}\n.user-email {\n  font-size: 12px;\n  color: #8c8c8c;\n}\n.def-count-label {\n  font-size: 12px;\n  color: #595959;\n}\n.training-controls {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.selected-info {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.control-buttons {\n  display: flex;\n  align-items: center;\n}\n.training-status-indicator {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.training-running-text {\n  color: #1890ff;\n  font-weight: 600;\n  animation: pulse 1.5s ease-in-out infinite;\n}\n@keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n.log-container {\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  overflow: hidden;\n  margin-top: 4px;\n}\n.log-header {\n  background: #fafafa;\n  border-bottom: 1px solid #d9d9d9;\n  padding: 8px 12px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 13px;\n  color: #595959;\n}\n.done-badge {\n  display: flex;\n  align-items: center;\n}\n.log-panel {\n  background: #0d1117;\n  height: 360px;\n  overflow-y: auto;\n  padding: 12px;\n  font-family:\n    "Consolas",\n    "Monaco",\n    "Courier New",\n    monospace;\n  font-size: 12.5px;\n  line-height: 1.7;\n  scroll-behavior: smooth;\n}\n.log-line {\n  display: block;\n  word-break: break-all;\n  padding: 1px 0;\n}\n.log-error {\n  color: #ff7875;\n}\n.log-warn {\n  color: #ffa940;\n}\n.log-success {\n  color: #73d13d;\n  font-weight: 600;\n}\n.log-cmd {\n  color: #69c0ff;\n  font-style: italic;\n}\n.log-system {\n  color: #b37feb;\n}\n.log-info {\n  color: #e6e6e6;\n}\n.folders-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.empty-state {\n  text-align: center;\n  padding: 28px 0;\n}\n.section-card {\n  border-radius: 12px;\n  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);\n  border: 1px solid #f0f0f0;\n}\n.embeddings-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.emb-list {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.emb-item {\n  background: rgba(255, 255, 255, 0.6);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid #e8e8e8;\n  border-radius: 8px;\n  padding: 10px 12px;\n  transition: all 0.2s ease;\n}\n.emb-item:hover {\n  border-color: #1890ff;\n  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);\n}\n.emb-meta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 6px;\n  font-size: 11px;\n}\n.emb-date {\n  color: #8c8c8c;\n}\n.emb-model {\n  color: #595959;\n  background: #f5f5f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n  font-family: monospace;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  max-width: 250px;\n}\n.emb-vector-row {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n}\n.vector-preview {\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.emb-buttons {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 6px;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path code {\n  background: #f9f9f9;\n  padding: 1px 4px;\n  border-radius: 3px;\n  font-size: 10.5px;\n}\n.compare-modal-content {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.target-user-card {\n  background: #f0f7ff;\n  border: 1px solid #bae7ff;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.card-label {\n  font-size: 11.5px;\n  color: #0050b3;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.user-profile-row {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n}\n.user-avatar.large {\n  width: 52px;\n  height: 52px;\n  border: 2.5px solid #1890ff;\n}\n.user-avatar-placeholder.large {\n  width: 52px;\n  height: 52px;\n  font-size: 20px;\n}\n.user-name-large {\n  font-weight: 700;\n  font-size: 16px;\n  color: #002c8c;\n}\n.user-email-large {\n  font-size: 13px;\n  color: #595959;\n}\n.threshold-panel {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.slider-label {\n  display: flex;\n  justify-content: space-between;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 6px;\n}\n.slider-control-row {\n  display: flex;\n  align-items: center;\n}\n.image-upload-workspace {\n  display: flex;\n  gap: 16px;\n}\n.workspace-col {\n  flex: 1;\n  display: flex;\n}\n.upload-zone {\n  width: 100%;\n  height: 140px;\n  border: 2px dashed #1890ff;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  padding: 16px;\n}\n.upload-zone:hover {\n  background: #e6f7ff;\n  border-color: #096dd9;\n}\n.upload-text {\n  font-weight: 600;\n  color: #262626;\n  margin-top: 8px;\n  font-size: 13px;\n}\n.upload-hint {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 4px;\n  text-align: center;\n}\n.preview-box {\n  width: 100%;\n  height: 140px;\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n}\n.no-preview {\n  text-align: center;\n  color: #bfbfbf;\n  font-size: 12px;\n}\n.no-preview div {\n  margin-top: 6px;\n}\n.aligned-preview {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n}\n.aligned-img {\n  width: 90px;\n  height: 90px;\n  border-radius: 8px;\n  border: 2px solid #52c41a;\n  object-fit: cover;\n}\n.aligned-label {\n  font-size: 10.5px;\n  color: #52c41a;\n  font-weight: 600;\n}\n.loading-container {\n  text-align: center;\n  padding: 24px 0;\n}\n.loading-msg {\n  margin-top: 10px;\n  color: #1890ff;\n  font-weight: 600;\n}\n.best-match-banner {\n  background: #fff2f0;\n  border: 1px solid #ffccc7;\n  border-radius: 8px;\n  padding: 12px 16px;\n  display: flex;\n  gap: 12px;\n}\n.best-match-banner.matched {\n  background: #f6ffed;\n  border: 1px solid #b7eb8f;\n}\n.banner-icon {\n  font-size: 24px;\n  color: #ff4d4f;\n  margin-top: 2px;\n}\n.best-match-banner.matched .banner-icon {\n  color: #52c41a;\n}\n.banner-title {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #d32029;\n}\n.best-match-banner.matched .banner-title {\n  color: #389e0d;\n}\n.banner-desc {\n  font-size: 12.5px;\n  color: #595959;\n  margin-top: 4px;\n}\n.section-sub-title {\n  font-weight: 600;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 8px;\n}\n.ranking-table {\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  overflow: hidden;\n}\n.ranking-table tr.target-row {\n  background: rgba(24, 144, 255, 0.05) !important;\n}\n.ranking-table tr.target-row td {\n  border-top: 1px solid #91d5ff;\n  border-bottom: 1px solid #91d5ff;\n}\n.ranking-table tr.matched-row {\n  background: rgba(82, 196, 26, 0.03);\n}\n/*# sourceMappingURL=training.component.css.map */\n'] }]
+`, styles: ['/* projects/tot/nhan-dien-khuon-mat/src/lib/training/training.component.css */\n.training-page {\n  padding: 24px;\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  max-width: 1100px;\n  margin: 0 auto;\n}\n.card-title-icon {\n  display: flex;\n  align-items: center;\n  font-weight: 600;\n  font-size: 15px;\n  gap: 4px;\n}\n.card-actions-row {\n  display: flex;\n  align-items: center;\n}\n.user-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.user-row {\n  cursor: pointer;\n  transition: background 0.15s ease;\n}\n.user-row:hover {\n  background: #f0f7ff !important;\n}\n.selected-row {\n  background: #e6f4ff !important;\n}\n.user-info {\n  display: flex;\n  align-items: center;\n  gap: 10px;\n}\n.user-avatar {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  object-fit: cover;\n  border: 2px solid #d0e9ff;\n}\n.user-avatar-placeholder {\n  width: 36px;\n  height: 36px;\n  border-radius: 50%;\n  background:\n    linear-gradient(\n      135deg,\n      #1890ff,\n      #096dd9);\n  color: white;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  font-weight: 700;\n  font-size: 15px;\n}\n.user-name {\n  font-weight: 600;\n  font-size: 14px;\n  color: #262626;\n}\n.user-email {\n  font-size: 12px;\n  color: #8c8c8c;\n}\n.def-count-label {\n  font-size: 12px;\n  color: #595959;\n}\n.training-controls {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  flex-wrap: wrap;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.selected-info {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n}\n.control-buttons {\n  display: flex;\n  align-items: center;\n}\n.training-status-indicator {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n}\n.training-running-text {\n  color: #1890ff;\n  font-weight: 600;\n  animation: pulse 1.5s ease-in-out infinite;\n}\n@keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.4;\n  }\n}\n.log-container {\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  overflow: hidden;\n  margin-top: 4px;\n}\n.log-header {\n  background: #fafafa;\n  border-bottom: 1px solid #d9d9d9;\n  padding: 8px 12px;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  font-size: 13px;\n  color: #595959;\n}\n.done-badge {\n  display: flex;\n  align-items: center;\n}\n.log-panel {\n  background: #0d1117;\n  height: 360px;\n  overflow-y: auto;\n  padding: 12px;\n  font-family:\n    "Consolas",\n    "Monaco",\n    "Courier New",\n    monospace;\n  font-size: 12.5px;\n  line-height: 1.7;\n  scroll-behavior: smooth;\n}\n.log-line {\n  display: block;\n  word-break: break-all;\n  padding: 1px 0;\n}\n.log-error {\n  color: #ff7875;\n}\n.log-warn {\n  color: #ffa940;\n}\n.log-success {\n  color: #73d13d;\n  font-weight: 600;\n}\n.log-cmd {\n  color: #69c0ff;\n  font-style: italic;\n}\n.log-system {\n  color: #b37feb;\n}\n.log-info {\n  color: #e6e6e6;\n}\n.folders-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.empty-state {\n  text-align: center;\n  padding: 28px 0;\n}\n.section-card {\n  border-radius: 12px;\n  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);\n  border: 1px solid #f0f0f0;\n}\n.embeddings-table {\n  border-radius: 8px;\n  overflow: hidden;\n}\n.emb-list {\n  display: flex;\n  flex-direction: column;\n  gap: 12px;\n}\n.emb-item {\n  background: rgba(255, 255, 255, 0.6);\n  -webkit-backdrop-filter: blur(8px);\n  backdrop-filter: blur(8px);\n  border: 1px solid #e8e8e8;\n  border-radius: 8px;\n  padding: 10px 12px;\n  transition: all 0.2s ease;\n}\n.emb-item:hover {\n  border-color: #1890ff;\n  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.1);\n}\n.emb-meta {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  margin-bottom: 6px;\n  font-size: 11px;\n}\n.emb-date {\n  color: #8c8c8c;\n}\n.emb-model {\n  color: #595959;\n  background: #f5f5f5;\n  padding: 2px 6px;\n  border-radius: 4px;\n  font-family: monospace;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n  max-width: 250px;\n}\n.emb-vector-row {\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  gap: 16px;\n}\n.vector-preview {\n  font-family:\n    "Consolas",\n    "Courier New",\n    monospace;\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 4px;\n  padding: 4px 8px;\n  font-size: 12px;\n  color: #1f1f1f;\n  flex: 1;\n}\n.emb-buttons {\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 6px;\n  display: flex;\n  align-items: center;\n  gap: 4px;\n}\n.emb-source-path code {\n  background: #f9f9f9;\n  padding: 1px 4px;\n  border-radius: 3px;\n  font-size: 10.5px;\n}\n.compare-modal-content {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n}\n.target-user-card {\n  background: #f0f7ff;\n  border: 1px solid #bae7ff;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.card-label {\n  font-size: 11.5px;\n  color: #0050b3;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.user-profile-row {\n  display: flex;\n  align-items: center;\n  gap: 14px;\n}\n.user-avatar.large {\n  width: 52px;\n  height: 52px;\n  border: 2.5px solid #1890ff;\n}\n.user-avatar-placeholder.large {\n  width: 52px;\n  height: 52px;\n  font-size: 20px;\n}\n.user-name-large {\n  font-weight: 700;\n  font-size: 16px;\n  color: #002c8c;\n}\n.user-email-large {\n  font-size: 13px;\n  color: #595959;\n}\n.threshold-panel {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  padding: 12px 16px;\n}\n.slider-label {\n  display: flex;\n  justify-content: space-between;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 6px;\n}\n.slider-control-row {\n  display: flex;\n  align-items: center;\n}\n.image-upload-workspace {\n  display: flex;\n  gap: 16px;\n}\n.workspace-col {\n  flex: 1;\n  display: flex;\n}\n.upload-zone {\n  width: 100%;\n  height: 140px;\n  border: 2px dashed #1890ff;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  cursor: pointer;\n  transition: all 0.2s ease;\n  padding: 16px;\n}\n.upload-zone:hover {\n  background: #e6f7ff;\n  border-color: #096dd9;\n}\n.upload-text {\n  font-weight: 600;\n  color: #262626;\n  margin-top: 8px;\n  font-size: 13px;\n}\n.upload-hint {\n  font-size: 11px;\n  color: #8c8c8c;\n  margin-top: 4px;\n  text-align: center;\n}\n.preview-box {\n  width: 100%;\n  height: 140px;\n  border: 1px solid #d9d9d9;\n  border-radius: 8px;\n  background: #fafafa;\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  overflow: hidden;\n}\n.no-preview {\n  text-align: center;\n  color: #bfbfbf;\n  font-size: 12px;\n}\n.no-preview div {\n  margin-top: 6px;\n}\n.aligned-preview {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  justify-content: center;\n  gap: 6px;\n}\n.aligned-img {\n  width: 90px;\n  height: 90px;\n  border-radius: 8px;\n  border: 2px solid #52c41a;\n  object-fit: cover;\n}\n.aligned-label {\n  font-size: 10.5px;\n  color: #52c41a;\n  font-weight: 600;\n}\n.loading-container {\n  text-align: center;\n  padding: 24px 0;\n}\n.loading-msg {\n  margin-top: 10px;\n  color: #1890ff;\n  font-weight: 600;\n}\n.best-match-banner {\n  background: #fff2f0;\n  border: 1px solid #ffccc7;\n  border-radius: 8px;\n  padding: 12px 16px;\n  display: flex;\n  gap: 12px;\n}\n.best-match-banner.matched {\n  background: #f6ffed;\n  border: 1px solid #b7eb8f;\n}\n.banner-icon {\n  font-size: 24px;\n  color: #ff4d4f;\n  margin-top: 2px;\n}\n.best-match-banner.matched .banner-icon {\n  color: #52c41a;\n}\n.banner-title {\n  font-weight: 700;\n  font-size: 14.5px;\n  color: #d32029;\n}\n.best-match-banner.matched .banner-title {\n  color: #389e0d;\n}\n.banner-desc {\n  font-size: 12.5px;\n  color: #595959;\n  margin-top: 4px;\n}\n.section-sub-title {\n  font-weight: 600;\n  font-size: 13px;\n  color: #262626;\n  margin-bottom: 8px;\n}\n.ranking-table {\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  overflow: hidden;\n}\n.ranking-table tr.target-row {\n  background: rgba(24, 144, 255, 0.05) !important;\n}\n.ranking-table tr.target-row td {\n  border-top: 1px solid #91d5ff;\n  border-bottom: 1px solid #91d5ff;\n}\n.ranking-table tr.matched-row {\n  background: rgba(82, 196, 26, 0.03);\n}\n.defined-face-wrapper {\n  position: relative;\n  display: inline-block;\n}\n.defined-face-thumbnail {\n  transition: all 0.2s ease;\n}\n.defined-face-wrapper:hover .defined-face-thumbnail {\n  border-color: #ff4d4f;\n  transform: scale(1.05);\n}\n.delete-face-btn {\n  position: absolute;\n  top: -4px;\n  right: -4px;\n  width: 16px;\n  height: 16px;\n  background: #ff4d4f;\n  color: white;\n  border-radius: 50%;\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  font-size: 10px;\n  cursor: pointer;\n  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);\n  opacity: 0;\n  transition: opacity 0.2s ease;\n  z-index: 10;\n}\n.defined-face-wrapper:hover .delete-face-btn {\n  opacity: 1;\n}\n.delete-face-btn:hover {\n  background: #d32029;\n  transform: scale(1.1);\n}\n/*# sourceMappingURL=training.component.css.map */\n'] }]
   }], null, null);
 })();
 (() => {
@@ -9965,4 +9993,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-OWE6MULV.js.map
+//# sourceMappingURL=chunk-V7REM6YY.js.map

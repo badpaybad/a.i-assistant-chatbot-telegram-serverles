@@ -232,15 +232,12 @@
       [pageSize]="5"
     >
       <ng-template totCell="fileName" let-data>
-        <span style="font-weight: 500; color: #262626;">{{ data.fileName }}</span>
-      </ng-template>
-
-      <ng-template totCell="imagePreview" let-data>
-        <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
+         <div style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; border: 1px solid #f0f0f0; background: #fafafa; display: flex; justify-content: center; align-items: center;">
           <img [src]="data.url" alt="preview" style="max-width: 100%; max-height: 100%; object-fit: contain;">
         </div>
-      </ng-template>
 
+        <span style="font-weight: 500; color: #262626;">{{ data.fileName }}</span>
+      </ng-template>
       <ng-template totCell="action" let-data>
         <div style="display: flex; align-items: center; gap: 12px;">
           <!-- Autocomplete user -->

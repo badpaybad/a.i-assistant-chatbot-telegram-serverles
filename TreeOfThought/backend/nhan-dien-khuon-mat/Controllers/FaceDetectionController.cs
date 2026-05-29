@@ -530,6 +530,7 @@ public class FaceDetectionController : BaseController
             .Select(i => new
             {
                 i.Id,
+                i.Url,
                 CroppedFaces = i.CroppedFaces.Select(c => new
                 {
                     c.Id,
@@ -548,7 +549,19 @@ public class FaceDetectionController : BaseController
             var userDefs = definitions.Where(d => d.UserId == u.Id).ToList();
             var userImageIds = userDefs.Select(d => d.OriginalImageId).ToList();
             var userImages = images.Where(i => userImageIds.Contains(i.Id)).ToList();
-            var faceUrls = userImages.SelectMany(i => i.CroppedFaces.Select(c => c.Url)).Distinct().ToList();
+
+            var defs = userDefs.Select(d =>
+            {
+                var img = userImages.FirstOrDefault(i => i.Id == d.OriginalImageId);
+                return new
+                {
+                    DefinitionId = d.Id,
+                    OriginalImageId = d.OriginalImageId,
+                    OriginalImageUrl = img?.Url
+                };
+            })
+            .Where(x => x.OriginalImageUrl != null)
+            .ToList();
 
             return new
             {
@@ -557,8 +570,8 @@ public class FaceDetectionController : BaseController
                 u.DisplayName,
                 u.Email,
                 u.AvatarUrl,
-                DefinitionCount = userDefs.Count,
-                FaceUrls = faceUrls
+                DefinitionCount = defs.Count,
+                Definitions = defs
             };
         }).OrderBy(u => u.DisplayName).ToList();
 

@@ -526,3 +526,48 @@
 .ranking-table tr.matched-row {
   background: rgba(82, 196, 26, 0.03);
 }
+
+/* === Hover Delete Face Definition thumbnail === */
+.defined-face-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.defined-face-thumbnail {
+  transition: all 0.2s ease;
+}
+
+.defined-face-wrapper:hover .defined-face-thumbnail {
+  border-color: #ff4d4f;
+  transform: scale(1.05);
+}
+
+.delete-face-btn {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 16px;
+  height: 16px;
+  background: #ff4d4f;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.defined-face-wrapper:hover .delete-face-btn {
+  opacity: 1;
+}
+
+.delete-face-btn:hover {
+  background: #d32029;
+  transform: scale(1.1);
+}
+
