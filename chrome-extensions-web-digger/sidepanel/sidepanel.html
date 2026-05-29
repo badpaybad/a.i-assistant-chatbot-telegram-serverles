@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Web Digger</title>
+  <!-- Google Fonts Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- Config Section (Header) -->
+    <header class="config-header" id="config-header">
+      <div class="header-summary" id="header-summary">
+        <div class="logo-area">
+          <span class="logo-icon">🤖</span>
+          <span class="logo-text">Gemini Web Digger</span>
+        </div>
+        <button class="toggle-btn" id="toggle-config-btn" aria-label="Hiện thiết lập">⚙️ Cấu hình</button>
+      </div>
+      
+      <!-- Collapsible Panel for settings -->
+      <div class="config-panel collapsed" id="config-panel">
+        <div class="form-group">
+          <label for="api-key-input">Gemini API Key</label>
+          <div class="password-wrapper">
+            <input type="password" id="api-key-input" placeholder="Nhập AIzaSy..." autocomplete="off">
+            <button type="button" class="eye-btn" id="toggle-password-btn" aria-label="Hiện mật khẩu">👁️</button>
+          </div>
+          <small class="help-text">Nhận API Key miễn phí tại <a href="https://aistudio.google.com/" target="_blank">Google AI Studio</a></small>
+        </div>
+        
+        <div class="form-group">
+          <label for="model-select">Mô hình (Model Name)</label>
+          <select id="model-select">
+            <option value="gemini-2.5-flash" selected>gemini-2.5-flash (Nhanh & Tối ưu)</option>
+            <option value="gemini-2.5-pro">gemini-2.5-pro (Thông minh & Lập luận tốt)</option>
+            <option value="custom">-- Tự nhập mô hình khác --</option>
+          </select>
+          <input type="text" id="custom-model-input" class="hidden" placeholder="Ví dụ: gemini-2.0-flash-exp">
+        </div>
+        
+        <div class="form-group">
+          <label for="max-messages-input">Số lượng tin nhắn lưu trữ tối đa</label>
+          <input type="number" id="max-messages-input" min="10" max="1000" value="100" step="10">
+          <small class="help-text">Giới hạn số tin nhắn hội thoại gần nhất được lưu và gửi cho AI.</small>
+        </div>
+        
+        <button type="button" class="save-btn" id="save-config-btn">Lưu & Khởi tạo</button>
+        <div class="save-status hidden" id="save-status">Đã lưu cấu hình!</div>
+      </div>
+    </header>
+
+    <!-- Tab Change Warning Banner -->
+    <div class="tab-warning-banner hidden" id="tab-warning-banner" role="alert">
+      <div class="tab-warning-content">
+        <span class="tab-warning-icon">⚠️</span>
+        <div class="tab-warning-text">
+          <strong>Bạn vừa chuyển sang tab khác!</strong>
+          <span id="tab-warning-detail">Cuộc trò chuyện đang gắn với tab trước. Các lệnh của AI sẽ tác động lên tab đó.</span>
+        </div>
+        <div class="tab-warning-actions">
+          <button class="tab-warning-btn tab-switch-btn" id="tab-switch-btn" title="Chuyển lại tab cũ">🔙 Tab cũ</button>
+          <button class="tab-warning-btn tab-dismiss-btn" id="tab-dismiss-btn" title="Đóng cảnh báo">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat History Area -->
+    <main class="chat-area" id="chat-area">
+      <div class="chat-history" id="chat-history">
+        <!-- Welcome message -->
+        <div class="welcome-box" id="welcome-box">
+          <div class="welcome-icon">🔮</div>
+          <h2>Trợ lý AI Duyệt Web</h2>
+          <p>Xin chào! Tôi có thể hỗ trợ bạn trò chuyện, đọc nội dung và trực tiếp tương tác với các thành phần trên website này.</p>
+          <div class="features-list">
+            <div class="feature-item">
+              <span class="feature-bullet">🔍</span>
+              <span><strong>Đọc & Tóm tắt:</strong> Đọc nội dung bài viết, phân tích dữ liệu trang.</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-bullet">✍️</span>
+              <span><strong>Điền dữ liệu:</strong> Tự động nhập thông tin vào các ô input, form.</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-bullet">🖱️</span>
+              <span><strong>Nhấn nút:</strong> Click chuột vào các button, link hoặc thực thi form.</span>
+            </div>
+          </div>
+          <div class="status-warning" id="api-status-warning">
+            ⚠️ Vui lòng nhấp vào nút <strong>Cấu hình (⚙️)</strong> ở trên để nhập API Key trước khi bắt đầu.
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Visual Activity Status Pill + Cancel Button -->
+    <div class="action-status-pill hidden" id="action-status-pill">
+      <span class="spinner"></span>
+      <span class="status-text" id="action-status-text">Đang suy nghĩ...</span>
+      <button class="cancel-pill-btn" id="cancel-btn" title="Hủy tiến trình" aria-label="Hủy">
+        ⏹️ Hủy
+      </button>
+    </div>
+
+    <!-- Input Footer Area -->
+    <footer class="input-footer">
+      <div class="input-actions">
+        <button class="action-btn clear-btn" id="clear-chat-btn" title="Xóa lịch sử chat">🗑️ Xóa hội thoại</button>
+        <span class="char-count" id="char-count">100 tin nhắn gần nhất</span>
+      </div>
+      <div class="input-row">
+        <textarea id="chat-input" placeholder="Hỏi tôi về trang web này hoặc ra lệnh điền form..." rows="1" disabled></textarea>
+        <button class="stop-btn hidden" id="stop-btn" aria-label="Dừng AI" title="Dừng AI (Hủy tiến trình)">
+          <svg viewBox="0 0 24 24" class="stop-icon"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+        </button>
+        <button class="send-btn" id="send-chat-btn" disabled aria-label="Gửi tin nhắn">
+          <svg viewBox="0 0 24 24" class="send-icon">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
+          </svg>
+        </button>
+      </div>
+    </footer>
+    
+  </div>
+  
+  <script src="sidepanel.js"></script>
+</body>
+</html>

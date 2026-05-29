@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini Web Digger",
+  "version": "1.0.0",
+  "description": "Trợ lý AI Gemini hỗ trợ chat, đọc nội dung và tương tác trực tiếp với website đang mở.",
+  "permissions": [
+    "sidePanel",
+    "tabs",
+    "scripting",
+    "storage",
+    "debugger"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Mở trợ lý Gemini"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  }
+}
