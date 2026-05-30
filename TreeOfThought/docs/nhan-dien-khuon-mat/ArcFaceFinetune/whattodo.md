@@ -67,3 +67,6 @@ cần đưa một số cấu hình dạng tham số để tinh chỉnh cho từn
     --device auto
 ở c# sau này sẽ connect tới db tạo dữ liệu ra folder và chỉ định --raw_dir --data_dir ... để  gọi process chạy nhiều luồng thành nhiều collection khác nhau cùng 1 lúc, c# cũng có thể đọc stdout để biết được tiến trình các epoch, batch đang chạy và hoàn thành 
 
+**cập nhật 2026-05-30 14:16:16**
+
+đọc TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/thinking.md và bổ xung việc tạo data khi training cần tách ra: 80% data train và  20% data test . xem các gợi ý đẻ tăng chất lượng embeding vector và thực thiện

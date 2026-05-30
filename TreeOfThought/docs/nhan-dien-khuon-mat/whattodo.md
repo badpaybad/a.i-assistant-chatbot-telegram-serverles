@@ -183,3 +183,6 @@ Thêm UI nút reload cache : khi click nút thì reload lại cache dữ liệu 
 **2026-05-30 10:35:35**
 chưa tuân thủ cqrs cần phải sửa để đúng tiêu chuẩn frontend backend
     kiểm tra nếu dispatch dùng được useMemoryMode: false
+
+**2026-05-30 14:35:35**
+tìm các file .onnx tương ứng với TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/face_landmarker.task TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/blaze_face_short_range.tflite download vào TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels rồi viết thêm controller để sử dụng các file onnx đó 

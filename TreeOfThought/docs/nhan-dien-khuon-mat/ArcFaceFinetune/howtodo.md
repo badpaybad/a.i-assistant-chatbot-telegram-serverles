@@ -924,6 +924,72 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 ---
 
+### 5.5. Cơ chế phân tách dữ liệu 80/20 & Chống Quá Khớp (Train/Test Split & Anti-Overfitting)
+
+Để kiểm soát chặt chẽ chất lượng trích xuất đặc trưng và chặn đứng hiện tượng "học vẹt" (overfitting) trên dữ liệu nhỏ, pipeline tự động phân tách dữ liệu thành 2 tập riêng biệt:
+
+1. **Tập Huấn luyện (Train Set - 80%):** Dùng để huấn luyện điều chỉnh trọng số của Backbone ResNet-50 và ArcFace Head.
+2. **Tập Kiểm thử (Test/Val Set - 20%):** Dùng làm dữ liệu độc lập để đánh giá sai số (Validation Loss) và độ chính xác (Validation Accuracy) ở cuối mỗi epoch.
+
+#### A. Kiến trúc và Xử lý dữ liệu
+Trong `main.py`, phân tách được thực hiện tự động bằng bộ chia ngẫu nhiên `torch.utils.data.random_split`:
+```python
+# Tách dữ liệu: 80% data train và 20% data test (validation)
+if len(dataset) >= 5:
+    train_size = int(0.8 * len(dataset))
+    test_size = len(dataset) - train_size
+    train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+else:
+    # Fallback cho tập dữ liệu cực nhỏ (< 5 ảnh) để tránh lỗi chia tập
+    train_dataset = dataset
+    test_dataset = dataset
+```
+
+#### B. Chiến lược checkpoint dựa trên Validation Loss
+*   Hệ thống không lưu mô hình dựa trên epoch cuối cùng hay loss trên tập train (dễ bị quá khớp).
+*   **Best Loss Checkpoint (`arcface_model_best.onnx`)** được theo dõi và ghi nhận hoàn toàn dựa trên **Validation Loss nhỏ nhất trên tập Test (20%)**:
+    ```python
+    if epoch_val_loss < best_loss:
+        best_loss = epoch_val_loss
+        best_epoch = epoch + 1
+        best_model_state = copy.deepcopy(backbone.state_dict())
+    ```
+*   Điều này đảm bảo mô hình ONNX xuất ra có độ tổng quát hóa cao nhất, nhận diện cực kỳ tốt trên các ảnh chụp thực tế ở góc nghiêng hay khoảng cách xa chưa từng xuất hiện trong tập train.
+
+---
+
+### 5.6. Kỹ thuật Đóng băng/Mở khóa Trọng số Tự động (Continuous Dynamic Weight Freezing)
+
+Tinh chỉnh một mạng lớn như ResNet-50 trên tập dữ liệu nhỏ của doanh nghiệp có nguy cơ cao làm hỏng các đặc trưng đại thể ban đầu (Catastrophic Forgetting). Để tối ưu chất lượng trích xuất đặc trưng cho người Việt Nam từ 2 - 100 tuổi, hệ thống áp dụng kỹ thuật **Huấn luyện theo Giai đoạn (Multi-stage Training)**:
+
+```mermaid
+graph TD
+    A[Bắt đầu Train Epoch 1 - 5] --> B[Đóng băng Convolutional Layers]
+    B --> C[Chỉ huấn luyện Fully Connected FC Head]
+    C --> D[Mô hình làm quen với nhãn lớp mới]
+    
+    D --> E[Bắt đầu Epoch 6 trở đi]
+    E --> F[Mở khóa toàn bộ mạng Unfreeze]
+    F --> G[Tinh chỉnh nhẹ nhàng với Learning Rate cực nhỏ]
+```
+
+#### Chi tiết cách triển khai trong PyTorch:
+*   **Giai đoạn 1 (Epoch 1 - 5):** Khóa tất cả các lớp tích chập Convolutional Layers của mạng ResNet-50, chỉ cho phép luồng Gradient chạy qua lớp Fully Connected (`fc` layer) và lớp ArcFace Head:
+    ```python
+    for name, param in backbone.backbone.named_parameters():
+        if "fc" not in name:
+            param.requires_grad = False
+    ```
+    *Ý nghĩa:* Giúp giữ nguyên các đặc trưng trích xuất mắt, mũi, miệng đại thể của mô hình gốc, tránh bị méo mó trọng số trong những epoch đầu tiên khi sai số còn rất lớn.
+*   **Giai đoạn 2 (Epoch 6 trở đi):** Giải phóng toàn bộ các tầng mạng để tinh chỉnh sâu:
+    ```python
+    for param in backbone.parameters():
+        param.requires_grad = True
+    ```
+    *Ý nghĩa:* Cho phép toàn bộ mạng nơ-ron học nhẹ nhàng các đặc trưng vi mô của người Việt (nếp mí mắt, nốt ruồi, sẹo nhỏ) mà không làm hỏng cấu trúc tổng quát của mô hình.
+
+---
+
 ## 6. Sơ đồ Tích hợp Doanh nghiệp: Python (Train) -> C# (Trích xuất) -> Postgres (So khớp)
 
 Dưới đây là thiết kế chi tiết luồng tích hợp hoàn chỉnh theo nhu cầu nghiệp vụ cốt lõi của dự án:

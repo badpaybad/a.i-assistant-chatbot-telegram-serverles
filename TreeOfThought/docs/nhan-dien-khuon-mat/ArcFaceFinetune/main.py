@@ -15,8 +15,8 @@ if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
 def parse_args():
     parser = argparse.ArgumentParser(description="Tinh chỉnh mô hình ArcFace với các tham số dòng lệnh.")
     parser.add_argument("--epochs", type=int, default=100, help="Số lượng Epochs huấn luyện (mặc định: 100)")
-    parser.add_argument("--batch_size", type=int, default=8, help="Kích thước Batch size (mặc định: 8)")
-    parser.add_argument("--learning_rate", type=float, default=0.0001, help="Tốc độ học Learning Rate (mặc định: 0.0001)")
+    parser.add_argument("--batch_size", type=int, default=16, help="Kích thước Batch size (mặc định: 16)")
+    parser.add_argument("--learning_rate", type=float, default=0.00005, help="Tốc độ học Learning Rate (mặc định: 0.00005)")
     parser.add_argument("--align_mode", type=str, default="advanced", choices=["standard", "advanced"], help="Chế độ căn chỉnh khuôn mặt (mặc định: advanced)")
     parser.add_argument("--raw_dir", type=str, default="./dataraw", help="Thư mục chứa ảnh thô (mặc định: ./dataraw)")
     parser.add_argument("--data_dir", type=str, default="./data", help="Thư mục chứa ảnh đã căn chỉnh (mặc định: ./data)")
@@ -797,13 +797,27 @@ def main():
     
     print(f"[+] Số lượng danh tính tìm thấy để Fine-tune: {num_classes}")
     print(f"[+] Danh sách nhãn lớp: {dataset.classes}")
-    print(f"[+] Tổng số lượng ảnh huấn luyện: {len(dataset)}")
+    print(f"[+] Tổng số lượng ảnh thu thập: {len(dataset)}")
 
     if len(dataset) == 0:
         print("[-] Lỗi: Không tìm thấy tệp ảnh nào trong thư mục data!")
         return
 
-    dataloader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
+    # Tách dữ liệu: 80% data train và 20% data test (validation)
+    if len(dataset) >= 5:
+        train_size = int(0.8 * len(dataset))
+        test_size = len(dataset) - train_size
+        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    else:
+        # Nếu dữ liệu quá nhỏ, dùng toàn bộ cho cả hai
+        train_dataset = dataset
+        test_dataset = dataset
+
+    print(f"[+] Số lượng ảnh huấn luyện (Train - 80%): {len(train_dataset)}")
+    print(f"[+] Số lượng ảnh kiểm thử (Test/Val - 20%): {len(test_dataset)}")
+
+    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
+    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=False)
 
     # Bước 4: Khởi tạo mạng Backbone ResNet-50 ArcFace và ArcFace Head
     pretrained_path = PRETRAINED_MODEL_PATH if has_pretrained else None
@@ -826,15 +840,29 @@ def main():
     best_epoch = -1
 
     print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}]...")
-    backbone.train()
-    arcface_head.train()
     
     for epoch in range(EPOCHS):
+        # --- CHIẾN LƯỢC ĐÓNG BĂNG/MỞ KHÓA TRỌNG SỐ (WEIGHT FREEZING) ---
+        # Giai đoạn 1 (Epoch 1 - 5): Đóng băng Conv Layers, chỉ train FC Head
+        # Giai đoạn 2 (Epoch 6 trở đi): Mở khóa toàn bộ mạng
+        if epoch < 5:
+            for name, param in backbone.backbone.named_parameters():
+                if "fc" not in name:
+                    param.requires_grad = False
+            print(f"[*] [Giai đoạn 1] Epoch {epoch+1}/{EPOCHS}: Đóng băng Convolutional Layers, chỉ huấn luyện Fully Connected Head.")
+        else:
+            for param in backbone.parameters():
+                param.requires_grad = True
+            print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ mạng để tinh chỉnh sâu.")
+
+        # --- BƯỚC HUẤN LUYỆN / TRAINING ---
+        backbone.train()
+        arcface_head.train()
         total_loss = 0.0
         correct = 0
         total = 0
         
-        for batch_idx, (imgs, labels) in enumerate(dataloader):
+        for batch_idx, (imgs, labels) in enumerate(train_dataloader):
             imgs = imgs.to(device)
             labels = labels.to(device)
             
@@ -862,24 +890,48 @@ def main():
             batch_acc = 100.0 * correct_batch / labels.size(0)
             
             # Ghi nhận log tiến trình của batch cho C# parse
-            print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(dataloader)} | Loss: {loss.item():.4f} | Acc: {batch_acc:.2f}%")
+            print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(train_dataloader)} | Loss: {loss.item():.4f} | Acc: {batch_acc:.2f}%")
             sys.stdout.flush()
             
-        epoch_loss = total_loss / len(dataset)
+        epoch_loss = total_loss / len(train_dataset)
         epoch_acc = 100.0 * correct / total
         
-        # Ghi nhận log tiến trình hoàn thành epoch
-        print(f"[EPOCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Loss: {epoch_loss:.4f} | Acc: {epoch_acc:.2f}%")
-        print(f"    Epoch [{epoch+1}/{EPOCHS}] - Loss: {epoch_loss:.4f} - Accuracy: {epoch_acc:.2f}%")
+        # --- BƯỚC KIỂM THỬ / VALIDATION (TEST - 20%) ---
+        backbone.eval()
+        arcface_head.eval()
+        val_loss = 0.0
+        val_correct = 0
+        val_total = 0
+        
+        with torch.no_grad():
+            for val_imgs, val_labels in test_dataloader:
+                val_imgs = val_imgs.to(device)
+                val_labels = val_labels.to(device)
+                
+                val_embeddings = backbone(val_imgs)
+                val_outputs = arcface_head(val_embeddings, val_labels)
+                loss = criterion(val_outputs, val_labels)
+                
+                val_loss += loss.item() * val_imgs.size(0)
+                _, val_predicted = val_outputs.max(1)
+                val_total += val_labels.size(0)
+                val_correct += val_predicted.eq(val_labels).sum().item()
+                
+        epoch_val_loss = val_loss / len(test_dataset)
+        epoch_val_acc = 100.0 * val_correct / val_total
+
+        # Ghi nhận log tiến trình hoàn thành epoch cho C# parse và theo dõi (Tương thích ngược 100% với regex của Backend C#)
+        print(f"[EPOCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Loss: {epoch_val_loss:.4f} | Acc: {epoch_val_acc:.2f}% | Train Loss: {epoch_loss:.4f} | Train Acc: {epoch_acc:.2f}%")
+        print(f"    Epoch [{epoch+1}/{EPOCHS}] - Val Loss (Loss): {epoch_val_loss:.4f} - Val Acc (Acc): {epoch_val_acc:.2f}% | Train Loss: {epoch_loss:.4f} - Train Acc: {epoch_acc:.2f}%")
         sys.stdout.flush()
         
-        # Theo dõi loss tốt nhất để lưu checkpoint
-        if epoch_loss < best_loss:
-            best_loss = epoch_loss
+        # Theo dõi loss kiểm thử (Validation Loss) tốt nhất để lưu checkpoint tránh Overfitting
+        if epoch_val_loss < best_loss:
+            best_loss = epoch_val_loss
             best_epoch = epoch + 1
             best_model_state = copy.deepcopy(backbone.state_dict())
 
-    print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Loss tốt nhất đạt: {best_loss:.4f} ở Epoch {best_epoch}.")
+    print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Validation Loss tốt nhất đạt: {best_loss:.4f} ở Epoch {best_epoch}.")
 
     # Helper function để xuất và kiểm định ONNX (gốc + mobile)
     def export_and_validate(model_to_export, onnx_path, mobile_path, label):
