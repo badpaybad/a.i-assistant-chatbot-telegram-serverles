@@ -657,11 +657,8 @@ class ArcFaceResNet50(nn.Module):
         self.backbone = models.resnet50(weights=None)
         num_features = self.backbone.fc.in_features
         
-        self.backbone.fc = nn.Sequential(
-            nn.BatchNorm1d(num_features),
-            nn.Linear(num_features, embedding_size, bias=False),
-            nn.BatchNorm1d(embedding_size)
-        )
+        # resnet50_arcface.pth được train với cấu trúc fc là 1 lớp Linear duy nhất (2048 -> 512)
+        self.backbone.fc = nn.Linear(num_features, embedding_size)
         
         if pretrained_path and os.path.exists(pretrained_path):
             try:
@@ -671,10 +668,9 @@ class ArcFaceResNet50(nn.Module):
                 else:
                     pretrained_state = checkpoint
                 
-                # Nạp state dict vào backbone. Vì các khóa trong model_state_dict của file resnet50_arcface.pth
-                # đã có sẵn tiền tố "backbone.", chúng ta giữ nguyên để khớp hoàn hảo với cấu trúc của ArcFaceResNet50.
-                self.load_state_dict(pretrained_state, strict=False)
-                print(f"[+] Khởi tạo thành công trọng số ArcFace Pretrained chất lượng cao từ '{pretrained_path}'.")
+                # Nạp state dict vào backbone với strict=True để đảm bảo nạp hoàn hảo toàn bộ 320/320 layers.
+                self.load_state_dict(pretrained_state, strict=True)
+                print(f"[+] Khởi tạo thành công và NẠP ĐẦY ĐỦ trọng số ArcFace Pretrained chất lượng cao từ '{pretrained_path}' (strict=True).")
             except Exception as e:
                 print(f"[-] Có lỗi khi nạp trọng số cục bộ ({e}). Sử dụng ImageNet Pretrained thay thế.")
                 self._fallback_to_imagenet(embedding_size)
@@ -927,6 +923,7 @@ def main():
     # Bắt đầu vòng lặp huấn luyện Fine-tune
     import copy
     best_loss = float('inf')
+    best_val_acc = 0.0
     best_model_state = None
     best_epoch = -1
 
@@ -1035,13 +1032,25 @@ def main():
         print(f"    Epoch [{epoch+1}/{EPOCHS}] - Val Loss (Loss): {epoch_val_loss:.4f} - Val Acc (Acc): {epoch_val_acc:.2f}% | Train Loss: {epoch_loss:.4f} - Train Acc: {epoch_acc:.2f}%")
         sys.stdout.flush()
         
-        # Theo dõi loss kiểm thử (Validation Loss) tốt nhất để lưu checkpoint tránh Overfitting
-        if epoch_val_loss < best_loss:
-            best_loss = epoch_val_loss
-            best_epoch = epoch + 1
-            best_model_state = copy.deepcopy(backbone.state_dict())
+        # Theo dõi độ chính xác kiểm thử (Validation Accuracy) tốt nhất và Loss để tránh Overfitting
+        # Chỉ theo dõi từ Epoch 6 trở đi (Giai đoạn 2) để đảm bảo mô hình đã được huấn luyện với Margin thực tế
+        if epoch >= 5:
+            is_better = False
+            if epoch_val_acc > best_val_acc:
+                is_better = True
+            elif math.isclose(epoch_val_acc, best_val_acc) and epoch_val_loss < best_loss:
+                is_better = True
+                
+            if is_better:
+                best_val_acc = epoch_val_acc
+                best_loss = epoch_val_loss
+                best_epoch = epoch + 1
+                best_model_state = copy.deepcopy(backbone.state_dict())
 
-    print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Validation Loss tốt nhất đạt: {best_loss:.4f} ở Epoch {best_epoch}.")
+    if best_epoch != -1:
+        print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Validation Accuracy tốt nhất đạt: {best_val_acc:.2f}% (Loss: {best_loss:.4f}) ở Epoch {best_epoch}.")
+    else:
+        print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Không tìm thấy checkpoint tốt nhất trong Giai đoạn 2. Sử dụng trọng số Epoch cuối cùng.")
 
     # Helper function để xuất và kiểm định ONNX (gốc + mobile)
     def export_and_validate(model_to_export, onnx_path, mobile_path, label):
