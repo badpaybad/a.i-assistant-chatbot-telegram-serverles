@@ -14,7 +14,7 @@ if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Tinh chỉnh mô hình ArcFace với các tham số dòng lệnh.")
-    parser.add_argument("--epochs", type=int, default=100, help="Số lượng Epochs huấn luyện (mặc định: 100)")
+    parser.add_argument("--epochs", type=int, default=200, help="Số lượng Epochs huấn luyện (mặc định: 200)")
     parser.add_argument("--batch_size", type=int, default=16, help="Kích thước Batch size (mặc định: 16)")
     parser.add_argument("--learning_rate", type=float, default=0.00005, help="Tốc độ học Learning Rate (mặc định: 0.00005)")
     parser.add_argument("--align_mode", type=str, default="advanced", choices=["standard", "advanced"], help="Chế độ căn chỉnh khuôn mặt (mặc định: advanced)")
@@ -25,6 +25,7 @@ def parse_args():
     parser.add_argument("--best_model_output_path", type=str, default="./arcface_model_best.onnx", help="Đường dẫn xuất mô hình ONNX best (mặc định: ./arcface_model_best.onnx)")
     parser.add_argument("--best_mobile_model_output_path", type=str, default="./arcface_model_best_mobile.onnx", help="Đường dẫn xuất mô hình ONNX best cho di động (mặc định: ./arcface_model_best_mobile.onnx)")
     parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Thiết bị huấn luyện: auto, cuda, cpu (mặc định: auto)")
+    parser.add_argument("--margin", type=float, default=0.50, help="Ranh giới góc Margin cho ArcFace (mặc định: 0.50)")
     
     args, unknown = parser.parse_known_args()
     return args
@@ -33,6 +34,7 @@ args = parse_args()
 
 # Cấu hình thiết bị chạy: 'auto', 'cuda', hoặc 'cpu'
 DEVICE_CONFIG = args.device
+MARGIN = args.margin
 
 # Lựa chọn chế độ căn chỉnh khuôn mặt (Align Face Mode):
 # - "standard": Chung chung đủ tốt (Dùng MediaPipe BlazeFace nhanh, nhẹ, lý tưởng cho người bình thường)
@@ -620,6 +622,14 @@ class ArcMarginProduct(nn.Module):
         self.th = math.cos(math.pi - m)
         self.mm = math.sin(math.pi - m) * m
 
+    def update_margin(self, new_m):
+        """Cập nhật động margin và các tham số lượng giác liên quan trong quá trình huấn luyện."""
+        self.m = new_m
+        self.cos_m = math.cos(new_m)
+        self.sin_m = math.sin(new_m)
+        self.th = math.cos(math.pi - new_m)
+        self.mm = math.sin(math.pi - new_m) * new_m
+
     def forward(self, input, label):
         cosine = F.linear(F.normalize(input), F.normalize(self.weight))
         sine = torch.sqrt(1.0 - torch.pow(cosine, 2)).clamp(0, 1)
@@ -655,13 +665,15 @@ class ArcFaceResNet50(nn.Module):
         
         if pretrained_path and os.path.exists(pretrained_path):
             try:
-                state_dict = torch.load(pretrained_path, map_location="cpu")
-                filtered_state_dict = {}
-                for k, v in state_dict.items():
-                    new_key = k.replace("backbone.", "").replace("features.", "")
-                    filtered_state_dict[new_key] = v
+                checkpoint = torch.load(pretrained_path, map_location="cpu")
+                if isinstance(checkpoint, dict) and "model_state_dict" in checkpoint:
+                    pretrained_state = checkpoint["model_state_dict"]
+                else:
+                    pretrained_state = checkpoint
                 
-                self.load_state_dict(filtered_state_dict, strict=False)
+                # Nạp state dict vào backbone. Vì các khóa trong model_state_dict của file resnet50_arcface.pth
+                # đã có sẵn tiền tố "backbone.", chúng ta giữ nguyên để khớp hoàn hảo với cấu trúc của ArcFaceResNet50.
+                self.load_state_dict(pretrained_state, strict=False)
                 print(f"[+] Khởi tạo thành công trọng số ArcFace Pretrained chất lượng cao từ '{pretrained_path}'.")
             except Exception as e:
                 print(f"[-] Có lỗi khi nạp trọng số cục bộ ({e}). Sử dụng ImageNet Pretrained thay thế.")
@@ -766,6 +778,71 @@ class AdvancedFaceDataset(torch.utils.data.Dataset):
 
         return img_tensor, label
 
+
+class CustomSubset(torch.utils.data.Dataset):
+    """
+    Sub-dataset helper để tách biệt rõ ràng dữ liệu huấn luyện và dữ liệu kiểm thử.
+    Giúp áp dụng các augmentation (Mask/Glasses) chỉ cho tập Train, giữ tập Val luôn sạch.
+    """
+    def __init__(self, dataset, indices, transform=None, is_train=True):
+        self.dataset = dataset
+        self.indices = indices
+        self.transform = transform
+        self.is_train = is_train
+
+    def __len__(self):
+        return len(self.indices)
+
+    def __getitem__(self, idx):
+        actual_idx = self.indices[idx]
+        img_pil, label = self.dataset.dataset[actual_idx]
+        
+        if self.is_train:
+            img_np = np.array(img_pil).copy()
+            h, w = img_np.shape[:2]
+            
+            import random
+            r_val = random.random()
+            
+            # 1. Giả lập Khẩu trang/Khăn bịt mặt (xác suất 25%)
+            if r_val < 0.25:
+                mask_colors = [
+                    (100, 180, 200),  # Xanh y tế
+                    (240, 240, 240),  # Trắng
+                    (20, 20, 20),      # Đen
+                    (120, 120, 120),  # Xám
+                ]
+                color = random.choice(mask_colors)
+                pts = np.array([
+                    [int(w * 0.15), int(h * 0.60)],
+                    [int(w * 0.85), int(h * 0.60)],
+                    [w, int(h * 0.80)],
+                    [int(w * 0.75), h],
+                    [int(w * 0.25), h],
+                    [0, int(h * 0.80)]
+                ], np.int32)
+                cv2.fillPoly(img_np, [pts], color)
+                
+            # 2. Giả lập Gọng kính (xác suất 15%)
+            elif r_val < 0.40:
+                glass_color = (10, 10, 10)
+                thickness = 2
+                cv2.circle(img_np, (38, 52), 14, glass_color, thickness)
+                cv2.circle(img_np, (74, 52), 14, glass_color, thickness)
+                cv2.line(img_np, (52, 52), (60, 52), glass_color, thickness)
+                cv2.line(img_np, (24, 52), (10, 52), glass_color, thickness)
+                cv2.line(img_np, (88, 52), (102, 52), glass_color, thickness)
+                
+            img_pil = Image.fromarray(img_np)
+            
+        if self.transform:
+            img_tensor = self.transform(img_pil)
+        else:
+            img_tensor = transforms.ToTensor()(img_pil)
+
+        return img_tensor, label
+
+
 # ==========================================
 # 7. LUỒNG HUẤN LUYỆN CHÍNH (MAIN PROCESS)
 # ==========================================
@@ -784,7 +861,7 @@ def main():
     has_pretrained = os.path.exists(PRETRAINED_MODEL_PATH)
 
     # Bước 3: Chuẩn bị Dữ liệu Huấn luyện nâng cao (Gaussian Blur & Color Jitter cho trẻ em & người già)
-    transform = transforms.Compose([
+    train_transform = transforms.Compose([
         transforms.Resize(IMAGE_SIZE),
         transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         transforms.RandomApply([transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.0))], p=0.3),
@@ -792,26 +869,40 @@ def main():
         transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
     ])
 
-    dataset = AdvancedFaceDataset(root_dir=DATA_DIR, transform=transform)
-    num_classes = len(dataset.classes)
+    val_transform = transforms.Compose([
+        transforms.Resize(IMAGE_SIZE),
+        transforms.ToTensor(),
+        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+    ])
+
+    full_dataset = AdvancedFaceDataset(root_dir=DATA_DIR)
+    num_classes = len(full_dataset.classes)
     
     print(f"[+] Số lượng danh tính tìm thấy để Fine-tune: {num_classes}")
-    print(f"[+] Danh sách nhãn lớp: {dataset.classes}")
-    print(f"[+] Tổng số lượng ảnh thu thập: {len(dataset)}")
+    print(f"[+] Danh sách nhãn lớp: {full_dataset.classes}")
+    print(f"[+] Tổng số lượng ảnh thu thập: {len(full_dataset)}")
 
-    if len(dataset) == 0:
+    if len(full_dataset) == 0:
         print("[-] Lỗi: Không tìm thấy tệp ảnh nào trong thư mục data!")
         return
 
-    # Tách dữ liệu: 80% data train và 20% data test (validation)
-    if len(dataset) >= 5:
-        train_size = int(0.8 * len(dataset))
-        test_size = len(dataset) - train_size
-        train_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, test_size])
+    # Tách chỉ số (indices) thay vì random_split trực tiếp trên đối tượng dataset để có thể dùng transform/augmentation khác nhau
+    indices = list(range(len(full_dataset)))
+    import random
+    random.seed(42)  # Cố định seed tách tập dữ liệu để đồng nhất
+    random.shuffle(indices)
+    
+    if len(full_dataset) >= 5:
+        train_size = int(0.8 * len(full_dataset))
+        train_indices = indices[:train_size]
+        val_indices = indices[train_size:]
     else:
-        # Nếu dữ liệu quá nhỏ, dùng toàn bộ cho cả hai
-        train_dataset = dataset
-        test_dataset = dataset
+        train_indices = indices
+        val_indices = indices
+
+    # Sử dụng CustomSubset để kiểm soát độc lập augmentation (chỉ bật khi training) và transform
+    train_dataset = CustomSubset(full_dataset, train_indices, transform=train_transform, is_train=True)
+    test_dataset = CustomSubset(full_dataset, val_indices, transform=val_transform, is_train=False)
 
     print(f"[+] Số lượng ảnh huấn luyện (Train - 80%): {len(train_dataset)}")
     print(f"[+] Số lượng ảnh kiểm thử (Test/Val - 20%): {len(test_dataset)}")
@@ -824,7 +915,7 @@ def main():
     backbone = ArcFaceResNet50(embedding_size=EMBEDDING_SIZE, pretrained_path=pretrained_path).to(device)
     
     # Nâng cấp s=64.0 mặc định (tối ưu tuyệt đối cho sinh đôi/sinh ba và các trường hợp che khuất)
-    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=64.0, m=0.50).to(device)
+    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=64.0, m=MARGIN).to(device)
 
     # Khởi tạo Optimizer (Tối ưu hóa cả Backbone và ArcFace Head)
     criterion = nn.CrossEntropyLoss()
@@ -842,18 +933,37 @@ def main():
     print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}]...")
     
     for epoch in range(EPOCHS):
-        # --- CHIẾN LƯỢC ĐÓNG BĂNG/MỞ KHÓA TRỌNG SỐ (WEIGHT FREEZING) ---
-        # Giai đoạn 1 (Epoch 1 - 5): Đóng băng Conv Layers, chỉ train FC Head
-        # Giai đoạn 2 (Epoch 6 trở đi): Mở khóa toàn bộ mạng
         if epoch < 5:
+            # Giai đoạn 1: learning_rate của optimizer cần gấp đôi so với args đầu vào
+            current_lr = LEARNING_RATE * 2
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = current_lr
             for name, param in backbone.backbone.named_parameters():
                 if "fc" not in name:
                     param.requires_grad = False
-            print(f"[*] [Giai đoạn 1] Epoch {epoch+1}/{EPOCHS}: Đóng băng Convolutional Layers, chỉ huấn luyện Fully Connected Head.")
+            
+            # Giai đoạn 1: tạm thời set margin = 0.0 để căn chỉnh phân tách các lớp thô trước mà không bị sụt giảm accuracy
+            arcface_head.update_margin(0.0)
+            print(f"[*] [Giai đoạn 1] Epoch {epoch+1}/{EPOCHS}: Đóng băng Convolutional Layers, chỉ huấn luyện Fully Connected Head. Learning Rate: {current_lr} | Margin m: 0.0")
         else:
+            # Giai đoạn 2: set lại optimizer learning_rate theo giá trị args đưa vào
+            current_lr = LEARNING_RATE
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = current_lr
             for param in backbone.parameters():
                 param.requires_grad = True
-            print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ mạng để tinh chỉnh sâu.")
+            
+            # Giai đoạn 2: Tăng dần margin (Gradual Margin Warmup) trong 5 epoch (Epoch 6-10) để tránh gradient shock/collapse
+            warmup_epochs = 5
+            if epoch < 5 + warmup_epochs:
+                # epoch chạy từ 5 đến 9
+                step = epoch - 4
+                current_margin = MARGIN * (step / warmup_epochs)
+            else:
+                current_margin = MARGIN
+                
+            arcface_head.update_margin(current_margin)
+            print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ mạng để tinh chỉnh sâu. Learning Rate: {current_lr} | Margin m: {current_margin:.4f}")
 
         # --- BƯỚC HUẤN LUYỆN / TRAINING ---
         backbone.train()

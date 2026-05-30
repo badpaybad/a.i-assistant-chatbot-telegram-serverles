@@ -66,11 +66,12 @@ export class TrainingComponent implements OnInit, OnDestroy {
   trainingDoneFolder: string | null = null;
 
   // Training hyper-parameters (configurable by user)
-  epochs: number = 100;
+  epochs: number = 200;
   batchSize: number = 16;
   learningRate: number = 0.00005;
   alignMode: string = 'advanced';
   device: string = 'cpu';
+  margin: number = 0.50;
 
   // Danh sách thư mục đã huấn luyện
   trainingFolders: any[] = [];
@@ -216,7 +217,8 @@ export class TrainingComponent implements OnInit, OnDestroy {
       this.batchSize,
       this.learningRate,
       this.alignMode,
-      this.device
+      this.device,
+      this.margin
     );
 
     this.eventSource.onmessage = (event) => {

@@ -640,7 +640,7 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
    * Tạo một EventSource SSE để stream log đào tạo từ server về trình duyệt.
    * Caller chịu trách nhiệm đóng EventSource khi không dùng nữa.
    */
-  streamTraining(userIds, epochs, batchSize, learningRate, alignMode, device) {
+  streamTraining(userIds, epochs, batchSize, learningRate, alignMode, device, margin) {
     var _a, _b, _c;
     const baseUrl = (_b = (_a = window.env) == null ? void 0 : _a.API_BASE_URL) != null ? _b : "";
     const token = (_c = localStorage.getItem("jwt_token")) != null ? _c : "";
@@ -656,6 +656,8 @@ var _NhanDienKhuonMatService = class _NhanDienKhuonMatService {
       url += `&alignMode=${encodeURIComponent(alignMode)}`;
     if (device !== void 0)
       url += `&device=${encodeURIComponent(device)}`;
+    if (margin !== void 0)
+      url += `&margin=${margin}`;
     return new EventSource(url);
   }
   // === EMBEDDINGS MANAGEMENT METHODS ===
@@ -6958,7 +6960,7 @@ function TrainingComponent_ng_template_25_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_span_65_Template(rf, ctx) {
+function TrainingComponent_span_69_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 96);
     \u0275\u0275element(1, "nz-spin", 97);
@@ -6967,7 +6969,7 @@ function TrainingComponent_span_65_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_div_71_span_4_Template(rf, ctx) {
+function TrainingComponent_div_75_span_4_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 104)(1, "nz-tag", 105);
     \u0275\u0275text(2);
@@ -6979,7 +6981,7 @@ function TrainingComponent_div_71_span_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate1("\u2705 Ho\xE0n t\u1EA5t: ", ctx_r2.trainingDoneFolder);
   }
 }
-function TrainingComponent_div_71_div_6_Template(rf, ctx) {
+function TrainingComponent_div_75_div_6_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div");
     \u0275\u0275text(1);
@@ -6993,15 +6995,15 @@ function TrainingComponent_div_71_div_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", line_r8, " ");
   }
 }
-function TrainingComponent_div_71_Template(rf, ctx) {
+function TrainingComponent_div_75_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 99)(1, "div", 100)(2, "span");
     \u0275\u0275text(3);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(4, TrainingComponent_div_71_span_4_Template, 3, 1, "span", 101);
+    \u0275\u0275template(4, TrainingComponent_div_75_span_4_Template, 3, 1, "span", 101);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(5, "div", 102);
-    \u0275\u0275template(6, TrainingComponent_div_71_div_6_Template, 2, 3, "div", 103);
+    \u0275\u0275template(6, TrainingComponent_div_75_div_6_Template, 2, 3, "div", 103);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -7014,7 +7016,7 @@ function TrainingComponent_div_71_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", ctx_r2.trainingLogs);
   }
 }
-function TrainingComponent_ng_template_73_Template(rf, ctx) {
+function TrainingComponent_ng_template_77_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 59);
     \u0275\u0275element(1, "span", 106);
@@ -7022,11 +7024,11 @@ function TrainingComponent_ng_template_73_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_ng_template_75_Template(rf, ctx) {
+function TrainingComponent_ng_template_79_Template(rf, ctx) {
   if (rf & 1) {
     const _r9 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 62);
-    \u0275\u0275listener("click", function TrainingComponent_ng_template_75_Template_button_click_0_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_ng_template_79_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r9);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadTrainingFolders());
@@ -7036,7 +7038,7 @@ function TrainingComponent_ng_template_75_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_tr_88_Template(rf, ctx) {
+function TrainingComponent_tr_92_Template(rf, ctx) {
   if (rf & 1) {
     const _r10 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td");
@@ -7048,7 +7050,7 @@ function TrainingComponent_tr_88_Template(rf, ctx) {
     \u0275\u0275text(7);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(8, "td", 108)(9, "button", 109);
-    \u0275\u0275listener("click", function TrainingComponent_tr_88_Template_button_click_9_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_tr_92_Template_button_click_9_listener() {
       const folder_r11 = \u0275\u0275restoreView(_r10).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.extractEmbeddings(folder_r11));
@@ -7070,7 +7072,7 @@ function TrainingComponent_tr_88_Template(rf, ctx) {
     \u0275\u0275property("disabled", !folder_r11.hasBestModel || ctx_r2.extractingFolder === folder_r11.folderName)("nzLoading", ctx_r2.extractingFolder === folder_r11.folderName);
   }
 }
-function TrainingComponent_ng_template_89_Template(rf, ctx) {
+function TrainingComponent_ng_template_93_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 91);
     \u0275\u0275element(1, "span", 111);
@@ -7079,12 +7081,12 @@ function TrainingComponent_ng_template_89_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_nz_alert_91_Template(rf, ctx) {
+function TrainingComponent_nz_alert_95_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "nz-alert", 112);
   }
 }
-function TrainingComponent_ng_template_93_Template(rf, ctx) {
+function TrainingComponent_ng_template_97_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "span", 59);
     \u0275\u0275element(1, "span", 113);
@@ -7092,11 +7094,11 @@ function TrainingComponent_ng_template_93_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_ng_template_95_Template(rf, ctx) {
+function TrainingComponent_ng_template_99_Template(rf, ctx) {
   if (rf & 1) {
     const _r12 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 62);
-    \u0275\u0275listener("click", function TrainingComponent_ng_template_95_Template_button_click_0_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_ng_template_99_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r12);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.loadEmbeddings());
@@ -7106,7 +7108,7 @@ function TrainingComponent_ng_template_95_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_tr_109_img_3_Template(rf, ctx) {
+function TrainingComponent_tr_113_img_3_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "img", 83);
   }
@@ -7115,7 +7117,7 @@ function TrainingComponent_tr_109_img_3_Template(rf, ctx) {
     \u0275\u0275property("src", item_r14.user.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
-function TrainingComponent_tr_109_div_4_Template(rf, ctx) {
+function TrainingComponent_tr_113_div_4_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 84);
     \u0275\u0275text(1);
@@ -7127,7 +7129,7 @@ function TrainingComponent_tr_109_div_4_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", (item_r14.user.displayName || item_r14.user.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
-function TrainingComponent_tr_109_div_12_div_26_Template(rf, ctx) {
+function TrainingComponent_tr_113_div_12_div_26_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 135);
     \u0275\u0275element(1, "span", 136);
@@ -7142,7 +7144,7 @@ function TrainingComponent_tr_109_div_12_div_26_Template(rf, ctx) {
     \u0275\u0275textInterpolate(emb_r16.inputImagePath.split("/").pop());
   }
 }
-function TrainingComponent_tr_109_div_12_Template(rf, ctx) {
+function TrainingComponent_tr_113_div_12_Template(rf, ctx) {
   if (rf & 1) {
     const _r15 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 118)(1, "div", 119);
@@ -7165,7 +7167,7 @@ function TrainingComponent_tr_109_div_12_Template(rf, ctx) {
     \u0275\u0275pipe(17, "number");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(18, "div", 128)(19, "button", 129);
-    \u0275\u0275listener("click", function TrainingComponent_tr_109_div_12_Template_button_click_19_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_tr_113_div_12_Template_button_click_19_listener() {
       const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.copyEmbedding(emb_r16.embedding));
@@ -7173,7 +7175,7 @@ function TrainingComponent_tr_109_div_12_Template(rf, ctx) {
     \u0275\u0275element(20, "span", 130);
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(21, "button", 131);
-    \u0275\u0275listener("click", function TrainingComponent_tr_109_div_12_Template_button_click_21_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_tr_113_div_12_Template_button_click_21_listener() {
       const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
       const item_r14 = \u0275\u0275nextContext().$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
@@ -7183,14 +7185,14 @@ function TrainingComponent_tr_109_div_12_Template(rf, ctx) {
     \u0275\u0275text(23, " Ki\u1EC3m tra ");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(24, "button", 133);
-    \u0275\u0275listener("click", function TrainingComponent_tr_109_div_12_Template_button_click_24_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_tr_113_div_12_Template_button_click_24_listener() {
       const emb_r16 = \u0275\u0275restoreView(_r15).$implicit;
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.deleteEmbedding(emb_r16.id));
     });
     \u0275\u0275element(25, "span", 117);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(26, TrainingComponent_tr_109_div_12_div_26_Template, 5, 1, "div", 134);
+    \u0275\u0275template(26, TrainingComponent_tr_113_div_12_div_26_Template, 5, 1, "div", 134);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -7209,11 +7211,11 @@ function TrainingComponent_tr_109_div_12_Template(rf, ctx) {
     \u0275\u0275property("ngIf", emb_r16.inputImagePath);
   }
 }
-function TrainingComponent_tr_109_Template(rf, ctx) {
+function TrainingComponent_tr_113_Template(rf, ctx) {
   if (rf & 1) {
     const _r13 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "tr")(1, "td")(2, "div", 70);
-    \u0275\u0275template(3, TrainingComponent_tr_109_img_3_Template, 1, 1, "img", 71)(4, TrainingComponent_tr_109_div_4_Template, 2, 1, "div", 72);
+    \u0275\u0275template(3, TrainingComponent_tr_113_img_3_Template, 1, 1, "img", 71)(4, TrainingComponent_tr_113_div_4_Template, 2, 1, "div", 72);
     \u0275\u0275elementStart(5, "div")(6, "div", 73);
     \u0275\u0275text(7);
     \u0275\u0275elementEnd();
@@ -7221,10 +7223,10 @@ function TrainingComponent_tr_109_Template(rf, ctx) {
     \u0275\u0275text(9);
     \u0275\u0275elementEnd()()()();
     \u0275\u0275elementStart(10, "td")(11, "div", 114);
-    \u0275\u0275template(12, TrainingComponent_tr_109_div_12_Template, 27, 20, "div", 115);
+    \u0275\u0275template(12, TrainingComponent_tr_113_div_12_Template, 27, 20, "div", 115);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(13, "td", 108)(14, "button", 116);
-    \u0275\u0275listener("click", function TrainingComponent_tr_109_Template_button_click_14_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_tr_113_Template_button_click_14_listener() {
       const item_r14 = \u0275\u0275restoreView(_r13).$implicit;
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.deleteUserEmbeddings(item_r14.user.id));
@@ -7247,7 +7249,7 @@ function TrainingComponent_tr_109_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", item_r14.embeddings);
   }
 }
-function TrainingComponent_ng_template_110_Template(rf, ctx) {
+function TrainingComponent_ng_template_114_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 91);
     \u0275\u0275element(1, "span", 137);
@@ -7259,7 +7261,7 @@ function TrainingComponent_ng_template_110_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_ng_template_113_Template(rf, ctx) {
+function TrainingComponent_ng_template_117_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "span", 138);
     \u0275\u0275elementStart(1, "span");
@@ -7267,7 +7269,7 @@ function TrainingComponent_ng_template_113_Template(rf, ctx) {
     \u0275\u0275elementEnd();
   }
 }
-function TrainingComponent_div_115_div_1_img_5_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_img_5_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "img", 166);
   }
@@ -7276,7 +7278,7 @@ function TrainingComponent_div_115_div_1_img_5_Template(rf, ctx) {
     \u0275\u0275property("src", ctx_r2.targetEmbeddingUser.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
-function TrainingComponent_div_115_div_1_div_6_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_6_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 167);
     \u0275\u0275text(1);
@@ -7288,7 +7290,7 @@ function TrainingComponent_div_115_div_1_div_6_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", (ctx_r2.targetEmbeddingUser.displayName || ctx_r2.targetEmbeddingUser.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
-function TrainingComponent_div_115_div_1_div_33_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_33_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 168);
     \u0275\u0275element(1, "span", 169);
@@ -7297,7 +7299,7 @@ function TrainingComponent_div_115_div_1_div_33_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_div_115_div_1_div_34_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_34_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 170);
     \u0275\u0275element(1, "img", 171);
@@ -7311,7 +7313,7 @@ function TrainingComponent_div_115_div_1_div_34_Template(rf, ctx) {
     \u0275\u0275property("src", ctx_r2.compareFilePreview, \u0275\u0275sanitizeUrl);
   }
 }
-function TrainingComponent_div_115_div_1_div_35_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_35_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 173);
     \u0275\u0275element(1, "nz-spin", 174);
@@ -7320,7 +7322,7 @@ function TrainingComponent_div_115_div_1_div_35_Template(rf, ctx) {
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_div_115_div_1_div_36_tr_35_img_6_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_36_tr_35_img_6_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275element(0, "img", 83);
   }
@@ -7329,7 +7331,7 @@ function TrainingComponent_div_115_div_1_div_36_tr_35_img_6_Template(rf, ctx) {
     \u0275\u0275property("src", match_r19.avatarUrl, \u0275\u0275sanitizeUrl);
   }
 }
-function TrainingComponent_div_115_div_1_div_36_tr_35_div_7_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_36_tr_35_div_7_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 84);
     \u0275\u0275text(1);
@@ -7341,24 +7343,24 @@ function TrainingComponent_div_115_div_1_div_36_tr_35_div_7_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", (match_r19.displayName || match_r19.username || "U").charAt(0).toUpperCase(), " ");
   }
 }
-function TrainingComponent_div_115_div_1_div_36_tr_35_div_11_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_36_tr_35_div_11_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 74)(1, "nz-tag", 123);
     \u0275\u0275text(2, "\u0110\xEDch");
     \u0275\u0275elementEnd()();
   }
 }
-function TrainingComponent_div_115_div_1_div_36_tr_35_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_36_tr_35_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "tr")(1, "td")(2, "strong");
     \u0275\u0275text(3);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(4, "td")(5, "div", 70);
-    \u0275\u0275template(6, TrainingComponent_div_115_div_1_div_36_tr_35_img_6_Template, 1, 1, "img", 71)(7, TrainingComponent_div_115_div_1_div_36_tr_35_div_7_Template, 2, 1, "div", 72);
+    \u0275\u0275template(6, TrainingComponent_div_119_div_1_div_36_tr_35_img_6_Template, 1, 1, "img", 71)(7, TrainingComponent_div_119_div_1_div_36_tr_35_div_7_Template, 2, 1, "div", 72);
     \u0275\u0275elementStart(8, "div")(9, "div", 73);
     \u0275\u0275text(10);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(11, TrainingComponent_div_115_div_1_div_36_tr_35_div_11_Template, 3, 0, "div", 188);
+    \u0275\u0275template(11, TrainingComponent_div_119_div_1_div_36_tr_35_div_11_Template, 3, 0, "div", 188);
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(12, "td", 108)(13, "strong");
     \u0275\u0275text(14);
@@ -7397,7 +7399,7 @@ function TrainingComponent_div_115_div_1_div_36_tr_35_Template(rf, ctx) {
     \u0275\u0275textInterpolate1(" ", match_r19.cosineSimilarity >= ctx_r2.compareThreshold ? "Kh\u1EDBp" : "Kh\xF4ng kh\u1EDBp", " ");
   }
 }
-function TrainingComponent_div_115_div_1_div_36_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_div_36_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 176);
     \u0275\u0275element(1, "nz-divider", 177);
@@ -7439,7 +7441,7 @@ function TrainingComponent_div_115_div_1_div_36_Template(rf, ctx) {
     \u0275\u0275text(33, "Tr\u1EA1ng th\xE1i");
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(34, "tbody");
-    \u0275\u0275template(35, TrainingComponent_div_115_div_1_div_36_tr_35_Template, 22, 19, "tr", 187);
+    \u0275\u0275template(35, TrainingComponent_div_119_div_1_div_36_tr_35_Template, 22, 19, "tr", 187);
     \u0275\u0275elementEnd()()()();
   }
   if (rf & 2) {
@@ -7462,14 +7464,14 @@ function TrainingComponent_div_115_div_1_div_36_Template(rf, ctx) {
     \u0275\u0275property("ngForOf", ctx_r2.compareResults.allMatches);
   }
 }
-function TrainingComponent_div_115_div_1_Template(rf, ctx) {
+function TrainingComponent_div_119_div_1_Template(rf, ctx) {
   if (rf & 1) {
     const _r17 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div")(1, "div", 141)(2, "div", 142);
     \u0275\u0275text(3, "\u{1F3AF} Embedding \u0111\xEDch c\u1EA7n ki\u1EC3m tra:");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(4, "div", 143);
-    \u0275\u0275template(5, TrainingComponent_div_115_div_1_img_5_Template, 1, 1, "img", 144)(6, TrainingComponent_div_115_div_1_div_6_Template, 2, 1, "div", 145);
+    \u0275\u0275template(5, TrainingComponent_div_119_div_1_img_5_Template, 1, 1, "img", 144)(6, TrainingComponent_div_119_div_1_div_6_Template, 2, 1, "div", 145);
     \u0275\u0275elementStart(7, "div")(8, "div", 146);
     \u0275\u0275text(9);
     \u0275\u0275elementEnd();
@@ -7483,7 +7485,7 @@ function TrainingComponent_div_115_div_1_Template(rf, ctx) {
     \u0275\u0275text(17);
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(18, "div", 150)(19, "nz-slider", 151);
-    \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_115_div_1_Template_nz_slider_ngModelChange_19_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_119_div_1_Template_nz_slider_ngModelChange_19_listener($event) {
       \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
@@ -7491,7 +7493,7 @@ function TrainingComponent_div_115_div_1_Template(rf, ctx) {
     });
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(20, "nz-input-number", 152);
-    \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_115_div_1_Template_nz_input_number_ngModelChange_20_listener($event) {
+    \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_div_119_div_1_Template_nz_input_number_ngModelChange_20_listener($event) {
       \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       \u0275\u0275twoWayBindingSet(ctx_r2.compareThreshold, $event) || (ctx_r2.compareThreshold = $event);
@@ -7499,15 +7501,15 @@ function TrainingComponent_div_115_div_1_Template(rf, ctx) {
     });
     \u0275\u0275elementEnd()()();
     \u0275\u0275elementStart(21, "div", 153)(22, "div", 154)(23, "div", 155);
-    \u0275\u0275listener("click", function TrainingComponent_div_115_div_1_Template_div_click_23_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_div_119_div_1_Template_div_click_23_listener() {
       \u0275\u0275restoreView(_r17);
       const testFileInput_r18 = \u0275\u0275reference(30);
       return \u0275\u0275resetView(testFileInput_r18.click());
-    })("dragover", function TrainingComponent_div_115_div_1_Template_div_dragover_23_listener($event) {
+    })("dragover", function TrainingComponent_div_119_div_1_Template_div_dragover_23_listener($event) {
       \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onDragOver($event));
-    })("drop", function TrainingComponent_div_115_div_1_Template_div_drop_23_listener($event) {
+    })("drop", function TrainingComponent_div_119_div_1_Template_div_drop_23_listener($event) {
       \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onCompareFileDrop($event));
@@ -7520,16 +7522,16 @@ function TrainingComponent_div_115_div_1_Template(rf, ctx) {
     \u0275\u0275text(28, "T\u1EF1 \u0111\u1ED9ng ph\xE1t hi\u1EC7n & c\u0103n ch\u1EC9nh (Face Alignment 112x112) b\u1EB1ng MediaPipe");
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(29, "input", 159, 14);
-    \u0275\u0275listener("change", function TrainingComponent_div_115_div_1_Template_input_change_29_listener($event) {
+    \u0275\u0275listener("change", function TrainingComponent_div_119_div_1_Template_input_change_29_listener($event) {
       \u0275\u0275restoreView(_r17);
       const ctx_r2 = \u0275\u0275nextContext(2);
       return \u0275\u0275resetView(ctx_r2.onCompareFileSelected($event));
     });
     \u0275\u0275elementEnd()();
     \u0275\u0275elementStart(31, "div", 160)(32, "div", 161);
-    \u0275\u0275template(33, TrainingComponent_div_115_div_1_div_33_Template, 4, 0, "div", 162)(34, TrainingComponent_div_115_div_1_div_34_Template, 4, 1, "div", 163);
+    \u0275\u0275template(33, TrainingComponent_div_119_div_1_div_33_Template, 4, 0, "div", 162)(34, TrainingComponent_div_119_div_1_div_34_Template, 4, 1, "div", 163);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(35, TrainingComponent_div_115_div_1_div_35_Template, 4, 0, "div", 164)(36, TrainingComponent_div_115_div_1_div_36_Template, 36, 17, "div", 165);
+    \u0275\u0275template(35, TrainingComponent_div_119_div_1_div_35_Template, 4, 0, "div", 164)(36, TrainingComponent_div_119_div_1_div_36_Template, 36, 17, "div", 165);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -7560,10 +7562,10 @@ function TrainingComponent_div_115_div_1_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r2.compareResults && !ctx_r2.isComparing);
   }
 }
-function TrainingComponent_div_115_Template(rf, ctx) {
+function TrainingComponent_div_119_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "div", 139);
-    \u0275\u0275template(1, TrainingComponent_div_115_div_1_Template, 37, 17, "div", 140);
+    \u0275\u0275template(1, TrainingComponent_div_119_div_1_Template, 37, 17, "div", 140);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
@@ -7572,11 +7574,11 @@ function TrainingComponent_div_115_Template(rf, ctx) {
     \u0275\u0275property("ngIf", ctx_r2.targetEmbeddingUser);
   }
 }
-function TrainingComponent_ng_template_116_Template(rf, ctx) {
+function TrainingComponent_ng_template_120_Template(rf, ctx) {
   if (rf & 1) {
     const _r21 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "button", 189);
-    \u0275\u0275listener("click", function TrainingComponent_ng_template_116_Template_button_click_0_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_ng_template_120_Template_button_click_0_listener() {
       \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.closeCompareModal());
@@ -7584,7 +7586,7 @@ function TrainingComponent_ng_template_116_Template(rf, ctx) {
     \u0275\u0275text(1, "\u0110\xF3ng");
     \u0275\u0275elementEnd();
     \u0275\u0275elementStart(2, "button", 190);
-    \u0275\u0275listener("click", function TrainingComponent_ng_template_116_Template_button_click_2_listener() {
+    \u0275\u0275listener("click", function TrainingComponent_ng_template_120_Template_button_click_2_listener() {
       \u0275\u0275restoreView(_r21);
       const ctx_r2 = \u0275\u0275nextContext();
       return \u0275\u0275resetView(ctx_r2.executeComparison());
@@ -7611,11 +7613,12 @@ var _TrainingComponent = class _TrainingComponent {
     this.trainingLogs = [];
     this.eventSource = null;
     this.trainingDoneFolder = null;
-    this.epochs = 100;
+    this.epochs = 200;
     this.batchSize = 16;
     this.learningRate = 5e-5;
     this.alignMode = "advanced";
     this.device = "cpu";
+    this.margin = 0.5;
     this.trainingFolders = [];
     this.loadingFolders = false;
     this.extractingFolder = null;
@@ -7730,7 +7733,7 @@ var _TrainingComponent = class _TrainingComponent {
     this.trainingDoneFolder = null;
     this.isTraining = true;
     const userIds = Array.from(this.selectedUserIds);
-    this.eventSource = this.api.streamTraining(userIds, this.epochs, this.batchSize, this.learningRate, this.alignMode, this.device);
+    this.eventSource = this.api.streamTraining(userIds, this.epochs, this.batchSize, this.learningRate, this.alignMode, this.device, this.margin);
     this.eventSource.onmessage = (event) => {
       const line = event.data || "";
       this.trainingLogs = [...this.trainingLogs, line];
@@ -8040,7 +8043,7 @@ var _TrainingComponent = class _TrainingComponent {
 _TrainingComponent.\u0275fac = function TrainingComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _TrainingComponent)();
 };
-_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 118, vars: 54, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], ["embeddingsTitle", ""], ["embeddingsActions", ""], ["embeddingsTable", ""], ["emptyEmbeddingsTemplate", ""], ["compareModalTitle", ""], ["compareModalFooter", ""], ["testFileInput", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["nzWidth", "150px", "nzAlign", "center"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-params-section", 2, "background", "rgba(24, 144, 255, 0.02)", "border", "1px solid #e8e8e8", "border-radius", "8px", "padding", "16px", "margin-bottom", "16px"], [2, "font-weight", "600", "font-size", "13px", "margin-bottom", "12px", "color", "#262626", "display", "flex", "align-items", "center", "gap", "6px"], ["nz-icon", "", "nzType", "setting", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "params-grid", 2, "display", "grid", "grid-template-columns", "repeat(auto-fit, minmax(180px, 1fr))", "gap", "16px"], [1, "param-item", 2, "display", "flex", "flex-direction", "column"], [2, "font-size", "12px", "color", "#595959", "margin-bottom", "6px", "font-weight", "500"], [2, "width", "100%", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel", "nzDisabled"], [2, "width", "100%", 3, "ngModelChange", "ngModel", "nzDisabled"], ["nzLabel", "4", 3, "nzValue"], ["nzLabel", "8", 3, "nzValue"], ["nzLabel", "16", 3, "nzValue"], ["nzLabel", "32", 3, "nzValue"], ["nzLabel", "64", 3, "nzValue"], ["nzValue", "advanced", "nzLabel", "Advanced (N\xE2ng cao)"], ["nzValue", "standard", "nzLabel", "Standard (Ti\xEAu chu\u1EA9n)"], ["nzValue", "cpu", "nzLabel", "CPU"], ["nzValue", "cuda", "nzLabel", "CUDA (GPU)"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "section-card", 2, "margin-top", "24px", 3, "nzTitle", "nzExtra"], ["nzSize", "small", 1, "embeddings-table", 3, "nzData", "nzShowPagination", "nzNoResult"], [3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "compare-modal-content", 4, "nzModalContent"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-left", "8px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "play-circle"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [1, "defined-faces-list", 2, "display", "flex", "gap", "8px", "flex-wrap", "wrap"], ["class", "defined-face-wrapper", 3, "click", 4, "ngFor", "ngForOf"], ["style", "color: #bbb; font-size: 12px; font-style: italic;", 4, "ngIf"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["nzAlign", "center", 3, "click"], ["nz-button", "", "nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "user-add"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "defined-face-wrapper", 3, "click"], [1, "defined-face-thumbnail", 2, "width", "46px", "height", "46px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "box-shadow", "0 2px 4px rgba(0,0,0,0.04)"], ["alt", "Face", "onerror", "this.src='https://placehold.co/46x46?text=Face'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["nz-tooltip", "", "nzTooltipTitle", "G\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a", 1, "delete-face-btn", 3, "click"], ["nz-icon", "", "nzType", "close"], [2, "color", "#bbb", "font-size", "12px", "font-style", "italic"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"], ["nz-icon", "", "nzType", "idcard", "nzTheme", "outline"], [1, "emb-list"], ["class", "emb-item", "style", "display: flex; gap: 14px; align-items: flex-start;", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "default", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "emb-item", 2, "display", "flex", "gap", "14px", "align-items", "flex-start"], [1, "emb-face-preview", 2, "width", "52px", "height", "52px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "flex-shrink", "0", "box-shadow", "0 2px 6px rgba(0,0,0,0.05)"], ["alt", "Aligned Face", "onerror", "this.src='https://placehold.co/52x52?text=No+Img'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "flex", "1", "min-width", "0"], [1, "emb-meta"], ["nzColor", "blue"], [1, "emb-date"], ["nz-tooltip", "", 1, "emb-model", 3, "nzTooltipTitle"], [1, "emb-vector-row"], [1, "vector-preview"], [1, "emb-buttons"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Copy vector", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Ki\u1EC3m tra \u0111\u1ED1i s\xE1nh", 3, "click"], ["nz-icon", "", "nzType", "safety-certificate", 2, "color", "#52c41a"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a embedding", 3, "click"], ["class", "emb-source-path", 4, "ngIf"], [1, "emb-source-path"], ["nz-icon", "", "nzType", "file-image"], ["nz-icon", "", "nzType", "database", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "compare-modal-content"], [4, "ngIf"], [1, "target-user-card"], [1, "card-label"], [1, "user-profile-row"], ["class", "user-avatar large", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder large", 4, "ngIf"], [1, "user-name-large"], [1, "user-email-large"], [1, "threshold-panel"], [1, "slider-label"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "16px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "image-upload-workspace"], [1, "workspace-col", "upload-col"], [1, "upload-zone", 3, "click", "dragover", "drop"], ["nz-icon", "", "nzType", "upload", 2, "font-size", "32px", "color", "#1890ff"], [1, "upload-text"], [1, "upload-hint"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [1, "workspace-col", "preview-col"], [1, "preview-box"], ["class", "no-preview", 4, "ngIf"], ["class", "aligned-preview", 4, "ngIf"], ["class", "loading-container", 4, "ngIf"], ["class", "compare-results-area", 4, "ngIf"], ["alt", "avatar", 1, "user-avatar", "large", 3, "src"], [1, "user-avatar-placeholder", "large"], [1, "no-preview"], ["nz-icon", "", "nzType", "picture", 2, "font-size", "36px", "color", "#ccc"], [1, "aligned-preview"], ["alt", "Aligned Face Preview", 1, "aligned-img", 3, "src"], [1, "aligned-label"], [1, "loading-container"], ["nzSimple", "", "nzSize", "large"], [1, "loading-msg"], [1, "compare-results-area"], ["nzText", "K\u1EBFt qu\u1EA3 so kh\u1EDBp"], [1, "best-match-banner"], [1, "banner-icon"], ["nz-icon", "", "nzTheme", "outline", 3, "nzType"], [1, "banner-title"], [1, "banner-desc"], [1, "ranking-list-section", 2, "margin-top", "16px"], [1, "section-sub-title"], ["nzSize", "small", 1, "ranking-table", 3, "nzData", "nzShowPagination"], ["nzWidth", "60px"], [3, "target-row", "matched-row", 4, "ngFor", "ngForOf"], ["class", "user-email", 4, "ngIf"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "thunderbolt"]], template: function TrainingComponent_Template(rf, ctx) {
+_TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _TrainingComponent, selectors: [["tot-nhan-dien-training"]], decls: 122, vars: 59, consts: [["userSelectTitle", ""], ["userSelectActions", ""], ["userTable", ""], ["emptyUserTemplate", ""], ["trainingControlTitle", ""], ["foldersTitle", ""], ["foldersActions", ""], ["emptyFolderTemplate", ""], ["embeddingsTitle", ""], ["embeddingsActions", ""], ["embeddingsTable", ""], ["emptyEmbeddingsTemplate", ""], ["compareModalTitle", ""], ["compareModalFooter", ""], ["testFileInput", ""], [1, "training-page"], [1, "section-card", 3, "nzTitle", "nzExtra"], [3, "nzSpinning"], ["nzSize", "small", 1, "user-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "48px"], ["nzWidth", "160px"], ["nzWidth", "150px", "nzAlign", "center"], ["class", "user-row", 3, "selected-row", "click", 4, "ngFor", "ngForOf"], [1, "section-card", 3, "nzTitle"], [1, "training-params-section", 2, "background", "rgba(24, 144, 255, 0.02)", "border", "1px solid #e8e8e8", "border-radius", "8px", "padding", "16px", "margin-bottom", "16px"], [2, "font-weight", "600", "font-size", "13px", "margin-bottom", "12px", "color", "#262626", "display", "flex", "align-items", "center", "gap", "6px"], ["nz-icon", "", "nzType", "setting", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "params-grid", 2, "display", "grid", "grid-template-columns", "repeat(auto-fit, minmax(180px, 1fr))", "gap", "16px"], [1, "param-item", 2, "display", "flex", "flex-direction", "column"], [2, "font-size", "12px", "color", "#595959", "margin-bottom", "6px", "font-weight", "500"], [2, "width", "100%", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel", "nzDisabled"], [2, "width", "100%", 3, "ngModelChange", "ngModel", "nzDisabled"], ["nzLabel", "4", 3, "nzValue"], ["nzLabel", "8", 3, "nzValue"], ["nzLabel", "16", 3, "nzValue"], ["nzLabel", "32", 3, "nzValue"], ["nzLabel", "64", 3, "nzValue"], ["nzValue", "advanced", "nzLabel", "Advanced (N\xE2ng cao)"], ["nzValue", "standard", "nzLabel", "Standard (Ti\xEAu chu\u1EA9n)"], ["nzValue", "cpu", "nzLabel", "CPU"], ["nzValue", "cuda", "nzLabel", "CUDA (GPU)"], [1, "training-controls"], [1, "selected-info"], [3, "nzColor"], ["class", "training-status-indicator", 4, "ngIf"], [1, "control-buttons"], ["label", "B\u1EAFt \u0111\u1EA7u \u0111\xE0o t\u1EA1o", "icon", "play-circle", 3, "click", "disabled"], ["nz-button", "", "nzType", "default", "nzDanger", "", 2, "margin-left", "12px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "stop"], ["class", "log-container", 4, "ngIf"], ["nzSize", "small", 1, "folders-table", 3, "nzData", "nzShowPagination", "nzNoResult"], ["nzWidth", "160px", "nzAlign", "center"], ["nzWidth", "180px", "nzAlign", "center"], [4, "ngFor", "ngForOf"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", "style", "margin-top: 16px;", 4, "ngIf"], [1, "section-card", 2, "margin-top", "24px", 3, "nzTitle", "nzExtra"], ["nzSize", "small", 1, "embeddings-table", 3, "nzData", "nzShowPagination", "nzNoResult"], [3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzWidth", "nzFooter"], ["class", "compare-modal-content", 4, "nzModalContent"], [1, "card-title-icon"], ["nz-icon", "", "nzType", "team", "nzTheme", "outline"], [1, "card-actions-row"], ["nz-button", "", "nzSize", "small", 3, "click"], ["nz-button", "", "nzSize", "small", 2, "margin-left", "8px", 3, "click"], ["nz-icon", "", "nzType", "reload"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 2, "margin-left", "8px", 3, "click", "disabled"], ["nz-icon", "", "nzType", "play-circle"], [1, "user-row", 3, "click"], [3, "click"], ["nz-checkbox", "", 3, "nzCheckedChange", "nzChecked"], [1, "user-info"], ["class", "user-avatar", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder", 4, "ngIf"], [1, "user-name"], [1, "user-email"], [1, "defined-faces-list", 2, "display", "flex", "gap", "8px", "flex-wrap", "wrap"], ["class", "defined-face-wrapper", 3, "click", 4, "ngFor", "ngForOf"], ["style", "color: #bbb; font-size: 12px; font-style: italic;", 4, "ngIf"], [3, "nzCount", "nzStyle"], [1, "def-count-label"], ["nzAlign", "center", 3, "click"], ["nz-button", "", "nzSize", "small", "nzType", "default", 3, "click"], ["nz-icon", "", "nzType", "user-add"], ["alt", "avatar", 1, "user-avatar", 3, "src"], [1, "user-avatar-placeholder"], [1, "defined-face-wrapper", 3, "click"], [1, "defined-face-thumbnail", 2, "width", "46px", "height", "46px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "box-shadow", "0 2px 4px rgba(0,0,0,0.04)"], ["alt", "Face", "onerror", "this.src='https://placehold.co/46x46?text=Face'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], ["nz-tooltip", "", "nzTooltipTitle", "G\u1EE1 \u1EA3nh \u0111\u1ECBnh ngh\u0129a", 1, "delete-face-btn", 3, "click"], ["nz-icon", "", "nzType", "close"], [2, "color", "#bbb", "font-size", "12px", "font-style", "italic"], [1, "empty-state"], ["nz-icon", "", "nzType", "user-add", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], [2, "margin-top", "8px", "color", "#999"], [2, "font-size", "12px", "color", "#ccc"], ["nz-icon", "", "nzType", "thunderbolt", "nzTheme", "outline"], [1, "training-status-indicator"], ["nzSimple", "", "nzSize", "small"], [1, "training-running-text"], [1, "log-container"], [1, "log-header"], ["class", "done-badge", 4, "ngIf"], ["id", "training-log-panel", 1, "log-panel"], [3, "class", 4, "ngFor", "ngForOf"], [1, "done-badge"], ["nzColor", "success"], ["nz-icon", "", "nzType", "folder-open", "nzTheme", "outline"], ["nz-icon", "", "nzType", "calendar", 2, "margin-right", "6px", "color", "#1890ff"], ["nzAlign", "center"], ["nz-button", "", "nzType", "primary", "nzSize", "small", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "database"], ["nz-icon", "", "nzType", "inbox", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nzType", "info", "nzShowIcon", "", "nzMessage", "H\u01B0\u1EDBng d\u1EABn", "nzDescription", "Sau khi \u0111\xE0o t\u1EA1o ho\xE0n t\u1EA5t, nh\u1EA5n 'Tr\xEDch xu\u1EA5t Embedding' \u0111\u1EC3 l\u01B0u vector \u0111\u1EB7c tr\u01B0ng v\xE0o database. C\xE1c embedding n\xE0y s\u1EBD \u0111\u01B0\u1EE3c d\xF9ng cho nh\u1EADn di\u1EC7n th\u1EDDi gian th\u1EF1c.", 2, "margin-top", "16px"], ["nz-icon", "", "nzType", "idcard", "nzTheme", "outline"], [1, "emb-list"], ["class", "emb-item", "style", "display: flex; gap: 14px; align-items: flex-start;", 4, "ngFor", "ngForOf"], ["nz-button", "", "nzType", "default", "nzDanger", "", "nzSize", "small", 3, "click"], ["nz-icon", "", "nzType", "delete"], [1, "emb-item", 2, "display", "flex", "gap", "14px", "align-items", "flex-start"], [1, "emb-face-preview", 2, "width", "52px", "height", "52px", "border-radius", "6px", "overflow", "hidden", "border", "1.5px solid #d9d9d9", "background", "#fafafa", "display", "flex", "justify-content", "center", "align-items", "center", "flex-shrink", "0", "box-shadow", "0 2px 6px rgba(0,0,0,0.05)"], ["alt", "Aligned Face", "onerror", "this.src='https://placehold.co/52x52?text=No+Img'", 2, "width", "100%", "height", "100%", "object-fit", "cover", 3, "src"], [2, "flex", "1", "min-width", "0"], [1, "emb-meta"], ["nzColor", "blue"], [1, "emb-date"], ["nz-tooltip", "", 1, "emb-model", 3, "nzTooltipTitle"], [1, "emb-vector-row"], [1, "vector-preview"], [1, "emb-buttons"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Copy vector", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nz-tooltip", "", "nzTooltipTitle", "Ki\u1EC3m tra \u0111\u1ED1i s\xE1nh", 3, "click"], ["nz-icon", "", "nzType", "safety-certificate", 2, "color", "#52c41a"], ["nz-button", "", "nzSize", "small", "nzType", "text", "nzDanger", "", "nz-tooltip", "", "nzTooltipTitle", "X\xF3a embedding", 3, "click"], ["class", "emb-source-path", 4, "ngIf"], [1, "emb-source-path"], ["nz-icon", "", "nzType", "file-image"], ["nz-icon", "", "nzType", "database", "nzTheme", "outline", 2, "font-size", "36px", "color", "#bbb"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "outline", 2, "color", "#1890ff"], [1, "compare-modal-content"], [4, "ngIf"], [1, "target-user-card"], [1, "card-label"], [1, "user-profile-row"], ["class", "user-avatar large", "alt", "avatar", 3, "src", 4, "ngIf"], ["class", "user-avatar-placeholder large", 4, "ngIf"], [1, "user-name-large"], [1, "user-email-large"], [1, "threshold-panel"], [1, "slider-label"], [1, "slider-control-row"], [2, "flex", "1", "margin-right", "16px", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], ["nzSize", "small", 3, "ngModelChange", "nzMin", "nzMax", "nzStep", "ngModel"], [1, "image-upload-workspace"], [1, "workspace-col", "upload-col"], [1, "upload-zone", 3, "click", "dragover", "drop"], ["nz-icon", "", "nzType", "upload", 2, "font-size", "32px", "color", "#1890ff"], [1, "upload-text"], [1, "upload-hint"], ["type", "file", "accept", "image/*", 2, "display", "none", 3, "change"], [1, "workspace-col", "preview-col"], [1, "preview-box"], ["class", "no-preview", 4, "ngIf"], ["class", "aligned-preview", 4, "ngIf"], ["class", "loading-container", 4, "ngIf"], ["class", "compare-results-area", 4, "ngIf"], ["alt", "avatar", 1, "user-avatar", "large", 3, "src"], [1, "user-avatar-placeholder", "large"], [1, "no-preview"], ["nz-icon", "", "nzType", "picture", 2, "font-size", "36px", "color", "#ccc"], [1, "aligned-preview"], ["alt", "Aligned Face Preview", 1, "aligned-img", 3, "src"], [1, "aligned-label"], [1, "loading-container"], ["nzSimple", "", "nzSize", "large"], [1, "loading-msg"], [1, "compare-results-area"], ["nzText", "K\u1EBFt qu\u1EA3 so kh\u1EDBp"], [1, "best-match-banner"], [1, "banner-icon"], ["nz-icon", "", "nzTheme", "outline", 3, "nzType"], [1, "banner-title"], [1, "banner-desc"], [1, "ranking-list-section", 2, "margin-top", "16px"], [1, "section-sub-title"], ["nzSize", "small", 1, "ranking-table", 3, "nzData", "nzShowPagination"], ["nzWidth", "60px"], [3, "target-row", "matched-row", 4, "ngFor", "ngForOf"], ["class", "user-email", 4, "ngIf"], ["nz-button", "", "nzType", "default", 3, "click"], ["nz-button", "", "nzType", "primary", 3, "click", "disabled", "nzLoading"], ["nz-icon", "", "nzType", "thunderbolt"]], template: function TrainingComponent_Template(rf, ctx) {
   if (rf & 1) {
     const _r1 = \u0275\u0275getCurrentView();
     \u0275\u0275elementStart(0, "div", 15)(1, "nz-card", 16);
@@ -8122,70 +8125,80 @@ _TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
       return \u0275\u0275resetView($event);
     });
     \u0275\u0275element(59, "nz-option", 39)(60, "nz-option", 40);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(61, "div", 28)(62, "label", 29);
+    \u0275\u0275text(63, "Margin (Bi\xEAn \u0111\u1ED9 g\xF3c):");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(64, "nz-input-number", 30);
+    \u0275\u0275twoWayListener("ngModelChange", function TrainingComponent_Template_nz_input_number_ngModelChange_64_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.margin, $event) || (ctx.margin = $event);
+      return \u0275\u0275resetView($event);
+    });
     \u0275\u0275elementEnd()()()();
-    \u0275\u0275elementStart(61, "div", 41)(62, "div", 42)(63, "nz-tag", 43);
-    \u0275\u0275text(64);
+    \u0275\u0275elementStart(65, "div", 41)(66, "div", 42)(67, "nz-tag", 43);
+    \u0275\u0275text(68);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(65, TrainingComponent_span_65_Template, 4, 0, "span", 44);
+    \u0275\u0275template(69, TrainingComponent_span_69_Template, 4, 0, "span", 44);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(66, "div", 45)(67, "tot-button", 46);
-    \u0275\u0275listener("click", function TrainingComponent_Template_tot_button_click_67_listener() {
+    \u0275\u0275elementStart(70, "div", 45)(71, "tot-button", 46);
+    \u0275\u0275listener("click", function TrainingComponent_Template_tot_button_click_71_listener() {
       return ctx.startTraining();
     });
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(68, "button", 47);
-    \u0275\u0275listener("click", function TrainingComponent_Template_button_click_68_listener() {
+    \u0275\u0275elementStart(72, "button", 47);
+    \u0275\u0275listener("click", function TrainingComponent_Template_button_click_72_listener() {
       return ctx.cancelTraining();
     });
-    \u0275\u0275element(69, "span", 48);
-    \u0275\u0275text(70, " H\u1EE7y \u0111\xE0o t\u1EA1o ");
+    \u0275\u0275element(73, "span", 48);
+    \u0275\u0275text(74, " H\u1EE7y \u0111\xE0o t\u1EA1o ");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(71, TrainingComponent_div_71_Template, 7, 3, "div", 49);
+    \u0275\u0275template(75, TrainingComponent_div_75_Template, 7, 3, "div", 49);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(72, "nz-card", 16);
-    \u0275\u0275template(73, TrainingComponent_ng_template_73_Template, 3, 0, "ng-template", null, 5, \u0275\u0275templateRefExtractor)(75, TrainingComponent_ng_template_75_Template, 3, 0, "ng-template", null, 6, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(77, "nz-spin", 17)(78, "nz-table", 50)(79, "thead")(80, "tr")(81, "th");
-    \u0275\u0275text(82, "Th\u01B0 m\u1EE5c (Ng\xE0y)");
+    \u0275\u0275elementStart(76, "nz-card", 16);
+    \u0275\u0275template(77, TrainingComponent_ng_template_77_Template, 3, 0, "ng-template", null, 5, \u0275\u0275templateRefExtractor)(79, TrainingComponent_ng_template_79_Template, 3, 0, "ng-template", null, 6, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(81, "nz-spin", 17)(82, "nz-table", 50)(83, "thead")(84, "tr")(85, "th");
+    \u0275\u0275text(86, "Th\u01B0 m\u1EE5c (Ng\xE0y)");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(83, "th", 51);
-    \u0275\u0275text(84, "Tr\u1EA1ng th\xE1i m\xF4 h\xECnh");
+    \u0275\u0275elementStart(87, "th", 51);
+    \u0275\u0275text(88, "Tr\u1EA1ng th\xE1i m\xF4 h\xECnh");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(85, "th", 52);
-    \u0275\u0275text(86, "H\xE0nh \u0111\u1ED9ng");
+    \u0275\u0275elementStart(89, "th", 52);
+    \u0275\u0275text(90, "H\xE0nh \u0111\u1ED9ng");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(87, "tbody");
-    \u0275\u0275template(88, TrainingComponent_tr_88_Template, 12, 5, "tr", 53);
+    \u0275\u0275elementStart(91, "tbody");
+    \u0275\u0275template(92, TrainingComponent_tr_92_Template, 12, 5, "tr", 53);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(89, TrainingComponent_ng_template_89_Template, 4, 0, "ng-template", null, 7, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(93, TrainingComponent_ng_template_93_Template, 4, 0, "ng-template", null, 7, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(91, TrainingComponent_nz_alert_91_Template, 1, 0, "nz-alert", 54);
+    \u0275\u0275template(95, TrainingComponent_nz_alert_95_Template, 1, 0, "nz-alert", 54);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(92, "nz-card", 55);
-    \u0275\u0275template(93, TrainingComponent_ng_template_93_Template, 3, 0, "ng-template", null, 8, \u0275\u0275templateRefExtractor)(95, TrainingComponent_ng_template_95_Template, 3, 0, "ng-template", null, 9, \u0275\u0275templateRefExtractor);
-    \u0275\u0275elementStart(97, "nz-spin", 17)(98, "nz-table", 56, 10)(100, "thead")(101, "tr")(102, "th");
-    \u0275\u0275text(103, "Ng\u01B0\u1EDDi d\xF9ng");
+    \u0275\u0275elementStart(96, "nz-card", 55);
+    \u0275\u0275template(97, TrainingComponent_ng_template_97_Template, 3, 0, "ng-template", null, 8, \u0275\u0275templateRefExtractor)(99, TrainingComponent_ng_template_99_Template, 3, 0, "ng-template", null, 9, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementStart(101, "nz-spin", 17)(102, "nz-table", 56, 10)(104, "thead")(105, "tr")(106, "th");
+    \u0275\u0275text(107, "Ng\u01B0\u1EDDi d\xF9ng");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(104, "th");
-    \u0275\u0275text(105, "Danh s\xE1ch Vector Embedding");
+    \u0275\u0275elementStart(108, "th");
+    \u0275\u0275text(109, "Danh s\xE1ch Vector Embedding");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(106, "th", 21);
-    \u0275\u0275text(107, "H\xE0nh \u0111\u1ED9ng User");
+    \u0275\u0275elementStart(110, "th", 21);
+    \u0275\u0275text(111, "H\xE0nh \u0111\u1ED9ng User");
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(108, "tbody");
-    \u0275\u0275template(109, TrainingComponent_tr_109_Template, 17, 5, "tr", 53);
+    \u0275\u0275elementStart(112, "tbody");
+    \u0275\u0275template(113, TrainingComponent_tr_113_Template, 17, 5, "tr", 53);
     \u0275\u0275elementEnd()();
-    \u0275\u0275template(110, TrainingComponent_ng_template_110_Template, 6, 0, "ng-template", null, 11, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(114, TrainingComponent_ng_template_114_Template, 6, 0, "ng-template", null, 11, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(112, "nz-modal", 57);
-    \u0275\u0275twoWayListener("nzVisibleChange", function TrainingComponent_Template_nz_modal_nzVisibleChange_112_listener($event) {
+    \u0275\u0275elementStart(116, "nz-modal", 57);
+    \u0275\u0275twoWayListener("nzVisibleChange", function TrainingComponent_Template_nz_modal_nzVisibleChange_116_listener($event) {
       \u0275\u0275restoreView(_r1);
       \u0275\u0275twoWayBindingSet(ctx.showCompareModal, $event) || (ctx.showCompareModal = $event);
       return \u0275\u0275resetView($event);
     });
-    \u0275\u0275listener("nzOnCancel", function TrainingComponent_Template_nz_modal_nzOnCancel_112_listener() {
+    \u0275\u0275listener("nzOnCancel", function TrainingComponent_Template_nz_modal_nzOnCancel_116_listener() {
       return ctx.closeCompareModal();
     });
-    \u0275\u0275template(113, TrainingComponent_ng_template_113_Template, 3, 0, "ng-template", null, 12, \u0275\u0275templateRefExtractor)(115, TrainingComponent_div_115_Template, 2, 1, "div", 58)(116, TrainingComponent_ng_template_116_Template, 5, 2, "ng-template", null, 13, \u0275\u0275templateRefExtractor);
+    \u0275\u0275template(117, TrainingComponent_ng_template_117_Template, 3, 0, "ng-template", null, 12, \u0275\u0275templateRefExtractor)(119, TrainingComponent_div_119_Template, 2, 1, "div", 58)(120, TrainingComponent_ng_template_120_Template, 5, 2, "ng-template", null, 13, \u0275\u0275templateRefExtractor);
     \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
@@ -8194,15 +8207,15 @@ _TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     const userTable_r24 = \u0275\u0275reference(8);
     const emptyUserTemplate_r25 = \u0275\u0275reference(23);
     const trainingControlTitle_r26 = \u0275\u0275reference(26);
-    const foldersTitle_r27 = \u0275\u0275reference(74);
-    const foldersActions_r28 = \u0275\u0275reference(76);
-    const emptyFolderTemplate_r29 = \u0275\u0275reference(90);
-    const embeddingsTitle_r30 = \u0275\u0275reference(94);
-    const embeddingsActions_r31 = \u0275\u0275reference(96);
-    const embeddingsTable_r32 = \u0275\u0275reference(99);
-    const emptyEmbeddingsTemplate_r33 = \u0275\u0275reference(111);
-    const compareModalTitle_r34 = \u0275\u0275reference(114);
-    const compareModalFooter_r35 = \u0275\u0275reference(117);
+    const foldersTitle_r27 = \u0275\u0275reference(78);
+    const foldersActions_r28 = \u0275\u0275reference(80);
+    const emptyFolderTemplate_r29 = \u0275\u0275reference(94);
+    const embeddingsTitle_r30 = \u0275\u0275reference(98);
+    const embeddingsActions_r31 = \u0275\u0275reference(100);
+    const embeddingsTable_r32 = \u0275\u0275reference(103);
+    const emptyEmbeddingsTemplate_r33 = \u0275\u0275reference(115);
+    const compareModalTitle_r34 = \u0275\u0275reference(118);
+    const compareModalFooter_r35 = \u0275\u0275reference(121);
     \u0275\u0275advance();
     \u0275\u0275property("nzTitle", userSelectTitle_r22)("nzExtra", userSelectActions_r23);
     \u0275\u0275advance(5);
@@ -8240,7 +8253,11 @@ _TrainingComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ typ
     \u0275\u0275advance(6);
     \u0275\u0275twoWayProperty("ngModel", ctx.device);
     \u0275\u0275property("nzDisabled", ctx.isTraining);
-    \u0275\u0275advance(5);
+    \u0275\u0275advance(6);
+    \u0275\u0275property("nzMin", 0.1)("nzMax", 1)("nzStep", 0.05);
+    \u0275\u0275twoWayProperty("ngModel", ctx.margin);
+    \u0275\u0275property("nzDisabled", ctx.isTraining);
+    \u0275\u0275advance(3);
     \u0275\u0275property("nzColor", ctx.selectedUserIds.size > 0 ? "blue" : "default");
     \u0275\u0275advance();
     \u0275\u0275textInterpolate1(" ", ctx.selectedUserIds.size, " user \u0111\u01B0\u1EE3c ch\u1ECDn ");
@@ -8452,6 +8469,12 @@ var TrainingComponent = _TrainingComponent;
             <nz-option nzValue="cpu" nzLabel="CPU"></nz-option>
             <nz-option nzValue="cuda" nzLabel="CUDA (GPU)"></nz-option>
           </nz-select>
+        </div>
+
+        <!-- Margin -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Margin (Bi\xEAn \u0111\u1ED9 g\xF3c):</label>
+          <nz-input-number [nzMin]="0.1" [nzMax]="1.0" [nzStep]="0.05" [(ngModel)]="margin" [nzDisabled]="isTraining" style="width: 100%;"></nz-input-number>
         </div>
       </div>
     </div>
@@ -10155,4 +10178,4 @@ export {
   TrainingComponent,
   CameraComponent
 };
-//# sourceMappingURL=chunk-T2EQTDLW.js.map
+//# sourceMappingURL=chunk-RLIVCJ7H.js.map

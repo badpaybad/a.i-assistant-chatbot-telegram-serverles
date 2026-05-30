@@ -28,7 +28,7 @@ import {
 import "./chunk-RDD4GU72.js";
 import {
   provideNhanDienKhuonMat
-} from "./chunk-T2EQTDLW.js";
+} from "./chunk-RLIVCJ7H.js";
 import "./chunk-3QJVCMLC.js";
 import {
   API_URL,
@@ -4322,17 +4322,17 @@ var routes = [
           {
             path: "sessions",
             data: { breadcrumb: "Phi\xEAn thu th\u1EADp \u1EA3nh" },
-            loadComponent: () => import("./chunk-FNQ4P4ER.js").then((m) => m.NhanDienKhuonMatComponent)
+            loadComponent: () => import("./chunk-I7LZYLDB.js").then((m) => m.NhanDienKhuonMatComponent)
           },
           {
             path: "training",
             data: { breadcrumb: "\u0110\xE0o t\u1EA1o nh\u1EADn d\u1EA1ng" },
-            loadComponent: () => import("./chunk-FNQ4P4ER.js").then((m) => m.TrainingComponent)
+            loadComponent: () => import("./chunk-I7LZYLDB.js").then((m) => m.TrainingComponent)
           },
           {
             path: "camera",
             data: { breadcrumb: "Camera nh\u1EADn d\u1EA1ng" },
-            loadComponent: () => import("./chunk-FNQ4P4ER.js").then((m) => m.CameraComponent)
+            loadComponent: () => import("./chunk-I7LZYLDB.js").then((m) => m.CameraComponent)
           },
           {
             path: "",

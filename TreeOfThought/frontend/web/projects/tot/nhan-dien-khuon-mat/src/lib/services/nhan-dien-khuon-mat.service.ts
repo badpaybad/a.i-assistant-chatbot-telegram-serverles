@@ -89,7 +89,8 @@ export class NhanDienKhuonMatService {
     batchSize?: number,
     learningRate?: number,
     alignMode?: string,
-    device?: string
+    device?: string,
+    margin?: number
   ): EventSource {
     const baseUrl = (window as any).env?.API_BASE_URL ?? '';
     const token = localStorage.getItem('jwt_token') ?? '';
@@ -101,6 +102,7 @@ export class NhanDienKhuonMatService {
     if (learningRate !== undefined) url += `&learningRate=${learningRate}`;
     if (alignMode !== undefined) url += `&alignMode=${encodeURIComponent(alignMode)}`;
     if (device !== undefined) url += `&device=${encodeURIComponent(device)}`;
+    if (margin !== undefined) url += `&margin=${margin}`;
 
     return new EventSource(url);
   }

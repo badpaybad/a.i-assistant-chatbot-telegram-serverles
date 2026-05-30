@@ -500,6 +500,7 @@ public class FaceDetectionController : BaseController
         [FromQuery] double learningRate = 0.00005,
         [FromQuery] string alignMode = "advanced",
         [FromQuery] string device = "cpu",
+        [FromQuery] double margin = 0.50,
         CancellationToken cancellationToken = default)
     {
         Response.Headers["Content-Type"] = "text/event-stream";
@@ -525,6 +526,7 @@ public class FaceDetectionController : BaseController
                 LearningRate = learningRate,
                 AlignMode = alignMode,
                 Device = device,
+                Margin = margin,
                 LogCallback = async (log) =>
                 {
                     await SendSseAsync(log);
@@ -725,12 +727,13 @@ public class FaceDetectionController : BaseController
 
     public static string GetArcFaceDir()
     {
-        var baseDomain = AppContext.BaseDirectory;
-        var arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../ArcFaceFinetune")); // For Core.Web.Api/ArcFaceFinetune
+        var baseDomain = AppDomain.CurrentDomain.BaseDirectory;
+        var arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "ArcFaceFinetune"));
         if (!System.IO.File.Exists(Path.Combine(arcfaceDir, "main.py")))
         {
+            throw new FileNotFoundException($"Không tìm thấy file main.py trong thư mục {arcfaceDir}");
             // Fallback to docs directory inside monorepo structure
-            arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../../../docs/nhan-dien-khuon-mat/ArcFaceFinetune"));
+            // arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../../../docs/nhan-dien-khuon-mat/ArcFaceFinetune"));
         }
         return arcfaceDir;
     }

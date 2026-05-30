@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Core.Infra.NhanDienKhuonMat.Handlers;
 
-public class FaceDetectionCommandHandler : 
+public class FaceDetectionCommandHandler :
     ICommandHandler<SaveFaceDetectionSessionCommand>,
     ICommandHandler<RenameFaceDetectionSessionCommand>,
     ICommandHandler<DeleteFaceDetectionSessionCommand>,
@@ -56,7 +56,7 @@ public class FaceDetectionCommandHandler :
 
     public async Task HandleAsync(SaveFaceDetectionSessionCommand command)
     {
-        _logger.LogInformation("Processing SaveFaceDetectionSessionCommand for User: {UserId}, TrackingId: {TrackingId}", 
+        _logger.LogInformation("Processing SaveFaceDetectionSessionCommand for User: {UserId}, TrackingId: {TrackingId}",
             command.UserId, command.TrackingId);
 
         var userId = Guid.Parse(command.UserId ?? Guid.Empty.ToString());
@@ -93,14 +93,14 @@ public class FaceDetectionCommandHandler :
         // 1. Upload original image to GCS
         var originalImageId = Guid.NewGuid();
         var originalPath = $"face-detection/{userId}/{originalImageId}/original_{command.OriginalFileName}";
-        
+
         string originalUrl;
         using (var originalStream = new MemoryStream(command.OriginalContent))
         {
             originalUrl = await _firebaseService.UploadFileAsync(
-                originalPath, 
-                originalStream, 
-                command.OriginalContentType, 
+                originalPath,
+                originalStream,
+                command.OriginalContentType,
                 true // Public URL
             );
         }
@@ -130,9 +130,9 @@ public class FaceDetectionCommandHandler :
             using (var faceStream = new MemoryStream(croppedFaceDto.Content))
             {
                 faceUrl = await _firebaseService.UploadFileAsync(
-                    facePath, 
-                    faceStream, 
-                    croppedFaceDto.ContentType, 
+                    facePath,
+                    faceStream,
+                    croppedFaceDto.ContentType,
                     true // Public URL
                 );
             }
@@ -154,7 +154,7 @@ public class FaceDetectionCommandHandler :
         // 3. Save DB Changes
         await _db.SaveChangesAsync();
 
-        _logger.LogInformation("Successfully saved Face Detection Session in Database. Saved original image {OriginalId} and {Count} cropped faces.", 
+        _logger.LogInformation("Successfully saved Face Detection Session in Database. Saved original image {OriginalId} and {Count} cropped faces.",
             originalImageId, command.CroppedFaces.Count);
 
         // 4. Publish Realtime UI Event Notification
@@ -341,10 +341,10 @@ public class FaceDetectionCommandHandler :
                 // Get existing user display name
                 var existingUser = await _faceUserDb.Users.FirstOrDefaultAsync(u => u.Id == existingDef.UserId);
                 var existingName = existingUser?.DisplayName ?? existingUser?.Username ?? "người dùng khác";
-                
+
                 command.ExistingUserId = existingDef.UserId;
                 command.ExistingUserName = existingName;
-                
+
                 throw new DuplicateDefinitionException(
                     $"Ảnh này đã được định nghĩa cho user '{existingName}'. Bạn có chắc chắn muốn tiếp tục gán cho user hiện tại?",
                     existingDef.UserId,
@@ -385,6 +385,26 @@ public class FaceDetectionCommandHandler :
 
         _faceDefinitionDb.UserFaceDefinitions.Remove(def);
         await _faceDefinitionDb.SaveChangesAsync();
+    }
+    // Hàm bổ trợ để copy toàn bộ thư mục (Deep Copy)
+    static void CopyDirectory(string sourceDir, string destDir)
+    {
+        // Tạo thư mục đích nếu chưa có
+        Directory.CreateDirectory(destDir);
+
+        // Copy tất cả các files
+        foreach (string file in Directory.GetFiles(sourceDir))
+        {
+            string destFile = Path.Combine(destDir, Path.GetFileName(file));
+            File.Copy(file, destFile, true); // true: cho phép ghi đè nếu file đã tồn tại
+        }
+
+        // Đệ quy để copy các thư mục con bên trong (nếu có)
+        foreach (string subDir in Directory.GetDirectories(sourceDir))
+        {
+            string destSubDir = Path.Combine(destDir, Path.GetFileName(subDir));
+            CopyDirectory(subDir, destSubDir);
+        }
     }
 
     public async Task HandleAsync(TrainArcFaceModelCommand command)
@@ -465,8 +485,13 @@ public class FaceDetectionCommandHandler :
                     if (string.IsNullOrEmpty(extension)) extension = ".jpg";
                     var localImagePath = Path.Combine(userRawPath, $"{image.Id}{extension}");
 
-                    var imageBytes = await httpClient.GetByteArrayAsync(image.Url, command.CancellationToken);
-                    await System.IO.File.WriteAllBytesAsync(localImagePath, imageBytes, command.CancellationToken);
+                    if (!System.IO.File.Exists(localImagePath))
+                    {
+                        var imageBytes = await httpClient.GetByteArrayAsync(image.Url, command.CancellationToken);
+                        await System.IO.File.WriteAllBytesAsync(localImagePath, imageBytes, command.CancellationToken);
+
+                    }
+
                     downloadedCount++;
                 }
                 catch (Exception ex)
@@ -482,6 +507,37 @@ public class FaceDetectionCommandHandler :
         {
             await SendSseAsync("[INFO] Đào tạo đã bị hủy bởi người dùng.");
             return;
+        }
+
+        // 2.1 Lấy thêm tạo subfolder dataraw để  tăng số lượng data 
+
+        var moreFaceFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ArcFaceFinetune", "dataraw");
+        _logger.LogInformation($"2.1 :{moreFaceFolder}");
+        if (Directory.Exists(moreFaceFolder))
+        {
+
+            await SendSseAsync($"[INFO] Lấy thêm tạo subfolder dataraw để  tăng số lượng từ thư mục: {moreFaceFolder}");
+            var moreSubFolders = Directory.GetDirectories(moreFaceFolder);
+
+            foreach (var subSourcePath in moreSubFolders)
+            {
+                // Lấy tên tên thư mục con (ví dụ: "folder_1" thay vì toàn bộ đường dẫn)
+                string folderName = Path.GetFileName(subSourcePath);
+
+                // Kiểm tra nếu tên thư mục có chứa chữ "dump" (không phân biệt chữ hoa/thường)
+                if (folderName.Contains("dump", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue; // Bỏ qua thư mục này
+                }
+
+                // Tạo đường dẫn đích cho thư mục con này trong rawDirPath
+                string subDestPath = Path.Combine(rawDirPath, folderName);
+
+                // Tiến hành copy toàn bộ thư mục con (bao gồm cả file và thư mục con bên trong nó)
+                CopyDirectory(subSourcePath, subDestPath);
+
+                await SendSseAsync($"[INFO] Đã thêm dữ liệu: {subDestPath}");
+            }
         }
 
         // 3. Xác định đường dẫn file main.py
@@ -522,7 +578,8 @@ public class FaceDetectionCommandHandler :
                         $"--mobile_model_output_path \"{modelFinalMobilePath}\" " +
                         $"--best_model_output_path \"{modelBestPath}\" " +
                         $"--best_mobile_model_output_path \"{modelBestMobilePath}\" " +
-                        $"--device {command.Device}";
+                        $"--device {command.Device} " +
+                        $"--margin {command.Margin.ToString(System.Globalization.CultureInfo.InvariantCulture)}";
 
         await SendSseAsync($"[INFO] Bắt đầu tiến trình đào tạo ArcFace...");
         await SendSseAsync($"[CMD] {pythonExe} {arguments}");
@@ -678,7 +735,7 @@ public class FaceDetectionCommandHandler :
         }
 
         await _faceDefinitionDb.SaveChangesAsync();
-        
+
         command.ProcessedCount = processedCount;
         command.ErrorCount = errorCount;
     }

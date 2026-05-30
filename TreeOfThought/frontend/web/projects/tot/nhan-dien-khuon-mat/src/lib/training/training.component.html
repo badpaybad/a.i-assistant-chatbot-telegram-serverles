@@ -153,6 +153,12 @@
             <nz-option nzValue="cuda" nzLabel="CUDA (GPU)"></nz-option>
           </nz-select>
         </div>
+
+        <!-- Margin -->
+        <div class="param-item" style="display: flex; flex-direction: column;">
+          <label style="font-size: 12px; color: #595959; margin-bottom: 6px; font-weight: 500;">Margin (Biên độ góc):</label>
+          <nz-input-number [nzMin]="0.1" [nzMax]="1.0" [nzStep]="0.05" [(ngModel)]="margin" [nzDisabled]="isTraining" style="width: 100%;"></nz-input-number>
+        </div>
       </div>
     </div>
 

@@ -186,3 +186,8 @@ chưa tuân thủ cqrs cần phải sửa để đúng tiêu chuẩn frontend ba
 
 **2026-05-30 14:35:35**
 tìm các file .onnx tương ứng với TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/face_landmarker.task TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/blaze_face_short_range.tflite download vào TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels rồi viết thêm controller để sử dụng các file onnx đó 
+
+**2026-05-30 16:05:35 (Đã hoàn thành)**
+Ở nút Đào tạo bổ sung input cho phép người dùng nhập thông tin thay đổi tham số `--margin` khi train:
+    - **Frontend (Angular)**: Đã thêm biến `margin: number = 0.50` vào `training.component.ts`, thêm trường nhập liệu `nz-input-number` vào `training.component.html`, và cập nhật service `NhanDienKhuonMatService.streamTraining` để truyền tham số này qua EventSource.
+    - **Backend (C#)**: Đã bổ sung thuộc tính `Margin` vào lớp `TrainArcFaceModelCommand` (mặc định 0.50), ánh xạ tham số từ Controller API `TrainStream` và truyền động chuỗi đối số `--margin <value>` vào tiến trình Python `main.py` thông qua Command Handler.

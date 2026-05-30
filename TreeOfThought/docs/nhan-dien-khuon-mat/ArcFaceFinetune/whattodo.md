@@ -70,3 +70,15 @@ cần đưa một số cấu hình dạng tham số để tinh chỉnh cho từn
 **cập nhật 2026-05-30 14:16:16**
 
 đọc TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/thinking.md và bổ xung việc tạo data khi training cần tách ra: 80% data train và  20% data test . xem các gợi ý đẻ tăng chất lượng embeding vector và thực thiện
+
+**cập nhật 2026-05-30 15:16:16**
+
+learning_rate của optimizer cho giai đoạn 1  (Giai đoạn 1 (Epoch 1 - 5): Đóng băng Conv Layers, chỉ train FC Head ) cần gấp đôi so với args đầu vào
+Khi sang giai đoạn 2 cần set lại optimizer learning_rate theo giá trị args đưa vào 
+
+**cập nhật 2026-05-30 16:06:16**
+Phân tích và đưa ra giải pháp cho sự cố Accuracy = 0% và Loss rất cao (~33) ở Giai đoạn 1:
+- **Đã phân tích toán học ArcFace**: Khi mới bắt đầu huấn luyện thô, các vector đặc trưng phân bố hỗn loạn (góc $\theta_i \approx 90^{\circ}$). Việc áp dụng biên độ Margin $m = 0.50$ và Scale $s = 64.0$ quá lớn ngay lập tức đã trừng phạt góc của lớp đúng cực kỳ nặng, kéo tụt logit đúng xuống mức âm lớn ($\approx -30.7$) trong khi logit các lớp sai là $\approx 0$. Điều này khiến logit đúng luôn nhỏ nhất $\rightarrow$ Mô hình luôn luôn đoán sai (Acc = 0%) và phát sinh Loss cực lớn ($L \approx 30.7 + \log(19) \approx 33.6$). 
+- **Đã triển khai giải pháp Dynamic Margin Warmup (Đã sửa đổi thành công trong main.py và howtodo.md)**:
+  - Ở Giai đoạn 1 (Epoch 1-5): Hạ margin $m$ về `0.0` (chỉ chạy Cosine Similarity/Norm-Softmax) để mô hình gom cụm thô các user mới một cách dễ dàng, giúp Accuracy tăng vọt lên cao (> 80%).
+  - Ở Giai đoạn 2 (Epoch 6 trở đi): Khôi phục margin $m$ về giá trị đích (mặc định `0.50`, có thể chỉnh qua tham số `--margin`) để tiếp tục siết chặt ranh giới quyết định sâu sắc mà không làm sập Accuracy.

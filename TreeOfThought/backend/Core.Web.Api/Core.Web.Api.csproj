@@ -26,4 +26,17 @@
     <ProjectReference Include="..\cqrs-dashboard\Core.Infra.CqrsDashboard.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Remove="ArcFaceFinetune\dataraw\dunp\**\*" />
+    <Content Remove="ArcFaceFinetune\dataraw\dunp\**\*" />
+    
+    <None Update="ArcFaceFinetune\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <Content Update="ArcFaceFinetune\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
+

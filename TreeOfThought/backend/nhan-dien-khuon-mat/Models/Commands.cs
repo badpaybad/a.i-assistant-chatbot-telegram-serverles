@@ -72,6 +72,7 @@ public class TrainArcFaceModelCommand : NhanDienKhuonMatCommand
     public double LearningRate { get; set; } = 0.00005;
     public string AlignMode { get; set; } = "advanced";
     public string Device { get; set; } = "cpu";
+    public double Margin { get; set; } = 0.50;
 
     [System.Text.Json.Serialization.JsonIgnore]
     public Func<string, Task>? LogCallback { get; set; }
