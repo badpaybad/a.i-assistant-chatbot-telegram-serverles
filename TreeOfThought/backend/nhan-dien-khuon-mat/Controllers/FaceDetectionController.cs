@@ -194,76 +194,48 @@ public class FaceDetectionController : BaseController
     [HttpPut("sessions/{sessionId}/rename")]
     public async Task<IActionResult> RenameSession(Guid sessionId, [FromBody] RenameRequest request)
     {
-        var userId = GetUserId();
-        var session = await _db.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
-
-        if (session == null)
-            return NotFound("Không tìm thấy phiên upload.");
-
         if (string.IsNullOrEmpty(request.NewName))
             return BadRequest("Tên phiên không được để trống.");
 
-        session.Name = request.NewName.Trim();
-        await _db.SaveChangesAsync();
+        var command = new RenameFaceDetectionSessionCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            SessionId = sessionId,
+            NewName = request.NewName
+        };
 
-        return Ok(new { message = "Đã cập nhật tên phiên thành công." });
+        try
+        {
+            await _dispatcher.SendAsync(command, useMemoryMode: true);
+            return Ok(new { message = "Đã cập nhật tên phiên thành công." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
 
     [HttpDelete("sessions/{sessionId}")]
     public async Task<IActionResult> DeleteSession(Guid sessionId)
     {
         var userId = GetUserId();
-        var session = await _db.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
-
-        if (session == null)
+        var sessionExists = await _db.UploadSessions.AnyAsync(s => s.Id == sessionId && s.UserId == userId);
+        if (!sessionExists)
             return NotFound("Không tìm thấy phiên upload.");
 
-        // 1. Find all associated original images and their cropped faces to delete from GCS
-        var images = await _db.OriginalImages
-            .Include(i => i.CroppedFaces)
-            .Where(i => i.UploadSessionId == sessionId && i.UserId == userId)
-            .ToListAsync();
-
-        foreach (var image in images)
+        var command = new DeleteFaceDetectionSessionCommand
         {
-            // Delete original image from GCS
-            var originalObjectName = GetGcsObjectName(image.Url);
-            if (originalObjectName != null)
-            {
-                try
-                {
-                    await _firebaseService.DeleteFileAsync(originalObjectName);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Failed to delete original image {ImageId} from GCS: {Message}", image.Id, ex.Message);
-                }
-            }
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            SessionId = sessionId
+        };
 
-            // Delete each cropped face from GCS
-            foreach (var face in image.CroppedFaces)
-            {
-                var faceObjectName = GetGcsObjectName(face.Url);
-                if (faceObjectName != null)
-                {
-                    try
-                    {
-                        await _firebaseService.DeleteFileAsync(faceObjectName);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning("Failed to delete cropped face {FaceId} from GCS: {Message}", face.Id, ex.Message);
-                    }
-                }
-            }
-        }
-
-        // 2. Remove session from DB (this cascade deletes database rows for OriginalImages and CroppedFaces)
-        _db.UploadSessions.Remove(session);
-        await _db.SaveChangesAsync();
-
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa phiên upload thành công." });
     }
 
@@ -271,48 +243,18 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> DeleteOriginalImage(Guid imageId)
     {
         var userId = GetUserId();
-        var image = await _db.OriginalImages
-            .Include(i => i.CroppedFaces)
-            .FirstOrDefaultAsync(i => i.Id == imageId && i.UserId == userId);
-
-        if (image == null)
+        var imageExists = await _db.OriginalImages.AnyAsync(i => i.Id == imageId && i.UserId == userId);
+        if (!imageExists)
             return NotFound("Không tìm thấy ảnh gốc.");
 
-        // 1. Delete original image from GCS
-        var originalObjectName = GetGcsObjectName(image.Url);
-        if (originalObjectName != null)
+        var command = new DeleteOriginalImageCommand
         {
-            try
-            {
-                await _firebaseService.DeleteFileAsync(originalObjectName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Failed to delete original image {ImageId} from GCS: {Message}", image.Id, ex.Message);
-            }
-        }
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            ImageId = imageId
+        };
 
-        // 2. Delete all associated cropped faces from GCS
-        foreach (var face in image.CroppedFaces)
-        {
-            var faceObjectName = GetGcsObjectName(face.Url);
-            if (faceObjectName != null)
-            {
-                try
-                {
-                    await _firebaseService.DeleteFileAsync(faceObjectName);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning("Failed to delete cropped face {FaceId} from GCS: {Message}", face.Id, ex.Message);
-                }
-            }
-        }
-
-        // 3. Remove image from DB (this cascade deletes CroppedFaces records in database)
-        _db.OriginalImages.Remove(image);
-        await _db.SaveChangesAsync();
-
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa ảnh gốc thành công." });
     }
 
@@ -320,33 +262,21 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> DeleteCroppedFace(Guid faceId)
     {
         var userId = GetUserId();
-        var face = await _db.CroppedFaces
-            .Include(f => f.OriginalImage)
-            .FirstOrDefaultAsync(f => f.Id == faceId && f.OriginalImage!.UserId == userId);
-
-        if (face == null)
+        var faceExists = await _db.CroppedFaces.AnyAsync(f => f.Id == faceId && f.OriginalImage!.UserId == userId);
+        if (!faceExists)
             return NotFound("Không tìm thấy ảnh khuôn mặt crop.");
 
-        // 1. Delete cropped face from GCS
-        var faceObjectName = GetGcsObjectName(face.Url);
-        if (faceObjectName != null)
+        var command = new DeleteCroppedFaceCommand
         {
-            try
-            {
-                await _firebaseService.DeleteFileAsync(faceObjectName);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning("Failed to delete cropped face {FaceId} from GCS: {Message}", face.Id, ex.Message);
-            }
-        }
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            FaceId = faceId
+        };
 
-        // 2. Remove cropped face from DB
-        _db.CroppedFaces.Remove(face);
-        await _db.SaveChangesAsync();
-
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa ảnh khuôn mặt crop thành công." });
     }
+
 
     [HttpGet("users")]
     public async Task<IActionResult> SearchUsers([FromQuery] string? keyword)
@@ -373,65 +303,40 @@ public class FaceDetectionController : BaseController
     [HttpPost("definitions")]
     public async Task<IActionResult> CreateDefinition([FromBody] CreateFaceDefinitionRequest request)
     {
-        if (request.UserId == Guid.Empty || request.OriginalImageId == Guid.Empty)
-            return BadRequest("Thông tin không hợp lệ.");
-
-        // Check if this image exists in NhanDienKhuonMat
-        var imageExists = await _db.OriginalImages.AnyAsync(i => i.Id == request.OriginalImageId);
-        if (!imageExists)
-            return NotFound("Không tìm thấy ảnh gốc trong hệ thống.");
-
-        // Check if this user exists in OIDC
-        var userExists = await _faceUserDb.Users.AnyAsync(u => u.Id == request.UserId);
-        if (!userExists)
-            return NotFound("Không tìm thấy người dùng.");
-
-        // Check if this image has already been defined for a DIFFERENT user
-        var existingDef = await _faceDefinitionDb.UserFaceDefinitions
-            .FirstOrDefaultAsync(d => d.OriginalImageId == request.OriginalImageId);
-
-        if (existingDef != null && existingDef.UserId != request.UserId)
+        var command = new CreateFaceDefinitionCommand
         {
-            if (!request.Force)
-            {
-                // Get existing user display name
-                var existingUser = await _faceUserDb.Users.FirstOrDefaultAsync(u => u.Id == existingDef.UserId);
-                var existingName = existingUser?.DisplayName ?? existingUser?.Username ?? "người dùng khác";
-                return StatusCode(StatusCodes.Status409Conflict, new
-                {
-                    error = "DuplicateUser",
-                    message = $"Ảnh này đã được định nghĩa cho user '{existingName}'. Bạn có chắc chắn muốn tiếp tục gán cho user hiện tại?",
-                    existingUserId = existingDef.UserId,
-                    existingUserName = existingName
-                });
-            }
-            else
-            {
-                // If force = true, delete the old definition first
-                _faceDefinitionDb.UserFaceDefinitions.Remove(existingDef);
-                await _faceDefinitionDb.SaveChangesAsync();
-            }
-        }
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            TargetUserId = request.UserId,
+            OriginalImageId = request.OriginalImageId,
+            Force = request.Force
+        };
 
-        // Check if already defined for the SAME user
-        var isSameDef = await _faceDefinitionDb.UserFaceDefinitions
-            .AnyAsync(d => d.OriginalImageId == request.OriginalImageId && d.UserId == request.UserId);
-
-        if (!isSameDef)
+        try
         {
-            var newDef = new UserFaceDefinition
-            {
-                Id = Guid.NewGuid(),
-                UserId = request.UserId,
-                OriginalImageId = request.OriginalImageId,
-                CreatedAt = DateTime.UtcNow
-            };
-            _faceDefinitionDb.UserFaceDefinitions.Add(newDef);
-            await _faceDefinitionDb.SaveChangesAsync();
+            await _dispatcher.SendAsync(command, useMemoryMode: true);
+            return Ok(new { message = "Định nghĩa khuôn mặt thành công." });
         }
-
-        return Ok(new { message = "Định nghĩa khuôn mặt thành công." });
+        catch (DuplicateDefinitionException ex)
+        {
+            return StatusCode(StatusCodes.Status409Conflict, new
+            {
+                error = "DuplicateUser",
+                message = ex.Message,
+                existingUserId = ex.ExistingUserId,
+                existingUserName = ex.ExistingUserName
+            });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
     }
+
 
     [HttpGet("users/{userId}/definitions")]
     public async Task<IActionResult> GetUserDefinitions(Guid userId)
@@ -496,15 +401,21 @@ public class FaceDetectionController : BaseController
     [HttpDelete("definitions/{definitionId}")]
     public async Task<IActionResult> DeleteDefinition(Guid definitionId)
     {
-        var def = await _faceDefinitionDb.UserFaceDefinitions.FindAsync(definitionId);
-        if (def == null)
+        var exists = await _faceDefinitionDb.UserFaceDefinitions.AnyAsync(d => d.Id == definitionId);
+        if (!exists)
             return NotFound("Không tìm thấy định nghĩa khuôn mặt.");
 
-        _faceDefinitionDb.UserFaceDefinitions.Remove(def);
-        await _faceDefinitionDb.SaveChangesAsync();
+        var command = new DeleteFaceDefinitionCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            DefinitionId = definitionId
+        };
 
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa định nghĩa khuôn mặt thành công khỏi người dùng." });
     }
+
 
     // =========================================================
     // === NEW TRAINING ENDPOINTS (Added 2026-05-28 16:59:32) ===
@@ -604,193 +515,24 @@ public class FaceDetectionController : BaseController
 
         try
         {
-            if (string.IsNullOrEmpty(userIds))
+            var command = new TrainArcFaceModelCommand
             {
-                await SendSseAsync("[ERROR] Không có userId nào được chọn.");
-                return;
-            }
-
-            var userIdList = userIds.Split(',', StringSplitOptions.RemoveEmptyEntries)
-                .Select(id => Guid.TryParse(id.Trim(), out var g) ? g : Guid.Empty)
-                .Where(g => g != Guid.Empty)
-                .ToList();
-
-            if (!userIdList.Any())
-            {
-                await SendSseAsync("[ERROR] UserIds không hợp lệ.");
-                return;
-            }
-
-            // 1. Tạo thư mục theo ngày
-            var dateStr = DateTime.Now.ToString("yyyy-MM-dd");
-            var rootFaceIds = GetRootFaceIdsPath();
-            var dateDirPath = Path.Combine(rootFaceIds, dateStr);
-            var rawDirPath = Path.Combine(dateDirPath, "dataraw");
-            var dataDirPath = Path.Combine(dateDirPath, "data");
-
-            Directory.CreateDirectory(rawDirPath);
-            await SendSseAsync($"[INFO] Đã tạo thư mục đào tạo: {dateDirPath}");
-
-            // 2. Tải ảnh gốc từ GCS cho từng user
-            using var httpClient = new HttpClient();
-            httpClient.Timeout = TimeSpan.FromMinutes(5);
-
-            foreach (var userId in userIdList)
-            {
-                if (cancellationToken.IsCancellationRequested) break;
-
-                var user = await _faceUserDb.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
-                if (user == null)
+                TrackingId = GetTrackingId(),
+                UserId = GetUserId().ToString(),
+                UserIds = userIds,
+                Epochs = epochs,
+                BatchSize = batchSize,
+                LearningRate = learningRate,
+                AlignMode = alignMode,
+                Device = device,
+                LogCallback = async (log) =>
                 {
-                    await SendSseAsync($"[WARN] Không tìm thấy user: {userId}");
-                    continue;
-                }
-
-                var userFolderName = $"{userId}_{user.Username}";
-                var userRawPath = Path.Combine(rawDirPath, userFolderName);
-                Directory.CreateDirectory(userRawPath);
-
-                // Lấy tất cả ảnh gốc của user thông qua bảng UserFaceDefinitions
-                var definitions = await _faceDefinitionDb.UserFaceDefinitions
-                    .Where(d => d.UserId == userId)
-                    .ToListAsync(cancellationToken);
-
-                var imageIds = definitions.Select(d => d.OriginalImageId).ToList();
-                var images = await _db.OriginalImages
-                    .Where(i => imageIds.Contains(i.Id))
-                    .ToListAsync(cancellationToken);
-
-                await SendSseAsync($"[INFO] User '{user.DisplayName}': Đang tải {images.Count} ảnh gốc...");
-
-                int downloadedCount = 0;
-                foreach (var image in images)
-                {
-                    if (cancellationToken.IsCancellationRequested) break;
-                    try
-                    {
-                        var extension = Path.GetExtension(image.FileName).ToLowerInvariant();
-                        if (string.IsNullOrEmpty(extension)) extension = ".jpg";
-                        var localImagePath = Path.Combine(userRawPath, $"{image.Id}{extension}");
-
-                        var imageBytes = await httpClient.GetByteArrayAsync(image.Url, cancellationToken);
-                        await System.IO.File.WriteAllBytesAsync(localImagePath, imageBytes, cancellationToken);
-                        downloadedCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        await SendSseAsync($"[WARN] Lỗi tải ảnh {image.FileName}: {ex.Message}");
-                    }
-                }
-
-                await SendSseAsync($"[INFO] User '{user.DisplayName}': Đã tải xong {downloadedCount}/{images.Count} ảnh.");
-            }
-
-            if (cancellationToken.IsCancellationRequested)
-            {
-                await SendSseAsync("[INFO] Đào tạo đã bị hủy bởi người dùng.");
-                return;
-            }
-
-            // 3. Xác định đường dẫn file main.py
-            var arcfaceDir = GetArcFaceDir();
-            var mainPyPath = Path.Combine(arcfaceDir, "main.py");
-
-            if (!System.IO.File.Exists(mainPyPath))
-            {
-                await SendSseAsync($"[ERROR] Không tìm thấy main.py tại: {mainPyPath}");
-                return;
-            }
-
-            var pythonExe = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../../venv/bin/python3")); // Workspace root venv
-            if (!System.IO.File.Exists(pythonExe))
-            {
-                pythonExe = Path.GetFullPath(Path.Combine(arcfaceDir, "venv", "bin", "python3")); // Local venv
-            }
-            if (!System.IO.File.Exists(pythonExe))
-            {
-                pythonExe = "python3"; // Fallback to global python3
-                await SendSseAsync("[WARN] Không tìm thấy venv, sử dụng python3 toàn cục.");
-            }
-
-            // 4. Xác định đường dẫn các file model output
-            var modelFinalPath = Path.Combine(dateDirPath, "arcface_model_final.onnx");
-            var modelFinalMobilePath = Path.Combine(dateDirPath, "arcface_model_final_mobile.onnx");
-            var modelBestPath = Path.Combine(dateDirPath, "arcface_model_best.onnx");
-            var modelBestMobilePath = Path.Combine(dateDirPath, "arcface_model_best_mobile.onnx");
-
-            var arguments = $"\"{mainPyPath}\" " +
-                            $"--epochs {epochs} " +
-                            $"--batch_size {batchSize} " +
-                            $"--learning_rate {learningRate.ToString(System.Globalization.CultureInfo.InvariantCulture)} " +
-                            $"--align_mode {alignMode} " +
-                            $"--raw_dir \"{rawDirPath}\" " +
-                            $"--data_dir \"{dataDirPath}\" " +
-                            $"--model_output_path \"{modelFinalPath}\" " +
-                            $"--mobile_model_output_path \"{modelFinalMobilePath}\" " +
-                            $"--best_model_output_path \"{modelBestPath}\" " +
-                            $"--best_mobile_model_output_path \"{modelBestMobilePath}\" " +
-                            $"--device {device}";
-
-            await SendSseAsync($"[INFO] Bắt đầu tiến trình đào tạo ArcFace...");
-            await SendSseAsync($"[CMD] {pythonExe} {arguments}");
-
-            // 5. Chạy python process và stream stdout
-            var psi = new ProcessStartInfo
-            {
-                FileName = pythonExe,
-                Arguments = arguments,
-                WorkingDirectory = arcfaceDir,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
+                    await SendSseAsync(log);
+                },
+                CancellationToken = cancellationToken
             };
 
-            using var process = new Process { StartInfo = psi };
-            process.Start();
-
-            // Stream stdout
-            var stdoutTask = Task.Run(async () =>
-            {
-                string? line;
-                while ((line = await process.StandardOutput.ReadLineAsync()) != null)
-                {
-                    if (cancellationToken.IsCancellationRequested) break;
-                    try
-                    {
-                        await SendSseAsync(line);
-                    }
-                    catch { break; }
-                }
-            });
-
-            // Stream stderr (as warnings)
-            var stderrTask = Task.Run(async () =>
-            {
-                string? line;
-                while ((line = await process.StandardError.ReadLineAsync()) != null)
-                {
-                    if (cancellationToken.IsCancellationRequested) break;
-                    try
-                    {
-                        await SendSseAsync($"[STDERR] {line}");
-                    }
-                    catch { break; }
-                }
-            });
-
-            await Task.WhenAll(stdoutTask, stderrTask);
-            await process.WaitForExitAsync(cancellationToken);
-
-            if (process.ExitCode == 0)
-            {
-                await SendSseAsync($"[SUCCESS] Đào tạo hoàn tất! Mô hình tốt nhất lưu tại: {modelBestPath}");
-                await SendSseAsync($"[DONE] {dateStr}");
-            }
-            else
-            {
-                await SendSseAsync($"[ERROR] Tiến trình thất bại với mã lỗi: {process.ExitCode}");
-            }
+            await _dispatcher.SendAsync(command, useMemoryMode: true);
         }
         catch (OperationCanceledException)
         {
@@ -802,12 +544,13 @@ public class FaceDetectionController : BaseController
             try
             {
                 var errMsg = $"data: [ERROR] Lỗi hệ thống: {ex.Message.Replace("\n", " ")}\n\n";
-                await Response.WriteAsync(errMsg);
-                await Response.Body.FlushAsync();
+                await Response.WriteAsync(errMsg, cancellationToken);
+                await Response.Body.FlushAsync(cancellationToken);
             }
             catch { /* Client đã ngắt kết nối */ }
         }
     }
+
 
     /// <summary>
     /// Lấy danh sách các thư mục huấn luyện đã tạo (theo ngày) trong facesid/.
@@ -846,105 +589,30 @@ public class FaceDetectionController : BaseController
     [HttpPost("training-folders/{folderName}/extract-embeddings")]
     public async Task<IActionResult> ExtractEmbeddings(string folderName)
     {
-        var rootFaceIds = GetRootFaceIdsPath();
-        var dateDirPath = Path.Combine(rootFaceIds, folderName);
-        var bestModelPath = Path.Combine(dateDirPath, "arcface_model_best.onnx");
-        var dataDirPath = Path.Combine(dateDirPath, "data");
-
-        if (!System.IO.File.Exists(bestModelPath))
-            return NotFound($"Không tìm thấy mô hình tốt nhất tại: {bestModelPath}");
-
-        if (!Directory.Exists(dataDirPath))
-            return NotFound($"Không tìm thấy thư mục data tại: {dataDirPath}");
-
-        var processedCount = 0;
-        var errorCount = 0;
+        var command = new ExtractFaceEmbeddingsCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            FolderName = folderName
+        };
 
         try
         {
-            var session = GetOrCreateSession(bestModelPath);
-
-            // Quét từng subfolder theo dạng {userid_username}
-            var userFolders = Directory.GetDirectories(dataDirPath);
-            foreach (var userFolder in userFolders)
-            {
-                var folderBaseName = Path.GetFileName(userFolder);
-                var parts = folderBaseName.Split('_', 2);
-                if (parts.Length < 1 || !Guid.TryParse(parts[0], out var userId))
-                {
-                    _logger.LogWarning("[ExtractEmbeddings] Bỏ qua folder không hợp lệ: {FolderName}", folderBaseName);
-                    continue;
-                }
-
-                // Lấy danh sách ảnh đã align trong folder user này
-                var imageFiles = Directory.GetFiles(userFolder, "*.png", SearchOption.TopDirectoryOnly)
-                    .Concat(Directory.GetFiles(userFolder, "*.jpg", SearchOption.TopDirectoryOnly))
-                    .Concat(Directory.GetFiles(userFolder, "*.jpeg", SearchOption.TopDirectoryOnly))
-                    .ToList();
-
-                // Lấy OriginalImageId tương ứng từ database
-                var definitions = await _faceDefinitionDb.UserFaceDefinitions
-                    .Where(d => d.UserId == userId)
-                    .ToListAsync();
-
-                var imageIds = definitions.Select(d => d.OriginalImageId).ToList();
-                var originalImages = await _db.OriginalImages
-                    .Where(i => imageIds.Contains(i.Id))
-                    .ToListAsync();
-
-                // Với mỗi file ảnh đã align, trích xuất embedding và lưu vào DB
-                for (int imgIdx = 0; imgIdx < imageFiles.Count && imgIdx < originalImages.Count; imgIdx++)
-                {
-                    var imgFile = imageFiles[imgIdx];
-                    var originalImage = originalImages[imgIdx];
-
-                    try
-                    {
-                        var embedding = ExtractEmbeddingFromFile(session, imgFile);
-
-                        // Lưu hoặc cập nhật embedding vào DB (upsert theo OriginalImageId + UserId)
-                        var existing = await _faceDefinitionDb.UserFaceEmbeddings
-                            .FirstOrDefaultAsync(e => e.OriginalImageId == originalImage.Id && e.UserId == userId);
-
-                        if (existing != null)
-                        {
-                            existing.Embedding = new Pgvector.Vector(embedding);
-                            existing.BestModelPath = bestModelPath;
-                            existing.InputImagePath = imgFile;
-                            existing.CreatedAt = DateTime.UtcNow;
-                        }
-                        else
-                        {
-                            _faceDefinitionDb.UserFaceEmbeddings.Add(new UserFaceEmbedding
-                            {
-                                Id = Guid.NewGuid(),
-                                UserId = userId,
-                                OriginalImageId = originalImage.Id,
-                                Embedding = new Pgvector.Vector(embedding),
-                                BestModelPath = bestModelPath,
-                                InputImagePath = imgFile,
-                                CreatedAt = DateTime.UtcNow
-                            });
-                        }
-
-                        processedCount++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "[ExtractEmbeddings] Lỗi khi trích xuất embedding từ ảnh: {File}", imgFile);
-                        errorCount++;
-                    }
-                }
-            }
-
-            await _faceDefinitionDb.SaveChangesAsync();
-
+            await _dispatcher.SendAsync(command, useMemoryMode: true);
             return Ok(new
             {
-                message = $"Trích xuất embedding hoàn tất.",
-                processedCount,
-                errorCount
+                message = "Trích xuất embedding hoàn tất.",
+                processedCount = command.ProcessedCount,
+                errorCount = command.ErrorCount
             });
+        }
+        catch (FileNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (DirectoryNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
         catch (Exception ex)
         {
@@ -961,7 +629,7 @@ public class FaceDetectionController : BaseController
     // /// Đọc file ảnh, chuẩn hóa về tensor NCHW 112x112 và chạy suy luận ONNX.
     // /// Trả về vector embedding 512 chiều đã được L2 Normalize.
     // /// </summary>
-    private static float[] ExtractEmbeddingFromFile(InferenceSession session, string imagePath)
+    public static float[] ExtractEmbeddingFromFile(InferenceSession session, string imagePath)
     {
         using var image = Image.Load<Rgb24>(imagePath);
 
@@ -997,7 +665,7 @@ public class FaceDetectionController : BaseController
         // // L2 Normalize (bắt buộc trước khi lưu hoặc so sánh)
         // return L2Normalize(outputTensor);
     }
-    private static float[] ExtractEmbeddingFromBytes(InferenceSession session, byte[] alignedImageBytes)
+    public static float[] ExtractEmbeddingFromBytes(InferenceSession session, byte[] alignedImageBytes)
     {
         if (alignedImageBytes == null || alignedImageBytes.Length == 0)
         {
@@ -1008,7 +676,7 @@ public class FaceDetectionController : BaseController
         using var image = Image.Load<Rgb24>(alignedImageBytes);
         return ExtractEmbeddingFromImgRgbg24(session, image);
     }
-    private static float[] ExtractEmbeddingFromImgRgbg24(InferenceSession session, Image<Rgb24> image)
+    public static float[] ExtractEmbeddingFromImgRgbg24(InferenceSession session, Image<Rgb24> image)
     {
         // image.Mutate(x => x.Resize(112, 112));
         // Phòng hờ nếu ảnh đầu vào chưa đúng 112x112 thì mới cần resize
@@ -1048,14 +716,14 @@ public class FaceDetectionController : BaseController
     /// <summary>
     /// Chuẩn hóa L2 vector embedding về độ dài đơn vị (unit vector).
     /// </summary>
-    private static float[] L2Normalize(float[] vector)
+    public static float[] L2Normalize(float[] vector)
     {
         var norm = (float)Math.Sqrt(vector.Sum(x => x * x));
         if (norm < 1e-10f) return vector;
         return vector.Select(x => x / norm).ToArray();
     }
 
-    private string GetArcFaceDir()
+    public static string GetArcFaceDir()
     {
         var baseDomain = AppContext.BaseDirectory;
         var arcfaceDir = Path.GetFullPath(Path.Combine(baseDomain, "../../../ArcFaceFinetune")); // For Core.Web.Api/ArcFaceFinetune
@@ -1067,7 +735,7 @@ public class FaceDetectionController : BaseController
         return arcfaceDir;
     }
 
-    private string GetRootFaceIdsPath()
+    public static string GetRootFaceIdsPath()
     {
         return Path.Combine(GetArcFaceDir(), "facesid");
     }
@@ -1075,7 +743,7 @@ public class FaceDetectionController : BaseController
     /// <summary>
     /// Trích xuất tên đối tượng GCS từ URL công khai.
     /// </summary>
-    private string? GetGcsObjectName(string url)
+    public static string? GetGcsObjectName(string url)
     {
         if (string.IsNullOrEmpty(url)) return null;
 
@@ -1091,6 +759,7 @@ public class FaceDetectionController : BaseController
         }
         return null;
     }
+
 
     private async Task<Image<Rgb24>> AlignFaceToImageCSharp(IFormFile inputFile, float eyeLeftX, float eyeLeftY, float eyeRightX, float eyeRightY, float padX, float padY, float clientScale)
     {
@@ -1445,24 +1114,32 @@ public class FaceDetectionController : BaseController
     [HttpDelete("embeddings/{id}")]
     public async Task<IActionResult> DeleteEmbedding(Guid id)
     {
-        var item = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
-        if (item == null)
+        var exists = await _faceDefinitionDb.UserFaceEmbeddings.AnyAsync(e => e.Id == id);
+        if (!exists)
             return NotFound("Không tìm thấy embedding.");
 
-        _faceDefinitionDb.UserFaceEmbeddings.Remove(item);
-        await _faceDefinitionDb.SaveChangesAsync();
+        var command = new DeleteEmbeddingCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            EmbeddingId = id
+        };
+
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa embedding thành công." });
     }
 
     [HttpDelete("embeddings/user/{userId}")]
     public async Task<IActionResult> DeleteUserEmbeddings(Guid userId)
     {
-        var list = await _faceDefinitionDb.UserFaceEmbeddings.Where(e => e.UserId == userId).ToListAsync();
-        if (list.Any())
+        var command = new DeleteUserEmbeddingsCommand
         {
-            _faceDefinitionDb.UserFaceEmbeddings.RemoveRange(list);
-            await _faceDefinitionDb.SaveChangesAsync();
-        }
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString(),
+            TargetUserId = userId
+        };
+
+        await _dispatcher.SendAsync(command);
         return Ok(new { message = "Đã xóa toàn bộ embedding của user thành công." });
     }
 
@@ -1638,11 +1315,11 @@ public class FaceDetectionController : BaseController
             AllMatches = sortedResults
         });
     }
-    private static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
-    private static List<UserFaceEmbedding>? _cachedEmbeddings = null;
-    private static readonly object _cacheLock = new();
-    private static string? _cachedBestModelPath = null;
-    private static readonly object _modelPathLock = new();
+    public static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
+    public static List<UserFaceEmbedding>? _cachedEmbeddings = null;
+    public static readonly object _cacheLock = new();
+    public static string? _cachedBestModelPath = null;
+    public static readonly object _modelPathLock = new();
 
     private async Task<string?> GetBestModelPathAsync()
     {
@@ -1700,7 +1377,7 @@ public class FaceDetectionController : BaseController
         return _cachedEmbeddings;
     }
 
-    private static void RemoveModel(string modelPath)
+    public static void RemoveModel(string modelPath)
     {
         if (_sessions.TryRemove(modelPath, out var lazySession))
         {
@@ -1711,7 +1388,7 @@ public class FaceDetectionController : BaseController
             }
         }
     }
-    public InferenceSession GetOrCreateSession(string modelPath)
+    public static InferenceSession GetOrCreateSession(string modelPath)
     {
         if (string.IsNullOrWhiteSpace(modelPath))
         {
@@ -1741,28 +1418,15 @@ public class FaceDetectionController : BaseController
     [AllowAnonymous]
     public async Task<IActionResult> ReloadCache()
     {
+        var command = new ReloadCacheCommand
+        {
+            TrackingId = GetTrackingId(),
+            UserId = GetUserId().ToString()
+        };
+
         try
         {
-            // 1. Clear ONNX sessions
-            var paths = _sessions.Keys.ToList();
-            foreach (var path in paths)
-            {
-                RemoveModel(path);
-            }
-            lock (_modelPathLock)
-            {
-                _cachedBestModelPath = null;
-            }
-
-            // 2. Clear cached embeddings
-            lock (_cacheLock)
-            {
-                _cachedEmbeddings = null;
-            }
-
-            // 3. Pre-load embeddings back to memory to warm up cache
-            await GetCachedEmbeddingsAsync();
-
+            await _dispatcher.SendAsync(command, useMemoryMode: true);
             _logger.LogInformation("[ReloadCache] Đã xóa cache ONNX session và làm nóng lại cache embeddings.");
             return Ok(new { message = "Đã tải lại cache thành công." });
         }

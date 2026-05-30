@@ -172,7 +172,6 @@ Thêm UI nút reload cache : khi click nút thì reload lại cache dữ liệu 
         cho phép xóa từng ảnh theo user
         hiển thị ảnh ở đây là ảnh gốc 
 
-
 **2026-05-29 14:35:35**
 Ở nút Đào tạo bổ xung các input cho phép người dùng nhập các thông tin thay đổi các tham số khi train:
         $"--epochs 100 " +
@@ -180,3 +179,7 @@ Thêm UI nút reload cache : khi click nút thì reload lại cache dữ liệu 
         $"--learning_rate 0.00005 " +
         $"--align_mode advanced " +
         $"--device cpu";
+
+**2026-05-30 10:35:35**
+chưa tuân thủ cqrs cần phải sửa để đúng tiêu chuẩn frontend backend
+    kiểm tra nếu dispatch dùng được useMemoryMode: false
