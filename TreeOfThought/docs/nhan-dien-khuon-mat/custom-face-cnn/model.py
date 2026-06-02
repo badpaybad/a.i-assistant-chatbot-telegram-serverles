@@ -74,26 +74,54 @@ class NoseNet(nn.Module):
 
 class GlobalNet(nn.Module):
     """
-    Nhánh mạng trích xuất đặc trưng toàn mặt (Global Face Region) sử dụng Backbone ResNet-18.
+    Nhánh mạng trích xuất đặc trưng toàn mặt (Global Face Region) sử dụng Backbone động.
     Kích thước đầu vào chuẩn hóa: (B, 3, 112, 112) [Height=112, Width=112]
     """
-    def __init__(self, embedding_dim=512, pretrained=False):
+    def __init__(self, backbone_name="resnet18", embedding_dim=512, pretrained=False):
         super(GlobalNet, self).__init__()
-        # Sử dụng resnet18 làm backbone
-        if pretrained:
-            self.backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
-        else:
-            self.backbone = models.resnet18()
-            
-        # Thay đổi lớp fully connected cuối cùng của ResNet
-        num_features = self.backbone.fc.in_features
-        self.backbone.fc = nn.Identity() # Bỏ qua lớp FC mặc định
+        self.backbone_name = backbone_name.lower()
         
+        if self.backbone_name == "resnet18":
+            if pretrained:
+                self.backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+            else:
+                self.backbone = models.resnet18()
+            num_features = self.backbone.fc.in_features
+            self.backbone.fc = nn.Identity()
+            
+        elif self.backbone_name == "resnet50":
+            if pretrained:
+                self.backbone = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+            else:
+                self.backbone = models.resnet50()
+            num_features = self.backbone.fc.in_features
+            self.backbone.fc = nn.Identity()
+            
+        elif self.backbone_name == "mobilenet_v3":
+            if pretrained:
+                self.backbone = models.mobilenet_v3_large(weights=models.MobileNet_V3_Large_Weights.DEFAULT)
+            else:
+                self.backbone = models.mobilenet_v3_large()
+            num_features = self.backbone.classifier[0].in_features
+            self.backbone.classifier = nn.Identity()
+            
+        elif self.backbone_name == "convnext":
+            if pretrained:
+                self.backbone = models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.DEFAULT)
+            else:
+                self.backbone = models.convnext_tiny()
+            num_features = self.backbone.classifier[2].in_features
+            self.backbone.classifier = nn.Identity()
+            
+        else:
+            raise ValueError(f"❌ Không hỗ trợ mạng backbone: {backbone_name}")
+            
         self.fc = nn.Linear(num_features, embedding_dim)
         self.bn_out = nn.BatchNorm1d(embedding_dim)
 
     def forward(self, x):
         x = self.backbone(x)
+        x = torch.flatten(x, 1)
         x = self.fc(x)
         return self.bn_out(x)
 
@@ -163,11 +191,11 @@ class CustomPartBasedFaceCNN(nn.Module):
     """
     Hệ thống mạng Custom Face CNN đa phân vùng kết hợp cơ chế Attention thích ứng và đặc trưng hình học đối xứng.
     """
-    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False):
+    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18"):
         super(CustomPartBasedFaceCNN, self).__init__()
         self.eye_branch = PeriocularNet(embedding_dim=128)
         self.nose_branch = NoseNet(embedding_dim=64)
-        self.global_branch = GlobalNet(embedding_dim=512, pretrained=pretrained_global)
+        self.global_branch = GlobalNet(backbone_name=backbone_name, embedding_dim=512, pretrained=pretrained_global)
         
         # Nhánh trích xuất đặc trưng hình học không gian (6 keypoints * 2D = 12 dims) -> 64-D
         self.geom_branch = GeometricNet(input_dim=12, embedding_dim=64)

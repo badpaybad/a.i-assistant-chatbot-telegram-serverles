@@ -448,7 +448,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50"):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -490,7 +490,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     device = torch.device(device_name)
     flush_print(f"🖥️ Thiết bị sử dụng huấn luyện: {device}")
     
-    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=False).to(device)
+    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=True, backbone_name=backbone_name).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
     
@@ -569,7 +569,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                 "model_state_dict": model.state_dict(),
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": epoch_val_loss,
-                "class_to_idx": class_to_idx
+                "class_to_idx": class_to_idx,
+                "backbone_name": backbone_name
             }
             torch.save(checkpoint, "checkpoint_best.pth")
             flush_print("💾 Đã lưu Checkpoint tốt nhất (Best loss).")
@@ -580,7 +581,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         "model_state_dict": model.state_dict(),
         "optimizer_state_dict": optimizer.state_dict(),
         "loss": epoch_val_loss,
-        "class_to_idx": class_to_idx
+        "class_to_idx": class_to_idx,
+        "backbone_name": backbone_name
     }, "checkpoint_final.pth")
     flush_print("💾 Đã lưu Checkpoint cuối cùng (checkpoint_final.pth).")
     
@@ -597,8 +599,10 @@ def export_best_to_onnx(num_classes, checkpoint_path="checkpoint_best.pth", outp
         return
         
     flush_print("🔄 Đang nạp checkpoint tốt nhất để xuất sang định dạng ONNX...")
-    model = CustomPartBasedFaceCNN(num_classes=num_classes)
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
+    backbone_name = checkpoint.get("backbone_name", "resnet50")
+    flush_print(f"💡 Phát hiện backbone sử dụng từ checkpoint: {backbone_name}")
+    model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name)
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     
@@ -644,6 +648,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")
     parser.add_argument("--val_split", type=float, default=0.8, help="Train/Validation split ratio (default: 0.8)")
+    parser.add_argument("--backbone", type=str, default="resnet50", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet50)")
     args = parser.parse_args()
 
     # Bước 1: Tiền xử lý dataraw
@@ -656,5 +661,6 @@ if __name__ == "__main__":
             lr=args.lr,
             device_name=args.device,
             weight_decay=args.weight_decay,
-            val_split=args.val_split
+            val_split=args.val_split,
+            backbone_name=args.backbone
         )

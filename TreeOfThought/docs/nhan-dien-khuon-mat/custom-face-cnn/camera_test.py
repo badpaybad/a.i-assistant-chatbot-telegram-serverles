@@ -65,6 +65,10 @@ def main():
     prev_time = time.time()
     flush_print("\n🔥 Bắt đầu kiểm thử Real-time! Nhấn 'q' trên màn hình camera để thoát.")
 
+    # Các biến lưu trạng thái ảnh đối chiếu để lưu vào cache (tránh đọc đĩa liên tục)
+    last_matched_user = None
+    cached_match_image = None
+
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -77,6 +81,8 @@ def main():
         
         # Phát hiện khuôn mặt thô để vẽ khung
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(60, 60))
+
+        frame_matched_user = None
 
         for (x, y, w, h) in faces:
             # Cắt vùng khuôn mặt thô phục vụ suy luận trích xuất đặc trưng đa nhánh
@@ -95,6 +101,7 @@ def main():
                 if matched_user:
                     color = (0, 255, 0) # Màu xanh lá cho đối tượng đã biết
                     label = f"ID: {matched_user} ({similarity:.2f})"
+                    frame_matched_user = matched_user
                 else:
                     color = (0, 0, 255) # Màu đỏ cho đối tượng không xác định
                     label = f"Unknown ({similarity:.2f})"
@@ -117,7 +124,49 @@ def main():
                 # Bỏ qua nếu có lỗi xử lý frame đơn lẻ
                 pass
 
-        # 6. Tính toán và hiển thị FPS thời gian thực
+        # 6. Vẽ ảnh đối chiếu của đối tượng khớp ở góc phải trên cùng video (Premium HUD)
+        if frame_matched_user is not None:
+            if frame_matched_user != last_matched_user:
+                last_matched_user = frame_matched_user
+                # Tìm ảnh gốc của đối tượng trong dataraw để hiển thị đối chiếu
+                user_raw_dir = os.path.join(DEFAULT_RAW_DIR, frame_matched_user)
+                cached_match_image = None
+                if os.path.exists(user_raw_dir) and os.path.isdir(user_raw_dir):
+                    raw_files = [rf for rf in os.listdir(user_raw_dir) if rf.lower().endswith(('.png', '.jpg', '.jpeg'))]
+                    if raw_files:
+                        img_path = os.path.join(user_raw_dir, raw_files[0])
+                        img_read = cv2.imread(img_path)
+                        if img_read is not None:
+                            cached_match_image = cv2.resize(img_read, (120, 120))
+            
+            if cached_match_image is not None:
+                fh, fw = display_frame.shape[:2]
+                y_start = 30
+                y_end = 30 + 120
+                x_start = fw - 10 - 120
+                x_end = fw - 10
+                
+                # Đè ảnh đối chiếu lên góc phải trên
+                display_frame[y_start:y_end, x_start:x_end] = cached_match_image
+                
+                # Khung viền bo bo xung quanh ảnh đối chiếu màu xanh lá cây cực đẹp
+                cv2.rectangle(display_frame, (x_start, y_start), (x_end, y_end), (0, 255, 0), 2)
+                
+                # Thanh tiêu đề trên ảnh đối chiếu
+                cv2.rectangle(display_frame, (x_start - 1, y_start - 18), (x_end + 1, y_start), (0, 255, 0), -1)
+                cv2.putText(display_frame, "DATABASE MATCH", (x_start + 4, y_start - 5), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 1, cv2.LINE_AA)
+                
+                # Thanh ID dưới ảnh đối chiếu
+                cv2.rectangle(display_frame, (x_start - 1, y_end), (x_end + 1, y_end + 18), (0, 255, 0), -1)
+                cv2.putText(display_frame, frame_matched_user, (x_start + 4, y_end + 13), 
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1, cv2.LINE_AA)
+        else:
+            # Xóa cache khi không phát hiện thấy khuôn mặt khớp nào trong frame
+            last_matched_user = None
+            cached_match_image = None
+
+        # 7. Tính toán và hiển thị FPS thời gian thực
         curr_time = time.time()
         fps = 1.0 / (curr_time - prev_time + 1e-6)
         prev_time = curr_time

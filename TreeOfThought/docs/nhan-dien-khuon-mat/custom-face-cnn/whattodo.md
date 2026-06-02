@@ -24,7 +24,6 @@ viết hướng dẫn train
 viết thêm test face real từ camera sau khi train xong có file .onnx có thể load lên và mở camera để test
     camera test cần dùng embeding tổng hợp duy nhất để so sánh và nhận dạng
 
-
 Có thể lấy các tập data set trên mạng và tạo vào dataraw không?
             | Tên Dataset | Số lượng ảnh / Đối tượng | Đặc trưng nổi bật | Mục đích áp dụng |
             | :--- | :--- | :--- | :--- |
@@ -32,3 +31,5 @@ Có thể lấy các tập data set trên mạng và tạo vào dataraw không?
             | **CASIA-WebFace** | ~500,000 ảnh / 10,000 người | Đa dạng góc nghiêng, ánh sáng, chất lượng ảnh thực tế dồi dào. | Huấn luyện từ đầu hoặc tinh chỉnh diện rộng. |
             | **FG-NET / CACD** | ~100,000 ảnh từ 2 đến 100 tuổi | Chứa ảnh của cùng một người ở nhiều độ tuổi khác nhau từ lúc nhỏ đến già. | Huấn luyện nhánh **Age-Invariant (AIFR)** để triệt tiêu biến động tuổi tác. |
             | **ND-Twins Dataset** | Hàng chục nghìn ảnh của các cặp sinh đôi cùng trứng | Chụp trong điều kiện ánh sáng và biểu cảm rất đa dạng. | Huấn luyện phân biệt **Sinh đôi** cực kỳ khó. |
+
+camera test có thể lấy ảnh tìm được khi so sanh hiển thị góc phải trên cùng video để đối chiếu với khuôn mặt ở camera
