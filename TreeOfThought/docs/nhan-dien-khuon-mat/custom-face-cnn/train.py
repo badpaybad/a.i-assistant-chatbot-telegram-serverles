@@ -448,7 +448,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50"):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50", pretrained_global=True):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -490,7 +490,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     device = torch.device(device_name)
     flush_print(f"🖥️ Thiết bị sử dụng huấn luyện: {device}")
     
-    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=True, backbone_name=backbone_name).to(device)
+    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
     
@@ -649,6 +649,8 @@ if __name__ == "__main__":
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")
     parser.add_argument("--val_split", type=float, default=0.8, help="Train/Validation split ratio (default: 0.8)")
     parser.add_argument("--backbone", type=str, default="resnet50", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet50)")
+    parser.add_argument("--no_pretrained_global", action="store_false", dest="pretrained_global", help="Disable pre-trained ImageNet weights for global backbone")
+    parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
     # Bước 1: Tiền xử lý dataraw
@@ -662,5 +664,6 @@ if __name__ == "__main__":
             device_name=args.device,
             weight_decay=args.weight_decay,
             val_split=args.val_split,
-            backbone_name=args.backbone
+            backbone_name=args.backbone,
+            pretrained_global=args.pretrained_global
         )
