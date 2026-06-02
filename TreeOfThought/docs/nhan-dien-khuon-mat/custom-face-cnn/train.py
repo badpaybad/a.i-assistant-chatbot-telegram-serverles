@@ -51,7 +51,7 @@ def align_face_python(image_bgr, eye_left, eye_right):
     aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
     return aligned_face
 
-def detect_and_align_face_with_geom(image_bgr):
+def detect_and_align_face_with_geom(image_bgr, detector=None):
     """
     Phát hiện mặt, align ngang mắt bằng MediaPipe -> OpenCV Haar -> Center Crop
     Trả về cả ảnh đã align và vector đặc trưng hình học 12 chiều chuẩn hóa của 6 keypoints.
@@ -69,17 +69,67 @@ def detect_and_align_face_with_geom(image_bgr):
     # 1. Dùng MediaPipe BlazeFace
     try:
         import mediapipe as mp
-        from mediapipe.tasks import python as mp_py
-        from mediapipe.tasks.python import vision as mp_vision
         
-        if os.path.exists(BLAZEFACE_MODEL_PATH):
+        # Sử dụng detector được tái sử dụng để đạt tốc độ cao
+        if detector is not None:
+            rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+            mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+            result = detector.detect(mp_image)
+            
+            if result.detections:
+                det = max(result.detections, key=lambda d: d.categories[0].score)
+                kp = det.keypoints
+                if len(kp) >= 2:
+                    h, w = image_bgr.shape[:2]
+                    right_eye = (int(kp[0].x * w), int(kp[0].y * h))
+                    left_eye = (int(kp[1].x * w), int(kp[1].y * h))
+                    
+                    cx = (right_eye[0] + left_eye[0]) / 2.0
+                    cy = (right_eye[1] + left_eye[1]) / 2.0
+                    dx = left_eye[0] - right_eye[0]
+                    dy = left_eye[1] - right_eye[1]
+                    
+                    current_dist = np.sqrt(dx**2 + dy**2)
+                    if current_dist == 0:
+                        current_dist = 1.0
+                        
+                    angle_deg = np.degrees(np.arctan2(dy, dx))
+                    target_dist = 35.2372
+                    tx = 55.9132
+                    ty = 51.59885
+                    
+                    scale = target_dist / current_dist
+                    M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
+                    M[0, 2] += (tx - cx)
+                    M[1, 2] += (ty - cy)
+                    
+                    aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
+                    
+                    # Áp dụng ma trận M cho 6 keypoints
+                    transformed_geom = []
+                    for i in range(min(len(kp), 6)):
+                        x_orig = kp[i].x * w
+                        y_orig = kp[i].y * h
+                        x_new = M[0, 0] * x_orig + M[0, 1] * y_orig + M[0, 2]
+                        y_new = M[1, 0] * x_orig + M[1, 1] * y_orig + M[1, 2]
+                        transformed_geom.extend([x_new / 112.0, y_new / 112.0])
+                    
+                    while len(transformed_geom) < 12:
+                        transformed_geom.append(0.5)
+                        
+                    return aligned_face, np.array(transformed_geom, dtype=np.float32)
+
+        # Dự phòng tự khởi tạo nếu detector là None
+        elif os.path.exists(BLAZEFACE_MODEL_PATH):
+            from mediapipe.tasks import python as mp_py
+            from mediapipe.tasks.python import vision as mp_vision
             base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
             det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
             
-            with mp_vision.FaceDetector.create_from_options(det_opts) as detector:
+            with mp_vision.FaceDetector.create_from_options(det_opts) as single_detector:
                 rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-                result = detector.detect(mp_image)
+                result = single_detector.detect(mp_image)
                 
                 if result.detections:
                     det = max(result.detections, key=lambda d: d.categories[0].score)
@@ -214,6 +264,21 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
         
     identities = [d for d in os.listdir(raw_dir) if os.path.isdir(os.path.join(raw_dir, d))]
     
+    # Khởi tạo FaceDetector một lần duy nhất để tái sử dụng trong suốt quá trình tiền xử lý
+    mp_detector = None
+    try:
+        import mediapipe as mp
+        from mediapipe.tasks import python as mp_py
+        from mediapipe.tasks.python import vision as mp_vision
+        
+        if os.path.exists(BLAZEFACE_MODEL_PATH):
+            base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
+            det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
+            mp_detector = mp_vision.FaceDetector.create_from_options(det_opts)
+            flush_print("⚡ Khởi tạo thành công persistent MediaPipe FaceDetector cho tiền xử lý!")
+    except Exception as e:
+        flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo persistent FaceDetector: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
+
     total_processed = 0
     for uid in identities:
         user_raw_path = os.path.join(raw_dir, uid)
@@ -232,7 +297,7 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             if img is None:
                 continue
                 
-            aligned, geom = detect_and_align_face_with_geom(img)
+            aligned, geom = detect_and_align_face_with_geom(img, detector=mp_detector)
             f_global, f_eye, f_nose = crop_sub_regions(aligned)
             
             # Lưu ảnh & đặc trưng hình học landmarks
@@ -243,6 +308,13 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             np.save(os.path.join(processed_dir, "global", uid, f"{base_name}_geom.npy"), geom)
             total_processed += 1
             
+    # Giải phóng detector
+    if mp_detector is not None:
+        try:
+            mp_detector.close()
+        except Exception:
+            pass
+
     flush_print(f"✅ Đã tiền xử lý xong {total_processed} bộ ảnh khuôn mặt đa vùng.")
     return True
 
