@@ -106,3 +106,9 @@ TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcface_model.onnx
 TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcface_model.onnx
 **/ArcFaceFinetune/**
 TreeOfThought/docs/nhan-dien-khuon-mat.zip
+**/custom-face-cnn/data_processed/**
+**/custom-face-cnn/**.pth
+**/custom-face-cnn/**.onnx
+**/custom-face-cnn/**.pt
+**/custom-face-cnn/**.index
+TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/user_ids.txt
