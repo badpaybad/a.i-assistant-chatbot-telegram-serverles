@@ -92,4 +92,4 @@ cần tăng đường chéo 15px cần tăng lên 20px
 
 **cập nhật 10**
 modal chỉ dùng GeometricNet và GlobalNet 
-GeometricNet dùng backbone ở như ở GlobalNet để trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt , lấy điểm key để làm tâm hình vuông có đường chéo 30px. như vậy tổng có 26 vùng và 1 vùng toàn mặt. Cần dùng self attention để kết hợp tính ra vector từng vùng trong số 26 vùng so với đặc trưng của vùng toàn mặt (toàn mặt là 1 vùng).
+GeometricNet cần trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt với mô hình nhẹ và đủ tốt phù hợp lấy điểm key để làm tâm hình vuông có đường chéo 30px. lấy điểm giữa của 2 mắt rồi lấy đặc trưng của vùng điểm đó (cách lấy đặc trưng giống của 26 điểm key khuôn mặt). từ vùng điểm giữa này self attention với 26 vùng trước đó để lấy đặc trưng tương quan điểm giữa của vùng tới 26 vùng trước đó . sau khi có cần kết hợp với GlobalNet để lấy được đặc trưng self attention. 
