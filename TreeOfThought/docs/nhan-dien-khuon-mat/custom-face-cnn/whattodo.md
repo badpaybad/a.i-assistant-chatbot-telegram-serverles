@@ -89,3 +89,7 @@ Sự kết hợp chéo bằng Self-Attention giữa cả 4 luồng mới tạo r
         # Bán kính 5px, tương đương đường chéo 15px (cạnh ~11px)
         offsets = torch.linspace(-5, 5, 11) * (2.0 / 112.0)
 cần tăng đường chéo 15px cần tăng lên 20px
+
+**cập nhật 10**
+modal chỉ dùng GeometricNet và GlobalNet 
+GeometricNet dùng backbone ở như ở GlobalNet để trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt , lấy điểm key để làm tâm hình vuông có đường chéo 30px. như vậy tổng có 26 vùng và 1 vùng toàn mặt. Cần dùng self attention để kết hợp tính ra vector từng vùng trong số 26 vùng so với đặc trưng của vùng toàn mặt (toàn mặt là 1 vùng).
