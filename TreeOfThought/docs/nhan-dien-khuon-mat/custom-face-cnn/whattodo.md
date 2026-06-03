@@ -71,4 +71,21 @@ Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được
                 4.  **Early Stopping:** Theo dõi Val Loss hoặc Val Acc và dừng quá trình huấn luyện khi chúng không cải thiện trong một số epoch nhất định, thay vì chạy hết 50 epoch.
                 5.  **Giảm độ phức tạp mô hình:** Nếu mô hình quá lớn so với lượng dữ liệu, hãy xem xét giảm số lớp hoặc số lượng neuron.  Khi Early Stopping thì xuất file onnx lúc đó để dùng
 
-patience ý không phải là đưa tham số vào dể dừng, mà khi click nút stop train, hoặc ctrl + C trước khi đóng tiến trình cần xuất best checkpoint thành file .onnx 
+patience ý không phải là đưa tham số vào dể dừng, mà khi click nút stop train, hoặc ctrl + C trước khi đóng tiến trình cần xuất best checkpoint thành file .onnx
+
+**cập nhật 7**
+Như để cập ở trên khi đã có landmark các điểm key như code hiện tại là 26 điểm. khi trích xuất cần dựa vào từng điểm rồi trích xuất đặc trưng vùng xung quanh từng điểm đó (vd lấy điểm đó làm tâm hình tròn bán kính 10px hoặc là tâm hình vuông có đường chéo 15px).
+    rồi lại lấy đặc trưng từng vùng đó để tính toán các vector tương quan tới vùng đặc trưng của các điểm đặc trưng khác như đuôi mắt, khóe mắt, mý mắt, đồng tử, đầu lông mày, đuôi lông mày, mũi, cánh mũi, nhân trung, mép miệng, khóe miệng, cằm, má, thái dương ... tìm đặc trưng tương quan các vector để cải thiện mô hình
+    **chú ý** device sẽ dùng cpu mặc định
+
+**cập nhật 8**
+ở CustomPartBasedFaceCNN có forward cần một mạng cnn để chỉ ra đặc trưng tương quan và self attention qua lại của x_global, x_eye, x_nose, x_geom  
+mô hình này mới là mô hình tổng thể để có embeding tốt nhất cho việc nhận diện khuôn mặt.
+Sự kết hợp chéo bằng Self-Attention giữa cả 4 luồng mới tạo ra vector embedding 512 chiều hoàn hảo nhất, giúp nhận diện chính xác kể cả khi bị che khuất một phần hay nghiêng mặt
+
+**cập nhật 9**
+ở trong model.py đang có
+        # Định nghĩa offset grid cho patch 11x11 (diagonal ~15px trên ảnh 112x112)
+        # Bán kính 5px, tương đương đường chéo 15px (cạnh ~11px)
+        offsets = torch.linspace(-5, 5, 11) * (2.0 / 112.0)
+cần tăng đường chéo 15px cần tăng lên 20px

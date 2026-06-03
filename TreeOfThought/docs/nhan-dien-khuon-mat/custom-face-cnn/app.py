@@ -408,10 +408,10 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="input-group">
                 <label for="backbone">Backbone</label>
                 <select id="backbone">
-                    <option value="resnet18" selected>resnet18 (Nhẹ - Khuyên dùng)</option>
+                    <option value="resnet18" >resnet18 (Nhẹ - Khuyên dùng)</option>
                     <option value="resnet50">resnet50 (Nặng)</option>
                     <option value="mobilenet_v3">mobilenet_v3 (Rất nhẹ)</option>
-                    <option value="convnext">convnext (Hiện đại)</option>
+                    <option value="convnext" selected>convnext (Hiện đại)</option>
                 </select>
             </div>
             <button id="btnStart" class="btn btn-primary" onclick="startTraining()">▶ Bắt đầu Train</button>

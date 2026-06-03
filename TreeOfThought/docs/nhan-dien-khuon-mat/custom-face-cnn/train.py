@@ -830,6 +830,10 @@ if __name__ == "__main__":
     # Đăng ký signal handler để bắt SIGINT và SIGTERM chuyển thành KeyboardInterrupt
     def sig_handler(signum, frame):
         flush_print(f"\n🛑 Nhận tín hiệu ngắt {signum}. Đang kích hoạt dừng tiến trình và xuất ONNX...")
+        try:
+            export_best_to_onnx()
+        except Exception as e:
+            flush_print(f"⚠️ Cảnh báo: Không thể xuất ONNX từ checkpoint tốt nhất: {e}")
         raise KeyboardInterrupt
         
     signal.signal(signal.SIGINT, sig_handler)
@@ -842,7 +846,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")
     parser.add_argument("--val_split", type=float, default=0.8, help="Train/Validation split ratio (default: 0.8)")
-    parser.add_argument("--backbone", type=str, default="resnet18", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet18)")
+    parser.add_argument("--backbone", type=str, default="convnext", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: convnext)")
     parser.add_argument("--no_pretrained_global", action="store_false", dest="pretrained_global", help="Disable pre-trained ImageNet weights for global backbone")
     parser.add_argument("--l1_lambda", type=float, default=1e-5, help="L1 regularization penalty coefficient (default: 1e-5)")
     parser.set_defaults(pretrained_global=True)
