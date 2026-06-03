@@ -19,10 +19,15 @@ PROCESSED_DIR = "./data_processed"
 BLAZEFACE_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/blaze_face_short_range.tflite")
 FACELANDMARKER_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/face_landmarker.task")
 
-# Đảm bảo in ra stdout lập tức để C# parse
+# Đảm bảo in ra stdout lập tức và ghi vào file train.log
 def flush_print(msg):
     print(msg)
     sys.stdout.flush()
+    try:
+        with open("train.log", "a", encoding="utf-8") as f:
+            f.write(msg + "\n")
+    except Exception:
+        pass
 
 # =====================================================================
 # 1. BỘ TIỀN XỬ LÝ & CẮT PHÂN VÙNG KHUÔN MẶT (MediaPipe / OpenCV / Center Crop)
@@ -503,6 +508,17 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     
     best_val_loss = float('inf')
     
+    # Khởi tạo file CSV ghi log hội tụ
+    import csv
+    from datetime import datetime
+    csv_file_path = "train_log.csv"
+    try:
+        with open(csv_file_path, mode='w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(["timestamp", "epoch", "batch", "loss", "accuracy", "phase"])
+    except Exception as e:
+        flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo file CSV log: {e}")
+    
     # 3. Vòng lặp huấn luyện chính
     flush_print("🚀 Bắt đầu quá trình huấn luyện mạng Custom Face CNN...")
     
@@ -534,8 +550,17 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             correct_train += (predicted == labels).sum().item()
             
             acc_batch = (predicted == labels).sum().item() / labels.size(0) * 100
-            # Định dạng stdout cho C# parse tiến độ từng batch
-            flush_print(f"[BATCH_PROGRESS] Epoch: {epoch}/{epochs} | Batch: {batch_idx+1}/{len(train_loader)} | Loss: {loss.item():.4f} | Acc: {acc_batch:.2f}%")
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Định dạng stdout cho C# parse tiến độ từng batch kèm mốc thời gian chạy từng batch
+            flush_print(f"[BATCH_PROGRESS] {now_str} | Epoch: {epoch}/{epochs} | Batch: {batch_idx+1}/{len(train_loader)} | Loss: {loss.item():.4f} | Acc: {acc_batch:.2f}%")
+            
+            # Ghi log batch vào CSV
+            try:
+                with open(csv_file_path, mode='a', newline='', encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    writer.writerow([now_str, epoch, batch_idx+1, f"{loss.item():.4f}", f"{acc_batch:.2f}", "train_batch"])
+            except Exception:
+                pass
             
         epoch_train_loss = train_loss / total_train
         epoch_train_acc = correct_train / total_train * 100
@@ -566,7 +591,17 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         epoch_val_acc = correct_val / total_val * 100
         
         # Định dạng stdout cho C# parse tiến độ epoch
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         flush_print(f"[EPOCH_PROGRESS] Epoch: {epoch}/{epochs} | Loss: {epoch_val_loss:.4f} | Acc: {epoch_val_acc:.2f}%")
+        
+        # Ghi log epoch (train & val) vào CSV
+        try:
+            with open(csv_file_path, mode='a', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                writer.writerow([now_str, epoch, "ALL", f"{epoch_train_loss:.4f}", f"{epoch_train_acc:.2f}", "train_epoch"])
+                writer.writerow([now_str, epoch, "ALL", f"{epoch_val_loss:.4f}", f"{epoch_val_acc:.2f}", "val_epoch"])
+        except Exception:
+            pass
         
         # Lưu checkpoint tốt nhất dựa trên Val Loss
         if epoch_val_loss < best_val_loss:
@@ -649,8 +684,8 @@ def export_best_to_onnx(num_classes, checkpoint_path="checkpoint_best.pth", outp
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Train Custom Part-Based Face CNN for Asian faces.")
-    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs (default: 100)")
-    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training (default: 16)")
+    parser.add_argument("--epochs", type=int, default=200, help="Number of training epochs (default: 200)")
+    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training (default: 64)")
     parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate (default: 0.0002)")
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")
@@ -660,6 +695,13 @@ if __name__ == "__main__":
     parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
+    # Xóa log cũ nếu tồn tại
+    if os.path.exists("train.log"):
+        try:
+            os.remove("train.log")
+        except Exception:
+            pass
+            
     # Bước 1: Tiền xử lý dataraw
     success = preprocess_dataraw()
     if success:
