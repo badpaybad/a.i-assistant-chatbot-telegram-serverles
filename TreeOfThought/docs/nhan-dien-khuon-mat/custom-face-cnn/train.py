@@ -219,41 +219,43 @@ def crop_sub_regions(aligned_face):
 
 def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
     """
-    Quét dataraw, phát hiện, align và lưu ảnh phân vùng
+    Quét dataraw, phát hiện, align, áp dụng tăng cường dữ liệu (data augmentation) và lưu ảnh phân vùng
     """
-    # Kiểm tra xem dữ liệu đã được xử lý ở dạng 16 landmarks mới chưa
+    # Kiểm tra xem dữ liệu đã được xử lý ở dạng 26 landmarks và có chứa dữ liệu tăng cường chưa
     need_reprocess = True
     global_dir = os.path.join(processed_dir, "global")
     if os.path.exists(global_dir) and os.path.isdir(global_dir):
         npy_files = []
+        has_aug = False
         for root, dirs, files in os.walk(global_dir):
             for f in files:
                 if f.endswith("_geom.npy"):
                     npy_files.append(os.path.join(root, f))
-                    break
-            if npy_files:
+                if "_aug_" in f:
+                    has_aug = True
+            if npy_files and has_aug:
                 break
         
-        if npy_files:
+        if npy_files and has_aug:
             try:
                 test_geom = np.load(npy_files[0])
                 if test_geom.shape == (26, 2):
                     need_reprocess = False
-                    flush_print("💡 Thư mục data_processed đã chứa dữ liệu dạng 26 landmarks mới. Bỏ qua tiền xử lý.")
+                    flush_print("💡 Thư mục data_processed đã chứa dữ liệu dạng 26 landmarks và ảnh tăng cường. Bỏ qua tiền xử lý.")
                     return True
             except Exception:
                 pass
 
     if need_reprocess:
         if os.path.exists(processed_dir):
-            flush_print("♻️ Phát hiện thư mục dữ liệu cũ, tiến hành dọn dẹp để xử lý lại theo định dạng 16 landmarks...")
+            flush_print("♻️ Phát hiện thư mục dữ liệu cũ hoặc chưa đủ ảnh tăng cường, tiến hành dọn dẹp để xử lý lại...")
             shutil.rmtree(processed_dir)
 
     if not os.path.exists(raw_dir):
         flush_print(f"❌ Lỗi: Không tìm thấy thư mục dataraw tại {raw_dir}")
         return False
         
-    flush_print(f"🔄 Bắt đầu tiền xử lý dữ liệu từ {raw_dir}...")
+    flush_print(f"🔄 Bắt đầu tiền xử lý dữ liệu và tạo ảnh tăng cường (Data Augmentation) từ {raw_dir}...")
     
     # Tạo các thư mục lưu trữ phân vùng
     for part in ["global", "eye", "nose"]:
@@ -278,6 +280,7 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
         flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo persistent FaceLandmarker: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
 
     total_processed = 0
+    total_augmented = 0
     for uid in identities:
         user_raw_path = os.path.join(raw_dir, uid)
         files = [f for f in os.listdir(user_raw_path) if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
@@ -298,13 +301,84 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             aligned, geom = detect_and_align_face_with_geom(img, face_mesh_detector=mp_detector)
             f_global, f_eye, f_nose = crop_sub_regions(aligned)
             
-            # Lưu ảnh & đặc trưng hình học landmarks
+            # 1. Lưu ảnh gốc đã align & đặc trưng hình học landmarks
             base_name = os.path.splitext(f)[0]
             cv2.imwrite(os.path.join(processed_dir, "global", uid, f"{base_name}_global.png"), f_global)
             cv2.imwrite(os.path.join(processed_dir, "eye", uid, f"{base_name}_eye.png"), f_eye)
             cv2.imwrite(os.path.join(processed_dir, "nose", uid, f"{base_name}_nose.png"), f_nose)
             np.save(os.path.join(processed_dir, "global", uid, f"{base_name}_geom.npy"), geom)
             total_processed += 1
+            
+            # --- TĂNG CƯỜNG DỮ LIỆU OFFLINE (OFFLINE DATA AUGMENTATION) ---
+            # Tạo 5 phiên bản tăng cường để chống quá khớp (Overfitting):
+            
+            # 1. Lật ngang (Horizontal Flip)
+            aligned_flip = cv2.flip(aligned, 1)
+            geom_flip = geom.copy()
+            geom_flip[:, 0] = 1.0 - geom_flip[:, 0]
+            geom_flip[[0, 3]] = geom_flip[[3, 0]]
+            geom_flip[[1, 2]] = geom_flip[[2, 1]]
+            geom_flip[[4, 6]] = geom_flip[[6, 4]]
+            geom_flip[[5, 7]] = geom_flip[[7, 5]]
+            geom_flip[[8, 9]] = geom_flip[[9, 8]]
+            geom_flip[[10, 12]] = geom_flip[[12, 10]]
+            geom_flip[[11, 13]] = geom_flip[[13, 11]]
+            geom_flip[[16, 17]] = geom_flip[[17, 16]]
+            geom_flip[[19, 20]] = geom_flip[[20, 19]]
+            geom_flip[[23, 24]] = geom_flip[[24, 23]]
+            
+            # 2. Xoay chéo trái (Rotation +10 độ, Scale 1.03)
+            M_rotP = cv2.getRotationMatrix2D((56, 56), 10.0, 1.03)
+            aligned_rotP = cv2.warpAffine(aligned, M_rotP, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
+            geom_rotP = geom.copy()
+            for i in range(26):
+                px = geom[i, 0] * 112.0
+                py = geom[i, 1] * 112.0
+                nx = M_rotP[0, 0] * px + M_rotP[0, 1] * py + M_rotP[0, 2]
+                ny = M_rotP[1, 0] * px + M_rotP[1, 1] * py + M_rotP[1, 2]
+                geom_rotP[i, 0] = np.clip(nx / 112.0, 0.0, 1.0)
+                geom_rotP[i, 1] = np.clip(ny / 112.0, 0.0, 1.0)
+
+            # 3. Xoay chéo phải (Rotation -10 độ, Scale 1.03)
+            M_rotN = cv2.getRotationMatrix2D((56, 56), -10.0, 1.03)
+            aligned_rotN = cv2.warpAffine(aligned, M_rotN, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
+            geom_rotN = geom.copy()
+            for i in range(26):
+                px = geom[i, 0] * 112.0
+                py = geom[i, 1] * 112.0
+                nx = M_rotN[0, 0] * px + M_rotN[0, 1] * py + M_rotN[0, 2]
+                ny = M_rotN[1, 0] * px + M_rotN[1, 1] * py + M_rotN[1, 2]
+                geom_rotN[i, 0] = np.clip(nx / 112.0, 0.0, 1.0)
+                geom_rotN[i, 1] = np.clip(ny / 112.0, 0.0, 1.0)
+
+            # 4. Giả lập che khẩu trang (Mask Occlusion)
+            aligned_mask = aligned.copy()
+            cv2.rectangle(aligned_mask, (0, 75), (112, 112), (128, 128, 128), -1)
+            geom_mask = geom.copy()
+
+            # 5. Giả lập đeo kính cận (Glasses Occlusion)
+            aligned_glasses = aligned.copy()
+            cv2.line(aligned_glasses, (15, 52), (97, 52), (0, 0, 0), 2)
+            cv2.circle(aligned_glasses, (38, 52), 15, (0, 0, 0), 2)
+            cv2.circle(aligned_glasses, (74, 52), 15, (0, 0, 0), 2)
+            geom_glasses = geom.copy()
+
+            # Lưu các phiên bản tăng cường
+            augmentations = [
+                ("_aug_flip", aligned_flip, geom_flip),
+                ("_rotP", aligned_rotP, geom_rotP),
+                ("_rotN", aligned_rotN, geom_rotN),
+                ("_mask", aligned_mask, geom_mask),
+                ("_glasses", aligned_glasses, geom_glasses)
+            ]
+
+            for suffix, aug_img, aug_geom in augmentations:
+                aug_global, aug_eye, aug_nose = crop_sub_regions(aug_img)
+                cv2.imwrite(os.path.join(processed_dir, "global", uid, f"{base_name}{suffix}_global.png"), aug_global)
+                cv2.imwrite(os.path.join(processed_dir, "eye", uid, f"{base_name}{suffix}_eye.png"), aug_eye)
+                cv2.imwrite(os.path.join(processed_dir, "nose", uid, f"{base_name}{suffix}_nose.png"), aug_nose)
+                np.save(os.path.join(processed_dir, "global", uid, f"{base_name}{suffix}_geom.npy"), aug_geom)
+                total_augmented += 1
             
     # Giải phóng detector
     if mp_detector is not None:
@@ -313,7 +387,7 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
         except Exception:
             pass
 
-    flush_print(f"✅ Đã tiền xử lý xong {total_processed} bộ ảnh khuôn mặt đa vùng.")
+    flush_print(f"✅ Đã tiền xử lý xong: {total_processed} ảnh gốc. Đã sinh thêm {total_augmented} ảnh tăng cường chống quá khớp.")
     return True
 
 # =====================================================================
@@ -471,25 +545,51 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     identities = sorted([d for d in os.listdir(global_dir) if os.path.isdir(os.path.join(global_dir, d))])
     class_to_idx = {uid: idx for idx, uid in enumerate(identities)}
     
-    file_list = []
+    original_files = []  # Danh sách ảnh gốc (không chứa hậu tố tăng cường)
+    augmented_files = {}  # Map từ uid -> { orig_base -> [aug_bases] }
+    
     for uid in identities:
         user_path = os.path.join(global_dir, uid)
         files = [f for f in os.listdir(user_path) if f.endswith("_global.png")]
         for f in files:
             base_name = f.replace("_global.png", "")
-            file_list.append((uid, base_name))
             
-    if not file_list:
-        flush_print("❌ Không tìm thấy tệp ảnh đã tiền xử lý nào!")
+            # Kiểm tra xem đây có phải là ảnh tăng cường không
+            is_aug = False
+            aug_suffixes = ["_aug_flip", "_rotP", "_rotN", "_mask", "_glasses"]
+            for suffix in aug_suffixes:
+                if base_name.endswith(suffix):
+                    is_aug = True
+                    orig_base = base_name[:-len(suffix)]
+                    if uid not in augmented_files:
+                        augmented_files[uid] = {}
+                    if orig_base not in augmented_files[uid]:
+                        augmented_files[uid][orig_base] = []
+                    augmented_files[uid][orig_base].append(base_name)
+                    break
+            
+            if not is_aug:
+                original_files.append((uid, base_name))
+                
+    if not original_files:
+        flush_print("❌ Không tìm thấy tệp ảnh gốc đã tiền xử lý nào!")
         return
 
-    # Trộn ngẫu nhiên dữ liệu và chia Train/Val theo tỉ lệ cấu hình
+    # Trộn ngẫu nhiên danh sách ảnh gốc để chia Train/Val
     random.seed(42)
-    random.shuffle(file_list)
-    split_idx = int(len(file_list) * val_split)
-    train_files = file_list[:split_idx]
-    val_files = file_list[split_idx:]
+    random.shuffle(original_files)
+    split_idx = int(len(original_files) * val_split)
+    train_originals = original_files[:split_idx]
+    val_files = original_files[split_idx:]
     
+    # Xây dựng train_files bao gồm ảnh gốc và toàn bộ các ảnh tăng cường của nó
+    train_files = []
+    for uid, orig_base in train_originals:
+        train_files.append((uid, orig_base))
+        if uid in augmented_files and orig_base in augmented_files[uid]:
+            for aug_base in augmented_files[uid][orig_base]:
+                train_files.append((uid, aug_base))
+                
     if not val_files: # Đề phòng dataset quá nhỏ
         val_files = train_files
         
@@ -521,6 +621,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo file CSV log: {e}")
     
     # 3. Vòng lặp huấn luyện chính
+    flush_print(f"📊 Dataset Size: Total Identities: {len(identities)} | Original Images: {len(original_files)} | Train Samples (with aug): {len(train_files)} | Val Samples (clean): {len(val_files)}")
     flush_print("🚀 Bắt đầu quá trình huấn luyện mạng Custom Face CNN...")
     
     for epoch in range(1, epochs + 1):
@@ -692,7 +793,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Train Custom Part-Based Face CNN for Asian faces.")
     parser.add_argument("--epochs", type=int, default=200, help="Number of training epochs (default: 200)")
-    parser.add_argument("--batch_size", type=int, default=64, help="Batch size for training (default: 64)")
+    parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training (default: 32)")
     parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate (default: 0.0002)")
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")

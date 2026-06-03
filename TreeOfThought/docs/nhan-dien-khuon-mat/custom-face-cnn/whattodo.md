@@ -61,3 +61,5 @@ Viết code c#, javascript typescript , dart fullter cho app mobi sử dụng .o
     viết hàm có tính sử dụng tiện lợi người dùng đưa ảnh cần lấy embeding hàm trả ra embending, face bbox ,...
 
 Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được từ MediaPipe Face Mesh. download modal về local folder nếu cần
+
+**cập nhật 5** do bị over fitting khi lấy từ dataraw sang processed cần bổ xung tạo thêm ảnh với các kỹ thuật chống quá khớp như tăng cường dữ liệu (data augmentation)
