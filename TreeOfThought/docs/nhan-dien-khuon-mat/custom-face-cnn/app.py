@@ -408,8 +408,8 @@ INDEX_HTML = """<!DOCTYPE html>
             <div class="input-group">
                 <label for="backbone">Backbone</label>
                 <select id="backbone">
-                    <option value="resnet50" selected>resnet50 (Khuyên dùng)</option>
-                    <option value="resnet18">resnet18 (Nhẹ)</option>
+                    <option value="resnet18" selected>resnet18 (Nhẹ - Khuyên dùng)</option>
+                    <option value="resnet50">resnet50 (Nặng)</option>
                     <option value="mobilenet_v3">mobilenet_v3 (Rất nhẹ)</option>
                     <option value="convnext">convnext (Hiện đại)</option>
                 </select>
@@ -788,7 +788,7 @@ def start_training():
     # 1. Dọn dẹp triệt để các tiến trình train.py mồ côi cũ để tránh trùng lặp log ghi đè chéo
     try:
         import subprocess
-        subprocess.run(["pkill", "-f", "train.py"])
+        subprocess.run(["pkill", "-9", "-f", "train.py"])
     except Exception as e:
         print(f"⚠️ Cảnh báo dọn dẹp tiến trình cũ: {e}")
         
@@ -821,7 +821,7 @@ def start_training():
     epochs = data.get("epochs", 200)
     batch_size = data.get("batch_size", 64)
     device = data.get("device", "cpu")
-    backbone = data.get("backbone", "resnet50")
+    backbone = data.get("backbone", "resnet18")
     lr = data.get("lr", 0.0002)
     l1_lambda = data.get("l1_lambda", 1e-5)
     
@@ -858,41 +858,72 @@ def start_training():
 @app.route('/api/stop', methods=['POST'])
 def stop_training():
     global train_process
+    import time
     
-    # Tiêu diệt tất cả tiến trình train.py (quét toàn hệ thống)
-    pkilled = False
-    try:
-        import subprocess
-        res = subprocess.run(["pkill", "-f", "train.py"])
-        if res.returncode == 0:
-            pkilled = True
-    except Exception as e:
-        print(f"⚠️ Lỗi khi chạy pkill: {e}")
-        
+    sent_sigint = False
+    
+    # 1. Thử gửi SIGINT (tương đương Ctrl+C / Signal 2) cho train_process chính
     if is_training_running():
         try:
             if os.name != 'nt':
+                # Gửi SIGINT tới nhóm tiến trình của train_process (được tạo bằng setsid)
                 os.killpg(os.getpgid(train_process.pid), signal.SIGINT)
             else:
                 train_process.terminate()
-            train_process.wait(timeout=5)
-            train_process = None
-            return jsonify({"status": "success", "message": "Đã dừng tiến trình huấn luyện thành công."})
-        except Exception:
-            try:
-                if os.name != 'nt':
-                    os.killpg(os.getpgid(train_process.pid), signal.SIGKILL)
-                else:
-                    train_process.kill()
-                train_process = None
-                return jsonify({"status": "success", "message": "Đã cưỡng bức dừng tiến trình huấn luyện (SIGKILL)."})
-            except Exception as ex:
-                return jsonify({"status": "error", "message": f"Lỗi khi dừng tiến trình: {str(ex)}"}), 500
-                
-    if pkilled:
-        train_process = None
-        return jsonify({"status": "success", "message": "Đã quét và dừng các tiến trình train.py chạy ngầm cũ."})
+            sent_sigint = True
+            print("📣 Đã gửi SIGINT tới nhóm tiến trình train_process.")
+        except Exception as e:
+            print(f"⚠️ Lỗi khi gửi SIGINT tới train_process: {e}")
+
+    # 2. Đồng thời gửi pkill -2 (SIGINT) đến toàn hệ thống cho các tiến trình train.py (đề phòng chạy ngầm mồ côi)
+    try:
+        res = subprocess.run(["pkill", "-2", "-f", "train.py"])
+        if res.returncode == 0:
+            sent_sigint = True
+            print("📣 Đã gửi pkill -2 tới tất cả tiến trình train.py.")
+    except Exception as e:
+        print(f"⚠️ Lỗi khi chạy pkill -2: {e}")
         
+    if sent_sigint:
+        # Chờ tối đa 15 giây để tiến trình train.py bắt tín hiệu, nạp checkpoint và xuất ONNX thành công
+        still_running = True
+        for i in range(15):
+            # Kiểm tra trạng thái của train_process
+            if train_process is not None and train_process.poll() is not None:
+                still_running = False
+                break
+                
+            # Kiểm tra xem còn tiến trình train.py nào chạy trên hệ thống không
+            try:
+                pgrep_res = subprocess.run(["pgrep", "-f", "train.py"], capture_output=True)
+                if pgrep_res.returncode != 0:
+                    still_running = False
+                    break
+            except Exception:
+                pass
+                
+            time.sleep(1.0)
+            
+        if still_running:
+            # Nếu quá 15 giây vẫn chưa dừng, tiến hành cưỡng bức dừng (SIGKILL / -9)
+            print("⚠️ Quá 15 giây chờ xuất ONNX, tiến hành cưỡng bức dừng (SIGKILL)...")
+            try:
+                if is_training_running():
+                    if os.name != 'nt':
+                        os.killpg(os.getpgid(train_process.pid), signal.SIGKILL)
+                    else:
+                        train_process.kill()
+                    train_process.wait()
+                subprocess.run(["pkill", "-9", "-f", "train.py"])
+                train_process = None
+                return jsonify({"status": "success", "message": "Quá thời gian chờ xuất ONNX, đã cưỡng bức dừng tiến trình."})
+            except Exception as ex:
+                train_process = None
+                return jsonify({"status": "error", "message": f"Lỗi khi cưỡng bức dừng tiến trình: {str(ex)}"}), 500
+        else:
+            train_process = None
+            return jsonify({"status": "success", "message": "Đã dừng tiến trình huấn luyện và xuất ONNX thành công."})
+            
     return jsonify({"status": "stopped", "message": "Không có tiến trình train nào đang chạy."})
 
 @app.route('/api/logs', methods=['GET'])
@@ -1000,9 +1031,9 @@ if __name__ == '__main__':
     # Tiêu diệt các tiến trình train.py mồ côi cũ chạy ngầm trước khi khởi chạy Flask Dashboard
     try:
         import subprocess
-        subprocess.run(["pkill", "-f", "train.py"])
+        subprocess.run(["pkill", "-9", "-f", "train.py"])
     except Exception:
         pass
         
-    # Chạy Flask ở port 5000, cho phép truy cập cục bộ/ngoại tuyến
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Chạy Flask ở port 5000, cho phép truy cập cục bộ/ngoại tuyến, tắt reloader để tránh trùng lặp tiến trình
+    app.run(host='0.0.0.0', port=5000, debug=True, use_reloader=False)

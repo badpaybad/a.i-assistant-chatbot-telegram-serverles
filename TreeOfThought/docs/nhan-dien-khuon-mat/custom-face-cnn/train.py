@@ -363,13 +363,23 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             cv2.circle(aligned_glasses, (74, 52), 15, (0, 0, 0), 2)
             geom_glasses = geom.copy()
 
+            # 6. Tăng độ sáng (Brightness)
+            aligned_bright = cv2.convertScaleAbs(aligned, alpha=1.2, beta=30)
+            geom_bright = geom.copy()
+
+            # 7. Giảm độ sáng (Darkness)
+            aligned_dark = cv2.convertScaleAbs(aligned, alpha=0.8, beta=-30)
+            geom_dark = geom.copy()
+
             # Lưu các phiên bản tăng cường
             augmentations = [
                 ("_aug_flip", aligned_flip, geom_flip),
                 ("_rotP", aligned_rotP, geom_rotP),
                 ("_rotN", aligned_rotN, geom_rotN),
                 ("_mask", aligned_mask, geom_mask),
-                ("_glasses", aligned_glasses, geom_glasses)
+                ("_glasses", aligned_glasses, geom_glasses),
+                ("_bright", aligned_bright, geom_bright),
+                ("_dark", aligned_dark, geom_dark)
             ]
 
             for suffix, aug_img, aug_geom in augmentations:
@@ -535,7 +545,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50", pretrained_global=True, l1_lambda=1e-5):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -556,7 +566,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             
             # Kiểm tra xem đây có phải là ảnh tăng cường không
             is_aug = False
-            aug_suffixes = ["_aug_flip", "_rotP", "_rotN", "_mask", "_glasses"]
+            aug_suffixes = ["_aug_flip", "_rotP", "_rotN", "_mask", "_glasses", "_bright", "_dark"]
             for suffix in aug_suffixes:
                 if base_name.endswith(suffix):
                     is_aug = True
@@ -752,60 +762,79 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     flush_print("💾 Đã lưu Checkpoint cuối cùng (checkpoint_final.pth).")
     
     # 4. Xuất mô hình tốt nhất sang định dạng ONNX
-    export_best_to_onnx(len(identities))
+    export_best_to_onnx()
 
 # =====================================================================
 # 4. BỘ XUẤT MÔ HÌNH SANG ĐỊNH DẠNG ONNX
 # =====================================================================
 
-def export_best_to_onnx(num_classes, checkpoint_path="checkpoint_best.pth", output_onnx_path="custom_face_cnn.onnx"):
+def export_best_to_onnx(checkpoint_path="checkpoint_best.pth", output_onnx_path="custom_face_cnn.onnx"):
     if not os.path.exists(checkpoint_path):
-        flush_print(f"⚠️ Không tìm thấy checkpoint tại {checkpoint_path}. Huấn luyện xong sẽ xuất.")
+        flush_print(f"⚠️ Không tìm thấy checkpoint tại {checkpoint_path}. Không thể xuất mô hình ONNX.")
         return
         
     flush_print("🔄 Đang nạp checkpoint tốt nhất để xuất sang định dạng ONNX...")
-    checkpoint = torch.load(checkpoint_path, map_location="cpu")
-    backbone_name = checkpoint.get("backbone_name", "resnet50")
-    flush_print(f"💡 Phát hiện backbone sử dụng từ checkpoint: {backbone_name}")
-    model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name)
-    model.load_state_dict(checkpoint["model_state_dict"])
-    model.eval()
-    
-    # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 16 landmarks * 2)
-    dummy_global = torch.randn(1, 3, 112, 112, dtype=torch.float32)
-    dummy_eye = torch.randn(1, 3, 56, 112, dtype=torch.float32)
-    dummy_nose = torch.randn(1, 3, 56, 56, dtype=torch.float32)
-    dummy_geom = torch.randn(1, 26, 2, dtype=torch.float32)
-    
-    dummy_inputs = (dummy_global, dummy_eye, dummy_nose, dummy_geom)
-    input_names = ["x_global", "x_eye", "x_nose", "x_geom"]
-    output_names = ["face_embedding", "attention_weights"]
-    
-    dynamic_axes = {
-        "x_global": {0: "batch_size"},
-        "x_eye": {0: "batch_size"},
-        "x_nose": {0: "batch_size"},
-        "x_geom": {0: "batch_size"},
-        "face_embedding": {0: "batch_size"},
-        "attention_weights": {0: "batch_size"}
-    }
-    
-    flush_print(f"🔄 Đang thực thi torch.onnx.export -> {output_onnx_path}...")
-    torch.onnx.export(
-        model,
-        dummy_inputs,
-        output_onnx_path,
-        export_params=True,
-        opset_version=16,
-        do_constant_folding=True,
-        input_names=input_names,
-        output_names=output_names,
-        dynamic_axes=dynamic_axes
-    )
-    flush_print("✅ Đã tạo thành công mô hình ONNX đa cổng đầu vào: custom_face_cnn.onnx")
+    try:
+        checkpoint = torch.load(checkpoint_path, map_location="cpu")
+        backbone_name = checkpoint.get("backbone_name", "resnet18")
+        class_to_idx = checkpoint.get("class_to_idx", {})
+        num_classes = len(class_to_idx)
+        if num_classes == 0:
+            flush_print("❌ Lỗi: Checkpoint không chứa class_to_idx hợp lệ.")
+            return
+            
+        flush_print(f"💡 Phát hiện backbone sử dụng từ checkpoint: {backbone_name} | Số lượng lớp (Classes): {num_classes}")
+        model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        model.eval()
+        
+        # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 26 landmarks * 2)
+        dummy_global = torch.randn(1, 3, 112, 112, dtype=torch.float32)
+        dummy_eye = torch.randn(1, 3, 56, 112, dtype=torch.float32)
+        dummy_nose = torch.randn(1, 3, 56, 56, dtype=torch.float32)
+        dummy_geom = torch.randn(1, 26, 2, dtype=torch.float32)
+        
+        dummy_inputs = (dummy_global, dummy_eye, dummy_nose, dummy_geom)
+        input_names = ["x_global", "x_eye", "x_nose", "x_geom"]
+        output_names = ["face_embedding", "attention_weights"]
+        
+        dynamic_axes = {
+            "x_global": {0: "batch_size"},
+            "x_eye": {0: "batch_size"},
+            "x_nose": {0: "batch_size"},
+            "x_geom": {0: "batch_size"},
+            "face_embedding": {0: "batch_size"},
+            "attention_weights": {0: "batch_size"}
+        }
+        
+        flush_print(f"🔄 Đang thực thi torch.onnx.export -> {output_onnx_path}...")
+        torch.onnx.export(
+            model,
+            dummy_inputs,
+            output_onnx_path,
+            export_params=True,
+            opset_version=16,
+            do_constant_folding=True,
+            input_names=input_names,
+            output_names=output_names,
+            dynamic_axes=dynamic_axes
+        )
+        flush_print("✅ Đã tạo thành công mô hình ONNX đa cổng đầu vào: custom_face_cnn.onnx")
+    except Exception as e:
+        flush_print(f"❌ Lỗi xảy ra khi xuất ONNX từ checkpoint: {e}")
 
 if __name__ == "__main__":
     import argparse
+    import signal
+    
+    # Đăng ký signal handler để bắt SIGINT và SIGTERM chuyển thành KeyboardInterrupt
+    def sig_handler(signum, frame):
+        flush_print(f"\n🛑 Nhận tín hiệu ngắt {signum}. Đang kích hoạt dừng tiến trình và xuất ONNX...")
+        raise KeyboardInterrupt
+        
+    signal.signal(signal.SIGINT, sig_handler)
+    signal.signal(signal.SIGTERM, sig_handler)
+
     parser = argparse.ArgumentParser(description="Train Custom Part-Based Face CNN for Asian faces.")
     parser.add_argument("--epochs", type=int, default=200, help="Number of training epochs (default: 200)")
     parser.add_argument("--batch_size", type=int, default=32, help="Batch size for training (default: 32)")
@@ -813,7 +842,7 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")
     parser.add_argument("--val_split", type=float, default=0.8, help="Train/Validation split ratio (default: 0.8)")
-    parser.add_argument("--backbone", type=str, default="resnet50", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet50)")
+    parser.add_argument("--backbone", type=str, default="resnet18", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet18)")
     parser.add_argument("--no_pretrained_global", action="store_false", dest="pretrained_global", help="Disable pre-trained ImageNet weights for global backbone")
     parser.add_argument("--l1_lambda", type=float, default=1e-5, help="L1 regularization penalty coefficient (default: 1e-5)")
     parser.set_defaults(pretrained_global=True)
@@ -835,15 +864,24 @@ if __name__ == "__main__":
     # Bước 1: Tiền xử lý dataraw
     success = preprocess_dataraw()
     if success:
-        # Bước 2: Huấn luyện mạng và xuất ONNX
-        train_and_validate(
-            epochs=args.epochs,
-            batch_size=args.batch_size,
-            lr=args.lr,
-            device_name=args.device,
-            weight_decay=args.weight_decay,
-            val_split=args.val_split,
-            backbone_name=args.backbone,
-            pretrained_global=args.pretrained_global,
-            l1_lambda=args.l1_lambda
-        )
+        # Bước 2: Huấn luyện mạng và xuất ONNX (Bọc trong try-except để xử lý dừng ngắt từ người dùng)
+        try:
+            train_and_validate(
+                epochs=args.epochs,
+                batch_size=args.batch_size,
+                lr=args.lr,
+                device_name=args.device,
+                weight_decay=args.weight_decay,
+                val_split=args.val_split,
+                backbone_name=args.backbone,
+                pretrained_global=args.pretrained_global,
+                l1_lambda=args.l1_lambda
+            )
+        except (KeyboardInterrupt, SystemExit):
+            flush_print("\n🛑 Nhận tín hiệu dừng từ người dùng (Ctrl+C hoặc nút Stop). Đang tiến hành xuất mô hình ONNX từ checkpoint tốt nhất...")
+            try:
+                export_best_to_onnx()
+            except Exception as e:
+                flush_print(f"⚠️ Cảnh báo: Không thể xuất ONNX từ checkpoint tốt nhất: {e}")
+            import sys
+            sys.exit(0)

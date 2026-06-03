@@ -45,16 +45,17 @@ Kích hoạt môi trường Python ảo và chạy lệnh:
 ### Các tham số tùy biến (CLI Arguments):
 | Tham số | Ý nghĩa | Giá trị mặc định | Khuyên dùng |
 |---|---|---|---|
-| `--epochs` | Số lượng vòng lặp huấn luyện | `100` | `40 - 60` |
-| `--batch_size` | Kích thước batch huấn luyện | `16` | `16` hoặc `32` |
+| `--epochs` | Số lượng vòng lặp huấn luyện | `200` | `40 - 60` |
+| `--batch_size` | Kích thước batch huấn luyện | `32` | `16` hoặc `32` |
 | `--lr` | Tốc độ học (Learning Rate) | `0.0002` | `0.0002` |
 | `--device` | Thiết bị tính toán (`cpu`, `cuda`, `hip`) | `cpu` | `cuda` (nếu có GPU Nvidia) |
-| `--backbone` | Backbone trích xuất ảnh toàn mặt | `resnet50` | `resnet50` (Chính xác cao) hoặc `resnet18`/`mobilenet_v3` (Nhẹ, tốc độ cao) |
+| `--backbone` | Backbone trích xuất ảnh toàn mặt | `resnet18` | `resnet18` (Nhẹ - Khuyên dùng) hoặc `resnet50` (Chính xác cao) |
 | `--no_pretrained_global` | Tắt việc nạp trọng số ImageNet cho Backbone | *Bật mặc định* | Giữ nguyên để tăng tốc hội tụ |
+| `--l1_lambda` | Hệ số phạt chuẩn hóa L1 | `1e-5` | `1e-5` (Chống overfitting) |
 
-*Ví dụ chạy trên GPU với MobileNetV3 trong 50 Epochs:*
+*Ví dụ chạy trên GPU với ResNet18 trong 50 Epochs:*
 ```bash
-/work/a.i-assistant-chatbot-telegram-serverles/venv/bin/python train.py --epochs 50 --batch_size 32 --device cuda --backbone mobilenet_v3
+/work/a.i-assistant-chatbot-telegram-serverles/venv/bin/python train.py --epochs 50 --batch_size 32 --device cuda --backbone resnet18
 ```
 
 ---
@@ -65,8 +66,10 @@ Kích hoạt môi trường Python ảo và chạy lệnh:
 > Mô hình sử dụng mạng tích chập kết cấu sâu kết hợp MLP hình học nên có khả năng ghi nhớ dữ liệu tập train rất nhanh (Overfitting). 
 
 Để đối phó với điều này, hệ thống đã tích hợp sẵn:
-* **Best Loss Checkpoint Saver:** Hệ thống liên tục theo dõi giá trị **Validation Loss**. Checkpoint chỉ được ghi đè vào file `checkpoint_best.pth` nếu loss trên tập validation thực sự giảm. File ONNX cuối cùng được xuất ra **luôn là phiên bản tốt nhất** này.
-* **Hình học Augmentation:** Tự động áp dụng lật ngang ma trận đối xứng lông mày, mắt, miệng; xoay ngẫu nhiên; vẽ giả lập khẩu trang và kính cận để tăng độ phong phú cho tập dữ liệu.
+* **Best Loss Checkpoint Saver:** Hệ thống liên tục theo dõi giá trị **Validation Loss**. Checkpoint chỉ được ghi đè vào file `checkpoint_best.pth` nếu loss trên tập validation thực sự giảm.
+* **Dừng Sớm & Xuất ONNX (Graceful Early Stopping):** Khi người dùng dừng thủ công (nhấn Ctrl+C trong terminal hoặc click nút "Dừng Train" trên Flask Dashboard), hệ thống sẽ bắt tín hiệu dừng, nạp checkpoint tốt nhất (`checkpoint_best.pth`) và tự động xuất ra file `custom_face_cnn.onnx` trước khi đóng tiến trình. Điều này giúp tận dụng mô hình tối ưu nhất mà không cần đợi chạy hết số lượng Epoch.
+* **Hình học & Ánh sáng Augmentation:** Tự động áp dụng lật ngang; xoay ngẫu nhiên; vẽ giả lập khẩu trang, kính cận; thay đổi độ sáng và tương phản (tạo ra các ảnh `_bright` và `_dark` offline) để tăng độ phong phú cho tập dữ liệu.
+* **Regularization & Dropout:** Tích hợp Spatial Dropout (0.1 -> 0.2), FC Dropout (0.3 -> 0.4), và phạt chuẩn hóa L1 vào tổng loss.
 
 ---
 

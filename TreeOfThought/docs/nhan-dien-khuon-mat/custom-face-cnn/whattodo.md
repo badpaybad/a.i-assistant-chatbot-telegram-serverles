@@ -65,3 +65,10 @@ Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được
 **cập nhật 5** do bị over fitting khi lấy từ dataraw sang processed cần bổ xung tạo thêm ảnh với các kỹ thuật chống quá khớp như tăng cường dữ liệu (data augmentation)
 
 **cập nhật 6** cải thiện mô hình tránh overfitting bằng cách tăng cường **Dropout**, sử dụng **Regularization** (L1/L2) và/hoặc **Batch Normalization** để cải thiện khả năng tổng quát hóa của mô hình.
+                1.  **Dropout:** Thêm các lớp Dropout vào kiến trúc mạng.
+                2.  **Data Augmentation:** Tăng cường dữ liệu huấn luyện (xoay, lật, thay đổi độ sáng, độ tương phản) để làm phong phú tập dữ liệu và giúp mô hình tổng quát hóa tốt hơn.
+                3.  **Regularization (L1/L2):** Thêm các hình thức chuẩn hóa vào hàm mất mát.
+                4.  **Early Stopping:** Theo dõi Val Loss hoặc Val Acc và dừng quá trình huấn luyện khi chúng không cải thiện trong một số epoch nhất định, thay vì chạy hết 50 epoch.
+                5.  **Giảm độ phức tạp mô hình:** Nếu mô hình quá lớn so với lượng dữ liệu, hãy xem xét giảm số lớp hoặc số lượng neuron.  Khi Early Stopping thì xuất file onnx lúc đó để dùng
+
+patience ý không phải là đưa tham số vào dể dừng, mà khi click nút stop train, hoặc ctrl + C trước khi đóng tiến trình cần xuất best checkpoint thành file .onnx 
