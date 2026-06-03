@@ -24,6 +24,17 @@ def main():
     # 1. Khởi tạo mô hình ONNX và Database Vector FAISS
     flush_print("🔄 Đang khởi tạo phiên suy luận Custom Face CNN ONNX...")
     recognizer = OnnxFaceRecognizer(onnx_path)
+    
+    # Xóa DB index cũ để luôn đăng ký lại bằng mô hình mới huấn luyện
+    index_path = "faiss_faces.index"
+    ids_path = "user_ids.txt"
+    if os.path.exists(index_path):
+        os.remove(index_path)
+        flush_print(f"🧹 Đã xóa file index cũ: {index_path}")
+    if os.path.exists(ids_path):
+        os.remove(ids_path)
+        flush_print(f"🧹 Đã xóa file danh sách ID cũ: {ids_path}")
+
     db = FaissFaceDatabase()
 
     # Tự động đăng ký mẫu nếu DB rỗng để người dùng test được ngay
@@ -58,9 +69,7 @@ def main():
             flush_print("❌ Lỗi: Không thể kết nối với bất kỳ camera nào.")
             return
 
-    # Sử dụng Haar Cascade để phát hiện vùng mặt thô nhanh phục vụ vẽ bounding box
-    cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-    face_cascade = cv2.CascadeClassifier(cascade_path)
+
 
     prev_time = time.time()
     flush_print("\n🔥 Bắt đầu kiểm thử Real-time! Nhấn 'q' trên màn hình camera để thoát.")
@@ -77,23 +86,14 @@ def main():
 
         # Sao chép để xử lý
         display_frame = frame.copy()
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        
-        # Phát hiện khuôn mặt thô để vẽ khung
-        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=5, minSize=(60, 60))
+        # 3. Trích xuất đặc trưng và phát hiện khuôn mặt bằng MediaPipe / Custom Face CNN qua ONNX
+        aligned, bbox, abs_landmarks, embedding, weights = recognizer.process_frame(frame)
 
         frame_matched_user = None
 
-        for (x, y, w, h) in faces:
-            # Cắt vùng khuôn mặt thô phục vụ suy luận trích xuất đặc trưng đa nhánh
-            face_roi = frame[y:y+h, x:x+w]
-            if face_roi.size == 0:
-                continue
-
+        if bbox is not None:
+            x, y, w, h = bbox
             try:
-                # 3. Trích xuất đặc trưng từ mạng đa nhánh Custom CNN qua ONNX
-                embedding, weights = recognizer.extract_embedding(face_roi)
-                
                 # 4. Tìm kiếm đối tượng khớp nhất trong database FAISS
                 matched_user, similarity = db.search_nearest(embedding, threshold=0.52)
                 
@@ -109,6 +109,11 @@ def main():
                 # Vẽ khung bounding box kiểu viền bo góc bo sắc nét (Premium design)
                 # Viền chữ nhật mờ nền
                 cv2.rectangle(display_frame, (x, y), (x+w, y+h), color, 2)
+                
+                # Vẽ landmarks tuyệt đối trên khuôn mặt để tăng tính trực quan / Premium AI look
+                if abs_landmarks is not None:
+                    for pt in abs_landmarks:
+                        cv2.circle(display_frame, pt, 2, (0, 255, 255), -1) # Điểm vàng sáng
                 
                 # Vẽ thông số Attention Weights lên đầu khung nhận diện
                 attention_text = f"Eye:{weights[0]:.2f} | Nose:{weights[1]:.2f} | Global:{weights[2]:.2f}"

@@ -44,3 +44,7 @@ Có thể trích xuất sâu tương quan các vị trí tính từ điểm vùn
 
     **chú ý** khi lấy điểm trung tâm vùng mắt để làm điểm gốc dùng để tính toán đặc trưng tới các điểm đặc trưng của các điểm như đuôi mắt, khóe mắt, mý mắt, đồng tử, đầu lông mày, đuôi lông mày, mũi, cánh mũi, nhân trung, mép miệng, khóe miệng ...
     lấy điểm giữa vùng mắt tìm đặc trưng các vector từ điểm giữa vùng mắt tới từngđiểm landmark khác của khuôn mặt
+
+**cập nhật 2** cần mô hình đảm bảo nhận diện khi khuôn mặt bị nghiêng, che 1 phần, nủa măt, hoặc che khẩu trang chỉ có mắt, hoặc camera góc chéo ... cần xử lý để camera test cũng detect được những khuôn mặt nghiêng, chéo góc.... 
+
+khi chạy camera test cần xóa db index face trước đó để luôn dùng được mô hình mới train 

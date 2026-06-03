@@ -135,6 +135,9 @@ def detect_and_align_face_with_geom(image_bgr, detector=None):
         import mediapipe as mp
         # 1. Dùng MediaPipe Face Landmarker được truyền vào (tái sử dụng)
         if detector is not None:
+            # Nếu detector là landmarks đã phát hiện sẵn (không phải là đối tượng detector)
+            if not hasattr(detector, 'detect'):
+                return process_landmarks(detector)
             rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
             results = detector.detect(mp_image)
@@ -265,6 +268,124 @@ class OnnxFaceRecognizer:
         
         return normalized_embedding, attention_w
 
+    def process_frame(self, frame_bgr):
+        """
+        Xử lý toàn bộ khung hình camera (BGR): phát hiện mặt, tính bounding box, landmarks,
+        và trích xuất vector đặc trưng embedding kèm trọng số attention.
+        """
+        h, w = frame_bgr.shape[:2]
+        
+        # 1. Thử dùng persistent FaceLandmarker trước để bắt khuôn mặt nghiêng/chéo/che
+        if self.mp_detector is not None:
+            try:
+                import mediapipe as mp
+                rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+                results = self.mp_detector.detect(mp_image)
+                
+                if results.face_landmarks:
+                    face_landmarks = results.face_landmarks[0]
+                    
+                    # Tính toán bbox từ 26 landmarks
+                    landmark_indices = [33, 133, 362, 263, 159, 145, 386, 374, 468, 473, 70, 107, 300, 336, 168, 4, 129, 358, 164, 61, 291, 0, 17, 234, 454, 152]
+                    x_coords = [face_landmarks[idx].x * w for idx in landmark_indices]
+                    y_coords = [face_landmarks[idx].y * h for idx in landmark_indices]
+                    
+                    x_min, x_max = min(x_coords), max(x_coords)
+                    y_min, y_max = min(y_coords), max(y_coords)
+                    
+                    box_w = x_max - x_min
+                    box_h = y_max - y_min
+                    pad_x = int(box_w * 0.2)
+                    pad_y = int(box_h * 0.25)
+                    
+                    x = max(0, int(x_min - pad_x))
+                    y = max(0, int(y_min - pad_y))
+                    box_w_pad = min(w - x, int(box_w + 2 * pad_x))
+                    box_h_pad = min(h - y, int(box_h + 2 * pad_y))
+                    bbox = (x, y, box_w_pad, box_h_pad)
+                    
+                    # Lấy tọa độ tuyệt đối để vẽ landmarks
+                    abs_landmarks = [(int(face_landmarks[idx].x * w), int(face_landmarks[idx].y * h)) for idx in landmark_indices]
+                    
+                    # Thực hiện align mặt và trích xuất đặc trưng hình học dùng landmarks đã có sẵn
+                    aligned, geom = detect_and_align_face_with_geom(frame_bgr, detector=face_landmarks)
+                    f_global, f_eye, f_nose = crop_sub_regions(aligned)
+                    
+                    f_global = cv2.cvtColor(f_global, cv2.COLOR_BGR2RGB)
+                    f_eye = cv2.cvtColor(f_eye, cv2.COLOR_BGR2RGB)
+                    f_nose = cv2.cvtColor(f_nose, cv2.COLOR_BGR2RGB)
+                    
+                    t_global = self._image_to_tensor(f_global)
+                    t_eye = self._image_to_tensor(f_eye)
+                    t_nose = self._image_to_tensor(f_nose)
+                    t_geom = np.expand_dims(geom.astype(np.float32), axis=0) # (1, 26, 2)
+                    
+                    inputs = {
+                        "x_global": t_global,
+                        "x_eye": t_eye,
+                        "x_nose": t_nose,
+                        "x_geom": t_geom
+                    }
+                    
+                    outputs = self.session.run(["face_embedding", "attention_weights"], inputs)
+                    raw_embedding = outputs[0][0]
+                    attention_w = outputs[1][0]
+                    
+                    norm = np.linalg.norm(raw_embedding)
+                    if norm == 0:
+                        norm = 1e-6
+                    normalized_embedding = raw_embedding / norm
+                    
+                    return aligned, bbox, abs_landmarks, normalized_embedding, attention_w
+            except Exception:
+                pass
+                
+        # 2. Dự phòng bằng OpenCV Haar Cascade nếu FaceLandmarker lỗi
+        try:
+            cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            face_cascade = cv2.CascadeClassifier(cascade_path)
+            gray = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2GRAY)
+            faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(60, 60))
+            if len(faces) > 0:
+                xf, yf, wf, hf = max(faces, key=lambda r: r[2] * r[3])
+                bbox = (xf, yf, wf, hf)
+                face_roi = frame_bgr[yf:yf+hf, xf:xf+wf]
+                
+                aligned, geom = detect_and_align_face_with_geom(face_roi, detector=None)
+                f_global, f_eye, f_nose = crop_sub_regions(aligned)
+                
+                f_global = cv2.cvtColor(f_global, cv2.COLOR_BGR2RGB)
+                f_eye = cv2.cvtColor(f_eye, cv2.COLOR_BGR2RGB)
+                f_nose = cv2.cvtColor(f_nose, cv2.COLOR_BGR2RGB)
+                
+                t_global = self._image_to_tensor(f_global)
+                t_eye = self._image_to_tensor(f_eye)
+                t_nose = self._image_to_tensor(f_nose)
+                t_geom = np.expand_dims(geom.astype(np.float32), axis=0) # (1, 26, 2)
+                
+                inputs = {
+                    "x_global": t_global,
+                    "x_eye": t_eye,
+                    "x_nose": t_nose,
+                    "x_geom": t_geom
+                }
+                
+                outputs = self.session.run(["face_embedding", "attention_weights"], inputs)
+                raw_embedding = outputs[0][0]
+                attention_w = outputs[1][0]
+                
+                norm = np.linalg.norm(raw_embedding)
+                if norm == 0:
+                    norm = 1e-6
+                normalized_embedding = raw_embedding / norm
+                
+                return aligned, bbox, None, normalized_embedding, attention_w
+        except Exception:
+            pass
+            
+        return None, None, None, None, None
+
 # =====================================================================
 # 3. QUẢN LÝ DATABASE VÀ SO KHỚP VECTOR BẰNG FAISS
 # =====================================================================
@@ -274,14 +395,6 @@ class FaissFaceDatabase:
         self.dimension = dimension
         self.index_path = index_path
         self.ids_path = ids_path
-        # Kiểm tra xem file có tồn tại không trước khi xóa để tránh lỗi
-        if os.path.exists(self.index_path):
-            os.remove(self.index_path)
-            print(f"Đã xóa file: {self.index_path}")
-        if os.path.exists(self.ids_path):
-            os.remove(self.ids_path)
-            print(f"Đã xóa file: {self.ids_path}")
-        
         # Khởi tạo chỉ mục FAISS Inner Product (Tương đương Cosine Similarity khi vector được L2 normalized)
         self.index = faiss.IndexFlatIP(self.dimension)
         self.user_ids = []
