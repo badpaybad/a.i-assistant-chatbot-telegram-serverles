@@ -619,6 +619,14 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             writer.writerow(["timestamp", "epoch", "batch", "loss", "accuracy", "phase"])
     except Exception as e:
         flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo file CSV log: {e}")
+        
+    # Xóa tệp tin đánh giá cũ để tránh lẫn lộn dữ liệu giữa các lần chạy
+    eval_txt_path = "train_evaluations.txt"
+    if os.path.exists(eval_txt_path):
+        try:
+            os.remove(eval_txt_path)
+        except Exception:
+            pass
     
     # 3. Vòng lặp huấn luyện chính
     flush_print(f"📊 Dataset Size: Total Identities: {len(identities)} | Original Images: {len(original_files)} | Train Samples (with aug): {len(train_files)} | Val Samples (clean): {len(val_files)}")
