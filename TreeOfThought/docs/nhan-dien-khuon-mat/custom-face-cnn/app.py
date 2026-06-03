@@ -784,6 +784,14 @@ def get_status():
 @app.route('/api/start', methods=['POST'])
 def start_training():
     global train_process
+    
+    # 1. Dọn dẹp triệt để các tiến trình train.py mồ côi cũ để tránh trùng lặp log ghi đè chéo
+    try:
+        import subprocess
+        subprocess.run(["pkill", "-f", "train.py"])
+    except Exception as e:
+        print(f"⚠️ Cảnh báo dọn dẹp tiến trình cũ: {e}")
+        
     if is_training_running():
         return jsonify({"status": "running", "message": "Tiến trình train đang chạy rồi!"}), 400
         
@@ -848,26 +856,42 @@ def start_training():
 @app.route('/api/stop', methods=['POST'])
 def stop_training():
     global train_process
-    if not is_training_running():
-        return jsonify({"status": "stopped", "message": "Không có tiến trình train nào đang chạy."}), 400
-        
+    
+    # Tiêu diệt tất cả tiến trình train.py (quét toàn hệ thống)
+    pkilled = False
     try:
-        if os.name != 'nt':
-            os.killpg(os.getpgid(train_process.pid), signal.SIGINT)
-        else:
-            train_process.terminate()
-        train_process.wait(timeout=5)
-        return jsonify({"status": "success", "message": "Đã gửi tín hiệu dừng (SIGINT) đến tiến trình huấn luyện."})
-    except Exception:
-        # Gửi SIGKILL nếu SIGINT thất bại
+        import subprocess
+        res = subprocess.run(["pkill", "-f", "train.py"])
+        if res.returncode == 0:
+            pkilled = True
+    except Exception as e:
+        print(f"⚠️ Lỗi khi chạy pkill: {e}")
+        
+    if is_training_running():
         try:
             if os.name != 'nt':
-                os.killpg(os.getpgid(train_process.pid), signal.SIGKILL)
+                os.killpg(os.getpgid(train_process.pid), signal.SIGINT)
             else:
-                train_process.kill()
-            return jsonify({"status": "success", "message": "Đã cưỡng bức dừng tiến trình train (SIGKILL)."})
-        except Exception as ex:
-            return jsonify({"status": "error", "message": f"Lỗi khi dừng tiến trình: {str(ex)}"}), 500
+                train_process.terminate()
+            train_process.wait(timeout=5)
+            train_process = None
+            return jsonify({"status": "success", "message": "Đã dừng tiến trình huấn luyện thành công."})
+        except Exception:
+            try:
+                if os.name != 'nt':
+                    os.killpg(os.getpgid(train_process.pid), signal.SIGKILL)
+                else:
+                    train_process.kill()
+                train_process = None
+                return jsonify({"status": "success", "message": "Đã cưỡng bức dừng tiến trình huấn luyện (SIGKILL)."})
+            except Exception as ex:
+                return jsonify({"status": "error", "message": f"Lỗi khi dừng tiến trình: {str(ex)}"}), 500
+                
+    if pkilled:
+        train_process = None
+        return jsonify({"status": "success", "message": "Đã quét và dừng các tiến trình train.py chạy ngầm cũ."})
+        
+    return jsonify({"status": "stopped", "message": "Không có tiến trình train nào đang chạy."})
 
 @app.route('/api/logs', methods=['GET'])
 def get_logs():
@@ -971,5 +995,12 @@ def get_evaluations():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
+    # Tiêu diệt các tiến trình train.py mồ côi cũ chạy ngầm trước khi khởi chạy Flask Dashboard
+    try:
+        import subprocess
+        subprocess.run(["pkill", "-f", "train.py"])
+    except Exception:
+        pass
+        
     # Chạy Flask ở port 5000, cho phép truy cập cục bộ/ngoại tuyến
     app.run(host='0.0.0.0', port=5000, debug=True)
