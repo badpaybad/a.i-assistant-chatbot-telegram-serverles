@@ -274,6 +274,13 @@ class FaissFaceDatabase:
         self.dimension = dimension
         self.index_path = index_path
         self.ids_path = ids_path
+        # Kiểm tra xem file có tồn tại không trước khi xóa để tránh lỗi
+        if os.path.exists(self.index_path):
+            os.remove(self.index_path)
+            print(f"Đã xóa file: {self.index_path}")
+        if os.path.exists(self.ids_path):
+            os.remove(self.ids_path)
+            print(f"Đã xóa file: {self.ids_path}")
         
         # Khởi tạo chỉ mục FAISS Inner Product (Tương đương Cosine Similarity khi vector được L2 normalized)
         self.index = faiss.IndexFlatIP(self.dimension)
