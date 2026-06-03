@@ -56,8 +56,8 @@ cần ghi log ra file .csv để tôi có thể theo dõi các hội tụ về l
     bổ xung việc dùng gemini api đánh giá quá trình train có thể lấy config từ file config_dunp.py cứ 1 epoch thì sẽ đánh giá 1 lần và hiển thị để xem, các lần đánh giá cũng cần lưu xuồng file để sau này đọc lại . cần tạo riêng file code file đánh giá để không rối code train, train ghi log history và code đánh giá đọc để xử lý đánh giá
 
 **cập nhật 4**
-Viết code c#, dart fullter cho app mobi sử dụng .onnx đã train làm code sample usage vào 2 folder code khác nhau để demo việc nhận diện khuôn mặt từ file ảnh
+Viết code c#, javascript typescript , dart fullter cho app mobi sử dụng .onnx đã train làm code sample usage vào 2 folder code khác nhau để demo việc nhận diện khuôn mặt từ file ảnh
     cần viết cả hàm dùng mediapipe để lấy căn chỉnh mặt có thể tách các hàm ra để tái sử dụng
-    viết hàm có tính sử dụng tiện lợi người dùng đưa ảnh cần lấy embeding hàm trả ra embending, face bbox ,... 
+    viết hàm có tính sử dụng tiện lợi người dùng đưa ảnh cần lấy embeding hàm trả ra embending, face bbox ,...
 
-Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được từ MediaPipe Face Mesh. download modal về local folder nếu cần 
+Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được từ MediaPipe Face Mesh. download modal về local folder nếu cần

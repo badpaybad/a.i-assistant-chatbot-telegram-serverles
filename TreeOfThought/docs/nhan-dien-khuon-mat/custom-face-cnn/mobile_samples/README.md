@@ -35,3 +35,4 @@ graph TD
 
 * [csharp/FaceRecognizer.cs](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/mobile_samples/csharp/FaceRecognizer.cs): Class viết bằng C# sử dụng gói NuGet `Microsoft.ML.OnnxRuntime` để chạy suy luận mô hình và xử lý ma trận.
 * [flutter/face_recognizer.dart](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/mobile_samples/flutter/face_recognizer.dart): Service viết bằng Dart sử dụng pub package `onnxruntime_flutter` để suy luận đa luồng đầu vào.
+* [web_javascript/](file:///work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/mobile_samples/web_javascript/): Demo chạy trực tiếp 100% trên trình duyệt (client-side) sử dụng thư viện `onnxruntime-web` và MediaPipe Vision Tasks. Chứa tệp tin HTML giao diện tương tác và file xử lý logic JS.

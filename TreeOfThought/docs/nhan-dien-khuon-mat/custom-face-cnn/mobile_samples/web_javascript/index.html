@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhận Diện Khuôn Mặt Trực Tiếp Trên Trình Duyệt</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- ONNX Runtime Web CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    
+    <!-- MediaPipe Tasks Vision CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm/vision_bundle.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-color: #0d0f14;
+            --panel-bg: rgba(22, 28, 40, 0.65);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --accent-glow: rgba(0, 229, 255, 0.15);
+            --accent-cyan: #00e5ff;
+            --accent-green: #00e676;
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 229, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(99, 102, 241, 0.05) 0%, transparent 40%);
+        }
+
+        header {
+            width: 100%;
+            max-width: 1200px;
+            padding: 2.5rem 1.5rem 1.5rem;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #00e5ff 0%, #6366f1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1200px;
+            padding: 0 1.5rem 3rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 1.8rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .panel-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.8rem;
+        }
+
+        .panel-title span {
+            color: var(--accent-cyan);
+        }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        label {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+        }
+
+        input[type="text"], input[type="file"] {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.75rem;
+            color: #fff;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #00e5ff 0%, #6366f1 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            padding: 0.8rem 1.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.3s, transform 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            background: #2e3542;
+            color: #64748b;
+            cursor: not-allowed;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            aspect-ratio: 4/3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        canvas {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .aligned-faces-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .aligned-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .aligned-box img {
+            width: 112px;
+            height: 112px;
+            background: #111;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            image-rendering: pixelated;
+        }
+
+        .result-panel {
+            grid-column: 1 / -1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            background: radial-gradient(circle at center, rgba(0, 229, 255, 0.08) 0%, transparent 70%);
+        }
+
+        .match-score {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--accent-cyan);
+            margin: 0.5rem 0;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .match-status {
+            font-size: 1.3rem;
+            font-weight: 600;
+            padding: 0.4rem 1.2rem;
+            border-radius: 99px;
+            border: 1px solid transparent;
+        }
+
+        .match-status.success {
+            background: rgba(0, 230, 118, 0.15);
+            color: var(--accent-green);
+            border-color: rgba(0, 230, 118, 0.3);
+        }
+
+        .match-status.fail {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        .status-console {
+            background: #07090e;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #38bdf8;
+            max-height: 180px;
+            overflow-y: auto;
+            width: 100%;
+            margin-top: 1rem;
+            white-space: pre-wrap;
+        }
+
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(13, 15, 20, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loader-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border-left-color: var(--accent-cyan);
+            animation: spin 1s linear infinite;
+            margin-bottom: 1.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader-overlay" id="loaderOverlay">
+        <div class="spinner"></div>
+        <h2 style="font-weight: 600;" id="loaderText">Đang khởi tạo các mô hình...</h2>
+        <p style="color: var(--text-muted); margin-top: 0.5rem;">Vui lòng chờ trong giây lát</p>
+    </div>
+
+    <header>
+        <h1>Nhận Diện Khuôn Mặt Trình Duyệt</h1>
+        <p>Demo suy luận trực tiếp với mô hình Custom Face CNN ONNX và MediaPipe Face Mesh</p>
+    </header>
+
+    <main>
+        <!-- Panel Điều Khiển -->
+        <div class="panel">
+            <h2 class="panel-title"><span>⚙️</span> Cấu hình & Tải ảnh</h2>
+            
+            <div class="form-group">
+                <label for="onnxModelUrl">Đường dẫn mô hình ONNX (.onnx)</label>
+                <input type="text" id="onnxModelUrl" value="../../custom_face_cnn.onnx" placeholder="URL tới mô hình custom_face_cnn.onnx">
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 1rem;">
+                <div style="flex: 1;">
+                    <label>Ảnh mẫu (Template)</label>
+                    <input type="file" id="imageTemplateInput" accept="image/*">
+                </div>
+                <div style="flex: 1;">
+                    <label>Ảnh kiểm tra (Target)</label>
+                    <input type="file" id="imageTargetInput" accept="image/*">
+                </div>
+            </div>
+
+            <button class="btn" id="btnInit" onclick="initModels()">1. Khởi Tạo Mô Hình</button>
+            <button class="btn" id="btnRun" onclick="runVerification()" style="margin-top: 1rem;" disabled>2. Chạy Nhận Diện & So Khớp</button>
+            
+            <div class="status-console" id="consoleLog">Hệ thống sẵn sàng. Vui lòng nạp mô hình.</div>
+        </div>
+
+        <!-- Panel Preview -->
+        <div class="panel preview-container">
+            <h2 class="panel-title"><span>👁️</span> Khung hình giám sát</h2>
+            
+            <div class="canvas-wrapper">
+                <canvas id="previewCanvas"></canvas>
+                <div style="position: absolute; color: var(--text-muted); font-size: 0.9rem;" id="canvasPlaceholder">Chưa tải ảnh</div>
+            </div>
+
+            <div class="aligned-faces-grid">
+                <div class="aligned-box">
+                    <img id="alignedTemplateImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'><rect width='100%' height='100%' fill='%23111'/></svg>" alt="Aligned Template">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Aligned Template</span>
+                </div>
+                <div class="aligned-box">
+                    <img id="alignedTargetImg" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='112' height='112'><rect width='100%' height='100%' fill='%23111'/></svg>" alt="Aligned Target">
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">Aligned Target</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Kết Quả Match -->
+        <div class="panel result-panel">
+            <h2 class="panel-title" style="border: none; margin-bottom: 0;">Độ Tương Đồng Khuôn Mặt</h2>
+            <div class="match-score" id="similarityScore">-.- - - -</div>
+            <div class="match-status" id="matchStatus" style="display: none;">Chưa chạy</div>
+        </div>
+    </main>
+
+    <!-- Script Nhận Diện -->
+    <script src="faceRecognizer.js"></script>
+    <script>
+        let faceLandmarker = null;
+        let recognizer = null;
+        let templateData = null;
+        let targetData = null;
+
+        const logConsole = (msg) => {
+            const el = document.getElementById("consoleLog");
+            el.innerHTML += `\n[${new Date().toLocaleTimeString()}] ${msg}`;
+            el.scrollTop = el.scrollHeight;
+        };
+
+        const showLoader = (text) => {
+            document.getElementById("loaderText").innerText = text;
+            document.getElementById("loaderOverlay").classList.add("active");
+        };
+
+        const hideLoader = () => {
+            document.getElementById("loaderOverlay").classList.remove("active");
+        };
+
+        // Khởi tạo MediaPipe Face Landmarker & ONNX Runtime Web
+        async function initModels() {
+            showLoader("Đang nạp thư viện WASM...");
+            try {
+                logConsole("Đang khởi tạo các mô hình...");
+                
+                // 1. Khởi tạo MediaPipe Face Landmarker
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.8/wasm"
+                );
+                
+                faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+                    baseOptions: {
+                        modelAssetPath: "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task",
+                        delegate: "GPU"
+                    },
+                    outputFaceBlendshapes: false,
+                    runningMode: "IMAGE",
+                    numFaces: 1
+                });
+                logConsole("✅ Đã nạp thành công MediaPipe Face Landmarker (float16).");
+
+                // 2. Khởi tạo custom Face CNN
+                const onnxUrl = document.getElementById("onnxModelUrl").value;
+                recognizer = new FaceRecognizer();
+                await recognizer.initialize(onnxUrl);
+                logConsole("✅ Đã nạp thành công mô hình Custom Face CNN ONNX.");
+
+                document.getElementById("btnInit").style.display = "none";
+                document.getElementById("btnRun").removeAttribute("disabled");
+                logConsole("🎉 Hệ thống đã sẵn sàng nhận diện!");
+            } catch (err) {
+                logConsole(`❌ Lỗi khởi tạo: ${err.message}`);
+                console.error(err);
+            } finally {
+                hideLoader();
+            }
+        }
+
+        // Đọc File sang RGB Uint8Array
+        function readImagePixels(file) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement("canvas");
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext("2d");
+                    ctx.drawImage(img, 0, 0);
+                    
+                    const imgData = ctx.getImageData(0, 0, img.width, img.height);
+                    const pixels = imgData.data; // RGBA array
+                    const rgbBytes = new Uint8Array(img.width * img.height * 3);
+                    
+                    let j = 0;
+                    for (let i = 0; i < pixels.length; i += 4) {
+                        rgbBytes[j++] = pixels[i];     // R
+                        rgbBytes[j++] = pixels[i+1];   // G
+                        rgbBytes[j++] = pixels[i+2];   // B
+                    }
+                    resolve({ rgbBytes, width: img.width, height: img.height, imageElement: img });
+                };
+                img.onerror = reject;
+                img.src = URL.createObjectURL(file);
+            });
+        }
+
+        // Vẽ ảnh gốc cùng 26 landmarks
+        function drawFaceHUD(imageElement, landmarks468, bbox) {
+            const canvas = document.getElementById("previewCanvas");
+            const ctx = canvas.getContext("2d");
+            
+            canvas.width = imageElement.width;
+            canvas.height = imageElement.height;
+            document.getElementById("canvasPlaceholder").style.display = "none";
+
+            // Vẽ ảnh gốc
+            ctx.drawImage(imageElement, 0, 0);
+
+            // Vẽ Bounding Box
+            ctx.strokeStyle = "#00e5ff";
+            ctx.lineWidth = Math.max(2, Math.round(imageElement.width / 300));
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "#00e5ff";
+            ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+            ctx.shadowBlur = 0; // reset
+
+            // Vẽ 26 landmarks được mô hình sử dụng
+            ctx.fillStyle = "#ffeb3b";
+            FaceRecognizer.landmarkIndices.forEach((idx) => {
+                const pt = landmarks468[idx];
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, Math.max(3, Math.round(imageElement.width / 200)), 0, 2 * Math.PI);
+                ctx.fill();
+            });
+        }
+
+        // Biến đổi ảnh Aligned Uint8Array RGB 112x112 sang Data URL hiển thị trên thẻ img
+        function showAlignedFace(rgbBytes, imgElementId) {
+            const canvas = document.createElement("canvas");
+            canvas.width = 112;
+            canvas.height = 112;
+            const ctx = canvas.getContext("2d");
+            const imgData = ctx.createImageData(112, 112);
+            
+            let j = 0;
+            for (let i = 0; i < imgData.data.length; i += 4) {
+                imgData.data[i] = rgbBytes[j++];     // R
+                imgData.data[i+1] = rgbBytes[j++];   // G
+                imgData.data[i+2] = rgbBytes[j++];   // B
+                imgData.data[i+3] = 255;             // Alpha
+            }
+            ctx.putImageData(imgData, 0, 0);
+            document.getElementById(imgElementId).src = canvas.toDataURL();
+        }
+
+        // Chạy quy trình so sánh ảnh
+        async function runVerification() {
+            const templateFile = document.getElementById("imageTemplateInput").files[0];
+            const targetFile = document.getElementById("imageTargetInput").files[0];
+
+            if (!templateFile || !targetFile) {
+                alert("Vui lòng chọn đầy đủ cả ảnh Template và ảnh Target!");
+                return;
+            }
+
+            showLoader("Đang suy luận đặc trưng khuôn mặt...");
+            logConsole("🔄 Đang xử lý so khớp 2 ảnh...");
+
+            try {
+                // 1. Tải và đọc pixel
+                const template = await readImagePixels(templateFile);
+                const target = await readImagePixels(targetFile);
+
+                // 2. Chạy MediaPipe Face Mesh lấy 468 landmarks cho Template
+                const mpResultTemplate = faceLandmarker.detect(template.imageElement);
+                if (mpResultTemplate.faceLandmarks.length === 0) {
+                    throw new Error("Không tìm thấy khuôn mặt trong ảnh Template!");
+                }
+                const landmarksTemplate = mpResultTemplate.faceLandmarks[0].map(pt => ({
+                    x: pt.x * template.width,
+                    y: pt.y * template.height
+                }));
+
+                // 3. Chạy MediaPipe Face Mesh lấy 468 landmarks cho Target
+                const mpResultTarget = faceLandmarker.detect(target.imageElement);
+                if (mpResultTarget.faceLandmarks.length === 0) {
+                    throw new Error("Không tìm thấy khuôn mặt trong ảnh Target!");
+                }
+                const landmarksTarget = mpResultTarget.faceLandmarks[0].map(pt => ({
+                    x: pt.x * target.width,
+                    y: pt.y * target.height
+                }));
+
+                // Vẽ HUD cho ảnh Target để minh họa
+                drawFaceHUD(target.imageElement, landmarksTarget, recognizer._computeBoundingBox(landmarksTarget, target.width, target.height));
+
+                // 4. Trích xuất embedding cho cả 2 ảnh
+                const resTemplate = await recognizer.processImage(template.rgbBytes, template.width, template.height, landmarksTemplate);
+                const resTarget = await recognizer.processImage(target.rgbBytes, target.width, target.height, landmarksTarget);
+
+                // Hiển thị ảnh aligned
+                showAlignedFace(resTemplate.alignedFaceImage, "alignedTemplateImg");
+                showAlignedFace(resTarget.alignedFaceImage, "alignedTargetImg");
+
+                // 5. Tính similarity
+                const similarity = FaceRecognizer.calculateCosineSimilarity(resTemplate.embedding, resTarget.embedding);
+                
+                // Hiển thị giao diện kết quả
+                const scoreEl = document.getElementById("similarityScore");
+                const statusEl = document.getElementById("matchStatus");
+                
+                scoreEl.innerText = similarity.toFixed(4);
+                statusEl.style.display = "inline-block";
+
+                if (similarity >= 0.55) {
+                    statusEl.innerText = "KHỚP THÀNH CÔNG (Cùng một người)";
+                    statusEl.className = "match-status success";
+                    logConsole(`🎉 NHẬN DIỆN THÀNH CÔNG! Độ tương đồng Cosine: ${similarity.toFixed(4)}`);
+                } else {
+                    statusEl.innerText = "KHÔNG KHỚP (Khác người)";
+                    statusEl.className = "match-status fail";
+                    logConsole(`⚠️ KHÔNG KHỚP! Độ tương đồng Cosine: ${similarity.toFixed(4)}`);
+                }
+            } catch (err) {
+                logConsole(`❌ Lỗi xử lý nhận diện: ${err.message}`);
+                alert(err.message);
+            } finally {
+                hideLoader();
+            }
+        }
+    </script>
+</body>
+</html>
