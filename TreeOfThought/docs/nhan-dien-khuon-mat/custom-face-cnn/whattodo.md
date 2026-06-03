@@ -52,3 +52,5 @@ khi chạy camera test cần xóa db index face trước đó để luôn dùng 
 **cập nhật 3** bổ xung ở log có [BATCH_PROGRESS] thêm thời gian chạy từng batch format yyyy-MM-dd HH:mm:ss
 cần ghi log ra file .csv để tôi có thể theo dõi các hội tụ về lost và accuratecy .
     có thể  bổ xung thêm hàm code flask python để start UI show log, show đồ thị lost accuratecy train.
+
+    bổ xung việc dùng gemini api đánh giá quá trình train có thể lấy config từ file config_dunp.py cứ 1 epoch thì sẽ đánh giá 1 lần và hiển thị để xem, các lần đánh giá cũng cần lưu xuồng file để sau này đọc lại . cần tạo riêng file code file đánh giá để không rối code train, train ghi log history và code đánh giá đọc để xử lý đánh giá

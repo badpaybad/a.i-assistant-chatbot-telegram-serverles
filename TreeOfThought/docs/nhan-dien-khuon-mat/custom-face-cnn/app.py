@@ -473,6 +473,17 @@ INDEX_HTML = """<!DOCTYPE html>
                 </div>
             </div>
 
+            <!-- Panel Đánh giá của Gemini AI -->
+            <div class="card log-panel" style="border: 1px solid rgba(167, 139, 250, 0.3); background: rgba(22, 18, 33, 0.8);">
+                <div class="card-header">
+                    <span class="card-title" style="color: #c084fc; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:#c084fc; animation: pulse 2s infinite;"></span>
+                        🧠 Đánh Giá Hội Tự & Tiến Trình Huấn Luyện (Gemini AI)
+                    </span>
+                </div>
+                <div id="geminiEvaluation" style="padding: 1rem; background: rgba(167, 139, 250, 0.04); border: 1px dashed rgba(167, 139, 250, 0.2); border-radius: 8px; font-size: 0.95rem; line-height: 1.6; color: #e9d5ff; white-space: pre-wrap; max-height: 250px; overflow-y: auto;">Đang đợi kết thúc Epoch đầu tiên để nhận phân tích & đánh giá từ Gemini AI...</div>
+            </div>
+
             <!-- Panel Logs -->
             <div class="card log-panel">
                 <div class="card-header">
@@ -621,6 +632,22 @@ INDEX_HTML = """<!DOCTYPE html>
                     if (atBottom) {
                         logViewer.scrollTop = logViewer.scrollHeight;
                     }
+                }
+
+                // Lấy Đánh giá Gemini
+                try {
+                    const evalRes = await fetch('/api/evaluations');
+                    const evalData = await evalRes.json();
+                    const geminiViewer = document.getElementById('geminiEvaluation');
+                    if (evalData.evaluations) {
+                        const atBottom = geminiViewer.scrollHeight - geminiViewer.clientHeight <= geminiViewer.scrollTop + 50;
+                        geminiViewer.textContent = evalData.evaluations;
+                        if (atBottom) {
+                            geminiViewer.scrollTop = geminiViewer.scrollHeight;
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi lấy đánh giá Gemini:", err);
                 }
 
                 // Lấy Dữ liệu vẽ đồ thị
@@ -774,6 +801,13 @@ def start_training():
         except Exception:
             pass
 
+    # Clear file evaluations cũ
+    if os.path.exists("train_evaluations.txt"):
+        try:
+            os.remove("train_evaluations.txt")
+        except Exception:
+            pass
+
     # Đọc tham số tùy chỉnh từ UI
     data = request.get_json() or {}
     epochs = data.get("epochs", 200)
@@ -922,6 +956,17 @@ def get_chart_data():
             "batch_loss": batch_loss[-100:],
             "batch_acc": batch_acc[-100:]
         })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/evaluations', methods=['GET'])
+def get_evaluations():
+    if not os.path.exists("train_evaluations.txt"):
+        return jsonify({"evaluations": "Chưa có đánh giá nào từ Gemini AI. Vui lòng kết thúc ít nhất 1 epoch để bắt đầu nhận phân tích."})
+    try:
+        with open("train_evaluations.txt", "r", encoding="utf-8") as f:
+            content = f.read()
+        return jsonify({"evaluations": content})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

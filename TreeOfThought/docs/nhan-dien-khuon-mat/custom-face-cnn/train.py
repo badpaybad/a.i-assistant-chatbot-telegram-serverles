@@ -11,6 +11,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from model import CustomPartBasedFaceCNN
 import shutil
+from evaluator import evaluate_epoch
 
 # Cấu hình đường dẫn dữ liệu
 WORKSPACE_DIR = "/work/a.i-assistant-chatbot-telegram-serverles"
@@ -617,6 +618,12 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             torch.save(checkpoint, "checkpoint_best.pth")
             flush_print("💾 Đã lưu Checkpoint tốt nhất (Best loss).")
             
+        # 4. Đánh giá hội tụ bằng cách gọi module evaluator riêng biệt (đọc từ CSV để giảm rối code train)
+        try:
+            evaluate_epoch(epoch, epochs, csv_path=csv_file_path)
+        except Exception as e:
+            flush_print(f"⚠️ Cảnh báo: Lỗi khi đánh giá tiến trình: {e}")
+            
     # Lưu checkpoint cuối cùng
     torch.save({
         "epoch": epochs,
@@ -699,6 +706,12 @@ if __name__ == "__main__":
     if os.path.exists("train.log"):
         try:
             os.remove("train.log")
+        except Exception:
+            pass
+            
+    if os.path.exists("train_evaluations.txt"):
+        try:
+            os.remove("train_evaluations.txt")
         except Exception:
             pass
             
