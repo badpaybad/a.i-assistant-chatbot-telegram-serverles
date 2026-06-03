@@ -9,7 +9,7 @@ try:
     from config_dunp import GEMINI_APIKEY, GEMINI_MODEL
 except ImportError:
     GEMINI_APIKEY = None
-    GEMINI_MODEL = "gemini-2.0-flash"
+    GEMINI_MODEL = "gemini-2.5-flash"
 
 def evaluate_epoch(epoch, epochs, csv_path="train_log.csv", eval_txt_path="train_evaluations.txt"):
     """
