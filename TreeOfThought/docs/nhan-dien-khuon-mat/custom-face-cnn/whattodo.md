@@ -63,3 +63,5 @@ Viết code c#, javascript typescript , dart fullter cho app mobi sử dụng .o
 Bổ xung cả hàm để lấy toàn bộ danh sách 468 landmarks thu được từ MediaPipe Face Mesh. download modal về local folder nếu cần
 
 **cập nhật 5** do bị over fitting khi lấy từ dataraw sang processed cần bổ xung tạo thêm ảnh với các kỹ thuật chống quá khớp như tăng cường dữ liệu (data augmentation)
+
+**cập nhật 6** cải thiện mô hình tránh overfitting bằng cách tăng cường **Dropout**, sử dụng **Regularization** (L1/L2) và/hoặc **Batch Normalization** để cải thiện khả năng tổng quát hóa của mô hình.

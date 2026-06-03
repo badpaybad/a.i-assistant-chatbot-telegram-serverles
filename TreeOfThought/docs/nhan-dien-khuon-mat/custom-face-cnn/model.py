@@ -16,16 +16,19 @@ class PeriocularNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.PReLU(),
             nn.MaxPool2d(2, 2), # Output: (B, 32, 28, 56)
+            nn.Dropout2d(p=0.1), # Spatial Dropout chống quá khớp cục bộ
             
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.PReLU(),
             nn.MaxPool2d(2, 2), # Output: (B, 64, 14, 28)
+            nn.Dropout2d(p=0.15),
             
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.PReLU(),
             nn.MaxPool2d(2, 2), # Output: (B, 128, 7, 14)
+            nn.Dropout2d(p=0.2),
             
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
@@ -33,12 +36,14 @@ class PeriocularNet(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)) # Output: (B, 256, 1, 1)
         )
         self.fc = nn.Linear(256, embedding_dim)
+        self.dropout = nn.Dropout(p=0.3) # Dropout sau FC
         self.bn_out = nn.BatchNorm1d(embedding_dim)
 
     def forward(self, x):
         x = self.features(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        x = self.dropout(x)
         return self.bn_out(x)
 
 class NoseNet(nn.Module):
@@ -53,11 +58,13 @@ class NoseNet(nn.Module):
             nn.BatchNorm2d(32),
             nn.PReLU(),
             nn.MaxPool2d(2, 2), # Output: (B, 32, 28, 28)
+            nn.Dropout2d(p=0.1),
             
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.PReLU(),
             nn.MaxPool2d(2, 2), # Output: (B, 64, 14, 14)
+            nn.Dropout2d(p=0.15),
             
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
@@ -65,12 +72,14 @@ class NoseNet(nn.Module):
             nn.AdaptiveAvgPool2d((1, 1)) # Output: (B, 128, 1, 1)
         )
         self.fc = nn.Linear(128, embedding_dim)
+        self.dropout = nn.Dropout(p=0.3)
         self.bn_out = nn.BatchNorm1d(embedding_dim)
 
     def forward(self, x):
         x = self.features(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        x = self.dropout(x)
         return self.bn_out(x)
 
 class GlobalNet(nn.Module):
@@ -118,12 +127,14 @@ class GlobalNet(nn.Module):
             raise ValueError(f"❌ Không hỗ trợ mạng backbone: {backbone_name}")
             
         self.fc = nn.Linear(num_features, embedding_dim)
+        self.dropout = nn.Dropout(p=0.4)
         self.bn_out = nn.BatchNorm1d(embedding_dim)
 
     def forward(self, x):
         x = self.backbone(x)
         x = torch.flatten(x, 1)
         x = self.fc(x)
+        x = self.dropout(x)
         return self.bn_out(x)
 
 class GeometricNet(nn.Module):
@@ -257,6 +268,9 @@ class CustomPartBasedFaceCNN(nn.Module):
             fused_dim=embedding_dim - 64
         )
         
+        # Lớp Dropout trước bộ phân lớp để chống overfitting embedding trong quá trình train classification
+        self.classifier_dropout = nn.Dropout(p=0.4)
+        
         # Đầu phân lớp Linear phục vụ huấn luyện phân loại danh tính
         self.classifier = nn.Linear(embedding_dim, num_classes)
 
@@ -291,5 +305,6 @@ class CustomPartBasedFaceCNN(nn.Module):
         Sử dụng khi huấn luyện để trả về cả embedding chuẩn hóa và điểm logit phân lớp
         """
         emb, weights = self.forward(x_global, x_eye, x_nose, x_geom)
-        logits = self.classifier(emb)
+        # Áp dụng dropout vào embedding trước khi đưa vào classifier để tăng khả năng tổng quát hóa
+        logits = self.classifier(self.classifier_dropout(emb))
         return emb, logits, weights

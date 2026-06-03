@@ -823,6 +823,7 @@ def start_training():
     device = data.get("device", "cpu")
     backbone = data.get("backbone", "resnet50")
     lr = data.get("lr", 0.0002)
+    l1_lambda = data.get("l1_lambda", 1e-5)
     
     cmd = [
         sys.executable, "train.py",
@@ -830,7 +831,8 @@ def start_training():
         "--batch_size", str(batch_size),
         "--device", device,
         "--backbone", backbone,
-        "--lr", str(lr)
+        "--lr", str(lr),
+        "--l1_lambda", str(l1_lambda)
     ]
     
     try:

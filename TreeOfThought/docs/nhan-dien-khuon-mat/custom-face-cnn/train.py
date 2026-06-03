@@ -535,7 +535,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50", pretrained_global=True):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet50", pretrained_global=True, l1_lambda=1e-5):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -650,6 +650,13 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             # Chạy lan truyền thuận (gồm cả ảnh phân vùng và đặc trưng hình học)
             _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom)
             loss = criterion(logits, labels)
+            
+            # Tăng cường chống quá khớp bằng L1 Regularization (nếu l1_lambda > 0)
+            if l1_lambda > 0:
+                l1_loss = 0.0
+                for param in model.parameters():
+                    l1_loss += torch.sum(torch.abs(param))
+                loss = loss + l1_lambda * l1_loss
             
             loss.backward()
             optimizer.step()
@@ -808,6 +815,7 @@ if __name__ == "__main__":
     parser.add_argument("--val_split", type=float, default=0.8, help="Train/Validation split ratio (default: 0.8)")
     parser.add_argument("--backbone", type=str, default="resnet50", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: resnet50)")
     parser.add_argument("--no_pretrained_global", action="store_false", dest="pretrained_global", help="Disable pre-trained ImageNet weights for global backbone")
+    parser.add_argument("--l1_lambda", type=float, default=1e-5, help="L1 regularization penalty coefficient (default: 1e-5)")
     parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
@@ -836,5 +844,6 @@ if __name__ == "__main__":
             weight_decay=args.weight_decay,
             val_split=args.val_split,
             backbone_name=args.backbone,
-            pretrained_global=args.pretrained_global
+            pretrained_global=args.pretrained_global,
+            l1_lambda=args.l1_lambda
         )
