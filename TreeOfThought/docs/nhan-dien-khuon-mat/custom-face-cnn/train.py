@@ -10,12 +10,14 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from model import CustomPartBasedFaceCNN
+import shutil
 
 # Cấu hình đường dẫn dữ liệu
 WORKSPACE_DIR = "/work/a.i-assistant-chatbot-telegram-serverles"
 DEFAULT_RAW_DIR = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/dataraw")
 PROCESSED_DIR = "./data_processed"
 BLAZEFACE_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/blaze_face_short_range.tflite")
+FACELANDMARKER_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/face_landmarker.task")
 
 # Đảm bảo in ra stdout lập tức để C# parse
 def flush_print(msg):
@@ -51,172 +53,139 @@ def align_face_python(image_bgr, eye_left, eye_right):
     aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
     return aligned_face
 
-def detect_and_align_face_with_geom(image_bgr, detector=None):
+def detect_and_align_face_with_geom(image_bgr, face_mesh_detector=None):
     """
-    Phát hiện mặt, align ngang mắt bằng MediaPipe -> OpenCV Haar -> Center Crop
-    Trả về cả ảnh đã align và vector đặc trưng hình học 12 chiều chuẩn hóa của 6 keypoints.
+    Phát hiện mặt và trích xuất 26 landmarks bằng MediaPipe Face Landmarker.
+    Nếu Face Landmarker hoạt động, ta dùng tọa độ mắt để xoay align ảnh 112x112,
+    sau đó biến đổi affine tọa độ 26 landmarks về khung 112x112 chuẩn hóa.
+    Nếu Face Landmarker không chạy được/không phát hiện thấy mặt, ta dùng Haar Cascade / Center Crop
+    và trả về khuôn mặt align kèm tọa độ template 26 landmarks mặc định.
     """
-    # Giá trị hình học mặc định
+    # 26 landmarks mặc định trên khung 112x112 chuẩn hóa
     default_geom = np.array([
-        (55.9132 - 17.6186) / 112.0, 51.59885 / 112.0,
-        (55.9132 + 17.6186) / 112.0, 51.59885 / 112.0,
-        55.9132 / 112.0, 70.0 / 112.0,
-        55.9132 / 112.0, 90.0 / 112.0,
-        20.0 / 112.0, 60.0 / 112.0,
-        92.0 / 112.0, 60.0 / 112.0
+        [30.0/112.0, 51.6/112.0],  # 0. Left eye outer
+        [46.0/112.0, 51.6/112.0],  # 1. Left eye inner
+        [66.0/112.0, 51.6/112.0],  # 2. Right eye inner
+        [82.0/112.0, 51.6/112.0],  # 3. Right eye outer
+        [38.0/112.0, 48.0/112.0],  # 4. Left upper eyelid
+        [38.0/112.0, 54.0/112.0],  # 5. Left lower eyelid
+        [74.0/112.0, 48.0/112.0],  # 6. Right upper eyelid
+        [74.0/112.0, 54.0/112.0],  # 7. Right lower eyelid
+        [38.0/112.0, 51.6/112.0],  # 8. Left Pupil
+        [74.0/112.0, 51.6/112.0],  # 9. Right Pupil
+        [44.0/112.0, 40.0/112.0],  # 10. Left eyebrow inner
+        [26.0/112.0, 42.0/112.0],  # 11. Left eyebrow outer
+        [68.0/112.0, 40.0/112.0],  # 12. Right eyebrow inner
+        [86.0/112.0, 42.0/112.0],  # 13. Right eyebrow outer
+        [55.9/112.0, 48.0/112.0],  # 14. Nose bridge
+        [55.9/112.0, 70.0/112.0],  # 15. Nose tip
+        [48.0/112.0, 75.0/112.0],  # 16. Left nose wing
+        [63.8/112.0, 75.0/112.0],  # 17. Right nose wing
+        [55.9/112.0, 82.0/112.0],  # 18. Philtrum
+        [44.0/112.0, 90.0/112.0],  # 19. Left mouth corner
+        [67.8/112.0, 90.0/112.0],  # 20. Right mouth corner
+        [55.9/112.0, 87.0/112.0],  # 21. Upper lip center
+        [55.9/112.0, 95.0/112.0],  # 22. Lower lip center
+        [20.0/112.0, 75.0/112.0],  # 23. Left cheek
+        [92.0/112.0, 75.0/112.0],  # 24. Right cheek
+        [55.9/112.0, 105.0/112.0]  # 25. Chin
     ], dtype=np.float32)
 
-    # 1. Dùng MediaPipe BlazeFace
-    try:
-        import mediapipe as mp
+    landmark_indices = [33, 133, 362, 263, 159, 145, 386, 374, 468, 473, 70, 107, 300, 336, 168, 4, 129, 358, 164, 61, 291, 0, 17, 234, 454, 152]
+
+    def process_landmarks(face_landmarks):
+        h, w = image_bgr.shape[:2]
         
-        # Sử dụng detector được tái sử dụng để đạt tốc độ cao
-        if detector is not None:
+        # Tọa độ thực tế của mắt để tính góc xoay
+        p33 = face_landmarks[33]
+        p133 = face_landmarks[133]
+        left_eye = (
+            ((p33.x + p133.x) / 2.0) * w,
+            ((p33.y + p133.y) / 2.0) * h
+        )
+        
+        p362 = face_landmarks[362]
+        p263 = face_landmarks[263]
+        right_eye = (
+            ((p362.x + p263.x) / 2.0) * w,
+            ((p362.y + p263.y) / 2.0) * h
+        )
+        
+        cx = (left_eye[0] + right_eye[0]) / 2.0
+        cy = (left_eye[1] + right_eye[1]) / 2.0
+        dx = right_eye[0] - left_eye[0]
+        dy = right_eye[1] - left_eye[1]
+        
+        current_dist = np.sqrt(dx**2 + dy**2)
+        if current_dist == 0:
+            current_dist = 1.0
+        
+        angle_deg = np.degrees(np.arctan2(dy, dx))
+        target_dist = 35.2372
+        tx = 55.9132
+        ty = 51.59885
+        
+        scale = target_dist / current_dist
+        M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
+        M[0, 2] += (tx - cx)
+        M[1, 2] += (ty - cy)
+        
+        # Xoay/align khuôn mặt về khung 112x112
+        aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
+        
+        # Biến đổi tọa độ của 16 landmarks được chọn sang khung 112x112
+        transformed_geom = []
+        for idx in landmark_indices:
+            pt = face_landmarks[idx]
+            pt_x = pt.x * w
+            pt_y = pt.y * h
+            # Áp dụng ma trận affine M
+            x_new = M[0, 0] * pt_x + M[0, 1] * pt_y + M[0, 2]
+            y_new = M[1, 0] * pt_x + M[1, 1] * pt_y + M[1, 2]
+            transformed_geom.append([x_new / 112.0, y_new / 112.0])
+        
+        return aligned_face, np.array(transformed_geom, dtype=np.float32)
+
+    # 1. Dùng MediaPipe Face Landmarker
+    if face_mesh_detector is not None:
+        try:
+            import mediapipe as mp
             rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            result = detector.detect(mp_image)
-            
-            if result.detections:
-                det = max(result.detections, key=lambda d: d.categories[0].score)
-                kp = det.keypoints
-                if len(kp) >= 2:
-                    h, w = image_bgr.shape[:2]
-                    right_eye = (int(kp[0].x * w), int(kp[0].y * h))
-                    left_eye = (int(kp[1].x * w), int(kp[1].y * h))
-                    
-                    cx = (right_eye[0] + left_eye[0]) / 2.0
-                    cy = (right_eye[1] + left_eye[1]) / 2.0
-                    dx = left_eye[0] - right_eye[0]
-                    dy = left_eye[1] - right_eye[1]
-                    
-                    current_dist = np.sqrt(dx**2 + dy**2)
-                    if current_dist == 0:
-                        current_dist = 1.0
-                        
-                    angle_deg = np.degrees(np.arctan2(dy, dx))
-                    target_dist = 35.2372
-                    tx = 55.9132
-                    ty = 51.59885
-                    
-                    scale = target_dist / current_dist
-                    M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                    M[0, 2] += (tx - cx)
-                    M[1, 2] += (ty - cy)
-                    
-                    aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                    
-                    # Áp dụng ma trận M cho 6 keypoints
-                    transformed_geom = []
-                    for i in range(min(len(kp), 6)):
-                        x_orig = kp[i].x * w
-                        y_orig = kp[i].y * h
-                        x_new = M[0, 0] * x_orig + M[0, 1] * y_orig + M[0, 2]
-                        y_new = M[1, 0] * x_orig + M[1, 1] * y_orig + M[1, 2]
-                        transformed_geom.extend([x_new / 112.0, y_new / 112.0])
-                    
-                    while len(transformed_geom) < 12:
-                        transformed_geom.append(0.5)
-                        
-                    return aligned_face, np.array(transformed_geom, dtype=np.float32)
-
-        # Dự phòng tự khởi tạo nếu detector là None
-        elif os.path.exists(BLAZEFACE_MODEL_PATH):
+            results = face_mesh_detector.detect(mp_image)
+            if results.face_landmarks:
+                return process_landmarks(results.face_landmarks[0])
+        except Exception:
+            pass
+    else:
+        # Dự phòng tự khởi tạo
+        try:
+            import mediapipe as mp
             from mediapipe.tasks import python as mp_py
             from mediapipe.tasks.python import vision as mp_vision
-            base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
-            det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
-            
-            with mp_vision.FaceDetector.create_from_options(det_opts) as single_detector:
+            base_opts = mp_py.BaseOptions(model_asset_path=FACELANDMARKER_MODEL_PATH)
+            det_opts = mp_vision.FaceLandmarkerOptions(
+                base_options=base_opts,
+                running_mode=mp_vision.RunningMode.IMAGE,
+                num_faces=1
+            )
+            with mp_vision.FaceLandmarker.create_from_options(det_opts) as single_detector:
                 rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-                result = single_detector.detect(mp_image)
-                
-                if result.detections:
-                    det = max(result.detections, key=lambda d: d.categories[0].score)
-                    kp = det.keypoints
-                    if len(kp) >= 2:
-                        h, w = image_bgr.shape[:2]
-                        right_eye = (int(kp[0].x * w), int(kp[0].y * h))
-                        left_eye = (int(kp[1].x * w), int(kp[1].y * h))
-                        
-                        cx = (right_eye[0] + left_eye[0]) / 2.0
-                        cy = (right_eye[1] + left_eye[1]) / 2.0
-                        dx = left_eye[0] - right_eye[0]
-                        dy = left_eye[1] - right_eye[1]
-                        
-                        current_dist = np.sqrt(dx**2 + dy**2)
-                        if current_dist == 0:
-                            current_dist = 1.0
-                            
-                        angle_deg = np.degrees(np.arctan2(dy, dx))
-                        target_dist = 35.2372
-                        tx = 55.9132
-                        ty = 51.59885
-                        
-                        scale = target_dist / current_dist
-                        M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                        M[0, 2] += (tx - cx)
-                        M[1, 2] += (ty - cy)
-                        
-                        aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                        
-                        # Áp dụng ma trận M cho 6 keypoints
-                        transformed_geom = []
-                        for i in range(min(len(kp), 6)):
-                            x_orig = kp[i].x * w
-                            y_orig = kp[i].y * h
-                            x_new = M[0, 0] * x_orig + M[0, 1] * y_orig + M[0, 2]
-                            y_new = M[1, 0] * x_orig + M[1, 1] * y_orig + M[1, 2]
-                            transformed_geom.extend([x_new / 112.0, y_new / 112.0])
-                        
-                        while len(transformed_geom) < 12:
-                            transformed_geom.append(0.5)
-                            
-                        return aligned_face, np.array(transformed_geom, dtype=np.float32)
-    except Exception:
-        pass
+                results = single_detector.detect(mp_image)
+                if results.face_landmarks:
+                    return process_landmarks(results.face_landmarks[0])
+        except Exception:
+            pass
 
     # 2. Dự phòng bằng OpenCV Haar Cascade
     try:
         cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        eye_cascade_path = cv2.data.haarcascades + 'haarcascade_eye.xml'
-        
         face_cascade = cv2.CascadeClassifier(cascade_path)
-        eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
-        
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
         if len(faces) > 0:
             x, y, fw, fh = max(faces, key=lambda r: r[2] * r[3])
-            roi_gray = gray[y:y+fh, x:x+fw]
-            eyes = eye_cascade.detectMultiScale(roi_gray, scaleFactor=1.1, minNeighbors=3, minSize=(10, 10))
-            if len(eyes) >= 2:
-                es = sorted(eyes, key=lambda e: e[0])
-                left_eye = (x + es[0][0] + es[0][2] // 2, y + es[0][1] + es[0][3] // 2)
-                right_eye = (x + es[1][0] + es[1][2] // 2, y + es[1][1] + es[1][3] // 2)
-                
-                cx = (left_eye[0] + right_eye[0]) / 2.0
-                cy = (left_eye[1] + right_eye[1]) / 2.0
-                dx = right_eye[0] - left_eye[0]
-                dy = right_eye[1] - left_eye[1]
-                
-                current_dist = np.sqrt(dx**2 + dy**2)
-                if current_dist == 0:
-                    current_dist = 1.0
-                    
-                angle_deg = np.degrees(np.arctan2(dy, dx))
-                target_dist = 35.2372
-                tx = 55.9132
-                ty = 51.59885
-                
-                scale = target_dist / current_dist
-                M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                M[0, 2] += (tx - cx)
-                M[1, 2] += (ty - cy)
-                
-                aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                return aligned_face, default_geom
-                
             face_crop = image_bgr[y:y+fh, x:x+fw]
             return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC), default_geom
     except Exception:
@@ -246,11 +215,33 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
     """
     Quét dataraw, phát hiện, align và lưu ảnh phân vùng
     """
-    # Nếu thư mục data_processed đã chứa dữ liệu thì bỏ qua để tiết kiệm thời gian
+    # Kiểm tra xem dữ liệu đã được xử lý ở dạng 16 landmarks mới chưa
+    need_reprocess = True
     global_dir = os.path.join(processed_dir, "global")
-    if os.path.exists(global_dir) and os.path.isdir(global_dir) and len(os.listdir(global_dir)) > 0:
-        flush_print("💡 Thư mục data_processed đã chứa dữ liệu từ trước. Bỏ qua bước tiền xử lý.")
-        return True
+    if os.path.exists(global_dir) and os.path.isdir(global_dir):
+        npy_files = []
+        for root, dirs, files in os.walk(global_dir):
+            for f in files:
+                if f.endswith("_geom.npy"):
+                    npy_files.append(os.path.join(root, f))
+                    break
+            if npy_files:
+                break
+        
+        if npy_files:
+            try:
+                test_geom = np.load(npy_files[0])
+                if test_geom.shape == (26, 2):
+                    need_reprocess = False
+                    flush_print("💡 Thư mục data_processed đã chứa dữ liệu dạng 26 landmarks mới. Bỏ qua tiền xử lý.")
+                    return True
+            except Exception:
+                pass
+
+    if need_reprocess:
+        if os.path.exists(processed_dir):
+            flush_print("♻️ Phát hiện thư mục dữ liệu cũ, tiến hành dọn dẹp để xử lý lại theo định dạng 16 landmarks...")
+            shutil.rmtree(processed_dir)
 
     if not os.path.exists(raw_dir):
         flush_print(f"❌ Lỗi: Không tìm thấy thư mục dataraw tại {raw_dir}")
@@ -264,20 +255,21 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
         
     identities = [d for d in os.listdir(raw_dir) if os.path.isdir(os.path.join(raw_dir, d))]
     
-    # Khởi tạo FaceDetector một lần duy nhất để tái sử dụng trong suốt quá trình tiền xử lý
+    # Khởi tạo FaceLandmarker một lần duy nhất để tái sử dụng
     mp_detector = None
     try:
-        import mediapipe as mp
         from mediapipe.tasks import python as mp_py
         from mediapipe.tasks.python import vision as mp_vision
-        
-        if os.path.exists(BLAZEFACE_MODEL_PATH):
-            base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
-            det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
-            mp_detector = mp_vision.FaceDetector.create_from_options(det_opts)
-            flush_print("⚡ Khởi tạo thành công persistent MediaPipe FaceDetector cho tiền xử lý!")
+        base_opts = mp_py.BaseOptions(model_asset_path=FACELANDMARKER_MODEL_PATH)
+        det_opts = mp_vision.FaceLandmarkerOptions(
+            base_options=base_opts,
+            running_mode=mp_vision.RunningMode.IMAGE,
+            num_faces=1
+        )
+        mp_detector = mp_vision.FaceLandmarker.create_from_options(det_opts)
+        flush_print("⚡ Khởi tạo thành công persistent MediaPipe FaceLandmarker cho tiền xử lý!")
     except Exception as e:
-        flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo persistent FaceDetector: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
+        flush_print(f"⚠️ Cảnh báo: Không thể khởi tạo persistent FaceLandmarker: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
 
     total_processed = 0
     for uid in identities:
@@ -297,7 +289,7 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             if img is None:
                 continue
                 
-            aligned, geom = detect_and_align_face_with_geom(img, detector=mp_detector)
+            aligned, geom = detect_and_align_face_with_geom(img, face_mesh_detector=mp_detector)
             f_global, f_eye, f_nose = crop_sub_regions(aligned)
             
             # Lưu ảnh & đặc trưng hình học landmarks
@@ -354,18 +346,38 @@ class CustomMultiStreamDataset(Dataset):
         if img_eye is None: img_eye = np.zeros((56, 112, 3), dtype=np.uint8)
         if img_nose is None: img_nose = np.zeros((56, 56, 3), dtype=np.uint8)
         
-        # Tải đặc trưng hình học
+        # Tải đặc trưng hình học 26 landmarks
         geom_path = os.path.join(self.processed_dir, "global", uid, f"{base_name}_geom.npy")
         if os.path.exists(geom_path):
             geom = np.load(geom_path).copy()
         else:
             geom = np.array([
-                (55.9132 - 17.6186) / 112.0, 51.59885 / 112.0,
-                (55.9132 + 17.6186) / 112.0, 51.59885 / 112.0,
-                55.9132 / 112.0, 70.0 / 112.0,
-                55.9132 / 112.0, 90.0 / 112.0,
-                20.0 / 112.0, 60.0 / 112.0,
-                92.0 / 112.0, 60.0 / 112.0
+                [30.0/112.0, 51.6/112.0],  # 0. Left eye outer
+                [46.0/112.0, 51.6/112.0],  # 1. Left eye inner
+                [66.0/112.0, 51.6/112.0],  # 2. Right eye inner
+                [82.0/112.0, 51.6/112.0],  # 3. Right eye outer
+                [38.0/112.0, 48.0/112.0],  # 4. Left upper eyelid
+                [38.0/112.0, 54.0/112.0],  # 5. Left lower eyelid
+                [74.0/112.0, 48.0/112.0],  # 6. Right upper eyelid
+                [74.0/112.0, 54.0/112.0],  # 7. Right lower eyelid
+                [38.0/112.0, 51.6/112.0],  # 8. Left Pupil
+                [74.0/112.0, 51.6/112.0],  # 9. Right Pupil
+                [44.0/112.0, 40.0/112.0],  # 10. Left eyebrow inner
+                [26.0/112.0, 42.0/112.0],  # 11. Left eyebrow outer
+                [68.0/112.0, 40.0/112.0],  # 12. Right eyebrow inner
+                [86.0/112.0, 42.0/112.0],  # 13. Right eyebrow outer
+                [55.9/112.0, 48.0/112.0],  # 14. Nose bridge
+                [55.9/112.0, 70.0/112.0],  # 15. Nose tip
+                [48.0/112.0, 75.0/112.0],  # 16. Left nose wing
+                [63.8/112.0, 75.0/112.0],  # 17. Right nose wing
+                [55.9/112.0, 82.0/112.0],  # 18. Philtrum
+                [44.0/112.0, 90.0/112.0],  # 19. Left mouth corner
+                [67.8/112.0, 90.0/112.0],  # 20. Right mouth corner
+                [55.9/112.0, 87.0/112.0],  # 21. Upper lip center
+                [55.9/112.0, 95.0/112.0],  # 22. Lower lip center
+                [20.0/112.0, 75.0/112.0],  # 23. Left cheek
+                [92.0/112.0, 75.0/112.0],  # 24. Right cheek
+                [55.9/112.0, 105.0/112.0]  # 25. Chin
             ], dtype=np.float32)
 
         # Chuyển đổi BGR sang RGB
@@ -381,53 +393,48 @@ class CustomMultiStreamDataset(Dataset):
                 img_eye = cv2.flip(img_eye, 1)
                 img_nose = cv2.flip(img_nose, 1)
                 
-                # Lật tọa độ hình học (x' = 1.0 - x) và tráo đổi trái-phải
-                re_x, re_y = geom[0], geom[1]
-                le_x, le_y = geom[2], geom[3]
-                nt_x, nt_y = geom[4], geom[5]
-                mc_x, mc_y = geom[6], geom[7]
-                r_ear_x, r_ear_y = geom[8], geom[9]
-                l_ear_x, l_ear_y = geom[10], geom[11]
+                # Lật tọa độ hình học (x' = 1.0 - x)
+                geom[:, 0] = 1.0 - geom[:, 0]
                 
-                geom[0], geom[1] = 1.0 - le_x, le_y
-                geom[2], geom[3] = 1.0 - re_x, re_y
-                geom[4], geom[5] = 1.0 - nt_x, nt_y
-                geom[6], geom[7] = 1.0 - mc_x, mc_y
-                geom[8], geom[9] = 1.0 - l_ear_x, l_ear_y
-                geom[10], geom[11] = 1.0 - r_ear_x, r_ear_y
+                # Tráo đổi các cặp đối xứng trái-phải cho 26 landmarks
+                geom[[0, 3]] = geom[[3, 0]]
+                geom[[1, 2]] = geom[[2, 1]]
+                geom[[4, 6]] = geom[[6, 4]]
+                geom[[5, 7]] = geom[[7, 5]]
+                geom[[8, 9]] = geom[[9, 8]]
+                geom[[10, 12]] = geom[[12, 10]]
+                geom[[11, 13]] = geom[[13, 11]]
+                geom[[16, 17]] = geom[[17, 16]]
+                geom[[19, 20]] = geom[[20, 19]]
+                geom[[23, 24]] = geom[[24, 23]]
                 
             # 2. Ngẫu nhiên xoay và thay đổi tỷ lệ (giả lập nghiêng đầu / góc chéo của camera) - Xác suất 30%
             if random.random() > 0.7:
                 angle = random.uniform(-15.0, 15.0)
                 scale = random.uniform(0.9, 1.1)
                 
-                # Tính ma trận xoay quanh tâm khuôn mặt (56, 56)
                 M_aug = cv2.getRotationMatrix2D((56, 56), angle, scale)
-                
-                # Áp dụng cho ảnh global
                 img_global = cv2.warpAffine(img_global, M_aug, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
                 
                 # Cắt lại mắt và mũi tương ứng với ảnh đã xoay để đồng bộ 100%
                 img_eye = img_global[20:76, 0:112].copy()
                 img_nose = img_global[45:101, 28:84].copy()
                 
-                # Áp dụng xoay tương tự cho 6 keypoints hình học
-                for i in range(6):
-                    px = geom[2*i] * 112.0
-                    py = geom[2*i+1] * 112.0
+                # Áp dụng xoay tương tự cho 26 keypoints hình học
+                for i in range(26):
+                    px = geom[i, 0] * 112.0
+                    py = geom[i, 1] * 112.0
                     nx = M_aug[0, 0] * px + M_aug[0, 1] * py + M_aug[0, 2]
                     ny = M_aug[1, 0] * px + M_aug[1, 1] * py + M_aug[1, 2]
-                    geom[2*i] = nx / 112.0
-                    geom[2*i+1] = ny / 112.0
+                    geom[i, 0] = nx / 112.0
+                    geom[i, 1] = ny / 112.0
 
             # 3. Vẽ khẩu trang giả lập ngẫu nhiên trên ảnh global (Xác suất 20%)
             if random.random() > 0.8:
-                # Vẽ khối che khuất vùng miệng cằm (nửa dưới ảnh)
                 cv2.rectangle(img_global, (0, 75), (112, 112), (128, 128, 128), -1)
                 
             # 4. Vẽ kính cận giả lập ngẫu nhiên (Xác suất 20%)
             if random.random() > 0.8:
-                # Vẽ gọng kính ngang vùng mắt (Y: 45:60)
                 cv2.line(img_global, (15, 52), (97, 52), (0, 0, 0), 2)
                 cv2.circle(img_global, (38, 52), 15, (0, 0, 0), 2)
                 cv2.circle(img_global, (74, 52), 15, (0, 0, 0), 2)
@@ -606,11 +613,11 @@ def export_best_to_onnx(num_classes, checkpoint_path="checkpoint_best.pth", outp
     model.load_state_dict(checkpoint["model_state_dict"])
     model.eval()
     
-    # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 12-D)
+    # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 16 landmarks * 2)
     dummy_global = torch.randn(1, 3, 112, 112, dtype=torch.float32)
     dummy_eye = torch.randn(1, 3, 56, 112, dtype=torch.float32)
     dummy_nose = torch.randn(1, 3, 56, 56, dtype=torch.float32)
-    dummy_geom = torch.randn(1, 12, dtype=torch.float32)
+    dummy_geom = torch.randn(1, 26, 2, dtype=torch.float32)
     
     dummy_inputs = (dummy_global, dummy_eye, dummy_nose, dummy_geom)
     input_names = ["x_global", "x_eye", "x_nose", "x_geom"]
@@ -642,8 +649,8 @@ def export_best_to_onnx(num_classes, checkpoint_path="checkpoint_best.pth", outp
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Train Custom Part-Based Face CNN for Asian faces.")
-    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs (default: 10)")
-    parser.add_argument("--batch_size", type=int, default=4, help="Batch size for training (default: 4)")
+    parser.add_argument("--epochs", type=int, default=100, help="Number of training epochs (default: 100)")
+    parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training (default: 16)")
     parser.add_argument("--lr", type=float, default=0.0002, help="Learning rate (default: 0.0002)")
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training, e.g. cpu, cuda, or hip (default: cpu)")
     parser.add_argument("--weight_decay", type=float, default=1e-4, help="Weight decay for AdamW optimizer (default: 1e-4)")

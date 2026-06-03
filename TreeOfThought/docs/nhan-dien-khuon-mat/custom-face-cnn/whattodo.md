@@ -33,3 +33,13 @@ Có thể lấy các tập data set trên mạng và tạo vào dataraw không?
             | **ND-Twins Dataset** | Hàng chục nghìn ảnh của các cặp sinh đôi cùng trứng | Chụp trong điều kiện ánh sáng và biểu cảm rất đa dạng. | Huấn luyện phân biệt **Sinh đôi** cực kỳ khó. |
 
 camera test có thể lấy ảnh tìm được khi so sanh hiển thị góc phải trên cùng video để đối chiếu với khuôn mặt ở camera
+
+**cập nhật 1** bổ xung tính toán đặc trưng tương quan từ điểm giữa vùng mắt tới các điểm đặc trưng khác của các vùng trên khuôn mặt
+Giả sử ảnh dùng để training từ dataraw -> thành processed -> là các ảnh đã được align, đã có các vùng
+    Vùng mắt có các đồng tử và mí mắt , viền mắt, đuôi mắt , khóe mắt, lông mày , đầu và đuôi lông mày ...
+    Vùng mũi có cánh mũi, sống mũi, lỗ mũi ...
+    Vành khuôn mặt
+    Vùng miệng 
+Có thể trích xuất sâu tương quan các vị trí tính từ điểm vùng mắt để tính toán các đặc trưng hình học về khoảng cách đặc trưng, có thể dùng cách đánh giá như thuật toán faiss để tạo các self attetion từ điểm giữa vùng mắt tới các điểm đặc trưng khác cho các vùng phía trên. có thể tạo nhiều vector tương quan để tìm ra các đặc trưng khi đưa các ảnh thẳng mặt để train thì khi ngoài đời thực qua camera, ảnh cứ có vùng mắt sẽ có điểm giữa vùng để so khớp đặc trưng nếu bị nghiêng, hay che 1 phần thì vẫn so khớp được, còn nếu thẳng mặt thì độ chính xác sẽ có kết quả tốt. 
+
+    **chú ý** khi lấy điểm trung tâm vùng mắt để làm điểm gốc dùng để tính toán đặc trưng tới các điểm đặc trưng của các điểm như đuôi mắt, khóe mắt, mý mắt, đồng tử, đầu lông mày, đuôi lông mày, mũi, cánh mũi, nhân trung, mép miệng, khóe miệng ...

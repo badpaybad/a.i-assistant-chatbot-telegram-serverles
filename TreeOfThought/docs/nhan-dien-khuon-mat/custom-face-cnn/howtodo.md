@@ -939,6 +939,8 @@ Sau khi đã huấn luyện ra file mô hình `custom_face_cnn.onnx` thành côn
 
 ---
 
+---
+
 ## 🚀 Đề Xuất Lộ Trình Triển Khai Thực Tế (Roadmap)
 
 > [!TIP]
@@ -949,3 +951,76 @@ Sau khi đã huấn luyện ra file mô hình `custom_face_cnn.onnx` thành côn
 * **Pha 2 (Xây dựng Model - 5 ngày):** Triển khai mạng `CustomPartBasedFaceCNN` bằng PyTorch, nạp trọng số pre-trained cho nhánh Global.
 * **Pha 3 (Huấn luyện Tinh chỉnh - 4 ngày):** Thiết lập hàm tổn thất ArcFace với Margin $m = 0.55$, huấn luyện với dữ liệu `dataraw` kết hợp kỹ thuật giả lập khẩu trang/kính cận và gia tăng độ tuổi (Gaussian Blur, Texture noise).
 * **Pha 4 (Xuất bản & Tích hợp - 2 ngày):** Xuất mô hình ONNX lượng tử hóa (Quantized ONNX) để tích hợp siêu nhanh vào backend **C# .NET 8.0** hoặc chạy offline trực tiếp trên app di động **Flutter**.
+
+---
+
+## 📌 Cập nhật 1: Đặc trưng Tương quan Hình học Tự thích ứng từ Điểm giữa vùng Mắt (Eye-Center Correlation with Self-Attention)
+
+Để tăng cường hơn nữa khả năng nhận diện khi người dùng quay nghiêng, chéo mặt hoặc bị che khuất một phần dưới (đeo khẩu trang) từ duy nhất **1 ảnh thẳng mặt (ảnh CCCD)**, chúng ta tích hợp thêm nhánh phân tích tương quan hình học không gian tự chú ý (Geometric Self-Attention) lấy trung điểm mắt làm gốc:
+
+### 1. Phép toán và Thuật toán Trích xuất Đặc trưng Tương quan
+
+#### A. Định vị điểm giữa vùng mắt làm gốc tọa độ ($P_{eye\_mid}$)
+Sử dụng các điểm mốc sinh trắc học từ MediaPipe, ta xác định tọa độ mắt trái $P_{le} = (x_{le}, y_{le})$ và mắt phải $P_{re} = (x_{re}, y_{re})$. Điểm giữa vùng mắt được định nghĩa là:
+$$P_{eye\_mid} = \frac{P_{le} + P_{re}}{2}$$
+
+#### B. Trích xuất nhóm điểm đặc trưng đại diện ($P_i$ với $i = 1, \dots, N$ với $N = 26$)
+Ta chọn ra $N = 26$ điểm mốc hình học quan trọng từ 3D Face Mesh đại diện cho các vùng:
+- **Vùng mắt/lông mày**: Khóe mắt trong/ngoài, đầu/đuôi chân mày trái/phải, mí mắt trên/dưới và đồng tử.
+- **Vùng mũi**: Cánh mũi trái/phải, sống mũi, đầu mũi.
+- **Vành khuôn mặt (Contour)**: Các điểm biên xương má và cằm.
+- **Vùng miệng**: Khóe môi trái/phải, trung điểm môi trên/dưới, nhân trung.
+
+#### C. Tính toán Vector lệch chuẩn hóa (Scale-Invariant Displacement)
+Với mỗi điểm đặc trưng $P_i = (x_i, y_i)$, tính vector dịch chuyển so với điểm giữa mắt:
+$$\vec{d}_i = P_i - P_{eye\_mid} = (x_i - x_{eye\_mid}, y_i - y_{eye\_mid})$$
+
+Để triệt tiêu biến động khoảng cách từ camera đến mặt (Zoom/Scale Invariance), ta chia vector cho khoảng cách liên đồng tử (Interpupillary Distance - IPD) $L_{ipd} = \|P_{le} - P_{re}\|_2$:
+$$\vec{d}_i' = \frac{\vec{d}_i}{L_{ipd}}$$
+
+Kết quả thu được là ma trận đặc trưng hình học tương quan không gian $D' \in \mathbb{R}^{26 \times 2}$.
+
+---
+
+### 2. Thiết kế Cơ chế Self-Attention tự thích ứng góc mặt và che khuất
+
+Khi khuôn mặt quay nghiêng chéo hoặc bị che mất một phần (ví dụ đeo khẩu trang), một số điểm mốc $P_i$ sẽ bị lệch hoặc biến mất. Để mô hình không bị tính toán sai, ta đưa ma trận $D'$ qua một **Mạng Attention Geometric tự thích ứng**:
+
+1. **Sinh Query, Key, Value:**
+   - Đầu vào là các token dịch chuyển $\vec{d}_i'$.
+   - Một vector truy vấn $Q_{eye}$ (đại diện cho điểm gốc mắt) được chiếu qua lớp Linear: $Q_{eye} = W_q \cdot [0, 0]^T$.
+   - Các điểm đặc trưng khác được chiếu thành Key và Value: $K_i = W_k \cdot \vec{d}_i'$, $V_i = W_v \cdot \vec{d}_i'$.
+2. **Tính toán Attention Weight (Độ tương quan):**
+   $$\alpha_i = \text{Softmax}\left(\frac{Q_{eye} \cdot K_i^T}{\sqrt{d_k}}\right)$$
+   Trọng số $\alpha_i$ biểu thị mức độ đóng góp thông tin của điểm đặc trưng $i$ đối với mắt.
+3. **Mặt nạ che khuất (Occlusion Masking):**
+   Nếu vùng miệng/mũi bị che khuất hoặc camera không quét được, các landmark tương ứng sẽ bị gán nhãn che khuất, và attention logit của chúng được đặt về $-\infty$. Softmax sẽ tự động đưa trọng số $\alpha_i$ của các điểm này về $0.0$.
+4. **Hợp nhất đặc trưng (Feature Aggregation):**
+   $$f_{geom\_attn} = \sum_{i=1}^N \alpha_i V_i$$
+   Vector $f_{geom\_attn}$ này sau đó được ghép nối (concatenated) với đặc trưng ảnh để sinh ra embedding vector 512 chiều cuối cùng.
+
+---
+
+### 3. Sơ đồ luồng xử lý so khớp thực tế
+
+```text
+[Ảnh Đăng Ký CCCD (Thẳng)]                [Ảnh Camera Thực Tế (Nghiêng / Che)]
+          │                                              │
+  Trích xuất và lưu                                Trích xuất vùng mắt sạch
+  tâm mắt & 26 điểm lệch                           & các điểm mốc còn lại
+          │                                              │
+   [D_cccd ∈ R^26x2]                              [D_camera ∈ R^26x2]
+          │                                              │
+          ▼                                              ▼
+  Attention Generator                             Dynamic Soft-Gating
+  (Lưu phân bố chuẩn)                             (Đặt trọng số vùng che = 0)
+          │                                              │
+          └───────────────────────►◄─────────────────────┘
+                                  │
+                          So khớp tương quan
+                          (Cosine Similarity)
+                                  │
+                                  ▼
+                      [Nhận diện thành công]
+```
+

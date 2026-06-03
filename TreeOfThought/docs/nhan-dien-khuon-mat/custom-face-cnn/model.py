@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
+import math
 
 class PeriocularNet(nn.Module):
     """
@@ -127,22 +128,70 @@ class GlobalNet(nn.Module):
 
 class GeometricNet(nn.Module):
     """
-    Nhánh trích xuất đặc trưng hình học không gian (Geometric Coordinate Branch).
-    Đầu vào: Tương quan khoảng cách tọa độ 3D/2D chuẩn hóa phẳng của 6 keypoints (B, 12).
+    Nhánh trích xuất đặc trưng hình học không gian tự chú ý (Geometric Self-Attention Branch).
+    Đầu vào: Tọa độ 26 landmarks (B, 26, 2) đã được chuẩn hóa.
     Đầu ra: Vector đặc trưng hình học 64 chiều.
     """
-    def __init__(self, input_dim=12, embedding_dim=64):
+    def __init__(self, num_landmarks=26, embedding_dim=64, head_dim=32):
         super(GeometricNet, self).__init__()
+        self.num_landmarks = num_landmarks
+        self.embedding_dim = embedding_dim
+        self.head_dim = head_dim
+        
+        # Lớp chiếu tọa độ (dx, dy) sang không gian đặc trưng Key/Value
+        self.proj_k = nn.Linear(2, head_dim)
+        self.proj_v = nn.Linear(2, head_dim)
+        
+        # Vector truy vấn Query đại diện cho tâm mắt (ở gốc tọa độ [0,0])
+        self.query_eye = nn.Parameter(torch.randn(1, head_dim))
+        
+        # Lớp Linear chiếu đặc trưng hình học tích hợp về kích thước đầu ra
         self.fc = nn.Sequential(
-            nn.Linear(input_dim, 32),
-            nn.BatchNorm1d(32),
+            nn.Linear(head_dim, 64),
+            nn.BatchNorm1d(64),
             nn.PReLU(),
-            nn.Linear(32, embedding_dim),
+            nn.Linear(64, embedding_dim),
             nn.BatchNorm1d(embedding_dim)
         )
 
     def forward(self, x):
-        return self.fc(x)
+        """
+        x: (B, 16, 2) - Tọa độ thô đã chuẩn hóa của 16 landmarks
+        """
+        B = x.size(0)
+        
+        # 1. Tính toán tâm mắt làm gốc tọa độ
+        # Mắt trái: index 0 (outer), 1 (inner) -> tâm mắt trái là trung điểm
+        # Mắt phải: index 2 (inner), 3 (outer) -> tâm mắt phải là trung điểm
+        left_eye = (x[:, 0] + x[:, 1]) / 2.0
+        right_eye = (x[:, 2] + x[:, 3]) / 2.0
+        eye_mid = (left_eye + right_eye) / 2.0 # (B, 2)
+        
+        # Tính khoảng cách liên đồng tử (IPD) để chia chuẩn hóa
+        ipd = torch.norm(left_eye - right_eye, p=2, dim=1, keepdim=True).clamp(min=1e-6) # (B, 1)
+        
+        # 2. Tính toán dịch chuyển chuẩn hóa (Scale-Invariant Displacement)
+        # d_i = (P_i - P_eye_mid) / IPD
+        disp = (x - eye_mid.unsqueeze(1)) / ipd.unsqueeze(2) # (B, 16, 2)
+        
+        # 3. Cơ chế Self-Attention từ tâm mắt
+        # Chiếu displacement sang Key và Value
+        K = self.proj_k(disp) # (B, 16, head_dim)
+        V = self.proj_v(disp) # (B, 16, head_dim)
+        
+        # Query đại diện cho tâm mắt (origin)
+        Q = self.query_eye.unsqueeze(0).expand(B, -1, -1) # (B, 1, head_dim)
+        
+        # Tính điểm tương quan Attention: Q x K^T
+        scores = torch.bmm(Q, K.transpose(1, 2)) / math.sqrt(self.head_dim) # (B, 1, 16)
+        attn_weights = F.softmax(scores, dim=2) # (B, 1, 16)
+        
+        # Hợp nhất các Value theo Attention weights
+        attn_out = torch.bmm(attn_weights, V).squeeze(1) # (B, head_dim)
+        
+        # 4. Chiếu về 64-D embedding hình học
+        out = self.fc(attn_out)
+        return out
 
 class DynamicAttentionFusion(nn.Module):
     """
@@ -197,8 +246,8 @@ class CustomPartBasedFaceCNN(nn.Module):
         self.nose_branch = NoseNet(embedding_dim=64)
         self.global_branch = GlobalNet(backbone_name=backbone_name, embedding_dim=512, pretrained=pretrained_global)
         
-        # Nhánh trích xuất đặc trưng hình học không gian (6 keypoints * 2D = 12 dims) -> 64-D
-        self.geom_branch = GeometricNet(input_dim=12, embedding_dim=64)
+        # Nhánh trích xuất đặc trưng hình học không gian tự chú ý (26 keypoints * 2D = 52 dims) -> 64-D
+        self.geom_branch = GeometricNet(num_landmarks=26, embedding_dim=64)
         
         # Hợp nhất ảnh trích xuất về (embedding_dim - 64) = 448 chiều
         self.fusion_module = DynamicAttentionFusion(
@@ -216,14 +265,14 @@ class CustomPartBasedFaceCNN(nn.Module):
         x_global: (B, 3, 112, 112)
         x_eye: (B, 3, 56, 112)
         x_nose: (B, 3, 56, 56)
-        x_geom: (B, 12)
+        x_geom: (B, 26, 2)
         """
         # 1. Trích xuất đặc trưng song song từ các luồng ảnh
         f_eye = self.eye_branch(x_eye)
         f_nose = self.nose_branch(x_nose)
         f_global = self.global_branch(x_global)
         
-        # 2. Trích xuất đặc trưng hình học đối xứng
+        # 2. Trích xuất đặc trưng hình học đối xứng tự chú ý
         f_geom = self.geom_branch(x_geom)
         
         # 3. Hợp nhất thích ứng đặc trưng ảnh

@@ -7,6 +7,7 @@ import faiss
 
 WORKSPACE_DIR = "/work/a.i-assistant-chatbot-telegram-serverles"
 BLAZEFACE_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/blaze_face_short_range.tflite")
+FACELANDMARKER_MODEL_PATH = os.path.join(WORKSPACE_DIR, "TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcfacemodels/face_landmarker.task")
 
 def flush_print(msg):
     print(msg)
@@ -43,173 +44,135 @@ def align_face_python(image_bgr, eye_left, eye_right):
 
 def detect_and_align_face_with_geom(image_bgr, detector=None):
     """
-    Quy trình phát hiện và căn chỉnh mắt (MediaPipe -> OpenCV Haar -> Center Crop)
-    Trả về cả ảnh đã align và vector đặc trưng hình học 12 chiều chuẩn hóa của 6 keypoints.
+    Quy trình phát hiện và căn chỉnh mắt bằng MediaPipe Face Landmarker (hoặc OpenCV Haar / Center Crop dự phòng).
+    Trả về cả ảnh đã align và ma trận đặc trưng hình học (26, 2) của 26 landmarks chuẩn hóa.
     """
-    # Giá trị hình học mặc định
+    # 26 landmarks mặc định trên khung 112x112 chuẩn hóa
     default_geom = np.array([
-        (55.9132 - 17.6186) / 112.0, 51.59885 / 112.0,
-        (55.9132 + 17.6186) / 112.0, 51.59885 / 112.0,
-        55.9132 / 112.0, 70.0 / 112.0,
-        55.9132 / 112.0, 90.0 / 112.0,
-        20.0 / 112.0, 60.0 / 112.0,
-        92.0 / 112.0, 60.0 / 112.0
+        [30.0/112.0, 51.6/112.0],  # 0. Left eye outer
+        [46.0/112.0, 51.6/112.0],  # 1. Left eye inner
+        [66.0/112.0, 51.6/112.0],  # 2. Right eye inner
+        [82.0/112.0, 51.6/112.0],  # 3. Right eye outer
+        [38.0/112.0, 48.0/112.0],  # 4. Left upper eyelid
+        [38.0/112.0, 54.0/112.0],  # 5. Left lower eyelid
+        [74.0/112.0, 48.0/112.0],  # 6. Right upper eyelid
+        [74.0/112.0, 54.0/112.0],  # 7. Right lower eyelid
+        [38.0/112.0, 51.6/112.0],  # 8. Left Pupil
+        [74.0/112.0, 51.6/112.0],  # 9. Right Pupil
+        [44.0/112.0, 40.0/112.0],  # 10. Left eyebrow inner
+        [26.0/112.0, 42.0/112.0],  # 11. Left eyebrow outer
+        [68.0/112.0, 40.0/112.0],  # 12. Right eyebrow inner
+        [86.0/112.0, 42.0/112.0],  # 13. Right eyebrow outer
+        [55.9/112.0, 48.0/112.0],  # 14. Nose bridge
+        [55.9/112.0, 70.0/112.0],  # 15. Nose tip
+        [48.0/112.0, 75.0/112.0],  # 16. Left nose wing
+        [63.8/112.0, 75.0/112.0],  # 17. Right nose wing
+        [55.9/112.0, 82.0/112.0],  # 18. Philtrum
+        [44.0/112.0, 90.0/112.0],  # 19. Left mouth corner
+        [67.8/112.0, 90.0/112.0],  # 20. Right mouth corner
+        [55.9/112.0, 87.0/112.0],  # 21. Upper lip center
+        [55.9/112.0, 95.0/112.0],  # 22. Lower lip center
+        [20.0/112.0, 75.0/112.0],  # 23. Left cheek
+        [92.0/112.0, 75.0/112.0],  # 24. Right cheek
+        [55.9/112.0, 105.0/112.0]  # 25. Chin
     ], dtype=np.float32)
+
+    landmark_indices = [33, 133, 362, 263, 159, 145, 386, 374, 468, 473, 70, 107, 300, 336, 168, 4, 129, 358, 164, 61, 291, 0, 17, 234, 454, 152]
+
+    def process_landmarks(face_landmarks):
+        h, w = image_bgr.shape[:2]
+        # Tọa độ thực tế của mắt để tính góc xoay
+        p33 = face_landmarks[33]
+        p133 = face_landmarks[133]
+        left_eye = (
+            ((p33.x + p133.x) / 2.0) * w,
+            ((p33.y + p133.y) / 2.0) * h
+        )
+        
+        p362 = face_landmarks[362]
+        p263 = face_landmarks[263]
+        right_eye = (
+            ((p362.x + p263.x) / 2.0) * w,
+            ((p362.y + p263.y) / 2.0) * h
+        )
+        
+        cx = (left_eye[0] + right_eye[0]) / 2.0
+        cy = (left_eye[1] + right_eye[1]) / 2.0
+        dx = right_eye[0] - left_eye[0]
+        dy = right_eye[1] - left_eye[1]
+        
+        current_dist = np.sqrt(dx**2 + dy**2)
+        if current_dist == 0:
+            current_dist = 1.0
+        
+        angle_deg = np.degrees(np.arctan2(dy, dx))
+        target_dist = 35.2372
+        tx = 55.9132
+        ty = 51.59885
+        
+        scale = target_dist / current_dist
+        M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
+        M[0, 2] += (tx - cx)
+        M[1, 2] += (ty - cy)
+        
+        # Xoay/align khuôn mặt về khung 112x112
+        aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
+        
+        # Biến đổi tọa độ của 16 landmarks được chọn sang khung 112x112
+        transformed_geom = []
+        for idx in landmark_indices:
+            pt = face_landmarks[idx]
+            pt_x = pt.x * w
+            pt_y = pt.y * h
+            # Áp dụng ma trận affine M
+            x_new = M[0, 0] * pt_x + M[0, 1] * pt_y + M[0, 2]
+            y_new = M[1, 0] * pt_x + M[1, 1] * pt_y + M[1, 2]
+            transformed_geom.append([x_new / 112.0, y_new / 112.0])
+        
+        return aligned_face, np.array(transformed_geom, dtype=np.float32)
 
     try:
         import mediapipe as mp
-        
-        # 1. Dùng MediaPipe BlazeFace với detector được tái sử dụng để đạt tốc độ cao
+        # 1. Dùng MediaPipe Face Landmarker được truyền vào (tái sử dụng)
         if detector is not None:
             rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            result = detector.detect(mp_image)
-            
-            if result.detections:
-                det = max(result.detections, key=lambda d: d.categories[0].score)
-                kp = det.keypoints
-                if len(kp) >= 2:
-                    h, w = image_bgr.shape[:2]
-                    right_eye = (int(kp[0].x * w), int(kp[0].y * h))
-                    left_eye = (int(kp[1].x * w), int(kp[1].y * h))
-                    
-                    cx = (right_eye[0] + left_eye[0]) / 2.0
-                    cy = (right_eye[1] + left_eye[1]) / 2.0
-                    dx = left_eye[0] - right_eye[0]
-                    dy = left_eye[1] - right_eye[1]
-                    
-                    current_dist = np.sqrt(dx**2 + dy**2)
-                    if current_dist == 0:
-                        current_dist = 1.0
-                        
-                    angle_deg = np.degrees(np.arctan2(dy, dx))
-                    target_dist = 35.2372
-                    tx = 55.9132
-                    ty = 51.59885
-                    
-                    scale = target_dist / current_dist
-                    M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                    M[0, 2] += (tx - cx)
-                    M[1, 2] += (ty - cy)
-                    
-                    aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                    
-                    # Áp dụng ma trận M cho 6 keypoints
-                    transformed_geom = []
-                    for i in range(min(len(kp), 6)):
-                        x_orig = kp[i].x * w
-                        y_orig = kp[i].y * h
-                        x_new = M[0, 0] * x_orig + M[0, 1] * y_orig + M[0, 2]
-                        y_new = M[1, 0] * x_orig + M[1, 1] * y_orig + M[1, 2]
-                        transformed_geom.extend([x_new / 112.0, y_new / 112.0])
-                    
-                    while len(transformed_geom) < 12:
-                        transformed_geom.append(0.5)
-                        
-                    return aligned_face, np.array(transformed_geom, dtype=np.float32)
-
-        # Dự phòng tự khởi tạo nếu detector là None (suy luận offline đơn lẻ)
-        elif os.path.exists(BLAZEFACE_MODEL_PATH):
+            results = detector.detect(mp_image)
+            if results.face_landmarks:
+                return process_landmarks(results.face_landmarks[0])
+        else:
+            # Tự khởi tạo single-use FaceLandmarker
             from mediapipe.tasks import python as mp_py
             from mediapipe.tasks.python import vision as mp_vision
-            base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
-            det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
-            
-            with mp_vision.FaceDetector.create_from_options(det_opts) as single_detector:
+            base_opts = mp_py.BaseOptions(model_asset_path=FACELANDMARKER_MODEL_PATH)
+            det_opts = mp_vision.FaceLandmarkerOptions(
+                base_options=base_opts,
+                running_mode=mp_vision.RunningMode.IMAGE,
+                num_faces=1
+            )
+            with mp_vision.FaceLandmarker.create_from_options(det_opts) as single_detector:
                 rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-                result = single_detector.detect(mp_image)
-                
-                if result.detections:
-                    det = max(result.detections, key=lambda d: d.categories[0].score)
-                    kp = det.keypoints
-                    if len(kp) >= 2:
-                        h, w = image_bgr.shape[:2]
-                        right_eye = (int(kp[0].x * w), int(kp[0].y * h))
-                        left_eye = (int(kp[1].x * w), int(kp[1].y * h))
-                        
-                        cx = (right_eye[0] + left_eye[0]) / 2.0
-                        cy = (right_eye[1] + left_eye[1]) / 2.0
-                        dx = left_eye[0] - right_eye[0]
-                        dy = left_eye[1] - right_eye[1]
-                        
-                        current_dist = np.sqrt(dx**2 + dy**2)
-                        if current_dist == 0:
-                            current_dist = 1.0
-                            
-                        angle_deg = np.degrees(np.arctan2(dy, dx))
-                        target_dist = 35.2372
-                        tx = 55.9132
-                        ty = 51.59885
-                        
-                        scale = target_dist / current_dist
-                        M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                        M[0, 2] += (tx - cx)
-                        M[1, 2] += (ty - cy)
-                        
-                        aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                        
-                        # Áp dụng ma trận M cho 6 keypoints
-                        transformed_geom = []
-                        for i in range(min(len(kp), 6)):
-                            x_orig = kp[i].x * w
-                            y_orig = kp[i].y * h
-                            x_new = M[0, 0] * x_orig + M[0, 1] * y_orig + M[0, 2]
-                            y_new = M[1, 0] * x_orig + M[1, 1] * y_orig + M[1, 2]
-                            transformed_geom.extend([x_new / 112.0, y_new / 112.0])
-                        
-                        while len(transformed_geom) < 12:
-                            transformed_geom.append(0.5)
-                            
-                        return aligned_face, np.array(transformed_geom, dtype=np.float32)
+                results = single_detector.detect(mp_image)
+                if results.face_landmarks:
+                    return process_landmarks(results.face_landmarks[0])
     except Exception:
         pass
 
+    # 2. Dự phòng bằng OpenCV Haar Cascade
     try:
         cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-        eye_cascade_path = cv2.data.haarcascades + 'haarcascade_eye.xml'
-        
         face_cascade = cv2.CascadeClassifier(cascade_path)
-        eye_cascade = cv2.CascadeClassifier(eye_cascade_path)
-        
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)
         faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(30, 30))
         if len(faces) > 0:
             x, y, fw, fh = max(faces, key=lambda r: r[2] * r[3])
-            roi_gray = gray[y:y+fh, x:x+fw]
-            eyes = eye_cascade.detectMultiScale(roi_gray, scaleFactor=1.1, minNeighbors=3, minSize=(10, 10))
-            if len(eyes) >= 2:
-                es = sorted(eyes, key=lambda e: e[0])
-                left_eye = (x + es[0][0] + es[0][2] // 2, y + es[0][1] + es[0][3] // 2)
-                right_eye = (x + es[1][0] + es[1][2] // 2, y + es[1][1] + es[1][3] // 2)
-                
-                cx = (left_eye[0] + right_eye[0]) / 2.0
-                cy = (left_eye[1] + right_eye[1]) / 2.0
-                dx = right_eye[0] - left_eye[0]
-                dy = right_eye[1] - left_eye[1]
-                
-                current_dist = np.sqrt(dx**2 + dy**2)
-                if current_dist == 0:
-                    current_dist = 1.0
-                    
-                angle_deg = np.degrees(np.arctan2(dy, dx))
-                target_dist = 35.2372
-                tx = 55.9132
-                ty = 51.59885
-                
-                scale = target_dist / current_dist
-                M = cv2.getRotationMatrix2D((cx, cy), angle_deg, scale)
-                M[0, 2] += (tx - cx)
-                M[1, 2] += (ty - cy)
-                
-                aligned_face = cv2.warpAffine(image_bgr, M, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
-                return aligned_face, default_geom
-                
             face_crop = image_bgr[y:y+fh, x:x+fw]
             return cv2.resize(face_crop, (112, 112), interpolation=cv2.INTER_CUBIC), default_geom
     except Exception:
         pass
 
+    # 3. Dự phòng cuối cùng: Center Crop
     h, w = image_bgr.shape[:2]
     size = min(h, w)
     x = (w - size) // 2
@@ -239,20 +202,21 @@ class OnnxFaceRecognizer:
         # Ưu tiên sử dụng CPU để chạy đa nền tảng ổn định
         self.session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
         
-        # Khởi tạo FaceDetector của MediaPipe để tái sử dụng, tăng FPS suy luận thực tế lên gấp nhiều lần
+        # Khởi tạo FaceLandmarker của MediaPipe để tái sử dụng, tăng FPS suy luận thực tế lên gấp nhiều lần
         self.mp_detector = None
         try:
-            import mediapipe as mp
             from mediapipe.tasks import python as mp_py
             from mediapipe.tasks.python import vision as mp_vision
-            
-            if os.path.exists(BLAZEFACE_MODEL_PATH):
-                base_opts = mp_py.BaseOptions(model_asset_path=BLAZEFACE_MODEL_PATH)
-                det_opts = mp_vision.FaceDetectorOptions(base_options=base_opts, min_detection_confidence=0.35)
-                self.mp_detector = mp_vision.FaceDetector.create_from_options(det_opts)
-                flush_print("⚡ Tải thành công persistent MediaPipe FaceDetector để tối ưu hóa FPS!")
+            base_opts = mp_py.BaseOptions(model_asset_path=FACELANDMARKER_MODEL_PATH)
+            det_opts = mp_vision.FaceLandmarkerOptions(
+                base_options=base_opts,
+                running_mode=mp_vision.RunningMode.IMAGE,
+                num_faces=1
+            )
+            self.mp_detector = mp_vision.FaceLandmarker.create_from_options(det_opts)
+            flush_print("⚡ Khởi tạo thành công persistent MediaPipe FaceLandmarker để tối ưu hóa FPS!")
         except Exception as e:
-            flush_print(f"⚠️ Cảnh báo: Không thể tải persistent FaceDetector: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
+            flush_print(f"⚠️ Cảnh báo: Không thể tải persistent FaceLandmarker: {e}. Sẽ dùng OpenCV Cascade dự phòng.")
         
     def _image_to_tensor(self, image_rgb):
         # Chuyển HWC sang CHW và float32
@@ -275,11 +239,11 @@ class OnnxFaceRecognizer:
         f_eye = cv2.cvtColor(f_eye, cv2.COLOR_BGR2RGB)
         f_nose = cv2.cvtColor(f_nose, cv2.COLOR_BGR2RGB)
         
-        # 2. Đưa ảnh về dạng Tensor float32 NCHW và vector tọa độ hình học (1, 12)
+        # 2. Đưa ảnh về dạng Tensor float32 NCHW và vector tọa độ hình học (1, 26, 2)
         t_global = self._image_to_tensor(f_global)
         t_eye = self._image_to_tensor(f_eye)
         t_nose = self._image_to_tensor(f_nose)
-        t_geom = np.expand_dims(geom.astype(np.float32), axis=0) # Shape: (1, 12)
+        t_geom = np.expand_dims(geom.astype(np.float32), axis=0) # Shape: (1, 26, 2)
         
         # 3. Chạy suy luận đa đầu vào tương thích đồ thị ONNX (gồm 3 luồng ảnh và 1 luồng tọa độ hình học)
         inputs = {
