@@ -96,3 +96,4 @@ GeometricNet cần trích xuất đặc trưng cho từng vùng của từng đi
 
 **cập nhật 11**
 Sử dụng Loss function mạnh mẽ hơn: Đảm bảo sử dụng các hàm loss chuyên dụng cho nhận diện khuôn mặt như ArcFace Loss (Additive Angular Margin Loss) hoặc Sub-center ArcFace khi huấn luyện để ép mô hình học các ranh giới quyết định (decision boundary) cực kỳ nhỏ giữa các lớp (nhất là các cặp sinh đôi)
+áp dụng các kỹ thuật regularization mạnh mẽ hơn (như dropout, weight decay)

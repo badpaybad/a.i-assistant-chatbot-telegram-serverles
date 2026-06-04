@@ -426,6 +426,18 @@ INDEX_HTML = """<!DOCTYPE html>
                 <label for="arcfaceK">Sub-centers (k)</label>
                 <input type="number" id="arcfaceK" value="3" min="1" max="10" step="1">
             </div>
+            <div class="input-group">
+                <label for="weightDecay">Weight Decay (L2)</label>
+                <input type="number" id="weightDecay" value="0.0001" step="0.0001" min="0.0">
+            </div>
+            <div class="input-group">
+                <label for="dropout">Classifier Dropout</label>
+                <input type="number" id="dropout" value="0.4" step="0.05" min="0.0" max="0.9">
+            </div>
+            <div class="input-group">
+                <label for="l1Lambda">L1 Regularization (λ)</label>
+                <input type="number" id="l1Lambda" value="0.00001" step="0.00001" min="0.0">
+            </div>
             <button id="btnStart" class="btn btn-primary" onclick="startTraining()">▶ Bắt đầu Train</button>
             <button id="btnStop" class="btn btn-danger" onclick="stopTraining()" disabled>■ Dừng Train</button>
         </section>
@@ -710,12 +722,27 @@ INDEX_HTML = """<!DOCTYPE html>
             const arcfaceS = parseFloat(document.getElementById('arcfaceS').value) || 30.0;
             const arcfaceM = parseFloat(document.getElementById('arcfaceM').value) || 0.50;
             const arcfaceK = parseInt(document.getElementById('arcfaceK').value) || 3;
+            const weightDecay = parseFloat(document.getElementById('weightDecay').value) || 0.0001;
+            const dropout = parseFloat(document.getElementById('dropout').value) || 0.4;
+            const l1Lambda = parseFloat(document.getElementById('l1Lambda').value) || 0.00001;
 
             try {
                 const res = await fetch('/api/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ epochs, batch_size: batchSize, lr: learningRate, device, backbone, arcface_s: arcfaceS, arcface_m: arcfaceM, arcface_k: arcfaceK })
+                    body: JSON.stringify({
+                        epochs,
+                        batch_size: batchSize,
+                        lr: learningRate,
+                        device,
+                        backbone,
+                        arcface_s: arcfaceS,
+                        arcface_m: arcfaceM,
+                        arcface_k: arcfaceK,
+                        weight_decay: weightDecay,
+                        dropout: dropout,
+                        l1_lambda: l1Lambda
+                    })
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
@@ -842,6 +869,8 @@ def start_training():
     arcface_s = data.get("arcface_s", 30.0)
     arcface_m = data.get("arcface_m", 0.50)
     arcface_k = data.get("arcface_k", 3)
+    weight_decay = data.get("weight_decay", 1e-4)
+    dropout = data.get("dropout", 0.4)
     
     cmd = [
         sys.executable, "train.py",
@@ -853,7 +882,9 @@ def start_training():
         "--l1_lambda", str(l1_lambda),
         "--arcface_s", str(arcface_s),
         "--arcface_m", str(arcface_m),
-        "--arcface_k", str(arcface_k)
+        "--arcface_k", str(arcface_k),
+        "--weight_decay", str(weight_decay),
+        "--dropout", str(dropout)
     ]
     
     try:

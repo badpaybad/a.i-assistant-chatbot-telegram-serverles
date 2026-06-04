@@ -365,7 +365,7 @@ class CustomPartBasedFaceCNN(nn.Module):
     """
     Hệ thống mạng Custom Face CNN kết hợp GlobalNet và GeometricNet (Backbone Patch + 28-Token Hierarchical Attention).
     """
-    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18", s=30.0, m=0.50, k=3):
+    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18", s=30.0, m=0.50, k=3, dropout=0.4):
         super(CustomPartBasedFaceCNN, self).__init__()
         # Mạng trích xuất đặc trưng toàn mặt
         self.global_branch = GlobalNet(backbone_name=backbone_name, embedding_dim=512, pretrained=pretrained_global)
@@ -379,7 +379,7 @@ class CustomPartBasedFaceCNN(nn.Module):
         )
         
         # Lớp Dropout trước bộ phân lớp để chống overfitting
-        self.classifier_dropout = nn.Dropout(p=0.4)
+        self.classifier_dropout = nn.Dropout(p=dropout)
         
         # Đầu phân lớp Sub-center ArcFace phục vụ huấn luyện phân loại danh tính
         self.classifier = SubCenterArcMarginProduct(embedding_dim, num_classes, s=s, m=m, k=k)
