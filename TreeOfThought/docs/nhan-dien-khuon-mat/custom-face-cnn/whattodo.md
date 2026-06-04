@@ -91,14 +91,17 @@ Sự kết hợp chéo bằng Self-Attention giữa cả 4 luồng mới tạo r
 cần tăng đường chéo 15px cần tăng lên 20px
 
 **cập nhật 10**
-modal chỉ dùng GeometricNet và GlobalNet 
-GeometricNet cần trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt với mô hình nhẹ và đủ tốt phù hợp lấy điểm key để làm tâm hình vuông có đường chéo 30px. lấy điểm giữa của 2 mắt rồi lấy đặc trưng của vùng điểm đó (cách lấy đặc trưng giống của 26 điểm key khuôn mặt). từ vùng điểm giữa này self attention với 26 vùng trước đó để lấy đặc trưng tương quan điểm giữa của vùng tới 26 vùng trước đó . sau khi có cần kết hợp với GlobalNet để lấy được đặc trưng self attention. 
+modal chỉ dùng GeometricNet và GlobalNet
+GeometricNet cần trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt với mô hình nhẹ và đủ tốt phù hợp lấy điểm key để làm tâm hình vuông có đường chéo 30px. lấy điểm giữa của 2 mắt rồi lấy đặc trưng của vùng điểm đó (cách lấy đặc trưng giống của 26 điểm key khuôn mặt). từ vùng điểm giữa này self attention với 26 vùng trước đó để lấy đặc trưng tương quan điểm giữa của vùng tới 26 vùng trước đó . sau khi có cần kết hợp với GlobalNet để lấy được đặc trưng self attention.
 
 **cập nhật 11**
 Sử dụng Loss function mạnh mẽ hơn: Đảm bảo sử dụng các hàm loss chuyên dụng cho nhận diện khuôn mặt như ArcFace Loss (Additive Angular Margin Loss) hoặc Sub-center ArcFace khi huấn luyện để ép mô hình học các ranh giới quyết định (decision boundary) cực kỳ nhỏ giữa các lớp (nhất là các cặp sinh đôi)
 áp dụng các kỹ thuật regularization mạnh mẽ hơn (như dropout, weight decay)
 
 **cập nhật 12**
-dựa vào face_landmarker.task của mediapipe cần bổ xung thêm viền khuôn mặt, đường bao khuôn mặt lấy đặc trưng và self attention với 26 vùng face key đã có phía trên 
-    tức là sẽ cần dựa vào các điểm landmark đường bao rồi từng điểm đó lấy hình vuông có đường chéo 30px rồi ghép tất cả các ảnh thành 1 vòng khép kín (ghép theo đường viền khuôn mặt) thành 1 ảnh (về cơ bản sẽ không có xuất hiện mắt mũi mồm ) sau đó lấy đặc trưng và self attention với 26 vùng face key đã lấy đặc trưng trước đó. 
+dựa vào face_landmarker.task của mediapipe cần bổ xung thêm viền khuôn mặt, đường bao khuôn mặt lấy đặc trưng và self attention với 26 vùng face key đã có phía trên
+    tức là sẽ cần dựa vào các điểm landmark đường bao rồi từng điểm đó lấy hình vuông có đường chéo 30px rồi ghép tất cả các ảnh thành 1 vòng khép kín (ghép theo đường viền khuôn mặt) thành 1 ảnh (về cơ bản sẽ không có xuất hiện mắt mũi mồm ) sau đó lấy đặc trưng và self attention với 26 vùng face key đã lấy đặc trưng trước đó.
     Self attention là cho các vùng đã lấy đặc trưng với nhau chứ không phải 1 điểm.
+
+**cập nhật 13**
+--freeze_epochs nếu do ảnh hưởng để gemini api đưa ra đề xuất thì chỉ dùng gemini đánh giá khi đã qua các epochs freeze này

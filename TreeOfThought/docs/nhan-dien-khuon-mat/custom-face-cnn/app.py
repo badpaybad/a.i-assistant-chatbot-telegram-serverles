@@ -872,6 +872,8 @@ def start_training():
     weight_decay = data.get("weight_decay", 1e-4)
     dropout = data.get("dropout", 0.4)
     num_landmarks = data.get("num_landmarks", 37)
+    freeze_epochs = data.get("freeze_epochs", 0)
+    freeze_layers = data.get("freeze_layers", -1)
     
     cmd = [
         sys.executable, "train.py",
@@ -886,7 +888,9 @@ def start_training():
         "--arcface_k", str(arcface_k),
         "--weight_decay", str(weight_decay),
         "--dropout", str(dropout),
-        "--num_landmarks", str(num_landmarks)
+        "--num_landmarks", str(num_landmarks),
+        "--freeze_epochs", str(freeze_epochs),
+        "--freeze_layers", str(freeze_layers)
     ]
     
     try:

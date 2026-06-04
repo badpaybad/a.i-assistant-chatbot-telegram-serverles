@@ -623,7 +623,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5, arcface_s=30.0, arcface_m=0.50, arcface_k=3, dropout=0.4, num_landmarks=37):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5, arcface_s=30.0, arcface_m=0.50, arcface_k=3, dropout=0.4, num_landmarks=37, freeze_epochs=0, freeze_layers=-1):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -707,14 +707,56 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     
     model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name, s=arcface_s, m=arcface_m, k=arcface_k, dropout=dropout, num_landmarks=num_landmarks).to(device)
 
-    # Freeze backbone 5 epoch đầu để warmup các lớp custom layer trước khi fine-tune toàn bộ
-    BACKBONE_FREEZE_EPOCHS = 5
-    def set_backbone_grad(requires_grad: bool):
-        for param in model.global_branch.backbone.parameters():
-            param.requires_grad = requires_grad
+    # -------------------------------------------------------------------------
+    # Cấu hình Freeze Layer linh hoạt:
+    #   freeze_layers = -1 : Freeze TOÀN BỘ backbone
+    #   freeze_layers =  0 : KHÔNG freeze layer nào
+    #   freeze_layers =  N : Freeze N stages/blocks đầu tiên (1-4 tùy backbone)
+    # freeze_epochs = 0 : Không warmup, train toàn bộ ngay từ epoch 1
+    # -------------------------------------------------------------------------
+    BACKBONE_FREEZE_EPOCHS = freeze_epochs  # 0 = vô hiệu hóa hoàn toàn
 
-    set_backbone_grad(False)  # Ban đầu freeze backbone
-    flush_print(f"🔒 Backbone đã bị freeze trong {BACKBONE_FREEZE_EPOCHS} epoch đầu để warmup.")
+    def _get_backbone_stages(model_bb, bb_name):
+        """Trả về list các sub-module stage theo thứ tự shallow→deep."""
+        n = bb_name.lower()
+        if n.startswith("resnet"):
+            # ResNet: layer1, layer2, layer3, layer4
+            return [model_bb.layer1, model_bb.layer2, model_bb.layer3, model_bb.layer4]
+        elif n == "mobilenet_v3":
+            # MobileNetV3: features chứa 16 InvertedResidual blocks
+            return list(model_bb.features.children())
+        elif n == "convnext":
+            # ConvNeXt: features[0..7] – 0=stem, 1=stage1, 2=stage2, 3=stage3
+            return list(model_bb.features.children())
+        return []
+
+    def set_freeze(requires_grad: bool, n_stages: int = -1):
+        """
+        Freeze/Unfreeze backbone.
+        n_stages=-1  → toàn bộ backbone
+        n_stages=0   → không freeze gì cả
+        n_stages=N   → chỉ freeze N stage đầu tiên
+        """
+        bb = model.global_branch.backbone
+        if n_stages == 0:
+            return  # không làm gì
+        if n_stages == -1:
+            # Toàn bộ backbone
+            for param in bb.parameters():
+                param.requires_grad = requires_grad
+        else:
+            stages = _get_backbone_stages(bb, backbone_name)
+            target = stages[:n_stages]
+            for stage in target:
+                for param in stage.parameters():
+                    param.requires_grad = requires_grad
+
+    if BACKBONE_FREEZE_EPOCHS > 0 and freeze_layers != 0:
+        set_freeze(False, freeze_layers)  # Freeze ban đầu
+        layer_desc = "TOÀN BỘ" if freeze_layers == -1 else f"{freeze_layers} stage(s) đầu"
+        flush_print(f"🔒 Freeze {layer_desc} của backbone trong {BACKBONE_FREEZE_EPOCHS} epoch đầu (warmup).")
+    else:
+        flush_print("🔓 Không freeze backbone – train toàn bộ ngay từ epoch 1.")
 
     optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
@@ -800,15 +842,16 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         epoch_train_acc = correct_train / total_train * 100
 
         # Unfreeze backbone sau BACKBONE_FREEZE_EPOCHS epoch
-        if epoch == BACKBONE_FREEZE_EPOCHS:
-            set_backbone_grad(True)
-            # Tái tạo optimizer để include backbone params với lr nhỏ hơn (discriminative LR)
+        if BACKBONE_FREEZE_EPOCHS > 0 and freeze_layers != 0 and epoch == BACKBONE_FREEZE_EPOCHS:
+            set_freeze(True, freeze_layers)  # Unfreeze
+            layer_desc = "TOÀN BỘ" if freeze_layers == -1 else f"{freeze_layers} stage(s) đầu"
+            # Tái tạo optimizer để include backbone params với discriminative LR
             optimizer = optim.AdamW([
                 {"params": model.global_branch.backbone.parameters(), "lr": lr * 0.1},
                 {"params": [p for n, p in model.named_parameters() if "global_branch.backbone" not in n], "lr": lr}
             ], weight_decay=weight_decay)
             scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs - BACKBONE_FREEZE_EPOCHS, eta_min=lr * 0.01)
-            flush_print(f"🔓 Backbone đã được unfreeze từ epoch {epoch + 1}. Discriminative LR: backbone={lr*0.1:.6f}, head={lr:.6f}")
+            flush_print(f"🔓 Unfreeze {layer_desc} backbone từ epoch {epoch + 1}. Discriminative LR: backbone={lr*0.1:.6f}, head={lr:.6f}")
 
         # Cập nhật learning rate theo cosine schedule
         scheduler.step()
@@ -872,9 +915,10 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             torch.save(checkpoint, "checkpoint_best.pth")
             flush_print("💾 Đã lưu Checkpoint tốt nhất (Best loss).")
             
-        # 4. Đánh giá hội tụ bằng cách gọi module evaluator riêng biệt (đọc từ CSV để giảm rối code train)
+        # 4. Đánh giá hội tụ bằng cách gọi module evaluator riêng biệt
+        # Truyền freeze_epochs để evaluator biết bỏ qua Gemini API trong giai đoạn warmup
         try:
-            evaluate_epoch(epoch, epochs, csv_path=csv_file_path)
+            evaluate_epoch(epoch, epochs, csv_path=csv_file_path, freeze_epochs=BACKBONE_FREEZE_EPOCHS)
         except Exception as e:
             flush_print(f"⚠️ Cảnh báo: Lỗi khi đánh giá tiến trình: {e}")
             
@@ -1001,6 +1045,10 @@ if __name__ == "__main__":
     parser.add_argument("--arcface_k", type=int, default=3, help="Sub-centers for Sub-center ArcFace, 1 for standard ArcFace (default: 3)")
     parser.add_argument("--dropout", type=float, default=0.4, help="Classifier dropout rate (default: 0.4)")
     parser.add_argument("--num_landmarks", type=int, default=37, help="Number of facial landmarks to use (default: 37)")
+    parser.add_argument("--freeze_epochs", type=int, default=0,
+                        help="Số epoch đầu freeze backbone để warmup. 0 = không freeze (mặc định: 0)")
+    parser.add_argument("--freeze_layers", type=int, default=-1,
+                        help="Số stages/layers của backbone sẽ bị freeze: -1=toàn bộ, 0=không freeze, N=N stages đầu (mặc định: -1)")
     parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
@@ -1036,7 +1084,9 @@ if __name__ == "__main__":
                 arcface_m=args.arcface_m,
                 arcface_k=args.arcface_k,
                 dropout=args.dropout,
-                num_landmarks=args.num_landmarks
+                num_landmarks=args.num_landmarks,
+                freeze_epochs=args.freeze_epochs,
+                freeze_layers=args.freeze_layers
             )
         except (KeyboardInterrupt, SystemExit):
             flush_print("\n🛑 Nhận tín hiệu dừng từ người dùng (Ctrl+C hoặc nút Stop). Đang tiến hành xuất mô hình ONNX từ checkpoint tốt nhất...")
