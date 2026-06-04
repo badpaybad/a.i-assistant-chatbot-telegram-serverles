@@ -4,9 +4,8 @@ import requests
 from huggingface_hub import snapshot_download
 
 # Define model and local paths
-MODEL_ID = "google/gemma-4-e4b-it"
+MODEL_ID = "unsloth/gemma-4-12b-it-GGUF"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Note: GEMMA_DIR is now dynamically determined in setup_gemma()
 KOKORO_DIR = os.path.join(BASE_DIR, "model", "kokoro")
 
 def download_file(url, dest_path):
@@ -48,30 +47,43 @@ def setup_kokoro():
         print("[-] Some Kokoro assets failed to download.")
     return success
 
-def setup_gemma(repo_id=None):
+def setup_gemma(repo_id=None, model_name="gemma-4-12b-it"):
     target_id = repo_id or MODEL_ID
-    model_name = target_id.split("/")[-1]
     gemma_dir = os.path.join(BASE_DIR, "model", model_name)
-    
-    print(f"\n[*] Checking/Setting up Gemma 4 ('{target_id}')...")
-    
-    # Check if some key file exists to skip download (e.g. config.json)
-    if os.path.exists(os.path.join(gemma_dir, "config.json")):
-        print(f"[*] Gemma 4 already exists in '{gemma_dir}'. Skipping download.")
-        return True
-
     os.makedirs(gemma_dir, exist_ok=True)
     
+    # Determine the GGUF file name based on model_name
+    if "e2b" in model_name:
+        gguf_filename = "gemma-4-e2b-it-Q4_K_M.gguf"
+    else:
+        gguf_filename = "gemma-4-12b-it-Q4_K_M.gguf"
+        
+    # Download main model gguf
+    model_path = os.path.join(gemma_dir, gguf_filename)
+    proj_path = os.path.join(gemma_dir, "mmproj-F16.gguf")
+    
     try:
-        # snapshot_download will check cache and download missing files
-        path = snapshot_download(
-            repo_id=target_id,
-            local_dir=gemma_dir
-        )
-        print(f"[+] Gemma 4 downloaded successfully to: {path}")
+        import subprocess
+        
+        if not os.path.exists(model_path):
+            print(f"[*] Downloading {model_path} via wget...")
+            url = f"https://huggingface.co/{target_id}/resolve/main/{gguf_filename}"
+            subprocess.run(["wget", "-c", url, "-O", model_path], check=True)
+            print("[+] Download model complete.")
+        else:
+            print("[*] GGUF model already exists.")
+            
+        if not os.path.exists(proj_path):
+            print(f"[*] Downloading {proj_path} via wget...")
+            url = f"https://huggingface.co/{target_id}/resolve/main/mmproj-F16.gguf"
+            subprocess.run(["wget", "-c", url, "-O", proj_path], check=True)
+            print("[+] Download projector complete.")
+        else:
+            print("[*] MMproj already exists.")
+            
         return True
     except Exception as e:
-        print(f"[-] Error downloading Gemma 4: {str(e)}")
+        print(f"[-] Error downloading Gemma 4 GGUF: {str(e)}")
         return False
 
 if __name__ == "__main__":

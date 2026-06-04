@@ -409,9 +409,9 @@ INDEX_HTML = """<!DOCTYPE html>
                 <label for="backbone">Backbone</label>
                 <select id="backbone">
                     <option value="resnet18" >resnet18 (Nhẹ - Khuyên dùng)</option>
-                    <option value="resnet50">resnet50 (Nặng)</option>
+                    <option value="resnet50" selected>resnet50 (Nặng)</option>
                     <option value="mobilenet_v3">mobilenet_v3 (Rất nhẹ)</option>
-                    <option value="convnext" selected>convnext (Hiện đại)</option>
+                    <option value="convnext" >convnext (Hiện đại)</option>
                 </select>
             </div>
             <div class="input-group">
@@ -438,8 +438,13 @@ INDEX_HTML = """<!DOCTYPE html>
                 <label for="l1Lambda">L1 Regularization (λ)</label>
                 <input type="number" id="l1Lambda" value="0.00001" step="0.00001" min="0.0">
             </div>
-            <button id="btnStart" class="btn btn-primary" onclick="startTraining()">▶ Bắt đầu Train</button>
-            <button id="btnStop" class="btn btn-danger" onclick="stopTraining()" disabled>■ Dừng Train</button>
+            <div class="input-group">
+                <label for="freezeEpochs">Freeze Epochs <small style="opacity:0.65;font-weight:400">(0 = không freeze, số epoch freeze toàn bộ backbone)</small></label>
+                <input type="number" id="freezeEpochs" value="5" step="1" min="0" max="50"
+                       title="Số epoch freeze toàn bộ backbone để warmup. 0 = không freeze (train toàn bộ ngay từ đầu).">
+            </div>
+            <button id="btnStart" class="btn btn-primary" onclick="startTraining()">&#9654; Bắt đầu Train</button>
+            <button id="btnStop" class="btn btn-danger" onclick="stopTraining()" disabled>&#9632; Dừng Train</button>
         </section>
 
         <!-- Thẻ Chỉ Số -->
@@ -725,6 +730,7 @@ INDEX_HTML = """<!DOCTYPE html>
             const weightDecay = parseFloat(document.getElementById('weightDecay').value) || 0.0001;
             const dropout = parseFloat(document.getElementById('dropout').value) || 0.4;
             const l1Lambda = parseFloat(document.getElementById('l1Lambda').value) || 0.00001;
+            const freezeEpochs = parseInt(document.getElementById('freezeEpochs').value) || 0;
 
             try {
                 const res = await fetch('/api/start', {
@@ -741,7 +747,9 @@ INDEX_HTML = """<!DOCTYPE html>
                         arcface_k: arcfaceK,
                         weight_decay: weightDecay,
                         dropout: dropout,
-                        l1_lambda: l1Lambda
+                        l1_lambda: l1Lambda,
+                        freeze_epochs: freezeEpochs,
+                        freeze_layers: -1  // Luôn freeze toàn bộ backbone khi warmup
                     })
                 });
                 const data = await res.json();

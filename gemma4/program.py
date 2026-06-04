@@ -408,29 +408,22 @@ async def stream_generate_content(request: GenerateContentRequest, req: Request,
     config = request.generationConfig or GenerationConfig()
 
     async def event_generator():
-        # Giả lập streaming bằng cách sinh toàn bộ text và chia nhỏ (do manager hiện tại không hỗ trợ stream generator)
-        # Trong thực tế, manager.generate nên trả về một iterator
         start_time = time.time()
         try:
-            full_response = manager.generate(
+            response_stream = manager.generate_stream(
                 input_data=gemma_msgs, 
                 audio_list=audios, 
                 images_list=images,
                 max_tokens=config.maxOutputTokens or 1024
             )
             
-            elapsed = time.time() - start_time
-            
-            # Chia nhỏ text để giả lập stream
-            words = full_response.split(" ")
-            for i in range(0, len(words), 5):
-                chunk_text = " ".join(words[i:i+5]) + (" " if i+5 < len(words) else "")
+            for chunk_text in response_stream:
                 chunk_resp = GenerateContentResponse(
                     candidates=[Candidate(content=Content(role="model", parts=[Part(text=chunk_text)]), finishReason="NONE")]
                 )
                 yield json.dumps(chunk_resp.dict()) + "\n"
                 
-            # Gửi chunk cuối cùng với STOP và thời gian thực hiện
+            elapsed = time.time() - start_time
             final_resp = GenerateContentResponse(
                 candidates=[Candidate(content=Content(role="model", parts=[Part(text="")]), finishReason="STOP")],
                 usageMetadata=UsageMetadata(elapsedTimeSeconds=round(elapsed, 3))

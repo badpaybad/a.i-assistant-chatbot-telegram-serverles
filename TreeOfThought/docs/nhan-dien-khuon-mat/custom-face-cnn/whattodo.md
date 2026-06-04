@@ -105,3 +105,4 @@ dựa vào face_landmarker.task của mediapipe cần bổ xung thêm viền khu
 
 **cập nhật 13**
 --freeze_epochs nếu do ảnh hưởng để gemini api đưa ra đề xuất thì chỉ dùng gemini đánh giá khi đã qua các epochs freeze này
+    UI app.py cho điền là số cho freeze epochs mặt định là 5, có lable hướng dẫn -1 là toàn bộ 

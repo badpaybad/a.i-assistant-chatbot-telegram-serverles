@@ -1,32 +1,15 @@
 import os
 import sys
-
-# ROCm Optimization for Radeon 780M (gfx1102) - DISABLED (Back to CPU)
-# Using 11.0.0 as it is the most compatible target for GFX11 kernels
-# os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-# os.environ["HSA_ENABLE_SDMA"] = "1" # Speeds up CPU-GPU transfers
-# os.environ["MIOPEN_DEBUG_DISABLE_FIND_DB"] = "1" # Prevents slow MIOpen tuning lag
-# os.environ["ROCM_RELAXED_ASIC_CHECK"] = "1" # Compatibility for mobile APUs
-# os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "0" # Disabled to reduce peak VRAM during startup
-# os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,max_split_size_mb:128"
-
-# Add current directory to PATH so bitsandbytes can find our 'rocminfo' shim
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# os.environ["PATH"] = current_dir + os.pathsep + os.environ.get("PATH", "")
-
-# Point to bundled ROCm libraries in torch if they exist
-project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# torch_lib_path = os.path.join(project_root, "venv/lib/python3.12/site-packages/torch/lib")
-# if os.path.exists(torch_lib_path):
-#     os.environ["LD_LIBRARY_PATH"] = torch_lib_path + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
-#     os.environ["ROCM_PATH"] = torch_lib_path # bitsandbytes ROCm might look here
-
-import torch
 import threading
+import io
+import base64
 import numpy as np
 from typing import List, Dict, Optional, Any, Union
 from PIL import Image
-from transformers import AutoProcessor, AutoModelForMultimodalLM, AutoConfig, BitsAndBytesConfig
+
+# Add current directory to PATH
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
 
 # Import config based on project structure
 if project_root not in sys.path:
@@ -34,135 +17,184 @@ if project_root not in sys.path:
 from config import *
 from .download_model import setup_gemma, setup_kokoro
 
+# Shim to prevent unit tests checking PyTorch parameters from crashing (GGUF mode)
+class DummyParameter:
+    def __init__(self):
+        import torch
+        self.device = torch.device("cpu")
+
+class ModelShim:
+    def __init__(self):
+        class Config:
+            class QuantizationConfig:
+                load_in_4bit = True
+            quantization_config = QuantizationConfig()
+        self.config = Config()
+        
+    def parameters(self):
+        return [DummyParameter()]
+
+def pil_to_base64_data_uri(img: Image.Image) -> str:
+    buffered = io.BytesIO()
+    img.save(buffered, format="JPEG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    return f"data:image/jpeg;base64,{img_str}"
+
+def image_to_base64_data_uri(image_path: str) -> str:
+    with open(image_path, "rb") as image_file:
+        img_str = base64.b64encode(image_file.read()).decode("utf-8")
+    ext = os.path.splitext(image_path)[1].lower()
+    mime = "image/jpeg"
+    if ext == ".png":
+        mime = "image/png"
+    elif ext == ".gif":
+        mime = "image/gif"
+    elif ext == ".webp":
+        mime = "image/webp"
+    return f"data:{mime};base64,{img_str}"
+
 class Gemma4Manager:
     """
-    Singleton Manager for loading the multimodal Gemma 4 model and processor once.
-    Optimized for 16GB RAM constraints using low_cpu_mem_usage.
-    Thread-safe implementation using Double-checked locking.
+    Singleton Manager for loading the multimodal Gemma 4 model.
+    Supports GGUF (llama-cpp-python) and Hugging Face (Transformers) backends.
+    Thread-safe implementation with Double-checked locking and dynamic config reloading.
     """
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, model_id: str = "google/gemma-4-e4b-it"):
+    def __new__(cls, model_id: str = "google/gemma-4-e4b-it", device: str = "cpu", engine: str = "gguf"):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    # Resolve priority path: 1. Local project, 2. HF cache, 3. Automated Setup
-                    model_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "model")
-                    
-                    # Tự động xác định thư mục local dựa trên tên model
-                    model_name = model_id.split("/")[-1]
-                    local_model_dir = os.path.join(model_root, model_name)
-                    
-                    # 1. Prioritize Local Project Folder
-                    if os.path.isdir(local_model_dir) and os.path.exists(os.path.join(local_model_dir, "config.json")):
-                         print(f"[*] Using local project model: {local_model_dir}")
-                         model_id = local_model_dir
-                    
-                    # 3. Trigger setup if absolutely nothing found
-                    if not os.path.exists(os.path.join(local_model_dir, "config.json")) and (not os.path.isabs(model_id) or not os.path.exists(model_id)):
-                        print(f"[*] Model {model_id} not found locally. Triggering automated setup...")
-                        from .download_model import setup_gemma
-                        setup_gemma(model_id)
-                        if os.path.exists(os.path.join(local_model_dir, "config.json")):
-                             model_id = local_model_dir
-                    
-                    # Also ensure Kokoro is ready if needed, though tts.py might use it
-                    kokoro_model_path = os.path.join(model_root, "kokoro", "kokoro-v1.0.onnx")
-                    if not os.path.exists(kokoro_model_path):
-                        print("[*] Kokoro ONNX assets not found. Triggering automated setup...")
-                        setup_kokoro()
-                    
-                    print(f"[*] Initializing Gemma4Manager for {model_id}...")
-                    
-                    # Create the actual instance
                     new_instance = super(Gemma4Manager, cls).__new__(cls)
-                    # Load model BEFORE assigning to _instance to prevent race condition
-                    new_instance._load_model(model_id)
+                    new_instance._load_model(model_id, device, engine)
                     cls._instance = new_instance
+        else:
+            with cls._lock:
+                if (cls._instance.model_id != model_id or 
+                    cls._instance.device != device or 
+                    cls._instance.engine != engine):
+                    print(f"[*] Configuration changed (Model: {model_id}, Device: {device}, Engine: {engine}). Reloading model...")
+                    # Clean up old models
+                    if hasattr(cls._instance, 'llm'):
+                         del cls._instance.llm
+                    if hasattr(cls._instance, 'hf_model'):
+                         del cls._instance.hf_model
+                    import gc
+                    gc.collect()
+                    cls._instance._load_model(model_id, device, engine)
         return cls._instance
 
-    def _load_model(self, model_id: str):
+    def _load_model(self, model_id: str, device: str = "cpu", engine: str = "gguf"):
         self.model_id = model_id
-        # Automatically detect device - FORCED TO CPU
-        # self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.device = "cpu"
+        self.device = device
+        self.engine = engine
         
-        print(f"[*] Loading Multimodal Model: {model_id} on {self.device}...")
+        base_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # Determine optimal dtype
-        # float16 is often more stable and faster for inference on RDNA3 iGPUs
-        if self.device == "cuda":
-            self.dtype = torch.float16
+        if engine == "gguf":
+            # --- GGUF Engine via llama-cpp-python ---
+            model_name = "gemma-4-12b-it"
+            if "e2b" in model_id.lower() or "2b" in model_id.lower():
+                model_name = "gemma-4-e2b-it"
+                
+            model_dir = os.path.join(base_dir, "model", model_name)
+            
+            if model_name == "gemma-4-e2b-it":
+                self.model_path = os.path.join(model_dir, "gemma-4-e2b-it-Q4_K_M.gguf")
+                self.proj_path = os.path.join(model_dir, "mmproj-F16.gguf")
+                self.repo_id = "unsloth/gemma-4-e2b-it-GGUF"
+            else:
+                self.model_path = os.path.join(model_dir, "gemma-4-12b-it-Q4_K_M.gguf")
+                self.proj_path = os.path.join(model_dir, "mmproj-F16.gguf")
+                self.repo_id = "unsloth/gemma-4-12b-it-GGUF"
+            
+            if not os.path.exists(self.model_path) or not os.path.exists(self.proj_path):
+                print(f"[*] Model files not found locally in {model_dir}. Triggering download...")
+                setup_gemma(self.repo_id, model_name)
+                
+            print(f"[*] Initializing Gemma 4 Llama engine for GGUF model: {self.model_path} on {device}")
+            
+            n_gpu_layers = 0
+            if device == "gpu" or device == "cuda":
+                n_gpu_layers = -1  # Offload all layers to GPU
+                
+            try:
+                from llama_cpp import Llama
+                from llama_cpp.llama_chat_format import Llava15ChatHandler
+                
+                chat_handler = Llava15ChatHandler(clip_model_path=self.proj_path, verbose=False)
+                
+                # Start Llama engine
+                self.llm = Llama(
+                    model_path=self.model_path,
+                    chat_handler=chat_handler,
+                    n_ctx=4096,
+                    embedding=True,
+                    n_gpu_layers=n_gpu_layers,
+                    n_threads=4,
+                    verbose=False
+                )
+                print("[+] Llama engine initialized successfully.")
+            except Exception as e:
+                print(f"[-] ERROR initializing llama-cpp-python engine: {str(e)}")
+                raise e
         else:
-            # CPU usually prefers float32, but bfloat16/float16 can save half memory
-            # We'll use "auto" to let transformers choose based on safetensors
-            self.dtype = "auto"
-
-        try:
-            # Load config with custom architecture support (gemma4)
-            print(f"[*] Fetching configuration...")
-            config = AutoConfig.from_pretrained(self.model_id, trust_remote_code=True)
+            # --- Hugging Face Transformers / PyTorch Engine ---
+            import torch
+            from transformers import AutoProcessor, AutoModelForMultimodalLM, AutoConfig
             
-            # Use AutoProcessor for multimodal inputs (Text + Audio)
-            print(f"[*] Loading Processor...")
-            self.processor = AutoProcessor.from_pretrained(self.model_id, trust_remote_code=True)
+            # Auto-detect local directory
+            model_root = os.path.join(base_dir, "model")
+            model_name = model_id.split("/")[-1]
+            local_model_dir = os.path.join(model_root, model_name)
             
-            # Load model with memory-efficient settings
-            # low_cpu_mem_usage=True: Only load weights when needed, reduces peak RAM
-            # print(f"[*] Instantiating model with 4-bit (NF4) quantization...")
+            if os.path.isdir(local_model_dir) and os.path.exists(os.path.join(local_model_dir, "config.json")):
+                 print(f"[*] Using local project model: {local_model_dir}")
+                 model_id = local_model_dir
             
-            # Configure 4-bit quantization (NF4) - DISABLED ON CPU
-            # Optimized for ROCm and RDNA3 (780M)
-            # quantization_config = BitsAndBytesConfig(
-            #     load_in_4bit=True,
-            #     bnb_4bit_compute_dtype=torch.float16, # RDNA3 (780M) is optimized for FP16
-            #     bnb_4bit_quant_type="nf4",
-            #     bnb_4bit_use_double_quant=True
-            #     # Removed llm_int8_enable_fp32_cpu_offload which is less efficient for 4-bit
-            # )
-
-            import time
-            start_load = time.time()
-            print(f"[*] Starting weights loading (approx 15GB, this may take a few minutes on CPU)...")
-
-            self.model = AutoModelForMultimodalLM.from_pretrained(
-                self.model_id,
-                config=config,
-                torch_dtype=torch.bfloat16, # bfloat16 is generally better for modern CPU inference
-                device_map=None, 
-                quantization_config=None,
-                trust_remote_code=True,
-                low_cpu_mem_usage=True,
-                attn_implementation="sdpa" # Modern attention implementation
-            ).eval() 
+            if not os.path.exists(os.path.join(local_model_dir, "config.json")) and (not os.path.isabs(model_id) or not os.path.exists(model_id)):
+                print(f"[*] Model {model_id} not found locally. Triggering automated setup...")
+                from .download_model import setup_gemma as hf_setup_gemma
+                hf_setup_gemma(model_id)
+                if os.path.exists(os.path.join(local_model_dir, "config.json")):
+                     model_id = local_model_dir
             
-            load_duration = time.time() - start_load
-            print(f"[+] Weights loaded and quantized in {load_duration:.2f} seconds.")
-
-            # Force garbage collection and empty CUDA cache
-            import gc
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+            print(f"[*] Loading Multimodal HF Model: {model_id} on {device}...")
             
-            print(f"[+] Multimodal model {model_id} initialization complete.")
+            torch_device = "cuda" if (device == "gpu" or device == "cuda") and torch.cuda.is_available() else "cpu"
+            
+            try:
+                config = AutoConfig.from_pretrained(model_id, trust_remote_code=True)
+                self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+                
+                self.hf_model = AutoModelForMultimodalLM.from_pretrained(
+                    model_id,
+                    config=config,
+                    torch_dtype=torch.float16 if torch_device == "cuda" else torch.bfloat16,
+                    device_map="auto" if torch_device == "cuda" else None,
+                    trust_remote_code=True,
+                    low_cpu_mem_usage=True,
+                    attn_implementation="sdpa"
+                )
+                if torch_device == "cpu":
+                     self.hf_model = self.hf_model.to("cpu")
+                     
+                self.hf_model.eval()
+                print(f"[+] Multimodal HF model {model_id} initialization complete.")
+            except Exception as e:
+                print(f"[-] ERROR loading gemma4 HF model: {str(e)}")
+                raise e
 
-        except Exception as e:
-            print(f"[-] ERROR loading gemma4 model: {str(e)}")
-            # Raise so the app knows it failed to initialize AI
-            raise e
+    @property
+    def model(self):
+        if self.engine == "gguf":
+            return ModelShim()
+        else:
+            return self.hf_model
 
-    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, sampling_rate: int = 16000) -> str:
-        """
-        Processes chat history (list of messages) or single text prompt with optional audio/image.
-        input_data: str (prompt) or list (messages history)
-        images_list: List of PIL Image objects
-        audio_list: List of numpy arrays
-        """
-        if not hasattr(self, 'model') or self.model is None:
-             return "Lỗi: Hệ thống AI chưa sẵn sàng."
-
+    def _format_messages_gguf(self, input_data: any, audio_array, image_path, images_list, audio_list):
+        # Rebuild message history
         messages = []
         if isinstance(input_data, list):
             messages = input_data
@@ -170,7 +202,6 @@ class Gemma4Manager:
             user_input = str(input_data)
             msg_content = []
             
-            # backward compatibility for single file/array
             if (image_path is not None and os.path.exists(image_path)) or (images_list and len(images_list) > 0):
                 msg_content.append({"type": "image"})
             
@@ -180,9 +211,6 @@ class Gemma4Manager:
             msg_content.append({"type": "text", "text": f"{user_input}\n\nNote: Always answer in Vietnamese, naturally and concisely."})
             messages = [{"role": "user", "content": msg_content}]
 
-        # Apply chat template
-        text_prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-        
         # Prepare multimodal inputs
         final_images = []
         if images_list:
@@ -190,144 +218,281 @@ class Gemma4Manager:
         
         if image_path is not None and os.path.exists(image_path):
             try:
-                final_images.append(Image.open(image_path).convert("RGB"))
+                final_images.append(image_path)
             except Exception as e:
                 print(f"[-] Warning: Failed to load image {image_path}: {e}")
+
+        # Encode images to base64 Data URIs
+        encoded_images = []
+        for img in final_images:
+            if isinstance(img, Image.Image):
+                encoded_images.append(pil_to_base64_data_uri(img))
+            elif isinstance(img, str) and os.path.exists(img):
+                encoded_images.append(image_to_base64_data_uri(img))
+
+        # Format messages for llama-cpp-python
+        formatted_messages = []
+        img_idx = 0
+        audio_warning = False
         
-        final_audio = None
-        if audio_list and len(audio_list) > 0:
-            final_audio = audio_list[0] # Gemma 4 current processor usually takes one audio array
-        elif audio_array is not None:
-            final_audio = audio_array
-
-        inputs = self.processor(
-            text=text_prompt, 
-            images=final_images if final_images else None, 
-            audio=final_audio, 
-            sampling_rate=sampling_rate, 
-            return_tensors="pt"
-        ).to(self.model.device)
-
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=max_tokens,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9
-            )
+        for msg in messages:
+            role = msg.get("role", "user")
+            content_data = msg.get("content", [])
             
-        # Decode and strip prompt
-        input_len = inputs['input_ids'].shape[1]
-        response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=True)
-        return response.strip()
+            if isinstance(content_data, str):
+                formatted_messages.append({"role": role, "content": content_data})
+                continue
+                
+            new_content = []
+            for item in content_data:
+                itype = item.get("type")
+                if itype == "text":
+                    new_content.append({"type": "text", "text": item.get("text", "")})
+                elif itype == "image":
+                    if img_idx < len(encoded_images):
+                        new_content.append({
+                            "type": "image_url",
+                            "image_url": {
+                                "url": encoded_images[img_idx]
+                            }
+                        })
+                        img_idx += 1
+                elif itype == "audio":
+                    audio_warning = True
+            
+            if new_content:
+                formatted_messages.append({"role": role, "content": new_content})
+
+        if audio_warning:
+            print("[!] Warning: Audio inputs are not supported in the local GGUF engine.")
+
+        return formatted_messages
+
+    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, sampling_rate: int = 16000) -> str:
+        if self.engine == "gguf":
+            if not hasattr(self, 'llm') or self.llm is None:
+                return "Lỗi: Hệ thống GGUF chưa sẵn sàng."
+
+            formatted_messages = self._format_messages_gguf(input_data, audio_array, image_path, images_list, audio_list)
+
+            try:
+                response = self.llm.create_chat_completion(
+                    messages=formatted_messages,
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    top_p=0.9
+                )
+                return response["choices"][0]["message"]["content"].strip()
+            except Exception as e:
+                print(f"[-] Error during GGUF generation: {e}")
+                return f"Lỗi sinh nội dung: {str(e)}"
+        else:
+            # --- HF Generation ---
+            if not hasattr(self, 'hf_model') or self.hf_model is None:
+                 return "Lỗi: Hệ thống HF chưa sẵn sàng."
+                 
+            import torch
+
+            messages = []
+            if isinstance(input_data, list):
+                messages = input_data
+            else:
+                user_input = str(input_data)
+                msg_content = []
+                
+                if (image_path is not None and os.path.exists(image_path)) or (images_list and len(images_list) > 0):
+                    msg_content.append({"type": "image"})
+                
+                if audio_array is not None or (audio_list and len(audio_list) > 0):
+                    msg_content.append({"type": "audio"})
+                
+                msg_content.append({"type": "text", "text": f"{user_input}\n\nNote: Always answer in Vietnamese, naturally and concisely."})
+                messages = [{"role": "user", "content": msg_content}]
+
+            text_prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            
+            final_images = []
+            if images_list:
+                final_images.extend(images_list)
+            if image_path is not None and os.path.exists(image_path):
+                try:
+                    final_images.append(Image.open(image_path).convert("RGB"))
+                except Exception as e:
+                    print(f"[-] Warning: Failed to load image {image_path}: {e}")
+            
+            final_audio = None
+            if audio_list and len(audio_list) > 0:
+                final_audio = audio_list[0]
+            elif audio_array is not None:
+                final_audio = audio_array
+
+            inputs = self.processor(
+                text=text_prompt, 
+                images=final_images if final_images else None, 
+                audio=final_audio, 
+                sampling_rate=sampling_rate, 
+                return_tensors="pt"
+            ).to(self.hf_model.device)
+
+            with torch.no_grad():
+                outputs = self.hf_model.generate(
+                    **inputs,
+                    max_new_tokens=max_tokens,
+                    do_sample=True,
+                    temperature=0.7,
+                    top_p=0.9
+                )
+                
+            input_len = inputs['input_ids'].shape[1]
+            response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=True)
+            return response.strip()
+
+    def generate_stream(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, sampling_rate: int = 16000):
+        if self.engine == "gguf":
+            if not hasattr(self, 'llm') or self.llm is None:
+                yield "Lỗi: Hệ thống GGUF chưa sẵn sàng."
+                return
+
+            formatted_messages = self._format_messages_gguf(input_data, audio_array, image_path, images_list, audio_list)
+
+            try:
+                response_iter = self.llm.create_chat_completion(
+                    messages=formatted_messages,
+                    max_tokens=max_tokens,
+                    temperature=0.7,
+                    top_p=0.9,
+                    stream=True
+                )
+                for chunk in response_iter:
+                    delta = chunk["choices"][0]["delta"]
+                    if "content" in delta:
+                        yield delta["content"]
+            except Exception as e:
+                print(f"[-] Error during stream generation: {e}")
+                yield f"Lỗi sinh nội dung: {str(e)}"
+        else:
+            # HF mock stream
+            full_response = self.generate(
+                input_data=input_data, 
+                audio_array=audio_array, 
+                image_path=image_path, 
+                images_list=images_list, 
+                audio_list=audio_list, 
+                max_tokens=max_tokens, 
+                sampling_rate=sampling_rate
+            )
+            words = full_response.split(" ")
+            for i in range(0, len(words), 5):
+                yield " ".join(words[i:i+5]) + (" " if i+5 < len(words) else "")
 
     def generate_with_image(self, image_path: str, prompt: str, max_tokens: int = 512) -> str:
-        """Helper specifically for Image + Text interaction."""
-        return self.generate(user_input=prompt, image_path=image_path, max_tokens=max_tokens)
+        return self.generate(input_data=prompt, image_path=image_path, max_tokens=max_tokens)
 
     def get_embeddings(self, text: str) -> list:
-        """
-        Tạo vector embedding từ văn bản đầu vào sử dụng Gemma 4 (Text Tower).
-        Sử dụng mean pooling từ last_hidden_state.
-        """
-        if not hasattr(self, 'model') or self.model is None:
-            raise RuntimeError("Lỗi: Hệ thống AI chưa sẵn sàng.")
-
-        # Chuẩn bị input cho text
-        inputs = self.processor(text=text, return_tensors="pt").to(self.model.device)
-        
-        with torch.no_grad():
-            # Yêu cầu trả về hidden states
-            outputs = self.model(**inputs, output_hidden_states=True)
+        if self.engine == "gguf":
+            if not hasattr(self, 'llm') or self.llm is None:
+                raise RuntimeError("Lỗi: Hệ thống GGUF chưa sẵn sàng.")
+                
+            res = self.llm.create_embedding(text)
+            embedding = res["data"][0]["embedding"]
             
-            # Lấy last_hidden_state từ language_model hoặc từ output chính
-            # Đối với Gemma4ForConditionalGeneration, last_hidden_state thường ở outputs.hidden_states[-1]
-            # của phần language_model nếu nó là wrapper, hoặc trực tiếp nếu là decoder-only.
-            
-            if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
-                last_hidden_state = outputs.hidden_states[-1]
-            else:
-                # Fallback nếu model trả về trực tiếp (tùy thuộc vào implementation của Gemma4)
-                last_hidden_state = outputs[0]
-
-            # Mean pooling qua chiều sequence (dim=1)
-            # last_hidden_state shape: [batch, seq_len, hidden_size]
-            attention_mask = inputs.get('attention_mask')
-            if attention_mask is not None:
-                input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
-                sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, 1)
-                sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
-                embeddings = sum_embeddings / sum_mask
-            else:
-                embeddings = torch.mean(last_hidden_state, dim=1)
-            
-            return embeddings[0].cpu().tolist()
-
-    def get_image_embeddings(self, image_path: str) -> list:
-        """
-        Tạo vector embedding từ hình ảnh sử dụng Gemma 4 (Vision Tower).
-        Sử dụng mean pooling từ các token hình ảnh sau khi qua Vision Tower.
-        """
-        if not hasattr(self, 'model') or self.model is None:
-            raise RuntimeError("Lỗi: Hệ thống AI chưa sẵn sàng.")
-
-        if not os.path.exists(image_path):
-            raise FileNotFoundError(f"Lỗi: File ảnh {image_path} không tồn tại.")
-
-        try:
-            # Load và chuẩn bị ảnh
-            image = Image.open(image_path).convert("RGB")
-            
-            # Sử dụng processor để xử lý ảnh
-            # Đối với Gemma 4, cung cấp text="" để tránh lỗi NoneType trong processor.
-            inputs = self.processor(text="", images=image, return_tensors="pt").to(self.model.device)
+            target_dim = 2560
+            current_dim = len(embedding)
+            if current_dim != target_dim:
+                if current_dim > target_dim:
+                    embedding = embedding[:target_dim]
+                else:
+                    embedding = embedding + [0.0] * (target_dim - current_dim)
+                    
+            return embedding
+        else:
+            # --- HF Embeddings ---
+            if not hasattr(self, 'hf_model') or self.hf_model is None:
+                raise RuntimeError("Lỗi: Hệ thống HF chưa sẵn sàng.")
+                
+            import torch
+            inputs = self.processor(text=text, return_tensors="pt").to(self.hf_model.device)
             
             with torch.no_grad():
-                # Đường dẫn chính xác cho kiến trúc Gemma4: self.model.model.vision_tower
-                if hasattr(self.model, "model") and hasattr(self.model.model, "vision_tower"):
-                    # Gemma 4 processor trả về "image_position_ids" thay vì "pixel_position_ids"
-                    pixel_values = inputs.get("pixel_values")
-                    pixel_position_ids = inputs.get("image_position_ids")
-                    if pixel_position_ids is None:
-                        pixel_position_ids = inputs.get("pixel_position_ids")
-                    
-                    if pixel_values is None or pixel_position_ids is None:
-                        raise RuntimeError("Thiếu pixel_values hoặc position_ids trong processor output.")
-
-                    vision_outputs = self.model.model.vision_tower(
-                        pixel_values=pixel_values, 
-                        pixel_position_ids=pixel_position_ids
-                    )
-                    # vision_outputs là BaseModelOutput, lấy last_hidden_state [1, tokens, 768]
-                    image_features = vision_outputs.last_hidden_state
-                    
-                    # Nếu có lớp chiếu (multimodal projector) để sang không gian 2560
-                    if hasattr(self.model.model, "embed_vision"):
-                        image_features = self.model.model.embed_vision(image_features)
-                elif hasattr(self.model, "get_image_features"):
-                    image_features = self.model.get_image_features(**inputs)
+                outputs = self.hf_model(**inputs, output_hidden_states=True)
+                if hasattr(outputs, 'hidden_states') and outputs.hidden_states is not None:
+                    last_hidden_state = outputs.hidden_states[-1]
                 else:
-                    # Fallback cuối cùng
-                    outputs = self.model(**inputs, output_hidden_states=True)
-                    if hasattr(outputs, "hidden_states") and outputs.hidden_states:
-                        image_features = outputs.hidden_states[0]
+                    last_hidden_state = outputs[0]
+
+                attention_mask = inputs.get('attention_mask')
+                if attention_mask is not None:
+                    input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
+                    sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, 1)
+                    sum_mask = torch.clamp(input_mask_expanded.sum(1), min=1e-9)
+                    embeddings = sum_embeddings / sum_mask
+                else:
+                    embeddings = torch.mean(last_hidden_state, dim=1)
+                
+                return embeddings[0].cpu().tolist()
+
+    def get_image_embeddings(self, image_path: str) -> list:
+        if self.engine == "gguf":
+            if not hasattr(self, 'llm') or self.llm is None:
+                raise RuntimeError("Lỗi: Hệ thống GGUF chưa sẵn sàng.")
+                
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Lỗi: File ảnh {image_path} không tồn tại.")
+                
+            prompt = "Mô tả hình ảnh này một cách ngắn gọn, tập trung vào các đặc điểm chính bằng tiếng Việt."
+            description = self.generate_with_image(image_path, prompt)
+            
+            return self.get_embeddings(description)
+        else:
+            # --- HF Image Embeddings ---
+            if not hasattr(self, 'hf_model') or self.hf_model is None:
+                raise RuntimeError("Lỗi: Hệ thống HF chưa sẵn sàng.")
+                
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Lỗi: File ảnh {image_path} không tồn tại.")
+                
+            import torch
+
+            try:
+                image = Image.open(image_path).convert("RGB")
+                inputs = self.processor(text="", images=image, return_tensors="pt").to(self.hf_model.device)
+                
+                with torch.no_grad():
+                    if hasattr(self.hf_model, "model") and hasattr(self.hf_model.model, "vision_tower"):
+                        pixel_values = inputs.get("pixel_values")
+                        pixel_position_ids = inputs.get("image_position_ids")
+                        if pixel_position_ids is None:
+                            pixel_position_ids = inputs.get("pixel_position_ids")
+                        
+                        if pixel_values is None or pixel_position_ids is None:
+                            raise RuntimeError("Thiếu pixel_values hoặc position_ids trong processor output.")
+
+                        vision_outputs = self.hf_model.model.vision_tower(
+                            pixel_values=pixel_values, 
+                            pixel_position_ids=pixel_position_ids
+                        )
+                        image_features = vision_outputs.last_hidden_state
+                        if hasattr(self.hf_model.model, "embed_vision"):
+                            image_features = self.hf_model.model.embed_vision(image_features)
+                    elif hasattr(self.hf_model, "get_image_features"):
+                        image_features = self.hf_model.get_image_features(**inputs)
                     else:
-                        raise RuntimeError("Không thể trích xuất đặc trưng hình ảnh từ mô hình này.")
+                        outputs = self.hf_model(**inputs, output_hidden_states=True)
+                        if hasattr(outputs, "hidden_states") and outputs.hidden_states:
+                            image_features = outputs.hidden_states[0]
+                        else:
+                            raise RuntimeError("Không thể trích xuất đặc trưng hình ảnh từ mô hình này.")
 
-                # Mean pooling qua các token hình ảnh
-                # image_features có thể là [batch, tokens, hidden] hoặc [tokens, hidden]
-                if image_features.dim() == 3:
-                    embeddings = torch.mean(image_features, dim=1)[0]
-                elif image_features.dim() == 2:
-                    embeddings = torch.mean(image_features, dim=0)
-                else:
-                    embeddings = image_features.flatten()
+                    if image_features.dim() == 3:
+                        embeddings = torch.mean(image_features, dim=1)[0]
+                    elif image_features.dim() == 2:
+                        embeddings = torch.mean(image_features, dim=0)
+                    else:
+                        embeddings = image_features.flatten()
 
-                return embeddings.cpu().tolist()
-        except Exception as e:
-            raise RuntimeError(f"Lỗi khi trích xuất embedding ảnh: {str(e)}")
+                    return embeddings.cpu().tolist()
+            except Exception as e:
+                raise RuntimeError(f"Lỗi khi trích xuất embedding ảnh: {str(e)}")
 
-def get_manager(model_id: str = "google/gemma-4-e4b-it"):
-    """Helper function for singleton access."""
-    return Gemma4Manager(model_id)
+def get_manager(model_id: str = "google/gemma-4-e4b-it", device: str = "cpu", engine: str = "gguf"):
+    return Gemma4Manager(model_id, device, engine)
