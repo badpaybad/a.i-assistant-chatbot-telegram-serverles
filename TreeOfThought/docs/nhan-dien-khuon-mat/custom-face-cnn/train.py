@@ -545,7 +545,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5, arcface_s=30.0, arcface_m=0.50, arcface_k=3):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -613,7 +613,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     device = torch.device(device_name)
     flush_print(f"🖥️ Thiết bị sử dụng huấn luyện: {device}")
     
-    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name).to(device)
+    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name, s=arcface_s, m=arcface_m, k=arcface_k).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
     
@@ -658,7 +658,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             optimizer.zero_grad()
             
             # Chạy lan truyền thuận (gồm cả ảnh phân vùng và đặc trưng hình học)
-            _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom)
+            _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
             loss = criterion(logits, labels)
             
             # Tăng cường chống quá khớp bằng L1 Regularization (nếu l1_lambda > 0)
@@ -706,7 +706,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                 t_geom = t_geom.to(device)
                 labels = labels.to(device)
                 
-                _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom)
+                _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
                 loss = criterion(logits, labels)
                 
                 val_loss += loss.item() * labels.size(0)
@@ -739,7 +739,10 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                 "optimizer_state_dict": optimizer.state_dict(),
                 "loss": epoch_val_loss,
                 "class_to_idx": class_to_idx,
-                "backbone_name": backbone_name
+                "backbone_name": backbone_name,
+                "s": arcface_s,
+                "m": arcface_m,
+                "k": arcface_k
             }
             torch.save(checkpoint, "checkpoint_best.pth")
             flush_print("💾 Đã lưu Checkpoint tốt nhất (Best loss).")
@@ -757,7 +760,10 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         "optimizer_state_dict": optimizer.state_dict(),
         "loss": epoch_val_loss,
         "class_to_idx": class_to_idx,
-        "backbone_name": backbone_name
+        "backbone_name": backbone_name,
+        "s": arcface_s,
+        "m": arcface_m,
+        "k": arcface_k
     }, "checkpoint_final.pth")
     flush_print("💾 Đã lưu Checkpoint cuối cùng (checkpoint_final.pth).")
     
@@ -783,9 +789,21 @@ def export_best_to_onnx(checkpoint_path="checkpoint_best.pth", output_onnx_path=
             flush_print("❌ Lỗi: Checkpoint không chứa class_to_idx hợp lệ.")
             return
             
-        flush_print(f"💡 Phát hiện backbone sử dụng từ checkpoint: {backbone_name} | Số lượng lớp (Classes): {num_classes}")
-        model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name)
-        model.load_state_dict(checkpoint["model_state_dict"])
+        # Tự động phát hiện cấu hình classifier từ checkpoint để tương thích ngược
+        model_state_dict = checkpoint["model_state_dict"]
+        s = checkpoint.get("s", 30.0)
+        m = checkpoint.get("m", 0.50)
+        k = checkpoint.get("k", 1)  # Mặc định là 1 nếu là checkpoint cũ (nn.Linear)
+        
+        if "classifier.weight" in model_state_dict:
+            weight_shape = model_state_dict["classifier.weight"].shape
+            calculated_k = weight_shape[0] // num_classes
+            if calculated_k > 0:
+                k = calculated_k
+                
+        flush_print(f"💡 Phát hiện backbone: {backbone_name} | Số lớp: {num_classes} | ArcFace s: {s}, m: {m}, k: {k}")
+        model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name, s=s, m=m, k=k)
+        model.load_state_dict(model_state_dict, strict=False)
         model.eval()
         
         # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 26 landmarks * 2)
@@ -849,6 +867,9 @@ if __name__ == "__main__":
     parser.add_argument("--backbone", type=str, default="convnext", choices=["resnet18", "resnet50", "mobilenet_v3", "convnext"], help="Backbone model for global features (default: convnext)")
     parser.add_argument("--no_pretrained_global", action="store_false", dest="pretrained_global", help="Disable pre-trained ImageNet weights for global backbone")
     parser.add_argument("--l1_lambda", type=float, default=1e-5, help="L1 regularization penalty coefficient (default: 1e-5)")
+    parser.add_argument("--arcface_s", type=float, default=30.0, help="ArcFace scale parameter s (default: 30.0)")
+    parser.add_argument("--arcface_m", type=float, default=0.50, help="ArcFace margin parameter m (default: 0.50)")
+    parser.add_argument("--arcface_k", type=int, default=3, help="Sub-centers for Sub-center ArcFace, 1 for standard ArcFace (default: 3)")
     parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
@@ -879,7 +900,10 @@ if __name__ == "__main__":
                 val_split=args.val_split,
                 backbone_name=args.backbone,
                 pretrained_global=args.pretrained_global,
-                l1_lambda=args.l1_lambda
+                l1_lambda=args.l1_lambda,
+                arcface_s=args.arcface_s,
+                arcface_m=args.arcface_m,
+                arcface_k=args.arcface_k
             )
         except (KeyboardInterrupt, SystemExit):
             flush_print("\n🛑 Nhận tín hiệu dừng từ người dùng (Ctrl+C hoặc nút Stop). Đang tiến hành xuất mô hình ONNX từ checkpoint tốt nhất...")

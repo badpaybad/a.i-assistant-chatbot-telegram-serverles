@@ -307,11 +307,65 @@ class CrossStreamCorrelationAttention(nn.Module):
     def forward(self, f_global, f_eye, f_nose, f_geom):
         return f_global, torch.zeros(f_global.size(0), 3, device=f_global.device)
 
+class SubCenterArcMarginProduct(nn.Module):
+    """
+    Sub-center ArcFace (Additive Angular Margin Loss) classifier head.
+    Ref: https://arxiv.org/abs/2004.04989
+    If k = 1, it degrades to standard ArcFace.
+    """
+    def __init__(self, in_features, out_features, s=30.0, m=0.50, k=3, easy_margin=False):
+        super(SubCenterArcMarginProduct, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.s = s
+        self.m = m
+        self.k = k
+        self.easy_margin = easy_margin
+        
+        # Trọng số có kích thước (out_features * k, in_features)
+        self.weight = nn.Parameter(torch.FloatTensor(out_features * k, in_features))
+        nn.init.xavier_uniform_(self.weight)
+        
+        self.cos_m = math.cos(m)
+        self.sin_m = math.sin(m)
+        self.th = math.cos(math.pi - m)
+        self.mm = math.sin(math.pi - m) * m
+
+    def forward(self, input, label):
+        # input: (B, in_features)
+        # weight: (out_features * k, in_features)
+        # cosine: (B, out_features * k)
+        cosine = F.linear(F.normalize(input), F.normalize(self.weight))
+        
+        # Nếu k > 1, lấy similarity lớn nhất trong số các sub-centers của từng lớp
+        if self.k > 1:
+            cosine = cosine.view(-1, self.out_features, self.k)
+            cosine, _ = torch.max(cosine, dim=2)
+            
+        # Tính sine = sqrt(1 - cos^2)
+        # Clamp để tránh lỗi NaN khi giá trị xấp xỉ 1.0
+        sine = torch.sqrt((1.0 - torch.pow(cosine, 2)).clamp(1e-7, 1.0))
+        phi = cosine * self.cos_m - sine * self.sin_m
+        
+        if self.easy_margin:
+            phi = torch.where(cosine > 0, phi, cosine)
+        else:
+            phi = torch.where(cosine > self.th, phi, cosine - self.mm)
+            
+        # One-hot encoding cho nhãn mục tiêu
+        one_hot = torch.zeros(cosine.size(), device=input.device)
+        one_hot.scatter_(1, label.view(-1, 1).long(), 1)
+        
+        # Chỉ áp dụng margin cộng thêm cho lớp mục tiêu (target class)
+        output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
+        output *= self.s
+        return output
+
 class CustomPartBasedFaceCNN(nn.Module):
     """
     Hệ thống mạng Custom Face CNN kết hợp GlobalNet và GeometricNet (Backbone Patch + 28-Token Hierarchical Attention).
     """
-    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18"):
+    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18", s=30.0, m=0.50, k=3):
         super(CustomPartBasedFaceCNN, self).__init__()
         # Mạng trích xuất đặc trưng toàn mặt
         self.global_branch = GlobalNet(backbone_name=backbone_name, embedding_dim=512, pretrained=pretrained_global)
@@ -327,8 +381,8 @@ class CustomPartBasedFaceCNN(nn.Module):
         # Lớp Dropout trước bộ phân lớp để chống overfitting
         self.classifier_dropout = nn.Dropout(p=0.4)
         
-        # Đầu phân lớp Linear phục vụ huấn luyện phân loại danh tính
-        self.classifier = nn.Linear(embedding_dim, num_classes)
+        # Đầu phân lớp Sub-center ArcFace phục vụ huấn luyện phân loại danh tính
+        self.classifier = SubCenterArcMarginProduct(embedding_dim, num_classes, s=s, m=m, k=k)
 
     def forward(self, x_global, x_eye, x_nose, x_geom):
         """
@@ -363,11 +417,11 @@ class CustomPartBasedFaceCNN(nn.Module):
         
         return normalized_embedding, weights_out
 
-    def forward_training(self, x_global, x_eye, x_nose, x_geom):
+    def forward_training(self, x_global, x_eye, x_nose, x_geom, labels):
         """
         Sử dụng khi huấn luyện để trả về cả embedding chuẩn hóa và điểm logit phân lớp
         """
         emb, weights = self.forward(x_global, x_eye, x_nose, x_geom)
         # Áp dụng dropout vào embedding trước khi đưa vào classifier để tăng khả năng tổng quát hóa
-        logits = self.classifier(self.classifier_dropout(emb))
+        logits = self.classifier(self.classifier_dropout(emb), labels)
         return emb, logits, weights

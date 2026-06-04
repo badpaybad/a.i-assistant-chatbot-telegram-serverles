@@ -93,3 +93,6 @@ cần tăng đường chéo 15px cần tăng lên 20px
 **cập nhật 10**
 modal chỉ dùng GeometricNet và GlobalNet 
 GeometricNet cần trích xuất đặc trưng cho từng vùng của từng điểm trong 26 điểm key của khuôn mặt với mô hình nhẹ và đủ tốt phù hợp lấy điểm key để làm tâm hình vuông có đường chéo 30px. lấy điểm giữa của 2 mắt rồi lấy đặc trưng của vùng điểm đó (cách lấy đặc trưng giống của 26 điểm key khuôn mặt). từ vùng điểm giữa này self attention với 26 vùng trước đó để lấy đặc trưng tương quan điểm giữa của vùng tới 26 vùng trước đó . sau khi có cần kết hợp với GlobalNet để lấy được đặc trưng self attention. 
+
+**cập nhật 11**
+Sử dụng Loss function mạnh mẽ hơn: Đảm bảo sử dụng các hàm loss chuyên dụng cho nhận diện khuôn mặt như ArcFace Loss (Additive Angular Margin Loss) hoặc Sub-center ArcFace khi huấn luyện để ép mô hình học các ranh giới quyết định (decision boundary) cực kỳ nhỏ giữa các lớp (nhất là các cặp sinh đôi)

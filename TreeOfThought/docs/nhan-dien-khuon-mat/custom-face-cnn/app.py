@@ -414,6 +414,18 @@ INDEX_HTML = """<!DOCTYPE html>
                     <option value="convnext" selected>convnext (Hiện đại)</option>
                 </select>
             </div>
+            <div class="input-group">
+                <label for="arcfaceS">ArcFace Scale (s)</label>
+                <input type="number" id="arcfaceS" value="30.0" step="1.0" min="1.0">
+            </div>
+            <div class="input-group">
+                <label for="arcfaceM">ArcFace Margin (m)</label>
+                <input type="number" id="arcfaceM" value="0.50" step="0.05" min="0.0">
+            </div>
+            <div class="input-group">
+                <label for="arcfaceK">Sub-centers (k)</label>
+                <input type="number" id="arcfaceK" value="3" min="1" max="10" step="1">
+            </div>
             <button id="btnStart" class="btn btn-primary" onclick="startTraining()">▶ Bắt đầu Train</button>
             <button id="btnStop" class="btn btn-danger" onclick="stopTraining()" disabled>■ Dừng Train</button>
         </section>
@@ -695,12 +707,15 @@ INDEX_HTML = """<!DOCTYPE html>
             const learningRate = parseFloat(document.getElementById('learningRate').value) || 0.0002;
             const device = document.getElementById('device').value;
             const backbone = document.getElementById('backbone').value;
+            const arcfaceS = parseFloat(document.getElementById('arcfaceS').value) || 30.0;
+            const arcfaceM = parseFloat(document.getElementById('arcfaceM').value) || 0.50;
+            const arcfaceK = parseInt(document.getElementById('arcfaceK').value) || 3;
 
             try {
                 const res = await fetch('/api/start', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ epochs, batch_size: batchSize, lr: learningRate, device, backbone })
+                    body: JSON.stringify({ epochs, batch_size: batchSize, lr: learningRate, device, backbone, arcface_s: arcfaceS, arcface_m: arcfaceM, arcface_k: arcfaceK })
                 });
                 const data = await res.json();
                 if (data.status === 'success') {
@@ -824,6 +839,9 @@ def start_training():
     backbone = data.get("backbone", "resnet18")
     lr = data.get("lr", 0.0002)
     l1_lambda = data.get("l1_lambda", 1e-5)
+    arcface_s = data.get("arcface_s", 30.0)
+    arcface_m = data.get("arcface_m", 0.50)
+    arcface_k = data.get("arcface_k", 3)
     
     cmd = [
         sys.executable, "train.py",
@@ -832,7 +850,10 @@ def start_training():
         "--device", device,
         "--backbone", backbone,
         "--lr", str(lr),
-        "--l1_lambda", str(l1_lambda)
+        "--l1_lambda", str(l1_lambda),
+        "--arcface_s", str(arcface_s),
+        "--arcface_m", str(arcface_m),
+        "--arcface_k", str(arcface_k)
     ]
     
     try:
