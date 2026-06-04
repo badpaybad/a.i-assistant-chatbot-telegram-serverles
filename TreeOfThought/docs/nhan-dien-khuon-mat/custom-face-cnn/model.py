@@ -456,7 +456,9 @@ class SubCenterArcMarginProduct(nn.Module):
         # Chỉ áp dụng margin cộng thêm cho lớp mục tiêu (target class)
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         output *= self.s
-        return output
+        
+        # Trả về cả logits có margin (để tính loss) và cosine logits nhân s (không margin để tính acc)
+        return output, cosine * self.s
 
 class CustomPartBasedFaceCNN(nn.Module):
     """
@@ -524,9 +526,10 @@ class CustomPartBasedFaceCNN(nn.Module):
 
     def forward_training(self, x_global, x_eye, x_nose, x_geom, labels):
         """
-        Sử dụng khi huấn luyện để trả về cả embedding chuẩn hóa và điểm logit phân lớp
+        Sử dụng khi huấn luyện để trả về cả embedding chuẩn hóa, điểm logit phân lớp có margin,
+        và điểm logit phân lớp thuần cosine (không margin).
         """
         emb, weights = self.forward(x_global, x_eye, x_nose, x_geom)
         # Áp dụng dropout vào embedding trước khi đưa vào classifier để tăng khả năng tổng quát hóa
-        logits = self.classifier(self.classifier_dropout(emb), labels)
-        return emb, logits, weights
+        logits, cosine_logits = self.classifier(self.classifier_dropout(emb), labels)
+        return emb, logits, cosine_logits, weights

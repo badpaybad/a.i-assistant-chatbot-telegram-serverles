@@ -805,7 +805,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             optimizer.zero_grad()
             
             # Chạy lan truyền thuận (gồm cả ảnh phân vùng và đặc trưng hình học)
-            _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
+            _, logits, cosine_logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
             loss = criterion(logits, labels)
             
             # Tăng cường chống quá khớp bằng L1 Regularization (nếu l1_lambda > 0)
@@ -821,7 +821,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             optimizer.step()
             
             train_loss += loss.item() * labels.size(0)
-            _, predicted = torch.max(logits, 1)
+            _, predicted = torch.max(cosine_logits, 1)
             total_train += labels.size(0)
             correct_train += (predicted == labels).sum().item()
             
@@ -871,11 +871,11 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                 t_geom = t_geom.to(device)
                 labels = labels.to(device)
                 
-                _, logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
+                _, logits, cosine_logits, _ = model.forward_training(t_global, t_eye, t_nose, t_geom, labels)
                 loss = criterion(logits, labels)
                 
                 val_loss += loss.item() * labels.size(0)
-                _, predicted = torch.max(logits, 1)
+                _, predicted = torch.max(cosine_logits, 1)
                 total_val += labels.size(0)
                 correct_val += (predicted == labels).sum().item()
                 
