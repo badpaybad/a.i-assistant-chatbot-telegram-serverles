@@ -773,9 +773,9 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                     l1_loss += torch.sum(torch.abs(param))
                 loss = loss + l1_lambda * l1_loss
             
-            # Gradient clipping để tránh gradient explosion
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
+            # Gradient clipping phải đặt SAU loss.backward() để clip gradient vừa tính xong
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
             optimizer.step()
             
             train_loss += loss.item() * labels.size(0)
