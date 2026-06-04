@@ -433,12 +433,14 @@ class CustomMultiStreamDataset(Dataset):
     """
     Dataset tùy chỉnh nạp đồng thời 3 luồng ảnh: Global, Eye, Nose
     """
-    def __init__(self, processed_dir, file_list, class_to_idx, transform=None, is_train=True):
+    def __init__(self, processed_dir, file_list, class_to_idx, transform=None, is_train=True, allow_online_aug=True):
         self.processed_dir = processed_dir
         self.file_list = file_list
         self.class_to_idx = class_to_idx
         self.transform = transform
         self.is_train = is_train
+        # allow_online_aug=False cho ảnh đã augment offline để tránh double-augmentation
+        self.allow_online_aug = allow_online_aug
 
     def __len__(self):
         return len(self.file_list)
@@ -512,7 +514,8 @@ class CustomMultiStreamDataset(Dataset):
         img_nose = cv2.cvtColor(img_nose, cv2.COLOR_BGR2RGB)
         
         # Áp dụng Data Augmentation / Occlusion Simulation khi Train
-        if self.is_train:
+        # Chỉ áp dụng online aug nếu được phép (tránh double-augment ảnh offline aug)
+        if self.is_train and self.allow_online_aug:
             # 1. Ngẫu nhiên lật ngang đồng thời cả 3 luồng để giữ tính đối xứng
             if random.random() > 0.5:
                 img_global = cv2.flip(img_global, 1)
@@ -574,8 +577,38 @@ class CustomMultiStreamDataset(Dataset):
                 cv2.circle(img_global, (38, 52), 15, (0, 0, 0), 2)
                 cv2.circle(img_global, (74, 52), 15, (0, 0, 0), 2)
 
-            # 5. Thêm nhiễu hình học nhỏ (Jittering) để chống Overfitting
-            geom += np.random.normal(0, 0.01, size=geom.shape).astype(np.float32)
+            # 5. Gaussian Blur ngẫu nhiên (Xác suất 30%) - làm mờ ảnh để buộc mô hình học kết cấu tổng quát
+            if random.random() > 0.7:
+                ksize = random.choice([3, 5])
+                img_global = cv2.GaussianBlur(img_global, (ksize, ksize), 0)
+                img_eye = cv2.GaussianBlur(img_eye, (ksize, ksize), 0)
+                img_nose = cv2.GaussianBlur(img_nose, (ksize, ksize), 0)
+
+            # 6. Color Jitter: thay đổi ngẫu nhiên độ bão hòa và tương phản (Xác suất 40%)
+            if random.random() > 0.6:
+                alpha = random.uniform(0.7, 1.3)  # contrast
+                beta = random.randint(-20, 20)     # brightness
+                img_global = cv2.convertScaleAbs(img_global, alpha=alpha, beta=beta)
+                img_eye = cv2.convertScaleAbs(img_eye, alpha=alpha, beta=beta)
+                img_nose = cv2.convertScaleAbs(img_nose, alpha=alpha, beta=beta)
+
+            # 7. Perspective Distortion nhẹ (Xác suất 20%) - giả lập góc camera thay đổi
+            if random.random() > 0.8:
+                margin = random.randint(3, 8)
+                src_pts = np.float32([[0, 0], [111, 0], [111, 111], [0, 111]])
+                dst_pts = np.float32([
+                    [random.randint(0, margin), random.randint(0, margin)],
+                    [111 - random.randint(0, margin), random.randint(0, margin)],
+                    [111 - random.randint(0, margin), 111 - random.randint(0, margin)],
+                    [random.randint(0, margin), 111 - random.randint(0, margin)]
+                ])
+                M_persp = cv2.getPerspectiveTransform(src_pts, dst_pts)
+                img_global = cv2.warpPerspective(img_global, M_persp, (112, 112))
+                img_eye = img_global[20:76, 0:112].copy()
+                img_nose = img_global[45:101, 28:84].copy()
+
+            # 8. Thêm nhiễu hình học (Geom Jittering) chống Overfitting - tăng std lên 0.015
+            geom += np.random.normal(0, 0.015, size=geom.shape).astype(np.float32)
             geom = np.clip(geom, 0.0, 1.0)
 
         # Chuẩn hóa về [-1.0, 1.0] tương ứng với ArcFace
@@ -635,20 +668,34 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     random.shuffle(original_files)
     split_idx = int(len(original_files) * val_split)
     train_originals = original_files[:split_idx]
-    val_files = original_files[split_idx:]
+    val_originals = original_files[split_idx:]
+    val_files = [(uid, base) for uid, base in val_originals]  # Val chỉ dùng ảnh gốc sạch
     
-    # Xây dựng train_files bao gồm ảnh gốc và toàn bộ các ảnh tăng cường của nó
-    train_files = []
+    # FIX DATA LEAKAGE: Xây dựng tập val_orig_keys để loại bỏ aug của val khỏi train
+    val_orig_keys = set((uid, base) for uid, base in val_originals)
+
+    # Xây dựng train_files: ảnh gốc train + aug của chúng
+    # KHÔNG cho aug của ảnh val vào train để tránh data leakage!
+    train_files_orig = []   # Ảnh gốc train (dùng online aug)
+    train_files_aug = []    # Ảnh offline aug train (KHÔNG dùng online aug)
     for uid, orig_base in train_originals:
-        train_files.append((uid, orig_base))
+        train_files_orig.append((uid, orig_base))
         if uid in augmented_files and orig_base in augmented_files[uid]:
             for aug_base in augmented_files[uid][orig_base]:
-                train_files.append((uid, aug_base))
+                train_files_aug.append((uid, aug_base))
                 
-    if not val_files: # Đề phòng dataset quá nhỏ
-        val_files = train_files
+    if not val_files:  # Đề phòng dataset quá nhỏ
+        val_files = [(uid, base) for uid, base in train_originals]
         
-    train_dataset = CustomMultiStreamDataset(PROCESSED_DIR, train_files, class_to_idx, is_train=True)
+    flush_print(f"📊 Train originals: {len(train_files_orig)} | Train aug (offline): {len(train_files_aug)} | Val (clean): {len(val_files)}")
+
+    # Dataset gốc train: cho phép online augmentation đầy đủ
+    train_dataset_orig = CustomMultiStreamDataset(PROCESSED_DIR, train_files_orig, class_to_idx, is_train=True, allow_online_aug=True)
+    # Dataset aug train: KHÔNG online aug để tránh double-augmentation
+    train_dataset_aug = CustomMultiStreamDataset(PROCESSED_DIR, train_files_aug, class_to_idx, is_train=True, allow_online_aug=False)
+    # Ghép 2 dataset lại
+    from torch.utils.data import ConcatDataset
+    train_dataset = ConcatDataset([train_dataset_orig, train_dataset_aug])
     val_dataset = CustomMultiStreamDataset(PROCESSED_DIR, val_files, class_to_idx, is_train=False)
     
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -659,8 +706,21 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     flush_print(f"🖥️ Thiết bị sử dụng huấn luyện: {device}")
     
     model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name, s=arcface_s, m=arcface_m, k=arcface_k, dropout=dropout, num_landmarks=num_landmarks).to(device)
-    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    # Freeze backbone 5 epoch đầu để warmup các lớp custom layer trước khi fine-tune toàn bộ
+    BACKBONE_FREEZE_EPOCHS = 5
+    def set_backbone_grad(requires_grad: bool):
+        for param in model.global_branch.backbone.parameters():
+            param.requires_grad = requires_grad
+
+    set_backbone_grad(False)  # Ban đầu freeze backbone
+    flush_print(f"🔒 Backbone đã bị freeze trong {BACKBONE_FREEZE_EPOCHS} epoch đầu để warmup.")
+
+    optimizer = optim.AdamW(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
+
+    # CosineAnnealingLR: học rate giảm dần theo hàm cosine để tránh mắc kẹt vào local minima
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=lr * 0.01)
     
     best_val_loss = float('inf')
     
@@ -713,6 +773,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                     l1_loss += torch.sum(torch.abs(param))
                 loss = loss + l1_lambda * l1_loss
             
+            # Gradient clipping để tránh gradient explosion
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=2.0)
             loss.backward()
             optimizer.step()
             
@@ -736,6 +798,21 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             
         epoch_train_loss = train_loss / total_train
         epoch_train_acc = correct_train / total_train * 100
+
+        # Unfreeze backbone sau BACKBONE_FREEZE_EPOCHS epoch
+        if epoch == BACKBONE_FREEZE_EPOCHS:
+            set_backbone_grad(True)
+            # Tái tạo optimizer để include backbone params với lr nhỏ hơn (discriminative LR)
+            optimizer = optim.AdamW([
+                {"params": model.global_branch.backbone.parameters(), "lr": lr * 0.1},
+                {"params": [p for n, p in model.named_parameters() if "global_branch.backbone" not in n], "lr": lr}
+            ], weight_decay=weight_decay)
+            scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs - BACKBONE_FREEZE_EPOCHS, eta_min=lr * 0.01)
+            flush_print(f"🔓 Backbone đã được unfreeze từ epoch {epoch + 1}. Discriminative LR: backbone={lr*0.1:.6f}, head={lr:.6f}")
+
+        # Cập nhật learning rate theo cosine schedule
+        scheduler.step()
+        current_lr = scheduler.get_last_lr()
         
         # Vòng lặp đánh giá trên tập Validation
         model.eval()
@@ -764,7 +841,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         
         # Định dạng stdout cho C# parse tiến độ epoch
         now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        flush_print(f"[EPOCH_PROGRESS] Epoch: {epoch}/{epochs} | Loss: {epoch_val_loss:.4f} | Acc: {epoch_val_acc:.2f}%")
+        flush_print(f"[EPOCH_PROGRESS] Epoch: {epoch}/{epochs} | Loss: {epoch_val_loss:.4f} | Acc: {epoch_val_acc:.2f}% | LR: {current_lr}")
+        flush_print(f"[OVERFIT_CHECK] Train Loss: {epoch_train_loss:.4f} | Train Acc: {epoch_train_acc:.2f}% | Val Loss: {epoch_val_loss:.4f} | Val Acc: {epoch_val_acc:.2f}% | Gap: {epoch_train_acc - epoch_val_acc:.2f}%")
         
         # Ghi log epoch (train & val) vào CSV
         try:

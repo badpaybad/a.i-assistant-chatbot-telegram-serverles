@@ -169,7 +169,7 @@ class GlobalNet(nn.Module):
             raise ValueError(f"❌ Không hỗ trợ mạng backbone: {backbone_name}")
             
         self.fc = nn.Linear(num_features, embedding_dim)
-        self.dropout = nn.Dropout(p=0.4)
+        self.dropout = nn.Dropout(p=0.5)  # Tăng từ 0.4 lên 0.5 để regularize mạnh hơn
         self.bn_out = nn.BatchNorm1d(embedding_dim)
 
     def forward(self, x):
@@ -265,19 +265,22 @@ class GeometricNet(nn.Module):
             num_tokens = num_landmarks + 2
             
         # Lớp Multihead Self-Attention cục bộ giữa các local keypoint tokens
-        self.self_attn_local = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True)
+        # dropout=0.15 trong attention để ngẫu nhiên mask attention patterns khi train
+        self.self_attn_local = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True, dropout=0.15)
         self.layernorm_attn_local = nn.LayerNorm(token_dim)
+        self.dropout_local = nn.Dropout(p=0.2)  # Dropout sau local attention
         
         # Lớp Multihead Self-Attention toàn cục
-        self.self_attn_global = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True)
+        self.self_attn_global = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True, dropout=0.15)
         self.layernorm_attn_global = nn.LayerNorm(token_dim)
+        self.dropout_global = nn.Dropout(p=0.2)  # Dropout sau global attention
         
         # MLP chiếu đầu ra tự chú ý toàn cục về embedding 512 chiều
         self.fc_out = nn.Sequential(
             nn.Linear(num_tokens * token_dim, 512),
             nn.BatchNorm1d(512),
             nn.PReLU(),
-            nn.Dropout(p=0.3)
+            nn.Dropout(p=0.5)  # Tăng từ 0.3 lên 0.5
         )
 
     def forward(self, x_geom, x_global, f_global):
@@ -339,7 +342,7 @@ class GeometricNet(nn.Module):
             local_attn_out, local_attn_weights = self.self_attn_local(
                 sampled_feat_with_contour, sampled_feat_with_contour, sampled_feat_with_contour
             )
-            local_tokens = self.layernorm_attn_local(sampled_feat_with_contour + local_attn_out) # (B, 28, token_dim)
+            local_tokens = self.layernorm_attn_local(sampled_feat_with_contour + self.dropout_local(local_attn_out))  # (B, 28, token_dim)
             
             # 4. Chiếu đặc trưng toàn cảnh f_global về token_dim
             t_global = self.proj_global(f_global)
@@ -373,7 +376,7 @@ class GeometricNet(nn.Module):
             sampled_feat = sampled_feat + pos_emb
             
             local_attn_out, local_attn_weights = self.self_attn_local(sampled_feat, sampled_feat, sampled_feat)
-            local_tokens = self.layernorm_attn_local(sampled_feat + local_attn_out)
+            local_tokens = self.layernorm_attn_local(sampled_feat + self.dropout_local(local_attn_out))
             
             t_global = self.proj_global(f_global)
             t_global_with_pos = t_global.unsqueeze(1) + self.global_pos_emb
@@ -382,7 +385,7 @@ class GeometricNet(nn.Module):
             
         # Global Attention
         global_attn_out, global_attn_weights = self.self_attn_global(tokens_all, tokens_all, tokens_all)
-        tokens_all = self.layernorm_attn_global(tokens_all + global_attn_out)
+        tokens_all = self.layernorm_attn_global(tokens_all + self.dropout_global(global_attn_out))
         
         # MLP chiếu về 512-D
         feat_flat = tokens_all.reshape(B, -1)
