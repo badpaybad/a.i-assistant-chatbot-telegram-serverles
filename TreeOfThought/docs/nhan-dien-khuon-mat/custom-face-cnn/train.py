@@ -744,7 +744,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
             pass
     
     # 3. Vòng lặp huấn luyện chính
-    flush_print(f"📊 Dataset Size: Total Identities: {len(identities)} | Original Images: {len(original_files)} | Train Samples (with aug): {len(train_files)} | Val Samples (clean): {len(val_files)}")
+    flush_print(f"📊 Dataset Size: Total Identities: {len(identities)} | Original Images: {len(original_files)} | Train Samples (with aug): {len(train_files_orig) + len(train_files_aug)} | Val Samples (clean): {len(val_files)}")
     flush_print("🚀 Bắt đầu quá trình huấn luyện mạng Custom Face CNN...")
     
     for epoch in range(1, epochs + 1):
