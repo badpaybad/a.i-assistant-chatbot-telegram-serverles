@@ -97,3 +97,8 @@ GeometricNet cần trích xuất đặc trưng cho từng vùng của từng đi
 **cập nhật 11**
 Sử dụng Loss function mạnh mẽ hơn: Đảm bảo sử dụng các hàm loss chuyên dụng cho nhận diện khuôn mặt như ArcFace Loss (Additive Angular Margin Loss) hoặc Sub-center ArcFace khi huấn luyện để ép mô hình học các ranh giới quyết định (decision boundary) cực kỳ nhỏ giữa các lớp (nhất là các cặp sinh đôi)
 áp dụng các kỹ thuật regularization mạnh mẽ hơn (như dropout, weight decay)
+
+**cập nhật 12**
+dựa vào face_landmarker.task của mediapipe cần bổ xung thêm viền khuôn mặt, đường bao khuôn mặt lấy đặc trưng và self attention với 26 vùng face key đã có phía trên 
+    tức là sẽ cần dựa vào các điểm landmark đường bao rồi từng điểm đó lấy hình vuông có đường chéo 30px rồi ghép tất cả các ảnh thành 1 vòng khép kín (ghép theo đường viền khuôn mặt) thành 1 ảnh (về cơ bản sẽ không có xuất hiện mắt mũi mồm ) sau đó lấy đặc trưng và self attention với 26 vùng face key đã lấy đặc trưng trước đó. 
+    Self attention là cho các vùng đã lấy đặc trưng với nhau chứ không phải 1 điểm.

@@ -67,7 +67,7 @@ def detect_and_align_face_with_geom(image_bgr, face_mesh_detector=None):
     Nếu Face Landmarker không chạy được/không phát hiện thấy mặt, ta dùng Haar Cascade / Center Crop
     và trả về khuôn mặt align kèm tọa độ template 26 landmarks mặc định.
     """
-    # 26 landmarks mặc định trên khung 112x112 chuẩn hóa
+    # 37 landmarks mặc định trên khung 112x112 chuẩn hóa (bao gồm 11 viền/đường bao khuôn mặt)
     default_geom = np.array([
         [30.0/112.0, 51.6/112.0],  # 0. Left eye outer
         [46.0/112.0, 51.6/112.0],  # 1. Left eye inner
@@ -94,10 +94,26 @@ def detect_and_align_face_with_geom(image_bgr, face_mesh_detector=None):
         [55.9/112.0, 95.0/112.0],  # 22. Lower lip center
         [20.0/112.0, 75.0/112.0],  # 23. Left cheek
         [92.0/112.0, 75.0/112.0],  # 24. Right cheek
-        [55.9/112.0, 105.0/112.0]  # 25. Chin
+        [55.9/112.0, 105.0/112.0], # 25. Chin
+        [55.9/112.0, 10.0/112.0],  # 26. Forehead top center (10)
+        [30.0/112.0, 15.0/112.0],  # 27. Forehead top left (109)
+        [82.0/112.0, 15.0/112.0],  # 28. Forehead top right (338)
+        [15.0/112.0, 35.0/112.0],  # 29. Left temple (127)
+        [97.0/112.0, 35.0/112.0],  # 30. Right temple (356)
+        [15.0/112.0, 60.0/112.0],  # 31. Left mid-jaw (132)
+        [97.0/112.0, 60.0/112.0],  # 32. Right mid-jaw (361)
+        [25.0/112.0, 85.0/112.0],  # 33. Left lower jaw (58)
+        [87.0/112.0, 85.0/112.0],  # 34. Right lower jaw (288)
+        [40.0/112.0, 102.0/112.0], # 35. Left chin corner (136)
+        [72.0/112.0, 102.0/112.0]  # 36. Right chin corner (365)
     ], dtype=np.float32)
 
-    landmark_indices = [33, 133, 362, 263, 159, 145, 386, 374, 468, 473, 70, 107, 300, 336, 168, 4, 129, 358, 164, 61, 291, 0, 17, 234, 454, 152]
+    landmark_indices = [
+        33, 133, 362, 263, 159, 145, 386, 374, 468, 473, 
+        70, 107, 300, 336, 168, 4, 129, 358, 164, 61, 
+        291, 0, 17, 234, 454, 152,
+        10, 109, 338, 127, 356, 132, 361, 58, 288, 136, 365
+    ]
 
     def process_landmarks(face_landmarks):
         h, w = image_bgr.shape[:2]
@@ -217,11 +233,11 @@ def crop_sub_regions(aligned_face):
     nose_region = aligned_face[45:101, 28:84].copy()
     return global_face, eye_region, nose_region
 
-def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
+def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR, num_landmarks=37):
     """
     Quét dataraw, phát hiện, align, áp dụng tăng cường dữ liệu (data augmentation) và lưu ảnh phân vùng
     """
-    # Kiểm tra xem dữ liệu đã được xử lý ở dạng 26 landmarks và có chứa dữ liệu tăng cường chưa
+    # Kiểm tra xem dữ liệu đã được xử lý ở dạng num_landmarks và có chứa dữ liệu tăng cường chưa
     need_reprocess = True
     global_dir = os.path.join(processed_dir, "global")
     if os.path.exists(global_dir) and os.path.isdir(global_dir):
@@ -239,9 +255,9 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
         if npy_files and has_aug:
             try:
                 test_geom = np.load(npy_files[0])
-                if test_geom.shape == (26, 2):
+                if test_geom.shape == (num_landmarks, 2):
                     need_reprocess = False
-                    flush_print("💡 Thư mục data_processed đã chứa dữ liệu dạng 26 landmarks và ảnh tăng cường. Bỏ qua tiền xử lý.")
+                    flush_print(f"💡 Thư mục data_processed đã chứa dữ liệu dạng {num_landmarks} landmarks và ảnh tăng cường. Bỏ qua tiền xử lý.")
                     return True
             except Exception:
                 pass
@@ -327,11 +343,20 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             geom_flip[[19, 20]] = geom_flip[[20, 19]]
             geom_flip[[23, 24]] = geom_flip[[24, 23]]
             
+            # Tráo đổi các cặp đối xứng của viền khuôn mặt (indices 26-36):
+            # 27<->28, 29<->30, 31<->32, 33<->34, 35<->36
+            if geom_flip.shape[0] >= 37:
+                geom_flip[[27, 28]] = geom_flip[[28, 27]]
+                geom_flip[[29, 30]] = geom_flip[[30, 29]]
+                geom_flip[[31, 32]] = geom_flip[[32, 31]]
+                geom_flip[[33, 34]] = geom_flip[[34, 33]]
+                geom_flip[[35, 36]] = geom_flip[[36, 35]]
+            
             # 2. Xoay chéo trái (Rotation +10 độ, Scale 1.03)
             M_rotP = cv2.getRotationMatrix2D((56, 56), 10.0, 1.03)
             aligned_rotP = cv2.warpAffine(aligned, M_rotP, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
             geom_rotP = geom.copy()
-            for i in range(26):
+            for i in range(geom_rotP.shape[0]):
                 px = geom[i, 0] * 112.0
                 py = geom[i, 1] * 112.0
                 nx = M_rotP[0, 0] * px + M_rotP[0, 1] * py + M_rotP[0, 2]
@@ -343,7 +368,7 @@ def preprocess_dataraw(raw_dir=DEFAULT_RAW_DIR, processed_dir=PROCESSED_DIR):
             M_rotN = cv2.getRotationMatrix2D((56, 56), -10.0, 1.03)
             aligned_rotN = cv2.warpAffine(aligned, M_rotN, (112, 112), flags=cv2.INTER_CUBIC, borderValue=0)
             geom_rotN = geom.copy()
-            for i in range(26):
+            for i in range(geom_rotN.shape[0]):
                 px = geom[i, 0] * 112.0
                 py = geom[i, 1] * 112.0
                 nx = M_rotN[0, 0] * px + M_rotN[0, 1] * py + M_rotN[0, 2]
@@ -467,7 +492,18 @@ class CustomMultiStreamDataset(Dataset):
                 [55.9/112.0, 95.0/112.0],  # 22. Lower lip center
                 [20.0/112.0, 75.0/112.0],  # 23. Left cheek
                 [92.0/112.0, 75.0/112.0],  # 24. Right cheek
-                [55.9/112.0, 105.0/112.0]  # 25. Chin
+                [55.9/112.0, 105.0/112.0], # 25. Chin
+                [55.9/112.0, 10.0/112.0],  # 26. Forehead top center (10)
+                [30.0/112.0, 15.0/112.0],  # 27. Forehead top left (109)
+                [82.0/112.0, 15.0/112.0],  # 28. Forehead top right (338)
+                [15.0/112.0, 35.0/112.0],  # 29. Left temple (127)
+                [97.0/112.0, 35.0/112.0],  # 30. Right temple (356)
+                [15.0/112.0, 60.0/112.0],  # 31. Left mid-jaw (132)
+                [97.0/112.0, 60.0/112.0],  # 32. Right mid-jaw (361)
+                [25.0/112.0, 85.0/112.0],  # 33. Left lower jaw (58)
+                [87.0/112.0, 85.0/112.0],  # 34. Right lower jaw (288)
+                [40.0/112.0, 102.0/112.0], # 35. Left chin corner (136)
+                [72.0/112.0, 102.0/112.0]  # 36. Right chin corner (365)
             ], dtype=np.float32)
 
         # Chuyển đổi BGR sang RGB
@@ -498,6 +534,15 @@ class CustomMultiStreamDataset(Dataset):
                 geom[[19, 20]] = geom[[20, 19]]
                 geom[[23, 24]] = geom[[24, 23]]
                 
+                # Tráo đổi các cặp đối xứng của viền khuôn mặt (indices 26-36):
+                # 27<->28, 29<->30, 31<->32, 33<->34, 35<->36
+                if geom.shape[0] >= 37:
+                    geom[[27, 28]] = geom[[28, 27]]
+                    geom[[29, 30]] = geom[[30, 29]]
+                    geom[[31, 32]] = geom[[32, 31]]
+                    geom[[33, 34]] = geom[[34, 33]]
+                    geom[[35, 36]] = geom[[36, 35]]
+                
             # 2. Ngẫu nhiên xoay và thay đổi tỷ lệ (giả lập nghiêng đầu / góc chéo của camera) - Xác suất 30%
             if random.random() > 0.7:
                 angle = random.uniform(-15.0, 15.0)
@@ -510,8 +555,8 @@ class CustomMultiStreamDataset(Dataset):
                 img_eye = img_global[20:76, 0:112].copy()
                 img_nose = img_global[45:101, 28:84].copy()
                 
-                # Áp dụng xoay tương tự cho 26 keypoints hình học
-                for i in range(26):
+                # Áp dụng xoay tương tự cho các keypoints hình học
+                for i in range(geom.shape[0]):
                     px = geom[i, 0] * 112.0
                     py = geom[i, 1] * 112.0
                     nx = M_aug[0, 0] * px + M_aug[0, 1] * py + M_aug[0, 2]
@@ -545,7 +590,7 @@ class CustomMultiStreamDataset(Dataset):
 # 3. VÒNG LẶP HUẤN LUYỆN & KIỂM ĐỊNH (TRAIN & VALIDATION)
 # =====================================================================
 
-def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5, arcface_s=30.0, arcface_m=0.50, arcface_k=3, dropout=0.4):
+def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", weight_decay=1e-4, val_split=0.8, backbone_name="resnet18", pretrained_global=True, l1_lambda=1e-5, arcface_s=30.0, arcface_m=0.50, arcface_k=3, dropout=0.4, num_landmarks=37):
     # 1. Lấy danh tính và lập chỉ mục ảnh
     global_dir = os.path.join(PROCESSED_DIR, "global")
     if not os.path.exists(global_dir):
@@ -613,7 +658,7 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
     device = torch.device(device_name)
     flush_print(f"🖥️ Thiết bị sử dụng huấn luyện: {device}")
     
-    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name, s=arcface_s, m=arcface_m, k=arcface_k, dropout=dropout).to(device)
+    model = CustomPartBasedFaceCNN(num_classes=len(identities), pretrained_global=pretrained_global, backbone_name=backbone_name, s=arcface_s, m=arcface_m, k=arcface_k, dropout=dropout, num_landmarks=num_landmarks).to(device)
     optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss()
     
@@ -743,7 +788,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
                 "s": arcface_s,
                 "m": arcface_m,
                 "k": arcface_k,
-                "dropout": dropout
+                "dropout": dropout,
+                "num_landmarks": num_landmarks
             }
             torch.save(checkpoint, "checkpoint_best.pth")
             flush_print("💾 Đã lưu Checkpoint tốt nhất (Best loss).")
@@ -765,7 +811,8 @@ def train_and_validate(epochs=15, batch_size=8, lr=0.0002, device_name="cpu", we
         "s": arcface_s,
         "m": arcface_m,
         "k": arcface_k,
-        "dropout": dropout
+        "dropout": dropout,
+        "num_landmarks": num_landmarks
     }, "checkpoint_final.pth")
     flush_print("💾 Đã lưu Checkpoint cuối cùng (checkpoint_final.pth).")
     
@@ -797,6 +844,7 @@ def export_best_to_onnx(checkpoint_path="checkpoint_best.pth", output_onnx_path=
         m = checkpoint.get("m", 0.50)
         k = checkpoint.get("k", 1)  # Mặc định là 1 nếu là checkpoint cũ (nn.Linear)
         dropout = checkpoint.get("dropout", 0.4)
+        num_landmarks = checkpoint.get("num_landmarks", 26)
         
         if "classifier.weight" in model_state_dict:
             weight_shape = model_state_dict["classifier.weight"].shape
@@ -804,16 +852,16 @@ def export_best_to_onnx(checkpoint_path="checkpoint_best.pth", output_onnx_path=
             if calculated_k > 0:
                 k = calculated_k
                 
-        flush_print(f"💡 Phát hiện backbone: {backbone_name} | Số lớp: {num_classes} | ArcFace s: {s}, m: {m}, k: {k} | Dropout: {dropout}")
-        model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name, s=s, m=m, k=k, dropout=dropout)
+        flush_print(f"💡 Phát hiện backbone: {backbone_name} | Số lớp: {num_classes} | ArcFace s: {s}, m: {m}, k: {k} | Dropout: {dropout} | Landmarks: {num_landmarks}")
+        model = CustomPartBasedFaceCNN(num_classes=num_classes, backbone_name=backbone_name, s=s, m=m, k=k, dropout=dropout, num_landmarks=num_landmarks)
         model.load_state_dict(model_state_dict, strict=False)
         model.eval()
         
-        # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học 26 landmarks * 2)
+        # Chuẩn bị dummy inputs (gồm 3 luồng ảnh và 1 luồng tọa độ hình học landmarks * 2)
         dummy_global = torch.randn(1, 3, 112, 112, dtype=torch.float32)
         dummy_eye = torch.randn(1, 3, 56, 112, dtype=torch.float32)
         dummy_nose = torch.randn(1, 3, 56, 56, dtype=torch.float32)
-        dummy_geom = torch.randn(1, 26, 2, dtype=torch.float32)
+        dummy_geom = torch.randn(1, num_landmarks, 2, dtype=torch.float32)
         
         dummy_inputs = (dummy_global, dummy_eye, dummy_nose, dummy_geom)
         input_names = ["x_global", "x_eye", "x_nose", "x_geom"]
@@ -874,6 +922,7 @@ if __name__ == "__main__":
     parser.add_argument("--arcface_m", type=float, default=0.50, help="ArcFace margin parameter m (default: 0.50)")
     parser.add_argument("--arcface_k", type=int, default=3, help="Sub-centers for Sub-center ArcFace, 1 for standard ArcFace (default: 3)")
     parser.add_argument("--dropout", type=float, default=0.4, help="Classifier dropout rate (default: 0.4)")
+    parser.add_argument("--num_landmarks", type=int, default=37, help="Number of facial landmarks to use (default: 37)")
     parser.set_defaults(pretrained_global=True)
     args = parser.parse_args()
 
@@ -891,7 +940,7 @@ if __name__ == "__main__":
             pass
             
     # Bước 1: Tiền xử lý dataraw
-    success = preprocess_dataraw()
+    success = preprocess_dataraw(num_landmarks=args.num_landmarks)
     if success:
         # Bước 2: Huấn luyện mạng và xuất ONNX (Bọc trong try-except để xử lý dừng ngắt từ người dùng)
         try:
@@ -908,7 +957,8 @@ if __name__ == "__main__":
                 arcface_s=args.arcface_s,
                 arcface_m=args.arcface_m,
                 arcface_k=args.arcface_k,
-                dropout=args.dropout
+                dropout=args.dropout,
+                num_landmarks=args.num_landmarks
             )
         except (KeyboardInterrupt, SystemExit):
             flush_print("\n🛑 Nhận tín hiệu dừng từ người dùng (Ctrl+C hoặc nút Stop). Đang tiến hành xuất mô hình ONNX từ checkpoint tốt nhất...")

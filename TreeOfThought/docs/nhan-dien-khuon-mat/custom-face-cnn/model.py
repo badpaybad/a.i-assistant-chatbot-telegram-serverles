@@ -82,6 +82,48 @@ class NoseNet(nn.Module):
         x = self.dropout(x)
         return self.bn_out(x)
 
+class ContourNet(nn.Module):
+    """
+    Nhánh mạng tích chập chuyên trích xuất đặc trưng từ ảnh viền khuôn mặt (Face Contour/Silhouette).
+    Kích thước đầu vào chuẩn hóa: (B, 3, 112, 112) [Height=112, Width=112]
+    """
+    def __init__(self, embedding_dim=128):
+        super(ContourNet, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.PReLU(),
+            nn.MaxPool2d(2, 2), # Output: (B, 32, 56, 56)
+            nn.Dropout2d(p=0.1),
+            
+            nn.Conv2d(32, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.PReLU(),
+            nn.MaxPool2d(2, 2), # Output: (B, 64, 28, 28)
+            nn.Dropout2d(p=0.15),
+            
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.PReLU(),
+            nn.MaxPool2d(2, 2), # Output: (B, 128, 14, 14)
+            nn.Dropout2d(p=0.2),
+            
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.PReLU(),
+            nn.AdaptiveAvgPool2d((1, 1)) # Output: (B, 256, 1, 1)
+        )
+        self.fc = nn.Linear(256, embedding_dim)
+        self.dropout = nn.Dropout(p=0.3)
+        self.bn_out = nn.BatchNorm1d(embedding_dim)
+
+    def forward(self, x):
+        x = self.features(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        x = self.dropout(x)
+        return self.bn_out(x)
+
 class GlobalNet(nn.Module):
     """
     Nhánh mạng trích xuất đặc trưng toàn mặt (Global Face Region) sử dụng Backbone động.
@@ -180,7 +222,7 @@ class GeometricNet(nn.Module):
     """
     Nhánh trích xuất đặc trưng hình học không gian tự chú ý và đặc trưng vùng (Geometric & Regional Backbone Branch).
     Đầu vào: 
-        - x_geom: Tọa độ 26 landmarks (B, 26, 2) đã được chuẩn hóa.
+        - x_geom: Tọa độ landmarks (B, num_landmarks, 2) đã được chuẩn hóa.
         - x_global: Ảnh toàn mặt (B, 3, 112, 112).
         - f_global: Đặc trưng toàn cảnh (B, 512).
     Đầu ra: Vector đặc trưng hình học kết hợp tự chú ý 512 chiều và ma trận chú ý (attention weights).
@@ -192,7 +234,6 @@ class GeometricNet(nn.Module):
         self.token_dim = token_dim
         
         # Định nghĩa offset grid cho patch 21x21 (diagonal ~30px trên ảnh 112x112)
-        # Bán kính 10px, tương đương đường chéo 30px (cạnh ~21px)
         offsets = torch.linspace(-10, 10, 21) * (2.0 / 112.0)
         oy, ox = torch.meshgrid(offsets, offsets, indexing='ij')
         offset_grid = torch.stack([ox, oy], dim=-1) # Shape: (21, 21, 2)
@@ -202,7 +243,6 @@ class GeometricNet(nn.Module):
         self.patch_backbone = PatchFeatureNet(token_dim=token_dim)
         
         # Lớp chiếu tọa độ landmarks sang chiều token_dim để làm Position Embedding
-        # x_geom_extended sẽ có 27 landmarks (1 eye_mid + 26 landmarks)
         self.proj_pos = nn.Linear(2, token_dim)
         
         # Lớp chiếu đặc trưng toàn cảnh f_global sang chiều token_dim
@@ -215,17 +255,26 @@ class GeometricNet(nn.Module):
         # Learned position embedding cho global token
         self.global_pos_emb = nn.Parameter(torch.zeros(1, 1, token_dim))
         
-        # Lớp Multihead Self-Attention cục bộ giữa 27 tokens (1 eye_mid + 26 landmarks)
+        # Nếu sử dụng >=37 landmarks, ta kích hoạt ContourNet để trích xuất viền mặt khép kín
+        if num_landmarks >= 37:
+            self.contour_branch = ContourNet(embedding_dim=token_dim)
+            self.contour_pos_emb = nn.Parameter(torch.zeros(1, 1, token_dim))
+            # 26 keypoint tokens + 1 eye_mid token + 1 global token + 1 contour token = 29 tokens
+            num_tokens = 29
+        else:
+            num_tokens = num_landmarks + 2
+            
+        # Lớp Multihead Self-Attention cục bộ giữa các local keypoint tokens
         self.self_attn_local = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True)
         self.layernorm_attn_local = nn.LayerNorm(token_dim)
         
-        # Lớp Multihead Self-Attention toàn cục kết hợp 1 global token và 27 local tokens (Tổng: 28 tokens)
+        # Lớp Multihead Self-Attention toàn cục
         self.self_attn_global = nn.MultiheadAttention(embed_dim=token_dim, num_heads=4, batch_first=True)
         self.layernorm_attn_global = nn.LayerNorm(token_dim)
         
-        # MLP chiếu đầu ra tự chú ý toàn cục (28 tokens * token_dim) về embedding 512 chiều
+        # MLP chiếu đầu ra tự chú ý toàn cục về embedding 512 chiều
         self.fc_out = nn.Sequential(
-            nn.Linear(28 * token_dim, 512),
+            nn.Linear(num_tokens * token_dim, 512),
             nn.BatchNorm1d(512),
             nn.PReLU(),
             nn.Dropout(p=0.3)
@@ -233,65 +282,110 @@ class GeometricNet(nn.Module):
 
     def forward(self, x_geom, x_global, f_global):
         B = x_geom.size(0)
+        device = x_geom.device
         
-        # 1. Tính toán tọa độ trung điểm 2 mắt (eye_mid)
-        left_eye = (x_geom[:, 0] + x_geom[:, 1]) / 2.0
-        right_eye = (x_geom[:, 2] + x_geom[:, 3]) / 2.0
-        eye_mid = (left_eye + right_eye) / 2.0 # (B, 2)
-        
-        # Ghép eye_mid vào danh sách tọa độ: eye_mid nằm ở index 0, 26 landmarks theo sau. (B, 27, 2)
-        x_geom_extended = torch.cat([eye_mid.unsqueeze(1), x_geom], dim=1)
-        
-        # 2. Chuyển đổi coordinates sang [-1, 1] cho F.grid_sample
-        grid_centers = x_geom_extended * 2.0 - 1.0 # (B, 27, 2)
-        
-        # 3. Xây dựng grid lấy mẫu cho từng patch xung quanh 27 landmarks
-        # grid_centers: (B, 27, 1, 1, 2)
-        # self.offset_grid: (1, 1, 21, 21, 2)
-        grid = grid_centers.unsqueeze(2).unsqueeze(3) + self.offset_grid
-        
-        # Reshape grid để tương thích với F.grid_sample: (B, 27 * 21, 21, 2)
-        grid_reshaped = grid.view(B, 27 * 21, 21, 2)
-        
-        # 4. Lấy mẫu patch 21x21 từ ảnh toàn mặt x_global
-        sampled_patches = F.grid_sample(x_global, grid_reshaped, align_corners=False)
-        
-        # Reshape & Permute về dạng: (B, 27, 3, 21, 21)
-        sampled_patches = sampled_patches.view(B, 3, 27, 21, 21).permute(0, 2, 1, 3, 4)
-        
-        # Flatten batch và landmark dims: (B * 27, 3, 21, 21)
-        patches_flat = sampled_patches.reshape(B * 27, 3, 21, 21)
-        
-        # 5. Trích xuất đặc trưng vùng bằng patch backbone nhẹ
-        sampled_feat = self.patch_backbone(patches_flat) # (B * 27, token_dim)
-        sampled_feat = sampled_feat.view(B, 27, self.token_dim) # (B, 27, token_dim)
-        
-        # 6. Tính toán đặc trưng vị trí hình học (Displacement & IPD Normalization) cho position embedding
-        ipd = torch.norm(left_eye - right_eye, p=2, dim=1, keepdim=True).clamp(min=1e-6)
-        disp = (x_geom_extended - eye_mid.unsqueeze(1)) / ipd.unsqueeze(2) # (B, 27, 2)
-        pos_emb = self.proj_pos(disp) # (B, 27, token_dim)
-        
-        # Cộng position embedding vào các đặc trưng vùng
-        sampled_feat = sampled_feat + pos_emb
-        
-        # 7. Thực thi Local Self-Attention giữa 27 local tokens (1 eye_mid + 26 landmarks)
-        local_attn_out, local_attn_weights = self.self_attn_local(sampled_feat, sampled_feat, sampled_feat)
-        local_tokens = self.layernorm_attn_local(sampled_feat + local_attn_out) # (B, 27, token_dim)
-        
-        # 8. Chiếu đặc trưng toàn cảnh f_global về token_dim
-        t_global = self.proj_global(f_global) # (B, token_dim)
-        t_global_with_pos = t_global.unsqueeze(1) + self.global_pos_emb # (B, 1, token_dim)
-        
-        # 9. Xếp thành chuỗi 28 tokens: (B, 28, token_dim)
-        # global token ở index 0, local tokens ở index 1-27
-        tokens_all = torch.cat([t_global_with_pos, local_tokens], dim=1)
-        
-        # 10. Thực thi Global Self-Attention kết hợp Global và các local tokens đã chú ý
+        if self.num_landmarks >= 37:
+            # 1. Tính toán tọa độ trung điểm 2 mắt (từ 4 landmark đầu của mắt)
+            left_eye = (x_geom[:, 0] + x_geom[:, 1]) / 2.0
+            right_eye = (x_geom[:, 2] + x_geom[:, 3]) / 2.0
+            eye_mid = (left_eye + right_eye) / 2.0 # (B, 2)
+            
+            # Chỉ lấy 26 keypoints đầu tiên làm local tokens
+            x_geom_keys = x_geom[:, :26, :]
+            x_geom_extended = torch.cat([eye_mid.unsqueeze(1), x_geom_keys], dim=1) # (B, 27, 2)
+            
+            # Crop 27 local patches và lấy mẫu
+            grid_centers = x_geom_extended * 2.0 - 1.0
+            grid = grid_centers.unsqueeze(2).unsqueeze(3) + self.offset_grid
+            grid_reshaped = grid.view(B, 27 * 21, 21, 2)
+            sampled_patches = F.grid_sample(x_global, grid_reshaped, align_corners=False)
+            sampled_patches = sampled_patches.view(B, 3, 27, 21, 21).permute(0, 2, 1, 3, 4)
+            
+            patches_flat = sampled_patches.reshape(B * 27, 3, 21, 21)
+            sampled_feat = self.patch_backbone(patches_flat)
+            sampled_feat = sampled_feat.view(B, 27, self.token_dim)
+            
+            # Tính position embedding
+            ipd = torch.norm(left_eye - right_eye, p=2, dim=1, keepdim=True).clamp(min=1e-6)
+            disp = (x_geom_extended - eye_mid.unsqueeze(1)) / ipd.unsqueeze(2)
+            pos_emb = self.proj_pos(disp)
+            sampled_feat = sampled_feat + pos_emb
+            
+            # 2. Xây dựng contour image bằng masking các landmark đường bao (chỉ số 26-36)
+            coords = x_geom[:, 26:, :] * 112.0 # Shape: (B, 11, 2)
+            
+            grid_y, grid_x = torch.meshgrid(
+                torch.arange(112, device=device),
+                torch.arange(112, device=device),
+                indexing='ij'
+            )
+            grid_px = torch.stack([grid_x, grid_y], dim=-1).float() # (112, 112, 2)
+            grid_px = grid_px.unsqueeze(0).unsqueeze(0) # (1, 1, 112, 112, 2)
+            
+            coords_expanded = coords.unsqueeze(2).unsqueeze(2) # (B, 11, 1, 1, 2)
+            diff = torch.abs(grid_px - coords_expanded) # (B, 11, 112, 112, 2)
+            
+            # Hình vuông 21x21 (đường chéo ~30px)
+            in_square = (diff[..., 0] <= 10) & (diff[..., 1] <= 10)
+            mask = in_square.any(dim=1).float().unsqueeze(1) # (B, 1, 112, 112)
+            
+            contour_image = x_global * mask
+            contour_token = self.contour_branch(contour_image) # (B, token_dim)
+            contour_token_with_pos = contour_token.unsqueeze(1) + self.contour_pos_emb # (B, 1, token_dim)
+            
+            # 3. Thực thi Local Self-Attention giữa các vùng đã lấy đặc trưng với nhau:
+            # Gồm 1 contour token và 27 keypoint/eye_mid tokens với nhau
+            sampled_feat_with_contour = torch.cat([contour_token_with_pos, sampled_feat], dim=1) # (B, 28, token_dim)
+            local_attn_out, local_attn_weights = self.self_attn_local(
+                sampled_feat_with_contour, sampled_feat_with_contour, sampled_feat_with_contour
+            )
+            local_tokens = self.layernorm_attn_local(sampled_feat_with_contour + local_attn_out) # (B, 28, token_dim)
+            
+            # 4. Chiếu đặc trưng toàn cảnh f_global về token_dim
+            t_global = self.proj_global(f_global)
+            t_global_with_pos = t_global.unsqueeze(1) + self.global_pos_emb # (B, 1, token_dim)
+            
+            # Xếp chuỗi tokens: global token (0) kết hợp với các local tokens đã chú ý (1-28)
+            tokens_all = torch.cat([t_global_with_pos, local_tokens], dim=1) # (B, 29, token_dim)
+            
+        else:
+            # Tương thích ngược với legacy checkpoints
+            left_eye = (x_geom[:, 0] + x_geom[:, 1]) / 2.0
+            right_eye = (x_geom[:, 2] + x_geom[:, 3]) / 2.0
+            eye_mid = (left_eye + right_eye) / 2.0
+            
+            x_geom_extended = torch.cat([eye_mid.unsqueeze(1), x_geom], dim=1) # (B, num_landmarks + 1, 2)
+            L = self.num_landmarks + 1
+            
+            grid_centers = x_geom_extended * 2.0 - 1.0
+            grid = grid_centers.unsqueeze(2).unsqueeze(3) + self.offset_grid
+            grid_reshaped = grid.view(B, L * 21, 21, 2)
+            sampled_patches = F.grid_sample(x_global, grid_reshaped, align_corners=False)
+            sampled_patches = sampled_patches.view(B, 3, L, 21, 21).permute(0, 2, 1, 3, 4)
+            
+            patches_flat = sampled_patches.reshape(B * L, 3, 21, 21)
+            sampled_feat = self.patch_backbone(patches_flat)
+            sampled_feat = sampled_feat.view(B, L, self.token_dim)
+            
+            ipd = torch.norm(left_eye - right_eye, p=2, dim=1, keepdim=True).clamp(min=1e-6)
+            disp = (x_geom_extended - eye_mid.unsqueeze(1)) / ipd.unsqueeze(2)
+            pos_emb = self.proj_pos(disp)
+            sampled_feat = sampled_feat + pos_emb
+            
+            local_attn_out, local_attn_weights = self.self_attn_local(sampled_feat, sampled_feat, sampled_feat)
+            local_tokens = self.layernorm_attn_local(sampled_feat + local_attn_out)
+            
+            t_global = self.proj_global(f_global)
+            t_global_with_pos = t_global.unsqueeze(1) + self.global_pos_emb
+            
+            tokens_all = torch.cat([t_global_with_pos, local_tokens], dim=1) # (B, num_landmarks + 2, token_dim)
+            
+        # Global Attention
         global_attn_out, global_attn_weights = self.self_attn_global(tokens_all, tokens_all, tokens_all)
-        tokens_all = self.layernorm_attn_global(tokens_all + global_attn_out) # (B, 28, token_dim)
+        tokens_all = self.layernorm_attn_global(tokens_all + global_attn_out)
         
-        # 11. Phẳng hóa và chiếu về 512-D
-        feat_flat = tokens_all.reshape(B, -1) # (B, 28 * token_dim)
+        # MLP chiếu về 512-D
+        feat_flat = tokens_all.reshape(B, -1)
         out = self.fc_out(feat_flat)
         
         return out, global_attn_weights
@@ -365,7 +459,7 @@ class CustomPartBasedFaceCNN(nn.Module):
     """
     Hệ thống mạng Custom Face CNN kết hợp GlobalNet và GeometricNet (Backbone Patch + 28-Token Hierarchical Attention).
     """
-    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18", s=30.0, m=0.50, k=3, dropout=0.4):
+    def __init__(self, num_classes=10, embedding_dim=512, pretrained_global=False, backbone_name="resnet18", s=30.0, m=0.50, k=3, dropout=0.4, num_landmarks=37):
         super(CustomPartBasedFaceCNN, self).__init__()
         # Mạng trích xuất đặc trưng toàn mặt
         self.global_branch = GlobalNet(backbone_name=backbone_name, embedding_dim=512, pretrained=pretrained_global)
@@ -373,7 +467,7 @@ class CustomPartBasedFaceCNN(nn.Module):
         # Nhánh GeometricNet (chứa patch backbone và self-attention)
         self.geom_branch = GeometricNet(
             backbone_name=backbone_name,
-            num_landmarks=26,
+            num_landmarks=num_landmarks,
             token_dim=128,
             pretrained=pretrained_global
         )
@@ -403,13 +497,21 @@ class CustomPartBasedFaceCNN(nn.Module):
         # 4. Chuẩn hóa L2 embedding phục vụ so sánh Cosine trực tiếp
         normalized_embedding = F.normalize(f_fused + dummy_val, p=2, dim=1)
         
-        # 5. Tính toán trọng số chú ý tương thích ngược (B, 3) từ attn_weights (B, 28, 28)
-        # tokens_all: index 0 = global, index 1 = eye_mid, indices 2-27 = 26 landmarks
-        w_global = attn_weights[:, :, 0].mean(dim=1)
-        # Vùng mắt (landmarks 0-9) tương ứng với indices 2-11
-        w_eye = attn_weights[:, :, 2:12].mean(dim=(1, 2))
-        # Vùng mũi (landmarks 14-17) tương ứng với indices 16-19
-        w_nose = attn_weights[:, :, 16:20].mean(dim=(1, 2))
+        # 5. Tính toán trọng số chú ý tương thích ngược (B, 3) từ attn_weights
+        if self.geom_branch.num_landmarks >= 37:
+            # tokens_all: index 0 = global, index 1 = contour, index 2 = eye_mid, indices 3-28 = 26 landmarks
+            w_global = attn_weights[:, :, 0].mean(dim=1)
+            # Vùng mắt (landmarks 0-9) tương ứng với indices 3-12
+            w_eye = attn_weights[:, :, 3:13].mean(dim=(1, 2))
+            # Vùng mũi (landmarks 14-17) tương ứng với indices 17-20
+            w_nose = attn_weights[:, :, 17:21].mean(dim=(1, 2))
+        else:
+            # tokens_all: index 0 = global, index 1 = eye_mid, indices 2-27 = 26 landmarks
+            w_global = attn_weights[:, :, 0].mean(dim=1)
+            # Vùng mắt (landmarks 0-9) tương ứng với indices 2-11
+            w_eye = attn_weights[:, :, 2:12].mean(dim=(1, 2))
+            # Vùng mũi (landmarks 14-17) tương ứng với indices 16-19
+            w_nose = attn_weights[:, :, 16:20].mean(dim=(1, 2))
         
         # Ghép thành vector trọng số 3 chiều
         weights_out = torch.stack([w_eye, w_nose, w_global], dim=1)

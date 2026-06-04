@@ -871,6 +871,7 @@ def start_training():
     arcface_k = data.get("arcface_k", 3)
     weight_decay = data.get("weight_decay", 1e-4)
     dropout = data.get("dropout", 0.4)
+    num_landmarks = data.get("num_landmarks", 37)
     
     cmd = [
         sys.executable, "train.py",
@@ -884,7 +885,8 @@ def start_training():
         "--arcface_m", str(arcface_m),
         "--arcface_k", str(arcface_k),
         "--weight_decay", str(weight_decay),
-        "--dropout", str(dropout)
+        "--dropout", str(dropout),
+        "--num_landmarks", str(num_landmarks)
     ]
     
     try:
