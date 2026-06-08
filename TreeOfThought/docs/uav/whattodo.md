@@ -95,79 +95,40 @@
 
 ## 2. Hệ thống điều khiển tự động (Auto Control)
 
-### Bảng chuyển đổi từ cơ cấu thủ công sang hệ thống tự động trên UAV
+Khi gạt công tắc chuyển trạng thái sang **AUTO**, toàn bộ quyền can thiệp cơ học từ phần cứng Trạm mặt đất sẽ bị ngắt hoàn toàn. Hệ thống tự động ánh xạ thông số cảm biến để mô phỏng chính xác hành vi lái của con người:
 
 | Cơ cấu tay / chân thủ công (GCS) | Cảm biến thay thế trên UAV | Thuật toán Auto xử lý (Mô phỏng hành vi) |
 | :--- | :--- | :--- |
 | **Chân phải:** Bàn đạp chân ga nâng hạ | Cảm biến áp suất (Barometer) + Lidar quét đất | **PID Độ cao (Altitude PID):** Tự động giữ cụm đồng trục giữa ở mức ga treo (Hover), tăng ga cất cánh hoặc giảm dần ga để đáp. |
-| **Joystick phải (Dọc):** Tiến / Lùi | Module GPS + IMU (Đo vận tốc thực) | **PID Vị trí (Position PID):** Tính khoảng cách tới đích. Khoảng cách càng xa, tự động quét 2 Servo sườn ra sau càng sâu để tăng tốc. |
-| **Joystick phải (Ngang):** Nghiêng sườn / Lật bụng | Cảm biến góc nghiêng (Gyro/Accel 6 trục) | **PID Thăng bằng (Attitude PID):** Liên tục kiểm tra góc Roll. Tự động bù vi sai ga cho Motor 3 & 4 để ghìm UAV chống gió tạt sườn. |
+| **Joystick phải (Dọc):** Tiến / Lùi | Module GPS + IMU (Đo vận tốc thực) | **PID Vị trí (Position PID):** Tính khoảng cách tới đích. Khoảng cách càng xa, tự động quét 2 Servo sườn ra sau càng sâu. |
+| **Joystick phải (Ngang):** Nghiêng sườn / Lật bụng | Cảm biến góc nghiêng (Gyro/Accel 6 trục) | **PID Thăng bằng (Attitude PID):** Liên tục kiểm tra góc Roll. Tự động bù vi sai ga cho Motor 3 & 4 để ghìm UAV chống gió tạt. |
 | **Joystick trái (Dọc):** Xoay hướng mũi tàu (Yaw) | Cảm biến La bàn số (Magnetometer) | **PID Hướng mũi (Heading PID):** Tính góc lệch giữa mũi tàu và Đích, tự động bẻ Servo 1 & 2 nghiêng ngược chiều nhau để xoay hướng. |
-| **Chân trái:** Bàn đạp Phanh khẩn cấp & Ghìm đất | GPS (Vận tốc) + Lidar (Khoảng cách) + Cảm biến chạm đất (Landing Gear Switch) | **Thuật toán Phanh & Ghìm nền chủ động:** <br>1. *Khi sắp tới đích:* Ngắt ga phụ → quét servo về 0° → thốc 100% ga quạt phụ hãm quán tính.<br>2. *Khi cảm biến báo đã chạm đất:* Đảo chiều ESC động cơ phụ, **thổi ngược lên trời** tạo lực ép (Downforce) khóa chặt thân xe/máy bay xuống mặt đất. |
+| **Chân trái:** Bàn đạp Phanh khẩn cấp | GPS (Tốc độ) + Lidar (Khoảng cách đích) | **Thuật toán Phanh chủ động:** Tự động ngắt ga phụ $\rightarrow$ quét servo về $0^\circ$ $\rightarrow$ thốc 100% ga quạt phụ hãm quán tính khi sắp tới đích. |
+
+# BẢNG CẤU HÌNH PHẦN CỨNG ĐÁP ỨNG THỜI GIAN BAY 1 TIẾNG (60 PHÚT)
+
+Bảng đặc tả này áp dụng riêng cho cấu hình UAV Lai (Hybrid Coaxial-Tricopter: Cụm nâng đồng trục trung tâm kết hợp 2 quạt phụ điều hướng xoay trục sườn).
 
 ---
 
-### Phân tích logic xử lý của "Thuật toán Ghìm đất"
+## 1. Bảng Tổng Hợp Cấu Hình Phần Cứng Theo Tải Trọng (Payload)
 
-Để thực hiện ý tưởng đảo chiều động cơ phụ tạo lực ép xuống mặt đất, cấu hình phần cứng và phần mềm ở hàng cuối cùng sẽ hoạt động theo kịch bản 3 giai đoạn nghiêm ngặt:
-
-#### Sơ đồ tuần tự điều khiển (Sequence Workflow)
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Sensor as Cảm biến (GPS/Lidar)
-    participant FC as Mạch điều khiển (Flight Controller)
-    participant Servo as Servo 1 & 2 (Góc quét)
-    participant Motor as Động cơ phụ (Motor 3 & 4)
-    
-    Note over FC: GIAI ĐOẠN 1: TIẾP CẬN & PHANH CHỦ ĐỘNG
-    Sensor->>FC: Báo khoảng cách sắp tới đích
-    FC->>Servo: Quét Servo về góc 0° (Chúc thẳng đứng)
-    FC->>Motor: Ngắt ga phụ cũ -> Thốc 100% ga hãm quán tính
-    
-    Note over FC: GIAI ĐOẠN 2: CHẠM ĐẤT (TOUCHDOWN)
-    Sensor->>FC: Cảm biến chạm đất báo ON (Đã tiếp đất)
-    FC->>FC: Ngắt động cơ chính (Hover/VTOL Motor 1 & 2)
-    
-    Note over FC: GIAI ĐOẠN 3: GHÌM ĐẤT CHỦ ĐỘNG
-    FC->>Motor: Đảo chiều ESC động cơ phụ (Motor 3 & 4)
-    FC->>Motor: Thổi khí ngược lên trời -> Tạo Downforce ghìm đất
-```
-
-**Mô tả chi tiết 3 giai đoạn:**
-* **Giai đoạn 1 (Tiếp cận & Phanh chủ động):** Khi UAV sắp đến vị trí đích (dựa trên GPS và Lidar quét khoảng cách), hệ thống ngắt chế độ bay tiến của động cơ phụ, điều khiển Servo 1 & 2 quét góc về 0° (chúc thẳng đứng) và tăng tối đa 100% ga quạt phụ hướng ngược chiều chuyển động để tạo lực cản (phanh) nhằm giảm nhanh quán tính.
-* **Giai đoạn 2 (Chạm đất - Touchdown):** Cảm biến chạm đất (Landing Gear Switch) ghi nhận tín hiệu tiếp đất hoàn toàn. Hệ thống lập tức tắt động cơ chính (Motor 1 & 2 của cụm đồng trục đồng tốc) để triệt tiêu toàn bộ lực nâng.
-* **Giai đoạn 3 (Ghìm đất - Active Downforce):** ESC đảo chiều quay của động cơ phụ (Motor 3 & 4). Lúc này quạt thổi luồng khí hướng lên trời, tạo lực đè xuống đất (Downforce) để cố định chắc chắn UAV, tránh hiện tượng trượt, lật do gió mạnh hoặc địa hình dốc.
+| Tải trọng (Payload) | Tổng trọng lượng cất cánh (Ước tính) | Cụm đồng trục giữa (Lực nâng chính) | Cánh quạt giữa (Carbon) | 2 Quạt phụ hai bên sườn (Điều hướng) | Cánh quạt phụ | Mạch điều tốc (ESC) | Giải pháp nguồn năng lượng (Quyết định thời gian bay 60 phút) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **0.5 kg** | $\approx$ 1.8 kg | 2x Motor 3508 hoặc 4108 (380KV - 400KV) | 1447 hoặc 1555 (14 - 15 inch) | 2x Motor 1404 hoặc 1503 (2500KV) | 3 - 4 inch | 4x ESC 30A BLHeli_32 | **Thuần điện tử (Li-Ion):** Pack pin 4S3P (14.8V) đóng từ 12 cell Li-Ion 21700 Molicel P45B hoặc Samsung 50S. Dung lượng: 13.500 mAh. Trọng lượng pin: ~0.85kg. |
+| **1.0 kg** | $\approx$ 3.8 kg | 2x Motor 4114 hoặc 5010 (300KV - 340KV) | 1655 hoặc 1758 (16 - 17 inch) | 2x Motor 2204 (1400KV) | 6 inch | 4x ESC 40A - 50A | **Thuần điện tử (Li-Ion):** Pack pin 6S4P (22.2V) đóng từ 24 cell Li-Ion 21700 chuyên dụng. Dung lượng: 18.000 mAh - 20.000 mAh. Trọng lượng pin: ~1.7kg. |
+| **5.0 kg** | $\approx$ 10 kg | 2x Motor công nghiệp 8108 (100KV - 135KV) | 2808 hoặc 3010 (28 - 30 inch) | 2x Motor 4114 (400KV) | 15 inch | 4x ESC 80A - 100A High-Voltage | **Hệ thống Lai (Xăng pha Điện):** Bộ máy phát điện UAV Hybrid Generator chạy xăng 2 thì/V2, công suất 3KW - 4KW. Bình xăng: 3.5 - 4 lít. Kết hợp 1 viên LiPo 6S 3300mAh làm đệm áp. |
+| **10.0 kg** | $\approx$ 22 kg | 2x Motor siêu khủng 10010 hoặc U15 (80KV - 100KV) | 3211 hoặc 3612 (32 - 36 inch) | 2x Motor 6215 (170KV) | 22 inch | 4x ESC 120A - 150A High-Voltage | **Hệ thống Lai (Xăng pha Điện):** Bộ máy phát điện UAV Hybrid Generator chạy xăng công suất lớn 6KW - 8KW. Bình xăng: 6.5 - 8 lít. Kết hợp 1 viên LiPo 12S 3300mAh làm nguồn đệm chống sụt áp. |
 
 ---
 
-## 3. Tính toán cấu hình động cơ, cánh quạt và pin (Thời gian bay ~60 phút)
+## 2. Các Lưu Ý Kỹ Thuật Đặc Thù Khi Bay Tải Nặng Liên Tục 1 Tiếng
 
-| Tải trọng hữu ích (Payload) | Khung gầm & Số động cơ | Cấu hình Động cơ (Motor) | Kích thước Cánh (Propeller) | Cấu hình Pin Li-Ion (Thời gian bay ~60 phút) | Tổng trọng lượng cất cánh (MTOW) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **0.5 kg** | Quadcopter (4 động cơ)<br>Khung Carbon 7-8 inch | **Động cơ:** 2208 - 2506<br>**KV:** 900 - 1200 KV | 7 x 4.5 hoặc 8 x 4.5 inch<br>(Cánh dòng hiệu suất cao) | **Pin:** 4S4P hoặc 4S5P Li-Ion<br>**Dung lượng:** ~14.000 - 17.500 mAh<br>**Cell:** Molicel P45B hoặc Samsung 50S | ~ 1.5 - 1.8 kg |
-| **1.0 kg** | Quadcopter (4 động cơ)<br>Khung Carbon 10-12 inch | **Động cơ:** 2808 - 3110<br>**KV:** 500 - 700 KV | 10 x 4.5 hoặc 11 x 4.7 inch<br>(Carbon/Nhựa cứng) | **Pin:** 6S4P hoặc 6S5P Li-Ion<br>**Dung lượng:** ~16.000 - 20.000 mAh<br>**Cell:** Molicel P45B / Samsung 50S | ~ 2.8 - 3.2 kg |
-| **5.0 kg** | Hexacopter (6 động cơ)<br>Khung Carbon 22-24 inch | **Động cơ:** 6010 - 8010<br>**KV:** 130 - 180 KV | 22x7.4 hoặc 24x8.0 inch<br>(Cánh Carbon chuyên dụng) | **Pin:** 12S6P hoặc 12S8P Li-Ion<br>**Dung lượng:** ~27.000 - 36.000 mAh<br>**Cell:** Molicel P45B (Ghép khối lớn) | ~ 12 - 14 kg |
-| **10.0 kg** | Octacopter (8 động cơ) hoặc Heavy Hexa<br>Khung Carbon 28-30 inch | **Động cơ:** 8018 - 10010<br>**KV:** 100 - 120 KV | 28x9.2 hoặc 30x10 inch<br>(Cánh Carbon High-Efficiency) | **Pin:** 14S10P hoặc 14S12P Li-Ion<br>**Dung lượng:** ~45.000 - 54.000 mAh<br>**Hệ thống pin:** Kết hợp nhiều khối 14S | ~ 25 - 28 kg |
+### 2.1. Giới Hạn Của Công Nghệ Nguồn Năng Lượng
+* **Dưới 2kg tổng tải (0.5kg - 1kg):** Tuyệt đối không dùng pin LiPo thương mại thông thường vì mật độ năng lượng thấp (Energy Density), pin sẽ bị quá nhiệt và tụt áp sau 20-25 phút. Bắt buộc phải tự đóng Pack pin bằng **Cell Li-Ion 21700** dòng xả cao nhằm tối ưu tỷ lệ Dung lượng / Trọng lượng.
+* **Trên 5kg tổng tải (5kg - 10kg):** Trọng lượng pin tỷ lệ thuận để duy trì 1 tiếng sẽ vượt quá lực nâng khả dụng của motor (Hiệu ứng bão hòa trọng lượng pin). Giải pháp duy nhất là sử dụng **Bộ máy phát điện chạy xăng (Hybrid Generator)**. Xăng có mật độ năng lượng gấp hàng chục lần pin, và máy bay sẽ nhẹ dần (bay tiết kiệm điện hơn) ở nửa cuối hành trình khi xăng cạn dần.
 
----
-
-### Các nguyên tắc vàng để đạt thời gian bay 60 phút
-
-#### 1. Chọn loại Pin: Bắt buộc dùng Li-Ion (Không dùng Li-Po)
-* **Lý do:** Pin Li-Po thông thường chỉ có mật độ năng lượng khoảng `150-180 Wh/kg` (chỉ bay được 15-25 phút). Để bay 60 phút, bạn bắt buộc phải đóng mạch pin bằng các cell **Li-Ion 21700** chất lượng cao (như *Molicel P45B* hoặc *Samsung 50S*), có mật độ năng lượng đạt `240-260 Wh/kg`.
-* **Đặc tính:** Pin Li-Ion có dòng xả thấp hơn Li-Po, nên hệ thống động cơ cần ăn dòng thấp (Amperage thấp) nhưng áp phải cao (Volt cao -> chọn hệ pin nhiều S như 6S, 12S, 14S).
-
-#### 2. Tỷ lệ Công suất / Trọng lượng (Thrust-to-Weight Ratio)
-* Để bay bền bỉ và tiết kiệm năng lượng, tỷ lệ lực đẩy tối đa (Max Thrust) so với trọng lượng cất cánh (MTOW) chỉ nên nằm ở mức **2:1** đến **1.8:1**. 
-* Ở trạng thái bay treo (Hover), động cơ chỉ nên chạy ở mức **45% - 50% ga (Throttle)**. Nếu ga treo vượt quá 60%, UAV sẽ ngốn pin cực nhanh và không bao giờ đạt được mốc 1 tiếng.
-
-#### 3. Chỉ số Hiệu suất Động cơ + Cánh (Efficiency - g/W)
-* Để đạt 60 phút bay, hệ thống động cơ và cánh quạt của bạn phải đạt hiệu suất cực cao ở mức ga treo:
-  * Tải nhỏ (0.5kg - 1kg): Hiệu suất phải đạt từ **7g - 9g lực đẩy trên 1 Watt điện**.
-  * Tải lớn (5kg - 10kg): Hiệu suất phải đạt từ **10g - 13g lực đẩy trên 1 Watt điện** (Yêu cầu cánh quạt siêu lớn, quay chậm để tối ưu khí động học).
-
-#### 4. Bài toán Đảo chiều Động cơ phụ (Ghìm đất) từ bảng trước
-* Do hệ thống của bạn có động cơ phụ bẻ hướng (Servo) và đảo chiều (Reverse ESC), hãy lưu ý: **Chỉ đảo chiều khi đã chạm đất hoàn toàn**. 
-* Tuyệt đối không kích hoạt tính năng đảo chiều khi đang bay trên không vì cánh quạt hiệu suất cao (loại mỏng, bản to tối ưu cho bay 1 tiếng) khi quay ngược sẽ có hiệu suất khí động học cực kém và gây sụt áp pin Li-Ion rất nhanh, dễ dẫn đến hiện tượng sập nguồn (Voltage Sag).
+### 2.2. Nâng Cấp Hệ Thống Servo Sườn (Tilt-Rotor Servo)
+Khi thời gian bay kéo dài liên tục 60 phút, hệ thống Servo sườn phải liên tục gồng mình giữ góc và chịu rung động từ motor phụ.
+* **Cấp tải 0.5kg - 1kg:** Sử dụng Servo nhông kim loại điện tử (Digital Metal Gear) có lực kéo $>15\text{kg/cm}$ như dòng **Kingmax** hoặc **TD-8120MG**, có vỏ nhôm giải nhiệt (`Aluminium Heatsink`).
+* **Cấp tải 5kg - 10kg:** Bắt buộc sử dụng **Servo Công Nghiệp Không Chổi Than (Industrial Brushless Servo)** có lực ghì lớn từ $40\text{kg/cm}$ đến $70\text{kg/cm}$ kết hợp vòng bi gối đỡ chịu lực bên ngoài để tránh hiện tượng rơ lắc hoặc om cuộn dây dẫn đến cháy Servo giữa không trung.
