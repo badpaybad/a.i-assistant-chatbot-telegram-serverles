@@ -14,7 +14,7 @@
                 ┌────┴────┐           ┌───────────┐           ┌────┴────┐
                 │ SERVO 1 │           │  CỤM GIỮA │           │ SERVO 2 │ <── Xoay góc 0 - 180°
                 └────┬────┘           │ (Đồng trục│           └────┬────┘
-                        │                │ Đồng tốc) │                │
+                     │                │ Đồng tốc) │                │
                 ┌────┴────┐           └─────┬─────┘           ┌────┴────┐
                 │ MOTOR 3 │ <─Quạt phụ      │                 │ MOTOR 4 │ <─Quạt phụ
                 └─────────┘   (Trái)        │                 └─────────┘   (Phải)
@@ -30,31 +30,31 @@
 ```text
                                     [Trục trung tâm cố định]
                                             │
-                                    ┌───────┴───────┐
-                                ▲     │ ┌───────────┐ │     ▲
-                    Gió thổi   │ │    │ │  MOTOR 1  │ │    │ │   Gió thổi
-                    xuống đất  │ │    │ │ (Quay CW) │ │    │ │   xuống đất
-                                ▼      │ └─────┬─────┘ │      ▼
+                                       ┌───────┴───────┐
+                                 ▲     │ ┌───────────┐ │     ▲
+                     Gió thổi   │ │    │ │  MOTOR 1  │ │    │ │   Gió thổi
+                     xuống đất  │ │    │ │ (Quay CW) │ │    │ │   xuống đất
+                                 ▼     │ └─────┬─────┘ │     ▼
                     ┌──────────────┐   │   ┌───┴───┐   │   ┌──────────────┐
                     │ CÁNH PHỤ TRÁI│   │   │ CÁNH  │   │   │ CÁNH PHỤ PHẢI│ (Servo 1 & 2 xoay
                     └──────────────┘   │   │ TRÊN  │   │   └──────────────┘  trục chúc thẳng
                     ┌──────────────┐   │   └───────┘   │   ┌──────────────┐  xuống 90 độ)
                     │   MOTOR 3    │   │               │   │   MOTOR 4    │
                     └──────┬───────┘   │   ┌───────┐   │   └──────┬───────┘
-                        │           │   │ CÁNH  │   │          │
-                    ┌─────┴─────┐     │   │ DƯỚI  │   │    ┌─────┴─────┐
-                    │  SERVO 1  │     │   └───┬───┘   │    │  SERVO 2  │
-                    └─────┬─────┘     │ ┌─────┴─────┐ │    └─────┬─────┘
-                        │           │ │  MOTOR 2  │ │          │
-                        │           │ │ (Quay CCW)│ │          │
-                        │           │ └───────────┘ │          │
+                           │           │   │ CÁNH  │   │          │
+                     ┌─────┴─────┐     │   │ DƯỚI  │   │    ┌─────┴─────┐
+                     │  SERVO 1  │     │   └───┬───┘   │    │  SERVO 2  │
+                     └─────┬─────┘     │ ┌─────┴─────┐ │    └─────┬─────┘
+                           │           │ │  MOTOR 2  │ │          │
+                           │           │ │ (Quay CCW)│ │          │
+                           │           │ └───────────┘ │          │
                     ───────┴───────────┴───────┬───────┴──────────┴─────── [Cánh tay đòn carbon]
-                                            │
-                                        ┌─────┴─────┐
-                                        │   KHUNG   │ ───> Nơi đặt Arduino Nano, Pin LiPo,
-                                        │   TRUNG   │      Mạch nRF24L01 nhận tín hiệu từ
-                                        │   TÂM     │      Bàn đạp chân ga & Tay Joystick
-                                        └───────────┘
+                                               │
+                                         ┌─────┴─────┐
+                                         │   KHUNG   │ ───> Nơi đặt Arduino Nano, Pin LiPo,
+                                         │   TRUNG   │      Mạch nRF24L01 nhận tín hiệu từ
+                                         │   TÂM     │      Bàn đạp chân ga & Tay Joystick
+                                         └───────────┘
 ```
 
 ---
@@ -65,9 +65,9 @@
                     [JOYSTICK TRÁI]                                    [JOYSTICK PHẢI]
                     (Tay trái lo Hướng)                            (Tay phải lo Di chuyển)
                     
-                            ▲ Xoay Trái                                    ▲ Lao Tiến
-                            │                                              │
-                    ◄───────┼───────►                              ◄───────┼───────►
+                             ▲ Xoay Trái                                     ▲ Lao Tiến
+                             │                                               │
+                     ◄───────┼───────►                               ◄───────┼───────►
                     Nghiêng  │  Nghiêng                             Bay      │  Bay
                     Trái     ▼  Phải                                Trái     ▼  Lùi
                         Xoay Phải                                       Bay Phải
