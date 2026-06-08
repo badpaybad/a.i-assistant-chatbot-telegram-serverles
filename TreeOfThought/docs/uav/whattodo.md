@@ -5,12 +5,12 @@
 ### Góc nhìn từ trên xuống (Top View)
 
 ```text
-                                    MŨI UAV (HƯỚNG TIẾN)
+                                  MŨI UAV (HƯỚNG TIẾN)
                                             ▲
                                             │
                     [Cánh tay đòn Trái]     │     [Cánh tay đòn Phải]
-                        ┌──────────────────────┼──────────────────────┐
-                        │                      │                      │
+                     ┌──────────────────────┼──────────────────────┐
+                     │                      │                      │
                 ┌────┴────┐           ┌───────────┐           ┌────┴────┐
                 │ SERVO 1 │           │  CỤM GIỮA │           │ SERVO 2 │ <── Xoay góc 0 - 180°
                 └────┬────┘           │ (Đồng trục│           └────┬────┘
@@ -28,8 +28,8 @@
 ### Góc nhìn chính diện phía trước (Front View) - Trạng thái VTOL (Cất cánh / Giữ độ cao)
 
 ```text
-                                    [Trục trung tâm cố định]
-                                            │
+                                     [Trục trung tâm cố định]
+                                               │
                                        ┌───────┴───────┐
                                  ▲     │ ┌───────────┐ │     ▲
                      Gió thổi   │ │    │ │  MOTOR 1  │ │    │ │   Gió thổi
