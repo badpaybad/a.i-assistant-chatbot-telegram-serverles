@@ -132,3 +132,36 @@ Bảng đặc tả này áp dụng riêng cho cấu hình UAV Lai (Hybrid Coaxia
 Khi thời gian bay kéo dài liên tục 60 phút, hệ thống Servo sườn phải liên tục gồng mình giữ góc và chịu rung động từ motor phụ.
 * **Cấp tải 0.5kg - 1kg:** Sử dụng Servo nhông kim loại điện tử (Digital Metal Gear) có lực kéo $>15\text{kg/cm}$ như dòng **Kingmax** hoặc **TD-8120MG**, có vỏ nhôm giải nhiệt (`Aluminium Heatsink`).
 * **Cấp tải 5kg - 10kg:** Bắt buộc sử dụng **Servo Công Nghiệp Không Chổi Than (Industrial Brushless Servo)** có lực ghì lớn từ $40\text{kg/cm}$ đến $70\text{kg/cm}$ kết hợp vòng bi gối đỡ chịu lực bên ngoài để tránh hiện tượng rơ lắc hoặc om cuộn dây dẫn đến cháy Servo giữa không trung.
+
+
+```text
+
+
+[MŨI VÒNG KHUNG TRÒN]
+                                   ┌───────┐
+                              ┌────┘       └────┐
+                            ┌─┘   Luồng gió vào └──┐
+                            │      (Hút xuyên)     │
+       ┌────────────────────┼──────────────────────┼────────────────────┐
+       │   [QUẠT PHỤ TRÁI]  │    ┌───────────┐     │  [QUẠT PHỤ PHẢI]   │
+       │                    │    │ CỤM GIỮA  │     │                    │
+       │     (Nhô ra)       │    │ Đồng trục │     │     (Nhô ra)       │
+       └────────────────────┼────┴─────┬─────┴─────┼────────────────────┘
+                            │          │           │
+                            │      Vỏ Khung Lưới   │ <── Sợi Carbon / Nhựa in 3D
+                            │      Thoát Khí   │     (Lỗ tổ ong lớn)
+                            └─┐                 ┌─┘
+                              └───┐         ┌───┘
+                                  │ ┌─────┐ │
+                                  └─┤KHUNG├─┘
+                                    │TRUNG│
+                                    │ TÂM │
+                                    └──┬──┘
+                                       │
+                              ┌────────┴────────┐
+                              ▼                 ▼
+                         [CHÂN ĐÁP 1]      [CHÂN ĐÁP 2]  <── Khung 3 chân dạng kiềng
+                        (Có giảm chấn)    (Có giảm chấn)     (Chân 3 nằm phía sau)
+
+
+```
