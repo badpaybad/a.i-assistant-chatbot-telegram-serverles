@@ -115,3 +115,7 @@ TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/user_ids.txt
 **/temp_downloads/**
 TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/train_evaluations.txt
 TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/train_log.csv
+**/runs/**
+cameraip/train/output_detect.jpg
+cameraip/train/*.pt
+**/train_log.csv
