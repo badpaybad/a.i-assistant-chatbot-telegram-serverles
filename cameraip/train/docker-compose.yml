@@ -5,7 +5,7 @@
 x-backend-env: &backend-env
   CLICKHOUSE_HOST: clickhouse
   CVAT_POSTGRES_HOST: cvat_db
-  CVAT_REDIS_INMEM_HOST: 192.168.1.16
+  CVAT_REDIS_INMEM_HOST: cvat_redis_inmem
   CVAT_REDIS_INMEM_PORT: 6379
   CVAT_REDIS_INMEM_PASSWORD: Test123456
   CVAT_REDIS_ONDISK_HOST: cvat_redis_ondisk
@@ -17,6 +17,8 @@ x-backend-deps: &backend-deps
   cvat_redis_ondisk:
     condition: service_started
   cvat_db:
+    condition: service_started
+  cvat_redis_inmem:
     condition: service_started
 
 services:
@@ -48,6 +50,18 @@ services:
     init: true
     volumes:
       - cvat_cache_db:/var/lib/kvrocks/data
+    networks:
+      - cvat
+
+  cvat_redis_inmem:
+    container_name: cvat_redis_inmem
+    image: redis:7-alpine
+    restart: always
+    command: redis-server --requirepass Test123456
+    ports:
+      - "16379:6379"
+    volumes:
+      - cvat_redis_inmem:/data
     networks:
       - cvat
 
@@ -275,6 +289,7 @@ volumes:
   cvat_keys:
   cvat_logs:
   cvat_cache_db:
+  cvat_redis_inmem:
 
 networks:
   cvat:

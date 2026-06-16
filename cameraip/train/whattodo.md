@@ -10,7 +10,7 @@ viết python code để dùng file .onnx để detect object
 cần làm dataraw và data như thế nào?
     có thể tạo mẫu 1 vài dataraw để tham khảo
     CVAT chạy local qua docker, cần tạo docker compose file có mount volume để lưu để không bị mất dữ liệu, hướng dẫn chạy dockercompose để khởi động máy lên dùng được CVAT
-        đã có redis ở 192.168.1.16:6379 pass Test123456
+        tạo redis với port 16379 pass Test123456
         đăng nhập CVAT : dunp / Test123456
     chỉ cần dùng CVAT
 

@@ -25,7 +25,7 @@ Chúng tôi đã chuẩn bị sẵn file [docker-compose.yml](file:///work/a.i-a
 
 1. **Yêu cầu**: 
    * Máy tính đã cài đặt Docker và Docker Compose.
-   * Máy chủ Redis ngoài tại địa chỉ `192.168.1.16:6379` (password: `Test123456`) đang chạy và có thể truy cập được từ máy chạy Docker.
+   * Máy chủ Redis ngoài đang chạy tại cổng `6379` (password: `Test123456`) trên máy host (đã được cấu hình tự động phân giải qua `host.docker.internal` trong Docker Compose, giúp hệ thống hoạt động ổn định kể cả khi địa chỉ IP của máy host thay đổi).
 2. **Cấu hình tự động khởi động cùng hệ thống**:
    Để CVAT tự động chạy bất cứ khi nào máy tính của bạn khởi động lên:
    - Tất cả các dịch vụ trong file `docker-compose.yml` đều được cấu hình với chính sách `restart: always`. Điều này có nghĩa là khi Docker Daemon chạy, các container của CVAT sẽ tự động khởi động theo.
