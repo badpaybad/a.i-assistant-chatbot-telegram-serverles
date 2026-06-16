@@ -160,12 +160,7 @@ Nếu không muốn dùng giao diện web, bạn có thể chạy trực tiếp 
 
 ### Chạy huấn luyện và tự động xuất ONNX:
 ```bash
-venv/bin/python cameraip/train/train_yolo.py \
-    --data cameraip/train/data/dataset.yaml \
-    --model yolov8m.pt \
-    --epochs 50 \
-    --batch 8 \
-    --device cpu
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device cpu
 ```
 *Quá trình này sẽ sinh ra file PyTorch (`best.pt`) và tự động xuất ra file ONNX (`best.onnx`) lưu tại thư mục `runs/detect/train/weights/`.*
 
@@ -183,11 +178,7 @@ Sau khi xuất mô hình ra file `.onnx`, bạn có thể chạy nhận diện t
 
 ### Cách chạy:
 ```bash
-venv/bin/python cameraip/train/detect_onnx.py \
-    --model cameraip/train/runs/detect/train/weights/best.onnx \
-    --image cameraip/train/dataraw/images/sample_1.jpg \
-    --output cameraip/train/output_detect.jpg \
-    --conf 0.25
+venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/dataraw/obj_train_data/2 cosplay.png" --output cameraip/train/output_detect.jpg --conf 0.25
 ```
 *Kết quả nhận diện (vẽ khung bounding box và tên nhãn tương ứng) sẽ được lưu vào file `output_detect.jpg`.*
 
