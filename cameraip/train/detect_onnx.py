@@ -94,29 +94,48 @@ def main():
     print("Running model inference...")
     outputs = session.run(None, {input_name: blob})
     
-    # Output structure of YOLOv8/v11 is shape: [1, 4 + num_classes, 8400]
-    output = outputs[0][0]  # shape: [4 + num_classes, 8400]
-    output = np.transpose(output)  # shape: [8400, 4 + num_classes]
-
+    # Check output structure dynamically
+    raw_output = outputs[0][0]  # Get output for batch 0
+    print(f"Model Output shape: {raw_output.shape}")
+    
     boxes = []
     confidences = []
     class_ids = []
 
-    for row in output:
-        scores = row[4:]
-        class_id = np.argmax(scores)
-        confidence = scores[class_id]
-        
-        if confidence > args.conf:
-            # Box is center_x, center_y, width, height (relative to 640x640)
-            xc, yc, w, h = row[:4]
-            # Convert to top-left x, top-left y, width, height
-            x1 = xc - w / 2
-            y1 = yc - h / 2
+    # Format 1: YOLO26 / End-to-End models with shape [max_detections, 6]
+    # Each row is: [x1, y1, x2, y2, confidence, class_id]
+    if len(raw_output.shape) == 2 and raw_output.shape[1] == 6:
+        print("Parsing using YOLO26 (End-to-End) output format...")
+        for row in raw_output:
+            confidence = float(row[4])
+            if confidence > args.conf:
+                x1, y1, x2, y2 = row[:4]
+                w = x2 - x1
+                h = y2 - y1
+                boxes.append([float(x1), float(y1), float(w), float(h)])
+                confidences.append(confidence)
+                class_ids.append(int(row[5]))
+                
+    # Format 2: YOLOv8 / YOLO11 models with shape [4 + num_classes, num_anchors]
+    else:
+        print("Parsing using standard YOLOv8/YOLO11 output format...")
+        # Transpose to [num_anchors, 4 + num_classes]
+        output = np.transpose(raw_output)
+        for row in output:
+            scores = row[4:]
+            class_id = np.argmax(scores)
+            confidence = float(scores[class_id])
             
-            boxes.append([float(x1), float(y1), float(w), float(h)])
-            confidences.append(float(confidence))
-            class_ids.append(int(class_id))
+            if confidence > args.conf:
+                # Box is center_x, center_y, width, height (relative to model input size)
+                xc, yc, w, h = row[:4]
+                # Convert to top-left x, top-left y, width, height
+                x1 = xc - w / 2
+                y1 = yc - h / 2
+                
+                boxes.append([float(x1), float(y1), float(w), float(h)])
+                confidences.append(confidence)
+                class_ids.append(int(class_id))
 
     # Apply Non-Maximum Suppression (NMS)
     print(f"Applying Non-Maximum Suppression (NMS) with conf={args.conf}, iou={args.iou}...")

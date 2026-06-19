@@ -184,6 +184,11 @@ Nếu không muốn dùng giao diện web, bạn có thể chạy trực tiếp 
 
 ```bash
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device cpu
+
+
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device cpu
+
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26x.pt --epochs 50 --batch 8 --device cpu
 ```
 
 *Quá trình này sẽ sinh ra file PyTorch (`best.pt`) và tự động xuất ra file ONNX (`best.onnx`) lưu tại thư mục `runs/detect/train/weights/`.*
@@ -224,6 +229,7 @@ venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect
 >
 > - Khi bạn chạy nhận diện qua `detect_onnx.py`, luồng ảnh đầu vào sẽ tự động được chuyển đổi sang grayscale (3-channel) trước khi đẩy vào model ONNX nhằm đồng bộ hóa với tập dữ liệu huấn luyện đen trắng.
 > - Bounding boxes dự đoán sẽ được **vẽ và ánh xạ trực tiếp lên ảnh gốc có màu**. Kết quả lưu lại là ảnh màu hoàn chỉnh có bounding box, giúp bạn có thể dễ dàng crop ảnh màu chính xác (crop ảnh thật).
+> - **Tự động nhận diện định dạng mô hình**: Script tự động phát hiện kiến trúc đầu ra ONNX. Với YOLOv8/v11 (đầu ra chưa có NMS), nó sẽ tự động chạy thuật toán lọc box NMS của OpenCV. Với YOLO26 (kiến trúc End-to-End, đầu ra có shape `[300, 6]`), nó sẽ đọc trực tiếp kết quả đã qua NMS của mô hình để tối ưu hóa thời gian xử lý.
 
 ---
 

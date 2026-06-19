@@ -10,7 +10,7 @@ def parse_args():
     
     parser = argparse.ArgumentParser(description="Train YOLO model and export to ONNX")
     parser.add_argument('--data', type=str, default=default_data, help='Path to dataset.yaml')
-    parser.add_argument('--model', type=str, default='yolov8m.pt', help='Pre-trained YOLO model (e.g., yolov8n.pt, yolov8s.pt, yolov8m.pt, yolo11s.pt)')
+    parser.add_argument('--model', type=str, default='yolov8m.pt', help='Pre-trained YOLO model (e.g., yolov8n.pt, yolov8s.pt, yolov8m.pt, yolo11s.pt, yolo26m.pt, yolo26l.pt, yolo26x.pt)')
     parser.add_argument('--epochs', type=int, default=10, help='Number of epochs to train')
     parser.add_argument('--batch', type=int, default=8, help='Batch size (default: 8, set -1 for auto)')
     parser.add_argument('--imgsz', type=int, default=640, help='Image size (default: 640)')
@@ -55,7 +55,7 @@ def main():
             elif base_name.startswith('yolo11'):
                 tag = 'v8.3.0'
             else:
-                tag = 'v8.2.0' # fallback default
+                tag = 'v8.4.0' # fallback default
             
             download_url = f"https://github.com/ultralytics/assets/releases/download/{tag}/{base_name}"
             print(f"Downloading pre-trained weights from: {download_url}", flush=True)
