@@ -5,6 +5,7 @@ import shutil
 import random
 import argparse
 import yaml
+import cv2
 
 # Supported image extensions
 IMAGE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.bmp', '.webp', '.JPG', '.PNG', '.JPEG')
@@ -97,9 +98,20 @@ def main():
     def copy_pairs(pairs_list, subset):
         max_class_id = -1
         for img_path, lbl_path in pairs_list:
-            # Copy image
+            # Process image to grayscale
             img_dest = os.path.join(args.dest, 'images', subset, os.path.basename(img_path))
-            shutil.copy2(img_path, img_dest)
+            try:
+                img = cv2.imread(img_path)
+                if img is not None:
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                    # Convert back to 3 channels to keep compatibility with standard YOLO models
+                    gray_3ch = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+                    cv2.imwrite(img_dest, gray_3ch)
+                else:
+                    shutil.copy2(img_path, img_dest)
+            except Exception as e:
+                print(f"Warning: Failed to convert {img_path} to grayscale, copying original instead. Error: {e}")
+                shutil.copy2(img_path, img_dest)
             
             # Copy label
             lbl_dest = os.path.join(args.dest, 'labels', subset, os.path.basename(lbl_path))

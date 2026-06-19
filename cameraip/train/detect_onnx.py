@@ -73,8 +73,12 @@ def main():
         print(f"Error: Could not read image '{args.image}'.")
         sys.exit(1)
 
-    # Preprocess image with letterbox
-    pad_img, r, (dw, dh) = letterbox(original_img, (img_h, img_w))
+    # Convert original image to 3-channel grayscale for inference (prevent color bias)
+    gray_img = cv2.cvtColor(original_img, cv2.COLOR_BGR2GRAY)
+    gray_3ch = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2BGR)
+
+    # Preprocess image with letterbox using the grayscale image
+    pad_img, r, (dw, dh) = letterbox(gray_3ch, (img_h, img_w))
     
     # Convert BGR to RGB
     rgb_img = cv2.cvtColor(pad_img, cv2.COLOR_BGR2RGB)

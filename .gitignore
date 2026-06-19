@@ -119,3 +119,4 @@ TreeOfThought/docs/nhan-dien-khuon-mat/custom-face-cnn/train_log.csv
 cameraip/train/output_detect.jpg
 cameraip/train/*.pt
 **/train_log.csv
+**/augmented_image/**

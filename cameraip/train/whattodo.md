@@ -18,10 +18,14 @@ viết hướng dẫn sử dụng để làm dataraw cho việc train, có thể
 
 dùng flask để làm web realtime check quá trình train và đánh giá kết quả
 
-cần để các file pretrain vào cameraip/train 
+cần để các file pretrain vào cameraip/train
 
-train để dùng camera ip thu hình full hd ở 4 góc phòng học để có thể đếm được số người đang ngồi học 
+train để dùng camera ip thu hình full hd ở 4 góc phòng học để có thể đếm được số người đang ngồi học
 
 kiểm tra pretrain chưa có thì download về, cần cho phép chọn pretrain model mặc định dùng Medium
+
+**cập nhật 1** để tránh việc màu ảnh hưởng tới việc detect thì cần xử lý ảnh thô từ camera ip về dạng ảnh đen trắng gray scale trước khi đưa vào để train hoặc để detect, kết quả sẽ dựa trên ảnh gốc có bounding box để có thể crop đúng ảnh thật.
+
+**cập nhật 2** tạo thêm code python để tạo các ảnh tăng cường từ 1 folder ảnh có sẵn sang folder agumented_image để dùng cho CVAT để gán nhãn cho từ agumented_image cho phong phú. tạo thêm các ảnh như lật ngang , lật dọc, nghiên 15 độ bên trái phải, nghiêng 30 độ bên trái bên phải, nghiêng 45 độ bên trái bên phải
 
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm
