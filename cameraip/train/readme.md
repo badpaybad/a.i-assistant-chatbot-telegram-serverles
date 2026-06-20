@@ -1,4 +1,14 @@
-Tạo dataset để train, train xuất onnx, sử dụng detect 
+# Tạo dataset để train, train xuất onnx, sử dụng detect
+
+# cvat để label các ảnh
+
+folder: cameraip/train/dataraw_original
+
+tạo task rồi exported ra file zip
+
+giải nén vào cameraip/train/dataraw
+
+# prepare dataset & yolo train finetune
 
 ```bash
 # Chạy từ thư mục gốc của dự án:
