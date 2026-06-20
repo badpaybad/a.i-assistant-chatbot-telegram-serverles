@@ -7,6 +7,7 @@ import logging
 import subprocess
 import json
 import cv2
+import numpy as np
 import threading
 from typing import Dict, List, Set, Optional
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
@@ -22,6 +23,28 @@ app = FastAPI(title="GRBL CNC Web Controller")
 
 # Pen / Servo settings persistence
 SETTINGS_FILE = "pen_settings.json"
+CALIBRATION_FILE = "calibration_settings.json"
+
+def load_calibration_settings() -> dict:
+    default_settings = {
+        "points": {},
+        "matrix": None,
+        "draw_overlay": True
+    }
+    if os.path.exists(CALIBRATION_FILE):
+        try:
+            with open(CALIBRATION_FILE, "r") as f:
+                return {**default_settings, **json.load(f)}
+        except Exception as e:
+            logger.error(f"Error loading calibration settings: {e}")
+    return default_settings
+
+def save_calibration_settings(settings: dict):
+    try:
+        with open(CALIBRATION_FILE, "w") as f:
+            json.dump(settings, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error saving calibration settings: {e}")
 
 class PenSettings(BaseModel):
     mode: str
@@ -92,6 +115,41 @@ class ControllerState:
         self.sent_buffer_lengths = [] # Track length of lines in GRBL rx buffer
         self.stream_task: Optional[asyncio.Task] = None
         self.websocket_connections: Set[WebSocket] = set()
+        
+        # Calibration config
+        cal_settings = load_calibration_settings()
+        self.calibration_points = cal_settings["points"]
+        self.calibration_matrix = cal_settings["matrix"]
+        self.draw_overlay = cal_settings["draw_overlay"]
+        self.latest_detected_markers = {} # {"TL": [x, y], ...}
+
+    def update_calibration_matrix(self):
+        valid_pts = []
+        for corner in ["TL", "TR", "BR", "BL"]:
+            pt = self.calibration_points.get(corner)
+            if pt and "pixel" in pt and "machine" in pt:
+                valid_pts.append(pt)
+                
+        if len(valid_pts) < 3:
+            self.calibration_matrix = None
+            return False
+            
+        src = np.array([pt["pixel"] for pt in valid_pts], dtype=np.float32)
+        dst = np.array([pt["machine"] for pt in valid_pts], dtype=np.float32)
+        
+        try:
+            if len(valid_pts) == 3:
+                M = cv2.getAffineTransform(src, dst)
+            else:
+                M, _ = cv2.estimateAffine2D(src, dst)
+            if M is not None:
+                self.calibration_matrix = M.tolist()
+                return True
+        except Exception as e:
+            logger.error(f"Error computing calibration matrix: {e}")
+            
+        self.calibration_matrix = None
+        return False
 
 state = ControllerState()
 
@@ -153,6 +211,127 @@ class CameraManager:
                     continue
                 
                 consecutive_failures = 0
+                
+                # Detect ArUco markers in DICT_4X4_1000
+                detected_this_frame = {}
+                try:
+                    # Pad frame to allow detection near image borders
+                    pad = 50
+                    padded = cv2.copyMakeBorder(frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=[255, 255, 255])
+                    gray = cv2.cvtColor(padded, cv2.COLOR_BGR2GRAY)
+                    
+                    dict_id = cv2.aruco.DICT_4X4_1000
+                    try:
+                        aruco_dict = cv2.aruco.getPredefinedDictionary(dict_id)
+                        parameters = cv2.aruco.DetectorParameters()
+                    except AttributeError:
+                        aruco_dict = cv2.aruco.Dictionary_get(dict_id)
+                        parameters = cv2.aruco.DetectorParameters_create()
+                        
+                    # Spatial bounding boxes for the 4 corners relative to original image size (640x480)
+                    boxes = {
+                        "TL": {"x": (100, 180), "y": (20, 80)},
+                        "TR": {"x": (450, 530), "y": (20, 80)},
+                        "BL": {"x": (100, 180), "y": (310, 380)},
+                        "BR": {"x": (450, 530), "y": (310, 380)}
+                    }
+                    
+                    for scale in [1.5, 3.0]:
+                        if len(detected_this_frame) == 4:
+                            break
+                        resized = cv2.resize(gray, (0, 0), fx=scale, fy=scale)
+                        
+                        parameters.adaptiveThreshWinSizeMax = 75
+                        parameters.adaptiveThreshConstant = 7 if scale == 1.5 else 11
+                        parameters.minMarkerPerimeterRate = 0.01 / scale
+                        parameters.polygonalApproxAccuracyRate = 0.05
+                        
+                        try:
+                            detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+                            corners, ids, rejected = detector.detectMarkers(resized)
+                        except NameError:
+                            corners, ids, rejected = cv2.aruco.detectMarkers(resized, aruco_dict, parameters=parameters)
+                            
+                        if ids is not None and len(ids) > 0:
+                            for i, marker_id in enumerate(ids.flatten()):
+                                pts = corners[i][0] / scale - pad
+                                center = np.mean(pts, axis=0)
+                                x, y = center[0], center[1]
+                                
+                                # Check which box this center falls into
+                                for name, box in boxes.items():
+                                    if name in detected_this_frame:
+                                        continue
+                                    if box["x"][0] <= x <= box["x"][1] and box["y"][0] <= y <= box["y"][1]:
+                                        detected_this_frame[name] = center.tolist()
+                except Exception as e:
+                    logger.error(f"Error in ArUco detection: {e}")
+                
+                # Save latest detected markers in state (accumulate to handle flickering)
+                for name, pt in detected_this_frame.items():
+                    state.latest_detected_markers[name] = pt
+                
+                # Draw overlay if enabled
+                if state.draw_overlay:
+                    try:
+                        # Draw detected marker centers as red dots and names
+                        for name, pt in state.latest_detected_markers.items():
+                            pt_int = (int(pt[0]), int(pt[1]))
+                            cv2.circle(frame, pt_int, 5, (0, 0, 255), -1)
+                            cv2.putText(frame, name, (pt_int[0] + 10, pt_int[1] + 10),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+                                        
+                        # Draw rectangle and axes if all 4 corners detected
+                        if len(state.latest_detected_markers) == 4:
+                            pts = {name: (int(pt[0]), int(pt[1])) for name, pt in state.latest_detected_markers.items()}
+                            
+                            # Draw coordinate rectangle (green outline)
+                            cv2.line(frame, pts["TL"], pts["TR"], (0, 255, 0), 2)
+                            cv2.line(frame, pts["TR"], pts["BR"], (0, 255, 0), 2)
+                            cv2.line(frame, pts["BR"], pts["BL"], (0, 255, 0), 2)
+                            cv2.line(frame, pts["BL"], pts["TL"], (0, 255, 0), 2)
+                            
+                            # Calculate center in pixels
+                            cx = (pts["TL"][0] + pts["TR"][0] + pts["BR"][0] + pts["BL"][0]) // 4
+                            cy = (pts["TL"][1] + pts["TR"][1] + pts["BR"][1] + pts["BL"][1]) // 4
+                            
+                            # Draw center (blue dot)
+                            cv2.circle(frame, (cx, cy), 8, (255, 0, 0), -1)
+                            cv2.putText(frame, "(0,0)", (cx + 15, cy + 5),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                                        
+                            # Calculate horizontal and vertical vector directions
+                            v_top = np.array(pts["TR"]) - np.array(pts["TL"])
+                            v_bot = np.array(pts["BR"]) - np.array(pts["BL"])
+                            v_left = np.array(pts["TL"]) - np.array(pts["BL"])
+                            v_right = np.array(pts["TR"]) - np.array(pts["BR"])
+                            
+                            v_x = (v_top + v_bot) / 2.0
+                            v_y = (v_left + v_right) / 2.0
+                            
+                            norm_x = np.linalg.norm(v_x)
+                            norm_y = np.linalg.norm(v_y)
+                            
+                            if norm_x > 0 and norm_y > 0:
+                                u_x = v_x / norm_x
+                                u_y = v_y / norm_y
+                                
+                                # Draw X axis (cyan line, pointing to TR)
+                                pt1_x = (int(cx - 0.75 * norm_x * u_x[0]), int(cy - 0.75 * norm_x * u_x[1]))
+                                pt2_x = (int(cx + 0.75 * norm_x * u_x[0]), int(cy + 0.75 * norm_x * u_x[1]))
+                                cv2.line(frame, pt1_x, pt2_x, (255, 255, 0), 2)
+                                cv2.putText(frame, "+X", (pt2_x[0] + 5, pt2_x[1] + 5),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+                                            
+                                # Draw Y axis (magenta line, pointing to TL)
+                                pt1_y = (int(cx - 0.75 * norm_y * u_y[0]), int(cy - 0.75 * norm_y * u_y[1]))
+                                pt2_y = (int(cx + 0.75 * norm_y * u_y[0]), int(cy + 0.75 * norm_y * u_y[1]))
+                                cv2.line(frame, pt1_y, pt2_y, (255, 0, 255), 2)
+                                cv2.putText(frame, "+Y", (pt2_y[0] + 5, pt2_y[1] + 5),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
+                    except Exception as e:
+                        logger.error(f"Error drawing overlay: {e}")
+                
                 _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 with self.lock:
                     self.latest_frames[index] = jpeg.tobytes()
@@ -762,6 +941,124 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"WebSocket error: {e}")
         state.websocket_connections.discard(websocket)
+
+# API endpoints for calibration
+class RecordConfig(BaseModel):
+    corner: str # "TL", "TR", "BR", "BL"
+
+@app.get("/api/calibration/status")
+async def get_calibration_status():
+    return {
+        "detected": list(state.latest_detected_markers.keys()),
+        "coords": state.latest_detected_markers
+    }
+
+@app.post("/api/calibration/record")
+async def record_calibration(config: RecordConfig):
+    corner = config.corner
+    if corner not in ["TL", "TR", "BR", "BL"]:
+        return JSONResponse({"status": "error", "message": "Invalid corner"}, status_code=400)
+        
+    pixel_coord = state.latest_detected_markers.get(corner)
+    if not pixel_coord:
+        return JSONResponse({"status": "error", "message": f"Corner {corner} is not currently detected by the camera"}, status_code=400)
+        
+    if not state.connected:
+        return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
+        
+    # Record the current CNC machine coordinates from the state
+    machine_coord = [state.wpos[0], state.wpos[1]]
+    
+    state.calibration_points[corner] = {
+        "pixel": pixel_coord,
+        "machine": machine_coord
+    }
+    
+    # Recompute the matrix
+    state.update_calibration_matrix()
+    
+    # Save settings
+    save_calibration_settings({
+        "points": state.calibration_points,
+        "matrix": state.calibration_matrix,
+        "draw_overlay": state.draw_overlay
+    })
+    
+    return {
+        "status": "ok",
+        "message": f"Successfully calibrated {corner} at pixel {pixel_coord} and machine position {machine_coord}",
+        "config": state.calibration_points,
+        "calibrated": state.calibration_matrix is not None
+    }
+
+@app.get("/api/calibration/config")
+async def get_calibration_config():
+    return {
+        "points": state.calibration_points,
+        "calibrated": state.calibration_matrix is not None,
+        "draw_overlay": state.draw_overlay
+    }
+
+@app.post("/api/calibration/clear")
+async def clear_calibration():
+    state.calibration_points = {}
+    state.calibration_matrix = None
+    state.latest_detected_markers = {}
+    
+    save_calibration_settings({
+        "points": state.calibration_points,
+        "matrix": state.calibration_matrix,
+        "draw_overlay": state.draw_overlay
+    })
+    
+    return {"status": "ok", "message": "Calibration cleared"}
+
+class ToggleOverlayConfig(BaseModel):
+    draw_overlay: bool
+
+@app.post("/api/calibration/toggle_overlay")
+async def toggle_overlay(config: ToggleOverlayConfig):
+    state.draw_overlay = config.draw_overlay
+    
+    save_calibration_settings({
+        "points": state.calibration_points,
+        "matrix": state.calibration_matrix,
+        "draw_overlay": state.draw_overlay
+    })
+    
+    return {"status": "ok", "draw_overlay": state.draw_overlay}
+
+@app.post("/api/calibration/move_to_center")
+async def move_to_center():
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+        
+    if not state.calibration_matrix:
+        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
+        
+    # We calculate the center using the registered calibration points
+    valid_corners = [corner for corner in ["TL", "TR", "BR", "BL"] if corner in state.calibration_points]
+    if len(valid_corners) < 3:
+        return JSONResponse({"status": "error", "message": "Not enough calibration points"}, status_code=400)
+        
+    avg_px = sum(state.calibration_points[c]["pixel"][0] for c in valid_corners) / len(valid_corners)
+    avg_py = sum(state.calibration_points[c]["pixel"][1] for c in valid_corners) / len(valid_corners)
+    
+    M = np.array(state.calibration_matrix, dtype=np.float32)
+    mx = M[0, 0] * avg_px + M[0, 1] * avg_py + M[0, 2]
+    my = M[1, 0] * avg_px + M[1, 1] * avg_py + M[1, 2]
+    
+    cmd = f"G0 X{mx:.3f} Y{my:.3f}"
+    
+    state.serial_port.write((cmd + "\n").encode())
+    state.serial_port.flush()
+    await broadcast({"type": "log", "direction": "out", "content": cmd})
+    
+    return {
+        "status": "ok",
+        "message": f"Moving pen to center at machine coordinates X={mx:.3f}, Y={my:.3f}",
+        "target": [mx, my]
+    }
 
 # Serve Frontend
 # Ensure directories exist

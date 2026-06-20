@@ -17,3 +17,8 @@ click pen up, click pen down thì về đúng độ được set
 cần vừa gửi lệnh x,y , vừa gửi được spindle z , cần giả lập như ngón tay người touch, many touch, vuốt trái , vuốt phải , vuốt chéo , vuốt lên, vuốt xuống ...
 
 đã cắm camera usb rapoo , bổ xung thêm lên UI để xem camera. camera đang treo phía trên khung cnc để theo dõi, div camera cần luôn hiển thị dạng fixed css và có thể colapse được , vùng camera có thể kéo to hoặc thu nhỏ vùng xem
+
+**cập nhật 1** để xác định gốc tọa độ cho đầu bút cần dựa vào 4 ArUco Marker như hình cnc/printarea.png
+camera capture được ảnh, cần xác định 4 đỉnh của hình chữ nhật. rồi đưa đầu bút vào chính giữa hình chữ nhật
+    cần draw hình chữ nhật được xác định bới 4 ArUco Marker đó trên video.
+    cần vẽ trục tọa độ x,y trên video , sao cho gốc tọa độ trùng với tâm của hình chữ nhật.

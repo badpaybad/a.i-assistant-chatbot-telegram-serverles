@@ -1190,4 +1190,128 @@ input[type=range]::-webkit-slider-thumb:hover {
     box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 
+/* Calibration Styling */
+.camera-calibration-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+}
+.calibration-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.calibration-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--text-main);
+    letter-spacing: 0.5px;
+}
+/* Toggle Switch */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+.toggle-switch input {
+    display: none;
+}
+.toggle-slider {
+    position: relative;
+    width: 32px;
+    height: 18px;
+    background-color: hsla(220, 20%, 20%, 0.5);
+    border: 1px solid var(--border-color);
+    border-radius: 9px;
+    transition: 0.3s;
+}
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background-color: var(--text-muted);
+    border-radius: 50%;
+    transition: 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(14px);
+    background-color: #fff;
+}
+.toggle-label {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+/* Marker status grid */
+.marker-status-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.marker-status-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 4px;
+    background: hsla(220, 25%, 8%, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: 0.3s;
+}
+.marker-status-badge .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-muted);
+    box-shadow: 0 0 4px rgba(255,255,255,0.2);
+}
+.marker-status-badge.detected {
+    color: var(--success);
+    border-color: hsla(140, 70%, 50%, 0.3);
+    background: hsla(140, 70%, 50%, 0.05);
+}
+.marker-status-badge.detected .badge-dot {
+    background-color: var(--success);
+    box-shadow: 0 0 8px var(--success);
+}
+.marker-status-badge.calibrated {
+    color: var(--primary);
+    border-color: hsla(200, 100%, 50%, 0.3);
+    background: hsla(200, 100%, 50%, 0.05);
+}
+.marker-status-badge.calibrated .badge-dot {
+    background-color: var(--primary);
+    box-shadow: 0 0 8px var(--primary);
+}
+/* Calibration buttons */
+.calibration-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+}
+.calibration-actions-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 4px;
+}
+.calibration-actions-row .btn-primary {
+    flex: 1;
+}
+
 

@@ -360,6 +360,49 @@
                 <img id="camera-stream-img" src="" alt="Camera Feed Loading...">
                 <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
             </div>
+            
+            <!-- ALIGNMENT & CALIBRATION CONTROLS -->
+            <div class="camera-calibration-section">
+                <div class="calibration-row">
+                    <span class="calibration-title">Origin Alignment (ArUco Markers)</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="chk-show-overlay" checked>
+                        <span class="toggle-slider"></span>
+                        <span class="toggle-label">Show Overlay</span>
+                    </label>
+                </div>
+                
+                <div class="marker-status-grid">
+                    <div class="marker-status-badge" id="badge-tl">
+                        <span class="badge-dot"></span>
+                        <span class="badge-label">Top-Left</span>
+                    </div>
+                    <div class="marker-status-badge" id="badge-tr">
+                        <span class="badge-dot"></span>
+                        <span class="badge-label">Top-Right</span>
+                    </div>
+                    <div class="marker-status-badge" id="badge-br">
+                        <span class="badge-dot"></span>
+                        <span class="badge-label">Bottom-Right</span>
+                    </div>
+                    <div class="marker-status-badge" id="badge-bl">
+                        <span class="badge-dot"></span>
+                        <span class="badge-label">Bottom-Left</span>
+                    </div>
+                </div>
+                
+                <div class="calibration-buttons-grid">
+                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate TL</button>
+                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate TR</button>
+                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-br" disabled>Calibrate BR</button>
+                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-bl" disabled>Calibrate BL</button>
+                </div>
+                
+                <div class="calibration-actions-row">
+                    <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
+                    <button class="btn btn-primary" id="btn-move-to-center" disabled>Move Spindle to Center</button>
+                </div>
+            </div>
         </div>
     </div>
 

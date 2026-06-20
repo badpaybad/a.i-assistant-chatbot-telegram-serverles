@@ -257,6 +257,9 @@ function updateConnectionUI() {
         btnPauseStream.disabled = true;
         btnAbortStream.disabled = true;
     }
+    if (typeof window.updateCalibrationUI === 'function') {
+        window.updateCalibrationUI();
+    }
 }
 
 function updateTelemetry(data) {
@@ -741,6 +744,7 @@ function setupEventListeners() {
             cameraFloatingPanel.style.removeProperty("width");
             cameraFloatingPanel.style.removeProperty("height");
             stopCameraStream();
+            if (typeof window.stopCalibrationPolling === 'function') window.stopCalibrationPolling();
         } else {
             cameraFloatingPanel.classList.remove("collapsed");
             
@@ -756,6 +760,7 @@ function setupEventListeners() {
             }
             
             updateCameraStream();
+            if (typeof window.startCalibrationPolling === 'function') window.startCalibrationPolling();
         }
     };
 
@@ -778,6 +783,185 @@ function setupEventListeners() {
             updateCameraStream();
         }
     });
+
+    // --- Calibration Control Logic ---
+    const chkShowOverlay = document.getElementById("chk-show-overlay");
+    const badgeTL = document.getElementById("badge-tl");
+    const badgeTR = document.getElementById("badge-tr");
+    const badgeBR = document.getElementById("badge-br");
+    const badgeBL = document.getElementById("badge-bl");
+    
+    const btnCalTL = document.getElementById("btn-cal-tl");
+    const btnCalTR = document.getElementById("btn-cal-tr");
+    const btnCalBR = document.getElementById("btn-cal-br");
+    const btnCalBL = document.getElementById("btn-cal-bl");
+    const btnCalClear = document.getElementById("btn-cal-clear");
+    const btnMoveToCenter = document.getElementById("btn-move-to-center");
+    
+    let calibrationInterval = null;
+    let calibratedPoints = {};
+    let isCalibrated = false;
+
+    window.updateCalibrationUI = () => {
+        const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
+        for (const [key, badge] of Object.entries(badges)) {
+            if (badge) {
+                if (calibratedPoints[key]) {
+                    badge.classList.add("calibrated");
+                } else {
+                    badge.classList.remove("calibrated");
+                }
+            }
+        }
+        if (btnMoveToCenter) {
+            btnMoveToCenter.disabled = !isCalibrated || !isConnected;
+        }
+    };
+
+    const fetchCalibrationConfig = async () => {
+        try {
+            const res = await fetch("/api/calibration/config");
+            const data = await res.json();
+            calibratedPoints = data.points || {};
+            isCalibrated = data.calibrated || false;
+            if (chkShowOverlay) {
+                chkShowOverlay.checked = data.draw_overlay !== false;
+            }
+            window.updateCalibrationUI();
+        } catch (e) {
+            console.error("Failed to fetch calibration config: ", e);
+        }
+    };
+
+    const pollCalibrationStatus = async () => {
+        if (isCameraCollapsed) return;
+        
+        try {
+            const res = await fetch("/api/calibration/status");
+            const data = await res.json();
+            const detected = data.detected || [];
+            
+            const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
+            const buttons = { TL: btnCalTL, TR: btnCalTR, BR: btnCalBR, BL: btnCalBL };
+            
+            for (const [key, badge] of Object.entries(badges)) {
+                if (badge) {
+                    if (detected.includes(key)) {
+                        badge.classList.add("detected");
+                    } else {
+                        badge.classList.remove("detected");
+                    }
+                }
+            }
+            
+            for (const [key, btn] of Object.entries(buttons)) {
+                if (btn) {
+                    btn.disabled = !detected.includes(key) || !isConnected;
+                }
+            }
+        } catch (e) {
+            console.error("Failed to poll calibration status: ", e);
+        }
+    };
+
+    window.startCalibrationPolling = () => {
+        if (calibrationInterval) clearInterval(calibrationInterval);
+        pollCalibrationStatus();
+        calibrationInterval = setInterval(pollCalibrationStatus, 1000);
+    };
+
+    window.stopCalibrationPolling = () => {
+        if (calibrationInterval) {
+            clearInterval(calibrationInterval);
+            calibrationInterval = null;
+        }
+    };
+
+    const setupCalibrationEvents = () => {
+        if (chkShowOverlay) {
+            chkShowOverlay.addEventListener("change", async () => {
+                try {
+                    await fetch("/api/calibration/toggle_overlay", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ draw_overlay: chkShowOverlay.checked })
+                    });
+                } catch (e) {
+                    logSystemMessage(`Failed to toggle overlay: ${e}`);
+                }
+            });
+        }
+
+        const recordCorner = async (corner) => {
+            try {
+                const res = await fetch("/api/calibration/record", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ corner: corner })
+                });
+                const data = await res.json();
+                if (data.status === "ok") {
+                    calibratedPoints = data.config;
+                    isCalibrated = data.calibrated;
+                    window.updateCalibrationUI();
+                    logSystemMessage(`Calibrated ${corner} successfully!`);
+                } else {
+                    logSystemMessage(`Calibration failed: ${data.message}`);
+                }
+            } catch (e) {
+                logSystemMessage(`Network error during calibration: ${e}`);
+            }
+        };
+
+        if (btnCalTL) btnCalTL.addEventListener("click", () => recordCorner("TL"));
+        if (btnCalTR) btnCalTR.addEventListener("click", () => recordCorner("TR"));
+        if (btnCalBR) btnCalBR.addEventListener("click", () => recordCorner("BR"));
+        if (btnCalBL) btnCalBL.addEventListener("click", () => recordCorner("BL"));
+
+        if (btnCalClear) {
+            btnCalClear.addEventListener("click", async () => {
+                if (confirm("Are you sure you want to clear the calibration?")) {
+                    try {
+                        const res = await fetch("/api/calibration/clear", { method: "POST" });
+                        const data = await res.json();
+                        if (data.status === "ok") {
+                            calibratedPoints = {};
+                            isCalibrated = false;
+                            window.updateCalibrationUI();
+                            logSystemMessage("Calibration cleared.");
+                        }
+                    } catch (e) {
+                        logSystemMessage(`Failed to clear calibration: ${e}`);
+                    }
+                }
+            });
+        }
+
+        if (btnMoveToCenter) {
+            btnMoveToCenter.addEventListener("click", async () => {
+                try {
+                    logSystemMessage("Requesting spindle to move to the coordinate origin (center of the print area)...");
+                    const res = await fetch("/api/calibration/move_to_center", { method: "POST" });
+                    const data = await res.json();
+                    if (data.status === "ok") {
+                        logSystemMessage(data.message);
+                    } else {
+                        logSystemMessage(`Error moving: ${data.message}`);
+                    }
+                } catch (e) {
+                    logSystemMessage(`Network error: ${e}`);
+                }
+            });
+        }
+    };
+
+    fetchCalibrationConfig();
+    setupCalibrationEvents();
+    
+    // Also trigger initial polling if the camera starts in open state
+    if (!isCameraCollapsed) {
+        window.startCalibrationPolling();
+    }
 
     // --- Custom Drag-to-Resize Logic for Floating Camera Panel ---
     const handleTopLeft = cameraFloatingPanel.querySelector(".resize-handle.top-left");
