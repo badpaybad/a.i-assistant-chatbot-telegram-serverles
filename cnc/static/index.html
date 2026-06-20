@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity GRBL CNC Controller</title>
+    <!-- Google Fonts: Outfit & Space Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <meta name="description" content="A premium web-based CNC machine interface for GRBL controllers. Offers real-time telemetry, G-code path visualization, console logging, and responsive axis jogging.">
+</head>
+<body>
+    <div class="glass-bg"></div>
+    <div class="app-container">
+        
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-logo">
+                <div class="logo-icon"></div>
+                <h1>ANTIGRAVITY <span>CNC</span></h1>
+            </div>
+            
+            <div class="header-status">
+                <div class="status-badge disconnected" id="connection-status">DISCONNECTED</div>
+                <div class="state-badge disconnected" id="machine-state">OFFLINE</div>
+            </div>
+        </header>
+
+        <!-- MAIN LAYOUT -->
+        <main class="app-grid">
+            
+            <!-- LEFT PANEL: CONNECTION & CONTROL -->
+            <section class="panel-left">
+                
+                <!-- CONNECTION CARD -->
+                <div class="card glass-card" id="connection-card">
+                    <h2 class="card-title">Connection Settings</h2>
+                    <div class="card-content row-inputs">
+                        <div class="input-group">
+                            <label for="port-input">Serial Port</label>
+                            <input type="text" id="port-input" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
+                        </div>
+                        <div class="input-group">
+                            <label for="baudrate-input">Baud Rate</label>
+                            <select id="baudrate-input">
+                                <option value="115200" selected>115200</option>
+                                <option value="9600">9600</option>
+                                <option value="38400">38400</option>
+                                <option value="57600">57600</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" id="connect-btn">Connect</button>
+                    </div>
+                    <div class="port-warning hidden" id="port-warning">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-text" id="port-warning-text"></div>
+                    </div>
+                </div>
+
+                <!-- DIGITAL READ OUT (DRO) CARD -->
+                <div class="card glass-card">
+                    <div class="dro-header">
+                        <h2 class="card-title">Coordinates (WPos)</h2>
+                        <div class="coord-unit">mm</div>
+                    </div>
+                    <div class="dro-container">
+                        <div class="dro-axis" id="axis-x">
+                            <span class="axis-label">X</span>
+                            <span class="axis-val" id="val-x">0.000</span>
+                        </div>
+                        <div class="dro-axis" id="axis-y">
+                            <span class="axis-label">Y</span>
+                            <span class="axis-val" id="val-y">0.000</span>
+                        </div>
+                        <div class="dro-axis" id="axis-z">
+                            <span class="axis-label">Z</span>
+                            <span class="axis-val" id="val-z">0.000</span>
+                        </div>
+                    </div>
+                    <div class="telemetry-grid">
+                        <div class="tel-item">
+                            <span class="tel-label">Feedrate</span>
+                            <span class="tel-val"><span id="tel-feedrate">0</span> mm/min</span>
+                        </div>
+                        <div class="tel-item">
+                            <span class="tel-label">Spindle</span>
+                            <span class="tel-val"><span id="tel-spindle">0</span> RPM</span>
+                        </div>
+                        <div class="tel-item">
+                            <span class="tel-label">Rx Buffer</span>
+                            <span class="tel-val"><span id="tel-buffer">127</span> B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SERVO PEN CONTROL CARD -->
+                <div class="card glass-card">
+                    <h2 class="card-title">Pen Plotter (Z Servo)</h2>
+                    <div class="pen-control-actions">
+                        <button class="btn btn-primary pen-btn" id="btn-pen-up">Pen UP</button>
+                        <button class="btn btn-success pen-btn" id="btn-pen-down">Pen DOWN</button>
+                    </div>
+                    <div class="pen-config-section">
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Control Mode</span>
+                            </div>
+                            <select id="pen-control-mode" class="input-select-small">
+                                <option value="z-axis" selected>Z-Axis Position (G0 Z...)</option>
+                                <option value="spindle-pwm">Spindle PWM (M3 S...)</option>
+                            </select>
+                        </div>
+                        <div class="row-inputs" style="margin-top: 12px;">
+                            <div class="input-group">
+                                <label for="pen-up-val" id="lbl-pen-up" style="font-size: 10px;">UP Position</label>
+                                <input type="number" id="pen-up-val" value="3.0" step="0.5">
+                            </div>
+                            <div class="input-group">
+                                <label for="pen-down-val" id="lbl-pen-down" style="font-size: 10px;">DOWN Position</label>
+                                <input type="number" id="pen-down-val" value="0.0" step="0.5">
+                            </div>
+                            <div class="input-group">
+                                <label for="pen-dwell-val" style="font-size: 10px;">Dwell (s)</label>
+                                <input type="number" id="pen-dwell-val" value="0.25" step="0.05" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TOUCH & SWIPE GESTURES CARD -->
+                <div class="card glass-card">
+                    <h2 class="card-title">Touch &amp; Swipe Gestures</h2>
+                    <div class="card-content" style="display: flex; flex-direction: column; gap: 12px;">
+                        <!-- Coordinate Rows -->
+                        <div class="row-inputs">
+                            <div class="input-group">
+                                <label>Start Position (X, Y)</label>
+                                <div class="coordinate-input-group">
+                                    <input type="number" id="gesture-start-x" value="0.0" step="1" placeholder="X">
+                                    <span class="coord-separator">,</span>
+                                    <input type="number" id="gesture-start-y" value="0.0" step="1" placeholder="Y">
+                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-start" title="Set to current X/Y">🎯</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row-inputs">
+                            <div class="input-group">
+                                <label>End Position (X, Y)</label>
+                                <div class="coordinate-input-group">
+                                    <input type="number" id="gesture-end-x" value="0.0" step="1" placeholder="X">
+                                    <span class="coord-separator">,</span>
+                                    <input type="number" id="gesture-end-y" value="0.0" step="1" placeholder="Y">
+                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-end" title="Set to current X/Y">🎯</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gesture parameters -->
+                        <div class="row-inputs">
+                            <div class="input-group">
+                                <label for="gesture-feedrate">Feedrate</label>
+                                <input type="number" id="gesture-feedrate" value="2000" step="100">
+                            </div>
+                            <div class="input-group">
+                                <label for="gesture-dwell">Dwell (s)</label>
+                                <input type="number" id="gesture-dwell" value="0.15" step="0.05" min="0.05">
+                            </div>
+                            <div class="input-group">
+                                <label for="gesture-distance">Dist (mm)</label>
+                                <input type="number" id="gesture-distance" value="40" step="5">
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons Grid -->
+                        <div class="gesture-grid">
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-tap">Tap</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap">Double Tap</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-longpress">Long Press</button>
+                            
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up">Swipe Up ⬆️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Swipe Down ⬇️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Swipe Left ⬅️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Swipe Right ➡️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom" style="grid-column: span 2;">Custom Swipe (S ➔ E)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- JOGGING CONTROLS -->
+                <div class="card glass-card">
+                    <h2 class="card-title">Machine Jogging</h2>
+                    <div class="jog-layout">
+                        <!-- Keypad Pad -->
+                        <div class="jog-keypad">
+                            <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
+                            <button class="btn-jog directional" id="jog-y-plus" title="Y+">▲</button>
+                            <button class="btn-jog diagonal" id="jog-y-plus-x-plus" title="Y+ X+">↗</button>
+                            
+                            <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
+                            <button class="btn-jog center" id="jog-home" title="Home Machine">🏠</button>
+                            <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
+                            
+                            <button class="btn-jog diagonal" id="jog-y-minus-x-minus" title="Y- X-">↙</button>
+                            <button class="btn-jog directional" id="jog-y-minus" title="Y-">▼</button>
+                            <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
+                        </div>
+                        
+                        <!-- Z Axis Controls -->
+                        <div class="jog-z">
+                            <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
+                            <button class="btn-jog center" id="jog-unlock" title="Unlock Machine ($X)">🔓</button>
+                            <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
+                        </div>
+                    </div>
+
+                    <div class="jog-sliders">
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <span>Step Size (Distance)</span>
+                                <span class="slider-value" id="val-step">10 mm</span>
+                            </div>
+                            <input type="range" id="slider-step" min="0" max="3" step="1" value="2">
+                            <div class="slider-labels">
+                                <span>0.1</span>
+                                <span>1</span>
+                                <span>10</span>
+                                <span>100</span>
+                            </div>
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <span>Jog Feed Rate</span>
+                                <span class="slider-value" id="val-feed">1000 mm/min</span>
+                            </div>
+                            <input type="range" id="slider-feed" min="100" max="3000" step="100" value="1000">
+                        </div>
+                    </div>
+
+                    <div class="zero-actions">
+                        <button class="btn btn-secondary" id="btn-zero-x">Zero X</button>
+                        <button class="btn btn-secondary" id="btn-zero-y">Zero Y</button>
+                        <button class="btn btn-secondary" id="btn-zero-z">Zero Z</button>
+                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Zero All</button>
+                    </div>
+                </div>
+
+            </section>
+            
+            <!-- RIGHT PANEL: VISUALIZER & CONSOLE -->
+            <section class="panel-right">
+                
+                <!-- VISUALIZER CARD -->
+                <div class="card glass-card visualizer-card">
+                    <div class="visualizer-header">
+                        <h2 class="card-title">G-Code Toolpath</h2>
+                        <button class="btn-text" id="btn-clear-path">Reset View</button>
+                    </div>
+                    <div class="canvas-wrapper">
+                        <canvas id="toolpath-canvas"></canvas>
+                        <div class="canvas-instructions">Drag to Pan • Scroll to Zoom</div>
+                    </div>
+                    
+                    <!-- FILE ACTIONS & PROGRESS -->
+                    <div class="gcode-controller">
+                        <div class="file-upload-section">
+                            <div class="file-drop-zone" id="file-drop-zone">
+                                <span class="upload-icon">📂</span>
+                                <span class="upload-text">Drag & drop G-code file or <strong>Click to Browse</strong></span>
+                                <input type="file" id="file-input" accept=".gcode,.nc,.cnc,.txt" class="hidden">
+                            </div>
+                            <div class="file-info hidden" id="file-info-container">
+                                <span class="file-name" id="loaded-file-name">no_file.gcode</span>
+                                <span class="file-lines" id="loaded-file-lines">0 lines</span>
+                                <button class="btn-icon" id="btn-remove-file" title="Unload file">✕</button>
+                            </div>
+                        </div>
+
+                        <div class="stream-progress-section hidden" id="progress-container">
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" id="stream-progress-bar" style="width: 0%"></div>
+                            </div>
+                            <div class="progress-text">
+                                <span id="progress-percentage">0%</span>
+                                <span id="progress-fraction">0 / 0 lines</span>
+                            </div>
+                        </div>
+
+                        <div class="stream-controls">
+                            <button class="btn btn-success" id="btn-start-stream" disabled>Start Job</button>
+                            <button class="btn btn-warning" id="btn-pause-stream" disabled>Pause</button>
+                            <button class="btn btn-danger" id="btn-abort-stream" disabled>Abort (Ctrl-X)</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CONSOLE CARD -->
+                <div class="card glass-card console-card">
+                    <h2 class="card-title">Serial Console</h2>
+                    <div class="console-output" id="console-output">
+                        <div class="log-line system">Waiting for connection...</div>
+                    </div>
+                    <form class="console-input-form" id="console-form">
+                        <input type="text" id="console-input" placeholder="Type G-code command (e.g. G0 X10 Y20) and press Enter..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary btn-small">Send</button>
+                    </form>
+                </div>
+
+            </section>
+            
+        </main>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

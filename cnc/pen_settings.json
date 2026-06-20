@@ -1,0 +1,8 @@
+{
+    "mode": "spindle-pwm",
+    "pen_up_z": 3.0,
+    "pen_down_z": 0.0,
+    "pen_up_pwm": 0.0,
+    "pen_down_pwm": 50.0,
+    "pen_dwell": 0.25
+}
