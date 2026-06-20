@@ -403,6 +403,71 @@
                     <button class="btn btn-primary" id="btn-move-to-center" disabled>Move Spindle to Center</button>
                 </div>
             </div>
+
+            <!-- HOME & GOTO SECTION (cập nhật 2) -->
+            <div class="camera-home-section">
+                <div class="home-header-row">
+                    <span class="calibration-title">Origin Control</span>
+                    <div class="home-status-badge" id="home-status-badge">
+                        <span class="home-dot" id="home-dot"></span>
+                        <span id="home-status-label">Home not set</span>
+                    </div>
+                </div>
+
+                <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
+
+                <div class="home-actions-row">
+                    <button class="btn btn-warning" id="btn-set-home" disabled>
+                        🏠 Set Home (0,0,0)
+                    </button>
+                    <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 View Map</button>
+                </div>
+
+                <!-- Inline confirm row (hiện sau khi nhấn Set Home lần 1) -->
+                <div class="home-confirm-row hidden" id="home-confirm-row">
+                    <span class="home-confirm-text">⚠️ Xác nhận set gốc (0,0,0) tại vị trí hiện tại?</span>
+                    <div class="home-confirm-btns">
+                        <button class="btn btn-success btn-small" id="btn-home-confirm-yes">✓ Xác nhận</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-home-confirm-no">✕ Huỷ</button>
+                    </div>
+                </div>
+
+                <!-- GoTo Controls -->
+                <div class="goto-section" id="goto-section">
+                    <div class="goto-inputs-row">
+                        <div class="input-group">
+                            <label for="goto-x" style="font-size:10px;">Target X (mm)</label>
+                            <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
+                        </div>
+                        <div class="input-group">
+                            <label for="goto-y" style="font-size:10px;">Target Y (mm)</label>
+                            <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
+                        </div>
+                        <div class="input-group">
+                            <label for="goto-feedrate" style="font-size:10px;">Feedrate</label>
+                            <input type="number" id="goto-feedrate" value="1000" step="100" min="100">
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y</button>
+                </div>
+
+                <!-- Home Snapshot Map -->
+                <div class="home-snapshot-container hidden" id="home-snapshot-container">
+                    <div class="snapshot-header">
+                        <span class="snapshot-label">📷 Home Reference Map</span>
+                        <button class="btn-icon" id="btn-close-snapshot" title="Close map">✕</button>
+                    </div>
+                    <div class="snapshot-wrapper">
+                        <img id="home-snapshot-img" src="" alt="Home Snapshot" class="home-snapshot-img">
+                        <div class="snapshot-crosshair" id="snapshot-crosshair"></div>
+                        <div class="snapshot-pen-marker" id="snapshot-pen-marker" style="display:none;"></div>
+                    </div>
+                    <div class="snapshot-coords-overlay">
+                        <span>Home: (0, 0)</span>
+                        <span id="snapshot-current-pos">Pen: X=0.000, Y=0.000</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 

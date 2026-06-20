@@ -1314,4 +1314,217 @@ input[type=range]::-webkit-slider-thumb:hover {
     flex: 1;
 }
 
+/* ============================
+   HOME & GOTO SECTION (cập nhật 2)
+   ============================ */
+.camera-home-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+    border-top: 1px solid var(--border-color);
+    padding-top: 14px;
+}
+
+.home-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.home-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.home-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+    transition: all 0.3s;
+}
+.home-dot.home-active {
+    background: var(--success);
+    box-shadow: 0 0 10px var(--success), 0 0 20px hsla(145, 80%, 45%, 0.3);
+    animation: homePulse 2s infinite;
+}
+
+@keyframes homePulse {
+    0%, 100% { box-shadow: 0 0 6px var(--success); }
+    50% { box-shadow: 0 0 14px var(--success), 0 0 28px hsla(145, 80%, 45%, 0.4); }
+}
+
+.home-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    background: hsla(220, 25%, 8%, 0.4);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 8px 10px;
+}
+.home-hint strong {
+    color: var(--warning);
+}
+
+.home-actions-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.home-actions-row .btn-warning {
+    flex: 1;
+}
+
+/* Inline confirm row */
+.home-confirm-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    background: hsla(0, 85%, 60%, 0.1);
+    border: 1px solid hsla(0, 85%, 60%, 0.4);
+    border-radius: var(--radius-md);
+    animation: fadeInDown 0.2s ease;
+}
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.home-confirm-text {
+    font-size: 11px;
+    font-weight: 600;
+    color: hsl(35, 90%, 70%);
+    line-height: 1.4;
+}
+.home-confirm-btns {
+    display: flex;
+    gap: 8px;
+}
+.home-confirm-btns .btn-success {
+    flex: 1;
+}
+.home-confirm-btns .btn-danger-soft {
+    flex: 1;
+}
+
+/* GoTo section */
+.goto-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    background: hsla(200, 50%, 10%, 0.3);
+    border: 1px solid hsla(200, 100%, 50%, 0.2);
+    border-radius: var(--radius-md);
+}
+
+.goto-inputs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+}
+
+.goto-inputs-row .input-group input {
+    width: 100%;
+}
+
+.goto-section .btn-primary {
+    width: 100%;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+/* Home Snapshot Map */
+.home-snapshot-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid hsla(200, 100%, 50%, 0.3);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: hsla(220, 25%, 8%, 0.6);
+}
+
+.snapshot-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    background: hsla(220, 25%, 14%, 0.8);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.snapshot-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.snapshot-wrapper {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #000;
+    max-height: 240px;
+}
+
+.home-snapshot-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+    max-height: 240px;
+}
+
+/* Crosshair at center of home snapshot (origin 0,0) */
+.snapshot-crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    pointer-events: none;
+}
+.snapshot-crosshair::before,
+.snapshot-crosshair::after {
+    content: '';
+    position: absolute;
+    background: hsla(35, 90%, 55%, 0.9);
+}
+.snapshot-crosshair::before {
+    width: 1px;
+    height: 100%;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+}
+.snapshot-crosshair::after {
+    height: 1px;
+    width: 100%;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+}
+
+.snapshot-coords-overlay {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 10px;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    background: hsla(220, 25%, 10%, 0.9);
+    border-top: 1px solid var(--border-color);
+}
 

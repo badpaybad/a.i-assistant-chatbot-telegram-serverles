@@ -260,6 +260,9 @@ function updateConnectionUI() {
     if (typeof window.updateCalibrationUI === 'function') {
         window.updateCalibrationUI();
     }
+    if (typeof window.updateHomeUI === 'function') {
+        window.updateHomeUI();
+    }
 }
 
 function updateTelemetry(data) {
@@ -299,6 +302,9 @@ function updateTelemetry(data) {
     }
     
     drawToolpath();
+    if (typeof window._updateSnapshotPos === 'function') {
+        window._updateSnapshotPos();
+    }
 }
 
 function handleStreamStatus(msg) {
@@ -962,6 +968,168 @@ function setupEventListeners() {
     if (!isCameraCollapsed) {
         window.startCalibrationPolling();
     }
+
+    // --- HOME & GOTO Logic (cập nhật 2) ---
+    const btnSetHome = document.getElementById("btn-set-home");
+    const btnViewSnapshot = document.getElementById("btn-view-snapshot");
+    const btnGoto = document.getElementById("btn-goto");
+    const gotoX = document.getElementById("goto-x");
+    const gotoY = document.getElementById("goto-y");
+    const gotoFeedrate = document.getElementById("goto-feedrate");
+    const homeDot = document.getElementById("home-dot");
+    const homeStatusLabel = document.getElementById("home-status-label");
+    const homeSnapshotContainer = document.getElementById("home-snapshot-container");
+    const homeSnapshotImg = document.getElementById("home-snapshot-img");
+    const btnCloseSnapshot = document.getElementById("btn-close-snapshot");
+    const snapshotCurrentPos = document.getElementById("snapshot-current-pos");
+
+    let isHomeSet = false;
+    let homeSnapshotVisible = false;
+
+    const updateHomeUI = () => {
+        if (btnSetHome) btnSetHome.disabled = !isConnected;
+        if (btnGoto) btnGoto.disabled = !isConnected || !isHomeSet;
+        if (btnViewSnapshot) btnViewSnapshot.disabled = !isHomeSet;
+        if (homeDot) homeDot.className = "home-dot" + (isHomeSet ? " home-active" : "");
+        if (homeStatusLabel) homeStatusLabel.innerText = isHomeSet ? "Home set ✓" : "Home not set";
+    };
+    window.updateHomeUI = updateHomeUI;
+
+    const fetchHomeStatus = async () => {
+        try {
+            const res = await fetch("/api/home_status");
+            const data = await res.json();
+            isHomeSet = data.home_set || false;
+            updateHomeUI();
+            if (isHomeSet && data.has_snapshot && homeSnapshotImg) {
+                homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
+            }
+        } catch (e) {
+            console.error("Failed to fetch home status:", e);
+        }
+    };
+
+    const updateSnapshotPos = () => {
+        if (snapshotCurrentPos) {
+            snapshotCurrentPos.innerText = `Pen: X=${currentWPos.x.toFixed(3)}, Y=${currentWPos.y.toFixed(3)}`;
+        }
+    };
+    window._updateSnapshotPos = updateSnapshotPos;
+
+    if (btnSetHome) {
+        let homeConfirmPending = false;
+        const homeConfirmRow = document.getElementById("home-confirm-row");
+
+        const resetHomeConfirm = () => {
+            homeConfirmPending = false;
+            btnSetHome.innerText = "🏠 Set Home (0,0,0)";
+            btnSetHome.className = "btn btn-warning";
+            if (homeConfirmRow) homeConfirmRow.classList.add("hidden");
+        };
+
+        btnSetHome.addEventListener("click", async () => {
+            if (!isConnected) return;
+
+            if (!homeConfirmPending) {
+                // Step 1: Show inline confirm
+                homeConfirmPending = true;
+                btnSetHome.innerText = "⚠️ Nhấn xác nhận bên dưới ↓";
+                btnSetHome.className = "btn btn-danger";
+                if (homeConfirmRow) homeConfirmRow.classList.remove("hidden");
+                // Auto-cancel after 10 seconds
+                setTimeout(() => { if (homeConfirmPending) resetHomeConfirm(); }, 10000);
+                return;
+            }
+        });
+
+        // Bind confirm/cancel buttons inside the confirm row
+        const btnHomeConfirmYes = document.getElementById("btn-home-confirm-yes");
+        const btnHomeConfirmNo = document.getElementById("btn-home-confirm-no");
+
+        if (btnHomeConfirmYes) {
+            btnHomeConfirmYes.addEventListener("click", async () => {
+                if (!isConnected) return;
+                resetHomeConfirm();
+                try {
+                    btnSetHome.disabled = true;
+                    btnSetHome.innerText = "⏳ Đang set home...";
+                    const camIdx = cameraSelect ? cameraSelect.value : 4;
+                    const res = await fetch("/api/home?camera_index=" + camIdx, { method: "POST" });
+                    const data = await res.json();
+                    if (data.status === "ok") {
+                        isHomeSet = true;
+                        updateHomeUI();
+                        logSystemMessage("✅ Home set! Vị trí hiện tại là (0, 0, 0). Đã lưu ảnh reference.");
+                        if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
+                    } else {
+                        logSystemMessage("❌ Set home thất bại: " + data.message);
+                    }
+                } catch (e) {
+                    logSystemMessage("❌ Lỗi mạng khi set home: " + e);
+                } finally {
+                    btnSetHome.innerText = "🏠 Set Home (0,0,0)";
+                    btnSetHome.className = "btn btn-warning";
+                    updateHomeUI();
+                }
+            });
+        }
+
+        if (btnHomeConfirmNo) {
+            btnHomeConfirmNo.addEventListener("click", () => resetHomeConfirm());
+        }
+    }
+
+
+    if (btnViewSnapshot) {
+        btnViewSnapshot.addEventListener("click", () => {
+            if (!homeSnapshotContainer) return;
+            homeSnapshotVisible = !homeSnapshotVisible;
+            if (homeSnapshotVisible) {
+                homeSnapshotContainer.classList.remove("hidden");
+                btnViewSnapshot.innerText = "📷 Hide Map";
+                if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
+                updateSnapshotPos();
+            } else {
+                homeSnapshotContainer.classList.add("hidden");
+                btnViewSnapshot.innerText = "📸 View Map";
+            }
+        });
+    }
+
+    if (btnCloseSnapshot) {
+        btnCloseSnapshot.addEventListener("click", () => {
+            homeSnapshotVisible = false;
+            if (homeSnapshotContainer) homeSnapshotContainer.classList.add("hidden");
+            if (btnViewSnapshot) btnViewSnapshot.innerText = "📸 View Map";
+        });
+    }
+
+    if (btnGoto) {
+        btnGoto.addEventListener("click", async () => {
+            if (!isConnected || !isHomeSet) return;
+            const x = parseFloat(gotoX ? gotoX.value : 0) || 0;
+            const y = parseFloat(gotoY ? gotoY.value : 0) || 0;
+            const feedrate = parseFloat(gotoFeedrate ? gotoFeedrate.value : 1000) || 1000;
+            try {
+                logSystemMessage(`➡ GoTo: Moving pen to X=${x.toFixed(3)}, Y=${y.toFixed(3)} @ F${feedrate}`);
+                const res = await fetch("/api/goto", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ x: x, y: y, feedrate: feedrate })
+                });
+                const data = await res.json();
+                if (data.status === "ok") {
+                    logSystemMessage("✅ " + data.message);
+                } else {
+                    logSystemMessage("❌ GoTo failed: " + data.message);
+                }
+            } catch (e) {
+                logSystemMessage("❌ Network error during GoTo: " + e);
+            }
+        });
+    }
+
+    fetchHomeStatus();
 
     // --- Custom Drag-to-Resize Logic for Floating Camera Panel ---
     const handleTopLeft = cameraFloatingPanel.querySelector(".resize-handle.top-left");

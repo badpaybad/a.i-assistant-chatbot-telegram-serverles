@@ -25,11 +25,16 @@ app = FastAPI(title="GRBL CNC Web Controller")
 SETTINGS_FILE = "pen_settings.json"
 CALIBRATION_FILE = "calibration_settings.json"
 
+HOME_SNAPSHOT_FILE = "home_snapshot.jpg"
+
 def load_calibration_settings() -> dict:
     default_settings = {
         "points": {},
         "matrix": None,
-        "draw_overlay": True
+        "draw_overlay": True,
+        "home_set": False,
+        "home_markers": {},
+        "home_snapshot": None
     }
     if os.path.exists(CALIBRATION_FILE):
         try:
@@ -122,6 +127,11 @@ class ControllerState:
         self.calibration_matrix = cal_settings["matrix"]
         self.draw_overlay = cal_settings["draw_overlay"]
         self.latest_detected_markers = {} # {"TL": [x, y], ...}
+        
+        # Home settings (cập nhật 2)
+        self.home_set = cal_settings.get("home_set", False)
+        self.home_markers = cal_settings.get("home_markers", {})
+        self.home_snapshot = cal_settings.get("home_snapshot", None)
 
     def update_calibration_matrix(self):
         valid_pts = []
@@ -1027,6 +1037,122 @@ async def toggle_overlay(config: ToggleOverlayConfig):
     })
     
     return {"status": "ok", "draw_overlay": state.draw_overlay}
+
+
+# --- Home / GoTo endpoints (cập nhật 2) ---
+
+class GoToConfig(BaseModel):
+    x: float
+    y: float
+    feedrate: float = 1000.0
+
+@app.post("/api/home")
+async def set_home(camera_index: int = 4):
+    """
+    Set the current pen/spindle position as the work-coordinate origin (0, 0, 0).
+    Saves a camera snapshot and detected marker positions at the moment of homing.
+    Persists so the home survives server restarts.
+    """
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+
+    # Send GRBL command to zero work coordinates at current position
+    home_cmd = "G10 L20 P0 X0 Y0 Z0"
+    try:
+        state.serial_port.write((home_cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": home_cmd})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send home command: {e}"}, status_code=500)
+
+    # Capture camera snapshot
+    snapshot_path = None
+    frame_data = camera_manager.get_frame(camera_index)
+    if frame_data:
+        try:
+            snapshot_path = HOME_SNAPSHOT_FILE
+            with open(snapshot_path, "wb") as f:
+                f.write(frame_data)
+            logger.info(f"Saved home snapshot to {snapshot_path}")
+        except Exception as e:
+            logger.error(f"Failed to save home snapshot: {e}")
+            snapshot_path = None
+
+    # Record state
+    state.home_set = True
+    state.home_markers = dict(state.latest_detected_markers)
+    state.home_snapshot = snapshot_path
+
+    # Reset wpos in state to zeros
+    state.wpos = [0.0, 0.0, 0.0]
+
+    # Persist to disk
+    save_calibration_settings({
+        "points": state.calibration_points,
+        "matrix": state.calibration_matrix,
+        "draw_overlay": state.draw_overlay,
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "home_snapshot": state.home_snapshot
+    })
+
+    return {
+        "status": "ok",
+        "message": "Home set: current position is now (0, 0, 0). Snapshot saved.",
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "has_snapshot": snapshot_path is not None
+    }
+
+
+@app.get("/api/home_snapshot")
+async def get_home_snapshot():
+    """Serve the home snapshot image taken at the time Home was set."""
+    if state.home_snapshot and os.path.exists(state.home_snapshot):
+        from fastapi.responses import FileResponse
+        return FileResponse(state.home_snapshot, media_type="image/jpeg")
+    return JSONResponse({"status": "error", "message": "No home snapshot available"}, status_code=404)
+
+
+@app.get("/api/home_status")
+async def get_home_status():
+    """Return current home configuration."""
+    return {
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "has_snapshot": state.home_snapshot is not None and os.path.exists(state.home_snapshot or ""),
+        "wpos": state.wpos
+    }
+
+
+@app.post("/api/goto")
+async def goto_position(config: GoToConfig):
+    """
+    Move the pen/spindle to the specified work-coordinate position (X, Y).
+    Requires home to have been set (G10 L20 P0) so that work coordinates are valid.
+    """
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home has not been set. Please press Home button first."}, status_code=400)
+
+    cmd = f"G90 G0 X{config.x:.3f} Y{config.y:.3f}"
+    if config.feedrate > 0:
+        cmd = f"G90 G1 X{config.x:.3f} Y{config.y:.3f} F{config.feedrate:.0f}"
+
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send GoTo command: {e}"}, status_code=500)
+
+    return {
+        "status": "ok",
+        "message": f"Moving to X={config.x:.3f}, Y={config.y:.3f} at F{config.feedrate:.0f}",
+        "command": cmd
+    }
 
 @app.post("/api/calibration/move_to_center")
 async def move_to_center():
