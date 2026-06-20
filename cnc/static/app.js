@@ -779,6 +779,59 @@ function setupEventListeners() {
         }
     });
 
+    // --- Custom Drag-to-Resize Logic for Floating Camera Panel ---
+    const handleTopLeft = cameraFloatingPanel.querySelector(".resize-handle.top-left");
+    const handleTop = cameraFloatingPanel.querySelector(".resize-handle.top");
+    const handleLeft = cameraFloatingPanel.querySelector(".resize-handle.left");
+
+    let isResizing = false;
+    let currentHandle = null;
+    let startX = 0;
+    let startY = 0;
+    let startWidth = 0;
+    let startHeight = 0;
+
+    const performResize = (e) => {
+        if (!isResizing) return;
+        
+        if (currentHandle === "left" || currentHandle === "top-left") {
+            const dx = startX - e.clientX;
+            const newWidth = Math.max(280, Math.min(800, startWidth + dx));
+            cameraFloatingPanel.style.width = newWidth + "px";
+        }
+        
+        if (currentHandle === "top" || currentHandle === "top-left") {
+            const dy = startY - e.clientY;
+            const newHeight = Math.max(200, Math.min(700, startHeight + dy));
+            cameraFloatingPanel.style.height = newHeight + "px";
+        }
+    };
+
+    const stopResize = () => {
+        isResizing = false;
+        currentHandle = null;
+        document.removeEventListener("mousemove", performResize);
+        document.removeEventListener("mouseup", stopResize);
+    };
+
+    const startResize = (e, handleType) => {
+        e.preventDefault();
+        isResizing = true;
+        currentHandle = handleType;
+        startX = e.clientX;
+        startY = e.clientY;
+        const rect = cameraFloatingPanel.getBoundingClientRect();
+        startWidth = rect.width;
+        startHeight = rect.height;
+        
+        document.addEventListener("mousemove", performResize);
+        document.addEventListener("mouseup", stopResize);
+    };
+
+    handleTopLeft.addEventListener("mousedown", (e) => startResize(e, "top-left"));
+    handleTop.addEventListener("mousedown", (e) => startResize(e, "top"));
+    handleLeft.addEventListener("mousedown", (e) => startResize(e, "left"));
+
     // Observe panel resizing to save user's custom dimensions
     const resizeObserver = new ResizeObserver((entries) => {
         for (let entry of entries) {
