@@ -6,9 +6,11 @@ import asyncio
 import logging
 import subprocess
 import json
+import cv2
+import threading
 from typing import Dict, List, Set, Optional
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -93,6 +95,93 @@ class ControllerState:
 
 state = ControllerState()
 
+class CameraManager:
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.caps = {}
+        self.latest_frames = {}
+        self.active_clients = {}
+        self.threads = {}
+        self.running = {}
+
+    def start_camera(self, index: int):
+        with self.lock:
+            if index in self.running and self.running[index]:
+                return
+            self.running[index] = True
+            self.active_clients[index] = 0
+            self.threads[index] = threading.Thread(target=self._read_loop, args=(index,), daemon=True)
+            self.threads[index].start()
+            logger.info(f"Started camera thread for index {index}")
+
+    def stop_camera(self, index: int):
+        with self.lock:
+            # Just set the flag to False. The background thread will clean itself up!
+            self.running[index] = False
+            logger.info(f"Requested stop for camera index {index}")
+
+    def _read_loop(self, index: int):
+        logger.info(f"Opening camera index {index} in background thread...")
+        cap = cv2.VideoCapture(index)
+        if not cap.isOpened():
+            logger.error(f"Failed to open camera index {index}")
+            with self.lock:
+                self.running[index] = False
+            return
+            
+        with self.lock:
+            self.caps[index] = cap
+            
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        consecutive_failures = 0
+        logger.info(f"Camera index {index} initialized successfully. Starting read loop.")
+        
+        while True:
+            with self.lock:
+                if not self.running.get(index, False):
+                    break
+            try:
+                ret, frame = cap.read()
+                if not ret or frame is None:
+                    consecutive_failures += 1
+                    if consecutive_failures > 30:
+                        logger.error(f"Too many frame capture failures on camera {index}. Stopping.")
+                        break
+                    time.sleep(0.03)
+                    continue
+                
+                consecutive_failures = 0
+                _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                with self.lock:
+                    self.latest_frames[index] = jpeg.tobytes()
+                time.sleep(0.03)
+            except Exception as e:
+                logger.error(f"Error in camera loop for index {index}: {e}")
+                time.sleep(0.1)
+                
+        # Only release from the background thread that created it!
+        logger.info(f"Releasing camera index {index} from background thread...")
+        try:
+            cap.release()
+        except Exception as e:
+            logger.error(f"Error releasing camera index {index}: {e}")
+        
+        with self.lock:
+            self.running[index] = False
+            if index in self.caps:
+                del self.caps[index]
+            if index in self.latest_frames:
+                del self.latest_frames[index]
+            logger.info(f"Successfully released camera index {index}")
+
+    def get_frame(self, index: int) -> bytes:
+        with self.lock:
+            return self.latest_frames.get(index, b"")
+
+camera_manager = CameraManager()
+
 # Helpers
 def get_port_owner(port: str) -> str:
     """Check which process is currently holding the serial port."""
@@ -116,7 +205,7 @@ def get_port_owner(port: str) -> str:
             return ", ".join(names)
     except Exception:
         pass
-    return "Unknown process"
+    return ""
 
 async def broadcast(message: dict):
     """Send JSON message to all connected WebSockets."""
@@ -597,6 +686,53 @@ async def get_state():
         "gcode_total": len(state.stream_gcode_lines) if state.is_streaming else len(state.gcode_lines),
         "port_owner": owner
     }
+
+@app.get("/api/video_feed")
+async def video_feed(index: int = 4):
+    camera_manager.start_camera(index)
+    
+    with camera_manager.lock:
+        camera_manager.active_clients[index] = camera_manager.active_clients.get(index, 0) + 1
+
+    async def gen():
+        try:
+            # Wait up to 3 seconds for the first frame
+            retries = 30
+            while retries > 0 and not camera_manager.get_frame(index):
+                if not camera_manager.running.get(index, False):
+                    break
+                await asyncio.sleep(0.1)
+                retries -= 1
+                
+            if not camera_manager.running.get(index, False):
+                logger.error(f"Camera index {index} failed to start. Exiting generator.")
+                return
+
+            while True:
+                if not camera_manager.running.get(index, False):
+                    logger.warning(f"Camera index {index} stopped running. Exiting generator.")
+                    break
+                frame = camera_manager.get_frame(index)
+                if frame:
+                    yield (b'--frame\r\n'
+                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                else:
+                    await asyncio.sleep(0.1)
+                    continue
+                await asyncio.sleep(0.05)
+        finally:
+            with camera_manager.lock:
+                camera_manager.active_clients[index] = max(0, camera_manager.active_clients.get(index, 1) - 1)
+                if camera_manager.active_clients[index] == 0:
+                    asyncio.create_task(stop_camera_after_delay(index, 5))
+
+    async def stop_camera_after_delay(idx: int, delay: float):
+        await asyncio.sleep(delay)
+        with camera_manager.lock:
+            if camera_manager.active_clients.get(idx, 0) == 0:
+                camera_manager.stop_camera(idx)
+
+    return StreamingResponse(gen(), media_type="multipart/x-mixed-replace; boundary=frame")
 
 # WebSockets Endpoint
 @app.websocket("/ws")

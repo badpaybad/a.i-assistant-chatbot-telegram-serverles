@@ -119,3 +119,4 @@ cameraip/train/output_detect.jpg
 cameraip/train/*.pt
 **/train_log.csv
 **/augmented_image/**
+cnc/test_**

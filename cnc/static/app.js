@@ -696,6 +696,107 @@ function setupEventListeners() {
     document.getElementById("btn-gesture-swipe-left").addEventListener("click", () => executeGesture("swipe-left"));
     document.getElementById("btn-gesture-swipe-right").addEventListener("click", () => executeGesture("swipe-right"));
     document.getElementById("btn-gesture-swipe-custom").addEventListener("click", () => executeGesture("swipe-custom"));
+
+    // --- Collapsible Floating Camera Panel Logic ---
+    const cameraFloatingPanel = document.getElementById("camera-floating-panel");
+    const btnCameraToggle = document.getElementById("btn-camera-toggle");
+    const cameraPanelHeader = document.getElementById("camera-panel-header");
+    const cameraSelect = document.getElementById("camera-select");
+    const cameraStreamImg = document.getElementById("camera-stream-img");
+    const cameraStatusText = document.getElementById("camera-status-text");
+    const cameraActiveDot = document.getElementById("camera-active-dot");
+
+    // Load saved preferences
+    const savedCameraIndex = localStorage.getItem("cnc_camera_index");
+    if (savedCameraIndex) {
+        cameraSelect.value = savedCameraIndex;
+    }
+
+    let isCameraCollapsed = localStorage.getItem("cnc_camera_collapsed") !== "false"; // Default to collapsed: true
+
+    const updateCameraStream = () => {
+        const camIndex = cameraSelect.value;
+        cameraStreamImg.src = `/api/video_feed?index=${camIndex}`;
+        cameraStatusText.innerText = `Connected: Camera ${camIndex}`;
+        cameraActiveDot.classList.add("active");
+        logSystemMessage(`Started live camera feed stream (Camera index ${camIndex})`);
+    };
+
+    const stopCameraStream = () => {
+        cameraStreamImg.src = "";
+        cameraStatusText.innerText = "Stream Offline";
+        cameraActiveDot.classList.remove("active");
+        logSystemMessage("Camera feed stream stopped");
+    };
+
+    const toggleCameraCollapse = () => {
+        isCameraCollapsed = !isCameraCollapsed;
+        localStorage.setItem("cnc_camera_collapsed", isCameraCollapsed.toString());
+        applyCameraState();
+    };
+
+    const applyCameraState = () => {
+        if (isCameraCollapsed) {
+            cameraFloatingPanel.classList.add("collapsed");
+            cameraFloatingPanel.style.removeProperty("width");
+            cameraFloatingPanel.style.removeProperty("height");
+            stopCameraStream();
+        } else {
+            cameraFloatingPanel.classList.remove("collapsed");
+            
+            // Restore saved size
+            const savedWidth = localStorage.getItem("cnc_camera_width");
+            const savedHeight = localStorage.getItem("cnc_camera_height");
+            if (savedWidth && savedHeight) {
+                cameraFloatingPanel.style.width = savedWidth + "px";
+                cameraFloatingPanel.style.height = savedHeight + "px";
+            } else {
+                cameraFloatingPanel.style.removeProperty("width");
+                cameraFloatingPanel.style.removeProperty("height");
+            }
+            
+            updateCameraStream();
+        }
+    };
+
+    // Toggle collapse on clicking header or toggle button
+    btnCameraToggle.addEventListener("click", (e) => {
+        e.stopPropagation(); // prevent header click trigger
+        toggleCameraCollapse();
+    });
+
+    cameraPanelHeader.addEventListener("click", (e) => {
+        // Only toggle collapse if user didn't click inside panel actions (e.g. the select dropdown)
+        if (!e.target.closest(".panel-actions")) {
+            toggleCameraCollapse();
+        }
+    });
+
+    cameraSelect.addEventListener("change", () => {
+        localStorage.setItem("cnc_camera_index", cameraSelect.value);
+        if (!isCameraCollapsed) {
+            updateCameraStream();
+        }
+    });
+
+    // Observe panel resizing to save user's custom dimensions
+    const resizeObserver = new ResizeObserver((entries) => {
+        for (let entry of entries) {
+            if (!isCameraCollapsed) {
+                const rect = cameraFloatingPanel.getBoundingClientRect();
+                if (rect.width > 100 && rect.height > 100) {
+                    localStorage.setItem("cnc_camera_width", Math.round(rect.width).toString());
+                    localStorage.setItem("cnc_camera_height", Math.round(rect.height).toString());
+                }
+            }
+        }
+    });
+
+    // Apply initial collapse/expand state on load
+    applyCameraState();
+
+    // Start observing after initial layout
+    resizeObserver.observe(cameraFloatingPanel);
 }
 
 function jogAxis(axis, direction) {

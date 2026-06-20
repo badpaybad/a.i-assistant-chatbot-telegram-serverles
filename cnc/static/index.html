@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Antigravity GRBL CNC Controller</title>
+    <title>GRBL CNC Controller</title>
     <!-- Google Fonts: Outfit & Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css">
-    <meta name="description" content="A premium web-based CNC machine interface for GRBL controllers. Offers real-time telemetry, G-code path visualization, console logging, and responsive axis jogging.">
+    <meta name="description"
+        content="A premium web-based CNC machine interface for GRBL controllers. Offers real-time telemetry, G-code path visualization, console logging, and responsive axis jogging.">
 </head>
+
 <body>
     <div class="glass-bg"></div>
     <div class="app-container">
-        
+
         <!-- HEADER -->
         <header class="app-header">
             <div class="header-logo">
                 <div class="logo-icon"></div>
-                <h1>ANTIGRAVITY <span>CNC</span></h1>
+                <h1> <span>CNC</span></h1>
             </div>
-            
+
             <div class="header-status">
                 <div class="status-badge disconnected" id="connection-status">DISCONNECTED</div>
                 <div class="state-badge disconnected" id="machine-state">OFFLINE</div>
@@ -30,10 +35,10 @@
 
         <!-- MAIN LAYOUT -->
         <main class="app-grid">
-            
+
             <!-- LEFT PANEL: CONNECTION & CONTROL -->
             <section class="panel-left">
-                
+
                 <!-- CONNECTION CARD -->
                 <div class="card glass-card" id="connection-card">
                     <h2 class="card-title">Connection Settings</h2>
@@ -107,7 +112,9 @@
                     <div class="pen-config-section">
                         <div class="slider-group">
                             <div class="slider-header">
-                                <span style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Control Mode</span>
+                                <span
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Control
+                                    Mode</span>
                             </div>
                             <select id="pen-control-mode" class="input-select-small">
                                 <option value="z-axis" selected>Z-Axis Position (G0 Z...)</option>
@@ -120,7 +127,8 @@
                                 <input type="number" id="pen-up-val" value="3.0" step="0.5">
                             </div>
                             <div class="input-group">
-                                <label for="pen-down-val" id="lbl-pen-down" style="font-size: 10px;">DOWN Position</label>
+                                <label for="pen-down-val" id="lbl-pen-down" style="font-size: 10px;">DOWN
+                                    Position</label>
                                 <input type="number" id="pen-down-val" value="0.0" step="0.5">
                             </div>
                             <div class="input-group">
@@ -143,11 +151,12 @@
                                     <input type="number" id="gesture-start-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-start-y" value="0.0" step="1" placeholder="Y">
-                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-start" title="Set to current X/Y">🎯</button>
+                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-start"
+                                        title="Set to current X/Y">🎯</button>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row-inputs">
                             <div class="input-group">
                                 <label>End Position (X, Y)</label>
@@ -155,7 +164,8 @@
                                     <input type="number" id="gesture-end-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-end-y" value="0.0" step="1" placeholder="Y">
-                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-end" title="Set to current X/Y">🎯</button>
+                                    <button class="btn btn-secondary btn-icon-only" id="btn-set-end"
+                                        title="Set to current X/Y">🎯</button>
                                 </div>
                             </div>
                         </div>
@@ -175,18 +185,22 @@
                                 <input type="number" id="gesture-distance" value="40" step="5">
                             </div>
                         </div>
-                        
+
                         <!-- Action Buttons Grid -->
                         <div class="gesture-grid">
                             <button class="btn btn-secondary btn-small" id="btn-gesture-tap">Tap</button>
                             <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap">Double Tap</button>
                             <button class="btn btn-secondary btn-small" id="btn-gesture-longpress">Long Press</button>
-                            
+
                             <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up">Swipe Up ⬆️</button>
-                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Swipe Down ⬇️</button>
-                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Swipe Left ⬅️</button>
-                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Swipe Right ➡️</button>
-                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom" style="grid-column: span 2;">Custom Swipe (S ➔ E)</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Swipe Down
+                                ⬇️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Swipe Left
+                                ⬅️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Swipe Right
+                                ➡️</button>
+                            <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom"
+                                style="grid-column: span 2;">Custom Swipe (S ➔ E)</button>
                         </div>
                     </div>
                 </div>
@@ -200,16 +214,16 @@
                             <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
                             <button class="btn-jog directional" id="jog-y-plus" title="Y+">▲</button>
                             <button class="btn-jog diagonal" id="jog-y-plus-x-plus" title="Y+ X+">↗</button>
-                            
+
                             <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
                             <button class="btn-jog center" id="jog-home" title="Home Machine">🏠</button>
                             <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
-                            
+
                             <button class="btn-jog diagonal" id="jog-y-minus-x-minus" title="Y- X-">↙</button>
                             <button class="btn-jog directional" id="jog-y-minus" title="Y-">▼</button>
                             <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
                         </div>
-                        
+
                         <!-- Z Axis Controls -->
                         <div class="jog-z">
                             <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
@@ -251,27 +265,30 @@
                 </div>
 
             </section>
-            
+
             <!-- RIGHT PANEL: VISUALIZER & CONSOLE -->
             <section class="panel-right">
-                
+
                 <!-- VISUALIZER CARD -->
                 <div class="card glass-card visualizer-card">
                     <div class="visualizer-header">
-                        <h2 class="card-title">G-Code Toolpath</h2>
-                        <button class="btn-text" id="btn-clear-path">Reset View</button>
+                        <h2 class="card-title">Toolpath View</h2>
+                        <div class="visualizer-controls">
+                            <button class="btn-text" id="btn-clear-path">Reset View</button>
+                        </div>
                     </div>
-                    <div class="canvas-wrapper">
+                    <div class="canvas-wrapper" id="toolpath-wrapper">
                         <canvas id="toolpath-canvas"></canvas>
                         <div class="canvas-instructions">Drag to Pan • Scroll to Zoom</div>
                     </div>
-                    
+
                     <!-- FILE ACTIONS & PROGRESS -->
                     <div class="gcode-controller">
                         <div class="file-upload-section">
                             <div class="file-drop-zone" id="file-drop-zone">
                                 <span class="upload-icon">📂</span>
-                                <span class="upload-text">Drag & drop G-code file or <strong>Click to Browse</strong></span>
+                                <span class="upload-text">Drag & drop G-code file or <strong>Click to
+                                        Browse</strong></span>
                                 <input type="file" id="file-input" accept=".gcode,.nc,.cnc,.txt" class="hidden">
                             </div>
                             <div class="file-info hidden" id="file-info-container">
@@ -306,16 +323,44 @@
                         <div class="log-line system">Waiting for connection...</div>
                     </div>
                     <form class="console-input-form" id="console-form">
-                        <input type="text" id="console-input" placeholder="Type G-code command (e.g. G0 X10 Y20) and press Enter..." autocomplete="off">
+                        <input type="text" id="console-input"
+                            placeholder="Type G-code command (e.g. G0 X10 Y20) and press Enter..." autocomplete="off">
                         <button type="submit" class="btn btn-primary btn-small">Send</button>
                     </form>
                 </div>
 
             </section>
-            
+
         </main>
+    </div>
+
+    <!-- FLOATING CAMERA PANEL -->
+    <div class="camera-floating-panel glass-card collapsed" id="camera-floating-panel">
+        <div class="panel-header" id="camera-panel-header">
+            <div class="panel-title-wrapper">
+                <span class="panel-dot" id="camera-active-dot"></span>
+                <span class="panel-title">Camera Feed</span>
+            </div>
+            <div class="panel-actions">
+                <select id="camera-select" class="input-select-small inline-select">
+                    <option value="4" selected>Rapoo USB (Cam 4)</option>
+                    <option value="0">Webcam 1 (Cam 0)</option>
+                    <option value="2">Webcam 2 (Cam 2)</option>
+                </select>
+                <button class="btn-toggle" id="btn-camera-toggle" title="Toggle Camera Panel">
+                    <span class="toggle-icon">▲</span>
+                </button>
+            </div>
+        </div>
+        <div class="panel-body" id="camera-panel-body">
+            <div class="camera-stream-container">
+                <img id="camera-stream-img" src="" alt="Camera Feed Loading...">
+                <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
+            </div>
+        </div>
     </div>
 
     <script src="/static/app.js"></script>
 </body>
+
 </html>
