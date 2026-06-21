@@ -86,7 +86,45 @@ document.addEventListener("DOMContentLoaded", () => {
     setupEventListeners();
     setupCanvas();
     fetchState();
+    populateDevices();
 });
+
+// Fetch and populate available serial ports and camera inputs
+async function populateDevices() {
+    try {
+        const portsRes = await fetch("/api/devices/ports");
+        const ports = await portsRes.json();
+        const portsDatalist = document.getElementById("ports-datalist");
+        if (portsDatalist) {
+            portsDatalist.innerHTML = "";
+            ports.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.port;
+                opt.textContent = p.description;
+                portsDatalist.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Failed to fetch available serial ports:", e);
+    }
+    
+    try {
+        const camsRes = await fetch("/api/devices/cameras");
+        const cams = await camsRes.json();
+        const camsDatalist = document.getElementById("cameras-datalist");
+        if (camsDatalist) {
+            camsDatalist.innerHTML = "";
+            cams.forEach(c => {
+                const opt = document.createElement("option");
+                opt.value = c.index.toString();
+                opt.textContent = c.name;
+                camsDatalist.appendChild(opt);
+            });
+        }
+    } catch (e) {
+        console.error("Failed to fetch available cameras:", e);
+    }
+}
 
 // Fetch current state on page load
 async function fetchState() {
@@ -714,6 +752,10 @@ function setupEventListeners() {
     const cameraStreamImg = document.getElementById("camera-stream-img");
     const cameraStatusText = document.getElementById("camera-status-text");
     const cameraActiveDot = document.getElementById("camera-active-dot");
+    const btnCameraExpand = document.getElementById("btn-camera-expand");
+    const chkDetectObjects = document.getElementById("chk-detect-objects");
+    const btnDetectMove = document.getElementById("btn-detect-move");
+    let isCameraFullscreen = false;
 
     // Load saved preferences
     const savedCameraIndex = localStorage.getItem("cnc_camera_index");
@@ -776,19 +818,102 @@ function setupEventListeners() {
         toggleCameraCollapse();
     });
 
+    // Toggle fullscreen camera view (cập nhật 3)
+    if (btnCameraExpand) {
+        btnCameraExpand.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (isCameraCollapsed) {
+                isCameraCollapsed = false;
+                localStorage.setItem("cnc_camera_collapsed", "false");
+                applyCameraState();
+            }
+            isCameraFullscreen = !isCameraFullscreen;
+            if (isCameraFullscreen) {
+                cameraFloatingPanel.classList.add("fullscreen");
+                btnCameraExpand.querySelector(".expand-icon").innerText = "❐";
+                btnCameraExpand.title = "Restore Camera Panel";
+            } else {
+                cameraFloatingPanel.classList.remove("fullscreen");
+                btnCameraExpand.querySelector(".expand-icon").innerText = "⛶";
+                btnCameraExpand.title = "Expand Full Page";
+            }
+        });
+    }
+
     cameraPanelHeader.addEventListener("click", (e) => {
         // Only toggle collapse if user didn't click inside panel actions (e.g. the select dropdown)
         if (!e.target.closest(".panel-actions")) {
+            // Restore window if collapsed
+            if (isCameraFullscreen) {
+                isCameraFullscreen = false;
+                cameraFloatingPanel.classList.remove("fullscreen");
+                if (btnCameraExpand) {
+                    btnCameraExpand.querySelector(".expand-icon").innerText = "⛶";
+                    btnCameraExpand.title = "Expand Full Page";
+                }
+            }
             toggleCameraCollapse();
         }
     });
 
-    cameraSelect.addEventListener("change", () => {
-        localStorage.setItem("cnc_camera_index", cameraSelect.value);
+    const handleCameraChange = () => {
+        const val = cameraSelect.value.trim();
+        if (val === "") return;
+        localStorage.setItem("cnc_camera_index", val);
         if (!isCameraCollapsed) {
             updateCameraStream();
         }
-    });
+    };
+    cameraSelect.addEventListener("change", handleCameraChange);
+    cameraSelect.addEventListener("input", handleCameraChange);
+
+    // Object Detection controls (cập nhật 3)
+    if (chkDetectObjects) {
+        chkDetectObjects.addEventListener("change", async () => {
+            try {
+                const res = await fetch("/api/detection/toggle", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ detect_objects: chkDetectObjects.checked })
+                });
+                const data = await res.json();
+                if (data.status === "ok") {
+                    logSystemMessage(`Object detection overlay ${chkDetectObjects.checked ? "enabled" : "disabled"}.`);
+                }
+            } catch (e) {
+                logSystemMessage(`Failed to toggle object detection: ${e}`);
+            }
+        });
+    }
+
+    if (btnDetectMove) {
+        btnDetectMove.addEventListener("click", async () => {
+            if (!isConnected) return;
+            try {
+                btnDetectMove.disabled = true;
+                btnDetectMove.innerText = "⏳ Aligning...";
+                logSystemMessage("Running YOLO detection & moving to largest object center...");
+                
+                const camIdx = cameraSelect ? cameraSelect.value : 4;
+                const res = await fetch(`/api/detection/move_to_largest?camera_index=${camIdx}`, {
+                    method: "POST"
+                });
+                const data = await res.json();
+                btnDetectMove.disabled = false;
+                btnDetectMove.innerText = "🎯 Go to Largest Object";
+                
+                if (data.status === "ok") {
+                    logSystemMessage(`✅ ${data.message}`);
+                } else {
+                    logSystemMessage(`❌ Detection/Move failed: ${data.message}`);
+                }
+            } catch (e) {
+                btnDetectMove.disabled = false;
+                btnDetectMove.innerText = "🎯 Go to Largest Object";
+                logSystemMessage(`❌ Network error during alignment: ${e}`);
+            }
+        });
+    }
 
     // --- Calibration Control Logic ---
     const chkShowOverlay = document.getElementById("chk-show-overlay");
@@ -807,6 +932,60 @@ function setupEventListeners() {
     let calibrationInterval = null;
     let calibratedPoints = {};
     let isCalibrated = false;
+    let yoloDetected = false;
+    let hasLastObject = false;  // cập nhật 5: keeps true after first detection
+    let lastObjectInfo = null;  // cập nhật 5: stores last largest object data
+
+    // cập nhật 5: UI refs for detection status
+    const detectStatusDot = document.getElementById("detect-status-dot");
+    const detectStatusText = document.getElementById("detect-status-text");
+    const lastObjectInfoPanel = document.getElementById("last-object-info");
+    const lastObjPixel = document.getElementById("last-obj-pixel");
+    const lastObjMachine = document.getElementById("last-obj-machine");
+
+    const updateDetectionStatusUI = (detected, objectInfo, calibMatrix) => {
+        if (detectStatusDot && detectStatusText) {
+            if (detected) {
+                detectStatusDot.classList.add("active");
+                detectStatusText.textContent = "✅ Object detected (live)";
+            } else if (hasLastObject) {
+                detectStatusDot.classList.remove("active");
+                detectStatusDot.classList.add("stale");
+                detectStatusText.textContent = "📋 Using last known position";
+            } else {
+                detectStatusDot.classList.remove("active");
+                detectStatusDot.classList.remove("stale");
+                detectStatusText.textContent = "No object detected";
+            }
+        }
+
+        if (lastObjectInfoPanel && lastObjPixel && lastObjMachine) {
+            if (objectInfo) {
+                lastObjectInfoPanel.classList.remove("hidden");
+                const cx = objectInfo.center ? objectInfo.center[0].toFixed(1) : "?";
+                const cy = objectInfo.center ? objectInfo.center[1].toFixed(1) : "?";
+                lastObjPixel.textContent = `(${cx}, ${cy})`;
+
+                // Convert to machine coords if calibration matrix available
+                if (calibMatrix && objectInfo.center) {
+                    try {
+                        const M = calibMatrix;
+                        const px = objectInfo.center[0];
+                        const py = objectInfo.center[1];
+                        const wx = M[0][0]*px + M[0][1]*py + M[0][2];
+                        const wy = M[1][0]*px + M[1][1]*py + M[1][2];
+                        lastObjMachine.textContent = `X=${wx.toFixed(3)}, Y=${wy.toFixed(3)}`;
+                    } catch(e) {
+                        lastObjMachine.textContent = "—";
+                    }
+                } else {
+                    lastObjMachine.textContent = calibMatrix ? "—" : "(need calibration)";
+                }
+            } else {
+                lastObjectInfoPanel.classList.add("hidden");
+            }
+        }
+    };
 
     window.updateCalibrationUI = () => {
         const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
@@ -821,6 +1000,10 @@ function setupEventListeners() {
         }
         if (btnMoveToCenter) {
             btnMoveToCenter.disabled = !isCalibrated || !isConnected;
+        }
+        if (btnDetectMove) {
+            // Enable when connected and we have a saved last object position (cập nhật 5)
+            btnDetectMove.disabled = !isConnected || !hasLastObject;
         }
     };
 
@@ -864,6 +1047,19 @@ function setupEventListeners() {
                 if (btn) {
                     btn.disabled = !detected.includes(key) || !isConnected;
                 }
+            }
+            
+            yoloDetected = data.yolo_detected || false;
+            // cập nhật 5: hasLastObject stays true once an object has been detected
+            if (data.has_last_object) hasLastObject = true;
+            if (data.last_object) lastObjectInfo = data.last_object;
+
+            // Update detection status UI
+            updateDetectionStatusUI(yoloDetected, lastObjectInfo, isCalibrated && data.calibration_matrix ? data.calibration_matrix : null);
+
+            if (btnDetectMove) {
+                // Button enabled when connected and have a cached last object
+                btnDetectMove.disabled = !isConnected || !hasLastObject;
             }
         } catch (e) {
             console.error("Failed to poll calibration status: ", e);

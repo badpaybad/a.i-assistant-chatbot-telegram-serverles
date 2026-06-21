@@ -45,7 +45,12 @@
                     <div class="card-content row-inputs">
                         <div class="input-group">
                             <label for="port-input">Serial Port</label>
-                            <input type="text" id="port-input" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
+                            <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
+                            <datalist id="ports-datalist">
+                                <option value="/dev/ttyACM0">/dev/ttyACM0</option>
+                                <option value="/dev/ttyACM1">/dev/ttyACM1</option>
+                                <option value="dummy">dummy (Mock mode)</option>
+                            </datalist>
                         </div>
                         <div class="input-group">
                             <label for="baudrate-input">Baud Rate</label>
@@ -345,11 +350,11 @@
                 <span class="panel-title">Camera Feed</span>
             </div>
             <div class="panel-actions">
-                <select id="camera-select" class="input-select-small inline-select">
-                    <option value="4" selected>Rapoo USB (Cam 4)</option>
-                    <option value="0">Webcam 1 (Cam 0)</option>
-                    <option value="2">Webcam 2 (Cam 2)</option>
-                </select>
+                <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select" style="width: 150px;" placeholder="Cam index (e.g. 4)" value="4">
+                <datalist id="cameras-datalist"></datalist>
+                <button class="btn-toggle" id="btn-camera-expand" title="Expand Full Page">
+                    <span class="expand-icon">⛶</span>
+                </button>
                 <button class="btn-toggle" id="btn-camera-toggle" title="Toggle Camera Panel">
                     <span class="toggle-icon">▲</span>
                 </button>
@@ -361,111 +366,146 @@
                 <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
             </div>
             
-            <!-- ALIGNMENT & CALIBRATION CONTROLS -->
-            <div class="camera-calibration-section">
-                <div class="calibration-row">
-                    <span class="calibration-title">Origin Alignment (ArUco Markers)</span>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="chk-show-overlay" checked>
-                        <span class="toggle-slider"></span>
-                        <span class="toggle-label">Show Overlay</span>
-                    </label>
-                </div>
-                
-                <div class="marker-status-grid">
-                    <div class="marker-status-badge" id="badge-tl">
-                        <span class="badge-dot"></span>
-                        <span class="badge-label">Top-Left</span>
+            <div class="camera-controls-sidebar" id="camera-controls-sidebar">
+                <!-- ALIGNMENT & CALIBRATION CONTROLS -->
+                <div class="camera-calibration-section">
+                    <div class="calibration-row">
+                        <span class="calibration-title">Origin Alignment (ArUco Markers)</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="chk-show-overlay" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Show Overlay</span>
+                        </label>
                     </div>
-                    <div class="marker-status-badge" id="badge-tr">
-                        <span class="badge-dot"></span>
-                        <span class="badge-label">Top-Right</span>
+                    
+                    <div class="marker-status-grid">
+                        <div class="marker-status-badge" id="badge-tl">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Top-Left</span>
+                        </div>
+                        <div class="marker-status-badge" id="badge-tr">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Top-Right</span>
+                        </div>
+                        <div class="marker-status-badge" id="badge-br">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Bottom-Right</span>
+                        </div>
+                        <div class="marker-status-badge" id="badge-bl">
+                            <span class="badge-dot"></span>
+                            <span class="badge-label">Bottom-Left</span>
+                        </div>
                     </div>
-                    <div class="marker-status-badge" id="badge-br">
-                        <span class="badge-dot"></span>
-                        <span class="badge-label">Bottom-Right</span>
+                    
+                    <div class="calibration-buttons-grid">
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate TL</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate TR</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-br" disabled>Calibrate BR</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-bl" disabled>Calibrate BL</button>
                     </div>
-                    <div class="marker-status-badge" id="badge-bl">
-                        <span class="badge-dot"></span>
-                        <span class="badge-label">Bottom-Left</span>
-                    </div>
-                </div>
-                
-                <div class="calibration-buttons-grid">
-                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate TL</button>
-                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate TR</button>
-                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-br" disabled>Calibrate BR</button>
-                    <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-bl" disabled>Calibrate BL</button>
-                </div>
-                
-                <div class="calibration-actions-row">
-                    <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
-                    <button class="btn btn-primary" id="btn-move-to-center" disabled>Move Spindle to Center</button>
-                </div>
-            </div>
-
-            <!-- HOME & GOTO SECTION (cập nhật 2) -->
-            <div class="camera-home-section">
-                <div class="home-header-row">
-                    <span class="calibration-title">Origin Control</span>
-                    <div class="home-status-badge" id="home-status-badge">
-                        <span class="home-dot" id="home-dot"></span>
-                        <span id="home-status-label">Home not set</span>
+                    
+                    <div class="calibration-actions-row">
+                        <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
+                        <button class="btn btn-primary" id="btn-move-to-center" disabled>Move Spindle to Center</button>
                     </div>
                 </div>
 
-                <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
+                <!-- HOME & GOTO SECTION (cập nhật 2) -->
+                <div class="camera-home-section">
+                    <div class="home-header-row">
+                        <span class="calibration-title">Origin Control</span>
+                        <div class="home-status-badge" id="home-status-badge">
+                            <span class="home-dot" id="home-dot"></span>
+                            <span id="home-status-label">Home not set</span>
+                        </div>
+                    </div>
 
-                <div class="home-actions-row">
-                    <button class="btn btn-warning" id="btn-set-home" disabled>
-                        🏠 Set Home (0,0,0)
+                    <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
+
+                    <div class="home-actions-row">
+                        <button class="btn btn-warning" id="btn-set-home" disabled>
+                            🏠 Set Home (0,0,0)
+                        </button>
+                        <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 View Map</button>
+                    </div>
+
+                    <!-- Inline confirm row (hiện sau khi nhấn Set Home lần 1) -->
+                    <div class="home-confirm-row hidden" id="home-confirm-row">
+                        <span class="home-confirm-text">⚠️ Xác nhận set gốc (0,0,0) tại vị trí hiện tại?</span>
+                        <div class="home-confirm-btns">
+                            <button class="btn btn-success btn-small" id="btn-home-confirm-yes">✓ Xác nhận</button>
+                            <button class="btn btn-danger-soft btn-small" id="btn-home-confirm-no">✕ Huỷ</button>
+                        </div>
+                    </div>
+
+                    <!-- GoTo Controls -->
+                    <div class="goto-section" id="goto-section">
+                        <div class="goto-inputs-row">
+                            <div class="input-group">
+                                <label for="goto-x" style="font-size:10px;">Target X (mm)</label>
+                                <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
+                            </div>
+                            <div class="input-group">
+                                <label for="goto-y" style="font-size:10px;">Target Y (mm)</label>
+                                <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
+                            </div>
+                            <div class="input-group">
+                                <label for="goto-feedrate" style="font-size:10px;">Feedrate</label>
+                                <input type="number" id="goto-feedrate" value="1000" step="100" min="100">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y</button>
+                    </div>
+
+                    <!-- Home Snapshot Map -->
+                    <div class="home-snapshot-container hidden" id="home-snapshot-container">
+                        <div class="snapshot-header">
+                            <span class="snapshot-label">📷 Home Reference Map</span>
+                            <button class="btn-icon" id="btn-close-snapshot" title="Close map">✕</button>
+                        </div>
+                        <div class="snapshot-wrapper">
+                            <img id="home-snapshot-img" src="" alt="Home Snapshot" class="home-snapshot-img">
+                            <div class="snapshot-crosshair" id="snapshot-crosshair"></div>
+                            <div class="snapshot-pen-marker" id="snapshot-pen-marker" style="display:none;"></div>
+                        </div>
+                        <div class="snapshot-coords-overlay">
+                            <span>Home: (0, 0)</span>
+                            <span id="snapshot-current-pos">Pen: X=0.000, Y=0.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OBJECT DETECTION & ALIGNMENT SECTION (cập nhật 3 + 5) -->
+                <div class="camera-detection-section">
+                    <div class="detection-header-row">
+                        <span class="calibration-title">Object Detection</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="chk-detect-objects" checked>
+                            <span class="toggle-slider"></span>
+                            <span class="toggle-label">Detect Objects</span>
+                        </label>
+                    </div>
+
+                    <!-- Object detection live status (cập nhật 5) -->
+                    <div class="detection-status-row" id="detection-status-row">
+                        <span class="detect-status-dot" id="detect-status-dot"></span>
+                        <span class="detect-status-text" id="detect-status-text">No object detected</span>
+                    </div>
+
+                    <!-- Last largest object info (cập nhật 5) -->
+                    <div class="last-object-info hidden" id="last-object-info">
+                        <div class="last-object-label">📌 Last Largest Object</div>
+                        <div class="last-object-coords">
+                            <span>Pixel: <strong id="last-obj-pixel">—</strong></span>
+                            <span>Machine: <strong id="last-obj-machine">—</strong></span>
+                        </div>
+                    </div>
+
+                    <p class="home-hint">YOLO ONNX detect object tự động. Khi detect được, nhấn <strong>Go to Largest Object</strong> để di chuyển đầu bút tới vị trí đó.</p>
+
+                    <button class="btn btn-success" id="btn-detect-move" style="width: 100%; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;" disabled>
+                        🎯 Go to Largest Object
                     </button>
-                    <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 View Map</button>
-                </div>
-
-                <!-- Inline confirm row (hiện sau khi nhấn Set Home lần 1) -->
-                <div class="home-confirm-row hidden" id="home-confirm-row">
-                    <span class="home-confirm-text">⚠️ Xác nhận set gốc (0,0,0) tại vị trí hiện tại?</span>
-                    <div class="home-confirm-btns">
-                        <button class="btn btn-success btn-small" id="btn-home-confirm-yes">✓ Xác nhận</button>
-                        <button class="btn btn-danger-soft btn-small" id="btn-home-confirm-no">✕ Huỷ</button>
-                    </div>
-                </div>
-
-                <!-- GoTo Controls -->
-                <div class="goto-section" id="goto-section">
-                    <div class="goto-inputs-row">
-                        <div class="input-group">
-                            <label for="goto-x" style="font-size:10px;">Target X (mm)</label>
-                            <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
-                        </div>
-                        <div class="input-group">
-                            <label for="goto-y" style="font-size:10px;">Target Y (mm)</label>
-                            <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
-                        </div>
-                        <div class="input-group">
-                            <label for="goto-feedrate" style="font-size:10px;">Feedrate</label>
-                            <input type="number" id="goto-feedrate" value="1000" step="100" min="100">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y</button>
-                </div>
-
-                <!-- Home Snapshot Map -->
-                <div class="home-snapshot-container hidden" id="home-snapshot-container">
-                    <div class="snapshot-header">
-                        <span class="snapshot-label">📷 Home Reference Map</span>
-                        <button class="btn-icon" id="btn-close-snapshot" title="Close map">✕</button>
-                    </div>
-                    <div class="snapshot-wrapper">
-                        <img id="home-snapshot-img" src="" alt="Home Snapshot" class="home-snapshot-img">
-                        <div class="snapshot-crosshair" id="snapshot-crosshair"></div>
-                        <div class="snapshot-pen-marker" id="snapshot-pen-marker" style="display:none;"></div>
-                    </div>
-                    <div class="snapshot-coords-overlay">
-                        <span>Home: (0, 0)</span>
-                        <span id="snapshot-current-pos">Pen: X=0.000, Y=0.000</span>
-                    </div>
                 </div>
             </div>
         </div>

@@ -9,6 +9,7 @@ import json
 import cv2
 import numpy as np
 import threading
+import onnxruntime as ort
 from typing import Dict, List, Set, Optional
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -133,6 +134,17 @@ class ControllerState:
         self.home_markers = cal_settings.get("home_markers", {})
         self.home_snapshot = cal_settings.get("home_snapshot", None)
 
+        # Object detection settings (cập nhật 3)
+        self.detect_objects = True
+        self.ort_session = None
+        self.latest_detection_results = []
+        self.latest_detection_time = 0.0
+        self.latest_yolo_detections = []
+        self.latest_yolo_detection_time = 0.0
+        # cập nhật 5: save last known largest object position
+        self.last_largest_object_info = None  # {"center": [cx, cy], "bbox": [...], "class_id": n, "confidence": f, "area": n}
+        self.update_calibration_matrix()
+
     def update_calibration_matrix(self):
         valid_pts = []
         for corner in ["TL", "TR", "BR", "BL"]:
@@ -163,14 +175,161 @@ class ControllerState:
 
 state = ControllerState()
 
+# ONNX Detection Helper Functions (cập nhật 3)
+def get_ort_session():
+    if state.ort_session is None:
+        model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/runs/detect/train/weights/best.onnx"
+        if os.path.exists(model_path):
+            try:
+                logger.info(f"Loading ONNX model from {model_path}...")
+                state.ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
+                logger.info("ONNX model loaded successfully.")
+            except Exception as e:
+                logger.error(f"Error loading ONNX model: {e}")
+        else:
+            logger.error(f"Model file not found at: {model_path}")
+    return state.ort_session
+
+def letterbox(img, new_shape=(640, 640), color=(114, 114, 114)):
+    """Resizes and pads image while keeping aspect ratio."""
+    shape = img.shape[:2]  # current shape [height, width]
+    if isinstance(new_shape, int):
+        new_shape = (new_shape, new_shape)
+
+    # Scale ratio (new / old)
+    r = min(new_shape[0] / shape[0], new_shape[1] / shape[1])
+
+    # Compute padding
+    new_unpad = int(round(shape[1] * r)), int(round(shape[0] * r))
+    dw, dh = new_shape[1] - new_unpad[0], new_shape[0] - new_unpad[1]  # wh padding
+
+    dw /= 2  # divide padding into 2 sides
+    dh /= 2
+
+    if shape[::-1] != new_unpad:  # resize
+        img = cv2.resize(img, new_unpad, interpolation=cv2.INTER_LINEAR)
+    top, bottom = int(round(dh - 0.1)), int(round(dh + 0.1))
+    left, right = int(round(dw - 0.1)), int(round(dw + 0.1))
+    img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
+    return img, r, (dw, dh)
+
+def run_object_detection(frame, conf_threshold=0.25, iou_threshold=0.45):
+    session = get_ort_session()
+    if session is None:
+        return []
+
+    # Get model inputs
+    inputs = session.get_inputs()
+    input_name = inputs[0].name
+    input_shape = inputs[0].shape
+    img_h, img_w = input_shape[2], input_shape[3]
+
+    # Convert original image to 3-channel grayscale for inference (to prevent color bias, matching update 1 in cameraip whattodo)
+    gray_img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray_3ch = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2BGR)
+
+    # Preprocess image with letterbox
+    pad_img, r, (dw, dh) = letterbox(gray_3ch, (img_h, img_w))
+    
+    # Convert BGR to RGB
+    rgb_img = cv2.cvtColor(pad_img, cv2.COLOR_BGR2RGB)
+    
+    # Normalize and transpose
+    blob = rgb_img.astype(np.float32) / 255.0
+    blob = np.transpose(blob, (2, 0, 1))
+    blob = np.expand_dims(blob, axis=0)
+
+    # Run inference
+    try:
+        outputs = session.run(None, {input_name: blob})
+    except Exception as e:
+        logger.error(f"ONNX session run failed: {e}")
+        return []
+        
+    raw_output = outputs[0][0]  # Get output for batch 0
+    
+    boxes = []
+    confidences = []
+    class_ids = []
+
+    # Format 1: YOLO26 / End-to-End models with shape [max_detections, 6]
+    if len(raw_output.shape) == 2 and raw_output.shape[1] == 6:
+        for row in raw_output:
+            confidence = float(row[4])
+            if confidence > conf_threshold:
+                x1, y1, x2, y2 = row[:4]
+                w = x2 - x1
+                h = y2 - y1
+                boxes.append([float(x1), float(y1), float(w), float(h)])
+                confidences.append(confidence)
+                class_ids.append(int(row[5]))
+    # Format 2: YOLOv8 / YOLO11 models with shape [4 + num_classes, num_anchors]
+    else:
+        output = np.transpose(raw_output)
+        for row in output:
+            scores = row[4:]
+            class_id = np.argmax(scores)
+            confidence = float(scores[class_id])
+            if confidence > conf_threshold:
+                xc, yc, w, h = row[:4]
+                x1 = xc - w / 2
+                y1 = yc - h / 2
+                boxes.append([float(x1), float(y1), float(w), float(h)])
+                confidences.append(confidence)
+                class_ids.append(int(class_id))
+
+    # Apply NMS
+    indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, iou_threshold)
+    
+    detections = []
+    if len(indices) > 0:
+        indices = indices.flatten() if hasattr(indices, 'flatten') else [i[0] if isinstance(i, (list, tuple, np.ndarray)) else i for i in indices]
+        for i in indices:
+            box = boxes[i]
+            conf = confidences[i]
+            cid = class_ids[i]
+            
+            # Remove padding and rescale to original coordinates
+            x1 = (box[0] - dw) / r
+            y1 = (box[1] - dh) / r
+            w_box = box[2] / r
+            h_box = box[3] / r
+            
+            # Map box to pixel coordinates
+            ix1 = max(0, int(round(x1)))
+            iy1 = max(0, int(round(y1)))
+            ix2 = min(frame.shape[1], int(round(x1 + w_box)))
+            iy2 = min(frame.shape[0], int(round(y1 + h_box)))
+            
+            cx = (ix1 + ix2) / 2.0
+            cy = (iy1 + iy2) / 2.0
+            area = (ix2 - ix1) * (iy2 - iy1)
+            
+            detections.append({
+                "class_id": cid,
+                "confidence": conf,
+                "bbox": [ix1, iy1, ix2, iy2],
+                "center": [cx, cy],
+                "area": area
+            })
+            
+    return detections
+
 class CameraManager:
     def __init__(self):
         self.lock = threading.Lock()
         self.caps = {}
         self.latest_frames = {}
+        self.latest_raw_frames = {} # Store raw numpy frames (cập nhật 3)
         self.active_clients = {}
         self.threads = {}
         self.running = {}
+
+    def get_raw_frame(self, index: int) -> Optional[np.ndarray]:
+        with self.lock:
+            if index in self.latest_raw_frames:
+                return self.latest_raw_frames[index].copy()
+            return None
 
     def start_camera(self, index: int):
         with self.lock:
@@ -221,6 +380,10 @@ class CameraManager:
                     continue
                 
                 consecutive_failures = 0
+
+                # Save raw frame under lock (cập nhật 3)
+                with self.lock:
+                    self.latest_raw_frames[index] = frame.copy()
                 
                 # Detect ArUco markers in DICT_4X4_1000
                 detected_this_frame = {}
@@ -341,6 +504,46 @@ class CameraManager:
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
                     except Exception as e:
                         logger.error(f"Error drawing overlay: {e}")
+
+                # Draw YOLO detections overlay if enabled or recently triggered (cập nhật 3)
+                detections_to_draw = []
+                if getattr(state, "detect_objects", False):
+                    try:
+                        detections_to_draw = run_object_detection(frame)
+                        state.latest_yolo_detections = detections_to_draw
+                        state.latest_yolo_detection_time = time.time()
+                        # cập nhật 5: save the largest object persistently
+                        if detections_to_draw:
+                            largest = max(detections_to_draw, key=lambda d: d["area"])
+                            state.last_largest_object_info = largest
+                    except Exception as e:
+                        logger.error(f"Error in ONNX detection: {e}")
+                elif time.time() - getattr(state, "latest_detection_time", 0.0) < 5.0:
+                    detections_to_draw = getattr(state, "latest_detection_results", [])
+                    
+                if detections_to_draw:
+                    try:
+                        for d in detections_to_draw:
+                            ix1, iy1, ix2, iy2 = d["bbox"]
+                            cid = d["class_id"]
+                            conf = d["confidence"]
+                            
+                            # Draw bounding box
+                            colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255)]
+                            color = colors[cid % len(colors)]
+                            cv2.rectangle(frame, (ix1, iy1), (ix2, iy2), color, 2)
+                            
+                            # Draw dot at center
+                            cx, cy = d["center"]
+                            cv2.circle(frame, (int(cx), int(cy)), 4, color, -1)
+                            
+                            label = f"Obj {cid}: {conf:.2f}"
+                            label_sz, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                            iy1_text = max(iy1, label_sz[1] + 5)
+                            cv2.rectangle(frame, (ix1, iy1_text - label_sz[1] - 5), (ix1 + label_sz[0], iy1_text + base_line - 5), color, -1)
+                            cv2.putText(frame, label, (ix1, iy1_text - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
+                    except Exception as e:
+                        logger.error(f"Error drawing ONNX detections overlay: {e}")
                 
                 _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 with self.lock:
@@ -363,6 +566,8 @@ class CameraManager:
                 del self.caps[index]
             if index in self.latest_frames:
                 del self.latest_frames[index]
+            if index in self.latest_raw_frames:
+                del self.latest_raw_frames[index]
             logger.info(f"Successfully released camera index {index}")
 
     def get_frame(self, index: int) -> bytes:
@@ -631,6 +836,20 @@ async def gcode_streamer_task():
             break
 
 # REST Endpoints
+# Mock Serial for Testing (cập nhật 3)
+class DummySerial:
+    def __init__(self):
+        self.in_waiting = 0
+    def write(self, data: bytes):
+        cmd = data.decode('utf-8', errors='ignore').strip()
+        logger.info(f"[DUMMY SERIAL WRITE] {cmd}")
+    def read(self, size: int) -> bytes:
+        return b""
+    def flush(self):
+        pass
+    def close(self):
+        pass
+
 class ConnectionConfig(BaseModel):
     port: str
     baudrate: int
@@ -646,6 +865,13 @@ async def connect(config: ConnectionConfig):
     logger.info(f"Connecting to serial port {state.port_name} at {state.baudrate}")
     
     try:
+        if state.port_name.lower() in ["dummy", "mock"]:
+            state.serial_port = DummySerial()
+            state.connected = True
+            state.machine_state = "Idle"
+            await broadcast({"type": "connection", "connected": True, "message": "Connected to Mock CNC (Dummy Mode)"})
+            return {"status": "ok", "message": "Connected to Mock CNC successfully"}
+            
         # Open serial port
         state.serial_port = serial.Serial(state.port_name, state.baudrate, timeout=0.1)
         state.connected = True
@@ -958,9 +1184,31 @@ class RecordConfig(BaseModel):
 
 @app.get("/api/calibration/status")
 async def get_calibration_status():
+    yolo_detected = False
+    if getattr(state, "detect_objects", False):
+        t_diff = time.time() - getattr(state, "latest_yolo_detection_time", 0.0)
+        if t_diff < 2.0 and getattr(state, "latest_yolo_detections", None):
+            yolo_detected = True
+    # cập nhật 5: expose whether we have a saved last object position
+    has_last_object = state.last_largest_object_info is not None
+    # Build serializable last object info for frontend
+    last_object = None
+    if state.last_largest_object_info:
+        obj = state.last_largest_object_info
+        last_object = {
+            "center": obj.get("center"),
+            "bbox": obj.get("bbox"),
+            "class_id": obj.get("class_id"),
+            "confidence": obj.get("confidence"),
+            "area": obj.get("area")
+        }
     return {
         "detected": list(state.latest_detected_markers.keys()),
-        "coords": state.latest_detected_markers
+        "coords": state.latest_detected_markers,
+        "yolo_detected": yolo_detected,
+        "has_last_object": has_last_object,
+        "last_object": last_object,
+        "calibration_matrix": state.calibration_matrix
     }
 
 @app.post("/api/calibration/record")
@@ -1185,6 +1433,117 @@ async def move_to_center():
         "message": f"Moving pen to center at machine coordinates X={mx:.3f}, Y={my:.3f}",
         "target": [mx, my]
     }
+
+# --- Object Detection Endpoints (cập nhật 3) ---
+
+class ToggleDetectionConfig(BaseModel):
+    detect_objects: bool
+
+@app.post("/api/detection/toggle")
+async def toggle_detection(config: ToggleDetectionConfig):
+    state.detect_objects = config.detect_objects
+    return {"status": "ok", "detect_objects": state.detect_objects}
+
+@app.post("/api/detection/move_to_largest")
+async def move_to_largest(camera_index: int = 4):
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+        
+    if not state.calibration_matrix:
+        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
+    
+    # cập nhật 5: try live detection first, fallback to cached last object
+    largest_obj = None
+    
+    raw_frame = camera_manager.get_raw_frame(camera_index)
+    if raw_frame is not None:
+        try:
+            detections = run_object_detection(raw_frame)
+            if detections:
+                largest_obj = max(detections, key=lambda d: d["area"])
+                # Update saved last object
+                state.last_largest_object_info = largest_obj
+                # Save detections for flash overlay
+                state.latest_detection_results = detections
+                state.latest_detection_time = time.time()
+        except Exception as e:
+            logger.error(f"Live detection failed: {e}")
+    
+    # Fallback to cached last object if live detection found nothing
+    if largest_obj is None:
+        largest_obj = getattr(state, "last_largest_object_info", None)
+    
+    if largest_obj is None:
+        return JSONResponse({"status": "error", "message": "No objects detected. Point camera at object and retry."}, status_code=400)
+        
+    cx, cy = largest_obj["center"]
+    
+    # Map pixel center to work coordinates
+    M = np.array(state.calibration_matrix, dtype=np.float32)
+    wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
+    wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
+    
+    # Send G0 command
+    cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
+    
+    return {
+        "status": "ok",
+        "message": f"Moving pen to object (class {largest_obj['class_id']}, conf {largest_obj['confidence']:.2f}) at work coords X={wx:.3f}, Y={wy:.3f}",
+        "center": [cx, cy],
+        "target": [wx, wy],
+        "class_id": largest_obj["class_id"],
+        "confidence": largest_obj["confidence"],
+        "bbox": largest_obj["bbox"]
+    }
+
+# --- Device Listing Endpoints (cập nhật 4) ---
+
+@app.get("/api/devices/ports")
+async def get_serial_ports():
+    import serial.tools.list_ports
+    ports = []
+    # Add dummy mock port first
+    ports.append({
+        "port": "dummy",
+        "description": "Virtual Mock GRBL Controller"
+    })
+    for p in serial.tools.list_ports.comports():
+        desc = p.description if p.description != 'n/a' else p.device
+        ports.append({
+            "port": p.device,
+            "description": f"{p.device} ({desc})"
+        })
+    return ports
+
+@app.get("/api/devices/cameras")
+async def get_usb_cameras():
+    import glob
+    import re
+    cameras = []
+    for dev_path in sorted(glob.glob("/sys/class/video4linux/video*")):
+        base = os.path.basename(dev_path)
+        match = re.match(r"video(\d+)", base)
+        if match:
+            idx = int(match.group(1))
+            name_file = os.path.join(dev_path, "name")
+            name = f"Camera {idx}"
+            if os.path.exists(name_file):
+                try:
+                    with open(name_file, "r") as f:
+                        name = f.read().strip()
+                except Exception:
+                    pass
+            cameras.append({
+                "index": idx,
+                "name": f"{name} (Cam {idx})"
+            })
+    return cameras
 
 # Serve Frontend
 # Ensure directories exist

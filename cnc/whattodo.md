@@ -24,4 +24,17 @@ camera capture được ảnh, cần xác định 4 đỉnh của hình chữ nh
     cần vẽ trục tọa độ x,y trên video , sao cho gốc tọa độ trùng với tâm của hình chữ nhật.
 
 **cập nhật 2** khi dùng web UI để điều khiển , và đưa đầu bút vào gốc tọa độ. nhấn nút Home để set gốc tọa độ hiện tại trên ảnh cũng là gốc 0,0,0 của xyz cnc . Cần lưu lại để tắt máy đi vẫn dùng lại được.
-Ảnh và 4 đỉnh cũng cần lưu tại thời điểm nhấn nút Home. dùng ảnh đó như bản đồ để di chuyển đầu bút . dựa trên tính toán gốc tọa độ . Ví dụ như sau khi set gốc xong, tôi muốn di chuyển đầu bút tới vị trí (10,10) thì tôi chỉ việc nhập 10,10 vào web UI, và nhấn nút GoTo. lúc đó web UI sẽ tính toán xem đầu bút đang ở đâu , so sánh với ảnh gốc để xác định vị trí , rồi di chuyển đầu bút tới vị trí (10,10) 
+Ảnh và 4 đỉnh cũng cần lưu tại thời điểm nhấn nút Home. dùng ảnh đó như bản đồ để di chuyển đầu bút . dựa trên tính toán gốc tọa độ . Ví dụ như sau khi set gốc xong, tôi muốn di chuyển đầu bút tới vị trí (10,10) thì tôi chỉ việc nhập 10,10 vào web UI, và nhấn nút GoTo. lúc đó web UI sẽ tính toán xem đầu bút đang ở đâu , so sánh với ảnh gốc để xác định vị trí , rồi di chuyển đầu bút tới vị trí (10,10)
+
+**cập nhật 3**
+camera feed có thể mở rộng full page , để nhìn video cho to rõ hơn
+
+dùng model cameraip/train/runs/detect/train/weights/best.onnx và code detect usage ở cameraip/train/detect_onnx.py để phát hiện ra object trong frame camera , lấy ra object có bbox to nhất lấy điểm trung tâm và gửi lệnh di chuyển đầu bút đến vị trí đó
+    các nút chức năng chiếm nhiều vị trí của feed camera, cần video camera rộng  min 480px chiều rộng, video min chiều cao 320px, kể cả chưa phóng to full page 
+    detect được object thì cần vẽ bbox trên video  
+
+**cập nhật 4**
+thêm các lệnh ls để lấy danh sách usb camera , serial port để connect , droplist chọn và có thể gõ text nếu cần thay cho việc chọn sẵn ở droplist 
+
+**cập nhật 5** ở **cập nhật 3** detect object cần bật mặc định, khi detect được thì cần cho phép click go to object , giữ lại vị trí cuối của object lagest, để có thể click nút go to lagest object cần enable lên
+    click sẽ di chuyển đầu bút tới vị trí đó

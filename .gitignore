@@ -120,3 +120,7 @@ cameraip/train/*.pt
 **/train_log.csv
 **/augmented_image/**
 cnc/test_**
+cnc/sys
+cnc/re
+cnc/os
+cnc/getopt
