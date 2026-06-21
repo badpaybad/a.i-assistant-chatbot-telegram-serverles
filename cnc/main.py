@@ -152,6 +152,9 @@ class ControllerState:
         # cập nhật 5: save last known largest object position
         self.last_largest_object_info = None  # {"center": [cx, cy], "bbox": [...], "class_id": n, "confidence": f, "area": n}
         self.class_names = {0: "sittng"}      # cập nhật 6: class labels mapping
+        # cập nhật 8: Moving around state variables
+        self.moving_around_running = False
+        self.moving_around_task = None
         self.update_calibration_matrix()
 
     def update_calibration_matrix(self):
@@ -1309,7 +1312,8 @@ async def get_calibration_status():
         "has_last_object": has_last_object,
         "last_object": last_object,
         "calibration_matrix": get_adjusted_calibration_matrix(),
-        "home_set": state.home_set
+        "home_set": state.home_set,
+        "moving_around_running": getattr(state, "moving_around_running", False)
     }
 
 @app.post("/api/calibration/record")
@@ -1503,38 +1507,191 @@ async def goto_position(config: GoToConfig):
         "command": cmd
     }
 
-@app.post("/api/calibration/move_to_center")
-async def move_to_center():
+async def send_gcode_and_wait(cmd: str, target_x: float, target_y: float):
+    import math
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+    except Exception as e:
+        logger.error(f"Error sending command in loop: {e}")
+        return False
+        
+    # Wait for the command to execute
+    start_time = time.time()
+    await asyncio.sleep(0.2) # Allow GRBL to start processing
+    while state.moving_around_running:
+        # Check distance
+        dist = math.sqrt((state.wpos[0] - target_x)**2 + (state.wpos[1] - target_y)**2)
+        if dist < 0.2:
+            break
+        # Fallback check for Idle state
+        if time.time() - start_time > 0.5 and state.machine_state == "Idle":
+            break
+        await asyncio.sleep(0.05)
+    return True
+
+async def moving_around_loop_task(M_adj):
+    import math
+    
+    async def simulate_pen_up():
+        up_cmds = translate_command(f"G0 Z{state.pen_up_z}")
+        for cmd in up_cmds:
+            if not state.moving_around_running:
+                return
+            state.serial_port.write((cmd + "\n").encode())
+            state.serial_port.flush()
+            await broadcast({"type": "log", "direction": "out", "content": cmd})
+        dwell_time = max(0.1, state.pen_dwell)
+        await asyncio.sleep(dwell_time + 0.2)
+
+    async def simulate_pen_touch():
+        # Pen down
+        down_cmds = translate_command(f"G0 Z{state.pen_down_z}")
+        for cmd in down_cmds:
+            if not state.moving_around_running:
+                return
+            state.serial_port.write((cmd + "\n").encode())
+            state.serial_port.flush()
+            await broadcast({"type": "log", "direction": "out", "content": cmd})
+        dwell_time = max(0.1, state.pen_dwell)
+        await asyncio.sleep(dwell_time + 0.2)
+        
+        # Pen up
+        up_cmds = translate_command(f"G0 Z{state.pen_up_z}")
+        for cmd in up_cmds:
+            if not state.moving_around_running:
+                return
+            state.serial_port.write((cmd + "\n").encode())
+            state.serial_port.flush()
+            await broadcast({"type": "log", "direction": "out", "content": cmd})
+        await asyncio.sleep(dwell_time + 0.2)
+
+    try:
+        M = np.array(M_adj, dtype=np.float32)
+        pts = state.home_markers
+        
+        # Calculate target coordinates at distance 100 in the direction of the 4 markers
+        targets = {}
+        for c in ["TR", "BR", "BL", "TL"]:
+            if c in pts:
+                px, py = pts[c]
+                gx = M[0, 0] * px + M[0, 1] * py + M[0, 2]
+                gy = M[1, 0] * px + M[1, 1] * py + M[1, 2]
+                length = math.sqrt(gx*gx + gy*gy)
+                if length > 0:
+                    tx = (gx / length) * 100.0
+                    ty = (gy / length) * 100.0
+                    targets[c] = (tx, ty)
+                else:
+                    targets[c] = (0.0, 0.0)
+            else:
+                # Fallback direction vectors if a marker is missing
+                fallback = {
+                    "TR": (70.71, 70.71),
+                    "BR": (70.71, -70.71),
+                    "BL": (-70.71, -70.71),
+                    "TL": (-70.71, 70.71)
+                }
+                targets[c] = fallback[c]
+
+        logger.info(f"Moving around targets calculated: {targets}")
+        
+        # Sequence of corner points
+        seq = [
+            ("Origin", 0.0, 0.0),
+            ("TR", targets["TR"][0], targets["TR"][1]),
+            ("BR", targets["BR"][0], targets["BR"][1]),
+            ("BL", targets["BL"][0], targets["BL"][1]),
+            ("TL", targets["TL"][0], targets["TL"][1])
+        ]
+        
+        # Lift pen initially
+        await simulate_pen_up()
+        
+        # First go to origin and touch
+        success = await send_gcode_and_wait("G90 G0 X0 Y0", 0.0, 0.0)
+        if success and state.moving_around_running:
+            await simulate_pen_touch()
+        
+        while state.moving_around_running:
+            # We loop starting from TR
+            for name, tx, ty in seq[1:]:
+                if not state.moving_around_running:
+                    break
+                cmd = f"G90 G0 X{tx:.3f} Y{ty:.3f}"
+                success = await send_gcode_and_wait(cmd, tx, ty)
+                if not success:
+                    break
+                if state.moving_around_running:
+                    await simulate_pen_touch()
+                
+            # After finishing the 4 corners, we go to Origin and touch
+            if state.moving_around_running:
+                success = await send_gcode_and_wait("G90 G0 X0 Y0", 0.0, 0.0)
+                if success and state.moving_around_running:
+                    await simulate_pen_touch()
+                
+    except asyncio.CancelledError:
+        logger.info("Moving around task cancelled")
+    except Exception as e:
+        logger.error(f"Error in moving around task: {e}")
+    finally:
+        state.moving_around_running = False
+
+@app.post("/api/calibration/moving_around/start")
+async def start_moving_around():
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
-        
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home has not been set. Please set home first."}, status_code=400)
+    
     M_adj = get_adjusted_calibration_matrix()
     if not M_adj:
-        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
+        return JSONResponse({"status": "error", "message": "Calibration matrix is not available"}, status_code=400)
         
-    # We calculate the center using the registered calibration points
-    valid_corners = [corner for corner in ["TL", "TR", "BR", "BL"] if corner in state.calibration_points]
-    if len(valid_corners) < 3:
-        return JSONResponse({"status": "error", "message": "Not enough calibration points"}, status_code=400)
+    if state.moving_around_running:
+        return {"status": "ok", "message": "Already running"}
         
-    avg_px = sum(state.calibration_points[c]["pixel"][0] for c in valid_corners) / len(valid_corners)
-    avg_py = sum(state.calibration_points[c]["pixel"][1] for c in valid_corners) / len(valid_corners)
+    state.moving_around_running = True
+    state.moving_around_task = asyncio.create_task(moving_around_loop_task(M_adj))
     
-    M = np.array(M_adj, dtype=np.float32)
-    mx = M[0, 0] * avg_px + M[0, 1] * avg_py + M[0, 2]
-    my = M[1, 0] * avg_px + M[1, 1] * avg_py + M[1, 2]
-    
-    cmd = f"G0 X{mx:.3f} Y{my:.3f}"
-    
-    state.serial_port.write((cmd + "\n").encode())
-    state.serial_port.flush()
-    await broadcast({"type": "log", "direction": "out", "content": cmd})
-    
-    return {
-        "status": "ok",
-        "message": f"Moving pen to center at machine coordinates X={mx:.3f}, Y={my:.3f}",
-        "target": [mx, my]
-    }
+    return {"status": "ok", "message": "Moving around loop started"}
+
+@app.post("/api/calibration/moving_around/stop")
+async def stop_moving_around():
+    if not state.moving_around_running:
+        return {"status": "ok", "message": "Not running"}
+        
+    state.moving_around_running = False
+    if state.moving_around_task:
+        state.moving_around_task.cancel()
+        state.moving_around_task = None
+        
+    # Send stop command to GRBL immediately
+    if state.connected and state.serial_port:
+        try:
+            # Send feed hold
+            state.serial_port.write(b"!")
+            state.serial_port.flush()
+            await asyncio.sleep(0.2)
+            # Send soft reset
+            state.serial_port.write(b"\x18")
+            state.serial_port.flush()
+            await asyncio.sleep(0.5)
+            # Unlock
+            state.serial_port.write(b"$X\n")
+            state.serial_port.flush()
+            await asyncio.sleep(0.2)
+            # Move back to origin
+            cmd = "G90 G0 X0 Y0"
+            state.serial_port.write((cmd + "\n").encode())
+            state.serial_port.flush()
+            await broadcast({"type": "log", "direction": "out", "content": cmd})
+        except Exception as e:
+            logger.error(f"Error stopping moving around loop: {e}")
+            
+    return {"status": "ok", "message": "Moving around loop stopped"}
 
 # --- Object Detection Endpoints (cập nhật 3) ---
 

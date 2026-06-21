@@ -1022,6 +1022,8 @@ function setupEventListeners() {
     let yoloDetected = false;
     let hasLastObject = false;  // cập nhật 5: keeps true after first detection
     let lastObjectInfo = null;  // cập nhật 5: stores last largest object data
+    let movingAroundRunning = false;
+    let isAbortingMovingAround = false;
 
     // cập nhật 5: UI refs for detection status
     const detectStatusDot = document.getElementById("detect-status-dot");
@@ -1086,7 +1088,7 @@ function setupEventListeners() {
             }
         }
         if (btnMoveToCenter) {
-            btnMoveToCenter.disabled = !isCalibrated || !isConnected;
+            btnMoveToCenter.disabled = !isCalibrated || !isHomeSet || !isConnected || isAbortingMovingAround;
         }
         if (btnDetectMove) {
             // Enable when connected, home is set, and we have a saved last object position (cập nhật 7)
@@ -1144,6 +1146,17 @@ function setupEventListeners() {
             // Dynamically sync isCalibrated and isHomeSet status from backend
             isCalibrated = data.calibration_matrix !== null;
             isHomeSet = data.home_set || false;
+
+            // Sync moving around status
+            movingAroundRunning = data.moving_around_running || false;
+            if (btnMoveToCenter && !isAbortingMovingAround) {
+                if (movingAroundRunning) {
+                    btnMoveToCenter.textContent = "Moving around started";
+                } else {
+                    btnMoveToCenter.textContent = "Moving around";
+                }
+            }
+
             window.updateCalibrationUI();
             if (window.updateHomeUI) window.updateHomeUI();
 
@@ -1234,17 +1247,51 @@ function setupEventListeners() {
 
         if (btnMoveToCenter) {
             btnMoveToCenter.addEventListener("click", async () => {
-                try {
-                    logSystemMessage("Requesting spindle to move to the coordinate origin (center of the print area)...");
-                    const res = await fetch("/api/calibration/move_to_center", { method: "POST" });
-                    const data = await res.json();
-                    if (data.status === "ok") {
-                        logSystemMessage(data.message);
-                    } else {
-                        logSystemMessage(`Error moving: ${data.message}`);
+                if (isAbortingMovingAround) return;
+
+                if (!movingAroundRunning) {
+                    try {
+                        logSystemMessage("Starting moving around calibration loop...");
+                        btnMoveToCenter.disabled = true; // Temporary disable while waiting for request
+                        const res = await fetch("/api/calibration/moving_around/start", { method: "POST" });
+                        const data = await res.json();
+                        if (data.status === "ok") {
+                            movingAroundRunning = true;
+                            btnMoveToCenter.textContent = "Moving around started";
+                            logSystemMessage("Moving around loop started successfully.");
+                        } else {
+                            logSystemMessage(`Failed to start moving around: ${data.message}`);
+                        }
+                    } catch (e) {
+                        logSystemMessage(`Network error when starting loop: ${e}`);
+                    } finally {
+                        window.updateCalibrationUI();
                     }
-                } catch (e) {
-                    logSystemMessage(`Network error: ${e}`);
+                } else {
+                    try {
+                        logSystemMessage("Stopping moving around loop...");
+                        const res = await fetch("/api/calibration/moving_around/stop", { method: "POST" });
+                        const data = await res.json();
+                        if (data.status === "ok") {
+                            movingAroundRunning = false;
+                            isAbortingMovingAround = true;
+                            btnMoveToCenter.textContent = "Moving around stop";
+                            window.updateCalibrationUI();
+                            logSystemMessage("Moving around loop stopped. Spindle is resetting and homing to origin.");
+                            
+                            setTimeout(() => {
+                                isAbortingMovingAround = false;
+                                btnMoveToCenter.textContent = "Moving around";
+                                window.updateCalibrationUI();
+                            }, 1500);
+                        } else {
+                            logSystemMessage(`Failed to stop moving around: ${data.message}`);
+                            window.updateCalibrationUI();
+                        }
+                    } catch (e) {
+                        logSystemMessage(`Network error when stopping loop: ${e}`);
+                        window.updateCalibrationUI();
+                    }
                 }
             });
         }

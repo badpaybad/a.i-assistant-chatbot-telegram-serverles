@@ -30,18 +30,21 @@ camera capture được ảnh, cần xác định 4 đỉnh của hình chữ nh
 camera feed có thể mở rộng full page , để nhìn video cho to rõ hơn
 
 dùng model cameraip/train/runs/detect/train/weights/best.onnx và code detect usage ở cameraip/train/detect_onnx.py để phát hiện ra object trong frame camera , lấy ra object có bbox to nhất lấy điểm trung tâm và gửi lệnh di chuyển đầu bút đến vị trí đó
-    các nút chức năng chiếm nhiều vị trí của feed camera, cần video camera rộng  min 480px chiều rộng, video min chiều cao 320px, kể cả chưa phóng to full page 
+    các nút chức năng chiếm nhiều vị trí của feed camera, cần video camera rộng  min 480px chiều rộng, video min chiều cao 320px, kể cả chưa phóng to full page
     detect được object thì cần vẽ bbox trên video  
 
 **cập nhật 4**
-thêm các lệnh ls để lấy danh sách usb camera , serial port để connect , droplist chọn và có thể gõ text nếu cần thay cho việc chọn sẵn ở droplist 
+thêm các lệnh ls để lấy danh sách usb camera , serial port để connect , droplist chọn và có thể gõ text nếu cần thay cho việc chọn sẵn ở droplist
 
 **cập nhật 5** ở **cập nhật 3** detect object cần bật mặc định, khi detect được thì cần cho phép click go to object , giữ lại vị trí cuối của object lagest, để có thể click nút go to lagest object cần enable lên
     click sẽ di chuyển đầu bút tới vị trí đó
 
 **cập nhật 6**
-khi detect ArUco Marker và yolo object detect cần dùng frame ảnh gốc từ camera. sau khi có tất cả các điểm rồi thì mới vẽ lên frame để hiển thị 
+khi detect ArUco Marker và yolo object detect cần dùng frame ảnh gốc từ camera. sau khi có tất cả các điểm rồi thì mới vẽ lên frame để hiển thị
     detect object chỉ lấy lable: sittng, dùng object to nhất để xác định vị trí theo gốc set home
 
-**cập nhật 7** Last Largest Object khi detect ra bbox và tính ra trung tâm bbox. cần dựa vào Aruco và gốc tọa độ để tính ra điểm cần di chuyển đến của đầu bút khi click Go to largest object 
+**cập nhật 7** Last Largest Object khi detect ra bbox và tính ra trung tâm bbox. cần dựa vào Aruco và gốc tọa độ để tính ra điểm cần di chuyển đến của đầu bút khi click Go to largest object
 Sau khi set home nút Go to largest object sẽ được enable, bbox sẽ tính theo gốc home được set theo ảnh home đã chụp
+
+**cập nhật 8** dựa vào 4 điểm Aruco , đổi nút Move Spindle to Center thành Moving around. Khi click sẽ điều khiẻn đầu bút đi theo  hình chiều kim đồng hồ lần lượt 4 điểm , đi từ gốc , lên đến top right,bot right, bot left, top left , gốc , top right ... vòng lặp cho tới khi click lại Moving around. sẽ chuyển trạng thái vd Moving around -> Moving around started -> Moving around stop  -> Moving around . do có khung vật lý nên cần tránh va chạm động cơ khi di chuyển. với hình vuông theo vị trí 4 điểm aruco, mà đường chéo từ gốc đến 4 điểm là 100 
+    đến từng điểm thì lại giả lập touch bút, hạ xuống nhấc lên rồi mới di chuyển tiếp 
