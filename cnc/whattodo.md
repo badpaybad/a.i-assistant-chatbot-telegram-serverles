@@ -42,3 +42,6 @@ thêm các lệnh ls để lấy danh sách usb camera , serial port để conne
 **cập nhật 6**
 khi detect ArUco Marker và yolo object detect cần dùng frame ảnh gốc từ camera. sau khi có tất cả các điểm rồi thì mới vẽ lên frame để hiển thị 
     detect object chỉ lấy lable: sittng, dùng object to nhất để xác định vị trí theo gốc set home
+
+**cập nhật 7** Last Largest Object khi detect ra bbox và tính ra trung tâm bbox. cần dựa vào Aruco và gốc tọa độ để tính ra điểm cần di chuyển đến của đầu bút khi click Go to largest object 
+Sau khi set home nút Go to largest object sẽ được enable, bbox sẽ tính theo gốc home được set theo ảnh home đã chụp

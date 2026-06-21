@@ -47,8 +47,16 @@ def load_calibration_settings() -> dict:
 
 def save_calibration_settings(settings: dict):
     try:
+        existing = {}
+        if os.path.exists(CALIBRATION_FILE):
+            try:
+                with open(CALIBRATION_FILE, "r") as f:
+                    existing = json.load(f)
+            except Exception:
+                pass
+        merged = {**existing, **settings}
         with open(CALIBRATION_FILE, "w") as f:
-            json.dump(settings, f, indent=4)
+            json.dump(merged, f, indent=4)
     except Exception as e:
         logger.error(f"Error saving calibration settings: {e}")
 
@@ -177,22 +185,77 @@ class ControllerState:
 state = ControllerState()
 
 def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
-    if not state.calibration_matrix:
-        return None
-    M = np.array(state.calibration_matrix, dtype=np.float32)
-    if state.home_set and state.home_markers and len(state.home_markers) == 4:
+    M = None
+    if state.calibration_matrix:
+        M = np.array(state.calibration_matrix, dtype=np.float32)
+    elif state.home_set and state.home_markers and len(state.home_markers) == 4:
+        # Construct a default calibration matrix using home_markers mapping to a standard 200x150 mm area
         pts = state.home_markers
-        cx_home = sum(pts[c][0] for c in ["TL", "TR", "BR", "BL"]) / 4.0
-        cy_home = sum(pts[c][1] for c in ["TL", "TR", "BR", "BL"]) / 4.0
-        
-        hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
-        hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
-        
-        M_adj = M.copy()
-        M_adj[0, 2] -= hx_cal
-        M_adj[1, 2] -= hy_cal
-        return M_adj.tolist()
-    return state.calibration_matrix
+        src = np.array([pts[c] for c in ["TL", "TR", "BR", "BL"]], dtype=np.float32)
+        # We assume physical coordinates relative to the center (0,0):
+        # TL = (-100, 75), TR = (100, 75), BR = (100, -75), BL = (-100, -75)
+        dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
+        try:
+            M, _ = cv2.estimateAffine2D(src, dst)
+            logger.info("Generated a default calibration matrix from home markers (fallback).")
+        except Exception as e:
+            logger.error(f"Error generating fallback calibration matrix: {e}")
+            M = None
+
+    if M is None:
+        return None
+
+    if state.home_set and state.home_markers:
+        pts = state.home_markers
+        # Get list of valid corners recorded during homing
+        home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in pts]
+        if len(home_corners) >= 3:
+            cx_home = sum(pts[c][0] for c in home_corners) / len(home_corners)
+            cy_home = sum(pts[c][1] for c in home_corners) / len(home_corners)
+            
+            hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
+            hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
+            
+            M_adj = M.copy()
+            M_adj[0, 2] -= hx_cal
+            M_adj[1, 2] -= hy_cal
+            
+            # Now calculate shift compensation based on current ArUco markers vs home markers
+            common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers and c in state.latest_detected_markers]
+            if len(common_corners) >= 3:
+                try:
+                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
+                    if len(common_corners) == 3:
+                        H = cv2.getAffineTransform(src_pts, dst_pts)
+                    else:
+                        H, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                    if H is not None:
+                        # Append the row [0, 0, 1] to make it a 3x3 homogeneous transformation matrix
+                        H_3x3 = np.vstack([H, [0.0, 0.0, 1.0]])
+                        M_adj = np.dot(M_adj, H_3x3)
+                        logger.debug("Successfully applied affine correction to calibration matrix.")
+                except Exception as e:
+                    logger.error(f"Error computing affine calibration alignment: {e}")
+            elif 1 <= len(common_corners) <= 2:
+                try:
+                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
+                    # Translation vector: shift needed to move current markers back to home markers
+                    shift = np.mean(dst_pts - src_pts, axis=0) # [dx, dy]
+                    H = np.array([[1.0, 0.0, shift[0]], [0.0, 1.0, shift[1]]], dtype=np.float32)
+                    H_3x3 = np.vstack([H, [0.0, 0.0, 1.0]])
+                    M_adj = np.dot(M_adj, H_3x3)
+                    logger.debug(f"Successfully applied translation shift: {shift}")
+                except Exception as e:
+                    logger.error(f"Error computing translation calibration alignment: {e}")
+            # Invert Y-axis dynamically to correct physical Y direction
+            M_adj[1, :] = -M_adj[1, :]
+            return M_adj.tolist()
+    # Invert Y-axis for fallback case
+    M_copy = M.copy()
+    M_copy[1, :] = -M_copy[1, :]
+    return M_copy.tolist()
 
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session():
@@ -1245,7 +1308,8 @@ async def get_calibration_status():
         "yolo_detections": state.latest_yolo_detections if yolo_detected else [],
         "has_last_object": has_last_object,
         "last_object": last_object,
-        "calibration_matrix": get_adjusted_calibration_matrix()
+        "calibration_matrix": get_adjusted_calibration_matrix(),
+        "home_set": state.home_set
     }
 
 @app.post("/api/calibration/record")
@@ -1487,6 +1551,9 @@ async def move_to_largest(camera_index: int = 4):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
         
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
+        
     M_adj = get_adjusted_calibration_matrix()
     if not M_adj:
         return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
@@ -1550,6 +1617,9 @@ class ClickGoConfig(BaseModel):
 async def click_go(config: ClickGoConfig):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+        
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
         
     M_adj = get_adjusted_calibration_matrix()
     if not M_adj:

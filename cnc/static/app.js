@@ -1018,6 +1018,7 @@ function setupEventListeners() {
     let calibrationInterval = null;
     let calibratedPoints = {};
     let isCalibrated = false;
+    let isHomeSet = false;
     let yoloDetected = false;
     let hasLastObject = false;  // cập nhật 5: keeps true after first detection
     let lastObjectInfo = null;  // cập nhật 5: stores last largest object data
@@ -1088,8 +1089,8 @@ function setupEventListeners() {
             btnMoveToCenter.disabled = !isCalibrated || !isConnected;
         }
         if (btnDetectMove) {
-            // Enable when connected and we have a saved last object position (cập nhật 5)
-            btnDetectMove.disabled = !isConnected || !hasLastObject;
+            // Enable when connected, home is set, and we have a saved last object position (cập nhật 7)
+            btnDetectMove.disabled = !isConnected || !isHomeSet || !hasLastObject;
         }
     };
 
@@ -1140,12 +1141,18 @@ function setupEventListeners() {
             if (data.has_last_object) hasLastObject = true;
             if (data.last_object) lastObjectInfo = data.last_object;
 
+            // Dynamically sync isCalibrated and isHomeSet status from backend
+            isCalibrated = data.calibration_matrix !== null;
+            isHomeSet = data.home_set || false;
+            window.updateCalibrationUI();
+            if (window.updateHomeUI) window.updateHomeUI();
+
             // Update detection status UI
-            updateDetectionStatusUI(yoloDetected, lastObjectInfo, isCalibrated && data.calibration_matrix ? data.calibration_matrix : null);
+            updateDetectionStatusUI(yoloDetected, lastObjectInfo, isCalibrated ? data.calibration_matrix : null);
 
             if (btnDetectMove) {
-                // Button enabled when connected and have a cached last object
-                btnDetectMove.disabled = !isConnected || !hasLastObject;
+                // Button enabled when connected, home is set, and have a cached last object (cập nhật 7)
+                btnDetectMove.disabled = !isConnected || !isHomeSet || !hasLastObject;
             }
         } catch (e) {
             console.error("Failed to poll calibration status: ", e);
@@ -1265,7 +1272,6 @@ function setupEventListeners() {
     const btnCloseSnapshot = document.getElementById("btn-close-snapshot");
     const snapshotCurrentPos = document.getElementById("snapshot-current-pos");
 
-    let isHomeSet = false;
     let homeSnapshotVisible = false;
 
     const updateHomeUI = () => {
