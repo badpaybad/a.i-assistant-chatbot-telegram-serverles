@@ -2,3 +2,4 @@ data/obj_train_data/i1.jpg
 data/obj_train_data/i2.jpg
 data/obj_train_data/i3.jpg
 data/obj_train_data/i4.jpg
+data/obj_train_data/sample object.png

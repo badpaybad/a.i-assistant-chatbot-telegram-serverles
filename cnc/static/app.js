@@ -90,7 +90,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Fetch and populate available serial ports and camera inputs
-async function populateDevices() {
+async function populateDevices(showInConsole = false) {
+    if (showInConsole) {
+        logSystemMessage("Scanning connected devices (ls)...");
+    }
     try {
         const portsRes = await fetch("/api/devices/ports");
         const ports = await portsRes.json();
@@ -104,8 +107,15 @@ async function populateDevices() {
                 portsDatalist.appendChild(opt);
             });
         }
+        if (showInConsole) {
+            logSystemMessage("Available Serial Ports:");
+            ports.forEach(p => {
+                logSystemMessage(`  • ${p.port} - ${p.description}`);
+            });
+        }
     } catch (e) {
         console.error("Failed to fetch available serial ports:", e);
+        if (showInConsole) logSystemMessage(`Error scanning ports: ${e}`);
     }
     
     try {
@@ -121,8 +131,15 @@ async function populateDevices() {
                 camsDatalist.appendChild(opt);
             });
         }
+        if (showInConsole) {
+            logSystemMessage("Available USB Cameras:");
+            cams.forEach(c => {
+                logSystemMessage(`  • Cam ${c.index} - ${c.name}`);
+            });
+        }
     } catch (e) {
         console.error("Failed to fetch available cameras:", e);
+        if (showInConsole) logSystemMessage(`Error scanning cameras: ${e}`);
     }
 }
 
@@ -417,6 +434,15 @@ async function sendCommand(cmd) {
 }
 
 function setupEventListeners() {
+    // List ports button click
+    const btnListPorts = document.getElementById("btn-list-ports");
+    if (btnListPorts) {
+        btnListPorts.addEventListener("click", (e) => {
+            e.preventDefault();
+            populateDevices(true);
+        });
+    }
+
     // Port Connection
     connectBtn.addEventListener("click", async () => {
         if (isConnected) {
@@ -466,6 +492,11 @@ function setupEventListeners() {
         e.preventDefault();
         const cmd = consoleInput.value.trim();
         if (!cmd) return;
+        if (cmd.toLowerCase() === "ls") {
+            populateDevices(true);
+            consoleInput.value = "";
+            return;
+        }
         sendCommand(cmd);
         consoleInput.value = "";
     });
@@ -867,6 +898,14 @@ function setupEventListeners() {
     cameraSelect.addEventListener("change", handleCameraChange);
     cameraSelect.addEventListener("input", handleCameraChange);
 
+    const btnListCameras = document.getElementById("btn-list-cameras");
+    if (btnListCameras) {
+        btnListCameras.addEventListener("click", (e) => {
+            e.preventDefault();
+            populateDevices(true);
+        });
+    }
+
     // Object Detection controls (cập nhật 3)
     if (chkDetectObjects) {
         chkDetectObjects.addEventListener("change", async () => {
@@ -914,6 +953,53 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Camera stream click to move (cập nhật 5)
+    cameraStreamImg.addEventListener("click", async (e) => {
+        if (!isConnected) {
+            logSystemMessage("Cannot click-to-move: machine is disconnected.");
+            return;
+        }
+        if (!isCalibrated) {
+            logSystemMessage("Cannot click-to-move: calibration is not complete.");
+            return;
+        }
+
+        const rect = cameraStreamImg.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        // Scale to 640x480 coordinate space
+        const cx = (clickX / rect.width) * 640.0;
+        const cy = (clickY / rect.height) * 480.0;
+
+        // Spawn visual ripple ring
+        const ripple = document.createElement("div");
+        ripple.className = "click-indicator-ring";
+        ripple.style.left = `${clickX}px`;
+        ripple.style.top = `${clickY}px`;
+        cameraStreamImg.parentElement.appendChild(ripple);
+        setTimeout(() => ripple.remove(), 600);
+
+        logSystemMessage(`Clicked camera feed at px: (${cx.toFixed(1)}, ${cy.toFixed(1)}). Sending move command...`);
+
+        try {
+            const camIdx = cameraSelect ? cameraSelect.value : 4;
+            const res = await fetch("/api/detection/click_go", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ x: cx, y: cy, camera_index: parseInt(camIdx) || 4 })
+            });
+            const data = await res.json();
+            if (data.status === "ok") {
+                logSystemMessage(`✅ ${data.message}`);
+            } else {
+                logSystemMessage(`❌ Click movement failed: ${data.message}`);
+            }
+        } catch (err) {
+            logSystemMessage(`❌ Network error during click movement: ${err}`);
+        }
+    });
 
     // --- Calibration Control Logic ---
     const chkShowOverlay = document.getElementById("chk-show-overlay");

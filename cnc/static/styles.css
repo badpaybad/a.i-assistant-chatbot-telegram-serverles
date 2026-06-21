@@ -1006,12 +1006,12 @@ input[type=range]::-webkit-slider-thumb:hover {
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 520px;
-    height: 600px;
-    min-width: 504px;
-    max-width: 800px;
-    min-height: 400px;
-    max-height: 800px;
+    width: 840px;
+    height: 520px;
+    min-width: 780px;
+    max-width: 1200px;
+    min-height: 380px;
+    max-height: 900px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
@@ -1152,7 +1152,8 @@ input[type=range]::-webkit-slider-thumb:hover {
     background: hsla(220, 25%, 6%, 0.3);
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row; /* Lay out side-by-side! */
+    gap: 16px;
     min-height: 0; /* Enable scrolling/shrinking of contents when resized smaller */
 }
 .camera-stream-container {
@@ -1160,7 +1161,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     width: 480px;
     height: 360px;
     min-width: 480px;
-    min-height: 360px;
+    min-height: 320px;
     background-color: #05070a;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);
@@ -1168,7 +1169,8 @@ input[type=range]::-webkit-slider-thumb:hover {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0 auto 12px auto;
+    margin: 0;
+    flex-shrink: 0;
 }
 .camera-stream-container img {
     width: 100%;
@@ -1730,4 +1732,41 @@ input[type=range]::-webkit-slider-thumb:hover {
 .last-object-coords strong {
     color: var(--text-main);
     font-weight: 600;
+}
+
+/* Custom Styles for input-with-button and click indicator */
+.input-with-button {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.input-with-button input {
+    flex: 1;
+}
+
+.click-indicator-ring {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border: 2px solid var(--primary);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    animation: clickRingRipple 0.6s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+    z-index: 2010; /* high z-index to overlay image */
+}
+
+@keyframes clickRingRipple {
+    0% {
+        width: 0px;
+        height: 0px;
+        opacity: 1;
+        border-color: var(--primary);
+    }
+    100% {
+        width: 50px;
+        height: 50px;
+        opacity: 0;
+        border-color: var(--success);
+    }
 }

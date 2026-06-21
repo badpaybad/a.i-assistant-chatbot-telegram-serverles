@@ -186,7 +186,7 @@ Nếu không muốn dùng giao diện web, bạn có thể chạy trực tiếp 
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device cpu
 
 
-venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device cpu
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 40 --batch 8 --device cpu
 
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26x.pt --epochs 50 --batch 8 --device cpu
 ```
@@ -220,6 +220,8 @@ venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect
 
 
 venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/3.jpg" --output cameraip/train/3output_detect.jpg --conf 0.25
+
+venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/1.jpg" --output cameraip/train/1output_detect.jpg --conf 0.25
 ```
 
 *Kết quả nhận diện (vẽ khung bounding box và tên nhãn tương ứng) sẽ được lưu vào file `output_detect.jpg`.*

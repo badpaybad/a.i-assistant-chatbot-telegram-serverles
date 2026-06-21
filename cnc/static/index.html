@@ -45,7 +45,12 @@
                     <div class="card-content row-inputs">
                         <div class="input-group">
                             <label for="port-input">Serial Port</label>
-                            <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
+                            <div class="input-with-button">
+                                <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0"
+                                    placeholder="/dev/ttyACM0">
+                                <button class="btn btn-secondary" id="btn-list-ports" title="List serial ports (ls)"
+                                    style="padding: 10px;">ls</button>
+                            </div>
                             <datalist id="ports-datalist">
                                 <option value="/dev/ttyACM0">/dev/ttyACM0</option>
                                 <option value="/dev/ttyACM1">/dev/ttyACM1</option>
@@ -350,8 +355,12 @@
                 <span class="panel-title">Camera Feed</span>
             </div>
             <div class="panel-actions">
-                <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select" style="width: 150px;" placeholder="Cam index (e.g. 4)" value="4">
+                <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select"
+                    style="width: 120px;" placeholder="Cam index (e.g. 4)" value="4">
                 <datalist id="cameras-datalist"></datalist>
+                <button class="btn-toggle" id="btn-list-cameras" title="List cameras (ls)" style="margin-right: 4px;">
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">ls</span>
+                </button>
                 <button class="btn-toggle" id="btn-camera-expand" title="Expand Full Page">
                     <span class="expand-icon">⛶</span>
                 </button>
@@ -365,7 +374,7 @@
                 <img id="camera-stream-img" src="" alt="Camera Feed Loading...">
                 <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
             </div>
-            
+
             <div class="camera-controls-sidebar" id="camera-controls-sidebar">
                 <!-- ALIGNMENT & CALIBRATION CONTROLS -->
                 <div class="camera-calibration-section">
@@ -377,7 +386,6 @@
                             <span class="toggle-label">Show Overlay</span>
                         </label>
                     </div>
-                    
                     <div class="marker-status-grid">
                         <div class="marker-status-badge" id="badge-tl">
                             <span class="badge-dot"></span>
@@ -387,6 +395,9 @@
                             <span class="badge-dot"></span>
                             <span class="badge-label">Top-Right</span>
                         </div>
+                    </div>
+                    <div class="marker-status-grid">
+
                         <div class="marker-status-badge" id="badge-br">
                             <span class="badge-dot"></span>
                             <span class="badge-label">Bottom-Right</span>
@@ -396,14 +407,20 @@
                             <span class="badge-label">Bottom-Left</span>
                         </div>
                     </div>
-                    
                     <div class="calibration-buttons-grid">
-                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate TL</button>
-                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate TR</button>
-                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-br" disabled>Calibrate BR</button>
-                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-bl" disabled>Calibrate BL</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate
+                            TL</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate
+                            TR</button>
                     </div>
-                    
+                    <div class="calibration-buttons-grid">
+
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-br" disabled>Calibrate
+                            BR</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-bl" disabled>Calibrate
+                            BL</button>
+                    </div>
+
                     <div class="calibration-actions-row">
                         <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
                         <button class="btn btn-primary" id="btn-move-to-center" disabled>Move Spindle to Center</button>
@@ -420,7 +437,8 @@
                         </div>
                     </div>
 
-                    <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
+                    <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set
+                            Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
 
                     <div class="home-actions-row">
                         <button class="btn btn-warning" id="btn-set-home" disabled>
@@ -501,9 +519,11 @@
                         </div>
                     </div>
 
-                    <p class="home-hint">YOLO ONNX detect object tự động. Khi detect được, nhấn <strong>Go to Largest Object</strong> để di chuyển đầu bút tới vị trí đó.</p>
+                    <p class="home-hint">YOLO ONNX detect object tự động. Khi detect được, nhấn <strong>Go to Largest
+                            Object</strong> để di chuyển đầu bút tới vị trí đó.</p>
 
-                    <button class="btn btn-success" id="btn-detect-move" style="width: 100%; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;" disabled>
+                    <button class="btn btn-success" id="btn-detect-move"
+                        style="width: 100%; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;" disabled>
                         🎯 Go to Largest Object
                     </button>
                 </div>

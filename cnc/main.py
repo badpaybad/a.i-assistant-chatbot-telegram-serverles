@@ -358,9 +358,11 @@ class CameraManager:
             
         with self.lock:
             self.caps[index] = cap
-            
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        print("cv2.CAP_PROP_FRAME_WIDTH",cap.get(cv2.CAP_PROP_FRAME_WIDTH))        
+        print("cv2.CAP_PROP_FRAME_HEIGHT",cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
         consecutive_failures = 0
         logger.info(f"Camera index {index} initialized successfully. Starting read loop.")
@@ -1206,6 +1208,7 @@ async def get_calibration_status():
         "detected": list(state.latest_detected_markers.keys()),
         "coords": state.latest_detected_markers,
         "yolo_detected": yolo_detected,
+        "yolo_detections": state.latest_yolo_detections if yolo_detected else [],
         "has_last_object": has_last_object,
         "last_object": last_object,
         "calibration_matrix": state.calibration_matrix
@@ -1500,6 +1503,54 @@ async def move_to_largest(camera_index: int = 4):
         "class_id": largest_obj["class_id"],
         "confidence": largest_obj["confidence"],
         "bbox": largest_obj["bbox"]
+    }
+
+class ClickGoConfig(BaseModel):
+    x: float
+    y: float
+    camera_index: int = 4
+
+@app.post("/api/detection/click_go")
+async def click_go(config: ClickGoConfig):
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+        
+    if not state.calibration_matrix:
+        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
+        
+    # Check if the click coordinate falls inside any active bounding boxes
+    # We use live detections or cached detections from state.latest_yolo_detections
+    target_x, target_y = config.x, config.y
+    
+    # Check if there are active detections within 2 seconds
+    t_diff = time.time() - getattr(state, "latest_yolo_detection_time", 0.0)
+    if t_diff < 2.0 and getattr(state, "latest_yolo_detections", None):
+        for d in state.latest_yolo_detections:
+            x1, y1, x2, y2 = d["bbox"]
+            if x1 <= config.x <= x2 and y1 <= config.y <= y2:
+                # Snap to center of the clicked object!
+                target_x, target_y = d["center"]
+                logger.info(f"Click inside object {d['class_id']} detected. Snapping to center: {target_x}, {target_y}")
+                break
+                
+    # Map pixel coordinates to work coordinates
+    M = np.array(state.calibration_matrix, dtype=np.float32)
+    wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
+    wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+    
+    cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
+        
+    return {
+        "status": "ok",
+        "message": f"Moving pen to target X={wx:.3f}, Y={wy:.3f}",
+        "target": [wx, wy],
+        "pixel": [target_x, target_y]
     }
 
 # --- Device Listing Endpoints (cập nhật 4) ---
