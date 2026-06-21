@@ -143,6 +143,7 @@ class ControllerState:
         self.latest_yolo_detection_time = 0.0
         # cập nhật 5: save last known largest object position
         self.last_largest_object_info = None  # {"center": [cx, cy], "bbox": [...], "class_id": n, "confidence": f, "area": n}
+        self.class_names = {0: "sittng"}      # cập nhật 6: class labels mapping
         self.update_calibration_matrix()
 
     def update_calibration_matrix(self):
@@ -175,6 +176,24 @@ class ControllerState:
 
 state = ControllerState()
 
+def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
+    if not state.calibration_matrix:
+        return None
+    M = np.array(state.calibration_matrix, dtype=np.float32)
+    if state.home_set and state.home_markers and len(state.home_markers) == 4:
+        pts = state.home_markers
+        cx_home = sum(pts[c][0] for c in ["TL", "TR", "BR", "BL"]) / 4.0
+        cy_home = sum(pts[c][1] for c in ["TL", "TR", "BR", "BL"]) / 4.0
+        
+        hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
+        hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
+        
+        M_adj = M.copy()
+        M_adj[0, 2] -= hx_cal
+        M_adj[1, 2] -= hy_cal
+        return M_adj.tolist()
+    return state.calibration_matrix
+
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session():
     if state.ort_session is None:
@@ -184,6 +203,16 @@ def get_ort_session():
                 logger.info(f"Loading ONNX model from {model_path}...")
                 state.ort_session = ort.InferenceSession(model_path, providers=['CPUExecutionProvider'])
                 logger.info("ONNX model loaded successfully.")
+                
+                # Load class names from model metadata (cập nhật 6)
+                try:
+                    meta = state.ort_session.get_modelmeta()
+                    if "names" in meta.custom_metadata_map:
+                        import ast
+                        state.class_names = ast.literal_eval(meta.custom_metadata_map["names"])
+                        logger.info(f"Loaded class names from metadata: {state.class_names}")
+                except Exception as e:
+                    logger.warning(f"Could not load class names from metadata: {e}")
             except Exception as e:
                 logger.error(f"Error loading ONNX model: {e}")
         else:
@@ -289,6 +318,10 @@ def run_object_detection(frame, conf_threshold=0.25, iou_threshold=0.45):
             conf = confidences[i]
             cid = class_ids[i]
             
+            # detect object chỉ lấy lable: sittng (class_id = 0)
+            if cid != 0:
+                continue
+            
             # Remove padding and rescale to original coordinates
             x1 = (box[0] - dw) / r
             y1 = (box[1] - dh) / r
@@ -359,8 +392,8 @@ class CameraManager:
         with self.lock:
             self.caps[index] = cap
         
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         print("cv2.CAP_PROP_FRAME_WIDTH",cap.get(cv2.CAP_PROP_FRAME_WIDTH))        
         print("cv2.CAP_PROP_FRAME_HEIGHT",cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
@@ -446,6 +479,22 @@ class CameraManager:
                 for name, pt in detected_this_frame.items():
                     state.latest_detected_markers[name] = pt
                 
+                # Run YOLO object detection on the original clean frame (cập nhật 6)
+                detections_to_draw = []
+                if getattr(state, "detect_objects", False):
+                    try:
+                        detections_to_draw = run_object_detection(frame)
+                        state.latest_yolo_detections = detections_to_draw
+                        state.latest_yolo_detection_time = time.time()
+                        # cập nhật 5: save the largest object persistently
+                        if detections_to_draw:
+                            largest = max(detections_to_draw, key=lambda d: d["area"])
+                            state.last_largest_object_info = largest
+                    except Exception as e:
+                        logger.error(f"Error in ONNX detection: {e}")
+                elif time.time() - getattr(state, "latest_detection_time", 0.0) < 5.0:
+                    detections_to_draw = getattr(state, "latest_detection_results", [])
+
                 # Draw overlay if enabled
                 if state.draw_overlay:
                     try:
@@ -507,22 +556,6 @@ class CameraManager:
                     except Exception as e:
                         logger.error(f"Error drawing overlay: {e}")
 
-                # Draw YOLO detections overlay if enabled or recently triggered (cập nhật 3)
-                detections_to_draw = []
-                if getattr(state, "detect_objects", False):
-                    try:
-                        detections_to_draw = run_object_detection(frame)
-                        state.latest_yolo_detections = detections_to_draw
-                        state.latest_yolo_detection_time = time.time()
-                        # cập nhật 5: save the largest object persistently
-                        if detections_to_draw:
-                            largest = max(detections_to_draw, key=lambda d: d["area"])
-                            state.last_largest_object_info = largest
-                    except Exception as e:
-                        logger.error(f"Error in ONNX detection: {e}")
-                elif time.time() - getattr(state, "latest_detection_time", 0.0) < 5.0:
-                    detections_to_draw = getattr(state, "latest_detection_results", [])
-                    
                 if detections_to_draw:
                     try:
                         for d in detections_to_draw:
@@ -539,7 +572,8 @@ class CameraManager:
                             cx, cy = d["center"]
                             cv2.circle(frame, (int(cx), int(cy)), 4, color, -1)
                             
-                            label = f"Obj {cid}: {conf:.2f}"
+                            class_name = state.class_names.get(cid, f"Obj {cid}")
+                            label = f"{class_name}: {conf:.2f}"
                             label_sz, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
                             iy1_text = max(iy1, label_sz[1] + 5)
                             cv2.rectangle(frame, (ix1, iy1_text - label_sz[1] - 5), (ix1 + label_sz[0], iy1_text + base_line - 5), color, -1)
@@ -1211,7 +1245,7 @@ async def get_calibration_status():
         "yolo_detections": state.latest_yolo_detections if yolo_detected else [],
         "has_last_object": has_last_object,
         "last_object": last_object,
-        "calibration_matrix": state.calibration_matrix
+        "calibration_matrix": get_adjusted_calibration_matrix()
     }
 
 @app.post("/api/calibration/record")
@@ -1410,7 +1444,8 @@ async def move_to_center():
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
         
-    if not state.calibration_matrix:
+    M_adj = get_adjusted_calibration_matrix()
+    if not M_adj:
         return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
         
     # We calculate the center using the registered calibration points
@@ -1421,7 +1456,7 @@ async def move_to_center():
     avg_px = sum(state.calibration_points[c]["pixel"][0] for c in valid_corners) / len(valid_corners)
     avg_py = sum(state.calibration_points[c]["pixel"][1] for c in valid_corners) / len(valid_corners)
     
-    M = np.array(state.calibration_matrix, dtype=np.float32)
+    M = np.array(M_adj, dtype=np.float32)
     mx = M[0, 0] * avg_px + M[0, 1] * avg_py + M[0, 2]
     my = M[1, 0] * avg_px + M[1, 1] * avg_py + M[1, 2]
     
@@ -1452,7 +1487,8 @@ async def move_to_largest(camera_index: int = 4):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
         
-    if not state.calibration_matrix:
+    M_adj = get_adjusted_calibration_matrix()
+    if not M_adj:
         return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
     
     # cập nhật 5: try live detection first, fallback to cached last object
@@ -1482,7 +1518,7 @@ async def move_to_largest(camera_index: int = 4):
     cx, cy = largest_obj["center"]
     
     # Map pixel center to work coordinates
-    M = np.array(state.calibration_matrix, dtype=np.float32)
+    M = np.array(M_adj, dtype=np.float32)
     wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
     wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
     
@@ -1497,7 +1533,7 @@ async def move_to_largest(camera_index: int = 4):
     
     return {
         "status": "ok",
-        "message": f"Moving pen to object (class {largest_obj['class_id']}, conf {largest_obj['confidence']:.2f}) at work coords X={wx:.3f}, Y={wy:.3f}",
+        "message": f"Moving pen to object ({state.class_names.get(largest_obj['class_id'], 'object')}, conf {largest_obj['confidence']:.2f}) at work coords X={wx:.3f}, Y={wy:.3f}",
         "center": [cx, cy],
         "target": [wx, wy],
         "class_id": largest_obj["class_id"],
@@ -1515,7 +1551,8 @@ async def click_go(config: ClickGoConfig):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
         
-    if not state.calibration_matrix:
+    M_adj = get_adjusted_calibration_matrix()
+    if not M_adj:
         return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
         
     # Check if the click coordinate falls inside any active bounding boxes
@@ -1534,7 +1571,7 @@ async def click_go(config: ClickGoConfig):
                 break
                 
     # Map pixel coordinates to work coordinates
-    M = np.array(state.calibration_matrix, dtype=np.float32)
+    M = np.array(M_adj, dtype=np.float32)
     wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
     wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
     

@@ -38,3 +38,7 @@ thêm các lệnh ls để lấy danh sách usb camera , serial port để conne
 
 **cập nhật 5** ở **cập nhật 3** detect object cần bật mặc định, khi detect được thì cần cho phép click go to object , giữ lại vị trí cuối của object lagest, để có thể click nút go to lagest object cần enable lên
     click sẽ di chuyển đầu bút tới vị trí đó
+
+**cập nhật 6**
+khi detect ArUco Marker và yolo object detect cần dùng frame ảnh gốc từ camera. sau khi có tất cả các điểm rồi thì mới vẽ lên frame để hiển thị 
+    detect object chỉ lấy lable: sittng, dùng object to nhất để xác định vị trí theo gốc set home

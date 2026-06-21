@@ -1,5 +1,25 @@
 {
     "points": {},
     "matrix": null,
-    "draw_overlay": true
+    "draw_overlay": true,
+    "home_set": true,
+    "home_markers": {
+        "TL": [
+            162.3333282470703,
+            64.5
+        ],
+        "BR": [
+            475.6666564941406,
+            372.5000305175781
+        ],
+        "BL": [
+            155.25,
+            363.3333435058594
+        ],
+        "TR": [
+            488.5,
+            75.16667175292969
+        ]
+    },
+    "home_snapshot": "home_snapshot.jpg"
 }
