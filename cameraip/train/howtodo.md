@@ -137,6 +137,8 @@ venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --de
 > 1. **Tự động chuyển đổi sang ảnh đen trắng (Grayscale)**: Để tránh việc màu ảnh hưởng tới quá trình huấn luyện và nhận diện, ảnh từ `dataraw` được tự động chuyển đổi sang dạng ảnh xám (grayscale) và lưu dưới dạng 3 kênh màu (để tương thích hoàn toàn với các mô hình pre-trained YOLO mà không cần thay đổi kiến trúc mạng).
 > 2. **Hỗ trợ cấu trúc CVAT tự động**: Tự động duyệt tìm file ảnh và nhãn `.txt` đệ quy sâu bên trong các thư mục con như `obj_train_data/` mà không bắt buộc bạn phải di chuyển file hoặc đổi tên thư mục.
 > 3. **Tự động trích xuất Tên Class**: Đọc trực tiếp từ file `obj.names` (được sinh ra khi xuất dữ liệu từ CVAT) để đưa tên các nhãn (ví dụ: `test`) vào file `dataset.yaml` thay vì tạo các nhãn mặc định `class_0`, `class_1` giúp bạn không cần chỉnh sửa thủ công cấu hình `dataset.yaml`.
+> 4. **Phân chia dữ liệu bảo toàn Class (Class-Aware Split & Copy)**: Tự động phân tích nhãn của từng ảnh để đảm bảo mọi class đều có mẫu biểu diễn trong cả hai tập `train` và `val`. Trong trường hợp một class chỉ có duy nhất 1 ảnh gán nhãn, ảnh đó sẽ được tự động nhân bản (copy) vào cả hai tập `train` và `val` để đảm bảo chất lượng kiểm thử và tránh lỗi huấn luyện/đánh giá.
+
 
 ### Kết quả đầu ra thư mục `data/`
 

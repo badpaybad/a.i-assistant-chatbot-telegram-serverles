@@ -906,6 +906,64 @@ function setupEventListeners() {
         });
     }
 
+    // --- Camera Capture & Download (cập nhật 14) ---
+    const btnCapture1280 = document.getElementById("btn-capture-1280");
+    const btnCapture720 = document.getElementById("btn-capture-720");
+
+    const triggerCaptureDownload = (mode) => {
+        if (isCameraCollapsed) {
+            logSystemMessage("⚠️ Cannot capture frame: camera stream is offline. Please open the camera panel.");
+            return;
+        }
+        const camIdx = cameraSelect ? cameraSelect.value : 4;
+        
+        if (mode === "1280") {
+            logSystemMessage(`📸 Triggering original 1280x720 frame JPEG download...`);
+            const link = document.createElement("a");
+            link.href = `/api/capture/download?mode=1280&camera_index=${camIdx}`;
+            link.download = `capture_1280_${Date.now()}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } else if (mode === "720") {
+            logSystemMessage(`📸 Triggering raw & cropped 720x720 JPEG downloads...`);
+            
+            // Raw frame download
+            const linkRaw = document.createElement("a");
+            linkRaw.href = `/api/capture/download?mode=720_raw&camera_index=${camIdx}`;
+            linkRaw.download = `capture_raw_${Date.now()}.jpg`;
+            document.body.appendChild(linkRaw);
+            linkRaw.click();
+            document.body.removeChild(linkRaw);
+            
+            // Cropped frame download (with a tiny delay to ensure both downloads can start)
+            setTimeout(() => {
+                const linkCrop = document.createElement("a");
+                linkCrop.href = `/api/capture/download?mode=720_cropped&camera_index=${camIdx}`;
+                linkCrop.download = `capture_cropped_${Date.now()}.jpg`;
+                document.body.appendChild(linkCrop);
+                linkCrop.click();
+                document.body.removeChild(linkCrop);
+            }, 300);
+        }
+    };
+
+    if (btnCapture1280) {
+        btnCapture1280.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerCaptureDownload("1280");
+        });
+    }
+
+    if (btnCapture720) {
+        btnCapture720.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            triggerCaptureDownload("720");
+        });
+    }
+
     // Object Detection controls (cập nhật 3)
     if (chkDetectObjects) {
         chkDetectObjects.addEventListener("change", async () => {
@@ -1084,6 +1142,7 @@ function setupEventListeners() {
     const btnCalBR = document.getElementById("btn-cal-br");
     const btnCalBL = document.getElementById("btn-cal-bl");
     const btnCalClear = document.getElementById("btn-cal-clear");
+    const btnResetAruco = document.getElementById("btn-reset-aruco");
     const btnMoveToCenter = document.getElementById("btn-move-to-center");
     
     let calibrationInterval = null;
@@ -1131,6 +1190,7 @@ function setupEventListeners() {
                     try {
                         const M = calibMatrix;
                         const px = objectInfo.center[0];
+                        const py = objectInfo.center[1];
                         const denom = M.length > 2 ? (M[2][0]*px + M[2][1]*py + M[2][2]) : 1.0;
                         const wx = (M[0][0]*px + M[0][1]*py + M[0][2]) / (denom || 1.0);
                         const wy = (M[1][0]*px + M[1][1]*py + M[1][2]) / (denom || 1.0);
@@ -1338,6 +1398,23 @@ function setupEventListeners() {
             });
         }
 
+        if (btnResetAruco) {
+            btnResetAruco.addEventListener("click", async () => {
+                if (confirm("Are you sure you want to reset standard ArUco points?")) {
+                    try {
+                        const res = await fetch("/api/calibration/reset_aruco", { method: "POST" });
+                        const data = await res.json();
+                        if (data.status === "ok") {
+                            logSystemMessage("ArUco standard points reset.");
+                            fetchCalibrationConfig();
+                        }
+                    } catch (e) {
+                        logSystemMessage(`Failed to reset ArUco: ${e}`);
+                    }
+                }
+            });
+        }
+
         if (btnMoveToCenter) {
             btnMoveToCenter.addEventListener("click", async () => {
                 if (isAbortingMovingAround) return;
@@ -1401,6 +1478,7 @@ function setupEventListeners() {
     // --- HOME & GOTO Logic (cập nhật 2) ---
     const btnSetHome = document.getElementById("btn-set-home");
     const btnViewSnapshot = document.getElementById("btn-view-snapshot");
+    const btnResetHome = document.getElementById("btn-reset-home");
     const btnGoto = document.getElementById("btn-goto");
     const gotoX = document.getElementById("goto-x");
     const gotoY = document.getElementById("goto-y");
@@ -1418,6 +1496,7 @@ function setupEventListeners() {
         if (btnSetHome) btnSetHome.disabled = !isConnected;
         if (btnGoto) btnGoto.disabled = !isConnected || !isHomeSet;
         if (btnViewSnapshot) btnViewSnapshot.disabled = !isHomeSet;
+        if (btnResetHome) btnResetHome.disabled = !isHomeSet;
         if (homeDot) homeDot.className = "home-dot" + (isHomeSet ? " home-active" : "");
         if (homeStatusLabel) homeStatusLabel.innerText = isHomeSet ? "Home set ✓" : "Home not set";
     };
@@ -1505,6 +1584,26 @@ function setupEventListeners() {
         if (btnHomeConfirmNo) {
             btnHomeConfirmNo.addEventListener("click", () => resetHomeConfirm());
         }
+    }
+
+    if (btnResetHome) {
+        btnResetHome.addEventListener("click", async () => {
+            if (confirm("Are you sure you want to reset home position?")) {
+                try {
+                    const res = await fetch("/api/home/reset", { method: "POST" });
+                    const data = await res.json();
+                    if (data.status === "ok") {
+                        isHomeSet = false;
+                        updateHomeUI();
+                        logSystemMessage("Home position reset.");
+                        if (homeSnapshotImg) homeSnapshotImg.src = "";
+                        if (homeSnapshotContainer) homeSnapshotContainer.classList.add("hidden");
+                    }
+                } catch (e) {
+                    logSystemMessage(`Failed to reset home: ${e}`);
+                }
+            }
+        });
     }
 
 

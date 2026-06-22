@@ -151,6 +151,7 @@ class ControllerState:
         self.home_markers = cal_settings.get("home_markers", {})
         self.home_snapshot = cal_settings.get("home_snapshot", None)
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
+        self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
 
         # Object detection settings (cập nhật 3)
         self.detect_objects = True
@@ -447,6 +448,7 @@ class CameraManager:
         self.caps = {}
         self.latest_frames = {}
         self.latest_raw_frames = {} 
+        self.latest_uncropped_frames = {}
         self.active_clients = {}
         self.threads = {}
         self.running = {}
@@ -465,6 +467,12 @@ class CameraManager:
         with self.lock:
             if index in self.latest_raw_frames:
                 return self.latest_raw_frames[index].copy()
+            return None
+
+    def get_uncropped_frame(self, index: int) -> Optional[np.ndarray]:
+        with self.lock:
+            if index in self.latest_uncropped_frames:
+                return self.latest_uncropped_frames[index].copy()
             return None
 
     def start_camera(self, index: int):
@@ -543,6 +551,9 @@ class CameraManager:
 
                 consecutive_failures = 0
 
+                with self.lock:
+                    self.latest_uncropped_frames[index] = frame.copy()
+
                 # cập nhật 10: crop frame về 720x720 lấy vùng giữa frame
                 fh, fw = frame.shape[:2]
                 if fh >= 720 and fw >= 720:
@@ -572,6 +583,7 @@ class CameraManager:
             self.running[index] = False
             self.caps.pop(index, None)
             self.latest_raw_frames.pop(index, None)
+            self.latest_uncropped_frames.pop(index, None)
             self.latest_frames.pop(index, None)
         logger.info(f"[Capture] Camera {index} released.")
 
@@ -1686,6 +1698,26 @@ async def clear_calibration():
     
     return {"status": "ok", "message": "Calibration cleared"}
 
+@app.post("/api/calibration/reset_aruco")
+async def reset_aruco():
+    state.aruco_standard_points = {}
+    save_calibration_settings({
+        "aruco_standard_points": state.aruco_standard_points
+    })
+    return {"status": "ok", "message": "ArUco standard points reset", "aruco_standard_points": state.aruco_standard_points}
+
+@app.post("/api/home/reset")
+async def reset_home_api():
+    state.home_set = False
+    state.home_markers = {}
+    state.home_snapshot = None
+    save_calibration_settings({
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "home_snapshot": state.home_snapshot
+    })
+    return {"status": "ok", "message": "Home position reset"}
+
 class ToggleOverlayConfig(BaseModel):
     draw_overlay: bool
 
@@ -2139,6 +2171,60 @@ async def click_go(config: ClickGoConfig):
         "target": [wx, wy],
         "pixel": [target_x, target_y]
     }
+
+# --- Camera Capture & Download Endpoints (cập nhật 14) ---
+
+@app.get("/api/capture/download")
+async def download_capture(mode: str, camera_index: int = 4):
+    import io
+    
+    # Get uncropped frame from manager
+    uncropped = camera_manager.get_uncropped_frame(camera_index)
+    if uncropped is None:
+        # Fallback to latest raw frame if uncropped is missing
+        uncropped = camera_manager.get_raw_frame(camera_index)
+        
+    if uncropped is None:
+        return HTMLResponse(status_code=400, content="No active camera frame. Open camera feed first.")
+        
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    
+    if mode == "1280" or mode == "720_raw":
+        # Encode uncropped to JPEG
+        ret, raw_jpg = cv2.imencode(".jpg", uncropped)
+        if not ret:
+            return HTMLResponse(status_code=500, content="Failed to encode raw image.")
+            
+        filename = f"capture_1280_{timestamp}.jpg" if mode == "1280" else f"capture_raw_{timestamp}.jpg"
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+        return StreamingResponse(io.BytesIO(raw_jpg.tobytes()), media_type="image/jpeg", headers=headers)
+        
+    elif mode == "720_cropped":
+        # Create cropped 720 frame
+        fh, fw = uncropped.shape[:2]
+        if fh >= 720 and fw >= 720:
+            y_start = (fh - 720) // 2
+            x_start = (fw - 720) // 2
+            cropped = uncropped[y_start:y_start+720, x_start:x_start+720]
+        else:
+            crop_size = min(fh, fw)
+            y_start = (fh - crop_size) // 2
+            x_start = (fw - crop_size) // 2
+            cropped = uncropped[y_start:y_start+crop_size, x_start:x_start+crop_size]
+            
+        ret_crop, crop_jpg = cv2.imencode(".jpg", cropped)
+        if not ret_crop:
+            return HTMLResponse(status_code=500, content="Failed to encode cropped image.")
+            
+        filename = f"capture_cropped_{timestamp}.jpg"
+        headers = {
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+        return StreamingResponse(io.BytesIO(crop_jpg.tobytes()), media_type="image/jpeg", headers=headers)
+    else:
+        return HTMLResponse(status_code=400, content="Invalid capture mode.")
 
 # --- Device Listing Endpoints (cập nhật 4) ---
 

@@ -28,4 +28,8 @@ kiểm tra pretrain chưa có thì download về, cần cho phép chọn pretrai
 
 **cập nhật 2** tạo thêm code python để tạo các ảnh tăng cường từ 1 folder ảnh có sẵn sang folder agumented_image để dùng cho CVAT để gán nhãn cho từ agumented_image cho phong phú. tạo thêm các ảnh như lật ngang , lật dọc, nghiên 15 độ bên trái phải, nghiêng 30 độ bên trái bên phải, nghiêng 45 độ bên trái bên phải
 
+**cập nhật 3**
+xem lại code prepare_data.py ở data raw yolo1.1 xuất ra từ cvat cameraip/train/dataraw có 2 label, nhưng khi split ra train và valid cần phải đủ train valid cho từng lable, nếu 1 label chỉ có 1 ảnh thì cần copy tạo cho train và valid cùng ảnh đó .
+
+
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm

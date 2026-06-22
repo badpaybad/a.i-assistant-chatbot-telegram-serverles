@@ -361,6 +361,12 @@
                 <button class="btn-toggle" id="btn-list-cameras" title="List cameras (ls)" style="margin-right: 4px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">ls</span>
                 </button>
+                <button class="btn-toggle" id="btn-capture-1280" title="Capture 1280x720 (Original Frame)" style="margin-right: 4px; width: auto; padding: 0 6px;">
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 1280</span>
+                </button>
+                <button class="btn-toggle" id="btn-capture-720" title="Capture 720x720 (Original & Cropped)" style="margin-right: 4px; width: auto; padding: 0 6px;">
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 720</span>
+                </button>
                 <button class="btn-toggle" id="btn-camera-expand" title="Expand Full Page">
                     <span class="expand-icon">⛶</span>
                 </button>
@@ -423,6 +429,7 @@
 
                     <div class="calibration-actions-row">
                         <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Set ArUco</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco">Reset ArUco</button>
                         <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
                         <button class="btn btn-primary" id="btn-move-to-center" disabled>Moving around</button>
                     </div>
@@ -446,6 +453,7 @@
                             🏠 Set Home (0,0,0)
                         </button>
                         <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 View Map</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-reset-home" disabled>Reset Home</button>
                     </div>
 
                     <!-- Inline confirm row (hiện sau khi nhấn Set Home lần 1) -->
@@ -531,7 +539,6 @@
             </div>
         </div>
     </div>
-
     <script src="/static/app.js"></script>
 </body>
 

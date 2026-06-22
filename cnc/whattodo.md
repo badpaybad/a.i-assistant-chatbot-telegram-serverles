@@ -79,13 +79,23 @@ khi set aruco xong thì nó chính là tiêu chủân để tính gốc tọa đ
     các tính toán tọa độ sẽ cần dựa trên các aruco , gốc tọa độ tính tương đương với frame croped 720x720
     vẽ tọa độ trên frame cần thêm x+ ở trung điểm cạnh bên phải , y+ ở trung điểm cạnh dưới cùng  
 
-**cập nhật 12** Perspective Matrix Transformation có hỗ trợ việc tìm aruco tốt hơn không? có thể cải thiện tốt việc nhận aruco trên frame croped 720x720 cho chính xác và ổ định hơn, hiện tại camera caputure về  4 điểm aruco nhảy lung tung không ổn định 
+**cập nhật 12** Perspective Matrix Transformation có hỗ trợ việc tìm aruco tốt hơn không? có thể cải thiện tốt việc nhận aruco trên frame croped 720x720 cho chính xác và ổ định hơn, hiện tại camera caputure về  4 điểm aruco nhảy lung tung không ổn định
 
 **cập nhật 13** bổ xung chuột phải lên video để set các vị trí aruco : TL (top left), TR (top right), BR (bottom right), BL (bottom left) nếu detect quá lâu. sau khi set bằng chuột phải trên video cần lưu lại để dùng trong việc tính gốc tọa độ.
-    mọi tính toán sẽ cần dùng tới gốc tọa độ này. 
-    cần vẽ theo các điểm aruco này, và vẽ gốc tọa độ 
+    mọi tính toán sẽ cần dùng tới gốc tọa độ này.
+    cần vẽ theo các điểm aruco này, và vẽ gốc tọa độ
     khi di chuyển đầu bút tới gốc và set home. là set home cho cnc đầu bút.
 
-khi có aruco, gốc tọa độ, set home cho đầu bút CNC , toàn bộ cần lưu lại, lưu vị trí hiện tại của đầu bút để khi tắt đi bật lại vẫn dùng được. 
+khi có aruco, gốc tọa độ, set home cho đầu bút CNC , toàn bộ cần lưu lại, lưu vị trí hiện tại của đầu bút để khi tắt đi bật lại vẫn dùng được.
     cho phép reset các điểm aruco và set home lại .
-    các tính toán về di chuyển sau này đều cần tham chiếu tới gốc tọa độ , aruco, set home value 
+    các tính toán về di chuyển sau này đều cần tham chiếu tới gốc tọa độ , aruco, set home value
+
+**cập nhật 14** bổ xung thêm nút capture 1280 và nút capture 720, cạnh drop list chọn camera ở vùng camera feed
+    nút capture 1280
+        khi click sẽ capture frame gốc của camera trước khi croped
+    nút capture 720
+        khi click sẽ capture frame gốc và croped đã lấy vùng giữa 720
+
+sau khi có ảnh cần cho người dùng chọn thư mục để lưu.
+    dạng chọn folder như download file của trình duyệt ở máy client, lưu ảnh chụp được qua trình duyệt
+    lưu ảnh dạng jpeg frame capture 
