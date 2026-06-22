@@ -374,7 +374,7 @@ function updateTelemetry(data) {
     
     drawToolpath();
     if (typeof window._updateSnapshotPos === 'function') {
-        window._updateSnapshotPos();
+        window._updateSnapshotPos(data);
     }
 }
 
@@ -1555,14 +1555,37 @@ function setupEventListeners() {
             if (isHomeSet && data.has_snapshot && homeSnapshotImg) {
                 homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
             }
+            if (isHomeSet && data.home_pixel) {
+                const crosshair = document.getElementById("snapshot-crosshair");
+                if (crosshair) {
+                    crosshair.style.left = `${(data.home_pixel[0] / 720) * 100}%`;
+                    crosshair.style.top = `${(data.home_pixel[1] / 720) * 100}%`;
+                }
+            } else {
+                const crosshair = document.getElementById("snapshot-crosshair");
+                if (crosshair) {
+                    crosshair.style.left = "50%";
+                    crosshair.style.top = "50%";
+                }
+            }
         } catch (e) {
             console.error("Failed to fetch home status:", e);
         }
     };
 
-    const updateSnapshotPos = () => {
+    const updateSnapshotPos = (data) => {
         if (snapshotCurrentPos) {
             snapshotCurrentPos.innerText = `Pen: X=${currentWPos.x.toFixed(3)}, Y=${currentWPos.y.toFixed(3)}`;
+        }
+        const penMarker = document.getElementById("snapshot-pen-marker");
+        if (penMarker) {
+            if (isHomeSet && data && data.pen_px) {
+                penMarker.style.display = "block";
+                penMarker.style.left = `${(data.pen_px[0] / 720) * 100}%`;
+                penMarker.style.top = `${(data.pen_px[1] / 720) * 100}%`;
+            } else {
+                penMarker.style.display = "none";
+            }
         }
     };
     window._updateSnapshotPos = updateSnapshotPos;
@@ -1612,6 +1635,13 @@ function setupEventListeners() {
                         updateHomeUI();
                         logSystemMessage("✅ Home set! Vị trí hiện tại là (0, 0, 0). Đã lưu ảnh reference.");
                         if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
+                        if (data.home_pixel) {
+                            const crosshair = document.getElementById("snapshot-crosshair");
+                            if (crosshair) {
+                                crosshair.style.left = `${(data.home_pixel[0] / 720) * 100}%`;
+                                crosshair.style.top = `${(data.home_pixel[1] / 720) * 100}%`;
+                            }
+                        }
                     } else {
                         logSystemMessage("❌ Set home thất bại: " + data.message);
                     }

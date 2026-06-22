@@ -1521,6 +1521,18 @@ input[type=range]::-webkit-slider-thumb:hover {
     transform: translateY(-50%);
 }
 
+.snapshot-pen-marker {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background-color: var(--primary);
+    border: 2px solid #fff;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    box-shadow: 0 0 6px var(--primary);
+}
+
 .snapshot-coords-overlay {
     display: flex;
     justify-content: space-between;

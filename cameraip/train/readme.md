@@ -20,4 +20,10 @@ venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.
 venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/3.jpg" --output cameraip/train/3output_detect.jpg --conf 0.25
 
 venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/4.jpg" --output cameraip/train/4output_detect.jpg --conf 0.25
+
+
+venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/5.jpg" --output cameraip/train/5output_detect.jpg --conf 0.25
+
+
+venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/6.jpg" --output cameraip/train/6output_detect.jpg --conf 0.1
 ```

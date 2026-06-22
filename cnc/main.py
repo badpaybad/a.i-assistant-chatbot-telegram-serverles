@@ -152,6 +152,7 @@ class ControllerState:
         self.home_snapshot = cal_settings.get("home_snapshot", None)
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
         self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
+        self.home_pixel = cal_settings.get("home_pixel", [360.0, 360.0])
 
         # Object detection settings (cập nhật 3)
         self.detect_objects = True
@@ -219,7 +220,7 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
         try:
             M, _ = cv2.findHomography(src, dst)
-            logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
+            # logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
         except Exception as e:
             logger.error(f"Error generating fallback perspective calibration matrix: {e}")
             M = None
@@ -411,10 +412,6 @@ def run_object_detection(frame, conf_threshold=0.25, iou_threshold=0.45):
             box = boxes[i]
             conf = confidences[i]
             cid = class_ids[i]
-            
-            # detect object chỉ lấy lable: sittng (class_id = 0)
-            if cid != 0:
-                continue
             
             # Remove padding and rescale to original coordinates
             x1 = (box[0] - dw) / r
@@ -758,9 +755,14 @@ class CameraManager:
                     state.latest_yolo_detections = detections
                     state.latest_yolo_detection_time = now
                     state.yolo_history.append({"detections": detections, "time": now})
-                    largest = max(detections, key=lambda d: d["area"])
-                    state.last_largest_object_info = largest
-                    state.last_largest_object_time = now
+                    sittng_dets = [d for d in detections if state.class_names.get(d["class_id"], "") == "sittng"]
+                    if sittng_dets:
+                        largest = max(sittng_dets, key=lambda d: d["area"])
+                        state.last_largest_object_info = largest
+                        state.last_largest_object_time = now
+                    else:
+                        if now - state.last_largest_object_time > self.YOLO_CLEAR_TIMEOUT:
+                            state.last_largest_object_info = None
                 else:
                     elapsed = now - self.yolo_latest_time.get(index, 0.0)
                     if elapsed > self.YOLO_CLEAR_TIMEOUT:
@@ -871,17 +873,52 @@ class CameraManager:
                 # ── Draw YOLO detections ────────────────────────────────
                 if yolo_dets:
                     try:
+                        # Map current GRBL position to pixel coordinates
+                        M_adj = get_adjusted_calibration_matrix()
+                        pen_px = None
+                        if M_adj is not None:
+                            try:
+                                M = np.array(M_adj, dtype=np.float32)
+                                M_inv = np.linalg.inv(M)
+                                wpos_vec = np.array([state.wpos[0], state.wpos[1], 1.0], dtype=np.float32)
+                                px_vec = np.dot(M_inv, wpos_vec)
+                                if abs(px_vec[2]) > 1e-5:
+                                    px = px_vec[0] / px_vec[2]
+                                    py = px_vec[1] / px_vec[2]
+                                    pen_px = (int(round(px)), int(round(py)))
+                            except Exception as e:
+                                logger.error(f"Error calculating pen pixel coordinates: {e}")
+
+                        # Draw a small crosshair for the current pen position if mapped
+                        if pen_px is not None:
+                            cv2.drawMarker(frame, pen_px, (255, 128, 0), markerType=cv2.MARKER_CROSS, markerSize=14, thickness=2)
+
                         colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255)]
                         for d in yolo_dets:
                             ix1, iy1, ix2, iy2 = d["bbox"]
                             cid  = d["class_id"]
                             conf = d["confidence"]
-                            color = colors[cid % len(colors)]
+                            class_name = state.class_names.get(cid, f"Obj {cid}")
+                            
+                            is_cnchead = (class_name == "cnchead")
+                            in_range = True
+                            if is_cnchead:
+                                if pen_px is not None:
+                                    px, py = pen_px
+                                    in_range = (ix1 <= px <= ix2) and (iy1 <= py <= iy2)
+                                else:
+                                    in_range = False
+                            
+                            color = (0, 0, 255) if (is_cnchead and not in_range) else colors[cid % len(colors)]
+                            
                             cv2.rectangle(frame, (ix1, iy1), (ix2, iy2), color, 2)
                             dcx, dcy = d["center"]
                             cv2.circle(frame, (int(dcx), int(dcy)), 4, color, -1)
-                            class_name = state.class_names.get(cid, f"Obj {cid}")
+                            
                             label = f"{class_name}: {conf:.2f}"
+                            if is_cnchead and not in_range:
+                                label += " (not in range)"
+                                
                             label_sz, base_line = cv2.getTextSize(
                                 label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
                             iy1_text = max(iy1, label_sz[1] + 5)
@@ -892,6 +929,10 @@ class CameraManager:
                             cv2.putText(frame, label, (ix1, iy1_text - 5),
                                         cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                                         (0, 0, 0), 1, cv2.LINE_AA)
+                                        
+                            if is_cnchead and not in_range:
+                                cv2.putText(frame, "not in range", (ix1, iy2 + 20),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2, cv2.LINE_AA)
                     except Exception as e:
                         logger.error(f"[Draw] YOLO overlay error camera {index}: {e}")
 
@@ -1114,11 +1155,27 @@ async def status_polling_loop():
 
 async def send_telemetry():
     """Send current machine state & coordinates to clients."""
+    M_adj = get_adjusted_calibration_matrix()
+    pen_px = None
+    if M_adj is not None:
+        try:
+            M = np.array(M_adj, dtype=np.float32)
+            M_inv = np.linalg.inv(M)
+            wpos_vec = np.array([state.wpos[0], state.wpos[1], 1.0], dtype=np.float32)
+            px_vec = np.dot(M_inv, wpos_vec)
+            if abs(px_vec[2]) > 1e-5:
+                px = px_vec[0] / px_vec[2]
+                py = px_vec[1] / px_vec[2]
+                pen_px = [float(px), float(py)]
+        except Exception:
+            pass
+
     await broadcast({
         "type": "telemetry",
         "state": state.machine_state,
         "mpos": state.mpos,
         "wpos": state.wpos,
+        "pen_px": pen_px,
         "feedrate": state.feedrate,
         "spindle_speed": state.spindle_speed,
         "buffer_rx": state.buffer_rx,
@@ -1773,6 +1830,36 @@ async def set_home(camera_index: int = 4):
             logger.error(f"Failed to save home snapshot: {e}")
             snapshot_path = None
 
+    # Find current cnchead position in pixel coordinates
+    cnchead_px = None
+    if state.latest_yolo_detections:
+        for d in state.latest_yolo_detections:
+            cid = d["class_id"]
+            class_name = state.class_names.get(cid, f"Obj {cid}")
+            if class_name == "cnchead":
+                cnchead_px = d["center"]  # [cx, cy]
+                break
+
+    # Fallback to current mapped position of pen from grbl if cnchead not detected
+    if cnchead_px is None:
+        M_adj = get_adjusted_calibration_matrix()
+        if M_adj is not None:
+            try:
+                M = np.array(M_adj, dtype=np.float32)
+                M_inv = np.linalg.inv(M)
+                wpos_vec = np.array([state.wpos[0], state.wpos[1], 1.0], dtype=np.float32)
+                px_vec = np.dot(M_inv, wpos_vec)
+                if abs(px_vec[2]) > 1e-5:
+                    cnchead_px = [float(px_vec[0] / px_vec[2]), float(px_vec[1] / px_vec[2])]
+            except Exception:
+                pass
+
+    # If all fails, fall back to center of frame
+    if cnchead_px is None:
+        cnchead_px = [360.0, 360.0]
+
+    state.home_pixel = cnchead_px
+
     # Record state
     state.home_set = True
     if state.aruco_standard_points and len(state.aruco_standard_points) == 4:
@@ -1791,7 +1878,8 @@ async def set_home(camera_index: int = 4):
         "draw_overlay": state.draw_overlay,
         "home_set": state.home_set,
         "home_markers": state.home_markers,
-        "home_snapshot": state.home_snapshot
+        "home_snapshot": state.home_snapshot,
+        "home_pixel": state.home_pixel
     })
 
     return {
@@ -1799,7 +1887,8 @@ async def set_home(camera_index: int = 4):
         "message": "Home set: current position is now (0, 0, 0). Snapshot saved.",
         "home_set": state.home_set,
         "home_markers": state.home_markers,
-        "has_snapshot": snapshot_path is not None
+        "has_snapshot": snapshot_path is not None,
+        "home_pixel": state.home_pixel
     }
 
 
@@ -1819,7 +1908,8 @@ async def get_home_status():
         "home_set": state.home_set,
         "home_markers": state.home_markers,
         "has_snapshot": state.home_snapshot is not None and os.path.exists(state.home_snapshot or ""),
-        "wpos": state.wpos
+        "wpos": state.wpos,
+        "home_pixel": state.home_pixel
     }
 
 
@@ -2068,12 +2158,14 @@ async def move_to_largest(camera_index: int = 4):
         try:
             detections = run_object_detection(raw_frame)
             if detections:
-                largest_obj = max(detections, key=lambda d: d["area"])
-                # Update saved last object
-                state.last_largest_object_info = largest_obj
-                # Save detections for flash overlay
-                state.latest_detection_results = detections
-                state.latest_detection_time = time.time()
+                sittng_dets = [d for d in detections if state.class_names.get(d["class_id"], "") == "sittng"]
+                if sittng_dets:
+                    largest_obj = max(sittng_dets, key=lambda d: d["area"])
+                    # Update saved last object
+                    state.last_largest_object_info = largest_obj
+                    # Save detections for flash overlay
+                    state.latest_detection_results = detections
+                    state.latest_detection_time = time.time()
         except Exception as e:
             logger.error(f"Live detection failed: {e}")
     

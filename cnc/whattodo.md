@@ -103,3 +103,11 @@ sau khi có ảnh cần cho người dùng chọn thư mục để lưu.
 **cập nhật 15**
 chức năng ở Touch & Swipe Gestures . bổ xung thêm checkbox auto lấy theo đầu bút của cnc, mặc định là checked
     khi checked cần lấy theo vị trí hiện tại của đầu bút để thao tác, Start Position (X, Y) cần cập nhật tự động theo vị trí hiện tại của đầu bút.  
+
+**cập nhật 16** việc object detect sẽ load /work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/runs/detect/train/weights/best.onnx , model train có nhiều labels, trong đó
+    lable cnchead là đầu but cnc cần vẽ lên video , nếu detect được cnchead
+        vị trí đầu bút cnc đã dược xác định qua grbl, cần so sánh nếu vị trí từ grbl nằm bên trong vùng bbox cnchead detect, nếu nằm ngoài vùng bbox cần hiển thị text lỗi not in range
+    lable sittng, là object cần lấy largest đẻ khi go to largest object thì đầu bút cnc sẽ di chuyển đến 
+sau này mô hình sẽ còn các labels khác (kể cả sittng, ccnhead đã có xử lý riêng và vẽ rồi), detect được sẽ cần vẽ label tương ứng lên video frame UI
+
+**cập nhật 17** khi set home (home_snapshot) cũng chính là vị trí của cnc header hiện tại.  
