@@ -969,9 +969,9 @@ function setupEventListeners() {
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
         
-        // Scale to 640x480 coordinate space
-        const cx = (clickX / rect.width) * 640.0;
-        const cy = (clickY / rect.height) * 480.0;
+        // Scale to 720x720 coordinate space (cập nhật 11)
+        const cx = (clickX / rect.width) * 720.0;
+        const cy = (clickY / rect.height) * 720.0;
 
         // Spawn visual ripple ring
         const ripple = document.createElement("div");
@@ -1060,9 +1060,9 @@ function setupEventListeners() {
                     try {
                         const M = calibMatrix;
                         const px = objectInfo.center[0];
-                        const py = objectInfo.center[1];
-                        const wx = M[0][0]*px + M[0][1]*py + M[0][2];
-                        const wy = M[1][0]*px + M[1][1]*py + M[1][2];
+                        const denom = M.length > 2 ? (M[2][0]*px + M[2][1]*py + M[2][2]) : 1.0;
+                        const wx = (M[0][0]*px + M[0][1]*py + M[0][2]) / (denom || 1.0);
+                        const wy = (M[1][0]*px + M[1][1]*py + M[1][2]) / (denom || 1.0);
                         lastObjMachine.textContent = `X=${wx.toFixed(3)}, Y=${wy.toFixed(3)}`;
                     } catch(e) {
                         lastObjMachine.textContent = "—";
@@ -1136,6 +1136,11 @@ function setupEventListeners() {
                 if (btn) {
                     btn.disabled = !detected.includes(key) || !isConnected;
                 }
+            }
+            
+            const btnSetAruco = document.getElementById("btn-set-aruco");
+            if (btnSetAruco) {
+                btnSetAruco.disabled = detected.length !== 4 || !isConnected;
             }
             
             yoloDetected = data.yolo_detected || false;
@@ -1225,6 +1230,23 @@ function setupEventListeners() {
         if (btnCalTR) btnCalTR.addEventListener("click", () => recordCorner("TR"));
         if (btnCalBR) btnCalBR.addEventListener("click", () => recordCorner("BR"));
         if (btnCalBL) btnCalBL.addEventListener("click", () => recordCorner("BL"));
+
+        const btnSetAruco = document.getElementById("btn-set-aruco");
+        if (btnSetAruco) {
+            btnSetAruco.addEventListener("click", async () => {
+                try {
+                    const res = await fetch("/api/calibration/set_aruco", { method: "POST" });
+                    const data = await res.json();
+                    if (data.status === "ok") {
+                        logSystemMessage("📐 Set ArUco standard points successfully!");
+                    } else {
+                        logSystemMessage(`❌ Failed to set ArUco standard points: ${data.message}`);
+                    }
+                } catch (e) {
+                    logSystemMessage(`❌ Network error when setting ArUco: ${e}`);
+                }
+            });
+        }
 
         if (btnCalClear) {
             btnCalClear.addEventListener("click", async () => {

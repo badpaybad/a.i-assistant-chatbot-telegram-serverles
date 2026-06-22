@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 import threading
 import onnxruntime as ort
+from collections import deque
 from typing import Dict, List, Set, Optional
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -136,11 +137,20 @@ class ControllerState:
         self.calibration_matrix = cal_settings["matrix"]
         self.draw_overlay = cal_settings["draw_overlay"]
         self.latest_detected_markers = {} # {"TL": [x, y], ...}
+        # cập nhật 10: timestamps per corner (unix epoch float)
+        self.latest_detected_markers_time: Dict[str, float] = {}  # {"TL": t, ...}
+        # cập nhật 10: history ring buffer, max 500 items per corner
+        self.aruco_history: Dict[str, deque] = {
+            name: deque(maxlen=500) for name in ["TL", "TR", "BL", "BR"]
+        }
+        # cập nhật 10: YOLO detection history, max 500 batches
+        self.yolo_history: deque = deque(maxlen=500)
         
         # Home settings (cập nhật 2)
         self.home_set = cal_settings.get("home_set", False)
         self.home_markers = cal_settings.get("home_markers", {})
         self.home_snapshot = cal_settings.get("home_snapshot", None)
+        self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
 
         # Object detection settings (cập nhật 3)
         self.detect_objects = True
@@ -150,7 +160,9 @@ class ControllerState:
         self.latest_yolo_detections = []
         self.latest_yolo_detection_time = 0.0
         # cập nhật 5: save last known largest object position
-        self.last_largest_object_info = None  # {"center": [cx, cy], "bbox": [...], "class_id": n, "confidence": f, "area": n}
+        self.last_largest_object_info = None  # {"center": [cx, cy], "bbox": [...], "class_id": n, "confidence": f, "area": n, "time": t}
+        # cập nhật 10: separate timestamp for last_largest (survives clear)
+        self.last_largest_object_time: float = 0.0
         self.class_names = {0: "sittng"}      # cập nhật 6: class labels mapping
         # cập nhật 8: Moving around state variables
         self.moving_around_running = False
@@ -173,9 +185,13 @@ class ControllerState:
         
         try:
             if len(valid_pts) == 3:
-                M = cv2.getAffineTransform(src, dst)
+                M_aff = cv2.getAffineTransform(src, dst)
+                if M_aff is not None:
+                    M = np.vstack([M_aff, [0.0, 0.0, 1.0]])
+                else:
+                    M = None
             else:
-                M, _ = cv2.estimateAffine2D(src, dst)
+                M, _ = cv2.findHomography(src, dst)
             if M is not None:
                 self.calibration_matrix = M.tolist()
                 return True
@@ -191,6 +207,8 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
     M = None
     if state.calibration_matrix:
         M = np.array(state.calibration_matrix, dtype=np.float32)
+        if M.shape == (2, 3):
+            M = np.vstack([M, [0.0, 0.0, 1.0]])
     elif state.home_set and state.home_markers and len(state.home_markers) == 4:
         # Construct a default calibration matrix using home_markers mapping to a standard 200x150 mm area
         pts = state.home_markers
@@ -199,10 +217,10 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         # TL = (-100, 75), TR = (100, 75), BR = (100, -75), BL = (-100, -75)
         dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
         try:
-            M, _ = cv2.estimateAffine2D(src, dst)
-            logger.info("Generated a default calibration matrix from home markers (fallback).")
+            M, _ = cv2.findHomography(src, dst)
+            logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
         except Exception as e:
-            logger.error(f"Error generating fallback calibration matrix: {e}")
+            logger.error(f"Error generating fallback perspective calibration matrix: {e}")
             M = None
 
     if M is None:
@@ -216,27 +234,38 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
             cx_home = sum(pts[c][0] for c in home_corners) / len(home_corners)
             cy_home = sum(pts[c][1] for c in home_corners) / len(home_corners)
             
-            hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
-            hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
+            denom_home = M[2, 0] * cx_home + M[2, 1] * cy_home + M[2, 2]
+            if abs(denom_home) > 1e-5:
+                hx_cal = (M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]) / denom_home
+                hy_cal = (M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]) / denom_home
+            else:
+                hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
+                hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
             
             M_adj = M.copy()
-            M_adj[0, 2] -= hx_cal
-            M_adj[1, 2] -= hy_cal
+            M_adj[0, :] -= hx_cal * M_adj[2, :]
+            M_adj[1, :] -= hy_cal * M_adj[2, :]
             
             # Now calculate shift compensation based on current ArUco markers vs home markers
             common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers and c in state.latest_detected_markers]
-            if len(common_corners) >= 3:
+            if len(common_corners) == 4:
                 try:
                     src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
                     dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
-                    if len(common_corners) == 3:
-                        H = cv2.getAffineTransform(src_pts, dst_pts)
-                    else:
-                        H, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                    H, _ = cv2.findHomography(src_pts, dst_pts)
                     if H is not None:
-                        # Append the row [0, 0, 1] to make it a 3x3 homogeneous transformation matrix
-                        H_3x3 = np.vstack([H, [0.0, 0.0, 1.0]])
-                        M_adj = np.dot(M_adj, H_3x3)
+                        M_adj = np.dot(M_adj, H)
+                        logger.debug("Successfully applied perspective correction to calibration matrix.")
+                except Exception as e:
+                    logger.error(f"Error computing perspective calibration alignment: {e}")
+            elif len(common_corners) == 3:
+                try:
+                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
+                    H_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                    if H_aff is not None:
+                        H = np.vstack([H_aff, [0.0, 0.0, 1.0]])
+                        M_adj = np.dot(M_adj, H)
                         logger.debug("Successfully applied affine correction to calibration matrix.")
                 except Exception as e:
                     logger.error(f"Error computing affine calibration alignment: {e}")
@@ -244,11 +273,9 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
                 try:
                     src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
                     dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
-                    # Translation vector: shift needed to move current markers back to home markers
                     shift = np.mean(dst_pts - src_pts, axis=0) # [dx, dy]
-                    H = np.array([[1.0, 0.0, shift[0]], [0.0, 1.0, shift[1]]], dtype=np.float32)
-                    H_3x3 = np.vstack([H, [0.0, 0.0, 1.0]])
-                    M_adj = np.dot(M_adj, H_3x3)
+                    H = np.array([[1.0, 0.0, shift[0]], [0.0, 1.0, shift[1]], [0.0, 0.0, 1.0]], dtype=np.float32)
+                    M_adj = np.dot(M_adj, H)
                     logger.debug(f"Successfully applied translation shift: {shift}")
                 except Exception as e:
                     logger.error(f"Error computing translation calibration alignment: {e}")
@@ -419,10 +446,20 @@ class CameraManager:
         self.lock = threading.Lock()
         self.caps = {}
         self.latest_frames = {}
-        self.latest_raw_frames = {} # Store raw numpy frames (cập nhật 3)
+        self.latest_raw_frames = {} 
         self.active_clients = {}
         self.threads = {}
         self.running = {}
+        
+        # cập nhật 9+10: shared results per camera (protected by self.lock)
+        self.aruco_latest = {}
+        self.smoothed_aruco_markers = {}  # cập nhật 12: EMA smoothed markers per camera
+        self.aruco_latest_time = {}
+        self.aruco_history = {}
+        self.yolo_latest = {}
+        self.yolo_latest_time = {}
+        self.yolo_history = {}
+        self.YOLO_CLEAR_TIMEOUT = 5.0
 
     def get_raw_frame(self, index: int) -> Optional[np.ndarray]:
         with self.lock:
@@ -436,36 +473,60 @@ class CameraManager:
                 return
             self.running[index] = True
             self.active_clients[index] = 0
-            self.threads[index] = threading.Thread(target=self._read_loop, args=(index,), daemon=True)
-            self.threads[index].start()
-            logger.info(f"Started camera thread for index {index}")
+            
+            # Initialize camera history / state buffers
+            self.aruco_latest[index] = {}
+            self.aruco_latest_time[index] = {}
+            self.aruco_history[index] = {name: deque(maxlen=500) for name in ["TL", "TR", "BL", "BR"]}
+            self.yolo_latest[index] = []
+            self.yolo_latest_time[index] = 0.0
+            self.yolo_history[index] = deque(maxlen=500)
+            
+            # Start the 4 separate threads
+            t_capture = threading.Thread(target=self._capture_loop, args=(index,), daemon=True)
+            t_aruco = threading.Thread(target=self._aruco_loop, args=(index,), daemon=True)
+            t_yolo = threading.Thread(target=self._yolo_loop, args=(index,), daemon=True)
+            t_draw = threading.Thread(target=self._draw_loop, args=(index,), daemon=True)
+            
+            self.threads[index] = {
+                "capture": t_capture,
+                "aruco":   t_aruco,
+                "yolo":    t_yolo,
+                "draw":    t_draw,
+            }
+            
+            t_capture.start()
+            t_aruco.start()
+            t_yolo.start()
+            t_draw.start()
+            logger.info(f"Started 4 camera threads for index {index}")
 
     def stop_camera(self, index: int):
         with self.lock:
-            # Just set the flag to False. The background thread will clean itself up!
             self.running[index] = False
-            logger.info(f"Requested stop for camera index {index}")
+        logger.info(f"Requested stop for camera index {index}")
 
-    def _read_loop(self, index: int):
-        logger.info(f"Opening camera index {index} in background thread...")
+    # ── Thread 1: capture ────────────────────────────────────────────────────
+    def _capture_loop(self, index: int):
+        logger.info(f"[Capture] Opening camera index {index}…")
         cap = cv2.VideoCapture(index)
         if not cap.isOpened():
-            logger.error(f"Failed to open camera index {index}")
+            logger.error(f"[Capture] Failed to open camera index {index}")
             with self.lock:
                 self.running[index] = False
             return
-            
+
         with self.lock:
             self.caps[index] = cap
-        
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        print("cv2.CAP_PROP_FRAME_WIDTH",cap.get(cv2.CAP_PROP_FRAME_WIDTH))        
-        print("cv2.CAP_PROP_FRAME_HEIGHT",cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        
+
+        # cập nhật 10: 1280x720 camera frame
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH,  1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        actual_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        actual_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        logger.info(f"[Capture] Camera {index} opened ({actual_w}×{actual_h})")
+
         consecutive_failures = 0
-        logger.info(f"Camera index {index} initialized successfully. Starting read loop.")
-        
         while True:
             with self.lock:
                 if not self.running.get(index, False):
@@ -475,202 +536,355 @@ class CameraManager:
                 if not ret or frame is None:
                     consecutive_failures += 1
                     if consecutive_failures > 30:
-                        logger.error(f"Too many frame capture failures on camera {index}. Stopping.")
+                        logger.error(f"[Capture] Too many failures on camera {index}. Stopping.")
                         break
                     time.sleep(0.03)
                     continue
-                
+
                 consecutive_failures = 0
 
-                # Save raw frame under lock (cập nhật 3)
-                with self.lock:
-                    self.latest_raw_frames[index] = frame.copy()
-                
-                # Detect ArUco markers in DICT_4X4_1000
-                detected_this_frame = {}
-                try:
-                    # Pad frame to allow detection near image borders
-                    pad = 50
-                    padded = cv2.copyMakeBorder(frame, pad, pad, pad, pad, cv2.BORDER_CONSTANT, value=[255, 255, 255])
-                    gray = cv2.cvtColor(padded, cv2.COLOR_BGR2GRAY)
-                    
-                    dict_id = cv2.aruco.DICT_4X4_1000
-                    try:
-                        aruco_dict = cv2.aruco.getPredefinedDictionary(dict_id)
-                        parameters = cv2.aruco.DetectorParameters()
-                    except AttributeError:
-                        aruco_dict = cv2.aruco.Dictionary_get(dict_id)
-                        parameters = cv2.aruco.DetectorParameters_create()
-                        
-                    # Spatial bounding boxes for the 4 corners relative to original image size (640x480)
-                    boxes = {
-                        "TL": {"x": (100, 180), "y": (20, 80)},
-                        "TR": {"x": (450, 530), "y": (20, 80)},
-                        "BL": {"x": (100, 180), "y": (310, 380)},
-                        "BR": {"x": (450, 530), "y": (310, 380)}
-                    }
-                    
-                    for scale in [1.5, 3.0]:
-                        if len(detected_this_frame) == 4:
-                            break
-                        resized = cv2.resize(gray, (0, 0), fx=scale, fy=scale)
-                        
-                        parameters.adaptiveThreshWinSizeMax = 75
-                        parameters.adaptiveThreshConstant = 7 if scale == 1.5 else 11
-                        parameters.minMarkerPerimeterRate = 0.01 / scale
-                        parameters.polygonalApproxAccuracyRate = 0.05
-                        
-                        try:
-                            detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
-                            corners, ids, rejected = detector.detectMarkers(resized)
-                        except NameError:
-                            corners, ids, rejected = cv2.aruco.detectMarkers(resized, aruco_dict, parameters=parameters)
-                            
-                        if ids is not None and len(ids) > 0:
-                            for i, marker_id in enumerate(ids.flatten()):
-                                pts = corners[i][0] / scale - pad
-                                center = np.mean(pts, axis=0)
-                                x, y = center[0], center[1]
-                                
-                                # Check which box this center falls into
-                                for name, box in boxes.items():
-                                    if name in detected_this_frame:
-                                        continue
-                                    if box["x"][0] <= x <= box["x"][1] and box["y"][0] <= y <= box["y"][1]:
-                                        detected_this_frame[name] = center.tolist()
-                except Exception as e:
-                    logger.error(f"Error in ArUco detection: {e}")
-                
-                # Save latest detected markers in state (accumulate to handle flickering)
-                for name, pt in detected_this_frame.items():
-                    state.latest_detected_markers[name] = pt
-                
-                # Run YOLO object detection on the original clean frame (cập nhật 6)
-                detections_to_draw = []
-                if getattr(state, "detect_objects", False):
-                    try:
-                        detections_to_draw = run_object_detection(frame)
-                        state.latest_yolo_detections = detections_to_draw
-                        state.latest_yolo_detection_time = time.time()
-                        # cập nhật 5: save the largest object persistently
-                        if detections_to_draw:
-                            largest = max(detections_to_draw, key=lambda d: d["area"])
-                            state.last_largest_object_info = largest
-                    except Exception as e:
-                        logger.error(f"Error in ONNX detection: {e}")
-                elif time.time() - getattr(state, "latest_detection_time", 0.0) < 5.0:
-                    detections_to_draw = getattr(state, "latest_detection_results", [])
+                # cập nhật 10: crop frame về 720x720 lấy vùng giữa frame
+                fh, fw = frame.shape[:2]
+                if fh >= 720 and fw >= 720:
+                    y_start = (fh - 720) // 2
+                    x_start = (fw - 720) // 2
+                    frame = frame[y_start:y_start+720, x_start:x_start+720]
+                else:
+                    crop_size = min(fh, fw)
+                    y_start = (fh - crop_size) // 2
+                    x_start = (fw - crop_size) // 2
+                    frame = frame[y_start:y_start+crop_size, x_start:x_start+crop_size]
 
-                # Draw overlay if enabled
-                if state.draw_overlay:
-                    try:
-                        # Draw detected marker centers as red dots and names
-                        for name, pt in state.latest_detected_markers.items():
-                            pt_int = (int(pt[0]), int(pt[1]))
-                            cv2.circle(frame, pt_int, 5, (0, 0, 255), -1)
-                            cv2.putText(frame, name, (pt_int[0] + 10, pt_int[1] + 10),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-                                        
-                        # Draw rectangle and axes if all 4 corners detected
-                        if len(state.latest_detected_markers) == 4:
-                            pts = {name: (int(pt[0]), int(pt[1])) for name, pt in state.latest_detected_markers.items()}
-                            
-                            # Draw coordinate rectangle (green outline)
-                            cv2.line(frame, pts["TL"], pts["TR"], (0, 255, 0), 2)
-                            cv2.line(frame, pts["TR"], pts["BR"], (0, 255, 0), 2)
-                            cv2.line(frame, pts["BR"], pts["BL"], (0, 255, 0), 2)
-                            cv2.line(frame, pts["BL"], pts["TL"], (0, 255, 0), 2)
-                            
-                            # Calculate center in pixels
-                            cx = (pts["TL"][0] + pts["TR"][0] + pts["BR"][0] + pts["BL"][0]) // 4
-                            cy = (pts["TL"][1] + pts["TR"][1] + pts["BR"][1] + pts["BL"][1]) // 4
-                            
-                            # Draw center (blue dot)
-                            cv2.circle(frame, (cx, cy), 8, (255, 0, 0), -1)
-                            cv2.putText(frame, "(0,0)", (cx + 15, cy + 5),
-                                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
-                                        
-                            # Calculate horizontal and vertical vector directions
-                            v_top = np.array(pts["TR"]) - np.array(pts["TL"])
-                            v_bot = np.array(pts["BR"]) - np.array(pts["BL"])
-                            v_left = np.array(pts["TL"]) - np.array(pts["BL"])
-                            v_right = np.array(pts["TR"]) - np.array(pts["BR"])
-                            
-                            v_x = (v_top + v_bot) / 2.0
-                            v_y = (v_left + v_right) / 2.0
-                            
-                            norm_x = np.linalg.norm(v_x)
-                            norm_y = np.linalg.norm(v_y)
-                            
-                            if norm_x > 0 and norm_y > 0:
-                                u_x = v_x / norm_x
-                                u_y = v_y / norm_y
-                                
-                                # Draw X axis (cyan line, pointing to TR)
-                                pt1_x = (int(cx - 0.75 * norm_x * u_x[0]), int(cy - 0.75 * norm_x * u_x[1]))
-                                pt2_x = (int(cx + 0.75 * norm_x * u_x[0]), int(cy + 0.75 * norm_x * u_x[1]))
-                                cv2.line(frame, pt1_x, pt2_x, (255, 255, 0), 2)
-                                cv2.putText(frame, "+X", (pt2_x[0] + 5, pt2_x[1] + 5),
-                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
-                                            
-                                # Draw Y axis (magenta line, pointing to TL)
-                                pt1_y = (int(cx - 0.75 * norm_y * u_y[0]), int(cy - 0.75 * norm_y * u_y[1]))
-                                pt2_y = (int(cx + 0.75 * norm_y * u_y[0]), int(cy + 0.75 * norm_y * u_y[1]))
-                                cv2.line(frame, pt1_y, pt2_y, (255, 0, 255), 2)
-                                cv2.putText(frame, "+Y", (pt2_y[0] + 5, pt2_y[1] + 5),
-                                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 2)
-                    except Exception as e:
-                        logger.error(f"Error drawing overlay: {e}")
-
-                if detections_to_draw:
-                    try:
-                        for d in detections_to_draw:
-                            ix1, iy1, ix2, iy2 = d["bbox"]
-                            cid = d["class_id"]
-                            conf = d["confidence"]
-                            
-                            # Draw bounding box
-                            colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255)]
-                            color = colors[cid % len(colors)]
-                            cv2.rectangle(frame, (ix1, iy1), (ix2, iy2), color, 2)
-                            
-                            # Draw dot at center
-                            cx, cy = d["center"]
-                            cv2.circle(frame, (int(cx), int(cy)), 4, color, -1)
-                            
-                            class_name = state.class_names.get(cid, f"Obj {cid}")
-                            label = f"{class_name}: {conf:.2f}"
-                            label_sz, base_line = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
-                            iy1_text = max(iy1, label_sz[1] + 5)
-                            cv2.rectangle(frame, (ix1, iy1_text - label_sz[1] - 5), (ix1 + label_sz[0], iy1_text + base_line - 5), color, -1)
-                            cv2.putText(frame, label, (ix1, iy1_text - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1, cv2.LINE_AA)
-                    except Exception as e:
-                        logger.error(f"Error drawing ONNX detections overlay: {e}")
-                
-                _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
                 with self.lock:
-                    self.latest_frames[index] = jpeg.tobytes()
-                time.sleep(0.03)
+                    self.latest_raw_frames[index] = frame  # no copy – draw thread will copy
+                time.sleep(0.033)
             except Exception as e:
-                logger.error(f"Error in camera loop for index {index}: {e}")
+                logger.error(f"[Capture] Error camera {index}: {e}")
                 time.sleep(0.1)
-                
-        # Only release from the background thread that created it!
-        logger.info(f"Releasing camera index {index} from background thread...")
+
+        logger.info(f"[Capture] Releasing camera {index}…")
         try:
             cap.release()
         except Exception as e:
-            logger.error(f"Error releasing camera index {index}: {e}")
-        
+            logger.error(f"[Capture] Error releasing camera {index}: {e}")
+
         with self.lock:
             self.running[index] = False
-            if index in self.caps:
-                del self.caps[index]
-            if index in self.latest_frames:
-                del self.latest_frames[index]
-            if index in self.latest_raw_frames:
-                del self.latest_raw_frames[index]
-            logger.info(f"Successfully released camera index {index}")
+            self.caps.pop(index, None)
+            self.latest_raw_frames.pop(index, None)
+            self.latest_frames.pop(index, None)
+        logger.info(f"[Capture] Camera {index} released.")
+
+    # ── Thread 2: ArUco detection ─────────────────────────────────────────────
+    _clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+
+    def _detect_aruco_fullframe(self, gray_full, aruco_dict, parameters, use_new_api,
+                                  cx_frame: int, cy_frame: int):
+        found = {}   # corner_name -> (center, area)
+        scales = [1.0, 0.75, 1.5]
+        for scale in scales:
+            if scale != 1.0:
+                resized = cv2.resize(gray_full, (0, 0), fx=scale, fy=scale,
+                                     interpolation=cv2.INTER_LINEAR)
+            else:
+                resized = gray_full
+
+            win_min = max(3, int(15 * scale)) | 1
+            win_max = max(win_min + 2, int(75 * scale)) | 1
+            parameters.adaptiveThreshWinSizeMin = win_min
+            parameters.adaptiveThreshWinSizeStep = max(2, int(10 * scale))
+            parameters.adaptiveThreshWinSizeMax = win_max
+            parameters.adaptiveThreshConstant = 7
+            parameters.minMarkerPerimeterRate = 0.01 / max(scale, 0.5)
+            parameters.maxMarkerPerimeterRate = 4.0
+            parameters.polygonalApproxAccuracyRate = 0.04
+            parameters.minCornerDistanceRate = 0.05
+            parameters.minDistanceToBorder = 3
+            parameters.perspectiveRemovePixelPerCell = 8
+            parameters.perspectiveRemoveIgnoredMarginPerCell = 0.13
+            parameters.errorCorrectionRate = 0.6
+
+            try:
+                if use_new_api:
+                    try:
+                        detector = cv2.aruco.ArucoDetector(aruco_dict, parameters)
+                        corners, ids, _ = detector.detectMarkers(resized)
+                    except Exception:
+                        corners, ids, _ = cv2.aruco.detectMarkers(
+                            resized, aruco_dict, parameters=parameters)
+                else:
+                    corners, ids, _ = cv2.aruco.detectMarkers(
+                        resized, aruco_dict, parameters=parameters)
+            except Exception:
+                continue
+
+            if ids is not None and len(ids) > 0:
+                for i in range(len(ids)):
+                    pts_resized = corners[i][0]
+                    pts_orig    = pts_resized / scale
+                    center = np.mean(pts_orig, axis=0)
+                    area   = cv2.contourArea(pts_orig.reshape(-1, 1, 2).astype(np.float32))
+
+                    cx_m, cy_m = float(center[0]), float(center[1])
+                    if cx_m < cx_frame:
+                        name = "TL" if cy_m < cy_frame else "BL"
+                    else:
+                        name = "TR" if cy_m < cy_frame else "BR"
+
+                    if name not in found or area > found[name][1]:
+                        found[name] = (center, area)
+                break
+
+        return {name: data[0].tolist() for name, data in found.items()}
+
+    def _aruco_loop(self, index: int):
+        logger.info(f"[ArUco] Thread started for camera {index}")
+        dict_id = cv2.aruco.DICT_4X4_1000
+        try:
+            aruco_dict = cv2.aruco.getPredefinedDictionary(dict_id)
+            parameters = cv2.aruco.DetectorParameters()
+            use_new_api = True
+        except AttributeError:
+            aruco_dict = cv2.aruco.Dictionary_get(dict_id)
+            parameters = cv2.aruco.DetectorParameters_create()
+            use_new_api = False
+
+        latest = {"TL": None, "TR": None, "BR": None, "BL": None}
+        latest_time = {}
+
+        while True:
+            with self.lock:
+                if not self.running.get(index, False):
+                    break
+                raw = self.latest_raw_frames.get(index)
+
+            if raw is None:
+                time.sleep(0.05)
+                continue
+
+            frame = raw.copy()
+            h, w = frame.shape[:2]
+            cx_frame, cy_frame = w // 2, h // 2
+
+            gray_full = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            gray_full = self._clahe.apply(gray_full)
+
+            detected_this = {}
+            try:
+                detected_this = self._detect_aruco_fullframe(
+                    gray_full, aruco_dict, parameters, use_new_api,
+                    cx_frame, cy_frame)
+            except Exception as e:
+                logger.error(f"[ArUco] Detection error camera {index}: {e}")
+
+            now = time.time()
+            with self.lock:
+                if index not in self.smoothed_aruco_markers:
+                    self.smoothed_aruco_markers[index] = {"TL": None, "TR": None, "BR": None, "BL": None}
+                smoothed_dict = self.smoothed_aruco_markers[index]
+
+            for name, pt in detected_this.items():
+                if smoothed_dict[name] is None:
+                    smoothed_dict[name] = pt
+                else:
+                    last_pt = smoothed_dict[name]
+                    # EMA smoothing with alpha=0.15 for high stability (cập nhật 12)
+                    smoothed_x = 0.15 * pt[0] + 0.85 * last_pt[0]
+                    smoothed_y = 0.15 * pt[1] + 0.85 * last_pt[1]
+                    smoothed_dict[name] = [smoothed_x, smoothed_y]
+
+                smoothed_pt = smoothed_dict[name]
+                latest[name] = smoothed_pt
+                latest_time[name] = now
+
+            with self.lock:
+                self.aruco_latest[index] = {k: v for k, v in latest.items() if v is not None}
+                self.aruco_latest_time[index] = {k: v for k, v in latest_time.items() if latest.get(k) is not None}
+                for name, pt in detected_this.items():
+                    smoothed_pt = smoothed_dict[name]
+                    self.aruco_history[index][name].append({"pt": smoothed_pt, "time": now})
+
+            for name, pt in detected_this.items():
+                smoothed_pt = smoothed_dict[name]
+                state.latest_detected_markers[name] = smoothed_pt
+                state.latest_detected_markers_time[name] = now
+                state.aruco_history[name].append({"pt": smoothed_pt, "time": now})
+
+            time.sleep(0.125)
+
+        logger.info(f"[ArUco] Thread stopped for camera {index}")
+
+    # ── Thread 3: YOLO object detection ──────────────────────────────────────
+    def _yolo_loop(self, index: int):
+        logger.info(f"[YOLO] Thread started for camera {index}")
+
+        while True:
+            with self.lock:
+                if not self.running.get(index, False):
+                    break
+                raw = self.latest_raw_frames.get(index)
+
+            if raw is None:
+                time.sleep(0.1)
+                continue
+
+            frame = raw.copy()
+            now = time.time()
+            try:
+                detections = run_object_detection(frame)
+            except Exception as e:
+                logger.error(f"[YOLO] Detection error camera {index}: {e}")
+                detections = []
+
+            with self.lock:
+                if detections:
+                    for d in detections:
+                        d["time"] = now
+                    self.yolo_latest[index] = detections
+                    self.yolo_latest_time[index] = now
+                    self.yolo_history[index].append({"detections": detections, "time": now})
+                    state.latest_yolo_detections = detections
+                    state.latest_yolo_detection_time = now
+                    state.yolo_history.append({"detections": detections, "time": now})
+                    largest = max(detections, key=lambda d: d["area"])
+                    state.last_largest_object_info = largest
+                    state.last_largest_object_time = now
+                else:
+                    elapsed = now - self.yolo_latest_time.get(index, 0.0)
+                    if elapsed > self.YOLO_CLEAR_TIMEOUT:
+                        self.yolo_latest[index] = []
+                        state.last_largest_object_info = None
+                        state.latest_yolo_detections = []
+
+            time.sleep(0.20)
+
+        logger.info(f"[YOLO] Thread stopped for camera {index}")
+
+    # ── Thread 4: Draw / UI frame composer ───────────────────────────────────
+    def _draw_loop(self, index: int):
+        logger.info(f"[Draw] Thread started for camera {index}")
+
+        while True:
+            with self.lock:
+                if not self.running.get(index, False):
+                    break
+                raw = self.latest_raw_frames.get(index)
+                draw_overlay = state.draw_overlay
+                detect_draw  = state.detect_objects
+                aruco_pts = dict(self.aruco_latest.get(index, {}))
+                yolo_dets = list(self.yolo_latest.get(index, [])) if detect_draw else []
+
+            if raw is None:
+                time.sleep(0.033)
+                continue
+
+            frame = raw.copy()
+
+            if draw_overlay:
+                try:
+                    # ── Draw actively/live detected ArUco markers (faded) ──────────────────────────────
+                    for name, pt in aruco_pts.items():
+                        if pt is None:
+                            continue
+                        pt_int = (int(pt[0]), int(pt[1]))
+                        # Faded orange/red color: (80, 80, 150), thickness 1
+                        cv2.circle(frame, pt_int, 4, (80, 80, 150), -1)
+                        cv2.putText(frame, name, (pt_int[0] + 8, pt_int[1] + 8),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (120, 120, 120), 1)
+
+                    # Draw connecting lines for live corners (faded)
+                    live_four = all(aruco_pts.get(c) is not None for c in ["TL", "TR", "BR", "BL"])
+                    if live_four:
+                        live_pts = {name: (int(aruco_pts[name][0]), int(aruco_pts[name][1]))
+                                    for name in ["TL", "TR", "BR", "BL"]}
+                        # Faded grey/green box
+                        cv2.line(frame, live_pts["TL"], live_pts["TR"], (120, 150, 120), 1)
+                        cv2.line(frame, live_pts["TR"], live_pts["BR"], (120, 150, 120), 1)
+                        cv2.line(frame, live_pts["BR"], live_pts["BL"], (120, 150, 120), 1)
+                        cv2.line(frame, live_pts["BL"], live_pts["TL"], (120, 150, 120), 1)
+
+                    # ── Draw standard ArUco coordinate system (bright) ──────────────────────────────
+                    # Primary choice: state.aruco_standard_points
+                    # Fallback choice: aruco_pts if standard is not set yet
+                    std_pts_source = state.aruco_standard_points if (state.aruco_standard_points and len(state.aruco_standard_points) == 4) else None
+                    if std_pts_source is None and live_four:
+                        std_pts_source = aruco_pts
+
+                    if std_pts_source and all(std_pts_source.get(c) is not None for c in ["TL", "TR", "BR", "BL"]):
+                        std_pts = {name: (int(std_pts_source[name][0]), int(std_pts_source[name][1]))
+                                   for name in ["TL", "TR", "BR", "BL"]}
+
+                        # Bright green rectangle for standard boundaries
+                        cv2.line(frame, std_pts["TL"], std_pts["TR"], (0, 255, 0), 2)
+                        cv2.line(frame, std_pts["TR"], std_pts["BR"], (0, 255, 0), 2)
+                        cv2.line(frame, std_pts["BR"], std_pts["BL"], (0, 255, 0), 2)
+                        cv2.line(frame, std_pts["BL"], std_pts["TL"], (0, 255, 0), 2)
+
+                        # Centre (blue dot)
+                        cx = (std_pts["TL"][0] + std_pts["TR"][0] + std_pts["BR"][0] + std_pts["BL"][0]) // 4
+                        cy = (std_pts["TL"][1] + std_pts["TR"][1] + std_pts["BR"][1] + std_pts["BL"][1]) // 4
+                        cv2.circle(frame, (cx, cy), 8, (255, 0, 0), -1)
+                        cv2.putText(frame, "(0,0)", (cx + 15, cy + 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+
+                        # Midpoints
+                        mid_left = ((std_pts["TL"][0] + std_pts["BL"][0]) // 2, (std_pts["TL"][1] + std_pts["BL"][1]) // 2)
+                        mid_right = ((std_pts["TR"][0] + std_pts["BR"][0]) // 2, (std_pts["TR"][1] + std_pts["BR"][1]) // 2)
+                        mid_top = ((std_pts["TL"][0] + std_pts["TR"][0]) // 2, (std_pts["TL"][1] + std_pts["TR"][1]) // 2)
+                        mid_bot = ((std_pts["BL"][0] + std_pts["BR"][0]) // 2, (std_pts["BL"][1] + std_pts["BR"][1]) // 2)
+
+                        # X-axis: cyan line from Left Midpoint to Right Midpoint
+                        cv2.line(frame, mid_left, mid_right, (255, 255, 0), 2)
+                        # Put text x+ at right midpoint
+                        cv2.putText(frame, "x+", (mid_right[0] + 8, mid_right[1] + 5),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+
+                        # Y-axis: magenta line from Top Midpoint to Bottom Midpoint
+                        cv2.line(frame, mid_top, mid_bot, (255, 0, 255), 2)
+                        # Put text y+ at bottom midpoint
+                        cv2.putText(frame, "y+", (mid_bot[0] - 10, mid_bot[1] + 20),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
+                except Exception as e:
+                    logger.error(f"[Draw] ArUco overlay error camera {index}: {e}")
+
+                # ── Draw YOLO detections ────────────────────────────────
+                if yolo_dets:
+                    try:
+                        colors = [(0, 0, 255), (0, 255, 0), (255, 0, 0), (0, 255, 255)]
+                        for d in yolo_dets:
+                            ix1, iy1, ix2, iy2 = d["bbox"]
+                            cid  = d["class_id"]
+                            conf = d["confidence"]
+                            color = colors[cid % len(colors)]
+                            cv2.rectangle(frame, (ix1, iy1), (ix2, iy2), color, 2)
+                            dcx, dcy = d["center"]
+                            cv2.circle(frame, (int(dcx), int(dcy)), 4, color, -1)
+                            class_name = state.class_names.get(cid, f"Obj {cid}")
+                            label = f"{class_name}: {conf:.2f}"
+                            label_sz, base_line = cv2.getTextSize(
+                                label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+                            iy1_text = max(iy1, label_sz[1] + 5)
+                            cv2.rectangle(frame,
+                                          (ix1, iy1_text - label_sz[1] - 5),
+                                          (ix1 + label_sz[0], iy1_text + base_line - 5),
+                                          color, -1)
+                            cv2.putText(frame, label, (ix1, iy1_text - 5),
+                                        cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                        (0, 0, 0), 1, cv2.LINE_AA)
+                    except Exception as e:
+                        logger.error(f"[Draw] YOLO overlay error camera {index}: {e}")
+
+            # Encode JPEG
+            try:
+                _, jpeg = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
+                with self.lock:
+                    self.latest_frames[index] = jpeg.tobytes()
+            except Exception as e:
+                logger.error(f"[Draw] JPEG encode error camera {index}: {e}")
+
+            time.sleep(0.033)
+
+        logger.info(f"[Draw] Thread stopped for camera {index}")
 
     def get_frame(self, index: int) -> bytes:
         with self.lock:
@@ -1313,7 +1527,8 @@ async def get_calibration_status():
         "last_object": last_object,
         "calibration_matrix": get_adjusted_calibration_matrix(),
         "home_set": state.home_set,
-        "moving_around_running": getattr(state, "moving_around_running", False)
+        "moving_around_running": getattr(state, "moving_around_running", False),
+        "aruco_standard_points": state.aruco_standard_points
     }
 
 @app.post("/api/calibration/record")
@@ -1362,16 +1577,30 @@ async def get_calibration_config():
         "draw_overlay": state.draw_overlay
     }
 
+@app.post("/api/calibration/set_aruco")
+async def set_aruco_standard():
+    if not state.latest_detected_markers or len(state.latest_detected_markers) != 4:
+        return JSONResponse({"status": "error", "message": "All 4 ArUco markers must be detected before setting standard points"}, status_code=400)
+    
+    state.aruco_standard_points = dict(state.latest_detected_markers)
+    save_calibration_settings({
+        "aruco_standard_points": state.aruco_standard_points
+    })
+    return {"status": "ok", "message": "ArUco standard points set", "aruco_standard_points": state.aruco_standard_points}
+
 @app.post("/api/calibration/clear")
 async def clear_calibration():
     state.calibration_points = {}
     state.calibration_matrix = None
     state.latest_detected_markers = {}
+    state.aruco_standard_points = {}
+    camera_manager.smoothed_aruco_markers = {}
     
     save_calibration_settings({
         "points": state.calibration_points,
         "matrix": state.calibration_matrix,
-        "draw_overlay": state.draw_overlay
+        "draw_overlay": state.draw_overlay,
+        "aruco_standard_points": state.aruco_standard_points
     })
     
     return {"status": "ok", "message": "Calibration cleared"}
@@ -1433,7 +1662,10 @@ async def set_home(camera_index: int = 4):
 
     # Record state
     state.home_set = True
-    state.home_markers = dict(state.latest_detected_markers)
+    if state.aruco_standard_points and len(state.aruco_standard_points) == 4:
+        state.home_markers = dict(state.aruco_standard_points)
+    else:
+        state.home_markers = dict(state.latest_detected_markers)
     state.home_snapshot = snapshot_path
 
     # Reset wpos in state to zeros
@@ -1743,8 +1975,13 @@ async def move_to_largest(camera_index: int = 4):
     
     # Map pixel center to work coordinates
     M = np.array(M_adj, dtype=np.float32)
-    wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
-    wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
+    denom = M[2, 0] * cx + M[2, 1] * cy + M[2, 2] if M.shape[0] > 2 else 1.0
+    if abs(denom) > 1e-5:
+        wx = (M[0, 0] * cx + M[0, 1] * cy + M[0, 2]) / denom
+        wy = (M[1, 0] * cx + M[1, 1] * cy + M[1, 2]) / denom
+    else:
+        wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
+        wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
     
     # Send G0 command
     cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
@@ -1799,8 +2036,13 @@ async def click_go(config: ClickGoConfig):
                 
     # Map pixel coordinates to work coordinates
     M = np.array(M_adj, dtype=np.float32)
-    wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
-    wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+    denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
+    if abs(denom) > 1e-5:
+        wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
+        wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
+    else:
+        wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
+        wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
     
     cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
     try:

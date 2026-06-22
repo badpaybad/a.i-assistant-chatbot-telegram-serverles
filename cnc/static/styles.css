@@ -1159,9 +1159,9 @@ input[type=range]::-webkit-slider-thumb:hover {
 .camera-stream-container {
     position: relative;
     width: 480px;
-    height: 360px;
+    height: 480px;
     min-width: 480px;
-    min-height: 320px;
+    min-height: 480px;
     background-color: #05070a;
     border: 1px solid var(--border-color);
     border-radius: var(--radius-md);

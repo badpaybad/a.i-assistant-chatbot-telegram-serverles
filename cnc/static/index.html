@@ -262,7 +262,7 @@
                                 <span>Jog Feed Rate</span>
                                 <span class="slider-value" id="val-feed">1000 mm/min</span>
                             </div>
-                            <input type="range" id="slider-feed" min="100" max="3000" step="100" value="1000">
+                            <input type="range" id="slider-feed" min="100" max="10000" step="100" value="1000">
                         </div>
                     </div>
 
@@ -422,6 +422,7 @@
                     </div>
 
                     <div class="calibration-actions-row">
+                        <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Set ArUco</button>
                         <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
                         <button class="btn btn-primary" id="btn-move-to-center" disabled>Moving around</button>
                     </div>
