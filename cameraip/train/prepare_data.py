@@ -217,6 +217,30 @@ def main():
             except Exception as e:
                 print(f"Warning: Failed to parse label file {lbl_path}: {e}")
 
+            # Generate horizontal flip for train set only to augment/double the dataset
+            if subset == 'train' and img is not None:
+                try:
+                    flip_img = cv2.flip(gray_3ch, 1)
+                    base_name = os.path.splitext(os.path.basename(img_path))[0]
+                    ext = os.path.splitext(img_path)[1]
+                    flip_img_dest = os.path.join(args.dest, 'images', subset, f"{base_name}_flip{ext}")
+                    flip_lbl_dest = os.path.join(args.dest, 'labels', subset, f"{base_name}_flip.txt")
+                    
+                    cv2.imwrite(flip_img_dest, flip_img)
+                    
+                    # Flip bounding boxes: x_center becomes 1 - x_center
+                    flip_boxes = []
+                    for box in boxes:
+                        cid, cx, cy, w, h = box
+                        fcx = 1.0 - cx
+                        flip_boxes.append(f"{cid} {fcx:.6f} {cy:.6f} {w:.6f} {h:.6f}")
+                        
+                    with open(flip_lbl_dest, 'w') as f_out:
+                        f_out.write("\n".join(flip_boxes) + "\n")
+                    augmented_count += 1
+                except Exception as e:
+                    print(f"Warning: Failed to generate horizontal flip for {img_path}: {e}")
+
             # Apply Zoom-Crop Augmentation for train set only
             if subset == 'train' and args.zoom_crop and img is not None and len(boxes) > 0:
                 H_orig, W_orig = img.shape[:2]
@@ -227,21 +251,37 @@ def main():
                     t_cid, t_cx, t_cy, t_w, t_h = target_box
                     
                     # Convert normalized to pixel coordinates
-                    t_x_min = (t_cx - t_w/2) * W_orig
-                    t_x_max = (t_cx + t_w/2) * W_orig
-                    t_y_min = (t_cy - t_h/2) * H_orig
-                    t_y_max = (t_cy + t_h/2) * H_orig
                     t_bw = t_w * W_orig
                     t_bh = t_h * H_orig
                     
-                    # 25% padding on each side
-                    pad_x = 0.25 * t_bw
-                    pad_y = 0.25 * t_bh
+                    # Smart high-res crop centered around target box
+                    # Keep crop size at least 400x400 to preserve sharp details and context
+                    crop_w = max(int(t_bw * 2.5), 400)
+                    crop_h = max(int(t_bh * 2.5), 400)
                     
-                    cx_min = max(0, int(round(t_x_min - pad_x)))
-                    cx_max = min(W_orig, int(round(t_x_max + pad_x)))
-                    cy_min = max(0, int(round(t_y_min - pad_y)))
-                    cy_max = min(H_orig, int(round(t_y_max + pad_y)))
+                    # Bound by original image size
+                    crop_w = min(crop_w, W_orig)
+                    crop_h = min(crop_h, H_orig)
+                    
+                    cx_min = int(round(t_cx * W_orig - crop_w / 2))
+                    cx_max = cx_min + crop_w
+                    cy_min = int(round(t_cy * H_orig - crop_h / 2))
+                    cy_max = cy_min + crop_h
+                    
+                    # Bound adjustments
+                    if cx_min < 0:
+                        cx_min = 0
+                        cx_max = crop_w
+                    if cx_max > W_orig:
+                        cx_max = W_orig
+                        cx_min = W_orig - crop_w
+                        
+                    if cy_min < 0:
+                        cy_min = 0
+                        cy_max = crop_h
+                    if cy_max > H_orig:
+                        cy_max = H_orig
+                        cy_min = H_orig - crop_h
                     
                     W_crop = cx_max - cx_min
                     H_crop = cy_max - cy_min
