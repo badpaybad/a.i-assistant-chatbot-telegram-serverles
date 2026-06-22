@@ -31,5 +31,7 @@ kiểm tra pretrain chưa có thì download về, cần cho phép chọn pretrai
 **cập nhật 3**
 xem lại code prepare_data.py ở data raw yolo1.1 xuất ra từ cvat cameraip/train/dataraw có 2 label, nhưng khi split ra train và valid cần phải đủ train valid cho từng lable, nếu 1 label chỉ có 1 ảnh thì cần copy tạo cho train và valid cùng ảnh đó .
 
+**cập nhật 4**
+hỗ trợ thêm GPU AMD (ví dụ Radeon™ 780M Graphics × 16) bên cạnh CPU và GPU NVIDIA, tích hợp tự động cấu hình biến môi trường HSA_OVERRIDE_GFX_VERSION cho các dòng GPU consumer RDNA3/iGPU và hiển thị hướng dẫn cấu hình PyTorch ROCm chi tiết.
 
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm

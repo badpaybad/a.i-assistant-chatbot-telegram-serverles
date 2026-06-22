@@ -1,6 +1,42 @@
 #!/usr/bin/env python3
 import os
 import sys
+
+# Detect and configure AMD GPU environments before importing torch/ultralytics
+def setup_amd_gpu_env():
+    has_amd = False
+    try:
+        # Check /sys/class/drm/card*/device/vendor
+        import glob
+        for vendor_path in glob.glob('/sys/class/drm/card*/device/vendor'):
+            try:
+                with open(vendor_path, 'r') as f:
+                    vendor_id = f.read().strip()
+                if vendor_id == '0x1002': # AMD Vendor ID
+                    has_amd = True
+                    break
+            except Exception:
+                pass
+        
+        if not has_amd:
+            # Fallback to lspci
+            import subprocess
+            output = subprocess.check_output(["lspci", "-nnk"], text=True)
+            if "advanced micro devices" in output.lower() or "amd" in output.lower() or "radeon" in output.lower():
+                has_amd = True
+    except Exception:
+        pass
+
+    if has_amd:
+        # For AMD RDNA3 architectures like Radeon 780M (gfx1103),
+        # HSA_OVERRIDE_GFX_VERSION needs to be set to 11.0.2 or 11.0.0.
+        if 'HSA_OVERRIDE_GFX_VERSION' not in os.environ:
+            print("[AMD GPU Setup] AMD GPU detected on Linux. Setting HSA_OVERRIDE_GFX_VERSION=11.0.2 to enable support for consumer GPUs like Radeon 780M.", flush=True)
+            os.environ['HSA_OVERRIDE_GFX_VERSION'] = '11.0.2'
+    return has_amd
+
+has_amd_system = setup_amd_gpu_env()
+
 import argparse
 import numpy as np
 from ultralytics import YOLO
@@ -139,17 +175,31 @@ def main():
     # Load model
     model = YOLO(model_path)
     
-    # Resolve device to support both CPU and GPU (fallback gracefully)
+    # Resolve device to support CPU, NVIDIA GPU, and AMD GPU (fallback gracefully)
     device = args.device
     if device:
         device_lower = device.lower().strip()
-        if device_lower == 'gpu':
+        if device_lower in ('gpu', 'amd', 'rocm'):
             import torch
             if torch.cuda.is_available():
                 device = 'cuda'
-                print("Using CUDA (GPU) as requested by '--device gpu'.", flush=True)
+                device_name = torch.cuda.get_device_name(0)
+                print(f"Using GPU device '{device_name}' as requested by '--device {device_lower}'.", flush=True)
             else:
-                print("Warning: GPU requested ('--device gpu') but CUDA is not available. Falling back to CPU.", flush=True)
+                print(f"Warning: GPU requested ('--device {device_lower}') but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
+                if has_amd_system:
+                    print("\n" + "="*80)
+                    print("[WARNING] AMD GPU detected but PyTorch ROCm support is not available.")
+                    print("To train on your AMD GPU (e.g., Radeon 780M):")
+                    print("  1. Uninstall your current PyTorch version:")
+                    print("     venv/bin/pip uninstall -y torch torchvision torchaudio")
+                    print("  2. Install PyTorch with ROCm support (e.g., ROCm 6.0):")
+                    print("     venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0")
+                    print("  3. Ensure your user has access to GPU devices:")
+                    print("     sudo usermod -a -G video,render $USER")
+                    print("  4. Make sure HSA_OVERRIDE_GFX_VERSION is set:")
+                    print("     export HSA_OVERRIDE_GFX_VERSION=11.0.2")
+                    print("="*80 + "\n", flush=True)
                 device = 'cpu'
         elif device_lower == 'cpu':
             device = 'cpu'
@@ -159,9 +209,10 @@ def main():
             import torch
             if ('cuda' in device_lower or device_lower.isdigit() or ',' in device_lower):
                 if torch.cuda.is_available():
-                    print(f"Using CUDA device '{device}' as requested.", flush=True)
+                    device_name = torch.cuda.get_device_name(0)
+                    print(f"Using GPU device '{device_name}' via target '{device}'.", flush=True)
                 else:
-                    print(f"Warning: CUDA device '{device}' requested but CUDA is not available. Falling back to CPU.", flush=True)
+                    print(f"Warning: CUDA device '{device}' requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
                     device = 'cpu'
             else:
                 print(f"Using requested device: '{device}'", flush=True)
@@ -170,10 +221,16 @@ def main():
         import torch
         if torch.cuda.is_available():
             device = 'cuda'
-            print("Auto-detected GPU (CUDA) for training. To use CPU instead, pass '--device cpu'.", flush=True)
+            device_name = torch.cuda.get_device_name(0)
+            print(f"Auto-detected GPU ('{device_name}') for training. To use CPU instead, pass '--device cpu'.", flush=True)
         else:
             device = 'cpu'
-            print("Auto-detected CPU for training (No GPU/CUDA available).", flush=True)
+            print("Auto-detected CPU for training (No GPU/CUDA/ROCm available).", flush=True)
+            if has_amd_system:
+                print("\n" + "="*80)
+                print("[INFO] AMD GPU detected on system, but PyTorch ROCm is not configured.")
+                print("If you want to train using your AMD GPU, please check 'howtodo.md' for setup instructions.")
+                print("="*80 + "\n", flush=True)
 
     # Train the model (Transfer learning)
     print(f"\n--- Starting YOLO Training ({args.epochs} epochs) ---", flush=True)

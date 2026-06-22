@@ -378,3 +378,66 @@ Khi 4 camera giám sát cùng một phòng học, vùng nhìn của chúng chắ
    ```
 
 3. Các ảnh tăng cường mới sẽ được xuất ra thư mục `cameraip/train/augmented_image/`. Bạn chỉ cần upload thư mục này lên CVAT để tiến hành gán nhãn (boxing) bình thường.
+
+---
+
+## 10. Hướng Dẫn Cấu Hình Và Huấn Luyện Với GPU AMD (ROCm)
+
+Dự án đã hỗ trợ huấn luyện trên GPU AMD (ví dụ: Radeon™ 780M Graphics, RX 6000/7000 series) trên môi trường Linux thông qua nền tảng AMD ROCm.
+
+### 10.1. Yêu Cầu Hệ Thống & Cài Đặt Driver
+
+Để GPU AMD được nhận diện bởi PyTorch, bạn cần cài đặt driver AMDGPU và bộ thư viện ROCm trên Linux.
+1. **Kiểm tra phần cứng**: Đảm bảo hệ thống nhận diện được GPU AMD:
+   ```bash
+   lspci | grep -i vga
+   ```
+2. **Cài đặt Driver và ROCm**: Làm theo hướng dẫn chính thức của AMD để cài đặt driver và ROCm (khuyên dùng ROCm 6.0 hoặc mới hơn).
+3. **Cấp quyền truy cập GPU**: Thêm tài khoản user hiện tại vào các nhóm `video` và `render` để có quyền truy cập trực tiếp vào card đồ họa:
+   ```bash
+   sudo usermod -a -G video,render $USER
+   ```
+   *Lưu ý: Bạn cần đăng xuất và đăng nhập lại hoặc restart máy để thay đổi nhóm có hiệu lực.*
+
+### 10.2. Cấu HÌnh PyTorch Hỗ Trợ ROCm
+
+Mặc định, PyTorch cài đặt từ `pip` thông thường chỉ hỗ trợ CPU và NVIDIA CUDA. Để dùng GPU AMD, bạn cần cài đặt phiên bản PyTorch build riêng cho ROCm:
+
+```bash
+# 1. Kích hoạt môi trường ảo
+source venv/bin/activate
+
+# 2. Gỡ cài đặt PyTorch phiên bản CPU/CUDA hiện tại
+pip uninstall -y torch torchvision torchaudio
+
+# 3. Cài đặt PyTorch với ROCm 6.0 (hoặc phiên bản phù hợp với ROCm trên máy của bạn)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0
+```
+
+### 10.3. Biến Môi Trường HSA_OVERRIDE_GFX_VERSION (Cho GPU Consumer / iGPU như Radeon 780M)
+
+Các dòng card đồ họa consumer hoặc card tích hợp (như **Radeon 780M Graphics** - kiến trúc `gfx1103`) không nằm trong danh sách hỗ trợ chính thức của ROCm dành cho doanh nghiệp. Để chạy được, bạn cần ép ROCm nhận diện kiến trúc tương đương thông qua biến môi trường:
+
+```bash
+export HSA_OVERRIDE_GFX_VERSION=11.0.2
+```
+
+*Lưu ý: Script `train_yolo.py` đã được tích hợp cơ chế **tự động phát hiện GPU AMD** trên Linux. Nếu phát hiện card AMD và chưa cấu hình biến môi trường này, script sẽ tự động thiết lập `HSA_OVERRIDE_GFX_VERSION=11.0.2` trước khi khởi tạo PyTorch để giúp hệ thống chạy ngay lập tức mà không bị lỗi crash.*
+
+### 10.4. Kiểm Trạng Thái Nhận Diện GPU AMD
+
+Bạn có thể chạy lệnh sau để kiểm tra xem PyTorch đã nhận diện GPU AMD thành công chưa:
+
+```bash
+venv/bin/python -c "import torch; print('ROCm Available:', torch.cuda.is_available()); print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None')"
+```
+
+### 10.5. Cách Chạy Huấn Luyện
+
+* **Qua Giao Diện Web Dashboard**:
+  Mở `http://localhost:5000`, tại mục **Device**, chọn **AMD GPU (ROCm)** hoặc **Auto Detect**. Hệ thống sẽ tự động sử dụng GPU AMD để train.
+* **Qua Dòng Lệnh (CLI)**:
+  Sử dụng tham số `--device amd` hoặc `--device rocm`:
+  ```bash
+  venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device amd
+  ```
