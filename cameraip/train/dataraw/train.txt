@@ -3,3 +3,13 @@ data/obj_train_data/i2.jpg
 data/obj_train_data/i3.jpg
 data/obj_train_data/i4.jpg
 data/obj_train_data/sample object.png
+data/obj_train_data/capture_cropped_20260622_150240.jpg
+data/obj_train_data/capture_cropped_20260622_150316.jpg
+data/obj_train_data/capture_cropped_20260622_150329.jpg
+data/obj_train_data/capture_cropped_20260622_150339.jpg
+data/obj_train_data/capture_cropped_20260622_150348.jpg
+data/obj_train_data/capture_raw_20260622_150240.jpg
+data/obj_train_data/capture_raw_20260622_150316.jpg
+data/obj_train_data/capture_raw_20260622_150329.jpg
+data/obj_train_data/capture_raw_20260622_150338.jpg
+data/obj_train_data/capture_raw_20260622_150348.jpg
