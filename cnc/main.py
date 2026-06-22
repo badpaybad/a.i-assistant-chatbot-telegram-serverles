@@ -803,6 +803,15 @@ class CameraManager:
                         cv2.line(frame, live_pts["BR"], live_pts["BL"], (120, 150, 120), 1)
                         cv2.line(frame, live_pts["BL"], live_pts["TL"], (120, 150, 120), 1)
 
+                    # Draw manually set/standard ArUco standard points (cập nhật 13)
+                    if state.aruco_standard_points:
+                        for name, pt in state.aruco_standard_points.items():
+                            if pt is not None:
+                                pt_int = (int(pt[0]), int(pt[1]))
+                                cv2.circle(frame, pt_int, 6, (0, 140, 255), -1)
+                                cv2.putText(frame, f"{name} (manual)", (pt_int[0] + 8, pt_int[1] - 8),
+                                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 140, 255), 1)
+
                     # ── Draw standard ArUco coordinate system (bright) ──────────────────────────────
                     # Primary choice: state.aruco_standard_points
                     # Fallback choice: aruco_pts if standard is not set yet
@@ -1067,6 +1076,7 @@ async def serial_reader_loop():
 
 # Auto Query Loop
 async def status_polling_loop():
+    last_save_time = time.time()
     while state.connected and state.serial_port:
         try:
             # Send '?' to poll GRBL status
@@ -1074,6 +1084,20 @@ async def status_polling_loop():
             state.serial_port.flush()
         except Exception as e:
             logger.error(f"Error writing status poll: {e}")
+            
+        # Periodically save current pen position (every 3 seconds if changed)
+        now = time.time()
+        if now - last_save_time > 3.0:
+            try:
+                if getattr(state, "wpos", None) and state.wpos != getattr(state, "saved_pen_position", [0.0, 0.0, 0.0]):
+                    state.saved_pen_position = list(state.wpos)
+                    save_calibration_settings({
+                        "saved_pen_position": state.saved_pen_position
+                    })
+            except Exception as e:
+                logger.error(f"Failed to auto-save pen position: {e}")
+            last_save_time = now
+            
         await asyncio.sleep(0.2) # Poll every 200ms
 
 async def send_telemetry():
@@ -1159,6 +1183,19 @@ class DummySerial:
     def write(self, data: bytes):
         cmd = data.decode('utf-8', errors='ignore').strip()
         logger.info(f"[DUMMY SERIAL WRITE] {cmd}")
+        try:
+            if cmd.startswith("G92") or cmd.startswith("G0") or cmd.startswith("G1"):
+                for axis in ["X", "Y", "Z"]:
+                    match = re.search(rf"{axis}([-+]?[0-9]*\.?[0-9]+)", cmd, re.IGNORECASE)
+                    if match:
+                        val = float(match.group(1))
+                        idx = {"X": 0, "Y": 1, "Z": 2}[axis]
+                        state.wpos[idx] = val
+                        state.mpos[idx] = val
+                import asyncio
+                asyncio.create_task(send_telemetry())
+        except Exception as e:
+            logger.error(f"[Dummy Serial] Simulation error: {e}")
     def read(self, size: int) -> bytes:
         return b""
     def flush(self):
@@ -1185,6 +1222,9 @@ async def connect(config: ConnectionConfig):
             state.serial_port = DummySerial()
             state.connected = True
             state.machine_state = "Idle"
+            saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
+            if saved_pos and any(v != 0.0 for v in saved_pos):
+                state.wpos = list(saved_pos)
             await broadcast({"type": "connection", "connected": True, "message": "Connected to Mock CNC (Dummy Mode)"})
             return {"status": "ok", "message": "Connected to Mock CNC successfully"}
             
@@ -1204,6 +1244,15 @@ async def connect(config: ConnectionConfig):
         asyncio.create_task(serial_reader_loop())
         asyncio.create_task(status_polling_loop())
         
+        # Restore position if we have a saved one (cập nhật 13)
+        saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
+        if saved_pos and any(v != 0.0 for v in saved_pos):
+            g92_cmd = f"G92 X{saved_pos[0]:.3f} Y{saved_pos[1]:.3f} Z{saved_pos[2]:.3f}"
+            logger.info(f"Restoring last known pen position: {g92_cmd}")
+            await asyncio.sleep(0.5)
+            state.serial_port.write((g92_cmd + "\n").encode())
+            state.serial_port.flush()
+            
         await broadcast({"type": "connection", "connected": True, "message": "Connected to GRBL"})
         return {"status": "ok", "message": "Connected successfully"}
         
@@ -1588,6 +1637,30 @@ async def set_aruco_standard():
     })
     return {"status": "ok", "message": "ArUco standard points set", "aruco_standard_points": state.aruco_standard_points}
 
+class ManualCornerConfig(BaseModel):
+    corner: str
+    x: float
+    y: float
+
+@app.post("/api/calibration/set_manual_corner")
+async def set_manual_corner(config: ManualCornerConfig):
+    if config.corner not in ["TL", "TR", "BR", "BL"]:
+        return JSONResponse({"status": "error", "message": "Invalid corner name"}, status_code=400)
+    
+    if not state.aruco_standard_points:
+        state.aruco_standard_points = {}
+    state.aruco_standard_points[config.corner] = [config.x, config.y]
+    
+    save_calibration_settings({
+        "aruco_standard_points": state.aruco_standard_points
+    })
+    
+    return {
+        "status": "ok",
+        "message": f"Successfully set standard corner {config.corner} to pixel ({config.x:.1f}, {config.y:.1f})",
+        "aruco_standard_points": state.aruco_standard_points
+    }
+
 @app.post("/api/calibration/clear")
 async def clear_calibration():
     state.calibration_points = {}
@@ -1595,12 +1668,20 @@ async def clear_calibration():
     state.latest_detected_markers = {}
     state.aruco_standard_points = {}
     camera_manager.smoothed_aruco_markers = {}
+    state.home_set = False
+    state.home_markers = {}
+    state.home_snapshot = None
+    state.saved_pen_position = [0.0, 0.0, 0.0]
     
     save_calibration_settings({
         "points": state.calibration_points,
         "matrix": state.calibration_matrix,
         "draw_overlay": state.draw_overlay,
-        "aruco_standard_points": state.aruco_standard_points
+        "aruco_standard_points": state.aruco_standard_points,
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "home_snapshot": state.home_snapshot,
+        "saved_pen_position": state.saved_pen_position
     })
     
     return {"status": "ok", "message": "Calibration cleared"}

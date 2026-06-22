@@ -1770,3 +1770,33 @@ input[type=range]::-webkit-slider-thumb:hover {
         border-color: var(--success);
     }
 }
+
+/* Custom Camera Context Menu (cập nhật 13) */
+.camera-context-menu {
+    position: absolute;
+    z-index: 10000;
+    background: hsla(220, 25%, 10%, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.7);
+    padding: 6px 0;
+    min-width: 180px;
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.context-menu-item {
+    padding: 10px 16px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.context-menu-item:hover {
+    background-color: var(--warning);
+    color: var(--bg-dark);
+}

@@ -1001,6 +1001,77 @@ function setupEventListeners() {
         }
     });
 
+    // Camera stream right-click to manually set ArUco corners (cập nhật 13)
+    cameraStreamImg.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        
+        // Remove existing context menu if any
+        const existing = document.getElementById("camera-context-menu");
+        if (existing) existing.remove();
+
+        const rect = cameraStreamImg.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        // Scale to 720x720 coordinate space
+        const px = (clickX / rect.width) * 720.0;
+        const py = (clickY / rect.height) * 720.0;
+
+        // Create context menu element
+        const menu = document.createElement("div");
+        menu.id = "camera-context-menu";
+        menu.className = "camera-context-menu";
+        menu.style.left = `${e.clientX + window.scrollX}px`;
+        menu.style.top = `${e.clientY + window.scrollY}px`;
+
+        const corners = [
+            { id: "TL", label: "📐 Set Top-Left (TL)" },
+            { id: "TR", label: "📐 Set Top-Right (TR)" },
+            { id: "BR", label: "📐 Set Bottom-Right (BR)" },
+            { id: "BL", label: "📐 Set Bottom-Left (BL)" }
+        ];
+
+        corners.forEach(corner => {
+            const item = document.createElement("div");
+            item.className = "context-menu-item";
+            item.innerText = corner.label;
+            item.addEventListener("click", async () => {
+                menu.remove();
+                logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
+                try {
+                    const res = await fetch("/api/calibration/set_manual_corner", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ corner: corner.id, x: px, y: py })
+                    });
+                    const data = await res.json();
+                    if (data.status === "ok") {
+                        logSystemMessage(`📐 Set ${corner.id} successfully!`);
+                        fetchCalibrationConfig();
+                    } else {
+                        logSystemMessage(`❌ Failed to set manual corner: ${data.message}`);
+                    }
+                } catch (err) {
+                    logSystemMessage(`❌ Network error during manual corner calibration: ${err}`);
+                }
+            });
+            menu.appendChild(item);
+        });
+
+        document.body.appendChild(menu);
+
+        // Click outside to dismiss context menu
+        const dismissMenu = (event) => {
+            if (!menu.contains(event.target)) {
+                menu.remove();
+                document.removeEventListener("click", dismissMenu);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener("click", dismissMenu);
+        }, 10);
+    });
+
     // --- Calibration Control Logic ---
     const chkShowOverlay = document.getElementById("chk-show-overlay");
     const badgeTL = document.getElementById("badge-tl");
