@@ -195,6 +195,12 @@ venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.
 
 *Quá trình này sẽ sinh ra file PyTorch (`best.pt`) và tự động xuất ra file ONNX (`best.onnx`) lưu tại thư mục `runs/detect/train/weights/`.*
 
+> [!TIP]
+> **Các tham số huấn luyện bổ sung tối ưu cho nhận dạng vật thể nhỏ:**
+> - `--mosaic <float>`: Tỉ lệ áp dụng mosaic augmentation (mặc định: `1.0`). Ghép 4 ảnh thành 1 để thu nhỏ vật thể xuống 50% kích thước ban đầu, giúp model học nhận diện vật thể nhỏ/xa tốt hơn.
+> - `--scale <float>`: Biên độ ngẫu nhiên phóng to/thu nhỏ ảnh khi train (mặc định: `0.6`, tương ứng zoom từ 0.4x đến 1.6x).
+> - `--multi-scale` / `--no-multi-scale`: Kích hoạt/Vô hiệu hóa việc thay đổi kích thước ảnh ngẫu nhiên theo từng batch khi train (mặc định: bật).
+
 > [!NOTE]
 > **Tự động tải và Quản lý file Pretrain Weights:**
 >
@@ -287,6 +293,10 @@ Bài toán đếm số người đang ngồi học từ 4 camera Full HD ở 4 g
     ```bash
     venv/bin/python cameraip/train/train_yolo.py --imgsz 960 --model cameraip/train/yolov8n.pt --epochs 100
     ```
+
+* **Các tham số Data Augmentation tối ưu cho vật thể nhỏ**:
+  - Đảm bảo sử dụng `--mosaic 1.0` (mặc định) để YOLO tự động ghép 4 ảnh thành 1, giả lập các vật thể nhỏ hơn.
+  - Sử dụng `--scale 0.6` (mặc định) và bật `--multi-scale` để thay đổi kích thước ảnh linh hoạt theo từng batch, giúp tăng độ bao phủ của mô hình ở nhiều độ phân giải khác nhau.
 
 ### 8.3. Giải Thuật Loại Bỏ Đếm Trùng Lặp Giữa 4 Camera (Cross-Camera De-duplication)
 

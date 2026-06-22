@@ -17,6 +17,10 @@ def parse_args():
     parser.add_argument('--device', type=str, default='', help='Device to train on, e.g., cpu, cuda, 0, mps (empty for auto)')
     parser.add_argument('--project', type=str, default=os.path.join(script_dir, 'runs', 'detect'), help='Directory to save results')
     parser.add_argument('--name', type=str, default='train', help='Run name')
+    parser.add_argument('--mosaic', type=float, default=1.0, help='Mosaic augmentation ratio (default: 1.0)')
+    parser.add_argument('--scale', type=float, default=0.6, help='Scale augmentation ratio (default: 0.6)')
+    parser.add_argument('--multi-scale', action='store_true', dest='multi_scale', default=True, help='Enable multi-scale training (default: True)')
+    parser.add_argument('--no-multi-scale', action='store_false', dest='multi_scale', help='Disable multi-scale training')
     return parser.parse_args()
 
 def main():
@@ -94,7 +98,10 @@ def main():
         device=args.device if args.device else None,
         project=args.project,
         name=args.name,
-        exist_ok=True
+        exist_ok=True,
+        mosaic=args.mosaic,
+        scale=args.scale,
+        multi_scale=args.multi_scale
     )
     
     print("\n--- Starting Model Validation ---", flush=True)
