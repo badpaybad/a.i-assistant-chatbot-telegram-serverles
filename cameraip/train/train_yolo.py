@@ -2,7 +2,38 @@
 import os
 import sys
 import argparse
+import numpy as np
 from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer, torch_distributed_zero_first, LOGGER
+from ultralytics.data import build_dataloader
+
+# Monkey-patch DetectionTrainer.get_dataloader to force drop_last=True for training
+# when batch_size > 1. This prevents ValueError: Expected more than 1 value per channel
+# which occurs when the last batch has size 1 during BatchNorm.
+def patched_get_dataloader(self, dataset_path, batch_size=16, rank=0, mode="train"):
+    assert mode in {"train", "val"}, f"Mode must be 'train' or 'val', not {mode}."
+    with torch_distributed_zero_first(rank):
+        dataset = self.build_dataset(dataset_path, mode, batch_size)
+    shuffle = mode == "train"
+    if getattr(dataset, "rect", False) and shuffle and not np.all(dataset.batch_shapes == dataset.batch_shapes[0]):
+        LOGGER.warning("'rect=True' is incompatible with DataLoader shuffle, setting shuffle=False")
+        shuffle = False
+    
+    # Force drop_last=True during training to avoid batch-size-1 BatchNorm crashes
+    # unless batch_size is 1 (which we override to 2 in main anyway)
+    drop_last = mode == "train" and batch_size > 1
+    
+    return build_dataloader(
+        dataset,
+        batch=batch_size,
+        workers=self.args.workers if mode == "train" else self.args.workers * 2,
+        shuffle=shuffle,
+        rank=rank,
+        drop_last=drop_last,
+    )
+
+# Apply the patch
+DetectionTrainer.get_dataloader = patched_get_dataloader
 
 def parse_args():
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -25,6 +56,13 @@ def parse_args():
 
 def main():
     args = parse_args()
+    
+    # Enforce minimum batch size of 2 to avoid BatchNorm issues during training
+    if args.batch == 1:
+        print("Warning: Batch size of 1 is not recommended and can cause BatchNorm errors during training.", flush=True)
+        print("Automatically increasing batch size to 2.", flush=True)
+        args.batch = 2
+        
     script_dir = os.path.dirname(os.path.abspath(__file__))
     
     # Check if dataset.yaml exists
