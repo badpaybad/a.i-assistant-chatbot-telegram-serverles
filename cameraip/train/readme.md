@@ -40,5 +40,6 @@ venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/data
 
 venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 4 --device gpu --imgsz 960 --no-multi-scale
 
+venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 640
 
 ```
