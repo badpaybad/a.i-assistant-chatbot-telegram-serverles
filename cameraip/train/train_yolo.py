@@ -11,6 +11,18 @@ from ultralytics.data import build_dataloader
 # when batch_size > 1. This prevents ValueError: Expected more than 1 value per channel
 # which occurs when the last batch has size 1 during BatchNorm.
 def patched_get_dataloader(self, dataset_path, batch_size=16, rank=0, mode="train"):
+    if mode == "train" and batch_size < 2:
+        raise RuntimeError(
+            "\n[ERROR] GPU/System ran out of memory (OOM) during training, and batch size was automatically reduced to 1.\n"
+            "Training with batch size 1 is not supported because PyTorch BatchNorm layers require batch size >= 2.\n"
+            "To resolve this VRAM memory issue, please try the following:\n"
+            "  1. Disable multi-scale training by passing '--no-multi-scale'\n"
+            "  2. Reduce your image size (e.g., use '--imgsz 640' or '--imgsz 768' instead of 960)\n"
+            "  3. Reduce your batch size (e.g., use '--batch 4' or '--batch 2' with the smaller image size)\n"
+            "  4. Use a smaller model (e.g., yolo11s.pt or yolov8s.pt instead of yolo26m.pt)\n"
+        )
+    
+    print(f"\n[PATCH] get_dataloader called: mode={mode}, batch_size={batch_size}", flush=True)
     assert mode in {"train", "val"}, f"Mode must be 'train' or 'val', not {mode}."
     with torch_distributed_zero_first(rank):
         dataset = self.build_dataset(dataset_path, mode, batch_size)
@@ -22,6 +34,7 @@ def patched_get_dataloader(self, dataset_path, batch_size=16, rank=0, mode="trai
     # Force drop_last=True during training to avoid batch-size-1 BatchNorm crashes
     # unless batch_size is 1 (which we override to 2 in main anyway)
     drop_last = mode == "train" and batch_size > 1
+    print(f"[PATCH] setting drop_last={drop_last} for dataset: {dataset_path}\n", flush=True)
     
     return build_dataloader(
         dataset,

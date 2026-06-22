@@ -33,4 +33,12 @@ venv/bin/python3.12 cameraip/train/prepare_data.py --src cameraip/train/dataraw 
 
 
 venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device gpu
+
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 960
+
+venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 960
+
+venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 4 --device gpu --imgsz 960 --no-multi-scale
+
+
 ```
