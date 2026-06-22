@@ -16,6 +16,8 @@ def parse_args():
     parser.add_argument('--dest', type=str, default='data', help='Destination directory for YOLO formatted dataset')
     parser.add_argument('--split', type=float, default=0.8, help='Train/validation split ratio (default: 0.8)')
     parser.add_argument('--seed', type=int, default=42, help='Random seed for shuffling (default: 42)')
+    parser.add_argument('--zoom-crop', action='store_true', dest='zoom_crop', default=True, help='Enable zoom-crop augmentation around bounding boxes (default: True)')
+    parser.add_argument('--no-zoom-crop', action='store_false', dest='zoom_crop', help='Disable zoom-crop augmentation')
     return parser.parse_args()
 
 def main():
@@ -174,9 +176,11 @@ def main():
     # Function to copy pairs
     def copy_pairs(pairs_list, subset):
         max_class_id = -1
+        augmented_count = 0
         for img_path, lbl_path in pairs_list:
             # Process image to grayscale
             img_dest = os.path.join(args.dest, 'images', subset, os.path.basename(img_path))
+            img = None
             try:
                 img = cv2.imread(img_path)
                 if img is not None:
@@ -194,7 +198,8 @@ def main():
             lbl_dest = os.path.join(args.dest, 'labels', subset, os.path.basename(lbl_path))
             shutil.copy2(lbl_path, lbl_dest)
             
-            # Parse label to detect max class ID for dataset.yaml helper
+            # Parse labels
+            boxes = []
             try:
                 with open(lbl_path, 'r') as f:
                     for line in f:
@@ -203,9 +208,95 @@ def main():
                             class_id = int(parts[0])
                             if class_id > max_class_id:
                                 max_class_id = class_id
+                            if len(parts) >= 5:
+                                cx = float(parts[1])
+                                cy = float(parts[2])
+                                w = float(parts[3])
+                                h = float(parts[4])
+                                boxes.append([class_id, cx, cy, w, h])
             except Exception as e:
                 print(f"Warning: Failed to parse label file {lbl_path}: {e}")
+
+            # Apply Zoom-Crop Augmentation for train set only
+            if subset == 'train' and args.zoom_crop and img is not None and len(boxes) > 0:
+                H_orig, W_orig = img.shape[:2]
+                base_name = os.path.splitext(os.path.basename(img_path))[0]
+                ext = os.path.splitext(img_path)[1]
                 
+                for idx, target_box in enumerate(boxes):
+                    t_cid, t_cx, t_cy, t_w, t_h = target_box
+                    
+                    # Convert normalized to pixel coordinates
+                    t_x_min = (t_cx - t_w/2) * W_orig
+                    t_x_max = (t_cx + t_w/2) * W_orig
+                    t_y_min = (t_cy - t_h/2) * H_orig
+                    t_y_max = (t_cy + t_h/2) * H_orig
+                    t_bw = t_w * W_orig
+                    t_bh = t_h * H_orig
+                    
+                    # 25% padding on each side
+                    pad_x = 0.25 * t_bw
+                    pad_y = 0.25 * t_bh
+                    
+                    cx_min = max(0, int(round(t_x_min - pad_x)))
+                    cx_max = min(W_orig, int(round(t_x_max + pad_x)))
+                    cy_min = max(0, int(round(t_y_min - pad_y)))
+                    cy_max = min(H_orig, int(round(t_y_max + pad_y)))
+                    
+                    W_crop = cx_max - cx_min
+                    H_crop = cy_max - cy_min
+                    
+                    if W_crop <= 10 or H_crop <= 10:
+                        continue
+                        
+                    # Find all boxes that overlap with the cropped area
+                    cropped_boxes = []
+                    for box in boxes:
+                        cid, cx, cy, w, h = box
+                        bx_min = (cx - w/2) * W_orig
+                        bx_max = (cx + w/2) * W_orig
+                        by_min = (cy - h/2) * H_orig
+                        by_max = (cy + h/2) * H_orig
+                        
+                        # Intersection bounds
+                        ix_min = max(cx_min, bx_min)
+                        ix_max = min(cx_max, bx_max)
+                        iy_min = max(cy_min, by_min)
+                        iy_max = min(cy_max, by_max)
+                        
+                        if ix_max > ix_min and iy_max > iy_min:
+                            overlap_area = (ix_max - ix_min) * (iy_max - iy_min)
+                            box_area = (bx_max - bx_min) * (by_max - by_min)
+                            if box_area > 0 and (overlap_area / box_area) > 0.3:
+                                # Coordinate relative to cropped image
+                                nx_min = ix_min - cx_min
+                                nx_max = ix_max - cx_min
+                                ny_min = iy_min - cy_min
+                                ny_max = iy_max - cy_min
+                                
+                                # New normalized coordinates
+                                nw = (nx_max - nx_min) / W_crop
+                                nh = (ny_max - ny_min) / H_crop
+                                ncx = (nx_min + nx_max) / (2.0 * W_crop)
+                                ncy = (ny_min + ny_max) / (2.0 * H_crop)
+                                cropped_boxes.append(f"{cid} {ncx:.6f} {ncy:.6f} {nw:.6f} {nh:.6f}")
+                                
+                    if len(cropped_boxes) > 0:
+                        # Crop image and convert to grayscale 3-channel
+                        crop_img = img[cy_min:cy_max, cx_min:cx_max]
+                        crop_gray = cv2.cvtColor(crop_img, cv2.COLOR_BGR2GRAY)
+                        crop_gray_3ch = cv2.cvtColor(crop_gray, cv2.COLOR_GRAY2BGR)
+                        
+                        crop_img_dest = os.path.join(args.dest, 'images', subset, f"{base_name}_zoom_{idx}{ext}")
+                        crop_lbl_dest = os.path.join(args.dest, 'labels', subset, f"{base_name}_zoom_{idx}.txt")
+                        
+                        cv2.imwrite(crop_img_dest, crop_gray_3ch)
+                        with open(crop_lbl_dest, 'w') as f_out:
+                            f_out.write("\n".join(cropped_boxes) + "\n")
+                        augmented_count += 1
+                        
+        if augmented_count > 0:
+            print(f"Generated {augmented_count} zoom-cropped augmented images for '{subset}' set.")
         return max_class_id
 
     # Copy train and val

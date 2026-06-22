@@ -138,6 +138,14 @@ venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --de
 > 2. **Hỗ trợ cấu trúc CVAT tự động**: Tự động duyệt tìm file ảnh và nhãn `.txt` đệ quy sâu bên trong các thư mục con như `obj_train_data/` mà không bắt buộc bạn phải di chuyển file hoặc đổi tên thư mục.
 > 3. **Tự động trích xuất Tên Class**: Đọc trực tiếp từ file `obj.names` (được sinh ra khi xuất dữ liệu từ CVAT) để đưa tên các nhãn (ví dụ: `test`) vào file `dataset.yaml` thay vì tạo các nhãn mặc định `class_0`, `class_1` giúp bạn không cần chỉnh sửa thủ công cấu hình `dataset.yaml`.
 > 4. **Phân chia dữ liệu bảo toàn Class (Class-Aware Split & Copy)**: Tự động phân tích nhãn của từng ảnh để đảm bảo mọi class đều có mẫu biểu diễn trong cả hai tập `train` và `val`. Trong trường hợp một class chỉ có duy nhất 1 ảnh gán nhãn, ảnh đó sẽ được tự động nhân bản (copy) vào cả hai tập `train` và `val` để đảm bảo chất lượng kiểm thử và tránh lỗi huấn luyện/đánh giá.
+> 5. **Tăng cường dữ liệu bằng Zoom-Crop (Zoom-Crop Augmentation)**: Khi bật `--zoom-crop` (mặc định bật), script sẽ tự động duyệt qua tất cả các bounding box trong tập train. Với mỗi bounding box, nó sẽ tự động crop vùng ảnh xung quanh hộp đó cộng thêm 25% lề (padding) mở rộng ở mỗi bên. Script cũng tự động tính toán và cập nhật lại tọa độ chuẩn hóa cho tất cả các nhãn nằm trong vùng crop này (chỉ giữ lại các vật thể có phần diện tích còn lại trong vùng crop > 30%). Việc này giúp tạo thêm nhiều ảnh cận cảnh giả lập tự động, nâng cao đáng kể độ chính xác nhận diện của mô hình đối với các vật thể nhỏ/xa.
+
+### Các tham số CLI của `prepare_data.py`:
+- `--src`: Đường dẫn tới thư mục chứa dữ liệu thô (mặc định: `dataraw`).
+- `--dest`: Đường dẫn tới thư mục lưu kết quả chuẩn bị dữ liệu (mặc định: `data`).
+- `--split`: Tỷ lệ phân chia tập train (mặc định: `0.8`).
+- `--seed`: Seed ngẫu nhiên để đảm bảo việc phân tách dữ liệu giống nhau giữa các lần chạy (mặc định: `42`).
+- `--zoom-crop` / `--no-zoom-crop`: Bật/Tắt tính năng tự động crop phóng to các vùng nhãn để tăng cường tập train (mặc định: bật).
 
 
 ### Kết quả đầu ra thư mục `data/`
