@@ -195,6 +195,14 @@ function updateUIState(data) {
         valX.innerText = currentWPos.x.toFixed(3);
         valY.innerText = currentWPos.y.toFixed(3);
         valZ.innerText = currentWPos.z.toFixed(3);
+
+        const chkAutoTrackPen = document.getElementById("chk-auto-track-pen");
+        if (chkAutoTrackPen && chkAutoTrackPen.checked) {
+            const gestureStartX = document.getElementById("gesture-start-x");
+            const gestureStartY = document.getElementById("gesture-start-y");
+            if (gestureStartX) gestureStartX.value = currentWPos.x.toFixed(1);
+            if (gestureStartY) gestureStartY.value = currentWPos.y.toFixed(1);
+        }
     }
 
     // Feed / Spindle
@@ -330,6 +338,14 @@ function updateTelemetry(data) {
     valX.innerText = currentWPos.x.toFixed(3);
     valY.innerText = currentWPos.y.toFixed(3);
     valZ.innerText = currentWPos.z.toFixed(3);
+    
+    const chkAutoTrackPen = document.getElementById("chk-auto-track-pen");
+    if (chkAutoTrackPen && chkAutoTrackPen.checked) {
+        const gestureStartX = document.getElementById("gesture-start-x");
+        const gestureStartY = document.getElementById("gesture-start-y");
+        if (gestureStartX) gestureStartX.value = currentWPos.x.toFixed(1);
+        if (gestureStartY) gestureStartY.value = currentWPos.y.toFixed(1);
+    }
     
     telFeedrate.innerText = Math.round(data.feedrate);
     currentSpindleSpeed = Math.round(data.spindle_speed);
@@ -757,10 +773,36 @@ function setupEventListeners() {
     document.getElementById("btn-clear-path").addEventListener("click", resetCanvasView);
 
     // --- Touch & Swipe Gesture Event Listeners ---
-    document.getElementById("btn-set-start").addEventListener("click", () => {
-        document.getElementById("gesture-start-x").value = currentWPos.x.toFixed(1);
-        document.getElementById("gesture-start-y").value = currentWPos.y.toFixed(1);
-    });
+    const chkAutoTrackPen = document.getElementById("chk-auto-track-pen");
+    const gestureStartX = document.getElementById("gesture-start-x");
+    const gestureStartY = document.getElementById("gesture-start-y");
+    const btnSetStart = document.getElementById("btn-set-start");
+
+    const updateAutoTrackUI = () => {
+        if (chkAutoTrackPen && chkAutoTrackPen.checked) {
+            if (gestureStartX) gestureStartX.disabled = true;
+            if (gestureStartY) gestureStartY.disabled = true;
+            if (btnSetStart) btnSetStart.disabled = true;
+            if (gestureStartX) gestureStartX.value = currentWPos.x.toFixed(1);
+            if (gestureStartY) gestureStartY.value = currentWPos.y.toFixed(1);
+        } else {
+            if (gestureStartX) gestureStartX.disabled = false;
+            if (gestureStartY) gestureStartY.disabled = false;
+            if (btnSetStart) btnSetStart.disabled = false;
+        }
+    };
+
+    if (chkAutoTrackPen) {
+        chkAutoTrackPen.addEventListener("change", updateAutoTrackUI);
+        updateAutoTrackUI();
+    }
+
+    if (btnSetStart) {
+        btnSetStart.addEventListener("click", () => {
+            if (gestureStartX) gestureStartX.value = currentWPos.x.toFixed(1);
+            if (gestureStartY) gestureStartY.value = currentWPos.y.toFixed(1);
+        });
+    }
     document.getElementById("btn-set-end").addEventListener("click", () => {
         document.getElementById("gesture-end-x").value = currentWPos.x.toFixed(1);
         document.getElementById("gesture-end-y").value = currentWPos.y.toFixed(1);
@@ -928,23 +970,25 @@ function setupEventListeners() {
         } else if (mode === "720") {
             logSystemMessage(`📸 Triggering raw & cropped 720x720 JPEG downloads...`);
             
-            // Raw frame download
-            const linkRaw = document.createElement("a");
-            linkRaw.href = `/api/capture/download?mode=720_raw&camera_index=${camIdx}`;
-            linkRaw.download = `capture_raw_${Date.now()}.jpg`;
-            document.body.appendChild(linkRaw);
-            linkRaw.click();
-            document.body.removeChild(linkRaw);
+            // // Raw frame download
+            // const linkRaw = document.createElement("a");
+            // linkRaw.href = `/api/capture/download?mode=720_raw&camera_index=${camIdx}`;
+            // linkRaw.download = `capture_raw_${Date.now()}.jpg`;
+            // document.body.appendChild(linkRaw);
+            // linkRaw.click();
+            // document.body.removeChild(linkRaw);
             
             // Cropped frame download (with a tiny delay to ensure both downloads can start)
-            setTimeout(() => {
+
                 const linkCrop = document.createElement("a");
                 linkCrop.href = `/api/capture/download?mode=720_cropped&camera_index=${camIdx}`;
                 linkCrop.download = `capture_cropped_${Date.now()}.jpg`;
                 document.body.appendChild(linkCrop);
                 linkCrop.click();
                 document.body.removeChild(linkCrop);
-            }, 300);
+
+            // setTimeout(() => {
+            // }, 300);
         }
     };
 
@@ -2145,6 +2189,7 @@ async function executeGesture(type) {
     const feedrate = parseInt(document.getElementById("gesture-feedrate").value) || 2000;
     const dwell = parseFloat(document.getElementById("gesture-dwell").value) || 0.15;
     const distance = parseFloat(document.getElementById("gesture-distance").value) || 40.0;
+    const tapDwell = parseFloat(document.getElementById("gesture-tap-dwell").value) || 0.10;
     
     // Get UP/DOWN command strings from active mode settings
     const penUpValLocal = penUpVal.value;
@@ -2155,6 +2200,7 @@ async function executeGesture(type) {
     const penUpCmd = isSpindle ? `M3 S${penUpValLocal}` : `G0 Z${penUpValLocal}`;
     const penDownCmd = isSpindle ? `M3 S${penDownValLocal}` : `G0 Z${penDownValLocal}`;
     const penDwellCmd = `G4 P${penDwellLocal}`;
+    const tapDwellCmd = `G4 P${tapDwell}`;
     
     const gcode = [];
     
@@ -2166,12 +2212,9 @@ async function executeGesture(type) {
             logSystemMessage(`Simulating Tap at X:${startX}, Y:${startY}`);
             gcode.push(`G0 X${startX} Y${startY}`);
             gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            if (dwell > 0) {
-                gcode.push(`G4 P${dwell}`);
-            }
+            gcode.push(tapDwellCmd);
             gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
+            gcode.push(tapDwellCmd);
             break;
             
         case "doubletap":
@@ -2179,18 +2222,16 @@ async function executeGesture(type) {
             gcode.push(`G0 X${startX} Y${startY}`);
             // First Tap
             gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            if (dwell > 0) gcode.push(`G4 P${dwell}`);
+            gcode.push(tapDwellCmd);
             gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
+            gcode.push(tapDwellCmd);
             // Wait brief gap between taps
-            gcode.push(`G4 P0.15`);
+            gcode.push(tapDwellCmd);
             // Second Tap
             gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            if (dwell > 0) gcode.push(`G4 P${dwell}`);
+            gcode.push(tapDwellCmd);
             gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
+            gcode.push(tapDwellCmd);
             break;
             
         case "longpress":

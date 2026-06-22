@@ -99,3 +99,7 @@ khi có aruco, gốc tọa độ, set home cho đầu bút CNC , toàn bộ cầ
 sau khi có ảnh cần cho người dùng chọn thư mục để lưu.
     dạng chọn folder như download file của trình duyệt ở máy client, lưu ảnh chụp được qua trình duyệt
     lưu ảnh dạng jpeg frame capture 
+
+**cập nhật 15**
+chức năng ở Touch & Swipe Gestures . bổ xung thêm checkbox auto lấy theo đầu bút của cnc, mặc định là checked
+    khi checked cần lấy theo vị trí hiện tại của đầu bút để thao tác, Start Position (X, Y) cần cập nhật tự động theo vị trí hiện tại của đầu bút.  
