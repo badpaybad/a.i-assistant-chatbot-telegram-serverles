@@ -88,6 +88,42 @@ def main():
     # Load model
     model = YOLO(model_path)
     
+    # Resolve device to support both CPU and GPU (fallback gracefully)
+    device = args.device
+    if device:
+        device_lower = device.lower().strip()
+        if device_lower == 'gpu':
+            import torch
+            if torch.cuda.is_available():
+                device = 'cuda'
+                print("Using CUDA (GPU) as requested by '--device gpu'.", flush=True)
+            else:
+                print("Warning: GPU requested ('--device gpu') but CUDA is not available. Falling back to CPU.", flush=True)
+                device = 'cpu'
+        elif device_lower == 'cpu':
+            device = 'cpu'
+            print("Using CPU as requested by '--device cpu'.", flush=True)
+        else:
+            # Check if CUDA device requested (e.g. 'cuda', '0', '0,1') but not available
+            import torch
+            if ('cuda' in device_lower or device_lower.isdigit() or ',' in device_lower):
+                if torch.cuda.is_available():
+                    print(f"Using CUDA device '{device}' as requested.", flush=True)
+                else:
+                    print(f"Warning: CUDA device '{device}' requested but CUDA is not available. Falling back to CPU.", flush=True)
+                    device = 'cpu'
+            else:
+                print(f"Using requested device: '{device}'", flush=True)
+    else:
+        # Auto-detect device
+        import torch
+        if torch.cuda.is_available():
+            device = 'cuda'
+            print("Auto-detected GPU (CUDA) for training. To use CPU instead, pass '--device cpu'.", flush=True)
+        else:
+            device = 'cpu'
+            print("Auto-detected CPU for training (No GPU/CUDA available).", flush=True)
+
     # Train the model (Transfer learning)
     print(f"\n--- Starting YOLO Training ({args.epochs} epochs) ---", flush=True)
     training_results = model.train(
@@ -95,7 +131,7 @@ def main():
         epochs=args.epochs,
         batch=args.batch,
         imgsz=args.imgsz,
-        device=args.device if args.device else None,
+        device=device,
         project=args.project,
         name=args.name,
         exist_ok=True,

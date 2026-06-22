@@ -26,4 +26,11 @@ venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect
 
 
 venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/6.jpg" --output cameraip/train/6output_detect.jpg --conf 0.1
+
+
+
+venv/bin/python3.12 cameraip/train/prepare_data.py --src cameraip/train/dataraw --dest cameraip/train/data --split 0.8
+
+
+venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device gpu
 ```
