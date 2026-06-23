@@ -154,8 +154,11 @@
                     <h2 class="card-title">Touch &amp; Swipe Gestures</h2>
                     <div class="card-content" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Auto-track checkbox -->
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px;">Auto-track Pen</span>
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span
+                                style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px;">Auto-track
+                                Pen</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="chk-auto-track-pen" checked>
                                 <span class="toggle-slider"></span>
@@ -193,7 +196,7 @@
                         <div class="row-inputs">
                             <div class="input-group">
                                 <label for="gesture-feedrate">Feedrate</label>
-                                <input type="number" id="gesture-feedrate" value="2000" step="100">
+                                <input type="number" id="gesture-feedrate" value="4000" step="100">
                             </div>
                             <div class="input-group">
                                 <label for="gesture-distance">Dist (mm)</label>
@@ -208,7 +211,7 @@
                             </div>
                             <div class="input-group">
                                 <label for="gesture-tap-dwell">Tap Dwell (s)</label>
-                                <input type="number" id="gesture-tap-dwell" value="0.10" step="0.02" min="0.01">
+                                <input type="number" id="gesture-tap-dwell" value="0.05" step="0.01" min="0.01">
                             </div>
                         </div>
 
@@ -264,12 +267,15 @@
                                 <span>Step Size (Distance)</span>
                                 <span class="slider-value" id="val-step">10 mm</span>
                             </div>
-                            <input type="range" id="slider-step" min="0" max="3" step="1" value="2">
-                            <div class="slider-labels">
-                                <span>0.1</span>
-                                <span>1</span>
-                                <span>10</span>
-                                <span>100</span>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                                <input type="range" id="slider-step" min="0.1" max="100" step="0.1" value="10" style="flex: 1;">
+                                <select id="select-step-preset" class="input-select-small" style="width: 85px; margin: 0; padding: 4px 8px; height: 32px; font-size: 11px;">
+                                    <option value="0.1">0.1 mm</option>
+                                    <option value="1">1 mm</option>
+                                    <option value="10" selected>10 mm</option>
+                                    <option value="100">100 mm</option>
+                                    <option value="custom">Custom</option>
+                                </select>
                             </div>
                         </div>
 
@@ -377,10 +383,12 @@
                 <button class="btn-toggle" id="btn-list-cameras" title="List cameras (ls)" style="margin-right: 4px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">ls</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-1280" title="Capture 1280x720 (Original Frame)" style="margin-right: 4px; width: auto; padding: 0 6px;">
+                <button class="btn-toggle" id="btn-capture-1280" title="Capture 1280x720 (Original Frame)"
+                    style="margin-right: 4px; width: auto; padding: 0 6px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 1280</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-720" title="Capture 720x720 (Original & Cropped)" style="margin-right: 4px; width: auto; padding: 0 6px;">
+                <button class="btn-toggle" id="btn-capture-720" title="Capture 720x720 (Original & Cropped)"
+                    style="margin-right: 4px; width: auto; padding: 0 6px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 720</span>
                 </button>
                 <button class="btn-toggle" id="btn-camera-expand" title="Expand Full Page">
@@ -445,9 +453,11 @@
 
                     <div class="calibration-actions-row">
                         <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Set ArUco</button>
+                        <button class="btn btn-primary" id="btn-move-to-center" disabled>Moving around</button>
+                    </div>
+                    <div class="calibration-actions-row">
                         <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco">Reset ArUco</button>
                         <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
-                        <button class="btn btn-primary" id="btn-move-to-center" disabled>Moving around</button>
                     </div>
                 </div>
 
@@ -483,7 +493,7 @@
 
                     <!-- GoTo Controls -->
                     <div class="goto-section" id="goto-section">
-                        <div class="goto-inputs-row">
+                        <div class="goto-inputs-row" style="grid-template-columns: 1fr 1fr;">
                             <div class="input-group">
                                 <label for="goto-x" style="font-size:10px;">Target X (mm)</label>
                                 <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
@@ -492,12 +502,8 @@
                                 <label for="goto-y" style="font-size:10px;">Target Y (mm)</label>
                                 <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
                             </div>
-                            <div class="input-group">
-                                <label for="goto-feedrate" style="font-size:10px;">Feedrate</label>
-                                <input type="number" id="goto-feedrate" value="1000" step="100" min="100">
-                            </div>
                         </div>
-                        <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y</button>
+                        <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y (Global Feedrate)</button>
                     </div>
 
                     <!-- Home Snapshot Map -->

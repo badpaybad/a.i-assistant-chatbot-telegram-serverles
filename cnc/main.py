@@ -23,8 +23,7 @@ logger = logging.getLogger("cnc_controller")
 
 app = FastAPI(title="GRBL CNC Web Controller")
 
-# Pen / Servo settings persistence
-SETTINGS_FILE = "pen_settings.json"
+# Calibration Settings persistence
 CALIBRATION_FILE = "calibration_settings.json"
 
 HOME_SNAPSHOT_FILE = "home_snapshot.jpg"
@@ -36,15 +35,64 @@ def load_calibration_settings() -> dict:
         "draw_overlay": True,
         "home_set": False,
         "home_markers": {},
-        "home_snapshot": None
+        "home_snapshot": None,
+        "step_distance": 10.0,
+        "jog_feedrate": 1000,
+        "gesture_feedrate": 4000,
+        "gesture_distance": 40.0,
+        "gesture_dwell": 0.15,
+        "gesture_tap_dwell": 0.05,
+        # Pen / Servo configuration defaults
+        "pen_mode": "z-axis",
+        "pen_up_z": 3.0,
+        "pen_down_z": 0.0,
+        "pen_up_pwm": 30.0,
+        "pen_down_pwm": 90.0,
+        "pen_dwell": 0.25
     }
+    
+    settings = default_settings.copy()
+    
+    # Load calibration settings
     if os.path.exists(CALIBRATION_FILE):
         try:
             with open(CALIBRATION_FILE, "r") as f:
-                return {**default_settings, **json.load(f)}
+                settings.update(json.load(f))
         except Exception as e:
             logger.error(f"Error loading calibration settings: {e}")
-    return default_settings
+            
+    # Migration & compatibility from pen_settings.json
+    migration_done = False
+    if os.path.exists("pen_settings.json"):
+        try:
+            with open("pen_settings.json", "r") as f:
+                pen_data = json.load(f)
+                if "mode" in pen_data:
+                    settings["pen_mode"] = pen_data["mode"]
+                for k in ["pen_up_z", "pen_down_z", "pen_up_pwm", "pen_down_pwm", "pen_dwell"]:
+                    if k in pen_data:
+                        settings[k] = pen_data[k]
+            migration_done = True
+        except Exception as e:
+            logger.error(f"Error migrating pen settings: {e}")
+            
+    # Compatibility checks for step_distance
+    if "step_distance" not in settings and "step_index" in settings:
+        mapping = [0.1, 1.0, 10.0, 100.0]
+        idx = int(settings["step_index"])
+        if 0 <= idx < len(mapping):
+            settings["step_distance"] = mapping[idx]
+            
+    if migration_done:
+        try:
+            with open(CALIBRATION_FILE, "w") as f:
+                json.dump(settings, f, indent=4)
+            os.remove("pen_settings.json")
+            logger.info("Successfully merged pen_settings.json into calibration_settings.json and removed old file.")
+        except Exception as e:
+            logger.error(f"Error removing old pen settings file after merge: {e}")
+            
+    return settings
 
 def save_calibration_settings(settings: dict):
     try:
@@ -69,30 +117,6 @@ class PenSettings(BaseModel):
     pen_down_pwm: float
     pen_dwell: float
 
-def load_pen_settings() -> dict:
-    default_settings = {
-        "mode": "z-axis",
-        "pen_up_z": 3.0,
-        "pen_down_z": 0.0,
-        "pen_up_pwm": 30.0,
-        "pen_down_pwm": 90.0,
-        "pen_dwell": 0.25
-    }
-    if os.path.exists(SETTINGS_FILE):
-        try:
-            with open(SETTINGS_FILE, "r") as f:
-                return {**default_settings, **json.load(f)}
-        except Exception as e:
-            logger.error(f"Error loading pen settings: {e}")
-    return default_settings
-
-def save_pen_settings(settings: dict):
-    try:
-        with open(SETTINGS_FILE, "w") as f:
-            json.dump(settings, f, indent=4)
-    except Exception as e:
-        logger.error(f"Error saving pen settings: {e}")
-
 # Global Controller State
 class ControllerState:
     def __init__(self):
@@ -112,13 +136,13 @@ class ControllerState:
         self.buffer_blocks = 15
         
         # Pen/Servo configuration
-        settings = load_pen_settings()
-        self.pen_mode = settings["mode"]
-        self.pen_up_z = settings["pen_up_z"]
-        self.pen_down_z = settings["pen_down_z"]
-        self.pen_up_pwm = settings["pen_up_pwm"]
-        self.pen_down_pwm = settings["pen_down_pwm"]
-        self.pen_dwell = settings["pen_dwell"]
+        cal_settings = load_calibration_settings()
+        self.pen_mode = cal_settings.get("pen_mode", "z-axis")
+        self.pen_up_z = cal_settings.get("pen_up_z", 3.0)
+        self.pen_down_z = cal_settings.get("pen_down_z", 0.0)
+        self.pen_up_pwm = cal_settings.get("pen_up_pwm", 30.0)
+        self.pen_down_pwm = cal_settings.get("pen_down_pwm", 90.0)
+        self.pen_dwell = cal_settings.get("pen_dwell", 0.25)
         self.pen_state = None # "up" or "down" or None
         
         # G-Code streaming variables
@@ -153,6 +177,14 @@ class ControllerState:
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
         self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
         self.home_pixel = cal_settings.get("home_pixel", [360.0, 360.0])
+
+        # UI Preferences (cập nhật 18)
+        self.step_distance = cal_settings.get("step_distance", 10.0)
+        self.jog_feedrate = cal_settings.get("jog_feedrate", 1000)
+        self.gesture_feedrate = cal_settings.get("gesture_feedrate", 4000)
+        self.gesture_distance = cal_settings.get("gesture_distance", 40.0)
+        self.gesture_dwell = cal_settings.get("gesture_dwell", 0.15)
+        self.gesture_tap_dwell = cal_settings.get("gesture_tap_dwell", 0.05)
 
         # Object detection settings (cập nhật 3)
         self.detect_objects = True
@@ -1110,10 +1142,9 @@ async def serial_reader_loop():
                     
                     # Check streaming acknowledgment
                     elif line == "ok" or "error" in line:
-                        if state.is_streaming:
-                            if state.sent_buffer_lengths:
-                                # Acknowledge line
-                                state.sent_buffer_lengths.pop(0)
+                        if state.sent_buffer_lengths:
+                            # Acknowledge line
+                            state.sent_buffer_lengths.pop(0)
                             # Notify streaming task to send more lines
                             # We can trigger checking queue
                             if state.stream_task:
@@ -1398,15 +1429,38 @@ async def send_command(command: str = Form(...)):
         # Standard G-code command
         clean_cmd = command.strip()
         if clean_cmd:
+            if not state.is_streaming:
+                state.sent_buffer_lengths = []
+                
             lines = [line.strip() for line in clean_cmd.splitlines() if line.strip()]
+            all_cmds = []
             for line in lines:
-                translated_cmds = translate_command(line)
-                for cmd in translated_cmds:
-                    state.serial_port.write((cmd + "\n").encode())
-                    state.serial_port.flush()
-                    await broadcast({"type": "log", "direction": "out", "content": cmd})
-                    if len(translated_cmds) > 1 or len(lines) > 1:
-                        await asyncio.sleep(0.02)
+                all_cmds.extend(translate_command(line))
+                
+            for cmd in all_cmds:
+                clean_line = re.sub(r'\(.*?\)', '', cmd).strip()
+                clean_line = re.sub(r';.*', '', clean_line).strip()
+                if not clean_line:
+                    continue
+                    
+                line_len = len(clean_line) + 1
+                
+                # Wait if rx buffer is full
+                while True:
+                    if not state.connected:
+                        break
+                    current_buffer_sum = sum(state.sent_buffer_lengths)
+                    if current_buffer_sum + line_len <= 127:
+                        break
+                    await asyncio.sleep(0.01)
+                    
+                if not state.connected:
+                    break
+                    
+                state.sent_buffer_lengths.append(line_len)
+                state.serial_port.write((clean_line + "\n").encode())
+                state.serial_port.flush()
+                await broadcast({"type": "log", "direction": "out", "content": clean_line})
             
         return {"status": "ok", "message": "Command sent"}
     except Exception as e:
@@ -1462,8 +1516,8 @@ async def update_pen_settings(settings: PenSettings):
     state.pen_down_pwm = settings.pen_down_pwm
     state.pen_dwell = settings.pen_dwell
     
-    save_pen_settings({
-        "mode": state.pen_mode,
+    save_calibration_settings({
+        "pen_mode": state.pen_mode,
         "pen_up_z": state.pen_up_z,
         "pen_down_z": state.pen_down_z,
         "pen_up_pwm": state.pen_up_pwm,
@@ -1471,6 +1525,45 @@ async def update_pen_settings(settings: PenSettings):
         "pen_dwell": state.pen_dwell
     })
     return {"status": "ok", "message": "Pen settings updated successfully"}
+
+class UIPreferences(BaseModel):
+    step_distance: float
+    jog_feedrate: int
+    gesture_feedrate: int
+    gesture_distance: float
+    gesture_dwell: float
+    gesture_tap_dwell: float
+
+@app.get("/api/ui_preferences")
+async def get_ui_preferences():
+    settings = load_calibration_settings()
+    return {
+        "step_distance": settings.get("step_distance", 10.0),
+        "jog_feedrate": settings.get("jog_feedrate", 1000),
+        "gesture_feedrate": settings.get("gesture_feedrate", 4000),
+        "gesture_distance": settings.get("gesture_distance", 40.0),
+        "gesture_dwell": settings.get("gesture_dwell", 0.15),
+        "gesture_tap_dwell": settings.get("gesture_tap_dwell", 0.05)
+    }
+
+@app.post("/api/ui_preferences")
+async def update_ui_preferences(prefs: UIPreferences):
+    state.step_distance = prefs.step_distance
+    state.jog_feedrate = prefs.jog_feedrate
+    state.gesture_feedrate = prefs.gesture_feedrate
+    state.gesture_distance = prefs.gesture_distance
+    state.gesture_dwell = prefs.gesture_dwell
+    state.gesture_tap_dwell = prefs.gesture_tap_dwell
+
+    save_calibration_settings({
+        "step_distance": prefs.step_distance,
+        "jog_feedrate": prefs.jog_feedrate,
+        "gesture_feedrate": prefs.gesture_feedrate,
+        "gesture_distance": prefs.gesture_distance,
+        "gesture_dwell": prefs.gesture_dwell,
+        "gesture_tap_dwell": prefs.gesture_tap_dwell
+    })
+    return {"status": "ok", "message": "UI preferences updated successfully"}
 
 @app.post("/api/start")
 async def start_streaming():
@@ -1925,9 +2018,8 @@ async def goto_position(config: GoToConfig):
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Home has not been set. Please press Home button first."}, status_code=400)
 
-    cmd = f"G90 G0 X{config.x:.3f} Y{config.y:.3f}"
-    if config.feedrate > 0:
-        cmd = f"G90 G1 X{config.x:.3f} Y{config.y:.3f} F{config.feedrate:.0f}"
+    feedrate = config.feedrate if config.feedrate > 0 else state.gesture_feedrate
+    cmd = f"G90 G1 X{config.x:.3f} Y{config.y:.3f} F{feedrate:.0f}"
 
     try:
         state.serial_port.write((cmd + "\n").encode())
@@ -1938,7 +2030,7 @@ async def goto_position(config: GoToConfig):
 
     return {
         "status": "ok",
-        "message": f"Moving to X={config.x:.3f}, Y={config.y:.3f} at F{config.feedrate:.0f}",
+        "message": f"Moving to X={config.x:.3f}, Y={config.y:.3f} at F{feedrate:.0f}",
         "command": cmd
     }
 
@@ -1977,8 +2069,8 @@ async def moving_around_loop_task(M_adj):
             state.serial_port.write((cmd + "\n").encode())
             state.serial_port.flush()
             await broadcast({"type": "log", "direction": "out", "content": cmd})
-        dwell_time = max(0.1, state.pen_dwell)
-        await asyncio.sleep(dwell_time + 0.2)
+        dwell_time = max(0.01, state.gesture_dwell)
+        await asyncio.sleep(dwell_time + 0.1)
 
     async def simulate_pen_touch():
         # Pen down
@@ -1989,8 +2081,8 @@ async def moving_around_loop_task(M_adj):
             state.serial_port.write((cmd + "\n").encode())
             state.serial_port.flush()
             await broadcast({"type": "log", "direction": "out", "content": cmd})
-        dwell_time = max(0.1, state.pen_dwell)
-        await asyncio.sleep(dwell_time + 0.2)
+        dwell_time = max(0.01, state.gesture_tap_dwell)
+        await asyncio.sleep(dwell_time + 0.1)
         
         # Pen up
         up_cmds = translate_command(f"G0 Z{state.pen_up_z}")
@@ -2000,13 +2092,13 @@ async def moving_around_loop_task(M_adj):
             state.serial_port.write((cmd + "\n").encode())
             state.serial_port.flush()
             await broadcast({"type": "log", "direction": "out", "content": cmd})
-        await asyncio.sleep(dwell_time + 0.2)
+        await asyncio.sleep(dwell_time + 0.1)
 
     try:
         M = np.array(M_adj, dtype=np.float32)
         pts = state.home_markers
         
-        # Calculate target coordinates at distance 100 in the direction of the 4 markers
+        # Calculate target coordinates at gesture_distance in the direction of the 4 markers
         targets = {}
         for c in ["TR", "BR", "BL", "TL"]:
             if c in pts:
@@ -2015,18 +2107,19 @@ async def moving_around_loop_task(M_adj):
                 gy = M[1, 0] * px + M[1, 1] * py + M[1, 2]
                 length = math.sqrt(gx*gx + gy*gy)
                 if length > 0:
-                    tx = (gx / length) * 100.0
-                    ty = (gy / length) * 100.0
+                    tx = (gx / length) * state.gesture_distance
+                    ty = (gy / length) * state.gesture_distance
                     targets[c] = (tx, ty)
                 else:
                     targets[c] = (0.0, 0.0)
             else:
                 # Fallback direction vectors if a marker is missing
+                d_half = state.gesture_distance * 0.70710678
                 fallback = {
-                    "TR": (70.71, 70.71),
-                    "BR": (70.71, -70.71),
-                    "BL": (-70.71, -70.71),
-                    "TL": (-70.71, 70.71)
+                    "TR": (d_half, d_half),
+                    "BR": (d_half, -d_half),
+                    "BL": (-d_half, -d_half),
+                    "TL": (-d_half, d_half)
                 }
                 targets[c] = fallback[c]
 
@@ -2045,7 +2138,7 @@ async def moving_around_loop_task(M_adj):
         await simulate_pen_up()
         
         # First go to origin and touch
-        success = await send_gcode_and_wait("G90 G0 X0 Y0", 0.0, 0.0)
+        success = await send_gcode_and_wait(f"G90 G1 X0 Y0 F{state.gesture_feedrate:.0f}", 0.0, 0.0)
         if success and state.moving_around_running:
             await simulate_pen_touch()
         
@@ -2054,7 +2147,7 @@ async def moving_around_loop_task(M_adj):
             for name, tx, ty in seq[1:]:
                 if not state.moving_around_running:
                     break
-                cmd = f"G90 G0 X{tx:.3f} Y{ty:.3f}"
+                cmd = f"G90 G1 X{tx:.3f} Y{ty:.3f} F{state.gesture_feedrate:.0f}"
                 success = await send_gcode_and_wait(cmd, tx, ty)
                 if not success:
                     break
@@ -2063,7 +2156,7 @@ async def moving_around_loop_task(M_adj):
                 
             # After finishing the 4 corners, we go to Origin and touch
             if state.moving_around_running:
-                success = await send_gcode_and_wait("G90 G0 X0 Y0", 0.0, 0.0)
+                success = await send_gcode_and_wait(f"G90 G1 X0 Y0 F{state.gesture_feedrate:.0f}", 0.0, 0.0)
                 if success and state.moving_around_running:
                     await simulate_pen_touch()
                 
@@ -2119,7 +2212,7 @@ async def stop_moving_around():
             state.serial_port.flush()
             await asyncio.sleep(0.2)
             # Move back to origin
-            cmd = "G90 G0 X0 Y0"
+            cmd = f"G90 G1 X0 Y0 F{state.gesture_feedrate:.0f}"
             state.serial_port.write((cmd + "\n").encode())
             state.serial_port.flush()
             await broadcast({"type": "log", "direction": "out", "content": cmd})
@@ -2188,8 +2281,8 @@ async def move_to_largest(camera_index: int = 4):
         wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
         wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
     
-    # Send G0 command
-    cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
+    # Send G1 command using global feedrate
+    cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
         state.serial_port.write((cmd + "\n").encode())
         state.serial_port.flush()
@@ -2249,7 +2342,7 @@ async def click_go(config: ClickGoConfig):
         wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
         wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
     
-    cmd = f"G0 X{wx:.3f} Y{wy:.3f}"
+    cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
         state.serial_port.write((cmd + "\n").encode())
         state.serial_port.flush()

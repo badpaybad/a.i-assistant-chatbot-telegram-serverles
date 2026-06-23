@@ -84,6 +84,7 @@ const ctx = canvas.getContext("2d");
 document.addEventListener("DOMContentLoaded", () => {
     initWebSocket();
     setupEventListeners();
+    loadSavedUIPreferences();
     setupCanvas();
     fetchState();
     populateDevices();
@@ -517,17 +518,74 @@ function setupEventListeners() {
         consoleInput.value = "";
     });
 
-    // Step Slider
+    // Step Slider & Dropdown Logic
+    const selectStepPreset = document.getElementById("select-step-preset");
+    
+    const updateDropdownSelection = (val) => {
+        if (selectStepPreset) {
+            const valNum = parseFloat(val);
+            if (valNum === 0.1 || valNum === 1 || valNum === 10 || valNum === 100) {
+                selectStepPreset.value = valNum.toString();
+            } else {
+                selectStepPreset.value = "custom";
+            }
+        }
+    };
+
     sliderStep.addEventListener("input", () => {
-        currentStepDistance = stepMapping[sliderStep.value];
+        currentStepDistance = parseFloat(sliderStep.value) || 10.0;
         valStep.innerText = `${currentStepDistance} mm`;
+        updateDropdownSelection(currentStepDistance);
+        saveUIPreferencesToServer();
     });
+
+    if (selectStepPreset) {
+        selectStepPreset.addEventListener("change", () => {
+            const val = selectStepPreset.value;
+            if (val !== "custom") {
+                currentStepDistance = parseFloat(val);
+                sliderStep.value = currentStepDistance;
+                valStep.innerText = `${currentStepDistance} mm`;
+                saveUIPreferencesToServer();
+            }
+        });
+    }
 
     // Feed Slider
     sliderFeed.addEventListener("input", () => {
         currentFeedrate = sliderFeed.value;
         valFeed.innerText = `${currentFeedrate} mm/min`;
+        saveUIPreferencesToServer();
     });
+
+    // Gesture input listeners to auto-save preferences
+    const gestureFeedrateInput = document.getElementById("gesture-feedrate");
+    if (gestureFeedrateInput) {
+        gestureFeedrateInput.addEventListener("input", () => {
+            saveUIPreferencesToServer();
+        });
+    }
+
+    const gestureDistanceInput = document.getElementById("gesture-distance");
+    if (gestureDistanceInput) {
+        gestureDistanceInput.addEventListener("input", () => {
+            saveUIPreferencesToServer();
+        });
+    }
+
+    const gestureDwellInput = document.getElementById("gesture-dwell");
+    if (gestureDwellInput) {
+        gestureDwellInput.addEventListener("input", () => {
+            saveUIPreferencesToServer();
+        });
+    }
+
+    const gestureTapDwellInput = document.getElementById("gesture-tap-dwell");
+    if (gestureTapDwellInput) {
+        gestureTapDwellInput.addEventListener("input", () => {
+            saveUIPreferencesToServer();
+        });
+    }
 
     // Interactive Jog Keypad
     document.getElementById("jog-y-plus").addEventListener("click", () => jogAxis("Y", 1));
@@ -1526,7 +1584,6 @@ function setupEventListeners() {
     const btnGoto = document.getElementById("btn-goto");
     const gotoX = document.getElementById("goto-x");
     const gotoY = document.getElementById("goto-y");
-    const gotoFeedrate = document.getElementById("goto-feedrate");
     const homeDot = document.getElementById("home-dot");
     const homeStatusLabel = document.getElementById("home-status-label");
     const homeSnapshotContainer = document.getElementById("home-snapshot-container");
@@ -1710,7 +1767,9 @@ function setupEventListeners() {
             if (!isConnected || !isHomeSet) return;
             const x = parseFloat(gotoX ? gotoX.value : 0) || 0;
             const y = parseFloat(gotoY ? gotoY.value : 0) || 0;
-            const feedrate = parseFloat(gotoFeedrate ? gotoFeedrate.value : 1000) || 1000;
+            // Use the global gesture feedrate
+            const gestureFeedrateInput = document.getElementById("gesture-feedrate");
+            const feedrate = parseFloat(gestureFeedrateInput ? gestureFeedrateInput.value : 4000) || 4000;
             try {
                 logSystemMessage(`➡ GoTo: Moving pen to X=${x.toFixed(3)}, Y=${y.toFixed(3)} @ F${feedrate}`);
                 const res = await fetch("/api/goto", {
@@ -2216,7 +2275,7 @@ async function executeGesture(type) {
     const endX = parseFloat(document.getElementById("gesture-end-x").value) || 0.0;
     const endY = parseFloat(document.getElementById("gesture-end-y").value) || 0.0;
     
-    const feedrate = parseInt(document.getElementById("gesture-feedrate").value) || 2000;
+    const feedrate = parseInt(document.getElementById("gesture-feedrate").value) || 4000;
     const dwell = parseFloat(document.getElementById("gesture-dwell").value) || 0.15;
     const distance = parseFloat(document.getElementById("gesture-distance").value) || 40.0;
     const tapDwell = parseFloat(document.getElementById("gesture-tap-dwell").value) || 0.10;
@@ -2240,7 +2299,7 @@ async function executeGesture(type) {
     switch (type) {
         case "tap":
             logSystemMessage(`Simulating Tap at X:${startX}, Y:${startY}`);
-            gcode.push(`G0 X${startX} Y${startY}`);
+            gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(tapDwellCmd);
             gcode.push(penUpCmd);
@@ -2249,7 +2308,7 @@ async function executeGesture(type) {
             
         case "doubletap":
             logSystemMessage(`Simulating Double Tap at X:${startX}, Y:${startY}`);
-            gcode.push(`G0 X${startX} Y${startY}`);
+            gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             // First Tap
             gcode.push(penDownCmd);
             gcode.push(tapDwellCmd);
@@ -2266,7 +2325,7 @@ async function executeGesture(type) {
             
         case "longpress":
             logSystemMessage(`Simulating Long Press (1s) at X:${startX}, Y:${startY}`);
-            gcode.push(`G0 X${startX} Y${startY}`);
+            gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
             gcode.push(`G4 P1.0`);
@@ -2275,56 +2334,73 @@ async function executeGesture(type) {
             break;
             
         case "swipe-up":
-            logSystemMessage(`Simulating Swipe Up: moving up by ${distance}mm`);
-            gcode.push(`G0 X${startX} Y${startY}`);
-            gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            gcode.push(`G1 Y${startY + distance} F${feedrate}`);
-            gcode.push(`G4 P0.1`);
-            gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
-            break;
-            
         case "swipe-down":
-            logSystemMessage(`Simulating Swipe Down: moving down by ${distance}mm`);
-            gcode.push(`G0 X${startX} Y${startY}`);
-            gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            gcode.push(`G1 Y${startY - distance} F${feedrate}`);
-            gcode.push(`G4 P0.1`);
-            gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
-            break;
-            
         case "swipe-left":
-            logSystemMessage(`Simulating Swipe Left: moving left by ${distance}mm`);
-            gcode.push(`G0 X${startX} Y${startY}`);
-            gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            gcode.push(`G1 X${startX - distance} F${feedrate}`);
-            gcode.push(`G4 P0.1`);
-            gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
-            break;
-            
         case "swipe-right":
-            logSystemMessage(`Simulating Swipe Right: moving right by ${distance}mm`);
-            gcode.push(`G0 X${startX} Y${startY}`);
-            gcode.push(penDownCmd);
-            gcode.push(penDwellCmd);
-            gcode.push(`G1 X${startX + distance} F${feedrate}`);
-            gcode.push(`G4 P0.1`);
-            gcode.push(penUpCmd);
-            gcode.push(penDwellCmd);
-            break;
-            
         case "swipe-custom":
-            logSystemMessage(`Simulating Custom Swipe from X:${startX} Y:${startY} to X:${endX} Y:${endY}`);
-            gcode.push(`G0 X${startX} Y${startY}`);
+            let swipeEndX = startX;
+            let swipeEndY = startY;
+            let logMsg = "";
+            
+            switch (type) {
+                case "swipe-up":
+                    swipeEndY = startY + distance;
+                    logMsg = `Simulating Swipe Up: moving up by ${distance}mm`;
+                    break;
+                case "swipe-down":
+                    swipeEndY = startY - distance;
+                    logMsg = `Simulating Swipe Down: moving down by ${distance}mm`;
+                    break;
+                case "swipe-left":
+                    swipeEndX = startX - distance;
+                    logMsg = `Simulating Swipe Left: moving left by ${distance}mm`;
+                    break;
+                case "swipe-right":
+                    swipeEndX = startX + distance;
+                    logMsg = `Simulating Swipe Right: moving right by ${distance}mm`;
+                    break;
+                case "swipe-custom":
+                    swipeEndX = endX;
+                    swipeEndY = endY;
+                    logMsg = `Simulating Custom Swipe from X:${startX} Y:${startY} to X:${endX} Y:${endY}`;
+                    break;
+            }
+            
+            logSystemMessage(`${logMsg} @ F${feedrate} (gradually lifting pen from ${penDownValLocal} to ${penUpValLocal})`);
+            gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
-            gcode.push(`G1 X${endX} Y${endY} F${feedrate}`);
-            gcode.push(`G4 P0.1`);
+            
+            // Segmented path to gradually lift pen Z/spindle PWM as we approach the end of the stroke
+            const N = 15; // Increased to 15 segments for smoother lift (approx 1 degree servo steps)
+            const startLiftRatio = 0.3; // pen remains fully down for first 30% of stroke, then lifts
+            
+            for (let i = 1; i <= N; i++) {
+                const ratio = i / N;
+                const curX = startX + (swipeEndX - startX) * ratio;
+                const curY = startY + (swipeEndY - startY) * ratio;
+                
+                // Speed starts slower and accelerates quadratically up to the target feedrate
+                const accelFactor = 0.3 + 0.7 * Math.pow(ratio, 2);
+                const segmentFeedrate = Math.round(feedrate * accelFactor);
+                
+                if (isSpindle) {
+                    let pwmVal = parseFloat(penDownValLocal);
+                    if (ratio >= startLiftRatio) {
+                        const liftT = (ratio - startLiftRatio) / (1 - startLiftRatio);
+                        pwmVal = parseFloat(penDownValLocal) + liftT * (parseFloat(penUpValLocal) - parseFloat(penDownValLocal));
+                    }
+                    gcode.push(`G1 X${curX.toFixed(3)} Y${curY.toFixed(3)} S${Math.round(pwmVal)} F${segmentFeedrate}`);
+                } else {
+                    let zVal = parseFloat(penDownValLocal);
+                    if (ratio >= startLiftRatio) {
+                        const liftT = (ratio - startLiftRatio) / (1 - startLiftRatio);
+                        zVal = parseFloat(penDownValLocal) + liftT * (parseFloat(penUpValLocal) - parseFloat(penDownValLocal));
+                    }
+                    gcode.push(`G1 X${curX.toFixed(3)} Y${curY.toFixed(3)} Z${zVal.toFixed(3)} F${segmentFeedrate}`);
+                }
+            }
+            // Final confirm pen is up
             gcode.push(penUpCmd);
             gcode.push(penDwellCmd);
             break;
@@ -2336,4 +2412,129 @@ async function executeGesture(type) {
     
     // Send G-code lines to backend
     await sendCommand(gcode.join("\n"));
+}
+
+async function loadSavedUIPreferences() {
+    let prefs = {
+        step_distance: 10.0,
+        jog_feedrate: 1000,
+        gesture_feedrate: 4000,
+        gesture_distance: 40.0,
+        gesture_dwell: 0.15,
+        gesture_tap_dwell: 0.05
+    };
+
+    try {
+        const res = await fetch("/api/ui_preferences");
+        if (res.ok) {
+            prefs = await res.json();
+            // Handle fallback for step_index
+            if (prefs.step_distance === undefined && prefs.step_index !== undefined) {
+                const mapping = [0.1, 1.0, 10.0, 100.0];
+                prefs.step_distance = mapping[prefs.step_index] || 10.0;
+            }
+        }
+    } catch (e) {
+        console.error("Failed to load UI preferences from server, using localStorage/defaults:", e);
+        // Try fallback to localStorage
+        const localStepDist = localStorage.getItem("cnc_step_distance");
+        if (localStepDist !== null) {
+            prefs.step_distance = parseFloat(localStepDist);
+        } else {
+            const localStepIndex = localStorage.getItem("cnc_step_index");
+            if (localStepIndex !== null) {
+                const mapping = [0.1, 1.0, 10.0, 100.0];
+                prefs.step_distance = mapping[parseInt(localStepIndex, 10)] || 10.0;
+            }
+        }
+        
+        const localJogFeedrate = localStorage.getItem("cnc_jog_feedrate");
+        if (localJogFeedrate !== null) prefs.jog_feedrate = parseInt(localJogFeedrate, 10);
+        
+        const localGestureFeedrate = localStorage.getItem("cnc_gesture_feedrate");
+        if (localGestureFeedrate !== null) prefs.gesture_feedrate = parseInt(localGestureFeedrate, 10);
+        
+        const localGestureDistance = localStorage.getItem("cnc_gesture_distance");
+        if (localGestureDistance !== null) prefs.gesture_distance = parseFloat(localGestureDistance);
+        
+        const localGestureDwell = localStorage.getItem("cnc_gesture_dwell");
+        if (localGestureDwell !== null) prefs.gesture_dwell = parseFloat(localGestureDwell);
+        
+        const localGestureTapDwell = localStorage.getItem("cnc_gesture_tap_dwell");
+        if (localGestureTapDwell !== null) prefs.gesture_tap_dwell = parseFloat(localGestureTapDwell);
+    }
+
+    // Apply to DOM and Global variables
+    sliderStep.value = prefs.step_distance;
+    currentStepDistance = prefs.step_distance;
+    valStep.innerText = `${currentStepDistance} mm`;
+    
+    // Update preset dropdown selection
+    const selectStepPreset = document.getElementById("select-step-preset");
+    if (selectStepPreset) {
+        const valNum = currentStepDistance;
+        if (valNum === 0.1 || valNum === 1 || valNum === 10 || valNum === 100) {
+            selectStepPreset.value = valNum.toString();
+        } else {
+            selectStepPreset.value = "custom";
+        }
+    }
+
+    sliderFeed.value = prefs.jog_feedrate;
+    currentFeedrate = prefs.jog_feedrate;
+    valFeed.innerText = `${currentFeedrate} mm/min`;
+
+    const gestureFeedrateInput = document.getElementById("gesture-feedrate");
+    if (gestureFeedrateInput) gestureFeedrateInput.value = prefs.gesture_feedrate;
+
+    const gestureDistanceInput = document.getElementById("gesture-distance");
+    if (gestureDistanceInput) gestureDistanceInput.value = prefs.gesture_distance;
+
+    const gestureDwellInput = document.getElementById("gesture-dwell");
+    if (gestureDwellInput) gestureDwellInput.value = prefs.gesture_dwell;
+
+    const gestureTapDwellInput = document.getElementById("gesture-tap-dwell");
+    if (gestureTapDwellInput) gestureTapDwellInput.value = prefs.gesture_tap_dwell;
+
+    // Sync to localStorage
+    syncPreferencesToLocalStorage(prefs);
+}
+
+function syncPreferencesToLocalStorage(prefs) {
+    localStorage.setItem("cnc_step_distance", prefs.step_distance);
+    localStorage.setItem("cnc_jog_feedrate", prefs.jog_feedrate);
+    localStorage.setItem("cnc_gesture_feedrate", prefs.gesture_feedrate);
+    localStorage.setItem("cnc_gesture_distance", prefs.gesture_distance);
+    localStorage.setItem("cnc_gesture_dwell", prefs.gesture_dwell);
+    localStorage.setItem("cnc_gesture_tap_dwell", prefs.gesture_tap_dwell);
+}
+
+async function saveUIPreferencesToServer() {
+    const gestureFeedrateInput = document.getElementById("gesture-feedrate");
+    const gestureDistanceInput = document.getElementById("gesture-distance");
+    const gestureDwellInput = document.getElementById("gesture-dwell");
+    const gestureTapDwellInput = document.getElementById("gesture-tap-dwell");
+
+    const prefs = {
+        step_distance: parseFloat(sliderStep.value) || 10.0,
+        jog_feedrate: parseInt(sliderFeed.value, 10),
+        gesture_feedrate: gestureFeedrateInput ? parseInt(gestureFeedrateInput.value, 10) : 4000,
+        gesture_distance: gestureDistanceInput ? parseFloat(gestureDistanceInput.value) : 40.0,
+        gesture_dwell: gestureDwellInput ? parseFloat(gestureDwellInput.value) : 0.15,
+        gesture_tap_dwell: gestureTapDwellInput ? parseFloat(gestureTapDwellInput.value) : 0.05
+    };
+
+    // Save to localStorage
+    syncPreferencesToLocalStorage(prefs);
+
+    // Save to server
+    try {
+        await fetch("/api/ui_preferences", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(prefs)
+        });
+    } catch (e) {
+        console.error("Failed to save UI preferences to server:", e);
+    }
 }
