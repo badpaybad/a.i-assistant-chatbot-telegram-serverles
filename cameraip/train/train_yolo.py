@@ -65,6 +65,40 @@ def setup_amd_gpu_env():
 
 has_amd_system = setup_amd_gpu_env()
 
+# Detect and configure NVIDIA GPU environments before importing torch/ultralytics
+def setup_nvidia_gpu_env():
+    has_nvidia = False
+    try:
+        # Check /sys/class/drm/card*/device/vendor
+        import glob
+        for vendor_path in glob.glob('/sys/class/drm/card*/device/vendor'):
+            try:
+                with open(vendor_path, 'r') as f:
+                    vendor_id = f.read().strip()
+                if vendor_id == '0x10de': # NVIDIA Vendor ID
+                    has_nvidia = True
+                    break
+            except Exception:
+                pass
+        
+        if not has_nvidia:
+            # Fallback to lspci
+            import subprocess
+            output = subprocess.check_output(["lspci", "-nnk"], text=True)
+            if "nvidia" in output.lower() or "geforce" in output.lower() or "rtx" in output.lower() or "gtx" in output.lower():
+                has_nvidia = True
+    except Exception:
+        pass
+
+    if has_nvidia:
+        # Configure PYTORCH_CUDA_ALLOC_CONF to prevent memory fragmentation and OOM on consumer cards (like RTX 3060/3060 Ti)
+        if 'PYTORCH_CUDA_ALLOC_CONF' not in os.environ:
+            os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:512'
+            print("[NVIDIA GPU Setup] NVIDIA GPU detected on Linux. Setting PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8,max_split_size_mb:512 to prevent VRAM memory fragmentation.", flush=True)
+    return has_nvidia
+
+has_nvidia_system = setup_nvidia_gpu_env()
+
 import argparse
 import numpy as np
 from ultralytics import YOLO
@@ -283,6 +317,13 @@ def main():
                 print("[INFO] AMD GPU detected on system, but PyTorch ROCm is not configured.")
                 print("If you want to train using your AMD GPU, please check 'howtodo.md' for setup instructions.")
                 print("="*80 + "\n", flush=True)
+    # Print CUDA memory optimization info if NVIDIA GPU is used
+    if device != 'cpu' and has_nvidia_system:
+        import torch
+        if torch.cuda.is_available():
+            vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+            print(f"[NVIDIA GPU] Active memory allocator configuration (PYTORCH_CUDA_ALLOC_CONF): {os.environ.get('PYTORCH_CUDA_ALLOC_CONF', 'Not set')}", flush=True)
+            print(f"[NVIDIA GPU] VRAM detected: {vram_gb:.2f} GB", flush=True)
 
     # Resolve AMP setting.
     # On AMD iGPU (gfx1102), hipBLASLt used by the C2PSA attention block causes

@@ -441,3 +441,64 @@ venv/bin/python -c "import torch; print('ROCm Available:', torch.cuda.is_availab
   ```bash
   venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device amd
   ```
+
+---
+
+## 11. Hướng Dẫn Cấu Hình Và Huấn Luyện Với GPU NVIDIA (GeForce RTX 3060 / 3060 Ti / Các Dòng RTX Khác)
+
+Dự án hỗ trợ hoàn hảo việc huấn luyện trên các dòng GPU NVIDIA (ví dụ: GeForce RTX 3060, RTX 3060 Ti, hoặc cao hơn) để tăng tốc độ huấn luyện mô hình YOLO gấp nhiều lần so với CPU.
+
+### 11.1. Yêu Cầu Hệ Thống & Kiểm Tra Cài Đặt Driver
+
+Để GPU NVIDIA hoạt động với PyTorch, hệ thống của bạn cần cài đặt driver NVIDIA và CUDA Toolkit phù hợp:
+1. **Kiểm tra driver card đồ họa**: Đảm bảo driver NVIDIA đã được cài đặt và hoạt động bình thường:
+   ```bash
+   nvidia-smi
+   ```
+2. **Kiểm tra tính tương thích của CUDA**: Lệnh trên sẽ hiển thị phiên bản CUDA tối đa được hỗ trợ bởi Driver (ví dụ: `CUDA Version: 13.0` hoặc `12.x`).
+
+### 11.2. Cài Đặt PyTorch Hỗ Trợ CUDA
+
+Trong môi trường ảo `venv` của dự án, cài đặt phiên bản PyTorch tương thích với CUDA của hệ thống:
+```bash
+# 1. Kích hoạt môi trường ảo
+source venv/bin/activate
+
+# 2. Cài đặt lại PyTorch với CUDA build (mặc định PyTorch cài từ pip thường tự nhận diện CUDA)
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+```
+
+### 11.3. Cấu Hình Tối Ưu Hóa Bộ Nhớ Tránh Lỗi Tràn VRAM (OOM)
+
+Các dòng card đồ họa consumer như **RTX 3060** (12GB VRAM) hoặc **RTX 3060 Ti** (8GB VRAM) có thể gặp lỗi tràn bộ nhớ `torch.OutOfMemoryError` nếu huấn luyện với batch size lớn, kích thước ảnh lớn (e.g. 960px) hoặc khi bật tính năng multi-scale training.
+
+Để giải quyết vấn đề này, hãy cấu hình biến môi trường kiểm soát phân mảnh bộ nhớ:
+```bash
+export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8,max_split_size_mb:512
+```
+
+*Lưu ý: Script `train_yolo.py` đã tích hợp cơ chế **tự động phát hiện GPU NVIDIA** trên Linux. Nếu phát hiện card NVIDIA và chưa cấu hình biến môi trường này, script sẽ tự động thiết lập `PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8,max_split_size_mb:512` giúp tối ưu hóa bộ nhớ đồ họa ngay lập tức.*
+
+### 11.4. Kiểm Tra Nhận Diện GPU NVIDIA CUDA
+
+Chạy lệnh sau để xác nhận PyTorch nhận diện GPU NVIDIA thành công:
+```bash
+venv/bin/python -c "import torch; print('CUDA Available:', torch.cuda.is_available()); print('Device Name:', torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'None')"
+```
+
+### 11.5. Cách Chạy Huấn Luyện
+
+* **Qua Giao Diện Web Dashboard**:
+  Mở `http://localhost:5000` trên trình duyệt. Tại mục **Device**, chọn **NVIDIA GPU (CUDA)** hoặc **Auto Detect**. Hệ thống sẽ tự động dùng GPU RTX 3060 để chạy.
+* **Qua Dòng Lệnh (CLI)**:
+  Sử dụng tham số `--device cuda` hoặc chỉ định cụ thể GPU index (ví dụ `--device 0`):
+  ```bash
+  venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 50 --batch 8 --device cuda
+  ```
+
+### 11.6. Khuyến Nghị Hiệu Năng Cho RTX 3060 / 3060 Ti
+- **Batch Size**: 
+  - Với ảnh kích thước `640x640` và mô hình `yolov8m.pt` (Medium), bạn có thể thiết lập `--batch 8` hoặc `--batch 16`.
+  - Với ảnh kích thước `960x960` để nhận diện vật thể nhỏ tốt hơn, khuyến nghị dùng `--batch 4` hoặc `--batch 8` để tránh tràn VRAM.
+- **AMP (Automatic Mixed Precision)**: 
+  - GPU NVIDIA hỗ trợ rất tốt chế độ AMP (Mixed Precision FP16). Hãy luôn giữ bật AMP (`--amp`, mặc định tự bật) để tăng tốc độ huấn luyện lên ~2x và tiết kiệm 50% bộ nhớ đồ họa.
