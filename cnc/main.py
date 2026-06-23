@@ -369,6 +369,7 @@ def letterbox(img, new_shape=(640, 640), color=(114, 114, 114)):
     img = cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)  # add border
     return img, r, (dw, dh)
 
+
 def run_object_detection(frame, conf_threshold=0.25, iou_threshold=0.45):
     session = get_ort_session()
     if session is None:
