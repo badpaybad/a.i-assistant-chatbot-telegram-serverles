@@ -16,7 +16,10 @@ unset HSA_OVERRIDE_GFX_VERSION
 unset PYTORCH_ROCM_ARCH
 venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --dest cameraip/train/data --split 0.8
 
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 100 --batch 8 --device cuda
+
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device cpu
+
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 50 --batch 4 --device amd
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 100 --batch 8 --device cpu
 
@@ -38,6 +41,10 @@ venv/bin/python3.12 cameraip/train/prepare_data.py --src cameraip/train/dataraw 
 venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device gpu
 
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 960
+
+# Train trên NVIDIA GPU (ví dụ: RTX 3060 / 3060 Ti) với tối ưu hóa bộ nhớ
+export PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8,max_split_size_mb:512
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 80 --batch 8 --device cuda --imgsz 640
 
 venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 960
 

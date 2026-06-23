@@ -39,4 +39,6 @@ hỗ trợ thêm GPU AMD (ví dụ Radeon™ 780M Graphics × 16) bên cạnh CP
     
         chạy lệnh và xem độ tương thích venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 80 --batch 4 --device amd
 
+**cập nhật 5** hỗ trợ và tối ưu hóa hệ thống cho dòng GPU NVIDIA (ví dụ GeForce RTX 3060 / 3060 Ti), tự động cấu hình biến môi trường tối ưu hóa bộ nhớ `PYTORCH_CUDA_ALLOC_CONF` để tránh phân mảnh VRAM/lỗi tràn bộ nhớ (OOM) khi huấn luyện mô hình lớn với batch size lớn.
+
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm
