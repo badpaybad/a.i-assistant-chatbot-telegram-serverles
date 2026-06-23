@@ -415,7 +415,7 @@ function appendConsoleLog(direction, content) {
     consoleOutput.appendChild(line);
     
     // Auto-scroll to bottom
-    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    // consoleOutput.scrollTop = consoleOutput.scrollHeight;
     
     // Limit console buffer to 200 lines
     while (consoleOutput.childNodes.length > 200) {
@@ -428,7 +428,7 @@ function logSystemMessage(msg) {
     line.className = "log-line system";
     line.innerText = `[SYS] ${msg}`;
     consoleOutput.appendChild(line);
-    consoleOutput.scrollTop = consoleOutput.scrollHeight;
+    // consoleOutput.scrollTop = consoleOutput.scrollHeight;
 }
 
 // --- JOG CONTROLS & API TRIGGERS ---

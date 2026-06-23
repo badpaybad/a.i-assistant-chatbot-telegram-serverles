@@ -1,0 +1,72 @@
+set home + spidle 0 bút nhấc lên
+G10 L20 P1 X0 Y0 Z0
+M5 (hoặc M3 S0)
+
+
+
+G21 G90          ; Đặt đơn vị mm, chế độ tọa độ tuyệt đối
+G00 X0 Y0        ; Lao nhanh về gốc (Điểm xuất phát ban đầu)
+G01 X50 Y0 F500  ; Đi thẳng sang phải 50mm để tới rìa đường tròn, hạ bút cắt
+G02 X-50 Y0 R50  ; Vẽ nửa vòng tròn trên (đến tọa độ đối diện X-50, bán kính R50)
+G02 X50 Y0 R50   ; Vẽ nửa vòng tròn dưới để khép kín về lại điểm X50
+G00 X0 Y0        ; Nhấc bút, lao nhanh về lại gốc 0,0
+
+Chữ A hoa được vẽ qua 2 nét chính:Nét 1 (Hình mái nhà): Đi từ Chân trái $(0,0) \rightarrow$ Đỉnh $(4,10) \rightarrow$ Chân phải $(8,0)$.Nét 2 (Thanh ngang): Đi từ cạnh trái $(1.6, 4) \rightarrow$ cạnh phải $(6.4, 4)$.
+G21 G90 Z0               ; Thiết lập hệ mm, tọa độ tuyệt đối
+G00 X0 Y0                ; Di chuyển không tải về điểm xuất phát (Chân trái chữ A)
+
+; --- NÉT 1: VẼ THÂN CHỮ A ---
+M3 S500                  ; HẠ BÚT xuống mặt giấy
+G01 X4 Y10 F600          ; Cắt thẳng lên Đỉnh (X=4, Y=10), tốc độ 600mm/min
+G01 X8 Y0                ; Cắt thẳng xuống Chân phải (X=8, Y=0)
+M3 S0                    ; NHẤC BÚT lên (kết thúc nét 1)
+
+; --- NÉT 2: VẼ THANH NGANG ---
+G00 X1.6 Y4              ; Di chuyển không tải đến vị trí thanh ngang bên trái
+M3 S500                  ; HẠ BÚT xuống
+G01 X6.4 Y4              ; Cắt thẳng sang phải để tạo dấu gạch ngang chữ A
+M3 S0                    ; NHẤC BÚT lên (Hoàn thành chữ A)
+
+; --- KẾT THÚC ---
+G00 X0 Y0                ; Di chuyển không tải đầu bút về gốc an toàn
+
+
+
+Phân tích cấu trúc nét chữ B thư pháp (Cao 10mm, Rộng ~9mm)
+Chữ B thư pháp thường gồm 3 nét chính chuyển động mượt mà:
+
+Nét 1 (Thân trái): Là một nét lượn sóng nhẹ từ đỉnh xuống, phần giữa hơi phình to (nét đậm), phần chân cong nhẹ về bên trái để tạo điểm nhấn móc (serif).
+
+Nét 2 (Bụng trên): Đi từ đỉnh, cong tròn mở rộng sang phải và thắt lại ở giữa thân (khoảng độ cao 5.5mm).
+
+Nét 3 (Bụng dưới): Đi tiếp từ điểm thắt giữa, uốn cong vòng lớn hơn ra phía sau và cuộn tròn vào trong lòng chữ ở góc dưới.
+
+G21 G90 Z0               ; Đặt hệ mét (mm), tọa độ tuyệt đối
+G00 X2 Y10               ; Di chuyển không tải đến điểm đỉnh của thân trái
+
+; --- NÉT 1: THÂN TRÁI LƯỢN SÓNG (HẠ BÚT TỪ ĐỈNH XOM) ---
+M3 S500                  ; HẠ BÚT xuống mặt giấy
+G02 X1.5 Y5 R15 F500     ; Uốn cong nhẹ vào trong ở giữa thân
+G03 X0.5 Y0.5 R10        ; Uốn móc cong ra ở chân chữ B
+G02 X2 Y0 R1.5           ; Bo tròn góc chân đáy
+G01 X2.5 Y1              ; Đi lên một chút để tạo độ dày cho thân trái
+G03 X3 Y5 R12            ; Chạy song song ngược lên tạo nét đậm ở bụng thân
+G02 X2.5 Y10 R15         ; Khép kín về lại đỉnh thân trái
+M3 S0                    ; NHẤC BÚT (Kết thúc nét 1)
+
+; --- NÉT 2 & 3: HAI BỤNG CHỮ B TO ĐẬM (VẼ LIÊN TỤC) ---
+G00 X2 Y9.5              ; Di chuyển không tải đến điểm bắt đầu của bụng trên
+M3 S500                  ; HẠ BÚT xuống
+G02 X6.5 Y8 R4           ; Vòng cung lên đỉnh bụng trên
+G02 X4 Y5.5 R3           ; Uốn lượn thắt vào giữa thân (Eo chữ B)
+G02 X7.5 Y2.5 R4         ; Phình to ra ở bụng dưới
+G03 X3 Y0.5 R4           ; Bo tròn đáy chữ B dưới chân
+G01 X3 Y1.5              ; Đi lùi vào trong lòng một chút
+G02 X6 Y2.5 R3           ; Chạy viền lòng trong của bụng dưới
+G03 X3.5 Y5.2 R3         ; Trả ngược về eo giữa
+G02 X5.2 Y7.8 R2.5       ; Chạy viền lòng trong của bụng trên
+G02 X2 Y8.5 R2.5         ; Cuộn ngược lại điểm thắt đầu
+M3 S0                    ; NHẤC BÚT (Hoàn thành toàn bộ viền chữ B)
+
+; --- KẾT THÚC VÀ ĐƯA ĐẦU DAO VỀ GỐC AN TOÀN ---
+G00 X0 Y0

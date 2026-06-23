@@ -22,17 +22,17 @@
         ]
     },
     "home_snapshot": "home_snapshot.jpg",
-    "step_distance": 73.8,
-    "jog_feedrate": 76700,
+    "step_distance": 50.2,
+    "jog_feedrate": 15700,
     "gesture_feedrate": 50000,
     "gesture_distance": 50.0,
     "gesture_dwell": 0.2,
-    "gesture_tap_dwell": 0.08,
+    "gesture_tap_dwell": 0.1,
     "pen_mode": "spindle-pwm",
     "pen_up_z": 3.0,
     "pen_down_z": 0.0,
     "pen_up_pwm": 0.0,
-    "pen_down_pwm": 50.0,
+    "pen_down_pwm": 35.0,
     "pen_dwell": 0.05,
     "aruco_standard_points": {
         "TL": [
@@ -53,13 +53,13 @@
         ]
     },
     "saved_pen_position": [
-        0.0,
-        26.1,
+        54.7,
+        74.475,
         0.0
     ],
     "home_pixel": [
-        389.7703552246094,
-        338.2461853027344
+        380.8435974121094,
+        388.3705749511719
     ],
     "step_index": 1
 }
