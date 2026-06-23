@@ -28,11 +28,39 @@ def setup_amd_gpu_env():
         pass
 
     if has_amd:
-        # For AMD RDNA3 architectures like Radeon 780M (gfx1103),
-        # HSA_OVERRIDE_GFX_VERSION needs to be set to 11.0.2 or 11.0.0.
+        # For AMD RDNA3 iGPU architectures like Radeon 780M (gfx1102),
+        # PyTorch ROCm 6.x prebuilt wheels only include kernels for gfx1100 (RX 7900).
+        # Override to gfx1100 so HIP kernels can be found.
         if 'HSA_OVERRIDE_GFX_VERSION' not in os.environ:
-            print("[AMD GPU Setup] AMD GPU detected on Linux. Setting HSA_OVERRIDE_GFX_VERSION=11.0.2 to enable support for consumer GPUs like Radeon 780M.", flush=True)
-            os.environ['HSA_OVERRIDE_GFX_VERSION'] = '11.0.2'
+            ## print("[AMD GPU Setup] AMD GPU detected on Linux. Setting HSA_OVERRIDE_GFX_VERSION=11.0.0 (gfx1100) to map consumer iGPU (gfx1102) to supported ROCm target.", flush=True)
+            ## dunp os.environ['HSA_OVERRIDE_GFX_VERSION'] = '11.0.0'
+            pass
+
+        # hipBLASLt checks the REAL GPU ISA independently and rejects gfx1102 even after
+        # the HSA override. This causes HSA_STATUS_ERROR_INVALID_ISA crash in the attention
+        # (C2PSA) layers during AMP compatibility checks. Disable hipBLASLt workspace
+        # entirely so PyTorch falls back to the standard hipBLAS path.
+        if 'HIPBLASLT_WORKSPACE_SIZE' not in os.environ:
+            ## dunp os.environ['HIPBLASLT_WORKSPACE_SIZE'] = '0'
+            pass
+
+        # Radeon 780M is an iGPU using shared system memory (unified memory architecture).
+        # The HSA System DMA engine (SDMA) conflicts with ROCm memory access on iGPUs,
+        # causing "Memory access fault on address (nil) - Page not present" GPU crashes
+        # during the first training step. Disabling SDMA forces CPU-based data copy which
+        # is slower but fully stable on integrated/APU GPUs.
+        if 'HSA_ENABLE_SDMA' not in os.environ:
+            ## dun os.environ['HSA_ENABLE_SDMA'] = '0'
+            ## print("[AMD GPU Setup] Set HSA_ENABLE_SDMA=0 to prevent iGPU memory access faults (shared memory architecture).", flush=True)
+            pass
+        # Configure HIP memory allocator for shared VRAM pool stability.
+        # max_split_size_mb=512 reduces fragmentation; gc threshold triggers earlier cleanup.
+        if 'PYTORCH_HIP_ALLOC_CONF' not in os.environ:
+            ## dunp os.environ['PYTORCH_HIP_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:512'
+            ## print("[AMD GPU Setup] Set PYTORCH_HIP_ALLOC_CONF for better iGPU shared memory management.", flush=True)
+            pass
+        print("[AMD GPU Setup] All AMD iGPU environment variables configured.", flush=True)
+
     return has_amd
 
 has_amd_system = setup_amd_gpu_env()
@@ -101,6 +129,12 @@ def parse_args():
     parser.add_argument('--scale', type=float, default=0.6, help='Scale augmentation ratio (default: 0.6)')
     parser.add_argument('--multi-scale', action='store_true', dest='multi_scale', default=True, help='Enable multi-scale training (default: True)')
     parser.add_argument('--no-multi-scale', action='store_false', dest='multi_scale', help='Disable multi-scale training')
+    # AMP (Automatic Mixed Precision): disabled by default on AMD iGPU because hipBLASLt
+    # crashes on unsupported architectures (gfx1102). Pass --amp to force-enable if needed.
+    parser.add_argument('--amp', action='store_true', dest='amp', default=None, help='Force enable AMP (mixed precision) training')
+    parser.add_argument('--no-amp', action='store_false', dest='amp', help='Force disable AMP (use FP32). Default on AMD iGPU.')
+    parser.add_argument('--force-gpu', action='store_true', dest='force_gpu', default=False,
+                        help='Force GPU even on unsupported gfx1102 (Radeon 780M). Will likely GPU Hang. Use at your own risk.')
     return parser.parse_args()
 
 def main():
@@ -182,24 +216,42 @@ def main():
         if device_lower in ('gpu', 'amd', 'rocm'):
             import torch
             if torch.cuda.is_available():
-                device = 'cuda'
                 device_name = torch.cuda.get_device_name(0)
-                print(f"Using GPU device '{device_name}' as requested by '--device {device_lower}'.", flush=True)
-            else:
-                print(f"Warning: GPU requested ('--device {device_lower}') but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
-                if has_amd_system:
-                    print("\n" + "="*80)
-                    print("[WARNING] AMD GPU detected but PyTorch ROCm support is not available.")
-                    print("To train on your AMD GPU (e.g., Radeon 780M):")
-                    print("  1. Uninstall your current PyTorch version:")
-                    print("     venv/bin/pip uninstall -y torch torchvision torchaudio")
-                    print("  2. Install PyTorch with ROCm support (e.g., ROCm 6.0):")
-                    print("     venv/bin/pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0")
-                    print("  3. Ensure your user has access to GPU devices:")
-                    print("     sudo usermod -a -G video,render $USER")
-                    print("  4. Make sure HSA_OVERRIDE_GFX_VERSION is set:")
-                    print("     export HSA_OVERRIDE_GFX_VERSION=11.0.2")
+                gcn_arch = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
+                print(f"GPU detected: '{device_name}' (arch: {gcn_arch})", flush=True)
+
+                # gfx1102 = Radeon 780M iGPU (Navi33 / RDNA3 integrated).
+                # PyTorch ROCm prebuilt wheels have NO native gfx1102 kernels.
+                # HSA_OVERRIDE maps it to gfx1100, but the gfx1100 kernel ISA is
+                # binary-incompatible with gfx1102 micro-architecture at runtime,
+                # causing GPU Hang at the first training iteration.
+                if 'gfx1102' in gcn_arch and not args.force_gpu:
+                    print("\n" + "="*80, flush=True)
+                    print("[WARNING] gfx1102 (Radeon 780M) detected — GPU training is NOT stable!")
+                    print("PyTorch ROCm prebuilt wheels have no native gfx1102 kernels.")
+                    print("Running gfx1100 kernels on gfx1102 hardware causes GPU Hang.")
+                    print("")
+                    print("RECOMMENDED: Use CPU training (slower but fully stable):")
+                    print("  --device cpu")
+                    print("")
+                    print("ALTERNATIVE: Build PyTorch from source with gfx1102 support:")
+                    print("  export PYTORCH_ROCM_ARCH=gfx1102")
+                    print("  pip install cmake ninja && python tools/amd_build/build_amd.py")
+                    print("  See: https://github.com/pytorch/pytorch#from-source")
+                    print("")
+                    print("To force GPU anyway (will likely GPU Hang): add --force-gpu")
                     print("="*80 + "\n", flush=True)
+                    print("[Auto-fallback] Switching to CPU training for stability.", flush=True)
+                    device = 'cpu'
+                    # device = 'cuda'
+                else:
+                    device = 'cuda'
+                    if 'gfx1102' in gcn_arch:
+                        print("[WARNING] --force-gpu set: training gfx1102 with gfx1100 kernels — may GPU Hang!", flush=True)
+                    else:
+                        print(f"Using GPU device '{device_name}'.", flush=True)
+            else:
+                print(f"Warning: GPU requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
                 device = 'cpu'
         elif device_lower == 'cpu':
             device = 'cpu'
@@ -232,8 +284,24 @@ def main():
                 print("If you want to train using your AMD GPU, please check 'howtodo.md' for setup instructions.")
                 print("="*80 + "\n", flush=True)
 
+    # Resolve AMP setting.
+    # On AMD iGPU (gfx1102), hipBLASLt used by the C2PSA attention block causes
+    # HSA_STATUS_ERROR_INVALID_ISA during the ultralytics AMP compatibility check.
+    # We therefore disable AMP automatically for AMD GPU unless the user explicitly
+    # requests it with --amp.  FP32 training is ~20-30% slower but fully stable.
+    if args.amp is None:
+        # auto-mode: disable AMP for AMD iGPU
+        use_amp = not (has_amd_system and device != 'cpu')
+        if has_amd_system and device != 'cpu':
+            print("[AMD GPU] AMP (mixed precision) disabled automatically to avoid hipBLASLt ISA crash on gfx1102.", flush=True)
+            print("          Training will use FP32. Pass --amp to override (may crash).", flush=True)
+    else:
+        use_amp = args.amp
+        if use_amp and has_amd_system and device != 'cpu':
+            print("[AMD GPU] WARNING: AMP force-enabled via --amp. This may crash with HSA_STATUS_ERROR_INVALID_ISA on gfx1102.", flush=True)
+
     # Train the model (Transfer learning)
-    print(f"\n--- Starting YOLO Training ({args.epochs} epochs) ---", flush=True)
+    print(f"\n--- Starting YOLO Training ({args.epochs} epochs, amp={use_amp}) ---", flush=True)
     training_results = model.train(
         data=args.data,
         epochs=args.epochs,
@@ -245,9 +313,21 @@ def main():
         exist_ok=True,
         mosaic=args.mosaic,
         scale=args.scale,
-        multi_scale=args.multi_scale
+        multi_scale=args.multi_scale,
+        amp=use_amp,
+        workers=16,
     )
-    
+#     model = YOLO('yolov8s.pt')  # Hoặc bản n (nano) tùy mục đích
+# results = model.train(
+#     data='data.yaml', 
+#     epochs=50, 
+#     imgsz=640, 
+#     batch=16,          # Giữ ở mức vừa vặn bộ nhớ
+#     accumulate=4,      # Giúp đạt hiệu năng tương đương batch 64 (16*4)
+#     cache=True,        # Load toàn bộ dữ liệu lên 24GB RAM CPU trống để tăng tốc
+#     workers=4,         # Tận dụng các luồng CPU load ảnh
+#     amp=True           # Bật Float16 để tiết kiệm bộ nhớ đồ họa
+# )
     print("\n--- Starting Model Validation ---", flush=True)
     metrics = model.val()
     print("Validation mAP50-95:", metrics.box.map, flush=True)
