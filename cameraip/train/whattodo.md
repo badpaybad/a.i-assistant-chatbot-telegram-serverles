@@ -33,5 +33,10 @@ xem lại code prepare_data.py ở data raw yolo1.1 xuất ra từ cvat cameraip
 
 **cập nhật 4**
 hỗ trợ thêm GPU AMD (ví dụ Radeon™ 780M Graphics × 16) bên cạnh CPU và GPU NVIDIA, tích hợp tự động cấu hình biến môi trường HSA_OVERRIDE_GFX_VERSION cho các dòng GPU consumer RDNA3/iGPU và hiển thị hướng dẫn cấu hình PyTorch ROCm chi tiết.
+    xem file cameraip/train/radeon780m.md đã clone vào /vm/pytorch cài vào vnev ở /work/a.i-assistant-chatbot-telegram-serverles/venv 
+
+    /work/a.i-assistant-chatbot-telegram-serverles/venv/bin/pip install --force-reinstall torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.2
+    
+        chạy lệnh và xem độ tương thích venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 80 --batch 4 --device amd
 
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm

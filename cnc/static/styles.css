@@ -954,13 +954,14 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 .gesture-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
 .gesture-grid .btn {
     padding: 8px 4px;
     font-size: 11px;
     height: 38px;
+    margin: 3px;
 }
 
 /* TABS & CAMERA FEED STYLING */

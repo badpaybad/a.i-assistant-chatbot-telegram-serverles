@@ -1,0 +1,9 @@
+Lệnh GRBL,Ý nghĩa,Giải thích hành động,Khi nào nên dùng?
+$,Xem danh sách lệnh,Trả về menu hướng dẫn cơ bản của GRBL.,Khi bạn mới kết nối máy và muốn kiểm tra phản hồi.
+$$,Xem/Sửa thông số cấu hình,Hiển thị toàn bộ danh sách thiết lập lõi của máy (ví dụ: $100=250 là số xung/mm của trục X).,"Dùng khi cần cân chỉnh kích thước máy, đảo chiều động cơ bước hoặc thay đổi tốc độ Jog tối đa."
+$X,Mở khóa máy (Kill Alarm),"Đưa GRBL thoát khỏi trạng thái ""Báo động"" (Alarm lock) khi máy vô tình chạm công tắc hành trình hoặc bị mất nguồn đột ngột.","Khi máy bị khóa cứng không cho di chuyển, gõ $X để mở khóa và Jog đầu dao ra ngoài tai nạn."
+$H,Chạy về gốc máy (Homing),Buộc tất cả các trục tự động di chuyển về phía các công tắc hành trình để xác định tọa độ gốc tuyệt đối của máy (Machine Home).,Luôn chạy lệnh này đầu tiên khi vừa bật máy CNC lên để máy định vị được không gian an toàn.
+?,Kiểm tra trạng thái (Status),"Máy sẽ trả về tọa độ hiện tại (WPOS, MPOS) và trạng thái (Idle, Run, Hold, Alarm).",Thường được phần mềm tự động gửi liên tục mỗi 100ms để vẽ vị trí đầu dao lên màn hình giao diện.
+~,Tiếp tục (Cycle Start / Resume),Ra lệnh cho đầu CNC tiếp tục chạy từ vị trí đang tạm dừng.,Dùng sau khi bạn đã bấm dừng để kiểm tra phôi và muốn máy chạy tiếp.
+!,Tạm dừng khẩn cấp (Feed Hold),"Dừng ngay lập tức mọi chuyển động của các động cơ bước một cách mượt mà (không làm mất bước), trục chính vẫn quay.","Khi thấy đầu dao chuẩn bị đi sai hướng hoặc có nguy cơ va chạm nhẹ, bấm lệnh này để dừng máy kiểm tra."
+0x18 (Ctrl+X),Khởi động lại GRBL (Soft Reset),"Reset lại bo mạch điều khiển xóa bỏ toàn bộ hàng đợi lệnh, dừng ngay lập tức cả động cơ và trục chính.","Khi xảy ra sự cố nghiêm trọng (sắp gãy dao, đâm máy), nhấn Tổ hợp này để cứu máy lập tức."

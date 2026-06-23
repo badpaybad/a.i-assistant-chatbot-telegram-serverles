@@ -1,0 +1,36 @@
+# Requirements for cameraip/train (YOLO training, augmentation, and monitoring dashboard)
+
+# Core training & detection dependencies
+ultralytics
+
+# PyTorch (Default CPU/NVIDIA CUDA. For AMD ROCm GPU, see comments below)
+torch
+torchvision
+
+# ONNX model support for cross-platform deployment
+onnx
+onnxruntime
+
+# Image processing & augmentation
+opencv-python
+Pillow
+PyYAML
+
+# Web monitoring dashboard
+Flask
+
+# Note for GPU Acceleration support:
+#
+# 1. NVIDIA CUDA GPU:
+#    The standard torch/torchvision packages usually auto-detect NVIDIA CUDA.
+#
+# 2. AMD GPU (ROCm) on Linux:
+#    To train using AMD GPUs (e.g. Radeon 780M / consumer RDNA3 / RX 6000 & 7000 series):
+#    - First, uninstall standard packages:
+#      pip uninstall -y torch torchvision torchaudio
+#    - Install the ROCm enabled packages (e.g. ROCm 6.0):
+#      pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/rocm6.0
+
+opencv-python-headless
+opencv-python
+opencv-contrib-python
