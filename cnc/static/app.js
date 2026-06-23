@@ -88,6 +88,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setupCanvas();
     fetchState();
     populateDevices();
+
+    if (!isConnected) connectBtn.click();
 });
 
 // Fetch and populate available serial ports and camera inputs
@@ -118,7 +120,7 @@ async function populateDevices(showInConsole = false) {
         console.error("Failed to fetch available serial ports:", e);
         if (showInConsole) logSystemMessage(`Error scanning ports: ${e}`);
     }
-    
+
     try {
         const camsRes = await fetch("/api/devices/cameras");
         const cams = await camsRes.json();
@@ -158,7 +160,7 @@ async function fetchState() {
 // Update UI elements based on API status
 function updateUIState(data) {
     isConnected = data.connected;
-    
+
     // Connection badge
     if (isConnected) {
         connStatus.innerText = "CONNECTED";
@@ -175,7 +177,7 @@ function updateUIState(data) {
         connectBtn.className = "btn btn-primary";
         portInput.disabled = false;
         baudrateInput.disabled = false;
-        
+
         if (data.port_owner) {
             portWarningText.innerHTML = `Port <strong>${data.port}</strong> is busy. Opened by: <strong>${data.port_owner}</strong>. Please close it and retry.`;
             portWarning.classList.remove("hidden");
@@ -221,11 +223,11 @@ function updateUIState(data) {
         progressPercentage.innerText = Math.round(pct) + "%";
         progressFraction.innerText = `${data.gcode_index} / ${data.gcode_total} lines`;
         streamProgressBar.style.width = pct + "%";
-        
+
         btnStartStream.disabled = true;
         btnPauseStream.disabled = false;
         btnAbortStream.disabled = false;
-        
+
         if (data.is_paused) {
             btnPauseStream.innerText = "Resume";
             btnPauseStream.className = "btn btn-success";
@@ -239,7 +241,7 @@ function updateUIState(data) {
         btnPauseStream.disabled = true;
         btnAbortStream.disabled = true;
     }
-    
+
     // Redraw Canvas with new tool position
     drawToolpath();
 }
@@ -248,25 +250,25 @@ function updateUIState(data) {
 function initWebSocket() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
-    
+
     logSystemMessage("Establishing connection to controller...");
     ws = new WebSocket(wsUrl);
-    
+
     ws.onopen = () => {
         logSystemMessage("WebSocket telemetry channel active.");
         connectionAttempts = 0;
     };
-    
+
     ws.onmessage = (event) => {
         const msg = JSON.parse(event.data);
         handleWSMessage(msg);
     };
-    
+
     ws.onclose = () => {
         logSystemMessage("WebSocket telemetry closed. Reconnecting in 3s...");
         setTimeout(initWebSocket, 3000);
     };
-    
+
     ws.onerror = (err) => {
         console.error("WS error: ", err);
     };
@@ -279,22 +281,22 @@ function handleWSMessage(msg) {
             portInput.value = msg.port;
             baudrateInput.value = msg.baudrate;
             break;
-            
+
         case "connection":
             isConnected = msg.connected;
             updateConnectionUI();
             logSystemMessage(msg.message);
             fetchState(); // sync state fields
             break;
-            
+
         case "telemetry":
             updateTelemetry(msg);
             break;
-            
+
         case "log":
             appendConsoleLog(msg.direction, msg.content);
             break;
-            
+
         case "stream_status":
             handleStreamStatus(msg);
             break;
@@ -332,14 +334,14 @@ function updateConnectionUI() {
 function updateTelemetry(data) {
     machineState.innerText = data.state;
     machineState.className = "state-badge " + data.state.toLowerCase();
-    
+
     currentWPos.x = data.wpos[0];
     currentWPos.y = data.wpos[1];
     currentWPos.z = data.wpos[2];
     valX.innerText = currentWPos.x.toFixed(3);
     valY.innerText = currentWPos.y.toFixed(3);
     valZ.innerText = currentWPos.z.toFixed(3);
-    
+
     const chkAutoTrackPen = document.getElementById("chk-auto-track-pen");
     if (chkAutoTrackPen && chkAutoTrackPen.checked) {
         const gestureStartX = document.getElementById("gesture-start-x");
@@ -347,7 +349,7 @@ function updateTelemetry(data) {
         if (gestureStartX) gestureStartX.value = currentWPos.x.toFixed(1);
         if (gestureStartY) gestureStartY.value = currentWPos.y.toFixed(1);
     }
-    
+
     telFeedrate.innerText = Math.round(data.feedrate);
     currentSpindleSpeed = Math.round(data.spindle_speed);
     if (!isJoggingSpindle) {
@@ -355,14 +357,14 @@ function updateTelemetry(data) {
     }
     telSpindle.innerText = currentSpindleSpeed;
     telBuffer.innerText = data.buffer_rx;
-    
+
     if (data.streaming) {
         progressContainer.classList.remove("hidden");
         const pct = (data.streaming_progress * 100) || 0;
         progressPercentage.innerText = Math.round(pct) + "%";
         progressFraction.innerText = `${data.gcode_index} / ${data.gcode_total} lines`;
         streamProgressBar.style.width = pct + "%";
-        
+
         btnStartStream.disabled = true;
         btnPauseStream.disabled = false;
         btnAbortStream.disabled = false;
@@ -372,7 +374,7 @@ function updateTelemetry(data) {
         btnPauseStream.disabled = true;
         btnAbortStream.disabled = true;
     }
-    
+
     drawToolpath();
     if (typeof window._updateSnapshotPos === 'function') {
         window._updateSnapshotPos(data);
@@ -398,7 +400,7 @@ function handleStreamStatus(msg) {
 function appendConsoleLog(direction, content) {
     const line = document.createElement("div");
     line.className = `log-line ${direction}`;
-    
+
     let displayContent = content;
     if (direction === "in") {
         displayContent = `<-- ${content}`;
@@ -410,13 +412,13 @@ function appendConsoleLog(direction, content) {
     } else {
         displayContent = `--> ${content}`;
     }
-    
+
     line.innerText = displayContent;
     consoleOutput.appendChild(line);
-    
+
     // Auto-scroll to bottom
     // consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    
+
     // Limit console buffer to 200 lines
     while (consoleOutput.childNodes.length > 200) {
         consoleOutput.removeChild(consoleOutput.firstChild);
@@ -436,7 +438,7 @@ async function sendCommand(cmd) {
     try {
         const formData = new FormData();
         formData.append("command", cmd);
-        
+
         const res = await fetch("/api/command", {
             method: "POST",
             body: formData
@@ -520,7 +522,7 @@ function setupEventListeners() {
 
     // Step Slider & Dropdown Logic
     const selectStepPreset = document.getElementById("select-step-preset");
-    
+
     const updateDropdownSelection = (val) => {
         if (selectStepPreset) {
             const valNum = parseFloat(val);
@@ -594,7 +596,7 @@ function setupEventListeners() {
     document.getElementById("jog-x-minus").addEventListener("click", () => jogAxis("X", -1));
     document.getElementById("jog-z-plus").addEventListener("click", () => jogAxis("Z", 1));
     document.getElementById("jog-z-minus").addEventListener("click", () => jogAxis("Z", -1));
-    
+
     // Diagonal Jogging
     document.getElementById("jog-y-plus-x-minus").addEventListener("click", () => jogDiagonal(-1, 1));
     document.getElementById("jog-y-plus-x-plus").addEventListener("click", () => jogDiagonal(1, 1));
@@ -647,11 +649,11 @@ function setupEventListeners() {
         fileInput.value = "";
         toolpathPoints = [];
         boundingBox = { minX: 0, maxX: 0, minY: 0, maxY: 0, center: { x: 0, y: 0 }, width: 0, height: 0 };
-        
+
         fileInfoContainer.classList.add("hidden");
         fileDropZone.classList.remove("hidden");
         btnStartStream.disabled = true;
-        
+
         resetCanvasView();
     });
 
@@ -691,7 +693,7 @@ function setupEventListeners() {
             lblPenDown.innerText = "DOWN Position (mm)";
             penUpVal.step = "0.5";
             penDownVal.step = "0.5";
-            
+
             // Load saved coordinates
             penUpVal.value = localStorage.getItem("cnc_pen_up_z") || "3.0";
             penDownVal.value = localStorage.getItem("cnc_pen_down_z") || "0.0";
@@ -700,7 +702,7 @@ function setupEventListeners() {
             lblPenDown.innerText = "DOWN PWM / Speed (S)";
             penUpVal.step = "5";
             penDownVal.step = "5";
-            
+
             // Load saved PWM values
             penUpVal.value = localStorage.getItem("cnc_pen_up_pwm") || "30";
             penDownVal.value = localStorage.getItem("cnc_pen_down_pwm") || "90";
@@ -712,14 +714,14 @@ function setupEventListeners() {
         try {
             const res = await fetch("/api/pen_settings");
             const settings = await res.json();
-            
+
             localStorage.setItem("cnc_pen_mode", settings.mode);
             localStorage.setItem("cnc_pen_up_z", settings.pen_up_z.toString());
             localStorage.setItem("cnc_pen_down_z", settings.pen_down_z.toString());
             localStorage.setItem("cnc_pen_up_pwm", settings.pen_up_pwm.toString());
             localStorage.setItem("cnc_pen_down_pwm", settings.pen_down_pwm.toString());
             localStorage.setItem("cnc_pen_dwell", settings.pen_dwell.toString());
-            
+
             penControlMode.value = settings.mode;
             penDwellVal.value = settings.pen_dwell;
             updatePenLabels();
@@ -739,7 +741,7 @@ function setupEventListeners() {
             pen_down_pwm: parseFloat(localStorage.getItem("cnc_pen_down_pwm") || "90"),
             pen_dwell: parseFloat(penDwellVal.value || "0.25")
         };
-        
+
         if (mode === "z-axis") {
             settings.pen_up_z = parseFloat(penUpVal.value);
             settings.pen_down_z = parseFloat(penDownVal.value);
@@ -747,7 +749,7 @@ function setupEventListeners() {
             settings.pen_up_pwm = parseFloat(penUpVal.value);
             settings.pen_down_pwm = parseFloat(penDownVal.value);
         }
-        
+
         try {
             await fetch("/api/pen_settings", {
                 method: "POST",
@@ -865,7 +867,7 @@ function setupEventListeners() {
         document.getElementById("gesture-end-x").value = currentWPos.x.toFixed(1);
         document.getElementById("gesture-end-y").value = currentWPos.y.toFixed(1);
     });
-    
+
     document.getElementById("btn-gesture-tap").addEventListener("click", () => executeGesture("tap"));
     document.getElementById("btn-gesture-doubletap").addEventListener("click", () => executeGesture("doubletap"));
     document.getElementById("btn-gesture-longpress").addEventListener("click", () => executeGesture("longpress"));
@@ -899,6 +901,8 @@ function setupEventListeners() {
     const updateCameraStream = () => {
         const camIndex = cameraSelect.value;
         cameraStreamImg.src = `/api/video_feed?index=${camIndex}`;
+        cameraStreamImg.width = 720;
+        cameraStreamImg.height = 720;
         cameraStatusText.innerText = `Connected: Camera ${camIndex}`;
         cameraActiveDot.classList.add("active");
         logSystemMessage(`Started live camera feed stream (Camera index ${camIndex})`);
@@ -926,18 +930,20 @@ function setupEventListeners() {
             if (typeof window.stopCalibrationPolling === 'function') window.stopCalibrationPolling();
         } else {
             cameraFloatingPanel.classList.remove("collapsed");
-            
+
             // Restore saved size
-            const savedWidth = localStorage.getItem("cnc_camera_width");
-            const savedHeight = localStorage.getItem("cnc_camera_height");
+            // const savedWidth = localStorage.getItem("cnc_camera_width");
+            // const savedHeight = localStorage.getItem("cnc_camera_height");
+            const savedWidth = 720;
+            const savedHeight = 720;
             if (savedWidth && savedHeight) {
-                cameraFloatingPanel.style.width = savedWidth + "px";
-                cameraFloatingPanel.style.height = savedHeight + "px";
+                cameraFloatingPanel.style.width = (savedWidth + 250) + "px";
+                cameraFloatingPanel.style.height = (savedHeight + 0) + "px";
             } else {
                 cameraFloatingPanel.style.removeProperty("width");
                 cameraFloatingPanel.style.removeProperty("height");
             }
-            
+
             updateCameraStream();
             if (typeof window.startCalibrationPolling === 'function') window.startCalibrationPolling();
         }
@@ -1016,7 +1022,7 @@ function setupEventListeners() {
             return;
         }
         const camIdx = cameraSelect ? cameraSelect.value : 4;
-        
+
         if (mode === "1280") {
             logSystemMessage(`📸 Triggering original 1280x720 frame JPEG download...`);
             const link = document.createElement("a");
@@ -1027,7 +1033,7 @@ function setupEventListeners() {
             document.body.removeChild(link);
         } else if (mode === "720") {
             logSystemMessage(`📸 Triggering raw & cropped 720x720 JPEG downloads...`);
-            
+
             // // Raw frame download
             // const linkRaw = document.createElement("a");
             // linkRaw.href = `/api/capture/download?mode=720_raw&camera_index=${camIdx}`;
@@ -1035,15 +1041,15 @@ function setupEventListeners() {
             // document.body.appendChild(linkRaw);
             // linkRaw.click();
             // document.body.removeChild(linkRaw);
-            
+
             // Cropped frame download (with a tiny delay to ensure both downloads can start)
 
-                const linkCrop = document.createElement("a");
-                linkCrop.href = `/api/capture/download?mode=720_cropped&camera_index=${camIdx}`;
-                linkCrop.download = `capture_cropped_${Date.now()}.jpg`;
-                document.body.appendChild(linkCrop);
-                linkCrop.click();
-                document.body.removeChild(linkCrop);
+            const linkCrop = document.createElement("a");
+            linkCrop.href = `/api/capture/download?mode=720_cropped&camera_index=${camIdx}`;
+            linkCrop.download = `capture_cropped_${Date.now()}.jpg`;
+            document.body.appendChild(linkCrop);
+            linkCrop.click();
+            document.body.removeChild(linkCrop);
 
             // setTimeout(() => {
             // }, 300);
@@ -1092,7 +1098,7 @@ function setupEventListeners() {
                 btnDetectMove.disabled = true;
                 btnDetectMove.innerText = "⏳ Aligning...";
                 logSystemMessage("Running YOLO detection & moving to largest object center...");
-                
+
                 const camIdx = cameraSelect ? cameraSelect.value : 4;
                 const res = await fetch(`/api/detection/move_to_largest?camera_index=${camIdx}`, {
                     method: "POST"
@@ -1100,7 +1106,7 @@ function setupEventListeners() {
                 const data = await res.json();
                 btnDetectMove.disabled = false;
                 btnDetectMove.innerText = "🎯 Go to Largest Object";
-                
+
                 if (data.status === "ok") {
                     logSystemMessage(`✅ ${data.message}`);
                 } else {
@@ -1128,7 +1134,7 @@ function setupEventListeners() {
         const rect = cameraStreamImg.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
         const clickY = e.clientY - rect.top;
-        
+
         // Scale to 720x720 coordinate space (cập nhật 11)
         const cx = (clickX / rect.width) * 720.0;
         const cy = (clickY / rect.height) * 720.0;
@@ -1164,7 +1170,7 @@ function setupEventListeners() {
     // Camera stream right-click to manually set ArUco corners (cập nhật 13)
     cameraStreamImg.addEventListener("contextmenu", (e) => {
         e.preventDefault();
-        
+
         // Remove existing context menu if any
         const existing = document.getElementById("camera-context-menu");
         if (existing) existing.remove();
@@ -1238,7 +1244,7 @@ function setupEventListeners() {
     const badgeTR = document.getElementById("badge-tr");
     const badgeBR = document.getElementById("badge-br");
     const badgeBL = document.getElementById("badge-bl");
-    
+
     const btnCalTL = document.getElementById("btn-cal-tl");
     const btnCalTR = document.getElementById("btn-cal-tr");
     const btnCalBR = document.getElementById("btn-cal-br");
@@ -1246,7 +1252,7 @@ function setupEventListeners() {
     const btnCalClear = document.getElementById("btn-cal-clear");
     const btnResetAruco = document.getElementById("btn-reset-aruco");
     const btnMoveToCenter = document.getElementById("btn-move-to-center");
-    
+
     let calibrationInterval = null;
     let calibratedPoints = {};
     let isCalibrated = false;
@@ -1293,11 +1299,11 @@ function setupEventListeners() {
                         const M = calibMatrix;
                         const px = objectInfo.center[0];
                         const py = objectInfo.center[1];
-                        const denom = M.length > 2 ? (M[2][0]*px + M[2][1]*py + M[2][2]) : 1.0;
-                        const wx = (M[0][0]*px + M[0][1]*py + M[0][2]) / (denom || 1.0);
-                        const wy = (M[1][0]*px + M[1][1]*py + M[1][2]) / (denom || 1.0);
+                        const denom = M.length > 2 ? (M[2][0] * px + M[2][1] * py + M[2][2]) : 1.0;
+                        const wx = (M[0][0] * px + M[0][1] * py + M[0][2]) / (denom || 1.0);
+                        const wy = (M[1][0] * px + M[1][1] * py + M[1][2]) / (denom || 1.0);
                         lastObjMachine.textContent = `X=${wx.toFixed(3)}, Y=${wy.toFixed(3)}`;
-                    } catch(e) {
+                    } catch (e) {
                         lastObjMachine.textContent = "—";
                     }
                 } else {
@@ -1346,15 +1352,15 @@ function setupEventListeners() {
 
     const pollCalibrationStatus = async () => {
         if (isCameraCollapsed) return;
-        
+
         try {
             const res = await fetch("/api/calibration/status");
             const data = await res.json();
             const detected = data.detected || [];
-            
+
             const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
             const buttons = { TL: btnCalTL, TR: btnCalTR, BR: btnCalBR, BL: btnCalBL };
-            
+
             for (const [key, badge] of Object.entries(badges)) {
                 if (badge) {
                     if (detected.includes(key)) {
@@ -1364,18 +1370,18 @@ function setupEventListeners() {
                     }
                 }
             }
-            
+
             for (const [key, btn] of Object.entries(buttons)) {
                 if (btn) {
                     btn.disabled = !detected.includes(key) || !isConnected;
                 }
             }
-            
+
             const btnSetAruco = document.getElementById("btn-set-aruco");
             if (btnSetAruco) {
                 btnSetAruco.disabled = detected.length !== 4 || !isConnected;
             }
-            
+
             yoloDetected = data.yolo_detected || false;
             // cập nhật 5: hasLastObject stays true once an object has been detected
             if (data.has_last_object) hasLastObject = true;
@@ -1550,7 +1556,7 @@ function setupEventListeners() {
                             btnMoveToCenter.textContent = "Moving around stop";
                             window.updateCalibrationUI();
                             logSystemMessage("Moving around loop stopped. Spindle is resetting and homing to origin.");
-                            
+
                             setTimeout(() => {
                                 isAbortingMovingAround = false;
                                 btnMoveToCenter.textContent = "Moving around";
@@ -1571,7 +1577,7 @@ function setupEventListeners() {
 
     fetchCalibrationConfig();
     setupCalibrationEvents();
-    
+
     // Also trigger initial polling if the camera starts in open state
     if (!isCameraCollapsed) {
         window.startCalibrationPolling();
@@ -1805,13 +1811,13 @@ function setupEventListeners() {
 
     const performResize = (e) => {
         if (!isResizing) return;
-        
+
         if (currentHandle === "left" || currentHandle === "top-left") {
             const dx = startX - e.clientX;
             const newWidth = Math.max(280, Math.min(800, startWidth + dx));
             cameraFloatingPanel.style.width = newWidth + "px";
         }
-        
+
         if (currentHandle === "top" || currentHandle === "top-left") {
             const dy = startY - e.clientY;
             const newHeight = Math.max(200, Math.min(700, startHeight + dy));
@@ -1835,7 +1841,7 @@ function setupEventListeners() {
         const rect = cameraFloatingPanel.getBoundingClientRect();
         startWidth = rect.width;
         startHeight = rect.height;
-        
+
         document.addEventListener("mousemove", performResize);
         document.addEventListener("mouseup", stopResize);
     };
@@ -1869,23 +1875,23 @@ function jogAxis(axis, direction) {
         logSystemMessage("Cannot jog: machine is disconnected.");
         return;
     }
-    
+
     if (axis === "Z" && penControlMode.value === "spindle-pwm") {
         isJoggingSpindle = true;
         clearTimeout(jogSpindleTimeout);
         jogSpindleTimeout = setTimeout(() => {
             isJoggingSpindle = false;
         }, 1000);
-        
+
         targetSpindleSpeed = targetSpindleSpeed + (10 * direction);
         if (targetSpindleSpeed < 0) targetSpindleSpeed = 0;
         if (targetSpindleSpeed > 1000) targetSpindleSpeed = 1000;
-        
+
         logSystemMessage(`Adjusting spindle PWM by 10: S${targetSpindleSpeed}`);
         sendCommand(`M3 S${targetSpindleSpeed}`);
         return;
     }
-    
+
     const distance = currentStepDistance * direction;
     // For universal compatibility (including GRBL v0.9 which doesn't support $J=),
     // we jog using standard relative G-code coordinates and then immediately restore G90 (absolute mode)
@@ -1908,12 +1914,12 @@ function jogDiagonal(dirX, dirY) {
 async function handleFileSelection() {
     const file = fileInput.files[0];
     if (!file) return;
-    
+
     logSystemMessage(`Uploading file: ${file.name}...`);
-    
+
     const formData = new FormData();
     formData.append("file", file);
-    
+
     try {
         const res = await fetch("/api/upload", {
             method: "POST",
@@ -1922,14 +1928,14 @@ async function handleFileSelection() {
         const data = await res.json();
         if (data.status === "ok") {
             logSystemMessage(`Upload complete. Reading G-code to parse toolpath...`);
-            
+
             // Set file UI info card
             loadedFileName.innerText = file.name;
             loadedFileLines.innerText = `${data.lines_count} lines`;
             fileDropZone.classList.add("hidden");
             fileInfoContainer.classList.remove("hidden");
             btnStartStream.disabled = !isConnected;
-            
+
             // Read file on client side for parsing
             const reader = new FileReader();
             reader.onload = (e) => {
@@ -1940,7 +1946,7 @@ async function handleFileSelection() {
                 logSystemMessage(`Parsed ${toolpathPoints.length} motion segments from G-code.`);
             };
             reader.readAsText(file);
-            
+
         } else {
             logSystemMessage(`Upload failed: ${data.message}`);
         }
@@ -1955,29 +1961,29 @@ function parseGcode(gcodeText) {
     const path = [];
     let curX = 0, curY = 0, curZ = 0;
     let isAbsolute = true; // default G90
-    
+
     for (let i = 0; i < lines.length; i++) {
         let line = lines[i].trim();
         // Remove comments
         line = line.replace(/\(.*?\)/g, '').replace(/;.*/g, '').trim();
         if (!line) continue;
-        
+
         // Positioning modes
         if (line.includes('G90') || line.includes('g90')) isAbsolute = true;
         if (line.includes('G91') || line.includes('g91')) isAbsolute = false;
-        
+
         const xMatch = line.match(/X([-+]?[0-9]*\.?[0-9]+)/i);
         const yMatch = line.match(/Y([-+]?[0-9]*\.?[0-9]+)/i);
         const zMatch = line.match(/Z([-+]?[0-9]*\.?[0-9]+)/i);
-        
+
         const gMatch = line.match(/G([0-9]+)/i);
         let gCmd = gMatch ? parseInt(gMatch[1], 10) : null;
-        
+
         if (xMatch || yMatch || zMatch) {
             let nextX = curX;
             let nextY = curY;
             let nextZ = curZ;
-            
+
             if (xMatch) {
                 const val = parseFloat(xMatch[1]);
                 nextX = isAbsolute ? val : curX + val;
@@ -1990,9 +1996,9 @@ function parseGcode(gcodeText) {
                 const val = parseFloat(zMatch[1]);
                 nextZ = isAbsolute ? val : curZ + val;
             }
-            
+
             if (gCmd === null) gCmd = 1; // Default to linear cut
-            
+
             // Only capture G0 and G1/2/3 for visual rendering
             if (gCmd === 0 || gCmd === 1 || gCmd === 2 || gCmd === 3) {
                 path.push({
@@ -2001,7 +2007,7 @@ function parseGcode(gcodeText) {
                     x2: nextX, y2: nextY, z2: nextZ
                 });
             }
-            
+
             curX = nextX;
             curY = nextY;
             curZ = nextZ;
@@ -2012,23 +2018,23 @@ function parseGcode(gcodeText) {
 
 function calculateBoundingBox() {
     if (toolpathPoints.length === 0) return;
-    
+
     let minX = Infinity, maxX = -Infinity;
     let minY = Infinity, maxY = -Infinity;
-    
+
     toolpathPoints.forEach(p => {
         minX = Math.min(minX, p.x1, p.x2);
         maxX = Math.max(maxX, p.x1, p.x2);
         minY = Math.min(minY, p.y1, p.y2);
         maxY = Math.max(maxY, p.y1, p.y2);
     });
-    
+
     // In case drawing is single point or error
     if (minX === Infinity) {
         boundingBox = { minX: 0, maxX: 0, minY: 0, maxY: 0, center: { x: 0, y: 0 }, width: 0, height: 0 };
         return;
     }
-    
+
     boundingBox = {
         minX, maxX, minY, maxY,
         width: maxX - minX,
@@ -2048,41 +2054,41 @@ function setupCanvas() {
         canvas.height = canvas.parentElement.clientHeight;
         drawToolpath();
     };
-    
+
     window.addEventListener("resize", resizeCanvas);
     setTimeout(resizeCanvas, 100);
-    
+
     // Zoom handler
     canvas.addEventListener("wheel", (e) => {
         e.preventDefault();
         const zoomIntensity = 0.1;
-        
+
         // Mouse coordinate relative to canvas top-left
         const mouseX = e.offsetX;
         const mouseY = e.offsetY;
-        
+
         // Convert mouse position to visual coordinate space before zooming
         const worldX = (mouseX - panX) / zoomScale;
         const worldY = (mouseY - panY) / zoomScale;
-        
+
         // Calculate new scale
         const scaleFactor = e.deltaY < 0 ? (1 + zoomIntensity) : (1 - zoomIntensity);
         zoomScale = Math.max(0.1, Math.min(50, zoomScale * scaleFactor));
-        
+
         // Re-align pan so zoom anchors on mouse pointer
         panX = mouseX - worldX * zoomScale;
         panY = mouseY - worldY * zoomScale;
-        
+
         drawToolpath();
     });
-    
+
     // Pan Handlers
     canvas.addEventListener("mousedown", (e) => {
         isDragging = true;
         startDragX = e.offsetX - panX;
         startDragY = e.offsetY - panY;
     });
-    
+
     canvas.addEventListener("mousemove", (e) => {
         if (isDragging) {
             panX = e.offsetX - startDragX;
@@ -2090,7 +2096,7 @@ function setupCanvas() {
             drawToolpath();
         }
     });
-    
+
     window.addEventListener("mouseup", () => {
         isDragging = false;
     });
@@ -2104,49 +2110,49 @@ function resetCanvasView() {
         drawToolpath();
         return;
     }
-    
+
     // Find zoom scale fitting visual boundaries with padding
     const padding = 40;
     const availW = canvas.width - padding * 2;
     const availH = canvas.height - padding * 2;
-    
+
     const scaleX = availW / (boundingBox.width || 1);
     const scaleY = availH / (boundingBox.height || 1);
-    
+
     // Select minimum scale to fit in both directions
     zoomScale = Math.min(scaleX, scaleY);
     // Boundary checks
     zoomScale = Math.max(0.2, Math.min(20, zoomScale));
-    
+
     // Position center of visual path to center of canvas
     // Canvas coordinate runs Y downwards, CNC coordinate runs Y upwards. Flip Y!
     panX = canvas.width / 2 - (boundingBox.center.x * zoomScale);
     panY = canvas.height / 2 + (boundingBox.center.y * zoomScale);
-    
+
     drawToolpath();
 }
 
 function drawToolpath() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
+
     // Draw background grid lines relative to current pan & zoom
     drawGrid();
-    
+
     if (toolpathPoints.length > 0) {
         ctx.lineWidth = 1;
-        
+
         toolpathPoints.forEach(p => {
             ctx.beginPath();
-            
+
             // Transform point coordinates to screen pixels
             const x1 = panX + p.x1 * zoomScale;
             const y1 = panY - p.y1 * zoomScale; // Flip Y for display space
             const x2 = panX + p.x2 * zoomScale;
             const y2 = panY - p.y2 * zoomScale;
-            
+
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
-            
+
             // Visual indicators for G0 Rapid (dotted orange) vs G1 Feed cuts (solid blue)
             if (p.type === 0) {
                 ctx.strokeStyle = "hsla(35, 90%, 55%, 0.35)"; // faint orange
@@ -2155,13 +2161,13 @@ function drawToolpath() {
                 ctx.strokeStyle = "hsla(200, 100%, 50%, 0.8)"; // bright blue
                 ctx.setLineDash([]);
             }
-            
+
             ctx.stroke();
         });
-        
+
         ctx.setLineDash([]); // Reset dash state
     }
-    
+
     // Draw Current Tool Position (Glowing Crosshair overlay)
     drawToolCrosshair();
 }
@@ -2169,10 +2175,10 @@ function drawToolpath() {
 function drawGrid() {
     const gridSpacing = 10 * zoomScale; // base 10mm grid spacing
     if (gridSpacing < 5) return; // avoid tight loops on heavy zooms
-    
+
     ctx.strokeStyle = "hsla(220, 25%, 24%, 0.15)";
     ctx.lineWidth = 0.5;
-    
+
     // Draw vertical lines from center grid origin
     let originX = panX;
     while (originX > 0) {
@@ -2190,7 +2196,7 @@ function drawGrid() {
         ctx.stroke();
         originX += gridSpacing;
     }
-    
+
     // Draw horizontal lines from center grid origin
     let originY = panY;
     while (originY > 0) {
@@ -2208,17 +2214,17 @@ function drawGrid() {
         ctx.stroke();
         originY += gridSpacing;
     }
-    
+
     // Draw Grid Center Axes lines (X=0, Y=0 origin)
     ctx.strokeStyle = "hsla(220, 25%, 34%, 0.5)";
     ctx.lineWidth = 1.0;
-    
+
     // X Axis line
     ctx.beginPath();
     ctx.moveTo(0, panY);
     ctx.lineTo(canvas.width, panY);
     ctx.stroke();
-    
+
     // Y Axis line
     ctx.beginPath();
     ctx.moveTo(panX, 0);
@@ -2230,7 +2236,7 @@ function drawToolCrosshair() {
     // Current tool positions on screen pixel space
     const screenX = panX + currentWPos.x * zoomScale;
     const screenY = panY - currentWPos.y * zoomScale;
-    
+
     // Draw outer glow ring
     ctx.beginPath();
     ctx.arc(screenX, screenY, 8, 0, 2 * Math.PI);
@@ -2239,22 +2245,22 @@ function drawToolCrosshair() {
     ctx.lineWidth = 1.5;
     ctx.fill();
     ctx.stroke();
-    
+
     // Draw crosshair ticks
     ctx.beginPath();
     ctx.strokeStyle = "hsl(0, 85%, 60%)";
     ctx.lineWidth = 1.0;
-    
+
     // Horizontal tick
     ctx.moveTo(screenX - 15, screenY);
     ctx.lineTo(screenX + 15, screenY);
-    
+
     // Vertical tick
     ctx.moveTo(screenX, screenY - 15);
     ctx.lineTo(screenX, screenY + 15);
-    
+
     ctx.stroke();
-    
+
     // Draw tiny center dot
     ctx.beginPath();
     ctx.arc(screenX, screenY, 1.5, 0, 2 * Math.PI);
@@ -2268,34 +2274,34 @@ async function executeGesture(type) {
         logSystemMessage("Cannot execute gesture: machine is disconnected.");
         return;
     }
-    
+
     // Get gesture inputs
     const startX = parseFloat(document.getElementById("gesture-start-x").value) || 0.0;
     const startY = parseFloat(document.getElementById("gesture-start-y").value) || 0.0;
     const endX = parseFloat(document.getElementById("gesture-end-x").value) || 0.0;
     const endY = parseFloat(document.getElementById("gesture-end-y").value) || 0.0;
-    
+
     const feedrate = parseInt(document.getElementById("gesture-feedrate").value) || 4000;
     const dwell = parseFloat(document.getElementById("gesture-dwell").value) || 0.15;
     const distance = parseFloat(document.getElementById("gesture-distance").value) || 40.0;
     const tapDwell = parseFloat(document.getElementById("gesture-tap-dwell").value) || 0.10;
-    
+
     // Get UP/DOWN command strings from active mode settings
     const penUpValLocal = penUpVal.value;
     const penDownValLocal = penDownVal.value;
     const penDwellLocal = penDwellVal.value; // dwell for physical pen down/up movement
     const isSpindle = (penControlMode.value === "spindle-pwm");
-    
+
     const penUpCmd = isSpindle ? `M3 S${penUpValLocal}` : `G0 Z${penUpValLocal}`;
     const penDownCmd = isSpindle ? `M3 S${penDownValLocal}` : `G0 Z${penDownValLocal}`;
     const penDwellCmd = `G4 P${penDwellLocal}`;
     const tapDwellCmd = `G4 P${tapDwell}`;
-    
+
     const gcode = [];
-    
+
     // Always start by ensuring absolute coordinates (G90) and millimeters (G21)
     gcode.push("G90 G21");
-    
+
     switch (type) {
         case "tap":
             logSystemMessage(`Simulating Tap at X:${startX}, Y:${startY}`);
@@ -2305,7 +2311,7 @@ async function executeGesture(type) {
             gcode.push(penUpCmd);
             gcode.push(tapDwellCmd);
             break;
-            
+
         case "doubletap":
             logSystemMessage(`Simulating Double Tap at X:${startX}, Y:${startY}`);
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
@@ -2322,7 +2328,7 @@ async function executeGesture(type) {
             gcode.push(penUpCmd);
             gcode.push(tapDwellCmd);
             break;
-            
+
         case "longpress":
             logSystemMessage(`Simulating Long Press (1s) at X:${startX}, Y:${startY}`);
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
@@ -2332,7 +2338,7 @@ async function executeGesture(type) {
             gcode.push(penUpCmd);
             gcode.push(penDwellCmd);
             break;
-            
+
         case "swipe-up":
         case "swipe-down":
         case "swipe-left":
@@ -2341,7 +2347,7 @@ async function executeGesture(type) {
             let swipeEndX = startX;
             let swipeEndY = startY;
             let logMsg = "";
-            
+
             switch (type) {
                 case "swipe-up":
                     swipeEndY = startY + distance;
@@ -2365,25 +2371,25 @@ async function executeGesture(type) {
                     logMsg = `Simulating Custom Swipe from X:${startX} Y:${startY} to X:${endX} Y:${endY}`;
                     break;
             }
-            
+
             logSystemMessage(`${logMsg} @ F${feedrate}`);
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
-            
+
             // Single fast straight G1 swipe movement keeping the pen fully down
             gcode.push(`G1 X${swipeEndX.toFixed(3)} Y${swipeEndY.toFixed(3)} F${feedrate}`);
-            
+
             // Final confirm pen is up
             gcode.push(penUpCmd);
             gcode.push(penDwellCmd);
             break;
-            
+
         default:
             console.error("Unknown gesture type: " + type);
             return;
     }
-    
+
     // Send G-code lines to backend
     await sendCommand(gcode.join("\n"));
 }
@@ -2421,19 +2427,19 @@ async function loadSavedUIPreferences() {
                 prefs.step_distance = mapping[parseInt(localStepIndex, 10)] || 10.0;
             }
         }
-        
+
         const localJogFeedrate = localStorage.getItem("cnc_jog_feedrate");
         if (localJogFeedrate !== null) prefs.jog_feedrate = parseInt(localJogFeedrate, 10);
-        
+
         const localGestureFeedrate = localStorage.getItem("cnc_gesture_feedrate");
         if (localGestureFeedrate !== null) prefs.gesture_feedrate = parseInt(localGestureFeedrate, 10);
-        
+
         const localGestureDistance = localStorage.getItem("cnc_gesture_distance");
         if (localGestureDistance !== null) prefs.gesture_distance = parseFloat(localGestureDistance);
-        
+
         const localGestureDwell = localStorage.getItem("cnc_gesture_dwell");
         if (localGestureDwell !== null) prefs.gesture_dwell = parseFloat(localGestureDwell);
-        
+
         const localGestureTapDwell = localStorage.getItem("cnc_gesture_tap_dwell");
         if (localGestureTapDwell !== null) prefs.gesture_tap_dwell = parseFloat(localGestureTapDwell);
     }
@@ -2442,7 +2448,7 @@ async function loadSavedUIPreferences() {
     sliderStep.value = prefs.step_distance;
     currentStepDistance = prefs.step_distance;
     valStep.innerText = `${currentStepDistance} mm`;
-    
+
     // Update preset dropdown selection
     const selectStepPreset = document.getElementById("select-step-preset");
     if (selectStepPreset) {

@@ -2431,28 +2431,91 @@ async def get_serial_ports():
         })
     return ports
 
-@app.get("/api/devices/cameras")
-async def get_usb_cameras():
-    import glob
-    import re
+async def get_cameras_v4l2():
     cameras = []
+    try:
+        # Chạy lệnh v4l2-ctl ngoài hệ thống
+        proc = await asyncio.create_subprocess_exec(
+            'v4l2-ctl', '--list-devices',
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await proc.communicate()
+        output = stdout.decode('utf-8')
+        
+        # Phân tách các cụm thiết bị
+        chunks = output.strip().split("\n\n")
+        for chunk in chunks:
+            lines = chunk.split("\n")
+            if not lines:
+                continue
+                
+            # Dòng đầu tiên luôn là tên Camera và Bus (ví dụ: Integrated Camera (usb-0000:00:14.0-5):)
+            device_info = lines[0]
+            
+            # Tìm đường dẫn /dev/videoX đầu tiên trong cụm
+            video_paths = [line.strip() for line in lines[1:] if "/dev/video" in line]
+            if not video_paths:
+                continue
+                
+            # Lấy index từ đường dẫn đầu tiên (ví dụ: /dev/video0 -> 0)
+            match = re.search(r"video(\d+)", video_paths[0])
+            if match:
+                idx = int(match.group(1))
+                
+                # Xác định loại camera dựa trên tên hoặc thông tin bus
+                is_builtin = "integrated" in device_info.lower() or "built-in" in device_info.lower()
+                camera_type = "Built-in" if is_builtin else "External USB"
+                
+                cameras.append({
+                    "index": idx,
+                    "name": f"{device_info.split('(')[0].strip()} (Cam {idx})",
+                    "type": camera_type
+                })
+    except Exception as e:
+        print(f"Lỗi khi chạy v4l2-ctl: {e}")
+        
+    return cameras
+
+@app.get("/api/devices/cameras")
+async def get_all_cameras():
+    return await get_cameras_v4l2()
+    cameras = []
+    # Quét qua tất cả các thiết bị video4linux
     for dev_path in sorted(glob.glob("/sys/class/video4linux/video*")):
         base = os.path.basename(dev_path)
         match = re.match(r"video(\d+)", base)
-        if match:
-            idx = int(match.group(1))
-            name_file = os.path.join(dev_path, "name")
-            name = f"Camera {idx}"
-            if os.path.exists(name_file):
-                try:
-                    with open(name_file, "r") as f:
-                        name = f.read().strip()
-                except Exception:
-                    pass
-            cameras.append({
-                "index": idx,
-                "name": f"{name} (Cam {idx})"
-            })
+        if not match:
+            continue
+            
+        idx = int(match.group(1))
+        
+        # 1. Đọc tên thân thiện của camera
+        name_file = os.path.join(dev_path, "name")
+        name = f"Camera {idx}"
+        if os.path.exists(name_file):
+            try:
+                with open(name_file, "r") as f:
+                    name = f.read().strip()
+            except Exception:
+                pass
+        
+        # 2. Kiểm tra loại bus để phân biệt Built-in vs USB ngoài
+        # Thường camera built-in sẽ nhận diện là "Integrated Camera", "Front Camera", hoặc chạy bus PCI/I2C
+        subsystem_path = os.path.realpath(os.path.join(dev_path, "device", "subsystem"))
+        bus_type = os.path.basename(subsystem_path)
+        
+        # Kiểm tra thêm vị trí thiết bị (nếu cần tinh chỉnh)
+        is_builtin = "usb" not in bus_type or "integrated" in name.lower() or "built-in" in name.lower()
+        
+        camera_type = "Built-in" if is_builtin else "External USB"
+        
+        cameras.append({
+            "index": idx,
+            "name": f"{name} ({camera_type} - Cam {idx})",
+            "type": camera_type
+        })
+        
     return cameras
 
 # Serve Frontend
