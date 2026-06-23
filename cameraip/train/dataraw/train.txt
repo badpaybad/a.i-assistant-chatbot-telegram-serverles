@@ -1,15 +1,9 @@
-data/obj_train_data/i1.jpg
-data/obj_train_data/i2.jpg
-data/obj_train_data/i3.jpg
-data/obj_train_data/i4.jpg
-data/obj_train_data/sample object.png
-data/obj_train_data/capture_cropped_20260622_150240.jpg
-data/obj_train_data/capture_cropped_20260622_150316.jpg
-data/obj_train_data/capture_cropped_20260622_150329.jpg
-data/obj_train_data/capture_cropped_20260622_150339.jpg
-data/obj_train_data/capture_cropped_20260622_150348.jpg
-data/obj_train_data/capture_raw_20260622_150240.jpg
-data/obj_train_data/capture_raw_20260622_150316.jpg
-data/obj_train_data/capture_raw_20260622_150329.jpg
-data/obj_train_data/capture_raw_20260622_150338.jpg
-data/obj_train_data/capture_raw_20260622_150348.jpg
+data/obj_train_data/capture_cropped_20260622_165106.jpg
+data/obj_train_data/capture_cropped_20260622_165120.jpg
+data/obj_train_data/capture_cropped_20260622_165129.jpg
+data/obj_train_data/capture_cropped_20260622_165140.jpg
+data/obj_train_data/capture_cropped_20260622_165147.jpg
+data/obj_train_data/capture_cropped_20260622_165240.jpg
+data/obj_train_data/capture_cropped_20260622_165252.jpg
+data/obj_train_data/capture_cropped_20260622_165310.jpg
+data/obj_train_data/capture_cropped_20260622_165320.jpg
