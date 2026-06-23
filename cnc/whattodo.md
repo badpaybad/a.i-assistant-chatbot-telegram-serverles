@@ -119,3 +119,4 @@ sau này mô hình sẽ còn các labels khác (kể cả sittng, ccnhead đã c
 
 Step Size (Distance) và Jog Feed Rate, Feedrate,Dist (mm),Swipe/Dwell (s),Tap Dwell (s) cần thành global sử dụng cho tất cả các chế độ để di chuyển của đầu CNC, từ tab , vuốt, click trên video di chuyển đầu cnc, go to x y, moving around , go to largest object ... 
 cnc/pen_settings.json cần merger vào cnc/calibration_settings.json để chỉ còn 1 file và thống nhất về các chỉ số cấu hình sử dụng cho toàn bộ hệ thống 
+Vuốt dạng nhấc dần đầu bút lên đang bị giật giật, chuyển về ban đầu, nhấn bút vuốt rồi tới cuối nhấc hẳn bút, bỏ nhấc dần dần 

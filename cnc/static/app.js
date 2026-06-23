@@ -2366,40 +2366,14 @@ async function executeGesture(type) {
                     break;
             }
             
-            logSystemMessage(`${logMsg} @ F${feedrate} (gradually lifting pen from ${penDownValLocal} to ${penUpValLocal})`);
+            logSystemMessage(`${logMsg} @ F${feedrate}`);
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
             
-            // Segmented path to gradually lift pen Z/spindle PWM as we approach the end of the stroke
-            const N = 15; // Increased to 15 segments for smoother lift (approx 1 degree servo steps)
-            const startLiftRatio = 0.3; // pen remains fully down for first 30% of stroke, then lifts
+            // Single fast straight G1 swipe movement keeping the pen fully down
+            gcode.push(`G1 X${swipeEndX.toFixed(3)} Y${swipeEndY.toFixed(3)} F${feedrate}`);
             
-            for (let i = 1; i <= N; i++) {
-                const ratio = i / N;
-                const curX = startX + (swipeEndX - startX) * ratio;
-                const curY = startY + (swipeEndY - startY) * ratio;
-                
-                // Speed starts slower and accelerates quadratically up to the target feedrate
-                const accelFactor = 0.3 + 0.7 * Math.pow(ratio, 2);
-                const segmentFeedrate = Math.round(feedrate * accelFactor);
-                
-                if (isSpindle) {
-                    let pwmVal = parseFloat(penDownValLocal);
-                    if (ratio >= startLiftRatio) {
-                        const liftT = (ratio - startLiftRatio) / (1 - startLiftRatio);
-                        pwmVal = parseFloat(penDownValLocal) + liftT * (parseFloat(penUpValLocal) - parseFloat(penDownValLocal));
-                    }
-                    gcode.push(`G1 X${curX.toFixed(3)} Y${curY.toFixed(3)} S${Math.round(pwmVal)} F${segmentFeedrate}`);
-                } else {
-                    let zVal = parseFloat(penDownValLocal);
-                    if (ratio >= startLiftRatio) {
-                        const liftT = (ratio - startLiftRatio) / (1 - startLiftRatio);
-                        zVal = parseFloat(penDownValLocal) + liftT * (parseFloat(penUpValLocal) - parseFloat(penDownValLocal));
-                    }
-                    gcode.push(`G1 X${curX.toFixed(3)} Y${curY.toFixed(3)} Z${zVal.toFixed(3)} F${segmentFeedrate}`);
-                }
-            }
             // Final confirm pen is up
             gcode.push(penUpCmd);
             gcode.push(penDwellCmd);
