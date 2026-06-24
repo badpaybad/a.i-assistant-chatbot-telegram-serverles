@@ -1260,6 +1260,8 @@ function setupEventListeners() {
 
     let calibrationInterval = null;
     let calibratedPoints = {};
+    let arucoStandardPoints = {};
+    let cncPoints = {};
     let isCalibrated = false;
     let isHomeSet = false;
     let yoloDetected = false;
@@ -1324,11 +1326,26 @@ function setupEventListeners() {
         const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
         for (const [key, badge] of Object.entries(badges)) {
             if (badge) {
-                if (calibratedPoints[key]) {
+                const hasAruco = arucoStandardPoints[key] !== undefined;
+                const hasCnc = cncPoints[key] !== undefined;
+                
+                badge.classList.remove("calibrated", "detected");
+                if (hasAruco && hasCnc) {
                     badge.classList.add("calibrated");
-                } else {
-                    badge.classList.remove("calibrated");
+                } else if (hasAruco) {
+                    badge.classList.add("detected");
                 }
+            }
+        }
+        const cncButtons = {
+            TL: document.getElementById("btn-set-cnc-tl"),
+            TR: document.getElementById("btn-set-cnc-tr"),
+            BR: document.getElementById("btn-set-cnc-br"),
+            BL: document.getElementById("btn-set-cnc-bl")
+        };
+        for (const [key, btn] of Object.entries(cncButtons)) {
+            if (btn) {
+                btn.disabled = !isConnected;
             }
         }
         if (btnMoveToCenter) {
@@ -1345,6 +1362,8 @@ function setupEventListeners() {
             const res = await fetch("/api/calibration/config");
             const data = await res.json();
             calibratedPoints = data.points || {};
+            arucoStandardPoints = data.aruco_standard_points || {};
+            cncPoints = data.cnc_points || {};
             isCalibrated = data.calibrated || false;
             if (chkShowOverlay) {
                 chkShowOverlay.checked = data.draw_overlay !== false;
@@ -1395,6 +1414,9 @@ function setupEventListeners() {
             // Dynamically sync isCalibrated and isHomeSet status from backend
             isCalibrated = data.calibration_matrix !== null;
             isHomeSet = data.home_set || false;
+            
+            arucoStandardPoints = data.aruco_standard_points || {};
+            cncPoints = data.cnc_points || {};
 
             // Sync moving around status
             movingAroundRunning = data.moving_around_running || false;
@@ -1475,6 +1497,38 @@ function setupEventListeners() {
         if (btnCalBR) btnCalBR.addEventListener("click", () => recordCorner("BR"));
         if (btnCalBL) btnCalBL.addEventListener("click", () => recordCorner("BL"));
 
+        // CNC mapping button click listeners
+        const btnSetCncTL = document.getElementById("btn-set-cnc-tl");
+        const btnSetCncTR = document.getElementById("btn-set-cnc-tr");
+        const btnSetCncBR = document.getElementById("btn-set-cnc-br");
+        const btnSetCncBL = document.getElementById("btn-set-cnc-bl");
+
+        const setCncCorner = async (corner) => {
+            try {
+                const res = await fetch("/api/calibration/set_cnc", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ corner: corner })
+                });
+                const data = await res.json();
+                if (data.status === "ok") {
+                    cncPoints = data.cnc_points;
+                    isCalibrated = data.calibrated;
+                    window.updateCalibrationUI();
+                    logSystemMessage(`📐 Set CNC ${corner} to current machine position successfully!`);
+                } else {
+                    logSystemMessage(`❌ Failed to set CNC corner ${corner}: ${data.message}`);
+                }
+            } catch (e) {
+                logSystemMessage(`❌ Network error setting CNC ${corner}: ${e}`);
+            }
+        };
+
+        if (btnSetCncTL) btnSetCncTL.addEventListener("click", () => setCncCorner("TL"));
+        if (btnSetCncTR) btnSetCncTR.addEventListener("click", () => setCncCorner("TR"));
+        if (btnSetCncBR) btnSetCncBR.addEventListener("click", () => setCncCorner("BR"));
+        if (btnSetCncBL) btnSetCncBL.addEventListener("click", () => setCncCorner("BL"));
+
         const btnSetAruco = document.getElementById("btn-set-aruco");
         if (btnSetAruco) {
             btnSetAruco.addEventListener("click", async () => {
@@ -1500,6 +1554,8 @@ function setupEventListeners() {
                         const data = await res.json();
                         if (data.status === "ok") {
                             calibratedPoints = {};
+                            arucoStandardPoints = {};
+                            cncPoints = {};
                             isCalibrated = false;
                             window.updateCalibrationUI();
                             logSystemMessage("Calibration cleared.");
@@ -1519,6 +1575,7 @@ function setupEventListeners() {
                         const data = await res.json();
                         if (data.status === "ok") {
                             logSystemMessage("ArUco standard points reset.");
+                            arucoStandardPoints = {};
                             fetchCalibrationConfig();
                         }
                     } catch (e) {

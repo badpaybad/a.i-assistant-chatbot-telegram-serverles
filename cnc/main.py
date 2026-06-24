@@ -184,6 +184,7 @@ class ControllerState:
         self.calibration_points = cal_settings["points"]
         self.calibration_matrix = cal_settings["matrix"]
         self.draw_overlay = cal_settings["draw_overlay"]
+        self.cnc_points = cal_settings.get("cnc_points", {})
         
         # Home settings (cập nhật 2)
         self.home_set = cal_settings.get("home_set", False)
@@ -228,27 +229,49 @@ class ControllerState:
         self.update_calibration_matrix()
 
     def update_calibration_matrix(self):
-        valid_pts = []
+        src_pts = []
+        dst_pts = []
+        
+        # 1. Add corner mappings based on manual ArUco and manual CNC points
         for corner in ["TL", "TR", "BR", "BL"]:
-            pt = self.calibration_points.get(corner)
-            if pt and "pixel" in pt and "machine" in pt:
-                valid_pts.append(pt)
+            px = self.aruco_standard_points.get(corner)
+            cx = self.cnc_points.get(corner)
+            if px and cx:
+                src_pts.append(px)
+                dst_pts.append(cx)
                 
-        if len(valid_pts) < 3:
+        # 2. Add home point mapping if set
+        if self.home_set and (getattr(self, "home_pixel", None) is not None):
+            src_pts.append(self.home_pixel)
+            dst_pts.append([0.0, 0.0])
+            
+        # Fallback to old calibration_points if no manual points set
+        if len(src_pts) < 3:
+            valid_pts = []
+            for corner in ["TL", "TR", "BR", "BL"]:
+                pt = self.calibration_points.get(corner)
+                if pt and "pixel" in pt and "machine" in pt:
+                    valid_pts.append(pt)
+            if len(valid_pts) >= 3:
+                src_pts = [pt["pixel"] for pt in valid_pts]
+                dst_pts = [pt["machine"] for pt in valid_pts]
+                
+        if len(src_pts) < 3:
             self.calibration_matrix = None
             return False
             
-        src = np.array([pt["pixel"] for pt in valid_pts], dtype=np.float32)
-        dst = np.array([pt["machine"] for pt in valid_pts], dtype=np.float32)
+        src = np.array(src_pts, dtype=np.float32)
+        dst = np.array(dst_pts, dtype=np.float32)
         
         try:
-            if len(valid_pts) == 3:
+            if len(src_pts) == 3:
                 M_aff = cv2.getAffineTransform(src, dst)
                 if M_aff is not None:
                     M = np.vstack([M_aff, [0.0, 0.0, 1.0]])
                 else:
                     M = None
             else:
+                # 4 or more points: Homography
                 M, _ = cv2.findHomography(src, dst)
             if M is not None:
                 self.calibration_matrix = M.tolist()
@@ -272,9 +295,9 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         pts = state.home_markers
         src = np.array([pts[c] for c in ["TL", "TR", "BR", "BL"]], dtype=np.float32)
         # We assume physical coordinates relative to the center (0,0):
-        # TL = (-100, -75), TR = (100, -75), BR = (100, 75), BL = (-100, 75)
-        # Y is positive down (cập nhật 20)
-        dst = np.array([[-100.0, -75.0], [100.0, -75.0], [100.0, 75.0], [-100.0, 75.0]], dtype=np.float32)
+        # TL = (-100, 75), TR = (100, 75), BR = (100, -75), BL = (-100, -75)
+        # Y is positive up (corrected for Y inversion)
+        dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
         try:
             M, _ = cv2.findHomography(src, dst)
             # logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
@@ -1721,7 +1744,8 @@ async def get_calibration_status():
         "calibration_matrix": get_adjusted_calibration_matrix(),
         "home_set": state.home_set,
         "moving_around_running": getattr(state, "moving_around_running", False),
-        "aruco_standard_points": state.aruco_standard_points
+        "aruco_standard_points": state.aruco_standard_points,
+        "cnc_points": state.cnc_points
     }
 
 @app.post("/api/calibration/record")
@@ -1766,8 +1790,39 @@ async def record_calibration(config: RecordConfig):
 async def get_calibration_config():
     return {
         "points": state.calibration_points,
+        "aruco_standard_points": state.aruco_standard_points,
+        "cnc_points": state.cnc_points,
         "calibrated": state.calibration_matrix is not None,
         "draw_overlay": state.draw_overlay
+    }
+
+class SetCNCConfig(BaseModel):
+    corner: str
+
+@app.post("/api/calibration/set_cnc")
+async def set_cnc_corner(config: SetCNCConfig):
+    corner = config.corner
+    if corner not in ["TL", "TR", "BR", "BL"]:
+        return JSONResponse({"status": "error", "message": "Invalid corner name"}, status_code=400)
+        
+    if not state.connected:
+        return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
+        
+    machine_coord = [state.wpos[0], state.wpos[1]]
+    
+    state.cnc_points[corner] = machine_coord
+    state.update_calibration_matrix()
+    
+    save_calibration_settings({
+        "cnc_points": state.cnc_points,
+        "matrix": state.calibration_matrix
+    })
+    
+    return {
+        "status": "ok",
+        "message": f"Successfully set CNC corner {corner} to position {machine_coord}",
+        "cnc_points": state.cnc_points,
+        "calibrated": state.calibration_matrix is not None
     }
 
 @app.post("/api/calibration/set_aruco")
@@ -1814,6 +1869,7 @@ async def clear_calibration():
     state.latest_detected_markers = {}
     state.latest_detected_markers_time = {}
     state.aruco_standard_points = {}
+    state.cnc_points = {}
     camera_manager.smoothed_aruco_markers = {}
     state.home_set = False
     state.home_markers = {}
@@ -1825,6 +1881,7 @@ async def clear_calibration():
         "matrix": state.calibration_matrix,
         "draw_overlay": state.draw_overlay,
         "aruco_standard_points": state.aruco_standard_points,
+        "cnc_points": state.cnc_points,
         "home_set": state.home_set,
         "home_markers": state.home_markers,
         "home_snapshot": state.home_snapshot,
