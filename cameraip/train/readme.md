@@ -18,6 +18,8 @@ venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --de
 
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 100 --batch 8 --device cuda
 
+venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 100 --batch 8 --device cuda
+
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 50 --batch 8 --device cpu
 
 venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 50 --batch 4 --device amd

@@ -367,9 +367,13 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
     return M.tolist()
 
 # ONNX Detection Helper Functions (cập nhật 3)
-def get_ort_session():
+def get_ort_session(forceload=False):
+    if forceload ==True:
+        state.ort_session=None
+        pass
     if state.ort_session is None:
-        model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/runs/detect/train/weights/best.onnx"
+        model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/best.onnx"
+        print("model_path",model_path)
         if os.path.exists(model_path):
             try:
                 logger.info(f"Loading ONNX model from {model_path}...")
@@ -1309,6 +1313,13 @@ class DummySerial:
 class ConnectionConfig(BaseModel):
     port: str
     baudrate: int
+
+# get_ort_session
+
+@app.get("/api/reload-ai-model")
+def load_onnx_session():
+    get_ort_session(forceload=True)
+    return {"status": "ok", "message": "Model reloaded successfully"}
 
 @app.post("/api/connect")
 async def connect(config: ConnectionConfig):

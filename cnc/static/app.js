@@ -31,6 +31,8 @@ const machineState = document.getElementById("machine-state");
 const portInput = document.getElementById("port-input");
 const baudrateInput = document.getElementById("baudrate-input");
 const connectBtn = document.getElementById("connect-btn");
+//reload-ai-model-btn
+const reloadAiModelBtn = document.getElementById("reload-ai-model-btn");
 const portWarning = document.getElementById("port-warning");
 const portWarningText = document.getElementById("port-warning-text");
 
@@ -462,6 +464,18 @@ function setupEventListeners() {
             populateDevices(true);
         });
     }
+
+    reloadAiModelBtn.addEventListener("click", async () => {
+        try {
+            const res = await fetch("/api/reload-ai-model", { method: "GET" });
+            const data = await res.json();
+            if (data.status === "error") {
+                logSystemMessage(`Reload AI model error: ${data.message}`);
+            }
+        } catch (e) {
+            logSystemMessage(`Network error reloading AI model: ${e}`);
+        }
+    });
 
     // Port Connection
     connectBtn.addEventListener("click", async () => {
@@ -1120,7 +1134,29 @@ function setupEventListeners() {
             }
         });
     }
+    function isPointInPolygon(cx, cy, points) {
+        // Sắp xếp các điểm theo thứ tự vòng tròn (TL -> TR -> BR -> BL)
+        const polygon = [
+            points.TL,
+            points.TR,
+            points.BR,
+            points.BL
+        ];
 
+        let inside = false;
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const xi = polygon[i][0], yi = polygon[i][1];
+            const xj = polygon[j][0], yj = polygon[j][1];
+
+            // Thuật toán bắn tia Ray-casting
+            const intersect = ((yi > cy) !== (yj > cy))
+                && (cx < (xj - xi) * (cy - yi) / (yj - yi) + xi);
+
+            if (intersect) inside = !inside;
+        }
+
+        return inside;
+    }
     // Camera stream click to move (cập nhật 5)
     cameraStreamImg.addEventListener("click", async (e) => {
         if (!isConnected) {
@@ -1139,6 +1175,13 @@ function setupEventListeners() {
         // Scale to 720x720 coordinate space (cập nhật 11)
         const cx = (clickX / rect.width) * 720.0;
         const cy = (clickY / rect.height) * 720.0;
+
+        // arucoStandardPoints
+        const insideStrict = isPointInPolygon(cx, cy, arucoStandardPoints);
+        if (!insideStrict) {
+            alert("Điểm Không nằm trong tứ giác ArUco: " + JSON.stringify(arucoStandardPoints));
+            return;
+        }
 
         // Spawn visual ripple ring
         const parentRect = cameraStreamImg.parentElement.getBoundingClientRect();
@@ -1172,6 +1215,31 @@ function setupEventListeners() {
         }
     });
 
+    // 1. Định nghĩa function riêng biệt
+    async function handleCornerArucoClick(corner, px, py) {
+
+        logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
+
+        try {
+            const res = await fetch("/api/calibration/set_manual_corner", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ corner: corner.id, x: px, y: py })
+            });
+
+            const data = await res.json();
+
+            if (data.status === "ok") {
+                logSystemMessage(`📐 Set ${corner.id} successfully!`);
+                fetchCalibrationConfig(); // Đảm bảo hàm này tồn tại trong phạm vi (scope) của bạn
+            } else {
+                logSystemMessage(`❌ Failed to set manual corner: ${data.message}`);
+            }
+        } catch (err) {
+            logSystemMessage(`❌ Network error during manual corner calibration: ${err}`);
+        }
+    }
+
     // Camera stream right-click to manually set ArUco corners (cập nhật 13)
     cameraStreamImg.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -1193,13 +1261,13 @@ function setupEventListeners() {
         menu.id = "camera-context-menu";
         menu.className = "camera-context-menu";
         menu.style.left = `${e.clientX + window.scrollX}px`;
-        menu.style.top = `${e.clientY + window.scrollY}px`;
+        menu.style.top = `${e.clientY + window.scrollY - 70}px`;
 
         const corners = [
             { id: "TL", label: "📐 Set Top-Left (TL)" },
             { id: "TR", label: "📐 Set Top-Right (TR)" },
-            { id: "BR", label: "📐 Set Bottom-Right (BR)" },
-            { id: "BL", label: "📐 Set Bottom-Left (BL)" }
+            { id: "BL", label: "📐 Set Bottom-Left (BL)" },
+            { id: "BR", label: "📐 Set Bottom-Right (BR)" }
         ];
 
         corners.forEach(corner => {
@@ -1208,23 +1276,24 @@ function setupEventListeners() {
             item.innerText = corner.label;
             item.addEventListener("click", async () => {
                 menu.remove();
-                logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
-                try {
-                    const res = await fetch("/api/calibration/set_manual_corner", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ corner: corner.id, x: px, y: py })
-                    });
-                    const data = await res.json();
-                    if (data.status === "ok") {
-                        logSystemMessage(`📐 Set ${corner.id} successfully!`);
-                        fetchCalibrationConfig();
-                    } else {
-                        logSystemMessage(`❌ Failed to set manual corner: ${data.message}`);
-                    }
-                } catch (err) {
-                    logSystemMessage(`❌ Network error during manual corner calibration: ${err}`);
-                }
+                await handleCornerArucoClick(corner, px, py);
+                // logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
+                // try {
+                //     const res = await fetch("/api/calibration/set_manual_corner", {
+                //         method: "POST",
+                //         headers: { "Content-Type": "application/json" },
+                //         body: JSON.stringify({ corner: corner.id, x: px, y: py })
+                //     });
+                //     const data = await res.json();
+                //     if (data.status === "ok") {
+                //         logSystemMessage(`📐 Set ${corner.id} successfully!`);
+                //         fetchCalibrationConfig();
+                //     } else {
+                //         logSystemMessage(`❌ Failed to set manual corner: ${data.message}`);
+                //     }
+                // } catch (err) {
+                //     logSystemMessage(`❌ Network error during manual corner calibration: ${err}`);
+                // }
             });
             menu.appendChild(item);
         });
@@ -1328,7 +1397,7 @@ function setupEventListeners() {
             if (badge) {
                 const hasAruco = arucoStandardPoints[key] !== undefined;
                 const hasCnc = cncPoints[key] !== undefined;
-                
+
                 badge.classList.remove("calibrated", "detected");
                 if (hasAruco && hasCnc) {
                     badge.classList.add("calibrated");
@@ -1414,7 +1483,7 @@ function setupEventListeners() {
             // Dynamically sync isCalibrated and isHomeSet status from backend
             isCalibrated = data.calibration_matrix !== null;
             isHomeSet = data.home_set || false;
-            
+
             arucoStandardPoints = data.aruco_standard_points || {};
             cncPoints = data.cnc_points || {};
 
@@ -1471,31 +1540,35 @@ function setupEventListeners() {
             });
         }
 
-        const recordCorner = async (corner) => {
-            try {
-                const res = await fetch("/api/calibration/record", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ corner: corner })
-                });
-                const data = await res.json();
-                if (data.status === "ok") {
-                    calibratedPoints = data.config;
-                    isCalibrated = data.calibrated;
-                    window.updateCalibrationUI();
-                    logSystemMessage(`Calibrated ${corner} successfully!`);
-                } else {
-                    logSystemMessage(`Calibration failed: ${data.message}`);
-                }
-            } catch (e) {
-                logSystemMessage(`Network error during calibration: ${e}`);
-            }
-        };
+        // const recordCorner = async (corner) => {
+        //     try {
+        //         const res = await fetch("/api/calibration/record", {
+        //             method: "POST",
+        //             headers: { "Content-Type": "application/json" },
+        //             body: JSON.stringify({ corner: corner })
+        //         });
+        //         const data = await res.json();
+        //         if (data.status === "ok") {
+        //             calibratedPoints = data.config;
+        //             isCalibrated = data.calibrated;
+        //             window.updateCalibrationUI();
+        //             logSystemMessage(`Calibrated ${corner} successfully!`);
+        //         } else {
+        //             logSystemMessage(`Calibration failed: ${data.message}`);
+        //         }
+        //     } catch (e) {
+        //         logSystemMessage(`Network error during calibration: ${e}`);
+        //     }
+        // };
 
-        if (btnCalTL) btnCalTL.addEventListener("click", () => recordCorner("TL"));
-        if (btnCalTR) btnCalTR.addEventListener("click", () => recordCorner("TR"));
-        if (btnCalBR) btnCalBR.addEventListener("click", () => recordCorner("BR"));
-        if (btnCalBL) btnCalBL.addEventListener("click", () => recordCorner("BL"));
+        // if (btnCalTL) btnCalTL.addEventListener("click", () => recordCorner("TL"));
+        // if (btnCalTR) btnCalTR.addEventListener("click", () => recordCorner("TR"));
+        // if (btnCalBR) btnCalBR.addEventListener("click", () => recordCorner("BR"));
+        // if (btnCalBL) btnCalBL.addEventListener("click", () => recordCorner("BL"));
+        if (btnCalTL) btnCalTL.addEventListener("click", () => { });
+        if (btnCalTR) btnCalTR.addEventListener("click", () => { });
+        if (btnCalBR) btnCalBR.addEventListener("click", () => { });
+        if (btnCalBL) btnCalBL.addEventListener("click", () => { });
 
         // CNC mapping button click listeners
         const btnSetCncTL = document.getElementById("btn-set-cnc-tl");
@@ -1835,6 +1908,13 @@ function setupEventListeners() {
             if (!isConnected || !isHomeSet) return;
             const x = parseFloat(gotoX ? gotoX.value : 0) || 0;
             const y = parseFloat(gotoY ? gotoY.value : 0) || 0;
+
+            // const insideStrict = isPointInPolygon(x, y, arucoStandardPoints);
+            // if (!insideStrict) {
+            //     alert("Điểm không nằm trong tứ giác ArUco: "+ JSON.stringify(arucoStandardPoints));
+            //     return;
+            // }
+
             // Use the global gesture feedrate
             const gestureFeedrateInput = document.getElementById("gesture-feedrate");
             const feedrate = parseFloat(gestureFeedrateInput ? gestureFeedrateInput.value : 4000) || 4000;
