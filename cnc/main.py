@@ -160,15 +160,6 @@ class ControllerState:
         self.calibration_points = cal_settings["points"]
         self.calibration_matrix = cal_settings["matrix"]
         self.draw_overlay = cal_settings["draw_overlay"]
-        self.latest_detected_markers = {} # {"TL": [x, y], ...}
-        # cập nhật 10: timestamps per corner (unix epoch float)
-        self.latest_detected_markers_time: Dict[str, float] = {}  # {"TL": t, ...}
-        # cập nhật 10: history ring buffer, max 500 items per corner
-        self.aruco_history: Dict[str, deque] = {
-            name: deque(maxlen=500) for name in ["TL", "TR", "BL", "BR"]
-        }
-        # cập nhật 10: YOLO detection history, max 500 batches
-        self.yolo_history: deque = deque(maxlen=500)
         
         # Home settings (cập nhật 2)
         self.home_set = cal_settings.get("home_set", False)
@@ -177,6 +168,15 @@ class ControllerState:
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
         self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
         self.home_pixel = cal_settings.get("home_pixel", [360.0, 360.0])
+
+        self.latest_detected_markers = dict(self.aruco_standard_points) # sync with manual points (cập nhật 19)
+        self.latest_detected_markers_time: Dict[str, float] = {name: time.time() for name in self.aruco_standard_points}
+        # cập nhật 10: history ring buffer, max 500 items per corner
+        self.aruco_history: Dict[str, deque] = {
+            name: deque(maxlen=500) for name in ["TL", "TR", "BL", "BR"]
+        }
+        # cập nhật 10: YOLO detection history, max 500 batches
+        self.yolo_history: deque = deque(maxlen=500)
 
         # UI Preferences (cập nhật 18)
         self.step_distance = cal_settings.get("step_distance", 10.0)
@@ -680,80 +680,12 @@ class CameraManager:
         return {name: data[0].tolist() for name, data in found.items()}
 
     def _aruco_loop(self, index: int):
-        logger.info(f"[ArUco] Thread started for camera {index}")
-        dict_id = cv2.aruco.DICT_4X4_1000
-        try:
-            aruco_dict = cv2.aruco.getPredefinedDictionary(dict_id)
-            parameters = cv2.aruco.DetectorParameters()
-            use_new_api = True
-        except AttributeError:
-            aruco_dict = cv2.aruco.Dictionary_get(dict_id)
-            parameters = cv2.aruco.DetectorParameters_create()
-            use_new_api = False
-
-        latest = {"TL": None, "TR": None, "BR": None, "BL": None}
-        latest_time = {}
-
+        logger.info(f"[ArUco] Thread started for camera {index} (dynamic detection disabled - cập nhật 19)")
         while True:
             with self.lock:
                 if not self.running.get(index, False):
                     break
-                raw = self.latest_raw_frames.get(index)
-
-            if raw is None:
-                time.sleep(0.05)
-                continue
-
-            frame = raw.copy()
-            h, w = frame.shape[:2]
-            cx_frame, cy_frame = w // 2, h // 2
-
-            gray_full = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            gray_full = self._clahe.apply(gray_full)
-
-            detected_this = {}
-            try:
-                detected_this = self._detect_aruco_fullframe(
-                    gray_full, aruco_dict, parameters, use_new_api,
-                    cx_frame, cy_frame)
-            except Exception as e:
-                logger.error(f"[ArUco] Detection error camera {index}: {e}")
-
-            now = time.time()
-            with self.lock:
-                if index not in self.smoothed_aruco_markers:
-                    self.smoothed_aruco_markers[index] = {"TL": None, "TR": None, "BR": None, "BL": None}
-                smoothed_dict = self.smoothed_aruco_markers[index]
-
-            for name, pt in detected_this.items():
-                if smoothed_dict[name] is None:
-                    smoothed_dict[name] = pt
-                else:
-                    last_pt = smoothed_dict[name]
-                    # EMA smoothing with alpha=0.15 for high stability (cập nhật 12)
-                    smoothed_x = 0.15 * pt[0] + 0.85 * last_pt[0]
-                    smoothed_y = 0.15 * pt[1] + 0.85 * last_pt[1]
-                    smoothed_dict[name] = [smoothed_x, smoothed_y]
-
-                smoothed_pt = smoothed_dict[name]
-                latest[name] = smoothed_pt
-                latest_time[name] = now
-
-            with self.lock:
-                self.aruco_latest[index] = {k: v for k, v in latest.items() if v is not None}
-                self.aruco_latest_time[index] = {k: v for k, v in latest_time.items() if latest.get(k) is not None}
-                for name, pt in detected_this.items():
-                    smoothed_pt = smoothed_dict[name]
-                    self.aruco_history[index][name].append({"pt": smoothed_pt, "time": now})
-
-            for name, pt in detected_this.items():
-                smoothed_pt = smoothed_dict[name]
-                state.latest_detected_markers[name] = smoothed_pt
-                state.latest_detected_markers_time[name] = now
-                state.aruco_history[name].append({"pt": smoothed_pt, "time": now})
-
-            time.sleep(0.125)
-
+            time.sleep(0.5)
         logger.info(f"[ArUco] Thread stopped for camera {index}")
 
     # ── Thread 3: YOLO object detection ──────────────────────────────────────
@@ -1813,6 +1745,8 @@ async def set_manual_corner(config: ManualCornerConfig):
     if not state.aruco_standard_points:
         state.aruco_standard_points = {}
     state.aruco_standard_points[config.corner] = [config.x, config.y]
+    state.latest_detected_markers[config.corner] = [config.x, config.y]
+    state.latest_detected_markers_time[config.corner] = time.time()
     
     save_calibration_settings({
         "aruco_standard_points": state.aruco_standard_points
@@ -1829,6 +1763,7 @@ async def clear_calibration():
     state.calibration_points = {}
     state.calibration_matrix = None
     state.latest_detected_markers = {}
+    state.latest_detected_markers_time = {}
     state.aruco_standard_points = {}
     camera_manager.smoothed_aruco_markers = {}
     state.home_set = False
@@ -1852,6 +1787,8 @@ async def clear_calibration():
 @app.post("/api/calibration/reset_aruco")
 async def reset_aruco():
     state.aruco_standard_points = {}
+    state.latest_detected_markers = {}
+    state.latest_detected_markers_time = {}
     save_calibration_settings({
         "aruco_standard_points": state.aruco_standard_points
     })

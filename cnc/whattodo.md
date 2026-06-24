@@ -120,3 +120,7 @@ sau này mô hình sẽ còn các labels khác (kể cả sittng, ccnhead đã c
 Step Size (Distance) và Jog Feed Rate, Feedrate,Dist (mm),Swipe/Dwell (s),Tap Dwell (s) cần thành global sử dụng cho tất cả các chế độ để di chuyển của đầu CNC, từ tab , vuốt, click trên video di chuyển đầu cnc, go to x y, moving around , go to largest object ... 
 cnc/pen_settings.json cần merger vào cnc/calibration_settings.json để chỉ còn 1 file và thống nhất về các chỉ số cấu hình sử dụng cho toàn bộ hệ thống 
 Vuốt dạng nhấc dần đầu bút lên đang bị giật giật, chuyển về ban đầu, nhấn bút vuốt rồi tới cuối nhấc hẳn bút, bỏ nhấc dần dần 
+
+**cập nhật 19** bỏ tính toán động 4 aruco bằng detect camera, dùng hoàn toàn 4 điểm aruco được set manual, từ đó có gốc tọa độ chính xác để ánh xạ tính toán với set home cnc, cnc header của croped frame 720x720, việc click video di chuyển, hay detect largest object sẽ theo tọa độ của 4 điểm aruco set manual .
+
+**cập nhật 20** kiểm tra lại việc tính toán click chuột trên frame video croped 720x720, ảnh UI cũng đang hiển thị 720x720 thì cần ánh xạ tính toán tọa độ chính xác. khi tôi click Go To X,Y về home thì đã về đúng vị trí pixel trên ảnh, khi click vào điểm bất kỳ trên video để di chuyển tới đó thì vị trí đầu bút CNC đi tới không đúng vị trí pixel vừa click vào, kiểm tra và sửa chính xác 
