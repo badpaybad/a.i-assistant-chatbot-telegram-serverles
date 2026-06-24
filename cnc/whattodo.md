@@ -123,4 +123,8 @@ Vuốt dạng nhấc dần đầu bút lên đang bị giật giật, chuyển v
 
 **cập nhật 19** bỏ tính toán động 4 aruco bằng detect camera, dùng hoàn toàn 4 điểm aruco được set manual, từ đó có gốc tọa độ chính xác để ánh xạ tính toán với set home cnc, cnc header của croped frame 720x720, việc click video di chuyển, hay detect largest object sẽ theo tọa độ của 4 điểm aruco set manual .
 
-**cập nhật 20** kiểm tra lại việc tính toán click chuột trên frame video croped 720x720, ảnh UI cũng đang hiển thị 720x720 thì cần ánh xạ tính toán tọa độ chính xác. khi tôi click Go To X,Y về home thì đã về đúng vị trí pixel trên ảnh, khi click vào điểm bất kỳ trên video để di chuyển tới đó thì vị trí đầu bút CNC đi tới không đúng vị trí pixel vừa click vào, kiểm tra và sửa chính xác 
+**cập nhật 20** kiểm tra lại việc tính toán click chuột trên frame video croped 720x720, ảnh UI cũng đang hiển thị 720x720 thì cần ánh xạ tính toán tọa độ chính xác. khi tôi click Go To X,Y về home thì đã về đúng vị trí pixel trên ảnh, khi click vào điểm bất kỳ trên video để di chuyển tới đó thì vị trí đầu bút CNC đi tới không đúng vị trí pixel vừa click vào, kiểm tra và sửa chính xác . 
+trục tọa độ của ảnh là tù vị trí gốc , OX trái sang phải là dương tăng dần , OY từ trên xuống là dương tăng dần
+set home của cnc cần đi theo, hiện tại việc di chuyển đầu cnc bị ngược chiều Y của ảnh 
+    việc di chuyển đầu CNC cần đúng tới vị trí click trên ảnh, hiện chưa đúng về Y, cần tính X,Y chính xác trên frame ảnh khi được click rồi transform và dựa trên home của cnc và di chuyển 
+    đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh 

@@ -1141,10 +1141,14 @@ function setupEventListeners() {
         const cy = (clickY / rect.height) * 720.0;
 
         // Spawn visual ripple ring
+        const parentRect = cameraStreamImg.parentElement.getBoundingClientRect();
+        const parentClickX = e.clientX - parentRect.left;
+        const parentClickY = e.clientY - parentRect.top;
+
         const ripple = document.createElement("div");
         ripple.className = "click-indicator-ring";
-        ripple.style.left = `${clickX}px`;
-        ripple.style.top = `${clickY}px`;
+        ripple.style.left = `${parentClickX}px`;
+        ripple.style.top = `${parentClickY}px`;
         cameraStreamImg.parentElement.appendChild(ripple);
         setTimeout(() => ripple.remove(), 600);
 

@@ -28,6 +28,28 @@ CALIBRATION_FILE = "calibration_settings.json"
 
 HOME_SNAPSHOT_FILE = "home_snapshot.jpg"
 
+def invert_gcode_y(gcode_line: str) -> str:
+    # Do not invert Y coordinate (cập nhật 20 - sửa lại)
+    return gcode_line
+
+def make_serial_wrapper(original_serial):
+    original_write = original_serial.write
+    
+    def wrapped_write(data):
+        if isinstance(data, bytes):
+            try:
+                decoded = data.decode('utf-8')
+                # Check if it looks like a G-code line (not single char real-time commands like '?' or '!')
+                if len(decoded) > 1 and any(cmd in decoded for cmd in ["G", "M", "$"]):
+                    inverted = invert_gcode_y(decoded)
+                    data = inverted.encode('utf-8')
+            except Exception as e:
+                logger.error(f"Error wrapping serial write: {e}")
+        return original_write(data)
+        
+    original_serial.write = wrapped_write
+    return original_serial
+
 def load_calibration_settings() -> dict:
     default_settings = {
         "points": {},
@@ -248,8 +270,9 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         pts = state.home_markers
         src = np.array([pts[c] for c in ["TL", "TR", "BR", "BL"]], dtype=np.float32)
         # We assume physical coordinates relative to the center (0,0):
-        # TL = (-100, 75), TR = (100, 75), BR = (100, -75), BL = (-100, -75)
-        dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
+        # TL = (-100, -75), TR = (100, -75), BR = (100, 75), BL = (-100, 75)
+        # Y is positive down (cập nhật 20)
+        dst = np.array([[-100.0, -75.0], [100.0, -75.0], [100.0, 75.0], [-100.0, 75.0]], dtype=np.float32)
         try:
             M, _ = cv2.findHomography(src, dst)
             # logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
@@ -265,16 +288,16 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         # Get list of valid corners recorded during homing
         home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in pts]
         if len(home_corners) >= 3:
-            cx_home = sum(pts[c][0] for c in home_corners) / len(home_corners)
-            cy_home = sum(pts[c][1] for c in home_corners) / len(home_corners)
+            # Use state.home_pixel which corresponds exactly to physical (0, 0)
+            hx_home, hy_home = state.home_pixel if (getattr(state, "home_pixel", None) is not None and len(state.home_pixel) == 2) else [360.0, 360.0]
             
-            denom_home = M[2, 0] * cx_home + M[2, 1] * cy_home + M[2, 2]
+            denom_home = M[2, 0] * hx_home + M[2, 1] * hy_home + M[2, 2]
             if abs(denom_home) > 1e-5:
-                hx_cal = (M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]) / denom_home
-                hy_cal = (M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]) / denom_home
+                hx_cal = (M[0, 0] * hx_home + M[0, 1] * hy_home + M[0, 2]) / denom_home
+                hy_cal = (M[1, 0] * hx_home + M[1, 1] * hy_home + M[1, 2]) / denom_home
             else:
-                hx_cal = M[0, 0] * cx_home + M[0, 1] * cy_home + M[0, 2]
-                hy_cal = M[1, 0] * cx_home + M[1, 1] * cy_home + M[1, 2]
+                hx_cal = M[0, 0] * hx_home + M[0, 1] * hy_home + M[0, 2]
+                hy_cal = M[1, 0] * hx_home + M[1, 1] * hy_home + M[1, 2]
             
             M_adj = M.copy()
             M_adj[0, :] -= hx_cal * M_adj[2, :]
@@ -313,13 +336,10 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
                     logger.debug(f"Successfully applied translation shift: {shift}")
                 except Exception as e:
                     logger.error(f"Error computing translation calibration alignment: {e}")
-            # Invert Y-axis dynamically to correct physical Y direction
-            M_adj[1, :] = -M_adj[1, :]
+            # Return adjusted matrix
             return M_adj.tolist()
-    # Invert Y-axis for fallback case
-    M_copy = M.copy()
-    M_copy[1, :] = -M_copy[1, :]
-    return M_copy.tolist()
+    # Return unmodified copy for fallback case
+    return M.tolist()
 
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session():
@@ -1024,15 +1044,21 @@ def parse_grbl_status(status_str: str):
         for key, val in matches:
             val = val.strip(",")
             if key == "WPos":
-                state.wpos = [float(x) for x in val.split(",")]
+                parts = [float(x) for x in val.split(",")]
+                # Do not invert Y coordinate (cập nhật 20 - sửa lại)
+                state.wpos = parts
                 # Calculate MPos if we have WCO
                 state.mpos = [w + o for w, o in zip(state.wpos, state.wco)]
             elif key == "MPos":
-                state.mpos = [float(x) for x in val.split(",")]
+                parts = [float(x) for x in val.split(",")]
+                # Do not invert Y coordinate (cập nhật 20 - sửa lại)
+                state.mpos = parts
                 # Calculate WPos if we have WCO
                 state.wpos = [m - o for m, o in zip(state.mpos, state.wco)]
             elif key == "WCO":
-                state.wco = [float(x) for x in val.split(",")]
+                parts = [float(x) for x in val.split(",")]
+                # Do not invert Y coordinate (cập nhật 20 - sửa lại)
+                state.wco = parts
             elif key == "Bf":
                 bf_parts = val.split(",")
                 if len(bf_parts) == 2:
@@ -1222,6 +1248,7 @@ class DummySerial:
                     match = re.search(rf"{axis}([-+]?[0-9]*\.?[0-9]+)", cmd, re.IGNORECASE)
                     if match:
                         val = float(match.group(1))
+                        # Do not invert Y coordinate (cập nhật 20 - sửa lại)
                         idx = {"X": 0, "Y": 1, "Z": 2}[axis]
                         state.wpos[idx] = val
                         state.mpos[idx] = val
@@ -1253,6 +1280,7 @@ async def connect(config: ConnectionConfig):
     try:
         if state.port_name.lower() in ["dummy", "mock"]:
             state.serial_port = DummySerial()
+            make_serial_wrapper(state.serial_port) # Wrap DummySerial to support transparent Y inversion (cập nhật 20)
             state.connected = True
             state.machine_state = "Idle"
             saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
@@ -1263,6 +1291,7 @@ async def connect(config: ConnectionConfig):
             
         # Open serial port
         state.serial_port = serial.Serial(state.port_name, state.baudrate, timeout=0.1)
+        make_serial_wrapper(state.serial_port) # Wrap physical serial port to support transparent Y inversion (cập nhật 20)
         state.connected = True
         state.machine_state = "Connecting"
         
