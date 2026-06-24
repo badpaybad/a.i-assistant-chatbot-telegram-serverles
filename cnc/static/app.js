@@ -431,7 +431,7 @@ function logSystemMessage(msg) {
     line.innerText = `[SYS] ${msg}`;
     consoleOutput.appendChild(line);
     // consoleOutput.scrollTop = consoleOutput.scrollHeight;
-    console.log(line);
+    console.log(msg);
 }
 
 // --- JOG CONTROLS & API TRIGGERS ---

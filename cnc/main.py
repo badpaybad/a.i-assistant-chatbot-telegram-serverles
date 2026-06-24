@@ -146,6 +146,8 @@ class ControllerState:
         self.port_name = "/dev/ttyACM0"
         self.baudrate = 115200
         self.connected = False
+
+        self.grbl_ack_event = asyncio.Event()
         
         # Telemetry
         self.machine_state = "Disconnected"
@@ -1101,6 +1103,9 @@ async def serial_reader_loop():
                     
                     # Check streaming acknowledgment
                     elif line == "ok" or "error" in line:
+                        # --- KÍCH HOẠT SỰ KIỆN CHO CÁC HÀM ĐANG ĐỢI ---
+                        state.grbl_ack_event.set()
+
                         if state.sent_buffer_lengths:
                             # Acknowledge line
                             state.sent_buffer_lengths.pop(0)
@@ -1116,7 +1121,21 @@ async def serial_reader_loop():
             state.connected = False
             await broadcast({"type": "connection", "connected": False, "message": f"Connection lost: {e}"})
             break
-
+async def wait_for_ok(timeout=1.0):
+    """
+    Đợi luồng đọc nền nhận được 'ok' hoặc 'error' từ GRBL mà không gây xung đột cổng Serial.
+    """
+    # 1. Xóa trạng thái của chuông về vô hiệu (chuẩn bị đợi)
+    state.grbl_ack_event.clear()
+    
+    try:
+        # 2. Ngồi đợi chuông reo hoặc hết thời gian timeout
+        await asyncio.wait_for(state.grbl_ack_event.wait(), timeout=timeout)
+        return True
+    except asyncio.TimeoutError:
+        # Quá thời gian chờ mà luồng nền chưa nhận được ok
+        return False
+        
 # Auto Query Loop
 async def status_polling_loop():
     last_save_time = time.time()
@@ -2162,27 +2181,42 @@ async def stop_moving_around():
     if state.moving_around_task:
         state.moving_around_task.cancel()
         state.moving_around_task = None
-        
-    # Send stop command to GRBL immediately
+        # Send stop command to GRBL immediately
     if state.connected and state.serial_port:
         try:
-            # Send feed hold
+            # 1. Phanh khẩn cấp lập tức (Ký tự real-time không cần \n)
             state.serial_port.write(b"!")
             state.serial_port.flush()
-            await asyncio.sleep(0.2)
-            # Send soft reset
+            await asyncio.sleep(0.2) # 200ms là đủ để motor dừng hẳn
+
+            # 2. Soft Reset để xóa sạch bộ đệm lệnh cũ
             state.serial_port.write(b"\x18")
             state.serial_port.flush()
-            await asyncio.sleep(0.5)
-            # Unlock
+            await asyncio.sleep(1) # Chờ 1000ms cho mạch khởi động lại
+
+            # 3. CHUẨN BỊ BỘ ĐỆM: Xóa sạch trạng thái Event cũ trước khi gửi lệnh có phản hồi 'ok'
+            state.grbl_ack_event.clear()
+
+            # 3. Mở khóa trạng thái Alarm sau Reset
             state.serial_port.write(b"$X\n")
             state.serial_port.flush()
-            await asyncio.sleep(0.2)
-            # Move back to origin
-            cmd = f"G90 G1 X0 Y0 F{state.gesture_feedrate:.0f}"
-            state.serial_port.write((cmd + "\n").encode())
+            await wait_for_ok(timeout=2.0)
+
+            # 5. Xóa Event một lần nữa để chuẩn bị đợi chữ 'ok' của lệnh di chuyển cuối cùng
+            state.grbl_ack_event.clear()
+
+            # 4. GỘP lện nhấc bút (M5) và lệnh về gốc tuyệt đối (G90 G21) làm MỘT dòng duy nhất
+            # Việc gộp này ép GRBL xử lý đồng thời: Nhấc bút trước rồi kéo motor về sau
+            cmd = f"G90 G21 M5 G01 X0 Y0 F{state.gesture_feedrate:.0f}\n"
+            
+            # print("ve goc toa do: ", cmd)
+            state.serial_port.write(cmd.encode())
             state.serial_port.flush()
+
+            await wait_for_ok(timeout=10.0) # Đợi luồng nền báo đã nhận ok khi máy về đích xong
+
             await broadcast({"type": "log", "direction": "out", "content": cmd})
+            
         except Exception as e:
             logger.error(f"Error stopping moving around loop: {e}")
             

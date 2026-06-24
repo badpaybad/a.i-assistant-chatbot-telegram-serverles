@@ -6,6 +6,9 @@ M5 (hoặc M3 S0)
 
 G21 G90          ; Đặt đơn vị mm, chế độ tọa độ tuyệt đối
 G00 X0 Y0        ; Lao nhanh về gốc (Điểm xuất phát ban đầu)
+
+G90 G1 X0 Y0 F5000 ; đi về gốc 
+
 G01 X50 Y0 F500  ; Đi thẳng sang phải 50mm để tới rìa đường tròn, hạ bút cắt
 G02 X-50 Y0 R50  ; Vẽ nửa vòng tròn trên (đến tọa độ đối diện X-50, bán kính R50)
 G02 X50 Y0 R50   ; Vẽ nửa vòng tròn dưới để khép kín về lại điểm X50
