@@ -1121,6 +1121,7 @@ async def serial_reader_loop():
             state.connected = False
             await broadcast({"type": "connection", "connected": False, "message": f"Connection lost: {e}"})
             break
+        
 async def wait_for_ok(timeout=1.0):
     """
     Đợi luồng đọc nền nhận được 'ok' hoặc 'error' từ GRBL mà không gây xung đột cổng Serial.
