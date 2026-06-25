@@ -135,3 +135,7 @@ Khi set manua 4 điểm aruco sẽ có gốc tọa độ trên croped frame 720x
         Tất cả các tính toán đều cần dựa vào các gốc tọa độ tương ứng set home cnc, các điểm aruco tl,tr,br,bl tương ứng cnc tl,tr,br,bl sẽ dùng khi go to object khi detect được, vẽ đường baseline cho việc vẽ tranh, click trên ảnh để di chuyển ... 
 các tính toán cần dựa trên các điểm: set home cnc (gốc tọa độ trên ảnh theo các aruco ), aruco tl,tr,br,bl , cnc tl,tr,br,bl 
     đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh 
+
+**cập nhật 22**
+
+dựa vào cnc/calibration_camera.py cnc/calibration_usage.py để sửa việc tính toán việc di chuyển trong 4 điểm aruco . 
