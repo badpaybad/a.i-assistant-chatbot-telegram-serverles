@@ -137,5 +137,4 @@ các tính toán cần dựa trên các điểm: set home cnc (gốc tọa độ
     đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh 
 
 **cập nhật 22**
-
-dựa vào cnc/calibration_camera.py cnc/calibration_usage.py để sửa việc tính toán việc di chuyển trong 4 điểm aruco . 
+dựa vào cnc/calibration_camera.py cnc/calibration_usage.py để sửa việc tính toán việc di chuyển khi click trên frame video. cần tham khảo lại các cập nhật trước cũng như code hiện tại. code hiện tại đã di chuyển tương đối đúng, cần chính xác hơn nhờ các calibration 
