@@ -125,3 +125,4 @@ cnc/re
 cnc/os
 cnc/getopt
 **/debug_original_labels/**
+**/captured_calibration_frames/**

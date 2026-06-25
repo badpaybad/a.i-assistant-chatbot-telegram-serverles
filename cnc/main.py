@@ -1130,9 +1130,6 @@ async def serial_reader_loop():
                     
                     # Check streaming acknowledgment
                     elif line == "ok" or "error" in line:
-                        # --- KÍCH HOẠT SỰ KIỆN CHO CÁC HÀM ĐANG ĐỢI ---
-                        state.grbl_ack_event.set()
-
                         if state.sent_buffer_lengths:
                             # Acknowledge line
                             state.sent_buffer_lengths.pop(0)
@@ -1141,6 +1138,10 @@ async def serial_reader_loop():
                             if state.stream_task:
                                 # We wake up stream_task or it checks dynamically
                                 pass
+
+                        # --- KÍCH HOẠT SỰ KIỆN CHO CÁC HÀM ĐANG ĐỢI ---
+                        state.grbl_ack_event.set()
+
             else:
                 await asyncio.sleep(0.01)
         except Exception as e:
