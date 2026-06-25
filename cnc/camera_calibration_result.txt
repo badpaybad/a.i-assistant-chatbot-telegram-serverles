@@ -1,14 +1,14 @@
 
 === HIỆU CHUẨN CAMERA THÀNH CÔNG ===
-Sai số trung bình (Re-projection Error): 0.2125 pixel
+Sai số trung bình (Re-projection Error): 0.2051 pixel
 
 Ma trận Camera (Camera Matrix):
-[[1.64876452e+03 0.00000000e+00 3.50030874e+02]
- [0.00000000e+00 1.65017701e+03 4.10828457e+02]
+[[1.64441423e+03 0.00000000e+00 3.57567486e+02]
+ [0.00000000e+00 1.64293465e+03 3.92759564e+02]
  [0.00000000e+00 0.00000000e+00 1.00000000e+00]]
 
 Hệ số biến dạng (Distortion Coefficients):
-[-6.97482590e-01  2.93592243e+00  7.92242088e-03  1.03801870e-02
- -2.41206726e+01]
+[-7.05781524e-01  3.23432313e+00  1.43830766e-02  5.22587831e-03
+ -2.62518225e+01]
 
-[THÀNH CÔNG] Đã ghi dữ liệu chuẩn mới vào file: 'camera_calibration_result.npz'
+[THÀNH CÔNG] Đã cập nhật ma trận mới vào file: 'camera_calibration_result.npz'
