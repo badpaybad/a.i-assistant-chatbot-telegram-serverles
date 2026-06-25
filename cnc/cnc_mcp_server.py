@@ -159,3 +159,26 @@ if __name__ == "__main__":
         asyncio.run(run_stdio())
 
 # pip install mcp fastapi uvicorn sse-starlette anyio pyserial
+
+"""
+curl -N -H "Accept: text/event-stream" http://localhost:8000/sse
+
+    response 
+        event: endpoint
+        data: /messages?session_id=9f155e4f20954fcd817e07750b1fae6f
+
+
+curl -X POST "http://localhost:8000/messages/?sessionId=9f155e4f20954fcd817e07750b1fae6f&session_id=9f155e4f20954fcd817e07750b1fae6f" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "jsonrpc": "2.0",
+       "method": "initialize",
+       "params": {
+         "protocolVersion": "2024-11-05",
+         "capabilities": {},
+         "clientInfo": {"name": "curl-test", "version": "1.0.0"}
+       },
+       "id": 1
+     }'
+
+"""
