@@ -3,23 +3,19 @@ import logging
 import serial
 import serial.tools.list_ports
 import json
-from mcp.server.models import InitializationOptions
-from mcp.server import NotificationOptions, Server
+import sys
+from mcp.server.lowlevel import Server
 import mcp.types as types
-from mcp.server.stdio import stdio_server
 
 # Khởi tạo Logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("mcp-cnc-advanced-server")
 
-# Biến toàn cục quản lý kết nối CNC biến đổi động
 cnc_connection = None
-
-# Khởi tạo MCP Server
 server = Server("mcp-cnc-advanced-controller")
 
 # ------------------------------------------------------------------
-# RESOURCES: Quản lý trạng thái kết nối hiện tại
+# RESOURCES & TOOLS (Logic xử lý phần cứng CNC)
 # ------------------------------------------------------------------
 @server.list_resources()
 async def handle_list_resources() -> list[types.Resource]:
@@ -27,7 +23,7 @@ async def handle_list_resources() -> list[types.Resource]:
         types.Resource(
             uri="cnc://connection_status",
             name="CNC Connection Status",
-            description="Thông tin cấu hình kết nối hiện tại (Port, Baudrate, Status).",
+            description="Thông tin cấu hình kết nối hiện tại.",
             mimeType="application/json"
         )
     ]
@@ -37,54 +33,36 @@ async def handle_read_resource(uri: str) -> str:
     global cnc_connection
     if uri == "cnc://connection_status":
         if cnc_connection and cnc_connection.is_open:
-            return json.dumps({
-                "connected": True,
-                "port": cnc_connection.port,
-                "baudrate": cnc_connection.baudrate
-            })
-        return json.dumps({"connected": false, "port": None, "baudrate": None})
+            return json.dumps({"connected": True, "port": cnc_connection.port, "baudrate": cnc_connection.baudrate})
+        return json.dumps({"connected": False, "port": None, "baudrate": None})
     raise ValueError(f"Không tìm thấy tài nguyên: {uri}")
 
-# ------------------------------------------------------------------
-# TOOLS: Định nghĩa các hành động dò tìm, kết nối và điều khiển
-# ------------------------------------------------------------------
 @server.list_tools()
 async def handle_list_tools() -> list[types.Tool]:
     return [
-        # Tool 1: Quét danh sách cổng USB/Serial hiện có
         types.Tool(
             name="scan_serial_ports",
-            description="Quét toàn bộ hệ thống để tìm các cổng USB Serial đang cắm. Trả về tên cổng, mô tả phần cứng và ID phần cứng để AI nhận biết thiết bị CNC.",
+            description="Quét toàn bộ hệ thống để tìm các cổng USB Serial đang cắm.",
             inputSchema={"type": "object", "properties": {}}
         ),
-        # Tool 2: Kết nối động vào một cổng cụ thể
         types.Tool(
             name="connect_cnc",
-            description="Thiết lập kết nối Serial tới máy CNC với cổng và baudrate tùy chọn.",
+            description="Thiết lập kết nối Serial tới máy CNC.",
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "port": {"type": "string", "description": "Tên cổng, ví dụ: '/dev/ttyUSB0' hoặc 'COM3'"},
-                    "baudrate": {"type": "integer", "description": "Tốc độ baud, mặc định cho Grbl thường là 115200", "default": 115200}
+                    "port": {"type": "string", "description": "Ví dụ: /dev/ttyUSB0 hoặc COM3"},
+                    "baudrate": {"type": "integer", "default": 115200}
                 },
                 "required": ["port"]
             }
         ),
-        # Tool 3: Ngắt kết nối
-        types.Tool(
-            name="disconnect_cnc",
-            description="Ngắt kết nối an toàn khỏi máy CNC hiện tại.",
-            inputSchema={"type": "object", "properties": {}}
-        ),
-        # Tool 4: Gửi G-code (chỉ chạy khi đã kết nối)
         types.Tool(
             name="send_gcode",
-            description="Gửi lệnh G-code đến máy CNC (Yêu cầu phải chạy connect_cnc trước).",
+            description="Gửi lệnh G-code đến máy CNC.",
             inputSchema={
                 "type": "object",
-                "properties": {
-                    "gcode": {"type": "string", "description": "Ví dụ: G0 X10 Y10 hoặc $H"}
-                },
+                "properties": {"gcode": {"type": "string"}},
                 "required": ["gcode"]
             }
         )
@@ -93,104 +71,91 @@ async def handle_list_tools() -> list[types.Tool]:
 @server.call_tool()
 async def handle_call_tool(name: str, arguments: dict | None) -> list[types.TextContent]:
     global cnc_connection
-
-    # HÀNH ĐỘNG 1: QUÉT CỔNG
     if name == "scan_serial_ports":
         ports = serial.tools.list_ports.comports()
-        if not ports:
-            return [types.TextContent(type="text", text="Không tìm thấy cổng USB/Serial nào đang kết nối với máy tính.")]
-        
-        port_list = []
-        for p in ports:
-            port_list.append({
-                "port": p.device,
-                "description": p.description,
-                "hwid": p.hwid
-            })
-        return [types.TextContent(type="text", text=json.dumps(port_list, indent=2))]
-
-    # HÀNH ĐỘNG 2: KẾT NỐI
+        return [types.TextContent(type="text", text=json.dumps([{"port": p.device, "desc": p.description} for p in ports], indent=2))]
+    
     elif name == "connect_cnc":
         port = arguments.get("port")
         baudrate = arguments.get("baudrate", 115200)
-
-        # Nếu đang có kết nối cũ thì đóng lại
-        if cnc_connection and cnc_connection.is_open:
-            cnc_connection.close()
-
         try:
+            if cnc_connection and cnc_connection.is_open:
+                cnc_connection.close()
             cnc_connection = serial.Serial(port, baudrate, timeout=1)
-            # Chờ một chút để vi điều khiển khởi động lại (Reset on Connect)
-            await asyncio.sleep(2)
-            # Đọc dòng chào mừng từ Grbl (nếu có)
-            welcome_msg = ""
-            if cnc_connection.in_waiting:
-                welcome_msg = cnc_connection.read(cnc_connection.in_waiting).decode(errors='ignore').strip()
-            
-            return [types.TextContent(
-                type="text", 
-                text=f"Kết nối THÀNH CÔNG tới {port} ở tốc độ {baudrate}.\nPhản hồi ban đầu từ CNC: {welcome_msg}"
-            )]
+            await asyncio.sleep(2) # Chờ chip nạp lại
+            return [types.TextContent(type="text", text=f"Kết nối thành công tới {port}")]
         except Exception as e:
-            return [types.TextContent(type="text", text=f"LỖI KẾT NỐI tới {port}: {str(e)}")]
-
-    # HÀNH ĐỘNG 3: NGẮT KẾT NỐI
-    elif name == "disconnect_cnc":
-        if cnc_connection and cnc_connection.is_open:
-            port_name = cnc_connection.port
-            cnc_connection.close()
-            return [types.TextContent(type="text", text=f"Đã đóng kết nối an toàn với cổng {port_name}.")]
-        return [types.TextContent(type="text", text="Hiện không có kết nối nào đang mở.")]
-
-    # HÀNH ĐỘNG 4: GỬI LỆNH G-CODE
+            return [types.TextContent(type="text", text=f"Lỗi kết nối: {str(e)}")]
+            
     elif name == "send_gcode":
         gcode = arguments.get("gcode", "").strip()
         if not cnc_connection or not cnc_connection.is_open:
-            return [types.TextContent(
-                type="text", 
-                text="LỖI: Chưa thiết lập kết nối tới CNC. Hãy yêu cầu quét cổng và kết nối trước."
-            )]
-        
-        try:
-            cnc_connection.write(f"{gcode}\n".encode())
-            await asyncio.sleep(0.1) # Chờ phần cứng xử lý
-            
-            # Đọc phản hồi phản hồi cho đến khi nhận được 'ok' hoặc 'error'
-            response_lines = []
-            timeout_counter = 0
-            while timeout_counter < 20: # Tránh loop vô hạn
-                if cnc_connection.in_waiting:
-                    line = cnc_connection.readline().decode().strip()
-                    if line:
-                        response_lines.append(line)
-                        if line.lower() == "ok" or "error" in line.lower():
-                            break
-                await asyncio.sleep(0.05)
-                timeout_counter += 1
-
-            return [types.TextContent(type="text", text=f"CNC Response:\n" + "\n".join(response_lines))]
-        except Exception as e:
-            return [types.TextContent(type="text", text=f"Lỗi khi truyền thông tin qua Serial: {str(e)}")]
+            return [types.TextContent(type="text", text="Lỗi: Chưa kết nối CNC.")]
+        cnc_connection.write(f"{gcode}\n".encode())
+        return [types.TextContent(type="text", text=f"Đã gửi lệnh: {gcode}")]
 
     raise ValueError(f"Không tìm thấy tool: {name}")
 
 # ------------------------------------------------------------------
-# RUN SERVER
+# ĐA GIAO THỨC KHỞI CHẠY (STDIO vs WEB HTTP/SSE)
 # ------------------------------------------------------------------
-async def main():
+async def run_stdio():
+    """Chạy chế độ STDIO chuẩn mực (Cho Cursor, Claude Desktop)"""
+    from mcp.server.stdio import stdio_server
+    logger.info("Đang chạy MCP Server ở chế độ STDIO...")
     async with stdio_server() as (read_stream, write_stream):
         await server.run(
-            read_stream,
-            write_stream,
-            InitializationOptions(
-                server_name="cnc-mcp-advanced",
-                server_version="1.1.0",
-                capabilities=server.get_capabilities(
-                    notification_options=NotificationOptions(),
-                    experimental_capabilities={},
-                ),
-            ),
+            read_stream, write_stream, server.create_initialization_options()
         )
 
+
+def run_web():
+    """Chạy chế độ Web Server bẻ khóa hoàn toàn Response bằng ASGI App thô"""
+    from fastapi import FastAPI, Request
+    from fastapi.responses import RedirectResponse
+    from mcp.server.sse import SseServerTransport
+    from starlette.routing import Mount
+    import uvicorn
+
+    # Định tuyến đích cho các gói tin nhắn phản hồi RPC
+    transport = SseServerTransport("/messages")
+
+    # BIẾN THÀNH ASGI APP THÔ: Không nhận Request, tuân thủ đúng chữ ký hàm ASGI (scope, receive, send)
+    async def handle_messages_asgi(scope, receive, send):
+        """Ủy quyền 100% cho MCP SDK tự đọc và tự đóng phản hồi HTTP"""
+        await transport.handle_post_message(scope, receive, send)
+
+    # Sử dụng Mount để gắn ASGI App thô này trực tiếp vào Router của FastAPI lúc khởi tạo
+    app = FastAPI(
+        title="CNC MCP Multi-Protocol Gateway", 
+        version="1.0.0",
+        routes=[
+            Mount("/messages", app=handle_messages_asgi)
+        ]
+    )
+
+    @app.get("/", include_in_schema=False)
+    async def index():
+        return RedirectResponse(url="/docs")
+
+    @app.get("/sse")
+    async def handle_sse(request: Request):
+        """Endpoint thiết lập kết nối SSE với Client và liên kết với nhân xử lý cùng lúc"""
+        async with transport.connect_sse(request.scope, request.receive, request._send) as (read_stream, write_stream):
+            await server.run(
+                read_stream,
+                write_stream,
+                server.create_initialization_options()
+            )
+
+    logger.info("Đang chạy Web Server tại http://localhost:8000 (Mở /docs để xem Swagger)...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    if len(sys.argv) > 1 and sys.argv[1] == "web":
+        run_web()
+    else:
+        asyncio.run(run_stdio())
+
+# pip install mcp fastapi uvicorn sse-starlette anyio pyserial
