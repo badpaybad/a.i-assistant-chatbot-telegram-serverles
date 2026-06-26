@@ -8,6 +8,8 @@ import serial
 import time
 from skimage.morphology import thin
 
+# pip install scikit-image networkx
+
 def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1, feed_rate=2000, mode="servo"):
     """
     Trích xuất trục trung hòa (xương chữ) thành 1 nét đơn duy nhất và xuất G-code.
@@ -217,7 +219,7 @@ if __name__ == "__main__":
         feed_rate=2000, 
         mode="servo" 
     )
-    
-    # Bước 2: Nếu tạo file thành công, tiến hành stream trực tiếp xuống máy GRBL CNC
-    if success:
-        send_gcode_to_grbl(serial_port, output_gcode)
+    for i in range(10):
+        # Bước 2: Nếu tạo file thành công, tiến hành stream trực tiếp xuống máy GRBL CNC
+        if success:
+            send_gcode_to_grbl(serial_port, output_gcode)
