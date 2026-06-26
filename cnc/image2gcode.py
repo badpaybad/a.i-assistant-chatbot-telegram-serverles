@@ -161,6 +161,155 @@ def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1,
     print(f"Đã xuất file G-code nét đơn hoàn hảo tại: {gcode_path}")
     return True
 
+def image_to_gcode(image_path, gcode_path, scale_factor=0.12, feed_rate=2000, mode="servo"):
+    """
+    Hàm chuyển đổi ảnh sang G-code dạng VẼ BAO QUANH CHỮ (Cả Outline ngoài và lỗ rỗng bên trong: O, D, P...).
+    Đã sửa hệ tọa độ đồng bộ với hàm perfect_single_line để đầu CNC di chuyển đúng hướng.
+    """
+    # 1. Đọc ảnh dưới dạng Grayscale
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f"❌ Không tìm thấy ảnh tại: {image_path}")
+        return False
+        
+    height, width = img.shape
+    
+    # Cân bằng sáng và làm mờ khử nhiễu hạt để đường viền bao quanh mượt hơn
+    gray = cv2.equalizeHist(img)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    
+    # Nhị phân hóa ảnh bằng phương pháp Adaptive Thresholding (Đảo ngược để chữ màu TRẮNG)
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                   cv2.THRESH_BINARY_INV, 11, 2)
+    
+    # THAY ĐỔI QUAN TRỌNG: Dùng RETR_TREE để lấy toàn bộ đường viền (bao gồm cả lỗ rỗng bên trong chữ)
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    
+    if not contours:
+        print("❌ Không tìm thấy bất kỳ đường viền nào trên ảnh!")
+        return False
+
+    # Loại bỏ các đốm chấm nhiễu siêu nhỏ (chỉ giữ lại nét có từ 3 điểm trở lên)
+    valid_contours = [c for c in contours if len(c) >= 3]
+    if not valid_contours:
+        print("❌ Không còn nét vẽ nào hợp lệ sau khi lọc nhiễu!")
+        return False
+
+    print(f"Tìm thấy {len(valid_contours)} đường viền (trong + ngoài). Đang tối ưu hành trình...")
+
+    # 2. SẮP XẾP ĐƯỜNG VIỀN TỐI ƯU HÀNH TRÌNH (Greedy Nearest Neighbor)
+    sorted_contours = []
+    current_pos = np.array([0, 0]) # Bắt đầu từ gốc giả định (0,0)
+    
+    while valid_contours:
+        closest_idx = -1
+        min_dist = float('inf')
+        reverse_contour = False
+        
+        for idx, contour in enumerate(valid_contours):
+            start_pt = contour[0][0]
+            end_pt = contour[-1][0]
+            
+            # Tính khoảng cách từ vị trí hiện tại tới điểm đầu hoặc điểm cuối của viền
+            dist_to_start = np.linalg.norm(current_pos - start_pt)
+            dist_to_end = np.linalg.norm(current_pos - end_pt)
+            
+            if dist_to_start < min_dist:
+                min_dist = dist_to_start
+                closest_idx = idx
+                reverse_contour = False
+                
+            if dist_to_end < min_dist:
+                min_dist = dist_to_end
+                closest_idx = idx
+                reverse_contour = True
+        
+        chosen_contour = valid_contours.pop(closest_idx)
+        if reverse_contour:
+            chosen_contour = np.flip(chosen_contour, axis=0)
+            
+        sorted_contours.append(chosen_contour)
+        current_pos = chosen_contour[-1][0]
+
+    # 3. TẠO NỘI DUNG G-CODE CHUẨN PHẦN CỨNG CHỐNG NGHẸN
+    gcode = [
+        ";--- KHOI TAO MAY VE BAO QUANH CHU FULL (OUTLINE IN/OUT) ---",
+        "G21 ; Don vi: mm",
+        "G90 ; Toa do tuyet doi",
+        "G10 L20 P1 X0 Y0 ; Tu dong reset vi tri hien tai lam goc (0,0)"
+    ]
+    
+    # Cấu hình Nhấc / Hạ bút
+    if mode == "servo":
+        gcode.append("M3 S0 ; Khoi tao xung Servo o muc 0")
+        def pen_up(): return "M5 ; Nhac but (Tat xung)"
+        def pen_down(): return "M3 S90 ; Ha but xuong (Goc 90 do)"
+    else:
+        def pen_up(): return "G0 Z2.0 ; Nhac dao len an toan"
+        def pen_down(): return "G1 Z-1.0 F500 ; Ha dau dao xuong"
+
+    # Ban đầu nhấc bút an toàn
+    gcode.append(pen_up())
+    gcode.append("G0 Z2.0 ; Dua Z len vi tri an toan")
+    gcode.append(f"G1 F{feed_rate} ; Thiet lap toc do tien dao mac dinh")
+
+    # 4. XUẤT TỌA ĐỘ ĐẦU CNC DI CHUYỂN
+    for i, contour in enumerate(sorted_contours):
+        path_points = [point[0] for point in contour]
+        
+        # Lọc bỏ các điểm quá sát nhau (< 0.8 pixel) để chống nghẹn bộ đệm mạch GRBL
+        clean_path = [path_points[0]]
+        for pt in path_points[1:]:
+            if np.linalg.norm(pt - clean_path[-1]) > 0.8:
+                clean_path.append(pt)
+                
+        # Tự động đóng vùng viền: Thêm lại điểm đầu tiên vào cuối đường nếu chưa khép kín
+        if len(clean_path) > 1 and np.linalg.norm(clean_path[-1] - clean_path[0]) > 0.1:
+            clean_path.append(clean_path[0])
+
+        # Tiến hành ghi lệnh G-code
+        if len(clean_path) > 1:
+            gcode.append(f"; --- Duong vien thu {i+1} ---")
+            
+            # TỌA ĐỘ ĐỒNG BỘ: Nhân trực tiếp với scale_factor giống hàm nét đơn
+            x_start = clean_path[0][0] * scale_factor
+            y_start = clean_path[0][1] * scale_factor
+            
+            # Bước A: Di chuyển nhanh G0 đến điểm bắt đầu viền (Lúc này đang nhấc bút)
+            gcode.append(f"G0 X{x_start:.3f} Y{y_start:.3f}")
+            
+            # Bước B: Hạ bút / đầu dao xuống
+            gcode.append(pen_down())
+            
+            # Bước C: Ép điểm di chuyển đầu tiên chạy chậm F300 để servo kịp đáp ứng cơ học
+            first_move = clean_path[1]
+            x_first = first_move[0] * scale_factor
+            y_first = first_move[1] * scale_factor
+            gcode.append(f"G1 X{x_first:.3f} Y{y_first:.3f} F300")
+            
+            # Bước D: Chạy các điểm còn lại theo tốc độ feed_rate chuẩn
+            for pt in clean_path[2:]:
+                x = pt[0] * scale_factor
+                y = pt[1] * scale_factor
+                gcode.append(f"G1 X{x:.3f} Y{y:.3f} F{feed_rate}")
+                
+            # Bước E: Vẽ xong một vòng bao quanh (hoặc lỗ trong) thì nhấc bút lên
+            gcode.append(pen_up())
+
+    # 5. KẾT THÚC CHƯƠNG TRÌNH
+    gcode.append(";--- KET THUC ---")
+    gcode.append("G0 Z2.0")
+    gcode.append("G0 X0 Y0 ; Quay ve goc toa do an toan")
+    gcode.append("M5 ; Tat hoan toan Spindle/Servo")
+    gcode.append("M30 ; Ket thuc chuong trinh")
+
+    # Ghi nội dung ra file
+    with open(gcode_path, "w") as f:
+        f.write("\n".join(gcode))
+        
+    print(f"✅ Đã xuất file G-code vẽ TOÀN BỘ OUTLINE (Trong + Ngoài) thành công: {gcode_path}")
+    return True
+
 
 def send_gcode_to_grbl(port_name, gcode_file_path):
     """
@@ -219,7 +368,20 @@ if __name__ == "__main__":
         feed_rate=2000, 
         mode="servo" 
     )
-    for i in range(10):
-        # Bước 2: Nếu tạo file thành công, tiến hành stream trực tiếp xuống máy GRBL CNC
-        if success:
-            send_gcode_to_grbl(serial_port, output_gcode)
+    image_to_gcode(
+        image_path=input_image, 
+        gcode_path=output_gcode +"1.cn", 
+        scale_factor=0.12, 
+        feed_rate=2000, 
+        mode="servo" 
+    )       
+    
+    send_gcode_to_grbl(serial_port, output_gcode)     
+    
+    send_gcode_to_grbl(serial_port, output_gcode +"1.cn")
+    
+    # for i in range(10):
+    #     # Bước 2: Nếu tạo file thành công, tiến hành stream trực tiếp xuống máy GRBL CNC
+    #     if success:
+    #         # send_gcode_to_grbl(serial_port, output_gcode)
+    #         send_gcode_to_grbl(serial_port, output_gcode +"1.cn")
