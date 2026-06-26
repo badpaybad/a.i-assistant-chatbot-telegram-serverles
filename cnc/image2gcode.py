@@ -397,7 +397,7 @@ if __name__ == "__main__":
         mode="servo" 
     )       
 
-    # send_gcode_to_grbl(serial_port, output_gcode)     
+    send_gcode_to_grbl(serial_port, output_gcode)     
     
     send_gcode_to_grbl(serial_port, output_gcode +"1.cn")
     
