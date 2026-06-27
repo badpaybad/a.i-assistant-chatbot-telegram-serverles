@@ -166,3 +166,13 @@ gcode editor gcode-editor-panel cần chiếm 1/4 độ rộng của page. min w
 
 **cập nhật 27** bổ xung nút <button class="btn btn-success" id="btn-editor-preview-in-video-frame" ... ></button> button này khi click sẽ dựa vào video frame ở div id=camera-floating-panel , dựa vào object detect ra cnchead để lấy vị trí của đầu cnc trong video frame và vẽ gcode đã chỉnh sửa ở gcode editor tương ứng vào video frame UI
     cnc header object detected là class_id=0 hoặc class_name=cnchead
+
+**cập nhật 28**  <div class="editor-canvas-wrapper" id="editor-canvas-wrapper">
+                    <canvas id="editor-canvas" width="720" height="720"></canvas>
+                </div> 
+trong thẻ div trên cần bổ xung side menu bên phải cho id="editor-canvas" dựa vào code cnc/image2gcodesketch.py cần lấy ra các chỉ số để đưa lên UI cho phép người dùng thay đổi động để lấy sketch , sketch này sẽ tạo ra các gcode đã chỉnh sửa để xem preview thay đổi trên frame video
+khi chọn file ảnh ở 2. Chọn File Ảnh / SVG  . thì Sketch Settings cần có các UI control để thay đổi thông số liên quan để tạo sketch, thay đổi realtime khi người dùng thay đổi UI control, tạo ra gcode đã chỉnh sửa để hiển thị lên frame video 
+
+Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
+    từng filter đều cần có check box để apply vào ảnh lấy sketch chuyển thành gcode đã chỉnh sửa hay không 
+    các logic hiển thị trước đó lên framevideo , editor canvas draw,toolpath view đang đúng , chỉ riêng cnc/image2gcodesketch.py dang bị sai trục Y, cần sửa lại  

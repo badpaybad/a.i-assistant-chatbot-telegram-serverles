@@ -617,6 +617,116 @@
                 </div>
                 <div class="editor-canvas-wrapper" id="editor-canvas-wrapper">
                     <canvas id="editor-canvas" width="720" height="720"></canvas>
+                    
+                    <!-- Sketch Parameters Side Menu -->
+                    <div class="editor-sketch-sidebar" id="editor-sketch-sidebar">
+                        <div class="sketch-sidebar-header">
+                            <h4>Sketch Settings</h4>
+                        </div>
+                        <div class="sketch-sidebar-body">
+                             <!-- Preprocessing & Processing Filters -->
+                            <div class="sketch-param-group">
+                                <div class="group-title">Filters Configuration</div>
+                                <div class="checkbox-row" style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="sketch-use-clahe" checked style="accent-color: var(--warning); cursor: pointer;">
+                                        Apply CLAHE (Contrast)
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="sketch-use-blur" checked style="accent-color: var(--warning); cursor: pointer;">
+                                        Apply Gaussian Blur
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="sketch-use-connect" checked style="accent-color: var(--warning); cursor: pointer;">
+                                        Connect Edges (Close)
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="sketch-use-thin" checked style="accent-color: var(--warning); cursor: pointer;">
+                                        Thin Edges (Erode)
+                                    </label>
+                                    <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                        <input type="checkbox" id="sketch-use-len-filter" checked style="accent-color: var(--warning); cursor: pointer;">
+                                        Filter Short Contours
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- CLAHE Group -->
+                            <div class="sketch-param-group">
+                                <div class="slider-header-flex">
+                                    <label for="sketch-clahe-clip">CLAHE Clip Limit</label>
+                                    <span class="param-val" id="val-sketch-clahe-clip">1.5</span>
+                                </div>
+                                <input type="range" id="sketch-clahe-clip" min="1.0" max="5.0" step="0.1" value="1.5">
+                            </div>
+                            
+                            <!-- Blur Group -->
+                            <div class="sketch-param-group">
+                                <div class="slider-header-flex">
+                                    <label for="sketch-blur-size">Gaussian Blur Size</label>
+                                    <span class="param-val" id="val-sketch-blur-size">3 px</span>
+                                </div>
+                                <input type="range" id="sketch-blur-size" min="1" max="15" step="2" value="3">
+                            </div>
+                            
+                            <!-- Canny Ultra Group -->
+                            <div class="sketch-param-group">
+                                <div class="group-title">Canny Ultra (Fine Details)</div>
+                                <div class="slider-header-flex">
+                                    <label for="sketch-canny-ultra-low">Low Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-ultra-low">5</span>
+                                </div>
+                                <input type="range" id="sketch-canny-ultra-low" min="1" max="100" step="1" value="5">
+                                
+                                <div class="slider-header-flex" style="margin-top: 6px;">
+                                    <label for="sketch-canny-ultra-high">High Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-ultra-high">25</span>
+                                </div>
+                                <input type="range" id="sketch-canny-ultra-high" min="5" max="150" step="1" value="25">
+                            </div>
+
+                            <!-- Canny Medium Group -->
+                            <div class="sketch-param-group">
+                                <div class="group-title">Canny Medium (Features)</div>
+                                <div class="slider-header-flex">
+                                    <label for="sketch-canny-medium-low">Low Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-medium-low">20</span>
+                                </div>
+                                <input type="range" id="sketch-canny-medium-low" min="5" max="150" step="1" value="20">
+                                
+                                <div class="slider-header-flex" style="margin-top: 6px;">
+                                    <label for="sketch-canny-medium-high">High Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-medium-high">60</span>
+                                </div>
+                                <input type="range" id="sketch-canny-medium-high" min="10" max="250" step="1" value="60">
+                            </div>
+
+                            <!-- Canny Strong Group -->
+                            <div class="sketch-param-group">
+                                <div class="group-title">Canny Strong (Outlines)</div>
+                                <div class="slider-header-flex">
+                                    <label for="sketch-canny-strong-low">Low Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-strong-low">50</span>
+                                </div>
+                                <input type="range" id="sketch-canny-strong-low" min="10" max="250" step="1" value="50">
+                                
+                                <div class="slider-header-flex" style="margin-top: 6px;">
+                                    <label for="sketch-canny-strong-high">High Thresh</label>
+                                    <span class="param-val" id="val-sketch-canny-strong-high">120</span>
+                                </div>
+                                <input type="range" id="sketch-canny-strong-high" min="20" max="500" step="1" value="120">
+                            </div>
+
+                            <!-- Min Contour Length Group -->
+                            <div class="sketch-param-group">
+                                <div class="slider-header-flex">
+                                    <label for="sketch-min-contour-len">Min Contour Length</label>
+                                    <span class="param-val" id="val-sketch-min-contour-len">5 px</span>
+                                </div>
+                                <input type="range" id="sketch-min-contour-len" min="1" max="50" step="1" value="5">
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="canvas-status-bar">
                     <span id="editor-status-segments">0 nét vẽ</span>
@@ -653,6 +763,7 @@
                             <select id="editor-algo">
                                 <option value="centerline" selected>Centerline (Nét giữa)</option>
                                 <option value="contour">Contour (Bao quanh)</option>
+                                <option value="sketch">Sketch (Đa ngưỡng Canny)</option>
                             </select>
                         </div>
                     </div>

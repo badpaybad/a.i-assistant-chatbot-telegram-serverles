@@ -2619,7 +2619,21 @@ async def gcode_editor_convert(
     scale_factor: float = Form(0.1),
     feed_rate: int = Form(2000),
     mode: str = Form("servo"),
-    algorithm: str = Form("centerline")
+    algorithm: str = Form("centerline"),
+    clahe_clip_limit: float = Form(1.5),
+    blur_size: int = Form(3),
+    canny_ultra_low: int = Form(5),
+    canny_ultra_high: int = Form(25),
+    canny_medium_low: int = Form(20),
+    canny_medium_high: int = Form(60),
+    canny_strong_low: int = Form(50),
+    canny_strong_high: int = Form(120),
+    min_contour_len: int = Form(5),
+    use_clahe: bool = Form(True),
+    use_blur: bool = Form(True),
+    use_connect: bool = Form(True),
+    use_thin: bool = Form(True),
+    use_len_filter: bool = Form(True)
 ):
     try:
         # Create temp folder if not exists
@@ -2657,6 +2671,33 @@ async def gcode_editor_convert(
                     feed_rate=feed_rate,
                     mode=mode
                 )
+            elif algorithm == "sketch":
+                from image2gcodesketch import maximum_detail_sketch
+                try:
+                    success = maximum_detail_sketch(
+                        image_path=temp_input_path,
+                        gcode_path=temp_gcode_path,
+                        contours_path=os.path.join(temp_dir, f"contours_{int(time.time())}.png"),
+                        scale_mm_per_pixel=scale_factor,
+                        speed=feed_rate,
+                        clahe_clip_limit=clahe_clip_limit,
+                        blur_size=blur_size,
+                        canny_ultra_low=canny_ultra_low,
+                        canny_ultra_high=canny_ultra_high,
+                        canny_medium_low=canny_medium_low,
+                        canny_medium_high=canny_medium_high,
+                        canny_strong_low=canny_strong_low,
+                        canny_strong_high=canny_strong_high,
+                        min_contour_len=min_contour_len,
+                        use_clahe=use_clahe,
+                        use_blur=use_blur,
+                        use_connect=use_connect,
+                        use_thin=use_thin,
+                        use_len_filter=use_len_filter
+                    )
+                except Exception as ex:
+                    logger.error(f"Error in sketch conversion: {ex}")
+                    success = False
             else: # contour
                 success = image_to_gcode(
                     image_path=temp_input_path,

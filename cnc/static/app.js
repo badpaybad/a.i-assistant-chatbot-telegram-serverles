@@ -2768,11 +2768,25 @@ function initGcodeEditor() {
     let editorCurrentMode = "edit"; // edit, move, delete, draw
     let editorSelectedNode = null; // { index, type: 'start'|'end' }
     let editorLineWidth = 2.0;
+    let previewIntervalId = null; // Declare in parent scope for auto-preview control (Cập nhật 28)
+
+    // Sketch Parameters mapping
+    const sketchParams = [
+        { id: "sketch-clahe-clip", valId: "val-sketch-clahe-clip", suffix: "" },
+        { id: "sketch-blur-size", valId: "val-sketch-blur-size", suffix: " px" },
+        { id: "sketch-canny-ultra-low", valId: "val-sketch-canny-ultra-low", suffix: "" },
+        { id: "sketch-canny-ultra-high", valId: "val-sketch-canny-ultra-high", suffix: "" },
+        { id: "sketch-canny-medium-low", valId: "val-sketch-canny-medium-low", suffix: "" },
+        { id: "sketch-canny-medium-high", valId: "val-sketch-canny-medium-high", suffix: "" },
+        { id: "sketch-canny-strong-low", valId: "val-sketch-canny-strong-low", suffix: "" },
+        { id: "sketch-canny-strong-high", valId: "val-sketch-canny-strong-high", suffix: "" },
+        { id: "sketch-min-contour-len", valId: "val-sketch-min-contour-len", suffix: " px" }
+    ];
 
     // View transform
     let editorZoom = 1.0;
     let editorPan = { x: 0, y: 0 };
-    let editorBoundingBox = { minX: 0, maxX: 240, minY: 0, maxY: 240 };
+    let editorBoundingBox = { minX: 0, maxX: 120, minY: 0, maxY: 120 };
     let scale = 1.0;
     const padding = 40;
 
@@ -2812,7 +2826,12 @@ function initGcodeEditor() {
     // Resize Canvas to wrapper
     function resizeEditorCanvas() {
         const rect = editorCanvasWrapper.getBoundingClientRect();
-        const size = Math.min(rect.width, rect.height, 720) || 720;
+        const sidebar = document.getElementById("editor-sketch-sidebar");
+        let availableWidth = rect.width;
+        if (sidebar && !sidebar.classList.contains("hidden")) {
+            availableWidth -= sidebar.getBoundingClientRect().width;
+        }
+        const size = Math.min(availableWidth, rect.height, 720) || 720;
         editorCanvas.width = size;
         editorCanvas.height = size;
         updateScale();
@@ -2886,9 +2905,18 @@ function initGcodeEditor() {
         if (ext === ".svg") {
             groupEditorAlgo.classList.add("hidden");
             editorScale.value = "0.5";
+            editorAlgo.value = "centerline";
+            editorAlgo.dispatchEvent(new Event("change"));
         } else {
             groupEditorAlgo.classList.remove("hidden");
-            editorScale.value = "0.1";
+            editorScale.value = "0.15";
+            editorAlgo.value = "sketch";
+            editorAlgo.dispatchEvent(new Event("change"));
+
+            // Auto start preview if not already active (Cập nhật 28)
+            if (btnEditorPreviewInVideoFrame && !previewIntervalId) {
+                btnEditorPreviewInVideoFrame.click();
+            }
         }
 
         const reader = new FileReader();
@@ -2920,6 +2948,23 @@ function initGcodeEditor() {
             formData.append("feed_rate", parseInt(editorFeedrate.value, 10) || 2000);
             formData.append("mode", editorMode.value);
             formData.append("algorithm", editorAlgo.value);
+
+            if (editorAlgo.value === "sketch") {
+                formData.append("clahe_clip_limit", parseFloat(document.getElementById("sketch-clahe-clip").value) || 1.5);
+                formData.append("blur_size", parseInt(document.getElementById("sketch-blur-size").value, 10) || 3);
+                formData.append("canny_ultra_low", parseInt(document.getElementById("sketch-canny-ultra-low").value, 10) || 5);
+                formData.append("canny_ultra_high", parseInt(document.getElementById("sketch-canny-ultra-high").value, 10) || 25);
+                formData.append("canny_medium_low", parseInt(document.getElementById("sketch-canny-medium-low").value, 10) || 20);
+                formData.append("canny_medium_high", parseInt(document.getElementById("sketch-canny-medium-high").value, 10) || 60);
+                formData.append("canny_strong_low", parseInt(document.getElementById("sketch-canny-strong-low").value, 10) || 50);
+                formData.append("canny_strong_high", parseInt(document.getElementById("sketch-canny-strong-high").value, 10) || 120);
+                formData.append("min_contour_len", parseInt(document.getElementById("sketch-min-contour-len").value, 10) || 5);
+                formData.append("use_clahe", document.getElementById("sketch-use-clahe").checked);
+                formData.append("use_blur", document.getElementById("sketch-use-blur").checked);
+                formData.append("use_connect", document.getElementById("sketch-use-connect").checked);
+                formData.append("use_thin", document.getElementById("sketch-use-thin").checked);
+                formData.append("use_len_filter", document.getElementById("sketch-use-len-filter").checked);
+            }
 
             try {
                 const res = await fetch("/api/gcode-editor/convert", {
@@ -2954,7 +2999,7 @@ function initGcodeEditor() {
     // Map bounding boxes and scaling
     function updateBoundingBox() {
         if (editorSegments.length === 0) {
-            editorBoundingBox = { minX: 0, maxX: 240, minY: 0, maxY: 240 };
+            editorBoundingBox = { minX: 0, maxX: 120, minY: 0, maxY: 120 };
             return;
         }
         // const allX = editorSegments.map(s => s.x1).concat(editorSegments.map(s => s.x2));
@@ -3740,7 +3785,21 @@ function initGcodeEditor() {
                 editorAlgo: editorAlgo.value,
                 editorLineWidth: editorLineWidth,
                 originalSegments: editorOriginalSegments,
-                segments: editorSegments
+                segments: editorSegments,
+                sketchClaheClip: parseFloat(document.getElementById("sketch-clahe-clip").value),
+                sketchBlurSize: parseInt(document.getElementById("sketch-blur-size").value, 10),
+                sketchCannyUltraLow: parseInt(document.getElementById("sketch-canny-ultra-low").value, 10),
+                sketchCannyUltraHigh: parseInt(document.getElementById("sketch-canny-ultra-high").value, 10),
+                sketchCannyMediumLow: parseInt(document.getElementById("sketch-canny-medium-low").value, 10),
+                sketchCannyMediumHigh: parseInt(document.getElementById("sketch-canny-medium-high").value, 10),
+                sketchCannyStrongLow: parseInt(document.getElementById("sketch-canny-strong-low").value, 10),
+                sketchCannyStrongHigh: parseInt(document.getElementById("sketch-canny-strong-high").value, 10),
+                sketchMinContourLen: parseInt(document.getElementById("sketch-min-contour-len").value, 10),
+                sketchUseClahe: document.getElementById("sketch-use-clahe").checked,
+                sketchUseBlur: document.getElementById("sketch-use-blur").checked,
+                sketchUseConnect: document.getElementById("sketch-use-connect").checked,
+                sketchUseThin: document.getElementById("sketch-use-thin").checked,
+                sketchUseLenFilter: document.getElementById("sketch-use-len-filter").checked
             };
             const jsonString = JSON.stringify(project, null, 2);
 
@@ -3806,6 +3865,31 @@ function initGcodeEditor() {
                     editorAlgo.value = data.editorAlgo || "centerline";
                     editorSegments = data.segments || [];
                     editorOriginalSegments = data.originalSegments || JSON.parse(JSON.stringify(editorSegments));
+
+                    // Load sketch settings if present
+                    if (data.sketchClaheClip !== undefined) document.getElementById("sketch-clahe-clip").value = data.sketchClaheClip;
+                    if (data.sketchBlurSize !== undefined) document.getElementById("sketch-blur-size").value = data.sketchBlurSize;
+                    if (data.sketchCannyUltraLow !== undefined) document.getElementById("sketch-canny-ultra-low").value = data.sketchCannyUltraLow;
+                    if (data.sketchCannyUltraHigh !== undefined) document.getElementById("sketch-canny-ultra-high").value = data.sketchCannyUltraHigh;
+                    if (data.sketchCannyMediumLow !== undefined) document.getElementById("sketch-canny-medium-low").value = data.sketchCannyMediumLow;
+                    if (data.sketchCannyMediumHigh !== undefined) document.getElementById("sketch-canny-medium-high").value = data.sketchCannyMediumHigh;
+                    if (data.sketchCannyStrongLow !== undefined) document.getElementById("sketch-canny-strong-low").value = data.sketchCannyStrongLow;
+                    if (data.sketchCannyStrongHigh !== undefined) document.getElementById("sketch-canny-strong-high").value = data.sketchCannyStrongHigh;
+                    if (data.sketchMinContourLen !== undefined) document.getElementById("sketch-min-contour-len").value = data.sketchMinContourLen;
+                    if (data.sketchUseClahe !== undefined) document.getElementById("sketch-use-clahe").checked = data.sketchUseClahe;
+                    if (data.sketchUseBlur !== undefined) document.getElementById("sketch-use-blur").checked = data.sketchUseBlur;
+                    if (data.sketchUseConnect !== undefined) document.getElementById("sketch-use-connect").checked = data.sketchUseConnect;
+                    if (data.sketchUseThin !== undefined) document.getElementById("sketch-use-thin").checked = data.sketchUseThin;
+                    if (data.sketchUseLenFilter !== undefined) document.getElementById("sketch-use-len-filter").checked = data.sketchUseLenFilter;
+
+                    // Trigger input event to update displays
+                    sketchParams.forEach(param => {
+                        const input = document.getElementById(param.id);
+                        if (input) input.dispatchEvent(new Event("input"));
+                    });
+
+                    // Trigger change to update side-menu visibility
+                    editorAlgo.dispatchEvent(new Event("change"));
 
                     if (data.editorLineWidth !== undefined) {
                         editorLineWidth = data.editorLineWidth;
@@ -3930,7 +4014,6 @@ function initGcodeEditor() {
     }
 
     // --- Camera Feed G-Code Preview Logic (Cập nhật 27) ---
-    let previewIntervalId = null;
 
     if (btnEditorPreviewInVideoFrame) {
         btnEditorPreviewInVideoFrame.addEventListener("click", async () => {
@@ -4117,6 +4200,91 @@ function initGcodeEditor() {
         if (Math.abs(pz) < 1e-8) return null;
         return { x: px / pz, y: py / pz };
     }
+
+    // --- Sketch Sidebar Controls & Auto-reconversion with Debounce ---
+    function debounce(func, wait) {
+        let timeout;
+        return function(...args) {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(this, args), wait);
+        };
+    }
+
+    const debouncedConvert = debounce(() => {
+        if (editorOriginalImageFile && editorAlgo.value === "sketch") {
+            btnEditorConvert.click();
+        }
+    }, 250);
+
+    sketchParams.forEach(param => {
+        const input = document.getElementById(param.id);
+        const display = document.getElementById(param.valId);
+        if (input && display) {
+            input.addEventListener("input", () => {
+                display.innerText = input.value + param.suffix;
+                debouncedConvert();
+            });
+        }
+    });
+
+    const chkUseClahe = document.getElementById("sketch-use-clahe");
+    const chkUseBlur = document.getElementById("sketch-use-blur");
+    const chkUseConnect = document.getElementById("sketch-use-connect");
+    const chkUseThin = document.getElementById("sketch-use-thin");
+    const chkUseLenFilter = document.getElementById("sketch-use-len-filter");
+    if (chkUseClahe) {
+        chkUseClahe.addEventListener("change", () => {
+            debouncedConvert();
+        });
+    }
+    if (chkUseBlur) {
+        chkUseBlur.addEventListener("change", () => {
+            debouncedConvert();
+        });
+    }
+    if (chkUseConnect) {
+        chkUseConnect.addEventListener("change", () => {
+            debouncedConvert();
+        });
+    }
+    if (chkUseThin) {
+        chkUseThin.addEventListener("change", () => {
+            debouncedConvert();
+        });
+    }
+    if (chkUseLenFilter) {
+        chkUseLenFilter.addEventListener("change", () => {
+            debouncedConvert();
+        });
+    }
+
+    if (editorAlgo) {
+        editorAlgo.addEventListener("change", () => {
+            const sidebar = document.getElementById("editor-sketch-sidebar");
+            if (editorAlgo.value === "sketch") {
+                panelGcodeEditor.classList.add("wide");
+                if (sidebar) sidebar.classList.remove("hidden");
+                // Automatically run convert once if file is selected
+                if (editorOriginalImageFile) {
+                    btnEditorConvert.click();
+                }
+            } else {
+                panelGcodeEditor.classList.remove("wide");
+                if (sidebar) sidebar.classList.add("hidden");
+            }
+            resizeEditorCanvas();
+            drawEditorCanvas();
+        });
+    }
+
+    // Trigger update displays immediately on load
+    sketchParams.forEach(param => {
+        const input = document.getElementById(param.id);
+        const display = document.getElementById(param.valId);
+        if (input && display) {
+            display.innerText = input.value + param.suffix;
+        }
+    });
 
     resizeEditorCanvas();
 }
