@@ -4030,14 +4030,14 @@ function initGcodeEditor() {
             const M_inv = invert3x3(M);
             if (!M_inv) return;
 
-            // 3. Draw head position bounding box highlight
-            const bbox = head.bbox; // [x1, y1, x2, y2]
-            ctx.strokeStyle = "rgba(0, 255, 0, 0.6)";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
-            ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
-            ctx.font = "12px sans-serif";
-            ctx.fillText("CNC Head", bbox[0], bbox[1] - 5);
+            // // 3. Draw head position bounding box highlight
+            // const bbox = head.bbox; // [x1, y1, x2, y2]
+            // ctx.strokeStyle = "rgba(0, 255, 0, 0.6)";
+            // ctx.lineWidth = 2;
+            // ctx.strokeRect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
+            // ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
+            // ctx.font = "12px sans-serif";
+            // ctx.fillText("CNC Head", bbox[0], bbox[1] - 5);
 
             // 4. Draw G-Code segments relative to head position
             ctx.strokeStyle = "rgba(255, 0, 128, 0.85)"; // vibrant magenta
