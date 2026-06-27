@@ -2772,7 +2772,7 @@ function initGcodeEditor() {
     // View transform
     let editorZoom = 1.0;
     let editorPan = { x: 0, y: 0 };
-    let editorBoundingBox = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+    let editorBoundingBox = { minX: 0, maxX: 240, minY: 0, maxY: 240 };
     let scale = 1.0;
     const padding = 40;
 
@@ -2954,17 +2954,17 @@ function initGcodeEditor() {
     // Map bounding boxes and scaling
     function updateBoundingBox() {
         if (editorSegments.length === 0) {
-            editorBoundingBox = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+            editorBoundingBox = { minX: 0, maxX: 240, minY: 0, maxY: 240 };
             return;
         }
-        const allX = editorSegments.map(s => s.x1).concat(editorSegments.map(s => s.x2));
-        const allY = editorSegments.map(s => s.y1).concat(editorSegments.map(s => s.y2));
-        editorBoundingBox = {
-            minX: Math.min(...allX),
-            maxX: Math.max(...allX),
-            minY: Math.min(...allY),
-            maxY: Math.max(...allY)
-        };
+        // const allX = editorSegments.map(s => s.x1).concat(editorSegments.map(s => s.x2));
+        // const allY = editorSegments.map(s => s.y1).concat(editorSegments.map(s => s.y2));
+        // editorBoundingBox = {
+        //     minX: Math.min(...allX),
+        //     maxX: Math.max(...allX),
+        //     minY: Math.min(...allY),
+        //     maxY: Math.max(...allY)
+        // };
     }
 
     function updateScale() {
@@ -3392,8 +3392,19 @@ function initGcodeEditor() {
             } else if (editorCurrentMode === "draw") {
                 editorIsDrawingPath = true;
                 editorDrawPathPoints = [realCoords];
+            } else if (editorCurrentMode === "delete-all") {
+                editorSegments = []
+                updateBoundingBox();
+                drawEditorCanvas();
             }
         }
+    });
+
+    document.getElementById("gcode-editor-delete-all").addEventListener("click",()=>{
+
+                editorSegments = []
+                updateBoundingBox();
+                drawEditorCanvas();
     });
 
     window.addEventListener("mousemove", (e) => {
