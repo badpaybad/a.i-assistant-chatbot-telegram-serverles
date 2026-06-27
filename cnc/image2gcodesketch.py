@@ -128,3 +128,11 @@ def maximum_detail_sketch(
 if __name__ == "__main__":
     # Chạy thử nghiệm phiên bản tối đa nét vẽ
     maximum_detail_sketch("dunp.png", "portrait.gcode", "portrait_contours.png", scale_mm_per_pixel=0.15, speed=1500)
+
+
+"""
+Loại ảnh đầu vào,Tham số gợi ý thay đổi,Tác dụng
+Ảnh Toàn Chữ,use_clahe = Falseuse_blur = Falsemin_contour_len = 10,"Tắt làm mịn để giữ cạnh chữ sắc nét, lọc bỏ các đốm mực nhỏ bẩn trên nền giấy."
+"Chân dung Tối giản(Ít nét, rõ khối)",canny_ultra_low = 30canny_ultra_high = 70blur_size = 5min_contour_len = 15,"Làm mịn da, bỏ qua các nét mờ nhạt, chỉ giữ lại viền mắt, mũi, miệng, tóc lớn."
+"Chân dung Tả thực(Giàu chi tiết, bóng đổ)",canny_ultra_low = 3canny_ultra_high = 15clahe_clip_limit = 2.0,"Đẩy độ nhạy lên tối đa để bắt được các mảng chuyển khối, nếp nhăn và lọn tóc nhỏ."
+"""
