@@ -3681,26 +3681,78 @@ function initGcodeEditor() {
         });
     }
 
+    // Helper to reconstruct File object from Base64 string (Cập nhật 25)
+    function dataURLtoFile(dataurl, filename) {
+        if (!dataurl || !dataurl.includes(",")) return null;
+        try {
+            var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+                bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+            while(n--){
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, {type:mime});
+        } catch (e) {
+            console.error("Failed to parse data URL to File object:", e);
+            return null;
+        }
+    }
+
     if (btnSaveProject) {
-        btnSaveProject.addEventListener("click", () => {
+        btnSaveProject.addEventListener("click", async () => {
             const project = {
                 version: "1.0",
                 originalFilename: editorOriginalFilename,
                 originalImageBase64: editorOriginalImageBase64,
                 originalGcodeText: editorOriginalGcodeText,
+                editedGcodeText: generateGcodeFromSegments(), // Include edited Gcode text (Cập nhật 25)
                 editorScale: parseFloat(editorScale.value),
                 editorFeedrate: parseInt(editorFeedrate.value, 10),
                 editorZMode: editorMode.value,
                 editorAlgo: editorAlgo.value,
+                editorLineWidth: editorLineWidth,
+                originalSegments: editorOriginalSegments,
                 segments: editorSegments
             };
-            const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "project_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "unnamed") + ".json";
-            a.click();
-            URL.revokeObjectURL(url);
+            const jsonString = JSON.stringify(project, null, 2);
+            
+            // Check if showSaveFilePicker is available (File System Access API)
+            if (window.showSaveFilePicker) {
+                const options = {
+                    suggestedName: "project_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "unnamed") + ".json",
+                    types: [{
+                        description: 'JSON Project Files',
+                        accept: {
+                            'application/json': ['.json'],
+                        }
+                    }],
+                };
+                try {
+                    const handle = await window.showSaveFilePicker(options);
+                    const writable = await handle.createWritable();
+                    await writable.write(jsonString);
+                    await writable.close();
+                    logSystemMessage("Project saved successfully using file picker.");
+                } catch (err) {
+                    // If user cancels the dialog, do nothing. If error occurs, fallback.
+                    if (err.name !== 'AbortError') {
+                        console.error("Save file picker failed, falling back to standard download:", err);
+                        fallbackDownload(jsonString);
+                    }
+                }
+            } else {
+                fallbackDownload(jsonString);
+            }
+            
+            function fallbackDownload(content) {
+                const blob = new Blob([content], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = "project_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "unnamed") + ".json";
+                a.click();
+                URL.revokeObjectURL(url);
+                logSystemMessage("Project downloaded successfully.");
+            }
         });
     }
 
@@ -3716,17 +3768,30 @@ function initGcodeEditor() {
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    editorOriginalFilename = data.originalFilename;
-                    editorOriginalImageBase64 = data.originalImageBase64;
-                    editorOriginalGcodeText = data.originalGcodeText;
-                    editorScale.value = data.editorScale;
-                    editorFeedrate.value = data.editorFeedrate;
-                    editorMode.value = data.editorZMode;
-                    editorAlgo.value = data.editorAlgo;
-                    editorSegments = data.segments;
-                    editorOriginalSegments = JSON.parse(JSON.stringify(data.segments));
+                    editorOriginalFilename = data.originalFilename || "";
+                    editorOriginalImageBase64 = data.originalImageBase64 || "";
+                    editorOriginalGcodeText = data.originalGcodeText || "";
+                    editorScale.value = data.editorScale !== undefined ? data.editorScale : "0.1";
+                    editorFeedrate.value = data.editorFeedrate !== undefined ? data.editorFeedrate : "2000";
+                    editorMode.value = data.editorZMode || "servo";
+                    editorAlgo.value = data.editorAlgo || "centerline";
+                    editorSegments = data.segments || [];
+                    editorOriginalSegments = data.originalSegments || JSON.parse(JSON.stringify(editorSegments));
 
-                    editorFileName.innerText = editorOriginalFilename || "Loaded Project";
+                    if (data.editorLineWidth !== undefined) {
+                        editorLineWidth = data.editorLineWidth;
+                        if (sliderLineWidth) sliderLineWidth.value = editorLineWidth;
+                        if (valLineWidth) valLineWidth.innerText = `${editorLineWidth} px`;
+                    }
+
+                    // Reconstruct editorOriginalImageFile so parameters tweak & re-converts work (Cập nhật 25)
+                    if (editorOriginalImageBase64) {
+                        editorOriginalImageFile = dataURLtoFile(editorOriginalImageBase64, editorOriginalFilename || "image.png");
+                    } else {
+                        editorOriginalImageFile = null;
+                    }
+
+                    editorFileName.innerText = editorOriginalFilename || "project.json";
                     editorDropZone.classList.add("hidden");
                     editorFileInfo.classList.remove("hidden");
 
@@ -3736,6 +3801,8 @@ function initGcodeEditor() {
                             drawEditorCanvas();
                         };
                         editorBgImage.src = editorOriginalImageBase64;
+                    } else {
+                        editorBgImage = null;
                     }
 
                     editorZoom = 1.0;

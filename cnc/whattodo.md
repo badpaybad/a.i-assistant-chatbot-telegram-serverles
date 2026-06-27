@@ -153,4 +153,8 @@ thêm 1 floating window chiếm nửa bên trái của UI, UI này gọi là Gco
 
 **cập nhật 23** bổ xung nút <button class="btn btn-warning" id="btn-stop-to-home">Stop & go home</button> khi người dùng click thì gọi lệnh stop cnc , reset gcode ở máy cnc và go to home
 
-**cập nhật 24** <canvas id="toolpath-canvas"></canvas> đang vẽ bị ngược như gương, trục Y cần điều chỉnh 
+**cập nhật 24** <canvas id="toolpath-canvas"></canvas> đang vẽ bị ngược như gương, trục Y cần điều chỉnh
+
+**cập nhật 25** ở gcode editor , lưu project và load project chưa hoạt động
+    lưu project cho phép người dùng lưu vào file dạng json các dữ liệu (gồm cả ảnh , gcode gốc, gcode đã chỉnh sửa ..), cho phép người dùng chọn folder như download về
+    load project cần chọn file json đã lưu, chọn xong các dữ liệu (gồm cả ảnh , gcode gốc, gcode đã chỉnh sửa ..) được load lại vào gcode editor để tiếp tục
