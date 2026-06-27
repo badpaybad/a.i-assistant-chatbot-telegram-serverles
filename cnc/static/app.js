@@ -3812,7 +3812,7 @@ function initGcodeEditor() {
                     fileInfoContainer.classList.remove("hidden");
                     btnStartStream.disabled = !isConnected;
 
-                    panelGcodeEditor.classList.add("hidden");
+                    // panelGcodeEditor.classList.add("hidden");
 
                     if (isConnected) {
                         btnStartStream.click();
