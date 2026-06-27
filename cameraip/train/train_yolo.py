@@ -3,8 +3,46 @@ import os
 import sys
 
 # Detect and configure AMD GPU environments before importing torch/ultralytics
+def detect_real_amd_gpu_arch():
+    import glob
+    for path in glob.glob('/sys/class/kfd/kfd/topology/nodes/*/properties'):
+        try:
+            with open(path, 'r') as f:
+                for line in f:
+                    if line.startswith('gfx_target_version'):
+                        val = int(line.split()[1])
+                        if val > 0:
+                            major = val // 10000
+                            minor = (val % 10000) // 100
+                            patch = val % 100
+                            return f"gfx{major}{minor}{patch}"
+        except Exception:
+            pass
+    return None
+
+def get_supported_rocm_archs():
+    try:
+        import subprocess
+        # Run python in a subprocess to query arch list without initializing CUDA in parent process
+        output = subprocess.check_output(
+            [sys.executable, "-c", "import torch; print(','.join(torch.cuda.get_arch_list()) if hasattr(torch.cuda, 'get_arch_list') else '')"],
+            text=True,
+            stderr=subprocess.DEVNULL
+        )
+        return [arch.strip() for arch in output.strip().split(',') if arch.strip()]
+    except Exception:
+        return []
+
 def setup_amd_gpu_env():
     has_amd = False
+    os.environ['MIOPEN_FIND_ENFORCE'] = 'NONE'
+    os.environ['MIOPEN_DEBUG_DISABLE_FIND_DB'] = '1'
+    os.environ['HSA_XNACK'] = '1'
+    os.environ['PYTORCH_HIP_ALLOC_CONF'] = "max_split_size_mb:128"
+    os.environ['HSA_ENABLE_SDMA'] = '0'
+
+    # venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26n.pt --epochs 80 --batch 2 --device amd --force-gpu
+
     try:
         # Check /sys/class/drm/card*/device/vendor
         import glob
@@ -28,21 +66,28 @@ def setup_amd_gpu_env():
         pass
 
     if has_amd:
-        # For AMD RDNA3 iGPU architectures like Radeon 780M (gfx1102),
-        # PyTorch ROCm 6.x prebuilt wheels only include kernels for gfx1100 (RX 7900).
-        # Override to gfx1100 so HIP kernels can be found.
-        if 'HSA_OVERRIDE_GFX_VERSION' not in os.environ:
-            ## print("[AMD GPU Setup] AMD GPU detected on Linux. Setting HSA_OVERRIDE_GFX_VERSION=11.0.0 (gfx1100) to map consumer iGPU (gfx1102) to supported ROCm target.", flush=True)
-            ## dunp os.environ['HSA_OVERRIDE_GFX_VERSION'] = '11.0.0'
-            pass
+        # Check native compatibility
+        real_arch = detect_real_amd_gpu_arch()
+        supported_archs = get_supported_rocm_archs()
+        
+        if real_arch and real_arch in supported_archs:
+            print(f"[AMD GPU Setup] AMD GPU {real_arch} is natively supported by PyTorch. No HSA override needed.", flush=True)
+            if 'HSA_OVERRIDE_GFX_VERSION' in os.environ:
+                del os.environ['HSA_OVERRIDE_GFX_VERSION']
+        else:
+            # For AMD RDNA3 iGPU architectures like Radeon 780M (gfx1103),
+            # PyTorch ROCm 6.x prebuilt wheels only include kernels for gfx1100 (RX 7900).
+            # Override to gfx1100 so HIP kernels can be found.
+            fallback_version = '11.0.0'
+            os.environ['HSA_OVERRIDE_GFX_VERSION'] = fallback_version
+            print(f"[AMD GPU Setup] AMD GPU {real_arch or 'unknown'} is not natively supported. Overriding HSA_OVERRIDE_GFX_VERSION to {fallback_version}.", flush=True)
 
-        # hipBLASLt checks the REAL GPU ISA independently and rejects gfx1102 even after
+        # hipBLASLt checks the REAL GPU ISA independently and rejects gfx1102/gfx1103 even after
         # the HSA override. This causes HSA_STATUS_ERROR_INVALID_ISA crash in the attention
         # (C2PSA) layers during AMP compatibility checks. Disable hipBLASLt workspace
         # entirely so PyTorch falls back to the standard hipBLAS path.
         if 'HIPBLASLT_WORKSPACE_SIZE' not in os.environ:
-            ## dunp os.environ['HIPBLASLT_WORKSPACE_SIZE'] = '0'
-            pass
+            os.environ['HIPBLASLT_WORKSPACE_SIZE'] = '0'
 
         # Radeon 780M is an iGPU using shared system memory (unified memory architecture).
         # The HSA System DMA engine (SDMA) conflicts with ROCm memory access on iGPUs,
@@ -50,15 +95,13 @@ def setup_amd_gpu_env():
         # during the first training step. Disabling SDMA forces CPU-based data copy which
         # is slower but fully stable on integrated/APU GPUs.
         if 'HSA_ENABLE_SDMA' not in os.environ:
-            ## dun os.environ['HSA_ENABLE_SDMA'] = '0'
-            ## print("[AMD GPU Setup] Set HSA_ENABLE_SDMA=0 to prevent iGPU memory access faults (shared memory architecture).", flush=True)
-            pass
+            os.environ['HSA_ENABLE_SDMA'] = '0'
+            print("[AMD GPU Setup] Set HSA_ENABLE_SDMA=0 to prevent iGPU memory access faults (shared memory architecture).", flush=True)
         # Configure HIP memory allocator for shared VRAM pool stability.
         # max_split_size_mb=512 reduces fragmentation; gc threshold triggers earlier cleanup.
         if 'PYTORCH_HIP_ALLOC_CONF' not in os.environ:
-            ## dunp os.environ['PYTORCH_HIP_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:512'
-            ## print("[AMD GPU Setup] Set PYTORCH_HIP_ALLOC_CONF for better iGPU shared memory management.", flush=True)
-            pass
+            os.environ['PYTORCH_HIP_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:256'
+            print("[AMD GPU Setup] Set PYTORCH_HIP_ALLOC_CONF for better iGPU shared memory management.", flush=True)
         print("[AMD GPU Setup] All AMD iGPU environment variables configured.", flush=True)
 
     return has_amd
@@ -169,6 +212,7 @@ def parse_args():
     parser.add_argument('--no-amp', action='store_false', dest='amp', help='Force disable AMP (use FP32). Default on AMD iGPU.')
     parser.add_argument('--force-gpu', action='store_true', dest='force_gpu', default=False,
                         help='Force GPU even on unsupported gfx1102 (Radeon 780M). Will likely GPU Hang. Use at your own risk.')
+    parser.add_argument('--workers', type=int, default=8, help='Number of dataloader workers (default: 8)')
     return parser.parse_args()
 
 def main():
@@ -245,64 +289,7 @@ def main():
     
     # Resolve device to support CPU, NVIDIA GPU, and AMD GPU (fallback gracefully)
     device = args.device
-    if device:
-        device_lower = device.lower().strip()
-        if device_lower in ('gpu', 'amd', 'rocm'):
-            import torch
-            if torch.cuda.is_available():
-                device_name = torch.cuda.get_device_name(0)
-                gcn_arch = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
-                print(f"GPU detected: '{device_name}' (arch: {gcn_arch})", flush=True)
-
-                # gfx1102 = Radeon 780M iGPU (Navi33 / RDNA3 integrated).
-                # PyTorch ROCm prebuilt wheels have NO native gfx1102 kernels.
-                # HSA_OVERRIDE maps it to gfx1100, but the gfx1100 kernel ISA is
-                # binary-incompatible with gfx1102 micro-architecture at runtime,
-                # causing GPU Hang at the first training iteration.
-                if 'gfx1102' in gcn_arch and not args.force_gpu:
-                    print("\n" + "="*80, flush=True)
-                    print("[WARNING] gfx1102 (Radeon 780M) detected — GPU training is NOT stable!")
-                    print("PyTorch ROCm prebuilt wheels have no native gfx1102 kernels.")
-                    print("Running gfx1100 kernels on gfx1102 hardware causes GPU Hang.")
-                    print("")
-                    print("RECOMMENDED: Use CPU training (slower but fully stable):")
-                    print("  --device cpu")
-                    print("")
-                    print("ALTERNATIVE: Build PyTorch from source with gfx1102 support:")
-                    print("  export PYTORCH_ROCM_ARCH=gfx1102")
-                    print("  pip install cmake ninja && python tools/amd_build/build_amd.py")
-                    print("  See: https://github.com/pytorch/pytorch#from-source")
-                    print("")
-                    print("To force GPU anyway (will likely GPU Hang): add --force-gpu")
-                    print("="*80 + "\n", flush=True)
-                    print("[Auto-fallback] Switching to CPU training for stability.", flush=True)
-                    device = 'cpu'
-                    # device = 'cuda'
-                else:
-                    device = 'cuda'
-                    if 'gfx1102' in gcn_arch:
-                        print("[WARNING] --force-gpu set: training gfx1102 with gfx1100 kernels — may GPU Hang!", flush=True)
-                    else:
-                        print(f"Using GPU device '{device_name}'.", flush=True)
-            else:
-                print(f"Warning: GPU requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
-                device = 'cpu'
-        elif device_lower == 'cpu':
-            device = 'cpu'
-            print("Using CPU as requested by '--device cpu'.", flush=True)
-        else:
-            # Check if CUDA device requested (e.g. 'cuda', '0', '0,1') but not available
-            import torch
-            if ('cuda' in device_lower or device_lower.isdigit() or ',' in device_lower):
-                if torch.cuda.is_available():
-                    device_name = torch.cuda.get_device_name(0)
-                    print(f"Using GPU device '{device_name}' via target '{device}'.", flush=True)
-                else:
-                    print(f"Warning: CUDA device '{device}' requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
-                    device = 'cpu'
-            else:
-                print(f"Using requested device: '{device}'", flush=True)
-    else:
+    if not device:
         # Auto-detect device
         import torch
         if torch.cuda.is_available():
@@ -317,6 +304,62 @@ def main():
                 print("[INFO] AMD GPU detected on system, but PyTorch ROCm is not configured.")
                 print("If you want to train using your AMD GPU, please check 'howtodo.md' for setup instructions.")
                 print("="*80 + "\n", flush=True)
+    else:
+        device_lower = device.lower().strip()
+        if device_lower in ('gpu', 'amd', 'rocm'):
+            import torch
+            if torch.cuda.is_available():
+                device = 'cuda'
+            else:
+                print(f"Warning: GPU requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
+                device = 'cpu'
+        elif device_lower == 'cpu':
+            device = 'cpu'
+            print("Using CPU as requested by '--device cpu'.", flush=True)
+        elif 'cuda' in device_lower or device_lower.isdigit() or ',' in device_lower:
+            import torch
+            if torch.cuda.is_available():
+                device = 'cuda'
+            else:
+                print(f"Warning: CUDA device '{device}' requested but CUDA/ROCm is not available. Falling back to CPU.", flush=True)
+                device = 'cpu'
+        else:
+            print(f"Using requested device: '{device}'", flush=True)
+
+    # Apply safety overrides for AMD iGPU (Radeon 780M / gfx1103) if GPU is selected
+    if device == 'cuda':
+        import torch
+        device_name = torch.cuda.get_device_name(0)
+        gcn_arch = detect_real_amd_gpu_arch()
+        if not gcn_arch:
+            gcn_arch = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
+
+        # gfx1102 / gfx1103 = Radeon 780M iGPU (RDNA3 integrated).
+        # PyTorch ROCm prebuilt wheels have NO native gfx1102/gfx1103 kernels.
+        # HSA_OVERRIDE maps it to gfx1100, but the gfx1100 kernel ISA is
+        # binary-incompatible with gfx1102/gfx1103 micro-architecture at runtime,
+        # causing GPU Hang at the first training iteration.
+        if gcn_arch and ('gfx1102' in gcn_arch or 'gfx1103' in gcn_arch) and not args.force_gpu:
+            print("\n" + "="*80, flush=True)
+            print("[WARNING] gfx1102/gfx1103 (Radeon 780M) detected — GPU training is NOT stable by default!")
+            print("PyTorch ROCm prebuilt wheels have no native gfx1102/gfx1103 kernels.")
+            print("Running gfx1100 kernels on gfx1102/gfx1103 hardware may cause GPU Hang.")
+            print("")
+            print("RECOMMENDED: Use CPU training (slower but fully stable):")
+            print("  --device cpu")
+            print("")
+            print("ALTERNATIVE: Build PyTorch from source or use ROCm nightlies for gfx110X.")
+            print("See 'cameraip/train/radeon780m.md' for installation details.")
+            print("")
+            print("To force GPU anyway (will likely GPU Hang unless custom wheel is used): add --force-gpu")
+            print("="*80 + "\n", flush=True)
+            print("[Auto-fallback] Switching to CPU training for stability.", flush=True)
+            device = 'cpu'
+        else:
+            if 'gfx1102' in gcn_arch or 'gfx1103' in gcn_arch:
+                print("[WARNING] --force-gpu set: training gfx1102/gfx1103 with gfx1100 kernels — may GPU Hang!", flush=True)
+            else:
+                print(f"Using GPU device '{device_name}' (arch: {gcn_arch}).", flush=True)
     # Print CUDA memory optimization info if NVIDIA GPU is used
     if device != 'cpu' and has_nvidia_system:
         import torch
@@ -356,7 +399,7 @@ def main():
         scale=args.scale,
         multi_scale=args.multi_scale,
         amp=use_amp,
-        workers=16,
+        workers=args.workers,
     )
 #     model = YOLO('yolov8s.pt')  # Hoặc bản n (nano) tùy mục đích
 # results = model.train(
@@ -370,7 +413,7 @@ def main():
 #     amp=True           # Bật Float16 để tiết kiệm bộ nhớ đồ họa
 # )
     print("\n--- Starting Model Validation ---", flush=True)
-    metrics = model.val()
+    metrics = model.val(device=device)
     print("Validation mAP50-95:", metrics.box.map, flush=True)
     
     # Export to ONNX

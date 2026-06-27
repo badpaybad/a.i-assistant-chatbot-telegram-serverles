@@ -54,7 +54,7 @@ venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/data
 
 venv/bin/python3.12 cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 80 --batch 8 --device gpu --imgsz 640
 
-# export HSA_OVERRIDE_GFX_VERSION=11.0.2 && export PYTORCH_ROCM_ARCH=gfx1102 && venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 100 --batch 4 --device amd --imgsz 640
+# export HSA_OVERRIDE_GFX_VERSION=11.0.0 && export PYTORCH_ROCM_ARCH=gfx1100 && venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26m.pt --epochs 100 --batch 4 --device amd --imgsz 640
 
 # export HSA_OVERRIDE_GFX_VERSION=11.0.0 && export PYTORCH_ROCM_ARCH=gfx1100 && venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.yaml --model yolo26s.pt --epochs 100 --batch 4 --device amd --imgsz 640
 
