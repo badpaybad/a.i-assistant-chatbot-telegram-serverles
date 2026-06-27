@@ -1882,8 +1882,7 @@ input[type=range]::-webkit-slider-thumb:hover {
     border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     padding: 10px 12px;
-    display: flex;
-    flex-direction: column;
+    display: flex;    flex-direction: column;
     justify-content: space-between;
     gap: 8px;
 }
@@ -1949,7 +1948,6 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .editor-sidebar #btn-editor-execute {
-    flex: 0 0 220px;
     align-self: center;
     margin: 0 !important;
     height: 90%;

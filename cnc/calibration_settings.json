@@ -49,8 +49,8 @@
         ]
     },
     "home_snapshot": "home_snapshot.jpg",
-    "step_distance": 20.3,
-    "jog_feedrate": 58500,
+    "step_distance": 7.9,
+    "jog_feedrate": 11100,
     "gesture_feedrate": 20000,
     "gesture_distance": 50.0,
     "gesture_dwell": 0.2,
@@ -81,12 +81,12 @@
     },
     "saved_pen_position": [
         0.0,
-        -0.0,
+        0.0,
         0.0
     ],
     "home_pixel": [
-        185.5,
-        436.0
+        208.5,
+        321.5
     ],
     "step_index": 1,
     "cnc_points": {

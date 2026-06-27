@@ -1746,11 +1746,27 @@ async def get_calibration_status():
             "confidence": obj.get("confidence"),
             "area": obj.get("area")
         }
+
+    # Enrich yolo_detections with class_name for frontend convenience (Cập nhật 27)
+    enriched_yolo_detections = []
+    if yolo_detected and state.latest_yolo_detections:
+        for d in state.latest_yolo_detections:
+            cid = d["class_id"]
+            name = state.class_names.get(cid, f"Obj {cid}")
+            enriched_yolo_detections.append({
+                "class_id": cid,
+                "class_name": name,
+                "confidence": d["confidence"],
+                "bbox": d["bbox"],
+                "center": d["center"],
+                "area": d.get("area", 0)
+            })
+
     return {
         "detected": list(state.latest_detected_markers.keys()),
         "coords": state.latest_detected_markers,
         "yolo_detected": yolo_detected,
-        "yolo_detections": state.latest_yolo_detections if yolo_detected else [],
+        "yolo_detections": enriched_yolo_detections,
         "has_last_object": has_last_object,
         "last_object": last_object,
         "calibration_matrix": get_adjusted_calibration_matrix(),

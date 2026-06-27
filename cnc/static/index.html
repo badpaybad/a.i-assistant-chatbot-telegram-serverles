@@ -254,69 +254,6 @@
                     </div>
                 </div>
 
-                <!-- JOGGING CONTROLS -->
-                <div class="card glass-card">
-                    <h2 class="card-title">Machine Jogging</h2>
-                    <div class="jog-layout">
-                        <!-- Keypad Pad -->
-                        <div class="jog-keypad">
-                            <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
-                            <button class="btn-jog directional" id="jog-y-plus" title="Y+">▲</button>
-                            <button class="btn-jog diagonal" id="jog-y-plus-x-plus" title="Y+ X+">↗</button>
-
-                            <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
-                            <button class="btn-jog center" id="jog-home" title="Home Machine">🏠</button>
-                            <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
-
-                            <button class="btn-jog diagonal" id="jog-y-minus-x-minus" title="Y- X-">↙</button>
-                            <button class="btn-jog directional" id="jog-y-minus" title="Y-">▼</button>
-                            <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
-                        </div>
-
-                        <!-- Z Axis Controls -->
-                        <div class="jog-z">
-                            <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
-                            <button class="btn-jog center" id="jog-unlock" title="Unlock Machine ($X)">🔓</button>
-                            <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
-                        </div>
-                    </div>
-
-                    <div class="jog-sliders">
-                        <div class="slider-group">
-                            <div class="slider-header">
-                                <span>Step Size (Distance)</span>
-                                <span class="slider-value" id="val-step">10 mm</span>
-                            </div>
-                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
-                                <input type="range" id="slider-step" min="0.1" max="100" step="0.1" value="10"
-                                    style="flex: 1;">
-                                <select id="select-step-preset" class="input-select-small"
-                                    style="width: 85px; margin: 0; padding: 4px 8px; height: 32px; font-size: 11px;">
-                                    <option value="0.1">0.1 mm</option>
-                                    <option value="1">1 mm</option>
-                                    <option value="10" selected>10 mm</option>
-                                    <option value="100">100 mm</option>
-                                    <option value="custom">Custom</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="slider-group">
-                            <div class="slider-header">
-                                <span>Jog Feed Rate</span>
-                                <span class="slider-value" id="val-feed">1000 mm/min</span>
-                            </div>
-                            <input type="range" id="slider-feed" min="100" max="100000" step="100" value="1000">
-                        </div>
-                    </div>
-
-                    <div class="zero-actions">
-                        <button class="btn btn-secondary" id="btn-zero-x">Zero X</button>
-                        <button class="btn btn-secondary" id="btn-zero-y">Zero Y</button>
-                        <button class="btn btn-secondary" id="btn-zero-z">Zero Z</button>
-                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Zero All</button>
-                    </div>
-                </div>
 
             </section>
 
@@ -424,10 +361,80 @@
         <div class="panel-body" id="camera-panel-body">
             <div class="camera-stream-container">
                 <img id="camera-stream-img" src="" alt="Camera Feed Loading...">
+                <canvas id="camera-overlay-canvas"
+                    style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 5;"></canvas>
                 <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
             </div>
 
             <div class="camera-controls-sidebar" id="camera-controls-sidebar">
+
+                <!-- JOGGING CONTROLS -->
+                <div class="card glass-card">
+                    <h2 class="card-title">Machine Jogging</h2>
+                    <div class="jog-layout">
+                        <!-- Keypad Pad -->
+                        <div class="jog-keypad">
+
+                            <button class="btn-jog diagonal" id="jog-y-minus-x-minus" title="Y- X-">↙</button>
+                            <button class="btn-jog directional" id="jog-y-minus" title="Y-">▲</button>
+                            <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
+
+                            <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
+                            <button class="btn-jog center" id="jog-home" title="Home Machine">🏠</button>
+                            <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
+
+                            <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
+                            <button class="btn-jog directional" id="jog-y-plus" title="Y+"> ▼</button>
+                            <button class="btn-jog diagonal" id="jog-y-plus-x-plus" title="Y+ X+">↗</button>
+
+
+                            <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
+                            <button class="btn-jog center" id="jog-unlock" title="Unlock Machine ($X)">🔓</button>
+                            <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
+                        </div>
+
+                        <!-- Z Axis Controls -->
+                        <!-- <div class="jog-z">
+                        </div> -->
+                    </div>
+
+                    <div class="jog-sliders">
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <span>Step Size (Distance)</span>
+                                <span class="slider-value" id="val-step">10 mm</span>
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
+                                <input type="range" id="slider-step" min="0.1" max="100" step="0.1" value="10"
+                                    style="flex: 1;">
+                                <select id="select-step-preset" class="input-select-small"
+                                    style="width: 85px; margin: 0; padding: 4px 8px; height: 32px; font-size: 11px;">
+                                    <option value="0.1">0.1 mm</option>
+                                    <option value="1">1 mm</option>
+                                    <option value="10" selected>10 mm</option>
+                                    <option value="100">100 mm</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="slider-group">
+                            <div class="slider-header">
+                                <span>Jog Feed Rate</span>
+                                <span class="slider-value" id="val-feed">1000 mm/min</span>
+                            </div>
+                            <input type="range" id="slider-feed" min="100" max="100000" step="100" value="1000">
+                        </div>
+                    </div>
+
+                    <div class="zero-actions">
+                        <button class="btn btn-secondary" id="btn-zero-x">Zero X</button>
+                        <button class="btn btn-secondary" id="btn-zero-y">Zero Y</button>
+                        <button class="btn btn-secondary" id="btn-zero-z">Zero Z</button>
+                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Zero All</button>
+                    </div>
+                </div>
+
                 <!-- ALIGNMENT & CALIBRATION CONTROLS -->
                 <div class="camera-calibration-section">
                     <div class="calibration-row">
@@ -601,7 +608,7 @@
             <button class="btn-toggle" id="btn-close-gcode-editor" title="Close G-Code Editor">✕</button>
         </div>
         <div class="editor-panel-body">
-           
+
             <!-- Interactive Canvas Area -->
             <div class="editor-canvas-container">
                 <div class="canvas-instructions-top">
@@ -615,9 +622,9 @@
                     <span id="editor-status-coords">X: 0.0, Y: 0.0</span>
                 </div>
             </div>
-             <!-- Control Sidebar -->
+            <!-- Control Sidebar -->
             <div class="editor-sidebar">
-               
+
 
                 <!-- Parameters -->
                 <div class="editor-card">
@@ -654,27 +661,29 @@
 
                 <!-- Canvas Edit Toolbar -->
                 <div class="editor-card">
-                     <!-- File Upload -->
-                <div >
-                    <h3 class="editor-card-title">2. Chọn File Ảnh / SVG</h3>
-                    <div class="file-drop-zone" id="editor-drop-zone">
-                        <span class="upload-icon">🖼️</span>
-                        <span class="upload-text">Kéo thả hoặc <strong>Chọn file ảnh/SVG</strong></span>
-                        <input type="file" id="editor-file-input" accept="image/*,.svg" class="hidden">
+                    <!-- File Upload -->
+                    <div>
+                        <h3 class="editor-card-title">2. Chọn File Ảnh / SVG</h3>
+                        <div class="file-drop-zone" id="editor-drop-zone">
+                            <span class="upload-icon">🖼️</span>
+                            <span class="upload-text">Kéo thả hoặc <strong>Chọn file ảnh/SVG</strong></span>
+                            <input type="file" id="editor-file-input" accept="image/*,.svg" class="hidden">
+                        </div>
+                        <div class="file-info hidden" id="editor-file-info">
+                            <span class="file-name" id="editor-file-name">-</span>
+                            <button class="btn-icon" id="btn-editor-remove-file">✕</button>
+                        </div>
                     </div>
-                    <div class="file-info hidden" id="editor-file-info">
-                        <span class="file-name" id="editor-file-name">-</span>
-                        <button class="btn-icon" id="btn-editor-remove-file">✕</button>
-                    </div>
-                </div>
 
                     <h3 class="editor-card-title">3. Công cụ chỉnh sửa</h3>
                     <div class="editor-toolbar">
-                        <button class="btn-tool active" data-mode="edit" title="Sửa điểm (Edit nodes)" style=" display:none;">
+                        <button class="btn-tool active" data-mode="edit" title="Sửa điểm (Edit nodes)"
+                            style=" display:none;">
                             <span class="tool-icon">📍</span>
                             <span class="tool-lbl">Sửa điểm</span>
                         </button>
-                        <button class="btn-tool" data-mode="move" title="Di chuyển toàn bộ (Move all)" style=" display:none;">
+                        <button class="btn-tool" data-mode="move" title="Di chuyển toàn bộ (Move all)"
+                            style=" display:none;">
                             <span class="tool-icon">✋</span>
                             <span class="tool-lbl">Di chuyển</span>
                         </button>
@@ -688,10 +697,10 @@
                         </button>
                     </div>
                     <div style="margin-top: 12px; display: flex; gap: 8px;">
-                        <button class="btn btn-secondary btn-small" id="btn-editor-smooth" style="flex: 1; display:none;"
-                            title="Bo cong làm mịn các góc">Bo cong (Mịn)</button>
-                        <button class="btn btn-secondary btn-small" id="btn-editor-straighten" style="flex: 1; display:none;"
-                            title="Kéo thẳng các nét cong">Kéo thẳng</button>
+                        <button class="btn btn-secondary btn-small" id="btn-editor-smooth"
+                            style="flex: 1; display:none;" title="Bo cong làm mịn các góc">Bo cong (Mịn)</button>
+                        <button class="btn btn-secondary btn-small" id="btn-editor-straighten"
+                            style="flex: 1; display:none;" title="Kéo thẳng các nét cong">Kéo thẳng</button>
                     </div>
                     <div class="slider-group" style="margin-top: 12px;">
                         <div class="slider-header" style="padding: 0;">
@@ -711,17 +720,21 @@
                         <button class="btn btn-secondary btn-small" id="btn-save-orig-gcode">Gcode gốc</button>
                         <button class="btn btn-secondary btn-small" id="btn-save-edit-gcode"
                             style="grid-column: span 2;">Lưu Gcode chỉnh sửa</button>
-                        <button class="btn btn-secondary btn-small" id="btn-save-project">Lưu Project</button>
                         <button class="btn btn-secondary btn-small" id="btn-load-project-trigger">Tải Project</button>
+                        <button class="btn btn-secondary btn-small" id="btn-save-project">Lưu Project</button>
                         <input type="file" id="editor-project-input" accept=".json" class="hidden">
                     </div>
-                    <div>
+                    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 0;">
+                        <!-- Button 1 -->
+                        <button class="btn btn-success" id="btn-editor-preview-in-video-frame"
+                            style="width: 48%; font-size: 15px; font-weight: bold; padding: 12px; ">
+                            Xem trước
+                        </button>
 
-                <!-- Execution Button -->
-                <button class="btn btn-success" id="btn-editor-execute"
-                    style="width: 100%; font-size: 15px; font-weight: bold; padding: 12px; margin-top: auto; letter-spacing: 0.5px;">
-                    ⚡ Thực hiện vẽ (Run CNC)
-                </button>
+                        <!-- Button 2 -->
+                        <button class="btn btn-success" id="btn-editor-execute"
+                            style="width: 48%; font-size: 15px; font-weight: bold; padding: 12px; ">⚡ Run CNC
+                        </button>
                     </div>
                 </div>
 

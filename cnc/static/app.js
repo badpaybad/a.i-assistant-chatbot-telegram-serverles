@@ -604,34 +604,48 @@ function setupEventListeners() {
             saveUIPreferencesToServer();
         });
     }
+    function jog_keyboard_register_event() {
 
-    // Interactive Jog Keypad
-    document.getElementById("jog-y-plus").addEventListener("click", () => jogAxis("Y", 1));
-    document.getElementById("jog-y-minus").addEventListener("click", () => jogAxis("Y", -1));
-    document.getElementById("jog-x-plus").addEventListener("click", () => jogAxis("X", 1));
-    document.getElementById("jog-x-minus").addEventListener("click", () => jogAxis("X", -1));
-    document.getElementById("jog-z-plus").addEventListener("click", () => jogAxis("Z", 1));
-    document.getElementById("jog-z-minus").addEventListener("click", () => jogAxis("Z", -1));
+        // Interactive Jog Keypad
+        document.getElementById("jog-y-plus").addEventListener("click", () => jogAxis("Y", 1));
+        document.getElementById("jog-y-minus").addEventListener("click", () => jogAxis("Y", -1));
+        document.getElementById("jog-x-plus").addEventListener("click", () => jogAxis("X", 1));
+        document.getElementById("jog-x-minus").addEventListener("click", () => jogAxis("X", -1));
+        document.getElementById("jog-z-plus").addEventListener("click", () => jogAxis("Z", 1));
+        document.getElementById("jog-z-minus").addEventListener("click", () => jogAxis("Z", -1));
 
-    // Diagonal Jogging
-    document.getElementById("jog-y-plus-x-minus").addEventListener("click", () => jogDiagonal(-1, 1));
-    document.getElementById("jog-y-plus-x-plus").addEventListener("click", () => jogDiagonal(1, 1));
-    document.getElementById("jog-y-minus-x-minus").addEventListener("click", () => jogDiagonal(-1, -1));
-    document.getElementById("jog-y-minus-x-plus").addEventListener("click", () => jogDiagonal(1, -1));
+        // Diagonal Jogging
+        document.getElementById("jog-y-plus-x-minus").addEventListener("click", () => jogDiagonal(-1, 1));
+        document.getElementById("jog-y-plus-x-plus").addEventListener("click", () => jogDiagonal(1, 1));
+        document.getElementById("jog-y-minus-x-minus").addEventListener("click", () => jogDiagonal(-1, -1));
+        document.getElementById("jog-y-minus-x-plus").addEventListener("click", () => jogDiagonal(1, -1));
 
-    // Home / Unlock
-    document.getElementById("jog-home").addEventListener("click", () => sendCommand("$H"));
-    document.getElementById("jog-unlock").addEventListener("click", () => sendCommand("$X"));
+        // Home / Unlock
+        // document.getElementById("jog-home").addEventListener("click", () => sendCommand("$H"));
+        document.getElementById("jog-home").addEventListener("click", () => {
 
-    // Axis Zeroing
-    document.getElementById("btn-zero-x").addEventListener("click", () => sendCommand("G10 L20 P1 X0"));
-    document.getElementById("btn-zero-y").addEventListener("click", () => sendCommand("G10 L20 P1 Y0"));
-    document.getElementById("btn-zero-z").addEventListener("click", () => sendCommand("G10 L20 P1 Z0"));
-    document.getElementById("btn-zero-all").addEventListener("click", () => {
-        if (confirm("Are you sure you want to ZERO all axes relative coordinates?")) {
-            sendCommand("G10 L20 P1 X0 Y0 Z0");
-        }
-    });
+            if (btnSetHome) {
+                btnSetHome.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start' // Aligns the top of the element to the top of the viewport
+                });
+            }
+
+            btnSetHome.click();
+        });
+        document.getElementById("jog-unlock").addEventListener("click", () => sendCommand("$X"));
+
+        // Axis Zeroing
+        document.getElementById("btn-zero-x").addEventListener("click", () => sendCommand("G10 L20 P1 X0"));
+        document.getElementById("btn-zero-y").addEventListener("click", () => sendCommand("G10 L20 P1 Y0"));
+        document.getElementById("btn-zero-z").addEventListener("click", () => sendCommand("G10 L20 P1 Z0"));
+        document.getElementById("btn-zero-all").addEventListener("click", () => {
+            if (confirm("Are you sure you want to ZERO all axes relative coordinates?")) {
+                sendCommand("G10 L20 P1 X0 Y0 Z0");
+            }
+        });
+
+    }
 
     // File Selection Trigger
     fileDropZone.addEventListener("click", () => fileInput.click());
@@ -1669,30 +1683,30 @@ function setupEventListeners() {
                     logSystemMessage("Stopping CNC streaming and resetting machine...");
                     const res = await fetch("/api/stop", { method: "POST" });
                     const data = await res.json();
-                    
+
                     if (data.status === "ok") {
                         logSystemMessage("CNC Stopped and Reset command sent.");
                     } else {
                         logSystemMessage("Warning: Stop API returned status: " + data.status);
                     }
-                    
+
                     // 2. Wait 1.5 seconds for soft-reset to execute and connection to settle
                     await new Promise(resolve => setTimeout(resolve, 1500));
-                    
+
                     // 3. Send Unlock command $X to unlock GRBL from Alarm state after reset
                     logSystemMessage("Sending unlock command ($X) to GRBL...");
                     await sendCommand("$X");
                     await new Promise(resolve => setTimeout(resolve, 500));
-                    
+
                     // 4. Raise the Pen/Spindle tool up to safe height (Avoid dragging on paper)
                     const isSpindle = (penControlMode.value === "spindle-pwm");
                     const penUpValLocal = penUpVal.value;
                     const penUpCmd = isSpindle ? `M3 S${penUpValLocal}` : `G0 Z${penUpValLocal}`;
-                    
+
                     logSystemMessage(`Raising pen/spindle: ${penUpCmd}`);
                     await sendCommand(penUpCmd);
                     await new Promise(resolve => setTimeout(resolve, 500));
-                    
+
                     // 5. Move the CNC head back to the home position (0,0)
                     logSystemMessage("Moving CNC head to Home (X0 Y0)...");
                     await sendCommand("G90\nG0 X0 Y0");
@@ -2055,6 +2069,8 @@ function setupEventListeners() {
 
     // Start observing after initial layout
     resizeObserver.observe(cameraFloatingPanel);
+
+    jog_keyboard_register_event();
 }
 
 function jogAxis(axis, direction) {
@@ -2732,6 +2748,7 @@ function initGcodeEditor() {
     const btnLoadProjectTrigger = document.getElementById("btn-load-project-trigger");
     const editorProjectInput = document.getElementById("editor-project-input");
     const btnEditorExecute = document.getElementById("btn-editor-execute");
+    const btnEditorPreviewInVideoFrame = document.getElementById("btn-editor-preview-in-video-frame");
     const editorCanvas = document.getElementById("editor-canvas");
     const editorStatusSegments = document.getElementById("editor-status-segments");
     const editorStatusCoords = document.getElementById("editor-status-coords");
@@ -2788,6 +2805,7 @@ function initGcodeEditor() {
     if (btnCloseGcodeEditor) {
         btnCloseGcodeEditor.addEventListener("click", () => {
             panelGcodeEditor.classList.add("hidden");
+            stopPreviewInVideoFrame(); // Stop preview on close (Cập nhật 27)
         });
     }
 
@@ -3687,10 +3705,10 @@ function initGcodeEditor() {
         try {
             var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
                 bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-            while(n--){
+            while (n--) {
                 u8arr[n] = bstr.charCodeAt(n);
             }
-            return new File([u8arr], filename, {type:mime});
+            return new File([u8arr], filename, { type: mime });
         } catch (e) {
             console.error("Failed to parse data URL to File object:", e);
             return null;
@@ -3714,7 +3732,7 @@ function initGcodeEditor() {
                 segments: editorSegments
             };
             const jsonString = JSON.stringify(project, null, 2);
-            
+
             // Check if showSaveFilePicker is available (File System Access API)
             if (window.showSaveFilePicker) {
                 const options = {
@@ -3742,7 +3760,7 @@ function initGcodeEditor() {
             } else {
                 fallbackDownload(jsonString);
             }
-            
+
             function fallbackDownload(content) {
                 const blob = new Blob([content], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
@@ -3822,6 +3840,9 @@ function initGcodeEditor() {
     // CNC Stream Execution Trigger
     if (btnEditorExecute) {
         btnEditorExecute.addEventListener("click", async () => {
+            // Stop preview before execution to release resources (Cập nhật 27)
+            stopPreviewInVideoFrame();
+
             if (editorSegments.length === 0) {
                 alert("Không có đường vẽ nào để thực hiện!");
                 return;
@@ -3895,6 +3916,195 @@ function initGcodeEditor() {
                 alert("Lỗi mạng: " + err);
             }
         });
+    }
+
+    // --- Camera Feed G-Code Preview Logic (Cập nhật 27) ---
+    let previewIntervalId = null;
+
+    if (btnEditorPreviewInVideoFrame) {
+        btnEditorPreviewInVideoFrame.addEventListener("click", async () => {
+            if (previewIntervalId) {
+                stopPreviewInVideoFrame();
+                return;
+            }
+
+            // Start preview mode
+            btnEditorPreviewInVideoFrame.classList.add("active");
+            btnEditorPreviewInVideoFrame.innerText = "Stop Preview";
+            logSystemMessage("Starting real-time G-Code preview on camera feed...");
+
+            // Ensure camera panel is expanded
+            const cameraFloatingPanel = document.getElementById("camera-floating-panel");
+            const btnCameraToggle = document.getElementById("btn-camera-toggle");
+            if (cameraFloatingPanel && cameraFloatingPanel.classList.contains("collapsed")) {
+                if (btnCameraToggle) btnCameraToggle.click();
+            }
+
+            // Ensure object detection is checked
+            const chkDetectObjects = document.getElementById("chk-detect-objects");
+            if (chkDetectObjects && !chkDetectObjects.checked) {
+                chkDetectObjects.checked = true;
+                chkDetectObjects.dispatchEvent(new Event("change"));
+            }
+
+            // Poll and draw every 300ms
+            previewIntervalId = setInterval(async () => {
+                await drawPreviewOnCamera();
+            }, 300);
+        });
+    }
+
+    function stopPreviewInVideoFrame() {
+        if (previewIntervalId) {
+            clearInterval(previewIntervalId);
+            previewIntervalId = null;
+        }
+        if (btnEditorPreviewInVideoFrame) {
+            btnEditorPreviewInVideoFrame.classList.remove("active");
+            btnEditorPreviewInVideoFrame.innerText = "Xem trước";
+        }
+        // Clear overlay canvas
+        const overlayCanvas = document.getElementById("camera-overlay-canvas");
+        if (overlayCanvas) {
+            const ctx = overlayCanvas.getContext("2d");
+            ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+        logSystemMessage("Stopped camera G-Code preview.");
+    }
+
+    async function drawPreviewOnCamera() {
+        const overlayCanvas = document.getElementById("camera-overlay-canvas");
+        if (!overlayCanvas) return;
+        const ctx = overlayCanvas.getContext("2d");
+
+        const cameraStreamImg = document.getElementById("camera-stream-img");
+        if (!cameraStreamImg) return;
+
+        // Set logical dimensions of canvas to match natural resolution of video frame
+        const w = cameraStreamImg.naturalWidth || 1280;
+        const h = cameraStreamImg.naturalHeight || 720;
+        if (overlayCanvas.width !== w || overlayCanvas.height !== h) {
+            overlayCanvas.width = w;
+            overlayCanvas.height = h;
+        }
+
+        ctx.clearRect(0, 0, w, h);
+
+        if (editorSegments.length === 0) return;
+
+        try {
+            const res = await fetch("/api/calibration/status");
+            const data = await res.json();
+
+            const M = data.calibration_matrix;
+            if (!M || M.length !== 3) {
+                // Not calibrated yet
+                ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
+                ctx.font = "bold 20px sans-serif";
+                ctx.fillText("⚠️ Camera chưa hiệu chỉnh!", 20, 40);
+                return;
+            }
+
+            // Find cnchead position in YOLO detections (Cập nhật 27: class_id=0 hoặc class_name=cnchead)
+            const head = data.yolo_detections ? data.yolo_detections.find(d => d.class_id === 0 || d.class_name === "cnchead") : null;
+            if (!head) {
+                ctx.fillStyle = "rgba(255, 165, 0, 0.8)";
+                ctx.font = "bold 16px sans-serif";
+                ctx.fillText("⚠️ Đang tìm đầu CNC (cnchead)...", 20, 40);
+                return;
+            }
+
+            // Head pixel coordinates
+            const cx = head.center[0];
+            const cy = head.center[1];
+
+            // 1. Calculate head workspace coordinates: W_head = M * [cx, cy, 1]
+            const head_w_x = M[0][0] * cx + M[0][1] * cy + M[0][2];
+            const head_w_y = M[1][0] * cx + M[1][1] * cy + M[1][2];
+            const head_w_z = M[2][0] * cx + M[2][1] * cy + M[2][2];
+            if (Math.abs(head_w_z) < 1e-8) return;
+            const wx = head_w_x / head_w_z;
+            const wy = head_w_y / head_w_z;
+
+            // 2. Compute M_inv to map absolute workspace coordinate back to camera pixels
+            const M_inv = invert3x3(M);
+            if (!M_inv) return;
+
+            // 3. Draw head position bounding box highlight
+            const bbox = head.bbox; // [x1, y1, x2, y2]
+            ctx.strokeStyle = "rgba(0, 255, 0, 0.6)";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]);
+            ctx.fillStyle = "rgba(0, 255, 0, 0.8)";
+            ctx.font = "12px sans-serif";
+            ctx.fillText("CNC Head", bbox[0], bbox[1] - 5);
+
+            // 4. Draw G-Code segments relative to head position
+            ctx.strokeStyle = "rgba(255, 0, 128, 0.85)"; // vibrant magenta
+            ctx.lineWidth = 3;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+
+            editorSegments.forEach(seg => {
+                // segment coordinates relative to head starting position (which is 0,0)
+                const abs_w_x1 = wx + seg.x1;
+                const abs_w_y1 = wy + seg.y1;
+                const abs_w_x2 = wx + seg.x2;
+                const abs_w_y2 = wy + seg.y2;
+
+                // Map back to pixels
+                const p1 = workspaceToPixel(M_inv, abs_w_x1, abs_w_y1);
+                const p2 = workspaceToPixel(M_inv, abs_w_x2, abs_w_y2);
+
+                if (p1 && p2) {
+                    ctx.beginPath();
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+            });
+
+        } catch (err) {
+            console.error("Error drawing G-Code preview on camera frame:", err);
+        }
+    }
+
+    // Matrix inversion helper
+    function invert3x3(m) {
+        const a = m[0][0], b = m[0][1], c = m[0][2];
+        const d = m[1][0], e = m[1][1], f = m[1][2];
+        const g = m[2][0], h = m[2][1], i = m[2][2];
+
+        const det = a * (e * i - f * h) - b * (d * i - f * g) + c * (d * h - e * g);
+        if (Math.abs(det) < 1e-8) return null;
+
+        const invdet = 1.0 / det;
+        return [
+            [
+                (e * i - f * h) * invdet,
+                (c * h - b * i) * invdet,
+                (b * f - c * e) * invdet
+            ],
+            [
+                (f * g - d * i) * invdet,
+                (a * i - c * g) * invdet,
+                (c * d - a * f) * invdet
+            ],
+            [
+                (d * h - e * g) * invdet,
+                (b * g - a * h) * invdet,
+                (a * e - b * d) * invdet
+            ]
+        ];
+    }
+
+    // Workspace to camera pixel coordinates mapper
+    function workspaceToPixel(M_inv, wx, wy) {
+        const px = M_inv[0][0] * wx + M_inv[0][1] * wy + M_inv[0][2];
+        const py = M_inv[1][0] * wx + M_inv[1][1] * wy + M_inv[1][2];
+        const pz = M_inv[2][0] * wx + M_inv[2][1] * wy + M_inv[2][2];
+        if (Math.abs(pz) < 1e-8) return null;
+        return { x: px / pz, y: py / pz };
     }
 
     resizeEditorCanvas();

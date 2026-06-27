@@ -160,6 +160,9 @@ thêm 1 floating window chiếm nửa bên trái của UI, UI này gọi là Gco
     load project cần chọn file json đã lưu, chọn xong các dữ liệu (gồm cả ảnh , gcode gốc, gcode đã chỉnh sửa ..) được load lại vào gcode editor để tiếp tục
 
 **cập nhật 26**
-gcode editor gcode-editor-panel cần chiếm 1/4 độ rộng của page. min width là theo editor-canvas để vẽ đúng kích cỡ 
+gcode editor gcode-editor-panel cần chiếm 1/4 độ rộng của page. min width là theo editor-canvas để vẽ đúng kích cỡ
     editor-sidebar cần thành bottom bar của gcode editor
-    editor-canvas cần nằm phía trên 
+    editor-canvas cần nằm phía trên
+
+**cập nhật 27** bổ xung nút <button class="btn btn-success" id="btn-editor-preview-in-video-frame" ... ></button> button này khi click sẽ dựa vào video frame ở div id=camera-floating-panel , dựa vào object detect ra cnchead để lấy vị trí của đầu cnc trong video frame và vẽ gcode đã chỉnh sửa ở gcode editor tương ứng vào video frame UI
+    cnc header object detected là class_id=0 hoặc class_name=cnchead
