@@ -158,3 +158,8 @@ thêm 1 floating window chiếm nửa bên trái của UI, UI này gọi là Gco
 **cập nhật 25** ở gcode editor , lưu project và load project chưa hoạt động
     lưu project cho phép người dùng lưu vào file dạng json các dữ liệu (gồm cả ảnh , gcode gốc, gcode đã chỉnh sửa ..), cho phép người dùng chọn folder như download về
     load project cần chọn file json đã lưu, chọn xong các dữ liệu (gồm cả ảnh , gcode gốc, gcode đã chỉnh sửa ..) được load lại vào gcode editor để tiếp tục
+
+**cập nhật 26**
+gcode editor gcode-editor-panel cần chiếm 1/4 độ rộng của page. min width là theo editor-canvas để vẽ đúng kích cỡ 
+    editor-sidebar cần thành bottom bar của gcode editor
+    editor-canvas cần nằm phía trên 

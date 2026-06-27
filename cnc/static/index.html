@@ -600,26 +600,28 @@
             </div>
             <button class="btn-toggle" id="btn-close-gcode-editor" title="Close G-Code Editor">✕</button>
         </div>
-        <div class="panel-body flex-row">
-            <!-- Control Sidebar -->
-            <div class="editor-sidebar">
-                <!-- File Upload -->
-                <div class="editor-card">
-                    <h3 class="editor-card-title">1. Chọn File Ảnh / SVG</h3>
-                    <div class="file-drop-zone" id="editor-drop-zone">
-                        <span class="upload-icon">🖼️</span>
-                        <span class="upload-text">Kéo thả hoặc <strong>Chọn file ảnh/SVG</strong></span>
-                        <input type="file" id="editor-file-input" accept="image/*,.svg" class="hidden">
-                    </div>
-                    <div class="file-info hidden" id="editor-file-info">
-                        <span class="file-name" id="editor-file-name">-</span>
-                        <button class="btn-icon" id="btn-editor-remove-file">✕</button>
-                    </div>
+        <div class="editor-panel-body">
+           
+            <!-- Interactive Canvas Area -->
+            <div class="editor-canvas-container">
+                <div class="canvas-instructions-top">
+                    💡 Cuộn chuột: Zoom • Kéo chuột phải/giữa: Pan • Phím Shift: Nắn thẳng khi kéo sửa điểm
                 </div>
+                <div class="editor-canvas-wrapper" id="editor-canvas-wrapper">
+                    <canvas id="editor-canvas" width="720" height="720"></canvas>
+                </div>
+                <div class="canvas-status-bar">
+                    <span id="editor-status-segments">0 nét vẽ</span>
+                    <span id="editor-status-coords">X: 0.0, Y: 0.0</span>
+                </div>
+            </div>
+             <!-- Control Sidebar -->
+            <div class="editor-sidebar">
+               
 
                 <!-- Parameters -->
                 <div class="editor-card">
-                    <h3 class="editor-card-title">2. Cấu hình chuyển đổi</h3>
+                    <h3 class="editor-card-title">1. Cấu hình chuyển đổi</h3>
                     <div class="row-inputs">
                         <div class="input-group">
                             <label for="editor-scale">Scale Factor</label>
@@ -652,6 +654,20 @@
 
                 <!-- Canvas Edit Toolbar -->
                 <div class="editor-card">
+                     <!-- File Upload -->
+                <div >
+                    <h3 class="editor-card-title">2. Chọn File Ảnh / SVG</h3>
+                    <div class="file-drop-zone" id="editor-drop-zone">
+                        <span class="upload-icon">🖼️</span>
+                        <span class="upload-text">Kéo thả hoặc <strong>Chọn file ảnh/SVG</strong></span>
+                        <input type="file" id="editor-file-input" accept="image/*,.svg" class="hidden">
+                    </div>
+                    <div class="file-info hidden" id="editor-file-info">
+                        <span class="file-name" id="editor-file-name">-</span>
+                        <button class="btn-icon" id="btn-editor-remove-file">✕</button>
+                    </div>
+                </div>
+
                     <h3 class="editor-card-title">3. Công cụ chỉnh sửa</h3>
                     <div class="editor-toolbar">
                         <button class="btn-tool active" data-mode="edit" title="Sửa điểm (Edit nodes)" style=" display:none;">
@@ -699,28 +715,18 @@
                         <button class="btn btn-secondary btn-small" id="btn-load-project-trigger">Tải Project</button>
                         <input type="file" id="editor-project-input" accept=".json" class="hidden">
                     </div>
-                </div>
+                    <div>
 
                 <!-- Execution Button -->
                 <button class="btn btn-success" id="btn-editor-execute"
                     style="width: 100%; font-size: 15px; font-weight: bold; padding: 12px; margin-top: auto; letter-spacing: 0.5px;">
                     ⚡ Thực hiện vẽ (Run CNC)
                 </button>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Interactive Canvas Area -->
-            <div class="editor-canvas-container">
-                <div class="canvas-instructions-top">
-                    💡 Cuộn chuột: Zoom • Kéo chuột phải/giữa: Pan • Phím Shift: Nắn thẳng khi kéo sửa điểm
-                </div>
-                <div class="editor-canvas-wrapper" id="editor-canvas-wrapper">
-                    <canvas id="editor-canvas" width="720" height="720"></canvas>
-                </div>
-                <div class="canvas-status-bar">
-                    <span id="editor-status-segments">0 nét vẽ</span>
-                    <span id="editor-status-coords">X: 0.0, Y: 0.0</span>
-                </div>
-            </div>
         </div>
     </div>
 

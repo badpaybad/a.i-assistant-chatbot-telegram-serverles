@@ -1824,12 +1824,13 @@ input[type=range]::-webkit-slider-thumb:hover {
     position: fixed;
     top: 0;
     left: 0;
-    width: 50vw;
+    width: 25vw;
+    min-width: 740px; /* based on editor-canvas size (720px) + margins */
     height: 100vh;
     z-index: 1100;
     display: flex;
     flex-direction: column;
-    background: rgba(13, 17, 23, 0.9) !important;
+    background: rgba(13, 17, 23, 0.92) !important;
     backdrop-filter: blur(25px) saturate(180%);
     -webkit-backdrop-filter: blur(25px) saturate(180%);
     border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -1848,31 +1849,43 @@ input[type=range]::-webkit-slider-thumb:hover {
     pointer-events: none;
 }
 
-.gcode-editor-panel .panel-body.flex-row {
+.gcode-editor-panel .editor-panel-body {
     display: flex;
-    flex-direction: row;
+    flex-direction: column; /* vertical layout: canvas top, sidebar bottom */
     flex: 1;
     overflow: hidden;
     height: calc(100vh - 48px);
 }
 
 .editor-sidebar {
-    width: 330px;
-    min-width: 330px;
-    border-right: 1px solid rgba(255, 255, 255, 0.08);
-    padding: 16px;
+    order: 2; /* Bottom bar positioning */
+    width: 100%;
+    min-width: 100%;
+    height: auto;
+    max-height: 380px; /* fixed max height for bottom controls */
+    min-height: 250px;
+    border-right: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px;
     display: flex;
-    flex-direction: column;
-    gap: 14px;
-    overflow-y: auto;
-    background: rgba(20, 24, 33, 0.4);
+    flex-direction: row; /* Horizontal flow for bottom bar */
+    gap: 12px;
+    overflow-x: auto; /* horizontal scroll for cards */
+    overflow-y: hidden;
+    background: rgba(15, 20, 28, 0.95);
+    align-items: stretch;
 }
 
 .editor-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    flex: 0 0 290px; /* fixed width for cards in bottom bar */
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
     border-radius: 8px;
-    padding: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 8px;
 }
 
 .editor-card-title {
@@ -1926,12 +1939,23 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .editor-canvas-container {
+    order: 1; /* Top canvas positioning */
     flex: 1;
     display: flex;
     flex-direction: column;
     position: relative;
     background: #090c10;
     overflow: hidden;
+}
+
+.editor-sidebar #btn-editor-execute {
+    flex: 0 0 220px;
+    align-self: center;
+    margin: 0 !important;
+    height: 90%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .canvas-instructions-top {
