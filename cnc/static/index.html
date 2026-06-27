@@ -28,7 +28,9 @@
             </div>
 
             <div class="header-status">
-                <button class="btn btn-primary" id="btn-toggle-gcode-editor" style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">G-Code Editor</button>
+                <button class="btn btn-primary" id="btn-toggle-gcode-editor"
+                    style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">G-Code
+                    Editor</button>
                 <div class="status-badge disconnected" id="connection-status">DISCONNECTED</div>
                 <div class="state-badge disconnected" id="machine-state">OFFLINE</div>
             </div>
@@ -470,7 +472,7 @@
                     <div class="calibration-buttons-grid" style="margin-top: 6px;">
                         <button class="btn btn-secondary btn-small" id="btn-set-cnc-tl" disabled>Set CNC TL</button>
                         <button class="btn btn-secondary btn-small" id="btn-set-cnc-tr" disabled>Set CNC TR</button>
-                   
+
                         <button class="btn btn-secondary btn-small" id="btn-set-cnc-bl" disabled>Set CNC BL</button>
                         <button class="btn btn-secondary btn-small" id="btn-set-cnc-br" disabled>Set CNC BR</button>
                     </div>
@@ -529,6 +531,9 @@
                         <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y (Global Feedrate)</button>
 
                         <button class="btn btn-primary" id="btn-move-to-center" disabled>Moving around</button>
+
+
+                        <button class="btn btn-warning" id="btn-stop-to-home">Stop & go home</button>
                     </div>
 
                     <!-- Home Snapshot Map -->
@@ -617,12 +622,12 @@
                     <h3 class="editor-card-title">2. Cấu hình chuyển đổi</h3>
                     <div class="row-inputs">
                         <div class="input-group">
-                           <label for="editor-scale">Scale Factor</label>
-                           <input type="number" id="editor-scale" value="0.1" step="0.01" min="0.001">
+                            <label for="editor-scale">Scale Factor</label>
+                            <input type="number" id="editor-scale" value="0.1" step="0.01" min="0.001">
                         </div>
                         <div class="input-group">
-                           <label for="editor-feedrate">Feedrate (mm/min)</label>
-                           <input type="number" id="editor-feedrate" value="2000" step="100" min="10">
+                            <label for="editor-feedrate">Feedrate (mm/min)</label>
+                            <input type="number" id="editor-feedrate" value="2000" step="100" min="10">
                         </div>
                     </div>
                     <div class="row-inputs" style="margin-top: 10px;">
@@ -641,7 +646,8 @@
                             </select>
                         </div>
                     </div>
-                    <button class="btn btn-primary" id="btn-editor-convert" style="width: 100%; margin-top: 12px; font-weight: bold;">Tạo G-Code</button>
+                    <button class="btn btn-primary" id="btn-editor-convert"
+                        style="width: 100%; margin-top: 12px; font-weight: bold;">Tạo G-Code</button>
                 </div>
 
                 <!-- Canvas Edit Toolbar -->
@@ -666,15 +672,18 @@
                         </button>
                     </div>
                     <div style="margin-top: 12px; display: flex; gap: 8px;">
-                        <button class="btn btn-secondary btn-small" id="btn-editor-smooth" style="flex: 1;" title="Bo cong làm mịn các góc">Bo cong (Mịn)</button>
-                        <button class="btn btn-secondary btn-small" id="btn-editor-straighten" style="flex: 1;" title="Kéo thẳng các nét cong">Kéo thẳng</button>
+                        <button class="btn btn-secondary btn-small" id="btn-editor-smooth" style="flex: 1;"
+                            title="Bo cong làm mịn các góc">Bo cong (Mịn)</button>
+                        <button class="btn btn-secondary btn-small" id="btn-editor-straighten" style="flex: 1;"
+                            title="Kéo thẳng các nét cong">Kéo thẳng</button>
                     </div>
                     <div class="slider-group" style="margin-top: 12px;">
                         <div class="slider-header" style="padding: 0;">
                             <span style="font-size: 11px;">Độ dày nét Canvas</span>
                             <span class="slider-value" id="val-editor-linewidth">2 px</span>
                         </div>
-                        <input type="range" id="slider-editor-linewidth" min="0.5" max="10" step="0.5" value="2" style="margin-top: 4px;">
+                        <input type="range" id="slider-editor-linewidth" min="0.5" max="10" step="0.5" value="2"
+                            style="margin-top: 4px;">
                     </div>
                 </div>
 
@@ -684,7 +693,8 @@
                     <div class="project-actions-grid">
                         <button class="btn btn-secondary btn-small" id="btn-save-orig-img">Ảnh gốc</button>
                         <button class="btn btn-secondary btn-small" id="btn-save-orig-gcode">Gcode gốc</button>
-                        <button class="btn btn-secondary btn-small" id="btn-save-edit-gcode" style="grid-column: span 2;">Lưu Gcode chỉnh sửa</button>
+                        <button class="btn btn-secondary btn-small" id="btn-save-edit-gcode"
+                            style="grid-column: span 2;">Lưu Gcode chỉnh sửa</button>
                         <button class="btn btn-secondary btn-small" id="btn-save-project">Lưu Project</button>
                         <button class="btn btn-secondary btn-small" id="btn-load-project-trigger">Tải Project</button>
                         <input type="file" id="editor-project-input" accept=".json" class="hidden">
@@ -692,7 +702,8 @@
                 </div>
 
                 <!-- Execution Button -->
-                <button class="btn btn-success" id="btn-editor-execute" style="width: 100%; font-size: 15px; font-weight: bold; padding: 12px; margin-top: auto; letter-spacing: 0.5px;">
+                <button class="btn btn-success" id="btn-editor-execute"
+                    style="width: 100%; font-size: 15px; font-weight: bold; padding: 12px; margin-top: auto; letter-spacing: 0.5px;">
                     ⚡ Thực hiện vẽ (Run CNC)
                 </button>
             </div>

@@ -151,5 +151,6 @@ thêm 1 floating window chiếm nửa bên trái của UI, UI này gọi là Gco
         lúc này gcode đã chỉnh sửa sẽ được gửi tới cnc máy vẽ để thực hiện lệnh di chuyển cnc head để vẽ.
         vị trí hiện tại của đầu cnc là gốc home rồi mới bắt đầu vẽ 
 
-**cập nhật 23**
-    tool path view 
+**cập nhật 23** bổ xung nút <button class="btn btn-warning" id="btn-stop-to-home">Stop & go home</button> khi người dùng click thì gọi lệnh stop cnc , reset gcode ở máy cnc và go to home
+
+**cập nhật 24** <canvas id="toolpath-canvas"></canvas> đang vẽ bị ngược như gương, trục Y cần điều chỉnh 

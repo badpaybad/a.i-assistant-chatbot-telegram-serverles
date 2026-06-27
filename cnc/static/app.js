@@ -1327,6 +1327,9 @@ function setupEventListeners() {
     const btnCalClear = document.getElementById("btn-cal-clear");
     const btnResetAruco = document.getElementById("btn-reset-aruco");
     const btnMoveToCenter = document.getElementById("btn-move-to-center");
+    const btnStopToHome = document.getElementById("btn-stop-to-home");
+
+
 
     let calibrationInterval = null;
     let calibratedPoints = {};
@@ -1655,6 +1658,47 @@ function setupEventListeners() {
                     } catch (e) {
                         logSystemMessage(`Failed to reset ArUco: ${e}`);
                     }
+                }
+            });
+        }
+
+        if (btnStopToHome) {
+            btnStopToHome.addEventListener("click", async () => {
+                try {
+                    // 1. Call api to stop/abort CNC streaming
+                    logSystemMessage("Stopping CNC streaming and resetting machine...");
+                    const res = await fetch("/api/stop", { method: "POST" });
+                    const data = await res.json();
+                    
+                    if (data.status === "ok") {
+                        logSystemMessage("CNC Stopped and Reset command sent.");
+                    } else {
+                        logSystemMessage("Warning: Stop API returned status: " + data.status);
+                    }
+                    
+                    // 2. Wait 1.5 seconds for soft-reset to execute and connection to settle
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // 3. Send Unlock command $X to unlock GRBL from Alarm state after reset
+                    logSystemMessage("Sending unlock command ($X) to GRBL...");
+                    await sendCommand("$X");
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // 4. Raise the Pen/Spindle tool up to safe height (Avoid dragging on paper)
+                    const isSpindle = (penControlMode.value === "spindle-pwm");
+                    const penUpValLocal = penUpVal.value;
+                    const penUpCmd = isSpindle ? `M3 S${penUpValLocal}` : `G0 Z${penUpValLocal}`;
+                    
+                    logSystemMessage(`Raising pen/spindle: ${penUpCmd}`);
+                    await sendCommand(penUpCmd);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                    // 5. Move the CNC head back to the home position (0,0)
+                    logSystemMessage("Moving CNC head to Home (X0 Y0)...");
+                    await sendCommand("G90\nG0 X0 Y0");
+                } catch (err) {
+                    console.error("Error executing Stop & Go Home:", err);
+                    logSystemMessage(`Error executing Stop & Go Home: ${err}`);
                 }
             });
         }
@@ -2268,9 +2312,9 @@ function resetCanvasView() {
     zoomScale = Math.max(0.2, Math.min(20, zoomScale));
 
     // Position center of visual path to center of canvas
-    // Canvas coordinate runs Y downwards, CNC coordinate runs Y upwards. Flip Y!
+    // Y-axis alignment: screen Y increases downwards (Cập nhật 24)
     panX = canvas.width / 2 - (boundingBox.center.x * zoomScale);
-    panY = canvas.height / 2 + (boundingBox.center.y * zoomScale);
+    panY = canvas.height / 2 - (boundingBox.center.y * zoomScale);
 
     drawToolpath();
 }
@@ -2289,9 +2333,9 @@ function drawToolpath() {
 
             // Transform point coordinates to screen pixels
             const x1 = panX + p.x1 * zoomScale;
-            const y1 = panY - p.y1 * zoomScale; // Flip Y for display space
+            const y1 = panY + p.y1 * zoomScale; // Screen Y increases downwards (Cập nhật 24)
             const x2 = panX + p.x2 * zoomScale;
-            const y2 = panY - p.y2 * zoomScale;
+            const y2 = panY + p.y2 * zoomScale;
 
             ctx.moveTo(x1, y1);
             ctx.lineTo(x2, y2);
@@ -2378,7 +2422,7 @@ function drawGrid() {
 function drawToolCrosshair() {
     // Current tool positions on screen pixel space
     const screenX = panX + currentWPos.x * zoomScale;
-    const screenY = panY - currentWPos.y * zoomScale;
+    const screenY = panY + currentWPos.y * zoomScale; // Screen Y increases downwards (Cập nhật 24)
 
     // Draw outer glow ring
     ctx.beginPath();
