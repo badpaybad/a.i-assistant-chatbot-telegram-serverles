@@ -2593,6 +2593,143 @@ async def get_all_cameras():
 os.makedirs("static", exist_ok=True)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# G-code Editor Endpoints
+class SetGcodeRequest(BaseModel):
+    gcode: str
+
+@app.post("/api/gcode-editor/convert")
+async def gcode_editor_convert(
+    file: UploadFile = File(...),
+    scale_factor: float = Form(0.1),
+    feed_rate: int = Form(2000),
+    mode: str = Form("servo"),
+    algorithm: str = Form("centerline")
+):
+    try:
+        # Create temp folder if not exists
+        temp_dir = os.path.join("static", "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Save uploaded file
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        temp_input_path = os.path.join(temp_dir, f"input_{int(time.time())}{file_ext}")
+        temp_gcode_path = os.path.join(temp_dir, f"output_{int(time.time())}.gcode")
+        
+        with open(temp_input_path, "wb") as f:
+            f.write(await file.read())
+            
+        success = False
+        
+        # SVG Conversion
+        if file_ext == ".svg":
+            from svg2gcode import svg_to_exact_gcode
+            success = svg_to_exact_gcode(
+                svg_path=temp_input_path,
+                gcode_path=temp_gcode_path,
+                scale_factor=scale_factor,
+                feed_rate=feed_rate,
+                mode=mode
+            )
+        # Image Conversion
+        elif file_ext in [".png", ".jpg", ".jpeg", ".webp"]:
+            from image2gcode import image_to_perfect_single_line_gcode, image_to_gcode
+            if algorithm == "centerline":
+                success = image_to_perfect_single_line_gcode(
+                    image_path=temp_input_path,
+                    gcode_path=temp_gcode_path,
+                    scale_factor=scale_factor,
+                    feed_rate=feed_rate,
+                    mode=mode
+                )
+            else: # contour
+                success = image_to_gcode(
+                    image_path=temp_input_path,
+                    gcode_path=temp_gcode_path,
+                    scale_factor=scale_factor,
+                    feed_rate=feed_rate,
+                    mode=mode
+                )
+        else:
+            return JSONResponse({"status": "error", "message": f"Unsupported file type: {file_ext}"}, status_code=400)
+            
+        if not success or not os.path.exists(temp_gcode_path):
+            return JSONResponse({"status": "error", "message": "Conversion failed"}, status_code=500)
+            
+        # Read the generated G-code
+        with open(temp_gcode_path, "r", encoding="utf-8", errors="ignore") as f:
+            gcode_content = f.read()
+            
+        # Parse G-code to segments
+        segments = []
+        current_x = 0.0
+        current_y = 0.0
+        
+        x_pattern = re.compile(r'X([\d\.-]+)', re.IGNORECASE)
+        y_pattern = re.compile(r'Y([\d\.-]+)', re.IGNORECASE)
+        
+        for line in gcode_content.splitlines():
+            line = line.strip()
+            if not line or line.startswith(';') or line.startswith('('):
+                continue
+                
+            if line.upper().startswith('G0') or line.upper().startswith('G1') or ('X' in line.upper() or 'Y' in line.upper()):
+                x_match = x_pattern.search(line)
+                y_match = y_pattern.search(line)
+                
+                new_x = float(x_match.group(1)) if x_match else current_x
+                new_y = float(y_match.group(1)) if y_match else current_y
+                
+                is_drawing = 'G1' in line.upper() or (not 'G0' in line.upper() and not 'G00' in line.upper())
+                
+                if is_drawing:
+                    segments.append({
+                        "x1": current_x, "y1": current_y,
+                        "x2": new_x, "y2": new_y
+                    })
+                
+                current_x = new_x
+                current_y = new_y
+                
+        # Clean up temp files
+        try:
+            os.remove(temp_input_path)
+            os.remove(temp_gcode_path)
+        except Exception as e:
+            logger.error(f"Error removing temp files: {e}")
+            
+        return {
+            "status": "ok",
+            "gcode": gcode_content,
+            "segments": segments
+        }
+    except Exception as e:
+        logger.error(f"Error converting in gcode editor: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/api/gcode-editor/set-gcode")
+async def gcode_editor_set_gcode(req: SetGcodeRequest):
+    try:
+        lines = req.gcode.splitlines()
+        valid_lines = []
+        for line in lines:
+            line_stripped = line.strip()
+            if line_stripped:
+                valid_lines.append(line_stripped)
+                
+        state.gcode_lines = valid_lines
+        state.gcode_index = 0
+        state.is_streaming = False
+        state.is_paused = False
+        
+        logger.info(f"Loaded G-code from editor: {len(valid_lines)} lines")
+        return {
+            "status": "ok",
+            "lines_count": len(valid_lines)
+        }
+    except Exception as e:
+        logger.error(f"Error setting G-code from editor: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
 @app.get("/")
 async def root():
     with open(os.path.join("static", "index.html"), "r") as f:

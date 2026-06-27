@@ -98,7 +98,7 @@ khi có aruco, gốc tọa độ, set home cho đầu bút CNC , toàn bộ cầ
 
 sau khi có ảnh cần cho người dùng chọn thư mục để lưu.
     dạng chọn folder như download file của trình duyệt ở máy client, lưu ảnh chụp được qua trình duyệt
-    lưu ảnh dạng jpeg frame capture 
+    lưu ảnh dạng jpeg frame capture
 
 **cập nhật 15**
 chức năng ở Touch & Swipe Gestures . bổ xung thêm checkbox auto lấy theo đầu bút của cnc, mặc định là checked
@@ -107,34 +107,49 @@ chức năng ở Touch & Swipe Gestures . bổ xung thêm checkbox auto lấy th
 **cập nhật 16** việc object detect sẽ load /work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/runs/detect/train/weights/best.onnx , model train có nhiều labels, trong đó
     lable cnchead là đầu but cnc cần vẽ lên video , nếu detect được cnchead
         vị trí đầu bút cnc đã dược xác định qua grbl, cần so sánh nếu vị trí từ grbl nằm bên trong vùng bbox cnchead detect, nếu nằm ngoài vùng bbox cần hiển thị text lỗi not in range
-    lable sittng, là object cần lấy largest đẻ khi go to largest object thì đầu bút cnc sẽ di chuyển đến 
+    lable sittng, là object cần lấy largest đẻ khi go to largest object thì đầu bút cnc sẽ di chuyển đến
 sau này mô hình sẽ còn các labels khác (kể cả sittng, ccnhead đã có xử lý riêng và vẽ rồi), detect được sẽ cần vẽ label tương ứng lên video frame UI
 
 **cập nhật 17** khi set home (home_snapshot) cũng chính là vị trí của cnc header hiện tại.  
 
-**cập nhật 18** cần tốc độ vuốt của đầu bút nhanh như tay người, khi vuốt cũng nhấc dần đầu bút lên cao khi tới cuối hành trình thì là như nhấc hẳn ngón tay lên màn cảm ứng 
+**cập nhật 18** cần tốc độ vuốt của đầu bút nhanh như tay người, khi vuốt cũng nhấc dần đầu bút lên cao khi tới cuối hành trình thì là như nhấc hẳn ngón tay lên màn cảm ứng
     Step Size (Distance) và Jog Feed Rate, Feedrate,Dist (mm),Swipe/Dwell (s),Tap Dwell (s) cần thành global apply, cũng cần lưu lại để khi tắt đi mở lại vẫn dùng như được set
     cần lưu cả phía server và client load theo server
-    việc nhấc đầu but lên dần có thể servor chỉnh theo 1 độ 1 lần như vậy giống việc vuốt của tay người, tốc độ cần nhanh tăng tốc dần 
+    việc nhấc đầu but lên dần có thể servor chỉnh theo 1 độ 1 lần như vậy giống việc vuốt của tay người, tốc độ cần nhanh tăng tốc dần
 
-Step Size (Distance) và Jog Feed Rate, Feedrate,Dist (mm),Swipe/Dwell (s),Tap Dwell (s) cần thành global sử dụng cho tất cả các chế độ để di chuyển của đầu CNC, từ tab , vuốt, click trên video di chuyển đầu cnc, go to x y, moving around , go to largest object ... 
-cnc/pen_settings.json cần merger vào cnc/calibration_settings.json để chỉ còn 1 file và thống nhất về các chỉ số cấu hình sử dụng cho toàn bộ hệ thống 
-Vuốt dạng nhấc dần đầu bút lên đang bị giật giật, chuyển về ban đầu, nhấn bút vuốt rồi tới cuối nhấc hẳn bút, bỏ nhấc dần dần 
+Step Size (Distance) và Jog Feed Rate, Feedrate,Dist (mm),Swipe/Dwell (s),Tap Dwell (s) cần thành global sử dụng cho tất cả các chế độ để di chuyển của đầu CNC, từ tab , vuốt, click trên video di chuyển đầu cnc, go to x y, moving around , go to largest object ...
+cnc/pen_settings.json cần merger vào cnc/calibration_settings.json để chỉ còn 1 file và thống nhất về các chỉ số cấu hình sử dụng cho toàn bộ hệ thống
+Vuốt dạng nhấc dần đầu bút lên đang bị giật giật, chuyển về ban đầu, nhấn bút vuốt rồi tới cuối nhấc hẳn bút, bỏ nhấc dần dần
 
 **cập nhật 19** bỏ tính toán động 4 aruco bằng detect camera, dùng hoàn toàn 4 điểm aruco được set manual, từ đó có gốc tọa độ chính xác để ánh xạ tính toán với set home cnc, cnc header của croped frame 720x720, việc click video di chuyển, hay detect largest object sẽ theo tọa độ của 4 điểm aruco set manual .
 
-**cập nhật 20** kiểm tra lại việc tính toán click chuột trên frame video croped 720x720, ảnh UI cũng đang hiển thị 720x720 thì cần ánh xạ tính toán tọa độ chính xác. khi tôi click Go To X,Y về home thì đã về đúng vị trí pixel trên ảnh, khi click vào điểm bất kỳ trên video để di chuyển tới đó thì vị trí đầu bút CNC đi tới không đúng vị trí pixel vừa click vào, kiểm tra và sửa chính xác . 
+**cập nhật 20** kiểm tra lại việc tính toán click chuột trên frame video croped 720x720, ảnh UI cũng đang hiển thị 720x720 thì cần ánh xạ tính toán tọa độ chính xác. khi tôi click Go To X,Y về home thì đã về đúng vị trí pixel trên ảnh, khi click vào điểm bất kỳ trên video để di chuyển tới đó thì vị trí đầu bút CNC đi tới không đúng vị trí pixel vừa click vào, kiểm tra và sửa chính xác .
 trục tọa độ của ảnh là tù vị trí gốc , OX trái sang phải là dương tăng dần , OY từ trên xuống là dương tăng dần
-set home của cnc cần đi theo, hiện tại việc di chuyển đầu cnc bị ngược chiều Y của ảnh 
-    việc di chuyển đầu CNC cần đúng tới vị trí click trên ảnh, hiện chưa đúng về Y, cần tính X,Y chính xác trên frame ảnh khi được click rồi transform và dựa trên home của cnc và di chuyển 
-    đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh 
+set home của cnc cần đi theo, hiện tại việc di chuyển đầu cnc bị ngược chiều Y của ảnh
+    việc di chuyển đầu CNC cần đúng tới vị trí click trên ảnh, hiện chưa đúng về Y, cần tính X,Y chính xác trên frame ảnh khi được click rồi transform và dựa trên home của cnc và di chuyển
+    đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh
 
 **cập nhật 21**
-Khi set manua 4 điểm aruco sẽ có gốc tọa độ trên croped frame 720x720, khi set home cnc thì đầu cnc đã được điều chỉnh ở gốc tọa độ. Cần bổ xung thêm 4 nút set cnc TL, TR, BR, BL để set các vị trí của cnc header tương ứng với các điểm aruco, người dùng sẽ tự di chuyển đầu cnc tới đúng 4 tọa độ điểm aruco trên frame croped và click nút set cnc tương ứng, sau đó click set cnc tl, tr, bl, br để lưu ánh xạ từ điểm ảnh với vị trí cnc. sẽ có bộ home cnc là gốc tọa độ , các cnc tl, tr,br,bl tương ứng với các tọa độ điểm aruco tl,tr,br,bl 
-    Cần tính pixel tỷ lệ tương ứng với milimet frame ảnh 720x720 và cnc  (cnc G21 G90  ; Đặt đơn vị mm, chế độ tọa độ tuyệt đối) 
-        Tất cả các tính toán đều cần dựa vào các gốc tọa độ tương ứng set home cnc, các điểm aruco tl,tr,br,bl tương ứng cnc tl,tr,br,bl sẽ dùng khi go to object khi detect được, vẽ đường baseline cho việc vẽ tranh, click trên ảnh để di chuyển ... 
-các tính toán cần dựa trên các điểm: set home cnc (gốc tọa độ trên ảnh theo các aruco ), aruco tl,tr,br,bl , cnc tl,tr,br,bl 
-    đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh 
+Khi set manua 4 điểm aruco sẽ có gốc tọa độ trên croped frame 720x720, khi set home cnc thì đầu cnc đã được điều chỉnh ở gốc tọa độ. Cần bổ xung thêm 4 nút set cnc TL, TR, BR, BL để set các vị trí của cnc header tương ứng với các điểm aruco, người dùng sẽ tự di chuyển đầu cnc tới đúng 4 tọa độ điểm aruco trên frame croped và click nút set cnc tương ứng, sau đó click set cnc tl, tr, bl, br để lưu ánh xạ từ điểm ảnh với vị trí cnc. sẽ có bộ home cnc là gốc tọa độ , các cnc tl, tr,br,bl tương ứng với các tọa độ điểm aruco tl,tr,br,bl
+    Cần tính pixel tỷ lệ tương ứng với milimet frame ảnh 720x720 và cnc  (cnc G21 G90  ; Đặt đơn vị mm, chế độ tọa độ tuyệt đối)
+        Tất cả các tính toán đều cần dựa vào các gốc tọa độ tương ứng set home cnc, các điểm aruco tl,tr,br,bl tương ứng cnc tl,tr,br,bl sẽ dùng khi go to object khi detect được, vẽ đường baseline cho việc vẽ tranh, click trên ảnh để di chuyển ...
+các tính toán cần dựa trên các điểm: set home cnc (gốc tọa độ trên ảnh theo các aruco ), aruco tl,tr,br,bl , cnc tl,tr,br,bl
+    đầu CNC đang bị di chuyển ngược trục Y so với click trên ảnh
 
 **cập nhật 22**
-dựa vào cnc/calibration_camera.py cnc/calibration_usage.py để sửa việc tính toán việc di chuyển khi click trên frame video. cần tham khảo lại các cập nhật trước cũng như code hiện tại. code hiện tại đã di chuyển tương đối đúng, cần chính xác hơn nhờ các calibration 
+
+thêm 1 floating window chiếm nửa bên trái của UI, UI này gọi là Gcode editor
+    cho phép người dùng chọn file ảnh (jpg png ...) hoặc svg
+    khi chọn xong tham khảo code cnc/svg2gcode.py hoặc cnc/grblgcode2image.py để tạo ra gcode
+    khi có gcode rồi thì cần vẽ lên html5 canvas tham khảo cnc/gcode_canvas.html và cnc/gcode2htmlcanvas.py
+    khi có canvas rồi cho phép người dùng chỉnh sửa, có thêm việc vẽ tay trên canvas để thêm các đường vẽ, khi vẽ tay gần hoặc trùng với các đường có sẵn của gcode gốc cần chỉnh lại các đường để cho mịn liền mạch để gcode sinh ra không bị đứt đoạn và di chuyển cnc để vẽ không bị giật cục
+    cho phép chọn các đọan để xóa
+
+    chỉnh sửa xong cho phép người dùng lưu lại : ảnh gốc, gcode gốc, gcode đã chỉnh sửa
+    lưu lại các file, có thể load lại để dùng cho các lần sau
+    có nút Thực hiện vẽ
+        lúc này gcode đã chỉnh sửa sẽ được gửi tới cnc máy vẽ để thực hiện lệnh di chuyển cnc head để vẽ.
+        vị trí hiện tại của đầu cnc là gốc home rồi mới bắt đầu vẽ 
+
+**cập nhật 23**
+    tool path view 

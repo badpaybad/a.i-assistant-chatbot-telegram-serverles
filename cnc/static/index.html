@@ -28,6 +28,7 @@
             </div>
 
             <div class="header-status">
+                <button class="btn btn-primary" id="btn-toggle-gcode-editor" style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">G-Code Editor</button>
                 <div class="status-badge disconnected" id="connection-status">DISCONNECTED</div>
                 <div class="state-badge disconnected" id="machine-state">OFFLINE</div>
             </div>
@@ -585,6 +586,133 @@
             </div>
         </div>
     </div>
+    <!-- FLOATING G-CODE EDITOR PANEL -->
+    <div class="gcode-editor-panel glass-card hidden" id="gcode-editor-panel">
+        <div class="panel-header" id="editor-panel-header">
+            <div class="panel-title-wrapper">
+                <span class="panel-dot active"></span>
+                <span class="panel-title">G-Code Editor</span>
+            </div>
+            <button class="btn-toggle" id="btn-close-gcode-editor" title="Close G-Code Editor">✕</button>
+        </div>
+        <div class="panel-body flex-row">
+            <!-- Control Sidebar -->
+            <div class="editor-sidebar">
+                <!-- File Upload -->
+                <div class="editor-card">
+                    <h3 class="editor-card-title">1. Chọn File Ảnh / SVG</h3>
+                    <div class="file-drop-zone" id="editor-drop-zone">
+                        <span class="upload-icon">🖼️</span>
+                        <span class="upload-text">Kéo thả hoặc <strong>Chọn file ảnh/SVG</strong></span>
+                        <input type="file" id="editor-file-input" accept="image/*,.svg" class="hidden">
+                    </div>
+                    <div class="file-info hidden" id="editor-file-info">
+                        <span class="file-name" id="editor-file-name">-</span>
+                        <button class="btn-icon" id="btn-editor-remove-file">✕</button>
+                    </div>
+                </div>
+
+                <!-- Parameters -->
+                <div class="editor-card">
+                    <h3 class="editor-card-title">2. Cấu hình chuyển đổi</h3>
+                    <div class="row-inputs">
+                        <div class="input-group">
+                           <label for="editor-scale">Scale Factor</label>
+                           <input type="number" id="editor-scale" value="0.1" step="0.01" min="0.001">
+                        </div>
+                        <div class="input-group">
+                           <label for="editor-feedrate">Feedrate (mm/min)</label>
+                           <input type="number" id="editor-feedrate" value="2000" step="100" min="10">
+                        </div>
+                    </div>
+                    <div class="row-inputs" style="margin-top: 10px;">
+                        <div class="input-group">
+                            <label for="editor-mode">Z Mode</label>
+                            <select id="editor-mode">
+                                <option value="servo" selected>Servo (PWM)</option>
+                                <option value="spindle">Spindle (Z Axis)</option>
+                            </select>
+                        </div>
+                        <div class="input-group" id="group-editor-algo">
+                            <label for="editor-algo">Algorithm</label>
+                            <select id="editor-algo">
+                                <option value="centerline" selected>Centerline (Nét giữa)</option>
+                                <option value="contour">Contour (Bao quanh)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" id="btn-editor-convert" style="width: 100%; margin-top: 12px; font-weight: bold;">Tạo G-Code</button>
+                </div>
+
+                <!-- Canvas Edit Toolbar -->
+                <div class="editor-card">
+                    <h3 class="editor-card-title">3. Công cụ chỉnh sửa</h3>
+                    <div class="editor-toolbar">
+                        <button class="btn-tool active" data-mode="edit" title="Sửa điểm (Edit nodes)">
+                            <span class="tool-icon">📍</span>
+                            <span class="tool-lbl">Sửa điểm</span>
+                        </button>
+                        <button class="btn-tool" data-mode="move" title="Di chuyển toàn bộ (Move all)">
+                            <span class="tool-icon">✋</span>
+                            <span class="tool-lbl">Di chuyển</span>
+                        </button>
+                        <button class="btn-tool" data-mode="delete" title="Xoá nét vẽ (Click to delete)">
+                            <span class="tool-icon">🗑️</span>
+                            <span class="tool-lbl">Xoá nét</span>
+                        </button>
+                        <button class="btn-tool" data-mode="draw" title="Vẽ tay (Freehand draw)">
+                            <span class="tool-icon">✏️</span>
+                            <span class="tool-lbl">Vẽ tay</span>
+                        </button>
+                    </div>
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button class="btn btn-secondary btn-small" id="btn-editor-smooth" style="flex: 1;" title="Bo cong làm mịn các góc">Bo cong (Mịn)</button>
+                        <button class="btn btn-secondary btn-small" id="btn-editor-straighten" style="flex: 1;" title="Kéo thẳng các nét cong">Kéo thẳng</button>
+                    </div>
+                    <div class="slider-group" style="margin-top: 12px;">
+                        <div class="slider-header" style="padding: 0;">
+                            <span style="font-size: 11px;">Độ dày nét Canvas</span>
+                            <span class="slider-value" id="val-editor-linewidth">2 px</span>
+                        </div>
+                        <input type="range" id="slider-editor-linewidth" min="0.5" max="10" step="0.5" value="2" style="margin-top: 4px;">
+                    </div>
+                </div>
+
+                <!-- Save & Project Actions -->
+                <div class="editor-card">
+                    <h3 class="editor-card-title">4. Lưu trữ & Project</h3>
+                    <div class="project-actions-grid">
+                        <button class="btn btn-secondary btn-small" id="btn-save-orig-img">Ảnh gốc</button>
+                        <button class="btn btn-secondary btn-small" id="btn-save-orig-gcode">Gcode gốc</button>
+                        <button class="btn btn-secondary btn-small" id="btn-save-edit-gcode" style="grid-column: span 2;">Lưu Gcode chỉnh sửa</button>
+                        <button class="btn btn-secondary btn-small" id="btn-save-project">Lưu Project</button>
+                        <button class="btn btn-secondary btn-small" id="btn-load-project-trigger">Tải Project</button>
+                        <input type="file" id="editor-project-input" accept=".json" class="hidden">
+                    </div>
+                </div>
+
+                <!-- Execution Button -->
+                <button class="btn btn-success" id="btn-editor-execute" style="width: 100%; font-size: 15px; font-weight: bold; padding: 12px; margin-top: auto; letter-spacing: 0.5px;">
+                    ⚡ Thực hiện vẽ (Run CNC)
+                </button>
+            </div>
+
+            <!-- Interactive Canvas Area -->
+            <div class="editor-canvas-container">
+                <div class="canvas-instructions-top">
+                    💡 Cuộn chuột: Zoom • Kéo chuột phải/giữa: Pan • Phím Shift: Nắn thẳng khi kéo sửa điểm
+                </div>
+                <div class="editor-canvas-wrapper" id="editor-canvas-wrapper">
+                    <canvas id="editor-canvas" width="720" height="720"></canvas>
+                </div>
+                <div class="canvas-status-bar">
+                    <span id="editor-status-segments">0 nét vẽ</span>
+                    <span id="editor-status-coords">X: 0.0, Y: 0.0</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="/static/app.js"></script>
 </body>
 

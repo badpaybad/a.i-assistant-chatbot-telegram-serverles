@@ -90,6 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupCanvas();
     fetchState();
     populateDevices();
+    initGcodeEditor();
 
     if (!isConnected) connectBtn.click();
 });
@@ -2659,4 +2660,1131 @@ async function saveUIPreferencesToServer() {
     } catch (e) {
         console.error("Failed to save UI preferences to server:", e);
     }
+}
+
+// --- G-CODE EDITOR INTERACTIVE CANVAS CONTROLLER ---
+function initGcodeEditor() {
+    const btnToggleGcodeEditor = document.getElementById("btn-toggle-gcode-editor");
+    const panelGcodeEditor = document.getElementById("gcode-editor-panel");
+    const btnCloseGcodeEditor = document.getElementById("btn-close-gcode-editor");
+    const editorDropZone = document.getElementById("editor-drop-zone");
+    const editorFileInput = document.getElementById("editor-file-input");
+    const editorFileInfo = document.getElementById("editor-file-info");
+    const editorFileName = document.getElementById("editor-file-name");
+    const btnEditorRemoveFile = document.getElementById("btn-editor-remove-file");
+    const editorScale = document.getElementById("editor-scale");
+    const editorFeedrate = document.getElementById("editor-feedrate");
+    const editorMode = document.getElementById("editor-mode");
+    const editorAlgo = document.getElementById("editor-algo");
+    const btnEditorConvert = document.getElementById("btn-editor-convert");
+    const sliderLineWidth = document.getElementById("slider-editor-linewidth");
+    const valLineWidth = document.getElementById("val-editor-linewidth");
+    const btnSmooth = document.getElementById("btn-editor-smooth");
+    const btnStraighten = document.getElementById("btn-editor-straighten");
+    const btnSaveOrigImg = document.getElementById("btn-save-orig-img");
+    const btnSaveOrigGcode = document.getElementById("btn-save-orig-gcode");
+    const btnSaveEditGcode = document.getElementById("btn-save-edit-gcode");
+    const btnSaveProject = document.getElementById("btn-save-project");
+    const btnLoadProjectTrigger = document.getElementById("btn-load-project-trigger");
+    const editorProjectInput = document.getElementById("editor-project-input");
+    const btnEditorExecute = document.getElementById("btn-editor-execute");
+    const editorCanvas = document.getElementById("editor-canvas");
+    const editorStatusSegments = document.getElementById("editor-status-segments");
+    const editorStatusCoords = document.getElementById("editor-status-coords");
+    const groupEditorAlgo = document.getElementById("group-editor-algo");
+    const editorCanvasWrapper = document.getElementById("editor-canvas-wrapper");
+
+    if (!editorCanvas) return;
+    const ctx = editorCanvas.getContext("2d");
+
+    // Editor State
+    let editorSegments = [];
+    let editorOriginalSegments = [];
+    let editorOriginalImageBase64 = "";
+    let editorOriginalImageFile = null;
+    let editorOriginalFilename = "";
+    let editorOriginalGcodeText = "";
+    let editorCurrentMode = "edit"; // edit, move, delete, draw
+    let editorSelectedNode = null; // { index, type: 'start'|'end' }
+    let editorLineWidth = 2.0;
+
+    // View transform
+    let editorZoom = 1.0;
+    let editorPan = { x: 0, y: 0 };
+    let editorBoundingBox = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+    let scale = 1.0;
+    const padding = 40;
+
+    // Pan & Draw state
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let isTranslating = false;
+    let translationStart = { x: 0, y: 0 };
+    let editorIsDrawingPath = false;
+    let editorDrawPathPoints = [];
+    let isShiftPressed = false;
+    let editorBgImage = null;
+    let hoveredSegmentIndex = -1;
+    let lastMousePos = null;
+
+    // Listen to Shift Key
+    window.addEventListener("keydown", (e) => { if (e.key === "Shift") isShiftPressed = true; });
+    window.addEventListener("keyup", (e) => { if (e.key === "Shift") isShiftPressed = false; });
+
+    // Toggle editor visibility
+    if (btnToggleGcodeEditor) {
+        btnToggleGcodeEditor.addEventListener("click", () => {
+            panelGcodeEditor.classList.toggle("hidden");
+            if (!panelGcodeEditor.classList.contains("hidden")) {
+                resizeEditorCanvas();
+                drawEditorCanvas();
+            }
+        });
+    }
+    if (btnCloseGcodeEditor) {
+        btnCloseGcodeEditor.addEventListener("click", () => {
+            panelGcodeEditor.classList.add("hidden");
+        });
+    }
+
+    // Resize Canvas to wrapper
+    function resizeEditorCanvas() {
+        const rect = editorCanvasWrapper.getBoundingClientRect();
+        const size = Math.min(rect.width, rect.height, 720) || 720;
+        editorCanvas.width = size;
+        editorCanvas.height = size;
+        updateScale();
+    }
+    window.addEventListener("resize", () => {
+        if (!panelGcodeEditor.classList.contains("hidden")) {
+            resizeEditorCanvas();
+            drawEditorCanvas();
+        }
+    });
+
+    // File inputs & Drag and drop
+    if (editorDropZone) {
+        editorDropZone.addEventListener("click", () => editorFileInput.click());
+        editorDropZone.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            editorDropZone.classList.add("dragover");
+        });
+        editorDropZone.addEventListener("dragleave", () => {
+            editorDropZone.classList.remove("dragover");
+        });
+        editorDropZone.addEventListener("drop", (e) => {
+            e.preventDefault();
+            editorDropZone.classList.remove("dragover");
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleEditorFile(files[0]);
+            }
+        });
+    }
+
+    if (editorFileInput) {
+        editorFileInput.addEventListener("change", () => {
+            if (editorFileInput.files.length > 0) {
+                handleEditorFile(editorFileInput.files[0]);
+            }
+        });
+    }
+
+    if (btnEditorRemoveFile) {
+        btnEditorRemoveFile.addEventListener("click", () => {
+            editorOriginalImageFile = null;
+            editorOriginalImageBase64 = "";
+            editorOriginalFilename = "";
+            editorBgImage = null;
+            editorFileInput.value = "";
+            editorFileName.innerText = "-";
+            editorFileInfo.classList.add("hidden");
+            editorDropZone.classList.remove("hidden");
+            editorSegments = [];
+            editorOriginalSegments = [];
+            editorOriginalGcodeText = "";
+            updateBoundingBox();
+            drawEditorCanvas();
+        });
+    }
+
+    function handleEditorFile(file) {
+        const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+        if (![".svg", ".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
+            alert("File không hỗ trợ! Vui lòng chọn ảnh JPG, PNG hoặc file SVG.");
+            return;
+        }
+
+        editorOriginalImageFile = file;
+        editorOriginalFilename = file.name;
+        editorFileName.innerText = file.name;
+        editorDropZone.classList.add("hidden");
+        editorFileInfo.classList.remove("hidden");
+
+        if (ext === ".svg") {
+            groupEditorAlgo.classList.add("hidden");
+            editorScale.value = "0.5";
+        } else {
+            groupEditorAlgo.classList.remove("hidden");
+            editorScale.value = "0.1";
+        }
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            editorOriginalImageBase64 = e.target.result;
+            editorBgImage = new Image();
+            editorBgImage.onload = () => {
+                drawEditorCanvas();
+            };
+            editorBgImage.src = editorOriginalImageBase64;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Server conversion triggers
+    if (btnEditorConvert) {
+        btnEditorConvert.addEventListener("click", async () => {
+            if (!editorOriginalImageFile) {
+                alert("Vui lòng chọn một file ảnh hoặc SVG trước!");
+                return;
+            }
+
+            btnEditorConvert.disabled = true;
+            btnEditorConvert.innerText = "Đang chuyển đổi...";
+
+            const formData = new FormData();
+            formData.append("file", editorOriginalImageFile);
+            formData.append("scale_factor", parseFloat(editorScale.value) || 0.1);
+            formData.append("feed_rate", parseInt(editorFeedrate.value, 10) || 2000);
+            formData.append("mode", editorMode.value);
+            formData.append("algorithm", editorAlgo.value);
+
+            try {
+                const res = await fetch("/api/gcode-editor/convert", {
+                    method: "POST",
+                    body: formData
+                });
+                const data = await res.json();
+                btnEditorConvert.disabled = false;
+                btnEditorConvert.innerText = "Tạo G-Code";
+
+                if (data.status === "ok") {
+                    editorSegments = data.segments;
+                    editorOriginalSegments = JSON.parse(JSON.stringify(data.segments));
+                    editorOriginalGcodeText = data.gcode;
+                    editorZoom = 1.0;
+                    editorPan = { x: 0, y: 0 };
+
+                    updateBoundingBox();
+                    updateScale();
+                    drawEditorCanvas();
+                } else {
+                    alert("Chuyển đổi thất bại: " + data.message);
+                }
+            } catch (err) {
+                btnEditorConvert.disabled = false;
+                btnEditorConvert.innerText = "Tạo G-Code";
+                alert("Lỗi kết nối máy chủ: " + err);
+            }
+        });
+    }
+
+    // Map bounding boxes and scaling
+    function updateBoundingBox() {
+        if (editorSegments.length === 0) {
+            editorBoundingBox = { minX: 0, maxX: 100, minY: 0, maxY: 100 };
+            return;
+        }
+        const allX = editorSegments.map(s => s.x1).concat(editorSegments.map(s => s.x2));
+        const allY = editorSegments.map(s => s.y1).concat(editorSegments.map(s => s.y2));
+        editorBoundingBox = {
+            minX: Math.min(...allX),
+            maxX: Math.max(...allX),
+            minY: Math.min(...allY),
+            maxY: Math.max(...allY)
+        };
+    }
+
+    function updateScale() {
+        const gcodeWidth = editorBoundingBox.maxX - editorBoundingBox.minX;
+        const gcodeHeight = editorBoundingBox.maxY - editorBoundingBox.minY;
+        const scaleX = (editorCanvas.width - padding * 2) / (gcodeWidth || 1);
+        const scaleY = (editorCanvas.height - padding * 2) / (gcodeHeight || 1);
+        scale = Math.min(scaleX, scaleY) || 1.0;
+    }
+
+    // Coordinates mapping math
+    function realToCanvas(rx, ry) {
+        const xOffset = rx - editorBoundingBox.minX;
+        const yOffset = ry - editorBoundingBox.minY;
+
+        const scaledX = padding + xOffset * scale;
+        const scaledY = padding + yOffset * scale;
+
+        const canvasX = (scaledX + editorPan.x) * editorZoom;
+        const canvasY = (scaledY + editorPan.y) * editorZoom;
+
+        return { x: canvasX, y: canvasY };
+    }
+
+    function canvasToReal(cx, cy) {
+        const scaledX = (cx / editorZoom) - editorPan.x;
+        const scaledY = (cy / editorZoom) - editorPan.y;
+
+        const xOffset = (scaledX - padding) / scale;
+        const yOffset = (scaledY - padding) / scale;
+
+        const rx = xOffset + editorBoundingBox.minX;
+        const ry = yOffset + editorBoundingBox.minY;
+
+        return { x: rx, y: ry };
+    }
+
+    // Interactive Canvas drawing
+    function drawEditorCanvas() {
+        ctx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
+
+        // 1. Draw background image if present
+        if (editorBgImage && editorBgImage.complete) {
+            ctx.save();
+            ctx.globalAlpha = 0.15;
+            const pMin = realToCanvas(editorBoundingBox.minX, editorBoundingBox.minY);
+            const pMax = realToCanvas(editorBoundingBox.maxX, editorBoundingBox.maxY);
+            ctx.drawImage(editorBgImage, pMin.x, pMin.y, pMax.x - pMin.x, pMax.y - pMin.y);
+            ctx.restore();
+        }
+
+        // 2. Draw origin coordinate axes helper (G54 home)
+        ctx.save();
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        const gridStep = 10; // mm
+        const xStart = Math.floor(editorBoundingBox.minX / gridStep) * gridStep;
+        const xEnd = Math.ceil(editorBoundingBox.maxX / gridStep) * gridStep;
+        const yStart = Math.floor(editorBoundingBox.minY / gridStep) * gridStep;
+        const yEnd = Math.ceil(editorBoundingBox.maxY / gridStep) * gridStep;
+
+        for (let gx = xStart; gx <= xEnd; gx += gridStep) {
+            const p1 = realToCanvas(gx, yStart);
+            const p2 = realToCanvas(gx, yEnd);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+        for (let gy = yStart; gy <= yEnd; gy += gridStep) {
+            const p1 = realToCanvas(xStart, gy);
+            const p2 = realToCanvas(xEnd, gy);
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 3. Draw toolpath segments
+        ctx.save();
+        ctx.lineWidth = editorLineWidth;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        editorSegments.forEach((seg, idx) => {
+            const p1 = realToCanvas(seg.x1, seg.y1);
+            const p2 = realToCanvas(seg.x2, seg.y2);
+
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+
+            if (editorCurrentMode === "delete" && idx === hoveredSegmentIndex) {
+                ctx.strokeStyle = "#ff4b4b";
+                ctx.lineWidth = editorLineWidth + 2;
+            } else {
+                ctx.strokeStyle = "#00d2ff";
+                ctx.lineWidth = editorLineWidth;
+            }
+            ctx.stroke();
+        });
+        ctx.restore();
+
+        // 4. Draw interactive nodes (edit points)
+        if (editorCurrentMode === "edit") {
+            ctx.save();
+            editorSegments.forEach(seg => {
+                const p1 = realToCanvas(seg.x1, seg.y1);
+                const p2 = realToCanvas(seg.x2, seg.y2);
+                [p1, p2].forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 5, 0, 2 * Math.PI);
+                    ctx.fillStyle = "#ff4b4b";
+                    ctx.fill();
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = "#fff";
+                    ctx.stroke();
+                });
+            });
+            ctx.restore();
+        }
+
+        // 5. Draw active stroke during hand drawing
+        if (editorIsDrawingPath && editorDrawPathPoints.length > 0) {
+            ctx.save();
+            ctx.lineWidth = editorLineWidth;
+            ctx.strokeStyle = "#ffb300";
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.beginPath();
+            const pStart = realToCanvas(editorDrawPathPoints[0].x, editorDrawPathPoints[0].y);
+            ctx.moveTo(pStart.x, pStart.y);
+            for (let i = 1; i < editorDrawPathPoints.length; i++) {
+                const p = realToCanvas(editorDrawPathPoints[i].x, editorDrawPathPoints[i].y);
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draw circular guide for eraser tool in delete mode
+        if (editorCurrentMode === "delete" && lastMousePos) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(255, 75, 75, 0.6)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(lastMousePos.x, lastMousePos.y, 15, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        editorStatusSegments.innerText = `${editorSegments.length} nét vẽ`;
+    }
+
+    // Tools Toolbar click
+    const btnTools = document.querySelectorAll(".btn-tool");
+    btnTools.forEach(btn => {
+        btn.addEventListener("click", () => {
+            btnTools.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            editorCurrentMode = btn.dataset.mode;
+
+            editorCanvas.className = "";
+            editorCanvas.classList.add(editorCurrentMode + "-mode");
+            drawEditorCanvas();
+        });
+    });
+
+    // Line width slider listener
+    if (sliderLineWidth) {
+        sliderLineWidth.addEventListener("input", (e) => {
+            editorLineWidth = parseFloat(e.target.value);
+            valLineWidth.innerText = `${editorLineWidth} px`;
+            drawEditorCanvas();
+        });
+    }
+
+    // Distance helper from pixel coordinate to line segment
+    function getDistanceToSegment(px, py, x1, y1, x2, y2) {
+        const A = px - x1;
+        const B = py - y1;
+        const C = x2 - x1;
+        const D = y2 - y1;
+
+        const dot = A * C + B * D;
+        const lenSq = C * C + D * D;
+        let param = -1;
+        if (lenSq !== 0) param = dot / lenSq;
+
+        let xx, yy;
+        if (param < 0) {
+            xx = x1;
+            yy = y1;
+        } else if (param > 1) {
+            xx = x2;
+            yy = y2;
+        } else {
+            xx = x1 + param * C;
+            yy = y1 + param * D;
+        }
+
+        const dx = px - xx;
+        const dy = py - yy;
+        return Math.hypot(dx, dy);
+    }
+
+    // Connected paths assembler
+    function getConnectedPaths() {
+        const paths = [];
+        const used = new Set();
+        const threshold = 0.05; // mm connection threshold
+
+        while (used.size < editorSegments.length) {
+            let startIdx = -1;
+            for (let i = 0; i < editorSegments.length; i++) {
+                if (!used.has(i)) {
+                    startIdx = i;
+                    break;
+                }
+            }
+            if (startIdx === -1) break;
+
+            const path = [];
+            let seg = editorSegments[startIdx];
+            path.push({ x: seg.x1, y: seg.y1, index: startIdx, end: "start" });
+            path.push({ x: seg.x2, y: seg.y2, index: startIdx, end: "end" });
+            used.add(startIdx);
+
+            let growing = true;
+            while (growing) {
+                growing = false;
+                const currentEnd = path[path.length - 1];
+                for (let i = 0; i < editorSegments.length; i++) {
+                    if (used.has(i)) continue;
+                    const other = editorSegments[i];
+
+                    if (Math.hypot(other.x1 - currentEnd.x, other.y1 - currentEnd.y) < threshold) {
+                        path.push({ x: other.x2, y: other.y2, index: i, end: "end" });
+                        used.add(i);
+                        growing = true;
+                        break;
+                    }
+                    if (Math.hypot(other.x2 - currentEnd.x, other.y2 - currentEnd.y) < threshold) {
+                        path.push({ x: other.x1, y: other.y1, index: i, end: "start" });
+                        used.add(i);
+                        growing = true;
+                        break;
+                    }
+                }
+            }
+
+            growing = true;
+            while (growing) {
+                growing = false;
+                const currentStart = path[0];
+                for (let i = 0; i < editorSegments.length; i++) {
+                    if (used.has(i)) continue;
+                    const other = editorSegments[i];
+
+                    if (Math.hypot(other.x2 - currentStart.x, other.y2 - currentStart.y) < threshold) {
+                        path.unshift({ x: other.x1, y: other.y1, index: i, end: "start" });
+                        used.add(i);
+                        growing = true;
+                        break;
+                    }
+                    if (Math.hypot(other.x1 - currentStart.x, other.y1 - currentStart.y) < threshold) {
+                        path.unshift({ x: other.x2, y: other.y2, index: i, end: "end" });
+                        used.add(i);
+                        growing = true;
+                        break;
+                    }
+                }
+            }
+            paths.push(path);
+        }
+        return paths;
+    }
+
+    // Smooth drawing action
+    if (btnSmooth) {
+        btnSmooth.addEventListener("click", () => {
+            if (editorSegments.length === 0) return;
+            const paths = getConnectedPaths();
+            const newSegments = [];
+
+            paths.forEach(path => {
+                if (path.length <= 2) {
+                    path.forEach((pt, idx) => {
+                        if (idx < path.length - 1) {
+                            newSegments.push({
+                                x1: pt.x, y1: pt.y,
+                                x2: path[idx + 1].x, y2: path[idx + 1].y
+                            });
+                        }
+                    });
+                    return;
+                }
+
+                const smoothedPts = [];
+                smoothedPts.push({ x: path[0].x, y: path[0].y });
+                for (let i = 1; i < path.length - 1; i++) {
+                    const prev = path[i - 1];
+                    const curr = path[i];
+                    const next = path[i + 1];
+                    smoothedPts.push({
+                        x: 0.25 * prev.x + 0.5 * curr.x + 0.25 * next.x,
+                        y: 0.25 * prev.y + 0.5 * curr.y + 0.25 * next.y
+                    });
+                }
+                smoothedPts.push({ x: path[path.length - 1].x, y: path[path.length - 1].y });
+
+                for (let i = 0; i < smoothedPts.length - 1; i++) {
+                    newSegments.push({
+                        x1: smoothedPts[i].x, y1: smoothedPts[i].y,
+                        x2: smoothedPts[i + 1].x, y2: smoothedPts[i + 1].y
+                    });
+                }
+            });
+
+            editorSegments = newSegments;
+            drawEditorCanvas();
+        });
+    }
+
+    // Straighten drawing action
+    if (btnStraighten) {
+        btnStraighten.addEventListener("click", () => {
+            if (editorSegments.length === 0) return;
+            const paths = getConnectedPaths();
+            const newSegments = [];
+            paths.forEach(path => {
+                newSegments.push({
+                    x1: path[0].x, y1: path[0].y,
+                    x2: path[path.length - 1].x, y2: path[path.length - 1].y
+                });
+            });
+            editorSegments = newSegments;
+            drawEditorCanvas();
+        });
+    }
+
+    // Canvas Mouse listeners
+    editorCanvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const zoomFactor = 1.15;
+        const rect = editorCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const mouseRealBefore = canvasToReal(mouseX, mouseY);
+
+        if (e.deltaY < 0) {
+            editorZoom *= zoomFactor;
+        } else {
+            editorZoom /= zoomFactor;
+        }
+        editorZoom = Math.max(0.1, Math.min(20, editorZoom));
+
+        const mouseCanvasAfter = realToCanvas(mouseRealBefore.x, mouseRealBefore.y);
+        editorPan.x += (mouseX - mouseCanvasAfter.x) / editorZoom;
+        editorPan.y += (mouseY - mouseCanvasAfter.y) / editorZoom;
+
+        drawEditorCanvas();
+    });
+
+    editorCanvas.addEventListener("mousedown", (e) => {
+        const rect = editorCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const realCoords = canvasToReal(mouseX, mouseY);
+
+        const isRightClick = e.button === 2;
+        const isMiddleClick = e.button === 1;
+        const isLeftClickInMoveMode = e.button === 0 && editorCurrentMode === "move";
+
+        if (isRightClick || isMiddleClick || isLeftClickInMoveMode) {
+            isPanning = true;
+            panStart = { x: e.clientX, y: e.clientY };
+            e.preventDefault();
+            return;
+        }
+
+        if (e.button === 0) {
+            if (editorCurrentMode === "edit") {
+                editorSelectedNode = null;
+                const NODE_DETECTION_RADIUS = 10;
+                for (let i = 0; i < editorSegments.length; i++) {
+                    const seg = editorSegments[i];
+                    const p1 = realToCanvas(seg.x1, seg.y1);
+                    const p2 = realToCanvas(seg.x2, seg.y2);
+
+                    if (Math.hypot(p1.x - mouseX, p1.y - mouseY) < NODE_DETECTION_RADIUS) {
+                        editorSelectedNode = { index: i, type: "start" };
+                        break;
+                    }
+                    if (Math.hypot(p2.x - mouseX, p2.y - mouseY) < NODE_DETECTION_RADIUS) {
+                        editorSelectedNode = { index: i, type: "end" };
+                        break;
+                    }
+                }
+            } else if (editorCurrentMode === "delete") {
+                // Drag-to-delete Brush Eraser: delete all segments within a radius of the cursor (15px)
+                const ERASER_RADIUS = 15; // pixels
+                const remainingSegments = [];
+                let changed = false;
+
+                editorSegments.forEach(seg => {
+                    const p1 = realToCanvas(seg.x1, seg.y1);
+                    const p2 = realToCanvas(seg.x2, seg.y2);
+                    const dist = getDistanceToSegment(mouseX, mouseY, p1.x, p1.y, p2.x, p2.y);
+                    if (dist < ERASER_RADIUS) {
+                        changed = true;
+                    } else {
+                        remainingSegments.push(seg);
+                    }
+                });
+
+                if (changed) {
+                    editorSegments = remainingSegments;
+                    updateBoundingBox();
+                    drawEditorCanvas();
+                }
+            } else if (editorCurrentMode === "draw") {
+                editorIsDrawingPath = true;
+                editorDrawPathPoints = [realCoords];
+            }
+        }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (isPanning) {
+            const dx = (e.clientX - panStart.x) / editorZoom;
+            const dy = (e.clientY - panStart.y) / editorZoom;
+            editorPan.x += dx;
+            editorPan.y += dy;
+            panStart = { x: e.clientX, y: e.clientY };
+            drawEditorCanvas();
+            return;
+        }
+
+        const rect = editorCanvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const realCoords = canvasToReal(mouseX, mouseY);
+
+        if (mouseX >= 0 && mouseX <= editorCanvas.width && mouseY >= 0 && mouseY <= editorCanvas.height) {
+            editorStatusCoords.innerText = `X: ${realCoords.x.toFixed(1)}, Y: ${realCoords.y.toFixed(1)} mm`;
+        }
+
+        if (editorCurrentMode === "edit" && editorSelectedNode) {
+            const seg = editorSegments[editorSelectedNode.index];
+            const oldX = editorSelectedNode.type === "start" ? seg.x1 : seg.x2;
+            const oldY = editorSelectedNode.type === "start" ? seg.y1 : seg.y2;
+
+            let newX = realCoords.x;
+            let newY = realCoords.y;
+
+            if (isShiftPressed) {
+                if (editorSelectedNode.type === "start") {
+                    if (Math.abs(newX - seg.x2) < Math.abs(newY - seg.y2)) {
+                        newX = seg.x2;
+                    } else {
+                        newY = seg.y2;
+                    }
+                } else {
+                    if (Math.abs(newX - seg.x1) < Math.abs(newY - seg.y1)) {
+                        newX = seg.x1;
+                    } else {
+                        newY = seg.y1;
+                    }
+                }
+            }
+
+            editorSegments.forEach((otherSeg) => {
+                const threshold = 0.01;
+                if (Math.abs(otherSeg.x1 - oldX) < threshold && Math.abs(otherSeg.y1 - oldY) < threshold) {
+                    otherSeg.x1 = newX;
+                    otherSeg.y1 = newY;
+                }
+                if (Math.abs(otherSeg.x2 - oldX) < threshold && Math.abs(otherSeg.y2 - oldY) < threshold) {
+                    otherSeg.x2 = newX;
+                    otherSeg.y2 = newY;
+                }
+            });
+
+            if (editorSelectedNode.type === "start") {
+                seg.x1 = newX;
+                seg.y1 = newY;
+            } else {
+                seg.x2 = newX;
+                seg.y2 = newY;
+            }
+
+            drawEditorCanvas();
+        } else if (editorCurrentMode === "delete") {
+            // Track last mouse position for guide rendering
+            lastMousePos = { x: mouseX, y: mouseY };
+
+            // If dragging (left button down), erase segments
+            if (e.buttons === 1) {
+                const ERASER_RADIUS = 15; // pixels
+                const remainingSegments = [];
+                let changed = false;
+
+                editorSegments.forEach(seg => {
+                    const p1 = realToCanvas(seg.x1, seg.y1);
+                    const p2 = realToCanvas(seg.x2, seg.y2);
+                    const dist = getDistanceToSegment(mouseX, mouseY, p1.x, p1.y, p2.x, p2.y);
+                    if (dist < ERASER_RADIUS) {
+                        changed = true;
+                    } else {
+                        remainingSegments.push(seg);
+                    }
+                });
+
+                if (changed) {
+                    editorSegments = remainingSegments;
+                    updateBoundingBox();
+                }
+            }
+            drawEditorCanvas();
+        } else if (editorCurrentMode === "draw" && editorIsDrawingPath) {
+            const lastPt = editorDrawPathPoints[editorDrawPathPoints.length - 1];
+            if (Math.hypot(realCoords.x - lastPt.x, realCoords.y - lastPt.y) > 0.5) {
+                editorDrawPathPoints.push(realCoords);
+                drawEditorCanvas();
+            }
+        }
+    });
+
+    // Clear last mouse position on mouseleave to hide eraser guide
+    editorCanvas.addEventListener("mouseleave", () => {
+        lastMousePos = null;
+        drawEditorCanvas();
+    });
+
+    window.addEventListener("mouseup", () => {
+        if (editorSelectedNode) {
+            editorSelectedNode = null;
+            updateBoundingBox();
+        }
+        if (editorIsDrawingPath) {
+            editorIsDrawingPath = false;
+            if (editorDrawPathPoints.length > 1) {
+                // Snap start and end points of hand-drawn path to existing endpoints if close
+                const snapThreshold = 6.0; // mm (about 15-20 pixels depending on scale)
+                let startPt = editorDrawPathPoints[0];
+                let endPt = editorDrawPathPoints[editorDrawPathPoints.length - 1];
+                let minStartDist = snapThreshold;
+                let snapStartPt = null;
+                let minEndDist = snapThreshold;
+                let snapEndPt = null;
+
+                editorSegments.forEach(seg => {
+                    const dS1 = Math.hypot(seg.x1 - startPt.x, seg.y1 - startPt.y);
+                    if (dS1 < minStartDist) {
+                        minStartDist = dS1;
+                        snapStartPt = { x: seg.x1, y: seg.y1 };
+                    }
+                    const dS2 = Math.hypot(seg.x2 - startPt.x, seg.y2 - startPt.y);
+                    if (dS2 < minStartDist) {
+                        minStartDist = dS2;
+                        snapStartPt = { x: seg.x2, y: seg.y2 };
+                    }
+
+                    const dE1 = Math.hypot(seg.x1 - endPt.x, seg.y1 - endPt.y);
+                    if (dE1 < minEndDist) {
+                        minEndDist = dE1;
+                        snapEndPt = { x: seg.x1, y: seg.y1 };
+                    }
+                    const dE2 = Math.hypot(seg.x2 - endPt.x, seg.y2 - endPt.y);
+                    if (dE2 < minEndDist) {
+                        minEndDist = dE2;
+                        snapEndPt = { x: seg.x2, y: seg.y2 };
+                    }
+                });
+
+                if (snapStartPt) {
+                    editorDrawPathPoints[0].x = snapStartPt.x;
+                    editorDrawPathPoints[0].y = snapStartPt.y;
+                }
+                if (snapEndPt) {
+                    editorDrawPathPoints[editorDrawPathPoints.length - 1].x = snapEndPt.x;
+                    editorDrawPathPoints[editorDrawPathPoints.length - 1].y = snapEndPt.y;
+                }
+
+                // Add the new hand-drawn segments
+                for (let i = 0; i < editorDrawPathPoints.length - 1; i++) {
+                    editorSegments.push({
+                        x1: editorDrawPathPoints[i].x,
+                        y1: editorDrawPathPoints[i].y,
+                        x2: editorDrawPathPoints[i + 1].x,
+                        y2: editorDrawPathPoints[i + 1].y
+                    });
+                }
+
+                // Auto-smooth the connected paths that were modified to ensure smooth continuous lines
+                const paths = getConnectedPaths();
+                const newSegments = [];
+
+                paths.forEach(path => {
+                    if (path.length <= 2) {
+                        // Single segment paths don't need smoothing
+                        path.forEach((pt, idx) => {
+                            if (idx < path.length - 1) {
+                                newSegments.push({
+                                    x1: pt.x, y1: pt.y,
+                                    x2: path[idx + 1].x, y2: path[idx + 1].y
+                                });
+                            }
+                        });
+                        return;
+                    }
+
+                    // Apply moving average to smooth the path
+                    const smoothedPts = [];
+                    smoothedPts.push({ x: path[0].x, y: path[0].y });
+                    for (let i = 1; i < path.length - 1; i++) {
+                        const prev = path[i - 1];
+                        const curr = path[i];
+                        const next = path[i + 1];
+                        smoothedPts.push({
+                            x: 0.25 * prev.x + 0.5 * curr.x + 0.25 * next.x,
+                            y: 0.25 * prev.y + 0.5 * curr.y + 0.25 * next.y
+                        });
+                    }
+                    smoothedPts.push({ x: path[path.length - 1].x, y: path[path.length - 1].y });
+
+                    for (let i = 0; i < smoothedPts.length - 1; i++) {
+                        newSegments.push({
+                            x1: smoothedPts[i].x, y1: smoothedPts[i].y,
+                            x2: smoothedPts[i + 1].x, y2: smoothedPts[i + 1].y
+                        });
+                    }
+                });
+
+                editorSegments = newSegments;
+                updateBoundingBox();
+                drawEditorCanvas();
+            }
+            editorDrawPathPoints = [];
+        }
+    });
+
+    // G-code text builder
+    function generateGcodeFromSegments() {
+        const paths = getConnectedPaths();
+        const feedrate = parseInt(editorFeedrate.value, 10) || 2000;
+        const mode = editorMode.value;
+
+        let penDownCmd, penUpCmd;
+        if (mode === "servo") {
+            penDownCmd = "M3 S90 ; Ha but\nG4 P0.2";
+            penUpCmd = "M3 S10 ; Nhac but\nG4 P0.2";
+        } else {
+            penDownCmd = "G1 Z-1.0 F500 ; Ha dao";
+            penUpCmd = "G0 Z2.0 ; Nhac dao";
+        }
+
+        const lines = [];
+        lines.push(";--- G-CODE GENERATED BY G-CODE EDITOR ---");
+        lines.push("G21 ; Don vi: mm");
+        lines.push("G90 ; Toa do tuyet doi");
+        lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri");
+        if (mode !== "servo") {
+            lines.push("G0 Z2.0");
+        }
+        lines.push(`F${feedrate}`);
+        lines.push("");
+
+        paths.forEach((path, idx) => {
+            if (path.length === 0) return;
+            lines.push(`; --- Path ${idx + 1} ---`);
+            const start = path[0];
+            lines.push(`G0 X${start.x.toFixed(3)} Y${start.y.toFixed(3)}`);
+            lines.push(penDownCmd);
+            for (let i = 1; i < path.length; i++) {
+                const pt = path[i];
+                lines.push(`G1 X${pt.x.toFixed(3)} Y${pt.y.toFixed(3)}`);
+            }
+            lines.push(penUpCmd);
+            lines.push("");
+        });
+
+        lines.push(";--- END OF PROGRAM ---");
+        if (mode !== "servo") {
+            lines.push("G0 Z2.0");
+        }
+        lines.push("G0 X0 Y0");
+        lines.push("M30");
+
+        return lines.join("\n");
+    }
+
+    // Download triggers
+    if (btnSaveOrigImg) {
+        btnSaveOrigImg.addEventListener("click", () => {
+            if (!editorOriginalImageBase64) return;
+            const a = document.createElement("a");
+            a.href = editorOriginalImageBase64;
+            a.download = "original_" + (editorOriginalFilename || "image.png");
+            a.click();
+        });
+    }
+
+    if (btnSaveOrigGcode) {
+        btnSaveOrigGcode.addEventListener("click", () => {
+            if (!editorOriginalGcodeText) return;
+            const blob = new Blob([editorOriginalGcodeText], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "original_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "output") + ".nc";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (btnSaveEditGcode) {
+        btnSaveEditGcode.addEventListener("click", () => {
+            if (editorSegments.length === 0) return;
+            const gcode = generateGcodeFromSegments();
+            const blob = new Blob([gcode], { type: "text/plain" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "edited_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "draw") + ".gcode";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (btnSaveProject) {
+        btnSaveProject.addEventListener("click", () => {
+            const project = {
+                version: "1.0",
+                originalFilename: editorOriginalFilename,
+                originalImageBase64: editorOriginalImageBase64,
+                originalGcodeText: editorOriginalGcodeText,
+                editorScale: parseFloat(editorScale.value),
+                editorFeedrate: parseInt(editorFeedrate.value, 10),
+                editorZMode: editorMode.value,
+                editorAlgo: editorAlgo.value,
+                segments: editorSegments
+            };
+            const blob = new Blob([JSON.stringify(project, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "project_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "unnamed") + ".json";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    if (btnLoadProjectTrigger) {
+        btnLoadProjectTrigger.addEventListener("click", () => editorProjectInput.click());
+    }
+
+    if (editorProjectInput) {
+        editorProjectInput.addEventListener("change", () => {
+            if (editorProjectInput.files.length === 0) return;
+            const file = editorProjectInput.files[0];
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    editorOriginalFilename = data.originalFilename;
+                    editorOriginalImageBase64 = data.originalImageBase64;
+                    editorOriginalGcodeText = data.originalGcodeText;
+                    editorScale.value = data.editorScale;
+                    editorFeedrate.value = data.editorFeedrate;
+                    editorMode.value = data.editorZMode;
+                    editorAlgo.value = data.editorAlgo;
+                    editorSegments = data.segments;
+                    editorOriginalSegments = JSON.parse(JSON.stringify(data.segments));
+
+                    editorFileName.innerText = editorOriginalFilename || "Loaded Project";
+                    editorDropZone.classList.add("hidden");
+                    editorFileInfo.classList.remove("hidden");
+
+                    if (editorOriginalImageBase64) {
+                        editorBgImage = new Image();
+                        editorBgImage.onload = () => {
+                            drawEditorCanvas();
+                        };
+                        editorBgImage.src = editorOriginalImageBase64;
+                    }
+
+                    editorZoom = 1.0;
+                    editorPan = { x: 0, y: 0 };
+                    updateBoundingBox();
+                    updateScale();
+                    drawEditorCanvas();
+                } catch (err) {
+                    alert("Lỗi tải project: JSON không hợp lệ. " + err);
+                }
+            };
+            reader.readAsText(file);
+            editorProjectInput.value = "";
+        });
+    }
+
+    // CNC Stream Execution Trigger
+    if (btnEditorExecute) {
+        btnEditorExecute.addEventListener("click", async () => {
+            if (editorSegments.length === 0) {
+                alert("Không có đường vẽ nào để thực hiện!");
+                return;
+            }
+
+            btnEditorExecute.disabled = true;
+
+            // Auto-home CNC head at current position before streaming drawing (Cập nhật 22)
+            if (isConnected) {
+                btnEditorExecute.innerText = "⏳ Đang thiết lập Home...";
+                try {
+                    const camSelectEl = document.getElementById("camera-select");
+                    const camIdx = camSelectEl ? camSelectEl.value : 4;
+                    const homeRes = await fetch("/api/home?camera_index=" + camIdx, { method: "POST" });
+                    const homeData = await homeRes.json();
+                    if (homeData.status === "ok") {
+                        logSystemMessage("✅ Tự động thiết lập vị trí hiện tại làm gốc Home (0,0,0)!");
+                        isHomeSet = true;
+                        if (window.updateHomeUI) window.updateHomeUI();
+                        const homeSnapshotImg = document.getElementById("home-snapshot-img");
+                        if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
+                    } else {
+                        logSystemMessage("⚠️ Không thể tự động set Home: " + homeData.message + ". Vẫn tiếp tục thực hiện vẽ.");
+                    }
+                } catch (homeErr) {
+                    console.error("Lỗi khi gọi set home tự động:", homeErr);
+                    logSystemMessage("⚠️ Lỗi thiết lập Home tự động. Vẫn tiếp tục thực hiện vẽ.");
+                }
+            }
+
+            btnEditorExecute.innerText = "Đang gửi G-Code...";
+
+            const gcode = generateGcodeFromSegments();
+
+            try {
+                const res = await fetch("/api/gcode-editor/set-gcode", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ gcode: gcode })
+                });
+                const data = await res.json();
+                btnEditorExecute.disabled = false;
+                btnEditorExecute.innerText = "⚡ Thực hiện vẽ (Run CNC)";
+
+                if (data.status === "ok") {
+                    logSystemMessage(`G-Code loaded successfully to server (${data.lines_count} lines).`);
+
+                    toolpathPoints = parseGcode(gcode);
+                    calculateBoundingBox();
+                    resetCanvasView();
+
+                    loadedFileName.innerText = "edited_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "editor") + ".gcode";
+                    loadedFileLines.innerText = `${data.lines_count} lines`;
+                    fileDropZone.classList.add("hidden");
+                    fileInfoContainer.classList.remove("hidden");
+                    btnStartStream.disabled = !isConnected;
+
+                    panelGcodeEditor.classList.add("hidden");
+
+                    if (isConnected) {
+                        btnStartStream.click();
+                    } else {
+                        alert("G-Code đã được nạp lên máy vẽ. Hãy kết nối CNC để bắt đầu.");
+                    }
+                } else {
+                    alert("Gửi G-Code thất bại: " + data.message);
+                }
+            } catch (err) {
+                btnEditorExecute.disabled = false;
+                btnEditorExecute.innerText = "⚡ Thực hiện vẽ (Run CNC)";
+                alert("Lỗi mạng: " + err);
+            }
+        });
+    }
+
+    resizeEditorCanvas();
 }
