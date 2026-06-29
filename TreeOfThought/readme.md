@@ -1,4 +1,4 @@
-# db test 
+# db test
 
 chạy docker compose: `docker compose -f docker-compose.yml up -d`
 
@@ -11,3 +11,7 @@ admin / admin123
 # firebase-adminsdk.json
 
 TreeOfThought/backend/Core.Web.Api/firebase-adminsdk.json
+
+# run dev
+
+TreeOfThought/backend/Core.Web.Api/run-dev.sh

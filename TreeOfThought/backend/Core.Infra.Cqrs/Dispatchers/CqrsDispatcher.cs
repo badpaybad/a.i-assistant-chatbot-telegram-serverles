@@ -86,8 +86,8 @@ public class CqrsDispatcher : IDispatcher
                 }
 
                 // Unwrap nested compiler-generated async state machines to find original controller/handler
-                while (type != null && 
-                       (type.Name.StartsWith("<") || 
+                while (type != null &&
+                       (type.Name.StartsWith("<") ||
                         type.CustomAttributes.Any(a => a.AttributeType.Name == "CompilerGeneratedAttribute")))
                 {
                     type = type.DeclaringType;
@@ -888,7 +888,7 @@ public class CqrsDispatcher : IDispatcher
                 else
                 {
                     if (stopWhenEmpty) break;
-                    await Task.Delay(100, ct);
+                    await Task.Delay(10, ct);
                 }
             }
             catch (OperationCanceledException) { break; }
@@ -896,6 +896,10 @@ public class CqrsDispatcher : IDispatcher
             {
                 _logger.LogError(ex, "Critical error in worker loop for {WorkerId}", workerId);
                 await Task.Delay(1000, ct);
+            }
+            finally
+            {
+                await Task.Delay(1, ct);
             }
         }
     }
