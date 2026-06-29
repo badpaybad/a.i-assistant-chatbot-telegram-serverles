@@ -136,27 +136,55 @@ public class FirebaseService
     // Firestore
     public FirestoreDb GetFirestore(string appName) => _firestoreDbs[appName];
 
-    public async Task PublishToAddressPathAsync(string appName, string path, object data)
+    public async Task PublishToAddressPathAsync(string appName, string path, object data, DateTime? expiredAt)
     {
         var db = GetFirestore(appName);
         
-        // Convert to Firestore-compatible format
+        IDictionary<string, object?> dict;
         if (data is JsonElement element)
         {
-            data = ConvertToFirestoreData(element) ?? new Dictionary<string, object?>();
+            dict = new Dictionary<string, object?>((ConvertToFirestoreData(element) as IDictionary<string, object?>) ?? new Dictionary<string, object?>());
         }
-        else if (data != null && !(data is IDictionary<string, object>) && !data.GetType().IsPrimitive && !(data is string))
+        else if (data is IDictionary<string, object?> dNull)
+        {
+            dict = new Dictionary<string, object?>(dNull);
+        }
+        else if (data is IDictionary<string, object> d)
+        {
+            dict = new Dictionary<string, object?>();
+            foreach (var kvp in d)
+            {
+                dict[kvp.Key] = kvp.Value;
+            }
+        }
+        else if (data != null && !data.GetType().IsPrimitive && !(data is string))
         {
             // For complex objects, serialize to JSON first to ensure camelCase and Firestore compatibility
-            var json = JsonSerializer.Serialize(data,CqrsJsonOptions.Default);
+            var json = JsonSerializer.Serialize(data, CqrsJsonOptions.Default);
             using var jsonDoc = JsonDocument.Parse(json);
-            data = ConvertToFirestoreData(jsonDoc.RootElement) ?? new Dictionary<string, object?>();
+            dict = new Dictionary<string, object?>((ConvertToFirestoreData(jsonDoc.RootElement) as IDictionary<string, object?>) ?? new Dictionary<string, object?>());
+        }
+        else
+        {
+            dict = new Dictionary<string, object?>();
+            if (data != null)
+            {
+                dict["value"] = data;
+            }
+        }
+
+        if (expiredAt.HasValue)
+        {
+            dict["expiredAt"] = expiredAt.Value.ToUniversalTime();
         }
 
         // Path format: collection/docId or collection/docId/subcollection/docId
         var docRef = db.Document(path);
-        await docRef.SetAsync(data, SetOptions.MergeAll);
+        await docRef.SetAsync(dict, SetOptions.MergeAll);
     }
+
+    public async Task PublishToAddressPathAsync(string appName, string path, object data)
+        => await PublishToAddressPathAsync(appName, path, data, DateTime.UtcNow.AddHours(24));
 
     private object? ConvertToFirestoreData(JsonElement element)
     {
@@ -279,7 +307,10 @@ public class FirebaseService
         => GetFirestore(_options.Value.AppName);
 
     public async Task PublishToAddressPathAsync(string path, object data)
-        => await PublishToAddressPathAsync(_options.Value.AppName, path, data);
+        => await PublishToAddressPathAsync(_options.Value.AppName, path, data, DateTime.UtcNow.AddHours(24));
+
+    public async Task PublishToAddressPathAsync(string path, object data, DateTime? expiredAt)
+        => await PublishToAddressPathAsync(_options.Value.AppName, path, data, expiredAt);
 
     public async Task DeleteAddressPathAsync(string path)
         => await DeleteAddressPathAsync(_options.Value.AppName, path);
