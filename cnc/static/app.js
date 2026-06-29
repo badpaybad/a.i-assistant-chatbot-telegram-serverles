@@ -2722,6 +2722,7 @@ async function saveUIPreferencesToServer() {
     }
 }
 
+const ERASER_RADIUS = 15; // pixels
 // --- G-CODE EDITOR INTERACTIVE CANVAS CONTROLLER ---
 function initGcodeEditor() {
     const btnToggleGcodeEditor = document.getElementById("btn-toggle-gcode-editor");
@@ -3158,7 +3159,7 @@ function initGcodeEditor() {
             ctx.strokeStyle = "rgba(255, 75, 75, 0.6)";
             ctx.lineWidth = 1.5;
             ctx.beginPath();
-            ctx.arc(lastMousePos.x, lastMousePos.y, 15, 0, 2 * Math.PI);
+            ctx.arc(lastMousePos.x, lastMousePos.y, ERASER_RADIUS, 0, 2 * Math.PI);
             ctx.stroke();
             ctx.restore();
         }
@@ -3414,7 +3415,6 @@ function initGcodeEditor() {
                 }
             } else if (editorCurrentMode === "delete") {
                 // Drag-to-delete Brush Eraser: delete all segments within a radius of the cursor (15px)
-                const ERASER_RADIUS = 15; // pixels
                 const remainingSegments = [];
                 let changed = false;
 

@@ -61,15 +61,16 @@ def plot_gcode(segments):
     plt.gca().invert_yaxis()  # Giữ nguyên lệnh sửa lỗi ngược gương
     plt.show()
 
-# --- CHẠY CHƯƠNG TRÌNH ---
-# Thay 'test.gcode' bằng file của bạn
-file_name = 've_spindle_net_don.nc' 
+if __name__ == "__main__":
+    # --- CHẠY CHƯƠNG TRÌNH ---
+    # Thay 'test.gcode' bằng file của bạn
+    file_name = 've_spindle_net_don.nc' 
 
-try:
-    path_segments = parse_gcode(file_name)
-    if path_segments:
-        plot_gcode(path_segments)
-    else:
-        print("Không tìm thấy tọa độ vẽ hợp lệ trong file.")
-except FileNotFoundError:
-    print(f"Không tìm thấy file: {file_name}. Hãy kiểm tra lại đường dẫn.")
+    try:
+        path_segments = parse_gcode(file_name)
+        if path_segments:
+            plot_gcode(path_segments)
+        else:
+            print("Không tìm thấy tọa độ vẽ hợp lệ trong file.")
+    except FileNotFoundError:
+        print(f"Không tìm thấy file: {file_name}. Hãy kiểm tra lại đường dẫn.")

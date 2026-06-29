@@ -129,7 +129,8 @@ success = image_to_perfect_single_line_gcode(
     mode="servo" 
 )
 
-# pip install svgpathtools
-from image2gcode import send_gcode_to_grbl
-serial_port = "/dev/ttyACM0"  # Cổng Arduino trên Linux Ubuntu mặc định
-send_gcode_to_grbl(serial_port, output_gcode)
+if __name__ == "__main__":
+    # pip install svgpathtools
+    from image2gcode import send_gcode_to_grbl
+    serial_port = "/dev/ttyACM0"  # Cổng Arduino trên Linux Ubuntu mặc định
+    send_gcode_to_grbl(serial_port, output_gcode)

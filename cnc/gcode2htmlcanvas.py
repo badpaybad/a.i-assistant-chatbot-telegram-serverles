@@ -154,12 +154,13 @@ def generate_html_canvas(segments, output_html_path):
         f.write(html_template)
     print(f"Đã xuất file giao diện web thành công: {output_html_path}")
 
-# --- CHẠY CHƯƠNG TRÌNH ---
-gcode_file = 've_spindle_net_don.nc'  # Thay bằng tên file gcode thực tế của bạn
-output_html = 'gcode_canvas.html'
+if __name__ == "__main__":
+    # --- CHẠY CHƯƠNG TRÌNH ---
+    gcode_file = 've_spindle_net_don.nc'  # Thay bằng tên file gcode thực tế của bạn
+    output_html = 'gcode_canvas.html'
 
-try:
-    gcode_data = parse_gcode_to_json(gcode_file)
-    generate_html_canvas(gcode_data, output_html)
-except FileNotFoundError:
-    print(f"Không tìm thấy file: {gcode_file}")
+    try:
+        gcode_data = parse_gcode_to_json(gcode_file)
+        generate_html_canvas(gcode_data, output_html)
+    except FileNotFoundError:
+        print(f"Không tìm thấy file: {gcode_file}")
