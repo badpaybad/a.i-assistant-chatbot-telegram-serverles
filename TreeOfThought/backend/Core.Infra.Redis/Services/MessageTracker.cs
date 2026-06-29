@@ -1,7 +1,9 @@
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Constants;
 using StackExchange.Redis;
+using System;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Redis.Services;
 
@@ -19,19 +21,26 @@ public class MessageTracker : IMessageTracker
     {
         var json = JsonSerializer.Serialize(entry, CqrsJsonOptions.Default);
         var key = CqrsConstants.GetTrackingHistoryKey(entry.TrackingId);
-        await _db.ListRightPushAsync(key, json);
-        await _db.KeyExpireAsync(key, TimeSpan.FromDays(7));
+
+        var batch = _db.CreateBatch();
+
+        var t1 = batch.ListRightPushAsync(key, json);
+        var t2 = batch.KeyExpireAsync(key, TimeSpan.FromDays(7));
 
         // Maintain a global list of all tracking entries for the dashboard
-        await _db.ListLeftPushAsync("infra:all_tracks", json);
-        await _db.ListTrimAsync("infra:all_tracks", 0, 1999); // Keep last 2000 entries
-        await _db.KeyExpireAsync("infra:all_tracks", TimeSpan.FromDays(7));
+        var t3 = batch.ListLeftPushAsync("infra:all_tracks", json);
+        var t4 = batch.ListTrimAsync("infra:all_tracks", 0, 1999); // Keep last 2000 entries
+        var t5 = batch.KeyExpireAsync("infra:all_tracks", TimeSpan.FromDays(7));
 
         // Maintain a list of recent tracking IDs
-        await _db.ListRemoveAsync("infra:recent_tracks", entry.TrackingId.ToString());
-        await _db.ListLeftPushAsync("infra:recent_tracks", entry.TrackingId.ToString());
-        await _db.ListTrimAsync("infra:recent_tracks", 0, 999); // Keep last 1000 IDs
-        await _db.KeyExpireAsync("infra:recent_tracks", TimeSpan.FromDays(7));
+        var t6 = batch.ListRemoveAsync("infra:recent_tracks", entry.TrackingId.ToString());
+        var t7 = batch.ListLeftPushAsync("infra:recent_tracks", entry.TrackingId.ToString());
+        var t8 = batch.ListTrimAsync("infra:recent_tracks", 0, 999); // Keep last 1000 IDs
+        var t9 = batch.KeyExpireAsync("infra:recent_tracks", TimeSpan.FromDays(7));
+
+        batch.Execute();
+
+        await Task.WhenAll(t1, t2, t3, t4, t5, t6, t7, t8, t9);
     }
 
     public async Task<List<TrackingEntry>> GetTrackingHistoryAsync(Guid trackingId)
@@ -115,13 +124,19 @@ public class MessageTracker : IMessageTracker
             await _db.KeyDeleteAsync(zsetKey);
         }
 
+        var batch = _db.CreateBatch();
+
         // We store the TrackingId in the ZSet. 
         // Using score as timestamp for sorting.
-        await _db.SortedSetAddAsync(zsetKey, trackingId.ToString(), score);
+        var t1 = batch.SortedSetAddAsync(zsetKey, trackingId.ToString(), score);
         
         // Trim ZSet to keep only last 1000 IDs to avoid memory bloat
-        await _db.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -1001);
-        await _db.KeyExpireAsync(zsetKey, TimeSpan.FromDays(7));
+        var t2 = batch.SortedSetRemoveRangeByRankAsync(zsetKey, 0, -1001);
+        var t3 = batch.KeyExpireAsync(zsetKey, TimeSpan.FromDays(7));
+        
+        batch.Execute();
+
+        await Task.WhenAll(t1, t2, t3);
         
         System.Console.WriteLine($"[TRACKER] LogStatus: Key={zsetKey}, ID={trackingId}, Status={status}");
     }
