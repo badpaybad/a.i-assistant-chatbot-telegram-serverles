@@ -11,6 +11,7 @@ x-backend-env: &backend-env
   CVAT_REDIS_ONDISK_HOST: cvat_redis_ondisk
   CVAT_REDIS_ONDISK_PORT: 6666
   no_proxy: clickhouse,grafana,vector,nuclio,opa,${no_proxy:-}
+  # no_proxy: clickhouse,grafana,vector,opa,${no_proxy:-}
   SMOKESCREEN_OPTS: ${SMOKESCREEN_OPTS:-}
 
 x-backend-deps: &backend-deps
@@ -39,9 +40,7 @@ services:
     container_name: cvat_redis_ondisk
     image: apache/kvrocks:2.7.0
     restart: always
-    command: [
-      "--dir", "/var/lib/kvrocks/data"
-    ]
+    command: [ "--dir", "/var/lib/kvrocks/data" ]
     # The kvrocks image a) has a healthcheck command, and b) has a root process
     # that doesn't reap children, so it's susceptible to the problem described here:
     # <https://stackoverflow.com/a/77109064>. Kvrocks also uses a tiny timeout for
@@ -72,15 +71,14 @@ services:
     depends_on:
       <<: *backend-deps
       cvat_opa:
-        condition:
-          service_started
+        condition: service_started
     environment:
       <<: *backend-env
       DJANGO_MODWSGI_EXTRA_ARGS: ''
       ALLOWED_HOSTS: '*'
       ADAPTIVE_AUTO_ANNOTATION: 'false'
       IAM_OPA_BUNDLE: '1'
-      NUMPROCS: 2
+      NUMPROCS: 1
       CVAT_ANALYTICS: 0
       CVAT_BASE_URL:
       ONE_RUNNING_JOB_IN_QUEUE_PER_USER:
@@ -88,8 +86,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.services.cvat.loadbalancer.server.port=8080
-      - traefik.http.routers.cvat.rule=Host(`${CVAT_HOST:-localhost}`) &&
-        PathPrefix(`/api/`, `/static/`, `/admin`, `/documentation/`, `/django-rq`)
+      - traefik.http.routers.cvat.rule=Host(`${CVAT_HOST:-localhost}`) && PathPrefix(`/api/`, `/static/`, `/admin`, `/documentation/`, `/django-rq`)
       - traefik.http.routers.cvat.entrypoints=web
     volumes:
       - cvat_data:/home/django/data
@@ -104,10 +101,14 @@ services:
     container_name: cvat_utils
     image: cvat/server:${CVAT_VERSION:-v2.10.3}
     restart: always
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1' # Khóa cứng container này tối đa chỉ được ăn 100% CPU
     depends_on: *backend-deps
     environment:
       <<: *backend-env
-      CVAT_REDIS_INMEM_PASSWORD: ''
+      CVAT_REDIS_INMEM_PASSWORD: 'Test123456'
       NUMPROCS: 1
     command: run utils
     volumes:
@@ -124,7 +125,7 @@ services:
     depends_on: *backend-deps
     environment:
       <<: *backend-env
-      NUMPROCS: 2
+      NUMPROCS: 1
     command: run worker.import
     volumes:
       - cvat_data:/home/django/data
@@ -140,7 +141,7 @@ services:
     depends_on: *backend-deps
     environment:
       <<: *backend-env
-      NUMPROCS: 2
+      NUMPROCS: 1
     command: run worker.export
     volumes:
       - cvat_data:/home/django/data
@@ -204,7 +205,7 @@ services:
     depends_on: *backend-deps
     environment:
       <<: *backend-env
-      NUMPROCS: 2
+      NUMPROCS: 1
     command: run worker.analytics_reports
     volumes:
       - cvat_data:/home/django/data
