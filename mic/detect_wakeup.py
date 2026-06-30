@@ -29,6 +29,19 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
+# Quét danh sách nhãn lớp từ dataraw để xác định thứ tự các class
+DATA_RAW_DIR = "dataraw"
+if os.path.exists(DATA_RAW_DIR):
+    LABELS = sorted([d for d in os.listdir(DATA_RAW_DIR) if os.path.isdir(os.path.join(DATA_RAW_DIR, d))])
+else:
+    # Thứ tự mặc định fallback nếu không thấy thư mục dataraw
+    LABELS = ["background", "du_oi", "unknown"]
+
+print("\n🏷️ THỨ TỰ PHÂN LOẠI LỚP (CLASS MAPPING):")
+for idx, label in enumerate(LABELS):
+    print(f"   Class [{idx}]: {label}")
+print("-" * 40 + "\n")
+
 # Buffer variables
 buffer_len = SAMPLING_RATE * 2  # Keep 2 seconds of audio history
 audio_buffer = np.zeros(buffer_len, dtype=np.float32)
@@ -103,9 +116,17 @@ with stream:
             else:
                 probabilities = output_data.astype(np.float32)
                 
-            prob_unknown = probabilities[0][0]
-            prob_du_oi = probabilities[0][1]
-            prob_bg = probabilities[0][2]
+            # Tạo dictionary map giữa tên nhãn và xác suất để gán động theo đúng thứ tự nhãn
+            prob_dict = {}
+            for idx, label in enumerate(LABELS):
+                if idx < len(probabilities[0]):
+                    prob_dict[label] = probabilities[0][idx]
+                else:
+                    prob_dict[label] = 0.0
+                    
+            prob_du_oi = prob_dict.get("du_oi", 0.0)
+            prob_unknown = prob_dict.get("unknown", 0.0)
+            prob_bg = prob_dict.get("background", 0.0)
             
             # Display real-time output (low probability threshold logging)
             if prob_du_oi > 0.2:

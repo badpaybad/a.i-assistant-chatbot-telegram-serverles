@@ -22,7 +22,7 @@ OUTPUT_SPEC_DIR = "spectrogram"
 TFLITE_MODEL_PATH = "model.tflite"
 HEADER_MODEL_PATH = "model_data.h"
 
-LABELS = [d for d in os.listdir(DATA_RAW_DIR) if os.path.isdir(os.path.join(DATA_RAW_DIR, d))]
+LABELS = sorted([d for d in os.listdir(DATA_RAW_DIR) if os.path.isdir(os.path.join(DATA_RAW_DIR, d))])
 NUM_CLASSES = len(LABELS)
 
 SAMPLING_RATE = 16000
@@ -96,10 +96,69 @@ def convert_to_spectrogram(audio):
     return spectrogram[..., tf.newaxis]
 
 # ==========================================
-# QUÉT RAW -> LƯU ẢNH PHỔ -> TẠO DATASET
+# CÁC HÀM TĂNG CƯỜNG DỮ LIỆU (DATA AUGMENTATION)
 # ==========================================
-def create_dataset_and_save_images():
+def add_white_noise(audio, noise_factor=0.005):
+    """
+    Thêm tiếng ồn trắng (white noise) vào tín hiệu âm thanh với tỷ lệ nhỏ.
+    """
+    noise = tf.random.normal(shape=tf.shape(audio), mean=0.0, stddev=1.0, dtype=tf.float32)
+    augmented_audio = audio + noise_factor * noise
+    return tf.clip_by_value(augmented_audio, -1.0, 1.0)
+
+def time_shift(audio, shift_limit_ms=50):
+    """
+    Dịch chuyển trục thời gian của âm thanh sang trái hoặc phải ngẫu nhiên vài mười mili-giây.
+    """
+    # 1 ms tương đương 16 samples ở rate 16000Hz
+    shift_samples = int(shift_limit_ms * (SAMPLING_RATE / 1000.0))
+    shift = np.random.randint(-shift_samples, shift_samples)
+    
+    if shift > 0:
+        # Dịch chuyển sang phải (chèn zeros vào đầu, cắt bớt ở cuối)
+        shifted = tf.concat([tf.zeros(shift, dtype=tf.float32), audio[:-shift]], axis=0)
+    elif shift < 0:
+        # Dịch chuyển sang trái (cắt bớt ở đầu, chèn zeros vào cuối)
+        shift = -shift
+        shifted = tf.concat([audio[shift:], tf.zeros(shift, dtype=tf.float32)], axis=0)
+    else:
+        shifted = audio
+    return shifted
+
+def process_and_save_variant(audio, label_name, label_idx, base_name, variant_suffix, spec_folder, X, y):
+    """
+    Lưu spectrogram, file ảnh phổ và file .wav cho mỗi biến thể tăng cường (hoặc gốc).
+    """
+    spectrogram = convert_to_spectrogram(audio)
+    spec_np = spectrogram.numpy()
+    X.append(spec_np)
+    y.append(label_idx)
+    
+    # 1. Lưu ảnh phổ (.png)
+    img_name = f"{base_name}_{variant_suffix}.png" if variant_suffix else f"{base_name}.png"
+    matrix_2d = np.squeeze(spec_np, axis=-1)
+    log_spec = np.log(matrix_2d + 1e-6)
+    plt.figure(figsize=(3, 3))
+    plt.imshow(log_spec.T, origin='lower', aspect='auto', cmap='viridis')
+    plt.axis('off')
+    plt.savefig(os.path.join(spec_folder, img_name), bbox_inches='tight', pad_inches=0, dpi=100)
+    plt.close()
+    
+    # 2. Lưu file .wav tăng cường nếu không phải bản gốc (bản gốc đã được load_and_pad_audio lưu rồi)
+    if variant_suffix:
+        output_dir = os.path.join("data", label_name)
+        os.makedirs(output_dir, exist_ok=True)
+        wav_name = f"{base_name}_{variant_suffix}.wav"
+        output_path = os.path.join(output_dir, wav_name)
+        import soundfile as sf
+        sf.write(output_path, audio.numpy(), SAMPLING_RATE)
+
+# ==========================================
+# QUÉT RAW -> TĂNG CƯỜNG -> LƯU ẢNH PHỔ -> TẠO DATASET
+# ==========================================
+def create_dataset_and_save_images(augment=True):
     X, y = [], []
+    print("LABELS: ",LABELS)
     for label_idx, label_name in enumerate(LABELS):
         raw_folder = os.path.join(DATA_RAW_DIR, label_name)
         spec_folder = os.path.join(OUTPUT_SPEC_DIR, label_name)
@@ -114,25 +173,27 @@ def create_dataset_and_save_images():
         
         for file_path in file_list:
             try:
+                # 1. Đọc và chuẩn hóa bản gốc (wav gốc được lưu trong load_and_pad_audio)
                 audio = load_and_pad_audio(file_path)
-                spectrogram = convert_to_spectrogram(audio)
-                spec_np = spectrogram.numpy()
-                X.append(spec_np)
-                y.append(label_idx)
                 
-                # Lưu ảnh phổ để check trực quan bằng mắt
-                base_name = os.path.basename(file_path)
-                # Đổi đuôi bất kỳ thành .png
-                base_name = os.path.splitext(base_name)[0] + ".png"
+                # Trích xuất tên file gốc không kèm phần mở rộng
+                base_name = os.path.splitext(os.path.basename(file_path))[0]
                 
-                # Hàm save_spectrogram_image giữ nguyên như code trước của bạn...
-                matrix_2d = np.squeeze(spec_np, axis=-1)
-                log_spec = np.log(matrix_2d + 1e-6)
-                plt.figure(figsize=(3, 3))
-                plt.imshow(log_spec.T, origin='lower', aspect='auto', cmap='viridis')
-                plt.axis('off')
-                plt.savefig(os.path.join(spec_folder, base_name), bbox_inches='tight', pad_inches=0, dpi=100)
-                plt.close()
+                # Lưu bản gốc vào dataset
+                process_and_save_variant(audio, label_name, label_idx, base_name, "", spec_folder, X, y)
+                
+                if augment:
+                    # 2. Tạo bản sao thêm tiếng ồn trắng (White noise)
+                    audio_noise = add_white_noise(audio, noise_factor=0.005)
+                    process_and_save_variant(audio_noise, label_name, label_idx, base_name, "noise", spec_folder, X, y)
+                    
+                    # 3. Tạo bản sao dịch chuyển thời gian (Time shifting)
+                    audio_shift = time_shift(audio, shift_limit_ms=50)
+                    process_and_save_variant(audio_shift, label_name, label_idx, base_name, "shift", spec_folder, X, y)
+                    
+                    # 4. Kết hợp cả dịch chuyển thời gian và tiếng ồn trắng
+                    audio_shift_noise = add_white_noise(audio_shift, noise_factor=0.005)
+                    process_and_save_variant(audio_shift_noise, label_name, label_idx, base_name, "shift_noise", spec_folder, X, y)
                 
             except Exception as e:
                 print(f"⚠️ Lỗi khi xử lý file {file_path}: {e}")
@@ -171,6 +232,8 @@ model.fit(X_train, y_train, epochs=30, batch_size=16, validation_data=(X_val, y_
 # Lưu model gốc (.h5)
 model.save("vietnam_wakeup_model.h5")
 print("💾 Đã lưu model Keras: 'vietnam_wakeup_model.h5'")
+
+print("LABELS: ",LABELS)
 
 
 # ==========================================
@@ -240,3 +303,5 @@ except FileNotFoundError:
         f_h.write(f"const unsigned int model_tflite_len = {len(tflite_content)};\n")
         
     print(f"🎉 HOÀN THÀNH PHƯƠNG ÁN DỰ PHÒNG! File '{HEADER_MODEL_PATH}' đã sẵn sàng.")
+
+print("LABELS: ",LABELS)
