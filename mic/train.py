@@ -76,6 +76,18 @@ def load_and_pad_audio(file_path):
     else:
         audio = audio[:EXPECTED_SAMPLES]
         
+    # Lưu vào folder data theo các label tương ứng để kiểm tra audio đã cắt về 1 giây
+    label_name = os.path.basename(os.path.dirname(file_path))
+    base_name = os.path.basename(file_path)
+    # Đảm bảo lưu dưới dạng wav
+    base_name = os.path.splitext(base_name)[0] + ".wav"
+    output_dir = os.path.join("data", label_name)
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, base_name)
+    
+    import soundfile as sf
+    sf.write(output_path, audio.numpy(), SAMPLING_RATE)
+        
     return audio
 
 def convert_to_spectrogram(audio):
