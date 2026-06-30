@@ -16,7 +16,7 @@ const char* password = "YOUR_WIFI_PASSWORD";
 const char* gemini_api_key = "YOUR_GEMINI_API_KEY";
 
 // Mô hình Gemini Live hỗ trợ WebSockets đa phương thức thời gian thực
-const char* gemini_live_model = "models/gemini-2.0-flash-exp"; 
+const char* gemini_live_model = "gemini-3.1-flash-live-preview"; 
 
 // ==========================================
 // THAM SỐ CẤU HÌNH PHẦN CỨNG (2 MIC INMP441 & 1 LOA MAX98357A)

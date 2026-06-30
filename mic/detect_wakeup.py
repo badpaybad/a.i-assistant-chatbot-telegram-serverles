@@ -83,7 +83,7 @@ async def run_gemini_live_session(api_key):
         return
 
     client = genai.Client(api_key=api_key)
-    model = "gemini-2.0-flash-exp"
+    model = "gemini-3.1-flash-live-preview"
     
     config = types.LiveConnectConfig(
         response_modalities=[types.Modality.AUDIO],
