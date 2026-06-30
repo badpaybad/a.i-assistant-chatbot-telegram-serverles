@@ -42,6 +42,7 @@ public class FilesController : BaseController
         using var ms = new MemoryStream();
         await file.CopyToAsync(ms);
 
+        //todo: có thể sẽ gây lag reids vì content sẽ là base64 khi serialize. cần làm là upload lên google clouse storage (s3) tại controller luôn 
         var trackingId = GetTrackingId();
         var command = new UploadFileCommand
         {
@@ -114,6 +115,7 @@ public class FilesController : BaseController
         await upload.CopyToAsync(ms);
 
         var userId = GetUserId();
+        //todo: có thể sẽ gây lag reids vì content sẽ là base64 khi serialize. cần làm là upload lên google clouse storage (s3) tại controller luôn 
 
         var file = await _filesFoldersService.UploadEditorFileAsync(userId, upload.FileName, upload.ContentType, ms.ToArray());
 

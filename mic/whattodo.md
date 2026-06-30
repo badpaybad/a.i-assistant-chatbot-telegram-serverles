@@ -1,0 +1,1 @@
+dựa trên mic/train.py và model đã train mic/model.tflite để tạo 1 python code thu âm liên tục từ mic PC chuyển về chuẩn âm thanh như trong train.py rồi khi phát hiện ra "du ơi" là đã train ở mic/model.tflite cắt đoạn phát hiện ra ghi vào file theo thời gian 

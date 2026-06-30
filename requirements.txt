@@ -1,3 +1,4 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 aiofiles
 telethon
 google-generativeai
@@ -36,3 +37,4 @@ Pillow
 onnxruntime
 kernels
 python-multipart
+tensorflow-cpu
