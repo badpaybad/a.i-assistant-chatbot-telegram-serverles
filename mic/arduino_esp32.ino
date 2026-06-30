@@ -65,6 +65,14 @@ void init_i2s() {
 }
 
 // ==========================================
+// CÁC BIẾN THEO DÕI TRẠNG THÁI & LIÊN THÔNG THREAD
+// ==========================================
+volatile unsigned long last_wakeup_time = 0; // Lưu thời gian (ms) nhận diện từ khóa lần cuối
+
+// Định nghĩa Task FreeRTOS cho việc nhận diện giọng nói
+void wakeup_detection_task(void *pvParameters);
+
+// ==========================================
 // SETUP & INITIALIZATION
 // ==========================================
 void setup() {
@@ -80,73 +88,112 @@ void setup() {
         while (1) delay(1000);
     }
     Serial.println("🚀 Model AI đã sẵn sàng hoạt động!");
+
+    // Tạo Task chạy nhận diện ở Core 0 (để Core 1 chạy loop() chính thoải mái)
+    xTaskCreatePinnedToCore(
+        wakeup_detection_task,   // Hàm xử lý của Task
+        "WakeupDetectionTask",   // Tên Task
+        10000,                   // Kích thước Stack (bytes)
+        NULL,                    // Tham số truyền vào Task
+        1,                       // Độ ưu tiên của Task
+        NULL,                    // Task Handle
+        0                        // Pinned vào Core 0 (Core của các tác vụ hệ thống/WiFi)
+    );
+    Serial.println("🎙️ Thread nhận diện giọng nói đã được khởi chạy ở Core 0!");
 }
 
 // ==========================================
-// VÒNG LẶP CHÍNH - NHẬN DIỆN THỜI GIAN THỰC
+// VÒNG LẶP CHÍNH (THREAD CHÍNH - CORE 1)
 // ==========================================
 void loop() {
+    // Vòng lặp chính hoàn toàn độc lập, không bị block bởi xử lý AI
+    // Bạn có thể xử lý các tác vụ khác ở đây (đọc cảm biến, nhấp nháy LED, gửi nhận dữ liệu...)
+    
+    if (last_wakeup_time > 0) {
+        Serial.print("[Main Thread] Trạng thái: Đã từng kích hoạt. Lần cuối cách đây: ");
+        Serial.print((millis() - last_wakeup_time) / 1000.0);
+        Serial.println(" giây trước.");
+    } else {
+        Serial.println("[Main Thread] Đang chờ từ khóa kích hoạt...");
+    }
+    
+    delay(2000); // Main thread delay thoải mái mà không ảnh hưởng tới tốc độ lấy mẫu của mic
+}
+
+// ==========================================
+// THREAD NHẬN DIỆN GIỌNG NÓI OFFLINE (CORE 0)
+// ==========================================
+void wakeup_detection_task(void *pvParameters) {
     int16_t raw_samples[FFT_SAMPLES];
     size_t bytes_read = 0;
-    int feature_index = 0;
 
-    // Quét liên tục để gom đủ dữ liệu cho các hàng của Spectrogram
-    for (int row = 0; row < SPEC_ROWS; row++) {
-        // 1. Đọc một khung (Frame) tín hiệu từ Mic I2S
-        i2s_read(I2S_PORT, &raw_samples, sizeof(raw_samples), &bytes_read, portMAX_DELAY);
-        int num_samples = bytes_read / sizeof(int16_t);
+    for (;;) {
+        int feature_index = 0;
 
-        // 2. Chuẩn bị dữ liệu cho thuật toán FFT
-        for (int i = 0; i < FFT_SAMPLES; i++) {
-            if (i < num_samples) {
-                vReal[i] = (float)raw_samples[i] / 32768.0; // Chuẩn hóa biên độ về [-1.0, 1.0] tương tự pydub
-            } else {
-                vReal[i] = 0.0; // Bù khoảng trống nếu thiếu mẫu
+        // Quét liên tục để gom đủ dữ liệu cho các hàng của Spectrogram
+        for (int row = 0; row < SPEC_ROWS; row++) {
+            // 1. Đọc một khung (Frame) tín hiệu từ Mic I2S
+            // Hàm này tự động block/yield cho scheduler khi đang chờ dữ liệu từ DMA của I2S
+            i2s_read(I2S_PORT, &raw_samples, sizeof(raw_samples), &bytes_read, portMAX_DELAY);
+            int num_samples = bytes_read / sizeof(int16_t);
+
+            // 2. Chuẩn bị dữ liệu cho thuật toán FFT
+            for (int i = 0; i < FFT_SAMPLES; i++) {
+                if (i < num_samples) {
+                    vReal[i] = (float)raw_samples[i] / 32768.0; // Chuẩn hóa biên độ về [-1.0, 1.0]
+                } else {
+                    vReal[i] = 0.0;
+                }
+                vImag[i] = 0.0;
             }
-            vImag[i] = 0.0; // Phần ảo luôn bằng 0
+
+            // 3. Thực thi thuật toán biến đổi Fourier (FFT) trên chip
+            FFT.windowing(vReal, FFT_SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+            FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
+            FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
+
+            // 4. Trích xuất các cột tần số (Cắt lấy số cột SPEC_COLS giống Python)
+            for (int col = 0; col < SPEC_COLS; col++) {
+                float amplitude = vReal[col];
+                
+                // Biến đổi logarit tương đương hàm `np.log(matrix_2d + 1e-6)` trong train.py
+                float log_amplitude = log(amplitude + 1e-6);
+
+                // Ép thang đo về kiểu INT8 [-128, 127] theo chuẩn Quantization
+                int8_t quantized_value = (int8_t)constrain(log_amplitude * 10.0, -128.0, 127.0);
+
+                if (feature_index < INPUT_SIZE) {
+                    spectrogram_features[feature_index++] = quantized_value;
+                }
+            }
         }
 
-        // 3. Thực thi thuật toán biến đổi Fourier (FFT) trên chip
-        FFT.windowing(vReal, FFT_SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-        FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
-        FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
+        // 5. Đẩy toàn bộ "bức ảnh phổ" vừa chụp trực tiếp vào Model AI để phân loại (Inference)
+        int class_id = ml.predictClass(spectrogram_features);
+        float probability = ml.getProbability(); // Lấy độ tin cậy % của nhãn dự đoán
 
-        // 4. Trích xuất các cột tần số (Cắt lấy số cột cố định SPEC_COLS giống Python)
-        for (int col = 0; col < SPEC_COLS; col++) {
-            float amplitude = vReal[col];
+        // 6. Kiểm tra kết quả trùng khớp với từ khóa
+        // Class [1] là nhãn "du_oi"
+        if (class_id == 1 && probability > 0.82) { 
+            last_wakeup_time = millis(); // Ghi nhận thời điểm kích hoạt
             
-            // Biến đổi logarit tương đương hàm `np.log(matrix_2d + 1e-6)` trong train.py
-            float log_amplitude = log(amplitude + 1e-6);
+            Serial.print("🔥 [THREAD AI] Đã nhận diện tiếng Việt 'du ơi'! Độ tin cậy: ");
+            Serial.print(probability * 100);
+            Serial.print("% | Thời điểm: ");
+            Serial.print(last_wakeup_time);
+            Serial.println(" ms");
 
-            // Ép thang đo số thực (Float) về số nguyên kiểu INT8 [-128, 127] 
-            // Bước này giả lập lại cơ chế Quantization mà TFLite INT8 yêu cầu đầu vào
-            int8_t quantized_value = (int8_t)constrain(log_amplitude * 10.0, -128.0, 127.0);
-
-            if (feature_index < INPUT_SIZE) {
-                spectrogram_features[feature_index++] = quantized_value;
-            }
+            // --- ĐÂY LÀ NƠI BẠN GỌI LÊN GEMINI CLOUD ---
+            // Kịch bản tiếp theo: 
+            // 1. Tắt chế độ AI Offline này tạm thời.
+            // 2. Kích hoạt kết nối WiFiClientSecure để thiết lập kết nối HTTPS bảo mật.
+            // 3. Thu âm thêm một chuỗi buffer dài khoảng 3-5 giây (Ghi thẳng vào 8MB PSRAM thênh thang).
+            // 4. Mã hóa Base64 chuỗi đó rồi POST/Stream thẳng lên Gemini API để xử lý câu lệnh thông minh!
+            
+            vTaskDelay(pdMS_TO_TICKS(3000)); // Tạm dừng 3 giây tránh bị trùng lặp lệnh kích hoạt liên tiếp
         }
-    }
-
-    // 5. Đẩy toàn bộ "bức ảnh phổ" vừa chụp trực tiếp vào Model AI để phân loại (Inference)
-    int class_id = ml.predictClass(spectrogram_features);
-    float probability = ml.getProbability(); // Lấy độ tin cậy % của nhãn dự đoán
-
-    // 6. Kiểm tra kết quả trùng khớp với từ khóa
-    // Chú ý: Cần kiểm tra kĩ LOG in ra của Python lúc train để Map chuẩn id nhãn của bạn
-    // Giả định: 0 -> Background, 1 -> "du ơi", 2 -> Unknown
-    if (class_id == 1 && probability > 0.82) { 
-        Serial.print("🔥 [KÍCH HOẠT] Đã nhận diện tiếng Việt 'Ơi Gemini'! Độ tin cậy: ");
-        Serial.print(probability * 100);
-        Serial.println("%");
-
-        // --- ĐÂY LÀ NƠI BẠN GỌI LÊN GEMINI CLOUD ---
-        // Kịch bản tiếp theo: 
-        // 1. Tắt chế độ AI Offline này tạm thời.
-        // 2. Kích hoạt kết nối WiFiClientSecure để thiết lập kết nối HTTPS bảo mật.
-        // 3. Thu âm thêm một chuỗi buffer dài khoảng 3-5 giây (Ghi thẳng vào 8MB PSRAM thênh thang).
-        // 4. Mã hóa Base64 chuỗi đó rồi POST/Stream thẳng lên Gemini API để xử lý câu lệnh thông minh!
         
-        delay(3000); // Tạm dừng 3 giây tránh bị trùng lặp lệnh kích hoạt liên tiếp
+        // Nghỉ 10ms giữa mỗi lần suy luận để giải phóng CPU khi rảnh rỗi
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 }
