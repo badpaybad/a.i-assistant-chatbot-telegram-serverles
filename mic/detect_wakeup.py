@@ -10,6 +10,16 @@ import tensorflow as tf
 import sounddevice as sd
 import soundfile as sf
 import queue
+import sys
+import asyncio
+
+# Setup sys.path to import config from parent directory
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from config import GEMINI_APIKEY
+except ImportError:
+    GEMINI_APIKEY = os.environ.get("GEMINI_API_KEY", "")
+
 
 # Configs
 MODEL_PATH = "model.tflite"
@@ -47,6 +57,174 @@ buffer_len = SAMPLING_RATE * 2  # Keep 2 seconds of audio history
 audio_buffer = np.zeros(buffer_len, dtype=np.float32)
 audio_queue = queue.Queue()
 last_detection_time = 0.0
+
+def play_beep(frequency=440, duration=0.2, volume=0.3):
+    """Phát tiếng bíp bằng sounddevice."""
+    try:
+        sample_rate = 16000
+        t = np.linspace(0, duration, int(sample_rate * duration), False)
+        wave = np.sin(2 * np.pi * frequency * t) * volume
+        sd.play(wave, sample_rate)
+        sd.wait()
+    except Exception as e:
+        print(f"⚠️ Không thể phát tiếng bíp: {e}")
+
+async def run_gemini_live_session(api_key):
+    """Kết nối tới Gemini 2.0 Live API qua websocket để stream mic và loa máy tính."""
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        print("❌ Chưa cài đặt thư viện 'google-genai'. Vui lòng chạy: pip install google-genai")
+        return
+
+    if not api_key:
+        print("❌ Không tìm thấy GEMINI_APIKEY trong config.py hoặc môi trường.")
+        return
+
+    client = genai.Client(api_key=api_key)
+    model = "gemini-2.0-flash-exp"
+    
+    config = types.LiveConnectConfig(
+        response_modalities=[types.Modality.AUDIO],
+        speech_config=types.SpeechConfig(
+            voice_config=types.VoiceConfig(
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
+            )
+        ),
+        system_instruction=types.Content(
+            parts=[types.Part.from_text(
+                "Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
+            )]
+        )
+    )
+
+    loop = asyncio.get_running_loop()
+    input_queue = asyncio.Queue()
+    playback_queue = asyncio.Queue()
+    interrupt_event = asyncio.Event()
+    state = {"last_activity_time": time.time()}
+
+    # Callback cho sounddevice RawInputStream
+    def input_callback(indata, frames, time_info, status):
+        if status:
+            print(f"🎙️ Trạng thái Mic: {status}", flush=True)
+        loop.call_soon_threadsafe(input_queue.put_nowait, bytes(indata))
+
+    # Cấu hình RawInputStream (thu âm 16kHz mono int16)
+    mic_stream = sd.RawInputStream(
+        samplerate=16000,
+        channels=1,
+        dtype='int16',
+        blocksize=1024,
+        callback=input_callback
+    )
+
+    # Cấu hình RawOutputStream (phát loa 24kHz mono int16)
+    play_stream = sd.RawOutputStream(
+        samplerate=24000,
+        channels=1,
+        dtype='int16',
+        blocksize=1024
+    )
+
+    async def send_mic_task(session):
+        try:
+            while True:
+                chunk = await input_queue.get()
+                state["last_activity_time"] = time.time()
+                await session.send_realtime_input(
+                    audio=types.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
+                )
+                input_queue.task_done()
+        except asyncio.CancelledError:
+            pass
+
+    async def play_audio_task():
+        try:
+            while True:
+                chunk = await playback_queue.get()
+                if interrupt_event.is_set():
+                    playback_queue.task_done()
+                    continue
+                # Ghi ra loa qua thread phụ
+                await asyncio.to_thread(play_stream.write, chunk)
+                playback_queue.task_done()
+        except asyncio.CancelledError:
+            pass
+
+    async def receive_task(session):
+        try:
+            async for message in session.receive():
+                server_content = message.server_content
+                if server_content is not None:
+                    if server_content.model_turn is not None:
+                        for part in server_content.model_turn.parts:
+                            if part.inline_data is not None:
+                                state["last_activity_time"] = time.time()
+                                await playback_queue.put(part.inline_data.data)
+                            elif part.text is not None:
+                                print(part.text, end="", flush=True)
+
+                    if server_content.interrupted:
+                        print("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...")
+                        interrupt_event.set()
+                        while not playback_queue.empty():
+                            try:
+                                playback_queue.get_nowait()
+                                playback_queue.task_done()
+                            except asyncio.QueueEmpty:
+                                break
+
+                    if server_content.turn_complete:
+                        print("")
+                        interrupt_event.clear()
+        except asyncio.CancelledError:
+            pass
+        except Exception as e:
+            print(f"\n⚠️ Lỗi luồng nhận dữ liệu: {e}")
+
+    try:
+        mic_stream.start()
+        play_stream.start()
+        print("🔗 Đang kết nối cuộc gọi Live với Gemini...")
+        async with client.aio.live.connect(model=model, config=config) as session:
+            print("🟢 Trợ lý ảo đã sẵn sàng! Hãy nói chuyện.")
+            play_beep(600, 0.1)
+            play_beep(800, 0.15)
+            
+            send_task = asyncio.create_task(send_mic_task(session))
+            play_task = asyncio.create_task(play_audio_task())
+            recv_task = asyncio.create_task(receive_task(session))
+            
+            INACTIVITY_TIMEOUT = 30.0
+            while not send_task.done() and not play_task.done() and not recv_task.done():
+                await asyncio.sleep(0.5)
+                if time.time() - state["last_activity_time"] > INACTIVITY_TIMEOUT:
+                    print("\n⏳ Không có hoạt động trong 30 giây. Tự động kết thúc cuộc gọi...")
+                    break
+                    
+            for t in [send_task, play_task, recv_task]:
+                if not t.done():
+                    t.cancel()
+            await asyncio.gather(send_task, play_task, recv_task, return_exceptions=True)
+            
+    except KeyboardInterrupt:
+        print("\n👋 Kết thúc phiên trò chuyện.")
+    except Exception as e:
+        print(f"\n❌ Lỗi phiên làm việc Gemini Live: {e}")
+    finally:
+        try:
+            mic_stream.stop()
+            mic_stream.close()
+        except Exception:
+            pass
+        try:
+            play_stream.stop()
+            play_stream.close()
+        except Exception:
+            pass
+        play_beep(400, 0.15)
 
 def callback(indata, frames, time_info, status):
     if status:
@@ -145,9 +323,34 @@ with stream:
                 sf.write(filepath, audio_buffer, SAMPLING_RATE)
                 print(f"💾 Đã lưu file ghi âm: '{filepath}'\n")
                 
-                # Reset the queue to prevent immediate re-triggering from remaining buffer
+                # Tạm dừng stream nhận diện để nhường thiết bị mic cho Gemini Live
+                try:
+                    stream.stop()
+                except Exception as e:
+                    print(f"⚠️ Không thể dừng stream nhận diện: {e}")
+                
+                # Gọi hàm đàm thoại bất đồng bộ với Gemini
+                print("🎙️ Đang khởi chạy trợ lý ảo thời gian thực...")
+                try:
+                    asyncio.run(run_gemini_live_session(GEMINI_APIKEY))
+                except Exception as e:
+                    print(f"⚠️ Lỗi đàm thoại Gemini Live: {e}")
+                
+                # Dọn dẹp queue âm thanh nhận diện cũ để tránh kích hoạt lại ngay lập tức
                 while not audio_queue.empty():
-                    audio_queue.get_nowait()
+                    try:
+                        audio_queue.get_nowait()
+                    except Exception:
+                        break
+                
+                print("🎙️ Đang kích hoạt lại bộ nhận diện Wake-word...")
+                # Cập nhật lại thời gian tránh cooldown ngay lập tức
+                last_detection_time = time.time()
+                # Khởi động lại stream nhận diện
+                try:
+                    stream.start()
+                except Exception as e:
+                    print(f"⚠️ Không thể khởi động lại stream nhận diện: {e}")
                     
         except KeyboardInterrupt:
             print("\n👋 Đã tắt bộ nhận diện.")
