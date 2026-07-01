@@ -2138,4 +2138,82 @@ input[type=range]::-webkit-slider-thumb:hover {
     transform: scale(1.25);
 }
 
+/* SCENARIO FEATURES STYLING */
+.scenario-item-card {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 8px 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+.scenario-item-card:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+.scenario-item-card.insert-active {
+    border-color: var(--warning) !important;
+    box-shadow: 0 0 8px rgba(234, 179, 8, 0.2);
+}
+.scenario-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.scenario-item-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-light);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.scenario-item-subtitle {
+    font-size: 10px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.scenario-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.btn-scenario-action {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 4px;
+    transition: color 0.2s, background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-scenario-action:hover {
+    color: var(--text-light);
+    background: rgba(255, 255, 255, 0.08);
+}
+.btn-scenario-action.active {
+    color: var(--warning);
+    background: rgba(234, 179, 8, 0.15);
+}
+.btn-scenario-action.delete:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.camera-floating-panel.collapsed .scenario-controls-wrapper {
+    display: none !important;
+}
+
+
 

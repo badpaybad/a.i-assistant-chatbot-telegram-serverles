@@ -25,6 +25,12 @@ let isDragging = false;
 let startDragX = 0;
 let startDragY = 0;
 
+// Scenario state variables
+let activeScenario = null;
+let scenarioIsCreating = false;
+let scenarioInsertIndex = -1;
+let latestCalibrationMatrix = null;
+
 // DOM Elements
 const connStatus = document.getElementById("connection-status");
 const machineState = document.getElementById("machine-state");
@@ -1271,6 +1277,13 @@ function setupEventListeners() {
         const px = (clickX / rect.width) * 720.0;
         const py = (clickY / rect.height) * 720.0;
 
+        if (scenarioIsCreating && activeScenario) {
+            if (typeof showScenarioContextMenu === "function") {
+                showScenarioContextMenu(e, px, py);
+            }
+            return;
+        }
+
         // Create context menu element
         const menu = document.createElement("div");
         menu.id = "camera-context-menu";
@@ -1499,8 +1512,15 @@ function setupEventListeners() {
             if (data.last_object) lastObjectInfo = data.last_object;
 
             // Dynamically sync isCalibrated and isHomeSet status from backend
+            latestCalibrationMatrix = data.calibration_matrix;
             isCalibrated = data.calibration_matrix !== null;
             isHomeSet = data.home_set || false;
+
+            if (activeScenario && !previewIntervalId) {
+                if (typeof drawScenarioOnCamera === "function") {
+                    drawScenarioOnCamera();
+                }
+            }
 
             arucoStandardPoints = data.aruco_standard_points || {};
             cncPoints = data.cnc_points || {};
@@ -4221,6 +4241,12 @@ function initGcodeEditor() {
                 }
             });
 
+            if (activeScenario) {
+                if (typeof drawScenarioOnCamera === "function") {
+                    drawScenarioOnCamera(ctx, w, h);
+                }
+            }
+
         } catch (err) {
             console.error("Error drawing G-Code preview on camera frame:", err);
         }
@@ -4348,6 +4374,784 @@ function initGcodeEditor() {
             display.innerText = input.value + param.suffix;
         }
     });
+
+    resizeEditorCanvas();
+
+    // ==========================================
+    // SCENARIO FEATURE IMPLEMENTATION
+    // ==========================================
+
+    const scenarioNameInput = document.getElementById("scenario-name");
+    const btnCreateScenario = document.getElementById("btn-create-scenario");
+    const btnSaveScenario = document.getElementById("btn-save-scenario");
+    const btnCancelScenario = document.getElementById("btn-cancel-scenario");
+    const btnLoadScenario = document.getElementById("btn-load-scenario");
+    const inputLoadScenario = document.getElementById("input-load-scenario");
+    const btnRunScenario = document.getElementById("btn-run-scenario");
+    const btnEditScenario = document.getElementById("btn-edit-scenario");
+
+    const scenarioEditModal = document.getElementById("scenario-edit-modal");
+    const scenarioEditHeader = document.getElementById("scenario-edit-header");
+    const scenarioEditNameTitle = document.getElementById("scenario-edit-name-title");
+    const scenarioItemsList = document.getElementById("scenario-items-list");
+    const btnScenarioClearAll = document.getElementById("btn-scenario-clear-all");
+    const btnScenarioSaveEdit = document.getElementById("btn-scenario-save-edit");
+    const btnCloseScenarioEdit = document.getElementById("btn-close-scenario-edit");
+    const scenarioInsertInfo = document.getElementById("scenario-insert-info");
+    const scenarioInsertIndexLabel = document.getElementById("scenario-insert-index-label");
+
+    // Initialize Draggable helper for Scenario Edit Modal
+    if (scenarioEditModal && scenarioEditHeader) {
+        makeElementDraggable(scenarioEditModal, scenarioEditHeader);
+    }
+
+    function makeElementDraggable(elmnt, header) {
+        let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+        if (header) {
+            header.onmousedown = dragMouseDown;
+        } else {
+            elmnt.onmousedown = dragMouseDown;
+        }
+
+        function dragMouseDown(e) {
+            e = e || window.event;
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT') return;
+            e.preventDefault();
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            document.onmouseup = closeDragElement;
+            document.onmousemove = elementDrag;
+        }
+
+        function elementDrag(e) {
+            e = e || window.event;
+            e.preventDefault();
+            pos1 = pos3 - e.clientX;
+            pos2 = pos4 - e.clientY;
+            pos3 = e.clientX;
+            pos4 = e.clientY;
+            elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+            elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+        }
+
+        function closeDragElement() {
+            document.onmouseup = null;
+            document.onmousemove = null;
+        }
+    }
+
+    // Helper: Convert Pixel (0-720) to CNC Coordinates using latest calibration matrix
+    function convertPixelToCNC(px, py) {
+        if (!latestCalibrationMatrix) return { x: 0, y: 0 };
+        const M = latestCalibrationMatrix;
+        const denom = M[2][0] * px + M[2][1] * py + M[2][2];
+        let wx, wy;
+        if (Math.abs(denom) > 1e-5) {
+            wx = (M[0][0] * px + M[0][1] * py + M[0][2]) / denom;
+            wy = (M[1][0] * px + M[1][1] * py + M[1][2]) / denom;
+        } else {
+            wx = M[0][0] * px + M[0][1] * py + M[0][2];
+            wy = M[1][0] * px + M[1][1] * py + M[1][2];
+        }
+        return { x: wx, y: wy };
+    }
+
+    // Helper: Convert CNC coordinates to Pixel (0-720) using inverted calibration matrix
+    function convertCNCToPixel(wx, wy) {
+        if (!latestCalibrationMatrix) return null;
+        const M_inv = invert3x3(latestCalibrationMatrix);
+        if (!M_inv) return null;
+        const denom = M_inv[2][0] * wx + M_inv[2][1] * wy + M_inv[2][2];
+        if (Math.abs(denom) < 1e-8) return null;
+        const px = (M_inv[0][0] * wx + M_inv[0][1] * wy + M_inv[0][2]) / denom;
+        const py = (M_inv[1][0] * wx + M_inv[1][1] * wy + M_inv[1][2]) / denom;
+        return { x: px, y: py };
+    }
+
+    // Context Menu for Scenario Actions
+    window.showScenarioContextMenu = function(e, px, py) {
+        const menu = document.createElement("div");
+        menu.id = "camera-context-menu";
+        menu.className = "camera-context-menu";
+        menu.style.left = `${e.clientX + window.scrollX}px`;
+        menu.style.top = `${e.clientY + window.scrollY - 70}px`;
+
+        const cncPos = convertPixelToCNC(px, py);
+        const wx = cncPos ? cncPos.x : 0;
+        const wy = cncPos ? cncPos.y : 0;
+
+        const items = [
+            { label: "🏁 Set Begin", action: () => addScenarioAction({ type: "set_begin", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "📍 Go To Here", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "➡️ Go To Keep State", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "🛑 Set End", action: () => addScenarioAction({ type: "set_end", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { divider: true },
+            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { divider: true },
+            { label: "👇 Swipe Down", action: () => addScenarioAction({ type: "swipe_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👆 Swipe Up", action: () => addScenarioAction({ type: "swipe_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👈 Swipe Left", action: () => addScenarioAction({ type: "swipe_left", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👉 Swipe Right", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
+        ];
+
+        items.forEach(item => {
+            if (item.divider) {
+                const hr = document.createElement("hr");
+                hr.style.margin = "4px 0";
+                hr.style.border = "none";
+                hr.style.borderTop = "1px solid rgba(255, 255, 255, 0.1)";
+                menu.appendChild(hr);
+                return;
+            }
+            const div = document.createElement("div");
+            div.className = "context-menu-item";
+            div.innerText = item.label;
+            div.addEventListener("click", () => {
+                menu.remove();
+                item.action();
+            });
+            menu.appendChild(div);
+        });
+
+        document.body.appendChild(menu);
+
+        const dismissMenu = (event) => {
+            if (!menu.contains(event.target)) {
+                menu.remove();
+                document.removeEventListener("click", dismissMenu);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener("click", dismissMenu);
+        }, 10);
+    };
+
+    // Add Scenario Action
+    function addScenarioAction(action) {
+        if (!activeScenario) return;
+
+        if (scenarioInsertIndex !== -1) {
+            activeScenario.actions.splice(scenarioInsertIndex + 1, 0, action);
+            logSystemMessage(`Scenario: Inserted step ${action.type} after step ${scenarioInsertIndex + 1}`);
+            scenarioInsertIndex++;
+        } else {
+            activeScenario.actions.push(action);
+            logSystemMessage(`Scenario: Added step ${action.type} to end`);
+        }
+
+        updateScenarioButtonsState();
+        drawScenarioOnCamera();
+        renderScenarioItemsList();
+    }
+
+    // Update buttons visibility & disabled states
+    function updateScenarioButtonsState() {
+        if (!activeScenario) {
+            btnSaveScenario.style.display = "none";
+            btnCancelScenario.style.display = "none";
+            btnEditScenario.style.display = "none";
+            btnRunScenario.disabled = true;
+            return;
+        }
+
+        btnSaveScenario.style.display = "inline-block";
+        btnCancelScenario.style.display = "inline-block";
+        btnEditScenario.style.display = "inline-block";
+
+        const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
+        btnRunScenario.disabled = !hasSetEnd || !isConnected;
+
+        if (scenarioInsertIndex !== -1) {
+            scenarioInsertInfo.style.display = "block";
+            scenarioInsertIndexLabel.innerText = `${scenarioInsertIndex + 1}`;
+        } else {
+            scenarioInsertInfo.style.display = "none";
+        }
+    }
+
+    // Draw Scenario Visual Paths on Canvas
+    window.drawScenarioOnCamera = function(targetCtx = null, canvasWidth = null, canvasHeight = null) {
+        const overlayCanvas = document.getElementById("camera-overlay-canvas");
+        if (!overlayCanvas) return;
+        const ctx = targetCtx || overlayCanvas.getContext("2d");
+
+        const cameraStreamImg = document.getElementById("camera-stream-img");
+        if (!cameraStreamImg) return;
+
+        const w = canvasWidth || overlayCanvas.width;
+        const h = canvasHeight || overlayCanvas.height;
+
+        if (!targetCtx) {
+            const nw = cameraStreamImg.naturalWidth || 1280;
+            const nh = cameraStreamImg.naturalHeight || 720;
+            if (overlayCanvas.width !== nw || overlayCanvas.height !== nh) {
+                overlayCanvas.width = nw;
+                overlayCanvas.height = nh;
+            }
+            ctx.clearRect(0, 0, nw, nh);
+        }
+
+        if (!activeScenario || !activeScenario.actions || activeScenario.actions.length === 0) return;
+
+        const M = latestCalibrationMatrix;
+        const M_inv = M ? invert3x3(M) : null;
+
+        let lastX = null;
+        let lastY = null;
+
+        // Draw arrow helper
+        function drawArrowOnCanvas(context, fromX, fromY, toX, toY, arrowColor) {
+            const headlen = 8;
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            const angle = Math.atan2(dy, dx);
+            
+            context.beginPath();
+            context.moveTo(fromX, fromY);
+            context.lineTo(toX, toY);
+            context.strokeStyle = arrowColor;
+            context.lineWidth = 2.5;
+            context.stroke();
+            
+            context.beginPath();
+            context.moveTo(toX, toY);
+            context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
+            context.lineTo(toX - headlen * Math.cos(angle + Math.PI / 6), toY - headlen * Math.sin(angle + Math.PI / 6));
+            context.closePath();
+            context.fillStyle = arrowColor;
+            context.fill();
+        }
+
+        activeScenario.actions.forEach((act, idx) => {
+            let px = act.px;
+            let py = act.py;
+
+            if ((px === undefined || py === undefined) && M_inv && act.head_x !== undefined && act.head_y !== undefined) {
+                const pt = workspaceToPixel(M_inv, act.head_x, act.head_y);
+                if (pt) {
+                    px = pt.x;
+                    py = pt.y;
+                }
+            }
+
+            if (px === undefined || py === undefined) return;
+
+            const cx = (px / 720.0) * w;
+            const cy = (py / 720.0) * h;
+
+            if (lastX !== null && lastY !== null) {
+                ctx.beginPath();
+                ctx.moveTo(lastX, lastY);
+                ctx.lineTo(cx, cy);
+                ctx.strokeStyle = "rgba(234, 179, 8, 0.6)";
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([6, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            ctx.beginPath();
+            ctx.arc(cx, cy, 7, 0, 2 * Math.PI);
+
+            let color = "#ea580c";
+            if (act.type === "set_begin") color = "#22c55e";
+            else if (act.type === "set_end") color = "#ef4444";
+            else if (act.type === "go_to_here") color = "#3b82f6";
+            else if (act.type === "go_to_keep_state") color = "#a855f7";
+
+            ctx.fillStyle = color;
+            ctx.fill();
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw swipe direction arrows
+            if (act.type.startsWith("swipe_")) {
+                let dx_px = 0, dy_px = 0;
+                if (act.type === "swipe_down") dy_px = 35;
+                else if (act.type === "swipe_up") dy_px = -35;
+                else if (act.type === "swipe_left") dx_px = -35;
+                else if (act.type === "swipe_right") dx_px = 35;
+
+                const arrowEndX = cx + (dx_px / 720.0) * w;
+                const arrowEndY = cy + (dy_px / 720.0) * h;
+                
+                drawArrowOnCanvas(ctx, cx, cy, arrowEndX, arrowEndY, "#fbbf24");
+            }
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 11px sans-serif";
+            ctx.shadowColor = "rgba(0, 0, 0, 0.9)";
+            ctx.shadowBlur = 4;
+
+            let label = act.type.toUpperCase().replace(/_/g, " ");
+            ctx.fillText(`[${idx + 1}] ${label}`, cx + 12, cy + 4);
+
+            if (scenarioInsertIndex === idx) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, 2 * Math.PI);
+                ctx.strokeStyle = "#fbbf24";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+            }
+
+            lastX = cx;
+            lastY = cy;
+        });
+
+        ctx.shadowBlur = 0;
+    };
+
+    // Render list items in Scenario Edit Modal
+    function renderScenarioItemsList() {
+        if (!scenarioItemsList) return;
+        scenarioItemsList.innerHTML = "";
+
+        if (!activeScenario || activeScenario.actions.length === 0) {
+            scenarioItemsList.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px;">Scenario is empty. Right click on camera stream to add points.</div>`;
+            return;
+        }
+
+        activeScenario.actions.forEach((act, idx) => {
+            const card = document.createElement("div");
+            card.className = "scenario-item-card" + (scenarioInsertIndex === idx ? " insert-active" : "");
+
+            const info = document.createElement("div");
+            info.className = "scenario-item-info";
+
+            const title = document.createElement("div");
+            title.className = "scenario-item-title";
+            title.innerText = `[${idx + 1}] ${act.type.toUpperCase().replace(/_/g, " ")}`;
+
+            const subtitle = document.createElement("div");
+            subtitle.className = "scenario-item-subtitle";
+
+            if (act.wx !== undefined && act.wy !== undefined) {
+                subtitle.innerText = `CNC: X=${act.wx.toFixed(2)}, Y=${act.wy.toFixed(2)}`;
+            } else {
+                subtitle.innerText = `At recorded head pos`;
+            }
+
+            info.appendChild(title);
+            info.appendChild(subtitle);
+
+            const actions = document.createElement("div");
+            actions.className = "scenario-item-actions";
+
+            // Insert Pin Button
+            const btnPin = document.createElement("button");
+            btnPin.className = "btn-scenario-action" + (scenarioInsertIndex === idx ? " active" : "");
+            btnPin.title = scenarioInsertIndex === idx ? "Clear insertion point" : "Set insertion point after this step";
+            btnPin.innerHTML = "📌";
+            btnPin.addEventListener("click", () => {
+                if (scenarioInsertIndex === idx) {
+                    scenarioInsertIndex = -1;
+                } else {
+                    scenarioInsertIndex = idx;
+                }
+                updateScenarioButtonsState();
+                drawScenarioOnCamera();
+                renderScenarioItemsList();
+            });
+
+            // Move Up Button (▲)
+            const btnUp = document.createElement("button");
+            btnUp.className = "btn-scenario-action";
+            btnUp.title = "Di chuyển lên";
+            btnUp.innerHTML = "▲";
+            if (idx <= 1 || idx === activeScenario.actions.length - 1) {
+                btnUp.disabled = true;
+                btnUp.style.opacity = "0.3";
+                btnUp.style.cursor = "not-allowed";
+            }
+            btnUp.addEventListener("click", (evt) => {
+                evt.stopPropagation();
+                swapScenarioSteps(idx, idx - 1);
+            });
+
+            // Move Down Button (▼)
+            const btnDown = document.createElement("button");
+            btnDown.className = "btn-scenario-action";
+            btnDown.title = "Di chuyển xuống";
+            btnDown.innerHTML = "▼";
+            if (idx === 0 || idx >= activeScenario.actions.length - 2) {
+                btnDown.disabled = true;
+                btnDown.style.opacity = "0.3";
+                btnDown.style.cursor = "not-allowed";
+            }
+            btnDown.addEventListener("click", (evt) => {
+                evt.stopPropagation();
+                swapScenarioSteps(idx, idx + 1);
+            });
+
+            // Delete Button
+            const btnDel = document.createElement("button");
+            btnDel.className = "btn-scenario-action delete";
+            btnDel.title = "Delete this step";
+            btnDel.innerHTML = "🗑️";
+            btnDel.addEventListener("click", () => {
+                activeScenario.actions.splice(idx, 1);
+                if (scenarioInsertIndex === idx) {
+                    scenarioInsertIndex = -1;
+                } else if (scenarioInsertIndex > idx) {
+                    scenarioInsertIndex--;
+                }
+                updateScenarioButtonsState();
+                drawScenarioOnCamera();
+                renderScenarioItemsList();
+                logSystemMessage(`Scenario: Deleted step ${idx + 1}`);
+            });
+
+            actions.appendChild(btnPin);
+            actions.appendChild(btnUp);
+            actions.appendChild(btnDown);
+            actions.appendChild(btnDel);
+
+            card.appendChild(info);
+            card.appendChild(actions);
+            scenarioItemsList.appendChild(card);
+        });
+    }
+
+    // Helper: Swap two scenario steps
+    function swapScenarioSteps(i, j) {
+        if (!activeScenario || !activeScenario.actions) return;
+        const len = activeScenario.actions.length;
+        if (i <= 0 || i >= len - 1 || j <= 0 || j >= len - 1) return; // Prevent modifying first or last step
+
+        const temp = activeScenario.actions[i];
+        activeScenario.actions[i] = activeScenario.actions[j];
+        activeScenario.actions[j] = temp;
+
+        if (scenarioInsertIndex === i) {
+            scenarioInsertIndex = j;
+        } else if (scenarioInsertIndex === j) {
+            scenarioInsertIndex = i;
+        }
+
+        renderScenarioItemsList();
+        drawScenarioOnCamera();
+        logSystemMessage(`Scenario: Swapped step ${i + 1} with step ${j + 1}`);
+    }
+
+    // Compile Scenario Actions to standard G-code lines
+    function compileScenarioToGcode(scen) {
+        if (!scen || !scen.actions || scen.actions.length === 0) return "";
+
+        const lines = [];
+        lines.push("; --- Scenario Generated Toolpath ---");
+        lines.push("G21 ; Units in mm");
+        lines.push("G90 ; Absolute coordinates");
+
+        const pen_up_z = parseFloat(localStorage.getItem("cnc_pen_up_z")) || 3.0;
+        const pen_down_z = parseFloat(localStorage.getItem("cnc_pen_down_z")) || 0.0;
+        const pen_dwell = parseFloat(localStorage.getItem("cnc_pen_dwell")) || 0.25;
+        const feedrate = parseFloat(sliderFeed ? sliderFeed.value : 1000);
+
+        scen.actions.forEach((act, idx) => {
+            lines.push(`; Step ${idx + 1}: ${act.type}`);
+
+            switch (act.type) {
+                case "set_begin":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    break;
+
+                case "go_to_here":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    break;
+
+                case "go_to_keep_state":
+                    lines.push(`G1 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    break;
+
+                case "set_end":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    break;
+
+                case "tap":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "double_tap":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "pen_down":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "pen_up":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "swipe_down":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy - 20.0).toFixed(3)} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "swipe_up":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy + 20.0).toFixed(3)} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "swipe_left":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G1 X${(act.wx - 20.0).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "swipe_right":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G1 X${(act.wx + 20.0).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+            }
+        });
+
+        lines.push(`G0 Z${pen_up_z}`);
+        lines.push("; --- End Scenario Generated Toolpath ---");
+        return lines.join("\n");
+    }
+
+    // EVENT LISTENERS FOR SCENARIO
+    if (btnCreateScenario) {
+        btnCreateScenario.addEventListener("click", () => {
+            const rawName = scenarioNameInput ? scenarioNameInput.value.trim() : "";
+            const name = rawName || "Scenario_" + Math.floor(Math.random() * 1000);
+            
+            activeScenario = { name: name, actions: [] };
+            scenarioIsCreating = true;
+            scenarioInsertIndex = -1;
+
+            if (scenarioNameInput) scenarioNameInput.value = name;
+            logSystemMessage(`Created scenario kịch bản: "${name}"`);
+
+            updateScenarioButtonsState();
+            drawScenarioOnCamera();
+            renderScenarioItemsList();
+        });
+    }
+
+    if (btnSaveScenario) {
+        btnSaveScenario.addEventListener("click", () => {
+            if (!activeScenario) return;
+
+            const jsonStr = JSON.stringify(activeScenario, null, 2);
+            const blob = new Blob([jsonStr], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${activeScenario.name}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            logSystemMessage(`Downloaded Scenario JSON: ${activeScenario.name}.json`);
+        });
+    }
+
+    if (btnCancelScenario) {
+        btnCancelScenario.addEventListener("click", () => {
+            activeScenario = null;
+            scenarioIsCreating = false;
+            scenarioInsertIndex = -1;
+
+            if (scenarioNameInput) scenarioNameInput.value = "";
+            if (scenarioEditModal) scenarioEditModal.classList.add("hidden");
+
+            logSystemMessage("Scenario creation cancelled.");
+
+            updateScenarioButtonsState();
+            drawScenarioOnCamera();
+            renderScenarioItemsList();
+        });
+    }
+
+    if (btnLoadScenario) {
+        btnLoadScenario.addEventListener("click", () => {
+            if (inputLoadScenario) inputLoadScenario.click();
+        });
+    }
+
+    if (inputLoadScenario) {
+        inputLoadScenario.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    if (data && data.name && Array.isArray(data.actions)) {
+                        activeScenario = data;
+                        scenarioIsCreating = true;
+                        scenarioInsertIndex = -1;
+
+                        if (scenarioNameInput) scenarioNameInput.value = data.name;
+                        logSystemMessage(`Loaded Scenario kịch bản: "${data.name}" with ${data.actions.length} steps.`);
+
+                        updateScenarioButtonsState();
+                        drawScenarioOnCamera();
+                        renderScenarioItemsList();
+                    } else {
+                        alert("File kịch bản Scenario JSON không đúng định dạng!");
+                    }
+                } catch (err) {
+                    alert("Lỗi phân tích file JSON Scenario: " + err);
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = ""; // Reset
+        });
+    }
+
+    if (btnEditScenario) {
+        btnEditScenario.addEventListener("click", () => {
+            if (scenarioEditModal) {
+                scenarioEditModal.classList.toggle("hidden");
+                if (!scenarioEditModal.classList.contains("hidden")) {
+                    if (scenarioEditNameTitle && activeScenario) {
+                        scenarioEditNameTitle.innerText = activeScenario.name;
+                    }
+                    renderScenarioItemsList();
+                }
+            }
+        });
+    }
+
+    if (btnScenarioClearAll) {
+        btnScenarioClearAll.addEventListener("click", () => {
+            if (activeScenario && confirm("Xóa toàn bộ các bước trong kịch bản hiện tại?")) {
+                activeScenario.actions = [];
+                scenarioInsertIndex = -1;
+                updateScenarioButtonsState();
+                drawScenarioOnCamera();
+                renderScenarioItemsList();
+                logSystemMessage("Cleared all steps in the scenario.");
+            }
+        });
+    }
+
+    if (btnScenarioSaveEdit) {
+        btnScenarioSaveEdit.addEventListener("click", () => {
+            if (scenarioEditModal) {
+                scenarioEditModal.classList.add("hidden");
+            }
+        });
+    }
+
+    if (btnCloseScenarioEdit) {
+        btnCloseScenarioEdit.addEventListener("click", () => {
+            if (scenarioEditModal) {
+                scenarioEditModal.classList.add("hidden");
+            }
+        });
+    }
+
+    if (btnRunScenario) {
+        btnRunScenario.addEventListener("click", async () => {
+            if (!activeScenario || activeScenario.actions.length === 0) return;
+
+            const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
+            if (!hasSetEnd) {
+                alert("Kịch bản cần có ít nhất một bước Set End để chạy!");
+                return;
+            }
+
+            btnRunScenario.disabled = true;
+            btnRunScenario.innerText = "⏳ Running...";
+
+            const gcode = compileScenarioToGcode(activeScenario);
+
+            try {
+                const res = await fetch("/api/gcode-editor/set-gcode", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ gcode: gcode })
+                });
+                const data = await res.json();
+                
+                btnRunScenario.disabled = false;
+                btnRunScenario.innerText = "Run";
+
+                if (data.status === "ok") {
+                    logSystemMessage(`Scenario compiled successfully into G-code (${data.lines_count} lines).`);
+                    
+                    // Parse & load G-code into the visual toolpath
+                    toolpathPoints = parseGcode(gcode);
+                    calculateBoundingBox();
+                    resetCanvasView();
+
+                    loadedFileName.innerText = "scenario_" + activeScenario.name + ".gcode";
+                    loadedFileLines.innerText = `${data.lines_count} lines`;
+                    fileDropZone.classList.add("hidden");
+                    fileInfoContainer.classList.remove("hidden");
+                    btnStartStream.disabled = !isConnected;
+
+                    if (isConnected) {
+                        btnStartStream.click();
+                    } else {
+                        alert("G-Code kịch bản đã được nạp. Hãy kết nối CNC để bắt đầu.");
+                    }
+                } else {
+                    alert("Nạp G-Code kịch bản thất bại: " + data.message);
+                }
+            } catch (err) {
+                btnRunScenario.disabled = false;
+                btnRunScenario.innerText = "Run";
+                alert("Lỗi mạng khi nạp G-code kịch bản: " + err);
+            }
+        });
+    }
 
     resizeEditorCanvas();
 }

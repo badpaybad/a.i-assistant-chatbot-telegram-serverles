@@ -334,8 +334,19 @@
             <div class="panel-title-wrapper">
                 <span class="panel-dot" id="camera-active-dot"></span>
                 <span class="panel-title">Camera Feed</span>
+              
             </div>
             <div class="panel-actions">
+                  <div class="scenario-controls-wrapper" style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
+                    <input type="text" id="scenario-name" placeholder="Scenario name..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
+                    <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Create</button>
+                    <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Save</button>
+                    <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Cancel</button>
+                    <button class="btn btn-secondary" id="btn-load-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Load</button>
+                    <input type="file" id="input-load-scenario" accept=".json" style="display: none;">
+                    <button class="btn btn-warning" id="btn-run-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Run</button>
+                    <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Edit</button>
+                </div>
                 <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select"
                     style="width: 120px;" placeholder="Cam index (e.g. 4)" value="4">
                 <datalist id="cameras-datalist"></datalist>
@@ -873,6 +884,29 @@
 
             </div>
 
+        </div>
+    </div>
+
+    <!-- DRAGGABLE SCENARIO EDIT MODAL -->
+    <div id="scenario-edit-modal" class="glass-card hidden" style="position: fixed; top: 80px; left: 24px; width: 340px; max-height: 480px; z-index: 1050; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65); overflow: hidden; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-radius: 8px;">
+        <div id="scenario-edit-header" style="padding: 12px 14px; background: rgba(30, 41, 59, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none;">
+            <span style="font-weight: bold; color: var(--warning); font-size: 13px; letter-spacing: 0.5px;">✏️ Scenario Editor: <span id="scenario-edit-name-title" style="color: var(--text-light); font-weight: normal;"></span></span>
+            <button id="btn-close-scenario-edit" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;">✕</button>
+        </div>
+        <div id="scenario-edit-body" style="padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;">
+            <div style="font-size: 11px; color: var(--text-muted); line-height: 1.4;">
+                Chuột phải trên camera stream để thêm điểm. Click chọn 📌 trên một dòng để <strong>chèn (insert)</strong> hành động mới sau dòng đó.
+            </div>
+            <div id="scenario-insert-info" style="font-size: 11px; color: var(--warning); background: rgba(234, 179, 8, 0.1); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(234, 179, 8, 0.2); display: none;">
+                Next action will be inserted after step <strong id="scenario-insert-index-label">-</strong>
+            </div>
+            <div id="scenario-items-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
+                <!-- Scenario item cards will be generated here -->
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                <button class="btn btn-danger-soft btn-small" id="btn-scenario-clear-all" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Clear All</button>
+                <button class="btn btn-primary btn-small" id="btn-scenario-save-edit" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Close</button>
+            </div>
         </div>
     </div>
 
