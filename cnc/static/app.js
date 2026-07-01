@@ -4488,6 +4488,7 @@ function initGcodeEditor() {
             { divider: true },
             { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true },
@@ -4671,8 +4672,8 @@ function initGcodeEditor() {
             // Draw swipe direction arrows
             if (act.type.startsWith("swipe_")) {
                 let dx_px = 0, dy_px = 0;
-                if (act.type === "swipe_down") dy_px = 35;
-                else if (act.type === "swipe_up") dy_px = -35;
+                if (act.type === "swipe_down") dy_px = -35; // points up on screen
+                else if (act.type === "swipe_up") dy_px = 35;  // points down on screen
                 else if (act.type === "swipe_left") dx_px = -35;
                 else if (act.type === "swipe_right") dx_px = 35;
 
@@ -4850,6 +4851,7 @@ function initGcodeEditor() {
         const pen_down_z = parseFloat(localStorage.getItem("cnc_pen_down_z")) || 0.0;
         const pen_dwell = parseFloat(localStorage.getItem("cnc_pen_dwell")) || 0.25;
         const feedrate = parseFloat(sliderFeed ? sliderFeed.value : 1000);
+        const swipe_dist = parseFloat(document.getElementById("gesture-distance")?.value) || 40.0;
 
         scen.actions.forEach((act, idx) => {
             lines.push(`; Step ${idx + 1}: ${act.type}`);
@@ -4858,25 +4860,30 @@ function initGcodeEditor() {
                 case "set_begin":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     break;
 
                 case "go_to_here":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     break;
 
                 case "go_to_keep_state":
                     lines.push(`G1 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    lines.push("G4 P0.25");
                     break;
 
                 case "set_end":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     break;
 
                 case "tap":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
@@ -4886,12 +4893,24 @@ function initGcodeEditor() {
                 case "double_tap":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "long_press":
+                    lines.push(`G0 Z${pen_up_z}`);
+                    lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
+                    lines.push(`G1 Z${pen_down_z} F${feedrate}`);
+                    lines.push(`G4 P${pen_dwell}`);
+                    lines.push("G4 P1.0");
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
                     break;
@@ -4899,6 +4918,7 @@ function initGcodeEditor() {
                 case "pen_down":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     break;
@@ -4906,6 +4926,7 @@ function initGcodeEditor() {
                 case "pen_up":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
                     break;
@@ -4913,9 +4934,10 @@ function initGcodeEditor() {
                 case "swipe_down":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
-                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy - 20.0).toFixed(3)} F${feedrate}`);
+                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy - swipe_dist).toFixed(3)} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
@@ -4924,9 +4946,10 @@ function initGcodeEditor() {
                 case "swipe_up":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
-                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy + 20.0).toFixed(3)} F${feedrate}`);
+                    lines.push(`G1 X${act.wx.toFixed(3)} Y${(act.wy + swipe_dist).toFixed(3)} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
@@ -4935,9 +4958,10 @@ function initGcodeEditor() {
                 case "swipe_left":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
-                    lines.push(`G1 X${(act.wx - 20.0).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    lines.push(`G1 X${(act.wx - swipe_dist).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
@@ -4946,9 +4970,10 @@ function initGcodeEditor() {
                 case "swipe_right":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
+                    lines.push("G4 P0.25");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
-                    lines.push(`G1 X${(act.wx + 20.0).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
+                    lines.push(`G1 X${(act.wx + swipe_dist).toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);

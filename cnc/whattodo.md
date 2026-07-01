@@ -187,13 +187,13 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
         khi chuột phải vào video sẽ thêm các menu item để lưu các action phụ vụ cho kịch bản
             - set begin : lưu vị trí x,y trên ảnh , cùng cnc header  , sau này khi chạy kịch bản but cần nhấc lên trước cnc head sẽ về vị trí này trước
             - go to here: lưu vị trí x,y trên ảnh , cnc header và but cần nhấc lên trước , sau này khi chạy kịch bản sẽ cnc sẽ di chuyển đến vị trí này trước sau đó thực hiện các action tiếp theo
-            - các ation giả lập touch ( tab, doulbe tap , swipe down, swipe up, swipe left, swipe right, pen down, pen up) lưu vị trí x,y cùng cnc header 
-                swipe down là mũi tên đi lên, swipe up là múi tên đi xuống, do trục tọa độ đi theo set home 
+            - các ation giả lập touch ( tab, doulbe tap , swipe down, swipe up, swipe left, swipe right, pen down, pen up) lưu vị trí x,y cùng cnc header
+                swipe down (mô phỏng giống khi click btn-gesture-swipe-down ) là mũi tên đi lên, swipe up (mô phỏng giống btn-gesture-swipe-up click) là múi tên đi xuống, do trục tọa độ đi theo set home tương tự cho tab, double tab swipe left, swipe down, long press
             - go to keep state: giữ nguyên trạng thái bút (vd đang down) để di chuyển đến vị trí x,y chọn
             - set end: lưu vị trí x,y trên ảnh cùng cnc header và but cần nhấc lên , khi chạy kịch bản sẽ về vị trí cuối
         khi click nút save scenario thi cho người dùng lưu thành json và download về.
         có nút load scenario chọn json file load lại
         sau khi chuột phải set end hoặc trong scenario có điểm set end thì enable nút chạy , để click vào thì đầu cnc sẽ chạy theo kịch bản.
-        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end 
+        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end
             các step chạy lần lượt cần xong rồi mới tới step tiếp theo
-
+không cần test tự động trên chrome, sửa xong tôi tự test 
