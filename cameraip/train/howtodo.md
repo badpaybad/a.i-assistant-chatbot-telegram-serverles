@@ -218,6 +218,80 @@ venv/bin/python cameraip/train/train_yolo.py --data cameraip/train/data/dataset.
 
 ---
 
+## 5b. Huấn Luyện Tối Ưu Vật Thể Nhỏ & Kiến Trúc P2 (`train_yolo_tiny.py`)
+
+Để giải quyết bài toán nhận diện những vật thể rất nhỏ trên màn hình điện thoại (icon button, link text, share, like, comment, droplist, chữ, số...) từ ảnh toàn cảnh crop 720px*720px ở độ phân giải tiêu chuẩn 640px, chúng tôi cung cấp script chuyên dụng `train_yolo_tiny.py` kế thừa từ `train_yolo.py`.
+
+### 5b.1. Thách thức vật thể nhỏ & Giải pháp
+
+1. **Vấn đề giảm độ phân giải (Stride)**:
+   Mô hình YOLOv8 tiêu chuẩn thực hiện dự đoán ở các tầng đặc trưng P3 (stride 8), P4 (stride 16), P5 (stride 32). Với ảnh đầu vào 640x640:
+   - Tại đầu ra P3 (stride 8), bản đồ đặc trưng có kích thước $80 \times 80$. Một icon 12x12px trên màn hình điện thoại khi đưa qua đây chỉ còn tương đương $1.5 \times 1.5$ pixel trên feature map $\rightarrow$ Dễ dàng bị bỏ sót hoặc gộp vào nền.
+2. **Giải pháp kiến trúc Stride-4 (P2 Head)**:
+   Bằng cách thêm một đầu nhận diện thứ tư ở tầng **P2 (Stride 4)**, bản đồ đặc trưng đầu ra tại P2 có độ phân giải cao lên tới **$160 \times 160$** (gấp 4 lần so với P3).
+   - Icon 12x12px sẽ giữ lại kích thước $3 \times 3$ pixel trên feature map, giúp bảo toàn cấu trúc hình dáng, chi tiết nhỏ và vị trí biên.
+   - Để kích hoạt, truyền thêm tham số `--p2` khi chạy. Script sẽ tự động xây dựng mô hình dạng P2 (ví dụ: `yolov8m-p2.yaml`) và nạp trọng số pre-trained tiêu chuẩn (`yolov8m.pt`) cho phần backbone để kế thừa khả năng trích xuất đặc trưng (Transfer Learning).
+
+### 5b.2. Các siêu tham số tối ưu gán sẵn (Default Overrides)
+
+Script `train_yolo_tiny.py` tích hợp sẵn các cấu hình tối ưu để chuyên fine-tune vật thể nhỏ:
+- **`--fl-gamma 1.5`**: Kích hoạt Focal Loss với gamma=1.5 giúp tập trung học các nhãn dương khó (các icon nhỏ dễ nhầm) và giảm ảnh hưởng của vùng nền trống khổng lồ.
+- **`--freeze 10`**: Đóng băng 10 tầng backbone đầu tiên. Giúp giữ nguyên các bộ lọc trích xuất đặc trưng cơ bản đã học từ COCO, tránh bị nhiễu do dữ liệu nhỏ phá hỏng.
+- **`--optimizer AdamW` & `--lr0 0.001`**: Sử dụng thuật toán tối ưu hóa AdamW và tốc độ học khởi đầu nhỏ hơn để quá trình fine-tune diễn ra êm, tránh mất mát thông tin.
+- **`--mosaic 0.5`**: Giảm tỉ lệ mosaic xuống 0.5 (tiêu chuẩn là 1.0). Nếu mosaic quá cao, ảnh sẽ bị ghép nhỏ thêm 50% nữa khiến các icon nhỏ vốn có biến mất hoàn toàn.
+- **`--cls 1.0`**: Tăng trọng số loss phân loại (classification loss weight) từ 0.5 lên 1.0 giúp mô hình phân biệt tốt hơn giữa các icon tương đối giống nhau (like vs share vs comment).
+
+### 5b.3. Hướng dẫn huấn luyện bằng CLI
+
+Bạn có thể chạy trực tiếp bằng dòng lệnh:
+
+```bash
+# Huấn luyện mô hình YOLOv8 Medium với đầu P2 Stride-4 chuyên dụng trên GPU NVIDIA
+venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 80 --batch 8 --device cuda --p2
+
+# Chạy trên GPU AMD Radeon 780M (APU)
+venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 80 --batch 4 --device amd --p2
+```
+
+### 5b.4. Huấn luyện qua Web Dashboard UI
+
+1. Mở Web UI tại `http://localhost:5000`.
+2. Tại mục **Training Mode**, chọn **Tiny Object (Specialized)**.
+3. Panel **Tiny Object Settings** sẽ xuất hiện cho phép bạn bật/tắt **Enable P2 Stride-4 Head**, điều chỉnh Focal Loss Gamma, số lớp Freeze, Optimizer, Learning Rate và các trọng số Loss trực quan.
+4. Bấm **Start Train** để bắt đầu và giám sát trực tiếp. Kết quả ONNX được xuất ra sẽ tự động lưu vào thư mục `runs/detect/train/weights/best.onnx` để tích hợp vào app detect.
+
+### 5b.5. Kịch bản thực tế (Ví dụ nhận diện icon trên màn hình điện thoại)
+
+Khi camera giám sát chụp toàn cảnh lớp học/phòng làm việc và bạn cắt ra (crop) một vùng kích thước **720px × 720px** chứa chiếc điện thoại. Lúc này, các icon trên màn hình điện thoại (like, share, comment, link text, input) chỉ có kích thước khoảng **10px đến 15px**, rất nhỏ và dễ bị mất dấu. Quy trình thực hiện từ gán nhãn đến huấn luyện như sau:
+
+1. **Gán nhãn (Labeling) trên CVAT**:
+   - Cắt các vùng ảnh 720x720px chứa điện thoại và tải lên CVAT.
+   - Tiến hành gán nhãn (boxing) cực kỳ tỉ mỉ và sát viền các icon (`like`, `share`, `comment`, `input_text`, `button`,...). Không vẽ khung quá rộng để tránh gộp nhiều nhiễu nền.
+   - Xuất dữ liệu dưới định dạng **YOLO 1.1** vào thư mục `dataraw`.
+
+2. **Chuẩn bị dữ liệu với Zoom-Crop**:
+   Chạy script chuẩn bị dữ liệu:
+   ```bash
+   venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --dest cameraip/train/data --zoom-crop
+   ```
+   *Lưu ý: Tính năng `--zoom-crop` (mặc định bật) sẽ tự động cắt cận cảnh các vùng gán nhãn và tạo thêm ảnh giả lập phóng to giúp mô hình học các chi tiết nhỏ tốt hơn.*
+
+3. **Huấn luyện mô hình P2 (Stride-4)**:
+   Mở dashboard hoặc chạy CLI với cờ `--p2` và imgsz `640`:
+   ```bash
+   venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 100 --batch 8 --p2 --device cuda
+   ```
+   *Mô hình sẽ tự động cấu hình đầu nhận diện P2 Stride-4 (độ phân giải bản đồ đặc trưng đạt 160x160) giúp giữ nguyên đặc trưng của các icon 10-15px khi ảnh bị resize về 640px.*
+
+4. **Chạy nhận diện (Inference)**:
+   Sau khi hoàn tất, sử dụng file ONNX đã xuất để detect trực tiếp trên ảnh 720x720px:
+   ```bash
+   venv/bin/python cameraip/train/detect_onnx.py --model cameraip/train/runs/detect/train/weights/best.onnx --image "path/to/phone_crop_720.jpg" --output cameraip/train/output_detect.jpg --conf 0.25
+   ```
+   *Hệ thống sẽ chạy nhận diện đen trắng (grayscale) và vẽ bounding box có màu trực tiếp lên ảnh crop màu gốc của bạn.*
+
+---
+
 ## 6. Chạy Nhận Diện Với File ONNX Độc Lập (`detect_onnx.py`)
 
 Sau khi xuất mô hình ra file `.onnx`, bạn có thể chạy nhận diện trên các hệ thống khác chỉ với thư viện gọn nhẹ: `onnxruntime`, `opencv-python` và `numpy` (không cần `pytorch` hay `ultralytics`).

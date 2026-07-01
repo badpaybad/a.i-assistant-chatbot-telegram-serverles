@@ -57,12 +57,37 @@ def start_training():
     model = data.get('model', 'yolov8m.pt')
     device = data.get('device', 'cpu')
     
+    script_mode = data.get('scriptMode', 'standard')
+    
+    # Tiny object specialized parameters
+    p2 = data.get('p2', False)
+    fl_gamma = float(data.get('fl_gamma', 1.5))
+    freeze = int(data.get('freeze', 10))
+    optimizer = data.get('optimizer', 'AdamW')
+    lr0 = float(data.get('lr0', 0.001))
+    box = float(data.get('box', 7.5))
+    cls = float(data.get('cls', 1.0))
+    dfl = float(data.get('dfl', 1.5))
+    mosaic = float(data.get('mosaic', 0.5))
+    scale = float(data.get('scale', 0.5))
+    
     current_config = {
         "epochs": epochs,
         "batch": batch,
         "imgsz": imgsz,
         "model": model,
-        "device": device
+        "device": device,
+        "scriptMode": script_mode,
+        "p2": p2,
+        "fl_gamma": fl_gamma,
+        "freeze": freeze,
+        "optimizer": optimizer,
+        "lr0": lr0,
+        "box": box,
+        "cls": cls,
+        "dfl": dfl,
+        "mosaic": mosaic,
+        "scale": scale
     }
     
     # Paths to config and dataset
@@ -86,23 +111,41 @@ def start_training():
     if not os.path.exists(python_bin):
         python_bin = 'python3' # Fallback
         
+    script_file = 'train_yolo_tiny.py' if script_mode == 'tiny' else 'train_yolo.py'
+    
     cmd = [
         python_bin,
         '-u', # Unbuffered output
-        os.path.join(script_dir, 'train_yolo.py'),
+        os.path.join(script_dir, script_file),
         '--data', dataset_yaml,
         '--model', model,
         '--epochs', str(epochs),
         '--batch', str(batch),
         '--imgsz', str(imgsz),
-        '--device', device
+        '--device', device,
+        '--name', 'train'  # Always write to 'train' directory so dashboard can monitor it
     ]
+    
+    if script_mode == 'tiny':
+        if p2:
+            cmd.append('--p2')
+        cmd.extend([
+            '--fl-gamma', str(fl_gamma),
+            '--freeze', str(freeze),
+            '--optimizer', optimizer,
+            '--lr0', str(lr0),
+            '--box', str(box),
+            '--cls', str(cls),
+            '--dfl', str(dfl),
+            '--mosaic', str(mosaic),
+            '--scale', str(scale)
+        ])
     
     print(f"Launching command: {' '.join(cmd)}")
     
     try:
         log_file = open(log_path, 'w')
-        log_file.write(f"=== Starting YOLO Training: {model} ===\n")
+        log_file.write(f"=== Starting YOLO Training ({script_mode} mode): {model} ===\n")
         log_file.flush()
         
         training_process = subprocess.Popen(

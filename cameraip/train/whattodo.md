@@ -41,4 +41,7 @@ hỗ trợ thêm GPU AMD (ví dụ Radeon™ 780M Graphics × 16) bên cạnh CP
 
 **cập nhật 5** hỗ trợ và tối ưu hóa hệ thống cho dòng GPU NVIDIA (ví dụ GeForce RTX 3060 / 3060 Ti), tự động cấu hình biến môi trường tối ưu hóa bộ nhớ `PYTORCH_CUDA_ALLOC_CONF` để tránh phân mảnh VRAM/lỗi tràn bộ nhớ (OOM) khi huấn luyện mô hình lớn với batch size lớn.
 
+**cập nhật 6**
+fine tune train yolo cần giải quyết việc detect những object nhỏ như nút bấm trên màn hình điện thoại, icon button , link text , input text, nút bấm share, nút bấm like, nút bấm comment, droplist, chữ, số ... với độ chính xác cao. dựa trên train_yolo.py để tạo train_yolo_tiny.py để chuyên finetune cho detect object nhỏ với độ chính xác cao, vd camera chụp toàn cảnh và lấy được vùng 720px*720px lúc này icon trên màn hình điện thoại đã khá nhỏ, dùng để boxing label rồi cần yolo finetune để nhận diện chính xác  
+
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm

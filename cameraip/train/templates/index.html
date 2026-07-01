@@ -442,6 +442,75 @@
                         <option value="">Auto Detect</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label for="modeSelect">Training Mode</label>
+                    <select id="modeSelect">
+                        <option value="standard" selected>Standard (General Object)</option>
+                        <option value="tiny">Tiny Object (Specialized)</option>
+                    </select>
+                </div>
+                <!-- Advanced Tiny Config (visible when Tiny Object Mode is active) -->
+                <div id="tinyConfigPanel" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--card-border); padding-top: 1.25rem;">
+                    <div style="font-size: 0.95rem; font-weight: 600; margin-bottom: 1rem; color: var(--accent-cyan);">Tiny Object Settings</div>
+                    
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                        <input type="checkbox" id="p2Checkbox" style="width: auto; height: auto; transform: scale(1.1); cursor: pointer;">
+                        <label for="p2Checkbox" style="margin-bottom: 0; cursor: pointer; user-select: none;">Enable P2 Stride-4 Head (YOLOv8)</label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="flGammaInput">Focal Loss Gamma</label>
+                        <input type="number" id="flGammaInput" value="1.5" min="0" max="10" step="0.1">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="freezeInput">Freeze Backbone Layers</label>
+                        <input type="number" id="freezeInput" value="10" min="0" max="22">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="optimizerSelect">Optimizer</label>
+                        <select id="optimizerSelect">
+                            <option value="AdamW" selected>AdamW</option>
+                            <option value="SGD">SGD</option>
+                            <option value="Adam">Adam</option>
+                            <option value="RMSProp">RMSProp</option>
+                            <option value="auto">Auto</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lr0Input">Initial Learning Rate (lr0)</label>
+                        <input type="number" id="lr0Input" value="0.001" min="0.00001" max="0.1" step="0.0001">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label for="boxInput">Box Loss Wt</label>
+                            <input type="number" id="boxInput" value="7.5" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="clsInput">Cls Loss Wt</label>
+                            <input type="number" id="clsInput" value="1.0" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dflInput">DFL Loss Wt</label>
+                        <input type="number" id="dflInput" value="1.5" step="0.1">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                        <div class="form-group">
+                            <label for="mosaicInput">Mosaic Prob</label>
+                            <input type="number" id="mosaicInput" value="0.5" min="0" max="1" step="0.1">
+                        </div>
+                        <div class="form-group">
+                            <label for="scaleInput">Scale Aug</label>
+                            <input type="number" id="scaleInput" value="0.5" min="0" max="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary" id="startBtn">Start Train</button>
                     <button type="button" class="btn btn-secondary" id="stopBtn" disabled>Stop</button>
@@ -510,6 +579,17 @@
             });
 
             document.getElementById('stopBtn').addEventListener('click', stopTraining);
+
+            // Toggle tiny config panel based on selected mode
+            const modeSelect = document.getElementById('modeSelect');
+            const tinyConfigPanel = document.getElementById('tinyConfigPanel');
+            modeSelect.addEventListener('change', () => {
+                if (modeSelect.value === 'tiny') {
+                    tinyConfigPanel.style.display = 'block';
+                } else {
+                    tinyConfigPanel.style.display = 'none';
+                }
+            });
         });
 
         function initCharts() {
@@ -586,6 +666,33 @@
                     startBtn.disabled = true;
                     stopBtn.disabled = false;
                     
+                    // Update input fields from currently running config
+                    if (data.config) {
+                        if (data.config.model) document.getElementById('modelSelect').value = data.config.model;
+                        if (data.config.epochs) document.getElementById('epochsInput').value = data.config.epochs;
+                        if (data.config.batch) document.getElementById('batchInput').value = data.config.batch;
+                        if (data.config.imgsz) document.getElementById('imgszInput').value = data.config.imgsz;
+                        if (data.config.device) document.getElementById('deviceSelect').value = data.config.device;
+                        if (data.config.scriptMode) {
+                            document.getElementById('modeSelect').value = data.config.scriptMode;
+                            if (data.config.scriptMode === 'tiny') {
+                                document.getElementById('tinyConfigPanel').style.display = 'block';
+                                document.getElementById('p2Checkbox').checked = !!data.config.p2;
+                                document.getElementById('flGammaInput').value = data.config.fl_gamma;
+                                document.getElementById('freezeInput').value = data.config.freeze;
+                                document.getElementById('optimizerSelect').value = data.config.optimizer;
+                                document.getElementById('lr0Input').value = data.config.lr0;
+                                document.getElementById('boxInput').value = data.config.box;
+                                document.getElementById('clsInput').value = data.config.cls;
+                                document.getElementById('dflInput').value = data.config.dfl;
+                                document.getElementById('mosaicInput').value = data.config.mosaic;
+                                document.getElementById('scaleInput').value = data.config.scale;
+                            } else {
+                                document.getElementById('tinyConfigPanel').style.display = 'none';
+                            }
+                        }
+                    }
+                    
                     // Poll logs and metrics more frequently during active training
                     fetchLogs();
                     fetchMetrics();
@@ -612,13 +719,28 @@
         }
 
         async function startTraining() {
+            const modeSelect = document.getElementById('modeSelect');
             const body = {
                 model: document.getElementById('modelSelect').value,
                 epochs: document.getElementById('epochsInput').value,
                 batch: document.getElementById('batchInput').value,
                 imgsz: document.getElementById('imgszInput').value,
-                device: document.getElementById('deviceSelect').value
+                device: document.getElementById('deviceSelect').value,
+                scriptMode: modeSelect.value
             };
+
+            if (modeSelect.value === 'tiny') {
+                body.p2 = document.getElementById('p2Checkbox').checked;
+                body.fl_gamma = parseFloat(document.getElementById('flGammaInput').value);
+                body.freeze = parseInt(document.getElementById('freezeInput').value);
+                body.optimizer = document.getElementById('optimizerSelect').value;
+                body.lr0 = parseFloat(document.getElementById('lr0Input').value);
+                body.box = parseFloat(document.getElementById('boxInput').value);
+                body.cls = parseFloat(document.getElementById('clsInput').value);
+                body.dfl = parseFloat(document.getElementById('dflInput').value);
+                body.mosaic = parseFloat(document.getElementById('mosaicInput').value);
+                body.scale = parseFloat(document.getElementById('scaleInput').value);
+            }
 
             try {
                 const res = await fetch('/api/start', {
