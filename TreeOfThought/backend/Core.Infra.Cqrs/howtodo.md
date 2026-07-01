@@ -313,6 +313,25 @@ if (_topicSubscribers.TryGetValue(topic, out var localSubs))
 #### C. Tại sao không cần thiết áp dụng cho `SendAsync` (Command)?
 Hàng đợi của các Command sử dụng kiến trúc **Định tuyến tĩnh trực tiếp (Point-to-Point static routing)** thẳng đến queue nghiệp vụ được chỉ định (như `CreateFolderCommand`) mà không đi qua cơ chế tra cứu động từ Redis Set. Do đó, ngay cả khi Redis bị xóa sạch, lần gọi `SendAsync` kế tiếp sẽ tự động tái tạo hàng đợi vật lý và đẩy command vào xử lý thành công mà không gặp phải rủi ro định tuyến rỗng.
 
+#### D. Giải pháp Decoupling: Kết hợp Hợp đồng Chia sẻ (Shared Contracts) & Duck-Typing (Cập nhật 2026-07-01)
+Để loại bỏ sự phụ thuộc chéo giữa các project module khác nhau khi truyền nhận Command/Event, hệ thống áp dụng cơ chế định danh độc lập:
+
+1. **Thay đổi cấu trúc phân giải tên Queue/Topic:**
+   * Mặc định, nếu Command/Event không cấu hình ghi đè tên Queue/Topic rõ ràng, hệ thống sẽ sử dụng **`Type.Name`** (tên Class ngắn gọn, ví dụ: `CreateFolderCommand`) thay vì `Type.FullName` (bao gồm cả namespace phức tạp).
+   * Điều này đảm bảo các class ở các project khác nhau dù khai báo ở namespace khác nhau vẫn ánh xạ chung vào một hàng đợi/chủ đề trên Redis nếu có cùng tên lớp.
+
+2. **Hỗ trợ Duck-Typing qua các hàm Dispatcher phi generic:**
+   * Thêm các phương thức mới vào `IDispatcher` để cho phép dispatch thông điệp bằng chuỗi tên Queue/Topic và một Object dữ liệu bất kỳ (anonymous object, local class, DTO...):
+     ```csharp
+     Task SendAsync(string queueName, object command, Guid? trackingId = null, string? userId = null, bool useMemoryMode = false);
+     Task PublishAsync(string topicName, object @event, Guid? trackingId = null, string? userId = null, bool useMemoryMode = false);
+     ```
+   * Khi dispatch qua hàm này, nếu object truyền vào không implement `IBaseMessage`, hệ thống sẽ tự động chuyển đổi qua `System.Text.Json.Nodes.JsonObject` để tiêm các thuộc tính theo dõi (`trackingId`, `timestamp`, `userId`) vào JSON trước khi đẩy lên Redis.
+   * Worker ở module nhận (đã đăng ký Handler cho kiểu dữ liệu gốc của nó) sẽ tự động deserialize JSON nhận được về class Handler cục bộ của nó trơn tru nhờ tính chất tương thích cấu trúc JSON (Duck Typing), không cần bất kỳ project reference nào sang module gửi.
+
+3. **Hỗ trợ Shared Contracts (Nếu muốn):**
+   * Nếu dự án chọn cách tạo một project Contracts dùng chung chứa các POCO DTOs của Command/Event, các phương thức generic cũ (`SendAsync<TCommand>` và `PublishAsync<TEvent>`) vẫn hoạt động bình thường bằng cách tự động lấy `Type.Name` làm Queue/Topic Name mặc định và ủy quyền lời gọi xuống hàm phi generic.
+
 ---
 
 ## 5. Kịch bản Truy vấn & Tra cứu Đáp ứng Nghiệp vụ
