@@ -24,3 +24,6 @@ trên UI khi click Đồng bộ quyền. khi thành công cần load lại list,
     -H 'sec-ch-ua-mobile: ?0' \
     -H 'sec-ch-ua-platform: "Linux"' \
     --data-raw '{"version":"1.3.0","claims":["fe.cqrs:dashboard:view","fe.cqrs:dashboard:manage_workers","fe.cqrs:dashboard:retry_messages","fe.test:view","fe.test:fire_commands","fe.auth:roles:view","fe.auth:roles:manage","fe.auth:claims:view","fe.auth:claims:manage","fe.auth:users:view","fe.auth:users:manage","fe.auth:acl:manage","fe.files_folders:view"]}'
+
+**cập nhật 2026-07-01 10:11:21**
+khi login , logout thành công cần tạo event trong Core.Infra.Contracts để share cho các nghiệp vụ khác khi cần.

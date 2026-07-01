@@ -19,6 +19,7 @@ using Microsoft.Extensions.Configuration;
 
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Base.Constants;
+using Core.Infra.Contracts.Events;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -31,18 +32,21 @@ public class AuthController : ControllerBase
   private readonly Microsoft.Extensions.Configuration.IConfiguration _config;
   private readonly IJwtService _jwtService;
   private readonly INotifyRepository _notifyRepo;
+  private readonly IDispatcher _dispatcher;
   public AuthController(
       IJwtService jwtService,
       AuthService authService,
       IUserSessionService sessionService,
       Microsoft.Extensions.Configuration.IConfiguration config,
-      INotifyRepository notifyRepo)
+      INotifyRepository notifyRepo,
+      IDispatcher dispatcher)
   {
     _jwtService = jwtService;
     _authService = authService;
     _sessionService = sessionService;
     _config = config;
     _notifyRepo = notifyRepo;
+    _dispatcher = dispatcher;
   }
 
 
@@ -165,6 +169,21 @@ public class AuthController : ControllerBase
       var firebaseToken = await _authService.GenerateFirebaseToken(user);
 
       Console.WriteLine($"[AUTH] Login completed for {user.Username}. Returning tokens.");
+
+      try
+      {
+        await _dispatcher.PublishAsync(new LoginSuccessEvent
+        {
+          UserId = user.Id.ToString(),
+          Username = user.Username,
+          DisplayName = user.DisplayName,
+          Email = user.Email ?? string.Empty
+        });
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for user {user.Username}: {ex.Message}");
+      }
 
       if (!string.IsNullOrEmpty(request.FcmToken))
       {
@@ -309,6 +328,36 @@ public class AuthController : ControllerBase
   public async Task<IActionResult> Logout([FromQuery(Name = "post_logout_redirect_uri")] string? postLogoutRedirectUri)
   {
     Console.WriteLine($"[OIDC] Logout request received. PostLogoutRedirectUri={postLogoutRedirectUri}");
+
+    var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
+    var username = User.Identity?.Name;
+
+    if (string.IsNullOrEmpty(userIdStr))
+    {
+      var authenticateResult = await HttpContext.AuthenticateAsync(AuthConstants.SsoSessionScheme);
+      if (authenticateResult.Succeeded && authenticateResult.Principal != null)
+      {
+        userIdStr = authenticateResult.Principal.FindFirst(AuthConstants.UserIdClaim)?.Value;
+        username = authenticateResult.Principal.Identity?.Name;
+      }
+    }
+
+    if (!string.IsNullOrEmpty(username) || !string.IsNullOrEmpty(userIdStr))
+    {
+      try
+      {
+        await _dispatcher.PublishAsync(new LogoutSuccessEvent
+        {
+          UserId = userIdStr,
+          Username = username ?? string.Empty
+        });
+      }
+      catch (Exception ex)
+      {
+        Console.WriteLine($"[AUTH] Error publishing LogoutSuccessEvent for user {username}: {ex.Message}");
+      }
+    }
+
     await HttpContext.SignOutAsync(AuthConstants.SsoSessionScheme);
 
     if (!string.IsNullOrEmpty(postLogoutRedirectUri))
@@ -429,6 +478,21 @@ public class AuthController : ControllerBase
 
     var token = await _authService.GenerateJwtToken(user);
     var firebaseToken = await _authService.GenerateFirebaseToken(user);
+
+    try
+    {
+      await _dispatcher.PublishAsync(new LoginSuccessEvent
+      {
+        UserId = user.Id.ToString(),
+        Username = user.Username,
+        DisplayName = user.DisplayName,
+        Email = user.Email ?? string.Empty
+      });
+    }
+    catch (Exception ex)
+    {
+      Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for SSO user {user.Username}: {ex.Message}");
+    }
 
     return Ok(new
     {

@@ -24,6 +24,7 @@
     <ProjectReference Include="..\Core.Infra.Redis\Core.Infra.Redis.csproj" />
     <ProjectReference Include="..\Core.Infra.Auth\Core.Infra.Auth.csproj" />
     <ProjectReference Include="..\Core.Infra.Session\Core.Infra.Session.csproj" />
+    <ProjectReference Include="..\Core.Infra.Contracts\Core.Infra.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>
