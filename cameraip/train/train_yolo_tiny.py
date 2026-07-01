@@ -184,7 +184,7 @@ def parse_args():
     
     # Tiny object specialized parameters
     parser.add_argument('--p2', action='store_true', help='Use Stride-4 (P2) Detection Head for tiny object sensitivity (YOLOv8 only)')
-    parser.add_argument('--fl-gamma', type=float, default=1.5, help='Focal loss gamma (default: 1.5, focuses on hard/small objects)')
+    parser.add_argument('--fl-gamma', type=float, default=None, help='Focal loss gamma (ignored, not natively supported in YOLOv8)')
     parser.add_argument('--freeze', type=int, default=10, help='Number of backbone layers to freeze (default: 10, keeps feature extractor stable)')
     parser.add_argument('--optimizer', type=str, default='AdamW', choices=['SGD', 'Adam', 'AdamW', 'RMSProp', 'auto'], help='Optimizer (default: AdamW)')
     parser.add_argument('--lr0', type=float, default=0.001, help='Initial learning rate (default: 0.001 for AdamW fine-tuning)')
@@ -200,6 +200,9 @@ def parse_args():
 
 def main():
     args = parse_args()
+    
+    if args.fl_gamma is not None:
+        print("Warning: Focal loss gamma (--fl-gamma) is not natively supported in YOLOv8 training and will be ignored.", flush=True)
     
     # Enforce minimum batch size of 2 to avoid BatchNorm issues during training
     if args.batch == 1:
@@ -339,7 +342,6 @@ def main():
         multi_scale=args.multi_scale,
         amp=use_amp,
         workers=args.workers,
-        fl_gamma=args.fl_gamma,
         freeze=args.freeze,
         optimizer=args.optimizer,
         lr0=args.lr0,
