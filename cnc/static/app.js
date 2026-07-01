@@ -2897,39 +2897,59 @@ function initGcodeEditor() {
             return;
         }
 
-        editorOriginalImageFile = file;
-        editorOriginalFilename = file.name;
-        editorFileName.innerText = file.name;
-        editorDropZone.classList.add("hidden");
-        editorFileInfo.classList.remove("hidden");
-
         if (ext === ".svg") {
+            editorOriginalImageFile = file;
+            editorOriginalFilename = file.name;
+            editorFileName.innerText = file.name;
+            editorDropZone.classList.add("hidden");
+            editorFileInfo.classList.remove("hidden");
+
             groupEditorAlgo.classList.add("hidden");
             editorScale.value = "0.5";
             editorAlgo.value = "centerline";
             editorAlgo.dispatchEvent(new Event("change"));
-        } else {
-            groupEditorAlgo.classList.remove("hidden");
-            editorScale.value = "0.15";
-            editorAlgo.value = "sketch";
-            editorAlgo.dispatchEvent(new Event("change"));
 
-            // Auto start preview if not already active (Cập nhật 28)
-            if (btnEditorPreviewInVideoFrame && !previewIntervalId) {
-                btnEditorPreviewInVideoFrame.click();
-            }
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            editorOriginalImageBase64 = e.target.result;
-            editorBgImage = new Image();
-            editorBgImage.onload = () => {
-                drawEditorCanvas();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                editorOriginalImageBase64 = e.target.result;
+                editorBgImage = new Image();
+                editorBgImage.onload = () => {
+                    drawEditorCanvas();
+                };
+                editorBgImage.src = editorOriginalImageBase64;
             };
-            editorBgImage.src = editorOriginalImageBase64;
-        };
-        reader.readAsDataURL(file);
+            reader.readAsDataURL(file);
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const dataUrl = e.target.result;
+                resizeImageIfNeeded(dataUrl, file.name, file.type, (finalFile, finalDataUrl) => {
+                    editorOriginalImageFile = finalFile;
+                    editorOriginalImageBase64 = finalDataUrl;
+                    editorOriginalFilename = file.name;
+                    editorFileName.innerText = file.name;
+                    editorDropZone.classList.add("hidden");
+                    editorFileInfo.classList.remove("hidden");
+
+                    groupEditorAlgo.classList.remove("hidden");
+                    editorScale.value = "0.15";
+                    editorAlgo.value = "sketch";
+                    editorAlgo.dispatchEvent(new Event("change"));
+
+                    // Auto start preview if not already active (Cập nhật 28)
+                    if (btnEditorPreviewInVideoFrame && !previewIntervalId) {
+                        btnEditorPreviewInVideoFrame.click();
+                    }
+
+                    editorBgImage = new Image();
+                    editorBgImage.onload = () => {
+                        drawEditorCanvas();
+                    };
+                    editorBgImage.src = finalDataUrl;
+                });
+            };
+            reader.readAsDataURL(file);
+        }
     }
 
     // Server conversion triggers
@@ -3771,6 +3791,38 @@ function initGcodeEditor() {
         }
     }
 
+    // Helper to check and resize image if width or height > 720px (Cập nhật 29)
+    function resizeImageIfNeeded(dataUrl, fileName, mimeType, callback) {
+        const img = new Image();
+        img.onload = () => {
+            let w = img.width;
+            let h = img.height;
+            let finalDataUrl = dataUrl;
+            
+            if (w > 720 || h > 720) {
+                if (w > h) {
+                    h = Math.round((h * 720) / w);
+                    w = 720;
+                } else {
+                    w = Math.round((w * 720) / h);
+                    h = 720;
+                }
+                const canvas = document.createElement("canvas");
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(img, 0, 0, w, h);
+                
+                const mime = mimeType || "image/png";
+                finalDataUrl = canvas.toDataURL(mime);
+                console.log(`Resized image ${fileName} from ${img.width}x${img.height} to ${w}x${h}`);
+            }
+            const finalFile = dataURLtoFile(finalDataUrl, fileName);
+            callback(finalFile, finalDataUrl);
+        };
+        img.src = dataUrl;
+    }
+
     if (btnSaveProject) {
         btnSaveProject.addEventListener("click", async () => {
             const project = {
@@ -3897,32 +3949,43 @@ function initGcodeEditor() {
                         if (valLineWidth) valLineWidth.innerText = `${editorLineWidth} px`;
                     }
 
-                    // Reconstruct editorOriginalImageFile so parameters tweak & re-converts work (Cập nhật 25)
-                    if (editorOriginalImageBase64) {
-                        editorOriginalImageFile = dataURLtoFile(editorOriginalImageBase64, editorOriginalFilename || "image.png");
-                    } else {
-                        editorOriginalImageFile = null;
-                    }
-
                     editorFileName.innerText = editorOriginalFilename || "project.json";
                     editorDropZone.classList.add("hidden");
                     editorFileInfo.classList.remove("hidden");
 
-                    if (editorOriginalImageBase64) {
-                        editorBgImage = new Image();
-                        editorBgImage.onload = () => {
-                            drawEditorCanvas();
-                        };
-                        editorBgImage.src = editorOriginalImageBase64;
-                    } else {
-                        editorBgImage = null;
-                    }
+                    const finalizeLoad = (finalFile, finalDataUrl) => {
+                        editorOriginalImageFile = finalFile;
+                        editorOriginalImageBase64 = finalDataUrl;
+                        if (finalDataUrl) {
+                            editorBgImage = new Image();
+                            editorBgImage.onload = () => {
+                                drawEditorCanvas();
+                            };
+                            editorBgImage.src = finalDataUrl;
+                        } else {
+                            editorBgImage = null;
+                        }
 
-                    editorZoom = 1.0;
-                    editorPan = { x: 0, y: 0 };
-                    updateBoundingBox();
-                    updateScale();
-                    drawEditorCanvas();
+                        editorZoom = 1.0;
+                        editorPan = { x: 0, y: 0 };
+                        updateBoundingBox();
+                        updateScale();
+                        drawEditorCanvas();
+                    };
+
+                    // Reconstruct editorOriginalImageFile so parameters tweak & re-converts work (Cập nhật 25 & 29)
+                    if (editorOriginalImageBase64) {
+                        if (!editorOriginalFilename.toLowerCase().endsWith(".svg")) {
+                            resizeImageIfNeeded(editorOriginalImageBase64, editorOriginalFilename || "image.png", "", (finalFile, finalDataUrl) => {
+                                finalizeLoad(finalFile, finalDataUrl);
+                            });
+                        } else {
+                            const fileObj = dataURLtoFile(editorOriginalImageBase64, editorOriginalFilename || "image.png");
+                            finalizeLoad(fileObj, editorOriginalImageBase64);
+                        }
+                    } else {
+                        finalizeLoad(null, "");
+                    }
                 } catch (err) {
                     alert("Lỗi tải project: JSON không hợp lệ. " + err);
                 }
