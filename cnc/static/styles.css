@@ -1081,11 +1081,11 @@ input[type=range]::-webkit-slider-thumb:hover {
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     user-select: none;
-    background: hsla(220, 25%, 12%, 0.4);
+    background: hsla(220, 25%, 12%, 1);
     transition: background-color var(--transition-speed);
 }
 .panel-header:hover {
-    background: hsla(220, 25%, 18%, 0.5);
+    background: hsla(220, 25%, 18%, 1);
 }
 .camera-floating-panel.collapsed .panel-header {
     border-bottom: 1px solid transparent;
@@ -1150,7 +1150,7 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 .panel-body {
     padding: 12px;
-    background: hsla(220, 25%, 6%, 0.3);
+    background: hsla(220, 25%, 6%, 1);
     flex: 1;
     display: flex;
     flex-direction: row; /* Lay out side-by-side! */
