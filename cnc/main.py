@@ -1975,7 +1975,7 @@ async def set_home(camera_index: int = 4):
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
 
     # Send GRBL command to zero work coordinates at current position
-    home_cmd = "G10 L20 P0 X0 Y0 Z0"
+    home_cmd = "G10 L20 P0 X0 Y0 Z0 M3 S0"
     try:
         state.serial_port.write((home_cmd + "\n").encode())
         state.serial_port.flush()

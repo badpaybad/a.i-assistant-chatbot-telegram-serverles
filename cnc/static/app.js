@@ -4486,7 +4486,7 @@ function initGcodeEditor() {
             { divider: true }, { divider: true },
             { label: "📍 Go To Here", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "➡️ Go To Keep State", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-              { divider: true }, { divider: true },
+            { divider: true }, { divider: true },
             { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
@@ -4498,7 +4498,9 @@ function initGcodeEditor() {
             { divider: true }, { divider: true },
             { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
+            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "⏸️ Dwell 0.25s", action: () => addScenarioAction({ type: "dwell", duration: 0.25 }) }
+
         ];
 
         items.forEach(item => {
@@ -4733,7 +4735,9 @@ function initGcodeEditor() {
             const subtitle = document.createElement("div");
             subtitle.className = "scenario-item-subtitle";
 
-            if (act.wx !== undefined && act.wy !== undefined) {
+            if (act.type === "dwell") {
+                subtitle.innerText = `Tạm dừng ${act.duration ?? 0.25}s`;
+            } else if (act.wx !== undefined && act.wy !== undefined) {
                 subtitle.innerText = `CNC: X=${act.wx.toFixed(2)}, Y=${act.wy.toFixed(2)}`;
             } else {
                 subtitle.innerText = `At recorded head pos`;
@@ -4825,6 +4829,7 @@ function initGcodeEditor() {
         if (!activeScenario || !activeScenario.actions) return;
         const len = activeScenario.actions.length;
         // if (i <= 0 || i >= len - 1 || j <= 0 || j >= len - 1) return; // Prevent modifying first or last step
+        if(j < 0 || j >= len ) return;
 
         const temp = activeScenario.actions[i];
         activeScenario.actions[i] = activeScenario.actions[j];
@@ -4874,7 +4879,7 @@ function initGcodeEditor() {
 
                 case "go_to_keep_state":
                     lines.push(`G1 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)} F${feedrate}`);
-                    lines.push("G4 P0.25");
+                    // lines.push("G4 P0.25");
                     break;
 
                 case "set_end":
@@ -4919,19 +4924,21 @@ function initGcodeEditor() {
                     break;
 
                 case "pen_down":
-                    lines.push(`G0 Z${pen_up_z}`);
+                    // lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
-                    lines.push("G4 P0.25");
+                    // lines.push("G4 P0.25");
+                    lines.push("M3 S40");
                     lines.push(`G1 Z${pen_down_z} F${feedrate}`);
-                    lines.push(`G4 P${pen_dwell}`);
+                    // lines.push(`G4 P${pen_dwell}`);
                     break;
 
                 case "pen_up":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
-                    lines.push("G4 P0.25");
-                    lines.push(`G0 Z${pen_up_z}`);
-                    lines.push(`G4 P${pen_dwell}`);
+                    // lines.push("G4 P0.25");
+                    // lines.push(`G0 Z${pen_up_z}`);
+                    // lines.push(`G4 P${pen_dwell}`);
+                    lines.push("M3 S0");
                     break;
 
                 case "swipe_up":
@@ -4980,6 +4987,10 @@ function initGcodeEditor() {
                     lines.push(`G4 P${pen_dwell}`);
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G4 P${pen_dwell}`);
+                    break;
+
+                case "dwell":
+                    lines.push(`G4 P${(act.duration ?? 0.25).toFixed(3)} ; Dwell pause`);
                     break;
             }
         });
@@ -5074,6 +5085,8 @@ function initGcodeEditor() {
                         updateScenarioButtonsState();
                         drawScenarioOnCamera();
                         renderScenarioItemsList();
+
+                        scenarioEditModal.classList.toggle("hidden");
                     } else {
                         alert("File kịch bản Scenario JSON không đúng định dạng!");
                     }

@@ -190,6 +190,7 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
             - các ation giả lập touch ( tab, doulbe tap , swipe down, swipe up, swipe left, swipe right, pen down, pen up) lưu vị trí x,y cùng cnc header
                 swipe down (mô phỏng giống khi click btn-gesture-swipe-down ) là mũi tên đi lên, swipe up (mô phỏng giống btn-gesture-swipe-up click) là múi tên đi xuống, do trục tọa độ đi theo set home tương tự cho tab, double tab swipe left, swipe down, long press
             - go to keep state: giữ nguyên trạng thái bút (vd đang down) để di chuyển đến vị trí x,y chọn
+            - dwell 0.25s : tạm dừng 0.25 giây 
             - set end: lưu vị trí x,y trên ảnh cùng cnc header và but cần nhấc lên , khi chạy kịch bản sẽ về vị trí cuối
         khi click nút save scenario thi cho người dùng lưu thành json và download về.
         có nút load scenario chọn json file load lại
