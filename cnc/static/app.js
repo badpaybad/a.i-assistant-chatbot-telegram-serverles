@@ -3732,6 +3732,18 @@ function initGcodeEditor() {
         lines.push(`F${feedrate}`);
         lines.push("");
 
+        // Sort paths: longest arc-length first (cập nhật 32)
+        const pathLength = (path) => {
+            let len = 0;
+            for (let i = 1; i < path.length; i++) {
+                const dx = path[i].x - path[i - 1].x;
+                const dy = path[i].y - path[i - 1].y;
+                len += Math.sqrt(dx * dx + dy * dy);
+            }
+            return len;
+        };
+        paths.sort((a, b) => pathLength(b) - pathLength(a));
+
         paths.forEach((path, idx) => {
             if (path.length === 0) return;
             lines.push(`; --- Path ${idx + 1} ---`);

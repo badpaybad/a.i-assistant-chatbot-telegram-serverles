@@ -200,3 +200,5 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
 không cần test tự động trên chrome, sửa xong tôi tự test 
 
 **cập nhật 31** generateGcodeFromSegments đang reset  lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri"); xung đột set home, ở phần image to gcode này chỉ cần vẽ bắt đầu từ vị trí hiện tại của đầu cnc 
+
+**cập nhật 32** ở generateGcodeFromSegments ưu tiên vẽ các đường connected dài trước. 
