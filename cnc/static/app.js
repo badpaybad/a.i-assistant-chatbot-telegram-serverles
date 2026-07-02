@@ -2573,11 +2573,11 @@ async function executeGesture(type) {
 
             switch (type) {
                 case "swipe-up":
-                    swipeEndY = startY + distance;
+                    swipeEndY = startY - distance;
                     logMsg = `Simulating Swipe Up: moving up by ${distance}mm`;
                     break;
                 case "swipe-down":
-                    swipeEndY = startY - distance;
+                    swipeEndY = startY + distance;
                     logMsg = `Simulating Swipe Down: moving down by ${distance}mm`;
                     break;
                 case "swipe-left":
@@ -4675,8 +4675,8 @@ function initGcodeEditor() {
             // Draw swipe direction arrows
             if (act.type.startsWith("swipe_")) {
                 let dx_px = 0, dy_px = 0;
-                if (act.type === "swipe_down") dy_px = -35; // points up on screen
-                else if (act.type === "swipe_up") dy_px = 35;  // points down on screen
+                if (act.type === "swipe_down") dy_px = 35; // points down on screen
+                else if (act.type === "swipe_up") dy_px = -35;  // points up on screen
                 else if (act.type === "swipe_left") dx_px = -35;
                 else if (act.type === "swipe_right") dx_px = 35;
 
@@ -4824,7 +4824,7 @@ function initGcodeEditor() {
     function swapScenarioSteps(i, j) {
         if (!activeScenario || !activeScenario.actions) return;
         const len = activeScenario.actions.length;
-        if (i <= 0 || i >= len - 1 || j <= 0 || j >= len - 1) return; // Prevent modifying first or last step
+        // if (i <= 0 || i >= len - 1 || j <= 0 || j >= len - 1) return; // Prevent modifying first or last step
 
         const temp = activeScenario.actions[i];
         activeScenario.actions[i] = activeScenario.actions[j];
@@ -4934,7 +4934,7 @@ function initGcodeEditor() {
                     lines.push(`G4 P${pen_dwell}`);
                     break;
 
-                case "swipe_down":
+                case "swipe_up":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
                     lines.push("G4 P0.25");
@@ -4946,7 +4946,7 @@ function initGcodeEditor() {
                     lines.push(`G4 P${pen_dwell}`);
                     break;
 
-                case "swipe_up":
+                case "swipe_down":
                     lines.push(`G0 Z${pen_up_z}`);
                     lines.push(`G0 X${act.wx.toFixed(3)} Y${act.wy.toFixed(3)}`);
                     lines.push("G4 P0.25");
@@ -5005,6 +5005,10 @@ function initGcodeEditor() {
             updateScenarioButtonsState();
             drawScenarioOnCamera();
             renderScenarioItemsList();
+
+            if (scenarioEditModal) {
+                scenarioEditModal.classList.toggle("hidden");
+            }
         });
     }
 
@@ -5034,7 +5038,7 @@ function initGcodeEditor() {
             scenarioInsertIndex = -1;
 
             if (scenarioNameInput) scenarioNameInput.value = "";
-            if (scenarioEditModal) scenarioEditModal.classList.add("hidden");
+            // if (scenarioEditModal) scenarioEditModal.classList.add("hidden");
 
             logSystemMessage("Scenario creation cancelled.");
 
