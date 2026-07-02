@@ -3485,11 +3485,11 @@ function initGcodeEditor() {
         }
     });
 
-    document.getElementById("gcode-editor-delete-all").addEventListener("click",()=>{
+    document.getElementById("gcode-editor-delete-all").addEventListener("click", () => {
 
-                editorSegments = []
-                updateBoundingBox();
-                drawEditorCanvas();
+        editorSegments = []
+        updateBoundingBox();
+        drawEditorCanvas();
     });
 
     window.addEventListener("mousemove", (e) => {
@@ -3818,7 +3818,7 @@ function initGcodeEditor() {
             let w = img.width;
             let h = img.height;
             let finalDataUrl = dataUrl;
-            
+
             if (w > 720 || h > 720) {
                 if (w > h) {
                     h = Math.round((h * 720) / w);
@@ -3832,7 +3832,7 @@ function initGcodeEditor() {
                 canvas.height = h;
                 const ctx = canvas.getContext("2d");
                 ctx.drawImage(img, 0, 0, w, h);
-                
+
                 const mime = mimeType || "image/png";
                 finalDataUrl = canvas.toDataURL(mime);
                 console.log(`Resized image ${fileName} from ${img.width}x${img.height} to ${w}x${h}`);
@@ -4293,7 +4293,7 @@ function initGcodeEditor() {
     // --- Sketch Sidebar Controls & Auto-reconversion with Debounce ---
     function debounce(func, wait) {
         let timeout;
-        return function(...args) {
+        return function (...args) {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
@@ -4469,7 +4469,7 @@ function initGcodeEditor() {
     }
 
     // Context Menu for Scenario Actions
-    window.showScenarioContextMenu = function(e, px, py) {
+    window.showScenarioContextMenu = function (e, px, py) {
         const menu = document.createElement("div");
         menu.id = "camera-context-menu";
         menu.className = "camera-context-menu";
@@ -4482,20 +4482,23 @@ function initGcodeEditor() {
 
         const items = [
             { label: "🏁 Set Begin", action: () => addScenarioAction({ type: "set_begin", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "🛑 Set End", action: () => addScenarioAction({ type: "set_end", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { divider: true }, { divider: true },
             { label: "📍 Go To Here", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "➡️ Go To Keep State", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "🛑 Set End", action: () => addScenarioAction({ type: "set_end", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { divider: true },
-            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+              { divider: true }, { divider: true },
             { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { divider: true },
+            { divider: true }, { divider: true },
             { label: "👇 Swipe Down", action: () => addScenarioAction({ type: "swipe_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "👆 Swipe Up", action: () => addScenarioAction({ type: "swipe_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { divider: true }, { divider: true },
             { label: "👈 Swipe Left", action: () => addScenarioAction({ type: "swipe_left", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👉 Swipe Right", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
+            { label: "👉 Swipe Right", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { divider: true }, { divider: true },
+            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
         ];
 
         items.forEach(item => {
@@ -4574,7 +4577,7 @@ function initGcodeEditor() {
     }
 
     // Draw Scenario Visual Paths on Canvas
-    window.drawScenarioOnCamera = function(targetCtx = null, canvasWidth = null, canvasHeight = null) {
+    window.drawScenarioOnCamera = function (targetCtx = null, canvasWidth = null, canvasHeight = null) {
         const overlayCanvas = document.getElementById("camera-overlay-canvas");
         if (!overlayCanvas) return;
         const ctx = targetCtx || overlayCanvas.getContext("2d");
@@ -4609,14 +4612,14 @@ function initGcodeEditor() {
             const dx = toX - fromX;
             const dy = toY - fromY;
             const angle = Math.atan2(dy, dx);
-            
+
             context.beginPath();
             context.moveTo(fromX, fromY);
             context.lineTo(toX, toY);
             context.strokeStyle = arrowColor;
             context.lineWidth = 2.5;
             context.stroke();
-            
+
             context.beginPath();
             context.moveTo(toX, toY);
             context.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
@@ -4679,7 +4682,7 @@ function initGcodeEditor() {
 
                 const arrowEndX = cx + (dx_px / 720.0) * w;
                 const arrowEndY = cy + (dy_px / 720.0) * h;
-                
+
                 drawArrowOnCanvas(ctx, cx, cy, arrowEndX, arrowEndY, "#fbbf24");
             }
 
@@ -4763,11 +4766,11 @@ function initGcodeEditor() {
             btnUp.className = "btn-scenario-action";
             btnUp.title = "Di chuyển lên";
             btnUp.innerHTML = "▲";
-            if (idx <= 1 || idx === activeScenario.actions.length - 1) {
-                btnUp.disabled = true;
-                btnUp.style.opacity = "0.3";
-                btnUp.style.cursor = "not-allowed";
-            }
+            // if (idx <= 1 || idx === activeScenario.actions.length - 1) {
+            //     // btnUp.disabled = true;
+            //     btnUp.style.opacity = "0.3";
+            //     btnUp.style.cursor = "not-allowed";
+            // }
             btnUp.addEventListener("click", (evt) => {
                 evt.stopPropagation();
                 swapScenarioSteps(idx, idx - 1);
@@ -4778,11 +4781,11 @@ function initGcodeEditor() {
             btnDown.className = "btn-scenario-action";
             btnDown.title = "Di chuyển xuống";
             btnDown.innerHTML = "▼";
-            if (idx === 0 || idx >= activeScenario.actions.length - 2) {
-                btnDown.disabled = true;
-                btnDown.style.opacity = "0.3";
-                btnDown.style.cursor = "not-allowed";
-            }
+            // if (idx === 0 || idx >= activeScenario.actions.length - 2) {
+            //     // btnDown.disabled = true;
+            //     btnDown.style.opacity = "0.3";
+            //     btnDown.style.cursor = "not-allowed";
+            // }
             btnDown.addEventListener("click", (evt) => {
                 evt.stopPropagation();
                 swapScenarioSteps(idx, idx + 1);
@@ -4991,7 +4994,7 @@ function initGcodeEditor() {
         btnCreateScenario.addEventListener("click", () => {
             const rawName = scenarioNameInput ? scenarioNameInput.value.trim() : "";
             const name = rawName || "Scenario_" + Math.floor(Math.random() * 1000);
-            
+
             activeScenario = { name: name, actions: [] };
             scenarioIsCreating = true;
             scenarioInsertIndex = -1;
@@ -5144,13 +5147,13 @@ function initGcodeEditor() {
                     body: JSON.stringify({ gcode: gcode })
                 });
                 const data = await res.json();
-                
+
                 btnRunScenario.disabled = false;
                 btnRunScenario.innerText = "Run";
 
                 if (data.status === "ok") {
                     logSystemMessage(`Scenario compiled successfully into G-code (${data.lines_count} lines).`);
-                    
+
                     // Parse & load G-code into the visual toolpath
                     toolpathPoints = parseGcode(gcode);
                     calculateBoundingBox();

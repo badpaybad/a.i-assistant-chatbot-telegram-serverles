@@ -194,6 +194,6 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
         khi click nút save scenario thi cho người dùng lưu thành json và download về.
         có nút load scenario chọn json file load lại
         sau khi chuột phải set end hoặc trong scenario có điểm set end thì enable nút chạy , để click vào thì đầu cnc sẽ chạy theo kịch bản.
-        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end
+        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end vẫn cho phép đổi thứ tự trong scenario 
             các step chạy lần lượt cần xong rồi mới tới step tiếp theo
 không cần test tự động trên chrome, sửa xong tôi tự test 
