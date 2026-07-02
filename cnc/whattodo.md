@@ -198,3 +198,5 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
         có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end vẫn cho phép đổi thứ tự trong scenario 
             các step chạy lần lượt cần xong rồi mới tới step tiếp theo
 không cần test tự động trên chrome, sửa xong tôi tự test 
+
+**cập nhật 31** generateGcodeFromSegments đang reset  lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri"); xung đột set home, ở phần image to gcode này chỉ cần vẽ bắt đầu từ vị trí hiện tại của đầu cnc 
