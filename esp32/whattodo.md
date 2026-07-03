@@ -32,4 +32,6 @@ khi detect được cần phát ra loa âm thanh esp32/esp32os/ok.wav
 bổ xung thêm log mỗi khi detect word để xem mô hình hoạt động không 
 việc detected wakeup word cần tham khảo  mic/detect_wakeup.py . kiểm trả kỹ logic, thông số, kể cả việc xuất model cho esp32  
 
+**cập nhật 6** cần play âm thanh ok_wav.h khi init xong mic loa . 
+
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

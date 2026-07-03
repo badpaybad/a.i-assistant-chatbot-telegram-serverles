@@ -94,6 +94,11 @@ void setup() {
   // Initialize speaker, microphones and task
   initSpeaker();
   initMic();
+  
+  // Play startup chime to confirm speaker + mic hardware is ready
+  Serial.println("[Main Thread] Hardware init complete. Playing startup chime...");
+  playOkSound();
+  
   startWakeupDetectionTask();
   
   // Publish start command to initialize and resume detection

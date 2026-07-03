@@ -206,8 +206,9 @@ void wakeup_detection_task(void *pvParameters) {
                     (int)bytes_read, frame_max_amp, avg_amp, micDetectActive ? "ACTIVE" : "PAUSED");
     }
 
-    // Run AI inference once every 100ms (1600 samples accumulated)
-    if (micDetectActive && samples_since_last_inference >= 1600) {
+    // Run AI inference every FRAME_STEP=320 samples (20ms) - same cadence as Python's rolling buffer
+    // This ensures speech just spoken rolls into the FRONT of the 1s window where model expects it
+    if (micDetectActive && samples_since_last_inference >= 320) {
       samples_since_last_inference = 0;
       inference_count++;
 
@@ -287,10 +288,12 @@ void wakeup_detection_task(void *pvParameters) {
         float prob_du_oi  = (ml.outputs[1] - out_zero_point) * out_scale;
         float prob_unknown = (ml.outputs[2] - out_zero_point) * out_scale;
 
-        // Always log every inference so we can see model is running (matches Python real-time print)
-        Serial.printf("[AI #%d] du_oi=%.2f | unknown=%.2f | bg=%.2f | max_amp=%.4f%s\n",
-                      inference_count, prob_du_oi, prob_unknown, prob_bg, max_val,
-                      in_cooldown ? " (cooldown)" : "");
+        // Log when model sees anything interesting (not every 20ms to avoid serial flood)
+        if (prob_du_oi > 0.10 || (inference_count % 50 == 0)) {
+          Serial.printf("[AI #%d] du_oi=%.2f | unk=%.2f | bg=%.2f | amp=%.4f%s\n",
+                        inference_count, prob_du_oi, prob_unknown, prob_bg, max_val,
+                        in_cooldown ? " [cooldown]" : "");
+        }
 
         // Trigger detection when probability >= THRESHOLD and not in cooldown
         if (!in_cooldown && prob_du_oi >= THRESHOLD) {
