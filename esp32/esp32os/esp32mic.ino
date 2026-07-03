@@ -15,7 +15,8 @@
 #define FFT_SAMPLES     512  
 #define ARENA_SIZE      (180 * 1024)
 #define TF_NUM_OPS      20
-#define ENABLE_MIC_LOOPBACK 1 // Set to 0 to disable speaker loopback after testing
+#define COOLDOWN_MS     1500  // 1.5s cooldown after detection (matches detect_wakeup.py COOLDOWN_SEC=1.5)
+#define THRESHOLD       0.80  // Detection threshold (matches detect_wakeup.py THRESHOLD=0.8)
 
 #include <new>
 
@@ -128,8 +129,10 @@ void wakeup_detection_task(void *pvParameters) {
   }
   
   unsigned long last_debug_print_time = 0;
+  unsigned long last_detection_time = 0; // cooldown timer - same as detect_wakeup.py last_detection_time
   int consecutive_zero_frames = 0;
   int samples_since_last_inference = 0;
+  int inference_count = 0; // for logging
   
   // Check if model starts successfully
   if (!ml.begin(model_tflite).isOk()) {
@@ -206,20 +209,20 @@ void wakeup_detection_task(void *pvParameters) {
     // Run AI inference once every 100ms (1600 samples accumulated)
     if (micDetectActive && samples_since_last_inference >= 1600) {
       samples_since_last_inference = 0;
+      inference_count++;
 
-      // Find maximum absolute amplitude over the 1.0 second window for peak normalization (matches detect_wakeup.py)
+      // === STEP 1: Peak Normalization (matches detect_wakeup.py convert_to_spectrogram) ===
+      // max_val = tf.reduce_max(tf.abs(audio)) then audio = audio / max_val
       float max_val = 0.0;
       for (int i = 0; i < 16000; i++) {
         float abs_val = abs((float)loop_audio_buffer[i] / 32768.0);
-        if (abs_val > max_val) {
-          max_val = abs_val;
-        }
+        if (abs_val > max_val) max_val = abs_val;
       }
 
       // Compile spectrogram features
       int feature_index = 0;
-      float input_scale = ml.in->params.scale;
-      float input_zero_point = ml.in->params.zero_point;
+      float input_scale = ml.in->params.scale;   // = 0.22077 from model
+      float input_zero_point = ml.in->params.zero_point; // = -128 from model
 
       for (int row = 0; row < SPEC_ROWS; row++) {
         // Yield CPU control every 10 rows to reset Task Watchdog
@@ -227,42 +230,42 @@ void wakeup_detection_task(void *pvParameters) {
           vTaskDelay(pdMS_TO_TICKS(1));
         }
         
-        int start_idx = row * 320; // FRAME_STEP = 320 in train.py
+        int start_idx = row * 320; // FRAME_STEP = 320, same as train.py
         
-        // Copy 480 samples, apply Hann window and zero-pad to 512 for FFT directly from circular buffer
+        // === STEP 2: Hann Window + Zero-pad (matches tf.signal.stft default behaviour) ===
+        // tf.signal.stft uses PERIODIC Hann window: w[n] = 0.5*(1 - cos(2*pi*n/N)) where N=480
+        // NOTE: divisor is N=480 (periodic), NOT N-1=479 (symmetric)
         for (int i = 0; i < FFT_SAMPLES; i++) {
           if (i < 480) {
             int read_idx = (audio_buffer_write_ptr + start_idx + i) % 16000;
             float sample = (float)loop_audio_buffer[read_idx] / 32768.0;
             if (max_val > 0.0) {
-              sample = sample / max_val;
+              sample = sample / max_val; // Peak normalize
             }
-            // Hann window formula for N = 480 (matches tf.signal.stft default Hann window)
-            float w = 0.5 * (1.0 - cos((2.0 * PI * i) / 479.0));
+            // Periodic Hann window (N=480) — matches TensorFlow stft default
+            float w = 0.5f * (1.0f - cosf((2.0f * PI * i) / 480.0f));
             vReal[i] = sample * w;
           } else {
-            vReal[i] = 0.0;
+            vReal[i] = 0.0f; // Zero-pad to FFT_SAMPLES=512
           }
-          vImag[i] = 0.0;
+          vImag[i] = 0.0f;
         }
 
-        // Run FFT on current frame
+        // === STEP 3: FFT magnitude (no extra windowing — window already applied above) ===
         FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
         FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
 
-        // Quantize using input scale and zero point
+        // === STEP 4: Quantize (matches Python: (spec/input_scale) + input_zero_point) ===
         for (int col = 0; col < SPEC_COLS; col++) {
-          float amplitude = vReal[col];
-          
-          int8_t quantized_value = 0;
-          if (input_scale != 0.0) {
-            quantized_value = (int8_t)constrain(round(amplitude / input_scale) + input_zero_point, -128, 127);
+          float amplitude = vReal[col]; // raw magnitude value from FFT
+          int8_t qval;
+          if (input_scale != 0.0f) {
+            qval = (int8_t)constrain((int)round(amplitude / input_scale) + (int)input_zero_point, -128, 127);
           } else {
-            quantized_value = (int8_t)constrain(amplitude, -128, 127);
+            qval = (int8_t)constrain((int)amplitude, -128, 127);
           }
-
           if (feature_index < INPUT_SIZE) {
-            spectrogram_features[feature_index++] = quantized_value;
+            spectrogram_features[feature_index++] = qval;
           }
         }
       }
@@ -270,49 +273,56 @@ void wakeup_detection_task(void *pvParameters) {
       // Yield CPU control before TFLite model prediction
       vTaskDelay(pdMS_TO_TICKS(1));
 
-      // Classify spectrogram using the TFLite model
+      // === STEP 5: Cooldown guard (matches detect_wakeup.py COOLDOWN_SEC=1.5) ===
+      unsigned long now_ms = millis();
+      bool in_cooldown = (now_ms - last_detection_time) < COOLDOWN_MS;
+
+      // === STEP 6: Classify spectrogram using the TFLite model ===
       if (ml.predict(spectrogram_features).isOk()) {
-        float scale = ml.out->params.scale;
-        float zero_point = ml.out->params.zero_point;
+        float out_scale     = ml.out->params.scale;      // = 0.00390625
+        float out_zero_point = ml.out->params.zero_point; // = -128
         
-        float prob_bg = (ml.outputs[0] - zero_point) * scale;
-        float prob_du_oi = (ml.outputs[1] - zero_point) * scale;
-        float prob_unknown = (ml.outputs[2] - zero_point) * scale;
+        // Dequantize output: prob = (raw - zero_point) * scale
+        float prob_bg     = (ml.outputs[0] - out_zero_point) * out_scale;
+        float prob_du_oi  = (ml.outputs[1] - out_zero_point) * out_scale;
+        float prob_unknown = (ml.outputs[2] - out_zero_point) * out_scale;
 
-        // Display real-time output when a potential word is heard (du_oi > 0.20 as in Python)
-        if (prob_du_oi > 0.20) {
-          Serial.printf("🔊 [AI Status] du_oi=%.2f | unknown=%.2f | background=%.2f\n", 
-                        prob_du_oi, prob_unknown, prob_bg);
-        }
+        // Always log every inference so we can see model is running (matches Python real-time print)
+        Serial.printf("[AI #%d] du_oi=%.2f | unknown=%.2f | bg=%.2f | max_amp=%.4f%s\n",
+                      inference_count, prob_du_oi, prob_unknown, prob_bg, max_val,
+                      in_cooldown ? " (cooldown)" : "");
 
-        // Trigger detection when du_oi probability matches or exceeds the threshold (THRESHOLD = 0.8 in detect_wakeup.py)
-        if (prob_du_oi >= 0.80) {
-          last_wakeup_time = millis();
+        // Trigger detection when probability >= THRESHOLD and not in cooldown
+        if (!in_cooldown && prob_du_oi >= THRESHOLD) {
+          last_detection_time = now_ms;
+          last_wakeup_time = now_ms;
           
-          // Format payload: "class:1,time:<detectTime>,type:detected,score:<score>"
-          String eventPayload = "class:1,time:" + String(last_wakeup_time) + ",type:detected,score:" + String(prob_du_oi, 2);
-          
-          Serial.printf("🎉 [THREAD AI] Wakeup word 'du ơi' detected! Score: %.2f. Publishing to EventBus...\n", prob_du_oi);
-          
+          Serial.printf("🎉 [AI] Wakeup word 'du ơi' DETECTED! Score: %.2f. Publishing event...\n", prob_du_oi);
+
           // Immediately pause further detection to avoid duplicates
           micDetectActive = false;
+          
+          // Publish to EventBus: "class:1,time:<ms>,type:detected,score:<score>"
+          String eventPayload = "class:1,time:" + String(last_wakeup_time) + ",type:detected,score:" + String(prob_du_oi, 2);
           publish("wakeupword", eventPayload);
         }
+      } else {
+        Serial.printf("⚠️ [AI #%d] Prediction failed: %s\n", inference_count, ml.exception.toString());
       }
     }
-    vTaskDelay(pdMS_TO_TICKS(1)); // Yield to prevent Watchdog timeout on CPU 0
+    vTaskDelay(pdMS_TO_TICKS(1)); // Yield to prevent Watchdog timeout
   }
 }
 
-// Spawns the wakeup detection task on Core 0
+// Spawns the wakeup detection task on Core 1 (App Core - avoids WiFi/BT driver conflicts on Core 0)
 void startWakeupDetectionTask() {
   xTaskCreatePinnedToCore(
     wakeup_detection_task,
-    "WakeupDetectionTask",
+    "WakeupDetection",
     32768, // Stack size in bytes (enough space for TFLite inference and FFT)
     NULL,
     2,    // Slightly higher priority to prevent audio frame drops
     NULL,
-    0     // Pinned to Core 0 (System Core)
+    1     // Pinned to Core 1 (App Core) - WiFi driver runs on Core 0, avoid sharing
   );
 }
