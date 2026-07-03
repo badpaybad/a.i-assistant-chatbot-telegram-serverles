@@ -28,6 +28,7 @@ SAMPLING_RATE = 16000
 BLOCK_SIZE = 1600  # 100ms blocks
 COOLDOWN_SEC = 1.5
 THRESHOLD = 0.8
+LOUD_THRESHOLD = 15000
 
 # Ensure output directory exists
 os.makedirs(DETECTIONS_DIR, exist_ok=True)
@@ -96,6 +97,9 @@ async def run_gemini_live_session(api_key):
             parts=[types.Part.from_text(
                 text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
             )]
+        ),
+        realtime_input_config=types.RealtimeInputConfig(
+            activity_handling=types.ActivityHandling.NO_INTERRUPTION
         )
     )
 
@@ -103,12 +107,22 @@ async def run_gemini_live_session(api_key):
     input_queue = asyncio.Queue()
     playback_queue = asyncio.Queue()
     interrupt_event = asyncio.Event()
-    state = {"last_activity_time": time.time()}
+    state = {
+        "last_activity_time": time.time(),
+        "current_utterance_max_volume": 0,
+        "ignore_current_turn": False
+    }
 
     # Callback cho sounddevice RawInputStream
     def input_callback(indata, frames, time_info, status):
         if status:
             print(f"🎙️ Trạng thái Mic: {status}", flush=True)
+        # Convert bytes to numpy int16 array to measure amplitude
+        audio_data = np.frombuffer(indata, dtype=np.int16)
+        if len(audio_data) > 0:
+            max_amp = np.max(np.abs(audio_data))
+            if max_amp > state["current_utterance_max_volume"]:
+                state["current_utterance_max_volume"] = int(max_amp)
         loop.call_soon_threadsafe(input_queue.put_nowait, bytes(indata))
 
     # Cấu hình RawInputStream (thu âm 16kHz mono int16)
@@ -154,42 +168,72 @@ async def run_gemini_live_session(api_key):
 
     async def receive_task(session):
         try:
-            async for message in session.receive():
-                server_content = message.server_content
-                is_communication = False
-                
-                if server_content is not None:
-                    if server_content.model_turn is not None:
+            while True:
+                if session._ws.close_code is not None:
+                    break
+                async for message in session.receive():
+                    server_content = message.server_content
+                    is_communication = False
+                    
+                    if server_content is not None:
+                        if server_content.model_turn is not None:
+                            is_communication = True
+                            for part in server_content.model_turn.parts:
+                                if part.inline_data is not None:
+                                    if not state["ignore_current_turn"]:
+                                        await playback_queue.put(part.inline_data.data)
+                                elif part.text is not None:
+                                    if not state["ignore_current_turn"]:
+                                        print(part.text, end="", flush=True)
+
+                        if server_content.interrupted:
+                            is_communication = True
+                            print("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...")
+                            interrupt_event.set()
+                            while not playback_queue.empty():
+                                try:
+                                    playback_queue.get_nowait()
+                                    playback_queue.task_done()
+                                except asyncio.QueueEmpty:
+                                    break
+
+                        if server_content.input_transcription is not None:
+                            trans = server_content.input_transcription
+                            if trans.text:
+                                is_communication = True
+                                text_lower = trans.text.lower()
+                                vol = state["current_utterance_max_volume"]
+                                print(f"\n🎙️ [Người dùng]: '{trans.text}' (Âm lượng: {vol})")
+                                
+                                # Kiểm tra xem có chứa từ khóa dừng lại và âm lượng có lớn hay không
+                                is_stop_phrase = "dừng lại" in text_lower or "làm ơn dừng lại" in text_lower
+                                is_loud = vol >= LOUD_THRESHOLD
+                                
+                                if is_stop_phrase and is_loud:
+                                    print(f"🛑 Phát hiện lệnh dừng khẩn cấp với âm lượng lớn ({vol})! Dừng phát âm thanh chatbot...")
+                                    interrupt_event.set()
+                                    while not playback_queue.empty():
+                                        try:
+                                            playback_queue.get_nowait()
+                                            playback_queue.task_done()
+                                        except asyncio.QueueEmpty:
+                                            break
+                                    state["ignore_current_turn"] = True
+                            
+                            if trans.finished:
+                                # Reset bộ đếm âm lượng cho câu nói tiếp theo
+                                state["current_utterance_max_volume"] = 0
+
+                        if server_content.turn_complete:
+                            print("")
+                            interrupt_event.clear()
+                            state["ignore_current_turn"] = False
+
+                    if message.tool_call is not None:
                         is_communication = True
-                        for part in server_content.model_turn.parts:
-                            if part.inline_data is not None:
-                                await playback_queue.put(part.inline_data.data)
-                            elif part.text is not None:
-                                print(part.text, end="", flush=True)
 
-                    if server_content.interrupted:
-                        is_communication = True
-                        print("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...")
-                        interrupt_event.set()
-                        while not playback_queue.empty():
-                            try:
-                                playback_queue.get_nowait()
-                                playback_queue.task_done()
-                            except asyncio.QueueEmpty:
-                                break
-
-                    if server_content.input_transcription is not None and server_content.input_transcription.text:
-                        is_communication = True
-
-                    if server_content.turn_complete:
-                        print("")
-                        interrupt_event.clear()
-
-                if message.tool_call is not None:
-                    is_communication = True
-
-                if is_communication:
-                    state["last_activity_time"] = time.time()
+                    if is_communication:
+                        state["last_activity_time"] = time.time()
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -215,6 +259,10 @@ async def run_gemini_live_session(api_key):
                     print("\n⏳ Không có hoạt động trong 1 phút. Tự động kết thúc cuộc gọi...")
                     break
                     
+            for name, t in [("send", send_task), ("play", play_task), ("recv", recv_task)]:
+                if t.done() and t.exception() is not None:
+                    print(f"❌ Task '{name}' failed with exception: {t.exception()}")
+
             for t in [send_task, play_task, recv_task]:
                 if not t.done():
                     t.cancel()
