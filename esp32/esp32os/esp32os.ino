@@ -54,6 +54,9 @@ bool inApMode = false;
 unsigned long lastLogTime = 0;
 String gemini_api_key = "";
 String gemini_model = "gemini-3.1-flash-live-preview";
+extern volatile bool live_chat_active;
+
+#define BTN_HOLD_RESET_MS 10000 // hold this many ms to trigger factory reset
 
 // Function declarations from esp32wifi.ino and esp32uiconfig.ino
 void loadWifiCredentials(WifiCreds savedCreds[], int &count);
@@ -98,7 +101,7 @@ void playSilence(int duration_ms);
 
 // Function declarations from this file (esp32os.ino)
 void micSelfTest();
-void checkBootButton();
+void startButtonPollingTask();
 
 // EventBus Callback for Wakeup Word Detections (main thread listener)
 void onWakeupwordReceived(const String& topic, const String& payload) {
@@ -154,7 +157,10 @@ void setup() {
   //   5. startWakeupDetectionTask() → Start AI detection on Core 1
   // ═══════════════════════════════════════════════════════════════════════
 
-  // Initialize BOOT button pin
+  // BOOT button pin – configured as INPUT_PULLUP.
+  // Detection is handled by a FreeRTOS polling task (startButtonPollingTask)
+  // started at the end of setup(). No hardware interrupt is used to avoid
+  // WDT crashes from GPIO 0 / USB-CDC noise on ESP32-S3.
   pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 
   Serial.println("[Boot] 1/5 - initMic: Initializing microphone I2S RX...");
@@ -178,7 +184,7 @@ void setup() {
   // Publish start command to activate detection in the AI task
   publish("wakeupword", "type=start");
 
-  
+
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
   if (connectWiFi()) {
     Serial.println("WiFi successfully connected!");
@@ -188,10 +194,14 @@ void setup() {
     // If connection failed or no credentials found, trigger AP configuration mode
     startAP();
   }
+
+  // Start the boot-button polling task LAST (after all hardware is ready).
+  // This task polls GPIO 0 every 50ms – no hardware interrupt needed.
+  startButtonPollingTask();
 }
 
+
 void loop() {
-  checkBootButton();
   if (inApMode) {
     // Serve DNS and HTTP clients in AP mode
     dnsServer.processNextRequest();
@@ -204,45 +214,153 @@ void loop() {
   }
 }
 
-void checkBootButton() {
-  static unsigned long lastPressTime = 0;
-  static int pressCount = 0;
-  static bool lastButtonState = HIGH;
-  
-  bool currentButtonState = digitalRead(BOOT_BUTTON_PIN);
-  
-  // Detect falling edge (transition from released to pressed)
-  if (lastButtonState == HIGH && currentButtonState == LOW) {
-    unsigned long now = millis();
-    // Debounce: check if at least 50ms have passed since last press to filter noise
-    if (now - lastPressTime > 50) {
-      if (now - lastPressTime < 1000) {
-        // Press within 1 second of the last one
-        pressCount++;
-      } else {
-        // Too long since last press, reset count
-        pressCount = 1;
+// -------------------------------------------------------------------------
+// FreeRTOS task: polls BOOT button (GPIO 0) every 50 ms.
+//
+// Why polling instead of hardware interrupt:
+//   GPIO 0 on ESP32-S3 is shared with the USB-CDC bridge. When Serial Monitor
+//   is connected, USB activity generates rapid spurious FALLING/CHANGE edges
+//   that flood an ISR and trigger the Interrupt Watchdog Timer (WDT crash).
+//   A 50 ms polling interval avoids ISR context entirely and naturally
+//   debounces contact bounce.
+//
+// Hold timeline:
+//   0 s  → pressed, timer starts
+//   5 s  → 1 beep ("keep holding")
+//   8 s  → 2 beeps ("almost there")
+//  10 s  → factory reset: wipe NVS → restart
+//   any  → release before 10 s = nothing happens
+// -------------------------------------------------------------------------
+void buttonPollingTask(void* param) {
+  bool isHeld          = false;
+  unsigned long pressStartMs = 0;
+  bool fired5s         = false;
+  bool fired8s         = false;
+
+  // ── Guard 1: boot settle delay ──
+  // Give the bootloader and USB-CDC subsystem time to release GPIO 0.
+  vTaskDelay(pdMS_TO_TICKS(2000));
+
+  // ── Guard 2: wait for GPIO 0 to be observed HIGH (idle/released) ──
+  // A valid button press MUST be a HIGH→LOW transition.
+  // If GPIO 0 is already LOW when the task starts (due to bootloader, USB-CDC,
+  // or hardware strapping), we must wait until it goes HIGH before accepting
+  // any LOW as a real press.  Timeout: 15 s.  If never HIGH → disable task.
+  {
+    bool gpioReady = false;
+    unsigned long waitStart = millis();
+    while (millis() - waitStart < 15000) {
+      if (digitalRead(BOOT_BUTTON_PIN) == HIGH) {
+        gpioReady = true;
+        break;
       }
-      lastPressTime = now;
-      Serial.printf("[Button] Boot button pressed. Count: %d\n", pressCount);
-      
-      if (pressCount >= 2) {
-        Serial.println("🚨 [Button] Double-press detected! Disconnecting WiFi and starting configuration portal...");
-        pressCount = 0; // Reset
-        
-        // Signal tone (double beep)
-        play_beep(880, 100);
-        delay(80);
-        play_beep(880, 100);
-        
-        // Disconnect wifi and start AP portal
-        WiFi.disconnect();
-        startAP();
-      }
+      vTaskDelay(pdMS_TO_TICKS(100));
+    }
+    if (!gpioReady) {
+      Serial.println("[Button] GPIO 0 stuck LOW after 15s – button monitoring disabled.");
+      vTaskDelete(NULL);
+      return;
     }
   }
-  
-  lastButtonState = currentButtonState;
+
+  Serial.println("[Button] Polling task ready. Hold BOOT 10s to factory reset.");
+
+  // ── Guard 3: require seenHigh before accepting any LOW as a press ──
+  // Initialized to true because we just confirmed HIGH above.
+  // Reset to false if the pin goes LOW without a prior HIGH (e.g. USB noise).
+  bool seenHigh = true;
+
+  // Consecutive LOW count for debounce (3 × 50 ms = 150 ms sustained LOW needed)
+  const int PRESS_CONFIRM_COUNT = 3;
+  int lowCount = 0;
+
+  for (;;) {
+    bool pinLow = (digitalRead(BOOT_BUTTON_PIN) == LOW);
+
+    if (!pinLow) {
+      // ── Pin is HIGH: button released / idle ──
+      seenHigh = true;
+      lowCount = 0;
+      if (isHeld) {
+        isHeld  = false;
+        fired5s = false;
+        fired8s = false;
+        Serial.println("[Button] Released – factory reset cancelled.");
+      }
+    } else if (seenHigh) {
+      // ── Pin is LOW and was HIGH before: could be a real press ──
+      lowCount++;
+      if (lowCount > PRESS_CONFIRM_COUNT) lowCount = PRESS_CONFIRM_COUNT;
+
+      if (!isHeld && lowCount >= PRESS_CONFIRM_COUNT) {
+        isHeld       = true;
+        pressStartMs = millis() - (PRESS_CONFIRM_COUNT * 50UL); // back-date to first LOW
+        fired5s      = false;
+        fired8s      = false;
+        Serial.println("[Button] Pressed. Hold 10s to factory reset, release to cancel.");
+      }
+    }
+    // else: pinLow && !seenHigh → ignore (no preceding HIGH, likely boot noise)
+
+    if (isHeld) {
+      unsigned long heldMs = millis() - pressStartMs;
+
+      if (!fired5s && heldMs >= 5000) {
+        fired5s = true;
+        play_beep(440, 150);
+        Serial.println("[Button] 5s / 10s – keep holding...");
+      }
+      if (!fired8s && heldMs >= 8000) {
+        fired8s = true;
+        play_beep(660, 100);
+        delay(80);
+        play_beep(660, 100);
+        Serial.println("[Button] 8s / 10s – almost there!");
+      }
+      if (heldMs >= BTN_HOLD_RESET_MS) {
+        Serial.println("\n🚨 [Button] 10s hold confirmed! Wiping all config and restarting...");
+
+        play_beep(1046, 150); // C6
+        delay(60);
+        play_beep(784,  150); // G5
+        delay(60);
+        play_beep(523,  300); // C5 (long)
+        delay(300);
+
+        // Local Preferences object avoids global-state conflicts
+        Preferences pref;
+        pref.begin("wifi-creds", false);
+        pref.clear();
+        pref.end();
+        Serial.println("[Button] WiFi credentials cleared.");
+
+        pref.begin("gemini-config", false);
+        pref.clear();
+        pref.end();
+        Serial.println("[Button] Gemini config cleared.");
+
+        Serial.println("[Button] Restarting in 500ms...");
+        Serial.flush();
+        delay(500);
+        ESP.restart();
+        vTaskDelete(NULL);
+      }
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(50));
+  }
+}
+
+void startButtonPollingTask() {
+  xTaskCreatePinnedToCore(
+    buttonPollingTask,
+    "BtnPoll",
+    4096,
+    NULL,
+    1,
+    NULL,
+    0  // Core 0, away from I2S-heavy loop() on Core 1
+  );
 }
 
 // Orchestrator for Mic and Speaker Self-Test on Main Thread:

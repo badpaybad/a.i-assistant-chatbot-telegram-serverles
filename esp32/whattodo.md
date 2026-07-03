@@ -59,6 +59,8 @@ khi detect được wakeup word thì không phát ok_wav nữa, xử lý như vo
 **cập nhật 9** ở esp32/esp32os/esp32uiconfig.ino cần bổ xung config để lưu gemini key và model name cho mic/esp32mic.ino, khi reset reboot , tắt đi bật lại vẫn dùng được, và cần bổ xung thêm các input config cho gemini . model mặc định "gemini-3.1-flash-live-preview"
 
 **cập nhật 10** wifi connect thành công thì cần play ok_wifi.wav (xử lý giống ok_wav).
-trên mạch esp32 có nút boot , khi nhấn 2 lần liên tiếp thì sẽ disconnect wifi và bật hostpost lên để điền lại các cấu hình như ở esp32/esp32os/esp32uiconfig.ino
+
+**cập nhật 11**
+trên mạch  esp32 s3 n16r8 dùng nút boot, khi nhấn giữ 10 giây thì sẽ xóa hết config và khởi động lại để mở hostpot và config lại. 
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md
