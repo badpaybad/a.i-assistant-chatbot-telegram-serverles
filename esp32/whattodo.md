@@ -18,7 +18,7 @@ esp32eventbus này cần boot lên chạy ở thread khác với thread chính v
         chạy ở thread khác không phải thread main
         thu âm từ 2 mic, gọi xử lý wakeup word khi có wakeup word cần dùng event bus esp32eventbus đẻ publish lên topic: wakeupword với idx class ở model A.I detect được, thời điểm detect được , type detected ,score
         khi detect được cần pending không xử lý detect wakeup word nữa
-        cần subscribe topic wakeupword khi nhận được data type start sẽ resume việc detect wakeup word. nếu data type peding thì không xử lý detect wakeup word nữa
+        cần subscribe topic wakeupword khi nhận được data type start sẽ resume việc detect wakeup word. nếu data type pending thì không xử lý detect wakeup word nữa
         khi esp32 khởi động ở main thread sẽ publish lên topic wakeupword type start để resume việc detect.
 
 wakeup word đang dùng model_data.h cần đổi tên thành wakeupword_model_data.h
@@ -49,5 +49,8 @@ mạch esp đang dùng : esp32 s3 n16r8
 khuyếch đại âm thanh: MAX98357A 
 việc cắm các chân, cài thư viện ở đây esp32/readme.md cần matching từ code các chân cắm
 sét âm lượng to nhất cho loa 
+
+**cập nhật 7** khi detect được wakeup word cần bỏ qua việc xử lý detect wakeup word, đợi nghiệp vụ khác publish data lên topic với type = start thì sẽ tiếp tục xử lý detect wakeup word 
+    publish data lên topic với type = stop thì sẽ bỏ xử lý detect wakeup word
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

@@ -96,3 +96,28 @@ void playOkSound() {
   playSpeakerWav(ok_wav, ok_wav_len);
   Serial.println("[Speaker] Finished playing 'ok.wav'.");
 }
+
+// Writes 0s to the speaker to clear DMA buffer and force absolute silence
+void playSilence(int duration_ms) {
+  unsigned int num_samples = (SPEAKER_SAMPLING_RATE * duration_ms) / 1000;
+  
+  #define SILENCE_CHUNK_SIZE 256
+  int16_t* silence_buf = (int16_t*)calloc(SILENCE_CHUNK_SIZE * 2, sizeof(int16_t));
+  if (silence_buf == nullptr) {
+    return;
+  }
+  
+  unsigned int played = 0;
+  while (played < num_samples) {
+    unsigned int chunk = num_samples - played;
+    if (chunk > SILENCE_CHUNK_SIZE) {
+      chunk = SILENCE_CHUNK_SIZE;
+    }
+    
+    size_t bytes_written = 0;
+    i2s_write(I2S_PORT_OUT, silence_buf, chunk * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+    played += chunk;
+  }
+  
+  free(silence_buf);
+}

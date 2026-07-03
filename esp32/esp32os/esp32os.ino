@@ -66,6 +66,7 @@ void initSpeaker();
 void playSpeaker(const int16_t* samples, size_t count);
 void playSpeakerWav(const uint8_t* wav_data, size_t wav_len);
 void playOkSound();
+void playSilence(int duration_ms);
 
 // Function declarations from this file (esp32os.ino)
 void micSelfTest();
@@ -74,11 +75,11 @@ void micSelfTest();
 void onWakeupwordReceived(const String& topic, const String& payload) {
   Serial.printf("[Main Thread] Received EventBus notification on topic '%s': %s\n", topic.c_str(), payload.c_str());
   
-  // If a detection occurred, simulate starting voice processing and auto-resuming after 5 seconds
-  if (payload.indexOf("type:detected") != -1) {
-    Serial.println("[Main Thread] Wakeup detected! Pausing detection for 5 seconds to simulate system activity...");
+  // If a detection occurred, play ok.wav. Detection is paused in the AI task loop
+  // and we wait for external business logic to publish "type=start" to resume.
+  if (payload.indexOf("type:detected") != -1 || payload.indexOf("type=detected") != -1) {
+    Serial.println("[Main Thread] Wakeup detected! Playing feedback sound. AI detection paused, waiting for 'start' to resume.");
     playOkSound(); // Play "ok.wav" feedback sound
-    set("resume_timer", String(millis() + 5000));
   }
 }
 
@@ -124,7 +125,7 @@ void setup() {
   Serial.println("[Boot] === All hardware verified. Wakeup detection running. ===\n");
 
   // Publish start command to activate detection in the AI task
-  publish("wakeupword", "start");
+  publish("wakeupword", "type=start");
 
   
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
@@ -146,17 +147,6 @@ void loop() {
   } else {
     // Normal operation: monitor connection and log quality
     monitorWiFi();
-    
-    // Demo auto-resume helper: check if we should trigger a resume command
-    String resumeTimeStr = get("resume_timer");
-    if (resumeTimeStr.length() > 0) {
-      unsigned long resumeTime = resumeTimeStr.toInt();
-      if (millis() >= resumeTime) {
-        set("resume_timer", ""); // Clear timer
-        Serial.println("[Main Thread] Simulating process complete: publishing 'start' to resume detection.");
-        publish("wakeupword", "start");
-      }
-    }
   }
 }
 
@@ -176,6 +166,10 @@ void micSelfTest() {
     
     // Play the recorded WAV buffer through the speaker
     playSpeakerWav(wav_buf, wav_size);
+    
+    // Play 1 second of silence to clear the I2S DMA buffers and stop any trailing loops
+    Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
+    playSilence(1000);
     
     Serial.println("[Self-Test] Playback complete. Releasing WAV buffer memory...");
     // Free the recording buffer to release memory back to the system

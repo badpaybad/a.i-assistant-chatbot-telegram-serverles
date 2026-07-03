@@ -62,10 +62,10 @@ void onWakeupwordEvent(const String& topic, const String& payload) {
   String msg = payload;
   msg.trim();
   
-  if (msg.indexOf("type:start") != -1 || msg == "start") {
+  if (msg.indexOf("type:start") != -1 || msg.indexOf("type=start") != -1 || msg == "start") {
     micDetectActive = true;
     Serial.println("[Mic] Detection resumed (micDetectActive = true).");
-  } else if (msg.indexOf("type:pending") != -1 || msg == "pending") {
+  } else if (msg.indexOf("type:pending") != -1 || msg.indexOf("type=pending") != -1 || msg == "pending" || msg.indexOf("type:stop") != -1 || msg.indexOf("type=stop") != -1 || msg == "stop") {
     micDetectActive = false;
     Serial.println("[Mic] Detection paused (micDetectActive = false).");
   }
