@@ -12,3 +12,18 @@ cần tạo wifi hostport để esp32 phát ra 1 mạng wifi esp32os_dunp pass l
     1 topic có thể có nhiều subscribe phân biệt bằng subscribe name , các subsribename không được trùng nhau.
 
 esp32eventbus này cần boot lên chạy ở thread khác với thread chính và chạy singleton toàn bộ esp32
+
+**cập nhật 3** dựa vào kết nối 2 mic ở mic/arduino_esp32_2mic.ino và wakeup word ở mic/arduino_esp32.ino để bổ xung thêm code esp32mic.ino rồi dùng vào esp32/esp32os/esp32os.ino 
+    esp32mic.ino cần đáp ứng
+        chạy ở thread khác không phải thread main
+        thu âm từ 2 mic, gọi xử lý wakeup word khi có wakeup word cần dùng event bus esp32eventbus đẻ publish lên topic: wakeupword với idx class ở model A.I detect được, thời điểm detect được , type detected ,score 
+        khi detect được cần pending không xử lý detect wakeup word nữa
+        cần subscribe topic wakeupword khi nhận được data type start sẽ resume việc detect wakeup word. nếu data type peding thì không xử lý detect wakeup word nữa 
+        khi esp32 khởi động ở main thread sẽ publish lên topic wakeupword type start để resume việc detect.
+
+wakeup word đang dùng model_data.h cần đổi tên thành wakeupword_model_data.h
+mic phần cứng đang dùng (I2S Input - Cho 2 Mic INMP441 song song) 
+
+**cập nhật 4** Cổng I2S Đầu Ra (I2S Output - Cho Mạch Khuếch Đại MAX98357A + Loa) xem code ở mic/arduino_esp32_2mic_talk.ino và tạo esp32speaker.ino khi nhận được âm thanh từ mic cần forward ra load để test việc hoạt động thực của loa và mic . 
+
+**chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

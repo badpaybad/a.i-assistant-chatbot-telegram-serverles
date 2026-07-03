@@ -80,8 +80,23 @@ bool connectWiFi() {
   int count = 0;
   loadWifiCredentials(savedCreds, count);
   
+  // Append default fallback WiFi if there is space and it's not already present in the list
+  bool defaultPresent = false;
+  for (int i = 0; i < count; i++) {
+    if (savedCreds[i].ssid == String(DEFAULT_WIFI_SSID)) {
+      defaultPresent = true;
+      break;
+    }
+  }
+  if (!defaultPresent && count < 5) {
+    savedCreds[count].ssid = String(DEFAULT_WIFI_SSID);
+    savedCreds[count].pass = String(DEFAULT_WIFI_PASS);
+    count++;
+    Serial.printf("[WiFi] Appended default fallback network: %s\n", DEFAULT_WIFI_SSID);
+  }
+  
   if (count == 0) {
-    Serial.println("[WiFi] No saved credentials found.");
+    Serial.println("[WiFi] No saved or default credentials available.");
     return false;
   }
   
@@ -190,7 +205,7 @@ void startAP() {
 // Monitoring and maintenance loop for WiFi connection
 void monitorWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
-    if (millis() - lastLogTime >= 5000) {
+    if (millis() - lastLogTime >= 10000) {
       lastLogTime = millis();
       
       String ssid = WiFi.SSID();

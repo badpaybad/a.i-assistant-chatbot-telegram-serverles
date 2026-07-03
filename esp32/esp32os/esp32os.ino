@@ -2,6 +2,11 @@
 #include <WebServer.h>
 #include <DNSServer.h>
 #include <Preferences.h>
+#include <driver/i2s.h>
+#include <arduinoFFT.h>
+#include <tflm_esp32.h>
+#include <eloquent_tinyml.h>
+#include "wakeupword_model_data.h"
 
 // WiFi credentials struct
 struct WifiCreds {
@@ -15,6 +20,8 @@ typedef void (*EventCallback)(const String& topic, const String& payload);
 // WiFi Access Point Configuration (for captive portal)
 const char* AP_SSID = "esp32os_dunp";
 const char* AP_PASS = "esp32osdunp";
+const char* DEFAULT_WIFI_SSID = "Tang 1 OMT";
+const char* DEFAULT_WIFI_PASS = "Omt070110";
 
 // Web Server and DNS Server instances
 WebServer server(80);
@@ -48,17 +55,24 @@ String dequeue(String queueName);
 void set(String key, String value);
 String get(String key);
 
-// EventBus Demo Callback Functions (logging executing Core ID)
-void onSensorData(const String& topic, const String& payload) {
-  Serial.printf("[Demo] Subscriber 'SensorHandler' received topic '%s': %s (running on Core %d)\n", topic.c_str(), payload.c_str(), xPortGetCoreID());
-}
+// Function declarations from esp32mic.ino
+void initMic();
+void startWakeupDetectionTask();
+void onWakeupwordEvent(const String& topic, const String& payload);
 
-void onAlert(const String& topic, const String& payload) {
-  Serial.printf("[Demo] Subscriber 'AlertHandler' received topic '%s': %s (running on Core %d)\n", topic.c_str(), payload.c_str(), xPortGetCoreID());
-}
+// Function declarations from esp32speaker.ino
+void initSpeaker();
+void playSpeaker(const int16_t* samples, size_t count);
 
-void onAlertBackup(const String& topic, const String& payload) {
-  Serial.printf("[Demo] Subscriber 'AlertBackupHandler' received topic '%s': %s (running on Core %d)\n", topic.c_str(), payload.c_str(), xPortGetCoreID());
+// EventBus Callback for Wakeup Word Detections (main thread listener)
+void onWakeupwordReceived(const String& topic, const String& payload) {
+  Serial.printf("[Main Thread] Received EventBus notification on topic '%s': %s\n", topic.c_str(), payload.c_str());
+  
+  // If a detection occurred, simulate starting voice processing and auto-resuming after 5 seconds
+  if (payload.indexOf("type:detected") != -1) {
+    Serial.println("[Main Thread] Wakeup detected! Pausing detection for 5 seconds to simulate system activity...");
+    set("resume_timer", String(millis() + 5000));
+  }
 }
 
 void setup() {
@@ -68,52 +82,21 @@ void setup() {
   Serial.println("      ESP32 OS INITIALIZING         ");
   Serial.println("====================================");
   
-  // --- EventBus Demo Setup ---
-  Serial.println("\n--- EventBus Initialization and Test ---");
-  
-  // Start the background EventBus task on Core 0
+  // Initialize the EventBus singleton and background thread
   initEventBus();
-  delay(100); // Small delay to let the task initialize and print its start log
-  
-  Serial.printf("[Demo] Main setup is running on Core %d\n", xPortGetCoreID());
-  
-  // 1. Test Pub/Sub
-  // Subscribe handlers
-  subscribe("sensors/temperature", "SensorHandler", onSensorData);
-  subscribe("system/alerts", "AlertHandler", onAlert);
-  // Test duplicate name rejection
-  subscribe("system/alerts", "AlertHandler", onAlertBackup); // Should fail/reject
-  subscribe("system/alerts", "AlertBackupHandler", onAlertBackup); // Should succeed
-  
-  // Publish test messages
-  Serial.println("[Demo] Publishing test events from main thread...");
-  publish("sensors/temperature", "24.5 C");
-  publish("system/alerts", "Low battery warning!");
-  
-  // Give a small delay to let the async thread process the callbacks
   delay(100);
   
-  // 2. Test Queue (FIFO)
-  Serial.println("[Demo] Testing Queue enqueues from main thread...");
-  enqueue("task-queue", "Task 1: Read sensor");
-  enqueue("task-queue", "Task 2: Send telemetry");
-  enqueue("task-queue", "Task 3: Blink LED");
+  // Register main thread listener for wakeup word events
+  subscribe("wakeupword", "MainAppWakeupListener", onWakeupwordReceived);
   
-  Serial.println("[Demo] Testing Queue dequeues...");
-  Serial.printf("[Demo] Dequeued: %s\n", dequeue("task-queue").c_str());
-  Serial.printf("[Demo] Dequeued: %s\n", dequeue("task-queue").c_str());
-  Serial.printf("[Demo] Dequeued: %s\n", dequeue("task-queue").c_str());
-  Serial.printf("[Demo] Dequeued from empty queue: %s\n", dequeue("task-queue").c_str()); // Should be empty ""
+  // Initialize speaker, microphones and task
+  initSpeaker();
+  initMic();
+  startWakeupDetectionTask();
   
-  // 3. Test State Management (Key-Value)
-  Serial.println("[Demo] Testing State set/get...");
-  set("device_status", "ACTIVE");
-  set("version", "v1.0.4-refactored");
-  
-  Serial.printf("[Demo] Key 'device_status' value: %s\n", get("device_status").c_str());
-  Serial.printf("[Demo] Key 'version' value: %s\n", get("version").c_str());
-  Serial.printf("[Demo] Key 'nonexistent' value: %s\n", get("nonexistent").c_str()); // Should be empty ""
-  Serial.println("--- EventBus Test End ---\n");
+  // Publish start command to initialize and resume detection
+  Serial.println("[Main Thread] Publishing initial 'start' command to resume wakeup word detection.");
+  publish("wakeupword", "start");
   
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
   if (connectWiFi()) {
@@ -134,5 +117,16 @@ void loop() {
   } else {
     // Normal operation: monitor connection and log quality
     monitorWiFi();
+    
+    // Demo auto-resume helper: check if we should trigger a resume command
+    String resumeTimeStr = get("resume_timer");
+    if (resumeTimeStr.length() > 0) {
+      unsigned long resumeTime = resumeTimeStr.toInt();
+      if (millis() >= resumeTime) {
+        set("resume_timer", ""); // Clear timer
+        Serial.println("[Main Thread] Simulating process complete: publishing 'start' to resume detection.");
+        publish("wakeupword", "start");
+      }
+    }
   }
 }
