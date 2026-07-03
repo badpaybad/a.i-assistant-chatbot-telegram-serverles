@@ -23,9 +23,9 @@ const char* gemini_live_model = "gemini-3.1-flash-live-preview";
 // ==========================================
 // 1. Cổng I2S Đầu Vào (I2S Input - Cho 2 Mic INMP441 song song)
 #define I2S_PORT_IN  I2S_NUM_0
-#define I2S_IN_WS    25  // Chân WS chung của 2 mic
-#define I2S_IN_SD    22  // Chân SD chung của 2 mic
-#define I2S_IN_SCK   26  // Chân SCK chung của 2 mic
+#define I2S_IN_WS    17  // Chân WS chung của 2 mic (ESP32-S3 GPIO 17)
+#define I2S_IN_SD    18  // Chân SD chung của 2 mic (ESP32-S3 GPIO 18)
+#define I2S_IN_SCK   16  // Chân SCK chung của 2 mic (ESP32-S3 GPIO 16)
 
 // Hướng dẫn đấu nối 2 Mic (Stereo):
 // - Mic 1 (Left Channel): Chân L/R đấu xuống GND (Ground)

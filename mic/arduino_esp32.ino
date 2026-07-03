@@ -7,9 +7,9 @@
 // ==========================================
 // THAM SỐ CẤU HÌNH PHẦN CỨNG & AI
 // ==========================================
-#define I2S_WS      25  // Chân WS của INMP441
-#define I2S_SD      22  // Chân SD của INMP441
-#define I2S_SCK     26  // Chân SCK của INMP441
+#define I2S_WS      17  // Chân WS của INMP441 (ESP32-S3 GPIO 17)
+#define I2S_SD      18  // Chân SD của INMP441 (ESP32-S3 GPIO 18)
+#define I2S_SCK     16  // Chân SCK của INMP441 (ESP32-S3 GPIO 16)
 #define I2S_PORT    I2S_NUM_0
 
 #define SAMPLING_RATE   16000
