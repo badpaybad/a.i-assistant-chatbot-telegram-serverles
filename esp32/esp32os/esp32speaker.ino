@@ -1,11 +1,5 @@
-// esp32speaker.ino - Speaker (I2S Output MAX98357A) Driver
 #include "ok_wav.h"
-
-// Hardware pin configurations for MAX98357A Speaker Amplifier
-#define I2S_OUT_BCLK 14  // BCLK (SCK) of speaker (ESP32-S3 GPIO 14)
-#define I2S_OUT_LRC  7   // LRC (WS) of speaker (ESP32-S3 GPIO 7 - avoids SPICS1 PSRAM conflict on GPIO 15)
-#define I2S_OUT_DIN  13  // DIN (SD) of speaker (ESP32-S3 GPIO 13)
-#define I2S_PORT_OUT I2S_NUM_1
+#include "ok_wifi_wav.h"
 
 #define SPEAKER_SAMPLING_RATE 16000 // Match mic sampling rate for loopback test
 
@@ -41,11 +35,35 @@ void playSpeaker(const int16_t* samples, size_t count) {
   size_t bytes_written = 0;
   i2s_write(I2S_PORT_OUT, samples, count * sizeof(int16_t), &bytes_written, portMAX_DELAY);
 }
-
-// Software volume scaling boost factor (1.0f = normal, 2.5f = 2.5x volume boost)
-#define SPEAKER_VOLUME_BOOST 2.5f
+// Writes 0s to the speaker to clear DMA buffer and force absolute silence
+void playSilence(int duration_ms) {
+  i2s_set_sample_rates(I2S_PORT_OUT, SPEAKER_SAMPLING_RATE);
+  unsigned int num_samples = (SPEAKER_SAMPLING_RATE * duration_ms) / 1000;
+  
+  #define SILENCE_CHUNK_SIZE 256
+  int16_t* silence_buf = (int16_t*)calloc(SILENCE_CHUNK_SIZE * 2, sizeof(int16_t));
+  if (silence_buf == nullptr) {
+    return;
+  }
+  
+  unsigned int played = 0;
+  while (played < num_samples) {
+    unsigned int chunk = num_samples - played;
+    if (chunk > SILENCE_CHUNK_SIZE) {
+      chunk = SILENCE_CHUNK_SIZE;
+    }
+    
+    size_t bytes_written = 0;
+    i2s_write(I2S_PORT_OUT, silence_buf, chunk * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+    played += chunk;
+  }
+  
+  free(silence_buf);
+}
 
 void playSpeakerWav(const uint8_t* wav_data, size_t wav_len) {
+  // Ensure the sample rate is set back to 16kHz for playing local WAV file
+  i2s_set_sample_rates(I2S_PORT_OUT, SPEAKER_SAMPLING_RATE);
   if (wav_data == nullptr || wav_len <= 44) {
     Serial.println("[Speaker] Invalid WAV data or size too small.");
     return;
@@ -88,6 +106,8 @@ void playSpeakerWav(const uint8_t* wav_data, size_t wav_len) {
   }
 
   free(stereo_chunk);
+Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
+  playSilence(1000);
 }
 
 
@@ -97,27 +117,8 @@ void playOkSound() {
   Serial.println("[Speaker] Finished playing 'ok.wav'.");
 }
 
-// Writes 0s to the speaker to clear DMA buffer and force absolute silence
-void playSilence(int duration_ms) {
-  unsigned int num_samples = (SPEAKER_SAMPLING_RATE * duration_ms) / 1000;
-  
-  #define SILENCE_CHUNK_SIZE 256
-  int16_t* silence_buf = (int16_t*)calloc(SILENCE_CHUNK_SIZE * 2, sizeof(int16_t));
-  if (silence_buf == nullptr) {
-    return;
-  }
-  
-  unsigned int played = 0;
-  while (played < num_samples) {
-    unsigned int chunk = num_samples - played;
-    if (chunk > SILENCE_CHUNK_SIZE) {
-      chunk = SILENCE_CHUNK_SIZE;
-    }
-    
-    size_t bytes_written = 0;
-    i2s_write(I2S_PORT_OUT, silence_buf, chunk * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
-    played += chunk;
-  }
-  
-  free(silence_buf);
+void playOkWifiSound() {
+  Serial.println("[Speaker] Playing 'ok_wifi.wav' sound...");
+ // playSpeakerWav(ok_wifi_wav, ok_wifi_wav_len);
+  Serial.println("[Speaker] Finished playing 'ok_wifi.wav'.");
 }

@@ -1,10 +1,19 @@
 // esp32mic.ino - Microphone and AI Wakeup Word Detection
 
-// Hardware pin configurations (Dual INMP441)
-#define I2S_WS      5   // WS pin (ESP32-S3 GPIO 5 - avoids OPI PSRAM conflict on GPIO 17)
-#define I2S_SD      6   // SD pin (ESP32-S3 GPIO 6)
-#define I2S_SCK     4   // SCK pin (ESP32-S3 GPIO 4 - avoids OPI PSRAM conflict on GPIO 16)
-#define I2S_PORT    I2S_NUM_0
+#include <WiFiClientSecure.h>
+#include <WebSocketsClient.h>
+#include <ArduinoJson.h>
+
+// Gemini Live configuration and state variables
+extern String gemini_model;
+extern String gemini_api_key;
+WebSocketsClient webSocket;
+volatile bool live_chat_active = false;
+unsigned long last_interaction_time = 0;
+unsigned long last_model_audio_time = 0;
+volatile int32_t current_utterance_max_volume = 0;
+volatile bool ignore_current_turn = false;
+#define LOUD_THRESHOLD 15000
 
 // Microphone Mode:
 // Set to 1 to use both microphones (mixes Left and Right channels for 3dB SNR boost).
@@ -384,6 +393,11 @@ void wakeup_detection_task(void *pvParameters) {
   for (;;) {
     if (!micDetectActive) {
       spectrogram_initialized = false; // Reset initialization status when inactive
+      if (live_chat_active) {
+        // Do NOT read from I2S here because the Gemini streaming is using it!
+        vTaskDelay(pdMS_TO_TICKS(100));
+        continue;
+      }
       // Discard input to clear DMA buffer, preventing lag when resuming
       i2s_read(I2S_PORT, &stereo_samples, sizeof(stereo_samples), &bytes_read, portMAX_DELAY);
       vTaskDelay(pdMS_TO_TICKS(100)); // sleep longer when inactive to save CPU
@@ -620,4 +634,388 @@ void startWakeupDetectionTask() {
     NULL,
     1     // Pinned to Core 1 (App Core) - WiFi driver runs on Core 0, avoid sharing
   );
+}
+
+// =========================================================================
+// GEMINI LIVE CHATBOT WEBSOCKET IMPLEMENTATION
+// =========================================================================
+
+void play_beep(int frequency, int duration_ms) {
+    int samples = (24000 * duration_ms) / 1000;
+    int16_t* beep_buf = NULL;
+    
+    beep_buf = (int16_t*)malloc(samples * 2 * sizeof(int16_t));
+    if (!beep_buf) return;
+    
+    for (int i = 0; i < samples; i++) {
+        int16_t val = (int16_t)(10000.0 * sin(2.0 * PI * frequency * i / 24000.0f));
+        beep_buf[2 * i] = val;     // Left channel
+        beep_buf[2 * i + 1] = val; // Right channel
+    }
+    
+    // Set speaker rate to 24000 before playing beep
+    i2s_set_sample_rates(I2S_PORT_OUT, 24000);
+    size_t bytes_written;
+    i2s_write(I2S_PORT_OUT, beep_buf, samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+    free(beep_buf);
+}
+
+void connect_live_chat() {
+    Serial.println("🌐 [Gemini] Đang kết nối lên Gemini Live API qua WebSockets...");
+    live_chat_active = true;
+    
+    // Debug API Key
+    Serial.printf("[Gemini] Độ dài API Key: %d ký tự\n", gemini_api_key.length());
+    if (gemini_api_key.length() > 10) {
+        Serial.printf("[Gemini] API Key bắt đầu bằng: %s...\n", gemini_api_key.substring(0, 8).c_str());
+    }
+
+    // SSL dry-run test
+    WiFiClientSecure test_client;
+    test_client.setInsecure();
+    Serial.println("[Gemini SSL Test] Kiểm tra kết nối tới generativelanguage.googleapis.com:443...");
+    if (test_client.connect("generativelanguage.googleapis.com", 443)) {
+        Serial.println("[Gemini SSL Test] Kết nối SSL thành công! TLS stack hoạt động bình thường.");
+        test_client.stop();
+    } else {
+        Serial.println("❌ [Gemini SSL Test] Kết nối SSL thất bại! Hãy kiểm tra mạng Internet hoặc DNS của ESP32.");
+    }
+    
+    // Path for BidiGenerateContent real-time endpoint (matching Python SDK)
+    String path = "/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent";
+    
+    // Set x-goog-api-key header (matching Python SDK)
+    String extra_headers = "x-goog-api-key: " + gemini_api_key;
+    webSocket.setExtraHeaders(extra_headers.c_str());
+    
+    // Configure SSL Connection (pass empty string for subprotocol to avoid protocol rejection)
+    webSocket.beginSSL("generativelanguage.googleapis.com", 443, path.c_str(), nullptr, "");
+    webSocket.onEvent(webSocketEvent);
+    
+    // Ping/Pong every 10 seconds to maintain connection
+    webSocket.enableHeartbeat(10000, 3000, 2);
+}
+
+void disconnect_live_chat() {
+    Serial.println("🔌 [Gemini] Đóng kết nối Live Chat. Chuyển về trạng thái chờ...");
+    webSocket.disconnect();
+    live_chat_active = false;
+    
+    // Signal tone
+    play_beep(400, 150);
+    
+    // Restore speaker rate to 16kHz
+    i2s_set_sample_rates(I2S_PORT_OUT, 16000);
+
+    // Resume wakeup word detection
+    publish("wakeupword", "type=start");
+}
+
+void send_setup_message() {
+    // Generate config JSON matching Python code (systemInstruction & activityHandling: NO_INTERRUPTION)
+    String setup_json = 
+    "{"
+      "\"setup\": {"
+        "\"model\": \"" + gemini_model + "\","
+        "\"generationConfig\": {"
+          "\"responseModalities\": [\"AUDIO\"],"
+          "\"speechConfig\": {"
+            "\"voiceConfig\": {"
+              "\"prebuiltVoiceConfig\": {"
+                "\"voiceName\": \"Aoede\""
+              "}"
+            "}"
+          "}"
+        "},"
+        "\"systemInstruction\": {"
+          "\"parts\": [{"
+            "\"text\": \"Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế.\""
+          "}]"
+        "},"
+        "\"realtimeInputConfig\": {"
+          "\"activityHandling\": \"NO_INTERRUPTION\""
+        "}"
+      "}"
+    "}";
+    
+    webSocket.sendTXT(setup_json);
+    Serial.println("⚙️ [Gemini] Đã gửi cấu hình Setup thành công!");
+    
+    live_chat_active = true;
+    last_interaction_time = millis();
+    
+    // Success tone
+    play_beep(660, 100);
+    delay(50);
+    play_beep(880, 100);
+}
+
+void stream_mic_to_websocket() {
+    static bool was_suppressed = false;
+    if (millis() - last_model_audio_time < 500) {
+        was_suppressed = true;
+        return;
+    }
+    
+    if (was_suppressed) {
+        // Drain I2S DMA buffer to discard old echo/sounds
+        size_t discarded_bytes = 0;
+        uint8_t temp_buf[256];
+        while (i2s_read(I2S_PORT, temp_buf, sizeof(temp_buf), &discarded_bytes, 0) == ESP_OK && discarded_bytes > 0) {
+            vTaskDelay(pdMS_TO_TICKS(1));
+        }
+        was_suppressed = false;
+        Serial.println("[Gemini] Drained I2S RX DMA buffer after echo suppression.");
+    }
+
+    const int CHUNK_FRAMES = 512;
+    size_t bytes_read = 0;
+    
+    // Allocate heap buffer for reading and processing
+    int32_t* stereo_chunk = (int32_t*)malloc(CHUNK_FRAMES * 2 * sizeof(int32_t));
+    int16_t* mono_chunk = (int16_t*)malloc(CHUNK_FRAMES * sizeof(int16_t));
+    if (stereo_chunk == nullptr || mono_chunk == nullptr) {
+        if (stereo_chunk) free(stereo_chunk);
+        if (mono_chunk) free(mono_chunk);
+        return;
+    }
+
+    esp_err_t err = i2s_read(I2S_PORT, stereo_chunk, CHUNK_FRAMES * 2 * sizeof(int32_t), &bytes_read, pdMS_TO_TICKS(100));
+    if (err != ESP_OK || bytes_read == 0) {
+        free(stereo_chunk);
+        free(mono_chunk);
+        return;
+    }
+
+    int frames = bytes_read / (2 * sizeof(int32_t));
+    if (frames <= 0) {
+        free(stereo_chunk);
+        free(mono_chunk);
+        return;
+    }
+
+    int32_t peak = 0;
+    for (int i = 0; i < frames; i++) {
+        int16_t left_16 = (int16_t)(stereo_chunk[2 * i] >> 16);
+#if USE_DUAL_MIC
+        int16_t right_16 = (int16_t)(stereo_chunk[2 * i + 1] >> 16);
+        int32_t mono = ((int32_t)left_16 + (int32_t)right_16) / 2;
+        mono_chunk[i] = (int16_t)mono;
+#else
+        mono_chunk[i] = left_16;
+#endif
+        int32_t abs_val = abs((int32_t)mono_chunk[i]);
+        if (abs_val > peak) peak = abs_val;
+    }
+
+    if (peak > current_utterance_max_volume) {
+        current_utterance_max_volume = peak;
+    }
+
+    size_t raw_bytes = frames * sizeof(int16_t);
+    size_t b64_size = ((raw_bytes + 2) / 3) * 4 + 1;
+    char* b64_buf = (char*)malloc(b64_size);
+    if (b64_buf) {
+        base64_encode_to_buf((uint8_t*)mono_chunk, raw_bytes, b64_buf);
+        String json_msg = "{\"realtimeInput\":{\"mediaChunks\":[{\"mimeType\":\"audio/pcm;rate=16000\",\"data\":\"" + String(b64_buf) + "\"}]}}";
+        webSocket.sendTXT(json_msg);
+        free(b64_buf);
+    }
+
+    free(stereo_chunk);
+    free(mono_chunk);
+}
+
+void handle_websocket_message(uint8_t * payload, size_t length) {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, payload, length);
+    if (error) return;
+    
+    last_interaction_time = millis();
+    
+    if (doc.containsKey("serverContent")) {
+        JsonObject serverContent = doc["serverContent"];
+        
+        // Parse user interruption flag (matching Python code)
+        if (serverContent["interrupted"] == true) {
+            Serial.println("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...");
+            ignore_current_turn = true;
+        }
+
+        // Parse user speech transcription to detect stop command (matching Python code)
+        if (serverContent.containsKey("inputTranscription")) {
+            JsonObject trans = serverContent["inputTranscription"];
+            if (trans.containsKey("text")) {
+                String text = trans["text"].as<String>();
+                if (text.length() > 0) {
+                    String text_lower = text;
+                    text_lower.toLowerCase();
+                    int32_t vol = current_utterance_max_volume;
+                    Serial.printf("🎙️ [Gemini Transcription]: '%s' (Volume: %d)\n", text.c_str(), vol);
+                    
+                    bool is_stop_phrase = (text_lower.indexOf("dừng lại") != -1 || text_lower.indexOf("làm ơn dừng lại") != -1);
+                    bool is_loud = (vol >= LOUD_THRESHOLD);
+                    
+                    if (is_stop_phrase && is_loud) {
+                        Serial.printf("🛑 [Gemini] Phát hiện lệnh dừng khẩn cấp với âm lượng lớn (%d)! Dừng phát âm thanh chatbot...\n", vol);
+                        ignore_current_turn = true;
+                    }
+                }
+            }
+            if (trans["finished"] == true) {
+                // Reset volume metric for next utterance
+                current_utterance_max_volume = 0;
+            }
+        }
+
+        if (serverContent.containsKey("modelTurn")) {
+            JsonArray parts = serverContent["modelTurn"]["parts"];
+            for (JsonObject part : parts) {
+                if (part.containsKey("inlineData")) {
+                    if (!ignore_current_turn) {
+                        String base64Data = part["inlineData"]["data"];
+                        
+                        last_model_audio_time = millis();
+                        
+                        size_t input_len = base64Data.length();
+                        size_t output_len = (input_len / 4) * 3; 
+                        uint8_t* decoded_buf = (uint8_t*)malloc(output_len);
+                        
+                        if (decoded_buf) {
+                            size_t actual_len = base64_decode_to_buf(base64Data.c_str(), input_len, decoded_buf);
+                            size_t num_samples = actual_len / sizeof(int16_t);
+                            
+                            int16_t* stereo_play_buf = (int16_t*)malloc(num_samples * 2 * sizeof(int16_t));
+                            if (stereo_play_buf) {
+                                int16_t* mono_play_buf = (int16_t*)decoded_buf;
+                                for (size_t i = 0; i < num_samples; i++) {
+                                    int32_t val = (int32_t)(mono_play_buf[i] * SPEAKER_VOLUME_BOOST);
+                                    if (val > 32767) val = 32767;
+                                    else if (val < -32768) val = -32768;
+                                    int16_t sample = (int16_t)val;
+                                    stereo_play_buf[2 * i] = sample;     // Left channel
+                                    stereo_play_buf[2 * i + 1] = sample; // Right channel
+                                }
+                                
+                                // Dynamic sample rate switch to 24kHz
+                                i2s_set_sample_rates(I2S_PORT_OUT, 24000);
+                                
+                                size_t bytes_written;
+                                i2s_write(I2S_PORT_OUT, stereo_play_buf, num_samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+                                free(stereo_play_buf);
+                            }
+                            free(decoded_buf);
+                        }
+                    }
+                }
+            }
+        }
+        
+        if (serverContent["turnComplete"] == true) {
+            Serial.println("🤖 [Gemini] Live Chat: Turn complete.");
+            ignore_current_turn = false; // Reset ignore turn flag
+        }
+    }
+}
+
+void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
+    switch(type) {
+        case WStype_DISCONNECTED:
+            Serial.println("🔌 [Gemini] Ngắt kết nối WebSocket!");
+            live_chat_active = false;
+            // Restore speaker sample rate to 16kHz
+            i2s_set_sample_rates(I2S_PORT_OUT, 16000);
+            publish("wakeupword", "type=start");
+            break;
+        case WStype_CONNECTED:
+            Serial.println("🔌 [Gemini] Kết nối WebSocket thành công!");
+            send_setup_message();
+            break;
+        case WStype_TEXT:
+            handle_websocket_message(payload, length);
+            break;
+        case WStype_BIN:
+            break;
+        case WStype_ERROR:
+            Serial.println("❌ [Gemini] Lỗi kết nối WebSocket!");
+            break;
+    }
+}
+
+void loopGeminiLive() {
+    if (live_chat_active) {
+        webSocket.loop();
+        
+        if (webSocket.isConnected()) {
+            stream_mic_to_websocket();
+            
+            if (millis() - last_interaction_time > 60000) {
+                Serial.println("⏰ Hết thời gian đàm thoại (1 phút im lặng), ngắt kết nối Live...");
+                disconnect_live_chat();
+            }
+        }
+    }
+}
+
+// Base64 lookup table and decoding/encoding helper methods
+const uint8_t b64_lookup[] = {
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
+    64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
+    64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
+    64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64
+};
+
+size_t base64_decode_to_buf(const char* input, size_t input_len, uint8_t* output) {
+    if (input_len % 4 != 0) return 0;
+    size_t out_len = (input_len / 4) * 3;
+    if (input[input_len - 1] == '=') out_len--;
+    if (input[input_len - 2] == '=') out_len--;
+
+    size_t i = 0, j = 0;
+    while (i < input_len) {
+        uint32_t sextet_a = input[i] < 128 ? b64_lookup[(uint8_t)input[i]] : 64;
+        uint32_t sextet_b = input[i+1] < 128 ? b64_lookup[(uint8_t)input[i+1]] : 64;
+        uint32_t sextet_c = input[i+2] < 128 ? b64_lookup[(uint8_t)input[i+2]] : 64;
+        uint32_t sextet_d = input[i+3] < 128 ? b64_lookup[(uint8_t)input[i+3]] : 64;
+        i += 4;
+
+        uint32_t triple = (sextet_a << 3 * 6) + (sextet_b << 2 * 6) + (sextet_c << 1 * 6) + sextet_d;
+
+        if (j < out_len) output[j++] = (triple >> 2 * 8) & 0xFF;
+        if (j < out_len) output[j++] = (triple >> 1 * 8) & 0xFF;
+        if (j < out_len) output[j++] = (triple >> 0 * 8) & 0xFF;
+    }
+    return out_len;
+}
+
+void base64_encode_to_buf(const uint8_t *input, size_t input_len, char *output) {
+    const char b64_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    size_t i = 0;
+    size_t j = 0;
+    
+    while (i < input_len) {
+        uint32_t octet_a = i < input_len ? input[i++] : 0;
+        uint32_t octet_b = i < input_len ? input[i++] : 0;
+        uint32_t octet_c = i < input_len ? input[i++] : 0;
+
+        uint32_t triple = (octet_a << 0x10) + (octet_b << 0x08) + octet_c;
+
+        output[j++] = b64_chars[(triple >> 3 * 6) & 0x3F];
+        output[j++] = b64_chars[(triple >> 2 * 6) & 0x3F];
+        output[j++] = b64_chars[(triple >> 1 * 6) & 0x3F];
+        output[j++] = b64_chars[(triple >> 0 * 6) & 0x3F];
+    }
+    
+    size_t mod = input_len % 3;
+    if (mod == 1) {
+        output[j - 2] = '=';
+        output[j - 1] = '=';
+    } else if (mod == 2) {
+        output[j - 1] = '=';
+    }
+    output[j] = '\0';
 }

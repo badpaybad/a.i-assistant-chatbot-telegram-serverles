@@ -1,5 +1,8 @@
 // esp32wifi.ino - WiFi Management and Credential Storage
 
+// External function from esp32speaker.ino
+void playOkWifiSound();
+
 // Loads stored credentials into the provided array (up to 5)
 void loadWifiCredentials(WifiCreds savedCreds[], int &count) {
   preferences.begin("wifi-creds", true); // Open in read-only mode
@@ -136,6 +139,7 @@ bool connectWiFi() {
         Serial.printf("[WiFi] Connected to %s successfully!\n", savedCreds[i].ssid.c_str());
         Serial.print("[WiFi] IP Address: ");
         Serial.println(WiFi.localIP());
+        playOkWifiSound();
         return true;
       } else {
         Serial.printf("[WiFi] Failed to connect to %s.\n", savedCreds[i].ssid.c_str());
@@ -165,6 +169,7 @@ bool connectWiFi() {
       Serial.printf("[WiFi] Connected to %s (fallback) successfully!\n", savedCreds[0].ssid.c_str());
       Serial.print("[WiFi] IP Address: ");
       Serial.println(WiFi.localIP());
+      playOkWifiSound();
       return true;
     }
   }

@@ -48,19 +48,27 @@ sequenceDiagram
         Web->>Main: Lưu thông tin WiFi mới vào NVS -> Reset chip
     end
 
-    Note over Mic, Bus: Chu kỳ phát hiện giọng nói
+    Note over Mic, Bus: Chu kỳ phát hiện giọng nói và Live Chat
     loop Đọc Mic & Suy luận
         Mic->>Mic: Đọc I2S Stereo (INMP441)
-        Mic->>Main: playSpeaker() (Hardware Loopback)
         Mic->>Mic: Cộng gộp L/R + FFT + Spectrogram
         Mic->>Mic: EloquentTinyML dự đoán (predict)
-        alt Nhận diện được từ khóa "du ơi" (probability > 0.82)
+        alt Nhận diện được từ khóa "du ơi" (probability > 0.50)
             Mic->>Bus: Publish "type:detected" lên topic "wakeupword"
-            Mic->>Mic: Tự động TẠM DỪNG quét mic (pending)
-            Bus-->>Main: Kích hoạt Callback xử lý chính
-            Note over Main: Thực hiện tác vụ chính (Gửi API, v.v.)
-            Main->>Bus: Sau 5s, Publish "start" để mở lại Mic
-            Bus-->>Mic: Kích hoạt quét mic trở lại
+            Mic->>Mic: Tự động TẠM DỪNG quét mic (micDetectActive = false)
+            Bus-->>Main: Kích hoạt Callback onWakeupwordReceived
+            Main->>Main: Phát ok.wav báo hiệu
+            Main->>Mic: connect_live_chat() (Kết nối WebSockets SSL)
+            Note over Main, Mic: Đàm thoại Live bắt đầu (live_chat_active = true)
+            loop Vòng lặp đàm thoại Live
+                Main->>Mic: stream_mic_to_websocket() (Thu và gửi PCM 16kHz)
+                Mic->>Main: Nhận phản hồi âm thanh PCM 24kHz từ Gemini
+                Main->>Main: Phát âm thanh qua loa (MAX98357A)
+            end
+            Note over Main: Hết 15s im lặng (Timeout) hoặc ngắt kết nối
+            Main->>Mic: disconnect_live_chat()
+            Main->>Bus: Publish "type=start" để mở lại Mic
+            Bus-->>Mic: Kích hoạt quét mic trở lại (micDetectActive = true)
         end
     end
 ```
@@ -119,6 +127,16 @@ sequenceDiagram
      * Hệ thống ưu tiên cấp phát vùng nhớ 160KB + 44 byte trên **PSRAM** bằng hàm `heap_caps_malloc(MALLOC_CAP_SPIRAM)`. Nếu board không có PSRAM hoặc không được cấu hình bật, hệ thống sẽ tự động hạ cấp xuống ghi âm 2 giây trên RAM nội bộ (Internal DRAM) để tránh tràn bộ nhớ.
      * Sau khi ghi âm kết thúc, hàm sẽ tự động điền các thông tin của file WAV tiêu chuẩn (RIFF, fmt, data chunk, sample rate 16000Hz, mono, 16-bit) vào 44 byte đầu tiên của bộ đệm.
   3. **Phát lại và Giải phóng**: Gọi `playSpeakerWav(wav_buf, wav_size)` để phát lại file WAV vừa ghi được qua loa. Hàm này sẽ tự động bỏ qua 44 byte WAV header và phát dữ liệu mono PCM còn lại ra loa tương tự như cách hoạt động của `playOkSound()`. Ngay sau khi phát xong, hệ thống gọi `playSilence(1000)` để ghi 1 giây âm thanh im lặng (dữ liệu 0) vào bộ đệm I2S, giúp xả sạch (flush) bộ đệm DMA của loa và dừng triệt để hiện tượng lặp tiếng/vọng tiếng do bộ đệm I2S bị đọng dữ liệu cũ. Cuối cùng, gọi `free(wav_buf)` ở main thread để giải phóng toàn bộ vùng đệm WAV, trả lại dung lượng RAM sạch cho hệ thống.
+
+### F. Trợ lý ảo đàm thoại Live với Gemini (`esp32mic.ino` & `esp32speaker.ino`)
+* **Kiến trúc thời gian thực thời gian thực hai chiều**:
+  * Khi từ khóa "du ơi" được phát hiện, hệ thống ngay lập tức kết nối tới endpoint WebSocket của Gemini Live API (`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`).
+  * Sử dụng thư viện `WebSocketsClient` với giao thức SSL để bảo mật và `ArduinoJson` để đóng/mở gói tin trao đổi.
+* **Xử lý luồng Microphone & Loa**:
+  * **Đầu vào (Mic)**: Thu thập dữ liệu PCM 32-bit Stereo từ cổng I2S RX, chuyển đổi sang PCM 16-bit Mono (16kHz), mã hóa Base64 và đóng gói JSON gửi lên websocket.
+  * **Đầu ra (Loa)**: Gemini trả về luồng âm thanh PCM 24kHz Mono dạng Base64. ESP32 giải mã, nâng biên độ bằng `SPEAKER_VOLUME_BOOST`, nhân bản thành Stereo và phát trực tiếp ra loa I2S TX với tần số lấy mẫu là 24kHz (sử dụng hàm thay đổi tần số linh hoạt `i2s_set_sample_rate`).
+  * **Khử nhiễu vọng phản hồi (Echo Suppression)**: Khi loa đang phát, micro sẽ tạm dừng gửi gói tin lên API trong vòng 500ms. Sau khi hết thời gian chặn, hệ thống sẽ thực hiện xả sạch (drain) bộ đệm DMA của micro trước khi gửi để tránh lặp tiếng trả lời của chatbot.
+* **Timeout im lặng (Inactivity Timeout)**: Sau 15 giây không có dữ liệu trao đổi âm thanh từ người dùng hoặc mô hình, hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
 
 ---
 

@@ -46,11 +46,19 @@ khi thu âm cần đúng chuẩn thiết bị, nhưng khi xử lý detect wakeup
 
 mạch esp đang dùng : esp32 s3 n16r8
 2 mic : is2 INMP441
-khuyếch đại âm thanh: MAX98357A 
+khuyếch đại âm thanh: MAX98357A
 việc cắm các chân, cài thư viện ở đây esp32/readme.md cần matching từ code các chân cắm
-sét âm lượng to nhất cho loa 
+sét âm lượng to nhất cho loa
 
-**cập nhật 7** khi detect được wakeup word cần bỏ qua việc xử lý detect wakeup word, đợi nghiệp vụ khác publish data lên topic với type = start thì sẽ tiếp tục xử lý detect wakeup word 
+**cập nhật 7** khi detect được wakeup word cần bỏ qua việc xử lý detect wakeup word, đợi nghiệp vụ khác publish data lên topic với type = start thì sẽ tiếp tục xử lý detect wakeup word
     publish data lên topic với type = stop thì sẽ bỏ xử lý detect wakeup word
+
+**cập nhật 8** từ yêu cầu này mic/whattodo.md đã code ra mic/detect_wakeup.py chạy như 1 voice chat bot hỗ trợ. có thể mô phòng code python và bổ xung thêm các hàm vào esp32/esp32os/esp32mic.ino để làm voice chat bot cho esp32, cũng dùng gemini api
+khi detect được wakeup word thì không phát ok_wav nữa, xử lý như voice chatbot ở mic/detect_wakeup.py các logic cần làm giống luôn code python về voice chat bot assitant ở mic/detect_wakeup.py
+
+**cập nhật 9** ở esp32/esp32os/esp32uiconfig.ino cần bổ xung config để lưu gemini key và model name cho mic/esp32mic.ino, khi reset reboot , tắt đi bật lại vẫn dùng được, và cần bổ xung thêm các input config cho gemini . model mặc định "gemini-3.1-flash-live-preview"
+
+**cập nhật 10** wifi connect thành công thì cần play ok_wifi.wav (xử lý giống ok_wav).
+trên mạch esp32 có nút boot , khi nhấn 2 lần liên tiếp thì sẽ disconnect wifi và bật hostpost lên để điền lại các cấu hình như ở esp32/esp32os/esp32uiconfig.ino
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

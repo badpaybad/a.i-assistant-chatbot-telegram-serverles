@@ -6,7 +6,28 @@
 #include <arduinoFFT.h>
 #include <tflm_esp32.h>
 #include <eloquent_tinyml.h>
+#include <WiFiClientSecure.h>
+#include <WebSocketsClient.h>
+#include <ArduinoJson.h>
 #include "wakeupword_model_data.h"
+
+// =========================================================================
+// HARDWARE PIN CONFIGURATIONS
+// =========================================================================
+// 1. Microphone Input (I2S RX - Dual INMP441)
+#define I2S_WS      5   // WS pin (ESP32-S3 GPIO 5)
+#define I2S_SD      6   // SD pin (ESP32-S3 GPIO 6)
+#define I2S_SCK     4   // SCK pin (ESP32-S3 GPIO 4)
+#define I2S_PORT    I2S_NUM_0
+
+// 2. Speaker Output (I2S TX - MAX98357A)
+#define I2S_OUT_BCLK 14  // BCLK (SCK) of speaker (ESP32-S3 GPIO 14)
+#define I2S_OUT_LRC  7   // LRC (WS) of speaker (ESP32-S3 GPIO 7)
+#define I2S_OUT_DIN  13  // DIN (SD) of speaker (ESP32-S3 GPIO 13)
+#define I2S_PORT_OUT I2S_NUM_1
+
+#define SPEAKER_VOLUME_BOOST 2.5f
+#define BOOT_BUTTON_PIN 0
 
 // WiFi credentials struct
 struct WifiCreds {
@@ -31,6 +52,8 @@ Preferences preferences;
 // State management variables
 bool inApMode = false;
 unsigned long lastLogTime = 0;
+String gemini_api_key = "";
+String gemini_model = "gemini-3.1-flash-live-preview";
 
 // Function declarations from esp32wifi.ino and esp32uiconfig.ino
 void loadWifiCredentials(WifiCreds savedCreds[], int &count);
@@ -60,26 +83,38 @@ void initMic();
 uint8_t* micRecordWav(int seconds, int* out_wav_size);
 void startWakeupDetectionTask();
 void onWakeupwordEvent(const String& topic, const String& payload);
+void connect_live_chat();
+void disconnect_live_chat();
+void loopGeminiLive();
+void play_beep(int frequency, int duration_ms);
 
 // Function declarations from esp32speaker.ino
 void initSpeaker();
 void playSpeaker(const int16_t* samples, size_t count);
 void playSpeakerWav(const uint8_t* wav_data, size_t wav_len);
 void playOkSound();
+void playOkWifiSound();
 void playSilence(int duration_ms);
 
 // Function declarations from this file (esp32os.ino)
 void micSelfTest();
+void checkBootButton();
 
 // EventBus Callback for Wakeup Word Detections (main thread listener)
 void onWakeupwordReceived(const String& topic, const String& payload) {
   Serial.printf("[Main Thread] Received EventBus notification on topic '%s': %s\n", topic.c_str(), payload.c_str());
   
-  // If a detection occurred, play ok.wav. Detection is paused in the AI task loop
-  // and we wait for external business logic to publish "type=start" to resume.
+  // If a detection occurred. Detection is paused in the AI task loop.
+  // We trigger the Gemini Live connection if the API key is configured.
   if (payload.indexOf("type:detected") != -1 || payload.indexOf("type=detected") != -1) {
-    Serial.println("[Main Thread] Wakeup detected! Playing feedback sound. AI detection paused, waiting for 'start' to resume.");
-    playOkSound(); // Play "ok.wav" feedback sound
+    Serial.println("[Main Thread] Wakeup detected! Connecting to Gemini Live...");
+    if (gemini_api_key.length() > 0) {
+      connect_live_chat();
+    } else {
+      Serial.println("⚠️ [Gemini] API Key is empty! Cannot start live session. Please set it in web config.");
+      // Resume wake word detection immediately
+      publish("wakeupword", "type=start");
+    }
   }
 }
 
@@ -90,6 +125,19 @@ void setup() {
   Serial.println("      ESP32 OS INITIALIZING         ");
   Serial.println("====================================");
   
+  // Load stored Gemini API key and model name
+  preferences.begin("gemini-config", true);
+  gemini_api_key = preferences.getString("api_key", "");
+  gemini_model = preferences.getString("model", "gemini-3.1-flash-live-preview");
+  preferences.end();
+  
+  if (gemini_api_key.length() > 0) {
+    Serial.printf("[Gemini] Stored API Key loaded (first 5 chars: %s...)\n", gemini_api_key.substring(0, 5).c_str());
+  } else {
+    Serial.println("⚠️ [Gemini] Stored API Key is empty! Please configure it via Web UI.");
+  }
+  Serial.printf("[Gemini] Stored Model loaded: %s\n", gemini_model.c_str());
+
   // Initialize the EventBus singleton and background thread
   initEventBus();
   delay(100);
@@ -105,6 +153,9 @@ void setup() {
   //   4. micSelfTest()   → Record 5s WAV → play back → free buffer
   //   5. startWakeupDetectionTask() → Start AI detection on Core 1
   // ═══════════════════════════════════════════════════════════════════════
+
+  // Initialize BOOT button pin
+  pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 
   Serial.println("[Boot] 1/5 - initMic: Initializing microphone I2S RX...");
   initMic();
@@ -140,6 +191,7 @@ void setup() {
 }
 
 void loop() {
+  checkBootButton();
   if (inApMode) {
     // Serve DNS and HTTP clients in AP mode
     dnsServer.processNextRequest();
@@ -147,7 +199,50 @@ void loop() {
   } else {
     // Normal operation: monitor connection and log quality
     monitorWiFi();
+    // Maintain Gemini live websocket loop & mic streaming
+    loopGeminiLive();
   }
+}
+
+void checkBootButton() {
+  static unsigned long lastPressTime = 0;
+  static int pressCount = 0;
+  static bool lastButtonState = HIGH;
+  
+  bool currentButtonState = digitalRead(BOOT_BUTTON_PIN);
+  
+  // Detect falling edge (transition from released to pressed)
+  if (lastButtonState == HIGH && currentButtonState == LOW) {
+    unsigned long now = millis();
+    // Debounce: check if at least 50ms have passed since last press to filter noise
+    if (now - lastPressTime > 50) {
+      if (now - lastPressTime < 1000) {
+        // Press within 1 second of the last one
+        pressCount++;
+      } else {
+        // Too long since last press, reset count
+        pressCount = 1;
+      }
+      lastPressTime = now;
+      Serial.printf("[Button] Boot button pressed. Count: %d\n", pressCount);
+      
+      if (pressCount >= 2) {
+        Serial.println("🚨 [Button] Double-press detected! Disconnecting WiFi and starting configuration portal...");
+        pressCount = 0; // Reset
+        
+        // Signal tone (double beep)
+        play_beep(880, 100);
+        delay(80);
+        play_beep(880, 100);
+        
+        // Disconnect wifi and start AP portal
+        WiFi.disconnect();
+        startAP();
+      }
+    }
+  }
+  
+  lastButtonState = currentButtonState;
 }
 
 // Orchestrator for Mic and Speaker Self-Test on Main Thread:
@@ -168,8 +263,8 @@ void micSelfTest() {
     playSpeakerWav(wav_buf, wav_size);
     
     // Play 1 second of silence to clear the I2S DMA buffers and stop any trailing loops
-    Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
-    playSilence(1000);
+    // Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
+    // playSilence(1000);
     
     Serial.println("[Self-Test] Playback complete. Releasing WAV buffer memory...");
     // Free the recording buffer to release memory back to the system

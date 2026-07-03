@@ -20,6 +20,12 @@ void handleRoot() {
   WifiCreds savedCreds[5];
   int savedCount = 0;
   loadWifiCredentials(savedCreds, savedCount);
+
+  // Load saved Gemini API Key and Model Name
+  preferences.begin("gemini-config", true);
+  String savedGeminiKey = preferences.getString("api_key", "");
+  String savedGeminiModel = preferences.getString("model", "gemini-3.1-flash-live-preview");
+  preferences.end();
   
   // Construct premium dark glassmorphism themed HTML
   String html = "<!DOCTYPE html><html><head>";
@@ -116,6 +122,18 @@ void handleRoot() {
   html += "        <label for='password'>Password</label>";
   html += "        <input type='password' name='password' id='password' placeholder='WiFi Password' autocomplete='current-password'>";
   html += "      </div>";
+
+  // Gemini API Key block
+  html += "      <div class='form-group'>";
+  html += "        <label for='gemini_key'>Gemini API Key</label>";
+  html += "        <input type='text' name='gemini_key' id='gemini_key' placeholder='AIzaSy...' value='" + savedGeminiKey + "' autocomplete='off'>";
+  html += "      </div>";
+
+  // Gemini Model block
+  html += "      <div class='form-group'>";
+  html += "        <label for='gemini_model'>Gemini Model Name</label>";
+  html += "        <input type='text' name='gemini_model' id='gemini_model' placeholder='gemini-3.1-flash-live-preview' value='" + savedGeminiModel + "' autocomplete='off'>";
+  html += "      </div>";
   
   html += "      <button type='submit'>Connect</button>";
   html += "    </form>";
@@ -163,9 +181,16 @@ void handleSave() {
     ssid = server.arg("ssid_select");
   }
   String pass = server.arg("password");
+  String geminiKey = server.arg("gemini_key");
+  String geminiModel = server.arg("gemini_model");
   
   ssid.trim();
   pass.trim();
+  geminiKey.trim();
+  geminiModel.trim();
+  if (geminiModel.length() == 0) {
+    geminiModel = "gemini-3.1-flash-live-preview";
+  }
   
   if (ssid.length() == 0) {
     String errorHtml = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>";
@@ -177,6 +202,12 @@ void handleSave() {
   
   // Save credentials to Preferences
   saveWifiCredentials(ssid, pass);
+
+  // Save Gemini API Key & Model Name to Preferences
+  preferences.begin("gemini-config", false);
+  preferences.putString("api_key", geminiKey);
+  preferences.putString("model", geminiModel);
+  preferences.end();
   
   // Serve the elegant confirmation/success page
   String successHtml = "<!DOCTYPE html><html><head>";
