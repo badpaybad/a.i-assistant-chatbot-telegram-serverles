@@ -94,7 +94,7 @@ async def run_gemini_live_session(api_key):
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                "Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
+                text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
             )]
         )
     )
@@ -132,7 +132,6 @@ async def run_gemini_live_session(api_key):
         try:
             while True:
                 chunk = await input_queue.get()
-                state["last_activity_time"] = time.time()
                 await session.send_realtime_input(
                     audio=types.Blob(data=chunk, mime_type="audio/pcm;rate=16000")
                 )
@@ -157,16 +156,19 @@ async def run_gemini_live_session(api_key):
         try:
             async for message in session.receive():
                 server_content = message.server_content
+                is_communication = False
+                
                 if server_content is not None:
                     if server_content.model_turn is not None:
+                        is_communication = True
                         for part in server_content.model_turn.parts:
                             if part.inline_data is not None:
-                                state["last_activity_time"] = time.time()
                                 await playback_queue.put(part.inline_data.data)
                             elif part.text is not None:
                                 print(part.text, end="", flush=True)
 
                     if server_content.interrupted:
+                        is_communication = True
                         print("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...")
                         interrupt_event.set()
                         while not playback_queue.empty():
@@ -176,9 +178,18 @@ async def run_gemini_live_session(api_key):
                             except asyncio.QueueEmpty:
                                 break
 
+                    if server_content.input_transcription is not None and server_content.input_transcription.text:
+                        is_communication = True
+
                     if server_content.turn_complete:
                         print("")
                         interrupt_event.clear()
+
+                if message.tool_call is not None:
+                    is_communication = True
+
+                if is_communication:
+                    state["last_activity_time"] = time.time()
         except asyncio.CancelledError:
             pass
         except Exception as e:
@@ -197,11 +208,11 @@ async def run_gemini_live_session(api_key):
             play_task = asyncio.create_task(play_audio_task())
             recv_task = asyncio.create_task(receive_task(session))
             
-            INACTIVITY_TIMEOUT = 30.0
+            INACTIVITY_TIMEOUT = 60.0
             while not send_task.done() and not play_task.done() and not recv_task.done():
                 await asyncio.sleep(0.5)
                 if time.time() - state["last_activity_time"] > INACTIVITY_TIMEOUT:
-                    print("\n⏳ Không có hoạt động trong 30 giây. Tự động kết thúc cuộc gọi...")
+                    print("\n⏳ Không có hoạt động trong 1 phút. Tự động kết thúc cuộc gọi...")
                     break
                     
             for t in [send_task, play_task, recv_task]:
