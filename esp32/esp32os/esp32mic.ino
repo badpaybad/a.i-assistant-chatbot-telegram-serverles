@@ -309,6 +309,35 @@ uint8_t* micRecordWav(int seconds, int* out_wav_size) {
   free(stereo_chunk);
   stereo_chunk = nullptr;
 
+  // Perform DC offset removal and peak normalization on recorded mono samples to boost volume
+  if (recorded > 0) {
+    int64_t sum = 0;
+    for (int i = 0; i < recorded; i++) {
+      sum += audio_data[i];
+    }
+    int16_t mean = (int16_t)(sum / recorded);
+
+    int16_t max_val = 0;
+    for (int i = 0; i < recorded; i++) {
+      audio_data[i] -= mean;
+      int16_t abs_val = abs(audio_data[i]);
+      if (abs_val > max_val) {
+        max_val = abs_val;
+      }
+    }
+
+    if (max_val > 0) {
+      float scale = 28000.0f / (float)max_val; // Boost to 28000 (just under max 32767 to avoid clipping)
+      for (int i = 0; i < recorded; i++) {
+        int32_t normalized = (int32_t)(audio_data[i] * scale);
+        if (normalized > 32767) normalized = 32767;
+        else if (normalized < -32768) normalized = -32768;
+        audio_data[i] = (int16_t)normalized;
+      }
+      Serial.printf("[Mic] Peak normalized recording with scale factor: %.2f\n", scale);
+    }
+  }
+
   Serial.printf("[Mic] Recording done: %d samples (%.1fs). Writing WAV header...\n",
                 recorded, (float)recorded / 16000.0f);
   
