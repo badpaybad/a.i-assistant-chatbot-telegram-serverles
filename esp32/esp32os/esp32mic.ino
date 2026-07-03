@@ -369,6 +369,7 @@ void wakeup_detection_task(void *pvParameters) {
   int consecutive_zero_frames = 0;
   int samples_since_last_inference = 0;
   int inference_count = 0; // for logging
+  bool spectrogram_initialized = false;
   
   // Check if model starts successfully
   if (!ml.begin(model_tflite).isOk()) {
@@ -382,6 +383,7 @@ void wakeup_detection_task(void *pvParameters) {
 
   for (;;) {
     if (!micDetectActive) {
+      spectrogram_initialized = false; // Reset initialization status when inactive
       // Discard input to clear DMA buffer, preventing lag when resuming
       i2s_read(I2S_PORT, &stereo_samples, sizeof(stereo_samples), &bytes_read, portMAX_DELAY);
       vTaskDelay(pdMS_TO_TICKS(100)); // sleep longer when inactive to save CPU
@@ -478,9 +480,9 @@ void wakeup_detection_task(void *pvParameters) {
                     (int)bytes_read, frame_max_amp, avg_amp, micDetectActive ? "ACTIVE" : "PAUSED");
     }
 
-    // Run AI inference every FRAME_STEP=320 samples (20ms) - same cadence as Python's rolling buffer
-    // This ensures speech just spoken rolls into the FRONT of the 1s window where model expects it
-    if (micDetectActive && samples_since_last_inference >= 320) {
+    // Run AI inference every 1600 samples (100ms) - matches detect_wakeup.py BLOCK_SIZE=1600 (100ms)
+    // This reduces CPU load by 5x compared to 20ms cadence, and prevents queue backups.
+    if (micDetectActive && samples_since_last_inference >= 1600) {
       samples_since_last_inference = 0;
       inference_count++;
 
@@ -501,20 +503,33 @@ void wakeup_detection_task(void *pvParameters) {
       }
 
       // Compile spectrogram features
-      int feature_index = 0;
       float input_scale = ml.in->params.scale;   // = 0.22077 from model
       float input_zero_point = ml.in->params.zero_point; // = -128 from model
 
-      for (int row = 0; row < SPEC_ROWS; row++) {
-        // Yield CPU control every 10 rows to reset Task Watchdog
+      // === STEP 2: Sliding Spectrogram Buffer Optimization ===
+      // Since the window shifted by 5 steps of 320 samples (1600 samples / 100ms), 
+      // the first 44 rows of the spectrogram are identical to the last 44 rows of the previous window.
+      // We shift the first 44 rows of spectrogram_features up by 5 rows, and ONLY calculate 5 new FFT rows.
+      int start_row = 0;
+      if (spectrogram_initialized) {
+        // Shift 44 rows (44 * 257 bytes) to the front
+        memmove(spectrogram_features, spectrogram_features + (5 * SPEC_COLS), (SPEC_ROWS - 5) * SPEC_COLS * sizeof(int8_t));
+        start_row = SPEC_ROWS - 5; // Only compute the 5 newest rows
+      } else {
+        start_row = 0; // Compute all 49 rows on startup/resume
+        spectrogram_initialized = true;
+      }
+
+      for (int row = start_row; row < SPEC_ROWS; row++) {
+        // Yield CPU control periodically to reset Task Watchdog
         if (row % 10 == 0) {
           vTaskDelay(pdMS_TO_TICKS(1));
         }
         
         int start_idx = row * 320; // FRAME_STEP = 320, same as train.py
+        int feature_index = row * SPEC_COLS;
         
-        // === STEP 2: Hann Window + Zero-pad (matches tf.signal.stft default behaviour) ===
-        // tf.signal.stft uses PERIODIC Hann window: w[n] = 0.5*(1 - cos(2*pi*n/N)) where N=480
+        // === STEP 3: Hann Window + Zero-pad (matches tf.signal.stft default behaviour) ===
         for (int i = 0; i < FFT_SAMPLES; i++) {
           if (i < 480) {
             int read_idx = (audio_buffer_write_ptr + start_idx + i) % 16000;
@@ -531,11 +546,11 @@ void wakeup_detection_task(void *pvParameters) {
           vImag[i] = 0.0f;
         }
 
-        // === STEP 3: FFT magnitude (no extra windowing — window already applied above) ===
+        // === STEP 4: FFT magnitude calculation ===
         FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
         FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
 
-        // === STEP 4: Quantize (matches Python: (spec/input_scale) + input_zero_point) ===
+        // === STEP 5: Quantize and write into features buffer ===
         for (int col = 0; col < SPEC_COLS; col++) {
           float amplitude = vReal[col]; // raw magnitude value from FFT
           int8_t qval;
@@ -544,9 +559,7 @@ void wakeup_detection_task(void *pvParameters) {
           } else {
             qval = (int8_t)constrain((int)amplitude, -128, 127);
           }
-          if (feature_index < INPUT_SIZE) {
-            spectrogram_features[feature_index++] = qval;
-          }
+          spectrogram_features[feature_index + col] = qval;
         }
       }
 
