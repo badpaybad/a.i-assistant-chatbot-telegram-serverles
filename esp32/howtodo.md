@@ -82,9 +82,11 @@ sequenceDiagram
   * Tích lũy mẫu mono liên tục vào bộ đệm xoay vòng `loop_audio_buffer` kích thước **16000 mẫu (1.0 giây)**.
 * **Xử lý TFLite Micro khớp chuẩn Python**:
   * Chu kỳ suy luận được đặt cố định **100ms một lần** (sau khi tích lũy đủ 1600 mẫu mới), giúp tối ưu hóa hiệu năng CPU và khớp tần suất suy luận với Python.
+  * **Chuẩn hóa biên độ (Peak Normalization)**: Tìm trị tuyệt đối biên độ lớn nhất (`max_val`) của toàn bộ 16000 mẫu âm thanh trong cửa sổ 1.0 giây và chia tỷ lệ các mẫu cho `max_val` để biên độ luôn nằm trong khoảng `[-1.0, 1.0]`. Giải quyết bài toán chênh lệch âm lượng thu âm thực tế.
   * Trích xuất cửa sổ trượt (Overlap STFT) với `FRAME_LENGTH = 480` và `FRAME_STEP = 320` tạo ra đúng **49 hàng** phổ (Spectrogram) cho mô hình.
-  * Mỗi hàng được phân tích bằng cửa sổ Hamming, tính biến đổi FFT (512 mẫu) lấy **257 cột tần số đầu tiên** (tương ứng toàn bộ nửa phổ tần số dương).
-  * **Lượng tử hóa tuyến tính (Linear Quantization)**: Thay vì sử dụng thang Log tùy tiện, dữ liệu được ánh xạ tuyến tính trực tiếp sang khoảng `[-128, 127]` dựa theo tham số `scale` và `zero_point` của tensor đầu vào của mô hình (`ml.in->params`). Điều này đảm bảo dữ liệu đầu vào trùng khớp 100% với dữ liệu mà mô hình đã được huấn luyện.
+  * **Cửa sổ Hann (Hann Windowing)**: Áp dụng thủ công cửa sổ Hann kích thước $N=480$ trên mỗi khung trước khi đệm zero-padding lên 512 mẫu để chạy FFT, khớp 100% với hàm toán học `tf.signal.stft` mặc định của TensorFlow. Thu thập **257 cột tần số đầu tiên** cho mỗi hàng phổ.
+  * **Lượng tử hóa tuyến tính (Linear Quantization)**: Dữ liệu được lượng tử hóa tuyến tính sang khoảng `[-128, 127]` dựa theo tham số `scale` và `zero_point` đầu vào của mô hình.
+  * **Hợp tác đa nhiệm (RTOS Yield)**: Chèn lệnh `vTaskDelay` 1ms định kỳ (sau mỗi 10 hàng FFT và trước khi predict) để nhường quyền điều phối cho Task Idle trên Core 0, triệt tiêu hoàn toàn lỗi kích hoạt Watchdog khi chạy tính toán nặng.
 
 
 ### C. Phát âm thanh (`esp32speaker.ino`)

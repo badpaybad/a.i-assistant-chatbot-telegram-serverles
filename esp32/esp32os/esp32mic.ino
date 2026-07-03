@@ -207,6 +207,15 @@ void wakeup_detection_task(void *pvParameters) {
     if (micDetectActive && samples_since_last_inference >= 1600) {
       samples_since_last_inference = 0;
 
+      // Find maximum absolute amplitude over the 1.0 second window for peak normalization (matches detect_wakeup.py)
+      float max_val = 0.0;
+      for (int i = 0; i < 16000; i++) {
+        float abs_val = abs((float)loop_audio_buffer[i] / 32768.0);
+        if (abs_val > max_val) {
+          max_val = abs_val;
+        }
+      }
+
       // Compile spectrogram features
       int feature_index = 0;
       float input_scale = ml.in->params.scale;
@@ -220,11 +229,17 @@ void wakeup_detection_task(void *pvParameters) {
         
         int start_idx = row * 320; // FRAME_STEP = 320 in train.py
         
-        // Copy 480 samples and zero-pad to 512 for FFT directly from circular buffer
+        // Copy 480 samples, apply Hann window and zero-pad to 512 for FFT directly from circular buffer
         for (int i = 0; i < FFT_SAMPLES; i++) {
           if (i < 480) {
             int read_idx = (audio_buffer_write_ptr + start_idx + i) % 16000;
-            vReal[i] = (float)loop_audio_buffer[read_idx] / 32768.0;
+            float sample = (float)loop_audio_buffer[read_idx] / 32768.0;
+            if (max_val > 0.0) {
+              sample = sample / max_val;
+            }
+            // Hann window formula for N = 480 (matches tf.signal.stft default Hann window)
+            float w = 0.5 * (1.0 - cos((2.0 * PI * i) / 479.0));
+            vReal[i] = sample * w;
           } else {
             vReal[i] = 0.0;
           }
@@ -232,7 +247,6 @@ void wakeup_detection_task(void *pvParameters) {
         }
 
         // Run FFT on current frame
-        FFT.windowing(vReal, FFT_SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
         FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
         FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
 
