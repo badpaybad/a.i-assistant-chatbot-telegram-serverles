@@ -29,12 +29,17 @@ sequenceDiagram
     participant Mic as Mic AI Task (Core 0)
     participant Web as Web Server (Portal)
 
-    Note over Main, Mic: Khởi động hệ thống (Bootup)
+    Note over Main, Mic: Khởi động hệ thống (Bootup Sequence)
     Main->>Bus: Khởi tạo EventBus (initEventBus)
     Main->>Main: Subscribe topic "wakeupword"
-    Main->>Mic: Khởi tạo Mic & Nạp Model AI (EloquentTinyML)
-    Main->>Mic: Khởi chạy Task phát hiện giọng nói
-    Main->>Bus: Publish "start" để kích hoạt Mic
+    Main->>Mic: Khởi tạo Mic I2S RX (initMic)
+    Main->>Main: Khởi tạo Speaker I2S TX (initSpeaker)
+    Main->>Main: Phát thử ok.wav qua loa (playOkSound)
+    Main->>Mic: Gọi micRecord(5s) để thu âm từ mic (Main Thread)
+    Main->>Main: Phát lại âm thanh vừa ghi qua loa (playSpeakerMono)
+    Main->>Main: Giải phóng bộ nhớ đệm thu âm (free)
+    Main->>Mic: Bắt đầu Task phát hiện giọng nói (startWakeupDetectionTask)
+    Main->>Bus: Publish "start" để kích hoạt nhận diện AI
 
     alt Có WiFi đã lưu trong Flash
         Main->>Main: Quét và tự động kết nối WiFi
@@ -76,13 +81,13 @@ sequenceDiagram
 * Chạy bất đồng bộ trên Core 0 thông qua `wakeup_detection_task` để tránh làm chậm Main Loop.
 * **Đọc đệm I2S siêu ngắn (20ms/block)**: Cho phép truyền trực tiếp tín hiệu ra loa (`playSpeaker`) với độ trễ cực thấp (<20ms) và ổn định cao, hoàn toàn loại bỏ tiếng rè rẹt do hụt bộ đệm.
 * **Lọc nhiễu & Đệm xoay vòng (Circular Buffer)**:
-  * Thu âm Stereo từ 2 Mic INMP441 (kênh Trái đấu GND, kênh Phải đấu 3.3V) và trộn mono:
-    $$\text{Mixed Sample} = \frac{\text{Left} + \text{Right}}{2}$$
-    Giúp tăng SNR thêm 3dB và triệt tiêu nhiễu ngẫu nhiên.
+  * Thu âm từ Mic INMP441 (mặc định lấy dữ liệu kênh Trái để tránh tiếng xào xào nhiễu khi chỉ dùng 1 mic hoặc 2 mic đấu song song bị lỏng chân) sử dụng cấu hình tự động nhận diện độ rộng bit (cả 16-bit và 32-bit slot width).
+  * Tách 16 bit có nghĩa nhất (MSB) nếu chạy ở chế độ 32-bit bằng cách dịch phải 16 bit (`>> 16`) arithmetically để chuyển về dạng mẫu signed 16-bit PCM. Nếu chạy ở chế độ 16-bit, dữ liệu được đọc trực tiếp không cần dịch bit.
   * Tích lũy mẫu mono liên tục vào bộ đệm xoay vòng `loop_audio_buffer` kích thước **16000 mẫu (1.0 giây)**.
 * **Xử lý TFLite Micro khớp chuẩn Python**:
-  * Chu kỳ suy luận được đặt cố định **100ms một lần** (sau khi tích lũy đủ 1600 mẫu mới), giúp tối ưu hóa hiệu năng CPU và khớp tần suất suy luận với Python.
-  * **Chuẩn hóa biên độ (Peak Normalization)**: Tìm trị tuyệt đối biên độ lớn nhất (`max_val`) của toàn bộ 16000 mẫu âm thanh trong cửa sổ 1.0 giây và chia tỷ lệ các mẫu cho `max_val` để biên độ luôn nằm trong khoảng `[-1.0, 1.0]`. Giải quyết bài toán chênh lệch âm lượng thu âm thực tế.
+  * Chu kỳ suy luận được đặt cố định **20ms một lần** (mỗi 320 mẫu mới), khớp tần suất suy luận với Python.
+  * **Khử sai lệch DC (DC Offset Removal)**: Tính giá trị trung bình (mean) của toàn bộ 16000 mẫu trong bộ đệm và trừ đi từ mỗi mẫu. Bước này bắt buộc phải có để loại bỏ nhiễu DC sinh ra từ cảm ứng phần cứng, khớp với tín hiệu sạch từ môi trường kiểm thử của Python.
+  * **Chuẩn hóa biên độ (Peak Normalization)**: Tìm trị tuyệt đối biên độ lớn nhất (`max_val`) của toàn bộ 16000 mẫu âm thanh đã khử DC trong cửa sổ 1.0 giây và chia tỷ lệ các mẫu cho `max_val` để biên độ luôn nằm trong khoảng `[-1.0, 1.0]`. Giải quyết bài toán chênh lệch âm lượng thu âm thực tế.
   * Trích xuất cửa sổ trượt (Overlap STFT) với `FRAME_LENGTH = 480` và `FRAME_STEP = 320` tạo ra đúng **49 hàng** phổ (Spectrogram) cho mô hình.
   * **Cửa sổ Hann (Hann Windowing)**: Áp dụng thủ công cửa sổ Hann kích thước $N=480$ trên mỗi khung trước khi đệm zero-padding lên 512 mẫu để chạy FFT, khớp 100% với hàm toán học `tf.signal.stft` mặc định của TensorFlow. Thu thập **257 cột tần số đầu tiên** cho mỗi hàng phổ.
   * **Lượng tử hóa tuyến tính (Linear Quantization)**: Dữ liệu được lượng tử hóa tuyến tính sang khoảng `[-128, 127]` dựa theo tham số `scale` và `zero_point` đầu vào của mô hình.
@@ -92,6 +97,9 @@ sequenceDiagram
 ### C. Phát âm thanh (`esp32speaker.ino`)
 * Khởi tạo Driver I2S Output (TX) trên cổng độc lập `I2S_NUM_1` với tần số phát mẫu **16kHz Stereo**.
 * Cung cấp hàm `playSpeaker(samples, count)` phục vụ phát âm thanh PCM thô.
+* **Tối ưu hóa âm lượng lớn nhất**:
+  * **Phần mềm (Software)**: Tích hợp hệ số nhân âm lượng `#define SPEAKER_VOLUME_BOOST 2.5f` kết hợp bộ cắt biên độ (clamping) để tránh tràn số, nâng biên độ lên gấp 2.5 lần.
+  * **Phần cứng (Hardware)**: Hướng dẫn nối chân **GAIN** của MAX98357A xuống **GND** (cho mức Gain 12dB) hoặc qua **điện trở 100kΩ xuống GND** (cho mức Gain cực đại 15dB) để âm thanh phát ra loa to rõ nhất.
 * **Hardware Loopback Test**: Trong quá trình quét mic, toàn bộ dữ liệu Stereo đọc được từ mic sẽ ngay lập tức được ghi thẳng sang Loa giúp người dùng nghe trực tiếp âm thanh thu được để căn chỉnh độ nhạy phần cứng và kiểm tra kết nối vật lý.
 
 ### D. Quản lý mạng WiFi (`esp32wifi.ino` & `esp32uiconfig.ino`)
@@ -99,15 +107,24 @@ sequenceDiagram
 * **Cơ chế Fallback**: Khi khởi động, nếu bộ nhớ Flash chưa lưu mạng nào, nó sẽ sử dụng mạng dự phòng cấu hình sẵn là `"Tang 1 OMT"` / `"Omt070110"`.
 * Nếu tất cả kết nối thất bại, ESP32 sẽ phát WiFi `esp32os_dunp` và khởi tạo Captive Portal (DNS Hijacking). Mọi truy cập web từ thiết bị kết nối sẽ được tự động điều hướng về trang chủ cấu hình kính mờ (Glassmorphism UI) để nhập thông tin mạng mới.
 
+### E. Tự kiểm tra Phần cứng (Self-test)
+* Thực hiện tuần tự trên Thread chính (`setup()` trên Core 1) ngay sau khi khởi tạo phần cứng để xác thực đường dẫn âm thanh trước khi chạy AI:
+  1. **Kiểm tra Loa (I2S TX)**: Gọi `playOkSound()` để giải mã và phát trực tiếp dữ liệu âm thanh `ok.wav` lưu trong bộ nhớ Flash. Nếu người dùng nghe thấy tiếng nhạc khởi động tức là cổng I2S TX, bộ khuếch đại MAX98357A và loa đều hoạt động bình thường.
+  2. **Kiểm tra Mic (I2S RX)**: Gọi `micRecordWav(5, &wav_size)` để ghi âm 5 giây âm thanh từ hai mic INMP441, trộn mono và trả ra dưới dạng file WAV hoàn chỉnh (bao gồm 44-byte WAV header ở đầu).
+     * Hệ thống ưu tiên cấp phát vùng nhớ 160KB + 44 byte trên **PSRAM** bằng hàm `heap_caps_malloc(MALLOC_CAP_SPIRAM)`. Nếu board không có PSRAM hoặc không được cấu hình bật, hệ thống sẽ tự động hạ cấp xuống ghi âm 2 giây trên RAM nội bộ (Internal DRAM) để tránh tràn bộ nhớ.
+     * Sau khi ghi âm kết thúc, hàm sẽ tự động điền các thông tin của file WAV tiêu chuẩn (RIFF, fmt, data chunk, sample rate 16000Hz, mono, 16-bit) vào 44 byte đầu tiên của bộ đệm.
+  3. **Phát lại và Giải phóng**: Gọi `playSpeakerWav(wav_buf, wav_size)` để phát lại file WAV vừa ghi được qua loa. Hàm này sẽ tự động bỏ qua 44 byte WAV header và phát dữ liệu mono PCM còn lại ra loa tương tự như cách hoạt động của `playOkSound()`. Cuối cùng, gọi `free(wav_buf)` ở main thread để giải phóng toàn bộ vùng đệm WAV, trả lại dung lượng RAM sạch cho hệ thống.
+
 ---
 
 ## 4. Hướng dẫn Gỡ lỗi (Troubleshooting)
 
 1. **Kiểm tra hoạt động của Mic & Loa**:
-   * Xem log `I2S Bytes Read` trên Serial Monitor. Nếu luôn bằng `0`, hãy kiểm tra lại kết nối chân `SCK` (GPIO 16) và `WS` (GPIO 17).
-   * Nói vào mic và quan sát `Spectrogram Max Amp`. Nếu số này dao động chứng tỏ Mic thu âm tốt. Nếu luôn bằng `0.00000` kèm cảnh báo im lặng, kiểm tra dây dữ liệu `SD` (GPIO 18) và nguồn của Mic.
+    * Xem log `I2S Bytes Read` trên Serial Monitor. Nếu luôn bằng `0`, hãy kiểm tra lại kết nối chân `SCK` (GPIO 4) và `WS` (GPIO 5).
+    * Nói vào mic và quan sát `Spectrogram Max Amp`. Nếu số này dao động chứng tỏ Mic thu âm tốt. Nếu luôn bằng `0.00000` kèm cảnh báo im lặng, kiểm tra dây dữ liệu `SD` (GPIO 6) và nguồn của Mic.
+    * **⚠️ Cảnh báo chân cắm trên ESP32-S3 N16R8 (R8 là 8MB Octal PSRAM)**: Do chế độ **OPI PSRAM** bắt buộc phải sử dụng các chân **GPIO 15, 16, 17** để truyền nhận dữ liệu với chip RAM ngoài của board, bạn tuyệt đối **không** được đấu mic (SCK, WS) hay loa (LRC) vào cụm chân này. Nếu đấu nhầm, I2S sẽ không thể thu âm (tiếng phát ra xào xào) và CPU sẽ bị stall liên tục làm thời gian phát chậm đi rất nhiều. Phải đấu đúng sang: Mic (SCK=4, WS=5, SD=6) và Loa (LRC=7, BCLK=14, DIN=13).
 2. **Loa có tiếng xè xè hoặc rè**:
    * Đảm bảo nguồn cấp cho mạch `MAX98357A` đấu vào chân **5V** thay vì **3.3V**. Dòng điện tiêu thụ từ loa khi phát âm thanh rất lớn, dùng chung đường 3.3V với MCU và Mic sẽ gây sụt áp đột ngột và sinh nhiễu.
 3. **Lỗi `wifi:Expected to init 4 rx buffer, actual is 0` / Treo Hotspot cấu hình**:
    * **Nguyên nhân**: Biên dịch nhưng tắt PSRAM trong cài đặt. Mảng TFLite Arena (180KB) bị đẩy vào bộ nhớ RAM nội bộ (DRAM) làm cạn kiệt Heap dành cho driver WiFi và mạng.
-   * **Cách xử lý**: Vào **Tools -> PSRAM** trong Arduino IDE và chuyển từ **Disabled** sang **OPI PSRAM** (hoặc **QSPI PSRAM** tùy dòng board). Hệ thống sẽ tự động chuyển mảng AI ra RAM ngoài, giải phóng hoàn toàn DRAM nội bộ giúp hệ thống hoạt động ổn định.
+   * **Cách xử lý**: Vào **Tools -> PSRAM** trong Arduino IDE và chuyển từ **Disabled** sang **OPI PSRAM** (bắt buộc chọn OPI cho dòng N16R8). Hệ thống sẽ tự động chuyển mảng AI ra RAM ngoài, giải phóng hoàn toàn DRAM nội bộ giúp hệ thống hoạt động ổn định.

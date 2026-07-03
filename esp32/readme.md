@@ -16,11 +16,12 @@ Dự án sử dụng các thư viện phần cứng của mạch ESP32 như `<Wi
 3. Vào **Tools -> Board -> Boards Manager...**
 4. Tìm kiếm từ khóa `esp32` (của tác giả **Espressif Systems**).
 5. Nhấn **Install** để cài đặt.
-6. Sau khi cài xong, vào **Tools -> Board -> esp32** chọn đúng dòng mạch của bạn (ví dụ: `ESP32 Dev Module` hoặc `ESP32S3 Dev Module`).
-7. Vào tiếp **Tools -> Partition Scheme** và chọn **Huge APP (3MB No OTA)** hoặc **No OTA (2MB APP / 2MB SPIFFS)**. 
+6. Sau khi cài xong, vào **Tools -> Board -> esp32** chọn **"ESP32S3 Dev Module"** (cho board **ESP32-S3 N16R8**).
+7. Vào tiếp **Tools -> Partition Scheme** và chọn **"16MB Flash (3MB APP/9.9MB FATFS)"** hoặc **"Huge APP (3MB No OTA)"**. 
    * *Lưu ý*: Bước này là **bắt buộc** vì mã nguồn kết hợp nhân chạy TensorFlow Lite và mô hình AI của bạn có dung lượng tương đối lớn (~1.44MB). Phân vùng mặc định ("Default" chỉ có 1.2MB cho App) sẽ báo lỗi không đủ dung lượng bộ nhớ chương trình.
-8. Vào tiếp **Tools -> PSRAM** và chọn **"OPI PSRAM"** (hoặc **"QSPI PSRAM"** tùy thuộc vào mạch ESP32-S3 của bạn).
-   * *Lưu ý quan trọng*: Bước này là **bắt buộc** để kích hoạt bộ nhớ ngoài (PSRAM) của chip. Nếu chọn "Disabled", toàn bộ 180KB của mô hình AI sẽ bị ép lưu vào RAM nội bộ (Internal DRAM), dẫn đến việc WiFi Driver bị lỗi thiếu bộ nhớ khi chạy (`Expected to init 4 rx buffer, actual is 0`), làm treo mạch và không thể phát ra Hotspot cấu hình.
+8. Vào tiếp **Tools -> PSRAM** và chọn **"OPI PSRAM"** (chọn OPI bắt buộc vì R8 là 8MB Octal PSRAM).
+   * *Lưu ý quan trọng*: Bước này là **bắt buộc** để kích hoạt bộ nhớ ngoài (PSRAM) của chip. Nếu chọn "Disabled", toàn bộ 180KB của mô hình AI và 160KB của bộ đệm ghi âm thử mic 5s sẽ bị ép lưu vào RAM nội bộ (Internal DRAM), dẫn đến việc hệ thống thiếu bộ nhớ trầm trọng, gây lỗi driver WiFi (`Expected to init 4 rx buffer, actual is 0`), làm treo mạch và không thể phát ra Hotspot cấu hình.
+   * **⚠️ CẢNH BÁO XUNG ĐỘT CHÂN (BẮT BUỘC ĐỌC)**: Khi kích hoạt **OPI PSRAM**, chip ESP32-S3 sẽ sử dụng chân **GPIO 15, 16, 17** cho đường truyền nội bộ của PSRAM. Tuyệt đối **không** được đấu nối Micro (SCK/WS) hoặc Loa (LRC) vào cụm chân 15, 16, 17 này (nếu đấu vào sẽ gây nhiễu trắng "xào xào", làm chậm luồng phát âm thanh và gây crash mạch). Hãy đổi sang các chân an toàn hơn là: Mic (SCK=GPIO 4, WS=GPIO 5, SD=GPIO 6) và Loa (LRC=GPIO 7).
 
 ---
 
@@ -49,7 +50,41 @@ Vì project được tách làm nhiều file `.ino` con, khi làm việc:
 
 ---
 
-## 4. Thông tin WiFi cấu hình sẵn & Điểm phát (AP)
+## 4. Sơ đồ đấu nối phần cứng (Wiring Diagram)
+
+Để tránh xung đột với các chân của OPI PSRAM (GPIO 15, 16, 17) trên mạch **ESP32-S3 N16R8**, bạn bắt buộc phải kết nối các thiết bị ngoại vi theo sơ đồ chân dưới đây:
+
+### A. 2 Microphone INMP441 (Stereo)
+Các chân của 2 Micro được đấu song song (chung chân) với nhau rồi nối về ESP32-S3, ngoại trừ chân chọn kênh **L/R**:
+
+| Chân INMP441 | Cổng kết nối ESP32-S3 | Ghi chú |
+| :--- | :--- | :--- |
+| **VDD** (cả 2 mic) | **3.3V** (3V3) | Cấp nguồn 3.3V (Bắt buộc) |
+| **GND** (cả 2 mic) | **GND** | Nối đất chung |
+| **SCK** (cả 2 mic) | **GPIO 4** | Xung nhịp hệ thống I2S RX |
+| **WS** (cả 2 mic) | **GPIO 5** | Xung chọn kênh I2S RX |
+| **SD** (cả 2 mic) | **GPIO 6** | Đường truyền dữ liệu âm thanh |
+| **L/R (Mic 1 - Trái)** | **GND** | Định danh Mic 1 là kênh Left |
+| **L/R (Mic 2 - Phải)**| **3.3V** (3V3) | Định danh Mic 2 là kênh Right |
+
+### B. Mạch khuếch đại Loa MAX98357A
+Mạch Loa MAX98357A nên được cấp nguồn riêng hoặc nguồn 5V của ESP32 để tránh sụt áp gây rè tiếng:
+
+| Chân MAX98357A | Cổng kết nối ESP32-S3 | Ghi chú |
+| :--- | :--- | :--- |
+| **VIN** | **5V** hoặc Nguồn 5V ngoài | Nguồn cấp cho loa |
+| **GND** | **GND** (Chung GND với ESP32) | Nối đất (Mass) tham chiếu |
+| **BCLK** | **GPIO 14** | Xung nhịp loa (I2S TX) |
+| **LRC** (WS) | **GPIO 7** | Xung chọn kênh loa (Tránh GPIO 15) |
+| **DIN** | **GPIO 13** | Dữ liệu âm thanh ra loa (I2S TX) |
+| **GAIN** | **GND** hoặc **Nối đất qua điện trở 100kΩ** | **Cấu hình âm lượng loa vật lý**:<br>• Nối trực tiếp xuống **GND** để đạt mức Gain **12dB** (To hơn mặc định).<br>• Nối xuống **GND qua điện trở 100kΩ** để đạt mức Gain cực đại **15dB** (To nhất). |
+
+> [!TIP]
+> **Tăng âm lượng bằng phần mềm (Software Volume Boost)**: Trong mã nguồn [esp32speaker.ino](file:///work/a.i-assistant-chatbot-telegram-serverles/esp32/esp32os/esp32speaker.ino#L45) đã được cấu hình sẵn hệ số tăng âm lượng `#define SPEAKER_VOLUME_BOOST 2.5f` (khuếch đại âm thanh lên 2.5 lần bằng thuật toán nhân mẫu và giới hạn biên độ). Kết hợp với việc nối chân **GAIN** phần cứng ở trên sẽ giúp âm thanh phát ra loa đạt mức to nhất có thể.
+
+---
+
+## 5. Thông tin WiFi cấu hình sẵn & Điểm phát (AP)
 Khi hệ thống chạy lần đầu tiên (hoặc khi không kết nối được WiFi nào trong bộ nhớ):
 
 * **WiFi mặc định thử kết nối (Fallback Client)**:

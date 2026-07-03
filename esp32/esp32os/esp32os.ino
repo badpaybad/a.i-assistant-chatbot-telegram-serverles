@@ -57,13 +57,18 @@ String get(String key);
 
 // Function declarations from esp32mic.ino
 void initMic();
+uint8_t* micRecordWav(int seconds, int* out_wav_size);
 void startWakeupDetectionTask();
 void onWakeupwordEvent(const String& topic, const String& payload);
 
 // Function declarations from esp32speaker.ino
 void initSpeaker();
 void playSpeaker(const int16_t* samples, size_t count);
+void playSpeakerWav(const uint8_t* wav_data, size_t wav_len);
 void playOkSound();
+
+// Function declarations from this file (esp32os.ino)
+void micSelfTest();
 
 // EventBus Callback for Wakeup Word Detections (main thread listener)
 void onWakeupwordReceived(const String& topic, const String& payload) {
@@ -91,19 +96,36 @@ void setup() {
   // Register main thread listener for wakeup word events
   subscribe("wakeupword", "MainAppWakeupListener", onWakeupwordReceived);
   
-  // Initialize speaker, microphones and task
-  initSpeaker();
+  // ═══════════════════════════════════════════════════════════════════════
+  // MAIN THREAD BOOT SEQUENCE (runs on Core 1, blocks until complete)
+  //   1. initMic()       → Init I2S RX driver (2x INMP441)
+  //   2. initSpeaker()   → Init I2S TX driver (MAX98357A)
+  //   3. playOkSound()   → Play ok.wav → confirms speaker is working
+  //   4. micSelfTest()   → Record 5s WAV → play back → free buffer
+  //   5. startWakeupDetectionTask() → Start AI detection on Core 1
+  // ═══════════════════════════════════════════════════════════════════════
+
+  Serial.println("[Boot] 1/5 - initMic: Initializing microphone I2S RX...");
   initMic();
-  
-  // Play startup chime to confirm speaker + mic hardware is ready
-  Serial.println("[Main Thread] Hardware init complete. Playing startup chime...");
+
+  Serial.println("[Boot] 2/5 - initSpeaker: Initializing speaker I2S TX...");
+  initSpeaker();
+
+  Serial.println("[Boot] 3/5 - playOkSound: Playing ok.wav to verify speaker...");
   playOkSound();
-  
+  Serial.println("[Boot]       Speaker OK ✓");
+
+  Serial.println("[Boot] 4/5 - micSelfTest: Record 5s WAV → play back → free memory...");
+  micSelfTest();
+  Serial.println("[Boot]       Mic OK ✓");
+
+  Serial.println("[Boot] 5/5 - startWakeupDetectionTask: Launching AI detection task...");
   startWakeupDetectionTask();
-  
-  // Publish start command to initialize and resume detection
-  Serial.println("[Main Thread] Publishing initial 'start' command to resume wakeup word detection.");
+  Serial.println("[Boot] === All hardware verified. Wakeup detection running. ===\n");
+
+  // Publish start command to activate detection in the AI task
   publish("wakeupword", "start");
+
   
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
   if (connectWiFi()) {
@@ -137,3 +159,33 @@ void loop() {
     }
   }
 }
+
+// Orchestrator for Mic and Speaker Self-Test on Main Thread:
+//   1. Call micRecordWav to capture 5 seconds of audio in WAV format (with header) from the microphone
+//   2. Call playSpeakerWav to play the recorded WAV buffer through the speaker (skips header)
+//   3. Free the allocated WAV buffer memory to release RAM (PSRAM/Internal Heap)
+void micSelfTest() {
+  Serial.println("\n[Self-Test] === MIC SELF-TEST START (Main Thread WAV Orchestrated) ===");
+  
+  int wav_size = 0;
+  // Record 2 seconds of audio as WAV format (returns pointer to allocated memory)
+  uint8_t* wav_buf = micRecordWav(2, &wav_size);
+  
+  if (wav_buf != nullptr && wav_size > 44) {
+    Serial.println("[Self-Test] Recording completed successfully. Beginning WAV playback...");
+    
+    // Play the recorded WAV buffer through the speaker
+    playSpeakerWav(wav_buf, wav_size);
+    
+    Serial.println("[Self-Test] Playback complete. Releasing WAV buffer memory...");
+    // Free the recording buffer to release memory back to the system
+    free(wav_buf);
+    wav_buf = nullptr;
+    Serial.println("[Self-Test] Memory freed successfully.");
+  } else {
+    Serial.println("❌ [Self-Test] Failed to record or WAV buffer was empty/invalid.");
+  }
+  
+  Serial.println("[Self-Test] === MIC SELF-TEST COMPLETE ===\n");
+}
+
