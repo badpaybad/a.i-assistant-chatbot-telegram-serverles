@@ -10,19 +10,23 @@
 #define NUM_CLASSES     3       // Labels: background, oi_gemini, unknown
 
 #define SPEC_ROWS       49
-#define SPEC_COLS       40
+#define SPEC_COLS       257
 #define INPUT_SIZE      (SPEC_ROWS * SPEC_COLS)
 #define FFT_SAMPLES     512  
-#define ARENA_SIZE      (160 * 1024)
+#define ARENA_SIZE      (180 * 1024)
 #define TF_NUM_OPS      20
+#define ENABLE_MIC_LOOPBACK 1 // Set to 0 to disable speaker loopback after testing
+
+#include <new>
 
 // Instantiate TFLite model and FFT objects
-Eloquent::TF::Sequential<TF_NUM_OPS, ARENA_SIZE> ml;
+Eloquent::TF::Sequential<TF_NUM_OPS, ARENA_SIZE>* ml_ptr = nullptr;
+#define ml (*ml_ptr)
+
 ArduinoFFT<float> FFT = ArduinoFFT<float>();
 
 float vReal[FFT_SAMPLES];
 float vImag[FFT_SAMPLES];
-int8_t spectrogram_features[INPUT_SIZE]; // Input features spectrogram for AI
 
 volatile bool micDetectActive = false;
 volatile unsigned long last_wakeup_time = 0;
@@ -43,6 +47,22 @@ void onWakeupwordEvent(const String& topic, const String& payload) {
 
 // Configures the I2S driver for 2 INMP441 microphones in parallel (Stereo Mode)
 void initMic() {
+  // Allocate TFLite model and arena dynamically (try PSRAM first, fallback to internal Heap)
+  size_t obj_size = sizeof(Eloquent::TF::Sequential<TF_NUM_OPS, ARENA_SIZE>);
+  void* buf = heap_caps_malloc(obj_size, MALLOC_CAP_SPIRAM);
+  if (buf != NULL) {
+    Serial.printf("[Memory] Successfully allocated TFLite model and %dKB arena in PSRAM.\n", ARENA_SIZE / 1024);
+  } else {
+    buf = malloc(obj_size);
+    if (buf != NULL) {
+      Serial.printf("[Memory] PSRAM allocation failed. Allocated %dKB arena in internal DRAM heap.\n", ARENA_SIZE / 1024);
+    } else {
+      Serial.println("❌ Failed to allocate TFLite memory arena!");
+      return;
+    }
+  }
+  ml_ptr = new (buf) Eloquent::TF::Sequential<TF_NUM_OPS, ARENA_SIZE>();
+
   i2s_config_t i2s_config = {
     .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
     .sample_rate = SAMPLING_RATE,
@@ -93,16 +113,29 @@ void initMic() {
 
 // Task function running AI wakeup word detection on Core 0
 void wakeup_detection_task(void *pvParameters) {
-  int16_t stereo_samples[FFT_SAMPLES * 2];
+  int16_t stereo_samples[320 * 2]; // 20ms block at 16000Hz
   size_t bytes_read = 0;
+  
+  static int16_t loop_audio_buffer[16000] = {0}; // 1.0 second audio buffer (32KB DRAM)
+  int audio_buffer_write_ptr = 0;
+  
+  // Allocate spectrogram_features dynamically on the heap to save DRAM compile space
+  int8_t* spectrogram_features = (int8_t*)malloc(INPUT_SIZE * sizeof(int8_t));
+  if (spectrogram_features == NULL) {
+    Serial.println("❌ Mic Task: Failed to allocate spectrogram buffer on the heap!");
+    vTaskDelete(NULL);
+    return;
+  }
   
   unsigned long last_debug_print_time = 0;
   int consecutive_zero_frames = 0;
+  int samples_since_last_inference = 0;
   
   // Check if model starts successfully
   if (!ml.begin(model_tflite).isOk()) {
     Serial.println("❌ EloquentTinyML: Failed to initialize AI model!");
     Serial.println(ml.exception.toString());
+    free(spectrogram_features);
     vTaskDelete(NULL);
     return;
   }
@@ -116,109 +149,136 @@ void wakeup_detection_task(void *pvParameters) {
       continue;
     }
 
-    int feature_index = 0;
-    bool activeDuringScan = true;
-    
-    float spectrogram_max_amp = 0.0;
-    float spectrogram_sum_amp = 0.0;
-    int total_processed_samples = 0;
+    // Read a stereo frame (20ms block)
+    i2s_read(I2S_PORT, &stereo_samples, sizeof(stereo_samples), &bytes_read, portMAX_DELAY);
+    int total_samples = bytes_read / sizeof(int16_t);
+    int num_frames = total_samples / 2;
 
-    // Scan to compile the spectrogram
-    for (int row = 0; row < SPEC_ROWS; row++) {
-      if (!micDetectActive) {
-        activeDuringScan = false;
-        break;
+    // // Forward audio to speaker for hardware loopback test if enabled
+    // #if ENABLE_MIC_LOOPBACK
+    // playSpeaker(stereo_samples, num_frames * 2);
+    // #endif
+
+    float frame_max_amp = 0.0;
+    float frame_sum_amp = 0.0;
+
+    // Mix Left & Right channels and write to circular buffer
+    for (int i = 0; i < num_frames; i++) {
+      int16_t left_channel = stereo_samples[2 * i];
+      int16_t right_channel = stereo_samples[2 * i + 1];
+      int32_t mixed_sample = ((int32_t)left_channel + (int32_t)right_channel) / 2;
+      
+      loop_audio_buffer[audio_buffer_write_ptr] = (int16_t)mixed_sample;
+      audio_buffer_write_ptr = (audio_buffer_write_ptr + 1) % 16000;
+      
+      float abs_val = abs((float)mixed_sample / 32768.0);
+      if (abs_val > frame_max_amp) {
+        frame_max_amp = abs_val;
       }
-
-      // Read a stereo frame
-      i2s_read(I2S_PORT, &stereo_samples, sizeof(stereo_samples), &bytes_read, portMAX_DELAY);
-      int total_samples = bytes_read / sizeof(int16_t);
-      int num_frames = total_samples / 2;
-
-      // Forward audio to speaker for hardware loopback test
-      playSpeaker(stereo_samples, num_frames * 2);
-
-      // Merge Left & Right channels to average signal and reduce noise (3dB SNR gain)
-      for (int i = 0; i < FFT_SAMPLES; i++) {
-        if (i < num_frames) {
-          int16_t left_channel = stereo_samples[2 * i];
-          int16_t right_channel = stereo_samples[2 * i + 1];
-          int32_t mixed_sample = ((int32_t)left_channel + (int32_t)right_channel) / 2;
-          float float_sample = (float)mixed_sample / 32768.0;
-          vReal[i] = float_sample;
-          
-          float abs_val = abs(float_sample);
-          if (abs_val > spectrogram_max_amp) {
-            spectrogram_max_amp = abs_val;
-          }
-          spectrogram_sum_amp += abs_val;
-          total_processed_samples++;
-        } else {
-          vReal[i] = 0.0;
-        }
-        vImag[i] = 0.0;
-      }
-
-      // Run FFT on current frame
-      FFT.windowing(vReal, FFT_SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
-      FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
-      FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
-
-      // Quantize column results into spectrogram features
-      for (int col = 0; col < SPEC_COLS; col++) {
-        float amplitude = vReal[col];
-        float log_amplitude = log(amplitude + 1e-6);
-        int8_t quantized_value = (int8_t)constrain(log_amplitude * 10.0, -128.0, 127.0);
-
-        if (feature_index < INPUT_SIZE) {
-          spectrogram_features[feature_index++] = quantized_value;
-        }
-      }
+      frame_sum_amp += abs_val;
     }
+    
+    samples_since_last_inference += num_frames;
 
     // Diagnostics for wiring issue / silent recording
-    if (activeDuringScan) {
-      if (spectrogram_max_amp == 0.0) {
-        consecutive_zero_frames++;
-      } else {
-        consecutive_zero_frames = 0;
-      }
+    if (frame_max_amp == 0.0) {
+      consecutive_zero_frames++;
+    } else {
+      consecutive_zero_frames = 0;
+    }
 
-      if (consecutive_zero_frames >= 2) { // 2 full spectrogram scans are ~3 seconds
-        static unsigned long last_warn_time = 0;
-        if (millis() - last_warn_time >= 4000) {
-          last_warn_time = millis();
-          Serial.println("⚠️ [Mic Warning] Absolute silence detected (amplitude is 0.00000). Please check microphone wiring (SD, SCK, WS) and Power!");
-        }
-      }
-
-      // Periodic debug print every 5 seconds
-      if (millis() - last_debug_print_time >= 5000) {
-        last_debug_print_time = millis();
-        float avg_amp = spectrogram_sum_amp / (total_processed_samples > 0 ? total_processed_samples : 1);
-        Serial.printf("[Mic Debug] I2S Bytes Read: %d | Spectrogram Max Amp: %.5f | Avg Amp: %.5f | Status: %s\n", 
-                      (int)bytes_read, spectrogram_max_amp, avg_amp, micDetectActive ? "ACTIVE" : "PAUSED");
+    if (consecutive_zero_frames >= 150) { // 150 frames of 20ms = 3.0s of silence
+      static unsigned long last_warn_time = 0;
+      if (millis() - last_warn_time >= 4000) {
+        last_warn_time = millis();
+        Serial.println("⚠️ [Mic Warning] Absolute silence detected (amplitude is 0.00000). Please check microphone wiring (SD, SCK, WS) and Power!");
       }
     }
 
-    // Classify spectrogram using the TFLite model
-    if (activeDuringScan && micDetectActive) {
-      if (ml.predict(spectrogram_features).isOk()) {
-        int class_id = ml.classification;
+    // Periodic debug print every 10 seconds
+    if (millis() - last_debug_print_time >= 10000) {
+      last_debug_print_time = millis();
+      float avg_amp = frame_sum_amp / (num_frames > 0 ? num_frames : 1);
+      Serial.printf("[Mic Debug] I2S Bytes Read: %d | Frame Peak Amp: %.5f | Avg Amp: %.5f | Status: %s\n", 
+                    (int)bytes_read, frame_max_amp, avg_amp, micDetectActive ? "ACTIVE" : "PAUSED");
+    }
+
+    // Run AI inference once every 100ms (1600 samples accumulated)
+    if (micDetectActive && samples_since_last_inference >= 1600) {
+      samples_since_last_inference = 0;
+
+      // Compile spectrogram features
+      int feature_index = 0;
+      float input_scale = ml.in->params.scale;
+      float input_zero_point = ml.in->params.zero_point;
+
+      for (int row = 0; row < SPEC_ROWS; row++) {
+        // Yield CPU control every 10 rows to reset Task Watchdog
+        if (row % 10 == 0) {
+          vTaskDelay(pdMS_TO_TICKS(1));
+        }
         
-        // Dequantize the output score (int8) to get float probability (0.0 to 1.0)
+        int start_idx = row * 320; // FRAME_STEP = 320 in train.py
+        
+        // Copy 480 samples and zero-pad to 512 for FFT directly from circular buffer
+        for (int i = 0; i < FFT_SAMPLES; i++) {
+          if (i < 480) {
+            int read_idx = (audio_buffer_write_ptr + start_idx + i) % 16000;
+            vReal[i] = (float)loop_audio_buffer[read_idx] / 32768.0;
+          } else {
+            vReal[i] = 0.0;
+          }
+          vImag[i] = 0.0;
+        }
+
+        // Run FFT on current frame
+        FFT.windowing(vReal, FFT_SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+        FFT.compute(vReal, vImag, FFT_SAMPLES, FFT_FORWARD);
+        FFT.complexToMagnitude(vReal, vImag, FFT_SAMPLES);
+
+        // Quantize using input scale and zero point
+        for (int col = 0; col < SPEC_COLS; col++) {
+          float amplitude = vReal[col];
+          
+          int8_t quantized_value = 0;
+          if (input_scale != 0.0) {
+            quantized_value = (int8_t)constrain(round(amplitude / input_scale) + input_zero_point, -128, 127);
+          } else {
+            quantized_value = (int8_t)constrain(amplitude, -128, 127);
+          }
+
+          if (feature_index < INPUT_SIZE) {
+            spectrogram_features[feature_index++] = quantized_value;
+          }
+        }
+      }
+
+      // Yield CPU control before TFLite model prediction
+      vTaskDelay(pdMS_TO_TICKS(1));
+
+      // Classify spectrogram using the TFLite model
+      if (ml.predict(spectrogram_features).isOk()) {
         float scale = ml.out->params.scale;
         float zero_point = ml.out->params.zero_point;
-        float probability = (ml.outputs[class_id] - zero_point) * scale;
+        
+        float prob_bg = (ml.outputs[0] - zero_point) * scale;
+        float prob_du_oi = (ml.outputs[1] - zero_point) * scale;
+        float prob_unknown = (ml.outputs[2] - zero_point) * scale;
 
-        // Class 1 represents the "du_oi" wakeup word
-        if (class_id == 1 && probability > 0.82) {
+        // Display real-time output when a potential word is heard (du_oi > 0.20 as in Python)
+        if (prob_du_oi > 0.20) {
+          Serial.printf("🔊 [AI Status] du_oi=%.2f | unknown=%.2f | background=%.2f\n", 
+                        prob_du_oi, prob_unknown, prob_bg);
+        }
+
+        // Trigger detection when du_oi probability matches or exceeds the threshold (THRESHOLD = 0.8 in detect_wakeup.py)
+        if (prob_du_oi >= 0.80) {
           last_wakeup_time = millis();
           
           // Format payload: "class:1,time:<detectTime>,type:detected,score:<score>"
-          String eventPayload = "class:" + String(class_id) + ",time:" + String(last_wakeup_time) + ",type:detected,score:" + String(probability, 2);
+          String eventPayload = "class:1,time:" + String(last_wakeup_time) + ",type:detected,score:" + String(prob_du_oi, 2);
           
-          Serial.printf("🔥 [THREAD AI] Wakeup word 'du ơi' detected! Score: %.2f. Publishing to EventBus...\n", probability);
+          Serial.printf("🎉 [THREAD AI] Wakeup word 'du ơi' detected! Score: %.2f. Publishing to EventBus...\n", prob_du_oi);
           
           // Immediately pause further detection to avoid duplicates
           micDetectActive = false;
@@ -226,8 +286,7 @@ void wakeup_detection_task(void *pvParameters) {
         }
       }
     }
-
-    vTaskDelay(pdMS_TO_TICKS(10));
+    vTaskDelay(pdMS_TO_TICKS(1)); // Yield to prevent Watchdog timeout on CPU 0
   }
 }
 
@@ -236,7 +295,7 @@ void startWakeupDetectionTask() {
   xTaskCreatePinnedToCore(
     wakeup_detection_task,
     "WakeupDetectionTask",
-    8192, // Stack size in words (enough space for TFLite inference)
+    32768, // Stack size in bytes (enough space for TFLite inference and FFT)
     NULL,
     2,    // Slightly higher priority to prevent audio frame drops
     NULL,

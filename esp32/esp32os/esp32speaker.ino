@@ -1,4 +1,5 @@
 // esp32speaker.ino - Speaker (I2S Output MAX98357A) Driver
+#include "ok_wav.h"
 
 // Hardware pin configurations for MAX98357A Speaker Amplifier
 #define I2S_OUT_BCLK 14  // BCLK (SCK) of speaker (ESP32-S3 GPIO 14)
@@ -39,4 +40,39 @@ void initSpeaker() {
 void playSpeaker(const int16_t* samples, size_t count) {
   size_t bytes_written = 0;
   i2s_write(I2S_PORT_OUT, samples, count * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+}
+
+// Plays the built-in ok.wav sound (16kHz Mono 16-bit PCM)
+void playOkSound() {
+  Serial.println("[Speaker] Playing 'ok.wav' sound...");
+  
+  // Skip the 44-byte WAV header
+  const unsigned char* pcm_data = ok_wav + 44;
+  unsigned int pcm_bytes = ok_wav_len - 44;
+  unsigned int num_samples = pcm_bytes / sizeof(int16_t);
+  
+  const int16_t* mono_samples = (const int16_t*)pcm_data;
+  
+  // Play chunk by chunk to avoid allocating a large buffer
+  #define PLAY_CHUNK_SIZE 256
+  int16_t stereo_chunk[PLAY_CHUNK_SIZE * 2];
+  
+  for (unsigned int i = 0; i < num_samples; i += PLAY_CHUNK_SIZE) {
+    unsigned int chunk_len = num_samples - i;
+    if (chunk_len > PLAY_CHUNK_SIZE) {
+      chunk_len = PLAY_CHUNK_SIZE;
+    }
+    
+    // Duplicate mono samples to left and right channels
+    for (unsigned int j = 0; j < chunk_len; j++) {
+      int16_t sample = mono_samples[i + j];
+      stereo_chunk[2 * j] = sample;     // Left channel
+      stereo_chunk[2 * j + 1] = sample; // Right channel
+    }
+    
+    size_t bytes_written = 0;
+    i2s_write(I2S_PORT_OUT, stereo_chunk, chunk_len * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+  }
+  
+  Serial.println("[Speaker] Finished playing 'ok.wav'.");
 }

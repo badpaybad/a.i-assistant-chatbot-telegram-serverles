@@ -63,6 +63,7 @@ void onWakeupwordEvent(const String& topic, const String& payload);
 // Function declarations from esp32speaker.ino
 void initSpeaker();
 void playSpeaker(const int16_t* samples, size_t count);
+void playOkSound();
 
 // EventBus Callback for Wakeup Word Detections (main thread listener)
 void onWakeupwordReceived(const String& topic, const String& payload) {
@@ -71,6 +72,7 @@ void onWakeupwordReceived(const String& topic, const String& payload) {
   // If a detection occurred, simulate starting voice processing and auto-resuming after 5 seconds
   if (payload.indexOf("type:detected") != -1) {
     Serial.println("[Main Thread] Wakeup detected! Pausing detection for 5 seconds to simulate system activity...");
+    playOkSound(); // Play "ok.wav" feedback sound
     set("resume_timer", String(millis() + 5000));
   }
 }

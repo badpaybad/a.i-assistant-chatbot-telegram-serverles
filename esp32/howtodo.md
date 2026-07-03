@@ -74,13 +74,18 @@ sequenceDiagram
 
 ### B. Thu âm & Nhận diện Giọng nói (`esp32mic.ino`)
 * Chạy bất đồng bộ trên Core 0 thông qua `wakeup_detection_task` để tránh làm chậm Main Loop.
-* **Lọc nhiễu phần cứng**: Thu âm Stereo từ 2 Mic INMP441 (kênh Trái đấu GND, kênh Phải đấu 3.3V). Thuật toán thực hiện lấy trung bình cộng tín hiệu của 2 kênh:
-  $$\text{Mixed Sample} = \frac{\text{Left} + \text{Right}}{2}$$
-  Giúp tăng SNR thêm 3dB và triệt tiêu nhiễu ngẫu nhiên.
-* **Xử lý TFLite Micro**: 
-  * Áp dụng cửa sổ Hamming Window, chạy biến đổi FFT (thư viện `arduinoFFT`) để chuyển đổi tín hiệu sang miền tần số.
-  * Lũy kế các lát cắt tần số thành ảnh phổ 2D Spectrogram kích thước 49x40 (`INPUT_SIZE = 1960` byte dữ liệu INT8 lượng tử hóa).
-  * Đẩy spectrogram vào mô hình AI thông qua `Eloquent::TF::Sequential`. Giải lượng tử hóa và so sánh điểm tin cậy để đưa ra sự kiện kích hoạt.
+* **Đọc đệm I2S siêu ngắn (20ms/block)**: Cho phép truyền trực tiếp tín hiệu ra loa (`playSpeaker`) với độ trễ cực thấp (<20ms) và ổn định cao, hoàn toàn loại bỏ tiếng rè rẹt do hụt bộ đệm.
+* **Lọc nhiễu & Đệm xoay vòng (Circular Buffer)**:
+  * Thu âm Stereo từ 2 Mic INMP441 (kênh Trái đấu GND, kênh Phải đấu 3.3V) và trộn mono:
+    $$\text{Mixed Sample} = \frac{\text{Left} + \text{Right}}{2}$$
+    Giúp tăng SNR thêm 3dB và triệt tiêu nhiễu ngẫu nhiên.
+  * Tích lũy mẫu mono liên tục vào bộ đệm xoay vòng `loop_audio_buffer` kích thước **16000 mẫu (1.0 giây)**.
+* **Xử lý TFLite Micro khớp chuẩn Python**:
+  * Chu kỳ suy luận được đặt cố định **100ms một lần** (sau khi tích lũy đủ 1600 mẫu mới), giúp tối ưu hóa hiệu năng CPU và khớp tần suất suy luận với Python.
+  * Trích xuất cửa sổ trượt (Overlap STFT) với `FRAME_LENGTH = 480` và `FRAME_STEP = 320` tạo ra đúng **49 hàng** phổ (Spectrogram) cho mô hình.
+  * Mỗi hàng được phân tích bằng cửa sổ Hamming, tính biến đổi FFT (512 mẫu) lấy **257 cột tần số đầu tiên** (tương ứng toàn bộ nửa phổ tần số dương).
+  * **Lượng tử hóa tuyến tính (Linear Quantization)**: Thay vì sử dụng thang Log tùy tiện, dữ liệu được ánh xạ tuyến tính trực tiếp sang khoảng `[-128, 127]` dựa theo tham số `scale` và `zero_point` của tensor đầu vào của mô hình (`ml.in->params`). Điều này đảm bảo dữ liệu đầu vào trùng khớp 100% với dữ liệu mà mô hình đã được huấn luyện.
+
 
 ### C. Phát âm thanh (`esp32speaker.ino`)
 * Khởi tạo Driver I2S Output (TX) trên cổng độc lập `I2S_NUM_1` với tần số phát mẫu **16kHz Stereo**.
@@ -101,3 +106,6 @@ sequenceDiagram
    * Nói vào mic và quan sát `Spectrogram Max Amp`. Nếu số này dao động chứng tỏ Mic thu âm tốt. Nếu luôn bằng `0.00000` kèm cảnh báo im lặng, kiểm tra dây dữ liệu `SD` (GPIO 18) và nguồn của Mic.
 2. **Loa có tiếng xè xè hoặc rè**:
    * Đảm bảo nguồn cấp cho mạch `MAX98357A` đấu vào chân **5V** thay vì **3.3V**. Dòng điện tiêu thụ từ loa khi phát âm thanh rất lớn, dùng chung đường 3.3V với MCU và Mic sẽ gây sụt áp đột ngột và sinh nhiễu.
+3. **Lỗi `wifi:Expected to init 4 rx buffer, actual is 0` / Treo Hotspot cấu hình**:
+   * **Nguyên nhân**: Biên dịch nhưng tắt PSRAM trong cài đặt. Mảng TFLite Arena (180KB) bị đẩy vào bộ nhớ RAM nội bộ (DRAM) làm cạn kiệt Heap dành cho driver WiFi và mạng.
+   * **Cách xử lý**: Vào **Tools -> PSRAM** trong Arduino IDE và chuyển từ **Disabled** sang **OPI PSRAM** (hoặc **QSPI PSRAM** tùy dòng board). Hệ thống sẽ tự động chuyển mảng AI ra RAM ngoài, giải phóng hoàn toàn DRAM nội bộ giúp hệ thống hoạt động ổn định.

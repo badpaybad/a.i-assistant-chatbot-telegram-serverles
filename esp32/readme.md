@@ -19,6 +19,8 @@ Dự án sử dụng các thư viện phần cứng của mạch ESP32 như `<Wi
 6. Sau khi cài xong, vào **Tools -> Board -> esp32** chọn đúng dòng mạch của bạn (ví dụ: `ESP32 Dev Module` hoặc `ESP32S3 Dev Module`).
 7. Vào tiếp **Tools -> Partition Scheme** và chọn **Huge APP (3MB No OTA)** hoặc **No OTA (2MB APP / 2MB SPIFFS)**. 
    * *Lưu ý*: Bước này là **bắt buộc** vì mã nguồn kết hợp nhân chạy TensorFlow Lite và mô hình AI của bạn có dung lượng tương đối lớn (~1.44MB). Phân vùng mặc định ("Default" chỉ có 1.2MB cho App) sẽ báo lỗi không đủ dung lượng bộ nhớ chương trình.
+8. Vào tiếp **Tools -> PSRAM** và chọn **"OPI PSRAM"** (hoặc **"QSPI PSRAM"** tùy thuộc vào mạch ESP32-S3 của bạn).
+   * *Lưu ý quan trọng*: Bước này là **bắt buộc** để kích hoạt bộ nhớ ngoài (PSRAM) của chip. Nếu chọn "Disabled", toàn bộ 180KB của mô hình AI sẽ bị ép lưu vào RAM nội bộ (Internal DRAM), dẫn đến việc WiFi Driver bị lỗi thiếu bộ nhớ khi chạy (`Expected to init 4 rx buffer, actual is 0`), làm treo mạch và không thể phát ra Hotspot cấu hình.
 
 ---
 
