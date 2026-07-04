@@ -1,5 +1,23 @@
+// esp32speaker.ino - MAX98357A Speaker I2S Driver
+// 
+// Sơ đồ đấu nối chân MAX98357A với ESP32-S3 N16R8:
+// | Chân MAX98357A | Cổng ESP32-S3 | Ghi chú |
+// | :------------- | :------------ | :------ |
+// | VIN             | 5V            | Cấp nguồn 5V ngoài hoặc từ ESP32 để tránh rè tiếng |
+// | GND             | GND           | Nối đất chung |
+// | BCLK            | GPIO 14       | BCK / SCK của Loa (I2S_OUT_BCLK) |
+// | LRC (WS)        | GPIO 7        | WS / LRC của Loa (I2S_OUT_LRC) |
+// | DIN             | GPIO 13       | SD / DIN của Loa (I2S_OUT_DIN) |
+// | GAIN            | GND hoặc Trở  | Cấu hình âm lượng vật lý: |
+// |                 |               | - Nối trực tiếp GND: Gain 12dB |
+// |                 |               | - Nối GND qua trở 100kΩ: Gain cực đại 15dB |
+//
+// Lưu ý quan trọng: Tuyệt đối KHÔNG đấu LRC/WS/BCLK vào cụm chân GPIO 15, 16, 17 
+// do các chân này đã bị chiếm dụng bởi OPI PSRAM của chip ESP32-S3 N16R8.
+
 #include "ok_wav.h"
 #include "ok_wifi_wav.h"
+
 
 #define SPEAKER_SAMPLING_RATE 16000 // Match mic sampling rate for loopback test
 
