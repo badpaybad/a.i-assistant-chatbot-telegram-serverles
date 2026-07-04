@@ -14,6 +14,7 @@ esp32os/
 ├── esp32wifi.ino        # Trình quản lý kết nối WiFi (Auto-connect 5 mạng gần nhất + Fallback)
 ├── esp32uiconfig.ino    # Giao diện Web cấu hình mạng (Captive Portal, Glassmorphism UI)
 ├── esp32eventbus.ino    # Bus sự kiện trung tâm (Asynchronous EventBus, Singleton, chạy Core 0)
+├── esp32firebase.ino    # Trình đọc ghi Google Firebase Firestore (Chạy qua REST API + EventBus)
 ├── esp32mic.ino         # Mô-đun xử lý Mic INMP441 (I2S RX, FFT, tạo Spectrogram & Suy luận AI)
 └── esp32speaker.ino     # Mô-đun điều khiển Loa MAX98357A (I2S TX, giải mã và phát âm thanh)
 ```
@@ -166,6 +167,15 @@ sequenceDiagram
   * **Đầu ra (Loa)**: Gemini trả về luồng âm thanh PCM 24kHz Mono dạng Base64. ESP32 giải mã, nâng biên độ bằng `SPEAKER_VOLUME_BOOST`, nhân bản thành Stereo và phát trực tiếp ra loa I2S TX với tần số lấy mẫu là 24kHz (sử dụng hàm thay đổi tần số linh hoạt `i2s_set_sample_rate`).
   * **Khử nhiễu vọng phản hồi (Echo Suppression)**: Khi loa đang phát, micro sẽ tạm dừng gửi gói tin lên API trong vòng 500ms. Sau khi hết thời gian chặn, hệ thống sẽ thực hiện xả sạch (drain) bộ đệm DMA của micro trước khi gửi để tránh lặp tiếng trả lời của chatbot.
 * **Timeout im lặng (Inactivity Timeout)**: Sau 15 giây không có dữ liệu trao đổi âm thanh từ người dùng hoặc mô hình, hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
+
+### G. Google Firebase Firestore Client (`esp32firebase.ino`)
+* **Không dùng thư viện nặng**: Sử dụng trực tiếp `WiFiClientSecure` và `HTTPClient` gốc để gọi REST API của Firestore, tránh xung đột bộ nhớ và watchdog với TensorFlow Lite / Gemini WebSockets.
+* **Tự động chuyển đổi định dạng JSON (JSON Mapping)**:
+  * Khi ghi: Hàm `flatJsonToFirestore(flatJson)` tự động chuyển đổi JSON phẳng (ví dụ: `{"status": "online", "rssi": -45}`) sang định dạng phân cấp của Firestore REST API (`{"fields": {"status": {"stringValue": "online"}, "rssi": {"integerValue": "-45"}}}`).
+  * Khi đọc: Hàm `firestoreToFlatJson(firestoreJson)` chuyển đổi ngược lại từ định dạng phân cấp của Firestore sang JSON phẳng để các mô-đun khác dễ sử dụng.
+* **Đọc ghi bất đồng bộ qua EventBus**:
+  * Đăng ký nhận sự kiện ghi trên topic `firebase/write`. Bản tin nhận được có thể chứa thông tin dạng `{"path": "esp32/status", "data": {"status":"online"}}` hoặc JSON phẳng trực tiếp.
+  * Đăng ký nhận sự kiện đọc trên topic `firebase/read` với payload là đường dẫn tài liệu. Kết quả đọc được sẽ được publish ngược lại lên topic `firebase/read/result` dưới dạng JSON phẳng.
 
 ---
 

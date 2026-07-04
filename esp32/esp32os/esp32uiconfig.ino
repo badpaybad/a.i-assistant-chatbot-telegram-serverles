@@ -26,6 +26,13 @@ void handleRoot() {
   String savedGeminiKey = preferences.getString("api_key", "");
   String savedGeminiModel = preferences.getString("model", "gemini-3.1-flash-live-preview");
   preferences.end();
+
+  // Load saved Firebase settings
+  preferences.begin("firebase-cfg", true);
+  String savedFirebaseProject = preferences.getString("proj_id", "");
+  String savedFirebaseApiKey = preferences.getString("api_key", "");
+  String savedFirebaseDocPath = preferences.getString("doc_path", "esp32/status");
+  preferences.end();
   
   // Construct premium dark glassmorphism themed HTML
   String html = "<!DOCTYPE html><html><head>";
@@ -134,6 +141,24 @@ void handleRoot() {
   html += "        <label for='gemini_model'>Gemini Model Name</label>";
   html += "        <input type='text' name='gemini_model' id='gemini_model' placeholder='gemini-3.1-flash-live-preview' value='" + savedGeminiModel + "' autocomplete='off'>";
   html += "      </div>";
+
+  // Firebase Project ID block
+  html += "      <div class='form-group'>";
+  html += "        <label for='firebase_project_id'>Firebase Project ID</label>";
+  html += "        <input type='text' name='firebase_project_id' id='firebase_project_id' placeholder='my-firebase-project' value='" + savedFirebaseProject + "' autocomplete='off'>";
+  html += "      </div>";
+
+  // Firebase API Key block
+  html += "      <div class='form-group'>";
+  html += "        <label for='firebase_api_key'>Firebase API Key (Optional)</label>";
+  html += "        <input type='text' name='firebase_api_key' id='firebase_api_key' placeholder='AIzaSy...' value='" + savedFirebaseApiKey + "' autocomplete='off'>";
+  html += "      </div>";
+
+  // Firebase Document Path block
+  html += "      <div class='form-group'>";
+  html += "        <label for='firebase_doc_path'>Firestore Document Path</label>";
+  html += "        <input type='text' name='firebase_doc_path' id='firebase_doc_path' placeholder='esp32/status' value='" + savedFirebaseDocPath + "' autocomplete='off'>";
+  html += "      </div>";
   
   html += "      <button type='submit'>Connect</button>";
   html += "    </form>";
@@ -184,12 +209,24 @@ void handleSave() {
   String geminiKey = server.arg("gemini_key");
   String geminiModel = server.arg("gemini_model");
   
+  // Read firebase parameters
+  String firebaseProject = server.arg("firebase_project_id");
+  String firebaseApiKey = server.arg("firebase_api_key");
+  String firebaseDocPath = server.arg("firebase_doc_path");
+  
   ssid.trim();
   pass.trim();
   geminiKey.trim();
   geminiModel.trim();
+  firebaseProject.trim();
+  firebaseApiKey.trim();
+  firebaseDocPath.trim();
+
   if (geminiModel.length() == 0) {
     geminiModel = "gemini-3.1-flash-live-preview";
+  }
+  if (firebaseDocPath.length() == 0) {
+    firebaseDocPath = "esp32/status";
   }
   
   if (ssid.length() == 0) {
@@ -207,6 +244,13 @@ void handleSave() {
   preferences.begin("gemini-config", false);
   preferences.putString("api_key", geminiKey);
   preferences.putString("model", geminiModel);
+  preferences.end();
+
+  // Save Firebase configurations to Preferences
+  preferences.begin("firebase-cfg", false);
+  preferences.putString("proj_id", firebaseProject);
+  preferences.putString("api_key", firebaseApiKey);
+  preferences.putString("doc_path", firebaseDocPath);
   preferences.end();
   
   // Serve the elegant confirmation/success page

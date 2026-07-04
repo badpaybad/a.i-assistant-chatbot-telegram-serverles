@@ -63,4 +63,7 @@ khi detect được wakeup word thì không phát ok_wav nữa, xử lý như vo
 **cập nhật 11**
 trên mạch  esp32 s3 n16r8 dùng nút boot, khi nhấn giữ 10 giây thì sẽ xóa hết config và khởi động lại để mở hostpot và config lại. 
 
+**cập nhật 12** [DONE] ở esp32/esp32os/esp32uiconfig.ino bổ xung thêm config cho google firebase firestore . 
+tạo thêm esp32firebase.ino để xử lý đọc ghi lên firestore
+
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

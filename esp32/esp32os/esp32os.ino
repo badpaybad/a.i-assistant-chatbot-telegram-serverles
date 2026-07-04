@@ -56,6 +56,11 @@ String gemini_api_key = "";
 String gemini_model = "gemini-3.1-flash-live-preview";
 extern volatile bool live_chat_active;
 
+// Firebase Firestore global configurations
+String firebase_project_id = "";
+String firebase_api_key = "";
+String firebase_doc_path = "esp32/status";
+
 #define BTN_HOLD_RESET_MS 10000 // hold this many ms to trigger factory reset
 
 // Function declarations from esp32wifi.ino and esp32uiconfig.ino
@@ -99,6 +104,11 @@ void playOkSound();
 void playOkWifiSound();
 void playSilence(int duration_ms);
 
+// Function declarations from esp32firebase.ino
+void initFirebase();
+bool firestoreWrite(const String& docPath, const String& flatJsonPayload);
+String firestoreRead(const String& docPath);
+
 // Function declarations from this file (esp32os.ino)
 void micSelfTest();
 void startButtonPollingTask();
@@ -133,6 +143,19 @@ void setup() {
   gemini_api_key = preferences.getString("api_key", "");
   gemini_model = preferences.getString("model", "gemini-3.1-flash-live-preview");
   preferences.end();
+
+  // Load stored Firebase/Firestore configurations
+  preferences.begin("firebase-cfg", true);
+  firebase_project_id = preferences.getString("proj_id", "");
+  firebase_api_key = preferences.getString("api_key", "");
+  firebase_doc_path = preferences.getString("doc_path", "esp32/status");
+  preferences.end();
+  
+  if (firebase_project_id.length() > 0) {
+    Serial.printf("[Firebase] Stored Project ID loaded: %s\n", firebase_project_id.c_str());
+  } else {
+    Serial.println("⚠️ [Firebase] Stored Project ID is empty! Please configure it via Web UI.");
+  }
   
   if (gemini_api_key.length() > 0) {
     Serial.printf("[Gemini] Stored API Key loaded (first 5 chars: %s...)\n", gemini_api_key.substring(0, 5).c_str());
@@ -147,6 +170,9 @@ void setup() {
   
   // Register main thread listener for wakeup word events
   subscribe("wakeupword", "MainAppWakeupListener", onWakeupwordReceived);
+
+  // Initialize Firebase and subscribe to EventBus topics
+  initFirebase();
   
   // ═══════════════════════════════════════════════════════════════════════
   // MAIN THREAD BOOT SEQUENCE (runs on Core 1, blocks until complete)
@@ -338,6 +364,11 @@ void buttonPollingTask(void* param) {
         pref.clear();
         pref.end();
         Serial.println("[Button] Gemini config cleared.");
+
+        pref.begin("firebase-cfg", false);
+        pref.clear();
+        pref.end();
+        Serial.println("[Button] Firebase config cleared.");
 
         Serial.println("[Button] Restarting in 500ms...");
         Serial.flush();
