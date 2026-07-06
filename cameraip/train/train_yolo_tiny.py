@@ -189,7 +189,7 @@ def parse_args():
     parser.add_argument('--optimizer', type=str, default='AdamW', choices=['SGD', 'Adam', 'AdamW', 'RMSProp', 'auto'], help='Optimizer (default: AdamW)')
     parser.add_argument('--lr0', type=float, default=0.001, help='Initial learning rate (default: 0.001 for AdamW fine-tuning)')
     parser.add_argument('--box', type=float, default=7.5, help='Box loss weight (default: 7.5)')
-    parser.add_argument('--cls', type=float, default=1.0, help='Classification loss weight (default: 1.0, boosted for small object classes)')
+    parser.add_argument('--cls', type=float, default=1.5, help='Classification loss weight (default: 1.5, boosted for small object classes)')
     parser.add_argument('--dfl', type=float, default=1.5, help='Distribution focal loss weight (default: 1.5)')
     parser.add_argument('--mosaic', type=float, default=0.5, help='Mosaic augmentation ratio (default: 0.5 - lower helps small objects from shrinking too much)')
     parser.add_argument('--scale', type=float, default=0.5, help='Scale augmentation ratio (default: 0.5)')
@@ -197,6 +197,111 @@ def parse_args():
     parser.add_argument('--no-multi-scale', action='store_false', dest='multi_scale', help='Disable multi-scale training')
 
     return parser.parse_args()
+
+def generate_p2_yaml(model_type, scale, target_path):
+    if model_type == 'yolov8':
+        scales = {
+            'n': '[0.33, 0.25, 1024]',
+            's': '[0.33, 0.50, 1024]',
+            'm': '[0.67, 0.75, 768]',
+            'l': '[1.00, 1.00, 512]',
+            'x': '[1.00, 1.25, 512]'
+        }
+        scale_val = scales.get(scale, '[0.33, 0.25, 1024]')
+        
+        yaml_content = f"""# Custom YOLOv8-P2 architecture generated dynamically
+nc: 80
+scales:
+  {scale}: {scale_val}
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 3, C2f, [128, True]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 6, C2f, [256, True]]
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 6, C2f, [512, True]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 3, C2f, [1024, True]]
+  - [-1, 1, SPPF, [1024, 5]] # 9
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]] # cat backbone P4
+  - [-1, 3, C2f, [512]] # 12
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 4], 1, Concat, [1]] # cat backbone P3
+  - [-1, 3, C2f, [256]] # 15 (P3/8-small)
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 2], 1, Concat, [1]] # cat backbone P2
+  - [-1, 3, C2f, [128]] # 18 (P2/4-xsmall)
+  - [-1, 1, Conv, [128, 3, 2]]
+  - [[-1, 15], 1, Concat, [1]] # cat head P3
+  - [-1, 3, C2f, [256]] # 21 (P3/8-small)
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 12], 1, Concat, [1]] # cat head P4
+  - [-1, 3, C2f, [512]] # 24 (P4/16-medium)
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 9], 1, Concat, [1]] # cat head P5
+  - [-1, 3, C2f, [1024]] # 27 (P5/32-large)
+  - [[18, 21, 24, 27], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
+"""
+    elif model_type == 'yolo11':
+        scales = {
+            'n': '[0.50, 0.25, 1024]',
+            's': '[0.50, 0.50, 1024]',
+            'm': '[0.50, 1.00, 512]',
+            'l': '[1.00, 1.00, 512]',
+            'x': '[1.00, 1.50, 512]'
+        }
+        scale_val = scales.get(scale, '[0.50, 0.25, 1024]')
+        
+        yaml_content = f"""# Custom YOLO11-P2 architecture generated dynamically
+nc: 80
+scales:
+  {scale}: {scale_val}
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]] # 0-P1/2
+  - [-1, 1, Conv, [128, 3, 2]] # 1-P2/4
+  - [-1, 2, C3k2, [256, False, 0.25]]
+  - [-1, 1, Conv, [256, 3, 2]] # 3-P3/8
+  - [-1, 2, C3k2, [512, False, 0.25]]
+  - [-1, 1, Conv, [512, 3, 2]] # 5-P4/16
+  - [-1, 2, C3k2, [512, True]]
+  - [-1, 1, Conv, [1024, 3, 2]] # 7-P5/32
+  - [-1, 2, C3k2, [1024, True]]
+  - [-1, 1, SPPF, [1024, 5]] # 9
+  - [-1, 2, C2PSA, [1024]] # 10
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]] # cat backbone P4
+  - [-1, 2, C3k2, [512, False]] # 13
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 4], 1, Concat, [1]] # cat backbone P3
+  - [-1, 2, C3k2, [256, False]] # 16 (P3/8-small)
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 2], 1, Concat, [1]] # cat backbone P2
+  - [-1, 2, C3k2, [128, False]] # 19 (P2/4-xsmall)
+  - [-1, 1, Conv, [128, 3, 2]]
+  - [[-1, 16], 1, Concat, [1]] # cat head P3
+  - [-1, 2, C3k2, [256, False]] # 22 (P3/8-small)
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 13], 1, Concat, [1]] # cat head P4
+  - [-1, 2, C3k2, [512, False]] # 25 (P4/16-medium)
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 10], 1, Concat, [1]] # cat head P5
+  - [-1, 2, C3k2, [1024, True]] # 28 (P5/32-large)
+  - [[19, 22, 25, 28], 1, Detect, [nc]] # Detect(P2, P3, P4, P5)
+"""
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
+
+    with open(target_path, 'w') as f:
+        f.write(yaml_content)
+    print(f"Generated custom P2 YAML at {target_path}", flush=True)
 
 def main():
     args = parse_args()
@@ -305,22 +410,36 @@ def main():
 
     # Build / load model architecture (P2 head support)
     if args.p2:
-        base_name = os.path.basename(model_path)
+        base_name = os.path.basename(model_path).lower()
+        model_type = None
+        scale = None
+        
         if base_name.startswith('yolov8'):
-            # extract scale character, e.g. 'yolov8m.pt' -> 'm'
-            scale = base_name[6] # 'n', 's', 'm', 'l', 'x'
-            if scale in ['n', 's', 'm', 'l', 'x']:
-                p2_yaml = f"yolov8{scale}-p2.yaml"
-                print(f"Building P2 (stride-4) model architecture from {p2_yaml}...", flush=True)
-                model = YOLO(p2_yaml)
+            model_type = 'yolov8'
+            scale_char = base_name[6]
+            if scale_char in ['n', 's', 'm', 'l', 'x']:
+                scale = scale_char
+        elif base_name.startswith('yolo11'):
+            model_type = 'yolo11'
+            scale_char = base_name[6]
+            if scale_char in ['n', 's', 'm', 'l', 'x']:
+                scale = scale_char
+                
+        if model_type and scale:
+            temp_yaml_path = os.path.join(script_dir, f"temp_{model_type}{scale}_p2.yaml")
+            try:
+                generate_p2_yaml(model_type, scale, temp_yaml_path)
+                print(f"Building P2 (stride-4) model architecture from {temp_yaml_path}...", flush=True)
+                model = YOLO(temp_yaml_path)
                 print(f"Loading pretrained backbone weights from {model_path} for transfer learning...", flush=True)
                 model.load(model_path)
-            else:
-                print(f"Warning: Could not determine YOLOv8 scale from '{base_name}'. Loading standard model.", flush=True)
-                model = YOLO(model_path)
+            finally:
+                if os.path.exists(temp_yaml_path):
+                    os.remove(temp_yaml_path)
+                    print(f"Cleaned up temporary YAML file: {temp_yaml_path}", flush=True)
         else:
-            print(f"Warning: Stride-4 (P2) architecture is natively supported for YOLOv8 models.", flush=True)
-            print(f"Model '{base_name}' is not YOLOv8. Loading standard model instead.", flush=True)
+            print(f"Warning: Stride-4 (P2) architecture only supports yolov8 or yolo11 models (e.g., yolov8m.pt or yolo11m.pt).", flush=True)
+            print(f"Model '{base_name}' could not be matched. Loading standard model instead.", flush=True)
             model = YOLO(model_path)
     else:
         print(f"Loading standard YOLO model from: {model_path}...", flush=True)
