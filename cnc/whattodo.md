@@ -220,3 +220,5 @@ Không cần set alarm lock tự động khi chạy các kịch bản
 Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản, xuất hiện alarm lock khi thực hiện lock xong cần unlock trở lại 
 
 **cập nhật 35** chuyển giao diện các text đang là tiếng Anh sang Tiếng Việt 
+
+**cập nhật 36** xây dựng cơ chế đa ngôn ngữ (i18n) chuẩn bằng JSON trong thư mục static/lang (en.json, vi.json). HTML sử dụng các tag thuộc tính data-i18n, data-i18n-placeholder, data-i18n-title. Javascript sử dụng hàm t(key, replacements) để dịch động các thông điệp hệ thống, log và tooltip trạng thái mà không bị mất key khi chuyển đổi qua lại. 

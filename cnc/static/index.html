@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=35">
+    <link rel="stylesheet" href="/static/styles.css?v=36">
     <meta name="description"
         content="A premium web-based CNC machine interface for GRBL controllers. Offers real-time telemetry, G-code path visualization, console logging, and responsive axis jogging.">
 </head>
@@ -28,10 +28,14 @@
             </div>
 
             <div class="header-status">
-                <button class="btn btn-primary" id="btn-toggle-gcode-editor"
+                <select id="lang-switcher" class="input-select-small" style="margin-right: 12px; height: 32px; font-size: 13px; font-weight: 600; padding: 0 10px; background: rgba(30, 41, 59, 0.6); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 6px; cursor: pointer; outline: none;">
+                    <option value="vi">Tiếng Việt 🇻🇳</option>
+                    <option value="en">English 🇬🇧</option>
+                </select>
+                <button class="btn btn-primary" id="btn-toggle-gcode-editor" data-i18n
                     style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">Bộ Soạn Thảo G-Code</button>
-                <div class="status-badge disconnected" id="connection-status">MẤT KẾT NỐI</div>
-                <div class="state-badge disconnected" id="machine-state">NGOẠI TUYẾN</div>
+                <div class="status-badge disconnected" id="connection-status" data-i18n>MẤT KẾT NỐI</div>
+                <div class="state-badge disconnected" id="machine-state" data-i18n>NGOẠI TUYẾN</div>
             </div>
         </header>
 
@@ -43,14 +47,14 @@
 
                 <!-- CONNECTION CARD -->
                 <div class="card glass-card" id="connection-card">
-                    <h2 class="card-title">Cấu Hình Kết Nối</h2>
+                    <h2 class="card-title" data-i18n>Cấu Hình Kết Nối</h2>
                     <div class="card-content row-inputs">
                         <div class="input-group">
-                            <label for="port-input">Cổng Serial</label>
+                            <label for="port-input" data-i18n>Cổng Serial</label>
                             <div class="input-with-button">
                                 <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0"
                                     placeholder="/dev/ttyACM0">
-                                <button class="btn btn-secondary" id="btn-list-ports" title="Danh sách cổng Serial (ls)"
+                                <button class="btn btn-secondary" id="btn-list-ports" data-i18n-title title="Danh sách cổng Serial (ls)"
                                     style="padding: 10px;">ls</button>
                             </div>
                             <datalist id="ports-datalist">
@@ -60,7 +64,7 @@
                             </datalist>
                         </div>
                         <div class="input-group">
-                            <label for="baudrate-input">Tốc độ Baud</label>
+                            <label for="baudrate-input" data-i18n>Tốc độ Baud</label>
                             <select id="baudrate-input">
                                 <option value="115200" selected>115200</option>
                                 <option value="9600">9600</option>
@@ -70,8 +74,8 @@
                         </div>
                     </div>
                     <div class="card-actions">
-                        <button class="btn btn-primary" id="connect-btn">Kết Nối</button>
-                        <button class="btn btn-primary" id="reload-ai-model-btn">Tải Lại Mô Hình A.I</button>
+                        <button class="btn btn-primary" id="connect-btn" data-i18n>Kết Nối</button>
+                        <button class="btn btn-primary" id="reload-ai-model-btn" data-i18n>Tải Lại Mô Hình A.I</button>
                     </div>
                     <div class="port-warning hidden" id="port-warning">
                         <div class="warning-icon">⚠️</div>
@@ -82,7 +86,7 @@
                 <!-- DIGITAL READ OUT (DRO) CARD -->
                 <div class="card glass-card">
                     <div class="dro-header">
-                        <h2 class="card-title">Tọa Độ (WPos)</h2>
+                        <h2 class="card-title" data-i18n>Tọa Độ (WPos)</h2>
                         <div class="coord-unit">mm</div>
                     </div>
                     <div class="dro-container">
@@ -101,15 +105,15 @@
                     </div>
                     <div class="telemetry-grid">
                         <div class="tel-item">
-                            <span class="tel-label">Tốc Độ Chạy</span>
+                            <span class="tel-label" data-i18n>Tốc Độ Chạy</span>
                             <span class="tel-val"><span id="tel-feedrate">0</span> mm/phút</span>
                         </div>
                         <div class="tel-item">
-                            <span class="tel-label">Trục Chính</span>
+                            <span class="tel-label" data-i18n>Trục Chính</span>
                             <span class="tel-val"><span id="tel-spindle">0</span> RPM</span>
                         </div>
                         <div class="tel-item">
-                            <span class="tel-label">Bộ Đệm Rx</span>
+                            <span class="tel-label" data-i18n>Bộ Đệm Rx</span>
                             <span class="tel-val"><span id="tel-buffer">127</span> B</span>
                         </div>
                     </div>
@@ -117,10 +121,10 @@
 
                 <!-- SERVO PEN CONTROL CARD -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Bút Vẽ (Z Servo)</h2>
+                    <h2 class="card-title" data-i18n>Bút Vẽ (Z Servo)</h2>
                     <div class="pen-control-actions">
-                        <button class="btn btn-primary pen-btn" id="btn-pen-up">Nhấc Bút</button>
-                        <button class="btn btn-success pen-btn" id="btn-pen-down">Hạ Bút</button>
+                        <button class="btn btn-primary pen-btn" id="btn-pen-up" data-i18n>Nhấc Bút</button>
+                        <button class="btn btn-success pen-btn" id="btn-pen-down" data-i18n>Hạ Bút</button>
                     </div>
                     <div class="pen-config-section">
                         <div class="slider-group">
@@ -129,8 +133,8 @@
                                     style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Chế Độ Điều Khiển</span>
                             </div>
                             <select id="pen-control-mode" class="input-select-small">
-                                <option value="z-axis" selected>Vị Trí Trục Z (G0 Z...)</option>
-                                <option value="spindle-pwm">PWM Trục Chính (M3 S...)</option>
+                                <option value="z-axis" data-i18n selected>Vị Trí Trục Z (G0 Z...)</option>
+                                <option value="spindle-pwm" data-i18n>PWM Trục Chính (M3 S...)</option>
                             </select>
                         </div>
                         <div class="row-inputs" style="margin-top: 12px;">
@@ -152,7 +156,7 @@
 
                 <!-- TOUCH & SWIPE GESTURES CARD -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Cử Chỉ Chạm & Vuốt</h2>
+                    <h2 class="card-title" data-i18n>Cử Chỉ Chạm & Vuốt</h2>
                     <div class="card-content" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Auto-track checkbox -->
                         <div
@@ -162,32 +166,32 @@
                             <label class="toggle-switch">
                                 <input type="checkbox" id="chk-auto-track-pen" checked>
                                 <span class="toggle-slider"></span>
-                                <span class="toggle-label">Bám bút</span>
+                                <span class="toggle-label" data-i18n>Bám bút</span>
                             </label>
                         </div>
                         <!-- Coordinate Rows -->
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label>Vị Trí Bắt Đầu (X, Y)</label>
+                                <label data-i18n>Vị Trí Bắt Đầu (X, Y)</label>
                                 <div class="coordinate-input-group">
                                     <input type="number" id="gesture-start-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-start-y" value="0.0" step="1" placeholder="Y">
                                     <button class="btn btn-secondary btn-icon-only" id="btn-set-start"
-                                        title="Thiết lập tọa độ hiện tại">🎯</button>
+                                        data-i18n-title title="Thiết lập tọa độ hiện tại">🎯</button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label>Vị Trí Kết Thúc (X, Y)</label>
+                                <label data-i18n>Vị Trí Kết Thúc (X, Y)</label>
                                 <div class="coordinate-input-group">
                                     <input type="number" id="gesture-end-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-end-y" value="0.0" step="1" placeholder="Y">
                                     <button class="btn btn-secondary btn-icon-only" id="btn-set-end"
-                                        title="Thiết lập tọa độ hiện tại">🎯</button>
+                                        data-i18n-title title="Thiết lập tọa độ hiện tại">🎯</button>
                                 </div>
                             </div>
                         </div>
@@ -195,11 +199,11 @@
                         <!-- Gesture parameters -->
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label for="gesture-feedrate">Tốc độ F</label>
+                                <label for="gesture-feedrate" data-i18n>Tốc độ F</label>
                                 <input type="number" id="gesture-feedrate" value="4000" step="100">
                             </div>
                             <div class="input-group">
-                                <label for="gesture-distance">Độ dài (mm)</label>
+                                <label for="gesture-distance" data-i18n>Độ dài (mm)</label>
                                 <input type="number" id="gesture-distance" value="40" step="5">
                             </div>
                         </div>
@@ -219,9 +223,9 @@
                         <div class="gesture-grid">
                             <div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-tap">Chạm</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap">Chạm Đúp</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-longpress">Nhấn Giữ</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-tap" data-i18n>Chạm</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap" data-i18n>Chạm Đúp</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-longpress" data-i18n>Nhấn Giữ</button>
                                 </div>
                                 <div>
                                     <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom"
@@ -231,12 +235,12 @@
 
                             <div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Vuốt Trái ⬅️</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Vuốt Phải ➡️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left" data-i18n>Vuốt Trái ⬅️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right" data-i18n>Vuốt Phải ➡️</button>
                                 </div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up">Vuốt Lên ⬆️</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Vuốt Xuống ⬇️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up" data-i18n>Vuốt Lên ⬆️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down" data-i18n>Vuốt Xuống ⬇️</button>
                                 </div>
                             </div>
 
@@ -253,14 +257,14 @@
                 <!-- VISUALIZER CARD -->
                 <div class="card glass-card visualizer-card">
                     <div class="visualizer-header">
-                        <h2 class="card-title">Đường Đi Đầu Cắt</h2>
+                        <h2 class="card-title" data-i18n>Đường Đi Đầu Cắt</h2>
                         <div class="visualizer-controls">
-                            <button class="btn-text" id="btn-clear-path">Đặt Lại Góc Nhìn</button>
+                            <button class="btn-text" id="btn-clear-path" data-i18n>Đặt Lại Góc Nhìn</button>
                         </div>
                     </div>
                     <div class="canvas-wrapper" id="toolpath-wrapper">
                         <canvas id="toolpath-canvas"></canvas>
-                        <div class="canvas-instructions">Kéo để di chuyển • Cuộn để phóng to</div>
+                        <div class="canvas-instructions" data-i18n>Kéo để di chuyển • Cuộn để phóng to</div>
                     </div>
 
                     <!-- FILE ACTIONS & PROGRESS -->
@@ -268,13 +272,13 @@
                         <div class="file-upload-section">
                             <div class="file-drop-zone" id="file-drop-zone">
                                 <span class="upload-icon">📂</span>
-                                <span class="upload-text">Kéo thả file G-code hoặc <strong>Click để Chọn</strong></span>
+                                <span class="upload-text" data-i18n>Kéo thả file G-code hoặc <strong>Click để Chọn</strong></span>
                                 <input type="file" id="file-input" accept=".gcode,.nc,.cnc,.txt" class="hidden">
                             </div>
                             <div class="file-info hidden" id="file-info-container">
-                                <span class="file-name" id="loaded-file-name">chưa_nạp_file.gcode</span>
-                                <span class="file-lines" id="loaded-file-lines">0 dòng</span>
-                                <button class="btn-icon" id="btn-remove-file" title="Hủy nạp file">✕</button>
+                                <span class="file-name" id="loaded-file-name" data-i18n>chưa_nạp_file.gcode</span>
+                                <span class="file-lines" id="loaded-file-lines" data-i18n>0 dòng</span>
+                                <button class="btn-icon" id="btn-remove-file" data-i18n-title title="Hủy nạp file">✕</button>
                             </div>
                         </div>
 
@@ -289,23 +293,23 @@
                         </div>
 
                         <div class="stream-controls">
-                            <button class="btn btn-success" id="btn-start-stream" disabled>Bắt Đầu</button>
-                            <button class="btn btn-warning" id="btn-pause-stream" disabled>Tạm Dừng</button>
-                            <button class="btn btn-danger" id="btn-abort-stream" disabled>Dừng Khẩn Cấp (Ctrl-X)</button>
+                            <button class="btn btn-success" id="btn-start-stream" data-i18n disabled>Bắt Đầu</button>
+                            <button class="btn btn-warning" id="btn-pause-stream" data-i18n disabled>Tạm Dừng</button>
+                            <button class="btn btn-danger" id="btn-abort-stream" data-i18n disabled>Dừng Khẩn Cấp (Ctrl-X)</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- CONSOLE CARD -->
                 <div class="card glass-card console-card">
-                    <h2 class="card-title">Cửa Sổ Console Serial</h2>
+                    <h2 class="card-title" data-i18n>Cửa Sổ Console Serial</h2>
                     <div class="console-output" id="console-output">
-                        <div class="log-line system">Đang chờ kết nối...</div>
+                        <div class="log-line system" data-i18n>Đang chờ kết nối...</div>
                     </div>
                     <form class="console-input-form" id="console-form">
                         <input type="text" id="console-input"
-                            placeholder="Nhập lệnh G-code (ví dụ: G0 X10 Y20) rồi nhấn Enter..." autocomplete="off">
-                        <button type="submit" class="btn btn-primary btn-small">Gửi</button>
+                            data-i18n-placeholder placeholder="Nhập lệnh G-code (ví dụ: G0 X10 Y20) rồi nhấn Enter..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary btn-small" data-i18n>Gửi</button>
                     </form>
                 </div>
 
@@ -322,12 +326,12 @@
         <div class="panel-header" id="camera-panel-header">
             <div class="panel-title-wrapper">
                 <span class="panel-dot" id="camera-active-dot"></span>
-                <span class="panel-title">Khung Hình Camera</span>
+                <span class="panel-title" data-i18n>Khung Hình Camera</span>
               
             </div>
             <div class="panel-actions">
                   <div class="scenario-controls-wrapper" style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
-                    <input type="text" id="scenario-name" placeholder="Tên kịch bản..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
+                    <input type="text" id="scenario-name" data-i18n-placeholder placeholder="Tên kịch bản..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
                     <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Tạo</button>
                     <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Lưu</button>
                     <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Hủy</button>
@@ -338,23 +342,23 @@
                     <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Sửa</button>
                 </div>
                 <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select"
-                    style="width: 120px;" placeholder="Chỉ số Cam (Ví dụ: 4)" value="4">
+                    style="width: 120px;" data-i18n-placeholder placeholder="Chỉ số Cam (Ví dụ: 4)" value="4">
                 <datalist id="cameras-datalist"></datalist>
-                <button class="btn-toggle" id="btn-list-cameras" title="Danh sách Camera (ls)" style="margin-right: 4px;">
+                <button class="btn-toggle" id="btn-list-cameras" data-i18n-title title="Danh sách Camera (ls)" style="margin-right: 4px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">ls</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-1280" title="Chụp 1280x720 (Khung hình gốc)"
+                <button class="btn-toggle" id="btn-capture-1280" data-i18n-title title="Chụp 1280x720 (Khung hình gốc)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 1280</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-720" title="Chụp 720x720 (Gốc & Cắt gọn)"
+                <button class="btn-toggle" id="btn-capture-720" data-i18n-title title="Chụp 720x720 (Gốc & Cắt gọn)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 720</span>
                 </button>
-                <button class="btn-toggle" id="btn-camera-expand" title="Mở rộng toàn màn hình">
+                <button class="btn-toggle" id="btn-camera-expand" data-i18n-title title="Mở rộng toàn màn hình">
                     <span class="expand-icon">⛶</span>
                 </button>
-                <button class="btn-toggle" id="btn-camera-toggle" title="Thu gọn/Mở rộng Panel Camera">
+                <button class="btn-toggle" id="btn-camera-toggle" data-i18n-title title="Thu gọn/Mở rộng Panel Camera">
                     <span class="toggle-icon">▲</span>
                 </button>
             </div>
@@ -364,14 +368,14 @@
                 <img id="camera-stream-img" src="" alt="Đang tải luồng video Camera...">
                 <canvas id="camera-overlay-canvas"
                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 5;"></canvas>
-                <div class="camera-status-overlay" id="camera-status-text">Camera Ngoại Tuyến</div>
+                <div class="camera-status-overlay" id="camera-status-text" data-i18n>Camera Ngoại Tuyến</div>
             </div>
 
             <div class="camera-controls-sidebar" id="camera-controls-sidebar">
 
                 <!-- JOGGING CONTROLS -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Điều Khiển Di Chuyển (Jog)</h2>
+                    <h2 class="card-title" data-i18n>Điều Khiển Di Chuyển (Jog)</h2>
                     <div class="jog-layout">
                         <!-- Keypad Pad -->
                         <div class="jog-keypad">
@@ -381,7 +385,7 @@
                             <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
 
                             <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
-                            <button class="btn-jog center" id="jog-home" title="Về gốc máy">🏠</button>
+                            <button class="btn-jog center" id="jog-home" data-i18n-title title="Về gốc máy">🏠</button>
                             <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
 
                             <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
@@ -390,7 +394,7 @@
 
 
                             <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
-                            <button class="btn-jog center" id="jog-unlock" title="Mở khóa máy ($X)">🔓</button>
+                            <button class="btn-jog center" id="jog-unlock" data-i18n-title title="Mở khóa máy ($X)">🔓</button>
                             <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
                         </div>
 
@@ -402,7 +406,7 @@
                     <div class="jog-sliders">
                         <div class="slider-group">
                             <div class="slider-header">
-                                <span>Kích thước bước di chuyển</span>
+                                <span data-i18n>Kích thước bước di chuyển</span>
                                 <span class="slider-value" id="val-step">10 mm</span>
                             </div>
                             <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
@@ -414,14 +418,14 @@
                                     <option value="1">1 mm</option>
                                     <option value="10" selected>10 mm</option>
                                     <option value="100">100 mm</option>
-                                    <option value="custom">Tự chọn</option>
+                                    <option value="custom" data-i18n>Tự chọn</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="slider-group">
                             <div class="slider-header">
-                                <span>Tốc độ di chuyển Jog</span>
+                                <span data-i18n>Tốc độ di chuyển Jog</span>
                                 <span class="slider-value" id="val-feed">1000 mm/phút</span>
                             </div>
                             <input type="range" id="slider-feed" min="100" max="100000" step="100" value="1000">
@@ -429,39 +433,39 @@
                     </div>
 
                     <div class="zero-actions">
-                        <button class="btn btn-secondary" id="btn-zero-x">Đặt Gốc X</button>
-                        <button class="btn btn-secondary" id="btn-zero-y">Đặt Gốc Y</button>
-                        <button class="btn btn-secondary" id="btn-zero-z">Đặt Gốc Z</button>
-                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Đặt Gốc Tất Cả</button>
+                        <button class="btn btn-secondary" id="btn-zero-x" data-i18n>Đặt Gốc X</button>
+                        <button class="btn btn-secondary" id="btn-zero-y" data-i18n>Đặt Gốc Y</button>
+                        <button class="btn btn-secondary" id="btn-zero-z" data-i18n>Đặt Gốc Z</button>
+                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all" data-i18n>Đặt Gốc Tất Cả</button>
                     </div>
                 </div>
 
                 <!-- ALIGNMENT & CALIBRATION CONTROLS -->
                 <div class="camera-calibration-section">
                     <div class="calibration-row">
-                        <span class="calibration-title">Căn Chỉnh Hệ Tọa Độ (ArUco Markers)</span>
+                        <span class="calibration-title" data-i18n>Căn Chỉnh Hệ Tọa Độ (ArUco Markers)</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="chk-show-overlay" checked>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Hiển thị lớp phủ</span>
+                            <span class="toggle-label" data-i18n>Hiển thị lớp phủ</span>
                         </label>
                     </div>
                     <div class="marker-status-grid">
                         <div class="marker-status-badge" id="badge-tl">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Trên - Trái</span>
+                            <span class="badge-label" data-i18n>Trên - Trái</span>
                         </div>
                         <div class="marker-status-badge" id="badge-tr">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Trên - Phải</span>
+                            <span class="badge-label" data-i18n>Trên - Phải</span>
                         </div>
                         <div class="marker-status-badge" id="badge-bl">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Dưới - Trái</span>
+                            <span class="badge-label" data-i18n>Dưới - Trái</span>
                         </div>
                         <div class="marker-status-badge" id="badge-br">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Dưới - Phải</span>
+                            <span class="badge-label" data-i18n>Dưới - Phải</span>
                         </div>
 
                     </div>
@@ -488,18 +492,18 @@
                         <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Đặt ArUco</button>
                     </div>
                     <div class="calibration-actions-row" style="display: none;">
-                        <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco">Đặt Lại ArUco</button>
-                        <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Xóa Căn Chỉnh</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco" data-i18n>Đặt Lại ArUco</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-cal-clear" data-i18n>Xóa Căn Chỉnh</button>
                     </div>
                 </div>
 
                 <!-- HOME & GOTO SECTION (cập nhật 2) -->
                 <div class="camera-home-section">
                     <div class="home-header-row">
-                        <span class="calibration-title">Quản Lý Điểm Gốc</span>
+                        <span class="calibration-title" data-i18n>Quản Lý Điểm Gốc</span>
                         <div class="home-status-badge" id="home-status-badge">
                             <span class="home-dot" id="home-dot"></span>
-                            <span id="home-status-label">Chưa đặt Home</span>
+                            <span id="home-status-label" data-i18n>Chưa đặt Home</span>
                         </div>
                     </div>
 
@@ -526,11 +530,11 @@
                     <div class="goto-section" id="goto-section">
                         <div class="goto-inputs-row" style="grid-template-columns: 1fr 1fr;">
                             <div class="input-group">
-                                <label for="goto-x" style="font-size:10px;">Tọa độ đích X (mm)</label>
+                                <label for="goto-x" data-i18n style="font-size:10px;">Tọa độ đích X (mm)</label>
                                 <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
                             </div>
                             <div class="input-group">
-                                <label for="goto-y" style="font-size:10px;">Tọa độ đích Y (mm)</label>
+                                <label for="goto-y" data-i18n style="font-size:10px;">Tọa độ đích Y (mm)</label>
                                 <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
                             </div>
                         </div>
@@ -540,14 +544,14 @@
                             around</button>
 
 
-                        <button class="btn btn-warning" id="btn-stop-to-home">Dừng & Về Home</button>
+                        <button class="btn btn-warning" id="btn-stop-to-home" data-i18n>Dừng & Về Home</button>
                     </div>
 
                     <!-- Home Snapshot Map -->
                     <div class="home-snapshot-container hidden" id="home-snapshot-container">
                         <div class="snapshot-header">
                             <span class="snapshot-label">📷 Bản đồ tham chiếu Home</span>
-                            <button class="btn-icon" id="btn-close-snapshot" title="Đóng bản đồ">✕</button>
+                            <button class="btn-icon" id="btn-close-snapshot" data-i18n-title title="Đóng bản đồ">✕</button>
                         </div>
                         <div class="snapshot-wrapper">
                             <img id="home-snapshot-img" src="" alt="Ảnh chụp Home" class="home-snapshot-img">
@@ -564,18 +568,18 @@
                 <!-- OBJECT DETECTION & ALIGNMENT SECTION (cập nhật 3 + 5) -->
                 <div class="camera-detection-section">
                     <div class="detection-header-row">
-                        <span class="calibration-title">Nhận Diện Vật Thể</span>
+                        <span class="calibration-title" data-i18n>Nhận Diện Vật Thể</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="chk-detect-objects" checked>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Nhận diện vật thể</span>
+                            <span class="toggle-label" data-i18n>Nhận diện vật thể</span>
                         </label>
                     </div>
 
                     <!-- Object detection live status (cập nhật 5) -->
                     <div class="detection-status-row" id="detection-status-row">
                         <span class="detect-status-dot" id="detect-status-dot"></span>
-                        <span class="detect-status-text" id="detect-status-text">Không phát hiện vật thể</span>
+                        <span class="detect-status-text" id="detect-status-text" data-i18n>Không phát hiện vật thể</span>
                     </div>
 
                     <!-- Last largest object info (cập nhật 5) -->
@@ -602,9 +606,9 @@
         <div class="panel-header" id="editor-panel-header">
             <div class="panel-title-wrapper">
                 <span class="panel-dot active"></span>
-                <span class="panel-title">Bộ Soạn Thảo G-Code</span>
+                <span class="panel-title" data-i18n>Bộ Soạn Thảo G-Code</span>
             </div>
-            <button class="btn-toggle" id="btn-close-gcode-editor" title="Đóng Bộ Soạn Thảo G-Code">✕</button>
+            <button class="btn-toggle" id="btn-close-gcode-editor" data-i18n-title title="Đóng Bộ Soạn Thảo G-Code">✕</button>
         </div>
         <div class="editor-panel-body">
 
@@ -619,12 +623,12 @@
                     <!-- Sketch Parameters Side Menu -->
                     <div class="editor-sketch-sidebar" id="editor-sketch-sidebar">
                         <div class="sketch-sidebar-header">
-                            <h4>Cấu Hình Nét Vẽ</h4>
+                            <h4 data-i18n>Cấu HÌnh Nét Vẽ</h4>
                         </div>
                         <div class="sketch-sidebar-body">
                             <!-- Preprocessing & Processing Filters -->
                             <div class="sketch-param-group">
-                                <div class="group-title">Cấu Hình Bộ Lọc</div>
+                                <div class="group-title">Cấu HÌnh Bộ Lọc</div>
                                 <div class="checkbox-row"
                                     style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
                                     <label class="checkbox-label"
@@ -663,7 +667,7 @@
                             <!-- CLAHE Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-clahe-clip">Ngưỡng CLAHE Clip</label>
+                                    <label for="sketch-clahe-clip" data-i18n>Ngưỡng CLAHE Clip</label>
                                     <span class="param-val" id="val-sketch-clahe-clip">1.5</span>
                                 </div>
                                 <input type="range" id="sketch-clahe-clip" min="1.0" max="5.0" step="0.1" value="1.5">
@@ -672,7 +676,7 @@
                             <!-- Blur Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-blur-size">Kích thước Blur</label>
+                                    <label for="sketch-blur-size" data-i18n>Kích thước Blur</label>
                                     <span class="param-val" id="val-sketch-blur-size">3 px</span>
                                 </div>
                                 <input type="range" id="sketch-blur-size" min="1" max="15" step="2" value="3">
@@ -731,7 +735,7 @@
                             <!-- Min Contour Length Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-min-contour-len">Chiều dài nét tối thiểu</label>
+                                    <label for="sketch-min-contour-len" data-i18n>Chiều dài nét tối thiểu</label>
                                     <span class="param-val" id="val-sketch-min-contour-len">5 px</span>
                                 </div>
                                 <input type="range" id="sketch-min-contour-len" min="1" max="50" step="1" value="5">
@@ -766,24 +770,24 @@
 
                     <div class="row-inputs">
                         <div class="input-group">
-                            <label for="editor-scale">Tỷ lệ thu phóng</label>
+                            <label for="editor-scale" data-i18n>Tỷ lệ thu phóng</label>
                             <input type="number" id="editor-scale" value="0.1" step="0.01" min="0.001">
                         </div>
                         <div class="input-group">
-                            <label for="editor-feedrate">Tốc độ chạy dao (mm/phút)</label>
+                            <label for="editor-feedrate" data-i18n>Tốc độ chạy dao (mm/phút)</label>
                             <input type="number" id="editor-feedrate" value="2000" step="100" min="10">
                         </div>
                     </div>
                     <div class="row-inputs" style="margin-top: 10px;">
                         <div class="input-group">
-                            <label for="editor-mode">Chế độ Z</label>
+                            <label for="editor-mode" data-i18n>Chế độ Z</label>
                             <select id="editor-mode">
                                 <option value="servo" selected>Servo (PWM)</option>
                                 <option value="spindle">Spindle (Z Axis)</option>
                             </select>
                         </div>
                         <div class="input-group" id="group-editor-algo">
-                            <label for="editor-algo">Thuật toán</label>
+                            <label for="editor-algo" data-i18n>Thuật toán</label>
                             <select id="editor-algo">
                                 <option value="centerline" selected>Centerline (Nét giữa)</option>
                                 <option value="contour">Contour (Bao quanh)</option>
@@ -891,13 +895,13 @@
                 <!-- Scenario item cards will be generated here -->
             </div>
             <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn btn-danger-soft btn-small" id="btn-scenario-clear-all" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Xóa Tất Cả</button>
-                <button class="btn btn-primary btn-small" id="btn-scenario-save-edit" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Đóng</button>
+                <button class="btn btn-danger-soft btn-small" id="btn-scenario-clear-all" data-i18n style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Xóa Tất Cả</button>
+                <button class="btn btn-primary btn-small" id="btn-scenario-save-edit" data-i18n style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Đóng</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js?v=35"></script>
+    <script src="/static/app.js?v=36"></script>
 </body>
 
 </html>
