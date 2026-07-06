@@ -112,7 +112,7 @@ sequenceDiagram
 * Khởi tạo Driver I2S Output (TX) trên cổng độc lập `I2S_NUM_1` với tần số phát mẫu **16kHz Stereo**.
 * Cung cấp hàm `playSpeaker(samples, count)` phục vụ phát âm thanh PCM thô.
 * **Tối ưu hóa âm lượng lớn nhất**:
-  * **Phần mềm (Software)**: Tích hợp hệ số nhân âm lượng `#define SPEAKER_VOLUME_BOOST 2.5f` kết hợp bộ cắt biên độ (clamping) để tránh tràn số, nâng biên độ lên gấp 2.5 lần.
+  * **Phần mềm (Software)**: Tích hợp hệ số nhân âm lượng `#define SPEAKER_VOLUME_BOOST 1.5f` kết hợp bộ cắt biên độ (clamping) để tránh tràn số, nâng biên độ lên gấp 2.5 lần.
   * **Phần cứng (Hardware)**: Hướng dẫn nối chân **GAIN** của MAX98357A xuống **GND** (cho mức Gain 12dB) hoặc qua **điện trở 100kΩ xuống GND** (cho mức Gain cực đại 15dB) để âm thanh phát ra loa to rõ nhất.
 * **Hardware Loopback Test**: Trong quá trình quét mic, toàn bộ dữ liệu Stereo đọc được từ mic sẽ ngay lập tức được ghi thẳng sang Loa giúp người dùng nghe trực tiếp âm thanh thu được để căn chỉnh độ nhạy phần cứng và kiểm tra kết nối vật lý.
 
@@ -160,13 +160,16 @@ sequenceDiagram
 
 ### F. Trợ lý ảo đàm thoại Live với Gemini (`esp32mic.ino` & `esp32speaker.ino`)
 * **Kiến trúc thời gian thực thời gian thực hai chiều**:
-  * Khi từ khóa "du ơi" được phát hiện, hệ thống ngay lập tức kết nối tới endpoint WebSocket của Gemini Live API (`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent`).
+  * Khi từ khóa "du ơi" được phát hiện, hệ thống ngay lập tức kết nối tới endpoint WebSocket của Gemini Live API (`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=YOUR_API_KEY`).
   * Sử dụng thư viện `WebSocketsClient` với giao thức SSL để bảo mật và `ArduinoJson` để đóng/mở gói tin trao đổi.
+  * API Key được gửi trực tiếp dưới dạng query parameter `?key=...` trong URL WebSocket để đảm bảo xác thực thành công.
+  * Cấu hình model gửi trong bản tin `setup` ban đầu bắt buộc được chuẩn hóa với tiền tố `models/` (ví dụ: `models/gemini-3.1-flash-live-preview`).
+  * Hệ thống tự động bắt và parse các gói tin chứa key `"error"` nhận lời từ server để in ra Serial Log hỗ trợ gỡ lỗi và tự động ngắt kết nối an toàn (`disconnect_live_chat()`) thay vì bị treo.
 * **Xử lý luồng Microphone & Loa**:
   * **Đầu vào (Mic)**: Thu thập dữ liệu PCM 32-bit Stereo từ cổng I2S RX, chuyển đổi sang PCM 16-bit Mono (16kHz), mã hóa Base64 và đóng gói JSON gửi lên websocket.
   * **Đầu ra (Loa)**: Gemini trả về luồng âm thanh PCM 24kHz Mono dạng Base64. ESP32 giải mã, nâng biên độ bằng `SPEAKER_VOLUME_BOOST`, nhân bản thành Stereo và phát trực tiếp ra loa I2S TX với tần số lấy mẫu là 24kHz (sử dụng hàm thay đổi tần số linh hoạt `i2s_set_sample_rate`).
   * **Khử nhiễu vọng phản hồi (Echo Suppression)**: Khi loa đang phát, micro sẽ tạm dừng gửi gói tin lên API trong vòng 500ms. Sau khi hết thời gian chặn, hệ thống sẽ thực hiện xả sạch (drain) bộ đệm DMA của micro trước khi gửi để tránh lặp tiếng trả lời của chatbot.
-* **Timeout im lặng (Inactivity Timeout)**: Sau 15 giây không có dữ liệu trao đổi âm thanh từ người dùng hoặc mô hình, hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
+* **Timeout im lặng (Inactivity Timeout)**: Sau 60 giây không có dữ liệu trao đổi âm thanh từ người dùng hoặc mô hình (đồng bộ với file python `detect_wakeup.py` timeout), hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
 
 ### G. Google Firebase Firestore Client (`esp32firebase.ino`)
 * **Không dùng thư viện nặng**: Sử dụng trực tiếp `WiFiClientSecure` và `HTTPClient` gốc để gọi REST API của Firestore, tránh xung đột bộ nhớ và watchdog với TensorFlow Lite / Gemini WebSockets.

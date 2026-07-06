@@ -1,4 +1,5 @@
 unzip -o /work/4567.zip -d /work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/dataraw
+unzip -o /work/1234.zip -d /work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/dataraw
 
 7z x /work/4567.zip -o/work/a.i-assistant-chatbot-telegram-serverles/cameraip/train/dataraw -aoa
 

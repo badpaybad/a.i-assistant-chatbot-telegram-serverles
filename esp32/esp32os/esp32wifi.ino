@@ -1,7 +1,23 @@
 // esp32wifi.ino - WiFi Management and Credential Storage
+#include <esp_netif.h>
 
 // External function from esp32speaker.ino
 void playOkWifiSound();
+
+void setCustomDNS() {
+    esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
+    if (netif) {
+        esp_netif_dns_info_t dns;
+        dns.ip.type = IPADDR_TYPE_V4;
+        
+        dns.ip.u_addr.ip4.addr = (uint32_t)IPAddress(8, 8, 8, 8);
+        esp_netif_set_dns_info(netif, ESP_NETIF_DNS_MAIN, &dns);
+        
+        dns.ip.u_addr.ip4.addr = (uint32_t)IPAddress(1, 1, 1, 1);
+        esp_netif_set_dns_info(netif, ESP_NETIF_DNS_BACKUP, &dns);
+        Serial.println("[WiFi] Custom DNS configured: 8.8.8.8 (Primary) & 1.1.1.1 (Backup)");
+    }
+}
 
 // Loads stored credentials into the provided array (up to 5)
 void loadWifiCredentials(WifiCreds savedCreds[], int &count) {
@@ -139,6 +155,7 @@ bool connectWiFi() {
         Serial.printf("[WiFi] Connected to %s successfully!\n", savedCreds[i].ssid.c_str());
         Serial.print("[WiFi] IP Address: ");
         Serial.println(WiFi.localIP());
+        setCustomDNS();
         playOkWifiSound();
         return true;
       } else {
@@ -169,6 +186,7 @@ bool connectWiFi() {
       Serial.printf("[WiFi] Connected to %s (fallback) successfully!\n", savedCreds[0].ssid.c_str());
       Serial.print("[WiFi] IP Address: ");
       Serial.println(WiFi.localIP());
+      setCustomDNS();
       playOkWifiSound();
       return true;
     }

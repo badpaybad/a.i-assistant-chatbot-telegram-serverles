@@ -26,7 +26,7 @@
 #define I2S_OUT_DIN  13  // DIN (SD) of speaker (ESP32-S3 GPIO 13)
 #define I2S_PORT_OUT I2S_NUM_1
 
-#define SPEAKER_VOLUME_BOOST 2.5f
+#define SPEAKER_VOLUME_BOOST 1.5f
 #define BOOT_BUTTON_PIN 0
 
 // WiFi credentials struct
@@ -223,7 +223,7 @@ void setup() {
 
   // Start the boot-button polling task LAST (after all hardware is ready).
   // This task polls GPIO 0 every 50ms – no hardware interrupt needed.
-  startButtonPollingTask();
+  // startButtonPollingTask();
 }
 
 

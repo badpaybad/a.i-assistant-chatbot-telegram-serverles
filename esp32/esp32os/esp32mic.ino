@@ -13,6 +13,7 @@ unsigned long last_interaction_time = 0;
 unsigned long last_model_audio_time = 0;
 volatile int32_t current_utterance_max_volume = 0;
 volatile bool ignore_current_turn = false;
+volatile bool setup_complete_received = false;
 #define LOUD_THRESHOLD 15000
 
 // Microphone Mode:
@@ -379,6 +380,7 @@ void wakeup_detection_task(void *pvParameters) {
   int samples_since_last_inference = 0;
   int inference_count = 0; // for logging
   bool spectrogram_initialized = false;
+  bool was_inactive = true;
   
   // Check if model starts successfully
   if (!ml.begin(model_tflite).isOk()) {
@@ -392,6 +394,7 @@ void wakeup_detection_task(void *pvParameters) {
 
   for (;;) {
     if (!micDetectActive) {
+      was_inactive = true;
       spectrogram_initialized = false; // Reset initialization status when inactive
       if (live_chat_active) {
         // Do NOT read from I2S here because the Gemini streaming is using it!
@@ -402,6 +405,15 @@ void wakeup_detection_task(void *pvParameters) {
       i2s_read(I2S_PORT, &stereo_samples, sizeof(stereo_samples), &bytes_read, portMAX_DELAY);
       vTaskDelay(pdMS_TO_TICKS(100)); // sleep longer when inactive to save CPU
       continue;
+    }
+
+    // Clear buffer when transitioning to active
+    if (was_inactive) {
+      was_inactive = false;
+      memset(loop_audio_buffer, 0, sizeof(loop_audio_buffer));
+      audio_buffer_write_ptr = 0;
+      samples_since_last_inference = 0;
+      Serial.println("[Mic] Transitioned to active: Cleared audio buffer to prevent false wakeup trigger.");
     }
 
     // Read a stereo frame (20ms block)
@@ -658,11 +670,29 @@ void play_beep(int frequency, int duration_ms) {
     size_t bytes_written;
     i2s_write(I2S_PORT_OUT, beep_buf, samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
     free(beep_buf);
+    
+    // Flush DMA buffer with silence to prevent stuck buzzer sound
+    int silence_samples = (24000 * 50) / 1000;
+    int16_t* silence_buf = (int16_t*)calloc(silence_samples * 2, sizeof(int16_t));
+    if (silence_buf) {
+        i2s_write(I2S_PORT_OUT, silence_buf, silence_samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+        free(silence_buf);
+    }
 }
 
 void connect_live_chat() {
+    if (webSocket.isConnected() && setup_complete_received) {
+        Serial.println("ℹ️ [Gemini] Already connected and setup. Skipping reconnect.");
+        play_beep(880, 100);
+        last_interaction_time = millis();
+        // Pause wake-word detection task
+        publish("wakeupword", "type=stop");
+        return;
+    }
+
     Serial.println("🌐 [Gemini] Đang kết nối lên Gemini Live API qua WebSockets...");
     live_chat_active = true;
+    setup_complete_received = false;
     
     // Debug API Key
     Serial.printf("[Gemini] Độ dài API Key: %d ký tự\n", gemini_api_key.length());
@@ -679,13 +709,18 @@ void connect_live_chat() {
         test_client.stop();
     } else {
         Serial.println("❌ [Gemini SSL Test] Kết nối SSL thất bại! Hãy kiểm tra mạng Internet hoặc DNS của ESP32.");
+        live_chat_active = false;
+        publish("wakeupword", "type=start");
+        return;
     }
     
     // Path for BidiGenerateContent real-time endpoint (matching Python SDK)
-    String path = "/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContent";
+    String path = "/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=" + gemini_api_key;
     
-    // Set x-goog-api-key header (matching Python SDK)
-    String extra_headers = "x-goog-api-key: " + gemini_api_key;
+    // Set x-goog-api-key header (matching Python SDK) and query param for maximum compatibility
+    // Declared static to prevent dangling pointer crashes after connect_live_chat exits
+    static String extra_headers;
+    extra_headers = "x-goog-api-key: " + gemini_api_key;
     webSocket.setExtraHeaders(extra_headers.c_str());
     
     // Configure SSL Connection (pass empty string for subprotocol to avoid protocol rejection)
@@ -700,6 +735,7 @@ void disconnect_live_chat() {
     Serial.println("🔌 [Gemini] Đóng kết nối Live Chat. Chuyển về trạng thái chờ...");
     webSocket.disconnect();
     live_chat_active = false;
+    setup_complete_received = false;
     
     // Signal tone
     play_beep(400, 150);
@@ -712,11 +748,15 @@ void disconnect_live_chat() {
 }
 
 void send_setup_message() {
+    String model_path = gemini_model;
+    if (!model_path.startsWith("models/")) {
+        model_path = "models/" + model_path;
+    }
     // Generate config JSON matching Python code (systemInstruction & activityHandling: NO_INTERRUPTION)
     String setup_json = 
     "{"
       "\"setup\": {"
-        "\"model\": \"" + gemini_model + "\","
+        "\"model\": \"" + model_path + "\","
         "\"generationConfig\": {"
           "\"responseModalities\": [\"AUDIO\"],"
           "\"speechConfig\": {"
@@ -768,29 +808,28 @@ void stream_mic_to_websocket() {
         Serial.println("[Gemini] Drained I2S RX DMA buffer after echo suppression.");
     }
 
-    const int CHUNK_FRAMES = 512;
+    const int CHUNK_FRAMES = 1024; // 64ms audio chunk (reduces message frequency and network overhead)
     size_t bytes_read = 0;
     
-    // Allocate heap buffer for reading and processing
-    int32_t* stereo_chunk = (int32_t*)malloc(CHUNK_FRAMES * 2 * sizeof(int32_t));
-    int16_t* mono_chunk = (int16_t*)malloc(CHUNK_FRAMES * sizeof(int16_t));
-    if (stereo_chunk == nullptr || mono_chunk == nullptr) {
-        if (stereo_chunk) free(stereo_chunk);
-        if (mono_chunk) free(mono_chunk);
-        return;
+    // Allocate static buffers to prevent heap allocation/fragmentation 15 times per second
+    static int32_t stereo_chunk[CHUNK_FRAMES * 2];
+    static int16_t mono_chunk[CHUNK_FRAMES];
+    static char b64_buf[((CHUNK_FRAMES * 2 * sizeof(int16_t) + 2) / 3) * 4 + 1];
+    static char json_buf[120 + sizeof(b64_buf)];
+
+    // Log RAM usage every 100 frames to monitor memory stability
+    static int loop_count = 0;
+    if (loop_count++ % 100 == 0) {
+        Serial.printf("[RAM] Free Heap: %u | Min Free: %u\n", ESP.getFreeHeap(), ESP.getMinFreeHeap());
     }
 
     esp_err_t err = i2s_read(I2S_PORT, stereo_chunk, CHUNK_FRAMES * 2 * sizeof(int32_t), &bytes_read, pdMS_TO_TICKS(100));
     if (err != ESP_OK || bytes_read == 0) {
-        free(stereo_chunk);
-        free(mono_chunk);
         return;
     }
 
     int frames = bytes_read / (2 * sizeof(int32_t));
     if (frames <= 0) {
-        free(stereo_chunk);
-        free(mono_chunk);
         return;
     }
 
@@ -813,25 +852,45 @@ void stream_mic_to_websocket() {
     }
 
     size_t raw_bytes = frames * sizeof(int16_t);
-    size_t b64_size = ((raw_bytes + 2) / 3) * 4 + 1;
-    char* b64_buf = (char*)malloc(b64_size);
-    if (b64_buf) {
-        base64_encode_to_buf((uint8_t*)mono_chunk, raw_bytes, b64_buf);
-        String json_msg = "{\"realtimeInput\":{\"mediaChunks\":[{\"mimeType\":\"audio/pcm;rate=16000\",\"data\":\"" + String(b64_buf) + "\"}]}}";
-        webSocket.sendTXT(json_msg);
-        free(b64_buf);
+    base64_encode_to_buf((uint8_t*)mono_chunk, raw_bytes, b64_buf);
+    
+    // Construct JSON payload efficiently without String class heap allocation
+    strcpy(json_buf, "{\"realtimeInput\":{\"mediaChunks\":[{\"mimeType\":\"audio/pcm;rate=16000\",\"data\":\"");
+    strcat(json_buf, b64_buf);
+    strcat(json_buf, "\"}]}}");
+    
+    bool success = webSocket.sendTXT(json_buf);
+    if (!success) {
+        Serial.println("❌ [Gemini] WebSocket send failed! Queue full?");
     }
-
-    free(stereo_chunk);
-    free(mono_chunk);
 }
 
 void handle_websocket_message(uint8_t * payload, size_t length) {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload, length);
-    if (error) return;
+    if (error) {
+        Serial.printf("[Gemini WebSocket] JSON parse error: %s\n", error.c_str());
+        return;
+    }
     
     last_interaction_time = millis();
+    
+    // Log any errors returned from the server (e.g. invalid API key, invalid model name, etc.)
+    if (doc.containsKey("error")) {
+        JsonObject err = doc["error"];
+        int code = err["code"];
+        String message = err["message"].as<String>();
+        String status = err["status"].as<String>();
+        Serial.printf("❌ [Gemini Error] Code %d (%s): %s\n", code, status.c_str(), message.c_str());
+        disconnect_live_chat(); // disconnect on error to avoid hang
+        return;
+    }
+    
+    if (doc.containsKey("setupComplete")) {
+        Serial.println("🤖 [Gemini] Live Chat: Setup complete received. Starting mic stream.");
+        setup_complete_received = true;
+        return;
+    }
     
     if (doc.containsKey("serverContent")) {
         JsonObject serverContent = doc["serverContent"];
@@ -921,7 +980,13 @@ void handle_websocket_message(uint8_t * payload, size_t length) {
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
         case WStype_DISCONNECTED:
-            Serial.println("🔌 [Gemini] Ngắt kết nối WebSocket!");
+            Serial.print("🔌 [Gemini] Ngắt kết nối WebSocket! Close code/reason: ");
+            if (payload != NULL && length > 0) {
+                Serial.write(payload, length);
+                Serial.println();
+            } else {
+                Serial.println("None");
+            }
             live_chat_active = false;
             // Restore speaker sample rate to 16kHz
             i2s_set_sample_rates(I2S_PORT_OUT, 16000);
@@ -932,12 +997,17 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
             send_setup_message();
             break;
         case WStype_TEXT:
+        case WStype_BIN:
             handle_websocket_message(payload, length);
             break;
-        case WStype_BIN:
-            break;
         case WStype_ERROR:
-            Serial.println("❌ [Gemini] Lỗi kết nối WebSocket!");
+            Serial.print("❌ [Gemini] Lỗi kết nối WebSocket! Chi tiết: ");
+            if (payload != NULL && length > 0) {
+                Serial.write(payload, length);
+                Serial.println();
+            } else {
+                Serial.println("None");
+            }
             break;
     }
 }
@@ -946,7 +1016,7 @@ void loopGeminiLive() {
     if (live_chat_active) {
         webSocket.loop();
         
-        if (webSocket.isConnected()) {
+        if (webSocket.isConnected() && setup_complete_received) {
             stream_mic_to_websocket();
             
             if (millis() - last_interaction_time > 60000) {
