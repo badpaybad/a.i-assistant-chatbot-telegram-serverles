@@ -225,3 +225,6 @@ Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản
 
 **cập nhật 37** vị trí cuối cùng của đầu CNC khônng phải là vị set home. vị trí set home đã thống nhất ở **cập nhật 34** chỉ duy nhất viết set home khi button btn-reset-home được click . 
 khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu cnc cho đúng theo vị trí cuối của cnc và vị trí được set home 
+    Vd hệ thống khi set home xong . di chuyển đầu CNC ra một vị trí bất kỳ. khi hệ thống mất điện bật lại cần xác định được vị trí cnc head để nếu click go to x=0 y=0 hoặc Stop & go home thì đầu cnc về đúng vị trí set home, cần match giữa frame ảnh và cnc head để tính toán được vị trí đúng. 
+
+**cập nhật 38** hiệu chỉnh thống nhất hướng trục Y khi tính toán sai lệch giữa camera Bed Coordinate System (BCS) và hệ trục tọa độ thực tế của máy CNC. Trục Y của camera (BCS) tăng theo chiều đi lên, ngược với trục Y của máy CNC (tăng theo chiều đi xuống). Do đó, khoảng lệch Y được tính toán bằng live camera hoặc khôi phục gốc Home cần được đảo dấu (`y_cnc = -(y_head_bed - y_home_bed)`) để tránh việc đầu CNC di chuyển ngược hướng trục Y khi thực hiện Go to Home hoặc di chuyển về 0. 

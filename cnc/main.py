@@ -1276,7 +1276,7 @@ async def realign_cnc_coordinates_on_startup():
     Recalculates the CNC coordinate offset so that it aligns correctly relative to the saved home,
     based on the last known position (state.saved_pen_position) or live camera detection.
     """
-    await asyncio.sleep(3.0) # Wait for serial loops and camera streams to initialize
+    await asyncio.sleep(2.0) # Wait for serial loops to initialize
     
     if not state.connected or not state.serial_port:
         return
@@ -1287,12 +1287,16 @@ async def realign_cnc_coordinates_on_startup():
 
     logger.info("Startup coordinate alignment: Homing reference exists. Calculating head position...")
 
+    # Start camera 4 to capture frame and run YOLO detections (cập nhật 37)
+    camera_index = 4
+    camera_manager.start_camera(camera_index)
+
     # 1. Try to detect the cnchead in camera
     cnchead_px = None
-    # Poll for YOLO detections for up to 3 seconds
-    for _ in range(15):
+    # Poll for YOLO detections for up to 5 seconds
+    for _ in range(25):
         if not state.connected:
-            return
+            break
         if state.latest_yolo_detections:
             for d in state.latest_yolo_detections:
                 if state.class_names.get(d["class_id"]) == "cnchead":
@@ -1345,13 +1349,18 @@ async def realign_cnc_coordinates_on_startup():
                 x_home_bed = bed_home[0] / bed_home[2]
                 y_home_bed = bed_home[1] / bed_home[2]
                 
-                # Expected coordinate relative to set home
+                # Expected coordinate relative to set home (negate Y because CNC Y direction is opposite of BCS Y direction)
                 x_cnc = x_head_bed - x_home_bed
-                y_cnc = y_head_bed - y_home_bed
+                y_cnc = -(y_head_bed - y_home_bed)
                 aligned_via_camera = True
                 logger.info(f"Startup coordinate alignment: Mapped via camera relative to set home: X={x_cnc:.3f}, Y={y_cnc:.3f}")
         except Exception as e:
             logger.error(f"Startup coordinate alignment: Homography mapping failed: {e}")
+
+    # Stop camera if there are no active clients
+    with camera_manager.lock:
+        if camera_manager.active_clients.get(camera_index, 0) == 0:
+            camera_manager.stop_camera(camera_index)
 
     # Fallback to last saved pen position if camera mapping was not possible
     saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
@@ -2092,10 +2101,9 @@ async def reset_home_api(force_current: bool = False):
         x_home_bed = bed_home[0] / bed_home[2]
         y_home_bed = bed_home[1] / bed_home[2]
         
-        # 4. Calculate expected CNC coordinates
-        # Offset in mm between current head position and saved home position
+        # 4. Calculate expected CNC coordinates (negate Y because CNC Y direction is opposite of BCS Y direction)
         x_cnc_expected = x_head_bed - x_home_bed
-        y_cnc_expected = y_head_bed - y_home_bed
+        y_cnc_expected = -(y_head_bed - y_home_bed)
         
         # Send G10 command to redefine current coordinates on the CNC
         cmd = f"G10 L20 P0 X{x_cnc_expected:.3f} Y{y_cnc_expected:.3f}"
