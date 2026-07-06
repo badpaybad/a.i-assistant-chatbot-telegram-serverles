@@ -106,7 +106,6 @@ def svg_to_exact_gcode(svg_path, gcode_path, scale_factor=1.0, feed_rate=2000, m
         f.write(";--- KHOI TAO MAY VE VECTOR SVG DIRECT ---\n")
         f.write("G21 ; Don vi: mm\n")
         f.write("G90 ; Toa do tuyet doi\n")
-        f.write("G10 L20 P1 X0 Y0 ; Set vi tri hien tai lam goc (0,0)\n")
         if mode != "servo":
             f.write("G0 Z2.0 ; Đưa trục Z lên thềm an toàn\n")
         f.write(f"F{feed_rate}\n\n")

@@ -207,4 +207,14 @@ không cần test tự động trên chrome, sửa xong tôi tự test
     sau khi run loop, nút này toggle thành stop loop, khi stop loop sẽ không chạy run nữa.
     nút run trước đó đang click chạy kịch bản 1 lần
     run loop chạy kịch bản vòng lặp kịch bản xong 1 lần tới lần tiếp theo 
-        
+xem logic btnRunLoopScenario việc enable khi set end xong cần giống btnRunScenario . không cần state phức tạp, khi start run loop rồi, thì toggle chuyển thành stop loop. click stop loop dừng lại không loop nữa
+
+**cập nhật 34** kiểm tra việc set home với button btn-reset-home , toàn bộ hệ thống chỉ có 1 điểm set home này, khi cnc mất điện hoặc reset việc chạy lại điểm set home này cần được giữ
+    giữ thông số cho cả cnc lẫn ảnh UI , frame camera để tham chiếu.
+
+Không cần set home lại dưới bất kỳ action nào, cũng không cần set lock cnc tự khi thực hiện các action , chỉ cần button btn-reset-home khi click để set home làm tính toán cho đầu cnc, cho ảnh và frame camera
+
+Không cần set alarm lock tự động khi chạy các kịch bản
+    vậy khi nào bị alarm lock cnc ? việc này chỉ cần làm manual với nút click trên UI , jog-unlock toggle làm việc đó
+
+Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản, xuất hiện alarm lock khi thực hiện lock xong cần unlock trở lại 

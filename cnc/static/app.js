@@ -351,6 +351,18 @@ function updateTelemetry(data) {
     machineState.innerText = data.state;
     machineState.className = "state-badge " + data.state.toLowerCase();
 
+    // Toggle unlock button alarm styling (cập nhật 34)
+    const btnUnlock = document.getElementById("jog-unlock");
+    if (btnUnlock) {
+        if (data.state === "Alarm") {
+            btnUnlock.classList.add("alarm-locked");
+            btnUnlock.title = "⚠️ Machine Locked! Click to Unlock ($X)";
+        } else {
+            btnUnlock.classList.remove("alarm-locked");
+            btnUnlock.title = "Unlock Machine ($X)";
+        }
+    }
+
     currentWPos.x = data.wpos[0];
     currentWPos.y = data.wpos[1];
     currentWPos.z = data.wpos[2];
@@ -1962,19 +1974,43 @@ function setupEventListeners() {
 
     if (btnResetHome) {
         btnResetHome.addEventListener("click", async () => {
-            if (confirm("Are you sure you want to reset home position?")) {
+            if (confirm("Bạn có muốn khôi phục vị trí Home của CNC về điểm đã lưu?")) {
                 try {
+                    btnResetHome.disabled = true;
+                    btnResetHome.innerText = "⏳ Restoring...";
                     const res = await fetch("/api/home/reset", { method: "POST" });
                     const data = await res.json();
+                    btnResetHome.disabled = false;
+                    btnResetHome.innerText = "Restore Home";
+                    
                     if (data.status === "ok") {
-                        isHomeSet = false;
-                        updateHomeUI();
-                        logSystemMessage("Home position reset.");
-                        if (homeSnapshotImg) homeSnapshotImg.src = "";
-                        if (homeSnapshotContainer) homeSnapshotContainer.classList.add("hidden");
+                        logSystemMessage("✅ " + data.message);
+                        alert(data.message);
+                    } else if (data.status === "head_not_detected") {
+                        if (confirm(data.message + "\n\nNhấn OK để thiết lập vị trí hiện tại làm mốc Home.")) {
+                            // User chose to manually align and force zero
+                            btnResetHome.disabled = true;
+                            btnResetHome.innerText = "⏳ Restoring...";
+                            const forceRes = await fetch("/api/home/reset?force_current=true", { method: "POST" });
+                            const forceData = await forceRes.json();
+                            btnResetHome.disabled = false;
+                            btnResetHome.innerText = "Restore Home";
+                            
+                            if (forceData.status === "ok") {
+                                logSystemMessage("✅ " + forceData.message);
+                                alert(forceData.message);
+                            } else {
+                                alert("Khôi phục thất bại: " + forceData.message);
+                            }
+                        }
+                    } else {
+                        alert("Lỗi khôi phục Home: " + data.message);
                     }
                 } catch (e) {
-                    logSystemMessage(`Failed to reset home: ${e}`);
+                    btnResetHome.disabled = false;
+                    btnResetHome.innerText = "Restore Home";
+                    logSystemMessage(`Failed to restore home: ${e}`);
+                    alert("Lỗi mạng khi khôi phục Home: " + e);
                 }
             }
         });
@@ -4061,30 +4097,6 @@ function initGcodeEditor() {
             }
 
             btnEditorExecute.disabled = true;
-
-            // Auto-home CNC head at current position before streaming drawing (Cập nhật 22)
-            if (isConnected) {
-                btnEditorExecute.innerText = "⏳ Đang thiết lập Home...";
-                try {
-                    const camSelectEl = document.getElementById("camera-select");
-                    const camIdx = camSelectEl ? camSelectEl.value : 4;
-                    const homeRes = await fetch("/api/home?camera_index=" + camIdx, { method: "POST" });
-                    const homeData = await homeRes.json();
-                    if (homeData.status === "ok") {
-                        logSystemMessage("✅ Tự động thiết lập vị trí hiện tại làm gốc Home (0,0,0)!");
-                        isHomeSet = true;
-                        if (window.updateHomeUI) window.updateHomeUI();
-                        const homeSnapshotImg = document.getElementById("home-snapshot-img");
-                        if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
-                    } else {
-                        logSystemMessage("⚠️ Không thể tự động set Home: " + homeData.message + ". Vẫn tiếp tục thực hiện vẽ.");
-                    }
-                } catch (homeErr) {
-                    console.error("Lỗi khi gọi set home tự động:", homeErr);
-                    logSystemMessage("⚠️ Lỗi thiết lập Home tự động. Vẫn tiếp tục thực hiện vẽ.");
-                }
-            }
-
             btnEditorExecute.innerText = "Đang gửi G-Code...";
 
             const gcode = generateGcodeFromSegments();

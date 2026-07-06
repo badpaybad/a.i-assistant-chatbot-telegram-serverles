@@ -300,70 +300,12 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         dst = np.array([[-100.0, 75.0], [100.0, 75.0], [100.0, -75.0], [-100.0, -75.0]], dtype=np.float32)
         try:
             M, _ = cv2.findHomography(src, dst)
-            # logger.info("Generated a default perspective calibration matrix from home markers (fallback).")
         except Exception as e:
             logger.error(f"Error generating fallback perspective calibration matrix: {e}")
             M = None
 
     if M is None:
         return None
-
-    if state.home_set and state.home_markers:
-        pts = state.home_markers
-        # Get list of valid corners recorded during homing
-        home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in pts]
-        if len(home_corners) >= 3:
-            # Use state.home_pixel which corresponds exactly to physical (0, 0)
-            hx_home, hy_home = state.home_pixel if (getattr(state, "home_pixel", None) is not None and len(state.home_pixel) == 2) else [360.0, 360.0]
-            
-            denom_home = M[2, 0] * hx_home + M[2, 1] * hy_home + M[2, 2]
-            if abs(denom_home) > 1e-5:
-                hx_cal = (M[0, 0] * hx_home + M[0, 1] * hy_home + M[0, 2]) / denom_home
-                hy_cal = (M[1, 0] * hx_home + M[1, 1] * hy_home + M[1, 2]) / denom_home
-            else:
-                hx_cal = M[0, 0] * hx_home + M[0, 1] * hy_home + M[0, 2]
-                hy_cal = M[1, 0] * hx_home + M[1, 1] * hy_home + M[1, 2]
-            
-            M_adj = M.copy()
-            M_adj[0, :] -= hx_cal * M_adj[2, :]
-            M_adj[1, :] -= hy_cal * M_adj[2, :]
-            
-            # Now calculate shift compensation based on current ArUco markers vs home markers
-            common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers and c in state.latest_detected_markers]
-            if len(common_corners) == 4:
-                try:
-                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
-                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
-                    H, _ = cv2.findHomography(src_pts, dst_pts)
-                    if H is not None:
-                        M_adj = np.dot(M_adj, H)
-                        logger.debug("Successfully applied perspective correction to calibration matrix.")
-                except Exception as e:
-                    logger.error(f"Error computing perspective calibration alignment: {e}")
-            elif len(common_corners) == 3:
-                try:
-                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
-                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
-                    H_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
-                    if H_aff is not None:
-                        H = np.vstack([H_aff, [0.0, 0.0, 1.0]])
-                        M_adj = np.dot(M_adj, H)
-                        logger.debug("Successfully applied affine correction to calibration matrix.")
-                except Exception as e:
-                    logger.error(f"Error computing affine calibration alignment: {e}")
-            elif 1 <= len(common_corners) <= 2:
-                try:
-                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
-                    dst_pts = np.array([state.home_markers[c] for c in common_corners], dtype=np.float32)
-                    shift = np.mean(dst_pts - src_pts, axis=0) # [dx, dy]
-                    H = np.array([[1.0, 0.0, shift[0]], [0.0, 1.0, shift[1]], [0.0, 0.0, 1.0]], dtype=np.float32)
-                    M_adj = np.dot(M_adj, H)
-                    logger.debug(f"Successfully applied translation shift: {shift}")
-                except Exception as e:
-                    logger.error(f"Error computing translation calibration alignment: {e}")
-            # Return adjusted matrix
-            return M_adj.tolist()
-    # Return unmodified copy for fallback case
     return M.tolist()
 
 # ONNX Detection Helper Functions (cập nhật 3)
@@ -1240,6 +1182,22 @@ async def gcode_streamer_task():
             while state.sent_buffer_lengths:
                 await asyncio.sleep(0.1)
             state.is_streaming = False
+            
+            # Send stop and reset command (Ctrl-X) to clear buffer automatically
+            if state.connected and state.serial_port:
+                try:
+                    logger.info("Stream completed. Automatically resetting and clearing GRBL buffer...")
+                    state.serial_port.write(b"\x18")
+                    state.serial_port.flush()
+                    
+                    # Auto-unlock after reset to clear Alarm lock
+                    await asyncio.sleep(1.5)
+                    logger.info("Automatically unlocking GRBL from Alarm lock after completed reset...")
+                    state.serial_port.write(b"$X\n")
+                    state.serial_port.flush()
+                except Exception as e:
+                    logger.error(f"Error resetting GRBL on stream completion: {e}")
+                    
             await broadcast({"type": "stream_status", "status": "completed"})
             await send_telemetry()
             break
@@ -1621,6 +1579,16 @@ async def stop_streaming():
             # Soft reset byte (0x18 = Ctrl-X)
             state.serial_port.write(b"\x18")
             state.serial_port.flush()
+            
+            # Automatically unlock after reset to clear the Alarm lock state
+            async def auto_unlock_after_stop():
+                await asyncio.sleep(1.5)
+                if state.connected and state.serial_port:
+                    logger.info("Automatically unlocking GRBL from Alarm lock after stop reset...")
+                    state.serial_port.write(b"$X\n")
+                    state.serial_port.flush()
+            
+            asyncio.create_task(auto_unlock_after_stop())
         except Exception:
             pass
             
@@ -1930,16 +1898,125 @@ async def reset_aruco():
     return {"status": "ok", "message": "ArUco standard points reset", "aruco_standard_points": state.aruco_standard_points}
 
 @app.post("/api/home/reset")
-async def reset_home_api():
-    state.home_set = False
-    state.home_markers = {}
-    state.home_snapshot = None
-    save_calibration_settings({
-        "home_set": state.home_set,
-        "home_markers": state.home_markers,
-        "home_snapshot": state.home_snapshot
-    })
-    return {"status": "ok", "message": "Home position reset"}
+async def reset_home_api(force_current: bool = False):
+    """
+    Restore/reset the CNC coordinate system back to the saved home reference.
+    If force_current is True, it will directly zero the CNC at the current position (manual alignment fallback).
+    Otherwise, it uses the camera to auto-align the CNC coordinate system to the saved home.
+    """
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
+
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home position has not been set yet"}, status_code=400)
+
+    if force_current:
+        # Manual alignment fallback: zero the coordinates at current physical position
+        home_cmd = "G10 L20 P0 X0 Y0 Z0 M3 S0"
+        try:
+            state.serial_port.write((home_cmd + "\n").encode())
+            state.serial_port.flush()
+            await broadcast({"type": "log", "direction": "out", "content": home_cmd})
+            state.wpos = [0.0, 0.0, 0.0]
+            return {
+                "status": "ok",
+                "message": "CNC Home reset manually to current position. Saved references are kept."
+            }
+        except Exception as e:
+            return JSONResponse({"status": "error", "message": f"Failed to send zero command: {e}"}, status_code=500)
+
+    # Automatic alignment using camera
+    # 1. Detect the CNC head
+    cnchead_px = None
+    if state.latest_yolo_detections:
+        for d in state.latest_yolo_detections:
+            cid = d["class_id"]
+            class_name = state.class_names.get(cid, f"Obj {cid}")
+            if class_name == "cnchead":
+                cnchead_px = d["center"]  # [cx, cy]
+                break
+
+    if cnchead_px is None:
+        return JSONResponse({
+            "status": "head_not_detected",
+            "message": "Không tìm thấy đầu CNC trong camera. Vui lòng di chuyển đầu CNC vào camera hoặc tự căn chỉnh đầu CNC về vị trí home cũ rồi nhấn OK."
+        })
+
+    # 2. Get current homography matrix from pixels to Bed Coordinates (BCS)
+    if not state.latest_detected_markers or len(state.latest_detected_markers) < 3:
+        return JSONResponse({
+            "status": "error", 
+            "message": "Không đủ 3 hoặc 4 điểm ArUco hiện tại để định vị hệ tọa độ bed."
+        }, status_code=400)
+    
+    try:
+        import numpy as np
+        import cv2
+        
+        common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
+        src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+        dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
+        
+        if len(common_corners) == 3:
+            H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+            H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
+        else:
+            H_curr, _ = cv2.findHomography(src_pts, dst_pts)
+            
+        # Convert current cnchead_px to current Bed Coordinates (BCS)
+        px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
+        bed_head = np.dot(H_curr, px_vec)
+        x_head_bed = bed_head[0] / bed_head[2]
+        y_head_bed = bed_head[1] / bed_head[2]
+        
+        # 3. Get saved home coordinates in BCS using saved home markers
+        home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
+        if len(home_corners) < 3:
+            return JSONResponse({
+                "status": "error",
+                "message": "Không đủ thông tin ArUco trong kịch bản home đã lưu để định vị."
+            }, status_code=400)
+            
+        src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
+        dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
+        
+        if len(home_corners) == 3:
+            H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
+            H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
+        else:
+            H_home, _ = cv2.findHomography(src_home, dst_home)
+            
+        # Convert saved home_pixel to saved Bed Coordinates (BCS)
+        px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
+        bed_home = np.dot(H_home, px_home_vec)
+        x_home_bed = bed_home[0] / bed_home[2]
+        y_home_bed = bed_home[1] / bed_home[2]
+        
+        # 4. Calculate expected CNC coordinates
+        # Offset in mm between current head position and saved home position
+        x_cnc_expected = x_head_bed - x_home_bed
+        y_cnc_expected = y_head_bed - y_home_bed
+        
+        # Send G10 command to redefine current coordinates on the CNC
+        cmd = f"G10 L20 P0 X{x_cnc_expected:.3f} Y{y_cnc_expected:.3f}"
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+        
+        # Update wpos in state
+        state.wpos[0] = x_cnc_expected
+        state.wpos[1] = y_cnc_expected
+        
+        return {
+            "status": "ok",
+            "message": f"CNC Home restored! Set current coordinates to X={x_cnc_expected:.3f}, Y={y_cnc_expected:.3f}.",
+            "x": x_cnc_expected,
+            "y": y_cnc_expected
+        }
+        
+    except Exception as e:
+        logger.error(f"Error restoring home coordinate system: {e}")
+        return JSONResponse({"status": "error", "message": f"Lỗi khôi phục tọa độ: {e}"}, status_code=500)
 
 class ToggleOverlayConfig(BaseModel):
     draw_overlay: bool
