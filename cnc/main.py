@@ -314,8 +314,7 @@ def get_ort_session(forceload=False):
         state.ort_session=None
         pass
     if state.ort_session is None:
-        # model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/best.onnx" 
-        model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cameraip/best_tiny.onnx" 
+        model_path = "/work/a.i-assistant-chatbot-telegram-serverles/cnc/aimodels/tiny/best.onnx" 
         print("model_path",model_path)
         if os.path.exists(model_path):
             try:
