@@ -222,3 +222,6 @@ Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản
 **cập nhật 35** chuyển giao diện các text đang là tiếng Anh sang Tiếng Việt 
 
 **cập nhật 36** xây dựng cơ chế đa ngôn ngữ (i18n) chuẩn bằng JSON trong thư mục static/lang (en.json, vi.json). HTML sử dụng các tag thuộc tính data-i18n, data-i18n-placeholder, data-i18n-title. Javascript sử dụng hàm t(key, replacements) để dịch động các thông điệp hệ thống, log và tooltip trạng thái mà không bị mất key khi chuyển đổi qua lại. 
+
+**cập nhật 37** vị trí cuối cùng của đầu CNC khônng phải là vị set home. vị trí set home đã thống nhất ở **cập nhật 34** chỉ duy nhất viết set home khi button btn-reset-home được click . 
+khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu cnc cho đúng theo vị trí cuối của cnc và vị trí được set home 

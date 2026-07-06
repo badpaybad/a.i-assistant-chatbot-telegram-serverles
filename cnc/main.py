@@ -1270,6 +1270,112 @@ class DummySerial:
     def close(self):
         pass
 
+async def realign_cnc_coordinates_on_startup():
+    """
+    Called upon startup / serial connection.
+    Recalculates the CNC coordinate offset so that it aligns correctly relative to the saved home,
+    based on the last known position (state.saved_pen_position) or live camera detection.
+    """
+    await asyncio.sleep(3.0) # Wait for serial loops and camera streams to initialize
+    
+    if not state.connected or not state.serial_port:
+        return
+        
+    if not state.home_set:
+        logger.info("Startup coordinate alignment: No home is set yet. Skipping.")
+        return
+
+    logger.info("Startup coordinate alignment: Homing reference exists. Calculating head position...")
+
+    # 1. Try to detect the cnchead in camera
+    cnchead_px = None
+    # Poll for YOLO detections for up to 3 seconds
+    for _ in range(15):
+        if not state.connected:
+            return
+        if state.latest_yolo_detections:
+            for d in state.latest_yolo_detections:
+                if state.class_names.get(d["class_id"]) == "cnchead":
+                    cnchead_px = d["center"]
+                    break
+        if cnchead_px is not None:
+            break
+        await asyncio.sleep(0.2)
+
+    x_cnc = None
+    y_cnc = None
+    aligned_via_camera = False
+
+    if cnchead_px is not None and state.latest_detected_markers and len(state.latest_detected_markers) >= 3:
+        try:
+            import numpy as np
+            import cv2
+            
+            # Get homography matrix for current frame
+            common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
+            src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+            dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
+            
+            if len(common_corners) == 3:
+                H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
+            else:
+                H_curr, _ = cv2.findHomography(src_pts, dst_pts)
+                
+            # Current head in BCS
+            px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
+            bed_head = np.dot(H_curr, px_vec)
+            x_head_bed = bed_head[0] / bed_head[2]
+            y_head_bed = bed_head[1] / bed_head[2]
+            
+            # Saved home in BCS
+            home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
+            if len(home_corners) >= 3:
+                src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
+                dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
+                
+                if len(home_corners) == 3:
+                    H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
+                    H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
+                else:
+                    H_home, _ = cv2.findHomography(src_home, dst_home)
+                    
+                px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
+                bed_home = np.dot(H_home, px_home_vec)
+                x_home_bed = bed_home[0] / bed_home[2]
+                y_home_bed = bed_home[1] / bed_home[2]
+                
+                # Expected coordinate relative to set home
+                x_cnc = x_head_bed - x_home_bed
+                y_cnc = y_head_bed - y_home_bed
+                aligned_via_camera = True
+                logger.info(f"Startup coordinate alignment: Mapped via camera relative to set home: X={x_cnc:.3f}, Y={y_cnc:.3f}")
+        except Exception as e:
+            logger.error(f"Startup coordinate alignment: Homography mapping failed: {e}")
+
+    # Fallback to last saved pen position if camera mapping was not possible
+    saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
+    if not aligned_via_camera:
+        x_cnc = saved_pos[0]
+        y_cnc = saved_pos[1]
+        logger.info(f"Startup coordinate alignment: Fallback to last saved pen position: X={x_cnc:.3f}, Y={y_cnc:.3f}")
+
+    z_cnc = saved_pos[2]
+
+    # Send G10 command to define G54 coordinate system at the current position
+    # (GRBL's machine position defaults to 0,0 on startup, so the G54 offsets are adjusted accordingly)
+    cmd = f"G10 L20 P0 X{x_cnc:.3f} Y{y_cnc:.3f} Z{z_cnc:.3f}"
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+        state.wpos[0] = x_cnc
+        state.wpos[1] = y_cnc
+        state.wpos[2] = z_cnc
+        logger.info(f"Startup coordinate alignment: Alignment successful. Sent G-code: {cmd}")
+    except Exception as e:
+        logger.error(f"Startup coordinate alignment: Failed to write to serial port: {e}")
+
 class ConnectionConfig(BaseModel):
     port: str
     baudrate: int
@@ -1320,14 +1426,8 @@ async def connect(config: ConnectionConfig):
         asyncio.create_task(serial_reader_loop())
         asyncio.create_task(status_polling_loop())
         
-        # Restore position if we have a saved one (cập nhật 13)
-        saved_pos = getattr(state, "saved_pen_position", [0.0, 0.0, 0.0])
-        if saved_pos and any(v != 0.0 for v in saved_pos):
-            g92_cmd = f"G92 X{saved_pos[0]:.3f} Y{saved_pos[1]:.3f} Z{saved_pos[2]:.3f}"
-            logger.info(f"Restoring last known pen position: {g92_cmd}")
-            await asyncio.sleep(0.5)
-            state.serial_port.write((g92_cmd + "\n").encode())
-            state.serial_port.flush()
+        # Re-align coordinates dynamically or fallback to last saved coordinates (cập nhật 37)
+        asyncio.create_task(realign_cnc_coordinates_on_startup())
             
         await broadcast({"type": "connection", "connected": True, "message": "Connected to GRBL"})
         return {"status": "ok", "message": "Connected successfully"}
