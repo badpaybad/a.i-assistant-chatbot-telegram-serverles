@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRBL CNC Controller</title>
+    <title>Bộ Điều Khiển CNC GRBL</title>
     <!-- Google Fonts: Outfit & Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=34">
+    <link rel="stylesheet" href="/static/styles.css?v=35">
     <meta name="description"
         content="A premium web-based CNC machine interface for GRBL controllers. Offers real-time telemetry, G-code path visualization, console logging, and responsive axis jogging.">
 </head>
@@ -29,10 +29,9 @@
 
             <div class="header-status">
                 <button class="btn btn-primary" id="btn-toggle-gcode-editor"
-                    style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">G-Code
-                    Editor</button>
-                <div class="status-badge disconnected" id="connection-status">DISCONNECTED</div>
-                <div class="state-badge disconnected" id="machine-state">OFFLINE</div>
+                    style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">Bộ Soạn Thảo G-Code</button>
+                <div class="status-badge disconnected" id="connection-status">MẤT KẾT NỐI</div>
+                <div class="state-badge disconnected" id="machine-state">NGOẠI TUYẾN</div>
             </div>
         </header>
 
@@ -44,24 +43,24 @@
 
                 <!-- CONNECTION CARD -->
                 <div class="card glass-card" id="connection-card">
-                    <h2 class="card-title">Connection Settings</h2>
+                    <h2 class="card-title">Cấu Hình Kết Nối</h2>
                     <div class="card-content row-inputs">
                         <div class="input-group">
-                            <label for="port-input">Serial Port</label>
+                            <label for="port-input">Cổng Serial</label>
                             <div class="input-with-button">
                                 <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0"
                                     placeholder="/dev/ttyACM0">
-                                <button class="btn btn-secondary" id="btn-list-ports" title="List serial ports (ls)"
+                                <button class="btn btn-secondary" id="btn-list-ports" title="Danh sách cổng Serial (ls)"
                                     style="padding: 10px;">ls</button>
                             </div>
                             <datalist id="ports-datalist">
                                 <option value="/dev/ttyACM0">/dev/ttyACM0</option>
                                 <option value="/dev/ttyACM1">/dev/ttyACM1</option>
-                                <option value="dummy">dummy (Mock mode)</option>
+                                <option value="dummy">dummy (Chế độ giả lập)</option>
                             </datalist>
                         </div>
                         <div class="input-group">
-                            <label for="baudrate-input">Baud Rate</label>
+                            <label for="baudrate-input">Tốc độ Baud</label>
                             <select id="baudrate-input">
                                 <option value="115200" selected>115200</option>
                                 <option value="9600">9600</option>
@@ -71,8 +70,8 @@
                         </div>
                     </div>
                     <div class="card-actions">
-                        <button class="btn btn-primary" id="connect-btn">Connect</button>
-                        <button class="btn btn-primary" id="reload-ai-model-btn">Reload A.I model</button>
+                        <button class="btn btn-primary" id="connect-btn">Kết Nối</button>
+                        <button class="btn btn-primary" id="reload-ai-model-btn">Tải Lại Mô Hình A.I</button>
                     </div>
                     <div class="port-warning hidden" id="port-warning">
                         <div class="warning-icon">⚠️</div>
@@ -83,7 +82,7 @@
                 <!-- DIGITAL READ OUT (DRO) CARD -->
                 <div class="card glass-card">
                     <div class="dro-header">
-                        <h2 class="card-title">Coordinates (WPos)</h2>
+                        <h2 class="card-title">Tọa Độ (WPos)</h2>
                         <div class="coord-unit">mm</div>
                     </div>
                     <div class="dro-container">
@@ -102,15 +101,15 @@
                     </div>
                     <div class="telemetry-grid">
                         <div class="tel-item">
-                            <span class="tel-label">Feedrate</span>
-                            <span class="tel-val"><span id="tel-feedrate">0</span> mm/min</span>
+                            <span class="tel-label">Tốc Độ Chạy</span>
+                            <span class="tel-val"><span id="tel-feedrate">0</span> mm/phút</span>
                         </div>
                         <div class="tel-item">
-                            <span class="tel-label">Spindle</span>
+                            <span class="tel-label">Trục Chính</span>
                             <span class="tel-val"><span id="tel-spindle">0</span> RPM</span>
                         </div>
                         <div class="tel-item">
-                            <span class="tel-label">Rx Buffer</span>
+                            <span class="tel-label">Bộ Đệm Rx</span>
                             <span class="tel-val"><span id="tel-buffer">127</span> B</span>
                         </div>
                     </div>
@@ -118,35 +117,33 @@
 
                 <!-- SERVO PEN CONTROL CARD -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Pen Plotter (Z Servo)</h2>
+                    <h2 class="card-title">Bút Vẽ (Z Servo)</h2>
                     <div class="pen-control-actions">
-                        <button class="btn btn-primary pen-btn" id="btn-pen-up">Pen UP</button>
-                        <button class="btn btn-success pen-btn" id="btn-pen-down">Pen DOWN</button>
+                        <button class="btn btn-primary pen-btn" id="btn-pen-up">Nhấc Bút</button>
+                        <button class="btn btn-success pen-btn" id="btn-pen-down">Hạ Bút</button>
                     </div>
                     <div class="pen-config-section">
                         <div class="slider-group">
                             <div class="slider-header">
                                 <span
-                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Control
-                                    Mode</span>
+                                    style="font-size: 11px; text-transform: uppercase; color: var(--text-muted); font-weight: 600;">Chế Độ Điều Khiển</span>
                             </div>
                             <select id="pen-control-mode" class="input-select-small">
-                                <option value="z-axis" selected>Z-Axis Position (G0 Z...)</option>
-                                <option value="spindle-pwm">Spindle PWM (M3 S...)</option>
+                                <option value="z-axis" selected>Vị Trí Trục Z (G0 Z...)</option>
+                                <option value="spindle-pwm">PWM Trục Chính (M3 S...)</option>
                             </select>
                         </div>
                         <div class="row-inputs" style="margin-top: 12px;">
                             <div class="input-group">
-                                <label for="pen-up-val" id="lbl-pen-up" style="font-size: 10px;">UP Position</label>
+                                <label for="pen-up-val" id="lbl-pen-up" style="font-size: 10px;">Vị Trí NHẤC</label>
                                 <input type="number" id="pen-up-val" value="3.0" step="0.5">
                             </div>
                             <div class="input-group">
-                                <label for="pen-down-val" id="lbl-pen-down" style="font-size: 10px;">DOWN
-                                    Position</label>
+                                <label for="pen-down-val" id="lbl-pen-down" style="font-size: 10px;">Vị Trí HẠ</label>
                                 <input type="number" id="pen-down-val" value="0.0" step="0.5">
                             </div>
                             <div class="input-group">
-                                <label for="pen-dwell-val" style="font-size: 10px;">Dwell (s)</label>
+                                <label for="pen-dwell-val" style="font-size: 10px;">Độ trễ (s)</label>
                                 <input type="number" id="pen-dwell-val" value="0.25" step="0.05" min="0">
                             </div>
                         </div>
@@ -155,43 +152,42 @@
 
                 <!-- TOUCH & SWIPE GESTURES CARD -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Touch &amp; Swipe Gestures</h2>
+                    <h2 class="card-title">Cử Chỉ Chạm & Vuốt</h2>
                     <div class="card-content" style="display: flex; flex-direction: column; gap: 12px;">
                         <!-- Auto-track checkbox -->
                         <div
                             style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                             <span
-                                style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px;">Auto-track
-                                Pen</span>
+                                style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-main); letter-spacing: 0.5px;">Tự Động Bám Bút</span>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="chk-auto-track-pen" checked>
                                 <span class="toggle-slider"></span>
-                                <span class="toggle-label">Auto-track</span>
+                                <span class="toggle-label">Bám bút</span>
                             </label>
                         </div>
                         <!-- Coordinate Rows -->
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label>Start Position (X, Y)</label>
+                                <label>Vị Trí Bắt Đầu (X, Y)</label>
                                 <div class="coordinate-input-group">
                                     <input type="number" id="gesture-start-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-start-y" value="0.0" step="1" placeholder="Y">
                                     <button class="btn btn-secondary btn-icon-only" id="btn-set-start"
-                                        title="Set to current X/Y">🎯</button>
+                                        title="Thiết lập tọa độ hiện tại">🎯</button>
                                 </div>
                             </div>
                         </div>
 
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label>End Position (X, Y)</label>
+                                <label>Vị Trí Kết Thúc (X, Y)</label>
                                 <div class="coordinate-input-group">
                                     <input type="number" id="gesture-end-x" value="0.0" step="1" placeholder="X">
                                     <span class="coord-separator">,</span>
                                     <input type="number" id="gesture-end-y" value="0.0" step="1" placeholder="Y">
                                     <button class="btn btn-secondary btn-icon-only" id="btn-set-end"
-                                        title="Set to current X/Y">🎯</button>
+                                        title="Thiết lập tọa độ hiện tại">🎯</button>
                                 </div>
                             </div>
                         </div>
@@ -199,22 +195,22 @@
                         <!-- Gesture parameters -->
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label for="gesture-feedrate">Feedrate</label>
+                                <label for="gesture-feedrate">Tốc độ F</label>
                                 <input type="number" id="gesture-feedrate" value="4000" step="100">
                             </div>
                             <div class="input-group">
-                                <label for="gesture-distance">Dist (mm)</label>
+                                <label for="gesture-distance">Độ dài (mm)</label>
                                 <input type="number" id="gesture-distance" value="40" step="5">
                             </div>
                         </div>
 
                         <div class="row-inputs">
                             <div class="input-group">
-                                <label for="gesture-dwell">Swipe/Dwell (s)</label>
+                                <label for="gesture-dwell">Swipe/Độ trễ (s)</label>
                                 <input type="number" id="gesture-dwell" value="0.15" step="0.05" min="0.05">
                             </div>
                             <div class="input-group">
-                                <label for="gesture-tap-dwell">Tap Dwell (s)</label>
+                                <label for="gesture-tap-dwell">Tap Độ trễ (s)</label>
                                 <input type="number" id="gesture-tap-dwell" value="0.05" step="0.01" min="0.01">
                             </div>
                         </div>
@@ -223,30 +219,24 @@
                         <div class="gesture-grid">
                             <div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-tap">Tap</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap">Double
-                                        Tap</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-longpress">Long
-                                        Press</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-tap">Chạm</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap">Chạm Đúp</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-longpress">Nhấn Giữ</button>
                                 </div>
                                 <div>
                                     <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom"
-                                        style="grid-column: span 2;">Custom Swipe (S ➔ E)</button>
+                                        style="grid-column: span 2;">Vuốt Tự Chọn (Đầu ➔ Cuối)</button>
                                 </div>
                             </div>
 
                             <div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Swipe Left
-                                        ⬅️</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Swipe Right
-                                        ➡️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left">Vuốt Trái ⬅️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right">Vuốt Phải ➡️</button>
                                 </div>
                                 <div>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up">Swipe Up
-                                        ⬆️</button>
-                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Swipe Down
-                                        ⬇️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up">Vuốt Lên ⬆️</button>
+                                    <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down">Vuốt Xuống ⬇️</button>
                                 </div>
                             </div>
 
@@ -263,14 +253,14 @@
                 <!-- VISUALIZER CARD -->
                 <div class="card glass-card visualizer-card">
                     <div class="visualizer-header">
-                        <h2 class="card-title">Toolpath View</h2>
+                        <h2 class="card-title">Đường Đi Đầu Cắt</h2>
                         <div class="visualizer-controls">
-                            <button class="btn-text" id="btn-clear-path">Reset View</button>
+                            <button class="btn-text" id="btn-clear-path">Đặt Lại Góc Nhìn</button>
                         </div>
                     </div>
                     <div class="canvas-wrapper" id="toolpath-wrapper">
                         <canvas id="toolpath-canvas"></canvas>
-                        <div class="canvas-instructions">Drag to Pan • Scroll to Zoom</div>
+                        <div class="canvas-instructions">Kéo để di chuyển • Cuộn để phóng to</div>
                     </div>
 
                     <!-- FILE ACTIONS & PROGRESS -->
@@ -278,14 +268,13 @@
                         <div class="file-upload-section">
                             <div class="file-drop-zone" id="file-drop-zone">
                                 <span class="upload-icon">📂</span>
-                                <span class="upload-text">Drag & drop G-code file or <strong>Click to
-                                        Browse</strong></span>
+                                <span class="upload-text">Kéo thả file G-code hoặc <strong>Click để Chọn</strong></span>
                                 <input type="file" id="file-input" accept=".gcode,.nc,.cnc,.txt" class="hidden">
                             </div>
                             <div class="file-info hidden" id="file-info-container">
-                                <span class="file-name" id="loaded-file-name">no_file.gcode</span>
-                                <span class="file-lines" id="loaded-file-lines">0 lines</span>
-                                <button class="btn-icon" id="btn-remove-file" title="Unload file">✕</button>
+                                <span class="file-name" id="loaded-file-name">chưa_nạp_file.gcode</span>
+                                <span class="file-lines" id="loaded-file-lines">0 dòng</span>
+                                <button class="btn-icon" id="btn-remove-file" title="Hủy nạp file">✕</button>
                             </div>
                         </div>
 
@@ -295,28 +284,28 @@
                             </div>
                             <div class="progress-text">
                                 <span id="progress-percentage">0%</span>
-                                <span id="progress-fraction">0 / 0 lines</span>
+                                <span id="progress-fraction">0 / 0 dòng</span>
                             </div>
                         </div>
 
                         <div class="stream-controls">
-                            <button class="btn btn-success" id="btn-start-stream" disabled>Start Job</button>
-                            <button class="btn btn-warning" id="btn-pause-stream" disabled>Pause</button>
-                            <button class="btn btn-danger" id="btn-abort-stream" disabled>Abort (Ctrl-X)</button>
+                            <button class="btn btn-success" id="btn-start-stream" disabled>Bắt Đầu</button>
+                            <button class="btn btn-warning" id="btn-pause-stream" disabled>Tạm Dừng</button>
+                            <button class="btn btn-danger" id="btn-abort-stream" disabled>Dừng Khẩn Cấp (Ctrl-X)</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- CONSOLE CARD -->
                 <div class="card glass-card console-card">
-                    <h2 class="card-title">Serial Console</h2>
+                    <h2 class="card-title">Cửa Sổ Console Serial</h2>
                     <div class="console-output" id="console-output">
-                        <div class="log-line system">Waiting for connection...</div>
+                        <div class="log-line system">Đang chờ kết nối...</div>
                     </div>
                     <form class="console-input-form" id="console-form">
                         <input type="text" id="console-input"
-                            placeholder="Type G-code command (e.g. G0 X10 Y20) and press Enter..." autocomplete="off">
-                        <button type="submit" class="btn btn-primary btn-small">Send</button>
+                            placeholder="Nhập lệnh G-code (ví dụ: G0 X10 Y20) rồi nhấn Enter..." autocomplete="off">
+                        <button type="submit" class="btn btn-primary btn-small">Gửi</button>
                     </form>
                 </div>
 
@@ -333,56 +322,56 @@
         <div class="panel-header" id="camera-panel-header">
             <div class="panel-title-wrapper">
                 <span class="panel-dot" id="camera-active-dot"></span>
-                <span class="panel-title">Camera Feed</span>
+                <span class="panel-title">Khung Hình Camera</span>
               
             </div>
             <div class="panel-actions">
                   <div class="scenario-controls-wrapper" style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
-                    <input type="text" id="scenario-name" placeholder="Scenario name..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
-                    <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Create</button>
-                    <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Save</button>
-                    <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Cancel</button>
-                    <button class="btn btn-secondary" id="btn-load-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Load</button>
+                    <input type="text" id="scenario-name" placeholder="Tên kịch bản..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
+                    <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Tạo</button>
+                    <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Lưu</button>
+                    <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Hủy</button>
+                    <button class="btn btn-secondary" id="btn-load-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Nạp</button>
                     <input type="file" id="input-load-scenario" accept=".json" style="display: none;">
-                    <button class="btn btn-warning" id="btn-run-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Run</button>
-                    <button class="btn btn-warning" id="btn-run-loop-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Run Loop</button>
-                    <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Edit</button>
+                    <button class="btn btn-warning" id="btn-run-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Chạy</button>
+                    <button class="btn btn-warning" id="btn-run-loop-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Chạy Lặp</button>
+                    <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Sửa</button>
                 </div>
                 <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select"
-                    style="width: 120px;" placeholder="Cam index (e.g. 4)" value="4">
+                    style="width: 120px;" placeholder="Chỉ số Cam (Ví dụ: 4)" value="4">
                 <datalist id="cameras-datalist"></datalist>
-                <button class="btn-toggle" id="btn-list-cameras" title="List cameras (ls)" style="margin-right: 4px;">
+                <button class="btn-toggle" id="btn-list-cameras" title="Danh sách Camera (ls)" style="margin-right: 4px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">ls</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-1280" title="Capture 1280x720 (Original Frame)"
+                <button class="btn-toggle" id="btn-capture-1280" title="Chụp 1280x720 (Khung hình gốc)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
-                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 1280</span>
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 1280</span>
                 </button>
-                <button class="btn-toggle" id="btn-capture-720" title="Capture 720x720 (Original & Cropped)"
+                <button class="btn-toggle" id="btn-capture-720" title="Chụp 720x720 (Gốc & Cắt gọn)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
-                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Cap 720</span>
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 720</span>
                 </button>
-                <button class="btn-toggle" id="btn-camera-expand" title="Expand Full Page">
+                <button class="btn-toggle" id="btn-camera-expand" title="Mở rộng toàn màn hình">
                     <span class="expand-icon">⛶</span>
                 </button>
-                <button class="btn-toggle" id="btn-camera-toggle" title="Toggle Camera Panel">
+                <button class="btn-toggle" id="btn-camera-toggle" title="Thu gọn/Mở rộng Panel Camera">
                     <span class="toggle-icon">▲</span>
                 </button>
             </div>
         </div>
         <div class="panel-body" id="camera-panel-body">
             <div class="camera-stream-container">
-                <img id="camera-stream-img" src="" alt="Camera Feed Loading...">
+                <img id="camera-stream-img" src="" alt="Đang tải luồng video Camera...">
                 <canvas id="camera-overlay-canvas"
                     style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; pointer-events: none; z-index: 5;"></canvas>
-                <div class="camera-status-overlay" id="camera-status-text">Stream Offline</div>
+                <div class="camera-status-overlay" id="camera-status-text">Camera Ngoại Tuyến</div>
             </div>
 
             <div class="camera-controls-sidebar" id="camera-controls-sidebar">
 
                 <!-- JOGGING CONTROLS -->
                 <div class="card glass-card">
-                    <h2 class="card-title">Machine Jogging</h2>
+                    <h2 class="card-title">Điều Khiển Di Chuyển (Jog)</h2>
                     <div class="jog-layout">
                         <!-- Keypad Pad -->
                         <div class="jog-keypad">
@@ -392,7 +381,7 @@
                             <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
 
                             <button class="btn-jog directional" id="jog-x-minus" title="X-">◀</button>
-                            <button class="btn-jog center" id="jog-home" title="Home Machine">🏠</button>
+                            <button class="btn-jog center" id="jog-home" title="Về gốc máy">🏠</button>
                             <button class="btn-jog directional" id="jog-x-plus" title="X+">▶</button>
 
                             <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
@@ -401,7 +390,7 @@
 
 
                             <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
-                            <button class="btn-jog center" id="jog-unlock" title="Unlock Machine ($X)">🔓</button>
+                            <button class="btn-jog center" id="jog-unlock" title="Mở khóa máy ($X)">🔓</button>
                             <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
                         </div>
 
@@ -413,7 +402,7 @@
                     <div class="jog-sliders">
                         <div class="slider-group">
                             <div class="slider-header">
-                                <span>Step Size (Distance)</span>
+                                <span>Kích thước bước di chuyển</span>
                                 <span class="slider-value" id="val-step">10 mm</span>
                             </div>
                             <div style="display: flex; gap: 8px; align-items: center; margin-top: 4px;">
@@ -425,60 +414,59 @@
                                     <option value="1">1 mm</option>
                                     <option value="10" selected>10 mm</option>
                                     <option value="100">100 mm</option>
-                                    <option value="custom">Custom</option>
+                                    <option value="custom">Tự chọn</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="slider-group">
                             <div class="slider-header">
-                                <span>Jog Feed Rate</span>
-                                <span class="slider-value" id="val-feed">1000 mm/min</span>
+                                <span>Tốc độ di chuyển Jog</span>
+                                <span class="slider-value" id="val-feed">1000 mm/phút</span>
                             </div>
                             <input type="range" id="slider-feed" min="100" max="100000" step="100" value="1000">
                         </div>
                     </div>
 
                     <div class="zero-actions">
-                        <button class="btn btn-secondary" id="btn-zero-x">Zero X</button>
-                        <button class="btn btn-secondary" id="btn-zero-y">Zero Y</button>
-                        <button class="btn btn-secondary" id="btn-zero-z">Zero Z</button>
-                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Zero All</button>
+                        <button class="btn btn-secondary" id="btn-zero-x">Đặt Gốc X</button>
+                        <button class="btn btn-secondary" id="btn-zero-y">Đặt Gốc Y</button>
+                        <button class="btn btn-secondary" id="btn-zero-z">Đặt Gốc Z</button>
+                        <button class="btn btn-secondary btn-danger-soft" id="btn-zero-all">Đặt Gốc Tất Cả</button>
                     </div>
                 </div>
 
                 <!-- ALIGNMENT & CALIBRATION CONTROLS -->
                 <div class="camera-calibration-section">
                     <div class="calibration-row">
-                        <span class="calibration-title">Origin Alignment (ArUco Markers)</span>
+                        <span class="calibration-title">Căn Chỉnh Hệ Tọa Độ (ArUco Markers)</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="chk-show-overlay" checked>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Show Overlay</span>
+                            <span class="toggle-label">Hiển thị lớp phủ</span>
                         </label>
                     </div>
                     <div class="marker-status-grid">
                         <div class="marker-status-badge" id="badge-tl">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Top-Left</span>
+                            <span class="badge-label">Trên - Trái</span>
                         </div>
                         <div class="marker-status-badge" id="badge-tr">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Top-Right</span>
+                            <span class="badge-label">Trên - Phải</span>
                         </div>
                         <div class="marker-status-badge" id="badge-bl">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Bottom-Left</span>
+                            <span class="badge-label">Dưới - Trái</span>
                         </div>
                         <div class="marker-status-badge" id="badge-br">
                             <span class="badge-dot"></span>
-                            <span class="badge-label">Bottom-Right</span>
+                            <span class="badge-label">Dưới - Phải</span>
                         </div>
 
                     </div>
                     <div class="calibration-buttons-grid" style="display:none">
-                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Calibrate
-                            TL</button>
+                        <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tl" disabled>Căn chỉnh TL</button>
                         <button class="btn btn-secondary btn-small cal-btn" id="btn-cal-tr" disabled>Calibrate
                             TR</button>
                     </div>
@@ -489,41 +477,40 @@
                             BL</button>
                     </div>
                     <div class="calibration-buttons-grid" style="margin-top: 6px;">
-                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-tl" disabled>Set CNC TL</button>
-                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-tr" disabled>Set CNC TR</button>
+                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-tl" disabled>Đặt CNC Trên-Trái</button>
+                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-tr" disabled>Đặt CNC Trên-Phải</button>
 
-                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-bl" disabled>Set CNC BL</button>
-                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-br" disabled>Set CNC BR</button>
+                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-bl" disabled>Đặt CNC Dưới-Trái</button>
+                        <button class="btn btn-secondary btn-small" id="btn-set-cnc-br" disabled>Đặt CNC Dưới-Phải</button>
                     </div>
 
                     <div class="calibration-actions-row" style="display: none;">
-                        <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Set ArUco</button>
+                        <button class="btn btn-warning btn-small" id="btn-set-aruco" disabled>📐 Đặt ArUco</button>
                     </div>
                     <div class="calibration-actions-row" style="display: none;">
-                        <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco">Reset ArUco</button>
-                        <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Clear Cal</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-reset-aruco">Đặt Lại ArUco</button>
+                        <button class="btn btn-danger-soft btn-small" id="btn-cal-clear">Xóa Căn Chỉnh</button>
                     </div>
                 </div>
 
                 <!-- HOME & GOTO SECTION (cập nhật 2) -->
                 <div class="camera-home-section">
                     <div class="home-header-row">
-                        <span class="calibration-title">Origin Control</span>
+                        <span class="calibration-title">Quản Lý Điểm Gốc</span>
                         <div class="home-status-badge" id="home-status-badge">
                             <span class="home-dot" id="home-dot"></span>
-                            <span id="home-status-label">Home not set</span>
+                            <span id="home-status-label">Chưa đặt Home</span>
                         </div>
                     </div>
 
-                    <p class="home-hint">Move the pen to the desired origin point (0,0), then press <strong>Set
-                            Home</strong>. This will zero the CNC work coordinates and save a reference snapshot.</p>
+                    <p class="home-hint">Di chuyển bút đến điểm gốc mong muốn (0,0), sau đó nhấn <strong>Đặt Gốc Home</strong>. Thao tác này sẽ thiết lập gốc tọa độ làm việc và lưu ảnh tham chiếu.</p>
 
                     <div class="home-actions-row">
                         <button class="btn btn-warning" id="btn-set-home" disabled>
-                            🏠 Set Home (0,0,0)
+                            🏠 Đặt Gốc Home (0,0,0)
                         </button>
-                        <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 View Map</button>
-                        <button class="btn btn-secondary btn-small" id="btn-reset-home" disabled>Restore Home</button>
+                        <button class="btn btn-secondary btn-small" id="btn-view-snapshot" disabled>📸 Xem Bản Đồ</button>
+                        <button class="btn btn-secondary btn-small" id="btn-reset-home" disabled>Khôi Phục Gốc Home</button>
                     </div>
 
                     <!-- Inline confirm row (hiện sau khi nhấn Set Home lần 1) -->
@@ -539,37 +526,37 @@
                     <div class="goto-section" id="goto-section">
                         <div class="goto-inputs-row" style="grid-template-columns: 1fr 1fr;">
                             <div class="input-group">
-                                <label for="goto-x" style="font-size:10px;">Target X (mm)</label>
+                                <label for="goto-x" style="font-size:10px;">Tọa độ đích X (mm)</label>
                                 <input type="number" id="goto-x" value="0" step="0.5" placeholder="X">
                             </div>
                             <div class="input-group">
-                                <label for="goto-y" style="font-size:10px;">Target Y (mm)</label>
+                                <label for="goto-y" style="font-size:10px;">Tọa độ đích Y (mm)</label>
                                 <input type="number" id="goto-y" value="0" step="0.5" placeholder="Y">
                             </div>
                         </div>
-                        <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y (Global Feedrate)</button>
+                        <button class="btn btn-primary" id="btn-goto" disabled>➡ GoTo X, Y (Tốc độ toàn cục)</button>
 
                         <button class="btn btn-primary" id="btn-move-to-center" style="display:none" disabled>Moving
                             around</button>
 
 
-                        <button class="btn btn-warning" id="btn-stop-to-home">Stop & go home</button>
+                        <button class="btn btn-warning" id="btn-stop-to-home">Dừng & Về Home</button>
                     </div>
 
                     <!-- Home Snapshot Map -->
                     <div class="home-snapshot-container hidden" id="home-snapshot-container">
                         <div class="snapshot-header">
-                            <span class="snapshot-label">📷 Home Reference Map</span>
-                            <button class="btn-icon" id="btn-close-snapshot" title="Close map">✕</button>
+                            <span class="snapshot-label">📷 Bản đồ tham chiếu Home</span>
+                            <button class="btn-icon" id="btn-close-snapshot" title="Đóng bản đồ">✕</button>
                         </div>
                         <div class="snapshot-wrapper">
-                            <img id="home-snapshot-img" src="" alt="Home Snapshot" class="home-snapshot-img">
+                            <img id="home-snapshot-img" src="" alt="Ảnh chụp Home" class="home-snapshot-img">
                             <div class="snapshot-crosshair" id="snapshot-crosshair"></div>
                             <div class="snapshot-pen-marker" id="snapshot-pen-marker" style="display:none;"></div>
                         </div>
                         <div class="snapshot-coords-overlay">
-                            <span>Home: (0, 0)</span>
-                            <span id="snapshot-current-pos">Pen: X=0.000, Y=0.000</span>
+                            <span>Gốc Home: (0, 0)</span>
+                            <span id="snapshot-current-pos">Bút: X=0.000, Y=0.000</span>
                         </div>
                     </div>
                 </div>
@@ -577,31 +564,30 @@
                 <!-- OBJECT DETECTION & ALIGNMENT SECTION (cập nhật 3 + 5) -->
                 <div class="camera-detection-section">
                     <div class="detection-header-row">
-                        <span class="calibration-title">Object Detection</span>
+                        <span class="calibration-title">Nhận Diện Vật Thể</span>
                         <label class="toggle-switch">
                             <input type="checkbox" id="chk-detect-objects" checked>
                             <span class="toggle-slider"></span>
-                            <span class="toggle-label">Detect Objects</span>
+                            <span class="toggle-label">Nhận diện vật thể</span>
                         </label>
                     </div>
 
                     <!-- Object detection live status (cập nhật 5) -->
                     <div class="detection-status-row" id="detection-status-row">
                         <span class="detect-status-dot" id="detect-status-dot"></span>
-                        <span class="detect-status-text" id="detect-status-text">No object detected</span>
+                        <span class="detect-status-text" id="detect-status-text">Không phát hiện vật thể</span>
                     </div>
 
                     <!-- Last largest object info (cập nhật 5) -->
                     <div class="last-object-info hidden" id="last-object-info">
-                        <div class="last-object-label">📌 Last Largest Object</div>
+                        <div class="last-object-label">📌 Vật thể lớn nhất gần nhất</div>
                         <div class="last-object-coords">
-                            <span>Pixel: <strong id="last-obj-pixel">—</strong></span>
-                            <span>Machine: <strong id="last-obj-machine">—</strong></span>
+                            <span>Điểm ảnh (Pixel): <strong id="last-obj-pixel">—</strong></span>
+                            <span>Tọa độ CNC: <strong id="last-obj-machine">—</strong></span>
                         </div>
                     </div>
 
-                    <p class="home-hint">YOLO ONNX detect object tự động. Khi detect được, nhấn <strong>Go to Largest
-                            Object</strong> để di chuyển đầu bút tới vị trí đó.</p>
+                    <p class="home-hint">Nhận diện tự động bằng YOLO ONNX. Khi phát hiện vật thể, nhấn <strong>Đến Vật Thể Lớn Nhất</strong> để di chuyển đầu bút tới vị trí đó.</p>
 
                     <button class="btn btn-success" id="btn-detect-move"
                         style="width: 100%; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;" disabled>
@@ -616,9 +602,9 @@
         <div class="panel-header" id="editor-panel-header">
             <div class="panel-title-wrapper">
                 <span class="panel-dot active"></span>
-                <span class="panel-title">G-Code Editor</span>
+                <span class="panel-title">Bộ Soạn Thảo G-Code</span>
             </div>
-            <button class="btn-toggle" id="btn-close-gcode-editor" title="Close G-Code Editor">✕</button>
+            <button class="btn-toggle" id="btn-close-gcode-editor" title="Đóng Bộ Soạn Thảo G-Code">✕</button>
         </div>
         <div class="editor-panel-body">
 
@@ -633,43 +619,43 @@
                     <!-- Sketch Parameters Side Menu -->
                     <div class="editor-sketch-sidebar" id="editor-sketch-sidebar">
                         <div class="sketch-sidebar-header">
-                            <h4>Sketch Settings</h4>
+                            <h4>Cấu Hình Nét Vẽ</h4>
                         </div>
                         <div class="sketch-sidebar-body">
                             <!-- Preprocessing & Processing Filters -->
                             <div class="sketch-param-group">
-                                <div class="group-title">Filters Configuration</div>
+                                <div class="group-title">Cấu Hình Bộ Lọc</div>
                                 <div class="checkbox-row"
                                     style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
                                     <label class="checkbox-label"
                                         style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" id="sketch-use-clahe" checked
                                             style="accent-color: var(--warning); cursor: pointer;">
-                                        Apply CLAHE (Contrast)
+                                        Áp dụng CLAHE (Tương phản)
                                     </label>
                                     <label class="checkbox-label"
                                         style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" id="sketch-use-blur" checked
                                             style="accent-color: var(--warning); cursor: pointer;">
-                                        Apply Gaussian Blur
+                                        Áp dụng Gaussian Blur
                                     </label>
                                     <label class="checkbox-label"
                                         style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" id="sketch-use-connect" checked
                                             style="accent-color: var(--warning); cursor: pointer;">
-                                        Connect Edges (Close)
+                                        Nối kín nét vẽ
                                     </label>
                                     <label class="checkbox-label"
                                         style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" id="sketch-use-thin" checked
                                             style="accent-color: var(--warning); cursor: pointer;">
-                                        Thin Edges (Erode)
+                                        Làm mảnh nét vẽ (Erode)
                                     </label>
                                     <label class="checkbox-label"
                                         style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
                                         <input type="checkbox" id="sketch-use-len-filter" checked
                                             style="accent-color: var(--warning); cursor: pointer;">
-                                        Filter Short Contours
+                                        Lọc bỏ nét ngắn
                                     </label>
                                 </div>
                             </div>
@@ -677,7 +663,7 @@
                             <!-- CLAHE Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-clahe-clip">CLAHE Clip Limit</label>
+                                    <label for="sketch-clahe-clip">Ngưỡng CLAHE Clip</label>
                                     <span class="param-val" id="val-sketch-clahe-clip">1.5</span>
                                 </div>
                                 <input type="range" id="sketch-clahe-clip" min="1.0" max="5.0" step="0.1" value="1.5">
@@ -686,7 +672,7 @@
                             <!-- Blur Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-blur-size">Gaussian Blur Size</label>
+                                    <label for="sketch-blur-size">Kích thước Blur</label>
                                     <span class="param-val" id="val-sketch-blur-size">3 px</span>
                                 </div>
                                 <input type="range" id="sketch-blur-size" min="1" max="15" step="2" value="3">
@@ -694,15 +680,15 @@
 
                             <!-- Canny Ultra Group -->
                             <div class="sketch-param-group">
-                                <div class="group-title">Canny Ultra (Fine Details)</div>
+                                <div class="group-title">Canny Ultra (Nét siêu mịn)</div>
                                 <div class="slider-header-flex">
-                                    <label for="sketch-canny-ultra-low">Low Thresh</label>
+                                    <label for="sketch-canny-ultra-low">Ngưỡng dưới</label>
                                     <span class="param-val" id="val-sketch-canny-ultra-low">5</span>
                                 </div>
                                 <input type="range" id="sketch-canny-ultra-low" min="1" max="100" step="1" value="5">
 
                                 <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-ultra-high">High Thresh</label>
+                                    <label for="sketch-canny-ultra-high">Ngưỡng trên</label>
                                     <span class="param-val" id="val-sketch-canny-ultra-high">25</span>
                                 </div>
                                 <input type="range" id="sketch-canny-ultra-high" min="5" max="150" step="1" value="25">
@@ -710,15 +696,15 @@
 
                             <!-- Canny Medium Group -->
                             <div class="sketch-param-group">
-                                <div class="group-title">Canny Medium (Features)</div>
+                                <div class="group-title">Canny Medium (Nét vừa)</div>
                                 <div class="slider-header-flex">
-                                    <label for="sketch-canny-medium-low">Low Thresh</label>
+                                    <label for="sketch-canny-medium-low">Ngưỡng dưới</label>
                                     <span class="param-val" id="val-sketch-canny-medium-low">20</span>
                                 </div>
                                 <input type="range" id="sketch-canny-medium-low" min="5" max="150" step="1" value="20">
 
                                 <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-medium-high">High Thresh</label>
+                                    <label for="sketch-canny-medium-high">Ngưỡng trên</label>
                                     <span class="param-val" id="val-sketch-canny-medium-high">60</span>
                                 </div>
                                 <input type="range" id="sketch-canny-medium-high" min="10" max="250" step="1"
@@ -727,15 +713,15 @@
 
                             <!-- Canny Strong Group -->
                             <div class="sketch-param-group">
-                                <div class="group-title">Canny Strong (Outlines)</div>
+                                <div class="group-title">Canny Strong (Nét biên)</div>
                                 <div class="slider-header-flex">
-                                    <label for="sketch-canny-strong-low">Low Thresh</label>
+                                    <label for="sketch-canny-strong-low">Ngưỡng dưới</label>
                                     <span class="param-val" id="val-sketch-canny-strong-low">50</span>
                                 </div>
                                 <input type="range" id="sketch-canny-strong-low" min="10" max="250" step="1" value="50">
 
                                 <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-strong-high">High Thresh</label>
+                                    <label for="sketch-canny-strong-high">Ngưỡng trên</label>
                                     <span class="param-val" id="val-sketch-canny-strong-high">120</span>
                                 </div>
                                 <input type="range" id="sketch-canny-strong-high" min="20" max="500" step="1"
@@ -745,7 +731,7 @@
                             <!-- Min Contour Length Group -->
                             <div class="sketch-param-group">
                                 <div class="slider-header-flex">
-                                    <label for="sketch-min-contour-len">Min Contour Length</label>
+                                    <label for="sketch-min-contour-len">Chiều dài nét tối thiểu</label>
                                     <span class="param-val" id="val-sketch-min-contour-len">5 px</span>
                                 </div>
                                 <input type="range" id="sketch-min-contour-len" min="1" max="50" step="1" value="5">
@@ -780,24 +766,24 @@
 
                     <div class="row-inputs">
                         <div class="input-group">
-                            <label for="editor-scale">Scale Factor</label>
+                            <label for="editor-scale">Tỷ lệ thu phóng</label>
                             <input type="number" id="editor-scale" value="0.1" step="0.01" min="0.001">
                         </div>
                         <div class="input-group">
-                            <label for="editor-feedrate">Feedrate (mm/min)</label>
+                            <label for="editor-feedrate">Tốc độ chạy dao (mm/phút)</label>
                             <input type="number" id="editor-feedrate" value="2000" step="100" min="10">
                         </div>
                     </div>
                     <div class="row-inputs" style="margin-top: 10px;">
                         <div class="input-group">
-                            <label for="editor-mode">Z Mode</label>
+                            <label for="editor-mode">Chế độ Z</label>
                             <select id="editor-mode">
                                 <option value="servo" selected>Servo (PWM)</option>
                                 <option value="spindle">Spindle (Z Axis)</option>
                             </select>
                         </div>
                         <div class="input-group" id="group-editor-algo">
-                            <label for="editor-algo">Algorithm</label>
+                            <label for="editor-algo">Thuật toán</label>
                             <select id="editor-algo">
                                 <option value="centerline" selected>Centerline (Nét giữa)</option>
                                 <option value="contour">Contour (Bao quanh)</option>
@@ -838,7 +824,7 @@
 
                         <button class="btn-tool" data-mode="delete-all" title="Xoá hết" id="gcode-editor-delete-all">
                             <span class="tool-icon">🗑️ X</span>
-                            <span class="tool-lbl">Clear all</span>
+                            <span class="tool-lbl">Xóa tất cả</span>
                         </button>
                     </div>
                     <div style="margin-top: 12px; display: flex; gap: 8px;">
@@ -878,7 +864,7 @@
 
                         <!-- Button 2 -->
                         <button class="btn btn-success" id="btn-editor-execute"
-                            style="width: 48%; font-size: 15px; font-weight: bold; padding: 12px; ">⚡ Run CNC
+                            style="width: 48%; font-size: 15px; font-weight: bold; padding: 12px; ">⚡ Chạy CNC
                         </button>
                     </div>
                 </div>
@@ -891,7 +877,7 @@
     <!-- DRAGGABLE SCENARIO EDIT MODAL -->
     <div id="scenario-edit-modal" class="glass-card hidden" style="position: fixed; top: 80px; left: 24px; width: 340px; max-height: 480px; z-index: 1050; display: flex; flex-direction: column; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65); overflow: hidden; border: 1px solid var(--border-color); background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px); border-radius: 8px;">
         <div id="scenario-edit-header" style="padding: 12px 14px; background: rgba(30, 41, 59, 0.95); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; cursor: move; user-select: none;">
-            <span style="font-weight: bold; color: var(--warning); font-size: 13px; letter-spacing: 0.5px;">✏️ Scenario Editor: <span id="scenario-edit-name-title" style="color: var(--text-light); font-weight: normal;"></span></span>
+            <span style="font-weight: bold; color: var(--warning); font-size: 13px; letter-spacing: 0.5px;">✏️ Trình Soạn Thảo Kịch Bản: <span id="scenario-edit-name-title" style="color: var(--text-light); font-weight: normal;"></span></span>
             <button id="btn-close-scenario-edit" style="background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px;">✕</button>
         </div>
         <div id="scenario-edit-body" style="padding: 14px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 10px;">
@@ -899,19 +885,19 @@
                 Chuột phải trên camera stream để thêm điểm. Click chọn 📌 trên một dòng để <strong>chèn (insert)</strong> hành động mới sau dòng đó.
             </div>
             <div id="scenario-insert-info" style="font-size: 11px; color: var(--warning); background: rgba(234, 179, 8, 0.1); padding: 6px 10px; border-radius: 4px; border: 1px solid rgba(234, 179, 8, 0.2); display: none;">
-                Next action will be inserted after step <strong id="scenario-insert-index-label">-</strong>
+                Hành động tiếp theo sẽ được chèn sau bước <strong id="scenario-insert-index-label">-</strong>
             </div>
             <div id="scenario-items-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; padding-right: 4px;">
                 <!-- Scenario item cards will be generated here -->
             </div>
             <div style="display: flex; gap: 8px; margin-top: 10px;">
-                <button class="btn btn-danger-soft btn-small" id="btn-scenario-clear-all" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Clear All</button>
-                <button class="btn btn-primary btn-small" id="btn-scenario-save-edit" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Close</button>
+                <button class="btn btn-danger-soft btn-small" id="btn-scenario-clear-all" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Xóa Tất Cả</button>
+                <button class="btn btn-primary btn-small" id="btn-scenario-save-edit" style="flex: 1; height: 32px; padding: 0; font-size: 12px;">Đóng</button>
             </div>
         </div>
     </div>
 
-    <script src="/static/app.js?v=34"></script>
+    <script src="/static/app.js?v=35"></script>
 </body>
 
 </html>

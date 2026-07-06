@@ -173,23 +173,23 @@ function updateUIState(data) {
 
     // Connection badge
     if (isConnected) {
-        connStatus.innerText = "CONNECTED";
+        connStatus.innerText = "ĐÃ KẾT NỐI";
         connStatus.className = "status-badge connected";
-        connectBtn.innerText = "Disconnect";
+        connectBtn.innerText = "Ngắt Kết Nối";
         connectBtn.className = "btn btn-danger";
         portInput.disabled = true;
         baudrateInput.disabled = true;
         portWarning.classList.add("hidden");
     } else {
-        connStatus.innerText = "DISCONNECTED";
+        connStatus.innerText = "MẤT KẾT NỐI";
         connStatus.className = "status-badge disconnected";
-        connectBtn.innerText = "Connect";
+        connectBtn.innerText = "Kết Nối";
         connectBtn.className = "btn btn-primary";
         portInput.disabled = false;
         baudrateInput.disabled = false;
 
         if (data.port_owner) {
-            portWarningText.innerHTML = `Port <strong>${data.port}</strong> is busy. Opened by: <strong>${data.port_owner}</strong>. Please close it and retry.`;
+            portWarningText.innerHTML = `Cổng <strong>${data.port}</strong> đang bận. Được mở bởi: <strong>${data.port_owner}</strong>. Vui lòng đóng và thử lại.`;
             portWarning.classList.remove("hidden");
         } else {
             portWarning.classList.add("hidden");
@@ -268,7 +268,7 @@ function initWebSocket() {
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
-        logSystemMessage("WebSocket telemetry channel active.");
+        logSystemMessage("Kênh truyền telemetry WebSocket hoạt động.");
         connectionAttempts = 0;
     };
 
@@ -278,7 +278,7 @@ function initWebSocket() {
     };
 
     ws.onclose = () => {
-        logSystemMessage("WebSocket telemetry closed. Reconnecting in 3s...");
+        logSystemMessage("Kênh telemetry WebSocket bị đóng. Đang kết nối lại sau 3 giây...");
         setTimeout(initWebSocket, 3000);
     };
 
@@ -318,17 +318,17 @@ function handleWSMessage(msg) {
 
 function updateConnectionUI() {
     if (isConnected) {
-        connStatus.innerText = "CONNECTED";
+        connStatus.innerText = "ĐÃ KẾT NỐI";
         connStatus.className = "status-badge connected";
-        connectBtn.innerText = "Disconnect";
+        connectBtn.innerText = "Ngắt Kết Nối";
         connectBtn.className = "btn btn-danger";
         portInput.disabled = true;
         baudrateInput.disabled = true;
         portWarning.classList.add("hidden");
     } else {
-        connStatus.innerText = "DISCONNECTED";
+        connStatus.innerText = "MẤT KẾT NỐI";
         connStatus.className = "status-badge disconnected";
-        connectBtn.innerText = "Connect";
+        connectBtn.innerText = "Kết Nối";
         connectBtn.className = "btn btn-primary";
         portInput.disabled = false;
         baudrateInput.disabled = false;
@@ -356,10 +356,10 @@ function updateTelemetry(data) {
     if (btnUnlock) {
         if (data.state === "Alarm") {
             btnUnlock.classList.add("alarm-locked");
-            btnUnlock.title = "⚠️ Machine Locked! Click to Unlock ($X)";
+            btnUnlock.title = "⚠️ Máy Đang Bị Khóa! Click để Mở Khóa ($X)";
         } else {
             btnUnlock.classList.remove("alarm-locked");
-            btnUnlock.title = "Unlock Machine ($X)";
+            btnUnlock.title = "Mở Khóa Máy ($X)";
         }
     }
 
@@ -529,11 +529,11 @@ function setupEventListeners() {
                 const data = await res.json();
                 connectBtn.disabled = false;
                 if (data.status === "error") {
-                    logSystemMessage(`Disconnect error: ${data.message}`);
+                    logSystemMessage(`Lỗi ngắt kết nối: ${data.message}`);
                 }
             } catch (e) {
                 connectBtn.disabled = false;
-                logSystemMessage(`Network error during disconnect: ${e}`);
+                logSystemMessage(`Lỗi mạng khi ngắt kết nối: ${e}`);
             }
         } else {
             // Connect
@@ -550,7 +550,7 @@ function setupEventListeners() {
                 const data = await res.json();
                 connectBtn.disabled = false;
                 if (data.status === "error") {
-                    logSystemMessage(`Connection error: ${data.message}`);
+                    logSystemMessage(`Lỗi kết nối: ${data.message}`);
                     portWarningText.innerHTML = data.message;
                     portWarning.classList.remove("hidden");
                 } else {
@@ -558,7 +558,7 @@ function setupEventListeners() {
                 }
             } catch (e) {
                 connectBtn.disabled = false;
-                logSystemMessage(`Network error connecting: ${e}`);
+                logSystemMessage(`Lỗi mạng khi kết nối: ${e}`);
             }
         }
     });
@@ -1416,15 +1416,15 @@ function setupEventListeners() {
         if (detectStatusDot && detectStatusText) {
             if (detected) {
                 detectStatusDot.classList.add("active");
-                detectStatusText.textContent = "✅ Object detected (live)";
+                detectStatusText.textContent = "✅ Phát hiện vật thể (trực tiếp)";
             } else if (hasLastObject) {
                 detectStatusDot.classList.remove("active");
                 detectStatusDot.classList.add("stale");
-                detectStatusText.textContent = "📋 Using last known position";
+                detectStatusText.textContent = "📋 Sử dụng vị trí cuối cùng đã biết";
             } else {
                 detectStatusDot.classList.remove("active");
                 detectStatusDot.classList.remove("stale");
-                detectStatusText.textContent = "No object detected";
+                detectStatusText.textContent = "Không phát hiện vật thể";
             }
         }
 
@@ -1449,7 +1449,7 @@ function setupEventListeners() {
                         lastObjMachine.textContent = "—";
                     }
                 } else {
-                    lastObjMachine.textContent = calibMatrix ? "—" : "(need calibration)";
+                    lastObjMachine.textContent = calibMatrix ? "—" : "(cần căn chỉnh)";
                 }
             } else {
                 lastObjectInfoPanel.classList.add("hidden");
@@ -1854,7 +1854,7 @@ function setupEventListeners() {
         if (btnViewSnapshot) btnViewSnapshot.disabled = !isHomeSet;
         if (btnResetHome) btnResetHome.disabled = !isHomeSet;
         if (homeDot) homeDot.className = "home-dot" + (isHomeSet ? " home-active" : "");
-        if (homeStatusLabel) homeStatusLabel.innerText = isHomeSet ? "Home set ✓" : "Home not set";
+        if (homeStatusLabel) homeStatusLabel.innerText = isHomeSet ? "Đã Đặt Home ✓" : "Chưa Đặt Home";
     };
     window.updateHomeUI = updateHomeUI;
 
@@ -1977,11 +1977,11 @@ function setupEventListeners() {
             if (confirm("Bạn có muốn khôi phục vị trí Home của CNC về điểm đã lưu?")) {
                 try {
                     btnResetHome.disabled = true;
-                    btnResetHome.innerText = "⏳ Restoring...";
+                    btnResetHome.innerText = "⏳ Đang Khôi Phục...";
                     const res = await fetch("/api/home/reset", { method: "POST" });
                     const data = await res.json();
                     btnResetHome.disabled = false;
-                    btnResetHome.innerText = "Restore Home";
+                    btnResetHome.innerText = "Khôi Phục Gốc Home";
                     
                     if (data.status === "ok") {
                         logSystemMessage("✅ " + data.message);
@@ -1990,11 +1990,11 @@ function setupEventListeners() {
                         if (confirm(data.message + "\n\nNhấn OK để thiết lập vị trí hiện tại làm mốc Home.")) {
                             // User chose to manually align and force zero
                             btnResetHome.disabled = true;
-                            btnResetHome.innerText = "⏳ Restoring...";
+                            btnResetHome.innerText = "⏳ Đang Khôi Phục...";
                             const forceRes = await fetch("/api/home/reset?force_current=true", { method: "POST" });
                             const forceData = await forceRes.json();
                             btnResetHome.disabled = false;
-                            btnResetHome.innerText = "Restore Home";
+                            btnResetHome.innerText = "Khôi Phục Gốc Home";
                             
                             if (forceData.status === "ok") {
                                 logSystemMessage("✅ " + forceData.message);

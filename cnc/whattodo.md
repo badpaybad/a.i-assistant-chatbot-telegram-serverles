@@ -218,3 +218,5 @@ Không cần set alarm lock tự động khi chạy các kịch bản
     vậy khi nào bị alarm lock cnc ? việc này chỉ cần làm manual với nút click trên UI , jog-unlock toggle làm việc đó
 
 Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản, xuất hiện alarm lock khi thực hiện lock xong cần unlock trở lại 
+
+**cập nhật 35** chuyển giao diện các text đang là tiếng Anh sang Tiếng Việt 
