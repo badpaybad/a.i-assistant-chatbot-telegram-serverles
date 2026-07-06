@@ -29,6 +29,7 @@ let startDragY = 0;
 let activeScenario = null;
 let scenarioIsCreating = false;
 let scenarioInsertIndex = -1;
+let scenarioLooping = false;
 let latestCalibrationMatrix = null;
 
 // DOM Elements
@@ -253,6 +254,9 @@ function updateUIState(data) {
 
     // Redraw Canvas with new tool position
     drawToolpath();
+    if (typeof window.updateScenarioButtonsState === 'function') {
+        window.updateScenarioButtonsState();
+    }
 }
 
 // --- WEBSOCKETS LOGIC ---
@@ -338,6 +342,9 @@ function updateConnectionUI() {
     if (typeof window.updateHomeUI === 'function') {
         window.updateHomeUI();
     }
+    if (typeof window.updateScenarioButtonsState === 'function') {
+        window.updateScenarioButtonsState();
+    }
 }
 
 function updateTelemetry(data) {
@@ -396,12 +403,28 @@ function handleStreamStatus(msg) {
     } else if (msg.status === "completed") {
         logSystemMessage("G-code job completed successfully!");
         fetchState();
+        if (scenarioLooping && typeof window.startScenarioExecution === "function") {
+            logSystemMessage("Scenario loop: starting next iteration in 1s...");
+            setTimeout(() => {
+                if (scenarioLooping && typeof window.startScenarioExecution === "function") {
+                    window.startScenarioExecution(true);
+                }
+            }, 1000);
+        }
     } else if (msg.status === "failed") {
         logSystemMessage(`G-code job execution failed: ${msg.message}`);
         fetchState();
+        if (scenarioLooping && typeof window.stopScenarioLoop === "function") {
+            logSystemMessage("Scenario loop stopped due to execution failure.");
+            window.stopScenarioLoop();
+        }
     } else if (msg.status === "stopped") {
         logSystemMessage("G-code job aborted by user. Controller soft-reset sent.");
         fetchState();
+        if (scenarioLooping && typeof window.stopScenarioLoop === "function") {
+            logSystemMessage("Scenario loop stopped because job was aborted.");
+            window.stopScenarioLoop();
+        }
     }
 }
 
@@ -4399,6 +4422,7 @@ function initGcodeEditor() {
     const btnLoadScenario = document.getElementById("btn-load-scenario");
     const inputLoadScenario = document.getElementById("input-load-scenario");
     const btnRunScenario = document.getElementById("btn-run-scenario");
+    const btnRunLoopScenario = document.getElementById("btn-run-loop-scenario");
     const btnEditScenario = document.getElementById("btn-edit-scenario");
 
     const scenarioEditModal = document.getElementById("scenario-edit-modal");
@@ -4571,6 +4595,9 @@ function initGcodeEditor() {
             btnCancelScenario.style.display = "none";
             btnEditScenario.style.display = "none";
             btnRunScenario.disabled = true;
+            if (btnRunLoopScenario) {
+                btnRunLoopScenario.disabled = true;
+            }
             return;
         }
 
@@ -4580,6 +4607,13 @@ function initGcodeEditor() {
 
         const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
         btnRunScenario.disabled = !hasSetEnd || !isConnected;
+        if (btnRunLoopScenario) {
+            btnRunLoopScenario.disabled = !hasSetEnd || !isConnected;
+        }
+
+        if (scenarioLooping) {
+            btnRunScenario.disabled = true;
+        }
 
         if (scenarioInsertIndex !== -1) {
             scenarioInsertInfo.style.display = "block";
@@ -5153,58 +5187,118 @@ function initGcodeEditor() {
         });
     }
 
-    if (btnRunScenario) {
-        btnRunScenario.addEventListener("click", async () => {
-            if (!activeScenario || activeScenario.actions.length === 0) return;
+    async function startScenarioExecution(isLoopTrigger = false) {
+        if (!activeScenario || activeScenario.actions.length === 0) return;
 
-            const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
-            if (!hasSetEnd) {
-                alert("Kịch bản cần có ít nhất một bước Set End để chạy!");
-                return;
+        const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
+        if (!hasSetEnd) {
+            alert("Kịch bản cần có ít nhất một bước Set End để chạy!");
+            if (scenarioLooping) {
+                stopScenarioLoop();
+            }
+            return;
+        }
+
+        if (!isLoopTrigger) {
+            if (scenarioLooping) {
+                if (btnRunLoopScenario) {
+                    btnRunLoopScenario.innerText = "🛑 Stop Loop";
+                    btnRunLoopScenario.className = "btn btn-danger";
+                }
+                btnRunScenario.disabled = true;
+            } else {
+                btnRunScenario.disabled = true;
+                btnRunScenario.innerText = "⏳ Running...";
+            }
+        }
+
+        const gcode = compileScenarioToGcode(activeScenario);
+
+        try {
+            const res = await fetch("/api/gcode-editor/set-gcode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ gcode: gcode })
+            });
+            const data = await res.json();
+
+            if (!scenarioLooping) {
+                btnRunScenario.disabled = false;
+                btnRunScenario.innerText = "Run";
             }
 
-            btnRunScenario.disabled = true;
-            btnRunScenario.innerText = "⏳ Running...";
+            if (data.status === "ok") {
+                logSystemMessage(`Scenario compiled successfully into G-code (${data.lines_count} lines).`);
 
-            const gcode = compileScenarioToGcode(activeScenario);
+                // Parse & load G-code into the visual toolpath
+                toolpathPoints = parseGcode(gcode);
+                calculateBoundingBox();
+                resetCanvasView();
 
-            try {
-                const res = await fetch("/api/gcode-editor/set-gcode", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ gcode: gcode })
-                });
-                const data = await res.json();
+                loadedFileName.innerText = "scenario_" + activeScenario.name + ".gcode";
+                loadedFileLines.innerText = `${data.lines_count} lines`;
+                fileDropZone.classList.add("hidden");
+                fileInfoContainer.classList.remove("hidden");
+                btnStartStream.disabled = !isConnected;
 
-                btnRunScenario.disabled = false;
-                btnRunScenario.innerText = "Run";
-
-                if (data.status === "ok") {
-                    logSystemMessage(`Scenario compiled successfully into G-code (${data.lines_count} lines).`);
-
-                    // Parse & load G-code into the visual toolpath
-                    toolpathPoints = parseGcode(gcode);
-                    calculateBoundingBox();
-                    resetCanvasView();
-
-                    loadedFileName.innerText = "scenario_" + activeScenario.name + ".gcode";
-                    loadedFileLines.innerText = `${data.lines_count} lines`;
-                    fileDropZone.classList.add("hidden");
-                    fileInfoContainer.classList.remove("hidden");
-                    btnStartStream.disabled = !isConnected;
-
-                    if (isConnected) {
-                        btnStartStream.click();
-                    } else {
-                        alert("G-Code kịch bản đã được nạp. Hãy kết nối CNC để bắt đầu.");
-                    }
+                if (isConnected) {
+                    btnStartStream.click();
                 } else {
-                    alert("Nạp G-Code kịch bản thất bại: " + data.message);
+                    alert("G-Code kịch bản đã được nạp. Hãy kết nối CNC để bắt đầu.");
+                    if (scenarioLooping) {
+                        stopScenarioLoop();
+                    }
                 }
-            } catch (err) {
+            } else {
+                alert("Nạp G-Code kịch bản thất bại: " + data.message);
+                if (scenarioLooping) {
+                    stopScenarioLoop();
+                }
+            }
+        } catch (err) {
+            if (!scenarioLooping) {
                 btnRunScenario.disabled = false;
                 btnRunScenario.innerText = "Run";
-                alert("Lỗi mạng khi nạp G-code kịch bản: " + err);
+            }
+            alert("Lỗi mạng khi nạp G-code kịch bản: " + err);
+            if (scenarioLooping) {
+                stopScenarioLoop();
+            }
+        }
+    }
+
+    function stopScenarioLoop() {
+        scenarioLooping = false;
+        if (btnRunLoopScenario) {
+            btnRunLoopScenario.innerText = "Run Loop";
+            btnRunLoopScenario.className = "btn btn-warning";
+        }
+        updateScenarioButtonsState();
+        logSystemMessage("Scenario loop execution stopped.");
+    }
+
+    window.startScenarioExecution = startScenarioExecution;
+    window.stopScenarioLoop = stopScenarioLoop;
+    window.updateScenarioButtonsState = updateScenarioButtonsState;
+
+    if (btnRunScenario) {
+        btnRunScenario.addEventListener("click", () => {
+            startScenarioExecution(false);
+        });
+    }
+
+    if (btnRunLoopScenario) {
+        btnRunLoopScenario.addEventListener("click", async () => {
+            if (scenarioLooping) {
+                stopScenarioLoop();
+                try {
+                    await fetch("/api/stop", { method: "POST" });
+                } catch (e) {
+                    console.error("Failed to abort stream on stop loop:", e);
+                }
+            } else {
+                scenarioLooping = true;
+                startScenarioExecution(false);
             }
         });
     }

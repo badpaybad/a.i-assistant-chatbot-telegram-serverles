@@ -202,3 +202,9 @@ không cần test tự động trên chrome, sửa xong tôi tự test
 **cập nhật 31** generateGcodeFromSegments đang reset  lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri"); xung đột set home, ở phần image to gcode này chỉ cần vẽ bắt đầu từ vị trí hiện tại của đầu cnc 
 
 **cập nhật 32** ở generateGcodeFromSegments ưu tiên vẽ các đường connected dài trước. 
+
+**cập nhật 33** scenario thêm nut run loop cạnh nút run để làm vòng lặp chạy kịch bản. đến khi click stop loop
+    sau khi run loop, nút này toggle thành stop loop, khi stop loop sẽ không chạy run nữa.
+    nút run trước đó đang click chạy kịch bản 1 lần
+    run loop chạy kịch bản vòng lặp kịch bản xong 1 lần tới lần tiếp theo 
+        
