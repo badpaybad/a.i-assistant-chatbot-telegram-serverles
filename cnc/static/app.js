@@ -1982,7 +1982,7 @@ function setupEventListeners() {
                     const data = await res.json();
                     btnResetHome.disabled = false;
                     btnResetHome.innerText = t("Khôi Phục Gốc Home");
-                    
+
                     if (data.status === "ok") {
                         logSystemMessage("✅ " + data.message);
                         alert(data.message);
@@ -1995,7 +1995,7 @@ function setupEventListeners() {
                             const forceData = await forceRes.json();
                             btnResetHome.disabled = false;
                             btnResetHome.innerText = t("Khôi Phục Gốc Home");
-                            
+
                             if (forceData.status === "ok") {
                                 logSystemMessage("✅ " + forceData.message);
                                 alert(forceData.message);
@@ -4521,7 +4521,7 @@ function initGcodeEditor() {
         menu.id = "camera-context-menu";
         menu.className = "camera-context-menu";
         menu.style.left = `${e.clientX + window.scrollX}px`;
-        menu.style.top = `${e.clientY + window.scrollY - 70}px`;
+        menu.style.top = `${e.clientY + window.scrollY - 320}px`;
 
         const cncPos = convertPixelToCNC(px, py);
         const wx = cncPos ? cncPos.x : 0;
@@ -4534,8 +4534,8 @@ function initGcodeEditor() {
             { label: "📍 Go To Here", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "➡️ Go To Keep State", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
             { label: "👇 Swipe Down", action: () => addScenarioAction({ type: "swipe_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "👆 Swipe Up", action: () => addScenarioAction({ type: "swipe_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
@@ -4543,10 +4543,12 @@ function initGcodeEditor() {
             { label: "👈 Swipe Left", action: () => addScenarioAction({ type: "swipe_left", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "👉 Swipe Right", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "⏸️ Dwell 0.25s", action: () => addScenarioAction({ type: "dwell", duration: 0.25 }) }
+            { label: "⏸️ Dwell 0.25s", action: () => addScenarioAction({ type: "dwell", duration: 0.25 }) },
+            { label: "⏸️ Dwell 0.5s", action: () => addScenarioAction({ type: "dwell", duration: 0.5 }) },
+            { label: "⏸️ Dwell 1s", action: () => addScenarioAction({ type: "dwell", duration: 1 }) },
+            { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
 
         ];
 
@@ -4886,7 +4888,7 @@ function initGcodeEditor() {
         if (!activeScenario || !activeScenario.actions) return;
         const len = activeScenario.actions.length;
         // if (i <= 0 || i >= len - 1 || j <= 0 || j >= len - 1) return; // Prevent modifying first or last step
-        if(j < 0 || j >= len ) return;
+        if (j < 0 || j >= len) return;
 
         const temp = activeScenario.actions[i];
         activeScenario.actions[i] = activeScenario.actions[j];
