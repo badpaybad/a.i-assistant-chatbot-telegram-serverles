@@ -332,14 +332,14 @@
             <div class="panel-actions">
                   <div class="scenario-controls-wrapper" style="display: flex; align-items: center; gap: 6px; margin-left: 12px;">
                     <input type="text" id="scenario-name" data-i18n-placeholder placeholder="Tên kịch bản..." class="input-select-small" style="width: 110px; height: 26px; font-size: 11px; padding: 2px 6px; display: inline-block; margin: 0; background: rgba(30, 41, 59, 0.5); border: 1px solid var(--border-color); color: var(--text-light); border-radius: 4px;">
-                    <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Tạo</button>
-                    <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Lưu</button>
-                    <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Hủy</button>
-                    <button class="btn btn-secondary" id="btn-load-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;">Nạp</button>
+                    <button class="btn btn-primary" id="btn-create-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" data-i18n>Tạo</button>
+                    <button class="btn btn-success" id="btn-save-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;" data-i18n>Lưu</button>
+                    <button class="btn btn-danger-soft" id="btn-cancel-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;" data-i18n>Hủy</button>
+                    <button class="btn btn-secondary" id="btn-load-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" data-i18n>Nạp</button>
                     <input type="file" id="input-load-scenario" accept=".json" style="display: none;">
-                    <button class="btn btn-warning" id="btn-run-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Chạy</button>
-                    <button class="btn btn-warning" id="btn-run-loop-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled>Chạy Lặp</button>
-                    <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;">Sửa</button>
+                    <button class="btn btn-warning" id="btn-run-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled data-i18n>Chạy</button>
+                    <button class="btn btn-warning" id="btn-run-loop-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; margin: 0;" disabled data-i18n>Chạy Lặp</button>
+                    <button class="btn btn-info" id="btn-edit-scenario" style="height: 26px; line-height: 1; padding: 0 8px; font-size: 11px; display: none; margin: 0;" data-i18n>Sửa</button>
                 </div>
                 <input type="text" id="camera-select" list="cameras-datalist" class="input-select-small inline-select"
                     style="width: 120px;" data-i18n-placeholder placeholder="Chỉ số Cam (Ví dụ: 4)" value="4">
@@ -349,11 +349,11 @@
                 </button>
                 <button class="btn-toggle" id="btn-capture-1280" data-i18n-title title="Chụp 1280x720 (Khung hình gốc)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
-                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 1280</span>
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);" data-i18n>Chụp 1280</span>
                 </button>
                 <button class="btn-toggle" id="btn-capture-720" data-i18n-title title="Chụp 720x720 (Gốc & Cắt gọn)"
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
-                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);">Chụp 720</span>
+                    <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);" data-i18n>Chụp 720</span>
                 </button>
                 <button class="btn-toggle" id="btn-camera-expand" data-i18n-title title="Mở rộng toàn màn hình">
                     <span class="expand-icon">⛶</span>

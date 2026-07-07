@@ -2,6 +2,11 @@
 let ws = null;
 let connectionAttempts = 0;
 let isConnected = false;
+let lastUIState = null;
+let lastTelemetry = null;
+let yoloDetected = false;
+let lastObjectInfo = null;
+let previewIntervalId = null;
 
 // Jogging defaults
 const stepMapping = [0.1, 1, 10, 100]; // mm
@@ -169,6 +174,7 @@ async function fetchState() {
 
 // Update UI elements based on API status
 function updateUIState(data) {
+    lastUIState = data;
     isConnected = data.connected;
 
     // Connection badge
@@ -348,6 +354,7 @@ function updateConnectionUI() {
 }
 
 function updateTelemetry(data) {
+    lastTelemetry = data;
     machineState.innerText = t(data.state);
     machineState.className = "state-badge " + data.state.toLowerCase();
 
@@ -1400,9 +1407,9 @@ function setupEventListeners() {
     let cncPoints = {};
     let isCalibrated = false;
     let isHomeSet = false;
-    let yoloDetected = false;
+    yoloDetected = false;
     let hasLastObject = false;  // cập nhật 5: keeps true after first detection
-    let lastObjectInfo = null;  // cập nhật 5: stores last largest object data
+    lastObjectInfo = null;  // cập nhật 5: stores last largest object data
     let movingAroundRunning = false;
     let isAbortingMovingAround = false;
 
@@ -1459,6 +1466,7 @@ function setupEventListeners() {
     };
 
     const updateDetectedLabelsUI = (detections) => {
+        window.lastDetections = detections;
         const container = document.getElementById("detected-labels-container");
         if (!container) return;
 
@@ -2208,6 +2216,8 @@ function setupEventListeners() {
     resizeObserver.observe(cameraFloatingPanel);
 
     jog_keyboard_register_event();
+    window.updateDetectionStatusUI = updateDetectionStatusUI;
+    window.updateDetectedLabelsUI = updateDetectedLabelsUI;
 }
 
 function jogAxis(axis, direction) {
@@ -2906,7 +2916,7 @@ function initGcodeEditor() {
     let editorCurrentMode = "edit"; // edit, move, delete, draw
     let editorSelectedNode = null; // { index, type: 'start'|'end' }
     let editorLineWidth = 2.0;
-    let previewIntervalId = null; // Declare in parent scope for auto-preview control (Cập nhật 28)
+    previewIntervalId = null; // Declare in parent scope for auto-preview control (Cập nhật 28)
 
     // Sketch Parameters mapping
     const sketchParams = [
@@ -5376,6 +5386,7 @@ function initGcodeEditor() {
     }
 
     resizeEditorCanvas();
+    window.renderScenarioItemsList = renderScenarioItemsList;
 }
 
     // --- i18n Localization Engine ---
@@ -5430,6 +5441,63 @@ function initGcodeEditor() {
                 }
             });
         });
+
+        // 3. Refresh dynamic JS-bound UI states
+        if (lastUIState) {
+            updateUIState(lastUIState);
+        }
+        if (lastTelemetry) {
+            updateTelemetry(lastTelemetry);
+        }
+        if (window.updateHomeUI) {
+            window.updateHomeUI();
+        }
+        if (window.updateCalibrationUI) {
+            window.updateCalibrationUI();
+        }
+        if (window.updateDetectionStatusUI) {
+            window.updateDetectionStatusUI(yoloDetected, lastObjectInfo, latestCalibrationMatrix);
+        }
+        if (window.updateDetectedLabelsUI && window.lastDetections) {
+            window.updateDetectedLabelsUI(window.lastDetections);
+        }
+        if (window.renderScenarioItemsList) {
+            window.renderScenarioItemsList();
+        }
+
+        // 4. Refresh scenario control buttons text
+        const btnRunLoopScenario = document.getElementById("btn-run-loop-scenario");
+        const btnRunScenario = document.getElementById("btn-run-scenario");
+        if (btnRunLoopScenario) {
+            if (scenarioLooping) {
+                btnRunLoopScenario.innerText = t("🛑 Dừng Lặp");
+                btnRunLoopScenario.className = "btn btn-danger";
+            } else {
+                btnRunLoopScenario.innerText = t("Chạy Vòng Lặp");
+                btnRunLoopScenario.className = "btn btn-warning";
+            }
+        }
+        if (btnRunScenario && btnRunScenario.innerText !== t("⏳ Đang chạy...")) {
+            btnRunScenario.innerText = t("Chạy");
+        }
+
+        // 5. Refresh G-code editor buttons text
+        const btnEditorPreviewInVideoFrame = document.getElementById("btn-editor-preview-in-video-frame");
+        if (btnEditorPreviewInVideoFrame) {
+            if (previewIntervalId) {
+                btnEditorPreviewInVideoFrame.innerText = t("Dừng xem trước");
+            } else {
+                btnEditorPreviewInVideoFrame.innerText = t("Xem trước");
+            }
+        }
+        const btnEditorExecute = document.getElementById("btn-editor-execute");
+        if (btnEditorExecute && btnEditorExecute.innerText !== t("Đang gửi G-Code...")) {
+            btnEditorExecute.innerText = t("⚡ Thực hiện vẽ (Chạy CNC)");
+        }
+        const btnEditorConvert = document.getElementById("btn-editor-convert");
+        if (btnEditorConvert && btnEditorConvert.innerText !== t("Đang chuyển đổi...")) {
+            btnEditorConvert.innerText = t("Tạo G-Code");
+        }
     }
 
     window.setLanguage = setLanguage;

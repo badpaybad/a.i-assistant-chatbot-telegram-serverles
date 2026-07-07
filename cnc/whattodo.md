@@ -233,4 +233,4 @@ khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu
 
 **cập nhật 40** các text ở cnc/static/app.js innertext, label , log to console cần chuyển sang tiếng Việt và dùng cơ chế i18n (đa ngôn ngữ) ở **cập nhật 36**
 
-Khi 
+Khi droplist change language thay đổi thì các tag html5 đã thay đổi theo ngôn ngữ, nhưng các data bind động bằng javascript thì chưa, cần thay đổi theo lang được chọn, lang được chọn cần lưu vào localstorage để lần sau khi vào lại website sẽ dùng lang đã chọn 
