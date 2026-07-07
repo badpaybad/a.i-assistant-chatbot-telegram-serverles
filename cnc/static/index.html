@@ -355,6 +355,9 @@
                     style="margin-right: 4px; width: auto; padding: 0 6px;">
                     <span style="font-size: 11px; font-weight: bold; font-family: var(--font-mono);" data-i18n>Chụp 720</span>
                 </button>
+                <button class="btn-toggle" id="btn-toggle-scenario-sidebar" data-i18n-title title="Ẩn/Hiện Bảng Kịch Bản" style="margin-right: 4px;">
+                    <span class="sidebar-toggle-icon">◀</span>
+                </button>
                 <button class="btn-toggle" id="btn-camera-expand" data-i18n-title title="Mở rộng toàn màn hình">
                     <span class="expand-icon">⛶</span>
                 </button>
@@ -364,6 +367,36 @@
             </div>
         </div>
         <div class="panel-body" id="camera-panel-body">
+            <!-- BẢNG PHÍM KỊCH BẢN BÊN TRÁI (cập nhật 41) -->
+            <div class="camera-scenario-sidebar glass-card" id="camera-scenario-sidebar">
+                <div class="sidebar-title">
+                    <span data-i18n>Phím Kịch Bản</span>
+                </div>
+                <div class="sidebar-buttons">
+                    <button class="btn-scenario-action" data-action="set_begin" data-i18n>🏁 Thiết lập bắt đầu</button>
+                    <button class="btn-scenario-action" data-action="set_end" data-i18n>🛑 Thiết lập kết thúc</button>
+                    <hr class="sidebar-divider">
+                    <button class="btn-scenario-action" data-action="go_to_here" data-i18n>📍 Di chuyển tới đây</button>
+                    <button class="btn-scenario-action" data-action="go_to_keep_state" data-i18n>➡️ Di chuyển giữ trạng thái</button>
+                    <hr class="sidebar-divider">
+                    <button class="btn-scenario-action" data-action="tap" data-i18n>👇 Chạm</button>
+                    <button class="btn-scenario-action" data-action="double_tap" data-i18n>👇👇 Chạm Đúp</button>
+                    <button class="btn-scenario-action" data-action="long_press" data-i18n>⏱️ Nhấn Giữ</button>
+                    <hr class="sidebar-divider">
+                    <button class="btn-scenario-action" data-action="swipe_down" data-i18n>👇 Vuốt Xuống</button>
+                    <button class="btn-scenario-action" data-action="swipe_up" data-i18n>👆 Vuốt Lên</button>
+                    <button class="btn-scenario-action" data-action="swipe_left" data-i18n>👈 Vuốt Trái</button>
+                    <button class="btn-scenario-action" data-action="swipe_right" data-i18n>👉 Vuốt Phải</button>
+                    <hr class="sidebar-divider">
+                    <button class="btn-scenario-action" data-action="pen_down" data-i18n>✒️ Hạ Bút</button>
+                    <button class="btn-scenario-action" data-action="pen_up" data-i18n>✒️ Nhấc Bút</button>
+                    <hr class="sidebar-divider">
+                    <button class="btn-scenario-action" data-action="dwell-0.25" data-i18n>⏸️ Dừng 0.25 giây</button>
+                    <button class="btn-scenario-action" data-action="dwell-0.5" data-i18n>⏸️ Dừng 0.5 giây</button>
+                    <button class="btn-scenario-action" data-action="dwell-1.0" data-i18n>⏸️ Dừng 1 giây</button>
+                </div>
+            </div>
+
             <div class="camera-stream-container">
                 <div id="detected-labels-container" class="detected-labels-container"></div>
                 <img id="camera-stream-img" src="" alt="Đang tải luồng video Camera...">

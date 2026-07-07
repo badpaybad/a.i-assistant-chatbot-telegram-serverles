@@ -234,3 +234,10 @@ khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu
 **cập nhật 40** các text ở cnc/static/app.js innertext, label , log to console cần chuyển sang tiếng Việt và dùng cơ chế i18n (đa ngôn ngữ) ở **cập nhật 36**
 
 Khi droplist change language thay đổi thì các tag html5 đã thay đổi theo ngôn ngữ, nhưng các data bind động bằng javascript thì chưa, cần thay đổi theo lang được chọn, lang được chọn cần lưu vào localstorage để lần sau khi vào lại website sẽ dùng lang đã chọn 
+
+**cập nhật 41** floating window video frame, thêm side pannel bên trái frame video , side panel bên trái này ẩn hiện được. có các button chức năng bên trong hoạt động cho scencario.
+    các button sẽ có chức năng giống như chuột phải vào video frame : set start, set end ....
+        khi các button được click thì dựa vào vị trí hiện tại của cnc head để ghi nhận vị trí và thao tác tương ứng các step của scenario.
+
+
+        

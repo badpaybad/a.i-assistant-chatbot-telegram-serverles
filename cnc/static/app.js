@@ -968,6 +968,23 @@ function setupEventListeners() {
     const btnDetectMove = document.getElementById("btn-detect-move");
     let isCameraFullscreen = false;
 
+    // Left Scenario Sidebar logic (cập nhật 41)
+    const btnToggleScenarioSidebar = document.getElementById("btn-toggle-scenario-sidebar");
+    const isSidebarCollapsed = localStorage.getItem("cnc_scenario_sidebar_collapsed") === "true";
+    if (isSidebarCollapsed && cameraFloatingPanel) {
+        cameraFloatingPanel.classList.add("sidebar-collapsed");
+    }
+    if (btnToggleScenarioSidebar) {
+        btnToggleScenarioSidebar.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (cameraFloatingPanel) {
+                cameraFloatingPanel.classList.toggle("sidebar-collapsed");
+                const currentlyCollapsed = cameraFloatingPanel.classList.contains("sidebar-collapsed");
+                localStorage.setItem("cnc_scenario_sidebar_collapsed", currentlyCollapsed.toString());
+            }
+        });
+    }
+
     // Load saved preferences
     const savedCameraIndex = localStorage.getItem("cnc_camera_index");
     if (savedCameraIndex) {
@@ -1017,7 +1034,7 @@ function setupEventListeners() {
             const savedWidth = 720;
             const savedHeight = 720;
             if (savedWidth && savedHeight) {
-                cameraFloatingPanel.style.width = (savedWidth + 250) + "px";
+                cameraFloatingPanel.style.width = (savedWidth + 450) + "px";
                 cameraFloatingPanel.style.height = (savedHeight + 0) + "px";
             } else {
                 cameraFloatingPanel.style.removeProperty("width");
@@ -4672,6 +4689,12 @@ function initGcodeEditor() {
 
     // Update buttons visibility & disabled states
     function updateScenarioButtonsState() {
+        const sidebarActions = document.querySelectorAll(".btn-scenario-action");
+        const shouldEnableSidebar = activeScenario && scenarioIsCreating;
+        sidebarActions.forEach(btn => {
+            btn.disabled = !shouldEnableSidebar;
+        });
+
         if (!activeScenario) {
             btnSaveScenario.style.display = "none";
             btnCancelScenario.style.display = "none";
@@ -5268,6 +5291,39 @@ function initGcodeEditor() {
             }
         });
     }
+
+    // Setup Left Sidebar Buttons Click Handlers (cập nhật 41)
+    const sidebarButtons = document.querySelectorAll(".btn-scenario-action");
+    sidebarButtons.forEach(btn => {
+        btn.addEventListener("click", () => {
+            if (!activeScenario || !scenarioIsCreating) return;
+
+            const actionAttr = btn.getAttribute("data-action");
+            const wx = currentWPos.x;
+            const wy = currentWPos.y;
+            const pt = convertCNCToPixel(wx, wy);
+            const px = pt ? pt.x : 0;
+            const py = pt ? pt.y : 0;
+
+            if (actionAttr.startsWith("dwell-")) {
+                const duration = parseFloat(actionAttr.replace("dwell-", ""));
+                addScenarioAction({
+                    type: "dwell",
+                    duration: duration
+                });
+            } else {
+                addScenarioAction({
+                    type: actionAttr,
+                    px: px,
+                    py: py,
+                    wx: wx,
+                    wy: wy,
+                    head_x: wx,
+                    head_y: wy
+                });
+            }
+        });
+    });
 
     async function startScenarioExecution(isLoopTrigger = false) {
         if (!activeScenario || activeScenario.actions.length === 0) return;

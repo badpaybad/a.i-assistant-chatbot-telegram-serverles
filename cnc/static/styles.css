@@ -2278,6 +2278,95 @@ input[type=range]::-webkit-slider-thumb:hover {
     transform: translateY(0);
 }
 
+/* LEFT SIDEBAR FOR SCENARIO ACTIONS (cập nhật 41) */
+.camera-scenario-sidebar {
+    width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: hsla(220, 25%, 8%, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: 10px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow-y: auto;
+    flex-shrink: 0;
+    min-height: 0;
+}
+
+.camera-floating-panel.sidebar-collapsed .camera-scenario-sidebar {
+    width: 0;
+    padding: 0;
+    margin-right: -16px; /* offset the flex gap */
+    border: none;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.camera-floating-panel.sidebar-collapsed .sidebar-toggle-icon {
+    transform: rotate(180deg);
+}
+
+.camera-scenario-sidebar .sidebar-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-light);
+    margin-bottom: 4px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.camera-scenario-sidebar .sidebar-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.btn-scenario-action {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 5px 8px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 11px;
+    text-align: left;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.btn-scenario-action:hover:not(:disabled) {
+    background: var(--primary-dark);
+    border-color: var(--primary);
+    color: var(--text-light);
+}
+
+.btn-scenario-action:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: rgba(15, 23, 42, 0.2);
+    border-color: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+}
+
+.sidebar-divider {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    margin: 3px 0;
+}
+
+.sidebar-toggle-icon {
+    font-size: 10px;
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    display: inline-block;
+}
+
+
 
 
 
