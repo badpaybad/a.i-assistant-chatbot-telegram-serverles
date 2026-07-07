@@ -178,5 +178,10 @@
   "✅ Phát hiện vật thể (trực tiếp)": "✅ Object detected (live)",
   "📋 Sử dụng vị trí cuối cùng đã biết": "📋 Using last known position",
   "Không phát hiện vật thể": "No object detected",
-  "(cần căn chỉnh)": "(need calibration)"
+  "(cần căn chỉnh)": "(need calibration)",
+  "Đang di chuyển đầu CNC tới vật thể {label}...": "Moving CNC head to object {label}...",
+  "Di chuyển tới vật thể thất bại: {error}": "Move to object failed: {error}",
+  "Lỗi mạng khi di chuyển tới vật thể: {error}": "Network error during move to object: {error}",
+  "Click để di chuyển đầu CNC tới vật thể {label}": "Click to move CNC head to object {label}",
+  "sittng": "Sitting Object"
 }

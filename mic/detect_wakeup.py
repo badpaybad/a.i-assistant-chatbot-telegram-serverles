@@ -90,7 +90,7 @@ async def run_gemini_live_session(api_key):
         response_modalities=[types.Modality.AUDIO],
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Zubenelgenubi")
             )
         ),
         system_instruction=types.Content(

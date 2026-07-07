@@ -983,6 +983,8 @@ function setupEventListeners() {
         cameraStreamImg.src = "";
         cameraStatusText.innerText = "Stream Offline";
         cameraActiveDot.classList.remove("active");
+        const container = document.getElementById("detected-labels-container");
+        if (container) container.innerHTML = "";
         logSystemMessage("Camera feed stream stopped");
     };
 
@@ -1457,6 +1459,62 @@ function setupEventListeners() {
         }
     };
 
+    const updateDetectedLabelsUI = (detections) => {
+        const container = document.getElementById("detected-labels-container");
+        if (!container) return;
+
+        container.innerHTML = "";
+        if (!detections || detections.length === 0) return;
+
+        // Filter out cnchead as we don't want to click to move to the CNC head itself
+        const targets = detections.filter(d => d.class_name !== "cnchead");
+
+        targets.forEach(obj => {
+            const btn = document.createElement("button");
+            btn.className = "detected-label-btn";
+            
+            // Translate the class_name if there is a translation mapping
+            const labelName = t(obj.class_name);
+            const labelText = `${labelName} (${(obj.confidence * 100).toFixed(0)}%)`;
+            btn.textContent = labelText;
+            btn.title = t("Click để di chuyển đầu CNC tới vật thể {label}", {label: labelName});
+            
+            btn.addEventListener("click", () => {
+                moveCNCHeadToObject(obj);
+            });
+            container.appendChild(btn);
+        });
+    };
+
+    const moveCNCHeadToObject = async (obj) => {
+        if (!isConnected) return;
+        try {
+            const labelName = t(obj.class_name);
+            logSystemMessage(t("Đang di chuyển đầu CNC tới vật thể {label}...", {label: labelName}));
+            const camIdx = cameraSelect ? cameraSelect.value : 4;
+            const res = await fetch("/api/detection/move_to_object", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    class_id: obj.class_id,
+                    center: obj.center,
+                    bbox: obj.bbox,
+                    camera_index: parseInt(camIdx)
+                })
+            });
+            const data = await res.json();
+            if (data.status === "ok") {
+                logSystemMessage(`✅ ${data.message}`);
+            } else {
+                logSystemMessage(t("Di chuyển tới vật thể thất bại: {error}", {error: data.message}));
+            }
+        } catch (e) {
+            logSystemMessage(t("Lỗi mạng khi di chuyển tới vật thể: {error}", {error: e.message || e}));
+        }
+    };
+
     window.updateCalibrationUI = () => {
         const badges = { TL: badgeTL, TR: badgeTR, BR: badgeBR, BL: badgeBL };
         for (const [key, badge] of Object.entries(badges)) {
@@ -1575,6 +1633,7 @@ function setupEventListeners() {
 
             // Update detection status UI
             updateDetectionStatusUI(yoloDetected, lastObjectInfo, isCalibrated ? data.calibration_matrix : null);
+            updateDetectedLabelsUI(data.yolo_detections);
 
             if (btnDetectMove) {
                 // Button enabled when connected, home is set, and have a cached last object (cập nhật 7)

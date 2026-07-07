@@ -2572,6 +2572,87 @@ async def move_to_largest(camera_index: int = 4):
         "bbox": largest_obj["bbox"]
     }
 
+class MoveToObjectConfig(BaseModel):
+    class_id: int
+    center: List[float]
+    bbox: List[float]
+    camera_index: int = 4
+
+@app.post("/api/detection/move_to_object")
+async def move_to_object(config: MoveToObjectConfig):
+    if not state.connected or not state.serial_port:
+        return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
+        
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
+        
+    M_adj = get_adjusted_calibration_matrix()
+    if not M_adj:
+        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
+
+    # 1. Map target object pixel center to workspace coordinates
+    cx_obj, cy_obj = config.center
+    M = np.array(M_adj, dtype=np.float32)
+    denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
+    if abs(denom) > 1e-5:
+        wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
+        wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
+    else:
+        wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
+        wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
+
+    # 2. Try to find the cnchead in current yolo detections for relative alignment
+    cnchead_obj = None
+    t_diff = time.time() - getattr(state, "latest_yolo_detection_time", 0.0)
+    if t_diff < 2.0 and getattr(state, "latest_yolo_detections", None):
+        for d in state.latest_yolo_detections:
+            cid = d["class_id"]
+            class_name = state.class_names.get(cid, f"Obj {cid}")
+            if class_name == "cnchead":
+                cnchead_obj = d
+                break
+
+    if cnchead_obj is not None:
+        cx_head, cy_head = cnchead_obj["center"]
+        # Map cnchead pixel center to workspace coordinates
+        denom_head = M[2, 0] * cx_head + M[2, 1] * cy_head + M[2, 2] if M.shape[0] > 2 else 1.0
+        if abs(denom_head) > 1e-5:
+            wx_head = (M[0, 0] * cx_head + M[0, 1] * cy_head + M[0, 2]) / denom_head
+            wy_head = (M[1, 0] * cx_head + M[1, 1] * cy_head + M[1, 2]) / denom_head
+        else:
+            wx_head = M[0, 0] * cx_head + M[0, 1] * cy_head + M[0, 2]
+            wy_head = M[1, 0] * cx_head + M[1, 1] * cy_head + M[1, 2]
+
+        # Relative movement logic: target_wpos = current_wpos + (obj_wpos - head_wpos)
+        dx = wx_obj - wx_head
+        dy = wy_obj - wy_head
+        target_wx = state.wpos[0] + dx
+        target_wy = state.wpos[1] + dy
+        movement_type = "relative (cnchead offset)"
+        logger.info(f"[MoveToObject] cnchead detected. Relative offset movement: dx={dx:.3f}, dy={dy:.3f}")
+    else:
+        # Fallback to direct mapping
+        target_wx = wx_obj
+        target_wy = wy_obj
+        movement_type = "direct mapping"
+        logger.info("[MoveToObject] cnchead NOT detected. Fallback to direct coordinate mapping")
+
+    # Send G1 command using global feedrate
+    cmd = f"G90 G1 X{target_wx:.3f} Y{target_wy:.3f} F{state.gesture_feedrate:.0f}"
+    try:
+        state.serial_port.write((cmd + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+    except Exception as e:
+        return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
+
+    label_name = state.class_names.get(config.class_id, f"Obj {config.class_id}")
+    return {
+        "status": "ok",
+        "message": f"Moved CNC head to {label_name} center at machine coords: X={target_wx:.3f}, Y={target_wy:.3f} ({movement_type})",
+        "target": [target_wx, target_wy]
+    }
+
 class ClickGoConfig(BaseModel):
     x: float
     y: float
