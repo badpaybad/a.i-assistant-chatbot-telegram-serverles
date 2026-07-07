@@ -105,7 +105,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Fetch and populate available serial ports and camera inputs
 async function populateDevices(showInConsole = false) {
     if (showInConsole) {
-        logSystemMessage("Scanning connected devices (ls)...");
+        logSystemMessage(t("Đang quét các thiết bị kết nối (ls)..."));
     }
     try {
         const portsRes = await fetch("/api/devices/ports");
@@ -121,14 +121,14 @@ async function populateDevices(showInConsole = false) {
             });
         }
         if (showInConsole) {
-            logSystemMessage("Available Serial Ports:");
+            logSystemMessage(t("Các cổng Serial khả dụng:"));
             ports.forEach(p => {
                 logSystemMessage(`  • ${p.port} - ${p.description}`);
             });
         }
     } catch (e) {
-        console.error("Failed to fetch available serial ports:", e);
-        if (showInConsole) logSystemMessage(`Error scanning ports: ${e}`);
+        console.error(t("Lấy danh sách các cổng Serial khả dụng thất bại:"), e);
+        if (showInConsole) logSystemMessage(t("Lỗi quét các cổng: {error}", { error: e }));
     }
 
     try {
@@ -145,14 +145,14 @@ async function populateDevices(showInConsole = false) {
             });
         }
         if (showInConsole) {
-            logSystemMessage("Available USB Cameras:");
+            logSystemMessage(t("Các Camera USB khả dụng:"));
             cams.forEach(c => {
                 logSystemMessage(`  • Cam ${c.index} - ${c.name}`);
             });
         }
     } catch (e) {
-        console.error("Failed to fetch available cameras:", e);
-        if (showInConsole) logSystemMessage(`Error scanning cameras: ${e}`);
+        console.error(t("Lấy danh sách camera khả dụng thất bại:"), e);
+        if (showInConsole) logSystemMessage(t("Lỗi quét camera: {error}", { error: e }));
     }
 }
 
@@ -163,7 +163,7 @@ async function fetchState() {
         const data = await res.json();
         updateUIState(data);
     } catch (e) {
-        logSystemMessage("Failed to fetch initial state from server.");
+        logSystemMessage(t("Lấy trạng thái ban đầu từ máy chủ thất bại."));
     }
 }
 
@@ -197,7 +197,7 @@ function updateUIState(data) {
     }
 
     // Machine State
-    machineState.innerText = data.machine_state || "OFFLINE";
+    machineState.innerText = data.machine_state ? t(data.machine_state) : t("NGOẠI TUYẾN");
     machineState.className = "state-badge " + (data.machine_state ? data.machine_state.toLowerCase() : "disconnected");
 
     // Coordinates (DRO)
@@ -231,7 +231,7 @@ function updateUIState(data) {
         progressContainer.classList.remove("hidden");
         const pct = ((data.gcode_index / data.gcode_total) * 100) || 0;
         progressPercentage.innerText = Math.round(pct) + "%";
-        progressFraction.innerText = `${data.gcode_index} / ${data.gcode_total} lines`;
+        progressFraction.innerText = t("{index} / {total} dòng", { index: data.gcode_index, total: data.gcode_total });
         streamProgressBar.style.width = pct + "%";
 
         btnStartStream.disabled = true;
@@ -239,10 +239,10 @@ function updateUIState(data) {
         btnAbortStream.disabled = false;
 
         if (data.is_paused) {
-            btnPauseStream.innerText = "Resume";
+            btnPauseStream.innerText = t("Tiếp Tục");
             btnPauseStream.className = "btn btn-success";
         } else {
-            btnPauseStream.innerText = "Pause";
+            btnPauseStream.innerText = t("Tạm Dừng");
             btnPauseStream.className = "btn btn-warning";
         }
     } else {
@@ -264,7 +264,7 @@ function initWebSocket() {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
     const wsUrl = `${protocol}//${window.location.host}/ws`;
 
-    logSystemMessage("Establishing connection to controller...");
+    logSystemMessage(t("Đang thiết lập kết nối tới bộ điều khiển..."));
     ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -283,7 +283,7 @@ function initWebSocket() {
     };
 
     ws.onerror = (err) => {
-        console.error("WS error: ", err);
+        console.error(t("Lỗi WS:"), err);
     };
 }
 
@@ -348,7 +348,7 @@ function updateConnectionUI() {
 }
 
 function updateTelemetry(data) {
-    machineState.innerText = data.state;
+    machineState.innerText = t(data.state);
     machineState.className = "state-badge " + data.state.toLowerCase();
 
     // Toggle unlock button alarm styling (cập nhật 34)
@@ -390,7 +390,7 @@ function updateTelemetry(data) {
         progressContainer.classList.remove("hidden");
         const pct = (data.streaming_progress * 100) || 0;
         progressPercentage.innerText = Math.round(pct) + "%";
-        progressFraction.innerText = `${data.gcode_index} / ${data.gcode_total} lines`;
+        progressFraction.innerText = t("{index} / {total} dòng", { index: data.gcode_index, total: data.gcode_total });
         streamProgressBar.style.width = pct + "%";
 
         btnStartStream.disabled = true;
@@ -411,12 +411,12 @@ function updateTelemetry(data) {
 
 function handleStreamStatus(msg) {
     if (msg.status === "started") {
-        logSystemMessage("G-code job execution started.");
+        logSystemMessage(t("Bắt đầu thực hiện công việc G-code."));
     } else if (msg.status === "completed") {
-        logSystemMessage("G-code job completed successfully!");
+        logSystemMessage(t("Công việc G-code hoàn thành thành công!"));
         fetchState();
         if (scenarioLooping && typeof window.startScenarioExecution === "function") {
-            logSystemMessage("Scenario loop: starting next iteration in 1s...");
+            logSystemMessage(t("Vòng lặp kịch bản: bắt đầu lượt tiếp theo sau 1 giây..."));
             setTimeout(() => {
                 if (scenarioLooping && typeof window.startScenarioExecution === "function") {
                     window.startScenarioExecution(true);
@@ -424,17 +424,17 @@ function handleStreamStatus(msg) {
             }, 1000);
         }
     } else if (msg.status === "failed") {
-        logSystemMessage(`G-code job execution failed: ${msg.message}`);
+        logSystemMessage(t("Thực hiện công việc G-code thất bại: {message}", { message: msg.message }));
         fetchState();
         if (scenarioLooping && typeof window.stopScenarioLoop === "function") {
-            logSystemMessage("Scenario loop stopped due to execution failure.");
+            logSystemMessage(t("Vòng lặp kịch bản đã dừng do thực hiện thất bại."));
             window.stopScenarioLoop();
         }
     } else if (msg.status === "stopped") {
-        logSystemMessage("G-code job aborted by user. Controller soft-reset sent.");
+        logSystemMessage(t("Công việc G-code đã bị hủy bởi người dùng. Đã gửi lệnh thiết lập lại mềm bộ điều khiển."));
         fetchState();
         if (scenarioLooping && typeof window.stopScenarioLoop === "function") {
-            logSystemMessage("Scenario loop stopped because job was aborted.");
+            logSystemMessage(t("Vòng lặp kịch bản đã dừng vì công việc bị hủy."));
             window.stopScenarioLoop();
         }
     }
@@ -490,10 +490,10 @@ async function sendCommand(cmd) {
         });
         const data = await res.json();
         if (data.status === "error") {
-            logSystemMessage(`Command error: ${data.message}`);
+            logSystemMessage(t("Lỗi lệnh: {message}", { message: data.message }));
         }
     } catch (e) {
-        logSystemMessage(`Network error sending command: ${e}`);
+        logSystemMessage(t("Lỗi mạng khi gửi lệnh: {error}", { error: e }));
     }
 }
 
@@ -512,10 +512,10 @@ function setupEventListeners() {
             const res = await fetch("/api/reload-ai-model", { method: "GET" });
             const data = await res.json();
             if (data.status === "error") {
-                logSystemMessage(`Reload AI model error: ${data.message}`);
+                logSystemMessage(t("Lỗi tải lại mô hình AI: {message}", { message: data.message }));
             }
         } catch (e) {
-            logSystemMessage(`Network error reloading AI model: ${e}`);
+            logSystemMessage(t("Lỗi mạng khi tải lại mô hình AI: {error}", { error: e }));
         }
     });
 
@@ -733,13 +733,13 @@ function setupEventListeners() {
         const res = await fetch("/api/start", { method: "POST" });
         const data = await res.json();
         if (data.status === "error") {
-            logSystemMessage(`Error starting stream: ${data.message}`);
+            logSystemMessage(t("Lỗi khởi động luồng phát: {message}", { message: data.message }));
         }
     });
 
     btnPauseStream.addEventListener("click", () => {
         const text = btnPauseStream.innerText;
-        if (text === "Pause") {
+        if (text === t("Tạm Dừng")) {
             sendCommand("!");
         } else {
             sendCommand("~");
@@ -747,11 +747,11 @@ function setupEventListeners() {
     });
 
     btnAbortStream.addEventListener("click", async () => {
-        if (confirm("WARNING: Are you sure you want to ABORT the running G-code job?")) {
+        if (confirm(t("CẢNH BÁO: Bạn có chắc chắn muốn HỦY công việc G-code đang chạy không?"))) {
             const res = await fetch("/api/stop", { method: "POST" });
             const data = await res.json();
             if (data.status === "error") {
-                logSystemMessage(`Error aborting: ${data.message}`);
+                logSystemMessage(t("Lỗi hủy bỏ: {message}", { message: data.message }));
             }
         }
     });
@@ -760,8 +760,8 @@ function setupEventListeners() {
     const updatePenLabels = () => {
         const mode = penControlMode.value;
         if (mode === "z-axis") {
-            lblPenUp.innerText = "UP Position (mm)";
-            lblPenDown.innerText = "DOWN Position (mm)";
+            lblPenUp.innerText = t("Vị Trí NHẤC (mm)");
+            lblPenDown.innerText = t("Vị Trí HẠ (mm)");
             penUpVal.step = "0.5";
             penDownVal.step = "0.5";
 
@@ -769,8 +769,8 @@ function setupEventListeners() {
             penUpVal.value = localStorage.getItem("cnc_pen_up_z") || "3.0";
             penDownVal.value = localStorage.getItem("cnc_pen_down_z") || "0.0";
         } else {
-            lblPenUp.innerText = "UP PWM / Speed (S)";
-            lblPenDown.innerText = "DOWN PWM / Speed (S)";
+            lblPenUp.innerText = t("Vị Trí NHẤC PWM / Tốc độ (S)");
+            lblPenDown.innerText = t("Vị Trí HẠ PWM / Tốc độ (S)");
             penUpVal.step = "5";
             penDownVal.step = "5";
 
@@ -797,7 +797,7 @@ function setupEventListeners() {
             penDwellVal.value = settings.pen_dwell;
             updatePenLabels();
         } catch (e) {
-            console.error("Failed to load pen settings from backend:", e);
+            console.error(t("Tải cấu hình bút từ backend thất bại:"), e);
             updatePenLabels();
         }
     };
@@ -828,7 +828,7 @@ function setupEventListeners() {
                 body: JSON.stringify(settings)
             });
         } catch (e) {
-            console.error("Failed to save pen settings to backend:", e);
+            console.error(t("Lưu cấu hình bút vào backend thất bại:"), e);
         }
     };
 
@@ -869,16 +869,16 @@ function setupEventListeners() {
     // Pen Click Triggers
     btnPenUp.addEventListener("click", () => {
         if (!isConnected) {
-            logSystemMessage("Cannot move pen: machine is disconnected.");
+            logSystemMessage(t("Không thể di chuyển bút: máy chưa kết nối."));
             return;
         }
         const mode = penControlMode.value;
         const val = penUpVal.value;
         if (mode === "z-axis") {
-            logSystemMessage(`Raising pen to Z ${val}`);
+            logSystemMessage(t("Đang nhấc bút lên Z {value}", { value: val }));
             sendCommand(`G0 Z${val}`);
         } else {
-            logSystemMessage(`Raising pen: Spindle PWM S${val}`);
+            logSystemMessage(t("Đang nhấc bút: Spindle PWM S{value}", { value: val }));
             targetSpindleSpeed = parseFloat(val);
             sendCommand(`M3 S${val}`);
         }
@@ -886,16 +886,16 @@ function setupEventListeners() {
 
     btnPenDown.addEventListener("click", () => {
         if (!isConnected) {
-            logSystemMessage("Cannot move pen: machine is disconnected.");
+            logSystemMessage(t("Không thể di chuyển bút: máy chưa kết nối."));
             return;
         }
         const mode = penControlMode.value;
         const val = penDownVal.value;
         if (mode === "z-axis") {
-            logSystemMessage(`Lowering pen to Z ${val}`);
+            logSystemMessage(t("Đang hạ bút xuống Z {value}", { value: val }));
             sendCommand(`G0 Z${val}`);
         } else {
-            logSystemMessage(`Lowering pen: Spindle PWM S${val}`);
+            logSystemMessage(t("Đang hạ bút: Spindle PWM S{value}", { value: val }));
             targetSpindleSpeed = parseFloat(val);
             sendCommand(`M3 S${val}`);
         }
@@ -974,18 +974,18 @@ function setupEventListeners() {
         cameraStreamImg.src = `/api/video_feed?index=${camIndex}`;
         cameraStreamImg.width = 720;
         cameraStreamImg.height = 720;
-        cameraStatusText.innerText = `Connected: Camera ${camIndex}`;
+        cameraStatusText.innerText = t("Đã kết nối: Camera {index}", { index: camIndex });
         cameraActiveDot.classList.add("active");
-        logSystemMessage(`Started live camera feed stream (Camera index ${camIndex})`);
+        logSystemMessage(t("Đã bắt đầu luồng truyền hình ảnh camera trực tiếp (Chỉ số Cam {index})", { index: camIndex }));
     };
 
     const stopCameraStream = () => {
         cameraStreamImg.src = "";
-        cameraStatusText.innerText = "Stream Offline";
+        cameraStatusText.innerText = t("Camera Ngoại Tuyến");
         cameraActiveDot.classList.remove("active");
         const container = document.getElementById("detected-labels-container");
         if (container) container.innerHTML = "";
-        logSystemMessage("Camera feed stream stopped");
+        logSystemMessage(t("Luồng truyền hình ảnh camera đã dừng"));
     };
 
     const toggleCameraCollapse = () => {
@@ -1041,11 +1041,11 @@ function setupEventListeners() {
             if (isCameraFullscreen) {
                 cameraFloatingPanel.classList.add("fullscreen");
                 btnCameraExpand.querySelector(".expand-icon").innerText = "❐";
-                btnCameraExpand.title = "Restore Camera Panel";
+                btnCameraExpand.title = t("Khôi phục bảng điều khiển Camera");
             } else {
                 cameraFloatingPanel.classList.remove("fullscreen");
                 btnCameraExpand.querySelector(".expand-icon").innerText = "⛶";
-                btnCameraExpand.title = "Expand Full Page";
+                btnCameraExpand.title = t("Mở rộng toàn màn hình");
             }
         });
     }
@@ -1059,7 +1059,7 @@ function setupEventListeners() {
                 cameraFloatingPanel.classList.remove("fullscreen");
                 if (btnCameraExpand) {
                     btnCameraExpand.querySelector(".expand-icon").innerText = "⛶";
-                    btnCameraExpand.title = "Expand Full Page";
+                    btnCameraExpand.title = t("Mở rộng toàn màn hình");
                 }
             }
             toggleCameraCollapse();
@@ -1091,13 +1091,13 @@ function setupEventListeners() {
 
     const triggerCaptureDownload = (mode) => {
         if (isCameraCollapsed) {
-            logSystemMessage("⚠️ Cannot capture frame: camera stream is offline. Please open the camera panel.");
+            logSystemMessage(t("⚠️ Không thể chụp ảnh: luồng camera ngoại tuyến. Vui lòng mở bảng điều khiển camera."));
             return;
         }
         const camIdx = cameraSelect ? cameraSelect.value : 4;
 
         if (mode === "1280") {
-            logSystemMessage(`📸 Triggering original 1280x720 frame JPEG download...`);
+            logSystemMessage(t("📸 Đang tải xuống ảnh chụp khung hình gốc 1280x720 JPEG..."));
             const link = document.createElement("a");
             link.href = `/api/capture/download?mode=1280&camera_index=${camIdx}`;
             link.download = `capture_1280_${Date.now()}.jpg`;
@@ -1105,7 +1105,7 @@ function setupEventListeners() {
             link.click();
             document.body.removeChild(link);
         } else if (mode === "720") {
-            logSystemMessage(`📸 Triggering raw & cropped 720x720 JPEG downloads...`);
+            logSystemMessage(t("📸 Đang tải xuống các ảnh chụp gốc & cắt gọn 720x720 JPEG..."));
 
             // // Raw frame download
             // const linkRaw = document.createElement("a");
@@ -1156,10 +1156,10 @@ function setupEventListeners() {
                 });
                 const data = await res.json();
                 if (data.status === "ok") {
-                    logSystemMessage(`Object detection overlay ${chkDetectObjects.checked ? "enabled" : "disabled"}.`);
+                    logSystemMessage(t("Lớp phủ nhận diện vật thể đã {status}.", { status: chkDetectObjects.checked ? t("bật") : t("tắt") }));
                 }
             } catch (e) {
-                logSystemMessage(`Failed to toggle object detection: ${e}`);
+                logSystemMessage(t("Bật/tắt nhận diện vật thể thất bại: {error}", { error: e }));
             }
         });
     }
@@ -1169,8 +1169,8 @@ function setupEventListeners() {
             if (!isConnected) return;
             try {
                 btnDetectMove.disabled = true;
-                btnDetectMove.innerText = "⏳ Aligning...";
-                logSystemMessage("Running YOLO detection & moving to largest object center...");
+                btnDetectMove.innerText = t("⏳ Đang căn chỉnh...");
+                logSystemMessage(t("Đang chạy nhận diện YOLO & di chuyển tới tâm vật thể lớn nhất..."));
 
                 const camIdx = cameraSelect ? cameraSelect.value : 4;
                 const res = await fetch(`/api/detection/move_to_largest?camera_index=${camIdx}`, {
@@ -1178,17 +1178,17 @@ function setupEventListeners() {
                 });
                 const data = await res.json();
                 btnDetectMove.disabled = false;
-                btnDetectMove.innerText = "🎯 Go to Largest Object";
+                btnDetectMove.innerText = t("Đến Vật Thể Lớn Nhất");
 
                 if (data.status === "ok") {
                     logSystemMessage(`✅ ${data.message}`);
                 } else {
-                    logSystemMessage(`❌ Detection/Move failed: ${data.message}`);
+                    logSystemMessage(t("❌ Nhận diện/Di chuyển thất bại: {message}", { message: data.message }));
                 }
             } catch (e) {
                 btnDetectMove.disabled = false;
-                btnDetectMove.innerText = "🎯 Go to Largest Object";
-                logSystemMessage(`❌ Network error during alignment: ${e}`);
+                btnDetectMove.innerText = t("Đến Vật Thể Lớn Nhất");
+                logSystemMessage(t("❌ Lỗi mạng khi căn chỉnh: {error}", { error: e }));
             }
         });
     }
@@ -1218,11 +1218,11 @@ function setupEventListeners() {
     // Camera stream click to move (cập nhật 5)
     cameraStreamImg.addEventListener("click", async (e) => {
         if (!isConnected) {
-            logSystemMessage("Cannot click-to-move: machine is disconnected.");
+            logSystemMessage(t("Không thể di chuyển: máy chưa kết nối."));
             return;
         }
         if (!isCalibrated) {
-            logSystemMessage("Cannot click-to-move: calibration is not complete.");
+            logSystemMessage(t("Không thể click để di chuyển: chưa hoàn thành căn chỉnh."));
             return;
         }
 
@@ -1253,7 +1253,7 @@ function setupEventListeners() {
         cameraStreamImg.parentElement.appendChild(ripple);
         setTimeout(() => ripple.remove(), 600);
 
-        logSystemMessage(`Clicked camera feed at px: (${cx.toFixed(1)}, ${cy.toFixed(1)}). Sending move command...`);
+        logSystemMessage(t("Đã click trên khung hình camera tại pixel: ({x}, {y}). Đang gửi lệnh di chuyển...", { x: cx.toFixed(1), y: cy.toFixed(1) }));
 
         try {
             const camIdx = cameraSelect ? cameraSelect.value : 4;
@@ -1266,17 +1266,16 @@ function setupEventListeners() {
             if (data.status === "ok") {
                 logSystemMessage(`✅ ${data.message}`);
             } else {
-                logSystemMessage(`❌ Click movement failed: ${data.message}`);
+                logSystemMessage(t("❌ Di chuyển bằng click thất bại: {message}", { message: data.message }));
             }
         } catch (err) {
-            logSystemMessage(`❌ Network error during click movement: ${err}`);
+            logSystemMessage(t("❌ Lỗi mạng khi di chuyển bằng click: {error}", { error: err }));
         }
     });
 
-    // 1. Định nghĩa function riêng biệt
     async function handleCornerArucoClick(corner, px, py) {
 
-        logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
+        logSystemMessage(t("Đang đặt điểm góc thủ công {id} tại pixel ({x}, {y})...", { id: corner.id, x: px.toFixed(1), y: py.toFixed(1) }));
 
         try {
             const res = await fetch("/api/calibration/set_manual_corner", {
@@ -1288,13 +1287,13 @@ function setupEventListeners() {
             const data = await res.json();
 
             if (data.status === "ok") {
-                logSystemMessage(`📐 Set ${corner.id} successfully!`);
+                logSystemMessage(t("📐 Đặt {id} thành công!", { id: corner.id }));
                 fetchCalibrationConfig(); // Đảm bảo hàm này tồn tại trong phạm vi (scope) của bạn
             } else {
-                logSystemMessage(`❌ Failed to set manual corner: ${data.message}`);
+                logSystemMessage(t("❌ Đặt điểm góc thủ công thất bại: {message}", { message: data.message }));
             }
         } catch (err) {
-            logSystemMessage(`❌ Network error during manual corner calibration: ${err}`);
+            logSystemMessage(t("❌ Lỗi mạng khi căn chỉnh điểm góc thủ công: {error}", { error: err }));
         }
     }
 
@@ -1329,16 +1328,16 @@ function setupEventListeners() {
         menu.style.top = `${e.clientY + window.scrollY - 70}px`;
 
         const corners = [
-            { id: "TL", label: "📐 Set Top-Left (TL)" },
-            { id: "TR", label: "📐 Set Top-Right (TR)" },
-            { id: "BL", label: "📐 Set Bottom-Left (BL)" },
-            { id: "BR", label: "📐 Set Bottom-Right (BR)" }
+            { id: "TL", label: "📐 Đặt Trên - Trái (TL)" },
+            { id: "TR", label: "📐 Đặt Trên - Phải (TR)" },
+            { id: "BL", label: "📐 Đặt Dưới - Trái (BL)" },
+            { id: "BR", label: "📐 Đặt Dưới - Phải (BR)" }
         ];
 
         corners.forEach(corner => {
             const item = document.createElement("div");
             item.className = "context-menu-item";
-            item.innerText = corner.label;
+            item.innerText = t(corner.label);
             item.addEventListener("click", async () => {
                 menu.remove();
                 await handleCornerArucoClick(corner, px, py);
@@ -1563,7 +1562,7 @@ function setupEventListeners() {
             }
             window.updateCalibrationUI();
         } catch (e) {
-            console.error("Failed to fetch calibration config: ", e);
+            console.error(t("Lấy cấu hình căn chỉnh thất bại:"), e);
         }
     };
 
@@ -1622,9 +1621,9 @@ function setupEventListeners() {
             movingAroundRunning = data.moving_around_running || false;
             if (btnMoveToCenter && !isAbortingMovingAround) {
                 if (movingAroundRunning) {
-                    btnMoveToCenter.textContent = "Moving around started";
+                    btnMoveToCenter.textContent = t("Đang di chuyển vòng quanh");
                 } else {
-                    btnMoveToCenter.textContent = "Moving around";
+                    btnMoveToCenter.textContent = t("Di chuyển vòng quanh");
                 }
             }
 
@@ -1640,7 +1639,7 @@ function setupEventListeners() {
                 btnDetectMove.disabled = !isConnected || !isHomeSet || !hasLastObject;
             }
         } catch (e) {
-            console.error("Failed to poll calibration status: ", e);
+            console.error(t("Kiểm tra trạng thái căn chỉnh thất bại:"), e);
         }
     };
 
@@ -1667,7 +1666,7 @@ function setupEventListeners() {
                         body: JSON.stringify({ draw_overlay: chkShowOverlay.checked })
                     });
                 } catch (e) {
-                    logSystemMessage(`Failed to toggle overlay: ${e}`);
+                    logSystemMessage(t("Bật/tắt lớp phủ thất bại: {error}", { error: e }));
                 }
             });
         }
@@ -1720,12 +1719,12 @@ function setupEventListeners() {
                     cncPoints = data.cnc_points;
                     isCalibrated = data.calibrated;
                     window.updateCalibrationUI();
-                    logSystemMessage(`📐 Set CNC ${corner} to current machine position successfully!`);
+                    logSystemMessage(t("📐 Đặt CNC {corner} về vị trí hiện tại thành công!", { corner: corner }));
                 } else {
-                    logSystemMessage(`❌ Failed to set CNC corner ${corner}: ${data.message}`);
+                    logSystemMessage(t("❌ Đặt góc CNC {corner} thất bại: {message}", { corner: corner, message: data.message }));
                 }
             } catch (e) {
-                logSystemMessage(`❌ Network error setting CNC ${corner}: ${e}`);
+                logSystemMessage(t("❌ Lỗi mạng khi đặt CNC {corner}: {error}", { corner: corner, error: e }));
             }
         };
 
@@ -1741,19 +1740,19 @@ function setupEventListeners() {
                     const res = await fetch("/api/calibration/set_aruco", { method: "POST" });
                     const data = await res.json();
                     if (data.status === "ok") {
-                        logSystemMessage("📐 Set ArUco standard points successfully!");
+                        logSystemMessage(t("📐 Đặt các điểm tiêu chuẩn ArUco thành công!"));
                     } else {
-                        logSystemMessage(`❌ Failed to set ArUco standard points: ${data.message}`);
+                        logSystemMessage(t("❌ Đặt các điểm tiêu chuẩn ArUco thất bại: {message}", { message: data.message }));
                     }
                 } catch (e) {
-                    logSystemMessage(`❌ Network error when setting ArUco: ${e}`);
+                    logSystemMessage(t("❌ Lỗi mạng khi đặt ArUco: {error}", { error: e }));
                 }
             });
         }
 
         if (btnCalClear) {
             btnCalClear.addEventListener("click", async () => {
-                if (confirm("Are you sure you want to clear the calibration?")) {
+                if (confirm(t("Bạn có chắc chắn muốn xóa căn chỉnh không?"))) {
                     try {
                         const res = await fetch("/api/calibration/clear", { method: "POST" });
                         const data = await res.json();
@@ -1763,10 +1762,10 @@ function setupEventListeners() {
                             cncPoints = {};
                             isCalibrated = false;
                             window.updateCalibrationUI();
-                            logSystemMessage("Calibration cleared.");
+                            logSystemMessage(t("Đã xóa căn chỉnh."));
                         }
                     } catch (e) {
-                        logSystemMessage(`Failed to clear calibration: ${e}`);
+                        logSystemMessage(t("Xóa căn chỉnh thất bại: {error}", { error: e }));
                     }
                 }
             });
@@ -1774,17 +1773,17 @@ function setupEventListeners() {
 
         if (btnResetAruco) {
             btnResetAruco.addEventListener("click", async () => {
-                if (confirm("Are you sure you want to reset standard ArUco points?")) {
+                if (confirm(t("Bạn có chắc chắn muốn đặt lại các điểm tiêu chuẩn ArUco không?"))) {
                     try {
                         const res = await fetch("/api/calibration/reset_aruco", { method: "POST" });
                         const data = await res.json();
                         if (data.status === "ok") {
-                            logSystemMessage("ArUco standard points reset.");
+                            logSystemMessage(t("Đã đặt lại các điểm tiêu chuẩn ArUco."));
                             arucoStandardPoints = {};
                             fetchCalibrationConfig();
                         }
                     } catch (e) {
-                        logSystemMessage(`Failed to reset ArUco: ${e}`);
+                        logSystemMessage(t("Đặt lại ArUco thất bại: {error}", { error: e }));
                     }
                 }
             });
@@ -1794,21 +1793,21 @@ function setupEventListeners() {
             btnStopToHome.addEventListener("click", async () => {
                 try {
                     // 1. Call api to stop/abort CNC streaming
-                    logSystemMessage("Stopping CNC streaming and resetting machine...");
+                    logSystemMessage(t("Đang dừng luồng phát CNC và thiết lập lại máy..."));
                     const res = await fetch("/api/stop", { method: "POST" });
                     const data = await res.json();
 
                     if (data.status === "ok") {
-                        logSystemMessage("CNC Stopped and Reset command sent.");
+                        logSystemMessage(t("Đã gửi lệnh Dừng và Thiết lập lại CNC."));
                     } else {
-                        logSystemMessage("Warning: Stop API returned status: " + data.status);
+                        logSystemMessage(t("Cảnh báo: API dừng trả về trạng thái: ") + data.status);
                     }
 
                     // 2. Wait 1.5 seconds for soft-reset to execute and connection to settle
                     await new Promise(resolve => setTimeout(resolve, 1500));
 
                     // 3. Send Unlock command $X to unlock GRBL from Alarm state after reset
-                    logSystemMessage("Sending unlock command ($X) to GRBL...");
+                    logSystemMessage(t("Đang gửi lệnh mở khóa ($X) tới GRBL..."));
                     await sendCommand("$X");
                     await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -1817,16 +1816,16 @@ function setupEventListeners() {
                     const penUpValLocal = penUpVal.value;
                     const penUpCmd = isSpindle ? `M3 S${penUpValLocal}` : `G0 Z${penUpValLocal}`;
 
-                    logSystemMessage(`Raising pen/spindle: ${penUpCmd}`);
+                    logSystemMessage(t("Đang nhấc bút/trục chính: {command}", { command: penUpCmd }));
                     await sendCommand(penUpCmd);
                     await new Promise(resolve => setTimeout(resolve, 500));
 
                     // 5. Move the CNC head back to the home position (0,0)
-                    logSystemMessage("Moving CNC head to Home (X0 Y0)...");
+                    logSystemMessage(t("Đang di chuyển đầu CNC về Home (X0 Y0)..."));
                     await sendCommand("G90\nG0 X0 Y0");
                 } catch (err) {
-                    console.error("Error executing Stop & Go Home:", err);
-                    logSystemMessage(`Error executing Stop & Go Home: ${err}`);
+                    console.error(t("Lỗi thực hiện Dừng & Về Home:"), err);
+                    logSystemMessage(t("Lỗi thực hiện Dừng & Về Home: {error}", { error: err }));
                 }
             });
         }
@@ -1837,45 +1836,45 @@ function setupEventListeners() {
 
                 if (!movingAroundRunning) {
                     try {
-                        logSystemMessage("Starting moving around calibration loop...");
+                        logSystemMessage(t("Đang bắt đầu vòng lặp căn chỉnh di chuyển vòng quanh..."));
                         btnMoveToCenter.disabled = true; // Temporary disable while waiting for request
                         const res = await fetch("/api/calibration/moving_around/start", { method: "POST" });
                         const data = await res.json();
                         if (data.status === "ok") {
                             movingAroundRunning = true;
-                            btnMoveToCenter.textContent = "Moving around started";
-                            logSystemMessage("Moving around loop started successfully.");
+                            btnMoveToCenter.textContent = t("Đang di chuyển vòng quanh");
+                            logSystemMessage(t("Đã bắt đầu vòng lặp di chuyển vòng quanh thành công."));
                         } else {
-                            logSystemMessage(`Failed to start moving around: ${data.message}`);
+                            logSystemMessage(t("Bắt đầu di chuyển vòng quanh thất bại: {message}", { message: data.message }));
                         }
                     } catch (e) {
-                        logSystemMessage(`Network error when starting loop: ${e}`);
+                        logSystemMessage(t("Lỗi mạng khi bắt đầu vòng lặp: {error}", { error: e }));
                     } finally {
                         window.updateCalibrationUI();
                     }
                 } else {
                     try {
-                        logSystemMessage("Stopping moving around loop...");
+                        logSystemMessage(t("Đang dừng vòng lặp di chuyển vòng quanh..."));
                         const res = await fetch("/api/calibration/moving_around/stop", { method: "POST" });
                         const data = await res.json();
                         if (data.status === "ok") {
                             movingAroundRunning = false;
                             isAbortingMovingAround = true;
-                            btnMoveToCenter.textContent = "Moving around stop";
+                            btnMoveToCenter.textContent = t("Đã dừng di chuyển vòng quanh");
                             window.updateCalibrationUI();
-                            logSystemMessage("Moving around loop stopped. Spindle is resetting and homing to origin.");
+                            logSystemMessage(t("Vòng lặp di chuyển vòng quanh đã dừng. Đầu cắt đang reset và về gốc tọa độ."));
 
                             setTimeout(() => {
                                 isAbortingMovingAround = false;
-                                btnMoveToCenter.textContent = "Moving around";
+                                btnMoveToCenter.textContent = t("Di chuyển vòng quanh");
                                 window.updateCalibrationUI();
                             }, 1500);
                         } else {
-                            logSystemMessage(`Failed to stop moving around: ${data.message}`);
+                            logSystemMessage(t("Dừng di chuyển vòng quanh thất bại: {message}", { message: data.message }));
                             window.updateCalibrationUI();
                         }
                     } catch (e) {
-                        logSystemMessage(`Network error when stopping loop: ${e}`);
+                        logSystemMessage(t("Lỗi mạng khi dừng vòng lặp: {error}", { error: e }));
                         window.updateCalibrationUI();
                     }
                 }
@@ -1946,7 +1945,7 @@ function setupEventListeners() {
 
     const updateSnapshotPos = (data) => {
         if (snapshotCurrentPos) {
-            snapshotCurrentPos.innerText = `Pen: X=${currentWPos.x.toFixed(3)}, Y=${currentWPos.y.toFixed(3)}`;
+            snapshotCurrentPos.innerText = t("Bút: X={x}, Y={y}", { x: currentWPos.x.toFixed(3), y: currentWPos.y.toFixed(3) });
         }
         const penMarker = document.getElementById("snapshot-pen-marker");
         if (penMarker) {
@@ -1967,7 +1966,7 @@ function setupEventListeners() {
 
         const resetHomeConfirm = () => {
             homeConfirmPending = false;
-            btnSetHome.innerText = "🏠 Set Home (0,0,0)";
+            btnSetHome.innerText = t("🏠 Đặt Gốc Home (0,0,0)");
             btnSetHome.className = "btn btn-warning";
             if (homeConfirmRow) homeConfirmRow.classList.add("hidden");
         };
@@ -1997,14 +1996,14 @@ function setupEventListeners() {
                 resetHomeConfirm();
                 try {
                     btnSetHome.disabled = true;
-                    btnSetHome.innerText = "⏳ Đang set home...";
+                    btnSetHome.innerText = t("⏳ Đang đặt gốc Home...");
                     const camIdx = cameraSelect ? cameraSelect.value : 4;
                     const res = await fetch("/api/home?camera_index=" + camIdx, { method: "POST" });
                     const data = await res.json();
                     if (data.status === "ok") {
                         isHomeSet = true;
                         updateHomeUI();
-                        logSystemMessage("✅ Home set! Vị trí hiện tại là (0, 0, 0). Đã lưu ảnh reference.");
+                        logSystemMessage(t("✅ Đặt Home thành công! Vị trí hiện tại là (0, 0, 0). Đã lưu ảnh tham chiếu."));
                         if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
                         if (data.home_pixel) {
                             const crosshair = document.getElementById("snapshot-crosshair");
@@ -2014,12 +2013,12 @@ function setupEventListeners() {
                             }
                         }
                     } else {
-                        logSystemMessage("❌ Set home thất bại: " + data.message);
+                        logSystemMessage(t("❌ Đặt home thất bại: {message}", { message: data.message }));
                     }
                 } catch (e) {
-                    logSystemMessage("❌ Lỗi mạng khi set home: " + e);
+                    logSystemMessage(t("❌ Lỗi mạng khi đặt home: {error}", { error: e }));
                 } finally {
-                    btnSetHome.innerText = "🏠 Set Home (0,0,0)";
+                    btnSetHome.innerText = t("🏠 Đặt Gốc Home (0,0,0)");
                     btnSetHome.className = "btn btn-warning";
                     updateHomeUI();
                 }
@@ -2033,7 +2032,7 @@ function setupEventListeners() {
 
     if (btnResetHome) {
         btnResetHome.addEventListener("click", async () => {
-            if (confirm("Bạn có muốn khôi phục vị trí Home của CNC về điểm đã lưu?")) {
+            if (confirm(t("Bạn có muốn khôi phục vị trí Home của CNC về điểm đã lưu?"))) {
                 try {
                     btnResetHome.disabled = true;
                     btnResetHome.innerText = t("Đang Khôi Phục...");
@@ -2046,7 +2045,7 @@ function setupEventListeners() {
                         logSystemMessage("✅ " + data.message);
                         alert(data.message);
                     } else if (data.status === "head_not_detected") {
-                        if (confirm(data.message + "\n\nNhấn OK để thiết lập vị trí hiện tại làm mốc Home.")) {
+                        if (confirm(data.message + "\n\n" + t("Nhấn OK để thiết lập vị trí hiện tại làm mốc Home."))) {
                             // User chose to manually align and force zero
                             btnResetHome.disabled = true;
                             btnResetHome.innerText = t("Đang Khôi Phục...");
@@ -2059,17 +2058,17 @@ function setupEventListeners() {
                                 logSystemMessage("✅ " + forceData.message);
                                 alert(forceData.message);
                             } else {
-                                alert("Khôi phục thất bại: " + forceData.message);
+                                alert(t("Khôi phục thất bại: {message}", { message: forceData.message }));
                             }
                         }
                     } else {
-                        alert("Lỗi khôi phục Home: " + data.message);
+                        alert(t("Lỗi khôi phục Home: {message}", { message: data.message }));
                     }
                 } catch (e) {
                     btnResetHome.disabled = false;
-                    btnResetHome.innerText = "Restore Home";
-                    logSystemMessage(`Failed to restore home: ${e}`);
-                    alert("Lỗi mạng khi khôi phục Home: " + e);
+                    btnResetHome.innerText = t("Khôi Phục Gốc Home");
+                    logSystemMessage(t("Khôi phục Home thất bại: {error}", { error: e }));
+                    alert(t("Lỗi mạng khi khôi phục Home: {error}", { error: e }));
                 }
             }
         });
@@ -2082,12 +2081,12 @@ function setupEventListeners() {
             homeSnapshotVisible = !homeSnapshotVisible;
             if (homeSnapshotVisible) {
                 homeSnapshotContainer.classList.remove("hidden");
-                btnViewSnapshot.innerText = "📷 Hide Map";
+                btnViewSnapshot.innerText = t("📷 Ẩn Bản Đồ");
                 if (homeSnapshotImg) homeSnapshotImg.src = "/api/home_snapshot?t=" + Date.now();
                 updateSnapshotPos();
             } else {
                 homeSnapshotContainer.classList.add("hidden");
-                btnViewSnapshot.innerText = "📸 View Map";
+                btnViewSnapshot.innerText = t("📸 Xem Bản Đồ");
             }
         });
     }
@@ -2096,7 +2095,7 @@ function setupEventListeners() {
         btnCloseSnapshot.addEventListener("click", () => {
             homeSnapshotVisible = false;
             if (homeSnapshotContainer) homeSnapshotContainer.classList.add("hidden");
-            if (btnViewSnapshot) btnViewSnapshot.innerText = "📸 View Map";
+            if (btnViewSnapshot) btnViewSnapshot.innerText = t("📸 Xem Bản Đồ");
         });
     }
 
@@ -2116,7 +2115,7 @@ function setupEventListeners() {
             const gestureFeedrateInput = document.getElementById("gesture-feedrate");
             const feedrate = parseFloat(gestureFeedrateInput ? gestureFeedrateInput.value : 4000) || 4000;
             try {
-                logSystemMessage(`➡ GoTo: Moving pen to X=${x.toFixed(3)}, Y=${y.toFixed(3)} @ F${feedrate}`);
+                logSystemMessage(t("➡ GoTo: Đang di chuyển bút tới X={x}, Y={y} @ F{feedrate}", { x: x.toFixed(3), y: y.toFixed(3), feedrate: feedrate }));
                 const res = await fetch("/api/goto", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -2126,10 +2125,10 @@ function setupEventListeners() {
                 if (data.status === "ok") {
                     logSystemMessage("✅ " + data.message);
                 } else {
-                    logSystemMessage("❌ GoTo failed: " + data.message);
+                    logSystemMessage(t("❌ GoTo thất bại: {message}", { message: data.message }));
                 }
             } catch (e) {
-                logSystemMessage("❌ Network error during GoTo: " + e);
+                logSystemMessage(t("❌ Lỗi mạng trong quá trình GoTo: {error}", { error: e }));
             }
         });
     }
@@ -2213,7 +2212,7 @@ function setupEventListeners() {
 
 function jogAxis(axis, direction) {
     if (!isConnected) {
-        logSystemMessage("Cannot jog: machine is disconnected.");
+        logSystemMessage(t("Không thể di chuyển Jog: máy chưa kết nối."));
         return;
     }
 
@@ -2228,7 +2227,7 @@ function jogAxis(axis, direction) {
         if (targetSpindleSpeed < 0) targetSpindleSpeed = 0;
         if (targetSpindleSpeed > 1000) targetSpindleSpeed = 1000;
 
-        logSystemMessage(`Adjusting spindle PWM by 10: S${targetSpindleSpeed}`);
+        logSystemMessage(t("Đang điều chỉnh spindle PWM thêm 10: S{speed}", { speed: targetSpindleSpeed }));
         sendCommand(`M3 S${targetSpindleSpeed}`);
         return;
     }
@@ -2242,7 +2241,7 @@ function jogAxis(axis, direction) {
 
 function jogDiagonal(dirX, dirY) {
     if (!isConnected) {
-        logSystemMessage("Cannot jog: machine is disconnected.");
+        logSystemMessage(t("Không thể di chuyển Jog: máy chưa kết nối."));
         return;
     }
     const distX = currentStepDistance * dirX;
@@ -2256,7 +2255,7 @@ async function handleFileSelection() {
     const file = fileInput.files[0];
     if (!file) return;
 
-    logSystemMessage(`Uploading file: ${file.name}...`);
+    logSystemMessage(t("Đang tải lên file: {filename}...", { filename: file.name }));
 
     const formData = new FormData();
     formData.append("file", file);
@@ -2268,11 +2267,11 @@ async function handleFileSelection() {
         });
         const data = await res.json();
         if (data.status === "ok") {
-            logSystemMessage(`Upload complete. Reading G-code to parse toolpath...`);
+            logSystemMessage(t("Tải lên thành công. Đang đọc G-code để phân tích đường chạy dao..."));
 
             // Set file UI info card
             loadedFileName.innerText = file.name;
-            loadedFileLines.innerText = `${data.lines_count} lines`;
+            loadedFileLines.innerText = t("{count} dòng", { count: data.lines_count });
             fileDropZone.classList.add("hidden");
             fileInfoContainer.classList.remove("hidden");
             btnStartStream.disabled = !isConnected;
@@ -2284,15 +2283,15 @@ async function handleFileSelection() {
                 toolpathPoints = parseGcode(text);
                 calculateBoundingBox();
                 resetCanvasView();
-                logSystemMessage(`Parsed ${toolpathPoints.length} motion segments from G-code.`);
+                logSystemMessage(t("Đã phân tích {count} phân đoạn chuyển động từ G-code.", { count: toolpathPoints.length }));
             };
             reader.readAsText(file);
 
         } else {
-            logSystemMessage(`Upload failed: ${data.message}`);
+            logSystemMessage(t("Tải lên thất bại: {message}", { message: data.message }));
         }
     } catch (e) {
-        logSystemMessage(`Upload network error: ${e}`);
+        logSystemMessage(t("Lỗi mạng khi tải lên: {error}", { error: e }));
     }
 }
 
@@ -2612,7 +2611,7 @@ function drawToolCrosshair() {
 // --- TOUCH & SWIPE GESTURE IMPLEMENTATION ---
 async function executeGesture(type) {
     if (!isConnected) {
-        logSystemMessage("Cannot execute gesture: machine is disconnected.");
+        logSystemMessage(t("Không thể thực hiện cử chỉ: máy chưa kết nối."));
         return;
     }
 
@@ -2645,7 +2644,7 @@ async function executeGesture(type) {
 
     switch (type) {
         case "tap":
-            logSystemMessage(`Simulating Tap at X:${startX}, Y:${startY}`);
+            logSystemMessage(t("Đang giả lập Chạm tại X:{x}, Y:{y}", { x: startX, y: startY }));
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(tapDwellCmd);
@@ -2654,7 +2653,7 @@ async function executeGesture(type) {
             break;
 
         case "doubletap":
-            logSystemMessage(`Simulating Double Tap at X:${startX}, Y:${startY}`);
+            logSystemMessage(t("Đang giả lập Chạm Đúp tại X:{x}, Y:{y}", { x: startX, y: startY }));
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             // First Tap
             gcode.push(penDownCmd);
@@ -2671,7 +2670,7 @@ async function executeGesture(type) {
             break;
 
         case "longpress":
-            logSystemMessage(`Simulating Long Press (1s) at X:${startX}, Y:${startY}`);
+            logSystemMessage(t("Đang giả lập Nhấn Giữ (1s) tại X:{x}, Y:{y}", { x: startX, y: startY }));
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
@@ -2692,28 +2691,28 @@ async function executeGesture(type) {
             switch (type) {
                 case "swipe-up":
                     swipeEndY = startY - distance;
-                    logMsg = `Simulating Swipe Up: moving up by ${distance}mm`;
+                    logMsg = t("Giả lập Vuốt Lên: di chuyển lên {distance}mm", { distance: distance });
                     break;
                 case "swipe-down":
                     swipeEndY = startY + distance;
-                    logMsg = `Simulating Swipe Down: moving down by ${distance}mm`;
+                    logMsg = t("Giả lập Vuốt Xuống: di chuyển xuống {distance}mm", { distance: distance });
                     break;
                 case "swipe-left":
                     swipeEndX = startX - distance;
-                    logMsg = `Simulating Swipe Left: moving left by ${distance}mm`;
+                    logMsg = t("Giả lập Vuốt Trái: di chuyển sang trái {distance}mm", { distance: distance });
                     break;
                 case "swipe-right":
                     swipeEndX = startX + distance;
-                    logMsg = `Simulating Swipe Right: moving right by ${distance}mm`;
+                    logMsg = t("Giả lập Vuốt Phải: di chuyển sang phải {distance}mm", { distance: distance });
                     break;
                 case "swipe-custom":
                     swipeEndX = endX;
                     swipeEndY = endY;
-                    logMsg = `Simulating Custom Swipe from X:${startX} Y:${startY} to X:${endX} Y:${endY}`;
+                    logMsg = t("Giả lập Vuốt Tự Chọn từ X:{startX} Y:{startY} tới X:{endX} Y:{endY}", { startX, startY, endX, endY });
                     break;
             }
 
-            logSystemMessage(`${logMsg} @ F${feedrate}`);
+            logSystemMessage(t("{message} @ F{feedrate}", { message: logMsg, feedrate: feedrate }));
             gcode.push(`G1 X${startX} Y${startY} F${feedrate}`);
             gcode.push(penDownCmd);
             gcode.push(penDwellCmd);
@@ -2727,7 +2726,7 @@ async function executeGesture(type) {
             break;
 
         default:
-            console.error("Unknown gesture type: " + type);
+            console.error(t("Cử chỉ không hợp lệ: ") + type);
             return;
     }
 
@@ -2756,7 +2755,7 @@ async function loadSavedUIPreferences() {
             }
         }
     } catch (e) {
-        console.error("Failed to load UI preferences from server, using localStorage/defaults:", e);
+        console.error(t("Tải cấu hình giao diện từ server thất bại, sử dụng localStorage hoặc mặc định:"), e);
         // Try fallback to localStorage
         const localStepDist = localStorage.getItem("cnc_step_distance");
         if (localStepDist !== null) {
@@ -2856,7 +2855,7 @@ async function saveUIPreferencesToServer() {
             body: JSON.stringify(prefs)
         });
     } catch (e) {
-        console.error("Failed to save UI preferences to server:", e);
+        console.error(t("Lưu cấu hình giao diện lên server thất bại:"), e);
     }
 }
 
@@ -3031,7 +3030,7 @@ function initGcodeEditor() {
     function handleEditorFile(file) {
         const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
         if (![".svg", ".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-            alert("File không hỗ trợ! Vui lòng chọn ảnh JPG, PNG hoặc file SVG.");
+            alert(t("File không hỗ trợ! Vui lòng chọn ảnh JPG, PNG hoặc file SVG."));
             return;
         }
 
@@ -3094,12 +3093,12 @@ function initGcodeEditor() {
     if (btnEditorConvert) {
         btnEditorConvert.addEventListener("click", async () => {
             if (!editorOriginalImageFile) {
-                alert("Vui lòng chọn một file ảnh hoặc SVG trước!");
+                alert(t("Vui lòng chọn một file ảnh hoặc SVG trước!"));
                 return;
             }
 
             btnEditorConvert.disabled = true;
-            btnEditorConvert.innerText = "Đang chuyển đổi...";
+            btnEditorConvert.innerText = t("Đang chuyển đổi...");
 
             const formData = new FormData();
             formData.append("file", editorOriginalImageFile);
@@ -3132,7 +3131,7 @@ function initGcodeEditor() {
                 });
                 const data = await res.json();
                 btnEditorConvert.disabled = false;
-                btnEditorConvert.innerText = "Tạo G-Code";
+                btnEditorConvert.innerText = t("Tạo G-Code");
 
                 if (data.status === "ok") {
                     editorSegments = data.segments;
@@ -3145,12 +3144,12 @@ function initGcodeEditor() {
                     updateScale();
                     drawEditorCanvas();
                 } else {
-                    alert("Chuyển đổi thất bại: " + data.message);
+                    alert(t("Chuyển đổi thất bại: {message}", { message: data.message }));
                 }
             } catch (err) {
                 btnEditorConvert.disabled = false;
-                btnEditorConvert.innerText = "Tạo G-Code";
-                alert("Lỗi kết nối máy chủ: " + err);
+                btnEditorConvert.innerText = t("Tạo G-Code");
+                alert(t("Lỗi kết nối máy chủ: {error}", { error: err }));
             }
         });
     }
@@ -3322,7 +3321,7 @@ function initGcodeEditor() {
             ctx.restore();
         }
 
-        editorStatusSegments.innerText = `${editorSegments.length} nét vẽ`;
+        editorStatusSegments.innerText = t("{count} nét vẽ", { count: editorSegments.length });
     }
 
     // Tools Toolbar click
@@ -4020,11 +4019,11 @@ function initGcodeEditor() {
                     const writable = await handle.createWritable();
                     await writable.write(jsonString);
                     await writable.close();
-                    logSystemMessage("Project saved successfully using file picker.");
+                    logSystemMessage(t("Lưu dự án thành công bằng trình chọn file."));
                 } catch (err) {
                     // If user cancels the dialog, do nothing. If error occurs, fallback.
                     if (err.name !== 'AbortError') {
-                        console.error("Save file picker failed, falling back to standard download:", err);
+                        console.error(t("Trình chọn file lưu dự án thất bại, đang chuyển hướng sang tải xuống tiêu chuẩn:"), err);
                         fallbackDownload(jsonString);
                     }
                 }
@@ -4040,7 +4039,7 @@ function initGcodeEditor() {
                 a.download = "project_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "unnamed") + ".json";
                 a.click();
                 URL.revokeObjectURL(url);
-                logSystemMessage("Project downloaded successfully.");
+                logSystemMessage(t("Dự án đã được tải xuống thành công."));
             }
         });
     }
@@ -4136,7 +4135,7 @@ function initGcodeEditor() {
                         finalizeLoad(null, "");
                     }
                 } catch (err) {
-                    alert("Lỗi tải project: JSON không hợp lệ. " + err);
+                    alert(t("Lỗi tải project: JSON không hợp lệ. ") + err);
                 }
             };
             reader.readAsText(file);
@@ -4151,12 +4150,12 @@ function initGcodeEditor() {
             stopPreviewInVideoFrame();
 
             if (editorSegments.length === 0) {
-                alert("Không có đường vẽ nào để thực hiện!");
+                alert(t("Không có đường vẽ nào để thực hiện!"));
                 return;
             }
 
             btnEditorExecute.disabled = true;
-            btnEditorExecute.innerText = "Đang gửi G-Code...";
+            btnEditorExecute.innerText = t("Đang gửi G-Code...");
 
             const gcode = generateGcodeFromSegments();
 
@@ -4168,17 +4167,17 @@ function initGcodeEditor() {
                 });
                 const data = await res.json();
                 btnEditorExecute.disabled = false;
-                btnEditorExecute.innerText = "⚡ Thực hiện vẽ (Run CNC)";
+                btnEditorExecute.innerText = t("⚡ Thực hiện vẽ (Chạy CNC)");
 
                 if (data.status === "ok") {
-                    logSystemMessage(`G-Code loaded successfully to server (${data.lines_count} lines).`);
+                    logSystemMessage(t("Đã nạp G-Code thành công lên máy chủ ({count} dòng).", { count: data.lines_count }));
 
                     toolpathPoints = parseGcode(gcode);
                     calculateBoundingBox();
                     resetCanvasView();
 
                     loadedFileName.innerText = "edited_" + (editorOriginalFilename ? editorOriginalFilename.replace(/\.[^/.]+$/, "") : "editor") + ".gcode";
-                    loadedFileLines.innerText = `${data.lines_count} lines`;
+                    loadedFileLines.innerText = t("{count} dòng", { count: data.lines_count });
                     fileDropZone.classList.add("hidden");
                     fileInfoContainer.classList.remove("hidden");
                     btnStartStream.disabled = !isConnected;
@@ -4188,15 +4187,15 @@ function initGcodeEditor() {
                     if (isConnected) {
                         btnStartStream.click();
                     } else {
-                        alert("G-Code đã được nạp lên máy vẽ. Hãy kết nối CNC để bắt đầu.");
+                        alert(t("G-Code đã được nạp lên máy vẽ. Hãy kết nối CNC để bắt đầu."));
                     }
                 } else {
-                    alert("Gửi G-Code thất bại: " + data.message);
+                    alert(t("Gửi G-Code thất bại: {message}", { message: data.message }));
                 }
             } catch (err) {
                 btnEditorExecute.disabled = false;
-                btnEditorExecute.innerText = "⚡ Thực hiện vẽ (Run CNC)";
-                alert("Lỗi mạng: " + err);
+                btnEditorExecute.innerText = t("⚡ Thực hiện vẽ (Chạy CNC)");
+                alert(t("Lỗi mạng: {error}", { error: err }));
             }
         });
     }
@@ -4212,8 +4211,8 @@ function initGcodeEditor() {
 
             // Start preview mode
             btnEditorPreviewInVideoFrame.classList.add("active");
-            btnEditorPreviewInVideoFrame.innerText = "Stop Preview";
-            logSystemMessage("Starting real-time G-Code preview on camera feed...");
+            btnEditorPreviewInVideoFrame.innerText = t("Dừng xem trước");
+            logSystemMessage(t("Đang bắt đầu xem trước G-Code trực tiếp trên hình ảnh camera..."));
 
             // Ensure camera panel is expanded
             const cameraFloatingPanel = document.getElementById("camera-floating-panel");
@@ -4243,7 +4242,7 @@ function initGcodeEditor() {
         }
         if (btnEditorPreviewInVideoFrame) {
             btnEditorPreviewInVideoFrame.classList.remove("active");
-            btnEditorPreviewInVideoFrame.innerText = "Xem trước";
+            btnEditorPreviewInVideoFrame.innerText = t("Xem trước");
         }
         // Clear overlay canvas
         const overlayCanvas = document.getElementById("camera-overlay-canvas");
@@ -4251,7 +4250,7 @@ function initGcodeEditor() {
             const ctx = overlayCanvas.getContext("2d");
             ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         }
-        logSystemMessage("Stopped camera G-Code preview.");
+        logSystemMessage(t("Đã dừng xem trước G-Code trên camera."));
     }
 
     async function drawPreviewOnCamera() {
@@ -4283,7 +4282,7 @@ function initGcodeEditor() {
                 // Not calibrated yet
                 ctx.fillStyle = "rgba(255, 0, 0, 0.7)";
                 ctx.font = "bold 20px sans-serif";
-                ctx.fillText("⚠️ Camera chưa hiệu chỉnh!", 20, 40);
+                ctx.fillText(t("⚠️ Camera chưa hiệu chỉnh!"), 20, 40);
                 return;
             }
 
@@ -4292,7 +4291,7 @@ function initGcodeEditor() {
             if (!head) {
                 ctx.fillStyle = "rgba(255, 165, 0, 0.8)";
                 ctx.font = "bold 16px sans-serif";
-                ctx.fillText("⚠️ Đang tìm đầu CNC (cnchead)...", 20, 40);
+                ctx.fillText(t("⚠️ Đang tìm đầu CNC (cnchead)..."), 20, 40);
                 return;
             }
 
@@ -4353,7 +4352,7 @@ function initGcodeEditor() {
             }
 
         } catch (err) {
-            console.error("Error drawing G-Code preview on camera frame:", err);
+            console.error(t("Lỗi vẽ xem trước G-Code trên khung hình camera:"), err);
         }
     }
 
@@ -4587,27 +4586,27 @@ function initGcodeEditor() {
         const wy = cncPos ? cncPos.y : 0;
 
         const items = [
-            { label: "🏁 Set Begin", action: () => addScenarioAction({ type: "set_begin", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "🛑 Set End", action: () => addScenarioAction({ type: "set_end", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "🏁 Thiết lập bắt đầu", action: () => addScenarioAction({ type: "set_begin", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "🛑 Thiết lập kết thúc", action: () => addScenarioAction({ type: "set_end", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "📍 Go To Here", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "➡️ Go To Keep State", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "📍 Di chuyển tới đây", action: () => addScenarioAction({ type: "go_to_here", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "➡️ Di chuyển giữ trạng thái", action: () => addScenarioAction({ type: "go_to_keep_state", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "👇 Tap", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👇👇 Double Tap", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇 Chạm", action: () => addScenarioAction({ type: "tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇👇 Chạm Đúp", action: () => addScenarioAction({ type: "double_tap", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "👇 Swipe Down", action: () => addScenarioAction({ type: "swipe_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👆 Swipe Up", action: () => addScenarioAction({ type: "swipe_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👇 Vuốt Xuống", action: () => addScenarioAction({ type: "swipe_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👆 Vuốt Lên", action: () => addScenarioAction({ type: "swipe_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "👈 Swipe Left", action: () => addScenarioAction({ type: "swipe_left", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "👉 Swipe Right", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👈 Vuốt Trái", action: () => addScenarioAction({ type: "swipe_left", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "👉 Vuốt Phải", action: () => addScenarioAction({ type: "swipe_right", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
             { divider: true }, { divider: true },
-            { label: "⏱️ Long Press", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "⏸️ Dwell 0.25s", action: () => addScenarioAction({ type: "dwell", duration: 0.25 }) },
-            { label: "⏸️ Dwell 0.5s", action: () => addScenarioAction({ type: "dwell", duration: 0.5 }) },
-            { label: "⏸️ Dwell 1s", action: () => addScenarioAction({ type: "dwell", duration: 1 }) },
-            { label: "✒️ Pen Down", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
-            { label: "✒️ Pen Up", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
+            { label: "⏱️ Nhấn Giữ", action: () => addScenarioAction({ type: "long_press", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "⏸️ Dừng 0.25 giây", action: () => addScenarioAction({ type: "dwell", duration: 0.25 }) },
+            { label: "⏸️ Dừng 0.5 giây", action: () => addScenarioAction({ type: "dwell", duration: 0.5 }) },
+            { label: "⏸️ Dừng 1 giây", action: () => addScenarioAction({ type: "dwell", duration: 1 }) },
+            { label: "✒️ Hạ Bút", action: () => addScenarioAction({ type: "pen_down", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) },
+            { label: "✒️ Nhấc Bút", action: () => addScenarioAction({ type: "pen_up", px, py, wx, wy, head_x: currentWPos.x, head_y: currentWPos.y }) }
 
         ];
 
@@ -4622,7 +4621,7 @@ function initGcodeEditor() {
             }
             const div = document.createElement("div");
             div.className = "context-menu-item";
-            div.innerText = item.label;
+            div.innerText = t(item.label);
             div.addEventListener("click", () => {
                 menu.remove();
                 item.action();
@@ -4649,11 +4648,11 @@ function initGcodeEditor() {
 
         if (scenarioInsertIndex !== -1) {
             activeScenario.actions.splice(scenarioInsertIndex + 1, 0, action);
-            logSystemMessage(`Scenario: Inserted step ${action.type} after step ${scenarioInsertIndex + 1}`);
+            logSystemMessage(t("Kịch bản: Đã chèn bước {type} sau bước {index}", { type: action.type, index: scenarioInsertIndex + 1 }));
             scenarioInsertIndex++;
         } else {
             activeScenario.actions.push(action);
-            logSystemMessage(`Scenario: Added step ${action.type} to end`);
+            logSystemMessage(t("Kịch bản: Đã thêm bước {type} vào cuối", { type: action.type }));
         }
 
         updateScenarioButtonsState();
@@ -4835,7 +4834,7 @@ function initGcodeEditor() {
         scenarioItemsList.innerHTML = "";
 
         if (!activeScenario || activeScenario.actions.length === 0) {
-            scenarioItemsList.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px;">Scenario is empty. Right click on camera stream to add points.</div>`;
+            scenarioItemsList.innerHTML = `<div style="text-align: center; color: var(--text-muted); font-size: 11px; padding: 10px;">${t("Kịch bản trống. Nhấp chuột phải vào luồng camera để thêm các điểm.")}</div>`;
             return;
         }
 
@@ -4854,11 +4853,11 @@ function initGcodeEditor() {
             subtitle.className = "scenario-item-subtitle";
 
             if (act.type === "dwell") {
-                subtitle.innerText = `Tạm dừng ${act.duration ?? 0.25}s`;
+                subtitle.innerText = t("Tạm dừng {duration}s", { duration: act.duration ?? 0.25 });
             } else if (act.wx !== undefined && act.wy !== undefined) {
                 subtitle.innerText = `CNC: X=${act.wx.toFixed(2)}, Y=${act.wy.toFixed(2)}`;
             } else {
-                subtitle.innerText = `At recorded head pos`;
+                subtitle.innerText = t("Tại vị trí đầu ghi");
             }
 
             info.appendChild(title);
@@ -4870,7 +4869,7 @@ function initGcodeEditor() {
             // Insert Pin Button
             const btnPin = document.createElement("button");
             btnPin.className = "btn-scenario-action" + (scenarioInsertIndex === idx ? " active" : "");
-            btnPin.title = scenarioInsertIndex === idx ? "Clear insertion point" : "Set insertion point after this step";
+            btnPin.title = scenarioInsertIndex === idx ? t("Xóa điểm chèn") : t("Đặt điểm chèn sau bước này");
             btnPin.innerHTML = "📌";
             btnPin.addEventListener("click", () => {
                 if (scenarioInsertIndex === idx) {
@@ -4886,7 +4885,7 @@ function initGcodeEditor() {
             // Move Up Button (▲)
             const btnUp = document.createElement("button");
             btnUp.className = "btn-scenario-action";
-            btnUp.title = "Di chuyển lên";
+            btnUp.title = t("Di chuyển lên");
             btnUp.innerHTML = "▲";
             // if (idx <= 1 || idx === activeScenario.actions.length - 1) {
             //     // btnUp.disabled = true;
@@ -4901,7 +4900,7 @@ function initGcodeEditor() {
             // Move Down Button (▼)
             const btnDown = document.createElement("button");
             btnDown.className = "btn-scenario-action";
-            btnDown.title = "Di chuyển xuống";
+            btnDown.title = t("Di chuyển xuống");
             btnDown.innerHTML = "▼";
             // if (idx === 0 || idx >= activeScenario.actions.length - 2) {
             //     // btnDown.disabled = true;
@@ -4916,7 +4915,7 @@ function initGcodeEditor() {
             // Delete Button
             const btnDel = document.createElement("button");
             btnDel.className = "btn-scenario-action delete";
-            btnDel.title = "Delete this step";
+            btnDel.title = t("Xóa bước này");
             btnDel.innerHTML = "🗑️";
             btnDel.addEventListener("click", () => {
                 activeScenario.actions.splice(idx, 1);
@@ -4928,7 +4927,7 @@ function initGcodeEditor() {
                 updateScenarioButtonsState();
                 drawScenarioOnCamera();
                 renderScenarioItemsList();
-                logSystemMessage(`Scenario: Deleted step ${idx + 1}`);
+                logSystemMessage(t("Kịch bản: Đã xóa bước {index}", { index: idx + 1 }));
             });
 
             actions.appendChild(btnPin);
@@ -4961,7 +4960,7 @@ function initGcodeEditor() {
 
         renderScenarioItemsList();
         drawScenarioOnCamera();
-        logSystemMessage(`Scenario: Swapped step ${i + 1} with step ${j + 1}`);
+        logSystemMessage(t("Kịch bản: Đã hoán đổi bước {index1} với bước {index2}", { index1: i + 1, index2: j + 1 }));
     }
 
     // Compile Scenario Actions to standard G-code lines
@@ -5129,7 +5128,7 @@ function initGcodeEditor() {
             scenarioInsertIndex = -1;
 
             if (scenarioNameInput) scenarioNameInput.value = name;
-            logSystemMessage(`Created scenario kịch bản: "${name}"`);
+            logSystemMessage(t("Đã tạo kịch bản: \"{name}\"", { name: name }));
 
             updateScenarioButtonsState();
             drawScenarioOnCamera();
@@ -5156,7 +5155,7 @@ function initGcodeEditor() {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            logSystemMessage(`Downloaded Scenario JSON: ${activeScenario.name}.json`);
+            logSystemMessage(t("Đã tải xuống Scenario JSON: {filename}", { filename: activeScenario.name + ".json" }));
         });
     }
 
@@ -5169,7 +5168,7 @@ function initGcodeEditor() {
             if (scenarioNameInput) scenarioNameInput.value = "";
             // if (scenarioEditModal) scenarioEditModal.classList.add("hidden");
 
-            logSystemMessage("Scenario creation cancelled.");
+            logSystemMessage(t("Đã hủy tạo kịch bản."));
 
             updateScenarioButtonsState();
             drawScenarioOnCamera();
@@ -5198,7 +5197,7 @@ function initGcodeEditor() {
                         scenarioInsertIndex = -1;
 
                         if (scenarioNameInput) scenarioNameInput.value = data.name;
-                        logSystemMessage(`Loaded Scenario kịch bản: "${data.name}" with ${data.actions.length} steps.`);
+                        logSystemMessage(t("Đã nạp kịch bản: \"{name}\" với {count} bước.", { name: data.name, count: data.actions.length }));
 
                         updateScenarioButtonsState();
                         drawScenarioOnCamera();
@@ -5206,10 +5205,10 @@ function initGcodeEditor() {
 
                         scenarioEditModal.classList.toggle("hidden");
                     } else {
-                        alert("File kịch bản Scenario JSON không đúng định dạng!");
+                        alert(t("File kịch bản Scenario JSON không đúng định dạng!"));
                     }
                 } catch (err) {
-                    alert("Lỗi phân tích file JSON Scenario: " + err);
+                    alert(t("Lỗi phân tích file JSON Scenario: ") + err);
                 }
             };
             reader.readAsText(file);
@@ -5233,13 +5232,13 @@ function initGcodeEditor() {
 
     if (btnScenarioClearAll) {
         btnScenarioClearAll.addEventListener("click", () => {
-            if (activeScenario && confirm("Xóa toàn bộ các bước trong kịch bản hiện tại?")) {
+            if (activeScenario && confirm(t("Xóa toàn bộ các bước trong kịch bản hiện tại?"))) {
                 activeScenario.actions = [];
                 scenarioInsertIndex = -1;
                 updateScenarioButtonsState();
                 drawScenarioOnCamera();
                 renderScenarioItemsList();
-                logSystemMessage("Cleared all steps in the scenario.");
+                logSystemMessage(t("Đã xóa tất cả các bước trong kịch bản."));
             }
         });
     }
@@ -5265,7 +5264,7 @@ function initGcodeEditor() {
 
         const hasSetEnd = activeScenario.actions.some(act => act.type === "set_end");
         if (!hasSetEnd) {
-            alert("Kịch bản cần có ít nhất một bước Set End để chạy!");
+            alert(t("Kịch bản cần có ít nhất một bước Set End để chạy!"));
             if (scenarioLooping) {
                 stopScenarioLoop();
             }
@@ -5275,13 +5274,13 @@ function initGcodeEditor() {
         if (!isLoopTrigger) {
             if (scenarioLooping) {
                 if (btnRunLoopScenario) {
-                    btnRunLoopScenario.innerText = "🛑 Stop Loop";
+                    btnRunLoopScenario.innerText = t("🛑 Dừng Lặp");
                     btnRunLoopScenario.className = "btn btn-danger";
                 }
                 btnRunScenario.disabled = true;
             } else {
                 btnRunScenario.disabled = true;
-                btnRunScenario.innerText = "⏳ Running...";
+                btnRunScenario.innerText = t("⏳ Đang chạy...");
             }
         }
 
@@ -5297,11 +5296,11 @@ function initGcodeEditor() {
 
             if (!scenarioLooping) {
                 btnRunScenario.disabled = false;
-                btnRunScenario.innerText = "Run";
+                btnRunScenario.innerText = t("Chạy");
             }
 
             if (data.status === "ok") {
-                logSystemMessage(`Scenario compiled successfully into G-code (${data.lines_count} lines).`);
+                logSystemMessage(t("Kịch bản đã được biên dịch thành công thành G-code ({count} dòng).", { count: data.lines_count }));
 
                 // Parse & load G-code into the visual toolpath
                 toolpathPoints = parseGcode(gcode);
@@ -5309,7 +5308,7 @@ function initGcodeEditor() {
                 resetCanvasView();
 
                 loadedFileName.innerText = "scenario_" + activeScenario.name + ".gcode";
-                loadedFileLines.innerText = `${data.lines_count} lines`;
+                loadedFileLines.innerText = t("{count} dòng", { count: data.lines_count });
                 fileDropZone.classList.add("hidden");
                 fileInfoContainer.classList.remove("hidden");
                 btnStartStream.disabled = !isConnected;
@@ -5317,13 +5316,13 @@ function initGcodeEditor() {
                 if (isConnected) {
                     btnStartStream.click();
                 } else {
-                    alert("G-Code kịch bản đã được nạp. Hãy kết nối CNC để bắt đầu.");
+                    alert(t("G-Code kịch bản đã được nạp. Hãy kết nối CNC để bắt đầu."));
                     if (scenarioLooping) {
                         stopScenarioLoop();
                     }
                 }
             } else {
-                alert("Nạp G-Code kịch bản thất bại: " + data.message);
+                alert(t("Nạp G-Code kịch bản thất bại: {message}", { message: data.message }));
                 if (scenarioLooping) {
                     stopScenarioLoop();
                 }
@@ -5331,9 +5330,9 @@ function initGcodeEditor() {
         } catch (err) {
             if (!scenarioLooping) {
                 btnRunScenario.disabled = false;
-                btnRunScenario.innerText = "Run";
+                btnRunScenario.innerText = t("Chạy");
             }
-            alert("Lỗi mạng khi nạp G-code kịch bản: " + err);
+            alert(t("Lỗi mạng khi nạp G-code kịch bản: {error}", { error: err }));
             if (scenarioLooping) {
                 stopScenarioLoop();
             }
@@ -5343,11 +5342,11 @@ function initGcodeEditor() {
     function stopScenarioLoop() {
         scenarioLooping = false;
         if (btnRunLoopScenario) {
-            btnRunLoopScenario.innerText = "Run Loop";
+            btnRunLoopScenario.innerText = t("Chạy Vòng Lặp");
             btnRunLoopScenario.className = "btn btn-warning";
         }
         updateScenarioButtonsState();
-        logSystemMessage("Scenario loop execution stopped.");
+        logSystemMessage(t("Đã dừng thực hiện kịch bản lặp."));
     }
 
     window.startScenarioExecution = startScenarioExecution;
@@ -5367,7 +5366,7 @@ function initGcodeEditor() {
                 try {
                     await fetch("/api/stop", { method: "POST" });
                 } catch (e) {
-                    console.error("Failed to abort stream on stop loop:", e);
+                    console.error(t("Dừng luồng phát thất bại khi dừng lặp:"), e);
                 }
             } else {
                 scenarioLooping = true;
@@ -5375,6 +5374,9 @@ function initGcodeEditor() {
             }
         });
     }
+
+    resizeEditorCanvas();
+}
 
     // --- i18n Localization Engine ---
     let currentLang = localStorage.getItem("app_lang") || "vi";
@@ -5392,7 +5394,7 @@ function initGcodeEditor() {
                     translations[lang] = {};
                 }
             } catch (e) {
-                console.error(`Failed to load translation JSON for ${lang}:`, e);
+                console.error(`Tải file dịch JSON cho ${lang} thất bại:`, e);
                 translations[lang] = {};
             }
         }
@@ -5458,6 +5460,3 @@ function initGcodeEditor() {
         await loadLanguage(currentLang);
         setLanguage(currentLang);
     })();
-
-    resizeEditorCanvas();
-}

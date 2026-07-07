@@ -230,3 +230,7 @@ khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu
 **cập nhật 38** hiệu chỉnh thống nhất hướng trục Y khi tính toán sai lệch giữa camera Bed Coordinate System (BCS) và hệ trục tọa độ thực tế của máy CNC. Trục Y của camera (BCS) tăng theo chiều đi lên, ngược với trục Y của máy CNC (tăng theo chiều đi xuống). Do đó, khoảng lệch Y được tính toán bằng live camera hoặc khôi phục gốc Home cần được đảo dấu (`y_cnc = -(y_head_bed - y_home_bed)`) để tránh việc đầu CNC di chuyển ngược hướng trục Y khi thực hiện Go to Home hoặc di chuyển về 0. 
 
 **cập nhật 39** ở floating window video frame, trên top khi nhận diện được các object trong frame, cần hiện tên các label , khi nhấn vào 1 label thì đầu cnc sẽ di chuyển tới vị trí đó. (tâm bbox của cnc head sẽ di chuyển dến tâm bbox của object detedcted)
+
+**cập nhật 40** các text ở cnc/static/app.js innertext, label , log to console cần chuyển sang tiếng Việt và dùng cơ chế i18n (đa ngôn ngữ) ở **cập nhật 36**
+
+Khi 
