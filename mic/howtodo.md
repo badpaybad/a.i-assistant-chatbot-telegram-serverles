@@ -71,6 +71,57 @@ Chất lượng phần cứng tốt chỉ là điều kiện cần; phần mềm
 
 ---
 
-## 5. Kết Luận
+## 5. Hướng Dẫn Chạy Script Huấn Luyện AI (train.py) Hỗ Trợ CPU & GPU
+
+Script `train.py` dùng để huấn luyện mô hình nhận diện từ khóa (Wake-Word) offline. Hiện tại script đã được nâng cấp hỗ trợ tự động nhận diện và cấu hình tối ưu cho cả CPU và các loại GPU (NVIDIA CUDA, AMD ROCm...).
+
+### Các tham số dòng lệnh hỗ trợ (Command-line Arguments)
+
+Khi chạy script huấn luyện, bạn có thể truyền các tham số tùy biến:
+
+*   `--data`: Đường dẫn đến thư mục chứa dữ liệu thô (mặc định: `dataraw`).
+*   `--epochs`: Số lượng epochs (chu kỳ) huấn luyện (mặc định: `30`).
+*   `--batch`: Kích thước lô dữ liệu (Batch size) huấn luyện (mặc định: `16`).
+*   `--device`: Thiết bị chạy huấn luyện. Các giá trị hợp lệ:
+    *   Để trống (mặc định): Tự động nhận diện GPU nếu có, nếu không sẽ chạy trên CPU.
+    *   `cpu`: Ép chạy hoàn toàn trên CPU.
+    *   `cuda` hoặc `gpu`: Chạy trên GPU NVIDIA/AMD.
+    *   Số nguyên (ví dụ: `0` hoặc `1`): Chỉ định cụ thể ID của GPU để chạy.
+*   `--no-augment`: Tắt tính năng tự động tăng cường dữ liệu (Data Augmentation) như thêm tiếng ồn trắng hay dịch thời gian.
+*   `--force-gpu`: Bỏ qua các cảnh báo phần cứng để ép buộc chạy trên GPU (ví dụ đối với các GPU tích hợp AMD Radeon 780M không ổn định).
+
+### Ví dụ các câu lệnh chạy huấn luyện
+
+Đảm bảo bạn kích hoạt môi trường ảo (virtualenv) trước khi chạy hoặc chạy trực tiếp bằng python trong thư mục venv:
+
+1.  **Huấn luyện tự động (Khuyên dùng):**
+    Tự động quét cấu hình máy, sử dụng GPU tối ưu nếu có:
+    ```bash
+    ../venv/bin/python3 train.py
+    ```
+
+2.  **Ép chạy trên CPU:**
+    Sử dụng khi máy không có GPU hoặc khi GPU bị lỗi phân mảnh VRAM:
+    ```bash
+    ../venv/bin/python3 train.py --device cpu
+    ```
+
+3.  **Huấn luyện nhanh để kiểm tra (Dry-run):**
+    Thiết lập số epoch bằng 1 để kiểm tra lỗi biên dịch/đọc file:
+    ```bash
+    ../venv/bin/python3 train.py --epochs 1 --device cpu
+    ```
+
+4.  **Tắt tính năng tăng cường dữ liệu và đổi batch size:**
+    ```bash
+    ../venv/bin/python3 train.py --epochs 50 --batch 32 --no-augment
+    ```
+
+Mô hình sau khi huấn luyện xong sẽ tự động được lượng tử hóa (Quantization) sang INT8 và lưu dưới dạng file nhị phân `model.tflite` cùng mảng C++ `model_data.h` để bạn nạp thẳng vào ESP32.
+
+---
+
+## 6. Kết Luận
 
 Micro **INMP441** và mạch khuếch đại **MAX98357A** là những linh kiện chất lượng rất tốt trong tầm giá và cực kỳ phổ biến. Nếu hệ thống của bạn hoạt động không ổn định (rè, nhiễu, không nhận dạng được âm thanh), **90% nguyên nhân** nằm ở thiết kế mạch cấp nguồn cẩu thả, đi dây I2S quá dài không bọc nhiễu, hoặc nguồn cấp bị sụt áp đột ngột. Hãy tuân thủ nghiêm ngặt các nguyên tắc thiết kế mạch phần cứng ở trên để có được chất lượng âm thanh tốt nhất.
+
