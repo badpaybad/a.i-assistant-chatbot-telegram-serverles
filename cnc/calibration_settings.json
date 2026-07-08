@@ -49,8 +49,8 @@
         ]
     },
     "home_snapshot": "home_snapshot.jpg",
-    "step_distance": 7.9,
-    "jog_feedrate": 11100,
+    "step_distance": 7.2,
+    "jog_feedrate": 93200,
     "gesture_feedrate": 20000,
     "gesture_distance": 50.0,
     "gesture_dwell": 0.2,
@@ -80,8 +80,8 @@
         ]
     },
     "saved_pen_position": [
-        51.808,
-        9.215,
+        -86.048,
+        -89.349,
         0.0
     ],
     "home_pixel": [
