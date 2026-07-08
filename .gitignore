@@ -103,7 +103,6 @@ TreeOfThought/frontend/webmvctestoidc/test.db-wal
 TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcface_model.onnx
 **/data/**
 TreeOfThought/docs/nhan-dien-khuon-mat/ArcFaceFinetune/arcface_model.onnx
-**/ArcFaceFinetune/**
 TreeOfThought/docs/nhan-dien-khuon-mat.zip
 **/custom-face-cnn/data_processed/**
 **/custom-face-cnn/**.pth
@@ -119,7 +118,6 @@ cameraip/train/output_detect.jpg
 cameraip/train/*.pt
 **/train_log.csv
 **/augmented_image/**
-cnc/test_**
 cnc/sys
 cnc/re
 cnc/os
@@ -133,3 +131,10 @@ cnc/getopt
 **/mic/**/**_noise**
 esp32/detect_wakeup/dunp_config.h
 mic/chat_history.db
+**/ArcFaceFinetune/dataraw/**
+**/ArcFaceFinetune/data/**
+**/ArcFaceFinetune/facesid/**
+**/ArcFaceFinetune/**.onnx
+**/ArcFaceFinetune/**.onnx.**
+**/ArcFaceFinetune/arcfacemodels/**
+**/cnc/test_**.jpg

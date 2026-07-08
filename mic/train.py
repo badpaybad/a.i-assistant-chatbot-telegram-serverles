@@ -2,6 +2,7 @@ import os
 # Force CPU execution for CUDA-enabled libraries
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 os.environ["QT_QPA_PLATFORM"] = "offscreen"  # Fallback for Qt if loaded
+os.environ["TF_USE_LEGACY_KERAS"] = "1"
 
 import glob
 import subprocess

@@ -37,4 +37,9 @@ Pillow
 onnxruntime
 kernels
 python-multipart
-tensorflow-cpu
+tensorflow-cpu==2.16.1
+protobuf>=4.25.3,<5.0.0dev
+mediapipe
+tf-keras~=2.16.0
+
+
