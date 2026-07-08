@@ -82,3 +82,9 @@ Phân tích và đưa ra giải pháp cho sự cố Accuracy = 0% và Loss rất
 - **Đã triển khai giải pháp Dynamic Margin Warmup (Đã sửa đổi thành công trong main.py và howtodo.md)**:
   - Ở Giai đoạn 1 (Epoch 1-5): Hạ margin $m$ về `0.0` (chỉ chạy Cosine Similarity/Norm-Softmax) để mô hình gom cụm thô các user mới một cách dễ dàng, giúp Accuracy tăng vọt lên cao (> 80%).
   - Ở Giai đoạn 2 (Epoch 6 trở đi): Khôi phục margin $m$ về giá trị đích (mặc định `0.50`, có thể chỉnh qua tham số `--margin`) để tiếp tục siết chặt ranh giới quyết định sâu sắc mà không làm sập Accuracy.
+
+**cập nhật 2026-07-07 16:06:16**
+https://github.com/deepinsight/insightface/blob/master/recognition/arcface_torch/README.md tốt nhất để finetune cho trẻ em mẫu giáo, cấp 1, và sinh đôi dùng (Best Choice): Glint360K (IResNet100) cần download pretrain và sửa code để finetune, việc chạy để chuẩn hóa dataraw thành data rồi dùng data làm dataset giữ nguyên để finetune 
+
+**cập nhật 2026-07-08 16:06:16**
+xem file cameraip/train/train_yolo.py để hỗ trợ việc chạy finetune chọn cuda, amd, cpu mặc định là cpu và các option khi finetune để có thể tối ưu khi chạy . cần cập nhật và hướng dẫn cách làm dataraw, dataset , finetune và inference khi train xong . viết code usage model ra file riêng để test  cần dùng dataraw làm identity facevector và test với ảnh TreeOfThought/docs/nhan-dien-khuon-mat/du1.jpeg  match là dunp 

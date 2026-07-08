@@ -238,6 +238,3 @@ Khi droplist change language thay đổi thì các tag html5 đã thay đổi th
 **cập nhật 41** floating window video frame, thêm side pannel bên trái frame video , side panel bên trái này ẩn hiện được. có các button chức năng bên trong hoạt động cho scencario.
     các button sẽ có chức năng giống như chuột phải vào video frame : set start, set end ....
         khi các button được click thì dựa vào vị trí hiện tại của cnc head để ghi nhận vị trí và thao tác tương ứng các step của scenario.
-
-
-        

@@ -5,11 +5,121 @@ import shutil
 import urllib.request
 import argparse
 
-# ── Fix AMD GPU gfx1103 (RDNA3) compatibility với PyTorch ROCm ──────────────
-# GPU gfx1103 (RX 7600/7700) chưa có TensileLibrary riêng, override về gfx1100
-# để dùng chung thư viện RDNA3 gfx1100 gần nhất. Phải set TRƯỚC khi import torch.
-if not os.environ.get("HSA_OVERRIDE_GFX_VERSION"):
-    os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
+# ── Fix AMD GPU & Nvidia GPU environments before importing torch/onnxruntime ──
+def detect_real_amd_gpu_arch():
+    import glob
+    for path in glob.glob('/sys/class/kfd/kfd/topology/nodes/*/properties'):
+        try:
+            with open(path, 'r') as f:
+                for line in f:
+                    if line.startswith('gfx_target_version'):
+                        val = int(line.split()[1])
+                        if val > 0:
+                            major = val // 10000
+                            minor = (val % 10000) // 100
+                            patch = val % 100
+                            return f"gfx{major}{minor}{patch}"
+        except Exception:
+            pass
+    return None
+
+def get_supported_rocm_archs():
+    try:
+        import subprocess
+        output = subprocess.check_output(
+            [sys.executable, "-c", "import torch; print(','.join(torch.cuda.get_arch_list()) if hasattr(torch.cuda, 'get_arch_list') else '')"],
+            text=True,
+            stderr=subprocess.DEVNULL
+        )
+        return [arch.strip() for arch in output.strip().split(',') if arch.strip()]
+    except Exception:
+        return []
+
+def setup_amd_gpu_env():
+    has_amd = False
+    os.environ['MIOPEN_FIND_ENFORCE'] = 'NONE'
+    os.environ['MIOPEN_DEBUG_DISABLE_FIND_DB'] = '1'
+    os.environ['HSA_XNACK'] = '1'
+    os.environ['PYTORCH_HIP_ALLOC_CONF'] = "max_split_size_mb:128"
+    os.environ['HSA_ENABLE_SDMA'] = '0'
+
+    try:
+        import glob
+        for vendor_path in glob.glob('/sys/class/drm/card*/device/vendor'):
+            try:
+                with open(vendor_path, 'r') as f:
+                    vendor_id = f.read().strip()
+                if vendor_id == '0x1002': # AMD Vendor ID
+                    has_amd = True
+                    break
+            except Exception:
+                pass
+        
+        if not has_amd:
+            import subprocess
+            output = subprocess.check_output(["lspci", "-nnk"], text=True)
+            if "advanced micro devices" in output.lower() or "amd" in output.lower() or "radeon" in output.lower():
+                has_amd = True
+    except Exception:
+        pass
+
+    if has_amd:
+        real_arch = detect_real_amd_gpu_arch()
+        supported_archs = get_supported_rocm_archs()
+        
+        if real_arch and real_arch in supported_archs:
+            print(f"[AMD GPU Setup] AMD GPU {real_arch} is natively supported by PyTorch. No HSA override needed.", flush=True)
+            if 'HSA_OVERRIDE_GFX_VERSION' in os.environ:
+                del os.environ['HSA_OVERRIDE_GFX_VERSION']
+        else:
+            fallback_version = '11.0.0'
+            os.environ['HSA_OVERRIDE_GFX_VERSION'] = fallback_version
+            print(f"[AMD GPU Setup] AMD GPU {real_arch or 'unknown'} is not natively supported. Overriding HSA_OVERRIDE_GFX_VERSION to {fallback_version}.", flush=True)
+
+        if 'HIPBLASLT_WORKSPACE_SIZE' not in os.environ:
+            os.environ['HIPBLASLT_WORKSPACE_SIZE'] = '0'
+
+        if 'HSA_ENABLE_SDMA' not in os.environ:
+            os.environ['HSA_ENABLE_SDMA'] = '0'
+            print("[AMD GPU Setup] Set HSA_ENABLE_SDMA=0 to prevent iGPU memory access faults (shared memory architecture).", flush=True)
+
+        if 'PYTORCH_HIP_ALLOC_CONF' not in os.environ:
+            os.environ['PYTORCH_HIP_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:256'
+            print("[AMD GPU Setup] Set PYTORCH_HIP_ALLOC_CONF for better iGPU shared memory management.", flush=True)
+        print("[AMD GPU Setup] All AMD iGPU environment variables configured.", flush=True)
+
+    return has_amd
+
+def setup_nvidia_gpu_env():
+    has_nvidia = False
+    try:
+        import glob
+        for vendor_path in glob.glob('/sys/class/drm/card*/device/vendor'):
+            try:
+                with open(vendor_path, 'r') as f:
+                    vendor_id = f.read().strip()
+                if vendor_id == '0x10de': # NVIDIA Vendor ID
+                    has_nvidia = True
+                    break
+            except Exception:
+                pass
+        
+        if not has_nvidia:
+            import subprocess
+            output = subprocess.check_output(["lspci", "-nnk"], text=True)
+            if "nvidia" in output.lower() or "geforce" in output.lower() or "rtx" in output.lower() or "gtx" in output.lower():
+                has_nvidia = True
+    except Exception:
+        pass
+
+    if has_nvidia:
+        if 'PYTORCH_CUDA_ALLOC_CONF' not in os.environ:
+            os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'garbage_collection_threshold:0.8,max_split_size_mb:512'
+            print("[NVIDIA GPU Setup] NVIDIA GPU detected on Linux. Setting PYTORCH_CUDA_ALLOC_CONF=garbage_collection_threshold:0.8,max_split_size_mb:512 to prevent VRAM memory fragmentation.", flush=True)
+    return has_nvidia
+
+has_amd_system = setup_amd_gpu_env()
+has_nvidia_system = setup_nvidia_gpu_env()
 
 
 def parse_args():
@@ -24,8 +134,13 @@ def parse_args():
     parser.add_argument("--mobile_model_output_path", type=str, default="./arcface_model_final_mobile.onnx", help="Đường dẫn xuất mô hình ONNX final cho di động (mặc định: ./arcface_model_final_mobile.onnx)")
     parser.add_argument("--best_model_output_path", type=str, default="./arcface_model_best.onnx", help="Đường dẫn xuất mô hình ONNX best (mặc định: ./arcface_model_best.onnx)")
     parser.add_argument("--best_mobile_model_output_path", type=str, default="./arcface_model_best_mobile.onnx", help="Đường dẫn xuất mô hình ONNX best cho di động (mặc định: ./arcface_model_best_mobile.onnx)")
-    parser.add_argument("--device", type=str, default="auto", choices=["auto", "cuda", "cpu"], help="Thiết bị huấn luyện: auto, cuda, cpu (mặc định: auto)")
+    parser.add_argument("--device", type=str, default="cpu", choices=["auto", "cuda", "amd", "cpu"], help="Thiết bị huấn luyện: auto, cuda, amd, cpu (mặc định: cpu)")
     parser.add_argument("--margin", type=float, default=0.50, help="Ranh giới góc Margin cho ArcFace (mặc định: 0.50)")
+    parser.add_argument("--use_opencv_only", action="store_true", help="Bỏ qua MediaPipe và chỉ sử dụng OpenCV Haar Cascade để tránh crash trên một số môi trường.")
+    parser.add_argument("--force_gpu", action="store_true", help="Bắt buộc sử dụng GPU kể cả chip gfx1102/gfx1103 không ổn định.")
+    parser.add_argument("--amp", action="store_true", dest="amp", default=None, help="Bắt buộc bật AMP (Mixed Precision) khi huấn luyện.")
+    parser.add_argument("--no_amp", action="store_false", dest="amp", help="Bắt buộc tắt AMP khi huấn luyện.")
+    parser.add_argument("--workers", type=int, default=4, help="Số lượng workers cho DataLoader (mặc định: 4)")
     
     args, unknown = parser.parse_known_args()
     return args
@@ -58,6 +173,7 @@ try:
     import torch
     import torch.nn as nn
     import torch.nn.functional as F
+    from iresnet import iresnet100
     from torch.utils.data import DataLoader
     import torchvision
     import torchvision.transforms as transforms
@@ -117,19 +233,11 @@ LEARNING_RATE = args.learning_rate
 
 # Đường dẫn thư mục tải mô hình pre-trained ArcFace tốt nhất
 PRETRAINED_MODEL_DIR = "./arcfacemodels"
-PRETRAINED_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "resnet50_arcface.pth")
+PRETRAINED_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "arcface-r100-glint360k.pth")
 
-# Danh sách URL backup để tải ArcFace Pretrained ResNet50 (thử lần lượt cho đến khi thành công)
-# Nguồn 1: deepinsight/insightface model zoo (public, không cần đăng nhập)
-# Nguồn 2: HuggingFace public model
-PRETRAINED_MODEL_URLS = [
-    # insightface model zoo - MS1MV3 + ArcFace ResNet50
-    "https://github.com/onnx/models/raw/main/validated/vision/body_analysis/arcface/model/arcface-lresnet100e-opset8.onnx",
-    # HuggingFace public (không yêu cầu đăng nhập)
-    "https://huggingface.co/public-data/test-model/resolve/main/model.safetensors",
-]
-# URL chính cho ImageNet ResNet50 PyTorch hub (luôn public)
-PRETRAINED_MODEL_URL = "https://huggingface.co/Simon2nd/arcface-resnet50/resolve/main/backbone.pth"
+# Danh sách URL để tải ArcFace Pretrained IResNet100 trained on Glint360K
+# URL chính: HuggingFace BooBooWu/Vec2Face
+PRETRAINED_MODEL_URL = "https://huggingface.co/BooBooWu/Vec2Face/resolve/main/weights/arcface-r100-glint360k.pth"
 
 # Mô hình TFLite BlazeFace cho MediaPipe Tasks API (mediapipe 0.10+)
 MP_FACE_DETECTOR_MODEL_PATH = os.path.join(PRETRAINED_MODEL_DIR, "blaze_face_short_range.tflite")
@@ -146,13 +254,52 @@ MP_FACE_LANDMARK_MODEL_URL  = (
 )
 
 # Cấu hình thiết bị chạy dựa vào biến cấu hình DEVICE_CONFIG
-if DEVICE_CONFIG == "auto":
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-elif DEVICE_CONFIG == "cuda":
-    device = torch.device("cuda")
+device_str = DEVICE_CONFIG
+if device_str == "auto":
+    if torch.cuda.is_available():
+        device_str = "cuda"
+    else:
+        device_str = "cpu"
+
+if device_str in ("cuda", "amd"):
+    if torch.cuda.is_available():
+        device_name = torch.cuda.get_device_name(0)
+        gcn_arch = detect_real_amd_gpu_arch()
+        if not gcn_arch:
+            gcn_arch = getattr(torch.cuda.get_device_properties(0), 'gcnArchName', '')
+        
+        # Kiểm tra thiết bị AMD không ổn định (gfx1102/gfx1103)
+        if gcn_arch and ('gfx1102' in gcn_arch or 'gfx1103' in gcn_arch) and not args.force_gpu:
+            print("\n" + "="*80, flush=True)
+            print("[WARNING] Phát hiện gfx1102/gfx1103 (Radeon 780M) — huấn luyện GPU không ổn định mặc định!")
+            print("PyTorch ROCm prebuilt wheels không có kernel native cho gfx1102/gfx1103.")
+            print("Chạy kernel gfx1100 trên phần cứng gfx1102/gfx1103 có thể gây GPU Hang.")
+            print("")
+            print("RECOMMENDED: Sử dụng huấn luyện CPU (chậm hơn nhưng ổn định tuyệt đối):")
+            print("  --device cpu")
+            print("")
+            print("Để bắt buộc dùng GPU: thêm --force_gpu")
+            print("="*80 + "\n", flush=True)
+            print("[Auto-fallback] Tự động chuyển sang huấn luyện CPU để đảm bảo ổn định.", flush=True)
+            device = torch.device("cpu")
+        else:
+            device = torch.device("cuda")
+            if gcn_arch and ('gfx1102' in gcn_arch or 'gfx1103' in gcn_arch):
+                print("[WARNING] --force_gpu được đặt: huấn luyện gfx1102/gfx1103 với kernel gfx1100 — có thể bị GPU Hang!", flush=True)
+            else:
+                print(f"[+] Sử dụng GPU: {device_name} (arch: {gcn_arch})", flush=True)
+            
+            # Print CUDA memory optimization info if NVIDIA GPU is used
+            if has_nvidia_system:
+                vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+                print(f"[NVIDIA GPU] Active memory allocator configuration (PYTORCH_CUDA_ALLOC_CONF): {os.environ.get('PYTORCH_CUDA_ALLOC_CONF', 'Not set')}", flush=True)
+                print(f"[NVIDIA GPU] VRAM detected: {vram_gb:.2f} GB", flush=True)
+    else:
+        print("[WARNING] Không tìm thấy CUDA/ROCm. Chuyển sang CPU.", flush=True)
+        device = torch.device("cpu")
 else:
     device = torch.device("cpu")
-print(f"[+] Thiết bị sử dụng huấn luyện: {device}")
+    print(f"[+] Thiết bị sử dụng huấn luyện: {device}")
 
 # ==========================================
 # 2. THUẬT TOÁN CĂN CHỈNH KHUÔN MẶT ĐỒNG NHẤT
@@ -277,48 +424,51 @@ def preprocess_dataraw():
     mp_detector = None
     mp_landmarker = None
 
-    try:
-        import mediapipe as mp_lib
-        from mediapipe.tasks import python as _mp_py
-        from mediapipe.tasks.python import vision as _mp_vision
-        from mediapipe.tasks.python.core import base_options as _mp_base
+    if getattr(args, "use_opencv_only", False):
+        print("[!] Được cấu hình bỏ qua MediaPipe và chỉ sử dụng OpenCV Haar Cascade.")
+    else:
+        try:
+            import mediapipe as mp_lib
+            from mediapipe.tasks import python as _mp_py
+            from mediapipe.tasks.python import vision as _mp_vision
+            from mediapipe.tasks.python.core import base_options as _mp_base
 
-        if ALIGN_MODE == "standard":
-            # ------------------------------------------------------------------
-            # Khởi tạo bộ phát hiện khuôn mặt BlazeFace TFLite (standard)
-            # ------------------------------------------------------------------
-            model_ok = _ensure_mp_face_model()
-            if model_ok:
-                base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_DETECTOR_MODEL_PATH)
-                det_opts  = _mp_vision.FaceDetectorOptions(
-                    base_options=base_opts,
-                    min_detection_confidence=0.5,
-                )
-                mp_detector = _mp_vision.FaceDetector.create_from_options(det_opts)
-                use_mp = True
-                print("[+] Sử dụng MediaPipe BlazeFace (Standard Align) — chung chung đủ tốt, gọn nhẹ.")
+            if ALIGN_MODE == "standard":
+                # ------------------------------------------------------------------
+                # Khởi tạo bộ phát hiện khuôn mặt BlazeFace TFLite (standard)
+                # ------------------------------------------------------------------
+                model_ok = _ensure_mp_face_model()
+                if model_ok:
+                    base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_DETECTOR_MODEL_PATH)
+                    det_opts  = _mp_vision.FaceDetectorOptions(
+                        base_options=base_opts,
+                        min_detection_confidence=0.5,
+                    )
+                    mp_detector = _mp_vision.FaceDetector.create_from_options(det_opts)
+                    use_mp = True
+                    print("[+] Sử dụng MediaPipe BlazeFace (Standard Align) — chung chung đủ tốt, gọn nhẹ.")
+                else:
+                    print(f"[!] Không thể tải mô hình BlazeFace tại '{MP_FACE_DETECTOR_MODEL_PATH}'.")
+                    
             else:
-                print(f"[!] Không thể tải mô hình BlazeFace tại '{MP_FACE_DETECTOR_MODEL_PATH}'.")
-                
-        else:
-            # ------------------------------------------------------------------
-            # Khởi tạo bộ phát hiện Face Landmarker 3D (advanced)
-            # ------------------------------------------------------------------
-            if os.path.exists(MP_FACE_LANDMARK_MODEL_PATH):
-                base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_LANDMARK_MODEL_PATH)
-                options = _mp_vision.FaceLandmarkerOptions(
-                    base_options=base_opts,
-                    output_face_blendshapes=False,
-                    output_facial_transformation_matrixes=False,
-                    num_faces=1,
-                )
-                mp_landmarker = _mp_vision.FaceLandmarker.create_from_options(options)
-                use_mp = True
-                print("[+] Sử dụng MediaPipe Face Landmarker (Advanced Align) — tăng cường tối đa cho điều kiện khắc nghiệt.")
-            else:
-                print(f"[!] Không tìm thấy mô hình Face Landmarker tại '{MP_FACE_LANDMARK_MODEL_PATH}'.")
-    except Exception as e:
-        print(f"[!] Lỗi khi nạp MediaPipe ({e}). Sẽ sử dụng OpenCV Haar Cascade làm fallback.")
+                # ------------------------------------------------------------------
+                # Khởi tạo bộ phát hiện Face Landmarker 3D (advanced)
+                # ------------------------------------------------------------------
+                if os.path.exists(MP_FACE_LANDMARK_MODEL_PATH):
+                    base_opts = _mp_base.BaseOptions(model_asset_path=MP_FACE_LANDMARK_MODEL_PATH)
+                    options = _mp_vision.FaceLandmarkerOptions(
+                        base_options=base_opts,
+                        output_face_blendshapes=False,
+                        output_facial_transformation_matrixes=False,
+                        num_faces=1,
+                    )
+                    mp_landmarker = _mp_vision.FaceLandmarker.create_from_options(options)
+                    use_mp = True
+                    print("[+] Sử dụng MediaPipe Face Landmarker (Advanced Align) — tăng cường tối đa cho điều kiện khắc nghiệt.")
+                else:
+                    print(f"[!] Không tìm thấy mô hình Face Landmarker tại '{MP_FACE_LANDMARK_MODEL_PATH}'.")
+        except Exception as e:
+            print(f"[!] Lỗi khi nạp MediaPipe ({e}). Sẽ sử dụng OpenCV Haar Cascade làm fallback.")
 
     # OpenCV Haar Cascade (fallback)
     face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
@@ -531,11 +681,10 @@ def generate_mock_dataset():
 # ==========================================
 def download_pretrained_weights():
     """
-    Tải trọng số ArcFace tiền huấn luyện (ResNet50) về ./arcfacemodels.
-    Thử lần lượt từ URL chính và các URL backup cho đến khi tải được.
+    Tải trọng số ArcFace pre-trained Glint360K (IResNet100) về ./arcfacemodels.
     """
     if os.path.exists(PRETRAINED_MODEL_PATH):
-        print(f"[+] Đã phát hiện mô hình ArcFace pre-trained tại '{PRETRAINED_MODEL_PATH}'.")
+        print(f"[+] Đã phát hiện mô hình ArcFace pre-trained Glint360K (IResNet100) tại '{PRETRAINED_MODEL_PATH}'.")
         return True
 
     os.makedirs(PRETRAINED_MODEL_DIR, exist_ok=True)
@@ -543,15 +692,15 @@ def download_pretrained_weights():
     opener.addheaders = [('User-agent', 'Mozilla/5.0')]
     urllib.request.install_opener(opener)
 
-    print(f"[*] Đang tải mô hình ArcFace pre-trained chất lượng cao (ResNet50)...")
+    print(f"[*] Đang tải mô hình ArcFace pre-trained chất lượng cao Glint360K (IResNet100)...")
     try:
         urllib.request.urlretrieve(PRETRAINED_MODEL_URL, PRETRAINED_MODEL_PATH)
-        print("[+] Tải mô hình ArcFace pre-trained thành công!")
+        print("[+] Tải mô hình ArcFace pre-trained Glint360K (IResNet100) thành công!")
         return True
     except Exception as e:
-        print(f"[-] Không thể tải từ nguồn chính ({e}). Sử dụng ImageNet Pretrained thay thế.")
+        print(f"[-] Không thể tải từ nguồn chính ({e}).")
         print(f"[*] Gợi ý thủ công: Tải file .pth từ link bên dưới rồi đặt vào: {PRETRAINED_MODEL_PATH}")
-        print(f"    https://github.com/deepinsight/insightface/wiki/Model-Zoo")
+        print(f"    {PRETRAINED_MODEL_URL}")
         return False
 
 
@@ -646,6 +795,64 @@ class ArcMarginProduct(nn.Module):
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         output *= self.s
         return output
+
+def load_checkpoint(model, pretrained_path):
+    if not pretrained_path or not os.path.exists(pretrained_path):
+        return False
+    try:
+        checkpoint = torch.load(pretrained_path, map_location="cpu")
+        if isinstance(checkpoint, dict):
+            if "model_state_dict" in checkpoint:
+                state_dict = checkpoint["model_state_dict"]
+            elif "state_dict" in checkpoint:
+                state_dict = checkpoint["state_dict"]
+            else:
+                state_dict = checkpoint
+        else:
+            state_dict = checkpoint
+        
+        # Kiểm tra và loại bỏ tiền tố 'module.' hoặc 'backbone.' nếu có
+        new_state_dict = {}
+        for k, v in state_dict.items():
+            name = k
+            if name.startswith("module."):
+                name = name[7:]
+            if name.startswith("backbone."):
+                name = name[9:]
+            new_state_dict[name] = v
+            
+        model.load_state_dict(new_state_dict, strict=True)
+        return True
+    except Exception as e:
+        print(f"[-] Lỗi khi load strict=True ({e}). Thử với strict=False...")
+        try:
+            model.load_state_dict(new_state_dict, strict=False)
+            print("[+] Nạp trọng số thành công với strict=False.")
+            return True
+        except Exception as e2:
+            print(f"[-] Nạp trọng số thất bại hoàn toàn ({e2}).")
+            return False
+
+class ArcFaceIResNet100(nn.Module):
+    """
+    Backbone mạng tích chập IResNet-100 để trích xuất Vector đặc trưng 512 chiều.
+    Tối ưu hóa đặc biệt cho trẻ em mẫu giáo, cấp 1 và sinh đôi (Glint360K pre-trained).
+    """
+    def __init__(self, embedding_size=512, pretrained_path=None):
+        super(ArcFaceIResNet100, self).__init__()
+        self.backbone = iresnet100(num_features=embedding_size)
+        
+        if pretrained_path and os.path.exists(pretrained_path):
+            success = load_checkpoint(self.backbone, pretrained_path)
+            if success:
+                print(f"[+] Khởi tạo thành công và NẠP ĐẦY ĐỦ trọng số ArcFace Pretrained Glint360K (IResNet100) từ '{pretrained_path}'.")
+            else:
+                print("[-] Không thể nạp trọng số Glint360K. Sử dụng mô hình khởi tạo ngẫu nhiên.")
+        else:
+            print("[!] Không tìm thấy file trọng số pre-trained. Sử dụng mô hình khởi tạo ngẫu nhiên.")
+
+    def forward(self, x):
+        return self.backbone(x)
 
 class ArcFaceResNet50(nn.Module):
     """
@@ -903,12 +1110,28 @@ def main():
     print(f"[+] Số lượng ảnh huấn luyện (Train - 80%): {len(train_dataset)}")
     print(f"[+] Số lượng ảnh kiểm thử (Test/Val - 20%): {len(test_dataset)}")
 
-    train_dataloader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, drop_last=False)
-    test_dataloader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, drop_last=False)
+    use_pin_memory = (device.type == 'cuda')
+    num_workers = args.workers if device.type == 'cuda' else 0
+    train_dataloader = DataLoader(
+        train_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=True, 
+        drop_last=False,
+        num_workers=num_workers,
+        pin_memory=use_pin_memory
+    )
+    test_dataloader = DataLoader(
+        test_dataset, 
+        batch_size=BATCH_SIZE, 
+        shuffle=False, 
+        drop_last=False,
+        num_workers=num_workers,
+        pin_memory=use_pin_memory
+    )
 
-    # Bước 4: Khởi tạo mạng Backbone ResNet-50 ArcFace và ArcFace Head
+    # Bước 4: Khởi tạo mạng Backbone IResNet-100 ArcFace (Glint360K) và ArcFace Head
     pretrained_path = PRETRAINED_MODEL_PATH if has_pretrained else None
-    backbone = ArcFaceResNet50(embedding_size=EMBEDDING_SIZE, pretrained_path=pretrained_path).to(device)
+    backbone = ArcFaceIResNet100(embedding_size=EMBEDDING_SIZE, pretrained_path=pretrained_path).to(device)
     
     # Nâng cấp s=64.0 mặc định (tối ưu tuyệt đối cho sinh đôi/sinh ba và các trường hợp che khuất)
     arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=64.0, m=MARGIN).to(device)
@@ -927,6 +1150,24 @@ def main():
     best_model_state = None
     best_epoch = -1
 
+    # Resolve AMP setting for training
+    use_amp = False
+    if device.type == 'cuda':
+        if args.amp is None:
+            # Auto AMP selection: disable for AMD system, enable for Nvidia GPU
+            use_amp = not has_amd_system
+        else:
+            use_amp = args.amp
+        if use_amp:
+            print(f"[+] Huấn luyện sử dụng Automatic Mixed Precision (AMP - FP16) trên [{device}].", flush=True)
+        else:
+            print(f"[-] Huấn luyện sử dụng FP32 (AMP tắt) trên [{device}].", flush=True)
+    else:
+        use_amp = False
+        print(f"[-] AMP tắt trên [{device}] (chỉ hỗ trợ GPU CUDA/ROCm).", flush=True)
+
+    scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+
     print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}]...")
     
     for epoch in range(EPOCHS):
@@ -936,7 +1177,7 @@ def main():
             for param_group in optimizer.param_groups:
                 param_group['lr'] = current_lr
             for name, param in backbone.backbone.named_parameters():
-                if "fc" not in name:
+                if "fc" not in name and "features" not in name:
                     param.requires_grad = False
             
             # Giai đoạn 1: tạm thời set margin = 0.0 để căn chỉnh phân tách các lớp thô trước mà không bị sụt giảm accuracy
@@ -975,16 +1216,24 @@ def main():
             
             optimizer.zero_grad()
             
-            # 1. Trích xuất embedding 512 chiều từ backbone
-            embeddings = backbone(imgs)
+            # Tự động chuyển đổi kiểu dữ liệu (AMP)
+            with torch.cuda.amp.autocast(enabled=use_amp):
+                # 1. Trích xuất embedding 512 chiều từ backbone
+                embeddings = backbone(imgs)
+                
+                # 2. Đưa qua lớp phân lớp ArcFace
+                outputs = arcface_head(embeddings, labels)
+                
+                # 3. Tính toán sai số
+                loss = criterion(outputs, labels)
             
-            # 2. Đưa qua lớp phân lớp ArcFace
-            outputs = arcface_head(embeddings, labels)
-            
-            # 3. Tính toán sai số
-            loss = criterion(outputs, labels)
-            loss.backward()
-            optimizer.step()
+            if use_amp:
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+            else:
+                loss.backward()
+                optimizer.step()
             
             total_loss += loss.item() * imgs.size(0)
             
@@ -1015,9 +1264,10 @@ def main():
                 val_imgs = val_imgs.to(device)
                 val_labels = val_labels.to(device)
                 
-                val_embeddings = backbone(val_imgs)
-                val_outputs = arcface_head(val_embeddings, val_labels)
-                loss = criterion(val_outputs, val_labels)
+                with torch.cuda.amp.autocast(enabled=use_amp):
+                    val_embeddings = backbone(val_imgs)
+                    val_outputs = arcface_head(val_embeddings, val_labels)
+                    loss = criterion(val_outputs, val_labels)
                 
                 val_loss += loss.item() * val_imgs.size(0)
                 _, val_predicted = val_outputs.max(1)

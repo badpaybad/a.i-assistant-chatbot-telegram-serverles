@@ -10,6 +10,7 @@
 #include <Preferences.h>
 #include "../esp32os/ok_wav.h"
 
+#include "wakeupword_model_data.h"
 // =========================================================================
 // WIFI & GEMINI LIVE CONFIGURATIONS
 // =========================================================================
