@@ -27,6 +27,7 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chat_history
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
+    # Table 1: Chat history (dialogue log)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_history (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,10 +37,20 @@ def init_db():
             content TEXT
         )
     """)
+    # Table 2: User memory/notes (separate table for explicit user request saves)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_notes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+            topic TEXT,
+            content TEXT
+        )
+    """)
     conn.commit()
     conn.close()
-    logger.info("sqlite3 database initialized.")
+    logger.info("sqlite3 database initialized with chat_history and user_notes tables.")
 
+# --- Bảng 1: Lịch sử hội thoại tự động ---
 def save_chat_message(session_id: str, role: str, content: str) -> str:
     if not content.strip():
         return "Nội dung trống, không lưu."
@@ -53,57 +64,10 @@ def save_chat_message(session_id: str, role: str, content: str) -> str:
         row_id = cursor.lastrowid
         conn.commit()
         conn.close()
-        logger.info(f"💾 Saved {role} message to SQLite: ID={row_id}, '{content.strip()}'")
-        return f"Thành công: Đã thêm bản ghi có ID {row_id}."
+        logger.info(f"💾 Saved {role} message to SQLite chat_history: ID={row_id}")
+        return f"Thành công: Đã ghi nhận đàm thoại ID {row_id}."
     except Exception as e:
-        error_msg = f"Lỗi lưu cơ sở dữ liệu: {e}"
-        logger.error(error_msg)
-        return error_msg
-
-def update_chat_message(record_id: int, new_content: str) -> str:
-    if not new_content.strip():
-        return "Nội dung mới trống, không thể cập nhật."
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        # Verify first if it exists
-        cursor.execute("SELECT id, role, content FROM chat_history WHERE id = ?", (record_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return f"Lỗi: Không tìm thấy bản ghi có ID {record_id}."
-        
-        cursor.execute(
-            "UPDATE chat_history SET content = ? WHERE id = ?",
-            (new_content.strip(), record_id)
-        )
-        conn.commit()
-        conn.close()
-        logger.info(f"💾 Updated message ID={record_id} to '{new_content.strip()}'")
-        return f"Thành công: Cập nhật bản ghi ID {record_id}."
-    except Exception as e:
-        error_msg = f"Lỗi cập nhật cơ sở dữ liệu: {e}"
-        logger.error(error_msg)
-        return error_msg
-
-def delete_chat_message(record_id: int) -> str:
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        cursor = conn.cursor()
-        # Verify first if it exists
-        cursor.execute("SELECT id FROM chat_history WHERE id = ?", (record_id,))
-        row = cursor.fetchone()
-        if not row:
-            conn.close()
-            return f"Lỗi: Không tìm thấy bản ghi có ID {record_id}."
-        
-        cursor.execute("DELETE FROM chat_history WHERE id = ?", (record_id,))
-        conn.commit()
-        conn.close()
-        logger.info(f"💾 Deleted message ID={record_id}")
-        return f"Thành công: Đã xóa bản ghi ID {record_id}."
-    except Exception as e:
-        error_msg = f"Lỗi xóa cơ sở dữ liệu: {e}"
+        error_msg = f"Lỗi lưu lịch sử: {e}"
         logger.error(error_msg)
         return error_msg
 
@@ -125,7 +89,7 @@ def get_chat_history_summary(limit: int = 20) -> str:
         history_lines = []
         for row_id, role, content, timestamp in rows:
             role_name = "Người dùng" if role == "user" else "Trợ lý (Du)"
-            history_lines.append(f"[ID: {row_id}] [{timestamp}] {role_name}: {content}")
+            history_lines.append(f"[Đàm thoại ID: {row_id}] [{timestamp}] {role_name}: {content}")
         return "\n".join(history_lines)
     except Exception as e:
         return f"Lỗi truy vấn lịch sử: {e}"
@@ -142,42 +106,172 @@ def search_chat_history(query_text: str, limit: int = 10) -> str:
         conn.close()
         
         if not rows:
-            return f"Không tìm thấy kết quả nào khớp với '{query_text}' trong lịch sử."
+            return f"Không tìm thấy kết quả nào khớp với '{query_text}' trong lịch sử đàm thoại."
             
         rows.reverse()
         history_lines = []
         for row_id, role, content, timestamp in rows:
             role_name = "Người dùng" if role == "user" else "Trợ lý (Du)"
-            history_lines.append(f"[ID: {row_id}] [{timestamp}] {role_name}: {content}")
-        return f"Kết quả tìm kiếm cho '{query_text}':\n" + "\n".join(history_lines)
+            history_lines.append(f"[Đàm thoại ID: {row_id}] [{timestamp}] {role_name}: {content}")
+        return f"Kết quả tìm kiếm đàm thoại cho '{query_text}':\n" + "\n".join(history_lines)
     except Exception as e:
         return f"Lỗi tìm kiếm lịch sử: {e}"
 
-# Model Tools Implementations
+
+# --- Bảng 2: Ghi chú / Thông tin người dùng yêu cầu lưu trữ ---
+def save_user_note(topic: str, content: str) -> str:
+    if not content.strip():
+        return "Nội dung ghi chú trống, không thể lưu."
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO user_notes (topic, content) VALUES (?, ?)",
+            (topic.strip() if topic else "Chung", content.strip())
+        )
+        row_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        logger.info(f"💾 Saved user note to SQLite user_notes: ID={row_id}, Topic='{topic}'")
+        return f"Thành công: Đã lưu ghi chú '{topic}' với ID {row_id}."
+    except Exception as e:
+        error_msg = f"Lỗi lưu ghi chú: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+def get_user_notes_summary(limit: int = 50) -> str:
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, topic, content, timestamp FROM user_notes ORDER BY id DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            return "Chưa có ghi chú hay thông tin nào được lưu."
+            
+        rows.reverse()
+        notes_lines = []
+        for row_id, topic, content, timestamp in rows:
+            notes_lines.append(f"[Ghi chú ID: {row_id}] [{timestamp}] Chủ đề: {topic} - Nội dung: {content}")
+        return "\n".join(notes_lines)
+    except Exception as e:
+        return f"Lỗi truy vấn ghi chú: {e}"
+
+def search_user_notes_summary(query_text: str) -> str:
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, topic, content, timestamp FROM user_notes WHERE topic LIKE ? OR content LIKE ? ORDER BY id DESC",
+            (f"%{query_text}%", f"%{query_text}%")
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            return f"Không tìm thấy ghi chú hay thông tin nào khớp với '{query_text}'."
+            
+        rows.reverse()
+        notes_lines = []
+        for row_id, topic, content, timestamp in rows:
+            notes_lines.append(f"[Ghi chú ID: {row_id}] [{timestamp}] Chủ đề: {topic} - Nội dung: {content}")
+        return f"Kết quả tìm kiếm ghi chú cho '{query_text}':\n" + "\n".join(notes_lines)
+    except Exception as e:
+        return f"Lỗi tìm kiếm ghi chú: {e}"
+
+def update_user_note_content(note_id: int, new_topic: str = None, new_content: str = None) -> str:
+    if not new_topic and not new_content:
+        return "Không có thông tin mới để cập nhật."
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        
+        # Verify first if it exists
+        cursor.execute("SELECT id, topic, content FROM user_notes WHERE id = ?", (note_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return f"Lỗi: Không tìm thấy ghi chú có ID {note_id}."
+        
+        current_topic, current_content = row[1], row[2]
+        final_topic = new_topic.strip() if new_topic else current_topic
+        final_content = new_content.strip() if new_content else current_content
+        
+        cursor.execute(
+            "UPDATE user_notes SET topic = ?, content = ? WHERE id = ?",
+            (final_topic, final_content, note_id)
+        )
+        conn.commit()
+        conn.close()
+        logger.info(f"💾 Updated user note ID={note_id}")
+        return f"Thành công: Cập nhật ghi chú ID {note_id}."
+    except Exception as e:
+        error_msg = f"Lỗi cập nhật ghi chú: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+def delete_user_note_record(note_id: int) -> str:
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        # Verify first if it exists
+        cursor.execute("SELECT id FROM user_notes WHERE id = ?", (note_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return f"Lỗi: Không tìm thấy ghi chú có ID {note_id}."
+        
+        cursor.execute("DELETE FROM user_notes WHERE id = ?", (note_id,))
+        conn.commit()
+        conn.close()
+        logger.info(f"💾 Deleted user note ID={note_id}")
+        return f"Thành công: Đã xóa ghi chú ID {note_id}."
+    except Exception as e:
+        error_msg = f"Lỗi xóa ghi chú: {e}"
+        logger.error(error_msg)
+        return error_msg
+
+
+# --- Model Tools Implementations ---
 def get_conversation_history(limit: int = 20) -> str:
-    """Lấy danh sách các câu đàm thoại gần nhất (trí nhớ ngắn hạn) để tiếp tục hội thoại."""
+    """Lấy danh sách các câu đàm thoại gần nhất (trí nhớ ngắn hạn)."""
     logger.info(f"🤖 Model called tool: get_conversation_history(limit={limit})")
     return get_chat_history_summary(limit)
 
 def search_conversation_history(query_text: str) -> str:
-    """Tìm kiếm thông tin chi tiết (trí nhớ dài hạn) trong lịch sử hội thoại."""
+    """Tìm kiếm từ khóa trong lịch sử đàm thoại."""
     logger.info(f"🤖 Model called tool: search_conversation_history(query_text='{query_text}')")
     return search_chat_history(query_text)
 
-def add_conversation_record(session_id: str, role: str, content: str) -> str:
-    """Thêm một bản ghi đàm thoại thủ công."""
-    logger.info(f"🤖 Model called tool: add_conversation_record(role='{role}', content='{content}')")
-    return save_chat_message(session_id, role, content)
+def add_user_note_tool(topic: str = "Chung", content: str = "") -> str:
+    """Thêm ghi chú thông tin người dùng yêu cầu lưu trữ."""
+    logger.info(f"🤖 Model called tool: add_user_note(topic='{topic}', content='{content}')")
+    return save_user_note(topic, content)
 
-def update_conversation_record(record_id: int, new_content: str) -> str:
-    """Sửa đổi bản ghi đàm thoại theo ID."""
-    logger.info(f"🤖 Model called tool: update_conversation_record(record_id={record_id}, new_content='{new_content}')")
-    return update_chat_message(record_id, new_content)
+def get_user_notes_tool(limit: int = 50) -> str:
+    """Lấy danh sách thông tin người dùng đã lưu trữ."""
+    logger.info(f"🤖 Model called tool: get_user_notes(limit={limit})")
+    return get_user_notes_summary(limit)
 
-def delete_conversation_record(record_id: int) -> str:
-    """Xóa bản ghi đàm thoại theo ID."""
-    logger.info(f"🤖 Model called tool: delete_conversation_record(record_id={record_id})")
-    return delete_chat_message(record_id)
+def search_user_notes_tool(query_text: str) -> str:
+    """Tìm kiếm trong ghi chú/thông tin người dùng đã lưu trữ."""
+    logger.info(f"🤖 Model called tool: search_user_notes(query_text='{query_text}')")
+    return search_user_notes_summary(query_text)
+
+def update_user_note_tool(note_id: int, new_topic: str = None, new_content: str = None) -> str:
+    """Sửa thông tin ghi chú theo ID."""
+    logger.info(f"🤖 Model called tool: update_user_note(note_id={note_id}, new_topic='{new_topic}', new_content='{new_content}')")
+    return update_user_note_content(note_id, new_topic, new_content)
+
+def delete_user_note_tool(note_id: int) -> str:
+    """Xóa thông tin ghi chú theo ID."""
+    logger.info(f"🤖 Model called tool: delete_user_note(note_id={note_id})")
+    return delete_user_note_record(note_id)
+
 
 # Initialize SQLite database
 init_db()
@@ -188,11 +282,68 @@ app = FastAPI(title="ESP32 Voice Chat Hub (esp32hub)")
 def read_root():
     return {"status": "running", "hub": "esp32hub"}
 
+@app.get("/history")
+def get_history(limit: int = 100):
+    """Lấy toàn bộ lịch sử đàm thoại tự động dưới dạng JSON."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, session_id, role, content, timestamp FROM chat_history ORDER BY id DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        history = []
+        for row_id, session_id, role, content, timestamp in rows:
+            history.append({
+                "id": row_id,
+                "session_id": session_id,
+                "role": role,
+                "content": content,
+                "timestamp": timestamp
+            })
+        return {"status": "success", "count": len(history), "data": history}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/notes")
+def get_notes(limit: int = 100):
+    """Lấy toàn bộ ghi chú / thông tin người dùng yêu cầu lưu trữ dưới dạng JSON."""
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id, topic, content, timestamp FROM user_notes ORDER BY id DESC LIMIT ?",
+            (limit,)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        
+        notes = []
+        for row_id, topic, content, timestamp in rows:
+            notes.append({
+                "id": row_id,
+                "topic": topic,
+                "content": content,
+                "timestamp": timestamp
+            })
+        return {"status": "success", "count": len(notes), "data": notes}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     session_id = str(uuid.uuid4())
     logger.info(f"🔌 Client connected via WebSocket. Generated Session ID: {session_id}")
+
+    # State tracking for clean finalization on disconnect
+    session_state = {
+        "user_text_acc": "",
+        "model_text_acc": []
+    }
 
     if not GEMINI_APIKEY:
         logger.error("❌ GEMINI_APIKEY is not configured in config_dunp.py or environment.")
@@ -208,14 +359,17 @@ async def websocket_endpoint(websocket: WebSocket):
         response_modalities=[types.Modality.AUDIO],
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
-            )
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck")
+            ),
+            language_code="vi-VN"
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế. "
-                     "Bạn có quyền truy cập vào lịch sử đàm thoại thông qua các công cụ lưu trữ SQLite (get_conversation_history, search_conversation_history, "
-                     "add_conversation_record, update_conversation_record, delete_conversation_record) để quản lý, sửa đổi hoặc truy xuất chuyện cũ khi người dùng yêu cầu."
+                text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế. Dùng giọng phổ thông của Việt Nam\n"
+                     "1. BẠN CÓ THỂ TRUY CẬP VÀO LỊCH SỬ ĐÀM THOẠI tự động trong cơ sở dữ liệu qua các công cụ 'get_conversation_history' và 'search_conversation_history' để nhớ chuyện cũ.\n"
+                     "2. BẠN CÓ THỂ LƯU TRỮ, TRA CỨU, SỬA, XÓA THÔNG TIN RIÊNG của người dùng (sở thích, lịch trình, nhắc nhở...) vào một bảng lưu trữ riêng khi người dùng yêu cầu qua các công cụ: "
+                     "'add_user_note', 'get_user_notes', 'search_user_notes', 'update_user_note', 'delete_user_note'. "
+                     "Khi thực hiện các thao tác này, hãy thông báo lại kết quả chính xác cho người dùng (ví dụ: 'Dạ, tôi đã sửa nội dung ghi chú ID 5 rồi ạ')."
             )]
         ),
         realtime_input_config=types.RealtimeInputConfig(
@@ -223,9 +377,10 @@ async def websocket_endpoint(websocket: WebSocket):
         ),
         tools=[
             types.Tool(function_declarations=[
+                # Nhóm 1: Tra cứu lịch sử hội thoại tự động (chat_history)
                 types.FunctionDeclaration(
                     name="get_conversation_history",
-                    description="Lấy danh sách các câu đàm thoại gần nhất dưới dạng danh sách kèm ID bản ghi (trí nhớ ngắn hạn) để biết ngữ cảnh.",
+                    description="Lấy danh sách các câu đàm thoại gần nhất (trí nhớ ngắn hạn) để tiếp tục hội thoại.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
@@ -238,7 +393,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 ),
                 types.FunctionDeclaration(
                     name="search_conversation_history",
-                    description="Tìm kiếm thông tin chi tiết (trí nhớ dài hạn) trong lịch sử hội thoại bằng từ khóa và trả về danh sách bản ghi kèm ID.",
+                    description="Tìm kiếm từ khóa trong lịch sử đàm thoại của người dùng và trợ lý để tra cứu thông tin cũ.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
@@ -250,54 +405,86 @@ async def websocket_endpoint(websocket: WebSocket):
                         required=["query_text"]
                     )
                 ),
+                # Nhóm 2: CRUD trên bảng thông tin/ghi chú riêng của người dùng (user_notes)
                 types.FunctionDeclaration(
-                    name="add_conversation_record",
-                    description="Thêm một câu đàm thoại thủ công vào lịch sử lưu trữ SQLite theo yêu cầu của người dùng.",
+                    name="add_user_note",
+                    description="Thêm một ghi chú hoặc lưu trữ thông tin (sở thích, công việc, lịch trình, ghi nhớ...) của người dùng theo yêu cầu của họ vào bảng riêng.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
-                            "role": types.Schema(
+                            "topic": types.Schema(
                                 type=types.Type.STRING,
-                                description="Vai trò phát ngôn: 'user' (người dùng) hoặc 'model' (trợ lý)."
+                                description="Chủ đề hoặc tiêu đề ngắn của ghi chú (ví dụ: 'sở thích', 'cuộc hẹn', 'nhắc nhở')."
                             ),
                             "content": types.Schema(
                                 type=types.Type.STRING,
-                                description="Nội dung hội thoại cần lưu trữ."
+                                description="Nội dung thông tin cần lưu trữ chi tiết."
                             )
                         },
-                        required=["role", "content"]
+                        required=["content"]
                     )
                 ),
                 types.FunctionDeclaration(
-                    name="update_conversation_record",
-                    description="Chỉnh sửa hoặc cập nhật lại nội dung của một bản ghi hội thoại trong SQLite theo ID bản ghi.",
+                    name="get_user_notes",
+                    description="Lấy toàn bộ danh sách các thông tin ghi nhớ/ghi chú đã lưu của người dùng trong bảng riêng.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
-                            "record_id": types.Schema(
+                            "limit": types.Schema(
                                 type=types.Type.INTEGER,
-                                description="ID của bản ghi hội thoại cần sửa."
+                                description="Giới hạn số lượng ghi chú muốn lấy."
+                            )
+                        }
+                    )
+                ),
+                types.FunctionDeclaration(
+                    name="search_user_notes",
+                    description="Tìm kiếm các thông tin ghi nhớ/ghi chú của người dùng theo từ khóa.",
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "query_text": types.Schema(
+                                type=types.Type.STRING,
+                                description="Từ khóa cần tìm trong các ghi chú."
+                            )
+                        },
+                        required=["query_text"]
+                    )
+                ),
+                types.FunctionDeclaration(
+                    name="update_user_note",
+                    description="Cập nhật hoặc sửa đổi một ghi chú đã lưu của người dùng theo ID ghi chú.",
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "note_id": types.Schema(
+                                type=types.Type.INTEGER,
+                                description="ID của ghi chú cần chỉnh sửa."
+                            ),
+                            "new_topic": types.Schema(
+                                type=types.Type.STRING,
+                                description="Chủ đề mới thay thế (tùy chọn)."
                             ),
                             "new_content": types.Schema(
                                 type=types.Type.STRING,
-                                description="Nội dung hội thoại mới thay thế nội dung cũ."
+                                description="Nội dung ghi chú mới thay thế (tùy chọn)."
                             )
                         },
-                        required=["record_id", "new_content"]
+                        required=["note_id"]
                     )
                 ),
                 types.FunctionDeclaration(
-                    name="delete_conversation_record",
-                    description="Xóa vĩnh viễn một bản ghi hội thoại ra khỏi lịch sử lưu trữ SQLite theo ID bản ghi.",
+                    name="delete_user_note",
+                    description="Xóa vĩnh viễn một ghi chú ra khỏi danh sách ghi nhớ của người dùng theo ID ghi chú.",
                     parameters=types.Schema(
                         type=types.Type.OBJECT,
                         properties={
-                            "record_id": types.Schema(
+                            "note_id": types.Schema(
                                 type=types.Type.INTEGER,
-                                description="ID của bản ghi hội thoại cần xóa."
+                                description="ID của ghi chú cần xóa."
                             )
                         },
-                        required=["record_id"]
+                        required=["note_id"]
                     )
                 )
             ])
@@ -347,7 +534,6 @@ async def websocket_endpoint(websocket: WebSocket):
             async def gemini_to_esp32():
                 audio_buffer = bytearray()
                 CHUNK_SIZE = 4096 # Standardize to 4KB chunks (~85ms of 24kHz audio)
-                model_text_acc = []
                 try:
                     async for response in session.receive():
                         # Check if the model is asking to use a tool
@@ -367,17 +553,24 @@ async def websocket_endpoint(websocket: WebSocket):
                                 elif name == "search_conversation_history":
                                     query_text = args.get("query_text", "")
                                     result = search_conversation_history(query_text)
-                                elif name == "add_conversation_record":
-                                    role = args.get("role", "user")
+                                elif name == "add_user_note":
+                                    topic = args.get("topic", "Chung")
                                     content = args.get("content", "")
-                                    result = add_conversation_record(session_id, role, content)
-                                elif name == "update_conversation_record":
-                                    record_id = int(args.get("record_id", 0))
-                                    new_content = args.get("new_content", "")
-                                    result = update_conversation_record(record_id, new_content)
-                                elif name == "delete_conversation_record":
-                                    record_id = int(args.get("record_id", 0))
-                                    result = delete_conversation_record(record_id)
+                                    result = add_user_note_tool(topic, content)
+                                elif name == "get_user_notes":
+                                    limit = args.get("limit", 50)
+                                    result = get_user_notes_tool(limit)
+                                elif name == "search_user_notes":
+                                    query_text = args.get("query_text", "")
+                                    result = search_user_notes_tool(query_text)
+                                elif name == "update_user_note":
+                                    note_id = int(args.get("note_id", 0))
+                                    new_topic = args.get("new_topic", None)
+                                    new_content = args.get("new_content", None)
+                                    result = update_user_note_tool(note_id, new_topic, new_content)
+                                elif name == "delete_user_note":
+                                    note_id = int(args.get("note_id", 0))
+                                    result = delete_user_note_tool(note_id)
                                 else:
                                     result = f"Error: Tool '{name}' not found."
                                     logger.error(result)
@@ -398,10 +591,10 @@ async def websocket_endpoint(websocket: WebSocket):
                             if server_content.interrupted:
                                 logger.info("🛑 Gemini session interrupted. Sending mute event.")
                                 audio_buffer.clear()
-                                if model_text_acc:
-                                    model_text = "".join(model_text_acc) + " [Bị cắt ngang]"
+                                if session_state["model_text_acc"]:
+                                    model_text = "".join(session_state["model_text_acc"]) + " [Bị cắt ngang]"
                                     save_chat_message(session_id, "model", model_text)
-                                    model_text_acc.clear()
+                                    session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "interrupted"})
 
                             # Model speaking turn audio data
@@ -418,7 +611,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                     elif part.text is not None:
                                         # Print or log the text response
                                         print(part.text, end="", flush=True)
-                                        model_text_acc.append(part.text)
+                                        session_state["model_text_acc"].append(part.text)
 
                             # Turn complete
                             if server_content.turn_complete:
@@ -427,29 +620,31 @@ async def websocket_endpoint(websocket: WebSocket):
                                     await websocket.send_bytes(bytes(audio_buffer))
                                     audio_buffer.clear()
                                 print("\n🤖 [Turn Complete]")
-                                if model_text_acc:
-                                    model_text = "".join(model_text_acc)
+                                if session_state["model_text_acc"]:
+                                    model_text = "".join(session_state["model_text_acc"])
                                     save_chat_message(session_id, "model", model_text)
-                                    model_text_acc.clear()
+                                    session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "turn_complete"})
 
                             # User input transcription check
                             if server_content.input_transcription is not None:
                                 trans = server_content.input_transcription
                                 if trans.text:
-                                    text_lower = trans.text.lower()
-                                    
-                                    # Save user message to database on finalization
-                                    if trans.finished:
-                                        logger.info(f"🎙️ [User transcription]: '{trans.text}'")
-                                        save_chat_message(session_id, "user", trans.text)
-                                    
+                                    session_state["user_text_acc"] = trans.text
                                     await websocket.send_json({"event": "user_transcription", "text": trans.text})
 
                                     # Check if the user wants to stop
+                                    text_lower = trans.text.lower()
                                     if "dừng lại" in text_lower or "làm ơn dừng lại" in text_lower:
                                         logger.info("🛑 Emergency stop command detected in transcription! Muting speaker.")
                                         await websocket.send_json({"event": "interrupted"})
+
+                                # Save user message to database on finalization
+                                if trans.finished:
+                                    if session_state["user_text_acc"]:
+                                        logger.info(f"🎙️ [User transcription]: '{session_state['user_text_acc']}'")
+                                        save_chat_message(session_id, "user", session_state["user_text_acc"])
+                                        session_state["user_text_acc"] = "" # Reset for next turn
 
                 except WebSocketDisconnect:
                     pass
@@ -477,6 +672,15 @@ async def websocket_endpoint(websocket: WebSocket):
         except Exception:
             pass
     finally:
+        # Flush any unsaved dialogue to SQLite before cleaning up on disconnect
+        try:
+            if session_state["user_text_acc"]:
+                save_chat_message(session_id, "user", session_state["user_text_acc"])
+            if session_state["model_text_acc"]:
+                model_text = "".join(session_state["model_text_acc"])
+                save_chat_message(session_id, "model", model_text)
+        except Exception as e:
+            logger.error(f"❌ Error during session state cleanup: {e}")
         logger.info("🔌 WebSocket connection closed and cleaned up.")
 
 if __name__ == "__main__":
