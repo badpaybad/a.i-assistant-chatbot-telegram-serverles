@@ -135,7 +135,7 @@ void setup() {
     initSpeaker();
 
     // Create FreeRTOS Audio Queue and Playback Task (Limit to 16 to control peak SRAM usage)
-    audio_play_queue = xQueueCreate(16, sizeof(AudioPacket));
+    audio_play_queue = xQueueCreate(32, sizeof(AudioPacket));
     xTaskCreatePinnedToCore(
         audio_playback_task,
         "AudioPlayback",

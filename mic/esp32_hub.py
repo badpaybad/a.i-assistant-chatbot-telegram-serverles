@@ -359,18 +359,19 @@ async def websocket_endpoint(websocket: WebSocket):
         response_modalities=[types.Modality.AUDIO],
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Zubenelgenubi")
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
             ),
             language_code="vi-VN"
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                text="Bạn là trợ lý ảo thông minh tiếng Việt thông minh có tên là 'Du' **giọng miền Bắc Việt Nam**. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế. "
-                     "Hãy dùng giọng phổ thông miền Bắc Việt Nam, giao tiếp thân thiện và phát âm rõ ràng.\n"
-                     "1. BẠN CÓ THỂ TRUY CẬP VÀO LỊCH SỬ ĐÀM THOẠI tự động trong cơ sở dữ liệu qua các công cụ 'get_conversation_history' và 'search_conversation_history' để nhớ chuyện cũ.\n"
-                     "2. BẠN CÓ THỂ LƯU TRỮ, TRA CỨU, SỬA, XÓA THÔNG TIN RIÊNG của người dùng (sở thích, lịch trình, nhắc nhở...) vào một bảng lưu trữ riêng khi người dùng yêu cầu qua các công cụ: "
+                text="HỆ THỐNG YÊU CẦU BẮT BUỘC:\n"
+                     "1. BẠN PHẢI LUÔN LUÔN PHÁT ÂM TIẾNG VIỆT VỚI GIỌNG CHUẨN MIỀN BẮC VIỆT NAM (GIỌNG HÀ NỘI). TUYỆT ĐỐI KHÔNG ĐƯỢC NÓI LƠ LỚ, KHÔNG GIẢ GIỌNG NƯỚC NGOÀI, VÀ KHÔNG ĐƯỢC CHUYỂN SANG TIẾNG ANH HOẶC NÓI ĐỆM TIẾNG ANH TRONG MỌI TRƯỜNG HỢP.\n"
+                     "2. Bạn là trợ lý ảo thông minh tiếng Việt tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên, thân thiện và phát âm rõ ràng như đang hội thoại thực tế.\n"
+                     "3. BẠN CÓ THỂ TRUY CẬP VÀO LỊCH SỬ ĐÀM THOẠI tự động trong cơ sở dữ liệu qua các công cụ 'get_conversation_history' và 'search_conversation_history' để nhớ chuyện cũ.\n"
+                     "4. BẠN CÓ THỂ LƯU TRỮ, TRA CỨU, SỬA, XÓA THÔNG TIN RIÊNG của người dùng (sở thích, lịch trình, nhắc nhở...) vào một bảng lưu trữ riêng khi người dùng yêu cầu qua các công cụ: "
                      "'add_user_note', 'get_user_notes', 'search_user_notes', 'update_user_note', 'delete_user_note'. "
-                     "Khi thực hiện các thao tác này, hãy thông báo lại kết quả chính xác cho người dùng (ví dụ: 'Dạ, tôi đã sửa nội dung ghi chú ID 5 rồi ạ')."
+                     "Khi thực hiện các thao tác này, hãy thông báo lại kết quả chính xác cho người dùng bằng tiếng Việt giọng Bắc chuẩn."
             )]
         ),
         realtime_input_config=types.RealtimeInputConfig(
@@ -535,6 +536,12 @@ async def websocket_endpoint(websocket: WebSocket):
             async def gemini_to_esp32():
                 audio_buffer = bytearray()
                 CHUNK_SIZE = 4096 # Standardize to 4KB chunks (~85ms of 24kHz audio)
+                
+                # Real-time audio pacing parameters
+                start_time = None
+                sent_duration = 0.0
+                CHUNK_DURATION = CHUNK_SIZE / 48000.0 # 4096 bytes / 48000 bytes/sec = 0.085333s
+                
                 try:
                     async for response in session.receive():
                         # Check if the model is asking to use a tool
@@ -592,6 +599,8 @@ async def websocket_endpoint(websocket: WebSocket):
                             if server_content.interrupted:
                                 logger.info("🛑 Gemini session interrupted. Sending mute event.")
                                 audio_buffer.clear()
+                                start_time = None
+                                sent_duration = 0.0
                                 if session_state["model_text_acc"]:
                                     session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "interrupted"})
@@ -606,7 +615,21 @@ async def websocket_endpoint(websocket: WebSocket):
                                             while len(audio_buffer) >= CHUNK_SIZE:
                                                 chunk = bytes(audio_buffer[:CHUNK_SIZE])
                                                 del audio_buffer[:CHUNK_SIZE]
+                                                
+                                                if start_time is None:
+                                                    start_time = asyncio.get_event_loop().time()
+                                                
+                                                # Send the chunk to the ESP32
                                                 await websocket.send_bytes(chunk)
+                                                sent_duration += CHUNK_DURATION
+                                                
+                                                # Perform adaptive pacing based on actual elapsed time
+                                                now = asyncio.get_event_loop().time()
+                                                elapsed = now - start_time
+                                                # Maintain a 150ms lead cushion (approx 1.7 chunks) on client play queue
+                                                target_play_time = sent_duration - 0.150
+                                                if target_play_time > elapsed:
+                                                    await asyncio.sleep(target_play_time - elapsed)
                                     elif part.text is not None:
                                         # Print or log the text response
                                         print(part.text, end="", flush=True)
@@ -619,6 +642,8 @@ async def websocket_endpoint(websocket: WebSocket):
                                     await websocket.send_bytes(bytes(audio_buffer))
                                     audio_buffer.clear()
                                 print("\n🤖 [Turn Complete]")
+                                start_time = None
+                                sent_duration = 0.0
                                 if session_state["model_text_acc"]:
                                     session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "turn_complete"})
