@@ -8,3 +8,7 @@ venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --de
 # Huấn luyện mô hình YOLO11 Medium với đầu P2 Stride-4 chuyên dụng trên GPU NVIDIA
 
 venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolo11s.pt --epochs 80 --batch 4 --device cuda --p2
+
+
+
+unzip -o dataraw.zip -d dataraw
