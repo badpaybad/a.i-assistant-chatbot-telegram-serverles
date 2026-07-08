@@ -10,3 +10,5 @@ pip install "protobuf>=4.25.3,<5.0.0dev"
 pip install "tensorflow-cpu==2.16.1"
 pip install "ml_dtypes>=0.5.0"
 pip install mediapipe
+
+python3 main.py --epochs 100 --device cuda --batch_size 32
