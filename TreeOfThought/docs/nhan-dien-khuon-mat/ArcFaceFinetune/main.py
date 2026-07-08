@@ -5,7 +5,7 @@ import shutil
 import urllib.request
 import argparse
 
-# ── Fix AMD GPU & Nvidia GPU environments before importing torch/onnxruntime ──
+# ── Fix AMD GPU & Nvidia GPU environments before importing torch/onnxruntime ── 
 def detect_real_amd_gpu_arch():
     import glob
     for path in glob.glob('/sys/class/kfd/kfd/topology/nodes/*/properties'):
@@ -220,8 +220,8 @@ if len(missing_libs) > 0:
 # ==========================================
 # 1. CẤU HÌNH & KHỞI TẠO
 # ==========================================
-RAW_DIR = args.raw_dir
-DATA_DIR = args.data_dir
+RAW_DIR = os.path.abspath(args.raw_dir)
+DATA_DIR = os.path.abspath(args.data_dir)
 MODEL_OUTPUT_PATH = args.model_output_path
 MOBILE_MODEL_OUTPUT_PATH = args.mobile_model_output_path
 BEST_MODEL_OUTPUT_PATH = args.best_model_output_path
@@ -1391,7 +1391,7 @@ def main():
             dummy_input,
             onnx_path,
             export_params=True,
-            opset_version=11,
+            opset_version=17,
             do_constant_folding=True,
             input_names=['input'],
             output_names=['output'],
