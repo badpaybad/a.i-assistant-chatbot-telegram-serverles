@@ -131,3 +131,5 @@ cnc/getopt
 **/mic/**_noise**
 **/mic/**/**_shift**
 **/mic/**/**_noise**
+esp32/detect_wakeup/dunp_config.h
+mic/chat_history.db
