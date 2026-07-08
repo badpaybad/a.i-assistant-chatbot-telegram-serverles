@@ -359,13 +359,14 @@ async def websocket_endpoint(websocket: WebSocket):
         response_modalities=[types.Modality.AUDIO],
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
-                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck")
+                prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Zubenelgenubi")
             ),
             language_code="vi-VN"
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế. Dùng giọng phổ thông của Việt Nam\n"
+                text="Bạn là trợ lý ảo thông minh tiếng Việt thông minh có tên là 'Du' **giọng miền Bắc Việt Nam**. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế. "
+                     "Hãy dùng giọng phổ thông miền Bắc Việt Nam, giao tiếp thân thiện và phát âm rõ ràng.\n"
                      "1. BẠN CÓ THỂ TRUY CẬP VÀO LỊCH SỬ ĐÀM THOẠI tự động trong cơ sở dữ liệu qua các công cụ 'get_conversation_history' và 'search_conversation_history' để nhớ chuyện cũ.\n"
                      "2. BẠN CÓ THỂ LƯU TRỮ, TRA CỨU, SỬA, XÓA THÔNG TIN RIÊNG của người dùng (sở thích, lịch trình, nhắc nhở...) vào một bảng lưu trữ riêng khi người dùng yêu cầu qua các công cụ: "
                      "'add_user_note', 'get_user_notes', 'search_user_notes', 'update_user_note', 'delete_user_note'. "
@@ -592,8 +593,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                 logger.info("🛑 Gemini session interrupted. Sending mute event.")
                                 audio_buffer.clear()
                                 if session_state["model_text_acc"]:
-                                    model_text = "".join(session_state["model_text_acc"]) + " [Bị cắt ngang]"
-                                    save_chat_message(session_id, "model", model_text)
                                     session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "interrupted"})
 
@@ -621,8 +620,6 @@ async def websocket_endpoint(websocket: WebSocket):
                                     audio_buffer.clear()
                                 print("\n🤖 [Turn Complete]")
                                 if session_state["model_text_acc"]:
-                                    model_text = "".join(session_state["model_text_acc"])
-                                    save_chat_message(session_id, "model", model_text)
                                     session_state["model_text_acc"].clear()
                                 await websocket.send_json({"event": "turn_complete"})
 
@@ -676,9 +673,8 @@ async def websocket_endpoint(websocket: WebSocket):
         try:
             if session_state["user_text_acc"]:
                 save_chat_message(session_id, "user", session_state["user_text_acc"])
-            if session_state["model_text_acc"]:
-                model_text = "".join(session_state["model_text_acc"])
-                save_chat_message(session_id, "model", model_text)
+            # We do not save model text responses into chat_history
+            pass
         except Exception as e:
             logger.error(f"❌ Error during session state cleanup: {e}")
         logger.info("🔌 WebSocket connection closed and cleaned up.")

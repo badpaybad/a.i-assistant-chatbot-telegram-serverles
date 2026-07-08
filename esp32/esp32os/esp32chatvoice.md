@@ -28,6 +28,6 @@ Trong quá trình chát việc người dùng yêu cầu lưu thông tinh thêm 
 
 gemini live cần dùng tool call để thực hiện các yêu cầu của người dùng khi cần 
 
-gemini live config âm thanh giọng phù hợp tiếng Việt , giọng nam 
+gemini live config âm thanh giọng phù hợp tiếng Việt phổ thông giọng miền bắc Việt nam , giọng nữ thân thiện rõ ràng  
 
 gemini live response voice có kèm cả text không cần lưu text response vào history 
