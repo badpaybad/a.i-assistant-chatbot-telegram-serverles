@@ -31,3 +31,18 @@ gemini live cần dùng tool call để thực hiện các yêu cầu của ngư
 gemini live config âm thanh giọng phù hợp tiếng Việt phổ thông giọng miền bắc Việt nam , giọng nữ thân thiện rõ ràng  
 
 gemini live response voice có kèm cả text không cần lưu text response vào history 
+
+**cập nhật 3**
+mic/esp32_hub.py api esp32hub cùng mạng LAN , wifi với esp32. cần mic/esp32_hub.py api esp32hub dùng lấy IP LAN  và dùng firestore TreeOfThought/backend/Core.Web.Api/firebase-adminsdk.json rồi gửi cho esp32 để nhận IP cho việc stream voice chat.
+esp32 cần dùng firebase firestore với config  firebase: {
+    apiKey: "AIzaSyAeOXhZrhaadsOIp1e_0tklcnH8H5KfRZ8",
+    authDomain: "realtimedbtest-d8c6b.firebaseapp.com",
+    databaseURL: "https://realtimedbtest-d8c6b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "realtimedbtest-d8c6b",
+    storageBucket: "realtimedbtest-d8c6b.firebasestorage.app",
+    messagingSenderId: "787425357847",
+    appId: "1:787425357847:web:70987cc599fe6242a92c52",
+    vapidKey: "BBsnw8XbQ0yCpHixy3hKt20NuwTBB_Uqz__TdWPVlAEN6LZekJQCNqDO53JpXO5Q1gJ_3Nfrr28RHvKVtXU1tRw"
+  } để nhận IP mới từ api esp32hub rồi thực hiện chat voice bình thường. khi esp32 nhận được ip và connect IP thành công cần xóa dữ liệu trên firestore để tiết kiêm chi phí , có thể tham khảo code ở esp32/esp32os/esp32firebase.ino 
+
+Nếu chưa lấy được IP từ firestore thì vẫn dùng IP ở esp32/detect_wakeup/dunp_config.h khi nào lấy được IP thì khởi động lại socket để kết nối IP mới 

@@ -4,8 +4,11 @@ import asyncio
 import logging
 import sqlite3
 import uuid
+import socket
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import uvicorn
+import firebase_admin
+from firebase_admin import credentials, firestore
 from google import genai
 from google.genai import types
 
@@ -273,8 +276,47 @@ def delete_user_note_tool(note_id: int) -> str:
     return delete_user_note_record(note_id)
 
 
-# Initialize SQLite database
+# Paths for Firebase config
+ADMIN_SDK_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "TreeOfThought", "backend", "Core.Web.Api", "firebase-adminsdk.json"
+)
+
+def get_lan_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        ip = '127.0.0.1'
+    finally:
+        s.close()
+    return ip
+
+def publish_ip_to_firestore():
+    if not os.path.exists(ADMIN_SDK_PATH):
+        logger.error(f"❌ Firebase Admin SDK config not found at: {ADMIN_SDK_PATH}")
+        return
+    try:
+        lan_ip = get_lan_ip()
+        logger.info(f"🌐 Local LAN IP detected: {lan_ip}")
+        
+        cred = credentials.Certificate(ADMIN_SDK_PATH)
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        
+        doc_ref = db.collection("esp32hub").document("config")
+        doc_ref.set({
+            "ip": lan_ip,
+            "port": PORT
+        })
+        logger.info(f"🔥 Successfully published server IP ({lan_ip}:{PORT}) to Firestore 'esp32hub/config'!")
+    except Exception as e:
+        logger.error(f"❌ Error publishing IP to Firestore: {e}")
+
+# Initialize SQLite database and publish server IP to Firestore
 init_db()
+publish_ip_to_firestore()
 
 app = FastAPI(title="ESP32 Voice Chat Hub (esp32hub)")
 

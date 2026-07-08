@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <HTTPClient.h>
 #include <WebSocketsClient.h> // Markus Sattler WebSockets Library
 #define ARDUINOJSON_DEFAULT_DOCUMENT_ALLOCATOR SpiRamAllocator
 #include <ArduinoJson.h>     // Benoit Blanchon ArduinoJson Library
@@ -14,6 +15,14 @@
 // WIFI & HUB CONFIGURATIONS
 // =========================================================================
 #include "dunp_config.h"
+
+// Dynamic Hub host and port configuration
+String current_hub_host = "";
+int current_hub_port = 8888;
+bool has_deleted_ip_document = false;
+String current_hub_ip = "";
+bool is_using_fallback_ip = false;
+unsigned long last_firestore_check_time = 0;
 
 // =========================================================================
 // HARDWARE PIN CONFIGURATIONS
@@ -89,6 +98,8 @@ void connectWiFi();
 void setCustomDNS();
 void connect_live_chat();
 void disconnect_live_chat();
+bool get_hub_ip_from_firestore();
+bool delete_hub_ip_from_firestore();
 void stream_mic_to_websocket();
 void handle_text_message(uint8_t * payload, size_t length);
 void handle_binary_audio(uint8_t * payload, size_t length);
@@ -210,6 +221,22 @@ void loop() {
             }
         }
     }
+
+    // Periodically poll Firestore if currently connected/connecting via fallback IP
+    if (is_using_fallback_ip && WiFi.status() == WL_CONNECTED) {
+        if (millis() - last_firestore_check_time > 10000) {
+            last_firestore_check_time = millis();
+            Serial.println("[Firebase] Periodically checking Firestore for a new Hub IP document...");
+            if (get_hub_ip_from_firestore()) {
+                if (current_hub_ip != current_hub_host) {
+                    Serial.printf("🟢 [Firebase] Found new Hub IP on Firestore: %s:%d. Reconnecting to new IP...\n", current_hub_ip.c_str(), current_hub_port);
+                    current_hub_host = current_hub_ip;
+                    is_using_fallback_ip = false;
+                    disconnect_live_chat(); // Force socket restart to use new IP
+                }
+            }
+        }
+    }
     
     delay(10); // Don't yield with delay(1) - let FreeRTOS scheduler give full quanta to gemini_ws_task
 }
@@ -321,7 +348,25 @@ void connect_live_chat() {
     ws_task_running = false;
     delay(50); // Yield to let gemini_ws_task exit webSocket.loop()
 
-    Serial.printf("🌐 [Hub] Connecting to esp32hub at ws://%s:%d/ws ...\n", esp32hub_host, esp32hub_port);
+    String target_host = current_hub_host;
+    int target_port = current_hub_port;
+
+    if (target_host.length() == 0) {
+        Serial.println("[Firebase] Attempting to retrieve Hub IP from Firestore...");
+        if (get_hub_ip_from_firestore()) {
+            target_host = current_hub_ip;
+            target_port = current_hub_port;
+            is_using_fallback_ip = false;
+        } else {
+            Serial.printf("⚠️ [Firebase] Could not retrieve IP from Firestore. Falling back to config IP: %s:%d\n", esp32hub_host, esp32hub_port);
+            target_host = esp32hub_host;
+            target_port = esp32hub_port;
+            is_using_fallback_ip = true;
+            last_firestore_check_time = millis(); // Reset checking timer
+        }
+    }
+
+    Serial.printf("🌐 [Hub] Connecting to esp32hub at ws://%s:%d/ws ...\n", target_host.c_str(), target_port);
     live_chat_active = true;
     setup_complete_received = false;
     model_speaking_turn = false;
@@ -334,18 +379,21 @@ void connect_live_chat() {
 
     // TCP connection test
     WiFiClient test_client;
-    if (test_client.connect(esp32hub_host, esp32hub_port)) {
+    if (test_client.connect(target_host.c_str(), target_port)) {
         Serial.println("[Hub TCP] Connection verified successfully!");
         test_client.stop();
+        current_hub_host = target_host;
+        current_hub_port = target_port;
     } else {
-        Serial.println("❌ [Hub TCP] Connection failed! Check if esp32hub server is running.");
+        Serial.printf("❌ [Hub TCP] Connection to %s:%d failed! Clearing cache to retry.\n", target_host.c_str(), target_port);
+        current_hub_host = ""; // Clear cache to force Firestore query on next try
         live_chat_active = false;
         ws_task_running = true;
         return;
     }
 
     // Connect WebSocket to local hub
-    webSocket.begin(esp32hub_host, esp32hub_port, "/ws");
+    webSocket.begin(current_hub_host.c_str(), current_hub_port, "/ws");
     webSocket.onEvent(webSocketEvent);
     webSocket.enableHeartbeat(10000, 3000, 2);
 
@@ -362,6 +410,7 @@ void disconnect_live_chat() {
     live_chat_active = false;
     setup_complete_received = false;
     model_speaking_turn = false;
+    has_deleted_ip_document = false; // Reset delete flag for next connection
     play_beep(400, 150);
     i2s_set_sample_rates(I2S_PORT_OUT, SPEAKER_SAMPLING_RATE);
     
@@ -509,10 +558,16 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
             }
             live_chat_active = false;
             setup_complete_received = false;
+            has_deleted_ip_document = false; // Reset delete flag on disconnect
             i2s_set_sample_rates(I2S_PORT_OUT, SPEAKER_SAMPLING_RATE);
             break;
         case WStype_CONNECTED:
             Serial.println("🔌 [Hub WS] Connection established successfully! Waiting for setup...");
+            if (!has_deleted_ip_document) {
+                if (delete_hub_ip_from_firestore()) {
+                    has_deleted_ip_document = true;
+                }
+            }
             break;
         case WStype_TEXT:
             handle_text_message(payload, length);
@@ -731,4 +786,96 @@ void gemini_ws_task(void *pvParameters) {
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // Yield
     }
+}
+
+bool get_hub_ip_from_firestore() {
+    if (WiFi.status() != WL_CONNECTED) {
+        Serial.println("❌ [Firebase] WiFi not connected. Cannot read Firestore.");
+        return false;
+    }
+    
+    WiFiClientSecure secure_client;
+    secure_client.setInsecure(); // Bypass NTP check
+    
+    HTTPClient http;
+    String url = "https://firestore.googleapis.com/v1/projects/";
+    url += firebase_project_id;
+    url += "/databases/(default)/documents/esp32hub/config";
+    if (String(firebase_api_key).length() > 0) {
+        url += "?key=";
+        url += firebase_api_key;
+    }
+    
+    Serial.printf("[Firebase] Fetching Hub IP from: %s\n", url.c_str());
+    http.begin(secure_client, url);
+    int httpResponseCode = http.GET();
+    bool success = false;
+    
+    if (httpResponseCode == 200) {
+        String response = http.getString();
+        JsonDocument doc;
+        DeserializationError error = deserializeJson(doc, response);
+        if (!error) {
+            if (doc.containsKey("fields")) {
+                JsonObject fields = doc["fields"];
+                if (fields.containsKey("ip") && fields["ip"].containsKey("stringValue")) {
+                    current_hub_ip = fields["ip"]["stringValue"].as<String>();
+                }
+                if (fields.containsKey("port")) {
+                    if (fields["port"].containsKey("integerValue")) {
+                        current_hub_port = fields["port"]["integerValue"].as<String>().toInt();
+                    } else if (fields["port"].containsKey("stringValue")) {
+                        current_hub_port = fields["port"]["stringValue"].as<String>().toInt();
+                    }
+                }
+                
+                if (current_hub_ip.length() > 0) {
+                    Serial.printf("🟢 [Firebase] Retrieved IP from Firestore: %s, Port: %d\n", current_hub_ip.c_str(), current_hub_port);
+                    success = true;
+                } else {
+                    Serial.println("❌ [Firebase] 'ip' field was missing in retrieved document.");
+                }
+            } else {
+                Serial.println("❌ [Firebase] No fields found in config document.");
+            }
+        } else {
+            Serial.printf("❌ [Firebase] JSON parse failed: %s\n", error.c_str());
+        }
+    } else {
+        Serial.printf("⚠️ [Firebase] GET config document failed, response code: %d\n", httpResponseCode);
+    }
+    
+    http.end();
+    return success;
+}
+
+bool delete_hub_ip_from_firestore() {
+    if (WiFi.status() != WL_CONNECTED) return false;
+    
+    WiFiClientSecure secure_client;
+    secure_client.setInsecure();
+    
+    HTTPClient http;
+    String url = "https://firestore.googleapis.com/v1/projects/";
+    url += firebase_project_id;
+    url += "/databases/(default)/documents/esp32hub/config";
+    if (String(firebase_api_key).length() > 0) {
+        url += "?key=";
+        url += firebase_api_key;
+    }
+    
+    Serial.printf("[Firebase] Deleting Hub IP document from: %s\n", url.c_str());
+    http.begin(secure_client, url);
+    int httpResponseCode = http.sendRequest("DELETE");
+    bool success = false;
+    
+    if (httpResponseCode >= 200 && httpResponseCode < 300) {
+        Serial.println("🟢 [Firebase] Firestore config document deleted successfully to minimize database costs.");
+        success = true;
+    } else {
+        Serial.printf("❌ [Firebase] Firestore document DELETE failed, response code: %d\n", httpResponseCode);
+    }
+    
+    http.end();
+    return success;
 }
