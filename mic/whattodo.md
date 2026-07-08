@@ -10,3 +10,5 @@ cần lưu lại lời người nói, để khi xong sẽ xử lý lời vừa l
 nếu người dùng nói : "làm ơn dừng lại," "dừng lại" với âm thanh lớn, thì mới dùng lại để lắng nghe người dùng nói xong rồi xử lý trả lời
 
 Không cần kích hoạt nhận diện wakr-word mỗi khi trả lời xong, chỉ kích hoạt khi lúc mới khởi động , sau 1 phút mà không xử lý tts ra chữ được thì lúc nay không stream lên api nữa, quay lại nghe du ơi 
+
+**cập nhật 2** xem code cameraip/train/train_yolo_tiny.py hỗ trợ cả cpu , cuda ... cần cập nhật cho mic/train.py để hỗ trợ cả cpu , cuda ... cho việc train 
