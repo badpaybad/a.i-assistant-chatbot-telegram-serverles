@@ -1619,6 +1619,24 @@ Sau khi kết thúc quá trình huấn luyện, hai tệp mô hình ONNX sẽ đ
 python test_inference.py --test_image ../du1.jpeg --threshold 0.50
 ```
 
+---
+
+## 12. Tối ưu hóa cho Cặp Sinh đôi & Camera thực tế (Cập nhật 2026-07-08)
+
+Để nâng cao khả năng phân biệt các cặp sinh đôi cùng trứng (ở độ tuổi mầm non và tiểu học) và cải thiện độ chính xác với ảnh độ phân giải thấp từ Camera USB/IP, hệ thống đã tích hợp thêm hai giải pháp nâng cấp cốt lõi:
+
+### 12.1. Giải pháp Downsampling Augmentation (Offline Preprocessing)
+*   **Mô tả:** Trong bước tiền xử lý ảnh thô (`dataraw -> data`), hệ thống tự động sinh thêm phiên bản chất lượng thấp cho mỗi bức ảnh. 
+*   **Cách thức hoạt động:** Mỗi ảnh khuôn mặt căn chỉnh `112x112` sẽ được thu nhỏ ngẫu nhiên về các kích thước thấp (`48x48`, `64x64`, hoặc `80x80`) bằng phép nội suy vùng (Area Interpolation), sau đó được phóng to lại `112x112` bằng phép nội suy Cubic để mô phỏng chính xác hiện tượng mất chi tiết do camera ở xa hoặc chất lượng kém.
+*   **Tác dụng:** Ép mạng nơ-ron phải học cách tập trung vào cấu trúc hình học tổng thể (facial topology) của khuôn mặt thay vì chỉ ghi nhớ các chi tiết da hay hạt nhiễu tần số cao vốn dễ bị biến dạng ở cự ly xa.
+
+### 12.2. Triplet Loss kết hợp Hard Negative Mining (Finetuning Option)
+*   **Mô tả:** Hệ thống hỗ trợ tích hợp Batch-Hard Triplet Loss làm hàm mất mát bổ trợ khi huấn luyện (bật theo mặc định thông qua cờ `--triplet`).
+*   **Cách thức hoạt động:** Trong mỗi Batch huấn luyện, mô hình tự động tìm ra cặp Positive xa nhất (hardest positive) và cặp Negative gần nhất (hardest negative). Đối với các cặp sinh đôi cùng trứng, vector embedding của bé A và bé B tự nhiên sẽ rất gần nhau (độ tương đồng cao). Cơ chế Hard Negative Mining sẽ tự động coi bé B là Negative khó nhất của bé A và ngược lại, từ đó tính toán hình phạt góc cực lớn để kéo xa khoảng cách vector giữa hai bé trong không gian 512 chiều.
+*   **Cấu hình tham số dòng lệnh:**
+    *   Bật Triplet Loss (Mặc định): `--triplet`
+    *   Tắt Triplet Loss: `--no_triplet`
+
 **Nguyên lý hoạt động của script đối sánh:**
 1. Quét qua toàn bộ thư mục `./dataraw` để trích xuất các vector đặc trưng khuôn mặt (L2 normalized embeddings).
 2. Tính toán vector trung bình (mean vector) đại diện cho từng danh tính (identity vector).

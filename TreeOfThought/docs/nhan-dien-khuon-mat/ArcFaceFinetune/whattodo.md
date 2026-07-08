@@ -88,3 +88,10 @@ https://github.com/deepinsight/insightface/blob/master/recognition/arcface_torch
 
 **cập nhật 2026-07-08 16:06:16**
 xem file cameraip/train/train_yolo.py để hỗ trợ việc chạy finetune chọn cuda, amd, cpu mặc định là cpu và các option khi finetune để có thể tối ưu khi chạy . cần cập nhật và hướng dẫn cách làm dataraw, dataset , finetune và inference khi train xong . viết code usage model ra file riêng để test  cần dùng dataraw làm identity facevector và test với ảnh TreeOfThought/docs/nhan-dien-khuon-mat/du1.jpeg  match là dunp 
+
+**cập nhật 2026-07-08 16:16:16**
+Downsampling Augmentation: áp dụng để tạo data từ dataraw , sau đó dùng folder data làm dataset cho việc finetune 
+Cách làm: Ngẫu nhiên thu nhỏ ảnh train xuống các kích thước thấp (48x48, 64x64, 80x80), sau đó resize ngược lại kích thước đầu vào của mô hình (112x112 hoặc 224x224).
+Tác dụng: Ép mạng nơ-ron học cách trích xuất các đặc trưng bất biến cấu trúc hình học (facial topology) thay vì chỉ dựa vào các chi tiết da siêu nhỏ vốn dễ bị mất đi khi camera ở xa.
+
+thêm option khi train cho việc áp dụng (Finetuning): Áp dụng Triplet Loss với Hard Negative Mining trong quá trình huấn luyện: Ghép cặp ảnh của bé A và bé B sinh đôi làm cặp đối kháng (negative pair) gần nhất để ép mô hình phải kéo xa khoảng cách vector giữa 2 bé. Mặc định là áp dụng Triplet Loss với Hard Negative Mining

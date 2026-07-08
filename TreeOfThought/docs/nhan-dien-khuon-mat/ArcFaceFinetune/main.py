@@ -141,6 +141,8 @@ def parse_args():
     parser.add_argument("--amp", action="store_true", dest="amp", default=None, help="Bắt buộc bật AMP (Mixed Precision) khi huấn luyện.")
     parser.add_argument("--no_amp", action="store_false", dest="amp", help="Bắt buộc tắt AMP khi huấn luyện.")
     parser.add_argument("--workers", type=int, default=4, help="Số lượng workers cho DataLoader (mặc định: 4)")
+    parser.add_argument("--triplet", action="store_true", dest="use_triplet", default=True, help="Bật Triplet Loss với Hard Negative Mining (mặc định: True)")
+    parser.add_argument("--no_triplet", action="store_false", dest="use_triplet", help="Tắt Triplet Loss với Hard Negative Mining")
     
     args, unknown = parser.parse_known_args()
     return args
@@ -619,6 +621,19 @@ def preprocess_dataraw():
             cv2.imwrite(save_path, aligned)
             face_count += 1
 
+            # Downsampling Augmentation: Ngẫu nhiên thu nhỏ ảnh xuống kích thước thấp (48x48, 64x64, 80x80), sau đó resize ngược lại 112x112
+            import random
+            low_res = random.choice([48, 64, 80])
+            downsampled_temp = cv2.resize(aligned, (low_res, low_res), interpolation=cv2.INTER_AREA)
+            downsampled_aligned = cv2.resize(downsampled_temp, (112, 112), interpolation=cv2.INTER_CUBIC)
+            
+            downsampled_save_path = os.path.join(
+                identity_aligned_path,
+                f"{os.path.splitext(file_name)[0]}_downsampled.png"
+            )
+            cv2.imwrite(downsampled_save_path, downsampled_aligned)
+            face_count += 1
+
     # Giải phóng tài nguyên MediaPipe
     if mp_detector is not None:
         try:
@@ -795,6 +810,55 @@ class ArcMarginProduct(nn.Module):
         output = (one_hot * phi) + ((1.0 - one_hot) * cosine)
         output *= self.s
         return output
+
+class BatchHardTripletLoss(nn.Module):
+    """
+    Hàm mất mát Triplet Loss với Hard Negative Mining.
+    Sử dụng kỹ thuật Batch-Hard: với mỗi Anchor trong Batch, tự động tìm Positive xa nhất (hardest positive)
+    và Negative gần nhất (hardest negative) để tính toán loss.
+    """
+    def __init__(self, margin=0.3):
+        super(BatchHardTripletLoss, self).__init__()
+        self.margin = margin
+
+    def forward(self, embeddings, labels):
+        # Đảm bảo các vector đã được chuẩn hóa L2
+        embeddings_norm = F.normalize(embeddings, p=2, dim=1)
+        
+        # Tính toán ma trận khoảng cách đôi một giữa các mẫu (Pairwise distance matrix)
+        # d(x, y) = ||x - y||^2 = ||x||^2 + ||y||^2 - 2*x^T*y = 2 - 2*cos_similarity
+        dist_matrix = 2.0 - 2.0 * torch.matmul(embeddings_norm, embeddings_norm.t())
+        dist_matrix = torch.clamp(dist_matrix, min=0.0)
+
+        # Tạo mask xác định mẫu cùng lớp (positive) và khác lớp (negative)
+        labels_equal = labels.unsqueeze(0) == labels.unsqueeze(1)
+        
+        # Mẫu Positive phải cùng lớp nhưng không phải là chính nó (i != j)
+        mask_pos = labels_equal ^ torch.eye(labels.size(0), dtype=torch.bool, device=labels.device)
+        
+        # Mẫu Negative phải khác lớp hoàn toàn
+        mask_neg = ~labels_equal
+
+        # Tìm Hardest Positive: khoảng cách lớn nhất trong số các positive
+        pos_dists = dist_matrix * mask_pos.float()
+        hardest_positive_dist, _ = torch.max(pos_dists, dim=1)
+
+        # Tìm Hardest Negative: khoảng cách nhỏ nhất trong số các negative
+        # Để tránh chọn các mẫu không hợp lệ, ta gán khoảng cách rất lớn cho các mẫu không phải negative
+        max_dist = dist_matrix.max() + 1.0
+        neg_dists = dist_matrix + (1.0 - mask_neg.float()) * max_dist
+        hardest_negative_dist, _ = torch.min(neg_dists, dim=1)
+
+        # Chỉ tính toán loss đối với những Anchors hợp lệ (có ít nhất 1 positive và 1 negative trong batch)
+        valid_pos = mask_pos.sum(dim=1) > 0
+        valid_neg = mask_neg.sum(dim=1) > 0
+        valid_anchors = valid_pos & valid_neg
+        
+        if not valid_anchors.any():
+            return torch.tensor(0.0, device=embeddings.device, requires_grad=True)
+
+        loss = F.relu(hardest_positive_dist[valid_anchors] - hardest_negative_dist[valid_anchors] + self.margin)
+        return loss.mean()
 
 def load_checkpoint(model, pretrained_path):
     if not pretrained_path or not os.path.exists(pretrained_path):
@@ -1138,6 +1202,7 @@ def main():
 
     # Khởi tạo Optimizer (Tối ưu hóa cả Backbone và ArcFace Head)
     criterion = nn.CrossEntropyLoss()
+    triplet_criterion = BatchHardTripletLoss(margin=0.3).to(device)
     optimizer = torch.optim.Adam([
         {'params': backbone.parameters()},
         {'params': arcface_head.parameters()}
@@ -1225,7 +1290,12 @@ def main():
                 outputs = arcface_head(embeddings, labels)
                 
                 # 3. Tính toán sai số
-                loss = criterion(outputs, labels)
+                loss_ce = criterion(outputs, labels)
+                if getattr(args, 'use_triplet', True):
+                    loss_triplet = triplet_criterion(embeddings, labels)
+                    loss = loss_ce + loss_triplet
+                else:
+                    loss = loss_ce
             
             if use_amp:
                 scaler.scale(loss).backward()
@@ -1246,7 +1316,10 @@ def main():
             batch_acc = 100.0 * correct_batch / labels.size(0)
             
             # Ghi nhận log tiến trình của batch cho C# parse
-            print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(train_dataloader)} | Loss: {loss.item():.4f} | Acc: {batch_acc:.2f}%")
+            if getattr(args, 'use_triplet', True):
+                print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(train_dataloader)} | Loss: {loss.item():.4f} (CE: {loss_ce.item():.4f}, Triplet: {loss_triplet.item():.4f}) | Acc: {batch_acc:.2f}%")
+            else:
+                print(f"[BATCH_PROGRESS] Epoch: {epoch+1}/{EPOCHS} | Batch: {batch_idx+1}/{len(train_dataloader)} | Loss: {loss.item():.4f} | Acc: {batch_acc:.2f}%")
             sys.stdout.flush()
             
         epoch_loss = total_loss / len(train_dataset)
@@ -1267,7 +1340,12 @@ def main():
                 with torch.cuda.amp.autocast(enabled=use_amp):
                     val_embeddings = backbone(val_imgs)
                     val_outputs = arcface_head(val_embeddings, val_labels)
-                    loss = criterion(val_outputs, val_labels)
+                    loss_ce = criterion(val_outputs, val_labels)
+                    if getattr(args, 'use_triplet', True):
+                        loss_triplet = triplet_criterion(val_embeddings, val_labels)
+                        loss = loss_ce + loss_triplet
+                    else:
+                        loss = loss_ce
                 
                 val_loss += loss.item() * val_imgs.size(0)
                 _, val_predicted = val_outputs.max(1)
