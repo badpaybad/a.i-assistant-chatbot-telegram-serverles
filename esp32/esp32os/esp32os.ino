@@ -56,8 +56,8 @@ String gemini_model = "gemini-3.1-flash-live-preview";
 extern volatile bool live_chat_active;
 
 // Firebase Firestore global configurations
-String firebase_project_id = "";
-String firebase_api_key = "";
+String firebase_project_id = "realtimedbtest-d8c6b";
+String firebase_api_key = "AIzaSyAeOXhZrhaadsOIp1e_0tklcnH8H5KfRZ8";
 String firebase_doc_path = "esp32/status";
 
 // ESP32 Hub configurations
@@ -111,6 +111,11 @@ void playSilence(int duration_ms);
 void initFirebase();
 bool firestoreWrite(const String& docPath, const String& flatJsonPayload);
 String firestoreRead(const String& docPath);
+bool refreshFirebaseToken();
+bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+
+extern String current_hub_host;
+extern int current_hub_port;
 
 // Function declarations from this file (esp32os.ino)
 void micSelfTest();
@@ -154,8 +159,8 @@ void setup() {
 
   // Load stored Firebase/Firestore configurations
   preferences.begin("firebase-cfg", true);
-  firebase_project_id = preferences.getString("proj_id", "");
-  firebase_api_key = preferences.getString("api_key", "");
+  firebase_project_id = preferences.getString("proj_id", "realtimedbtest-d8c6b");
+  firebase_api_key = preferences.getString("api_key", "AIzaSyAeOXhZrhaadsOIp1e_0tklcnH8H5KfRZ8");
   firebase_doc_path = preferences.getString("doc_path", "esp32/status");
   preferences.end();
 
@@ -225,6 +230,18 @@ void setup() {
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
   if (connectWiFi()) {
     Serial.println("WiFi successfully connected!");
+    // Fetch Firebase Access Token immediately
+    refreshFirebaseToken();
+
+    // Resolve Hub IP from Firestore immediately at boot
+    String resolved_ip = "";
+    int resolved_port = 8888;
+    if (get_hub_ip_from_firestore(resolved_ip, resolved_port)) {
+      current_hub_host = resolved_ip;
+      current_hub_port = resolved_port;
+      Serial.printf("[Firebase Boot Sync] Resolved Hub IP from Firestore: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+    }
+
     Serial.println("Starting network quality monitoring loop...");
   } else {
     Serial.println("Failed to connect to any saved WiFi networks.");

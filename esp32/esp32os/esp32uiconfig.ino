@@ -29,8 +29,8 @@ void handleRoot() {
 
   // Load saved Firebase settings
   preferences.begin("firebase-cfg", true);
-  String savedFirebaseProject = preferences.getString("proj_id", "");
-  String savedFirebaseApiKey = preferences.getString("api_key", "");
+  String savedFirebaseProject = preferences.getString("proj_id", "realtimedbtest-d8c6b");
+  String savedFirebaseApiKey = preferences.getString("api_key", "AIzaSyAeOXhZrhaadsOIp1e_0tklcnH8H5KfRZ8");
   String savedFirebaseDocPath = preferences.getString("doc_path", "esp32/status");
   preferences.end();
   

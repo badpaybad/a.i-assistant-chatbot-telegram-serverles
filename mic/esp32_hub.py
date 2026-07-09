@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import json
 import asyncio
 import logging
 import sqlite3
@@ -7,7 +9,7 @@ import uuid
 import socket
 import re
 import subprocess
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 import uvicorn
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -26,6 +28,13 @@ except ImportError:
     GEMINI_APIKEY = os.environ.get("GEMINI_API_KEY", "")
     PORT = 8888
     ALLOWED_ESP32_MACS = ["14:c1:9f:2e:3a:18"]
+
+def is_authorized_mac(mac: str) -> bool:
+    if not mac:
+        return False
+    mac_str = mac.strip().lower()
+    allowed_macs_normalized = [m.strip().lower() for m in ALLOWED_ESP32_MACS]
+    return mac_str in allowed_macs_normalized
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -440,6 +449,46 @@ def get_notes(limit: int = 100):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
+@app.get("/firebase-token")
+def get_firebase_token(mac: str = None):
+    if not mac:
+        raise HTTPException(status_code=400, detail="Missing MAC address")
+    if not is_authorized_mac(mac):
+        logger.warning(f"🔒 Unauthorized token request for MAC: {mac}")
+        raise HTTPException(status_code=401, detail="Unauthorized MAC address")
+    try:
+        # Load Firebase Admin certificate info to get client_email and private_key
+        if not os.path.exists(ADMIN_SDK_PATH):
+            logger.error(f"❌ Firebase Admin SDK config not found at: {ADMIN_SDK_PATH}")
+            raise HTTPException(status_code=500, detail="Firebase config not found")
+        with open(ADMIN_SDK_PATH) as f:
+            info = json.load(f)
+        private_key = info["private_key"]
+        client_email = info["client_email"]
+        
+        now = int(time.time())
+        # Generate custom JWT token for Firebase access valid for 1 week (7 days)
+        payload = {
+            "iss": client_email,
+            "sub": client_email,
+            "aud": "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
+            "uid": mac.strip().lower(),
+            "iat": now,
+            "exp": now + 7 * 24 * 3600, # 7 days (1 week) expiration
+        }
+        import jwt
+        token = jwt.encode(payload, private_key, algorithm="RS256")
+        
+        logger.info(f"🔑 Generated Firebase JWT Token for authorized MAC: {mac}")
+        return {
+            "status": "success",
+            "token": token,
+            "expires_in": 7 * 24 * 3600
+        }
+    except Exception as e:
+        logger.error(f"❌ Error generating Firebase token: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, mac: str = None):
     # If not passed as query param, check headers
@@ -449,10 +498,7 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
     logger.info(f"🔌 Incoming WebSocket connection. MAC: {mac}")
     
     # Check authorization
-    mac_str = mac.strip().lower() if mac else None
-    allowed_macs_normalized = [m.strip().lower() for m in ALLOWED_ESP32_MACS]
-    
-    if not mac_str or mac_str not in allowed_macs_normalized:
+    if not is_authorized_mac(mac):
         logger.warning(f"🔒 Unauthorized WebSocket connection attempt. MAC: {mac}")
         await websocket.accept()  # Accept to send error explanation, then close
         await websocket.send_json({"event": "error", "message": "Unauthorized MAC address"})

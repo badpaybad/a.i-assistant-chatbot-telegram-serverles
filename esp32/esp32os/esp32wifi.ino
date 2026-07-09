@@ -4,6 +4,14 @@
 // External function from esp32speaker.ino
 void playOkWifiSound();
 
+// Configuration & variables for Firestore sync when idle
+extern volatile bool live_chat_active;
+extern String current_hub_host;
+extern int current_hub_port;
+extern bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+
+unsigned long last_idle_firestore_check = 0;
+
 void setCustomDNS() {
     esp_netif_t *netif = esp_netif_get_handle_from_ifkey("WIFI_STA_DEF");
     if (netif) {
@@ -232,6 +240,21 @@ void startAP() {
 // Monitoring and maintenance loop for WiFi connection
 void monitorWiFi() {
   if (WiFi.status() == WL_CONNECTED) {
+    // Periodically sync Hub IP from Firestore when idle (every 30 seconds)
+    if (!live_chat_active && (millis() - last_idle_firestore_check >= 30000)) {
+      last_idle_firestore_check = millis();
+      Serial.println("[Firebase] Periodically checking Firestore for Hub IP updates (idle mode)...");
+      String resolved_ip = "";
+      int resolved_port = 8888;
+      if (get_hub_ip_from_firestore(resolved_ip, resolved_port)) {
+        if (resolved_ip != current_hub_host || resolved_port != current_hub_port) {
+          current_hub_host = resolved_ip;
+          current_hub_port = resolved_port;
+          Serial.printf("🟢 [Firebase Sync] Updated Hub host/IP from Firestore: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+        }
+      }
+    }
+
     if (millis() - lastLogTime >= 10000) {
       lastLogTime = millis();
       

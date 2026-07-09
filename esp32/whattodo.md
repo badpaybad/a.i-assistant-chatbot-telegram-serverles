@@ -80,6 +80,9 @@ esp32/detect_wakeup/detect_wakeup.ino và mic/esp32_hub.py đang hoạt động 
 
 **cập nhật 15** ở esp32/esp32os/esp32mic.ino các thông tin host và ip của esp32 hub cần được lưu dạng config như ở esp32/esp32os/esp32uiconfig.ino , cho phép người dùng nhập host hoặc ip và port của esp32 hub 
 
+**cập nhật 16** dựa trên MAC address mà esp32 có, gọi api http get firebase access token + MAC address lên api esp32 hub mô tả ở mic/whattodo.md -> khi MAC address matched với đã dăng ký ở hub thì google firebase admin generate jwt access token expire 1 tuần cho esp32 dùng cho các dịch vụ firebase client ở esp32. ở esp32 nếu jwt access token hết hạn hoặc expired thì cần gọi api http get firebase access token để lấy mới .
+ngoài việc esp32 hub gửi IP or domain và port của api esp32 hub thì có thể dùng để trao đổi các data khác khi cần giữa esp32 client và esp32 hub 
 
+nếu firebase jwt access token đã có và chưa expired thì cần firestore subscribe khi khởi động để đảm bảo nhận được dữ liệu từ esp32 hub khi cần . 
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

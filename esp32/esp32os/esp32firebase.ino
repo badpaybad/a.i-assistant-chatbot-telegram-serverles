@@ -14,6 +14,21 @@ extern String firebase_doc_path;
 void onFirebaseWriteEvent(const String& topic, const String& payload);
 void onFirebaseReadEvent(const String& topic, const String& payload);
 
+// Hub configurations and variables from other files
+extern String current_hub_host;
+extern int current_hub_port;
+extern String hub_host;
+extern int hub_port;
+
+// Token management variables
+String firebase_jwt_token = "";
+unsigned long token_fetched_millis = 0;
+
+// Function declarations
+String getEspMacAddress();
+bool refreshFirebaseToken();
+bool isTokenExpired();
+
 // Forward declarations
 String flatJsonToFirestore(const String& jsonStr);
 String firestoreToFlatJson(const String& firestoreJson);
@@ -97,21 +112,31 @@ bool firestoreWrite(const String& docPath, const String& flatJsonPayload) {
     return false;
   }
 
+  // Auto-refresh token if expired
+  if (isTokenExpired()) {
+    Serial.println("[Firebase] JWT token expired or empty. Refreshing from Hub...");
+    refreshFirebaseToken();
+  }
+
   WiFiClientSecure client;
   client.setInsecure(); // SSL certificate check bypassed to avoid NTP sync requirement / certificate expiration crashes
 
   HTTPClient http;
   
   // Format target REST API URL:
-  // PATCH https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/{documentPath}?key={apiKey}
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
-  if (firebase_api_key.length() > 0) {
-    url += "?key=" + firebase_api_key;
+  
+  if (firebase_jwt_token.length() > 0) {
+    Serial.printf("[Firebase] HTTP PATCH to: %s (using Bearer Token)\n", url.c_str());
+    http.begin(client, url);
+    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+  } else {
+    if (firebase_api_key.length() > 0) {
+      url += "?key=" + firebase_api_key;
+    }
+    Serial.printf("[Firebase] HTTP PATCH to: %s (using API Key)\n", url.c_str());
+    http.begin(client, url);
   }
-
-  Serial.printf("[Firebase] HTTP PATCH to: %s\n", url.c_str());
-
-  http.begin(client, url);
   http.addHeader("Content-Type", "application/json");
 
   String firestorePayload = flatJsonToFirestore(flatJsonPayload);
@@ -151,21 +176,31 @@ String firestoreRead(const String& docPath) {
     return "";
   }
 
+  // Auto-refresh token if expired
+  if (isTokenExpired()) {
+    Serial.println("[Firebase] JWT token expired or empty. Refreshing from Hub...");
+    refreshFirebaseToken();
+  }
+
   WiFiClientSecure client;
   client.setInsecure();
 
   HTTPClient http;
 
   // Format target REST API URL:
-  // GET https://firestore.googleapis.com/v1/projects/{projectId}/databases/(default)/documents/{documentPath}?key={apiKey}
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
-  if (firebase_api_key.length() > 0) {
-    url += "?key=" + firebase_api_key;
+  
+  if (firebase_jwt_token.length() > 0) {
+    Serial.printf("[Firebase] HTTP GET to: %s (using Bearer Token)\n", url.c_str());
+    http.begin(client, url);
+    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+  } else {
+    if (firebase_api_key.length() > 0) {
+      url += "?key=" + firebase_api_key;
+    }
+    Serial.printf("[Firebase] HTTP GET to: %s (using API Key)\n", url.c_str());
+    http.begin(client, url);
   }
-
-  Serial.printf("[Firebase] HTTP GET to: %s\n", url.c_str());
-
-  http.begin(client, url);
   int httpResponseCode = http.GET();
   String flatResult = "";
 
@@ -273,17 +308,29 @@ bool firestoreDelete(const String& docPath) {
     return false;
   }
 
+  // Auto-refresh token if expired
+  if (isTokenExpired()) {
+    Serial.println("[Firebase] JWT token expired or empty. Refreshing from Hub...");
+    refreshFirebaseToken();
+  }
+
   WiFiClientSecure client;
   client.setInsecure();
 
   HTTPClient http;
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
-  if (firebase_api_key.length() > 0) {
-    url += "?key=" + firebase_api_key;
+  
+  if (firebase_jwt_token.length() > 0) {
+    Serial.printf("[Firebase] HTTP DELETE to: %s (using Bearer Token)\n", url.c_str());
+    http.begin(client, url);
+    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+  } else {
+    if (firebase_api_key.length() > 0) {
+      url += "?key=" + firebase_api_key;
+    }
+    Serial.printf("[Firebase] HTTP DELETE to: %s (using API Key)\n", url.c_str());
+    http.begin(client, url);
   }
-
-  Serial.printf("[Firebase] HTTP DELETE to: %s\n", url.c_str());
-  http.begin(client, url);
   int httpResponseCode = http.sendRequest("DELETE");
   bool success = false;
 
@@ -327,5 +374,59 @@ bool get_hub_ip_from_firestore(String &out_ip, int &out_port) {
     }
   }
   return false;
+}
+
+// Checks if the active Firebase JWT token is expired (approx 6.94 days threshold for a 7-day token)
+bool isTokenExpired() {
+  if (firebase_jwt_token.length() == 0) return true;
+  // 600,000,000 milliseconds = 600,000 seconds = 10,000 minutes = 166.6 hours = ~6.94 days
+  if (millis() - token_fetched_millis > 600000000) {
+    return true;
+  }
+  return false;
+}
+
+// Fetches a new Firebase Custom Token (JWT) from the local hub
+bool refreshFirebaseToken() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[Firebase] WiFi not connected. Cannot refresh Firebase Token.");
+    return false;
+  }
+
+  String host = current_hub_host;
+  int port = current_hub_port;
+  if (host.length() == 0) {
+    host = hub_host;
+    port = hub_port;
+  }
+
+  WiFiClient client;
+  HTTPClient http;
+
+  String url = "http://" + host + ":" + String(port) + "/firebase-token?mac=" + getEspMacAddress();
+  Serial.printf("[Firebase] Requesting new Firebase token from: %s\n", url.c_str());
+
+  http.begin(client, url);
+  int httpResponseCode = http.GET();
+  bool success = false;
+
+  if (httpResponseCode == 200) {
+    String response = http.getString();
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, response);
+    if (!error && doc.containsKey("token")) {
+      firebase_jwt_token = doc["token"].as<String>();
+      token_fetched_millis = millis();
+      Serial.println("[Firebase] Successfully retrieved and updated Firebase JWT Token from Hub!");
+      success = true;
+    } else {
+      Serial.println("[Firebase] Failed to parse JSON token response from Hub.");
+    }
+  } else {
+    Serial.printf("[Firebase] HTTP error requesting token from Hub. Response code: %d\n", httpResponseCode);
+  }
+
+  http.end();
+  return success;
 }
 
