@@ -7,6 +7,8 @@
 // Gemini Live configuration and state variables
 extern String gemini_model;
 extern String gemini_api_key;
+extern String hub_host;
+extern int hub_port;
 WebSocketsClient webSocket;
 volatile bool live_chat_active = false;
 unsigned long last_interaction_time = 0;
@@ -781,9 +783,9 @@ void connect_live_chat() {
             target_port = current_hub_port;
             is_using_fallback_ip = false;
         } else {
-            Serial.printf("⚠️ [Firebase] Could not retrieve IP from Firestore. Falling back to config IP: %s:%d\n", esp32hub_host, esp32hub_port);
-            target_host = esp32hub_host;
-            target_port = esp32hub_port;
+            Serial.printf("⚠️ [Firebase] Could not retrieve IP from Firestore. Falling back to configured Hub: %s:%d\n", hub_host.c_str(), hub_port);
+            target_host = hub_host;
+            target_port = hub_port;
             is_using_fallback_ip = true;
             last_firestore_check_time = millis(); // Reset checking timer
         }

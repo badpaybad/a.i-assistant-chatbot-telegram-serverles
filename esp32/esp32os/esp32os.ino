@@ -61,6 +61,10 @@ String firebase_project_id = "";
 String firebase_api_key = "";
 String firebase_doc_path = "esp32/status";
 
+// ESP32 Hub configurations
+String hub_host = "192.168.4.248";
+int hub_port = 8888;
+
 #define BTN_HOLD_RESET_MS 10000 // hold this many ms to trigger factory reset
 
 // Function declarations from esp32wifi.ino and esp32uiconfig.ino
@@ -144,6 +148,14 @@ void setup() {
   firebase_api_key = preferences.getString("api_key", "");
   firebase_doc_path = preferences.getString("doc_path", "esp32/status");
   preferences.end();
+
+  // Load stored Hub config
+  preferences.begin("hub-config", true);
+  hub_host = preferences.getString("host", "192.168.4.248");
+  hub_port = preferences.getInt("port", 8888);
+  preferences.end();
+  
+  Serial.printf("[Hub] Configured Hub host/IP: %s, port: %d\n", hub_host.c_str(), hub_port);
   
   if (firebase_project_id.length() > 0) {
     Serial.printf("[Firebase] Stored Project ID loaded: %s\n", firebase_project_id.c_str());
@@ -363,6 +375,11 @@ void buttonPollingTask(void* param) {
         pref.clear();
         pref.end();
         Serial.println("[Button] Firebase config cleared.");
+
+        pref.begin("hub-config", false);
+        pref.clear();
+        pref.end();
+        Serial.println("[Button] Hub config cleared.");
 
         Serial.println("[Button] Restarting in 500ms...");
         Serial.flush();

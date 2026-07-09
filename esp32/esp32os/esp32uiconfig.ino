@@ -34,6 +34,12 @@ void handleRoot() {
   String savedFirebaseDocPath = preferences.getString("doc_path", "esp32/status");
   preferences.end();
   
+  // Load saved Hub settings
+  preferences.begin("hub-config", true);
+  String savedHubHost = preferences.getString("host", "192.168.4.248");
+  int savedHubPort = preferences.getInt("port", 8888);
+  preferences.end();
+  
   // Construct premium dark glassmorphism themed HTML
   String html = "<!DOCTYPE html><html><head>";
   html += "<meta charset='UTF-8'>";
@@ -159,6 +165,18 @@ void handleRoot() {
   html += "        <label for='firebase_doc_path'>Firestore Document Path</label>";
   html += "        <input type='text' name='firebase_doc_path' id='firebase_doc_path' placeholder='esp32/status' value='" + savedFirebaseDocPath + "' autocomplete='off'>";
   html += "      </div>";
+
+  // ESP32 Hub Host/IP block
+  html += "      <div class='form-group'>";
+  html += "        <label for='hub_host'>ESP32 Hub Host or IP</label>";
+  html += "        <input type='text' name='hub_host' id='hub_host' placeholder='192.168.4.248' value='" + savedHubHost + "' autocomplete='off'>";
+  html += "      </div>";
+
+  // ESP32 Hub Port block
+  html += "      <div class='form-group'>";
+  html += "        <label for='hub_port'>ESP32 Hub Port</label>";
+  html += "        <input type='text' name='hub_port' id='hub_port' placeholder='8888' value='" + String(savedHubPort) + "' autocomplete='off'>";
+  html += "      </div>";
   
   html += "      <button type='submit'>Connect</button>";
   html += "    </form>";
@@ -251,6 +269,27 @@ void handleSave() {
   preferences.putString("proj_id", firebaseProject);
   preferences.putString("api_key", firebaseApiKey);
   preferences.putString("doc_path", firebaseDocPath);
+  preferences.end();
+
+  // Read Hub parameters
+  String hubHost = server.arg("hub_host");
+  String hubPortStr = server.arg("hub_port");
+  
+  hubHost.trim();
+  hubPortStr.trim();
+  
+  int hubPort = hubPortStr.toInt();
+  if (hubPort <= 0 || hubPort > 65535) {
+    hubPort = 8888;
+  }
+  if (hubHost.length() == 0) {
+    hubHost = "192.168.4.248";
+  }
+
+  // Save Hub configurations to Preferences
+  preferences.begin("hub-config", false);
+  preferences.putString("host", hubHost);
+  preferences.putInt("port", hubPort);
   preferences.end();
   
   // Serve the elegant confirmation/success page

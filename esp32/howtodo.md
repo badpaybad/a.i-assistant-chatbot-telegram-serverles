@@ -129,11 +129,17 @@ sequenceDiagram
     * **5 giay**: 1 tieng bip thap 440Hz ("tiep tuc giu").
     * **8 giay**: 2 tieng bip 660Hz ("sap xong").
     * **10 giay**: Phat chuoi 3 am di xuong (C6 -> G5 -> C5) bao hieu factory reset.
-  * **Factory Reset thuc thi trong Task** (khong can qua `loop()`):
-    1. Xoa namespace NVS **`wifi-creds`** (5 mang WiFi da luu).
-    2. Xoa namespace NVS **`gemini-config`** (API Key + Model Name).
-    3. Goi `ESP.restart()` de khoi dong lai chip.
-  * Sau khi restart, boot sequence tim thay khong co credentials, `connectWiFi()` that bai, tu dong goi `startAP()` de mo hotspot cau hinh.
+  * **Factory Reset thực thi trong Task** (không cần qua `loop()`):
+    1. Xóa namespace NVS **`wifi-creds`** (5 mạng WiFi đã lưu).
+    2. Xóa namespace NVS **`gemini-config`** (API Key + Model Name).
+    3. Xóa namespace NVS **`firebase-cfg`** (Firebase Project ID + API Key + Doc Path).
+    4. Xóa namespace NVS **`hub-config`** (ESP32 Hub Host/IP + Port).
+    5. Gọi `ESP.restart()` để khởi động lại chip.
+  * Sau khi restart, boot sequence tìm thấy không có credentials, `connectWiFi()` thất bại, tự động gọi `startAP()` để mở hotspot cấu hình.
+  * **Cấu hình ESP32 Hub từ xa**:
+    * Cho phép người dùng nhập trực tiếp địa chỉ Host hoặc IP và số cổng (Port) của ESP32 Hub cục bộ qua giao diện cấu hình Captive Portal (Web UI).
+    * Thông tin này được lưu trữ trong namespace NVS **`hub-config`** (chứa khóa `"host"` kiểu chuỗi và `"port"` kiểu số nguyên).
+    * Khi khởi động, các cấu hình này được nạp tự động vào biến toàn cục `hub_host` và `hub_port`. Trường hợp không thể đọc địa chỉ IP của Hub từ Firestore (do Firebase Project ID trống), ESP32 sẽ tự động sử dụng cấu hình Hub đã lưu này làm địa chỉ kết nối dự phòng (fallback).
 
   * Trên mạch ESP32-S3-N16R8, nút **BOOT** (đấu nối phần cứng sẵn vào GPIO 0) được cấu hình chế độ `INPUT_PULLUP`.
   * Một ISR (`bootButtonISR`, `IRAM_ATTR`) được gắn vào ngắt phần cứng `CHANGE` của GPIO 0, nhận biết cả 2 sườn: đang nhấn xuống (FALLING) và thả ra (RISING).
