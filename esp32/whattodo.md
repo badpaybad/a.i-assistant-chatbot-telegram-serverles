@@ -68,6 +68,16 @@ tạo thêm esp32firebase.ino để xử lý đọc ghi lên firestore
 
 **cập nhật 13** xem code ở  mic/detect_wakeup.py , cần esp32 cũng dùng chat voice live gemini api được
 
-**cập nhật 14** cần xem esp32/esp32os/esp32chatvoice.md để dùng mic stream lên api esp32 hub để làm chat voice, lúc này mic chỉ capture voice gửi lên api esp32 hub và nhận stream audio để phát loa
+**cập nhật 14** cần xem esp32/esp32os/esp32chatvoice.md để dùng mic stream lên api esp32 hub để làm chat voice, lúc này mic chỉ capture voice gửi lên api esp32 hub và nhận stream audio để phát loa, esp32 không xử lý trực tiếp google gemini live nữa, gemini live đã được xử lý ở api esp32 hub
+    
+mic vẫn cần wake word detect rồi mới bắt đầu chat vocie, vẫn giữ 60 giây nếu không thấy mic active ( có âm thanh nhận biết dược) thì sẽ tạm dừng gọi stream api esp32 hub nữa. quay lại đợi wake word detect
+
+chú ý ARENA_SIZE phụ thuộc (SPEC_ROWS = 99), SPEC_ROWS  phụ thuộc FRAME_LENGTH và FRAME_STEP cần cập nhật cho đúng để chạy được model wake word detect
+
+sau khi detect wake word du ơi thành công cần thực hiện voice chát như code theo yêu cầu ở esp32/esp32os/esp32chatvoice.md , xem code esp32/detect_wakeup/detect_wakeup.ino . 
+
+esp32/detect_wakeup/detect_wakeup.ino và mic/esp32_hub.py đang hoạt động tốt , cập nhật esp32/esp32os/esp32mic.ino tương tự để hoạt động tốt với  mic/esp32_hub.py
+
+
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

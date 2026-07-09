@@ -118,16 +118,10 @@ void onWakeupwordReceived(const String& topic, const String& payload) {
   Serial.printf("[Main Thread] Received EventBus notification on topic '%s': %s\n", topic.c_str(), payload.c_str());
   
   // If a detection occurred. Detection is paused in the AI task loop.
-  // We trigger the Gemini Live connection if the API key is configured.
+  // We trigger the Voice Chat connection to the local Hub.
   if (payload.indexOf("type:detected") != -1 || payload.indexOf("type=detected") != -1) {
-    Serial.println("[Main Thread] Wakeup detected! Connecting to Gemini Live...");
-    if (gemini_api_key.length() > 0) {
-      connect_live_chat();
-    } else {
-      Serial.println("⚠️ [Gemini] API Key is empty! Cannot start live session. Please set it in web config.");
-      // Resume wake word detection immediately
-      publish("wakeupword", "type=start");
-    }
+    Serial.println("[Main Thread] Wakeup detected! Connecting to Local Hub for Voice Chat...");
+    connect_live_chat();
   }
 }
 
@@ -402,8 +396,8 @@ void micSelfTest() {
   Serial.println("\n[Self-Test] === MIC SELF-TEST START (Main Thread WAV Orchestrated) ===");
   
   int wav_size = 0;
-  // Record 2 seconds of audio as WAV format (returns pointer to allocated memory)
-  uint8_t* wav_buf = micRecordWav(2, &wav_size);
+  // Record 1 seconds of audio as WAV format (returns pointer to allocated memory)
+  uint8_t* wav_buf = micRecordWav(1, &wav_size);
   
   if (wav_buf != nullptr && wav_size > 44) {
     Serial.println("[Self-Test] Recording completed successfully. Beginning WAV playback...");

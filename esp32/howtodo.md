@@ -158,27 +158,29 @@ sequenceDiagram
      * Sau khi ghi âm kết thúc, hàm sẽ tự động điền các thông tin của file WAV tiêu chuẩn (RIFF, fmt, data chunk, sample rate 16000Hz, mono, 16-bit) vào 44 byte đầu tiên của bộ đệm.
   3. **Phát lại và Giải phóng**: Gọi `playSpeakerWav(wav_buf, wav_size)` để phát lại file WAV vừa ghi được qua loa. Hàm này sẽ tự động bỏ qua 44 byte WAV header và phát dữ liệu mono PCM còn lại ra loa tương tự như cách hoạt động của `playOkSound()`. Ngay sau khi phát xong, hệ thống gọi `playSilence(1000)` để ghi 1 giây âm thanh im lặng (dữ liệu 0) vào bộ đệm I2S, giúp xả sạch (flush) bộ đệm DMA của loa và dừng triệt để hiện tượng lặp tiếng/vọng tiếng do bộ đệm I2S bị đọng dữ liệu cũ. Cuối cùng, gọi `free(wav_buf)` ở main thread để giải phóng toàn bộ vùng đệm WAV, trả lại dung lượng RAM sạch cho hệ thống.
 
-### F. Trợ lý ảo đàm thoại Live với Gemini (`esp32mic.ino` & `esp32speaker.ino`)
-* **Kiến trúc thời gian thực thời gian thực hai chiều**:
-  * Khi từ khóa "du ơi" được phát hiện, hệ thống ngay lập tức kết nối tới endpoint WebSocket của Gemini Live API (`wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=YOUR_API_KEY`).
-  * Sử dụng thư viện `WebSocketsClient` với giao thức SSL để bảo mật và `ArduinoJson` để đóng/mở gói tin trao đổi.
-  * API Key được gửi trực tiếp dưới dạng query parameter `?key=...` trong URL WebSocket để đảm bảo xác thực thành công.
-  * Cấu hình model gửi trong bản tin `setup` ban đầu bắt buộc được chuẩn hóa với tiền tố `models/` (ví dụ: `models/gemini-3.1-flash-live-preview`).
-  * Hệ thống tự động bắt và parse các gói tin chứa key `"error"` nhận lời từ server để in ra Serial Log hỗ trợ gỡ lỗi và tự động ngắt kết nối an toàn (`disconnect_live_chat()`) thay vì bị treo.
-* **Xử lý luồng Microphone & Loa**:
-  * **Đầu vào (Mic)**: Thu thập dữ liệu PCM 32-bit Stereo từ cổng I2S RX, chuyển đổi sang PCM 16-bit Mono (16kHz), mã hóa Base64 và đóng gói JSON gửi lên websocket.
-  * **Đầu ra (Loa)**: Gemini trả về luồng âm thanh PCM 24kHz Mono dạng Base64. ESP32 giải mã, nâng biên độ bằng `SPEAKER_VOLUME_BOOST`, nhân bản thành Stereo và phát trực tiếp ra loa I2S TX với tần số lấy mẫu là 24kHz (sử dụng hàm thay đổi tần số linh hoạt `i2s_set_sample_rate`).
-  * **Khử nhiễu vọng phản hồi (Echo Suppression)**: Khi loa đang phát, micro sẽ tạm dừng gửi gói tin lên API trong vòng 500ms. Sau khi hết thời gian chặn, hệ thống sẽ thực hiện xả sạch (drain) bộ đệm DMA của micro trước khi gửi để tránh lặp tiếng trả lời của chatbot.
-* **Timeout im lặng (Inactivity Timeout)**: Sau 60 giây không có dữ liệu trao đổi âm thanh từ người dùng hoặc mô hình (đồng bộ với file python `detect_wakeup.py` timeout), hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
+### F. Trợ lý ảo đàm thoại Live qua local Hub (`esp32mic.ino` & `esp32speaker.ino`)
+* **Kiến trúc luồng âm thanh thông qua local `esp32_hub`**:
+  * Khi từ khóa "du ơi" được phát hiện, hệ thống sẽ tạm ngắt nhận dạng AI cục bộ và kết nối tới endpoint WebSocket của local hub (`ws://<HUB_IP>:<PORT>/ws`).
+  * **Xử lý bất đồng bộ đa luồng (Async FreeRTOS Tasks & Queues)**:
+    * **Đầu vào (Mic - `mic_recording_task`)**: Thu thập dữ liệu PCM 32-bit Stereo từ I2S RX, chuyển đổi thành PCM 16-bit Mono (16kHz), sau đó đưa vào hàng đợi `mic_queue`.
+    * **WebSocket (Main Loop - `loopGeminiLive()`)**: Đọc từ `mic_queue` và stream dữ liệu mono PCM thô dưới dạng nhị phân (`webSocket.sendBIN`) trực tiếp lên local hub.
+    * **VAD (Voice Activity Detection)**: Khi đang stream, nếu mic thu nhận được tín hiệu âm thanh có biên độ đỉnh `peak > 1500` (có âm thanh người dùng nói), hệ thống sẽ cập nhật `last_interaction_time` để làm mới thời gian đàm thoại.
+    * **Đầu ra (Loa - `audio_playback_task`)**: Nhận dữ liệu nhị phân PCM 24kHz Mono từ WebSocket của hub, chuyển đổi thành Stereo và đẩy vào `audio_play_queue`. Task phát sẽ liên tục lấy dữ liệu từ hàng đợi và phát qua I2S TX với tốc độ 24kHz.
+  * **Khử nhiễu vọng phản hồi (Echo Suppression)**: Khi loa đang phát hoặc có dữ liệu trong hàng đợi phát, micro sẽ tự động bỏ qua (discard) dữ liệu thu từ I2S và xả sạch hàng đợi `mic_queue` để tránh phản hồi vòng lặp (echo loop).
+  * **Timeout im lặng (Inactivity Timeout)**: Sau 60 giây nếu cả người dùng không nói (không có âm thanh mic `peak > 1500`) và loa không phát âm thanh, hệ thống sẽ tự động gọi `disconnect_live_chat()`, khôi phục loa về tần số 16kHz, và mở lại chế độ chờ Wake-word ngoại tuyến.
 
 ### G. Google Firebase Firestore Client (`esp32firebase.ino`)
 * **Không dùng thư viện nặng**: Sử dụng trực tiếp `WiFiClientSecure` và `HTTPClient` gốc để gọi REST API của Firestore, tránh xung đột bộ nhớ và watchdog với TensorFlow Lite / Gemini WebSockets.
+* **Tự động cấu hình kết nối động (Dynamic IP Discovery)**:
+  * **Đọc IP**: Khi kết nối, ESP32 gọi `get_hub_ip_from_firestore()` đọc tài liệu `esp32hub/config` trên Firestore nhằm tìm địa chỉ IP và Port hiện tại của local hub, nếu không thấy sẽ sử dụng IP cấu hình tĩnh dự phòng ở `dunp_config.h`.
+  * **Xóa tài liệu**: Khi kết nối WebSocket tới hub thành công, ESP32 sẽ gọi `delete_hub_ip_from_firestore()` để xóa config trên Firestore nhằm tối ưu hóa chi phí database.
+  * **Cập nhật động**: Nếu kết nối bằng IP dự phòng, ESP32 sẽ định kỳ 10 giây kiểm tra Firestore. Khi thấy có IP mới, nó sẽ tự động ngắt kết nối và khởi động lại WebSocket để chuyển sang IP mới.
 * **Tự động chuyển đổi định dạng JSON (JSON Mapping)**:
-  * Khi ghi: Hàm `flatJsonToFirestore(flatJson)` tự động chuyển đổi JSON phẳng (ví dụ: `{"status": "online", "rssi": -45}`) sang định dạng phân cấp của Firestore REST API (`{"fields": {"status": {"stringValue": "online"}, "rssi": {"integerValue": "-45"}}}`).
-  * Khi đọc: Hàm `firestoreToFlatJson(firestoreJson)` chuyển đổi ngược lại từ định dạng phân cấp của Firestore sang JSON phẳng để các mô-đun khác dễ sử dụng.
+  * Khi ghi: Hàm `flatJsonToFirestore(flatJson)` tự động chuyển đổi JSON phẳng sang định dạng phân cấp của Firestore REST API.
+  * Khi đọc: Hàm `firestoreToFlatJson(firestoreJson)` chuyển đổi ngược lại sang JSON phẳng.
 * **Đọc ghi bất đồng bộ qua EventBus**:
-  * Đăng ký nhận sự kiện ghi trên topic `firebase/write`. Bản tin nhận được có thể chứa thông tin dạng `{"path": "esp32/status", "data": {"status":"online"}}` hoặc JSON phẳng trực tiếp.
-  * Đăng ký nhận sự kiện đọc trên topic `firebase/read` với payload là đường dẫn tài liệu. Kết quả đọc được sẽ được publish ngược lại lên topic `firebase/read/result` dưới dạng JSON phẳng.
+  * Đăng ký nhận sự kiện ghi trên topic `firebase/write`.
+  * Đăng ký nhận sự kiện đọc trên topic `firebase/read`. Kết quả đọc được sẽ được publish ngược lại lên topic `firebase/read/result` dưới dạng JSON phẳng.
 
 ---
 

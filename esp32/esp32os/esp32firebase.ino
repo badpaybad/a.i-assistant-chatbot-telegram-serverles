@@ -261,3 +261,71 @@ String firestoreToFlatJson(const String& firestoreJson) {
   serializeJson(outDoc, output);
   return output;
 }
+
+// Performs REST API DELETE request on the specified Firestore document path
+bool firestoreDelete(const String& docPath) {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[Firebase] WiFi not connected. Aborting Firestore delete.");
+    return false;
+  }
+  if (firebase_project_id.length() == 0) {
+    Serial.println("[Firebase] Firebase Project ID is empty. Aborting Firestore delete.");
+    return false;
+  }
+
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
+  if (firebase_api_key.length() > 0) {
+    url += "?key=" + firebase_api_key;
+  }
+
+  Serial.printf("[Firebase] HTTP DELETE to: %s\n", url.c_str());
+  http.begin(client, url);
+  int httpResponseCode = http.sendRequest("DELETE");
+  bool success = false;
+
+  if (httpResponseCode >= 200 && httpResponseCode < 300) {
+    success = true;
+  } else {
+    Serial.printf("[Firebase] Firestore DELETE response error: %d\n", httpResponseCode);
+  }
+
+  http.end();
+  return success;
+}
+
+// Helper function to delete the hub IP config document from Firestore
+bool delete_hub_ip_from_firestore() {
+  return firestoreDelete("esp32hub/config");
+}
+
+// Helper function to fetch the hub IP and Port from Firestore config document
+bool get_hub_ip_from_firestore(String &out_ip, int &out_port) {
+  String flatJson = firestoreRead("esp32hub/config");
+  if (flatJson.length() > 0) {
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, flatJson);
+    if (!error) {
+      if (doc.containsKey("ip")) {
+        out_ip = doc["ip"].as<String>();
+      }
+      if (doc.containsKey("port")) {
+        out_port = doc["port"].as<int>();
+      }
+      
+      if (out_ip.length() > 0) {
+        Serial.printf("🟢 [Firebase] Retrieved IP from Firestore: %s, Port: %d\n", out_ip.c_str(), out_port);
+        return true;
+      } else {
+        Serial.println("❌ [Firebase] 'ip' field was missing in retrieved document.");
+      }
+    } else {
+      Serial.printf("❌ [Firebase] JSON parse failed: %s\n", error.c_str());
+    }
+  }
+  return false;
+}
+

@@ -21,6 +21,68 @@ volatile bool setup_complete_received = false;
 // Set to 0 to use only 1 microphone (Left channel - L/R pin connected to GND).
 #define USE_DUAL_MIC 1
 
+// Dunp config imports and fallback resolution
+#define firebase_project_id config_firebase_project_id
+#define firebase_api_key config_firebase_api_key
+#include "../detect_wakeup/dunp_config.h"
+#undef firebase_project_id
+#undef firebase_api_key
+
+// Firebase helper functions defined in esp32firebase.ino
+extern bool delete_hub_ip_from_firestore();
+extern bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+
+// State variables for Hub resolution
+String current_hub_host = "";
+int current_hub_port = 8888;
+bool has_deleted_ip_document = false;
+String current_hub_ip = "";
+bool is_using_fallback_ip = false;
+unsigned long last_firestore_check_time = 0;
+
+// Structures for non-blocking Queue processing
+struct AudioPacket {
+    int16_t* buffer;
+    size_t num_samples;
+};
+struct MicPacket {
+    int16_t* buffer;
+    size_t num_samples;
+};
+
+QueueHandle_t audio_play_queue = NULL;
+QueueHandle_t mic_queue = NULL;
+volatile bool ws_task_running = true;
+volatile bool model_speaking_turn = false;
+volatile bool is_playing_audio = false;
+
+// Audio buffer for chunk processing (DMA buffers must be in internal SRAM, Mono on PSRAM/Heap)
+#define STREAM_CHUNK_FRAMES 1024
+static int32_t* stream_stereo_chunk = nullptr;
+static int16_t* stream_mono_chunk = nullptr;
+
+// Allocate memory helper functions
+void* safe_malloc(size_t size) {
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+    if (ptr == NULL) {
+        ptr = malloc(size);
+    }
+    return ptr;
+}
+
+void* dma_malloc(size_t size) {
+    void* ptr = heap_caps_malloc(size, MALLOC_CAP_DMA | MALLOC_CAP_INTERNAL);
+    if (ptr == NULL) {
+        ptr = malloc(size);
+    }
+    return ptr;
+}
+
+// Forward declarations for background tasks
+void audio_playback_task(void *pvParameters);
+void mic_recording_task(void *pvParameters);
+
+
 // Hướng dẫn đấu nối 2 Mic INMP441 (Stereo):
 // 1. Microphone 1 (Kênh Trái - Left Channel):
 //    - Chân L/R (Left/Right) nối xuống GND (Ground)
@@ -42,16 +104,17 @@ volatile bool setup_complete_received = false;
 //   và cắm chung vào chân GPIO tương ứng trên mạch ESP32-S3. Chỉ có chân L/R là đấu khác nhau.
 
 #define SAMPLING_RATE   16000
+#define SPEAKER_SAMPLING_RATE 16000
 #define NUM_CLASSES     3       // Labels: background, oi_gemini, unknown
 
 #define SPEC_ROWS       99
 #define SPEC_COLS       257
 #define INPUT_SIZE      (SPEC_ROWS * SPEC_COLS)
 #define FFT_SAMPLES     512  
-#define ARENA_SIZE      (180 * 1024)
+#define ARENA_SIZE      (300 * 1024)
 #define TF_NUM_OPS      20
 #define COOLDOWN_MS     1500  // 1.5s cooldown after detection (matches detect_wakeup.py COOLDOWN_SEC=1.5)
-#define THRESHOLD       0.50  // Detection threshold (matches detect_wakeup.py THRESHOLD=0.5)
+#define THRESHOLD       0.20  // Detection threshold (matches detect_wakeup.py THRESHOLD=0.2)
 
 #include <new>
 
@@ -144,7 +207,34 @@ void initMic() {
   ml.resolver.AddSub();
   ml.resolver.AddMul();
 
-  Serial.println("[Mic] I2S Driver initialized & subscribed to 'wakeupword' topic.");
+  // Initialize non-blocking audio play and mic queues
+  audio_play_queue = xQueueCreate(32, sizeof(AudioPacket));
+  mic_queue = xQueueCreate(16, sizeof(MicPacket));
+  stream_stereo_chunk = (int32_t*)dma_malloc(STREAM_CHUNK_FRAMES * 2 * sizeof(int32_t));
+  stream_mono_chunk = (int16_t*)safe_malloc(STREAM_CHUNK_FRAMES * sizeof(int16_t));
+
+  // Spawn background tasks on Core 1
+  xTaskCreatePinnedToCore(
+      audio_playback_task,
+      "AudioPlayback",
+      4096,
+      NULL,
+      4,
+      NULL,
+      1
+  );
+
+  xTaskCreatePinnedToCore(
+      mic_recording_task,
+      "MicRecording",
+      4096,
+      NULL,
+      3,
+      NULL,
+      1
+  );
+
+  Serial.println("[Mic] I2S Driver initialized & subscribed to 'wakeupword' topic. Tasks and queues created.");
 }
 
 // Helper function to write a standard 44-byte WAV header for mono 16-bit PCM at 16kHz
@@ -390,7 +480,8 @@ void wakeup_detection_task(void *pvParameters) {
     vTaskDelete(NULL);
     return;
   }
-  Serial.println("[Mic] AI model loaded successfully. Starting task loop on Core 0...");
+  Serial.printf("[Mic] AI model loaded successfully. Input Scale: %.6f, Zero Point: %d. Starting task loop on Core 0...\n", 
+                ml.in->params.scale, (int)ml.in->params.zero_point);
 
   for (;;) {
     if (!micDetectActive) {
@@ -532,19 +623,10 @@ void wakeup_detection_task(void *pvParameters) {
       float input_scale = ml.in->params.scale;   // = 0.22077 from model
       float input_zero_point = ml.in->params.zero_point; // = -128 from model
 
-      // === STEP 2: Sliding Spectrogram Buffer Optimization ===
-      // Since the window shifted by 10 steps of 160 samples (1600 samples / 100ms), 
-      // the first 89 rows of the spectrogram are identical to the last 89 rows of the previous window.
-      // We shift the first 89 rows of spectrogram_features up by 10 rows, and ONLY calculate 10 new FFT rows.
+      // === STEP 2: Compute full spectrogram ===
+      // Always compute all 99 rows of the spectrogram to ensure consistent peak normalization
+      // across the entire 1.0s window, matching Python's preprocessing exactly.
       int start_row = 0;
-      if (spectrogram_initialized) {
-        // Shift 89 rows (89 * 257 bytes) to the front
-        memmove(spectrogram_features, spectrogram_features + (10 * SPEC_COLS), (SPEC_ROWS - 10) * SPEC_COLS * sizeof(int8_t));
-        start_row = SPEC_ROWS - 10; // Only compute the 10 newest rows
-      } else {
-        start_row = 0; // Compute all 99 rows on startup/resume
-        spectrogram_initialized = true;
-      }
 
       for (int row = start_row; row < SPEC_ROWS; row++) {
         // Yield CPU control periodically to reset Task Watchdog
@@ -650,13 +732,9 @@ void startWakeupDetectionTask() {
 
 // =========================================================================
 // GEMINI LIVE CHATBOT WEBSOCKET IMPLEMENTATION
-// =========================================================================
-
 void play_beep(int frequency, int duration_ms) {
     int samples = (24000 * duration_ms) / 1000;
-    int16_t* beep_buf = NULL;
-    
-    beep_buf = (int16_t*)malloc(samples * 2 * sizeof(int16_t));
+    int16_t* beep_buf = (int16_t*)dma_malloc(samples * 2 * sizeof(int16_t));
     if (!beep_buf) return;
     
     for (int i = 0; i < samples; i++) {
@@ -665,16 +743,16 @@ void play_beep(int frequency, int duration_ms) {
         beep_buf[2 * i + 1] = val; // Right channel
     }
     
-    // Set speaker rate to 24000 before playing beep
     i2s_set_sample_rates(I2S_PORT_OUT, 24000);
     size_t bytes_written;
     i2s_write(I2S_PORT_OUT, beep_buf, samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
     free(beep_buf);
     
-    // Flush DMA buffer with silence to prevent stuck buzzer sound
-    int silence_samples = (24000 * 50) / 1000;
-    int16_t* silence_buf = (int16_t*)calloc(silence_samples * 2, sizeof(int16_t));
+    // Silence flush to completely fill and clear the circular DMA buffer (which is ~170ms)
+    int silence_samples = (24000 * 300) / 1000;
+    int16_t* silence_buf = (int16_t*)dma_malloc(silence_samples * 2 * sizeof(int16_t));
     if (silence_buf) {
+        memset(silence_buf, 0, silence_samples * 2 * sizeof(int16_t));
         i2s_write(I2S_PORT_OUT, silence_buf, silence_samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
         free(silence_buf);
     }
@@ -682,7 +760,7 @@ void play_beep(int frequency, int duration_ms) {
 
 void connect_live_chat() {
     if (webSocket.isConnected() && setup_complete_received) {
-        Serial.println("ℹ️ [Gemini] Already connected and setup. Skipping reconnect.");
+        Serial.println("ℹ️ [Hub] Already connected and setup. Skipping reconnect.");
         play_beep(880, 100);
         last_interaction_time = millis();
         // Pause wake-word detection task
@@ -690,52 +768,94 @@ void connect_live_chat() {
         return;
     }
 
-    Serial.println("🌐 [Gemini] Đang kết nối lên Gemini Live API qua WebSockets...");
-    live_chat_active = true;
-    setup_complete_received = false;
-    
-    // Debug API Key
-    Serial.printf("[Gemini] Độ dài API Key: %d ký tự\n", gemini_api_key.length());
-    if (gemini_api_key.length() > 10) {
-        Serial.printf("[Gemini] API Key bắt đầu bằng: %s...\n", gemini_api_key.substring(0, 8).c_str());
+    ws_task_running = false;
+    vTaskDelay(pdMS_TO_TICKS(50)); // Yield to let loopGeminiLive() exit webSocket.loop()
+
+    String target_host = current_hub_host;
+    int target_port = current_hub_port;
+
+    if (target_host.length() == 0) {
+        Serial.println("[Firebase] Attempting to retrieve Hub IP from Firestore...");
+        if (get_hub_ip_from_firestore(current_hub_ip, current_hub_port)) {
+            target_host = current_hub_ip;
+            target_port = current_hub_port;
+            is_using_fallback_ip = false;
+        } else {
+            Serial.printf("⚠️ [Firebase] Could not retrieve IP from Firestore. Falling back to config IP: %s:%d\n", esp32hub_host, esp32hub_port);
+            target_host = esp32hub_host;
+            target_port = esp32hub_port;
+            is_using_fallback_ip = true;
+            last_firestore_check_time = millis(); // Reset checking timer
+        }
     }
 
-    // SSL dry-run test
-    WiFiClientSecure test_client;
-    test_client.setInsecure();
-    Serial.println("[Gemini SSL Test] Kiểm tra kết nối tới generativelanguage.googleapis.com:443...");
-    if (test_client.connect("generativelanguage.googleapis.com", 443)) {
-        Serial.println("[Gemini SSL Test] Kết nối SSL thành công! TLS stack hoạt động bình thường.");
+    Serial.printf("🌐 [Hub] Connecting to esp32hub at ws://%s:%d/ws ...\n", target_host.c_str(), target_port);
+    live_chat_active = true;
+    setup_complete_received = false;
+    model_speaking_turn = false;
+
+    // Pause wake-word detection task immediately to prevent concurrent I2S reads
+    publish("wakeupword", "type=stop");
+
+    // Clear mic queue
+    MicPacket p;
+    while (mic_queue != NULL && xQueueReceive(mic_queue, &p, 0) == pdPASS) {
+        if (p.buffer) free(p.buffer);
+    }
+
+    // TCP connection test
+    WiFiClient test_client;
+    if (test_client.connect(target_host.c_str(), target_port)) {
+        Serial.println("[Hub TCP] Connection verified successfully!");
         test_client.stop();
+        current_hub_host = target_host;
+        current_hub_port = target_port;
     } else {
-        Serial.println("❌ [Gemini SSL Test] Kết nối SSL thất bại! Hãy kiểm tra mạng Internet hoặc DNS của ESP32.");
+        Serial.printf("❌ [Hub TCP] Connection to %s:%d failed! Clearing cache to retry.\n", target_host.c_str(), target_port);
+        current_hub_host = ""; // Clear cache to force Firestore query on next try
         live_chat_active = false;
+        ws_task_running = true;
+        
+        // Resume wakeup word detection
         publish("wakeupword", "type=start");
         return;
     }
-    
-    // Path for BidiGenerateContent real-time endpoint (matching Python SDK)
-    String path = "/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=" + gemini_api_key;
-    
-    // Set x-goog-api-key header (matching Python SDK) and query param for maximum compatibility
-    // Declared static to prevent dangling pointer crashes after connect_live_chat exits
-    static String extra_headers;
-    extra_headers = "x-goog-api-key: " + gemini_api_key;
-    webSocket.setExtraHeaders(extra_headers.c_str());
-    
-    // Configure SSL Connection (pass empty string for subprotocol to avoid protocol rejection)
-    webSocket.beginSSL("generativelanguage.googleapis.com", 443, path.c_str(), nullptr, "");
+
+    // Connect WebSocket to local hub
+    webSocket.begin(current_hub_host.c_str(), current_hub_port, "/ws");
     webSocket.onEvent(webSocketEvent);
-    
-    // Ping/Pong every 10 seconds to maintain connection
     webSocket.enableHeartbeat(10000, 3000, 2);
+
+    ws_task_running = true;
 }
 
 void disconnect_live_chat() {
-    Serial.println("🔌 [Gemini] Đóng kết nối Live Chat. Chuyển về trạng thái chờ...");
+    Serial.println("🔌 [Hub] Disconnecting from Hub. Returning to wake-word standby...");
+    ws_task_running = false;
+    vTaskDelay(pdMS_TO_TICKS(50)); // Let loopGeminiLive() exit webSocket.loop()
+
     webSocket.disconnect();
+    
     live_chat_active = false;
     setup_complete_received = false;
+    model_speaking_turn = false;
+    has_deleted_ip_document = false; // Reset delete flag for next connection
+    
+    // Clear audio play queue
+    AudioPacket packet;
+    while (audio_play_queue != NULL && xQueueReceive(audio_play_queue, &packet, 0) == pdPASS) {
+        if (packet.buffer) {
+            free(packet.buffer);
+        }
+    }
+    
+    // Clear mic queue
+    MicPacket p;
+    while (mic_queue != NULL && xQueueReceive(mic_queue, &p, 0) == pdPASS) {
+        if (p.buffer) {
+            free(p.buffer);
+        }
+    }
     
     // Signal tone
     play_beep(400, 150);
@@ -743,125 +863,69 @@ void disconnect_live_chat() {
     // Restore speaker rate to 16kHz
     i2s_set_sample_rates(I2S_PORT_OUT, 16000);
 
+    ws_task_running = true;
+
     // Resume wakeup word detection
     publish("wakeupword", "type=start");
 }
 
-void send_setup_message() {
-    String model_path = gemini_model;
-    if (!model_path.startsWith("models/")) {
-        model_path = "models/" + model_path;
+void stream_mic_to_websocket() {
+    if (mic_queue == NULL) return;
+    
+    MicPacket packet;
+    if (xQueueReceive(mic_queue, &packet, 0) == pdPASS) {
+        if (packet.buffer) {
+            int32_t peak = 0;
+            for (size_t i = 0; i < packet.num_samples; i++) {
+                int32_t abs_val = abs((int32_t)packet.buffer[i]);
+                if (abs_val > peak) peak = abs_val;
+            }
+            
+            if (peak > current_utterance_max_volume) {
+                current_utterance_max_volume = peak;
+            }
+            
+            // Cập nhật 14: Nếu có âm thanh mic active (âm lượng vượt ngưỡng 1500)
+            // thì cập nhật last_interaction_time để làm mới thời gian đàm thoại
+            if (peak > 1500) {
+                last_interaction_time = millis();
+            }
+            
+            size_t raw_bytes = packet.num_samples * sizeof(int16_t);
+            bool success = webSocket.sendBIN((uint8_t*)packet.buffer, raw_bytes);
+            free(packet.buffer); // Free the mono buffer immediately
+            
+            if (!success) {
+                Serial.println("❌ [Hub] WebSocket send failed!");
+            }
+        }
     }
-    // Generate config JSON matching Python code (systemInstruction & activityHandling: NO_INTERRUPTION)
-    String setup_json = 
-    "{"
-      "\"setup\": {"
-        "\"model\": \"" + model_path + "\","
-        "\"generationConfig\": {"
-          "\"responseModalities\": [\"AUDIO\"],"
-          "\"speechConfig\": {"
-            "\"voiceConfig\": {"
-              "\"prebuiltVoiceConfig\": {"
-                "\"voiceName\": \"Aoede\""
-              "}"
-            "}"
-          "}"
-        "},"
-        "\"systemInstruction\": {"
-          "\"parts\": [{"
-            "\"text\": \"Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế.\""
-          "}]"
-        "},"
-        "\"realtimeInputConfig\": {"
-          "\"activityHandling\": \"NO_INTERRUPTION\""
-        "}"
-      "}"
-    "}";
-    
-    webSocket.sendTXT(setup_json);
-    Serial.println("⚙️ [Gemini] Đã gửi cấu hình Setup thành công!");
-    
-    live_chat_active = true;
-    last_interaction_time = millis();
-    
-    // Success tone
-    play_beep(660, 100);
-    delay(50);
-    play_beep(880, 100);
 }
 
-void stream_mic_to_websocket() {
-    static bool was_suppressed = false;
-    if (millis() - last_model_audio_time < 500) {
-        was_suppressed = true;
-        return;
-    }
+void handle_binary_audio(uint8_t * payload, size_t length) {
+    if (ignore_current_turn) return;
     
-    if (was_suppressed) {
-        // Drain I2S DMA buffer to discard old echo/sounds
-        size_t discarded_bytes = 0;
-        uint8_t temp_buf[256];
-        while (i2s_read(I2S_PORT, temp_buf, sizeof(temp_buf), &discarded_bytes, 0) == ESP_OK && discarded_bytes > 0) {
-            vTaskDelay(pdMS_TO_TICKS(1));
+    model_speaking_turn = true;
+    
+    size_t num_samples = length / sizeof(int16_t);
+    int16_t* mono_play_buf = (int16_t*)payload;
+    int16_t* stereo_play_buf = (int16_t*)dma_malloc(num_samples * 2 * sizeof(int16_t));
+    if (stereo_play_buf) {
+        for (size_t i = 0; i < num_samples; i++) {
+            int32_t val = (int32_t)(mono_play_buf[i] * SPEAKER_VOLUME_BOOST);
+            if (val > 32767) val = 32767;
+            else if (val < -32768) val = -32768;
+            stereo_play_buf[2 * i] = (int16_t)val;     // Left
+            stereo_play_buf[2 * i + 1] = (int16_t)val; // Right
         }
-        was_suppressed = false;
-        Serial.println("[Gemini] Drained I2S RX DMA buffer after echo suppression.");
-    }
-
-    const int CHUNK_FRAMES = 1024; // 64ms audio chunk (reduces message frequency and network overhead)
-    size_t bytes_read = 0;
-    
-    // Allocate static buffers to prevent heap allocation/fragmentation 15 times per second
-    static int32_t stereo_chunk[CHUNK_FRAMES * 2];
-    static int16_t mono_chunk[CHUNK_FRAMES];
-    static char b64_buf[((CHUNK_FRAMES * 2 * sizeof(int16_t) + 2) / 3) * 4 + 1];
-    static char json_buf[120 + sizeof(b64_buf)];
-
-    // Log RAM usage every 100 frames to monitor memory stability
-    static int loop_count = 0;
-    if (loop_count++ % 100 == 0) {
-        Serial.printf("[RAM] Free Heap: %u | Min Free: %u\n", ESP.getFreeHeap(), ESP.getMinFreeHeap());
-    }
-
-    esp_err_t err = i2s_read(I2S_PORT, stereo_chunk, CHUNK_FRAMES * 2 * sizeof(int32_t), &bytes_read, pdMS_TO_TICKS(100));
-    if (err != ESP_OK || bytes_read == 0) {
-        return;
-    }
-
-    int frames = bytes_read / (2 * sizeof(int32_t));
-    if (frames <= 0) {
-        return;
-    }
-
-    int32_t peak = 0;
-    for (int i = 0; i < frames; i++) {
-        int16_t left_16 = (int16_t)(stereo_chunk[2 * i] >> 16);
-#if USE_DUAL_MIC
-        int16_t right_16 = (int16_t)(stereo_chunk[2 * i + 1] >> 16);
-        int32_t mono = ((int32_t)left_16 + (int32_t)right_16) / 2;
-        mono_chunk[i] = (int16_t)mono;
-#else
-        mono_chunk[i] = left_16;
-#endif
-        int32_t abs_val = abs((int32_t)mono_chunk[i]);
-        if (abs_val > peak) peak = abs_val;
-    }
-
-    if (peak > current_utterance_max_volume) {
-        current_utterance_max_volume = peak;
-    }
-
-    size_t raw_bytes = frames * sizeof(int16_t);
-    base64_encode_to_buf((uint8_t*)mono_chunk, raw_bytes, b64_buf);
-    
-    // Construct JSON payload efficiently without String class heap allocation
-    strcpy(json_buf, "{\"realtimeInput\":{\"mediaChunks\":[{\"mimeType\":\"audio/pcm;rate=16000\",\"data\":\"");
-    strcat(json_buf, b64_buf);
-    strcat(json_buf, "\"}]}}");
-    
-    bool success = webSocket.sendTXT(json_buf);
-    if (!success) {
-        Serial.println("❌ [Gemini] WebSocket send failed! Queue full?");
+        
+        AudioPacket packet = { stereo_play_buf, num_samples };
+        if (audio_play_queue != NULL && xQueueSend(audio_play_queue, &packet, 0) == pdPASS) {
+            last_model_audio_time = millis();
+        } else {
+            Serial.println("❌ [Playback] Playback queue full, dropping chunk!");
+            free(stereo_play_buf);
+        }
     }
 }
 
@@ -869,110 +933,64 @@ void handle_websocket_message(uint8_t * payload, size_t length) {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, payload, length);
     if (error) {
-        Serial.printf("[Gemini WebSocket] JSON parse error: %s\n", error.c_str());
+        Serial.printf("[Hub WS] JSON parse error: %s\n", error.c_str());
         return;
     }
     
     last_interaction_time = millis();
     
-    // Log any errors returned from the server (e.g. invalid API key, invalid model name, etc.)
-    if (doc.containsKey("error")) {
-        JsonObject err = doc["error"];
-        int code = err["code"];
-        String message = err["message"].as<String>();
-        String status = err["status"].as<String>();
-        Serial.printf("❌ [Gemini Error] Code %d (%s): %s\n", code, status.c_str(), message.c_str());
-        disconnect_live_chat(); // disconnect on error to avoid hang
-        return;
-    }
-    
-    if (doc.containsKey("setupComplete")) {
-        Serial.println("🤖 [Gemini] Live Chat: Setup complete received. Starting mic stream.");
-        setup_complete_received = true;
-        return;
-    }
-    
-    if (doc.containsKey("serverContent")) {
-        JsonObject serverContent = doc["serverContent"];
-        
-        // Parse user interruption flag (matching Python code)
-        if (serverContent["interrupted"] == true) {
-            Serial.println("\n🛑 Người dùng nói xen vào, dừng phát âm thanh hiện tại...");
+    if (doc.containsKey("event")) {
+        String event = doc["event"].as<String>();
+        if (event == "setup_complete") {
+            Serial.println("🤖 [Hub] Setup complete. Streaming mic...");
+            
+            // Drain I2S RX DMA buffer to prevent immediate burst of old data
+            size_t discarded_bytes = 0;
+            uint8_t temp_buf[256];
+            while (i2s_read(I2S_PORT, temp_buf, sizeof(temp_buf), &discarded_bytes, 0) == ESP_OK && discarded_bytes > 0) {
+                vTaskDelay(pdMS_TO_TICKS(1));
+            }
+            Serial.println("[Hub] Drained I2S RX DMA buffer on startup.");
+            
+            // Clear mic queue
+            MicPacket p;
+            while (mic_queue != NULL && xQueueReceive(mic_queue, &p, 0) == pdPASS) {
+                if (p.buffer) free(p.buffer);
+            }
+            
+            play_beep(660, 100);
+            delay(50);
+            play_beep(880, 100);
+            setup_complete_received = true;
+        } else if (event == "interrupted") {
+            Serial.println("\n🛑 Người dùng nói ngắt lời, dừng loa...");
             ignore_current_turn = true;
-        }
-
-        // Parse user speech transcription to detect stop command (matching Python code)
-        if (serverContent.containsKey("inputTranscription")) {
-            JsonObject trans = serverContent["inputTranscription"];
-            if (trans.containsKey("text")) {
-                String text = trans["text"].as<String>();
-                if (text.length() > 0) {
-                    String text_lower = text;
-                    text_lower.toLowerCase();
-                    int32_t vol = current_utterance_max_volume;
-                    Serial.printf("🎙️ [Gemini Transcription]: '%s' (Volume: %d)\n", text.c_str(), vol);
-                    
-                    bool is_stop_phrase = (text_lower.indexOf("dừng lại") != -1 || text_lower.indexOf("làm ơn dừng lại") != -1);
-                    bool is_loud = (vol >= LOUD_THRESHOLD);
-                    
-                    if (is_stop_phrase && is_loud) {
-                        Serial.printf("🛑 [Gemini] Phát hiện lệnh dừng khẩn cấp với âm lượng lớn (%d)! Dừng phát âm thanh chatbot...\n", vol);
-                        ignore_current_turn = true;
-                    }
+            model_speaking_turn = false;
+            
+            // Clear the audio play queue
+            AudioPacket packet;
+            while (audio_play_queue != NULL && xQueueReceive(audio_play_queue, &packet, 0) == pdPASS) {
+                if (packet.buffer) {
+                    free(packet.buffer);
                 }
             }
-            if (trans["finished"] == true) {
-                // Reset volume metric for next utterance
-                current_utterance_max_volume = 0;
-            }
-        }
-
-        if (serverContent.containsKey("modelTurn")) {
-            JsonArray parts = serverContent["modelTurn"]["parts"];
-            for (JsonObject part : parts) {
-                if (part.containsKey("inlineData")) {
-                    if (!ignore_current_turn) {
-                        String base64Data = part["inlineData"]["data"];
-                        
-                        last_model_audio_time = millis();
-                        
-                        size_t input_len = base64Data.length();
-                        size_t output_len = (input_len / 4) * 3; 
-                        uint8_t* decoded_buf = (uint8_t*)malloc(output_len);
-                        
-                        if (decoded_buf) {
-                            size_t actual_len = base64_decode_to_buf(base64Data.c_str(), input_len, decoded_buf);
-                            size_t num_samples = actual_len / sizeof(int16_t);
-                            
-                            int16_t* stereo_play_buf = (int16_t*)malloc(num_samples * 2 * sizeof(int16_t));
-                            if (stereo_play_buf) {
-                                int16_t* mono_play_buf = (int16_t*)decoded_buf;
-                                for (size_t i = 0; i < num_samples; i++) {
-                                    int32_t val = (int32_t)(mono_play_buf[i] * SPEAKER_VOLUME_BOOST);
-                                    if (val > 32767) val = 32767;
-                                    else if (val < -32768) val = -32768;
-                                    int16_t sample = (int16_t)val;
-                                    stereo_play_buf[2 * i] = sample;     // Left channel
-                                    stereo_play_buf[2 * i + 1] = sample; // Right channel
-                                }
-                                
-                                // Dynamic sample rate switch to 24kHz
-                                i2s_set_sample_rates(I2S_PORT_OUT, 24000);
-                                
-                                size_t bytes_written;
-                                i2s_write(I2S_PORT_OUT, stereo_play_buf, num_samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
-                                free(stereo_play_buf);
-                            }
-                            free(decoded_buf);
-                        }
-                    }
+            
+            // Clear the mic queue to prevent echo feedback loop
+            MicPacket p;
+            while (mic_queue != NULL && xQueueReceive(mic_queue, &p, 0) == pdPASS) {
+                if (p.buffer) {
+                    free(p.buffer);
                 }
             }
-        }
-        
-        if (serverContent["turnComplete"] == true) {
-            Serial.println("🤖 [Gemini] Live Chat: Turn complete.");
-            ignore_current_turn = false; // Reset ignore turn flag
+            
+            i2s_zero_dma_buffer(I2S_PORT_OUT);
+        } else if (event == "turn_complete") {
+            Serial.println("🤖 [Hub] Turn complete.");
+            model_speaking_turn = false;
+            ignore_current_turn = false;
+        } else if (event == "user_transcription") {
+            String text = doc["text"].as<String>();
+            Serial.printf("🎙️ [User]: '%s'\n", text.c_str());
         }
     }
 }
@@ -980,7 +998,7 @@ void handle_websocket_message(uint8_t * payload, size_t length) {
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     switch(type) {
         case WStype_DISCONNECTED:
-            Serial.print("🔌 [Gemini] Ngắt kết nối WebSocket! Close code/reason: ");
+            Serial.print("🔌 [Hub WS] Disconnected! Close details: ");
             if (payload != NULL && length > 0) {
                 Serial.write(payload, length);
                 Serial.println();
@@ -988,20 +1006,28 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
                 Serial.println("None");
             }
             live_chat_active = false;
-            // Restore speaker sample rate to 16kHz
-            i2s_set_sample_rates(I2S_PORT_OUT, 16000);
+            setup_complete_received = false;
+            model_speaking_turn = false;
+            has_deleted_ip_document = false;
+            i2s_set_sample_rates(I2S_PORT_OUT, SPEAKER_SAMPLING_RATE);
             publish("wakeupword", "type=start");
             break;
         case WStype_CONNECTED:
-            Serial.println("🔌 [Gemini] Kết nối WebSocket thành công!");
-            send_setup_message();
+            Serial.println("🔌 [Hub WS] Connection established successfully! Waiting for setup...");
+            if (!has_deleted_ip_document) {
+                if (delete_hub_ip_from_firestore()) {
+                    has_deleted_ip_document = true;
+                }
+            }
             break;
         case WStype_TEXT:
-        case WStype_BIN:
             handle_websocket_message(payload, length);
             break;
+        case WStype_BIN:
+            handle_binary_audio(payload, length);
+            break;
         case WStype_ERROR:
-            Serial.print("❌ [Gemini] Lỗi kết nối WebSocket! Chi tiết: ");
+            Serial.print("❌ [Hub WS] WebSocket error! Details: ");
             if (payload != NULL && length > 0) {
                 Serial.write(payload, length);
                 Serial.println();
@@ -1013,17 +1039,121 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 }
 
 void loopGeminiLive() {
-    if (live_chat_active) {
+    if (live_chat_active && ws_task_running) {
         webSocket.loop();
         
         if (webSocket.isConnected() && setup_complete_received) {
             stream_mic_to_websocket();
             
             if (millis() - last_interaction_time > 60000) {
-                Serial.println("⏰ Hết thời gian đàm thoại (1 phút im lặng), ngắt kết nối Live...");
+                Serial.println("⏰ Hết thời gian đàm thoại (60s im lặng), tự động đóng kết nối Hub...");
                 disconnect_live_chat();
             }
         }
+    }
+
+    // Periodically poll Firestore if currently connected/connecting via fallback IP
+    if (is_using_fallback_ip && WiFi.status() == WL_CONNECTED) {
+        if (millis() - last_firestore_check_time > 10000) {
+            last_firestore_check_time = millis();
+            Serial.println("[Firebase] Periodically checking Firestore for a new Hub IP document...");
+            if (get_hub_ip_from_firestore(current_hub_ip, current_hub_port)) {
+                if (current_hub_ip != current_hub_host) {
+                    Serial.printf("🟢 [Firebase] Found new Hub IP on Firestore: %s:%d. Reconnecting to new IP...\n", current_hub_ip.c_str(), current_hub_port);
+                    current_hub_host = current_hub_ip;
+                    is_using_fallback_ip = false;
+                    disconnect_live_chat(); // Force socket restart to use new IP
+                    connect_live_chat();
+                }
+            }
+        }
+    }
+}
+
+// Background FreeRTOS tasks implementation
+void audio_playback_task(void *pvParameters) {
+    AudioPacket packet;
+    
+    while (true) {
+        if (audio_play_queue != NULL && xQueueReceive(audio_play_queue, &packet, pdMS_TO_TICKS(100)) == pdPASS) {
+            if (!is_playing_audio) {
+                is_playing_audio = true;
+                i2s_set_sample_rates(I2S_PORT_OUT, 24000); // Hub streams at 24kHz
+            }
+            if (packet.buffer) {
+                size_t bytes_written = 0;
+#if !DISABLE_SPEAKER_OUTPUT
+                i2s_write(I2S_PORT_OUT, packet.buffer, packet.num_samples * 2 * sizeof(int16_t), &bytes_written, portMAX_DELAY);
+#else
+                vTaskDelay(pdMS_TO_TICKS(packet.num_samples / 24)); // Simulation delay
+#endif
+                last_model_audio_time = millis();
+                free(packet.buffer);
+            }
+        } else {
+            if (is_playing_audio) {
+                is_playing_audio = false;
+                i2s_zero_dma_buffer(I2S_PORT_OUT);
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(1)); // Small yield
+    }
+}
+
+void mic_recording_task(void *pvParameters) {
+    while (true) {
+        if (!live_chat_active || !setup_complete_received) {
+            vTaskDelay(pdMS_TO_TICKS(10));
+            continue;
+        }
+        
+        // Suppression check (while playing model audio, or within 500ms after last playback)
+        bool should_suppress = model_speaking_turn || 
+                               is_playing_audio || 
+                               (millis() - last_model_audio_time < 500) || 
+                               (audio_play_queue != NULL && uxQueueMessagesWaiting(audio_play_queue) > 0);
+        
+        if (should_suppress) {
+            // Discard mic input to prevent backlog and echo
+            size_t bytes_read = 0;
+            i2s_read(I2S_PORT, stream_stereo_chunk, STREAM_CHUNK_FRAMES * 2 * sizeof(int32_t), &bytes_read, pdMS_TO_TICKS(50));
+            
+            // Clear the mic queue to ensure no old frames are sent when suppression ends
+            MicPacket p;
+            while (mic_queue != NULL && xQueueReceive(mic_queue, &p, 0) == pdPASS) {
+                if (p.buffer) {
+                    free(p.buffer);
+                }
+            }
+            vTaskDelay(pdMS_TO_TICKS(10));
+            continue;
+        }
+        
+        size_t bytes_read = 0;
+        esp_err_t err = i2s_read(I2S_PORT, stream_stereo_chunk, STREAM_CHUNK_FRAMES * 2 * sizeof(int32_t), &bytes_read, pdMS_TO_TICKS(150));
+        if (err == ESP_OK && bytes_read > 0) {
+            int frames = bytes_read / (2 * sizeof(int32_t));
+            if (frames > 0) {
+                int16_t* pcm_buf = (int16_t*)safe_malloc(frames * sizeof(int16_t));
+                if (pcm_buf) {
+                    for (int i = 0; i < frames; i++) {
+                        int16_t left_16 = (int16_t)(stream_stereo_chunk[2 * i] >> 16);
+#if USE_DUAL_MIC
+                        int16_t right_16 = (int16_t)(stream_stereo_chunk[2 * i + 1] >> 16);
+                        pcm_buf[i] = (int16_t)(((int32_t)left_16 + (int32_t)right_16) / 2);
+#else
+                        pcm_buf[i] = left_16;
+#endif
+                    }
+                    
+                    MicPacket packet = { pcm_buf, (size_t)frames };
+                    if (mic_queue != NULL && xQueueSend(mic_queue, &packet, 0) != pdPASS) {
+                        free(pcm_buf); // Drop if queue full
+                    }
+                }
+            }
+        }
+        vTaskDelay(pdMS_TO_TICKS(1)); // Yield to other tasks
     }
 }
 
