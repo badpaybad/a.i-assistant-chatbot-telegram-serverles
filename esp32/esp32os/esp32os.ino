@@ -71,6 +71,7 @@ void saveWifiCredentials(String ssid, String pass);
 bool connectWiFi();
 void startAP();
 void monitorWiFi();
+String getEspMacAddress();
 
 void setupWebRoutes();
 void handleRoot();

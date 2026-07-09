@@ -80,4 +80,6 @@ esp32/detect_wakeup/detect_wakeup.ino và mic/esp32_hub.py đang hoạt động 
 
 **cập nhật 15** ở esp32/esp32os/esp32mic.ino các thông tin host và ip của esp32 hub cần được lưu dạng config như ở esp32/esp32os/esp32uiconfig.ino , cho phép người dùng nhập host hoặc ip và port của esp32 hub 
 
+
+
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

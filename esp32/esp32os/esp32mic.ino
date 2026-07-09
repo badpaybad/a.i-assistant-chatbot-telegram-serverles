@@ -823,8 +823,9 @@ void connect_live_chat() {
         return;
     }
 
-    // Connect WebSocket to local hub
-    webSocket.begin(current_hub_host.c_str(), current_hub_port, "/ws");
+    // Connect WebSocket to local hub, passing the MAC address for authentication
+    String path = "/ws?mac=" + getEspMacAddress();
+    webSocket.begin(current_hub_host.c_str(), current_hub_port, path.c_str());
     webSocket.onEvent(webSocketEvent);
     webSocket.enableHeartbeat(10000, 3000, 2);
 

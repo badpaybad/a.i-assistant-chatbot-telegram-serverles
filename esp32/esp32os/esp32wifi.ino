@@ -155,6 +155,8 @@ bool connectWiFi() {
         Serial.printf("[WiFi] Connected to %s successfully!\n", savedCreds[i].ssid.c_str());
         Serial.print("[WiFi] IP Address: ");
         Serial.println(WiFi.localIP());
+        Serial.print("[WiFi] MAC Address: ");
+        Serial.println(WiFi.macAddress());
         setCustomDNS();
         playOkWifiSound();
         return true;
@@ -186,6 +188,8 @@ bool connectWiFi() {
       Serial.printf("[WiFi] Connected to %s (fallback) successfully!\n", savedCreds[0].ssid.c_str());
       Serial.print("[WiFi] IP Address: ");
       Serial.println(WiFi.localIP());
+      Serial.print("[WiFi] MAC Address: ");
+      Serial.println(WiFi.macAddress());
       setCustomDNS();
       playOkWifiSound();
       return true;
@@ -268,4 +272,9 @@ void monitorWiFi() {
       ESP.restart();
     }
   }
+}
+
+// Helper to get device MAC address
+String getEspMacAddress() {
+  return WiFi.macAddress();
 }

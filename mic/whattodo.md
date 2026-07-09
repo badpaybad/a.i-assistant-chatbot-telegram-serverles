@@ -18,3 +18,8 @@ Bạn có thể giảm FRAME_STEP xuống (ví dụ 240 hoặc 160) để tăng 
 cập nhật cho code esp32 , api esp32 hub ở yêu cầu esp32/esp32os/esp32chatvoice.md về FRAME_LENGTH=240 FRAME_STEP =160. để đồng nhất nhất quán xử lý âm thanh cho mượt 
 
 **cập nhật 4** sau khi train xong đã tạo file model_data.h cần copy thành esp32/esp32os/wakeupword_model_data.h , cần khai báo là const vd const unsigned char model_tflite[] __attribute__((aligned(16))) = .... tối ưu cho esp32
+
+**cập nhật 5** esp32 hub cần: get_lan_ip() dùng python subprocess chạy lệnh: ip a để lấy ip , ưu tiên wifi ip rồi đến ethernet rồi LAN ip . 
+cần tạo memory list unique esp32client mac address để:
+    mỗi esp32 có 1 MAC cần tạo unique id để nhận diện esp32 , device esp32 hiện tại MAC: 14:c1:9f:2e:3a:18 
+    ở esp32/esp32os/esp32wifi.ino lấy MAC address để khi gọi websocket hoặc http client post get gửi kèm lên để xác thực truy cập hợp lệ của esp32 lên api esp32 hub  

@@ -5,6 +5,8 @@ import logging
 import sqlite3
 import uuid
 import socket
+import re
+import subprocess
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 import uvicorn
 import firebase_admin
@@ -16,9 +18,14 @@ from google.genai import types
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from config_dunp import GEMINI_APIKEY, PORT
+    try:
+        from config_dunp import ALLOWED_ESP32_MACS
+    except ImportError:
+        ALLOWED_ESP32_MACS = ["14:c1:9f:2e:3a:18"]
 except ImportError:
     GEMINI_APIKEY = os.environ.get("GEMINI_API_KEY", "")
     PORT = 8888
+    ALLOWED_ESP32_MACS = ["14:c1:9f:2e:3a:18"]
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -283,15 +290,73 @@ ADMIN_SDK_PATH = os.path.join(
 )
 
 def get_lan_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
-        s.connect(('8.8.8.8', 80))
-        ip = s.getsockname()[0]
-    except Exception:
-        ip = '127.0.0.1'
-    finally:
-        s.close()
-    return ip
+        # Run 'ip a' command
+        result = subprocess.run(["ip", "a"], capture_output=True, text=True, check=True)
+        output = result.stdout
+    except Exception as e:
+        logger.error(f"⚠️ Error running 'ip a': {e}. Falling back to socket method.")
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(('8.8.8.8', 80))
+            ip = s.getsockname()[0]
+        except Exception:
+            ip = '127.0.0.1'
+        finally:
+            s.close()
+        return ip
+
+    # Parse output of 'ip a'
+    interfaces = {}
+    current_iface = None
+    
+    # Matching interface index & name (e.g. "2: wlp2s0: <...")
+    iface_regex = re.compile(r'^\d+:\s+([^:@\s]+)')
+    # Matching IPv4 address (e.g. "    inet 192.168.4.248/23 ...")
+    inet_regex = re.compile(r'^\s+inet\s+([0-9.]+)/\d+')
+
+    for line in output.splitlines():
+        iface_match = iface_regex.match(line)
+        if iface_match:
+            current_iface = iface_match.group(1)
+            interfaces[current_iface] = []
+        elif current_iface:
+            inet_match = inet_regex.match(line)
+            if inet_match:
+                ip = inet_match.group(1)
+                # Ignore loopback IP
+                if ip != '127.0.0.1':
+                    interfaces[current_iface].append(ip)
+
+    wifi_ips = []
+    eth_ips = []
+    other_ips = []
+
+    for iface, ips in interfaces.items():
+        if not ips:
+            continue
+        iface_lower = iface.lower()
+        if any(w in iface_lower for w in ['wlan', 'wlp', 'wlo', 'wifi']):
+            wifi_ips.append((iface, ips[0]))
+        elif any(e in iface_lower for e in ['eth', 'enp', 'eno', 'ens', 'em']):
+            eth_ips.append((iface, ips[0]))
+        else:
+            other_ips.append((iface, ips[0]))
+
+    if wifi_ips:
+        iface, ip = wifi_ips[0]
+        logger.info(f"📶 Selected WiFi IP: {ip} (interface: {iface})")
+        return ip
+    if eth_ips:
+        iface, ip = eth_ips[0]
+        logger.info(f"🔌 Selected Ethernet IP: {ip} (interface: {iface})")
+        return ip
+    if other_ips:
+        iface, ip = other_ips[0]
+        logger.info(f"🌐 Selected LAN IP: {ip} (interface: {iface})")
+        return ip
+
+    return '127.0.0.1'
 
 def publish_ip_to_firestore():
     if not os.path.exists(ADMIN_SDK_PATH):
@@ -376,10 +441,27 @@ def get_notes(limit: int = 100):
         return {"status": "error", "message": str(e)}
 
 @app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, mac: str = None):
+    # If not passed as query param, check headers
+    if not mac:
+        mac = websocket.headers.get("x-esp32-mac")
+        
+    logger.info(f"🔌 Incoming WebSocket connection. MAC: {mac}")
+    
+    # Check authorization
+    mac_str = mac.strip().lower() if mac else None
+    allowed_macs_normalized = [m.strip().lower() for m in ALLOWED_ESP32_MACS]
+    
+    if not mac_str or mac_str not in allowed_macs_normalized:
+        logger.warning(f"🔒 Unauthorized WebSocket connection attempt. MAC: {mac}")
+        await websocket.accept()  # Accept to send error explanation, then close
+        await websocket.send_json({"event": "error", "message": "Unauthorized MAC address"})
+        await websocket.close(code=4001)
+        return
+
     await websocket.accept()
     session_id = str(uuid.uuid4())
-    logger.info(f"🔌 Client connected via WebSocket. Generated Session ID: {session_id}")
+    logger.info(f"🔌 Client authorized and connected. MAC: {mac}, Session ID: {session_id}")
 
     # State tracking for clean finalization on disconnect
     session_state = {
