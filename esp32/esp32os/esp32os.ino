@@ -240,6 +240,8 @@ void setup() {
       current_hub_host = resolved_ip;
       current_hub_port = resolved_port;
       Serial.printf("[Firebase Boot Sync] Resolved Hub IP from Firestore: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+      // Try to fetch the Firebase token again now that we have the correct new Hub IP
+      refreshFirebaseToken();
     }
 
     Serial.println("Starting network quality monitoring loop...");
