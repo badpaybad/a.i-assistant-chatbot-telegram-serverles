@@ -101,8 +101,8 @@ Mạch Loa MAX98357A nên được cấp nguồn riêng hoặc nguồn 5V của 
 Khi hệ thống chạy lần đầu tiên (hoặc khi không kết nối được WiFi nào trong bộ nhớ):
 
 * **WiFi mặc định thử kết nối (Fallback Client)**:
-  * **SSID**: `Tang 1 OMT`
-  * **Mật khẩu**: `Omt070110`
+  * **SSID**: ``
+  * **Mật khẩu**: ``
 * **WiFi do ESP32 tự phát để cấu hình (SoftAP Captive Portal)**:
   * **SSID**: `esp32os_dunp`
   * **Mật khẩu**: `esp32osdunp`

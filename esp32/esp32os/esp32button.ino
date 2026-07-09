@@ -45,7 +45,7 @@ void buttonPollingTask(void* param) {
     }
   }
 
-  Serial.println("[Button] Polling task ready. Hold RESET button (GPIO 1) 10s to factory reset.");
+  Serial.printf("[Button] Polling task ready. Hold RESET button (GPIO %d) 10s to factory reset.\n", RESET_BUTTON_PIN);
   Serial.flush();
 
   // ── Guard 3: require seenHigh before accepting any LOW as a press ──
@@ -112,7 +112,31 @@ void buttonPollingTask(void* param) {
         play_beep(523,  300); // C5 (long)
         delay(300);
 
-        // Erase the entire default NVS partition
+        // 1. Explicitly clear all Preferences namespaces
+        Serial.println("[Button] Clearing Preferences namespaces...");
+        Serial.flush();
+        
+        preferences.begin("wifi-creds", false);
+        preferences.clear();
+        preferences.end();
+        
+        preferences.begin("gemini-config", false);
+        preferences.clear();
+        preferences.end();
+        
+        preferences.begin("firebase-cfg", false);
+        preferences.clear();
+        preferences.end();
+        
+        preferences.begin("hub-config", false);
+        preferences.clear();
+        preferences.end();
+
+        // 2. Erase the entire default NVS partition (requires deinitializing first)
+        Serial.println("[Button] Deinitializing NVS flash...");
+        Serial.flush();
+        nvs_flash_deinit();
+
         Serial.println("[Button] Erasing NVS flash partition...");
         Serial.flush();
         esp_err_t err = nvs_flash_erase();

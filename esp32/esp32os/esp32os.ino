@@ -40,8 +40,8 @@ typedef void (*EventCallback)(const String& topic, const String& payload);
 // WiFi Access Point Configuration (for captive portal)
 const char* AP_SSID = "esp32os_dunp";
 const char* AP_PASS = "esp32osdunp";
-const char* DEFAULT_WIFI_SSID = "Tang 1 OMT";
-const char* DEFAULT_WIFI_PASS = "Omt070110";
+const char* DEFAULT_WIFI_SSID = "";
+const char* DEFAULT_WIFI_PASS = "";
 
 // Web Server and DNS Server instances
 WebServer server(80);
