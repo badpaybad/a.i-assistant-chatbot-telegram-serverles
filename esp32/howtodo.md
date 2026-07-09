@@ -120,39 +120,24 @@ sequenceDiagram
 * **Lưu trữ NVS**: Sử dụng thư viện `Preferences` để duy trì danh sách mạng. Tự động dịch chuyển cấu trúc để lưu trữ **5 mạng WiFi đã kết nối gần nhất** theo dạng hàng đợi ưu tiên (mạng mới lưu có mức ưu tiên kết nối cao nhất).
 * **Cơ chế Fallback**: Khi khởi động, nếu bộ nhớ Flash chưa lưu mạng nào, nó sẽ sử dụng mạng dự phòng cấu hình sẵn là `"Tang 1 OMT"` / `"Omt070110"`.
 * Nếu tất cả kết nối thất bại, ESP32 sẽ phát WiFi `esp32os_dunp` và khởi tạo Captive Portal (DNS Hijacking). Mọi truy cập web từ thiết bị kết nối sẽ được tự động điều hướng về trang chủ cấu hình kính mờ (Glassmorphism UI) để nhập thông tin mạng mới.
-* **Nut Boot - Factory Reset (nhan giu 10 giay)**:
-  * **Kien truc: `buttonPollingTask` (FreeRTOS task)**:
-    * Task chay doc lap tren **Core 0**, priority 1, doc `digitalRead(GPIO 0)` moi **50ms**.
-    * **Guard 1 - Startup delay**: Task ngu 2 giay (`vTaskDelay(2000ms)`) sau khi khoi dong. Trong qua trinh boot, bootloader keo GPIO 0 xuong LOW de kiem tra flash mode. Delay dam bao trang thai chan on dinh truoc khi bat dau poll.
-    * **Guard 2 - Xac nhan nhan lien tiep**: Can **3 lan doc LOW lien tiep** (= 150ms duy tri LOW) moi xac nhan la nhan that. Mot spike LOW don le do nhieu dien se bi loc.
-  * **Phan hoi theo tien do giu**:
-    * **5 giay**: 1 tieng bip thap 440Hz ("tiep tuc giu").
-    * **8 giay**: 2 tieng bip 660Hz ("sap xong").
-    * **10 giay**: Phat chuoi 3 am di xuong (C6 -> G5 -> C5) bao hieu factory reset.
+* **Nút Reset Config - Factory Reset (nhấn giữ 10 giây)**:
+  * **Kiến trúc: `buttonPollingTask` (FreeRTOS task)**:
+    * Task chạy độc lập trên **Core 0**, priority 1, đọc `digitalRead(GPIO 1)` mỗi **50ms**. Nút nhấn ngoài được kết nối giữa chân GPIO 1 và chân GND.
+    * **Guard 1 - Startup delay**: Task ngủ 2 giây (`vTaskDelay(2000ms)`) sau khi khởi động để ổn định điện áp tránh nhiễu khởi động.
+    * **Guard 2 - Xác nhận nhấn liên tiếp**: Cần **3 lần đọc LOW liên tiếp** (= 150ms duy trì LOW) mới xác nhận là nhấn thật, giúp chống nhiễu tiếp điểm (debounce).
+  * **Phản hồi theo tiến độ giữ**:
+    * **5 giây**: 1 tiếng bíp thấp 440Hz ("tiếp tục giữ").
+    * **8 giây**: 2 tiếng bíp cao 660Hz ("sắp xong").
+    * **10 giây**: Phát chuỗi 3 âm đi xuống (C6 -> G5 -> C5) báo hiệu factory reset.
   * **Factory Reset thực thi trong Task** (không cần qua `loop()`):
-    1. Xóa namespace NVS **`wifi-creds`** (5 mạng WiFi đã lưu).
-    2. Xóa namespace NVS **`gemini-config`** (API Key + Model Name).
-    3. Xóa namespace NVS **`firebase-cfg`** (Firebase Project ID + API Key + Doc Path).
-    4. Xóa namespace NVS **`hub-config`** (ESP32 Hub Host/IP + Port).
-    5. Gọi `ESP.restart()` để khởi động lại chip.
+    1. Xóa sạch toàn bộ phân vùng Flash NVS bằng hàm `nvs_flash_erase()` (xóa toàn bộ wifi-creds, gemini-config, firebase-cfg, hub-config).
+    2. Khởi tạo lại phân vùng NVS trống bằng hàm `nvs_flash_init()`.
+    3. Gọi `ESP.restart()` để khởi động lại chip.
   * Sau khi restart, boot sequence tìm thấy không có credentials, `connectWiFi()` thất bại, tự động gọi `startAP()` để mở hotspot cấu hình.
   * **Cấu hình ESP32 Hub từ xa**:
     * Cho phép người dùng nhập trực tiếp địa chỉ Host hoặc IP và số cổng (Port) của ESP32 Hub cục bộ qua giao diện cấu hình Captive Portal (Web UI).
     * Thông tin này được lưu trữ trong namespace NVS **`hub-config`** (chứa khóa `"host"` kiểu chuỗi và `"port"` kiểu số nguyên).
     * Khi khởi động, các cấu hình này được nạp tự động vào biến toàn cục `hub_host` và `hub_port`. Trường hợp không thể đọc địa chỉ IP của Hub từ Firestore (do Firebase Project ID trống), ESP32 sẽ tự động sử dụng cấu hình Hub đã lưu này làm địa chỉ kết nối dự phòng (fallback).
-
-  * Trên mạch ESP32-S3-N16R8, nút **BOOT** (đấu nối phần cứng sẵn vào GPIO 0) được cấu hình chế độ `INPUT_PULLUP`.
-  * Một ISR (`bootButtonISR`, `IRAM_ATTR`) được gắn vào ngắt phần cứng `CHANGE` của GPIO 0, nhận biết cả 2 sườn: đang nhấn xuống (FALLING) và thả ra (RISING).
-  * Khi nhấn xuống: ISR lưu thời điểm bắt đầu (`isrPressStartMs`) và đánh dấu `isrButtonHeld = true`.
-  * Khi thả ra: ISR đặt lại `isrButtonHeld = false` – hủy bỏ nếu chưa đủ 10 giây.
-  * Hàm `checkBootButton()` trong `loop()` theo dõi thời lượng giữ và phát phản hồi theo tiến độ:
-    * **5 giây**: 1 tiếng bíp thấp (“tiếp tục giữ”).
-    * **8 giây**: 2 tiếng bíp trừ vừa (“sắp xong”).
-    * **10 giây**: Phát chuỗi 3 âm đi xuống (C6 → G5 → C5) báo hiệu factory reset, sau đó:
-      1. Xóa namespace NVS **`wifi-creds`** (5 mạng WiFi đã lưu).
-      2. Xóa namespace NVS **`gemini-config`** (API Key + Model Name).
-      3. Gọi `ESP.restart()` để khởi động lại chip.
-  * Sau khi restart, boot sequence bình thường tìm thấy không có credentials → `connectWiFi()` thất bại → tự động gọi `startAP()` để mở hotspot cấu hình.
 
 
 
