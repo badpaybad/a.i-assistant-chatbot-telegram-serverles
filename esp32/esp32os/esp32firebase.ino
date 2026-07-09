@@ -25,11 +25,17 @@ String firebase_jwt_token = "";
 String firebase_id_token = "";
 unsigned long token_fetched_millis = 0;
 
+// Google Cloud OAuth 2.0 Access Token variables
+String gcloud_access_token = "";
+unsigned long gcloud_token_fetched_millis = 0;
+
 // Function declarations
 String getEspMacAddress();
 bool refreshFirebaseToken();
 bool isTokenExpired();
 String exchangeCustomTokenForIdToken(const String& customToken);
+bool refreshGcloudToken();
+bool isGcloudTokenExpired();
 
 // Forward declarations
 String flatJsonToFirestore(const String& jsonStr);
@@ -483,5 +489,58 @@ String exchangeCustomTokenForIdToken(const String& customToken) {
   
   http.end();
   return idToken;
+}
+
+// Checks if the Google Access Token is expired (50 minutes threshold)
+bool isGcloudTokenExpired() {
+  if (gcloud_access_token.length() == 0) return true;
+  if (millis() - gcloud_token_fetched_millis > 3000000) {
+    return true;
+  }
+  return false;
+}
+
+// Fetches a new Google OAuth 2.0 Access Token from the local hub
+bool refreshGcloudToken() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("[Google Cloud] WiFi not connected. Cannot refresh Google Access Token.");
+    return false;
+  }
+
+  String host = current_hub_host;
+  int port = current_hub_port;
+  if (host.length() == 0) {
+    host = hub_host;
+    port = hub_port;
+  }
+
+  WiFiClient client;
+  HTTPClient http;
+
+  String url = "http://" + host + ":" + String(port) + "/gcloud-token?mac=" + getEspMacAddress();
+  Serial.printf("[Google Cloud] Requesting new Google Access Token from: %s\n", url.c_str());
+
+  http.begin(client, url);
+  int httpResponseCode = http.GET();
+  bool success = false;
+
+  if (httpResponseCode == 200) {
+    String response = http.getString();
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, response);
+    if (!error && doc.containsKey("access_token")) {
+      gcloud_access_token = doc["access_token"].as<String>();
+      gcloud_token_fetched_millis = millis();
+      Serial.println("[Google Cloud] Successfully retrieved and updated Google Access Token!");
+      success = true;
+    } else {
+      Serial.println("[Google Cloud] Failed to parse JSON token response from Hub.");
+    }
+  } else {
+    Serial.printf("[Google Cloud] HTTP error requesting Google token from Hub. Response code: %d\n", httpResponseCode);
+  }
+
+  http.end();
+  return success;
 }
 

@@ -113,6 +113,8 @@ bool firestoreWrite(const String& docPath, const String& flatJsonPayload);
 String firestoreRead(const String& docPath);
 bool refreshFirebaseToken();
 bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+bool refreshGcloudToken();
+bool isGcloudTokenExpired();
 
 extern String current_hub_host;
 extern int current_hub_port;
@@ -268,6 +270,9 @@ void setup() {
         current_hub_port = resolved_port;
       }
     }
+
+    // Fetch Google OAuth 2.0 Access Token immediately at boot
+    refreshGcloudToken();
 
     Serial.println("Starting network quality monitoring loop...");
   } else {

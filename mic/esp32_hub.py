@@ -489,6 +489,65 @@ def get_firebase_token(mac: str = None):
         logger.error(f"❌ Error generating Firebase token: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/gcloud-token")
+def get_gcloud_token(mac: str = None):
+    if not mac:
+        raise HTTPException(status_code=400, detail="Missing MAC address")
+    if not is_authorized_mac(mac):
+        logger.warning(f"🔒 Unauthorized Google Access Token request for MAC: {mac}")
+        raise HTTPException(status_code=401, detail="Unauthorized MAC address")
+    try:
+        if not os.path.exists(ADMIN_SDK_PATH):
+            logger.error(f"❌ Firebase Admin SDK config not found at: {ADMIN_SDK_PATH}")
+            raise HTTPException(status_code=500, detail="Firebase config not found")
+        with open(ADMIN_SDK_PATH) as f:
+            info = json.load(f)
+        private_key = info["private_key"]
+        client_email = info["client_email"]
+        
+        import time
+        import jwt
+        import requests
+        
+        now = int(time.time())
+        payload = {
+            "iss": client_email,
+            "sub": client_email,
+            "aud": "https://oauth2.googleapis.com/token",
+            "scope": "https://www.googleapis.com/auth/cloud-platform",
+            "iat": now,
+            "exp": now + 3600,
+        }
+        assertion = jwt.encode(payload, private_key, algorithm="RS256")
+        
+        # Exchange assertion for Google OAuth2 access token
+        token_res = requests.post(
+            "https://oauth2.googleapis.com/token",
+            data={
+                "grant_type": "urn:ietf:params:oauth:grant-type:jwt-bearer",
+                "assertion": assertion
+            },
+            timeout=10
+        )
+        
+        if token_res.status_code == 200:
+            data = token_res.json()
+            access_token = data.get("access_token")
+            expires_in = data.get("expires_in", 3600)
+            logger.info(f"🔑 Generated Google OAuth2 Access Token for authorized MAC: {mac}")
+            return {
+                "status": "success",
+                "access_token": access_token,
+                "expires_in": expires_in
+            }
+        else:
+            logger.error(f"❌ Failed to exchange JWT for Google OAuth2 Token: {token_res.text}")
+            raise HTTPException(status_code=500, detail="OAuth2 exchange failed")
+            
+    except Exception as e:
+        logger.error(f"❌ Error generating Google Access Token: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket, mac: str = None):
     # If not passed as query param, check headers

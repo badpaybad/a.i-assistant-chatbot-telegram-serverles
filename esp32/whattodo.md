@@ -87,4 +87,6 @@ nếu firebase jwt access token đã có và chưa expired thì cần firestore 
 
 **cập nhật 17** khi wifi check connect được và firebase từ esp32 hub gửi IP + port (hoặc domain + port) mới nếu connect được (IP domain port mới thay đổi khác so với cái đang có hiện tại ở config ) cần tự động lưu vào config
 
+**cập nhật 18** cần cấp thêm api cho esp32 hub để tạo Google OAuth 2.0 Access Token (đại diện cho services account ) để client esp32 lưu lại, việc lấy access token này vẫn dùng MAC address validate, cần 1 số dịch vụ chạy distributed trên các client esp32. 
+
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md
