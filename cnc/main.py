@@ -1,4 +1,5 @@
 import os
+import sys
 import re
 import time
 import serial
@@ -288,6 +289,105 @@ class ControllerState:
         return False
 
 state = ControllerState()
+
+# ── Cập nhật 43: Camera Calibration — load lúc khởi động, watcher restart khi file đổi ───────
+# Khi file camera_calibration_result.npz tồn tại → áp dụng undistortion.
+# Nếu file thay đổi (chạy lại calibration_camera.py) → server tự restart để an toàn.
+_CAM_CALIB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "camera_calibration_result.npz")
+_CALIB_IMG_SIZE = (720, 720)  # Nhất quán: calibration 720×720 = crop frame 720×720 = UI 720×720
+
+_cam_state = {
+    "mtx": None,           # Camera matrix (3×3)
+    "dist": None,          # Distortion coefficients (5×1)
+    "new_mtx": None,       # Optimal camera matrix với alpha=0
+    "loaded_mtime": -1.0,  # mtime lúc load thành công
+    "enabled": False       # True khi đã load thành công
+}
+
+def _load_cam_calib():
+    """
+    Load camera_calibration_result.npz lúc khởi động.
+    Trả về True nếu load thành công, False nếu file không có hoặc lỗi.
+    """
+    if not os.path.isfile(_CAM_CALIB_FILE):
+        logger.info("[Calib43] Không tìm thấy camera_calibration_result.npz → undistortion tắt (passthrough mode).")
+        _cam_state["enabled"] = False
+        return False
+    try:
+        mtime = os.path.getmtime(_CAM_CALIB_FILE)
+        with np.load(_CAM_CALIB_FILE) as d:
+            mtx = d["mtx"].astype(np.float64)
+            dist = d["dist"].astype(np.float64)
+        # alpha=0: giữ nguyên 720×720, không cần crop thêm sau undistort
+        new_mtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, _CALIB_IMG_SIZE, 0, _CALIB_IMG_SIZE)
+        _cam_state["mtx"] = mtx
+        _cam_state["dist"] = dist
+        _cam_state["new_mtx"] = new_mtx
+        _cam_state["loaded_mtime"] = mtime
+        _cam_state["enabled"] = True
+        logger.info(
+            f"[Calib43] ✅ Đã load camera_calibration_result.npz "
+            f"(cx={new_mtx[0,2]:.1f}, cy={new_mtx[1,2]:.1f})"
+        )
+        return True
+    except Exception as e:
+        logger.warning(f"[Calib43] Lỗi khi load calibration: {e} → undistortion tắt.")
+        _cam_state["enabled"] = False
+        return False
+
+def _start_calib_watcher():
+    """
+    Cập nhật 43: Background thread theo dõi file camera_calibration_result.npz.
+    Nếu file bị thay đổi (mtime mới hơn) → restart toàn bộ server để đảm bảo an toàn.
+    Tất cả state sẽ được rebuild từ đầu với thông số calibration mới.
+    """
+    def _watch():
+        logger.info("[Calib43] 🔍 Watcher thread bắt đầu theo dõi camera_calibration_result.npz")
+        while True:
+            time.sleep(5)  # Kiểm tra mỗi 5 giây
+            if not os.path.isfile(_CAM_CALIB_FILE):
+                continue
+            try:
+                current_mtime = os.path.getmtime(_CAM_CALIB_FILE)
+            except OSError:
+                continue
+            if current_mtime > _cam_state["loaded_mtime"]:
+                logger.warning(
+                    "[Calib43] ⚠️ Phát hiện file camera_calibration_result.npz mới! "
+                    "Đang khởi động lại server để áp dụng calibration mới..."
+                )
+                time.sleep(2)  # Chờ file ghi xong hoàn toàn
+                # Restart process: thay thế process hiện tại bằng process mới với cùng arguments
+                os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    t = threading.Thread(target=_watch, daemon=True, name="CalibWatcher")
+    t.start()
+
+# Thực hiện load lúc khởi động và bắt đầu watcher
+_load_cam_calib()
+_start_calib_watcher()
+
+def undistort_pixel(px: float, py: float) -> tuple:
+    """
+    Cập nhật 43: Hiệu chỉnh méo thấu kính cho một điểm pixel trên frame 720×720.
+    - Áp dụng khi camera_calibration_result.npz tồn tại lúc khởi động.
+    - Khi file calibration được cập nhật → server tự restart, load lại từ đầu.
+    - Nếu không có file calibration → passthrough (trả về pixel gốc).
+    - Resolution 720×720 nhất quán: calibration → crop frame → UI hiển thị.
+    """
+    if not _cam_state["enabled"]:
+        return px, py
+    try:
+        pts = np.array([[[float(px), float(py)]]], dtype=np.float32)
+        undistorted = cv2.undistortPoints(
+            pts, _cam_state["mtx"], _cam_state["dist"], P=_cam_state["new_mtx"]
+        )
+        return float(undistorted[0, 0, 0]), float(undistorted[0, 0, 1])
+    except Exception as e:
+        logger.error(f"[Calib43] undistort_pixel error: {e}")
+        return px, py
+
+
 
 def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
     M = None
@@ -1879,13 +1979,20 @@ async def record_calibration(config: RecordConfig):
     if not state.connected:
         return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
         
+    # Cập nhật 43: Undistort the detected ArUco corner pixel before storing as calibration point
+    raw_px, raw_py = pixel_coord[0], pixel_coord[1]
+    ux, uy = undistort_pixel(raw_px, raw_py)
+    logger.info(f"[Calib43] record_calibration {corner} raw: ({raw_px:.1f}, {raw_py:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+    pixel_coord_undistorted = [ux, uy]
+
     # Record the current CNC machine coordinates from the state
     machine_coord = [state.wpos[0], state.wpos[1]]
     
     state.calibration_points[corner] = {
-        "pixel": pixel_coord,
+        "pixel": pixel_coord_undistorted,
         "machine": machine_coord
     }
+
     
     # Recompute the matrix
     state.update_calibration_matrix()
@@ -1948,12 +2055,18 @@ async def set_cnc_corner(config: SetCNCConfig):
 async def set_aruco_standard():
     if not state.latest_detected_markers or len(state.latest_detected_markers) != 4:
         return JSONResponse({"status": "error", "message": "All 4 ArUco markers must be detected before setting standard points"}, status_code=400)
-    
-    state.aruco_standard_points = dict(state.latest_detected_markers)
+
+    # Cập nhật 43: Undistort detected ArUco corners before saving as calibration source points
+    undistorted_markers = {}
+    for corner_name, pt in state.latest_detected_markers.items():
+        ux, uy = undistort_pixel(pt[0], pt[1])
+        logger.info(f"[Calib43] set_aruco {corner_name} raw: ({pt[0]:.1f}, {pt[1]:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+        undistorted_markers[corner_name] = [ux, uy]
+    state.aruco_standard_points = undistorted_markers
     save_calibration_settings({
         "aruco_standard_points": state.aruco_standard_points
     })
-    return {"status": "ok", "message": "ArUco standard points set", "aruco_standard_points": state.aruco_standard_points}
+    return {"status": "ok", "message": "ArUco standard points set (with lens undistortion)", "aruco_standard_points": state.aruco_standard_points}
 
 class ManualCornerConfig(BaseModel):
     corner: str
@@ -1964,20 +2077,25 @@ class ManualCornerConfig(BaseModel):
 async def set_manual_corner(config: ManualCornerConfig):
     if config.corner not in ["TL", "TR", "BR", "BL"]:
         return JSONResponse({"status": "error", "message": "Invalid corner name"}, status_code=400)
-    
+
+    # Cập nhật 43: Undistort manual pixel click before saving as calibration source point
+    raw_x, raw_y = config.x, config.y
+    ux, uy = undistort_pixel(raw_x, raw_y)
+    logger.info(f"[Calib43] set_manual_corner {config.corner} raw: ({raw_x:.1f}, {raw_y:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+
     if not state.aruco_standard_points:
         state.aruco_standard_points = {}
-    state.aruco_standard_points[config.corner] = [config.x, config.y]
-    state.latest_detected_markers[config.corner] = [config.x, config.y]
+    state.aruco_standard_points[config.corner] = [ux, uy]
+    state.latest_detected_markers[config.corner] = [ux, uy]
     state.latest_detected_markers_time[config.corner] = time.time()
-    
+
     save_calibration_settings({
         "aruco_standard_points": state.aruco_standard_points
     })
-    
+
     return {
         "status": "ok",
-        "message": f"Successfully set standard corner {config.corner} to pixel ({config.x:.1f}, {config.y:.1f})",
+        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f})",
         "aruco_standard_points": state.aruco_standard_points
     }
 
@@ -1991,8 +2109,12 @@ async def set_touch_pen(config: SetTouchPenConfig):
         return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Please set Home first."}, status_code=400)
-        
-    state.touch_pen_pixel = [config.x, config.y]
+
+    # Cập nhật 43: Undistort touch pen pixel position before saving as calibration anchor
+    raw_x, raw_y = config.x, config.y
+    ux, uy = undistort_pixel(raw_x, raw_y)
+    logger.info(f"[Calib43] set_touch_pen raw: ({raw_x:.1f}, {raw_y:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+    state.touch_pen_pixel = [ux, uy]
     state.update_calibration_matrix()
     
     save_calibration_settings({
@@ -2008,10 +2130,11 @@ async def set_touch_pen(config: SetTouchPenConfig):
     
     return {
         "status": "ok",
-        "message": f"Successfully set touch pen position to pixel ({config.x:.1f}, {config.y:.1f})",
+        "message": f"Successfully set touch pen position to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f})",
         "touch_pen_pixel": state.touch_pen_pixel,
         "calibrated": state.calibration_matrix is not None
     }
+
 @app.post("/api/calibration/clear")
 async def clear_calibration():
     state.calibration_points = {}
@@ -2253,7 +2376,12 @@ async def set_home(camera_index: int = 4):
     if cnchead_px is None:
         cnchead_px = [360.0, 360.0]
 
-    state.home_pixel = cnchead_px
+    # Cập nhật 43: Undistort home_pixel before saving — ensures home anchor is in undistorted pixel space
+    raw_hx, raw_hy = cnchead_px[0], cnchead_px[1]
+    ux_h, uy_h = undistort_pixel(raw_hx, raw_hy)
+    logger.info(f"[Calib43] set_home cnchead_px raw: ({raw_hx:.1f}, {raw_hy:.1f}) → undistorted: ({ux_h:.1f}, {uy_h:.1f})")
+    state.home_pixel = [ux_h, uy_h]
+
 
     # Record state
     state.home_set = True
@@ -2643,6 +2771,9 @@ async def move_to_object(config: MoveToObjectConfig):
 
     # 1. Map target object pixel center to workspace coordinates
     cx_obj, cy_obj = config.center
+    # Cập nhật 43: Undistort object center pixel before Homography mapping
+    cx_obj, cy_obj = undistort_pixel(cx_obj, cy_obj)
+    logger.info(f"[Calib43] move_to_object undistorted center: ({cx_obj:.1f}, {cy_obj:.1f})")
     M = np.array(M_adj, dtype=np.float32)
     denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
     if abs(denom) > 1e-5:
@@ -2706,7 +2837,11 @@ async def click_go(config: ClickGoConfig):
                 target_x, target_y = d["center"]
                 logger.info(f"Click inside object {d['class_id']} detected. Snapping to center: {target_x}, {target_y}")
                 break
-                
+
+    # Cập nhật 43: Undistort pixel coordinates before Homography mapping
+    target_x, target_y = undistort_pixel(target_x, target_y)
+    logger.info(f"[Calib43] click_go undistorted pixel: ({target_x:.1f}, {target_y:.1f})")
+
     # Map pixel coordinates to work coordinates
     M = np.array(M_adj, dtype=np.float32)
     denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
@@ -2716,6 +2851,7 @@ async def click_go(config: ClickGoConfig):
     else:
         wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
         wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+
     
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
