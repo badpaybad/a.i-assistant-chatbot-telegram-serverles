@@ -245,5 +245,9 @@ bổ xung thêm menu của việc set 4 góc aruco, thêm 1 nút set touch pen p
     khi set home thì gốc tọa độ trên frame video cũng là home của cnc và cnc head đang có touch pen nằm ở vị trí gốc tọa độ frame, x,y cnc cũng đang ở gốc tọa độ home. việc cnc di chuyển thì touch pen position cũng di chuyển tương ứng , bỏ qua điểm trung tâm khi A.I bbox được cnc head và không dùng điểm này làm tính toán mà dùng touch pen position để tính toán
 
 **cập nhật 43** dùng kết quả calibration ở cnc/camera_calibration_result.npz để tính toán vị trí frame video cho đúng, về vị trí set home , touch pen position, các object detect ... để tính toán cho việc di chuyển cnc head chính xác tới các vị trí khi click trên frame video, khi move tới object detected ...
-về resolution hiện tại ảnh crop từ frame video là 720x720 và hiển thị lên web UI cũng là 720x720 đồng nhất từ calibration cho đến frame video croped và hiển thị UI giữ nguyên 720x720 không cần crop lại 
-check nếu có file cnc/camera_calibration_result.npz mới áp dụng tính toán theo nó, khi update cần khởi động lại hệ thống để cho an toàn 
+về resolution hiện tại ảnh crop từ frame video là 720x720 và hiển thị lên web UI cũng là 720x720 đồng nhất từ calibration cho đến frame video croped và hiển thị UI giữ nguyên 720x720 không cần crop lại
+check nếu có file cnc/camera_calibration_result.npz mới áp dụng tính toán theo nó, khi update cần khởi động lại hệ thống để cho an toàn
+
+**cập nhật 44** khi set home thì gốc tọa độ trên frame video, gốc home cnc cần lưu để khi tắt hệ thống đi mở lại vẫn đúng vị trí như khi set.
+vị trí cuối cùng của cnc và tương ứng với vị trí đó là touch pen position trên frame video , khi khởi động lại các vị trí này cần được load lại.
+    vd khi có các vị trí home cnc, gốc tọa độ frame video, vị trí cuối của cnc head , vị trí cuối của touch pen . click nút go to x=0, y=0 hoặc stop and go home thì cnc sẽ di chuyển về home cnc , tương tự touch pen postion cũng sẽ về gốc tọa độ video frame
