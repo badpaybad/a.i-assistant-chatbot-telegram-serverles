@@ -128,13 +128,9 @@ void onWakeupwordReceived(const String& topic, const String& payload) {
 }
 
 void setup() {
-  Serial.begin(1000000);
-   // Đợi tối đa 3 giây để Serial Monitor trên máy tính kết nối
-  unsigned long startWait = millis();
-  while (!Serial && (millis() - startWait < 3000)) {
-    delay(10);
-  }
-  
+  Serial.begin(115200);
+  delay(1000); // Brief delay for Serial monitor connection
+
   Serial.println("\n====================================");
   Serial.println("      ESP32 OS INITIALIZING         ");
   Serial.println("====================================");
