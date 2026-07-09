@@ -128,11 +128,26 @@ void onWakeupwordReceived(const String& topic, const String& payload) {
 }
 
 void setup() {
-  Serial.begin(115200);
-  delay(1000); // Brief delay for Serial monitor connection
+  Serial.begin(1000000);
+   // Đợi tối đa 3 giây để Serial Monitor trên máy tính kết nối
+  unsigned long startWait = millis();
+  while (!Serial && (millis() - startWait < 3000)) {
+    delay(10);
+  }
+  
   Serial.println("\n====================================");
   Serial.println("      ESP32 OS INITIALIZING         ");
   Serial.println("====================================");
+
+  // Check PSRAM and Free Heap memory status on boot
+  if (psramFound()) {
+    Serial.printf("[Memory] PSRAM initialized successfully! Size: %d bytes\n", ESP.getPsramSize());
+    Serial.printf("[Memory] Free PSRAM: %d bytes\n", ESP.getFreePsram());
+  } else {
+    Serial.println("⚠️ [Memory] CRITICAL WARNING: PSRAM is NOT enabled or not found!");
+    Serial.println("            Please enable PSRAM (OPI PSRAM) in Arduino IDE -> Tools -> PSRAM.");
+  }
+  Serial.printf("[Memory] Free Internal DRAM Heap: %d bytes\n", ESP.getFreeHeap());
   
   // Load stored Gemini API key and model name
   preferences.begin("gemini-config", true);

@@ -251,6 +251,9 @@ void monitorWiFi() {
       Serial.print(" dBm | Quality: ");
       Serial.print(quality);
       Serial.println("%");
+      
+      // Log free memory status dynamically
+      Serial.printf("[Memory] Free DRAM: %d bytes | Free PSRAM: %d bytes\n", ESP.getFreeHeap(), ESP.getFreePsram());
     }
   } else {
     // Handle connection loss

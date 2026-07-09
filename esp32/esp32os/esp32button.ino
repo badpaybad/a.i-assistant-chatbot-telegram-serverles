@@ -2,10 +2,10 @@
 
 extern Preferences preferences;
 
-#define RESET_BUTTON_PIN 1 // External reset button connected to GPIO 1
+#define RESET_BUTTON_PIN 9 // External reset button connected to GPIO 9 chân còn lại của nút đấu GND
 #define BTN_HOLD_RESET_MS 10000 // hold this many ms to trigger factory reset
 
-// FreeRTOS task: polls RESET button (GPIO 1) every 50 ms.
+// FreeRTOS task: polls RESET button (GPIO 9) every 50 ms.
 //
 // Hold timeline:
 //   0 s  → pressed, timer starts
@@ -23,6 +23,8 @@ void buttonPollingTask(void* param) {
   // ── Guard 1: boot settle delay ──
   vTaskDelay(pdMS_TO_TICKS(2000));
 
+  // Serial.println("[Button] GPIO 9 : " + digitalRead(RESET_BUTTON_PIN));
+
   // ── Guard 2: wait for pin to be observed HIGH (idle/released) ──
   // A valid button press MUST be a HIGH→LOW transition.
   {
@@ -36,7 +38,7 @@ void buttonPollingTask(void* param) {
       vTaskDelay(pdMS_TO_TICKS(100));
     }
     if (!gpioReady) {
-      Serial.println("[Button] GPIO 1 stuck LOW after 15s – button monitoring disabled.");
+      Serial.println("[Button] GPIO 9 stuck LOW after 15s – button monitoring disabled.");
       Serial.flush();
       vTaskDelete(NULL);
       return;
