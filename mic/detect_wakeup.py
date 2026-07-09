@@ -297,7 +297,7 @@ def convert_to_spectrogram(audio_np):
     max_val = tf.reduce_max(tf.abs(audio))
     if max_val > 0:
         audio = audio / max_val
-    stft = tf.signal.stft(audio, frame_length=480, frame_step=320)
+    stft = tf.signal.stft(audio, frame_length=240, frame_step=160, fft_length=512)
     spectrogram = tf.abs(stft)
     return spectrogram[..., tf.newaxis].numpy()
 
@@ -305,7 +305,7 @@ def convert_to_spectrogram(audio_np):
 print("🔍 Đang chạy kiểm thử tiền xử lý...")
 test_audio = np.zeros(16000, dtype=np.float32)
 test_spec = convert_to_spectrogram(test_audio)
-print(f"✅ Kích thước spectrogram thử nghiệm: {test_spec.shape} (Kỳ vọng: (49, 257, 1))")
+print(f"✅ Kích thước spectrogram thử nghiệm: {test_spec.shape} (Kỳ vọng: (99, 257, 1))")
 
 # Start audio stream
 print(f"🎙️ Đang mở micro (Tần số mẫu: {SAMPLING_RATE}Hz, Kích thước block: {BLOCK_SIZE} mẫu)...")

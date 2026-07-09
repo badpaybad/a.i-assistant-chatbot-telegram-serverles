@@ -44,7 +44,7 @@ volatile bool setup_complete_received = false;
 #define SAMPLING_RATE   16000
 #define NUM_CLASSES     3       // Labels: background, oi_gemini, unknown
 
-#define SPEC_ROWS       49
+#define SPEC_ROWS       99
 #define SPEC_COLS       257
 #define INPUT_SIZE      (SPEC_ROWS * SPEC_COLS)
 #define FFT_SAMPLES     512  
@@ -533,16 +533,16 @@ void wakeup_detection_task(void *pvParameters) {
       float input_zero_point = ml.in->params.zero_point; // = -128 from model
 
       // === STEP 2: Sliding Spectrogram Buffer Optimization ===
-      // Since the window shifted by 5 steps of 320 samples (1600 samples / 100ms), 
-      // the first 44 rows of the spectrogram are identical to the last 44 rows of the previous window.
-      // We shift the first 44 rows of spectrogram_features up by 5 rows, and ONLY calculate 5 new FFT rows.
+      // Since the window shifted by 10 steps of 160 samples (1600 samples / 100ms), 
+      // the first 89 rows of the spectrogram are identical to the last 89 rows of the previous window.
+      // We shift the first 89 rows of spectrogram_features up by 10 rows, and ONLY calculate 10 new FFT rows.
       int start_row = 0;
       if (spectrogram_initialized) {
-        // Shift 44 rows (44 * 257 bytes) to the front
-        memmove(spectrogram_features, spectrogram_features + (5 * SPEC_COLS), (SPEC_ROWS - 5) * SPEC_COLS * sizeof(int8_t));
-        start_row = SPEC_ROWS - 5; // Only compute the 5 newest rows
+        // Shift 89 rows (89 * 257 bytes) to the front
+        memmove(spectrogram_features, spectrogram_features + (10 * SPEC_COLS), (SPEC_ROWS - 10) * SPEC_COLS * sizeof(int8_t));
+        start_row = SPEC_ROWS - 10; // Only compute the 10 newest rows
       } else {
-        start_row = 0; // Compute all 49 rows on startup/resume
+        start_row = 0; // Compute all 99 rows on startup/resume
         spectrogram_initialized = true;
       }
 
@@ -552,19 +552,19 @@ void wakeup_detection_task(void *pvParameters) {
           vTaskDelay(pdMS_TO_TICKS(1));
         }
         
-        int start_idx = row * 320; // FRAME_STEP = 320, same as train.py
+        int start_idx = row * 160; // FRAME_STEP = 160, same as train.py
         int feature_index = row * SPEC_COLS;
         
         // === STEP 3: Hann Window + Zero-pad (matches tf.signal.stft default behaviour) ===
         for (int i = 0; i < FFT_SAMPLES; i++) {
-          if (i < 480) {
+          if (i < 240) { // FRAME_LENGTH = 240
             int read_idx = (audio_buffer_write_ptr + start_idx + i) % 16000;
             float sample = ((float)loop_audio_buffer[read_idx] / 32768.0f) - dc_offset;
             if (max_val > 0.0f) {
               sample = sample / max_val; // Peak normalize centered signal
             }
-            // Periodic Hann window (N=480) — matches TensorFlow stft default
-            float w = 0.5f * (1.0f - cosf((2.0f * PI * i) / 480.0f));
+            // Periodic Hann window (N=240) — matches TensorFlow stft default
+            float w = 0.5f * (1.0f - cosf((2.0f * PI * i) / 240.0f));
             vReal[i] = sample * w;
           } else {
             vReal[i] = 0.0f; // Zero-pad to FFT_SAMPLES=512

@@ -46,3 +46,10 @@ esp32 cần dùng firebase firestore với config  firebase: {
   } để nhận IP mới từ api esp32hub rồi thực hiện chat voice bình thường. khi esp32 nhận được ip và connect IP thành công cần xóa dữ liệu trên firestore để tiết kiêm chi phí , có thể tham khảo code ở esp32/esp32os/esp32firebase.ino 
 
 Nếu chưa lấy được IP từ firestore thì vẫn dùng IP ở esp32/detect_wakeup/dunp_config.h khi nào lấy được IP thì khởi động lại socket để kết nối IP mới 
+
+**cập nhật 4**
+Cấu hình âm thanh xử lý cho mượt và tăng độ chồng chập (overlap) nhận dạng âm tiết ngắn tốt hơn:
+* Dùng cấu hình `FRAME_LENGTH = 240` và `FRAME_STEP = 160`.
+* Điều này đồng nghĩa với việc mô hình wake-word sẽ được huấn luyện và suy luận với spectrogram đầu vào có `SPEC_ROWS = 99` hàng phổ thay vì 49 hàng phổ cũ.
+* Các logic trong code ESP32 và API esp32 hub/phương thức nhận diện local phải sử dụng đúng cấu hình này để đồng nhất quá trình xử lý âm thanh.
+ 

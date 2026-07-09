@@ -12,3 +12,9 @@ nếu người dùng nói : "làm ơn dừng lại," "dừng lại" với âm th
 Không cần kích hoạt nhận diện wakr-word mỗi khi trả lời xong, chỉ kích hoạt khi lúc mới khởi động , sau 1 phút mà không xử lý tts ra chữ được thì lúc nay không stream lên api nữa, quay lại nghe du ơi 
 
 **cập nhật 2** xem code cameraip/train/train_yolo_tiny.py hỗ trợ cả cpu , cuda ... cần cập nhật cho mic/train.py để hỗ trợ cả cpu , cuda ... cho việc train 
+
+**cập nhật 3** Hiện tại bạn đang cấu hình: FRAME_LENGTH = 480 và FRAME_STEP = 320.
+Bạn có thể giảm FRAME_STEP xuống (ví dụ 240 hoặc 160) để tăng độ chồng chập (overlap). Việc này giúp ảnh spectrogram mịn hơn, chi tiết hơn theo trục thời gian, từ đó giúp nhận diện các âm tiết ngắn tốt hơn.
+cập nhật cho code esp32 , api esp32 hub ở yêu cầu esp32/esp32os/esp32chatvoice.md về FRAME_LENGTH=240 FRAME_STEP =160. để đồng nhất nhất quán xử lý âm thanh cho mượt 
+
+**cập nhật 4** sau khi train xong đã tạo file model_data.h cần copy thành esp32/esp32os/wakeupword_model_data.h , cần khai báo là const vd const unsigned char model_tflite[] __attribute__((aligned(16))) = .... tối ưu cho esp32

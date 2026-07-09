@@ -61,11 +61,13 @@ khi detect được wakeup word thì không phát ok_wav nữa, xử lý như vo
 **cập nhật 10** wifi connect thành công thì cần play ok_wifi.wav (xử lý giống ok_wav).
 
 **cập nhật 11**
-trên mạch  esp32 s3 n16r8 dùng nút boot, khi nhấn giữ 10 giây thì sẽ xóa hết config và khởi động lại để mở hostpot và config lại. 
+trên mạch  esp32 s3 n16r8 dùng nút boot, khi nhấn giữ 10 giây thì sẽ xóa hết config và khởi động lại để mở hostpot và config lại.
 
-**cập nhật 12** [DONE] ở esp32/esp32os/esp32uiconfig.ino bổ xung thêm config cho google firebase firestore . 
+**cập nhật 12** [DONE] ở esp32/esp32os/esp32uiconfig.ino bổ xung thêm config cho google firebase firestore .
 tạo thêm esp32firebase.ino để xử lý đọc ghi lên firestore
 
-**cập nhật 13** xem code ở  mic/detect_wakeup.py , cần esp32 cũng dùng chat voice live gemini api được 
+**cập nhật 13** xem code ở  mic/detect_wakeup.py , cần esp32 cũng dùng chat voice live gemini api được
+
+**cập nhật 14** cần xem esp32/esp32os/esp32chatvoice.md để dùng mic stream lên api esp32 hub để làm chat voice, lúc này mic chỉ capture voice gửi lên api esp32 hub và nhận stream audio để phát loa
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

@@ -240,8 +240,8 @@ SAMPLING_RATE = 16000
 DURATION_SEC = 1
 EXPECTED_SAMPLES = SAMPLING_RATE * DURATION_SEC 
 
-FRAME_LENGTH = 480  
-FRAME_STEP = 320    
+FRAME_LENGTH = 240  
+FRAME_STEP = 160    
 
 # ==========================================
 # HÀM ĐỌC VÀ CHUẨN HÓA MỌI ĐỊNH DẠNG ÂM THANH
@@ -302,7 +302,7 @@ def load_and_pad_audio(file_path):
     return audio
 
 def convert_to_spectrogram(audio):
-    stft = tf.signal.stft(audio, frame_length=FRAME_LENGTH, frame_step=FRAME_STEP)
+    stft = tf.signal.stft(audio, frame_length=FRAME_LENGTH, frame_step=FRAME_STEP, fft_length=512)
     spectrogram = tf.abs(stft)
     return spectrogram[..., tf.newaxis]
 
@@ -487,6 +487,22 @@ try:
     # Câu lệnh: xxd -i model.tflite > model_data.h
     with open(HEADER_MODEL_PATH, "w") as output_h_file:
         subprocess.run(["xxd", "-i", TFLITE_MODEL_PATH], stdout=output_h_file, check=True)
+    
+    # Đọc lại và chuyển đổi thành const + aligned(16)
+    with open(HEADER_MODEL_PATH, "r") as f:
+        h_content = f.read()
+    
+    h_content = h_content.replace(
+        "unsigned char model_tflite[]",
+        "const unsigned char model_tflite[] __attribute__((aligned(16)))"
+    )
+    h_content = h_content.replace(
+        "unsigned int model_tflite_len",
+        "const unsigned int model_tflite_len"
+    )
+    
+    with open(HEADER_MODEL_PATH, "w") as f:
+        f.write(h_content)
         
     print(f"🎉 HOÀN THÀNH XUẤT THÀNH CÔNG! Bạn có thể lấy file '{HEADER_MODEL_PATH}' nạp thẳng vào ESP32.")
 
@@ -500,7 +516,7 @@ except FileNotFoundError:
         
     with open(HEADER_MODEL_PATH, "w") as f_h:
         f_h.write("// Sinh ra tự động bằng mã Python thuần thay thế xxd\n")
-        f_h.write(f"const unsigned char model_tflite[] = {{\n  ")
+        f_h.write(f"const unsigned char model_tflite[] __attribute__((aligned(16))) = {{\n  ")
         
         # Biến đổi từng byte nhị phân sang mã Hex (0x00)
         hex_bytes = [f"0x{b:02x}" for b in tflite_content]
@@ -514,5 +530,17 @@ except FileNotFoundError:
         f_h.write(f"const unsigned int model_tflite_len = {len(tflite_content)};\n")
         
     print(f"🎉 HOÀN THÀNH PHƯƠNG ÁN DỰ PHÒNG! File '{HEADER_MODEL_PATH}' đã sẵn sàng.")
+
+# Tự động copy sang esp32/esp32os/wakeupword_model_data.h nếu thư mục đích tồn tại
+import shutil
+import os
+esp32_dest_dir = os.path.join("..", "esp32", "esp32os")
+esp32_dest_file = os.path.join(esp32_dest_dir, "wakeupword_model_data.h")
+if os.path.exists(esp32_dest_dir):
+    try:
+        shutil.copy(HEADER_MODEL_PATH, esp32_dest_file)
+        print(f"✨ Đã tự động copy và cập nhật '{esp32_dest_file}'")
+    except Exception as e:
+        print(f"⚠️ Không thể tự động copy sang ESP32 folder: {e}")
 
 print("LABELS: ",LABELS)
