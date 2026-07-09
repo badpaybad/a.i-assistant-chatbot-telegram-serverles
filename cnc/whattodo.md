@@ -190,23 +190,23 @@ Bổ xung thêm check box cho Sketch Settings, để apply filter hoặc không
             - các ation giả lập touch ( tab, doulbe tap , swipe down, swipe up, swipe left, swipe right, pen down, pen up) lưu vị trí x,y cùng cnc header
                 swipe down (mô phỏng giống khi click btn-gesture-swipe-down ) là mũi tên đi lên, swipe up (mô phỏng giống btn-gesture-swipe-up click) là múi tên đi xuống, do trục tọa độ đi theo set home tương tự cho tab, double tab swipe left, swipe down, long press
             - go to keep state: giữ nguyên trạng thái bút (vd đang down) để di chuyển đến vị trí x,y chọn
-            - dwell 0.25s : tạm dừng 0.25 giây 
+            - dwell 0.25s : tạm dừng 0.25 giây
             - set end: lưu vị trí x,y trên ảnh cùng cnc header và but cần nhấc lên , khi chạy kịch bản sẽ về vị trí cuối
         khi click nút save scenario thi cho người dùng lưu thành json và download về.
         có nút load scenario chọn json file load lại
         sau khi chuột phải set end hoặc trong scenario có điểm set end thì enable nút chạy , để click vào thì đầu cnc sẽ chạy theo kịch bản.
-        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end vẫn cho phép đổi thứ tự trong scenario 
+        có nút sửa kịch bản hiện modal góc trái có thể di chuyển. để xóa item kịch bản và load lại kịch bản với các thay đổi. có thể thay đổi thứ tự các step trong scenario, đầu cuối vẫn là set begin, set end vẫn cho phép đổi thứ tự trong scenario
             các step chạy lần lượt cần xong rồi mới tới step tiếp theo
-không cần test tự động trên chrome, sửa xong tôi tự test 
+không cần test tự động trên chrome, sửa xong tôi tự test
 
-**cập nhật 31** generateGcodeFromSegments đang reset  lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri"); xung đột set home, ở phần image to gcode này chỉ cần vẽ bắt đầu từ vị trí hiện tại của đầu cnc 
+**cập nhật 31** generateGcodeFromSegments đang reset  lines.push("G10 L20 P1 X0 Y0 ; Reset vi tri"); xung đột set home, ở phần image to gcode này chỉ cần vẽ bắt đầu từ vị trí hiện tại của đầu cnc
 
-**cập nhật 32** ở generateGcodeFromSegments ưu tiên vẽ các đường connected dài trước. 
+**cập nhật 32** ở generateGcodeFromSegments ưu tiên vẽ các đường connected dài trước.
 
 **cập nhật 33** scenario thêm nut run loop cạnh nút run để làm vòng lặp chạy kịch bản. đến khi click stop loop
     sau khi run loop, nút này toggle thành stop loop, khi stop loop sẽ không chạy run nữa.
     nút run trước đó đang click chạy kịch bản 1 lần
-    run loop chạy kịch bản vòng lặp kịch bản xong 1 lần tới lần tiếp theo 
+    run loop chạy kịch bản vòng lặp kịch bản xong 1 lần tới lần tiếp theo
 xem logic btnRunLoopScenario việc enable khi set end xong cần giống btnRunScenario . không cần state phức tạp, khi start run loop rồi, thì toggle chuyển thành stop loop. click stop loop dừng lại không loop nữa
 
 **cập nhật 34** kiểm tra việc set home với button btn-reset-home , toàn bộ hệ thống chỉ có 1 điểm set home này, khi cnc mất điện hoặc reset việc chạy lại điểm set home này cần được giữ
@@ -217,24 +217,29 @@ Không cần set home lại dưới bất kỳ action nào, cũng không cần s
 Không cần set alarm lock tự động khi chạy các kịch bản
     vậy khi nào bị alarm lock cnc ? việc này chỉ cần làm manual với nút click trên UI , jog-unlock toggle làm việc đó
 
-Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản, xuất hiện alarm lock khi thực hiện lock xong cần unlock trở lại 
+Nếu có lệnh stop và clear buffer tự động khi chạy xong kịch bản, xuất hiện alarm lock khi thực hiện lock xong cần unlock trở lại
 
-**cập nhật 35** chuyển giao diện các text đang là tiếng Anh sang Tiếng Việt 
+**cập nhật 35** chuyển giao diện các text đang là tiếng Anh sang Tiếng Việt
 
-**cập nhật 36** xây dựng cơ chế đa ngôn ngữ (i18n) chuẩn bằng JSON trong thư mục static/lang (en.json, vi.json). HTML sử dụng các tag thuộc tính data-i18n, data-i18n-placeholder, data-i18n-title. Javascript sử dụng hàm t(key, replacements) để dịch động các thông điệp hệ thống, log và tooltip trạng thái mà không bị mất key khi chuyển đổi qua lại. 
+**cập nhật 36** xây dựng cơ chế đa ngôn ngữ (i18n) chuẩn bằng JSON trong thư mục static/lang (en.json, vi.json). HTML sử dụng các tag thuộc tính data-i18n, data-i18n-placeholder, data-i18n-title. Javascript sử dụng hàm t(key, replacements) để dịch động các thông điệp hệ thống, log và tooltip trạng thái mà không bị mất key khi chuyển đổi qua lại.
 
-**cập nhật 37** vị trí cuối cùng của đầu CNC khônng phải là vị set home. vị trí set home đã thống nhất ở **cập nhật 34** chỉ duy nhất viết set home khi button btn-reset-home được click . 
-khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu cnc cho đúng theo vị trí cuối của cnc và vị trí được set home 
-    Vd hệ thống khi set home xong . di chuyển đầu CNC ra một vị trí bất kỳ. khi hệ thống mất điện bật lại cần xác định được vị trí cnc head để nếu click go to x=0 y=0 hoặc Stop & go home thì đầu cnc về đúng vị trí set home, cần match giữa frame ảnh và cnc head để tính toán được vị trí đúng. 
+**cập nhật 37** vị trí cuối cùng của đầu CNC khônng phải là vị set home. vị trí set home đã thống nhất ở **cập nhật 34** chỉ duy nhất viết set home khi button btn-reset-home được click .
+khi tắt máy khởi động lại hệ thống, cần tính toán lại đầu cnc cho đúng theo vị trí cuối của cnc và vị trí được set home
+    Vd hệ thống khi set home xong . di chuyển đầu CNC ra một vị trí bất kỳ. khi hệ thống mất điện bật lại cần xác định được vị trí cnc head để nếu click go to x=0 y=0 hoặc Stop & go home thì đầu cnc về đúng vị trí set home, cần match giữa frame ảnh và cnc head để tính toán được vị trí đúng.
 
-**cập nhật 38** hiệu chỉnh thống nhất hướng trục Y khi tính toán sai lệch giữa camera Bed Coordinate System (BCS) và hệ trục tọa độ thực tế của máy CNC. Trục Y của camera (BCS) tăng theo chiều đi lên, ngược với trục Y của máy CNC (tăng theo chiều đi xuống). Do đó, khoảng lệch Y được tính toán bằng live camera hoặc khôi phục gốc Home cần được đảo dấu (`y_cnc = -(y_head_bed - y_home_bed)`) để tránh việc đầu CNC di chuyển ngược hướng trục Y khi thực hiện Go to Home hoặc di chuyển về 0. 
+**cập nhật 38** hiệu chỉnh thống nhất hướng trục Y khi tính toán sai lệch giữa camera Bed Coordinate System (BCS) và hệ trục tọa độ thực tế của máy CNC. Trục Y của camera (BCS) tăng theo chiều đi lên, ngược với trục Y của máy CNC (tăng theo chiều đi xuống). Do đó, khoảng lệch Y được tính toán bằng live camera hoặc khôi phục gốc Home cần được đảo dấu (`y_cnc = -(y_head_bed - y_home_bed)`) để tránh việc đầu CNC di chuyển ngược hướng trục Y khi thực hiện Go to Home hoặc di chuyển về 0.
 
 **cập nhật 39** ở floating window video frame, trên top khi nhận diện được các object trong frame, cần hiện tên các label , khi nhấn vào 1 label thì đầu cnc sẽ di chuyển tới vị trí đó. (tâm bbox của cnc head sẽ di chuyển dến tâm bbox của object detedcted)
 
 **cập nhật 40** các text ở cnc/static/app.js innertext, label , log to console cần chuyển sang tiếng Việt và dùng cơ chế i18n (đa ngôn ngữ) ở **cập nhật 36**
 
-Khi droplist change language thay đổi thì các tag html5 đã thay đổi theo ngôn ngữ, nhưng các data bind động bằng javascript thì chưa, cần thay đổi theo lang được chọn, lang được chọn cần lưu vào localstorage để lần sau khi vào lại website sẽ dùng lang đã chọn 
+Khi droplist change language thay đổi thì các tag html5 đã thay đổi theo ngôn ngữ, nhưng các data bind động bằng javascript thì chưa, cần thay đổi theo lang được chọn, lang được chọn cần lưu vào localstorage để lần sau khi vào lại website sẽ dùng lang đã chọn
 
 **cập nhật 41** floating window video frame, thêm side pannel bên trái frame video , side panel bên trái này ẩn hiện được. có các button chức năng bên trong hoạt động cho scencario.
     các button sẽ có chức năng giống như chuột phải vào video frame : set start, set end ....
         khi các button được click thì dựa vào vị trí hiện tại của cnc head để ghi nhận vị trí và thao tác tương ứng các step của scenario.
+
+**cập nhật 42** tìm hiểu tại sao khi click trên video frame mà cnc head di chuyển đến lại chưa chính xác, đầu but touch cần di chuyển tới đúng vị trí click. thường đầu bút touch khi set home thị vị trí x,y là đúng đầu bút touch gắn trên cnc head rồi.
+
+bổ xung thêm menu của việc set 4 góc aruco, thêm 1 nút set touch pen position. lúc này cần đánh dấu match giữa x,y của cnc head và vị trí touch pen position trên ảnh. việc di chuyển lúc này sẽ có tính toán dựa trên pixel trên frame video cần ánh xạ bù trừ x,y cho cnc head để di chuyển đến chính xác vị trí click trên ảnh . với giả định khi đã set home xong sẽ đến set touch pen position . từ đó gốc tọa độ trên frame video, gốc home cnc , cnc head position (x,y) và touch pen position trên frame video sẽ luôn có công thức và offset để bù trừ khi tính toán và di chuyển
+    khi set home thì gốc tọa độ trên frame video cũng là home của cnc và cnc head đang có touch pen nằm ở vị trí gốc tọa độ frame, x,y cnc cũng đang ở gốc tọa độ home. việc cnc di chuyển thì touch pen position cũng di chuyển tương ứng , bỏ qua điểm trung tâm khi A.I bbox được cnc head và không dùng điểm này làm tính toán mà dùng touch pen position để tính toán 

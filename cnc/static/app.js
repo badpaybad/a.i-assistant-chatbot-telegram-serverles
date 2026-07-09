@@ -1245,10 +1245,6 @@ function setupEventListeners() {
             logSystemMessage(t("Không thể di chuyển: máy chưa kết nối."));
             return;
         }
-        if (!isCalibrated) {
-            logSystemMessage(t("Không thể click để di chuyển: chưa hoàn thành căn chỉnh."));
-            return;
-        }
 
         const rect = cameraStreamImg.getBoundingClientRect();
         const clickX = e.clientX - rect.left;
@@ -1257,6 +1253,17 @@ function setupEventListeners() {
         // Scale to 720x720 coordinate space (cập nhật 11)
         const cx = (clickX / rect.width) * 720.0;
         const cy = (clickY / rect.height) * 720.0;
+
+        if (window.isWaitingForTouchPenClick) {
+            window.isWaitingForTouchPenClick = false;
+            await handleSetTouchPenClick(cx, cy);
+            return;
+        }
+
+        if (!isCalibrated) {
+            logSystemMessage(t("Không thể click để di chuyển: chưa hoàn thành căn chỉnh."));
+            return;
+        }
 
         // arucoStandardPoints
         const insideStrict = isPointInPolygon(cx, cy, arucoStandardPoints);
@@ -1321,6 +1328,26 @@ function setupEventListeners() {
         }
     }
 
+    async function handleSetTouchPenClick(px, py) {
+        logSystemMessage(t("Đang đặt vị trí bút touch tại pixel ({x}, {y})...", { x: px.toFixed(1), y: py.toFixed(1) }));
+        try {
+            const res = await fetch("/api/calibration/set_touch_pen", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ x: px, y: py })
+            });
+            const data = await res.json();
+            if (data.status === "ok") {
+                logSystemMessage(t("🖊️ Đặt vị trí bút touch thành công!"));
+                fetchCalibrationConfig();
+            } else {
+                logSystemMessage(t("❌ Đặt vị trí bút touch thất bại: {message}", { message: data.message }));
+            }
+        } catch (err) {
+            logSystemMessage(t("❌ Lỗi mạng khi đặt vị trí bút touch: {error}", { error: err }));
+        }
+    }
+
     // Camera stream right-click to manually set ArUco corners (cập nhật 13)
     cameraStreamImg.addEventListener("contextmenu", (e) => {
         e.preventDefault();
@@ -1355,7 +1382,8 @@ function setupEventListeners() {
             { id: "TL", label: "📐 Đặt Trên - Trái (TL)" },
             { id: "TR", label: "📐 Đặt Trên - Phải (TR)" },
             { id: "BL", label: "📐 Đặt Dưới - Trái (BL)" },
-            { id: "BR", label: "📐 Đặt Dưới - Phải (BR)" }
+            { id: "BR", label: "📐 Đặt Dưới - Phải (BR)" },
+            { id: "TOUCH_PEN", label: "🖊️ Đặt Vị Trí Bút Touch" }
         ];
 
         corners.forEach(corner => {
@@ -1364,7 +1392,11 @@ function setupEventListeners() {
             item.innerText = t(corner.label);
             item.addEventListener("click", async () => {
                 menu.remove();
-                await handleCornerArucoClick(corner, px, py);
+                if (corner.id === "TOUCH_PEN") {
+                    await handleSetTouchPenClick(px, py);
+                } else {
+                    await handleCornerArucoClick(corner, px, py);
+                }
                 // logSystemMessage(`Setting manual corner ${corner.id} at pixel (${px.toFixed(1)}, ${py.toFixed(1)})...`);
                 // try {
                 //     const res = await fetch("/api/calibration/set_manual_corner", {
@@ -1565,6 +1597,10 @@ function setupEventListeners() {
                 btn.disabled = !isConnected;
             }
         }
+        const btnSetTouchPen = document.getElementById("btn-set-touch-pen");
+        if (btnSetTouchPen) {
+            btnSetTouchPen.disabled = !isConnected || !isHomeSet;
+        }
         if (btnMoveToCenter) {
             btnMoveToCenter.disabled = !isCalibrated || !isHomeSet || !isConnected || isAbortingMovingAround;
         }
@@ -1757,6 +1793,14 @@ function setupEventListeners() {
         if (btnSetCncTR) btnSetCncTR.addEventListener("click", () => setCncCorner("TR"));
         if (btnSetCncBR) btnSetCncBR.addEventListener("click", () => setCncCorner("BR"));
         if (btnSetCncBL) btnSetCncBL.addEventListener("click", () => setCncCorner("BL"));
+
+        const btnSetTouchPen = document.getElementById("btn-set-touch-pen");
+        if (btnSetTouchPen) {
+            btnSetTouchPen.addEventListener("click", () => {
+                window.isWaitingForTouchPenClick = true;
+                logSystemMessage(t("👉 Click chuột trái lên khung hình camera tại vị trí đầu bút touch."));
+            });
+        }
 
         const btnSetAruco = document.getElementById("btn-set-aruco");
         if (btnSetAruco) {

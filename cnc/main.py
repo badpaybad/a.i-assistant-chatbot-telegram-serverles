@@ -193,6 +193,7 @@ class ControllerState:
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
         self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
         self.home_pixel = cal_settings.get("home_pixel", [360.0, 360.0])
+        self.touch_pen_pixel = cal_settings.get("touch_pen_pixel", None)
 
         self.latest_detected_markers = dict(self.aruco_standard_points) # sync with manual points (cập nhật 19)
         self.latest_detected_markers_time: Dict[str, float] = {name: time.time() for name in self.aruco_standard_points}
@@ -240,8 +241,12 @@ class ControllerState:
                 src_pts.append(px)
                 dst_pts.append(cx)
                 
-        # 2. Add home point mapping if set
-        if self.home_set and (getattr(self, "home_pixel", None) is not None):
+        # 2. Add home point mapping if set (Cập nhật 42: Sử dụng touch_pen_pixel ánh xạ về [0,0])
+        if self.home_set and (getattr(self, "touch_pen_pixel", None) is not None):
+            src_pts.append(self.touch_pen_pixel)
+            dst_pts.append([0.0, 0.0])
+        elif self.home_set and (getattr(self, "home_pixel", None) is not None):
+            # Fallback to home_pixel if touch_pen_pixel is not set yet
             src_pts.append(self.home_pixel)
             dst_pts.append([0.0, 0.0])
             
@@ -781,6 +786,13 @@ class CameraManager:
                                 cv2.circle(frame, pt_int, 6, (0, 140, 255), -1)
                                 cv2.putText(frame, f"{name} (manual)", (pt_int[0] + 8, pt_int[1] - 8),
                                             cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 140, 255), 1)
+
+                    # Draw manually set touch pen position (cập nhật 42)
+                    if getattr(state, "touch_pen_pixel", None) is not None:
+                        pt_int = (int(state.touch_pen_pixel[0]), int(state.touch_pen_pixel[1]))
+                        cv2.circle(frame, pt_int, 6, (255, 0, 255), -1)
+                        cv2.putText(frame, "Touch Pen", (pt_int[0] + 8, pt_int[1] - 8),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 255), 1)
 
                     # ── Draw standard ArUco coordinate system (bright) ──────────────────────────────
                     # Primary choice: state.aruco_standard_points
@@ -1850,7 +1862,8 @@ async def get_calibration_status():
         "home_set": state.home_set,
         "moving_around_running": getattr(state, "moving_around_running", False),
         "aruco_standard_points": state.aruco_standard_points,
-        "cnc_points": state.cnc_points
+        "cnc_points": state.cnc_points,
+        "touch_pen_pixel": state.touch_pen_pixel
     }
 
 @app.post("/api/calibration/record")
@@ -1898,7 +1911,8 @@ async def get_calibration_config():
         "aruco_standard_points": state.aruco_standard_points,
         "cnc_points": state.cnc_points,
         "calibrated": state.calibration_matrix is not None,
-        "draw_overlay": state.draw_overlay
+        "draw_overlay": state.draw_overlay,
+        "touch_pen_pixel": state.touch_pen_pixel
     }
 
 class SetCNCConfig(BaseModel):
@@ -1967,6 +1981,37 @@ async def set_manual_corner(config: ManualCornerConfig):
         "aruco_standard_points": state.aruco_standard_points
     }
 
+class SetTouchPenConfig(BaseModel):
+    x: float
+    y: float
+
+@app.post("/api/calibration/set_touch_pen")
+async def set_touch_pen(config: SetTouchPenConfig):
+    if not state.connected:
+        return JSONResponse({"status": "error", "message": "CNC machine is not connected"}, status_code=400)
+    if not state.home_set:
+        return JSONResponse({"status": "error", "message": "Please set Home first."}, status_code=400)
+        
+    state.touch_pen_pixel = [config.x, config.y]
+    state.update_calibration_matrix()
+    
+    save_calibration_settings({
+        "points": state.calibration_points,
+        "matrix": state.calibration_matrix,
+        "draw_overlay": state.draw_overlay,
+        "home_set": state.home_set,
+        "home_markers": state.home_markers,
+        "home_snapshot": state.home_snapshot,
+        "home_pixel": state.home_pixel,
+        "touch_pen_pixel": state.touch_pen_pixel
+    })
+    
+    return {
+        "status": "ok",
+        "message": f"Successfully set touch pen position to pixel ({config.x:.1f}, {config.y:.1f})",
+        "touch_pen_pixel": state.touch_pen_pixel,
+        "calibrated": state.calibration_matrix is not None
+    }
 @app.post("/api/calibration/clear")
 async def clear_calibration():
     state.calibration_points = {}
@@ -2218,6 +2263,9 @@ async def set_home(camera_index: int = 4):
         state.home_markers = dict(state.latest_detected_markers)
     state.home_snapshot = snapshot_path
 
+    state.touch_pen_pixel = None
+    state.update_calibration_matrix()
+
     # Reset wpos in state to zeros
     state.wpos = [0.0, 0.0, 0.0]
 
@@ -2229,7 +2277,8 @@ async def set_home(camera_index: int = 4):
         "home_set": state.home_set,
         "home_markers": state.home_markers,
         "home_snapshot": state.home_snapshot,
-        "home_pixel": state.home_pixel
+        "home_pixel": state.home_pixel,
+        "touch_pen_pixel": state.touch_pen_pixel
     })
 
     return {
@@ -2238,7 +2287,8 @@ async def set_home(camera_index: int = 4):
         "home_set": state.home_set,
         "home_markers": state.home_markers,
         "has_snapshot": snapshot_path is not None,
-        "home_pixel": state.home_pixel
+        "home_pixel": state.home_pixel,
+        "touch_pen_pixel": state.touch_pen_pixel
     }
 
 
@@ -2259,7 +2309,8 @@ async def get_home_status():
         "home_markers": state.home_markers,
         "has_snapshot": state.home_snapshot is not None and os.path.exists(state.home_snapshot or ""),
         "wpos": state.wpos,
-        "home_pixel": state.home_pixel
+        "home_pixel": state.home_pixel,
+        "touch_pen_pixel": state.touch_pen_pixel
     }
 
 
@@ -2601,41 +2652,12 @@ async def move_to_object(config: MoveToObjectConfig):
         wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
         wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
 
-    # 2. Try to find the cnchead in current yolo detections for relative alignment
-    cnchead_obj = None
-    t_diff = time.time() - getattr(state, "latest_yolo_detection_time", 0.0)
-    if t_diff < 2.0 and getattr(state, "latest_yolo_detections", None):
-        for d in state.latest_yolo_detections:
-            cid = d["class_id"]
-            class_name = state.class_names.get(cid, f"Obj {cid}")
-            if class_name == "cnchead":
-                cnchead_obj = d
-                break
-
-    if cnchead_obj is not None:
-        cx_head, cy_head = cnchead_obj["center"]
-        # Map cnchead pixel center to workspace coordinates
-        denom_head = M[2, 0] * cx_head + M[2, 1] * cy_head + M[2, 2] if M.shape[0] > 2 else 1.0
-        if abs(denom_head) > 1e-5:
-            wx_head = (M[0, 0] * cx_head + M[0, 1] * cy_head + M[0, 2]) / denom_head
-            wy_head = (M[1, 0] * cx_head + M[1, 1] * cy_head + M[1, 2]) / denom_head
-        else:
-            wx_head = M[0, 0] * cx_head + M[0, 1] * cy_head + M[0, 2]
-            wy_head = M[1, 0] * cx_head + M[1, 1] * cy_head + M[1, 2]
-
-        # Relative movement logic: target_wpos = current_wpos + (obj_wpos - head_wpos)
-        dx = wx_obj - wx_head
-        dy = wy_obj - wy_head
-        target_wx = state.wpos[0] + dx
-        target_wy = state.wpos[1] + dy
-        movement_type = "relative (cnchead offset)"
-        logger.info(f"[MoveToObject] cnchead detected. Relative offset movement: dx={dx:.3f}, dy={dy:.3f}")
-    else:
-        # Fallback to direct mapping
-        target_wx = wx_obj
-        target_wy = wy_obj
-        movement_type = "direct mapping"
-        logger.info("[MoveToObject] cnchead NOT detected. Fallback to direct coordinate mapping")
+    # 2. Cập nhật 42: Bỏ qua điểm trung tâm khi A.I bbox được cnc head. Không sử dụng cnchead từ YOLO để tính toán di chuyển.
+    # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography (đã hiệu chỉnh theo touch_pen_pixel).
+    target_wx = wx_obj
+    target_wy = wy_obj
+    movement_type = "direct mapping (touch pen calibrated)"
+    logger.info(f"[MoveToObject] Bỏ qua YOLO CNC head. Ánh xạ trực tiếp tọa độ đích bút touch: X={target_wx:.3f}, Y={target_wy:.3f}")
 
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{target_wx:.3f} Y{target_wy:.3f} F{state.gesture_feedrate:.0f}"

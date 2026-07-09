@@ -364,5 +364,12 @@
   "✒️ Nhấc Bút": "✒️ Pen Up",
   "⏳ Đang chạy...": "⏳ Running...",
   "Phím Kịch Bản": "Scenario Keys",
-  "Ẩn/Hiện Bảng Kịch Bản": "Toggle Scenario Panel"
+  "Ẩn/Hiện Bảng Kịch Bản": "Toggle Scenario Panel",
+  "Đặt Vị Trí Bút Touch (Touch Pen)": "Set Touch Pen Position",
+  "Đang đặt vị trí bút touch tại pixel ({x}, {y})...": "Setting touch pen position at pixel ({x}, {y})...",
+  "🖊️ Đặt vị trí bút touch thành công!": "🖊️ Touch pen position set successfully!",
+  "❌ Đặt vị trí bút touch thất bại: {message}": "❌ Failed to set touch pen position: {message}",
+  "❌ Lỗi mạng khi đặt vị trí bút touch: {error}": "❌ Network error setting touch pen position: {error}",
+  "👉 Click chuột trái lên khung hình camera tại vị trí đầu bút touch.": "👉 Left-click on the camera frame at the touch pen position.",
+  "🖊️ Đặt Vị Trí Bút Touch": "🖊️ Set Touch Pen Position"
 }
