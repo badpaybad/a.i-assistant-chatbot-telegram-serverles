@@ -467,14 +467,14 @@ def get_firebase_token(mac: str = None):
         client_email = info["client_email"]
         
         now = int(time.time())
-        # Generate custom JWT token for Firebase access valid for 1 week (7 days)
+        # Generate custom JWT token for Firebase access valid for 1 hour (3600 seconds)
         payload = {
             "iss": client_email,
             "sub": client_email,
             "aud": "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit",
             "uid": mac.strip().lower(),
             "iat": now,
-            "exp": now + 7 * 24 * 3600, # 7 days (1 week) expiration
+            "exp": now + 3600, # 1 hour (3600 seconds) expiration (Firebase Auth limit)
         }
         import jwt
         token = jwt.encode(payload, private_key, algorithm="RS256")
@@ -483,7 +483,7 @@ def get_firebase_token(mac: str = None):
         return {
             "status": "success",
             "token": token,
-            "expires_in": 7 * 24 * 3600
+            "expires_in": 3600
         }
     except Exception as e:
         logger.error(f"❌ Error generating Firebase token: {e}")

@@ -22,12 +22,14 @@ extern int hub_port;
 
 // Token management variables
 String firebase_jwt_token = "";
+String firebase_id_token = "";
 unsigned long token_fetched_millis = 0;
 
 // Function declarations
 String getEspMacAddress();
 bool refreshFirebaseToken();
 bool isTokenExpired();
+String exchangeCustomTokenForIdToken(const String& customToken);
 
 // Forward declarations
 String flatJsonToFirestore(const String& jsonStr);
@@ -126,10 +128,10 @@ bool firestoreWrite(const String& docPath, const String& flatJsonPayload) {
   // Format target REST API URL:
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
   
-  if (firebase_jwt_token.length() > 0) {
+  if (firebase_id_token.length() > 0) {
     Serial.printf("[Firebase] HTTP PATCH to: %s (using Bearer Token)\n", url.c_str());
     http.begin(client, url);
-    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+    http.addHeader("Authorization", "Bearer " + firebase_id_token);
   } else {
     if (firebase_api_key.length() > 0) {
       url += "?key=" + firebase_api_key;
@@ -190,10 +192,10 @@ String firestoreRead(const String& docPath) {
   // Format target REST API URL:
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
   
-  if (firebase_jwt_token.length() > 0) {
+  if (firebase_id_token.length() > 0) {
     Serial.printf("[Firebase] HTTP GET to: %s (using Bearer Token)\n", url.c_str());
     http.begin(client, url);
-    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+    http.addHeader("Authorization", "Bearer " + firebase_id_token);
   } else {
     if (firebase_api_key.length() > 0) {
       url += "?key=" + firebase_api_key;
@@ -320,10 +322,10 @@ bool firestoreDelete(const String& docPath) {
   HTTPClient http;
   String url = "https://firestore.googleapis.com/v1/projects/" + firebase_project_id + "/databases/(default)/documents/" + docPath;
   
-  if (firebase_jwt_token.length() > 0) {
+  if (firebase_id_token.length() > 0) {
     Serial.printf("[Firebase] HTTP DELETE to: %s (using Bearer Token)\n", url.c_str());
     http.begin(client, url);
-    http.addHeader("Authorization", "Bearer " + firebase_jwt_token);
+    http.addHeader("Authorization", "Bearer " + firebase_id_token);
   } else {
     if (firebase_api_key.length() > 0) {
       url += "?key=" + firebase_api_key;
@@ -376,17 +378,16 @@ bool get_hub_ip_from_firestore(String &out_ip, int &out_port) {
   return false;
 }
 
-// Checks if the active Firebase JWT token is expired (approx 6.94 days threshold for a 7-day token)
+// Checks if the active Firebase JWT token is expired (approx 50 minutes threshold for a 1-hour token)
 bool isTokenExpired() {
-  if (firebase_jwt_token.length() == 0) return true;
-  // 600,000,000 milliseconds = 600,000 seconds = 10,000 minutes = 166.6 hours = ~6.94 days
-  if (millis() - token_fetched_millis > 600000000) {
+  if (firebase_jwt_token.length() == 0 || firebase_id_token.length() == 0) return true;
+  if (millis() - token_fetched_millis > 3000000) {
     return true;
   }
   return false;
 }
 
-// Fetches a new Firebase Custom Token (JWT) from the local hub
+// Fetches a new Firebase Custom Token (JWT) from the local hub and exchanges it for a Firebase ID Token
 bool refreshFirebaseToken() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("[Firebase] WiFi not connected. Cannot refresh Firebase Token.");
@@ -415,10 +416,20 @@ bool refreshFirebaseToken() {
     JsonDocument doc;
     DeserializationError error = deserializeJson(doc, response);
     if (!error && doc.containsKey("token")) {
-      firebase_jwt_token = doc["token"].as<String>();
-      token_fetched_millis = millis();
-      Serial.println("[Firebase] Successfully retrieved and updated Firebase JWT Token from Hub!");
-      success = true;
+      String custom_token = doc["token"].as<String>();
+      Serial.println("[Firebase] Successfully retrieved Firebase Custom Token from Hub. Exchanging for ID Token...");
+      
+      // Perform the exchange
+      String id_token = exchangeCustomTokenForIdToken(custom_token);
+      if (id_token.length() > 0) {
+        firebase_jwt_token = custom_token;
+        firebase_id_token = id_token;
+        token_fetched_millis = millis();
+        Serial.println("[Firebase] Successfully exchanged and updated Firebase ID Token!");
+        success = true;
+      } else {
+        Serial.println("[Firebase] Exchange failed. Token not updated.");
+      }
     } else {
       Serial.println("[Firebase] Failed to parse JSON token response from Hub.");
     }
@@ -428,5 +439,49 @@ bool refreshFirebaseToken() {
 
   http.end();
   return success;
+}
+
+// Exchange Custom Token for Firebase ID Token using Firebase Auth REST API
+String exchangeCustomTokenForIdToken(const String& customToken) {
+  if (customToken.length() == 0) return "";
+  
+  WiFiClientSecure client;
+  client.setInsecure();
+  
+  HTTPClient http;
+  String url = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithCustomToken?key=" + firebase_api_key;
+  
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+  
+  JsonDocument doc;
+  doc["token"] = customToken;
+  doc["returnSecureToken"] = true;
+  
+  String payload;
+  serializeJson(doc, payload);
+  
+  int httpResponseCode = http.POST(payload);
+  String idToken = "";
+  
+  if (httpResponseCode == 200) {
+    String response = http.getString();
+    JsonDocument respDoc;
+    DeserializationError error = deserializeJson(respDoc, response);
+    if (!error && respDoc.containsKey("idToken")) {
+      idToken = respDoc["idToken"].as<String>();
+      Serial.println("[Firebase] Successfully exchanged Custom Token for ID Token.");
+    } else {
+      Serial.println("[Firebase] Failed to parse ID Token from exchange response.");
+    }
+  } else {
+    Serial.printf("[Firebase] Custom Token exchange failed with HTTP code: %d\n", httpResponseCode);
+    if (httpResponseCode > 0) {
+      Serial.println(http.getString());
+    }
+  }
+  
+  http.end();
+  return idToken;
 }
 

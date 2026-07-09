@@ -237,11 +237,36 @@ void setup() {
     String resolved_ip = "";
     int resolved_port = 8888;
     if (get_hub_ip_from_firestore(resolved_ip, resolved_port)) {
-      current_hub_host = resolved_ip;
-      current_hub_port = resolved_port;
-      Serial.printf("[Firebase Boot Sync] Resolved Hub IP from Firestore: %s:%d\n", current_hub_host.c_str(), current_hub_port);
-      // Try to fetch the Firebase token again now that we have the correct new Hub IP
-      refreshFirebaseToken();
+      if (resolved_ip != hub_host || resolved_port != hub_port) {
+        WiFiClient test_client;
+        if (test_client.connect(resolved_ip.c_str(), resolved_port)) {
+          test_client.stop();
+          current_hub_host = resolved_ip;
+          current_hub_port = resolved_port;
+
+          // Auto-save to config
+          preferences.begin("hub-config", false);
+          preferences.putString("host", resolved_ip);
+          preferences.putInt("port", resolved_port);
+          preferences.end();
+
+          // Update memory fallbacks
+          hub_host = resolved_ip;
+          hub_port = resolved_port;
+
+          Serial.printf("[Firebase Boot Sync] Connected successfully! Auto-saved new Hub to config: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+          // Fetch the Firebase token again now that we have the correct new Hub IP
+          refreshFirebaseToken();
+        } else {
+          Serial.printf("[Firebase Boot Sync] Resolved new IP %s:%d failed connection test. Using previous config.\n", resolved_ip.c_str(), resolved_port);
+          current_hub_host = hub_host;
+          current_hub_port = hub_port;
+        }
+      } else {
+        Serial.println("[Firebase Boot Sync] Resolved IP is identical to current config. No update needed.");
+        current_hub_host = resolved_ip;
+        current_hub_port = resolved_port;
+      }
     }
 
     Serial.println("Starting network quality monitoring loop...");

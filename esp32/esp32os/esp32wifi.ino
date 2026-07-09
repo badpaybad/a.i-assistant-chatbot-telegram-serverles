@@ -8,7 +8,10 @@ void playOkWifiSound();
 extern volatile bool live_chat_active;
 extern String current_hub_host;
 extern int current_hub_port;
+extern String hub_host;
+extern int hub_port;
 extern bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+extern Preferences preferences;
 
 unsigned long last_idle_firestore_check = 0;
 
@@ -247,10 +250,27 @@ void monitorWiFi() {
       String resolved_ip = "";
       int resolved_port = 8888;
       if (get_hub_ip_from_firestore(resolved_ip, resolved_port)) {
-        if (resolved_ip != current_hub_host || resolved_port != current_hub_port) {
-          current_hub_host = resolved_ip;
-          current_hub_port = resolved_port;
-          Serial.printf("🟢 [Firebase Sync] Updated Hub host/IP from Firestore: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+        if (resolved_ip != hub_host || resolved_port != hub_port) {
+          WiFiClient test_client;
+          if (test_client.connect(resolved_ip.c_str(), resolved_port)) {
+            test_client.stop();
+            current_hub_host = resolved_ip;
+            current_hub_port = resolved_port;
+
+            // Auto-save to config
+            preferences.begin("hub-config", false);
+            preferences.putString("host", resolved_ip);
+            preferences.putInt("port", resolved_port);
+            preferences.end();
+
+            // Update memory fallbacks
+            hub_host = resolved_ip;
+            hub_port = resolved_port;
+
+            Serial.printf("🟢 [Firebase Sync] Connected successfully! Auto-saved new Hub to config: %s:%d\n", current_hub_host.c_str(), current_hub_port);
+          } else {
+            Serial.printf("[Firebase Sync] Resolved new IP %s:%d failed connection test. Not updating.\n", resolved_ip.c_str(), resolved_port);
+          }
         }
       }
     }

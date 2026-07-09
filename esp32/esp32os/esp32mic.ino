@@ -9,6 +9,7 @@ extern String gemini_model;
 extern String gemini_api_key;
 extern String hub_host;
 extern int hub_port;
+extern Preferences preferences;
 WebSocketsClient webSocket;
 volatile bool live_chat_active = false;
 unsigned long last_interaction_time = 0;
@@ -1061,12 +1062,28 @@ void loopGeminiLive() {
             last_firestore_check_time = millis();
             Serial.println("[Firebase] Periodically checking Firestore for a new Hub IP document...");
             if (get_hub_ip_from_firestore(current_hub_ip, current_hub_port)) {
-                if (current_hub_ip != current_hub_host) {
-                    Serial.printf("🟢 [Firebase] Found new Hub IP on Firestore: %s:%d. Reconnecting to new IP...\n", current_hub_ip.c_str(), current_hub_port);
-                    current_hub_host = current_hub_ip;
-                    is_using_fallback_ip = false;
-                    disconnect_live_chat(); // Force socket restart to use new IP
-                    connect_live_chat();
+                if (current_hub_ip != hub_host || current_hub_port != hub_port) {
+                    WiFiClient test_client;
+                    if (test_client.connect(current_hub_ip.c_str(), current_hub_port)) {
+                        test_client.stop();
+                        Serial.printf("🟢 [Firebase] Found new Hub IP on Firestore: %s:%d. Reconnecting and auto-saving new IP to config...\n", current_hub_ip.c_str(), current_hub_port);
+                        current_hub_host = current_hub_ip;
+                        is_using_fallback_ip = false;
+
+                        // Auto-save to config
+                        preferences.begin("hub-config", false);
+                        preferences.putString("host", current_hub_host);
+                        preferences.putInt("port", current_hub_port);
+                        preferences.end();
+
+                        hub_host = current_hub_host;
+                        hub_port = current_hub_port;
+
+                        disconnect_live_chat(); // Force socket restart to use new IP
+                        connect_live_chat();
+                    } else {
+                        Serial.printf("[Firebase] Resolved new IP %s:%d failed connection test. Not updating.\n", current_hub_ip.c_str(), current_hub_port);
+                    }
                 }
             }
         }
