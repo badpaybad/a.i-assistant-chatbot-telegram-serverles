@@ -167,6 +167,7 @@ public class AuthController : ControllerBase
 
       Console.WriteLine("[AUTH] Generating Firebase Token...");
       var firebaseToken = await _authService.GenerateFirebaseToken(user);
+      var firebaseAccessToken = await _authService.GenerateFirebaseAccessTokenAsync();
 
       Console.WriteLine($"[AUTH] Login completed for {user.Username}. Returning tokens.");
 
@@ -201,6 +202,7 @@ public class AuthController : ControllerBase
       {
         token,
         firebaseToken,
+        firebaseAccessToken,
         mustChangePassword = user.MustChangePassword,
         user = new { user.Username, user.DisplayName, user.Email }
       });
@@ -430,6 +432,8 @@ public class AuthController : ControllerBase
     var defaultAudience = _config["Auth:Jwt:Audience"] ?? "TreeOfThought.FE";
     var accessToken = await _authService.GenerateJwtToken(user, defaultAudience, null);
     var idToken = await _authService.GenerateJwtToken(user, request.ClientId ?? defaultAudience, nonce);
+    var firebaseToken = await _authService.GenerateFirebaseToken(user);
+    var firebaseAccessToken = await _authService.GenerateFirebaseAccessTokenAsync();
 
     Console.WriteLine($"[OIDC DEBUG] Generated accessToken len: {accessToken?.Length}, idToken len: {idToken?.Length}");
     Console.WriteLine("[OIDC] Separate tokens (access_token & id_token) generated and returned to client.");
@@ -439,7 +443,11 @@ public class AuthController : ControllerBase
       access_token = accessToken,
       token_type = "Bearer",
       expires_in = 3600,
-      id_token = idToken
+      id_token = idToken,
+      firebaseToken = firebaseToken,
+      firebaseAccessToken = firebaseAccessToken,
+      firebase_token = firebaseToken,
+      firebase_access_token = firebaseAccessToken
     };
     var json = System.Text.Json.JsonSerializer.Serialize(tokenResponse);
     Console.WriteLine($"[OIDC DEBUG] Returning JSON: {json.Substring(0, Math.Min(json.Length, 100))}...");
@@ -478,6 +486,7 @@ public class AuthController : ControllerBase
 
     var token = await _authService.GenerateJwtToken(user);
     var firebaseToken = await _authService.GenerateFirebaseToken(user);
+    var firebaseAccessToken = await _authService.GenerateFirebaseAccessTokenAsync();
 
     try
     {
@@ -498,6 +507,7 @@ public class AuthController : ControllerBase
     {
       token,
       firebaseToken,
+      firebaseAccessToken,
       user = new { user.Username, user.DisplayName, user.Email }
     });
   }

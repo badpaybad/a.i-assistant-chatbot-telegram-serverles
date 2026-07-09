@@ -69,6 +69,11 @@ public class AuthService
         return await _firebaseService.CreateCustomTokenAsync("Default", user.Id.ToString());
     }
 
+    public async Task<string> GenerateFirebaseAccessTokenAsync()
+    {
+        return await _firebaseService.GetGoogleAccessTokenAsync("Default");
+    }
+
     public async Task<User?> AuthenticateAsync(string username, string password)
     {
         var user = await _userRepo.GetUserByUsernameAsync(username);

@@ -111,6 +111,13 @@ public class FirebaseService
         return await auth.CreateCustomTokenAsync(uid, claims);
     }
 
+    public async Task<string> GetGoogleAccessTokenAsync(string appName)
+    {
+        var credential = _credentials[appName];
+        var scopedCredential = credential.CreateScoped("https://www.googleapis.com/auth/cloud-platform");
+        return await scopedCredential.UnderlyingCredential.GetAccessTokenForRequestAsync();
+    }
+
     public async Task<FirebaseToken> VerifyIdTokenAsync(string appName, string idToken)
     {
         var auth = FirebaseAuth.GetAuth(_apps[appName]);
@@ -296,6 +303,9 @@ public class FirebaseService
 
     public async Task<string> CreateCustomTokenAsync(string uid, IDictionary<string, object>? claims = null)
         => await CreateCustomTokenAsync(_options.Value.AppName, uid, claims);
+
+    public async Task<string> GetGoogleAccessTokenAsync()
+        => await GetGoogleAccessTokenAsync(_options.Value.AppName);
 
     public async Task<FirebaseToken> VerifyIdTokenAsync(string idToken)
         => await VerifyIdTokenAsync(_options.Value.AppName, idToken);

@@ -37,15 +37,15 @@ Hệ thống phân quyền OIDC giải quyết các bài toán cốt lõi sau:
 - **Login Endpoint (`/api/auth/login`):**
   - Tiếp nhận thông tin Username/Password từ người dùng.
   - Xác thực thông tin, tạo và thiết lập cookie phiên đăng nhập SSO (`CreateSsoSessionCookie`) có thời hạn 7 ngày.
-  - Tạo và trả về JWT Access Token cùng Firebase Custom Token phục vụ đồng bộ dữ liệu Realtime.
+  - Tạo và trả về JWT Access Token cùng Firebase Custom Token (phục vụ đồng bộ dữ liệu Realtime) và Google OAuth 2.0 Access Token (đại diện cho Service Account).
   - Trả thêm cờ `mustChangePassword` nếu người dùng bắt buộc phải đổi mật khẩu ở lần đăng nhập đầu tiên.
 - **Authorize Endpoint (`/api/auth/authorize`):**
   - Tiếp nhận các yêu cầu ủy quyền OAuth2/OIDC (`client_id`, `redirect_uri`, `state`, `response_type`).
   - Nếu người dùng đã có Session Cookie SSO hợp lệ: Tự động tạo `code` (Authorization Code), sau đó chuyển hướng (redirect) người dùng về trang Client kèm `code` và `state`.
   - Nếu chưa đăng nhập: Chuyển hướng người dùng sang giao diện Login UI của SPA kèm theo tham số `returnUrl` được mã hóa.
-- **Token Exchange Endpoint (`/api/auth/token`):** Tiếp nhận Authorization Code và Client ID/Secret từ phía Client qua Form hoặc JSON, thực hiện xác thực mã code và trả về JWT Access Token (`id_token` & `access_token`).
+- **Token Exchange Endpoint (`/api/auth/token`):** Tiếp nhận Authorization Code và Client ID/Secret từ phía Client qua Form hoặc JSON, thực hiện xác thực mã code và trả về JWT Access Token (`id_token` & `access_token`) kèm Firebase Custom Token (`firebaseToken` / `firebase_token`) và Google OAuth 2.0 Access Token (`firebaseAccessToken` / `firebase_access_token`).
 - **User Information Endpoint (`/api/auth/me`):** Trả về thông tin chi tiết của người dùng đang đăng nhập (`sub`, username, name, email, email_verified, picture, roles, claims).
-- **Social SSO Login (`/api/auth/sso`):** Cho phép đăng nhập SSO qua nhà cung cấp thứ ba (Google, Microsoft, Facebook), khởi tạo Session Cookie và cấp phát token tương ứng.
+- **Social SSO Login (`/api/auth/sso`):** Cho phép đăng nhập SSO qua nhà cung cấp thứ ba (Google, Microsoft, Facebook), khởi tạo Session Cookie, cấp phát token tương ứng và trả về cả Firebase Custom Token cùng Google OAuth 2.0 Access Token.
 - **Đăng ký và Xác minh Email (`/api/auth/signup`, `/api/auth/verify`):** Cho phép người dùng đăng ký tài khoản mới và xác minh qua mã gửi về email.
 - **Đổi mật khẩu (`/api/auth/change-password`):** Cho phép người dùng tự đổi mật khẩu cá nhân với yêu cầu mật khẩu cũ chính xác.
 - **Đăng xuất (`/api/auth/logout`):** Hủy cookie phiên đăng nhập SSO và chuyển hướng về trang `post_logout_redirect_uri` chỉ định.
@@ -178,3 +178,7 @@ nghiệp vụ : business-oidc cần cập nhật việc dùng các component sha
 kiểm tra việc phân trang đã là server side paging chưa và cần sửa theo chuẩn 
 vì sao lúc page load không thấy load data vào bảng dữ liệu kiểm tra và sửa 
 paging của /modules/core-infra-auth/claims không hoạt động kiểm ra và sửa, cùng kiểm tra các paging server side cho các danh sách khác trong nghiệp vụ đảm bảo hoạt động đúng 
+
+**cập nhật 2026-07-09 15:25:21**
+ở esp32/whattodo.md có đề cập Google OAuth 2.0 Access Token (đại diện cho services account )  khác với Custom token (custom token khi client nhận được cần exchange id token rồi mới gọi được dịch vụ firebase). cần bổ xung cho việc đăng nhập qua oidc sẽ trả ra cả 2 loại token cho client. 
+FirebaseService cần bổ xung hàm để trả ra thêm Google OAuth 2.0 Access Token (đại diện cho services account ). client đăng nhập xong cũng sẽ nhận được cả 2 loại token . 
