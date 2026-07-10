@@ -2592,10 +2592,10 @@ async def set_manual_corner(config: ManualCornerConfig):
     if config.corner not in ["TL", "TR", "BR", "BL"]:
         return JSONResponse({"status": "error", "message": "Invalid corner name"}, status_code=400)
 
-    # Cập nhật 43: Undistort manual pixel click before saving as calibration source point
+    # Cập nhật 46: Không dùng undistort_pixel thô, lưu trực tiếp tọa độ pixel click trên frame chính
     raw_x, raw_y = config.x, config.y
-    ux, uy = undistort_pixel(raw_x, raw_y)
-    logger.info(f"[Calib43] set_manual_corner {config.corner} raw: ({raw_x:.1f}, {raw_y:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+    ux, uy = raw_x, raw_y
+    logger.info(f"[Calib46] set_manual_corner {config.corner} raw: ({raw_x:.1f}, {raw_y:.1f})")
 
     if not state.aruco_standard_points:
         state.aruco_standard_points = {}
@@ -2616,7 +2616,7 @@ async def set_manual_corner(config: ManualCornerConfig):
 
     return {
         "status": "ok",
-        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f}), CNC pos=({state.wpos[0]:.3f},{state.wpos[1]:.3f})",
+        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}), CNC pos=({state.wpos[0]:.3f},{state.wpos[1]:.3f})",
         "aruco_standard_points": state.aruco_standard_points,
         "aruco_cnc_points": state.aruco_cnc_points
     }
@@ -2632,10 +2632,10 @@ async def set_touch_pen(config: SetTouchPenConfig):
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Please set Home first."}, status_code=400)
 
-    # Cập nhật 43: Undistort touch pen pixel position before saving as calibration anchor
+    # Cập nhật 46: Không dùng undistort_pixel thô, lưu trực tiếp tọa độ click touch pen
     raw_x, raw_y = config.x, config.y
-    ux, uy = undistort_pixel(raw_x, raw_y)
-    logger.info(f"[Calib43] set_touch_pen raw: ({raw_x:.1f}, {raw_y:.1f}) → undistorted: ({ux:.1f}, {uy:.1f})")
+    ux, uy = raw_x, raw_y
+    logger.info(f"[Calib46] set_touch_pen raw: ({raw_x:.1f}, {raw_y:.1f})")
     state.touch_pen_pixel = [ux, uy]
     state.update_calibration_matrix()
     
@@ -2652,7 +2652,7 @@ async def set_touch_pen(config: SetTouchPenConfig):
     
     return {
         "status": "ok",
-        "message": f"Successfully set touch pen position to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f})",
+        "message": f"Successfully set touch pen position to pixel ({raw_x:.1f}, {raw_y:.1f})",
         "touch_pen_pixel": state.touch_pen_pixel,
         "calibrated": state.calibration_matrix is not None
     }
@@ -3298,6 +3298,15 @@ async def move_to_largest(camera_index: int = 4):
                 wy = M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]
             logger.info(f"[Calib45] move_to_largest fallback homography: X={wx:.3f}, Y={wy:.3f}")
     
+    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
+    tp_pixel = getattr(state, "touch_pen_pixel", None)
+    if tp_pixel is not None:
+        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
+        if tp_offset is not None:
+            wx = wx - tp_offset[0]
+            wy = wy - tp_offset[1]
+            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx:.3f} Y{wy:.3f}")
+
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
@@ -3365,6 +3374,15 @@ async def move_to_object(config: MoveToObjectConfig):
             wx_obj = -wx_obj
             wy_obj = -wy_obj
             logger.info(f"[Calib45] move_to_object fallback homography: X={wx_obj:.3f}, Y={wy_obj:.3f}")
+
+    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
+    tp_pixel = getattr(state, "touch_pen_pixel", None)
+    if tp_pixel is not None:
+        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
+        if tp_offset is not None:
+            wx_obj = wx_obj - tp_offset[0]
+            wy_obj = wy_obj - tp_offset[1]
+            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx_obj:.3f} Y{wy_obj:.3f}")
 
     # 2. Cập nhật 42: Bỏ qua điểm trung tâm khi A.I bbox được cnc head. Không sử dụng cnchead từ YOLO để tính toán di chuyển.
     # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography / PnP (đã hiệu chỉnh theo touch_pen_pixel).
@@ -3451,6 +3469,14 @@ async def click_go(config: ClickGoConfig):
             wy = -wy
             logger.info(f"[Calib45] click_go fallback homography: X={wx:.3f}, Y={wy:.3f}")
 
+    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
+    tp_pixel = getattr(state, "touch_pen_pixel", None)
+    if tp_pixel is not None:
+        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
+        if tp_offset is not None:
+            wx = wx - tp_offset[0]
+            wy = wy - tp_offset[1]
+            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx:.3f} Y{wy:.3f}")
     
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
