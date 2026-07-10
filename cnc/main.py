@@ -12,7 +12,7 @@ import numpy as np
 import threading
 import onnxruntime as ort
 from collections import deque
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Set, Optional, Tuple
 from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -71,7 +71,8 @@ def load_calibration_settings() -> dict:
         "pen_down_z": 0.0,
         "pen_up_pwm": 30.0,
         "pen_down_pwm": 90.0,
-        "pen_dwell": 0.25
+        "pen_dwell": 0.25,
+        "camera_height": 542.0
     }
     
     settings = default_settings.copy()
@@ -216,6 +217,7 @@ class ControllerState:
         self.gesture_distance = cal_settings.get("gesture_distance", 40.0)
         self.gesture_dwell = cal_settings.get("gesture_dwell", 0.15)
         self.gesture_tap_dwell = cal_settings.get("gesture_tap_dwell", 0.05)
+        self.camera_height = cal_settings.get("camera_height", 542.0)
 
         # Object detection settings (cập nhật 3)
         self.detect_objects = True
@@ -390,6 +392,268 @@ def undistort_pixel(px: float, py: float) -> tuple:
     except Exception as e:
         logger.error(f"[Calib43] undistort_pixel error: {e}")
         return px, py
+def get_camera_extrinsics_pnp() -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    Cập nhật 45: Tìm ma trận quay rvec và tvec từ các điểm standard markers & touch_pen_pixel.
+    """
+    object_pts = []
+    image_pts = []
+    
+    # 1. Thêm các điểm Aruco đã calibrate
+    for corner in ["TL", "TR", "BR", "BL"]:
+        px = state.aruco_standard_points.get(corner)
+        cx = state.cnc_points.get(corner)
+        if px and cx:
+            object_pts.append([cx[0], cx[1], 0.0])
+            image_pts.append(px)
+            
+    # 2. Thêm điểm gốc Home/Touch Pen
+    if state.home_set:
+        if getattr(state, "touch_pen_pixel", None) is not None:
+            object_pts.append([0.0, 0.0, 0.0])
+            image_pts.append(state.touch_pen_pixel)
+        elif getattr(state, "home_pixel", None) is not None:
+            object_pts.append([0.0, 0.0, 0.0])
+            image_pts.append(state.home_pixel)
+            
+    if len(object_pts) < 4:
+        return None, None
+        
+    object_pts = np.array(object_pts, dtype=np.float32)
+    image_pts = np.array(image_pts, dtype=np.float32)
+    
+    camera_matrix = _cam_state["new_mtx"] if _cam_state["new_mtx"] is not None else _cam_state["mtx"]
+    if camera_matrix is None:
+        return None, None
+        
+    dist_coeffs = np.zeros((5, 1), dtype=np.float32)
+    
+    try:
+        success, rvec, tvec = cv2.solvePnP(
+            object_pts, image_pts, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE
+        )
+        if not success:
+            return None, None
+        return rvec, tvec
+    except Exception as e:
+        logger.error(f"[Calib45] solvePnP error: {e}")
+        return None, None
+
+
+def get_adjusted_extrinsics() -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    Lấy extrinsics và hiệu chỉnh tvec theo chiều cao camera được cấu hình.
+    """
+    rvec, tvec = get_camera_extrinsics_pnp()
+    if rvec is None or tvec is None:
+        return None, None
+        
+    try:
+        # Chuyển rvec sang ma trận quay R
+        R, _ = cv2.Rodrigues(rvec)
+        
+        # Tọa độ camera trong hệ CNC: C = -R^T * tvec
+        R_T = R.T
+        C = -np.dot(R_T, tvec)
+        
+        current_height = C[2, 0]
+        target_height = getattr(state, "camera_height", 542.0)
+        
+        if abs(current_height) > 1e-3:
+            scale = target_height / current_height
+            tvec_adj = tvec * scale
+            return rvec, tvec_adj
+    except Exception as e:
+        logger.error(f"[Calib45] get_adjusted_extrinsics error: {e}")
+        
+    return rvec, tvec
+
+
+def project_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, float]]:
+    """
+    Chiếu một điểm pixel (đã khử méo thấu kính) sang mặt phẳng Z_cnc = 0 dùng solvePnP và camera_height.
+    """
+    if not _cam_state["enabled"]:
+        return None
+        
+    camera_matrix = _cam_state["new_mtx"] if _cam_state["new_mtx"] is not None else _cam_state["mtx"]
+    if camera_matrix is None:
+        return None
+        
+    rvec, tvec = get_adjusted_extrinsics()
+    if rvec is None or tvec is None:
+        return None
+        
+    try:
+        R, _ = cv2.Rodrigues(rvec)
+        R_T = R.T
+        
+        # Tia chiếu chuẩn hóa trong không gian camera
+        fx = camera_matrix[0, 0]
+        fy = camera_matrix[1, 1]
+        cx = camera_matrix[0, 2]
+        cy = camera_matrix[1, 2]
+        
+        v_c = np.array([(px - cx) / fx, (py - cy) / fy, 1.0], dtype=np.float32).reshape(3, 1)
+        
+        # Dòng 3 của R_T (tương đương cột 3 của R)
+        R_row3 = R_T[2, :]
+        
+        denom = np.dot(R_row3, v_c)[0]
+        if abs(denom) < 1e-6:
+            return None
+            
+        num = np.dot(R_row3, tvec)[0]
+        s = num / denom
+        
+        # Điểm 3D trong không gian CNC: P_cnc = R_T * (s * v_c - tvec)
+        P_cnc = np.dot(R_T, s * v_c - tvec)
+        
+        # Cập nhật 45: đảo dấu X và Y vì camera lắp ngược 180° so với hướng trục CNC
+        return float(-P_cnc[0, 0]), float(-P_cnc[1, 0])
+    except Exception as e:
+        logger.error(f"[Calib45] project_pixel_to_cnc error: {e}")
+        return None
+
+
+def project_cnc_to_pixel(x_cnc: float, y_cnc: float, z_cnc: float) -> Optional[Tuple[float, float]]:
+    """
+    Chiếu ngược điểm CNC 3D sang pixel ảnh (phục vụ set_home fallback).
+    """
+    if not _cam_state["enabled"]:
+        return None
+        
+    camera_matrix = _cam_state["new_mtx"] if _cam_state["new_mtx"] is not None else _cam_state["mtx"]
+    if camera_matrix is None:
+        return None
+        
+    rvec, tvec = get_adjusted_extrinsics()
+    if rvec is None or tvec is None:
+        return None
+        
+    try:
+        R, _ = cv2.Rodrigues(rvec)
+        # Cập nhật 45: đảo ngược dấu vì project_pixel_to_cnc đã đảo đầu ra
+        P_cnc = np.array([-x_cnc, -y_cnc, z_cnc], dtype=np.float32).reshape(3, 1)
+        P_cam = np.dot(R, P_cnc) + tvec
+        
+        if abs(P_cam[2, 0]) < 1e-6:
+            return None
+            
+        u = camera_matrix[0, 0] * (P_cam[0, 0] / P_cam[2, 0]) + camera_matrix[0, 2]
+        v = camera_matrix[1, 1] * (P_cam[1, 0] / P_cam[2, 0]) + camera_matrix[1, 2]
+        return float(u), float(v)
+    except Exception as e:
+        logger.error(f"[Calib45] project_cnc_to_pixel error: {e}")
+        return None
+
+
+def get_camera_extrinsics_pnp_for_frame(markers_dict: dict) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    Giải PnP cho một khung hình cụ thể dựa trên danh sách các marker phát hiện được.
+    """
+    object_pts = []
+    image_pts = []
+    
+    for corner in ["TL", "TR", "BR", "BL"]:
+        px = markers_dict.get(corner)
+        cx = state.cnc_points.get(corner)
+        if px and cx:
+            object_pts.append([cx[0], cx[1], 0.0])
+            # Do markers_dict chứa pixel thô, ta cần khử méo thấu kính trước
+            ux, uy = undistort_pixel(px[0], px[1])
+            image_pts.append([ux, uy])
+            
+    if len(object_pts) < 4:
+        return None, None
+        
+    object_pts = np.array(object_pts, dtype=np.float32)
+    image_pts = np.array(image_pts, dtype=np.float32)
+    
+    camera_matrix = _cam_state["new_mtx"] if _cam_state["new_mtx"] is not None else _cam_state["mtx"]
+    if camera_matrix is None:
+        return None, None
+        
+    dist_coeffs = np.zeros((5, 1), dtype=np.float32)
+    
+    try:
+        success, rvec, tvec = cv2.solvePnP(
+            object_pts, image_pts, camera_matrix, dist_coeffs, flags=cv2.SOLVEPNP_ITERATIVE
+        )
+        if not success:
+            return None, None
+        return rvec, tvec
+    except Exception as e:
+        logger.error(f"[Calib45] frame solvePnP error: {e}")
+        return None, None
+
+
+def get_adjusted_extrinsics_for_frame(markers_dict: dict) -> Tuple[Optional[np.ndarray], Optional[np.ndarray]]:
+    """
+    Lấy extrinsics của một khung hình và hiệu chỉnh theo chiều cao camera.
+    """
+    rvec, tvec = get_camera_extrinsics_pnp_for_frame(markers_dict)
+    if rvec is None or tvec is None:
+        return None, None
+        
+    try:
+        R, _ = cv2.Rodrigues(rvec)
+        R_T = R.T
+        C = -np.dot(R_T, tvec)
+        current_height = C[2, 0]
+        target_height = getattr(state, "camera_height", 542.0)
+        
+        if abs(current_height) > 1e-3:
+            scale = target_height / current_height
+            tvec_adj = tvec * scale
+            return rvec, tvec_adj
+    except Exception as e:
+        logger.error(f"[Calib45] get_adjusted_extrinsics_for_frame error: {e}")
+        
+    return rvec, tvec
+
+
+def project_pixel_to_cnc_for_frame(px: float, py: float, markers_dict: dict) -> Optional[Tuple[float, float]]:
+    """
+    Chiếu một điểm pixel thô trên một khung hình sang mặt phẳng Z_cnc = 0 sử dụng extrinsics của khung hình đó.
+    """
+    if not _cam_state["enabled"]:
+        return None
+        
+    camera_matrix = _cam_state["new_mtx"] if _cam_state["new_mtx"] is not None else _cam_state["mtx"]
+    if camera_matrix is None:
+        return None
+        
+    rvec, tvec = get_adjusted_extrinsics_for_frame(markers_dict)
+    if rvec is None or tvec is None:
+        return None
+        
+    try:
+        R, _ = cv2.Rodrigues(rvec)
+        R_T = R.T
+        
+        fx = camera_matrix[0, 0]
+        fy = camera_matrix[1, 1]
+        cx = camera_matrix[0, 2]
+        cy = camera_matrix[1, 2]
+        
+        # Khử méo thấu kính pixel đích
+        ux, uy = undistort_pixel(px, py)
+        v_c = np.array([(ux - cx) / fx, (uy - cy) / fy, 1.0], dtype=np.float32).reshape(3, 1)
+        
+        R_row3 = R_T[2, :]
+        denom = np.dot(R_row3, v_c)[0]
+        if abs(denom) < 1e-6:
+            return None
+            
+        num = np.dot(R_row3, tvec)[0]
+        s = num / denom
+        P_cnc = np.dot(R_T, s * v_c - tvec)
+        # Cập nhật 45: đảo dấu X và Y vì camera lắp ngược 180° so với hướng trục CNC
+        return float(-P_cnc[0, 0]), float(-P_cnc[1, 0])
+    except Exception as e:
+        logger.error(f"[Calib45] project_pixel_to_cnc_for_frame error: {e}")
+        return None
 
 
 
@@ -1442,48 +1706,65 @@ async def realign_cnc_coordinates_on_startup():
 
         if cnchead_px is not None and state.latest_detected_markers and len(state.latest_detected_markers) >= 3:
             try:
-                import numpy as np
-                import cv2
-                
-                # Get homography matrix for current frame
-                common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
-                src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
-                dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
-                
-                if len(common_corners) == 3:
-                    H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
-                    H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
-                else:
-                    H_curr, _ = cv2.findHomography(src_pts, dst_pts)
+                aligned_pnp = False
+                # Thử tính bằng PnP và Height nếu đủ marker
+                if len(state.latest_detected_markers) >= 4 and len(state.home_markers) >= 4:
+                    try:
+                        head_proj = project_pixel_to_cnc_for_frame(cnchead_px[0], cnchead_px[1], state.latest_detected_markers)
+                        home_proj = project_pixel_to_cnc_for_frame(state.home_pixel[0], state.home_pixel[1], state.home_markers)
+                        if head_proj is not None and home_proj is not None:
+                            # Cập nhật 45: PnP đã đảo dấu X,Y nên khoảng lệch tính trực tiếp là đúng
+                            x_cnc = head_proj[0] - home_proj[0]
+                            y_cnc = head_proj[1] - home_proj[1]
+                            aligned_via_camera = True
+                            aligned_pnp = True
+                            logger.info(f"Startup coordinate alignment [Calib45 PnP & Height]: Mapped via PnP: X={x_cnc:.3f}, Y={y_cnc:.3f}")
+                    except Exception as ePnP:
+                        logger.warning(f"Startup alignment via PnP failed: {ePnP}. Falling back to homography.")
+
+                if not aligned_pnp:
+                    import numpy as np
+                    import cv2
                     
-                # Current head in BCS
-                px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
-                bed_head = np.dot(H_curr, px_vec)
-                x_head_bed = bed_head[0] / bed_head[2]
-                y_head_bed = bed_head[1] / bed_head[2]
-                
-                # Saved home in BCS
-                home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
-                if len(home_corners) >= 3:
-                    src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
-                    dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
+                    # Get homography matrix for current frame
+                    common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
+                    src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+                    dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
                     
-                    if len(home_corners) == 3:
-                        H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
-                        H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
+                    if len(common_corners) == 3:
+                        H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                        H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
                     else:
-                        H_home, _ = cv2.findHomography(src_home, dst_home)
+                        H_curr, _ = cv2.findHomography(src_pts, dst_pts)
                         
-                    px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
-                    bed_home = np.dot(H_home, px_home_vec)
-                    x_home_bed = bed_home[0] / bed_home[2]
-                    y_home_bed = bed_home[1] / bed_home[2]
+                    # Current head in BCS
+                    px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
+                    bed_head = np.dot(H_curr, px_vec)
+                    x_head_bed = bed_head[0] / bed_head[2]
+                    y_head_bed = bed_head[1] / bed_head[2]
                     
-                    # Expected coordinate relative to set home (negate Y because CNC Y direction is opposite of BCS Y direction)
-                    x_cnc = x_head_bed - x_home_bed
-                    y_cnc = -(y_head_bed - y_home_bed)
-                    aligned_via_camera = True
-                    logger.info(f"Startup coordinate alignment: Mapped via camera relative to set home: X={x_cnc:.3f}, Y={y_cnc:.3f}")
+                    # Saved home in BCS
+                    home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
+                    if len(home_corners) >= 3:
+                        src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
+                        dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
+                        
+                        if len(home_corners) == 3:
+                            H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
+                            H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
+                        else:
+                            H_home, _ = cv2.findHomography(src_home, dst_home)
+                            
+                        px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
+                        bed_home = np.dot(H_home, px_home_vec)
+                        x_home_bed = bed_home[0] / bed_home[2]
+                        y_home_bed = bed_home[1] / bed_home[2]
+                        
+                        # Cập nhật 45: đảo dấu cả X và Y (đồng nhất với PnP path)
+                        x_cnc = -(x_head_bed - x_home_bed)
+                        y_cnc = -(y_head_bed - y_home_bed)
+                        aligned_via_camera = True
+                        logger.info(f"Startup coordinate alignment [Calib45 Homography Fallback]: Mapped via camera relative to set home: X={x_cnc:.3f}, Y={y_cnc:.3f}")
             except Exception as e:
                 logger.error(f"Startup coordinate alignment: Homography mapping failed: {e}")
 
@@ -1749,6 +2030,7 @@ class UIPreferences(BaseModel):
     gesture_distance: float
     gesture_dwell: float
     gesture_tap_dwell: float
+    camera_height: float = 542.0
 
 @app.get("/api/ui_preferences")
 async def get_ui_preferences():
@@ -1759,7 +2041,8 @@ async def get_ui_preferences():
         "gesture_feedrate": settings.get("gesture_feedrate", 4000),
         "gesture_distance": settings.get("gesture_distance", 40.0),
         "gesture_dwell": settings.get("gesture_dwell", 0.15),
-        "gesture_tap_dwell": settings.get("gesture_tap_dwell", 0.05)
+        "gesture_tap_dwell": settings.get("gesture_tap_dwell", 0.05),
+        "camera_height": settings.get("camera_height", 542.0)
     }
 
 @app.post("/api/ui_preferences")
@@ -1770,6 +2053,7 @@ async def update_ui_preferences(prefs: UIPreferences):
     state.gesture_distance = prefs.gesture_distance
     state.gesture_dwell = prefs.gesture_dwell
     state.gesture_tap_dwell = prefs.gesture_tap_dwell
+    state.camera_height = prefs.camera_height
 
     save_calibration_settings({
         "step_distance": prefs.step_distance,
@@ -1777,7 +2061,8 @@ async def update_ui_preferences(prefs: UIPreferences):
         "gesture_feedrate": prefs.gesture_feedrate,
         "gesture_distance": prefs.gesture_distance,
         "gesture_dwell": prefs.gesture_dwell,
-        "gesture_tap_dwell": prefs.gesture_tap_dwell
+        "gesture_tap_dwell": prefs.gesture_tap_dwell,
+        "camera_height": prefs.camera_height
     })
     return {"status": "ok", "message": "UI preferences updated successfully"}
 
@@ -2238,59 +2523,73 @@ async def reset_home_api(force_current: bool = False):
             "message": "Không tìm thấy đầu CNC trong camera. Vui lòng di chuyển đầu CNC vào camera hoặc tự căn chỉnh đầu CNC về vị trí home cũ rồi nhấn OK."
         })
 
-    # 2. Get current homography matrix from pixels to Bed Coordinates (BCS)
-    if not state.latest_detected_markers or len(state.latest_detected_markers) < 3:
-        return JSONResponse({
-            "status": "error", 
-            "message": "Không đủ 3 hoặc 4 điểm ArUco hiện tại để định vị hệ tọa độ bed."
-        }, status_code=400)
-    
     try:
-        import numpy as np
-        import cv2
-        
-        common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
-        src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
-        dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
-        
-        if len(common_corners) == 3:
-            H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
-            H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
-        else:
-            H_curr, _ = cv2.findHomography(src_pts, dst_pts)
+        aligned_pnp = False
+        if len(state.latest_detected_markers) >= 4 and len(state.home_markers) >= 4:
+            try:
+                head_proj = project_pixel_to_cnc_for_frame(cnchead_px[0], cnchead_px[1], state.latest_detected_markers)
+                home_proj = project_pixel_to_cnc_for_frame(state.home_pixel[0], state.home_pixel[1], state.home_markers)
+                if head_proj is not None and home_proj is not None:
+                    x_cnc_expected = head_proj[0] - home_proj[0]
+                    y_cnc_expected = head_proj[1] - home_proj[1]
+                    aligned_pnp = True
+                    logger.info(f"[Calib45] reset_home_api restored via PnP & Height: X={x_cnc_expected:.3f}, Y={y_cnc_expected:.3f}")
+            except Exception as ePnP:
+                logger.warning(f"Home restoration via PnP failed: {ePnP}. Falling back to homography.")
+
+        if not aligned_pnp:
+            # 2. Get current homography matrix from pixels to Bed Coordinates (BCS)
+            if not state.latest_detected_markers or len(state.latest_detected_markers) < 3:
+                return JSONResponse({
+                    "status": "error", 
+                    "message": "Không đủ 3 hoặc 4 điểm ArUco hiện tại để định vị hệ tọa độ bed."
+                }, status_code=400)
             
-        # Convert current cnchead_px to current Bed Coordinates (BCS)
-        px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
-        bed_head = np.dot(H_curr, px_vec)
-        x_head_bed = bed_head[0] / bed_head[2]
-        y_head_bed = bed_head[1] / bed_head[2]
-        
-        # 3. Get saved home coordinates in BCS using saved home markers
-        home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
-        if len(home_corners) < 3:
-            return JSONResponse({
-                "status": "error",
-                "message": "Không đủ thông tin ArUco trong kịch bản home đã lưu để định vị."
-            }, status_code=400)
+            import numpy as np
+            import cv2
             
-        src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
-        dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
-        
-        if len(home_corners) == 3:
-            H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
-            H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
-        else:
-            H_home, _ = cv2.findHomography(src_home, dst_home)
+            common_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.latest_detected_markers]
+            src_pts = np.array([state.latest_detected_markers[c] for c in common_corners], dtype=np.float32)
+            dst_pts = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in common_corners], dtype=np.float32)
             
-        # Convert saved home_pixel to saved Bed Coordinates (BCS)
-        px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
-        bed_home = np.dot(H_home, px_home_vec)
-        x_home_bed = bed_home[0] / bed_home[2]
-        y_home_bed = bed_home[1] / bed_home[2]
-        
-        # 4. Calculate expected CNC coordinates (negate Y because CNC Y direction is opposite of BCS Y direction)
-        x_cnc_expected = x_head_bed - x_home_bed
-        y_cnc_expected = -(y_head_bed - y_home_bed)
+            if len(common_corners) == 3:
+                H_curr_aff, _ = cv2.estimateAffine2D(src_pts, dst_pts)
+                H_curr = np.vstack([H_curr_aff, [0.0, 0.0, 1.0]])
+            else:
+                H_curr, _ = cv2.findHomography(src_pts, dst_pts)
+                
+            # Convert current cnchead_px to current Bed Coordinates (BCS)
+            px_vec = np.array([cnchead_px[0], cnchead_px[1], 1.0], dtype=np.float32)
+            bed_head = np.dot(H_curr, px_vec)
+            x_head_bed = bed_head[0] / bed_head[2]
+            y_head_bed = bed_head[1] / bed_head[2]
+            
+            # 3. Get saved home coordinates in BCS using saved home markers
+            home_corners = [c for c in ["TL", "TR", "BR", "BL"] if c in state.home_markers]
+            if len(home_corners) < 3:
+                return JSONResponse({
+                    "status": "error",
+                    "message": "Không đủ thông tin ArUco trong kịch bản home đã lưu để định vị."
+                }, status_code=400)
+                
+            src_home = np.array([state.home_markers[c] for c in home_corners], dtype=np.float32)
+            dst_home = np.array([[-100.0, 75.0] if c=="TL" else [100.0, 75.0] if c=="TR" else [100.0, -75.0] if c=="BR" else [-100.0, -75.0] for c in home_corners], dtype=np.float32)
+            
+            if len(home_corners) == 3:
+                H_home_aff, _ = cv2.estimateAffine2D(src_home, dst_home)
+                H_home = np.vstack([H_home_aff, [0.0, 0.0, 1.0]])
+            else:
+                H_home, _ = cv2.findHomography(src_home, dst_home)
+                
+            # Convert saved home_pixel to saved Bed Coordinates (BCS)
+            px_home_vec = np.array([state.home_pixel[0], state.home_pixel[1], 1.0], dtype=np.float32)
+            bed_home = np.dot(H_home, px_home_vec)
+            x_home_bed = bed_home[0] / bed_home[2]
+            y_home_bed = bed_home[1] / bed_home[2]
+            
+            # 4. Cập nhật 45: đảo dấu cả X và Y (đồng nhất với PnP path)
+            x_cnc_expected = -(x_head_bed - x_home_bed)
+            y_cnc_expected = -(y_head_bed - y_home_bed)
         
         # Send G10 command to redefine current coordinates on the CNC
         cmd = f"G10 L20 P0 X{x_cnc_expected:.3f} Y{y_cnc_expected:.3f}"
@@ -2380,17 +2679,23 @@ async def set_home(camera_index: int = 4):
 
     # Fallback to current mapped position of pen from grbl if cnchead not detected
     if cnchead_px is None:
-        M_adj = get_adjusted_calibration_matrix()
-        if M_adj is not None:
-            try:
-                M = np.array(M_adj, dtype=np.float32)
-                M_inv = np.linalg.inv(M)
-                wpos_vec = np.array([state.wpos[0], state.wpos[1], 1.0], dtype=np.float32)
-                px_vec = np.dot(M_inv, wpos_vec)
-                if abs(px_vec[2]) > 1e-5:
-                    cnchead_px = [float(px_vec[0] / px_vec[2]), float(px_vec[1] / px_vec[2])]
-            except Exception:
-                pass
+        projected_px = project_cnc_to_pixel(state.wpos[0], state.wpos[1], state.wpos[2])
+        if projected_px is not None:
+            cnchead_px = list(projected_px)
+            logger.info(f"[Calib45] set_home fallback projected via PnP: {cnchead_px}")
+        else:
+            M_adj = get_adjusted_calibration_matrix()
+            if M_adj is not None:
+                try:
+                    M = np.array(M_adj, dtype=np.float32)
+                    M_inv = np.linalg.inv(M)
+                    wpos_vec = np.array([state.wpos[0], state.wpos[1], 1.0], dtype=np.float32)
+                    px_vec = np.dot(M_inv, wpos_vec)
+                    if abs(px_vec[2]) > 1e-5:
+                        cnchead_px = [float(px_vec[0] / px_vec[2]), float(px_vec[1] / px_vec[2])]
+                        logger.info(f"[Calib45] set_home fallback projected via homography: {cnchead_px}")
+                except Exception:
+                    pass
 
     # If all fails, fall back to center of frame
     if cnchead_px is None:
@@ -2748,16 +3053,22 @@ async def move_to_largest(camera_index: int = 4):
         return JSONResponse({"status": "error", "message": "No objects detected. Point camera at object and retry."}, status_code=400)
         
     cx, cy = largest_obj["center"]
+    cx_undist, cy_undist = undistort_pixel(cx, cy)
     
-    # Map pixel center to work coordinates
-    M = np.array(M_adj, dtype=np.float32)
-    denom = M[2, 0] * cx + M[2, 1] * cy + M[2, 2] if M.shape[0] > 2 else 1.0
-    if abs(denom) > 1e-5:
-        wx = (M[0, 0] * cx + M[0, 1] * cy + M[0, 2]) / denom
-        wy = (M[1, 0] * cx + M[1, 1] * cy + M[1, 2]) / denom
+    projected = project_pixel_to_cnc(cx_undist, cy_undist)
+    if projected is not None:
+        wx, wy = projected
+        logger.info(f"[Calib45] move_to_largest projected via PnP & Height: X={wx:.3f}, Y={wy:.3f}")
     else:
-        wx = M[0, 0] * cx + M[0, 1] * cy + M[0, 2]
-        wy = M[1, 0] * cx + M[1, 1] * cy + M[1, 2]
+        M = np.array(M_adj, dtype=np.float32)
+        denom = M[2, 0] * cx_undist + M[2, 1] * cy_undist + M[2, 2] if M.shape[0] > 2 else 1.0
+        if abs(denom) > 1e-5:
+            wx = (M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]) / denom
+            wy = (M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]) / denom
+        else:
+            wx = M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]
+            wy = M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]
+        logger.info(f"[Calib45] move_to_largest projected via homography fallback: X={wx:.3f}, Y={wy:.3f}")
     
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -2801,17 +3112,27 @@ async def move_to_object(config: MoveToObjectConfig):
     # Cập nhật 43: Undistort object center pixel before Homography mapping
     cx_obj, cy_obj = undistort_pixel(cx_obj, cy_obj)
     logger.info(f"[Calib43] move_to_object undistorted center: ({cx_obj:.1f}, {cy_obj:.1f})")
-    M = np.array(M_adj, dtype=np.float32)
-    denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
-    if abs(denom) > 1e-5:
-        wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
-        wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
+    
+    projected = project_pixel_to_cnc(cx_obj, cy_obj)
+    if projected is not None:
+        wx_obj, wy_obj = projected
+        logger.info(f"[Calib45] move_to_object projected via PnP & Height: X={wx_obj:.3f}, Y={wy_obj:.3f}")
     else:
-        wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
-        wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
+        M = np.array(M_adj, dtype=np.float32)
+        denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
+        if abs(denom) > 1e-5:
+            wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
+            wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
+        else:
+            wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
+            wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
+        # Cập nhật 45: đảo dấu X và Y trong homography fallback (đồng nhất với PnP path)
+        wx_obj = -wx_obj
+        wy_obj = -wy_obj
+        logger.info(f"[Calib45] move_to_object projected via homography fallback: X={wx_obj:.3f}, Y={wy_obj:.3f}")
 
     # 2. Cập nhật 42: Bỏ qua điểm trung tâm khi A.I bbox được cnc head. Không sử dụng cnchead từ YOLO để tính toán di chuyển.
-    # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography (đã hiệu chỉnh theo touch_pen_pixel).
+    # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography / PnP (đã hiệu chỉnh theo touch_pen_pixel).
     target_wx = wx_obj
     target_wy = wy_obj
     movement_type = "direct mapping (touch pen calibrated)"
@@ -2870,14 +3191,23 @@ async def click_go(config: ClickGoConfig):
     logger.info(f"[Calib43] click_go undistorted pixel: ({target_x:.1f}, {target_y:.1f})")
 
     # Map pixel coordinates to work coordinates
-    M = np.array(M_adj, dtype=np.float32)
-    denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
-    if abs(denom) > 1e-5:
-        wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
-        wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
+    projected = project_pixel_to_cnc(target_x, target_y)
+    if projected is not None:
+        wx, wy = projected
+        logger.info(f"[Calib45] click_go projected via PnP & Height: X={wx:.3f}, Y={wy:.3f}")
     else:
-        wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
-        wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+        M = np.array(M_adj, dtype=np.float32)
+        denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
+        if abs(denom) > 1e-5:
+            wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
+            wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
+        else:
+            wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
+            wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+        # Cập nhật 45: đảo dấu X và Y trong homography fallback (đồng nhất với PnP path)
+        wx = -wx
+        wy = -wy
+        logger.info(f"[Calib45] click_go projected via homography fallback: X={wx:.3f}, Y={wy:.3f}")
 
     
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"

@@ -251,3 +251,23 @@ check nếu có file cnc/camera_calibration_result.npz mới áp dụng tính to
 **cập nhật 44** khi set home thì gốc tọa độ trên frame video, gốc home cnc cần lưu để khi tắt hệ thống đi mở lại vẫn đúng vị trí như khi set.
 vị trí cuối cùng của cnc và tương ứng với vị trí đó là touch pen position trên frame video , khi khởi động lại các vị trí này cần được load lại.
     vd khi có các vị trí home cnc, gốc tọa độ frame video, vị trí cuối của cnc head , vị trí cuối của touch pen . click nút go to x=0, y=0 hoặc stop and go home thì cnc sẽ di chuyển về home cnc , tương tự touch pen postion cũng sẽ về gốc tọa độ video frame
+
+**cập nhật 45** các cập nhật 42, cập nhật 43, cập nhật 44 dùng để xử lý việc tính toán di chuyển khi thao tác trên frame video cho cnc head ở ngoài đời thực. bổ xung thêm chiều cao thực tế từ camera tới mặt phẳng làm việc (mặt phẳng số 0) là 542mm (54.2cm). áp dụng việc tính toán cho việc click trên frame video để di chuyển cnc head ( đầu cnc), move to object detected, go to home , set home , set pen touch position, set 4 marker aruco manual ...cần di chuyển đúng tới vị trí
+cần lưu thêm chiều cao vào cấu hình để khi tắt máy load lại vẫn dùng được. tính toán về y cần xem cập nhật 20, cập nhật 24, cập nhật 38
+
+gốc tọa độ frame video là tâm của hình được tạo từ 4 aruco manual khi chuột phải set, khi set home thì cnc head thực tế đã nằm đúng vị trí  gốc tọa độ frame video.
+với frame video gốc tọa độ frame video trái sang phải là trục +x, gốc tọa độ frame video trên xuống dưới là trục y+  
+```
+       |
+       |
+_______|_______x+
+       |
+       |
+       |y+
+```
+phần tư thứ 0: x+, y+
+phân tư thứ 1: x-, y+
+phân tư thứ 2: x-, y-
+phân tư thứ 3: x+, y-
+
+đang bị sai cần sửa, click chuột vào phần tư thứ 0 thì cnc head thực tế lại di chuyển về phần tư thứ 3, cần sửa cho đúng việc tính toán từ position pixel trên frame video thành gcode cnc head di chuyển

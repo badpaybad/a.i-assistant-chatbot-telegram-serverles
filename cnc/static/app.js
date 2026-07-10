@@ -652,6 +652,13 @@ function setupEventListeners() {
             saveUIPreferencesToServer();
         });
     }
+
+    const cameraHeightInput = document.getElementById("camera-height");
+    if (cameraHeightInput) {
+        cameraHeightInput.addEventListener("input", () => {
+            saveUIPreferencesToServer();
+        });
+    }
     function jog_keyboard_register_event() {
 
         // Interactive Jog Keypad
@@ -2812,7 +2819,8 @@ async function loadSavedUIPreferences() {
         gesture_feedrate: 4000,
         gesture_distance: 40.0,
         gesture_dwell: 0.15,
-        gesture_tap_dwell: 0.05
+        gesture_tap_dwell: 0.05,
+        camera_height: 542.0
     };
 
     try {
@@ -2853,6 +2861,9 @@ async function loadSavedUIPreferences() {
 
         const localGestureTapDwell = localStorage.getItem("cnc_gesture_tap_dwell");
         if (localGestureTapDwell !== null) prefs.gesture_tap_dwell = parseFloat(localGestureTapDwell);
+
+        const localCameraHeight = localStorage.getItem("cnc_camera_height");
+        if (localCameraHeight !== null) prefs.camera_height = parseFloat(localCameraHeight);
     }
 
     // Apply to DOM and Global variables
@@ -2887,6 +2898,9 @@ async function loadSavedUIPreferences() {
     const gestureTapDwellInput = document.getElementById("gesture-tap-dwell");
     if (gestureTapDwellInput) gestureTapDwellInput.value = prefs.gesture_tap_dwell;
 
+    const cameraHeightInput = document.getElementById("camera-height");
+    if (cameraHeightInput) cameraHeightInput.value = prefs.camera_height !== undefined ? prefs.camera_height : 542.0;
+
     // Sync to localStorage
     syncPreferencesToLocalStorage(prefs);
 }
@@ -2898,6 +2912,7 @@ function syncPreferencesToLocalStorage(prefs) {
     localStorage.setItem("cnc_gesture_distance", prefs.gesture_distance);
     localStorage.setItem("cnc_gesture_dwell", prefs.gesture_dwell);
     localStorage.setItem("cnc_gesture_tap_dwell", prefs.gesture_tap_dwell);
+    localStorage.setItem("cnc_camera_height", prefs.camera_height);
 }
 
 async function saveUIPreferencesToServer() {
@@ -2905,6 +2920,7 @@ async function saveUIPreferencesToServer() {
     const gestureDistanceInput = document.getElementById("gesture-distance");
     const gestureDwellInput = document.getElementById("gesture-dwell");
     const gestureTapDwellInput = document.getElementById("gesture-tap-dwell");
+    const cameraHeightInput = document.getElementById("camera-height");
 
     const prefs = {
         step_distance: parseFloat(sliderStep.value) || 10.0,
@@ -2912,7 +2928,8 @@ async function saveUIPreferencesToServer() {
         gesture_feedrate: gestureFeedrateInput ? parseInt(gestureFeedrateInput.value, 10) : 4000,
         gesture_distance: gestureDistanceInput ? parseFloat(gestureDistanceInput.value) : 40.0,
         gesture_dwell: gestureDwellInput ? parseFloat(gestureDwellInput.value) : 0.15,
-        gesture_tap_dwell: gestureTapDwellInput ? parseFloat(gestureTapDwellInput.value) : 0.05
+        gesture_tap_dwell: gestureTapDwellInput ? parseFloat(gestureTapDwellInput.value) : 0.05,
+        camera_height: cameraHeightInput ? parseFloat(cameraHeightInput.value) : 542.0
     };
 
     // Save to localStorage
