@@ -72,7 +72,17 @@ def load_calibration_settings() -> dict:
         "pen_up_pwm": 30.0,
         "pen_down_pwm": 90.0,
         "pen_dwell": 0.25,
-        "camera_height": 542.0
+        "camera_height": 542.0,
+        # Cập nhật 48: hệ tọa độ mới
+        "frame_o": {"x": 360.0, "y": 360.0},
+        "cnc_o":   {"x": 0.0,   "y": 0.0},    # work coord
+        "cnc_mpos_o": {"x": 0.0, "y": 0.0},    # mpos cơ học
+        "frame_tl": None, "cnc_tl": None, "cnc_mpos_tl": None,
+        "frame_tr": None, "cnc_tr": None, "cnc_mpos_tr": None,
+        "frame_br": None, "cnc_br": None, "cnc_mpos_br": None,
+        "frame_bl": None, "cnc_bl": None, "cnc_mpos_bl": None,
+        "frame_last": {"x": 360.0, "y": 360.0},
+        "cnc_last":   {"x": 0.0,   "y": 0.0},
     }
     
     settings = default_settings.copy()
@@ -202,6 +212,26 @@ class ControllerState:
         # Cập nhật 44: Thêm mpos tại home và mpos cuối cùng được lưu
         self.home_mpos = cal_settings.get("home_mpos", [0.0, 0.0, 0.0])
         self.saved_mpos = cal_settings.get("saved_mpos", [0.0, 0.0, 0.0])
+
+        # Cập nhật 48: hệ tọa độ mới — gốc tọa độ, 4 góc, vị trí cuối
+        self.v48_frame_o  = cal_settings.get("frame_o",  {"x": 360.0, "y": 360.0})
+        self.v48_cnc_o    = cal_settings.get("cnc_o",    {"x": 0.0,   "y": 0.0})   # work coord
+        self.v48_frame_tl = cal_settings.get("frame_tl", None)
+        self.v48_cnc_tl   = cal_settings.get("cnc_tl",   None)   # work coord
+        self.v48_frame_tr = cal_settings.get("frame_tr", None)
+        self.v48_cnc_tr   = cal_settings.get("cnc_tr",   None)   # work coord
+        self.v48_frame_br = cal_settings.get("frame_br", None)
+        self.v48_cnc_br   = cal_settings.get("cnc_br",   None)   # work coord
+        self.v48_frame_bl = cal_settings.get("frame_bl", None)
+        self.v48_cnc_bl   = cal_settings.get("cnc_bl",   None)   # work coord
+        self.v48_frame_last = cal_settings.get("frame_last", {"x": 360.0, "y": 360.0})
+        self.v48_cnc_last   = cal_settings.get("cnc_last",   {"x": 0.0,   "y": 0.0})
+        # mpos cơ học GRBL tương ứng với từng điểm calibration
+        self.v48_cnc_mpos_o  = cal_settings.get("cnc_mpos_o",  {"x": 0.0, "y": 0.0})
+        self.v48_cnc_mpos_tl = cal_settings.get("cnc_mpos_tl", None)
+        self.v48_cnc_mpos_tr = cal_settings.get("cnc_mpos_tr", None)
+        self.v48_cnc_mpos_br = cal_settings.get("cnc_mpos_br", None)
+        self.v48_cnc_mpos_bl = cal_settings.get("cnc_mpos_bl", None)
 
 
         self.latest_detected_markers = dict(self.aruco_standard_points) # sync with manual points (cập nhật 19)
@@ -819,6 +849,106 @@ def get_frame_to_cnc_matrix() -> Optional[np.ndarray]:
         return H
     except Exception:
         return None
+
+
+def pixel_to_cnc_v48(px: float, py: float) -> Optional[Tuple[float, float]]:
+    """
+    Cập nhật 48: Hàm tính chuyển pixel (frame chính 720×720) → tọa độ CNC (mm).
+
+    Nguyên tắc:
+    - Gốc tọa độ frame chính = frame_o (luôn là 360, 360)
+    - X+ sang phải, Y+ xuống dưới
+    - Phần tư 0: dx>=0, dy>=0  → dùng frame_br / cnc_br
+    - Phần tư 1: dx<0,  dy>=0  → dùng frame_bl / cnc_bl
+    - Phần tư 2: dx<0,  dy<0   → dùng frame_tl / cnc_tl
+    - Phần tư 3: dx>=0, dy<0   → dùng frame_tr / cnc_tr
+
+    Với mỗi phần tư, tính scale_x và scale_y riêng dựa trên vector từ
+    frame_o → frame_corner và cnc_o → cnc_corner:
+        scale_x = (cnc_corner.x - cnc_o.x) / (frame_corner.x - frame_o.x)
+        scale_y = (cnc_corner.y - cnc_o.y) / (frame_corner.y - frame_o.y)
+
+    Tỷ lệ này đã bao hàm bù méo camera (dựa trên khoảng cách thực tế từ GRBL)
+    mà không cần camera_calibration_result.npz.
+
+    Kết quả:
+        cnc_x = cnc_o.x + dx * scale_x
+        cnc_y = cnc_o.y + dy * scale_y
+    """
+    if not state.home_set:
+        return None
+
+    # Lấy gốc tọa độ frame
+    fo = state.v48_frame_o
+    co = state.v48_cnc_o
+    fox, foy = float(fo.get("x", 360.0)), float(fo.get("y", 360.0))
+    cox, coy = float(co.get("x", 0.0)),   float(co.get("y", 0.0))
+
+    dx = px - fox   # dương = phải
+    dy = py - foy   # dương = xuống
+
+    # Xác định phần tư và góc calibration tương ứng
+    if dx >= 0 and dy >= 0:
+        f_corner = state.v48_frame_br
+        c_corner = state.v48_cnc_br
+        quadrant = 0
+    elif dx < 0 and dy >= 0:
+        f_corner = state.v48_frame_bl
+        c_corner = state.v48_cnc_bl
+        quadrant = 1
+    elif dx < 0 and dy < 0:
+        f_corner = state.v48_frame_tl
+        c_corner = state.v48_cnc_tl
+        quadrant = 2
+    else:  # dx >= 0 and dy < 0
+        f_corner = state.v48_frame_tr
+        c_corner = state.v48_cnc_tr
+        quadrant = 3
+
+    if f_corner is None or c_corner is None:
+        logger.warning(f"[v48] pixel_to_cnc_v48: Chưa set góc calibration cho phần tư {quadrant}")
+        return None
+
+    # Vector pixel từ gốc tới góc calibration
+    fcx = float(f_corner.get("x", 0.0))
+    fcy = float(f_corner.get("y", 0.0))
+    ccx = float(c_corner.get("x", 0.0))
+    ccy = float(c_corner.get("y", 0.0))
+
+    fdx = fcx - fox  # vector frame x
+    fdy = fcy - foy  # vector frame y
+    cdx = ccx - cox  # vector cnc x
+    cdy = ccy - coy  # vector cnc y
+
+    # Tính scale per-axis
+    if abs(fdx) < 1e-5 or abs(fdy) < 1e-5:
+        logger.warning(f"[v48] pixel_to_cnc_v48: Góc calibration phần tư {quadrant} trùng gốc tọa độ")
+        return None
+
+    scale_x = cdx / fdx
+    scale_y = cdy / fdy
+
+    # Tọa độ CNC tuyệt đối (work coordinate)
+    cnc_x = cox + dx * scale_x
+    cnc_y = coy + dy * scale_y
+
+    logger.debug(
+        f"[v48] Q{quadrant} px=({px:.1f},{py:.1f}) "
+        f"dx={dx:.1f} dy={dy:.1f} "
+        f"scale=({scale_x:.4f},{scale_y:.4f}) "
+        f"→ CNC=({cnc_x:.3f},{cnc_y:.3f})"
+    )
+    return float(cnc_x), float(cnc_y)
+
+
+def _v48_save_last_pos(target_px: float, target_py: float, cnc_x: float, cnc_y: float):
+    """Cập nhật 48: Lưu vị trí cuối cùng của CNC head vào state và file."""
+    state.v48_frame_last = {"x": target_px, "y": target_py}
+    state.v48_cnc_last   = {"x": cnc_x,     "y": cnc_y}
+    save_calibration_settings({
+        "frame_last": state.v48_frame_last,
+        "cnc_last":   state.v48_cnc_last,
+    })
 
 
 # ONNX Detection Helper Functions (cập nhật 3)
@@ -2565,16 +2695,44 @@ async def set_manual_corner(config: ManualCornerConfig):
     state.aruco_cnc_points[config.corner] = [float(state.wpos[0]), float(state.wpos[1])]
     logger.info(f"[Calib46] set_manual_corner {config.corner}: pixel=({ux:.1f},{uy:.1f}), CNC=({state.wpos[0]:.3f},{state.wpos[1]:.3f})")
 
+    # Cập nhật 48: lưu theo định dạng mới {x, y}
+    # cnc_* = work coord (wpos), cnc_mpos_* = mpos cơ học
+    corner_key_lower = config.corner.lower()  # tl, tr, br, bl
+    frame_key    = f"frame_{corner_key_lower}"
+    cnc_key      = f"cnc_{corner_key_lower}"
+    cnc_mpos_key = f"cnc_mpos_{corner_key_lower}"
+    frame_val    = {"x": float(ux), "y": float(uy)}
+    cnc_val      = {"x": float(state.wpos[0]), "y": float(state.wpos[1])}   # work coord
+    cnc_mpos_val = {"x": float(state.mpos[0]), "y": float(state.mpos[1])}  # mpos cơ học
+    setattr(state, f"v48_frame_{corner_key_lower}",    frame_val)
+    setattr(state, f"v48_cnc_{corner_key_lower}",      cnc_val)
+    setattr(state, f"v48_cnc_mpos_{corner_key_lower}", cnc_mpos_val)
+    logger.info(
+        f"[v48] set_manual_corner {config.corner}: "
+        f"frame={frame_val}, cnc_wpos={cnc_val}, cnc_mpos={cnc_mpos_val}"
+    )
+
     save_calibration_settings({
         "aruco_standard_points": state.aruco_standard_points,
-        "aruco_cnc_points": state.aruco_cnc_points
+        "aruco_cnc_points": state.aruco_cnc_points,
+        # Cập nhật 48
+        frame_key:    frame_val,
+        cnc_key:      cnc_val,      # work coord
+        cnc_mpos_key: cnc_mpos_val, # mpos cơ học
     })
 
     return {
         "status": "ok",
-        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}), CNC pos=({state.wpos[0]:.3f},{state.wpos[1]:.3f})",
+        "message": (
+            f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}), "
+            f"wpos=({state.wpos[0]:.3f},{state.wpos[1]:.3f}), "
+            f"mpos=({state.mpos[0]:.3f},{state.mpos[1]:.3f})"
+        ),
         "aruco_standard_points": state.aruco_standard_points,
-        "aruco_cnc_points": state.aruco_cnc_points
+        "aruco_cnc_points": state.aruco_cnc_points,
+        "v48_frame":    frame_val,
+        "v48_cnc":      cnc_val,
+        "v48_cnc_mpos": cnc_mpos_val,
     }
 
 class SetTouchPenConfig(BaseModel):
@@ -2640,6 +2798,19 @@ async def clear_calibration():
     })
     
     return {"status": "ok", "message": "Calibration cleared"}
+
+class SetCameraHeightConfig(BaseModel):
+    height: float
+
+@app.post("/api/calibration/set_camera_height")
+async def set_camera_height(config: SetCameraHeightConfig):
+    """Cập nhật 48: Cập nhật chiều cao từ camera tới mặt phẳng làm việc (mm)."""
+    if config.height <= 0:
+        return JSONResponse({"status": "error", "message": "Chiều cao phải > 0 mm"}, status_code=400)
+    state.camera_height = config.height
+    save_calibration_settings({"camera_height": config.height})
+    logger.info(f"[v48] set_camera_height: {config.height} mm")
+    return {"status": "ok", "camera_height": state.camera_height, "message": f"Đã cập nhật chiều cao camera: {config.height} mm"}
 
 @app.post("/api/calibration/reset_aruco")
 async def reset_aruco():
@@ -2818,12 +2989,16 @@ async def set_home(camera_index: int = 4):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
 
-    # Send GRBL command to zero work coordinates at current position
-    home_cmd = "G10 L20 P0 X0 Y0 Z0 M3 S0"
+    # Cập nhật 48: Dùng G10 L20 P1 để set work coordinate origin
+    home_cmd1 = "G10 L20 P1 X0 Y0 Z0"
+    home_cmd2 = "M5"
     try:
-        state.serial_port.write((home_cmd + "\n").encode())
+        state.serial_port.write((home_cmd1 + "\n").encode())
         state.serial_port.flush()
-        await broadcast({"type": "log", "direction": "out", "content": home_cmd})
+        await broadcast({"type": "log", "direction": "out", "content": home_cmd1})
+        state.serial_port.write((home_cmd2 + "\n").encode())
+        state.serial_port.flush()
+        await broadcast({"type": "log", "direction": "out", "content": home_cmd2})
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send home command: {e}"}, status_code=500)
 
@@ -2897,6 +3072,16 @@ async def set_home(camera_index: int = 4):
     state.home_mpos = list(state.mpos)
     state.update_calibration_matrix()
 
+    # Cập nhật 48: lưu frame_o và cnc_o
+    # frame_o luôn là tâm frame chính (360, 360)
+    # cnc_o = work coord, sau G10 L20 P1 X0 Y0 thì wpos = (0, 0)
+    state.v48_frame_o    = {"x": 360.0, "y": 360.0}
+    state.v48_cnc_o      = {"x": 0.0, "y": 0.0}   # work coord
+    state.v48_cnc_mpos_o = {"x": float(state.mpos[0]), "y": float(state.mpos[1])}  # mpos cơ học
+    state.v48_frame_last = {"x": 360.0, "y": 360.0}
+    state.v48_cnc_last   = {"x": 0.0, "y": 0.0}   # work coord
+    logger.info(f"[v48] set_home: frame_o=(360,360), cnc_o=(0,0) work, cnc_mpos_o=({state.mpos[0]:.3f},{state.mpos[1]:.3f}) mpos")
+
     # Reset wpos in state to zeros
     state.wpos = [0.0, 0.0, 0.0]
     state.saved_mpos = list(state.mpos)
@@ -2915,7 +3100,13 @@ async def set_home(camera_index: int = 4):
         "home_mpos": state.home_mpos,
         "saved_mpos": state.saved_mpos,
         "saved_pen_position": state.saved_pen_position,
-        "aruco_cnc_points": getattr(state, "aruco_cnc_points", {})
+        "aruco_cnc_points": getattr(state, "aruco_cnc_points", {}),
+        # Cập nhật 48
+        "frame_o":      state.v48_frame_o,
+        "cnc_o":        state.v48_cnc_o,       # work coord
+        "cnc_mpos_o":   state.v48_cnc_mpos_o,  # mpos cơ học
+        "frame_last":   state.v48_frame_last,
+        "cnc_last":     state.v48_cnc_last,
     })
 
     return {
@@ -2947,7 +3138,18 @@ async def get_home_status():
         "has_snapshot": state.home_snapshot is not None and os.path.exists(state.home_snapshot or ""),
         "wpos": state.wpos,
         "home_pixel": state.home_pixel,
-        "touch_pen_pixel": state.touch_pen_pixel
+        "touch_pen_pixel": state.touch_pen_pixel,
+        # Cập nhật 48
+        "frame_o": state.v48_frame_o,
+        "cnc_o":   state.v48_cnc_o,
+        "cnc_mpos_o": state.v48_cnc_mpos_o,
+        "frame_tl": state.v48_frame_tl, "cnc_tl": state.v48_cnc_tl, "cnc_mpos_tl": state.v48_cnc_mpos_tl,
+        "frame_tr": state.v48_frame_tr, "cnc_tr": state.v48_cnc_tr, "cnc_mpos_tr": state.v48_cnc_mpos_tr,
+        "frame_br": state.v48_frame_br, "cnc_br": state.v48_cnc_br, "cnc_mpos_br": state.v48_cnc_mpos_br,
+        "frame_bl": state.v48_frame_bl, "cnc_bl": state.v48_cnc_bl, "cnc_mpos_bl": state.v48_cnc_mpos_bl,
+        "frame_last": state.v48_frame_last,
+        "cnc_last":   state.v48_cnc_last,
+        "camera_height": state.camera_height,
     }
 
 
@@ -3198,11 +3400,7 @@ async def move_to_largest(camera_index: int = 4):
         
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
-        
-    M_adj = get_adjusted_calibration_matrix()
-    if not M_adj:
-        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
-    
+
     # cập nhật 5: try live detection first, fallback to cached last object
     largest_obj = None
     
@@ -3214,15 +3412,12 @@ async def move_to_largest(camera_index: int = 4):
                 sittng_dets = [d for d in detections if state.class_names.get(d["class_id"], "") == "sittng"]
                 if sittng_dets:
                     largest_obj = max(sittng_dets, key=lambda d: d["area"])
-                    # Update saved last object
                     state.last_largest_object_info = largest_obj
-                    # Save detections for flash overlay
                     state.latest_detection_results = detections
                     state.latest_detection_time = time.time()
         except Exception as e:
             logger.error(f"Live detection failed: {e}")
     
-    # Fallback to cached last object if live detection found nothing
     if largest_obj is None:
         largest_obj = getattr(state, "last_largest_object_info", None)
     
@@ -3230,38 +3425,16 @@ async def move_to_largest(camera_index: int = 4):
         return JSONResponse({"status": "error", "message": "No objects detected. Point camera at object and retry."}, status_code=400)
         
     cx, cy = largest_obj["center"]
-    cx_undist, cy_undist = undistort_pixel(cx, cy)
-    
-    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
-    projected = project_frame_pixel_to_cnc(cx, cy)
-    if projected is not None:
-        wx, wy = projected
-        logger.info(f"[Calib46] move_to_largest projected via frame homography: X={wx:.3f}, Y={wy:.3f}")
-    else:
-        # Fallback: PnP (camera_calibration_result.npz nếu có)
-        projected = project_pixel_to_cnc(cx_undist, cy_undist)
-        if projected is not None:
-            wx, wy = projected
-            logger.info(f"[Calib45] move_to_largest fallback PnP: X={wx:.3f}, Y={wy:.3f}")
-        else:
-            M = np.array(M_adj, dtype=np.float32)
-            denom = M[2, 0] * cx_undist + M[2, 1] * cy_undist + M[2, 2] if M.shape[0] > 2 else 1.0
-            if abs(denom) > 1e-5:
-                wx = (M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]) / denom
-                wy = (M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]) / denom
-            else:
-                wx = M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]
-                wy = M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]
-            logger.info(f"[Calib45] move_to_largest fallback homography: X={wx:.3f}, Y={wy:.3f}")
-    
-    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
-    tp_pixel = getattr(state, "touch_pen_pixel", None)
-    if tp_pixel is not None:
-        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
-        if tp_offset is not None:
-            wx = wx - tp_offset[0]
-            wy = wy - tp_offset[1]
-            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx:.3f} Y{wy:.3f}")
+
+    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
+    result = pixel_to_cnc_v48(cx, cy)
+    if result is None:
+        return JSONResponse({
+            "status": "error",
+            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+        }, status_code=400)
+    wx, wy = result
+    logger.info(f"[v48] move_to_largest: px=({cx:.1f},{cy:.1f}) → CNC=({wx:.3f},{wy:.3f})")
 
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -3271,6 +3444,9 @@ async def move_to_largest(camera_index: int = 4):
         await broadcast({"type": "log", "direction": "out", "content": cmd})
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
+
+    # Cập nhật 48: lưu vị trí cuối
+    _v48_save_last_pos(cx, cy, wx, wy)
     
     return {
         "status": "ok",
@@ -3295,57 +3471,18 @@ async def move_to_object(config: MoveToObjectConfig):
         
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
-        
-    M_adj = get_adjusted_calibration_matrix()
-    if not M_adj:
-        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
 
-    # 1. Map target object pixel center to workspace coordinates
     cx_obj, cy_obj = config.center
-    # Cập nhật 43: Undistort object center pixel before Homography mapping
-    cx_obj, cy_obj = undistort_pixel(cx_obj, cy_obj)
-    logger.info(f"[Calib43] move_to_object undistorted center: ({cx_obj:.1f}, {cy_obj:.1f})")
-    
-    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
-    projected = project_frame_pixel_to_cnc(cx_obj, cy_obj)
-    if projected is not None:
-        wx_obj, wy_obj = projected
-        logger.info(f"[Calib46] move_to_object projected via frame homography: X={wx_obj:.3f}, Y={wy_obj:.3f}")
-    else:
-        # Fallback: PnP
-        projected = project_pixel_to_cnc(cx_obj, cy_obj)
-        if projected is not None:
-            wx_obj, wy_obj = projected
-            logger.info(f"[Calib45] move_to_object fallback PnP: X={wx_obj:.3f}, Y={wy_obj:.3f}")
-        else:
-            M = np.array(M_adj, dtype=np.float32)
-            denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
-            if abs(denom) > 1e-5:
-                wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
-                wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
-            else:
-                wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
-                wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
-            # Cập nhật 45: đảo dấu X và Y trong homography fallback
-            wx_obj = -wx_obj
-            wy_obj = -wy_obj
-            logger.info(f"[Calib45] move_to_object fallback homography: X={wx_obj:.3f}, Y={wy_obj:.3f}")
 
-    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
-    tp_pixel = getattr(state, "touch_pen_pixel", None)
-    if tp_pixel is not None:
-        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
-        if tp_offset is not None:
-            wx_obj = wx_obj - tp_offset[0]
-            wy_obj = wy_obj - tp_offset[1]
-            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx_obj:.3f} Y{wy_obj:.3f}")
-
-    # 2. Cập nhật 42: Bỏ qua điểm trung tâm khi A.I bbox được cnc head. Không sử dụng cnchead từ YOLO để tính toán di chuyển.
-    # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography / PnP (đã hiệu chỉnh theo touch_pen_pixel).
-    target_wx = wx_obj
-    target_wy = wy_obj
-    movement_type = "direct mapping (touch pen calibrated)"
-    logger.info(f"[MoveToObject] Bỏ qua YOLO CNC head. Ánh xạ trực tiếp tọa độ đích bút touch: X={target_wx:.3f}, Y={target_wy:.3f}")
+    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
+    result = pixel_to_cnc_v48(cx_obj, cy_obj)
+    if result is None:
+        return JSONResponse({
+            "status": "error",
+            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+        }, status_code=400)
+    target_wx, target_wy = result
+    logger.info(f"[v48] move_to_object: px=({cx_obj:.1f},{cy_obj:.1f}) → CNC=({target_wx:.3f},{target_wy:.3f})")
 
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{target_wx:.3f} Y{target_wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -3356,10 +3493,13 @@ async def move_to_object(config: MoveToObjectConfig):
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
 
+    # Cập nhật 48: lưu vị trí cuối
+    _v48_save_last_pos(cx_obj, cy_obj, target_wx, target_wy)
+
     label_name = state.class_names.get(config.class_id, f"Obj {config.class_id}")
     return {
         "status": "ok",
-        "message": f"Moved CNC head to {label_name} center at machine coords: X={target_wx:.3f}, Y={target_wy:.3f} ({movement_type})",
+        "message": f"Moved CNC head to {label_name} center at machine coords: X={target_wx:.3f}, Y={target_wy:.3f}",
         "target": [target_wx, target_wy]
     }
 
@@ -3375,13 +3515,8 @@ async def click_go(config: ClickGoConfig):
         
     if not state.home_set:
         return JSONResponse({"status": "error", "message": "Home has not been set. Please press Set Home button first."}, status_code=400)
-        
-    M_adj = get_adjusted_calibration_matrix()
-    if not M_adj:
-        return JSONResponse({"status": "error", "message": "Calibration is not complete. Please calibrate at least 3 points first."}, status_code=400)
-        
+
     # Check if the click coordinate falls inside any active bounding boxes
-    # We use live detections or cached detections from state.latest_yolo_detections
     target_x, target_y = config.x, config.y
     
     # Check if there are active detections within 2 seconds
@@ -3395,45 +3530,16 @@ async def click_go(config: ClickGoConfig):
                 logger.info(f"Click inside object {d['class_id']} detected. Snapping to center: {target_x}, {target_y}")
                 break
 
-    # Cập nhật 43: Undistort pixel coordinates before Homography mapping
-    target_x, target_y = undistort_pixel(target_x, target_y)
-    logger.info(f"[Calib43] click_go undistorted pixel: ({target_x:.1f}, {target_y:.1f})")
+    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
+    result = pixel_to_cnc_v48(target_x, target_y)
+    if result is None:
+        return JSONResponse({
+            "status": "error",
+            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+        }, status_code=400)
+    wx, wy = result
+    logger.info(f"[v48] click_go: px=({target_x:.1f},{target_y:.1f}) → CNC=({wx:.3f},{wy:.3f})")
 
-    # Map pixel coordinates to work coordinates
-    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
-    projected = project_frame_pixel_to_cnc(target_x, target_y)
-    if projected is not None:
-        wx, wy = projected
-        logger.info(f"[Calib46] click_go projected via frame homography: X={wx:.3f}, Y={wy:.3f}")
-    else:
-        # Fallback: PnP
-        projected = project_pixel_to_cnc(target_x, target_y)
-        if projected is not None:
-            wx, wy = projected
-            logger.info(f"[Calib45] click_go fallback PnP: X={wx:.3f}, Y={wy:.3f}")
-        else:
-            M = np.array(M_adj, dtype=np.float32)
-            denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
-            if abs(denom) > 1e-5:
-                wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
-                wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
-            else:
-                wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
-                wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
-            # Cập nhật 45: đảo dấu X và Y trong homography fallback
-            wx = -wx
-            wy = -wy
-            logger.info(f"[Calib45] click_go fallback homography: X={wx:.3f}, Y={wy:.3f}")
-
-    # Cập nhật 46: Bù trừ Touch Pen Offset khi di chuyển đầu CNC
-    tp_pixel = getattr(state, "touch_pen_pixel", None)
-    if tp_pixel is not None:
-        tp_offset = project_frame_pixel_to_cnc(tp_pixel[0], tp_pixel[1])
-        if tp_offset is not None:
-            wx = wx - tp_offset[0]
-            wy = wy - tp_offset[1]
-            logger.info(f"[TouchPenOffset] Bù trừ touch pen offset ({tp_offset[0]:.3f}, {tp_offset[1]:.3f}) -> G1 X{wx:.3f} Y{wy:.3f}")
-    
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
         state.serial_port.write((cmd + "\n").encode())
@@ -3441,6 +3547,9 @@ async def click_go(config: ClickGoConfig):
         await broadcast({"type": "log", "direction": "out", "content": cmd})
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
+
+    # Cập nhật 48: lưu vị trí cuối
+    _v48_save_last_pos(target_x, target_y, wx, wy)
         
     return {
         "status": "ok",

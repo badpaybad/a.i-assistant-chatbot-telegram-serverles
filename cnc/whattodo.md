@@ -275,7 +275,7 @@ phân tư thứ 3: x+, y-
 đang bị sai cần sửa, click chuột vào phần tư thứ 0 thì cnc head thực tế lại di chuyển về phần tư thứ 3, cần sửa cho đúng việc tính toán từ position pixel trên frame video thành gcode cnc head di chuyển
 
 **cập nhật 46**
-không lại code tính toán để di chuyển cnc head ở các cập nhật : cập nhật 45, cập nhật 44, cập nhật 43
+không dùng lại code tính toán để di chuyển cnc head ở các cập nhật : cập nhật 45, cập nhật 44, cập nhật 43
 camera capture về là frame gốc. xác định tâm của frame gốc theo độ phân giải frame gốc đó (width gốc / 2, height gốc / 2) và tính offset để crop ra được frame 720x720.
 frame croped 720x720 gọi là frame chính
 frame chính cũng là ảnh để dùng trong việc detect object (a.i detection)
@@ -311,3 +311,77 @@ việc tính toán sẽ không dùng tới cnc/camera_calibration_result.npz mà
     việc touch pen position offset cũng cần tính toán để bù trừ khi di chuyển
     việc tính toán cũng cần cân nhắc camera nhìn thẳng xuống gốc tọa độ của frame chính, do vậy việc tuyến tính tăng dần giảm dần khoảng cách từ tâm frame tới vùng ngoại vi frame sẽ tương ứng với tuyến tính tăng dần khoảng cách từ gốc tọa độ thực tế của máy cnc head tới vùng ngoại vi. dựa vào 4 điểm aruco manual là hình tứ giác méo, nếu lấy điểm aruco xa nhất và vẽ hình vuông có tâm là gốc tọa độ sẽ có tỷ lệ về tuyến tính tăng giảm
     độ cao camera với mặt phẳng 0 tính bằng milimet,4 điểm aruco manual, touch pen position, gốc tọa độ có pixel x,y là theo frame chính, tương ứng 4 điểm đó là cnc head position của aruco tính bằng milimet. từ gốc tọa độ , và home (sau khi set home của cnc) cần tính toán để bù trừ cho gcode moving khi click trên frame video hoặc move tới tâm bbox object detected . camera sẽ tạo ra 4 tam giác vuông tới 4 aruco manual vuông tại gốc tọa độ, cạnh huyền là từ camera đến 4 điểm aurco manua tù đó có thể tính ra việc bù trừ gcode moving tới vị trí cho đúng
+
+**cập nhật 48** không dùng lại code tính toán để di chuyển cnc head ở các cập nhật : cập nhật 46, cập nhật 45, cập nhật 44, cập nhật 43 tạo code mới theo nguyên tắc sau để di chuyển khi click trên frame video hoặc di chuyển tới tâm bbox object detected
+camera capture về là frame gốc. xác định tâm của frame gốc theo độ phân giải frame gốc đó (width gốc / 2, height gốc / 2) và tính offset để crop ra được frame 720x720.
+frame croped 720x720 gọi là frame chính
+cần vẽ hiển thị trục tọa độ làm việc trên frame chính , gốc tọa độ là tâm của frame chính , trục x+ là sang phải, y+ là đi xuống
+
+```
+       |
+       |
+_______|_______x+
+       |
+       |
+       |y+
+```
+
+phần tư thứ 0: x+, y+
+phân tư thứ 1: x-, y+
+phân tư thứ 2: x-, y-
+phân tư thứ 3: x+, y-
+
+grbl code cnc set home
+    G10 L20 P1 X0 Y0 Z0
+    M5 (hoặc M3 S0)
+
+định nghĩa các thông số cần cập nhật cho cnc/calibration_settings.json sẽ có những thông số
+frame_o : {x, y}
+    pixel x của gốc tọa độ frame chính (bằng width gốc / 2) với frame chính ở đây là 320
+    pixel y của gốc tọa độ frame chính (bằng height gốc / 2) với frame chính ở đây là 320
+cnc_o : {x,y}
+    milimet x khi set home lấy theo thực tế grbl đọc ra
+    milimet y khi set home lấy theo thực tế grbl đọc ra
+
+trên UI khi click set home, vị trí cnc head đã được đưa đúng vị trí frame_o . cần lưu cập nhật frame_o, cnc_o vào cnc/calibration_settings.json
+sau khi lưu cập nhật xong, di chuyển cnc head lần lượt tới 4 góc của khung cnc , từng góc cần lưu khi set manual aruco tương ứng tl,tr,br,bl
+    frame_tl: {x:pixel,y:pixel} lấy theo vị trí pixel frame chính khi chuột phải ra menu set manual aruco tương ứng
+        cnc_tl: {x:milimet,y:milimet} lấy theo thực tế grbl đọc ra tại vị trí cnc head đang đứng
+    frame_tr: {x:pixel,y:pixel} lấy theo vị trí pixel frame chính khi chuột phải ra menu set manual aruco tương ứng
+        cnc_tr: {x:milimet,y:milimet} lấy theo thực tế grbl đọc ra tại vị trí cnc head đang đứng
+    frame_br: {x:pixel,y:pixel} lấy theo vị trí pixel frame chính khi chuột phải ra menu set manual aruco tương ứng
+        cnc_br: {x:milimet,y:milimet} lấy theo thực tế grbl đọc ra tại vị trí cnc head đang đứng
+    frame_bl: {x:pixel,y:pixel} lấy theo vị trí pixel frame chính khi chuột phải ra menu set manual aruco tương ứng
+        cnc_bl: {x:milimet,y:milimet} lấy theo thực tế grbl đọc ra tại vị trí cnc head đang đứng
+cần lưu cập nhật các thông số frame_tl,cnc_tl, frame_tr,cnc_tr,frame_br,cnc_br,frame_bl, cnc_bl khi được click set trên UI vào cnc/calibration_settings.json
+
+camera_height: chiều cao tính bằng milimet từ camera tới mặt phẳng 0 (mặt phẳng làm việc là frame chính) hiện tại là là 542mm (54.2cm) khi có thay đổi cần lưu cập nhật vào cnc/calibration_settings.json
+
+vùng làm việc của camera là diện tích tạo bởi: frame_tl, frame_tr, frame_bl, frame_br
+vùng làm việc của cnc head là: cnc_tl, cnc_tr, cnc_bl, cnc_br
+
+quy tắc tính chuyển pixel sang milimet để tạo gcode di chuyển cnc khi click trên frame chính , hoặc di chuyển tới tâm bbox object detected
+    tính 1 pixel là bao nhiêu milimet
+        pixel của phần tư 0: (dộ dài từ cnc_o tới cnc_br) / (độ dài frame_o, frame_br)
+        pixel của phần tư 1: (dộ dài từ cnc_o tới cnc_bl) / (độ dài frame_o, frame_bl)
+        pixel của phần tư 2: (dộ dài từ cnc_o tới cnc_tl) / (độ dài frame_o, frame_tl)
+        pixel của phần tư 3: (dộ dài từ cnc_o tới cnc_tr) / (độ dài frame_o, frame_tr)
+    các tỷ lệ đường chéo
+        tỷ lệ 0 : vector frame phần tư thứ 0 (frame_o , frame_br) tỷ lệ với vector cnc (cnc_o, cnc_br)
+        tỷ lệ 1 : vector frame phần tư thứ 1 (frame_o , frame_bl) tỷ lệ với vector cnc (cnc_o, cnc_bl)
+        tỷ lệ 2 : vector frame phần tư thứ 2 (frame_o , frame_lt) tỷ lệ với vector cnc (cnc_o, cnc_tl)
+        tỷ lệ 3 : vector frame phần tư thứ 3 (frame_o , frame_tr) tỷ lệ với vector cnc (cnc_o, cnc_tr)
+    công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual:
+        frame tg 0 của phần tư thứ 0: (độ dài đoạn từ frame_o tới frame_br) chia camera_height
+        frame tg 1 của phần tư thứ 1: (độ dài đoạn từ frame_o tới frame_bl) chia camera_height
+        frame tg 2 của phần tư thứ 2: (độ dài đoạn từ frame_o tới frame_lt) chia camera_height
+        frame tg 3 của phần tư thứ 3: (độ dài đoạn từ frame_o tới frame_tr) chia camera_height
+        cnc tg 0 của phần tư thứ 0: (độ dài đoạn từ cnc_o tới cnc_br) chia camera_height
+        cnc tg 1 của phần tư thứ 1: (độ dài đoạn từ cnc_o tới cnc_bl) chia camera_height
+        cnc tg 2 của phần tư thứ 2: (độ dài đoạn từ cnc_o tới cnc_lt) chia camera_height
+        cnc tg 3 của phần tư thứ 3: (độ dài đoạn từ cnc_o tới cnc_tr) chia camera_height
+    khi click chuột trên frame chính hoặc bbox sẽ có target : {x,y} là pixel tương ứng trên frame chính, phụ thuộc vào góc phần tư nào (phần tư thứ 0,1,2,3) mà lấy tương ứng các tỷ lệ đường chéo, công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual, tính 1 pixel là bao nhiêu milimet dựa vào đó tính ra được gcode sinh ra để di chuyển cnc head tới targett {x,y}
+
+cần lưu cả vị trí cuối cùng của cnc head (frame_last , cnc_last) vào cnc/calibration_settings.json để khi tắt máy đi mở lại thì cnc head ở ngoài thực tế và frame chính ở trên web UI đang ở cùng vị trí cuối cùng của cnc head , vd có thể click go to x=0,y=0 hoặc go to home là cnc head di chuyển về gốc tọa độ (frame_o, cnc_o)
+cnc_o là work coord
+cnc/calibration_settings.json cần lưu cả cnc_wpos cơ học (cnc_wpos_o, cnc_wpos_tl, cnc_wpos_tr, cnc_wpos_bl, cnc_mpos_br)
