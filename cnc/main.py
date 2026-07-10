@@ -194,8 +194,11 @@ class ControllerState:
         self.home_snapshot = cal_settings.get("home_snapshot", None)
         self.aruco_standard_points = cal_settings.get("aruco_standard_points", {})
         self.saved_pen_position = cal_settings.get("saved_pen_position", [0.0, 0.0, 0.0])
-        self.home_pixel = cal_settings.get("home_pixel", [360.0, 360.0])
+        # Cập nhật 46: home_pixel luôn là tâm frame chính (360, 360)
+        self.home_pixel = [360.0, 360.0]
         self.touch_pen_pixel = cal_settings.get("touch_pen_pixel", None)
+        # Cập nhật 46: lưu vị trí CNC tương ứng với mỗi góc ArUco manual
+        self.aruco_cnc_points: Dict[str, List[float]] = cal_settings.get("aruco_cnc_points", {})
         # Cập nhật 44: Thêm mpos tại home và mpos cuối cùng được lưu
         self.home_mpos = cal_settings.get("home_mpos", [0.0, 0.0, 0.0])
         self.saved_mpos = cal_settings.get("saved_mpos", [0.0, 0.0, 0.0])
@@ -681,6 +684,187 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
         return None
     return M.tolist()
 
+
+def undistort_pixel_with_k1(px: float, py: float, k1: float) -> Tuple[float, float]:
+    """
+    Undistort a pixel relative to the frame center (360, 360) using a radial distortion coefficient k1.
+    """
+    dx = px - 360.0
+    dy = py - 360.0
+    r2 = dx*dx + dy*dy
+    factor = 1.0 + k1 * r2
+    return 360.0 + dx * factor, 360.0 + dy * factor
+
+
+def get_radial_distortion_coef() -> float:
+    """
+    Fit the model: R_cnc / r_px = s + b * r_px^2
+    where:
+      - R_cnc is the physical CNC distance from home (0,0)
+      - r_px is the pixel distance from the main frame center (360, 360)
+    Returns k1 = b / s (or 0.0 if not enough data or fit is unstable).
+    Also logs the calculated focal length using camera_height.
+    """
+    if not state.home_set:
+        return 0.0
+
+    aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
+    corners = ["TL", "TR", "BR", "BL"]
+    
+    corner_pixels = {}
+    corner_cnc = {}
+    for c in corners:
+        px = state.aruco_standard_points.get(c)
+        cx = aruco_cnc.get(c)
+        if px and cx and len(px) >= 2 and len(cx) >= 2:
+            corner_pixels[c] = np.array(px, dtype=np.float32)
+            corner_cnc[c] = np.array(cx, dtype=np.float32)
+            
+    src_pts = []
+    dst_pts = []
+    
+    # 4 corners
+    for c, px in corner_pixels.items():
+        src_pts.append(px)
+        dst_pts.append(corner_cnc[c])
+        
+    # 4 midpoints of the edges
+    edges = [("TL", "TR"), ("TR", "BR"), ("BR", "BL"), ("BL", "TL")]
+    for c1, c2 in edges:
+        if c1 in corner_pixels and c2 in corner_pixels:
+            mid_px = (corner_pixels[c1] + corner_pixels[c2]) / 2.0
+            mid_cnc = (corner_cnc[c1] + corner_cnc[c2]) / 2.0
+            src_pts.append(mid_px)
+            dst_pts.append(mid_cnc)
+            
+    if len(src_pts) < 4:
+        return 0.0
+        
+    x_data = []
+    y_data = []
+    for px, cx in zip(src_pts, dst_pts):
+        dx = px[0] - 360.0
+        dy = px[1] - 360.0
+        r_px = np.sqrt(dx*dx + dy*dy)
+        R_cnc = np.sqrt(cx[0]*cx[0] + cx[1]*cx[1])
+        if r_px > 1.0:
+            x_data.append(r_px * r_px)
+            y_data.append(R_cnc / r_px)
+            
+    if len(x_data) < 3:
+        return 0.0
+        
+    try:
+        x_arr = np.array(x_data, dtype=np.float32)
+        y_arr = np.array(y_data, dtype=np.float32)
+        
+        # Linear regression: y = s + b * x
+        A = np.vstack([np.ones_like(x_arr), x_arr]).T
+        s, b = np.linalg.lstsq(A, y_arr, rcond=None)[0]
+        
+        if abs(s) > 1e-5:
+            k1 = b / s
+            # Sanity check: typical lens radial distortion k1 should be small.
+            # If the calculation yields an extremely large number, ignore it to prevent overflow/distortion.
+            if -1e-4 < k1 < 1e-4:
+                # Log focal length estimate using camera_height
+                h_cam = getattr(state, "camera_height", 542.0)
+                f_est = h_cam / s if s > 0 else 0.0
+                logger.info(f"[Calib46] Radial distortion fit: k1={k1:.6e}, scale s={s:.6f} mm/px. Camera height={h_cam:.1f} mm. Estimated focal length f={f_est:.2f} px")
+                return float(k1)
+    except Exception as e:
+        logger.error(f"[Calib46] Error fitting radial distortion: {e}")
+        
+    return 0.0
+
+
+def get_frame_to_cnc_matrix() -> Optional[Tuple[np.ndarray, float]]:
+    """
+    Cập nhật 46: Tính ma trận homography ánh xạ pixel frame chính (sau khi khử méo k1) → tọa độ CNC.
+    Nguồn calibration gồm 9 điểm:
+      - Gốc tọa độ frame chính (360, 360) ↔ CNC (0, 0)
+      - 4 điểm ArUco manual ↔ aruco_cnc_points
+      - 4 trung điểm của các cạnh ↔ trung điểm CNC tương ứng
+    Trả về (H, k1) hoặc None.
+    """
+    k1 = get_radial_distortion_coef()
+    
+    src_pts = []   # undistorted pixel coords
+    dst_pts = []   # CNC work coords
+    
+    # 1. Center (Home)
+    if state.home_set:
+        tp = getattr(state, "touch_pen_pixel", None) or [360.0, 360.0]
+        ux, uy = undistort_pixel_with_k1(tp[0], tp[1], k1)
+        src_pts.append([ux, uy])
+        dst_pts.append([0.0, 0.0])
+        
+    # 2. ArUco Manual corners
+    aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
+    corner_pixels = {}
+    corner_cnc = {}
+    for c in ["TL", "TR", "BR", "BL"]:
+        px = state.aruco_standard_points.get(c)
+        cx = aruco_cnc.get(c)
+        if px and cx and len(px) >= 2 and len(cx) >= 2:
+            corner_pixels[c] = np.array(px, dtype=np.float32)
+            corner_cnc[c] = np.array(cx, dtype=np.float32)
+            ux, uy = undistort_pixel_with_k1(px[0], px[1], k1)
+            src_pts.append([ux, uy])
+            dst_pts.append([float(cx[0]), float(cx[1])])
+            
+    # 3. Midpoints of the edges
+    edges = [("TL", "TR"), ("TR", "BR"), ("BR", "BL"), ("BL", "TL")]
+    for c1, c2 in edges:
+        if c1 in corner_pixels and c2 in corner_pixels:
+            mid_px = (corner_pixels[c1] + corner_pixels[c2]) / 2.0
+            mid_cnc = (corner_cnc[c1] + corner_cnc[c2]) / 2.0
+            ux, uy = undistort_pixel_with_k1(mid_px[0], mid_px[1], k1)
+            src_pts.append([ux, uy])
+            dst_pts.append([float(mid_cnc[0]), float(mid_cnc[1])])
+            
+    if len(src_pts) < 3:
+        return None
+        
+    try:
+        src = np.array(src_pts, dtype=np.float32)
+        dst = np.array(dst_pts, dtype=np.float32)
+        if len(src_pts) == 3:
+            M_aff, _ = cv2.estimateAffine2D(src, dst)
+            if M_aff is None:
+                return None
+            return np.vstack([M_aff, [0.0, 0.0, 1.0]]), k1
+        else:
+            H, _ = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
+            return H, k1
+    except Exception as e:
+        logger.error(f"[Calib46] get_frame_to_cnc_matrix error: {e}")
+        return None
+
+
+def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, float]]:
+    """
+    Cập nhật 46: Chiếu pixel (frame chính 720×720) → tọa độ CNC work.
+    Sử dụng ma trận homography và tham số radial distortion k1 tự suy luận.
+    Không dùng camera_calibration_result.npz.
+    """
+    res = get_frame_to_cnc_matrix()
+    if res is None:
+        return None
+    H, k1 = res
+    try:
+        # 1. Khử méo pixel đầu vào bằng k1
+        ux, uy = undistort_pixel_with_k1(px, py, k1)
+        # 2. Chiếu qua ma trận homography
+        v = np.array([ux, uy, 1.0], dtype=np.float32)
+        result = np.dot(H, v)
+        if abs(result[2]) < 1e-6:
+            return None
+        return float(result[0] / result[2]), float(result[1] / result[2])
+    except Exception as e:
+        logger.error(f"[Calib46] project_frame_pixel_to_cnc error: {e}")
+        return None
+
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session(forceload=False):
     if forceload ==True:
@@ -1123,6 +1307,30 @@ class CameraManager:
 
             frame = raw.copy()
 
+            # ── Cập nhật 46: Luôn vẽ trục tọa độ làm việc tại tâm frame (360, 360) ──
+            # Gốc tọa độ = tâm frame chính; X+ = phải; Y+ = xuống dưới
+            try:
+                h_f, w_f = frame.shape[:2]
+                cx_frame = w_f // 2  # 360
+                cy_frame = h_f // 2  # 360
+                # Đường X (ngang) — màu cyan nhạt
+                cv2.line(frame, (0, cy_frame), (w_f - 1, cy_frame), (180, 180, 0), 1)
+                # Đường Y (dọc) — màu magenta nhạt
+                cv2.line(frame, (cx_frame, 0), (cx_frame, h_f - 1), (180, 0, 180), 1)
+                # Chấm tròn tại gốc tọa độ
+                cv2.circle(frame, (cx_frame, cy_frame), 5, (255, 255, 255), -1)
+                # Nhãn x+ ở bên phải
+                cv2.putText(frame, "x+", (w_f - 40, cy_frame - 6),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1, cv2.LINE_AA)
+                # Nhãn y+ ở bên dưới
+                cv2.putText(frame, "y+", (cx_frame + 6, h_f - 6),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 255), 1, cv2.LINE_AA)
+                # Nhãn (0,0) tại gốc
+                cv2.putText(frame, "(0,0)", (cx_frame + 7, cy_frame - 7),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1, cv2.LINE_AA)
+            except Exception as e:
+                logger.error(f"[Draw] Coordinate axes error camera {index}: {e}")
+
             if draw_overlay:
                 try:
                     # ── Draw actively/live detected ArUco markers (faded) ──────────────────────────────
@@ -1192,17 +1400,18 @@ class CameraManager:
                         mid_top = ((std_pts["TL"][0] + std_pts["TR"][0]) // 2, (std_pts["TL"][1] + std_pts["TR"][1]) // 2)
                         mid_bot = ((std_pts["BL"][0] + std_pts["BR"][0]) // 2, (std_pts["BL"][1] + std_pts["BR"][1]) // 2)
 
-                        # X-axis: cyan line from Left Midpoint to Right Midpoint
-                        cv2.line(frame, mid_left, mid_right, (255, 255, 0), 2)
-                        # Put text x+ at right midpoint
-                        cv2.putText(frame, "x+", (mid_right[0] + 8, mid_right[1] + 5),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
+                        # # X-axis: cyan line from Left Midpoint to Right Midpoint
+                        # cv2.line(frame, mid_left, mid_right, (255, 255, 0), 2)
+                        # # Put text x+ at right midpoint
+                        # cv2.putText(frame, "x+", (mid_right[0] + 8, mid_right[1] + 5),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 0), 2)
 
-                        # Y-axis: magenta line from Top Midpoint to Bottom Midpoint
-                        cv2.line(frame, mid_top, mid_bot, (255, 0, 255), 2)
-                        # Put text y+ at bottom midpoint
-                        cv2.putText(frame, "y+", (mid_bot[0] - 10, mid_bot[1] + 20),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
+                        # # Y-axis: magenta line from Top Midpoint to Bottom Midpoint
+                        # cv2.line(frame, mid_top, mid_bot, (255, 0, 255), 2)
+                        # # Put text y+ at bottom midpoint
+                        # cv2.putText(frame, "y+", (mid_bot[0] - 10, mid_bot[1] + 20),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 255), 2)
+
                 except Exception as e:
                     logger.error(f"[Draw] ArUco overlay error camera {index}: {e}")
 
@@ -2394,14 +2603,22 @@ async def set_manual_corner(config: ManualCornerConfig):
     state.latest_detected_markers[config.corner] = [ux, uy]
     state.latest_detected_markers_time[config.corner] = time.time()
 
+    # Cập nhật 46: lưu vị trí CNC hiện tại tương ứng với góc ArUco này
+    if not hasattr(state, "aruco_cnc_points") or state.aruco_cnc_points is None:
+        state.aruco_cnc_points = {}
+    state.aruco_cnc_points[config.corner] = [float(state.wpos[0]), float(state.wpos[1])]
+    logger.info(f"[Calib46] set_manual_corner {config.corner}: pixel=({ux:.1f},{uy:.1f}), CNC=({state.wpos[0]:.3f},{state.wpos[1]:.3f})")
+
     save_calibration_settings({
-        "aruco_standard_points": state.aruco_standard_points
+        "aruco_standard_points": state.aruco_standard_points,
+        "aruco_cnc_points": state.aruco_cnc_points
     })
 
     return {
         "status": "ok",
-        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f})",
-        "aruco_standard_points": state.aruco_standard_points
+        "message": f"Successfully set corner {config.corner} to pixel ({raw_x:.1f}, {raw_y:.1f}) → undistorted ({ux:.1f}, {uy:.1f}), CNC pos=({state.wpos[0]:.3f},{state.wpos[1]:.3f})",
+        "aruco_standard_points": state.aruco_standard_points,
+        "aruco_cnc_points": state.aruco_cnc_points
     }
 
 class SetTouchPenConfig(BaseModel):
@@ -2716,9 +2933,12 @@ async def set_home(camera_index: int = 4):
         state.home_markers = dict(state.latest_detected_markers)
     state.home_snapshot = snapshot_path
 
-    # Cập nhật 44: Gốc home cnc cần lưu lại mpos cơ học và touch_pen_pixel lúc set home bằng home_pixel
+    # Cập nhật 46: home_pixel luôn là tâm frame chính (360, 360)
+    # Người dùng đã đưa CNC head về tâm frame trước khi nhấn Set Home
+    state.home_pixel = [360.0, 360.0]
+    state.touch_pen_pixel = [360.0, 360.0]
+    # Lưu mpos cơ học tại thời điểm set home (cập nhật 44)
     state.home_mpos = list(state.mpos)
-    state.touch_pen_pixel = list(state.home_pixel)
     state.update_calibration_matrix()
 
     # Reset wpos in state to zeros
@@ -2738,7 +2958,8 @@ async def set_home(camera_index: int = 4):
         "touch_pen_pixel": state.touch_pen_pixel,
         "home_mpos": state.home_mpos,
         "saved_mpos": state.saved_mpos,
-        "saved_pen_position": state.saved_pen_position
+        "saved_pen_position": state.saved_pen_position,
+        "aruco_cnc_points": getattr(state, "aruco_cnc_points", {})
     })
 
     return {
@@ -3055,20 +3276,27 @@ async def move_to_largest(camera_index: int = 4):
     cx, cy = largest_obj["center"]
     cx_undist, cy_undist = undistort_pixel(cx, cy)
     
-    projected = project_pixel_to_cnc(cx_undist, cy_undist)
+    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
+    projected = project_frame_pixel_to_cnc(cx, cy)
     if projected is not None:
         wx, wy = projected
-        logger.info(f"[Calib45] move_to_largest projected via PnP & Height: X={wx:.3f}, Y={wy:.3f}")
+        logger.info(f"[Calib46] move_to_largest projected via frame homography: X={wx:.3f}, Y={wy:.3f}")
     else:
-        M = np.array(M_adj, dtype=np.float32)
-        denom = M[2, 0] * cx_undist + M[2, 1] * cy_undist + M[2, 2] if M.shape[0] > 2 else 1.0
-        if abs(denom) > 1e-5:
-            wx = (M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]) / denom
-            wy = (M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]) / denom
+        # Fallback: PnP (camera_calibration_result.npz nếu có)
+        projected = project_pixel_to_cnc(cx_undist, cy_undist)
+        if projected is not None:
+            wx, wy = projected
+            logger.info(f"[Calib45] move_to_largest fallback PnP: X={wx:.3f}, Y={wy:.3f}")
         else:
-            wx = M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]
-            wy = M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]
-        logger.info(f"[Calib45] move_to_largest projected via homography fallback: X={wx:.3f}, Y={wy:.3f}")
+            M = np.array(M_adj, dtype=np.float32)
+            denom = M[2, 0] * cx_undist + M[2, 1] * cy_undist + M[2, 2] if M.shape[0] > 2 else 1.0
+            if abs(denom) > 1e-5:
+                wx = (M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]) / denom
+                wy = (M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]) / denom
+            else:
+                wx = M[0, 0] * cx_undist + M[0, 1] * cy_undist + M[0, 2]
+                wy = M[1, 0] * cx_undist + M[1, 1] * cy_undist + M[1, 2]
+            logger.info(f"[Calib45] move_to_largest fallback homography: X={wx:.3f}, Y={wy:.3f}")
     
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -3113,23 +3341,30 @@ async def move_to_object(config: MoveToObjectConfig):
     cx_obj, cy_obj = undistort_pixel(cx_obj, cy_obj)
     logger.info(f"[Calib43] move_to_object undistorted center: ({cx_obj:.1f}, {cy_obj:.1f})")
     
-    projected = project_pixel_to_cnc(cx_obj, cy_obj)
+    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
+    projected = project_frame_pixel_to_cnc(cx_obj, cy_obj)
     if projected is not None:
         wx_obj, wy_obj = projected
-        logger.info(f"[Calib45] move_to_object projected via PnP & Height: X={wx_obj:.3f}, Y={wy_obj:.3f}")
+        logger.info(f"[Calib46] move_to_object projected via frame homography: X={wx_obj:.3f}, Y={wy_obj:.3f}")
     else:
-        M = np.array(M_adj, dtype=np.float32)
-        denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
-        if abs(denom) > 1e-5:
-            wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
-            wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
+        # Fallback: PnP
+        projected = project_pixel_to_cnc(cx_obj, cy_obj)
+        if projected is not None:
+            wx_obj, wy_obj = projected
+            logger.info(f"[Calib45] move_to_object fallback PnP: X={wx_obj:.3f}, Y={wy_obj:.3f}")
         else:
-            wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
-            wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
-        # Cập nhật 45: đảo dấu X và Y trong homography fallback (đồng nhất với PnP path)
-        wx_obj = -wx_obj
-        wy_obj = -wy_obj
-        logger.info(f"[Calib45] move_to_object projected via homography fallback: X={wx_obj:.3f}, Y={wy_obj:.3f}")
+            M = np.array(M_adj, dtype=np.float32)
+            denom = M[2, 0] * cx_obj + M[2, 1] * cy_obj + M[2, 2] if M.shape[0] > 2 else 1.0
+            if abs(denom) > 1e-5:
+                wx_obj = (M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]) / denom
+                wy_obj = (M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]) / denom
+            else:
+                wx_obj = M[0, 0] * cx_obj + M[0, 1] * cy_obj + M[0, 2]
+                wy_obj = M[1, 0] * cx_obj + M[1, 1] * cy_obj + M[1, 2]
+            # Cập nhật 45: đảo dấu X và Y trong homography fallback
+            wx_obj = -wx_obj
+            wy_obj = -wy_obj
+            logger.info(f"[Calib45] move_to_object fallback homography: X={wx_obj:.3f}, Y={wy_obj:.3f}")
 
     # 2. Cập nhật 42: Bỏ qua điểm trung tâm khi A.I bbox được cnc head. Không sử dụng cnchead từ YOLO để tính toán di chuyển.
     # Sử dụng trực tiếp vị trí bút touch được ánh xạ tuyệt đối qua ma trận Homography / PnP (đã hiệu chỉnh theo touch_pen_pixel).
@@ -3191,23 +3426,30 @@ async def click_go(config: ClickGoConfig):
     logger.info(f"[Calib43] click_go undistorted pixel: ({target_x:.1f}, {target_y:.1f})")
 
     # Map pixel coordinates to work coordinates
-    projected = project_pixel_to_cnc(target_x, target_y)
+    # Cập nhật 46: Dùng homography trực tiếp từ ArUco + home (không cần camera calibration file)
+    projected = project_frame_pixel_to_cnc(target_x, target_y)
     if projected is not None:
         wx, wy = projected
-        logger.info(f"[Calib45] click_go projected via PnP & Height: X={wx:.3f}, Y={wy:.3f}")
+        logger.info(f"[Calib46] click_go projected via frame homography: X={wx:.3f}, Y={wy:.3f}")
     else:
-        M = np.array(M_adj, dtype=np.float32)
-        denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
-        if abs(denom) > 1e-5:
-            wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
-            wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
+        # Fallback: PnP
+        projected = project_pixel_to_cnc(target_x, target_y)
+        if projected is not None:
+            wx, wy = projected
+            logger.info(f"[Calib45] click_go fallback PnP: X={wx:.3f}, Y={wy:.3f}")
         else:
-            wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
-            wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
-        # Cập nhật 45: đảo dấu X và Y trong homography fallback (đồng nhất với PnP path)
-        wx = -wx
-        wy = -wy
-        logger.info(f"[Calib45] click_go projected via homography fallback: X={wx:.3f}, Y={wy:.3f}")
+            M = np.array(M_adj, dtype=np.float32)
+            denom = M[2, 0] * target_x + M[2, 1] * target_y + M[2, 2] if M.shape[0] > 2 else 1.0
+            if abs(denom) > 1e-5:
+                wx = (M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]) / denom
+                wy = (M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]) / denom
+            else:
+                wx = M[0, 0] * target_x + M[0, 1] * target_y + M[0, 2]
+                wy = M[1, 0] * target_x + M[1, 1] * target_y + M[1, 2]
+            # Cập nhật 45: đảo dấu X và Y trong homography fallback
+            wx = -wx
+            wy = -wy
+            logger.info(f"[Calib45] click_go fallback homography: X={wx:.3f}, Y={wy:.3f}")
 
     
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
