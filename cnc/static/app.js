@@ -679,14 +679,15 @@ function setupEventListeners() {
         // document.getElementById("jog-home").addEventListener("click", () => sendCommand("$H"));
         document.getElementById("jog-home").addEventListener("click", () => {
 
-            if (btnSetHome) {
-                btnSetHome.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start' // Aligns the top of the element to the top of the viewport
-                });
-            }
+            // if (btnSetHome) {
+            //     btnSetHome.scrollIntoView({
+            //         behavior: 'smooth',
+            //         block: 'start' // Aligns the top of the element to the top of the viewport
+            //     });
+            // }
 
-            btnSetHome.click();
+            // btnSetHome.click();
+            btnStopToHome.click();
         });
         document.getElementById("jog-unlock").addEventListener("click", () => sendCommand("$X"));
 
