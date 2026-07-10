@@ -1,4 +1,5 @@
 import os
+import math
 import sys
 import re
 import time
@@ -863,29 +864,34 @@ def pixel_to_cnc_v48(px: float, py: float) -> Optional[Tuple[float, float]]:
     - Phần tư 2: dx<0,  dy<0   → dùng frame_tl / cnc_tl
     - Phần tư 3: dx>=0, dy<0   → dùng frame_tr / cnc_tr
 
-    Với mỗi phần tư, tính scale_x và scale_y riêng dựa trên vector từ
-    frame_o → frame_corner và cnc_o → cnc_corner:
-        scale_x = (cnc_corner.x - cnc_o.x) / (frame_corner.x - frame_o.x)
-        scale_y = (cnc_corner.y - cnc_o.y) / (frame_corner.y - frame_o.y)
-
-    Tỷ lệ này đã bao hàm bù méo camera (dựa trên khoảng cách thực tế từ GRBL)
-    mà không cần camera_calibration_result.npz.
-
-    Kết quả:
-        cnc_x = cnc_o.x + dx * scale_x
-        cnc_y = cnc_o.y + dy * scale_y
+    Áp dụng công thức lượng giác tang góc:
+    1. Tính khoảng cách r_px từ tâm frame_o tới target pixel
+    2. Xác định góc phần tư để lấy corner calibration tương ứng
+    3. Tính góc theta_frame của target dựa trên camera_height
+    4. Tính tỷ lệ góc theta_cnc_corner / theta_frame_corner của corner
+    5. Suy ra góc theta_cnc_target của target, từ đó tính khoảng cách thực tế r_cnc_target
+    6. Tính hệ số bù trừ phi tuyến (Correction factor) C = r_cnc_target / r_cnc_linear
+    7. Áp dụng C vào phép chiếu scale per-axis gốc để đảm bảo đầu góc khớp chính xác tuyệt đối
     """
     if not state.home_set:
         return None
 
-    # Lấy gốc tọa độ frame
+    # Lấy gốc tọa độ frame và camera height
     fo = state.v48_frame_o
     co = state.v48_cnc_o
+    h = getattr(state, "camera_height", 542.0)
+    if h <= 0:
+        h = 542.0
+
     fox, foy = float(fo.get("x", 360.0)), float(fo.get("y", 360.0))
     cox, coy = float(co.get("x", 0.0)),   float(co.get("y", 0.0))
 
     dx = px - fox   # dương = phải
     dy = py - foy   # dương = xuống
+
+    r_px = math.sqrt(dx**2 + dy**2)
+    if r_px < 1e-5:
+        return cox, coy
 
     # Xác định phần tư và góc calibration tương ứng
     if dx >= 0 and dy >= 0:
@@ -909,34 +915,59 @@ def pixel_to_cnc_v48(px: float, py: float) -> Optional[Tuple[float, float]]:
         logger.warning(f"[v48] pixel_to_cnc_v48: Chưa set góc calibration cho phần tư {quadrant}")
         return None
 
-    # Vector pixel từ gốc tới góc calibration
+    # Vector pixel/cnc từ gốc tới góc calibration tương ứng
     fcx = float(f_corner.get("x", 0.0))
     fcy = float(f_corner.get("y", 0.0))
     ccx = float(c_corner.get("x", 0.0))
     ccy = float(c_corner.get("y", 0.0))
 
-    fdx = fcx - fox  # vector frame x
-    fdy = fcy - foy  # vector frame y
-    cdx = ccx - cox  # vector cnc x
-    cdy = ccy - coy  # vector cnc y
+    fdx = fcx - fox
+    fdy = fcy - foy
+    cdx = ccx - cox
+    cdy = ccy - coy
 
-    # Tính scale per-axis
-    if abs(fdx) < 1e-5 or abs(fdy) < 1e-5:
-        logger.warning(f"[v48] pixel_to_cnc_v48: Góc calibration phần tư {quadrant} trùng gốc tọa độ")
+    r_px_corner = math.sqrt(fdx**2 + fdy**2)
+    r_cnc_corner = math.sqrt(cdx**2 + cdy**2)
+
+    if r_px_corner < 1e-5 or r_cnc_corner < 1e-5:
+        logger.warning(f"[v48] pixel_to_cnc_v48: Góc calibration phần tư {quadrant} quá gần gốc tọa độ")
         return None
 
+    # --- Công thức lượng giác tang góc và tỷ lệ đường chéo ---
+    # 1. Tang góc nhìn từ camera tới manual corners
+    tg_f_corner = r_px_corner / h
+    tg_c_corner = r_cnc_corner / h
+
+    # 2. Quy đổi ra góc (rad)
+    theta_f_corner = math.atan(tg_f_corner)
+    theta_c_corner = math.atan(tg_c_corner)
+
+    # 3. Tang góc nhìn từ camera tới target
+    tg_f_target = r_px / h
+    theta_f_target = math.atan(tg_f_target)
+
+    # 4. Nội suy góc CNC vật lý cho target theo tỷ lệ góc thấu kính ở góc phần tư tương ứng
+    theta_c_target = theta_f_target * (theta_c_corner / theta_f_corner)
+
+    # 5. Độ dài CNC thực tế của target từ gốc tọa độ
+    r_cnc_target = h * math.tan(theta_c_target)
+
+    # 6. Hệ số bù trừ phi tuyến so với mô hình tuyến tính thẳng trục
+    r_cnc_linear = r_px * (r_cnc_corner / r_px_corner)
+    C = r_cnc_target / r_cnc_linear if r_cnc_linear > 1e-5 else 1.0
+
+    # 7. Tính scale per-axis cơ sở
     scale_x = cdx / fdx
     scale_y = cdy / fdy
 
-    # Tọa độ CNC tuyệt đối (work coordinate)
-    cnc_x = cox + dx * scale_x
-    cnc_y = coy + dy * scale_y
+    # Tọa độ CNC tuyệt đối (đã nhân với hệ số bù sai lệch thấu kính lượng giác C)
+    cnc_x = cox + dx * scale_x * C
+    cnc_y = coy + dy * scale_y * C
 
     logger.debug(
-        f"[v48] Q{quadrant} px=({px:.1f},{py:.1f}) "
-        f"dx={dx:.1f} dy={dy:.1f} "
-        f"scale=({scale_x:.4f},{scale_y:.4f}) "
-        f"→ CNC=({cnc_x:.3f},{cnc_y:.3f})"
+        f"[v48] Q{quadrant} px=({px:.1f},{py:.1f}) r_px={r_px:.1f} "
+        f"theta_f={math.degrees(theta_f_target):.2f}° → theta_c={math.degrees(theta_c_target):.2f}° "
+        f"C={C:.4f} → CNC=({cnc_x:.3f},{cnc_y:.3f})"
     )
     return float(cnc_x), float(cnc_y)
 
@@ -1473,18 +1504,18 @@ class CameraManager:
                         cv2.line(frame, std_pts["BR"], std_pts["BL"], (0, 255, 0), 2)
                         cv2.line(frame, std_pts["BL"], std_pts["TL"], (0, 255, 0), 2)
 
-                        # Centre (blue dot)
-                        cx = (std_pts["TL"][0] + std_pts["TR"][0] + std_pts["BR"][0] + std_pts["BL"][0]) // 4
-                        cy = (std_pts["TL"][1] + std_pts["TR"][1] + std_pts["BR"][1] + std_pts["BL"][1]) // 4
-                        cv2.circle(frame, (cx, cy), 8, (255, 0, 0), -1)
-                        cv2.putText(frame, "(0,0)", (cx + 15, cy + 5),
-                                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+                        # # Centre (blue dot)
+                        # cx = (std_pts["TL"][0] + std_pts["TR"][0] + std_pts["BR"][0] + std_pts["BL"][0]) // 4
+                        # cy = (std_pts["TL"][1] + std_pts["TR"][1] + std_pts["BR"][1] + std_pts["BL"][1]) // 4
+                        # cv2.circle(frame, (cx, cy), 8, (255, 0, 0), -1)
+                        # cv2.putText(frame, "(0,0)", (cx + 15, cy + 5),
+                        #             cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-                        # Midpoints
-                        mid_left = ((std_pts["TL"][0] + std_pts["BL"][0]) // 2, (std_pts["TL"][1] + std_pts["BL"][1]) // 2)
-                        mid_right = ((std_pts["TR"][0] + std_pts["BR"][0]) // 2, (std_pts["TR"][1] + std_pts["BR"][1]) // 2)
-                        mid_top = ((std_pts["TL"][0] + std_pts["TR"][0]) // 2, (std_pts["TL"][1] + std_pts["TR"][1]) // 2)
-                        mid_bot = ((std_pts["BL"][0] + std_pts["BR"][0]) // 2, (std_pts["BL"][1] + std_pts["BR"][1]) // 2)
+                        # # Midpoints
+                        # mid_left = ((std_pts["TL"][0] + std_pts["BL"][0]) // 2, (std_pts["TL"][1] + std_pts["BL"][1]) // 2)
+                        # mid_right = ((std_pts["TR"][0] + std_pts["BR"][0]) // 2, (std_pts["TR"][1] + std_pts["BR"][1]) // 2)
+                        # mid_top = ((std_pts["TL"][0] + std_pts["TR"][0]) // 2, (std_pts["TL"][1] + std_pts["TR"][1]) // 2)
+                        # mid_bot = ((std_pts["BL"][0] + std_pts["BR"][0]) // 2, (std_pts["BL"][1] + std_pts["BR"][1]) // 2)
 
                         # # X-axis: cyan line from Left Midpoint to Right Midpoint
                         # cv2.line(frame, mid_left, mid_right, (255, 255, 0), 2)
