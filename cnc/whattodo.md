@@ -290,6 +290,11 @@ _______|_______x+
        |
        |y+
 ```
+phần tư thứ 0: x+, y+
+phân tư thứ 1: x-, y+
+phân tư thứ 2: x-, y-
+phân tư thứ 3: x+, y-
+
 ngoài thực tế máy cnc cần đưa cnc head về gốc tọa độ là tâm của frame chính rồi set home, khi set home cần lưu được vị trí cnc head tương ứng với gốc tọa độ frame chính . rồi set touch pen position 
 set 4 aruco manual khi click chuột vào 4 vị trí thì góc đánh dấu hiển thị trên frame chính , cùng với các thông số về cnc head (touch pen postion là vị trị bút cảm ứng trên frame chính) và gốc tọa độ của frame chính , cần lưu tương ứng 4 điểm aruco tương ứng với cnc head position 
 vùng làm việc là diện tích được xác định bởi 4 điểm aruco manual, cần vẽ đường bao trên UI để nhận biết 
@@ -303,5 +308,6 @@ cần lưu cả vị trí cuối cùng của cnc head để khi tắt máy đi m
 việc tính toán sẽ không dùng tới cnc/camera_calibration_result.npz mà dựa trên gốc tọa độ của frame chính, touch pen position, chiều cao từ mặt phẳng tới camera, 4 điểm aruco manual ( tọa độ pixel theo frame chính) tương ứng với tọa độ thực tế của máy cnc head từ đó tính ra được các tỷ lệ để di chuyển 
 để di chuyển chính xác hơn: tỷ lệ từ gốc tọa độ frame chính, tới 4 điểm aruco manual có độ méo nhất định, các vector từ gốc tới 4 điểm aruco manual và vector từ gốc tới 4 trung điểm 4 cạnh aruco manual có thể suy luận ra độ méo tương đối của camera, cùng với chiều cao từ mặt phẳng 0 tới camera có thể bổ xung thêm cho việc tính toán di chuyển khi click trên frame chính , di chuyển cnc head (touch pen position) tới object detected ...  
     việc touch pen position offset cũng cần tính toán để bù trừ khi di chuyển 
-    việc tính toán cũng cần cân nhắc camera nhìn thẳng xuống gốc tọa độ của frame chính, do vậy việc tuyến tính tăng dần giảm dần khoảng cách từ tâm frame tới vùng ngoại vi frame sẽ tương ứng với tuyến tính tăng dần khoảng cách từ gốc tọa độ thực tế của máy cnc head tới vùng ngoại vi. dựa vào 4 điểm aruco manual là hình tứ giác méo, nếu lấy điểm aruco xa nhất và vẽ hình vuông có tâm là gốc tọa độ sẽ có tỷ lệ về tuyến tính tăng giảm  
+    việc tính toán cũng cần cân nhắc camera nhìn thẳng xuống gốc tọa độ của frame chính, do vậy việc tuyến tính tăng dần giảm dần khoảng cách từ tâm frame tới vùng ngoại vi frame sẽ tương ứng với tuyến tính tăng dần khoảng cách từ gốc tọa độ thực tế của máy cnc head tới vùng ngoại vi. dựa vào 4 điểm aruco manual là hình tứ giác méo, nếu lấy điểm aruco xa nhất và vẽ hình vuông có tâm là gốc tọa độ sẽ có tỷ lệ về tuyến tính tăng giảm
+    4 điểm aruco manual, touch pen position, gốc tọa độ có pixel x,y là theo frame chính, tương ứng 4 điểm đó là cnc head position của aruco tính bằng milimet. từ gốc tọa độ , và home (sau khi set home của cnc) cần tính toán để bù trừ cho gcode moving khi click trên frame video hoặc move tới tâm bbox object detected  
 
