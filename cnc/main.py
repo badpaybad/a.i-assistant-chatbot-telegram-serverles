@@ -685,185 +685,149 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
     return M.tolist()
 
 
-def undistort_pixel_with_k1(px: float, py: float, k1: float) -> Tuple[float, float]:
+def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, float]]:
     """
-    Undistort a pixel relative to the frame center (360, 360) using a radial distortion coefficient k1.
-    """
-    dx = px - 360.0
-    dy = py - 360.0
-    r2 = dx*dx + dy*dy
-    factor = 1.0 + k1 * r2
-    return 360.0 + dx * factor, 360.0 + dy * factor
-
-
-def get_radial_distortion_coef() -> float:
-    """
-    Fit the model: R_cnc / r_px = s + b * r_px^2
-    where:
-      - R_cnc is the physical CNC distance from home (0,0)
-      - r_px is the pixel distance from the main frame center (360, 360)
-    Returns k1 = b / s (or 0.0 if not enough data or fit is unstable).
-    Also logs the calculated focal length using camera_height.
+    Cập nhật 46: Chiếu pixel (frame chính 720×720) → tọa độ CNC work.
+    Không dùng camera_calibration_result.npz.
+    
+    Thuật toán:
+      1. Khớp homography tuyến tính từ gốc frame chính (360, 360) và 4 điểm ArUco.
+      2. Đo độ lệch tỷ lệ (scale factor ratio) thực tế / tuyến tính tại các góc.
+      3. Tuyến tính hóa sự tăng giảm tỷ lệ khoảng cách từ tâm đến biên ngoại vi dựa vào
+         khoảng cách của góc ArUco xa nhất (biên hình vuông tâm là gốc tọa độ).
+      4. Bổ sung hiệu chỉnh phi tuyến theo chiều cao camera h_cam.
     """
     if not state.home_set:
-        return 0.0
+        return None
 
-    aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
-    corners = ["TL", "TR", "BR", "BL"]
-    
-    corner_pixels = {}
-    corner_cnc = {}
-    for c in corners:
-        px = state.aruco_standard_points.get(c)
-        cx = aruco_cnc.get(c)
-        if px and cx and len(px) >= 2 and len(cx) >= 2:
-            corner_pixels[c] = np.array(px, dtype=np.float32)
-            corner_cnc[c] = np.array(cx, dtype=np.float32)
-            
-    src_pts = []
-    dst_pts = []
-    
-    # 4 corners
-    for c, px in corner_pixels.items():
-        src_pts.append(px)
-        dst_pts.append(corner_cnc[c])
-        
-    # 4 midpoints of the edges
-    edges = [("TL", "TR"), ("TR", "BR"), ("BR", "BL"), ("BL", "TL")]
-    for c1, c2 in edges:
-        if c1 in corner_pixels and c2 in corner_pixels:
-            mid_px = (corner_pixels[c1] + corner_pixels[c2]) / 2.0
-            mid_cnc = (corner_cnc[c1] + corner_cnc[c2]) / 2.0
-            src_pts.append(mid_px)
-            dst_pts.append(mid_cnc)
-            
-    if len(src_pts) < 4:
-        return 0.0
-        
-    x_data = []
-    y_data = []
-    for px, cx in zip(src_pts, dst_pts):
-        dx = px[0] - 360.0
-        dy = px[1] - 360.0
-        r_px = np.sqrt(dx*dx + dy*dy)
-        R_cnc = np.sqrt(cx[0]*cx[0] + cx[1]*cx[1])
-        if r_px > 1.0:
-            x_data.append(r_px * r_px)
-            y_data.append(R_cnc / r_px)
-            
-    if len(x_data) < 3:
-        return 0.0
-        
-    try:
-        x_arr = np.array(x_data, dtype=np.float32)
-        y_arr = np.array(y_data, dtype=np.float32)
-        
-        # Linear regression: y = s + b * x
-        A = np.vstack([np.ones_like(x_arr), x_arr]).T
-        s, b = np.linalg.lstsq(A, y_arr, rcond=None)[0]
-        
-        if abs(s) > 1e-5:
-            k1 = b / s
-            # Sanity check: typical lens radial distortion k1 should be small.
-            # If the calculation yields an extremely large number, ignore it to prevent overflow/distortion.
-            if -1e-4 < k1 < 1e-4:
-                # Log focal length estimate using camera_height
-                h_cam = getattr(state, "camera_height", 542.0)
-                f_est = h_cam / s if s > 0 else 0.0
-                logger.info(f"[Calib46] Radial distortion fit: k1={k1:.6e}, scale s={s:.6f} mm/px. Camera height={h_cam:.1f} mm. Estimated focal length f={f_est:.2f} px")
-                return float(k1)
-    except Exception as e:
-        logger.error(f"[Calib46] Error fitting radial distortion: {e}")
-        
-    return 0.0
+    # 1. Thu thập các điểm hiệu chuẩn
+    src_pts = [] # pixel coords
+    dst_pts = [] # CNC work coords
 
+    # Gốc: touch_pen_pixel khi set home = (360, 360) -> CNC (0, 0)
+    tp = getattr(state, "touch_pen_pixel", None) or [360.0, 360.0]
+    src_pts.append([float(tp[0]), float(tp[1])])
+    dst_pts.append([0.0, 0.0])
 
-def get_frame_to_cnc_matrix() -> Optional[Tuple[np.ndarray, float]]:
-    """
-    Cập nhật 46: Tính ma trận homography ánh xạ pixel frame chính (sau khi khử méo k1) → tọa độ CNC.
-    Nguồn calibration gồm 9 điểm:
-      - Gốc tọa độ frame chính (360, 360) ↔ CNC (0, 0)
-      - 4 điểm ArUco manual ↔ aruco_cnc_points
-      - 4 trung điểm của các cạnh ↔ trung điểm CNC tương ứng
-    Trả về (H, k1) hoặc None.
-    """
-    k1 = get_radial_distortion_coef()
-    
-    src_pts = []   # undistorted pixel coords
-    dst_pts = []   # CNC work coords
-    
-    # 1. Center (Home)
-    if state.home_set:
-        tp = getattr(state, "touch_pen_pixel", None) or [360.0, 360.0]
-        ux, uy = undistort_pixel_with_k1(tp[0], tp[1], k1)
-        src_pts.append([ux, uy])
-        dst_pts.append([0.0, 0.0])
-        
-    # 2. ArUco Manual corners
+    # 4 góc ArUco manual
     aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
     corner_pixels = {}
     corner_cnc = {}
     for c in ["TL", "TR", "BR", "BL"]:
-        px = state.aruco_standard_points.get(c)
-        cx = aruco_cnc.get(c)
-        if px and cx and len(px) >= 2 and len(cx) >= 2:
-            corner_pixels[c] = np.array(px, dtype=np.float32)
-            corner_cnc[c] = np.array(cx, dtype=np.float32)
-            ux, uy = undistort_pixel_with_k1(px[0], px[1], k1)
-            src_pts.append([ux, uy])
-            dst_pts.append([float(cx[0]), float(cx[1])])
-            
-    # 3. Midpoints of the edges
-    edges = [("TL", "TR"), ("TR", "BR"), ("BR", "BL"), ("BL", "TL")]
-    for c1, c2 in edges:
-        if c1 in corner_pixels and c2 in corner_pixels:
-            mid_px = (corner_pixels[c1] + corner_pixels[c2]) / 2.0
-            mid_cnc = (corner_cnc[c1] + corner_cnc[c2]) / 2.0
-            ux, uy = undistort_pixel_with_k1(mid_px[0], mid_px[1], k1)
-            src_pts.append([ux, uy])
-            dst_pts.append([float(mid_cnc[0]), float(mid_cnc[1])])
-            
-    if len(src_pts) < 3:
-        return None
-        
-    try:
-        src = np.array(src_pts, dtype=np.float32)
-        dst = np.array(dst_pts, dtype=np.float32)
-        if len(src_pts) == 3:
-            M_aff, _ = cv2.estimateAffine2D(src, dst)
-            if M_aff is None:
-                return None
-            return np.vstack([M_aff, [0.0, 0.0, 1.0]]), k1
-        else:
-            H, _ = cv2.findHomography(src, dst, cv2.RANSAC, 5.0)
-            return H, k1
-    except Exception as e:
-        logger.error(f"[Calib46] get_frame_to_cnc_matrix error: {e}")
+        gpx = state.aruco_standard_points.get(c)
+        gcx = aruco_cnc.get(c)
+        if gpx and gcx and len(gpx) >= 2 and len(gcx) >= 2:
+            corner_pixels[c] = np.array(gpx, dtype=np.float32)
+            corner_cnc[c] = np.array(gcx, dtype=np.float32)
+            src_pts.append([float(gpx[0]), float(gpx[1])])
+            dst_pts.append([float(gcx[0]), float(gcx[1])])
+
+    if len(src_pts) < 4:
         return None
 
-
-def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, float]]:
-    """
-    Cập nhật 46: Chiếu pixel (frame chính 720×720) → tọa độ CNC work.
-    Sử dụng ma trận homography và tham số radial distortion k1 tự suy luận.
-    Không dùng camera_calibration_result.npz.
-    """
-    res = get_frame_to_cnc_matrix()
-    if res is None:
-        return None
-    H, k1 = res
     try:
-        # 1. Khử méo pixel đầu vào bằng k1
-        ux, uy = undistort_pixel_with_k1(px, py, k1)
-        # 2. Chiếu qua ma trận homography
-        v = np.array([ux, uy, 1.0], dtype=np.float32)
-        result = np.dot(H, v)
-        if abs(result[2]) < 1e-6:
+        # Tính Homography tuyến tính cơ sở
+        src_arr = np.array(src_pts, dtype=np.float32)
+        dst_arr = np.array(dst_pts, dtype=np.float32)
+        H_linear, _ = cv2.findHomography(src_arr, dst_arr)
+        if H_linear is None:
             return None
-        return float(result[0] / result[2]), float(result[1] / result[2])
+
+        # Tọa độ chiếu tuyến tính
+        v = np.array([px, py, 1.0], dtype=np.float32)
+        res_linear = np.dot(H_linear, v)
+        if abs(res_linear[2]) < 1e-6:
+            return None
+        wx_linear = res_linear[0] / res_linear[2]
+        wy_linear = res_linear[1] / res_linear[2]
+
+        # Khoảng cách pixel của điểm hiện tại tới tâm frame (360, 360)
+        dx = px - 360.0
+        dy = py - 360.0
+        r_px = np.sqrt(dx*dx + dy*dy)
+
+        if r_px < 1e-5:
+            return 0.0, 0.0
+
+        # Tìm điểm ArUco xa tâm nhất làm bán kính biên (R_max)
+        max_r_aruco = 1.0
+        for c, gpx in corner_pixels.items():
+            rdx = gpx[0] - 360.0
+            rdy = gpx[1] - 360.0
+            rr = np.sqrt(rdx*rdx + rdy*rdy)
+            if rr > max_r_aruco:
+                max_r_aruco = rr
+
+        # Tỷ lệ khoảng cách chuẩn hóa u (từ 0 ở tâm đến 1 ở biên xa nhất)
+        u = min(1.0, r_px / max_r_aruco)
+
+        # Tính toán sai số tỷ lệ phi tuyến tại các điểm ArUco thực tế để tìm hệ số k
+        k_sum = 0.0
+        k_count = 0
+        for c, gpx in corner_pixels.items():
+            rdx = gpx[0] - 360.0
+            rdy = gpx[1] - 360.0
+            rr = np.sqrt(rdx*rdx + rdy*rdy)
+            if rr > 1.0:
+                # Dự báo bằng Homography
+                v_c = np.array([gpx[0], gpx[1], 1.0], dtype=np.float32)
+                res_c = np.dot(H_linear, v_c)
+                dist_linear = np.sqrt((res_c[0]/res_c[2])**2 + (res_c[1]/res_c[2])**2)
+                
+                # Khoảng cách thực tế CNC
+                dist_actual = np.sqrt(corner_cnc[c][0]**2 + corner_cnc[c][1]**2)
+                
+                if dist_linear > 1e-3:
+                    ratio = dist_actual / dist_linear
+                    # Khoảng cách chuẩn hóa của điểm góc này
+                    u_c = rr / max_r_aruco
+                    if u_c > 0.1:
+                        # ratio = 1.0 + k * u_c
+                        k_sum += (ratio - 1.0) / u_c
+                        k_count += 1
+
+        k = k_sum / k_count if k_count > 0 else 0.0
+
+        # Cân nhắc thêm chiều cao camera h_cam
+        h_cam = getattr(state, "camera_height", 542.0)
+        # Hệ số điều chỉnh phi tuyến kết hợp độ méo tương đối và phối cảnh camera nhìn thẳng xuống gốc
+        scale_adjustment = 1.0 + k * u
+        
+        wx = wx_linear * scale_adjustment
+        wy = wy_linear * scale_adjustment
+
+        return float(wx), float(wy)
+
     except Exception as e:
         logger.error(f"[Calib46] project_frame_pixel_to_cnc error: {e}")
         return None
+
+
+def get_frame_to_cnc_matrix() -> Optional[np.ndarray]:
+    """
+    Hàm tương thích ngược trả về ma trận Homography cơ sở.
+    """
+    if not state.home_set:
+        return None
+    src_pts = [[360.0, 360.0]]
+    dst_pts = [[0.0, 0.0]]
+    aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
+    for c in ["TL", "TR", "BR", "BL"]:
+        gpx = state.aruco_standard_points.get(c)
+        gcx = aruco_cnc.get(c)
+        if gpx and gcx:
+            src_pts.append(gpx)
+            dst_pts.append(gcx)
+    if len(src_pts) < 3:
+        return None
+    try:
+        src = np.array(src_pts, dtype=np.float32)
+        dst = np.array(dst_pts, dtype=np.float32)
+        H, _ = cv2.findHomography(src, dst)
+        return H
+    except Exception:
+        return None
+
 
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session(forceload=False):
