@@ -688,32 +688,23 @@ def get_adjusted_calibration_matrix() -> Optional[List[List[float]]]:
 def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, float]]:
     """
     Cập nhật 46: Chiếu pixel (frame chính 720×720) → tọa độ CNC work.
+    Sử dụng tam giác vuông từ camera (cao h_cam) chĩa thẳng xuống gốc tọa độ (360, 360),
+    cạnh huyền từ camera đến 4 điểm ArUco manual để suy luận chính xác khoảng cách và bù trừ di chuyển.
     Không dùng camera_calibration_result.npz.
-    
-    Thuật toán:
-      1. Khớp homography tuyến tính từ gốc frame chính (360, 360) và 4 điểm ArUco.
-      2. Đo độ lệch tỷ lệ (scale factor ratio) thực tế / tuyến tính tại các góc.
-      3. Tuyến tính hóa sự tăng giảm tỷ lệ khoảng cách từ tâm đến biên ngoại vi dựa vào
-         khoảng cách của góc ArUco xa nhất (biên hình vuông tâm là gốc tọa độ).
-      4. Bổ sung hiệu chỉnh phi tuyến theo chiều cao camera h_cam.
     """
     if not state.home_set:
         return None
 
     # 1. Thu thập các điểm hiệu chuẩn
-    src_pts = [] # pixel coords
-    dst_pts = [] # CNC work coords
-
-    # Gốc: touch_pen_pixel khi set home = (360, 360) -> CNC (0, 0)
-    tp = getattr(state, "touch_pen_pixel", None) or [360.0, 360.0]
-    src_pts.append([float(tp[0]), float(tp[1])])
-    dst_pts.append([0.0, 0.0])
-
-    # 4 góc ArUco manual
     aruco_cnc = getattr(state, "aruco_cnc_points", {}) or {}
+    corners = ["TL", "TR", "BR", "BL"]
+    
     corner_pixels = {}
     corner_cnc = {}
-    for c in ["TL", "TR", "BR", "BL"]:
+    src_pts = [[360.0, 360.0]]
+    dst_pts = [[0.0, 0.0]]
+    
+    for c in corners:
         gpx = state.aruco_standard_points.get(c)
         gcx = aruco_cnc.get(c)
         if gpx and gcx and len(gpx) >= 2 and len(gcx) >= 2:
@@ -721,27 +712,19 @@ def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, fl
             corner_cnc[c] = np.array(gcx, dtype=np.float32)
             src_pts.append([float(gpx[0]), float(gpx[1])])
             dst_pts.append([float(gcx[0]), float(gcx[1])])
-
+            
     if len(src_pts) < 4:
         return None
 
     try:
-        # Tính Homography tuyến tính cơ sở
+        # Tính Homography tuyến tính cơ sở để lấy hướng của các trục
         src_arr = np.array(src_pts, dtype=np.float32)
         dst_arr = np.array(dst_pts, dtype=np.float32)
         H_linear, _ = cv2.findHomography(src_arr, dst_arr)
         if H_linear is None:
             return None
 
-        # Tọa độ chiếu tuyến tính
-        v = np.array([px, py, 1.0], dtype=np.float32)
-        res_linear = np.dot(H_linear, v)
-        if abs(res_linear[2]) < 1e-6:
-            return None
-        wx_linear = res_linear[0] / res_linear[2]
-        wy_linear = res_linear[1] / res_linear[2]
-
-        # Khoảng cách pixel của điểm hiện tại tới tâm frame (360, 360)
+        # Tính khoảng cách pixel của điểm hiện tại tới tâm frame (360, 360)
         dx = px - 360.0
         dy = py - 360.0
         r_px = np.sqrt(dx*dx + dy*dy)
@@ -749,52 +732,61 @@ def project_frame_pixel_to_cnc(px: float, py: float) -> Optional[Tuple[float, fl
         if r_px < 1e-5:
             return 0.0, 0.0
 
-        # Tìm điểm ArUco xa tâm nhất làm bán kính biên (R_max)
-        max_r_aruco = 1.0
-        for c, gpx in corner_pixels.items():
-            rdx = gpx[0] - 360.0
-            rdy = gpx[1] - 360.0
-            rr = np.sqrt(rdx*rdx + rdy*rdy)
-            if rr > max_r_aruco:
-                max_r_aruco = rr
-
-        # Tỷ lệ khoảng cách chuẩn hóa u (từ 0 ở tâm đến 1 ở biên xa nhất)
-        u = min(1.0, r_px / max_r_aruco)
-
-        # Tính toán sai số tỷ lệ phi tuyến tại các điểm ArUco thực tế để tìm hệ số k
-        k_sum = 0.0
-        k_count = 0
-        for c, gpx in corner_pixels.items():
-            rdx = gpx[0] - 360.0
-            rdy = gpx[1] - 360.0
-            rr = np.sqrt(rdx*rdx + rdy*rdy)
-            if rr > 1.0:
-                # Dự báo bằng Homography
-                v_c = np.array([gpx[0], gpx[1], 1.0], dtype=np.float32)
-                res_c = np.dot(H_linear, v_c)
-                dist_linear = np.sqrt((res_c[0]/res_c[2])**2 + (res_c[1]/res_c[2])**2)
-                
-                # Khoảng cách thực tế CNC
-                dist_actual = np.sqrt(corner_cnc[c][0]**2 + corner_cnc[c][1]**2)
-                
-                if dist_linear > 1e-3:
-                    ratio = dist_actual / dist_linear
-                    # Khoảng cách chuẩn hóa của điểm góc này
-                    u_c = rr / max_r_aruco
-                    if u_c > 0.1:
-                        # ratio = 1.0 + k * u_c
-                        k_sum += (ratio - 1.0) / u_c
-                        k_count += 1
-
-        k = k_sum / k_count if k_count > 0 else 0.0
-
-        # Cân nhắc thêm chiều cao camera h_cam
+        # Độ cao camera tới mặt phẳng
         h_cam = getattr(state, "camera_height", 542.0)
-        # Hệ số điều chỉnh phi tuyến kết hợp độ méo tương đối và phối cảnh camera nhìn thẳng xuống gốc
-        scale_adjustment = 1.0 + k * u
+
+        # Hồi quy tuyến tính tìm quan hệ tan(theta) = r_px * (a + b * r_px^2)
+        # Sử dụng 4 tam giác vuông COXi vuông tại O(0,0,0)
+        x_data = []
+        y_data = []
+        for c, gpx in corner_pixels.items():
+            rdx = gpx[0] - 360.0
+            rdy = gpx[1] - 360.0
+            rr = np.sqrt(rdx*rdx + rdy*rdy)
+            
+            # Khoảng cách CNC thực tế (cạnh đối diện góc vuông tại gốc)
+            R_cnc = np.sqrt(corner_cnc[c][0]**2 + corner_cnc[c][1]**2)
+            
+            if rr > 1.0:
+                tan_theta = R_cnc / h_cam  # Đối / Kề (R_cnc / h_cam)
+                x_data.append(rr * rr)
+                y_data.append(tan_theta / rr)
+
+        if len(x_data) >= 2:
+            x_arr = np.array(x_data, dtype=np.float32)
+            y_arr = np.array(y_data, dtype=np.float32)
+            A = np.vstack([np.ones_like(x_arr), x_arr]).T
+            # Giải hệ phương trình bình phương tối thiểu
+            a, b = np.linalg.lstsq(A, y_arr, rcond=None)[0]
+        else:
+            # Fallback nếu thiếu điểm
+            a = 1.0 / h_cam
+            b = 0.0
+
+        # Tính tan_theta của điểm hiện tại dựa trên mô hình thấu kính đã khớp
+        tan_theta = r_px * (a + b * r_px * r_px)
         
-        wx = wx_linear * scale_adjustment
-        wy = wy_linear * scale_adjustment
+        # Khoảng cách CNC thực tế từ tâm (cạnh đối diện góc vuông tại gốc)
+        R_predicted = h_cam * tan_theta
+
+        # Lấy hướng bằng Homography tuyến tính cơ sở
+        v = np.array([px, py, 1.0], dtype=np.float32)
+        res_linear = np.dot(H_linear, v)
+        if abs(res_linear[2]) < 1e-6:
+            return None
+        wx_linear = res_linear[0] / res_linear[2]
+        wy_linear = res_linear[1] / res_linear[2]
+
+        len_linear = np.sqrt(wx_linear**2 + wy_linear**2)
+        if len_linear < 1e-5:
+            return 0.0, 0.0
+
+        # Chuẩn hóa hướng và nhân với khoảng cách thực tế đã bù trừ độ méo
+        dir_x = wx_linear / len_linear
+        dir_y = wy_linear / len_linear
+
+        wx = dir_x * R_predicted
+        wy = dir_y * R_predicted
 
         return float(wx), float(wy)
 

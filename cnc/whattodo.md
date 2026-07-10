@@ -275,11 +275,11 @@ phân tư thứ 3: x+, y-
 đang bị sai cần sửa, click chuột vào phần tư thứ 0 thì cnc head thực tế lại di chuyển về phần tư thứ 3, cần sửa cho đúng việc tính toán từ position pixel trên frame video thành gcode cnc head di chuyển
 
 **cập nhật 46**
-không lại code tính toán để di chuyển cnc head ở các cập nhật : cập nhật 45, cập nhật 44, cập nhật 43 
+không lại code tính toán để di chuyển cnc head ở các cập nhật : cập nhật 45, cập nhật 44, cập nhật 43
 camera capture về là frame gốc. xác định tâm của frame gốc theo độ phân giải frame gốc đó (width gốc / 2, height gốc / 2) và tính offset để crop ra được frame 720x720.
 frame croped 720x720 gọi là frame chính
 frame chính cũng là ảnh để dùng trong việc detect object (a.i detection)
-frame chính dùng để tính toán, để hiển thị web UI 
+frame chính dùng để tính toán, để hiển thị web UI
 cần vẽ hiển thị trục tọa độ làm việc trên frame chính , gốc tọa độ là tâm của frame chính , trục x+ là sang phải, y+ là đi xuống
 
 ```
@@ -290,24 +290,24 @@ _______|_______x+
        |
        |y+
 ```
+
 phần tư thứ 0: x+, y+
 phân tư thứ 1: x-, y+
 phân tư thứ 2: x-, y-
 phân tư thứ 3: x+, y-
 
-ngoài thực tế máy cnc cần đưa cnc head về gốc tọa độ là tâm của frame chính rồi set home, khi set home cần lưu được vị trí cnc head tương ứng với gốc tọa độ frame chính . rồi set touch pen position 
-set 4 aruco manual khi click chuột vào 4 vị trí thì góc đánh dấu hiển thị trên frame chính , cùng với các thông số về cnc head (touch pen postion là vị trị bút cảm ứng trên frame chính) và gốc tọa độ của frame chính , cần lưu tương ứng 4 điểm aruco tương ứng với cnc head position 
-vùng làm việc là diện tích được xác định bởi 4 điểm aruco manual, cần vẽ đường bao trên UI để nhận biết 
-cần thiết lập chiều cao từ camera tới mặt phẳng làm việc (mặt phẳng số 0), mặt phẳng số 0 hiện có chiều cao từ camera là 542mm (54.2cm) . 
+ngoài thực tế máy cnc cần đưa cnc head về gốc tọa độ là tâm của frame chính rồi set home, khi set home cần lưu được vị trí cnc head tương ứng với gốc tọa độ frame chính . rồi set touch pen position
+set 4 aruco manual khi click chuột vào 4 vị trí thì góc đánh dấu hiển thị trên frame chính , cùng với các thông số về cnc head (touch pen postion là vị trị bút cảm ứng trên frame chính) và gốc tọa độ của frame chính , cần lưu tương ứng 4 điểm aruco tương ứng với cnc head position
+vùng làm việc là diện tích được xác định bởi 4 điểm aruco manual, cần vẽ đường bao trên UI để nhận biết
+cần thiết lập chiều cao từ camera tới mặt phẳng làm việc (mặt phẳng số 0), mặt phẳng số 0 hiện có chiều cao từ camera là 542mm (54.2cm) .
 các thông số được thiết lập phía trên cần lưu lại để khi khởi động lại cần load lại làm cơ sở tính toán để di chuyển đầu cnc (touch pen postion) thực tế khi có thao tác trên frame video vd
     click chuột trên frame chính để di chuyển đầu cnc (touch pen postion)
     di chuyển tới các object detected trên frame chính đến tâm bbox của object detected
-    di chuyển về gốc tọa độ frame chính (cũng chính là home của đầu cnc khi được set home) 
+    di chuyển về gốc tọa độ frame chính (cũng chính là home của đầu cnc khi được set home)
 có UI để thiết lập lại chiều cao camera tới mặt phẳng làm việc (mặt phẳng 0)
-cần lưu cả vị trí cuối cùng của cnc head để khi tắt máy đi mở lại thì cnc head ở ngoài thực tế và frame chính ở trên web UI đang ở cùng vị trí cuối cùng của cnc head , vd có thể click go to x=0,y=0 hoặc go to home  là cnc head di chuyển về gốc tọa độ 
-việc tính toán sẽ không dùng tới cnc/camera_calibration_result.npz mà dựa trên gốc tọa độ của frame chính, touch pen position, chiều cao từ mặt phẳng tới camera, 4 điểm aruco manual ( tọa độ pixel theo frame chính) tương ứng với tọa độ thực tế của máy cnc head từ đó tính ra được các tỷ lệ để di chuyển 
+cần lưu cả vị trí cuối cùng của cnc head để khi tắt máy đi mở lại thì cnc head ở ngoài thực tế và frame chính ở trên web UI đang ở cùng vị trí cuối cùng của cnc head , vd có thể click go to x=0,y=0 hoặc go to home  là cnc head di chuyển về gốc tọa độ
+việc tính toán sẽ không dùng tới cnc/camera_calibration_result.npz mà dựa trên gốc tọa độ của frame chính, touch pen position, chiều cao từ mặt phẳng tới camera, 4 điểm aruco manual ( tọa độ pixel theo frame chính) tương ứng với tọa độ thực tế của máy cnc head từ đó tính ra được các tỷ lệ để di chuyển
 để di chuyển chính xác hơn: tỷ lệ từ gốc tọa độ frame chính, tới 4 điểm aruco manual có độ méo nhất định, các vector từ gốc tới 4 điểm aruco manual và vector từ gốc tới 4 trung điểm 4 cạnh aruco manual có thể suy luận ra độ méo tương đối của camera, cùng với chiều cao từ mặt phẳng 0 tới camera có thể bổ xung thêm cho việc tính toán di chuyển khi click trên frame chính , di chuyển cnc head (touch pen position) tới object detected ...  
-    việc touch pen position offset cũng cần tính toán để bù trừ khi di chuyển 
+    việc touch pen position offset cũng cần tính toán để bù trừ khi di chuyển
     việc tính toán cũng cần cân nhắc camera nhìn thẳng xuống gốc tọa độ của frame chính, do vậy việc tuyến tính tăng dần giảm dần khoảng cách từ tâm frame tới vùng ngoại vi frame sẽ tương ứng với tuyến tính tăng dần khoảng cách từ gốc tọa độ thực tế của máy cnc head tới vùng ngoại vi. dựa vào 4 điểm aruco manual là hình tứ giác méo, nếu lấy điểm aruco xa nhất và vẽ hình vuông có tâm là gốc tọa độ sẽ có tỷ lệ về tuyến tính tăng giảm
-    4 điểm aruco manual, touch pen position, gốc tọa độ có pixel x,y là theo frame chính, tương ứng 4 điểm đó là cnc head position của aruco tính bằng milimet. từ gốc tọa độ , và home (sau khi set home của cnc) cần tính toán để bù trừ cho gcode moving khi click trên frame video hoặc move tới tâm bbox object detected  
-
+    độ cao camera với mặt phẳng 0 tính bằng milimet,4 điểm aruco manual, touch pen position, gốc tọa độ có pixel x,y là theo frame chính, tương ứng 4 điểm đó là cnc head position của aruco tính bằng milimet. từ gốc tọa độ , và home (sau khi set home của cnc) cần tính toán để bù trừ cho gcode moving khi click trên frame video hoặc move tới tâm bbox object detected . camera sẽ tạo ra 4 tam giác vuông tới 4 aruco manual vuông tại gốc tọa độ, cạnh huyền là từ camera đến 4 điểm aurco manua tù đó có thể tính ra việc bù trừ gcode moving tới vị trí cho đúng
