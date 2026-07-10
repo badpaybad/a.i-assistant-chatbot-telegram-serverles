@@ -380,8 +380,9 @@ quy tắc tính chuyển pixel sang milimet để tạo gcode di chuyển cnc kh
         cnc tg 1 của phần tư thứ 1: (độ dài đoạn từ cnc_o tới cnc_bl) chia camera_height
         cnc tg 2 của phần tư thứ 2: (độ dài đoạn từ cnc_o tới cnc_lt) chia camera_height
         cnc tg 3 của phần tư thứ 3: (độ dài đoạn từ cnc_o tới cnc_tr) chia camera_height
-    khi click chuột trên frame chính hoặc bbox sẽ có target : {x,y} là pixel tương ứng trên frame chính, phụ thuộc vào góc phần tư nào (phần tư thứ 0,1,2,3) mà lấy tương ứng các tỷ lệ đường chéo, công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual, tính 1 pixel là bao nhiêu milimet dựa vào đó tính ra được gcode sinh ra để di chuyển cnc head tới targett {x,y}
+    khi click chuột trên frame chính hoặc bbox sẽ có target : {x,y} là pixel tương ứng trên frame chính, phụ thuộc vào góc phần tư nào (phần tư thứ 0,1,2,3) mà lấy tương ứng các tỷ lệ đường chéo, công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual, tính 1 pixel là bao nhiêu milimet dựa vào đó tính ra được gcode sinh ra để di chuyển cnc head tới target {x,y}
 
 cần lưu cả vị trí cuối cùng của cnc head (frame_last , cnc_last) vào cnc/calibration_settings.json để khi tắt máy đi mở lại thì cnc head ở ngoài thực tế và frame chính ở trên web UI đang ở cùng vị trí cuối cùng của cnc head , vd có thể click go to x=0,y=0 hoặc go to home là cnc head di chuyển về gốc tọa độ (frame_o, cnc_o)
 cnc_o là work coord
 cnc/calibration_settings.json cần lưu cả cnc_wpos cơ học (cnc_wpos_o, cnc_wpos_tl, cnc_wpos_tr, cnc_wpos_bl, cnc_mpos_br)
+dùng tính tính 1 pixel là bao nhiêu milimet cho từng góc phần tư để tính target {x,y} ra gcode milimet, do càng xa gốc tọa độ thì camera càng bị nhìn chéo cần bù thêm dùng  công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual cho từng góc phần tư

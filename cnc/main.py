@@ -933,40 +933,31 @@ def pixel_to_cnc_v48(px: float, py: float) -> Optional[Tuple[float, float]]:
         logger.warning(f"[v48] pixel_to_cnc_v48: Góc calibration phần tư {quadrant} quá gần gốc tọa độ")
         return None
 
-    # --- Công thức lượng giác tang góc và tỷ lệ đường chéo ---
-    # 1. Tang góc nhìn từ camera tới manual corners
-    tg_f_corner = r_px_corner / h
-    tg_c_corner = r_cnc_corner / h
+    # --- Công thức lượng giác tang góc thấu kính camera ---
+    # 1. Góc nhìn vật lý từ camera tới manual corner (dùng tang góc)
+    theta_c_corner = math.atan(r_cnc_corner / h)
 
-    # 2. Quy đổi ra góc (rad)
-    theta_f_corner = math.atan(tg_f_corner)
-    theta_c_corner = math.atan(tg_c_corner)
+    # 2. Nội suy góc nhìn vật lý cho target (phân bố tuyến tính theo khoảng cách pixel)
+    theta_c_target = (r_px / r_px_corner) * theta_c_corner
 
-    # 3. Tang góc nhìn từ camera tới target
-    tg_f_target = r_px / h
-    theta_f_target = math.atan(tg_f_target)
-
-    # 4. Nội suy góc CNC vật lý cho target theo tỷ lệ góc thấu kính ở góc phần tư tương ứng
-    theta_c_target = theta_f_target * (theta_c_corner / theta_f_corner)
-
-    # 5. Độ dài CNC thực tế của target từ gốc tọa độ
+    # 3. Tính khoảng cách CNC thực tế của target từ gốc tọa độ dựa vào tang góc target
     r_cnc_target = h * math.tan(theta_c_target)
 
-    # 6. Hệ số bù trừ phi tuyến so với mô hình tuyến tính thẳng trục
+    # 4. Tính hệ số bù trừ phi tuyến (do camera nhìn chéo khi ở rìa) so với mô hình tuyến tính
     r_cnc_linear = r_px * (r_cnc_corner / r_px_corner)
     C = r_cnc_target / r_cnc_linear if r_cnc_linear > 1e-5 else 1.0
-
-    # 7. Tính scale per-axis cơ sở
+    
+    # 5. Tính scale per-axis cơ sở từ manual corner
     scale_x = cdx / fdx
     scale_y = cdy / fdy
 
-    # Tọa độ CNC tuyệt đối (đã nhân với hệ số bù sai lệch thấu kính lượng giác C)
+    # 6. Tọa độ CNC tuyệt đối (work coordinate) đã được nhân hệ số hiệu chỉnh C
     cnc_x = cox + dx * scale_x * C
     cnc_y = coy + dy * scale_y * C
 
     logger.debug(
         f"[v48] Q{quadrant} px=({px:.1f},{py:.1f}) r_px={r_px:.1f} "
-        f"theta_f={math.degrees(theta_f_target):.2f}° → theta_c={math.degrees(theta_c_target):.2f}° "
+        f"theta_c_corner={math.degrees(theta_c_corner):.2f}° → theta_c_target={math.degrees(theta_c_target):.2f}° "
         f"C={C:.4f} → CNC=({cnc_x:.3f},{cnc_y:.3f})"
     )
     return float(cnc_x), float(cnc_y)
