@@ -389,6 +389,81 @@
             background: rgba(255, 255, 255, 0.01);
         }
 
+        /* Recommendations & Diagnostics Panel */
+        .diag-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .diag-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.25rem;
+            position: relative;
+        }
+
+        .diag-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 0.95rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .diag-status {
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .diag-status.normal { background: var(--success-glow); color: var(--success); }
+        .diag-status.warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+        .diag-status.danger { background: rgba(239, 44, 44, 0.15); color: var(--danger); }
+
+        .diag-content {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            line-height: 1.5;
+        }
+
+        .recommendation-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.8rem;
+        }
+
+        .recommendation-item {
+            font-size: 0.825rem;
+            position: relative;
+            padding-left: 1.25rem;
+            color: var(--text-secondary);
+        }
+
+        .recommendation-item::before {
+            content: '⚡';
+            position: absolute;
+            left: 0;
+            color: var(--primary-accent);
+        }
+
+        .recommendation-item code {
+            background: rgba(255, 255, 255, 0.08);
+            color: #ec4899;
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+        }
+
         /* Instructions list */
         .instruction-item {
             display: flex;
@@ -593,6 +668,21 @@
         </div>
 
         <div class="sidebar">
+            <!-- Sidebar Panel: Diagnostics & Expert Advisor -->
+            <div class="panel">
+                <div class="panel-header" style="margin-bottom: 1rem;">
+                    <span class="panel-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                        Khuyến nghị Huấn luyện
+                    </span>
+                </div>
+                <div class="diag-section" id="expert-advisor-content">
+                    <div style="font-size: 0.85rem; color: var(--text-secondary);">
+                        Đang chờ dữ liệu train để phân tích...
+                    </div>
+                </div>
+            </div>
+
             <!-- Sidebar Panel: Model & Run config -->
             <div class="panel" style="margin-bottom: 0;">
                 <div class="panel-header" style="margin-bottom: 1rem;">
@@ -640,20 +730,44 @@
             const refreshCheckbox = document.getElementById('auto-refresh');
             
             // Periodically check/reload
-            autoRefreshInterval = setInterval(() => {
-                if (refreshCheckbox.checked) {
-                    attemptAutoLoad();
-                }
-            }, 5000);
+            if (refreshCheckbox.checked) {
+                startAutoRefresh();
+            }
 
             refreshCheckbox.addEventListener('change', (e) => {
                 if (e.target.checked) {
                     attemptAutoLoad();
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
                 }
             });
         }
 
+        function startAutoRefresh() {
+            if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+            autoRefreshInterval = setInterval(() => {
+                attemptAutoLoad();
+            }, 5000);
+        }
+
+        function stopAutoRefresh() {
+            const refreshCheckbox = document.getElementById('auto-refresh');
+            if (refreshCheckbox) {
+                refreshCheckbox.checked = false;
+            }
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
         function attemptAutoLoad() {
+            const refreshCheckbox = document.getElementById('auto-refresh');
+            if (refreshCheckbox && !refreshCheckbox.checked) {
+                return;
+            }
+
             fetch('training_log.csv', { cache: 'no-store' })
                 .then(response => {
                     if (!response.ok) {
@@ -723,9 +837,13 @@
         }
 
         function readFile(file) {
+            // Stop auto-refresh when loading a file manually
+            stopAutoRefresh();
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const text = e.target.result;
+                lastCSVText = text;
                 processCSVData(text);
                 updateStatus("Manually Loaded: " + file.name, "connected");
                 document.getElementById('cors-banner').style.display = 'none';
@@ -797,6 +915,20 @@
 
             // Populate Logs Table
             populateTable(headers, data);
+
+            // Run Diagnostics / Expert Advice
+            const metrics = {
+                totalEpochs,
+                epochs,
+                loss: lossVals,
+                valLoss: valLossVals,
+                accuracy: accuracyVals,
+                valAccuracy: valAccuracyVals,
+                bestLossIdx,
+                minValLossIdx,
+                maxValAccIdx
+            };
+            runDiagnostics(metrics);
         }
 
         function parseCSV(text) {
@@ -977,6 +1109,176 @@
                     content.classList.remove('active');
                 }
             });
+        }
+
+        // Diagnostic Advisor Engine for Wake-Word Classification
+        function runDiagnostics(metrics) {
+            const container = document.getElementById('expert-advisor-content');
+            container.innerHTML = "";
+
+            const total = metrics.totalEpochs;
+            if (total === 0) return;
+
+            const lossVals = metrics.loss;
+            const valLossVals = metrics.valLoss;
+            const accuracyVals = metrics.accuracy;
+            const valAccuracyVals = metrics.valAccuracy;
+
+            // 1. Evaluate Overall Model Quality Rating
+            const maxValAcc = valAccuracyVals[metrics.maxValAccIdx];
+            const minValLoss = valLossVals[metrics.minValLossIdx];
+            let quality = "Bình thường";
+            let qClass = "warning";
+            
+            if (maxValAcc >= 0.95) {
+                quality = "Xuất sắc (Excellent)";
+                qClass = "normal";
+            } else if (maxValAcc >= 0.88) {
+                quality = "Tốt (Good)";
+                qClass = "normal";
+            } else if (maxValAcc >= 0.75) {
+                quality = "Trung bình (Fair)";
+                qClass = "warning";
+            } else {
+                quality = "Kém (Poor) - Cần cải thiện";
+                qClass = "danger";
+            }
+
+            let html = `
+                <div class="diag-card">
+                    <div class="diag-card-header">
+                        <span>Đánh giá Mô hình:</span>
+                        <span class="diag-status ${qClass}">${quality}</span>
+                    </div>
+                    <div class="diag-content" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <div>
+                            Độ chính xác kiểm thử tốt nhất đạt <strong>${(maxValAcc * 100).toFixed(2)}%</strong> tại Epoch <strong>${metrics.epochs[metrics.maxValAccIdx]}</strong>.
+                        </div>
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.5rem; margin-top: 0.25rem;">
+                            <strong>🏆 Best Model (<code style="color:var(--primary-accent); background:none; padding:0;">best_model.h5</code>):</strong> <br>
+                            Được chọn tại Epoch <strong>${metrics.epochs[metrics.minValLossIdx]}</strong> với Lỗ hụt kiểm thử (Val Loss) nhỏ nhất <strong>${minValLoss.toFixed(4)}</strong>. Mô hình này được chuyển đổi lượng tử hóa sang <code>model.tflite</code> cho ESP32 chạy.
+                        </div>
+                        <div style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.5rem;">
+                            <strong>💾 Last Model (<code style="color:var(--secondary-accent); background:none; padding:0;">last_model.h5</code>):</strong> <br>
+                            Trạng thái huấn luyện cuối cùng được lưu tại Epoch <strong>${total}</strong>.
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 2. Diagnose Overfitting
+            let isOverfitting = false;
+            let overfitReason = "";
+            let overfitRecommendations = [];
+
+            const checkWindow = Math.max(2, Math.round(total * 0.15));
+            if (total >= 5) {
+                const minValLossEpoch = metrics.epochs[metrics.minValLossIdx];
+                const lastValLosses = valLossVals.slice(-checkWindow);
+                const avgLastValLoss = lastValLosses.reduce((a, b) => a + b, 0) / checkWindow;
+                const minValLossValue = valLossVals[metrics.minValLossIdx];
+
+                if (avgLastValLoss > minValLossValue * 1.15 && metrics.minValLossIdx < (total - checkWindow)) {
+                    isOverfitting = true;
+                    overfitReason = `Val Loss đạt cực tiểu tại Epoch ${minValLossEpoch} (${minValLossValue.toFixed(4)}) nhưng sau đó tăng lên trung bình ${avgLastValLoss.toFixed(4)} ở các epoch cuối.`;
+                }
+                
+                const finalTrainAcc = accuracyVals[total - 1];
+                const finalValAcc = valAccuracyVals[total - 1];
+                if (finalTrainAcc - finalValAcc > 0.15) {
+                    isOverfitting = true;
+                    if (overfitReason) overfitReason += "<br>";
+                    overfitReason += `Độ lệch chính xác giữa Train (${(finalTrainAcc*100).toFixed(1)}%) và Validation (${(finalValAcc*100).toFixed(1)}%) quá lớn (> 15%).`;
+                }
+
+                if (isOverfitting) {
+                    overfitRecommendations = [
+                        `<strong>Tăng tỉ lệ Dropout:</strong> Điều chỉnh tham số Dropout trong mô hình (ví dụ: đổi <code>layers.Dropout(0.2)</code> thành <code>0.3</code> hoặc <code>0.4</code> trong <code>mic/train.py</code>).`,
+                        `<strong>Sử dụng Dừng sớm (Early Stopping):</strong> Dừng huấn luyện sớm ở khoảng Epoch <code>${minValLossEpoch + 5}</code> để tránh mô hình học thuộc lòng tập train.`,
+                        `<strong>Kiểm tra Augmentation:</strong> Đảm bảo không tắt augmentation khi chạy huấn luyện (tránh dùng cờ <code>--no-augment</code>).`,
+                        `<strong>Thêm dữ liệu nhiễu/nền:</strong> Bổ sung thêm âm thanh background hoặc tạp âm trong folder <code>dataraw</code> để tăng khả năng tổng quát hóa.`
+                    ];
+
+                    html += `
+                        <div class="diag-card" style="border-left: 4px solid var(--danger);">
+                            <div class="diag-card-header">
+                                <span>Phát hiện: Quá Khớp (Overfitting)</span>
+                                <span class="diag-status danger">Cảnh Báo</span>
+                            </div>
+                            <div class="diag-content">
+                                ${overfitReason} Mô hình đang quá khớp với dữ liệu huấn luyện.
+                            </div>
+                            <ul class="recommendation-list">
+                                ${overfitRecommendations.map(r => '<li class="recommendation-item">' + r + '</li>').join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+            }
+
+            // 3. Diagnose Underfitting / Early Stop
+            let isUnderfitting = false;
+            if (!isOverfitting && total >= 5) {
+                const endThreshold = Math.max(2, Math.round(total * 0.15));
+                if (metrics.minValLossIdx >= (total - endThreshold) && total < 60) {
+                    isUnderfitting = true;
+                    html += `
+                        <div class="diag-card" style="border-left: 4px solid var(--warning);">
+                            <div class="diag-card-header">
+                                <span>Phát hiện: Chưa Hội Tụ (Underfitting)</span>
+                                <span class="diag-status warning">Cần Chú Ý</span>
+                            </div>
+                            <div class="diag-content">
+                                Đường Loss của cả tập huấn luyện và kiểm thử vẫn đang đi xuống ổn định ở những Epoch cuối cùng. Mô hình vẫn còn dư địa để học tốt hơn.
+                            </div>
+                            <ul class="recommendation-list">
+                                <li class="recommendation-item"><strong>Tăng Epochs:</strong> Tăng số epoch huấn luyện lên ít nhất 50 đến 100 epoch (<code>--epochs 60</code>).</li>
+                                <li class="recommendation-item"><strong>Tăng độ phức tạp của mô hình:</strong> Tăng số filter của các lớp Conv2D (ví dụ: lớp 1 dùng 16, lớp 2 dùng 32) hoặc tăng Dense unit từ 32 lên 64 để tăng khả năng học đặc trưng âm thanh.</li>
+                            </ul>
+                        </div>
+                    `;
+                }
+            }
+
+            // 4. Diagnose Learning Rate / Training Instability
+            let isLrAnomaly = false;
+            if (total >= 5 && maxValAcc < 0.60) {
+                isLrAnomaly = true;
+                html += `
+                    <div class="diag-card" style="border-left: 4px solid var(--danger);">
+                        <div class="diag-card-header">
+                            <span>Phát hiện: Tốc Độ Học Chưa Tối Ưu</span>
+                            <span class="diag-status danger">Nghiêm Trọng</span>
+                        </div>
+                        <div class="diag-content">
+                            Độ chính xác kiểm thử ở mức thấp (<strong>${(maxValAcc*100).toFixed(1)}%</strong>) hoặc không tăng trong suốt phiên train. Có thể do tốc độ học quá cao dẫn tới phân kỳ, hoặc quá thấp làm hội tụ chậm.
+                        </div>
+                        <ul class="recommendation-list">
+                            <li class="recommendation-item"><strong>Giảm Learning Rate:</strong> Đổi sang compile optimizer Adam với tốc độ học nhỏ hơn (ví dụ: <code>tf.keras.optimizers.Adam(learning_rate=0.0005)</code>).</li>
+                            <li class="recommendation-item"><strong>Kiểm tra nhãn dữ liệu:</strong> Đảm bảo âm thanh thu âm không bị rỗng, rác hoặc ghi đè sai thư mục nhãn (<code>dataraw/du_oi</code>, <code>dataraw/background</code>...).</li>
+                        </ul>
+                    </div>
+                `;
+            }
+
+            // 5. General TinyML Wake-word advice
+            html += `
+                <div class="diag-card">
+                    <div class="diag-card-header">
+                        <span>💡 Lời khuyên tối ưu Wake-Word TinyML</span>
+                    </div>
+                    <div class="diag-content">
+                        Để mô hình hoạt động ổn định và nhạy bén trên ESP32:
+                    </div>
+                    <ul class="recommendation-list" style="margin-top:0.25rem;">
+                        <li class="recommendation-item"><strong>Cấu hình Spectrogram:</strong> Hãy đồng bộ hóa <code>FRAME_LENGTH = 240</code> và <code>FRAME_STEP = 160</code> trên cả ESP32 để kết quả phân tích thời gian thực giống hệt như lúc train.</li>
+                        <li class="recommendation-item"><strong>Cân bằng dữ liệu nhãn:</strong> Nên duy trì tỉ lệ số lượng mẫu file âm thanh giữa các lớp nhãn (ví dụ: wake-word vs background/others) xấp xỉ 1:1 hoặc 1:2.</li>
+                        <li class="recommendation-item"><strong>Kiểm tra Quantization:</strong> Mô hình xuất ra file <code>model.tflite</code> cần được lượng tử hóa INT8 (đã tích hợp trong script) để giảm bộ nhớ flash và tăng tốc độ xử lý trên vi điều khiển.</li>
+                    </ul>
+                </div>
+            `;
+
+            container.innerHTML = html;
         }
     </script>
 </body>

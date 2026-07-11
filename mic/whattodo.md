@@ -25,3 +25,4 @@ cần tạo memory list unique esp32client mac address để:
     ở esp32/esp32os/esp32wifi.ino lấy MAC address để khi gọi websocket hoặc http client post get gửi kèm lên để xác thực truy cập hợp lệ của esp32 lên api esp32 hub  
 
 **cập nhật 6** mic/train.py cần bổ xung log quá trình train để xem loss ... ra file csv vào folder train_dashboard có index.html để xem biểu đồ loss và các thông số khác để đánh giá kết quả train, có thể manual chọn file csv để xem , dựa trên dữ liệu có thể đưa ra các đánh giá và khuyến nghị với các tham số train 
+bổ xung thêm việc chọn best model và last model , khi xuất file và convert cần dùng best model để cho esp32 chạy  

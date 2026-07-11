@@ -4,6 +4,8 @@ import glob
 import subprocess
 import argparse
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
 # Keep baseline compatibility settings
 os.environ["QT_QPA_PLATFORM"] = "offscreen"  # Fallback for Qt if loaded
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
@@ -228,10 +230,10 @@ if device != 'cpu':
 # ==========================================
 # THAM SỐ CẤU HÌNH
 # ==========================================
-DATA_RAW_DIR = args.data
-OUTPUT_SPEC_DIR = "spectrogram"  
-TFLITE_MODEL_PATH = "model.tflite"
-HEADER_MODEL_PATH = "model_data.h"
+DATA_RAW_DIR = args.data if os.path.isabs(args.data) else os.path.join(script_dir, args.data)
+OUTPUT_SPEC_DIR = os.path.join(script_dir, "spectrogram")  
+TFLITE_MODEL_PATH = os.path.join(script_dir, "model.tflite")
+HEADER_MODEL_PATH = os.path.join(script_dir, "model_data.h")
 
 LABELS = sorted([d for d in os.listdir(DATA_RAW_DIR) if os.path.isdir(os.path.join(DATA_RAW_DIR, d))])
 NUM_CLASSES = len(LABELS)
@@ -292,7 +294,7 @@ def load_and_pad_audio(file_path):
     base_name = os.path.basename(file_path)
     # Đảm bảo lưu dưới dạng wav
     base_name = os.path.splitext(base_name)[0] + ".wav"
-    output_dir = os.path.join("data", label_name)
+    output_dir = os.path.join(script_dir, "data", label_name)
     os.makedirs(output_dir, exist_ok=True)
     output_path = os.path.join(output_dir, base_name)
     
@@ -357,7 +359,7 @@ def process_and_save_variant(audio, label_name, label_idx, base_name, variant_su
     
     # 2. Lưu file .wav tăng cường nếu không phải bản gốc (bản gốc đã được load_and_pad_audio lưu rồi)
     if variant_suffix:
-        output_dir = os.path.join("data", label_name)
+        output_dir = os.path.join(script_dir, "data", label_name)
         os.makedirs(output_dir, exist_ok=True)
         wav_name = f"{base_name}_{variant_suffix}.wav"
         output_path = os.path.join(output_dir, wav_name)
@@ -438,10 +440,20 @@ model = models.Sequential([
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 # Cấu hình log quá trình train ra file CSV để xem trên dashboard
-dashboard_dir = "train_dashboard"
+dashboard_dir = os.path.join(script_dir, "train_dashboard")
 os.makedirs(dashboard_dir, exist_ok=True)
 csv_log_path = os.path.join(dashboard_dir, "training_log.csv")
 csv_logger = tf.keras.callbacks.CSVLogger(csv_log_path, append=False)
+
+# Cấu hình ModelCheckpoint để tự động lưu Best Model (dựa trên val_loss thấp nhất)
+best_model_path = os.path.join(script_dir, "best_model.h5")
+checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+    filepath=best_model_path,
+    monitor='val_loss',
+    save_best_only=True,
+    mode='min',
+    verbose=1
+)
 
 print("\n🚀 Bắt đầu huấn luyện mô hình...")
 model.fit(
@@ -450,12 +462,15 @@ model.fit(
     epochs=args.epochs, 
     batch_size=args.batch, 
     validation_data=(X_val, y_val),
-    callbacks=[csv_logger]
+    callbacks=[csv_logger, checkpoint_callback]
 )
 
-# Lưu model gốc (.h5)
-model.save("vietnam_wakeup_model.h5")
-print("💾 Đã lưu model Keras: 'vietnam_wakeup_model.h5'")
+# Lưu model gốc cuối cùng (last_model.h5 và vietnam_wakeup_model.h5)
+last_model_path = os.path.join(script_dir, "last_model.h5")
+model.save(last_model_path)
+model.save(os.path.join(script_dir, "vietnam_wakeup_model.h5"))
+print(f"💾 Đã lưu model Keras cuối cùng (Last Model): '{last_model_path}'")
+print(f"🏆 Best Model (val_loss nhỏ nhất) được tự động cập nhật tại: '{best_model_path}'")
 
 print("LABELS: ",LABELS)
 
@@ -465,7 +480,15 @@ print("LABELS: ",LABELS)
 # ==========================================
 print("\n🛠️ Đang bắt đầu ép xung lượng tử hóa sang INT8 (Quantization)...")
 
-converter = tf.lite.TFLiteConverter.from_keras_model(model)
+# Load Best Model để convert sang TFLite cho ESP32 chạy
+if os.path.exists(best_model_path):
+    print(f"📂 Đang nạp Best Model từ '{best_model_path}' để chuyển đổi sang TFLite...", flush=True)
+    model_to_convert = tf.keras.models.load_model(best_model_path)
+else:
+    print(f"⚠️ Không tìm thấy Best Model tại '{best_model_path}', sử dụng mô hình Keras hiện tại...", flush=True)
+    model_to_convert = model
+
+converter = tf.lite.TFLiteConverter.from_keras_model(model_to_convert)
 converter.optimizations = [tf.lite.Optimize.DEFAULT]
 
 # Thiết lập ép cứng các toán tử và kiểu dữ liệu I/O về INT8
@@ -547,7 +570,7 @@ except FileNotFoundError:
 # Tự động copy sang esp32/esp32os/wakeupword_model_data.h nếu thư mục đích tồn tại
 import shutil
 import os
-esp32_dest_dir = os.path.join("..", "esp32", "esp32os")
+esp32_dest_dir = os.path.join(os.path.dirname(script_dir), "esp32", "esp32os")
 esp32_dest_file = os.path.join(esp32_dest_dir, "wakeupword_model_data.h")
 if os.path.exists(esp32_dest_dir):
     try:
