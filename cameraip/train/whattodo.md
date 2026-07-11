@@ -45,6 +45,6 @@ hỗ trợ thêm GPU AMD (ví dụ Radeon™ 780M Graphics × 16) bên cạnh CP
 fine tune train yolo cần giải quyết việc detect những object nhỏ như nút bấm trên màn hình điện thoại, icon button , link text , input text, nút bấm share, nút bấm like, nút bấm comment, droplist, chữ, số ... với độ chính xác cao. dựa trên train_yolo.py để tạo train_yolo_tiny.py để chuyên finetune cho detect object nhỏ với độ chính xác cao, vd camera chụp toàn cảnh và lấy được vùng 720px*720px lúc này icon trên màn hình điện thoại đã khá nhỏ, dùng để boxing label rồi cần yolo finetune để nhận diện chính xác  
 
 **cập nhật 7**
-tạo folder train_dashboard và tạo index.html để vẽ kết quả train từ result.csv , cần manual load chọn file .csv để xem , dựa trên dữ liệu có thể đưa ra các đánh giá và khuyến nghị với các tham số train 
+tạo folder train_dashboard và tạo index.html để vẽ kết quả train từ result.csv , cần manual load chọn file .csv để xem , dựa trên dữ liệu có thể đưa ra các đánh giá và khuyến nghị với các tham số train , không cần auto refresh chỉ cần chọn file thì hiện chart và suggestions 
 
 **chú ý** cần đưa ra giải pháp và cách làm vào cameraip/train/howtodo.md, sau này có cập nhật ở cameraip/train/whattodo.md thì cũng cần cập nhật  trở lại howtodo.md giải pháp và cách làm

@@ -1,1373 +1,1662 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YOLO Training Dashboard & Expert Advisor</title>
     <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <!-- ApexCharts for modern, responsive charts -->
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
-        :root {
-            --bg-color: #060913;
-            --panel-bg: rgba(13, 20, 38, 0.6);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            
-            /* Accents */
-            --cyan: #06b6d4;
-            --cyan-glow: rgba(6, 182, 212, 0.15);
-            --purple: #8b5cf6;
-            --purple-glow: rgba(139, 92, 246, 0.15);
-            --pink: #ec4899;
-            --pink-glow: rgba(236, 72, 153, 0.15);
-            --emerald: #10b981;
-            --emerald-glow: rgba(16, 185, 129, 0.15);
-            --amber: #f59e0b;
-            --amber-glow: rgba(245, 158, 11, 0.15);
-            --rose: #f43f5e;
-            
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            --card-radius: 16px;
-        }
+      :root {
+        --bg-color: #060913;
+        --panel-bg: rgba(13, 20, 38, 0.6);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --text-primary: #f8fafc;
+        --text-secondary: #94a3b8;
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
-        }
+        /* Accents */
+        --cyan: #06b6d4;
+        --cyan-glow: rgba(6, 182, 212, 0.15);
+        --purple: #8b5cf6;
+        --purple-glow: rgba(139, 92, 246, 0.15);
+        --pink: #ec4899;
+        --pink-glow: rgba(236, 72, 153, 0.15);
+        --emerald: #10b981;
+        --emerald-glow: rgba(16, 185, 129, 0.15);
+        --amber: #f59e0b;
+        --amber-glow: rgba(245, 158, 11, 0.15);
+        --rose: #f43f5e;
 
-        body {
-            background-color: var(--bg-color);
-            background-image: 
-                radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.07) 0px, transparent 40%),
-                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.07) 0px, transparent 40%),
-                radial-gradient(at 50% 100%, rgba(236, 72, 153, 0.04) 0px, transparent 45%);
-            color: var(--text-primary);
-            font-family: var(--font-sans);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 1.5rem 2rem;
-            line-height: 1.6;
-        }
+        --font-sans:
+          "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        --card-radius: 16px;
+      }
 
-        /* Webkit scrollbar fallback */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 99px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 255, 255, 0.2);
-        }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+      }
 
-        header {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1.25rem;
-            border-bottom: 1px solid var(--border-color);
-            gap: 1rem;
-        }
+      body {
+        background-color: var(--bg-color);
+        background-image:
+          radial-gradient(
+            at 0% 0%,
+            rgba(6, 182, 212, 0.07) 0px,
+            transparent 40%
+          ),
+          radial-gradient(
+            at 100% 0%,
+            rgba(139, 92, 246, 0.07) 0px,
+            transparent 40%
+          ),
+          radial-gradient(
+            at 50% 100%,
+            rgba(236, 72, 153, 0.04) 0px,
+            transparent 45%
+          );
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 1.5rem 2rem;
+        line-height: 1.6;
+      }
 
-        .header-title h1 {
-            font-size: 1.75rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--cyan), var(--purple), var(--pink));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.025em;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+      /* Webkit scrollbar fallback */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 99px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
 
-        .header-title p {
-            color: var(--text-secondary);
-            font-size: 0.875rem;
-            margin-top: 0.2rem;
-        }
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1.25rem;
+        border-bottom: 1px solid var(--border-color);
+        gap: 1rem;
+      }
 
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+      .header-title h1 {
+        font-size: 1.75rem;
+        font-weight: 800;
+        background: linear-gradient(
+          135deg,
+          var(--cyan),
+          var(--purple),
+          var(--pink)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.025em;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
 
-        .refresh-control {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            background: rgba(255, 255, 255, 0.02);
-            padding: 0.5rem 0.8rem;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
+      .header-title p {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-top: 0.2rem;
+      }
 
-        .refresh-control input[type="checkbox"] {
-            accent-color: var(--cyan);
-            cursor: pointer;
-            width: 14px;
-            height: 14px;
-        }
+      .header-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+      }
 
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border-color);
-            border-radius: 9999px;
-            font-size: 0.85rem;
-            font-weight: 500;
-        }
+      .refresh-control {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.02);
+        padding: 0.5rem 0.8rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+      }
 
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--text-secondary);
-            box-shadow: 0 0 6px var(--text-secondary);
-            transition: all 0.3s ease;
-        }
+      .refresh-control input[type="checkbox"] {
+        accent-color: var(--cyan);
+        cursor: pointer;
+        width: 14px;
+        height: 14px;
+      }
 
-        .status-indicator.active {
-            background-color: var(--cyan);
-            box-shadow: 0 0 8px var(--cyan);
-        }
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--border-color);
+        border-radius: 9999px;
+        font-size: 0.85rem;
+        font-weight: 500;
+      }
 
-        .status-indicator.connected {
-            background-color: var(--emerald);
-            box-shadow: 0 0 8px var(--emerald);
-        }
+      .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--text-secondary);
+        box-shadow: 0 0 6px var(--text-secondary);
+        transition: all 0.3s ease;
+      }
 
-        .status-indicator.error {
-            background-color: var(--rose);
-            box-shadow: 0 0 8px var(--rose);
-        }
+      .status-indicator.active {
+        background-color: var(--cyan);
+        box-shadow: 0 0 8px var(--cyan);
+      }
 
-        .btn {
-            background: linear-gradient(135deg, var(--cyan), #0891b2);
-            color: #060913;
-            border: none;
-            padding: 0.55rem 1.25rem;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.875rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+      .status-indicator.connected {
+        background-color: var(--emerald);
+        box-shadow: 0 0 8px var(--emerald);
+      }
 
-        .btn:hover {
-            opacity: 0.95;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--cyan-glow);
-        }
+      .status-indicator.error {
+        background-color: var(--rose);
+        box-shadow: 0 0 8px var(--rose);
+      }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
+      .btn {
+        background: linear-gradient(135deg, var(--cyan), #0891b2);
+        color: #060913;
+        border: none;
+        padding: 0.55rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.1);
-            box-shadow: none;
-            transform: translateY(-1px);
-        }
+      .btn:hover {
+        opacity: 0.95;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px var(--cyan-glow);
+      }
 
-        /* Dropzone / Upload Area */
-        .dropzone-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border: 2px dashed rgba(255, 255, 255, 0.15);
-            border-radius: var(--card-radius);
-            padding: 4rem 2rem;
-            text-align: center;
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            cursor: pointer;
-            transition: all 0.25s ease;
-            margin: auto;
-            max-width: 600px;
-            width: 100%;
-            margin-top: 5vh;
-        }
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-primary);
+        border: 1px solid var(--border-color);
+      }
 
-        .dropzone-container:hover, .dropzone-container.dragover {
-            border-color: var(--cyan);
-            background: rgba(6, 182, 212, 0.03);
-            box-shadow: 0 8px 32px rgba(6, 182, 212, 0.05);
-        }
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+        transform: translateY(-1px);
+      }
 
-        .dropzone-icon {
-            font-size: 3rem;
-            margin-bottom: 1.25rem;
-            color: var(--cyan);
-            filter: drop-shadow(0 0 10px var(--cyan-glow));
-        }
+      /* Dropzone / Upload Area */
+      .dropzone-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        border: 2px dashed rgba(255, 255, 255, 0.15);
+        border-radius: var(--card-radius);
+        padding: 4rem 2rem;
+        text-align: center;
+        background: var(--panel-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        cursor: pointer;
+        transition: all 0.25s ease;
+        margin: auto;
+        max-width: 600px;
+        width: 100%;
+        margin-top: 5vh;
+      }
 
-        .dropzone-text h3 {
-            font-size: 1.15rem;
-            font-weight: 600;
-            margin-bottom: 0.4rem;
-        }
+      .dropzone-container:hover,
+      .dropzone-container.dragover {
+        border-color: var(--cyan);
+        background: rgba(6, 182, 212, 0.03);
+        box-shadow: 0 8px 32px rgba(6, 182, 212, 0.05);
+      }
 
-        .dropzone-text p {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-        }
+      .dropzone-icon {
+        font-size: 3rem;
+        margin-bottom: 1.25rem;
+        color: var(--cyan);
+        filter: drop-shadow(0 0 10px var(--cyan-glow));
+      }
 
-        #file-input {
-            display: none;
-        }
+      .dropzone-text h3 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        margin-bottom: 0.4rem;
+      }
 
-        /* CORS Warning Banner */
-        .cors-banner {
-            display: none;
-            background: rgba(244, 63, 94, 0.1);
-            border: 1px solid rgba(244, 63, 94, 0.2);
-            border-radius: 10px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            align-items: center;
-            gap: 0.75rem;
-            color: #fecdd3;
-            font-size: 0.875rem;
-        }
+      .dropzone-text p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+      }
 
-        .cors-banner svg {
-            flex-shrink: 0;
-            color: var(--rose);
-        }
+      #file-input {
+        display: none;
+      }
 
-        .cors-banner button {
-            background: transparent;
-            border: none;
-            color: #fecdd3;
-            text-decoration: underline;
-            cursor: pointer;
-            font-weight: 600;
-        }
+      /* CORS Warning Banner */
+      .cors-banner {
+        display: none;
+        background: rgba(244, 63, 94, 0.1);
+        border: 1px solid rgba(244, 63, 94, 0.2);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+        gap: 0.75rem;
+        color: #fecdd3;
+        font-size: 0.875rem;
+      }
 
-        /* Stats Dashboard Grid */
-        .grid-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
+      .cors-banner svg {
+        flex-shrink: 0;
+        color: var(--rose);
+      }
 
-        .card-stat {
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: var(--card-radius);
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
+      .cors-banner button {
+        background: transparent;
+        border: none;
+        color: #fecdd3;
+        text-decoration: underline;
+        cursor: pointer;
+        font-weight: 600;
+      }
 
-        .card-stat:hover {
-            border-color: rgba(255, 255, 255, 0.12);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
-        }
+      /* Stats Dashboard Grid */
+      .grid-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
 
-        .card-stat::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 4px;
-            height: 100%;
-        }
+      .card-stat {
+        background: var(--panel-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        transition: all 0.2s ease;
+        position: relative;
+        overflow: hidden;
+      }
 
-        .card-stat.stat-cyan::after { background: var(--cyan); }
-        .card-stat.stat-purple::after { background: var(--purple); }
-        .card-stat.stat-pink::after { background: var(--pink); }
-        .card-stat.stat-emerald::after { background: var(--emerald); }
-        .card-stat.stat-amber::after { background: var(--amber); }
+      .card-stat:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+      }
 
-        .stat-label {
-            color: var(--text-secondary);
-            font-size: 0.75rem;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.4rem;
-        }
+      .card-stat::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+      }
 
-        .stat-value {
-            font-size: 1.6rem;
-            font-weight: 800;
-            line-height: 1.2;
-            word-break: break-all;
-        }
+      .card-stat.stat-cyan::after {
+        background: var(--cyan);
+      }
+      .card-stat.stat-purple::after {
+        background: var(--purple);
+      }
+      .card-stat.stat-pink::after {
+        background: var(--pink);
+      }
+      .card-stat.stat-emerald::after {
+        background: var(--emerald);
+      }
+      .card-stat.stat-amber::after {
+        background: var(--amber);
+      }
 
-        .stat-meta {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.4rem;
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-        }
+      .stat-label {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.4rem;
+      }
 
-        /* Layout panels */
+      .stat-value {
+        font-size: 1.6rem;
+        font-weight: 800;
+        line-height: 1.2;
+        word-break: break-all;
+      }
+
+      .stat-meta {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 0.4rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      /* Layout panels */
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      @media (min-width: 1200px) {
         .main-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
+          grid-template-columns: 3fr 1.3fr;
         }
+      }
 
-        @media (min-width: 1200px) {
-            .main-layout {
-                grid-template-columns: 3fr 1.3fr;
-            }
+      .panel {
+        background: var(--panel-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--border-color);
+        border-radius: var(--card-radius);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      }
+
+      .panel-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+      }
+
+      .panel-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+      }
+
+      .panel-title svg {
+        color: var(--cyan);
+      }
+
+      /* Tabs Navigation */
+      .tabs {
+        display: flex;
+        background: rgba(255, 255, 255, 0.03);
+        padding: 0.25rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        overflow-x: auto;
+      }
+
+      .tab-btn {
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        padding: 0.45rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+      }
+
+      .tab-btn:hover {
+        color: var(--text-primary);
+      }
+
+      .tab-btn.active {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+        animation: fadeIn 0.3s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
         }
-
-        .panel {
-            background: var(--panel-bg);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid var(--border-color);
-            border-radius: var(--card-radius);
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
+      }
 
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            flex-wrap: wrap;
-            gap: 0.75rem;
+      /* Charts grid */
+      .charts-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+
+      @media (min-width: 768px) {
+        .charts-grid-2 {
+          grid-template-columns: 1fr 1fr;
         }
+      }
 
-        .panel-title {
-            font-size: 1.15rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 0.6rem;
-        }
+      .chart-container {
+        background: rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 360px;
+      }
 
-        .panel-title svg {
-            color: var(--cyan);
-        }
+      /* Recommendations & Diagnostics Panel */
+      .diag-section {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
 
-        /* Tabs Navigation */
-        .tabs {
-            display: flex;
-            background: rgba(255, 255, 255, 0.03);
-            padding: 0.25rem;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            overflow-x: auto;
-        }
+      .diag-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.25rem;
+        position: relative;
+      }
 
-        .tab-btn {
-            background: transparent;
-            color: var(--text-secondary);
-            border: none;
-            padding: 0.45rem 1rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
+      .diag-card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        font-size: 1rem;
+        margin-bottom: 0.75rem;
+      }
 
-        .tab-btn:hover {
-            color: var(--text-primary);
-        }
+      .diag-status {
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
 
-        .tab-btn.active {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--text-primary);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        }
+      .diag-status.normal {
+        background: var(--emerald-glow);
+        color: var(--emerald);
+      }
+      .diag-status.warning {
+        background: var(--amber-glow);
+        color: var(--amber);
+      }
+      .diag-status.danger {
+        background: rgba(244, 63, 94, 0.15);
+        color: var(--rose);
+      }
 
-        .tab-content {
-            display: none;
-        }
+      .diag-content {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 1rem;
+        line-height: 1.5;
+      }
 
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease-in-out;
-        }
+      .recommendation-list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        padding-top: 0.8rem;
+      }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+      .recommendation-item {
+        font-size: 0.875rem;
+        position: relative;
+        padding-left: 1.5rem;
+      }
 
-        /* Charts grid */
-        .charts-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-        }
+      .recommendation-item::before {
+        content: "⚡";
+        position: absolute;
+        left: 0;
+        color: var(--cyan);
+      }
 
-        @media (min-width: 768px) {
-            .charts-grid-2 {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
+      .recommendation-item code {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--pink);
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.8rem;
+      }
 
-        .chart-container {
-            background: rgba(0, 0, 0, 0.15);
-            border: 1px solid rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            padding: 1rem;
-            min-height: 360px;
-        }
+      /* Sidebar items */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+      }
 
-        /* Recommendations & Diagnostics Panel */
-        .diag-section {
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
-        }
+      .instruction-item {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+      }
 
-        .diag-card {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.25rem;
-            position: relative;
-        }
+      .instruction-num {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        background: var(--cyan-glow);
+        color: var(--cyan);
+        border-radius: 50%;
+        font-size: 0.8rem;
+        font-weight: 700;
+        border: 1px solid rgba(6, 182, 212, 0.3);
+        flex-shrink: 0;
+      }
 
-        .diag-card-header {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 0.75rem;
-        }
+      .instruction-text strong {
+        color: var(--text-primary);
+        font-weight: 600;
+        font-size: 0.9rem;
+      }
 
-        .diag-status {
-            padding: 0.2rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
+      .instruction-text p {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 0.2rem;
+      }
 
-        .diag-status.normal { background: var(--emerald-glow); color: var(--emerald); }
-        .diag-status.warning { background: var(--amber-glow); color: var(--amber); }
-        .diag-status.danger { background: rgba(244, 63, 94, 0.15); color: var(--rose); }
+      .instruction-text code {
+        background: rgba(255, 255, 255, 0.06);
+        padding: 0.1rem 0.3rem;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 0.775rem;
+        color: var(--pink);
+      }
 
-        .diag-content {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
+      pre {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--border-color);
+        padding: 0.6rem;
+        border-radius: 6px;
+        font-family: monospace;
+        font-size: 0.775rem;
+        margin-top: 0.4rem;
+        overflow-x: auto;
+        color: #a7f3d0;
+      }
 
-        .recommendation-list {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 0.6rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            padding-top: 0.8rem;
-        }
+      /* Raw Data Table */
+      .table-wrapper {
+        overflow-x: auto;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        max-height: 550px;
+      }
 
-        .recommendation-item {
-            font-size: 0.875rem;
-            position: relative;
-            padding-left: 1.5rem;
-        }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+        font-size: 0.825rem;
+      }
 
-        .recommendation-item::before {
-            content: '⚡';
-            position: absolute;
-            left: 0;
-            color: var(--cyan);
-        }
+      th {
+        background: rgba(13, 20, 38, 0.8);
+        color: var(--text-secondary);
+        font-weight: 700;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid var(--border-color);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        backdrop-filter: blur(10px);
+      }
 
-        .recommendation-item code {
-            background: rgba(255, 255, 255, 0.08);
-            color: var(--pink);
-            padding: 0.1rem 0.35rem;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.8rem;
-        }
+      td {
+        padding: 0.6rem 1rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+        color: #cbd5e1;
+      }
 
-        /* Sidebar items */
-        .sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
+      tr:last-child td {
+        border-bottom: none;
+      }
 
-        .instruction-item {
-            display: flex;
-            gap: 0.75rem;
-            margin-bottom: 1rem;
-        }
+      tr:hover {
+        background: rgba(255, 255, 255, 0.015);
+      }
 
-        .instruction-num {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 24px;
-            height: 24px;
-            background: var(--cyan-glow);
-            color: var(--cyan);
-            border-radius: 50%;
-            font-size: 0.8rem;
-            font-weight: 700;
-            border: 1px solid rgba(6, 182, 212, 0.3);
-            flex-shrink: 0;
-        }
-
-        .instruction-text strong {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .instruction-text p {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-top: 0.2rem;
-        }
-
-        .instruction-text code {
-            background: rgba(255, 255, 255, 0.06);
-            padding: 0.1rem 0.3rem;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.775rem;
-            color: var(--pink);
-        }
-
-        pre {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--border-color);
-            padding: 0.6rem;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.775rem;
-            margin-top: 0.4rem;
-            overflow-x: auto;
-            color: #a7f3d0;
-        }
-
-        /* Raw Data Table */
-        .table-wrapper {
-            overflow-x: auto;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            max-height: 550px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            font-size: 0.825rem;
-        }
-
-        th {
-            background: rgba(13, 20, 38, 0.8);
-            color: var(--text-secondary);
-            font-weight: 700;
-            padding: 0.75rem 1rem;
-            border-bottom: 1px solid var(--border-color);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            backdrop-filter: blur(10px);
-        }
-
-        td {
-            padding: 0.6rem 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-            color: #cbd5e1;
-        }
-
-        tr:last-child td {
-            border-bottom: none;
-        }
-
-        tr:hover {
-            background: rgba(255, 255, 255, 0.015);
-        }
-
-        /* Custom styles for classification and validation columns */
-        .hl-loss { color: #f43f5e; }
-        .hl-val-loss { color: #fda4af; }
-        .hl-map { color: var(--emerald); font-weight: 600; }
-        .hl-lr { color: var(--purple); }
-
+      /* Custom styles for classification and validation columns */
+      .hl-loss {
+        color: #f43f5e;
+      }
+      .hl-val-loss {
+        color: #fda4af;
+      }
+      .hl-map {
+        color: var(--emerald);
+        font-weight: 600;
+      }
+      .hl-lr {
+        color: var(--purple);
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <header>
-        <div class="header-title">
-            <h1>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--cyan);"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
-                YOLO Training Dashboard & Expert Advisor
-            </h1>
-            <p id="dashboard-subtitle">Giám sát đồ thị học máy & Nhận khuyến nghị cấu hình tham số tự động</p>
+      <div class="header-title">
+        <h1>
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            style="color: var(--cyan)"
+          >
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83" />
+            <path d="M22 12A10 10 0 0 0 12 2v10z" />
+          </svg>
+          YOLO Training Dashboard & Expert Advisor
+        </h1>
+        <p id="dashboard-subtitle">
+          Giám sát đồ thị học máy & Nhận khuyến nghị cấu hình tham số tự động
+        </p>
+      </div>
+      <div class="header-controls">
+        <div class="status-badge">
+          <span class="status-indicator" id="status-dot"></span>
+          <span id="status-text">Chưa tải file</span>
         </div>
-        <div class="header-controls">
-            <div class="refresh-control" id="refresh-control-box" style="display: none;">
-                <input type="checkbox" id="auto-refresh" checked>
-                <label for="auto-refresh">Tự động quét (5s)</label>
-            </div>
-            <div class="status-badge">
-                <span class="status-indicator" id="status-dot"></span>
-                <span id="status-text">Chưa tải file</span>
-            </div>
-            <button class="btn btn-secondary" onclick="triggerFileInput()">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Chọn kết quả (CSV)
-            </button>
-        </div>
+        <button type="button" class="btn btn-secondary" onclick="triggerFileInput()">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          Chọn kết quả (CSV)
+        </button>
+      </div>
     </header>
-
-    <!-- CORS Policy warning banner -->
-    <div class="cors-banner" id="cors-banner">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        <div>
-            <strong>Lỗi CORS Policy:</strong> Không thể tự động đọc file <code>results.csv</code> khi mở qua giao thức <code>file://</code>. 
-            Vui lòng <button onclick="triggerFileInput()">Chọn file kết quả (results.csv) thủ công</button> hoặc khởi chạy server Python local.
-        </div>
-    </div>
 
     <!-- Dropzone fallback if no file loaded -->
     <div class="dropzone-container" id="dropzone" onclick="triggerFileInput()">
-        <div class="dropzone-icon">
-            <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
-        </div>
-        <div class="dropzone-text">
-            <h3>Kéo & Thả file <code>results.csv</code> vào đây</h3>
-            <p>Hoặc nhấp chuột để tìm file kết quả huấn luyện từ máy tính của bạn</p>
-        </div>
-        <input type="file" id="file-input" accept=".csv" onchange="handleFileSelect(event)">
+      <div class="dropzone-icon">
+        <svg
+          width="50"
+          height="50"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+          <line x1="15" y1="3" x2="15" y2="21" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="3" y1="15" x2="21" y2="15" />
+        </svg>
+      </div>
+      <div class="dropzone-text">
+        <h3>Kéo & Thả file <code>results.csv</code> vào đây</h3>
+        <p>
+          Hoặc nhấp chuột để tìm file kết quả huấn luyện từ máy tính của bạn
+        </p>
+      </div>
     </div>
+    <input
+      type="file"
+      id="file-input"
+      accept=".csv"
+      onchange="handleFileSelect(event)"
+      style="display: none;"
+    />
 
     <!-- Metrics Cards (Initially Hidden) -->
-    <div class="grid-stats" id="stats-grid" style="display: none;">
-        <div class="card-stat stat-cyan">
-            <span class="stat-label">Số Epoch Đã Huấn Luyện</span>
-            <span class="stat-value text-cyan" id="stat-epochs">0</span>
-            <span class="stat-meta">Tổng số vòng lặp hiện có</span>
-        </div>
-        <div class="card-stat stat-emerald">
-            <span class="stat-label">mAP50 Cao Nhất</span>
-            <span class="stat-value text-emerald" id="stat-best-map50">--</span>
-            <span class="stat-meta" id="meta-best-map50">Epoch: --</span>
-        </div>
-        <div class="card-stat stat-pink">
-            <span class="stat-label">mAP50-95 Cao Nhất</span>
-            <span class="stat-value text-pink" id="stat-best-map50-95">--</span>
-            <span class="stat-meta" id="meta-best-map50-95">Epoch: --</span>
-        </div>
-        <div class="card-stat stat-purple">
-            <span class="stat-label">Val Box Loss Thấp Nhất</span>
-            <span class="stat-value text-purple" id="stat-min-val-box-loss">--</span>
-            <span class="stat-meta" id="meta-min-val-box-loss">Epoch: --</span>
-        </div>
-        <div class="card-stat stat-amber">
-            <span class="stat-label">Val Cls Loss Thấp Nhất</span>
-            <span class="stat-value text-amber" id="stat-min-val-cls-loss">--</span>
-            <span class="stat-meta" id="meta-min-val-cls-loss">Epoch: --</span>
-        </div>
+    <div class="grid-stats" id="stats-grid" style="display: none">
+      <div class="card-stat stat-cyan">
+        <span class="stat-label">Số Epoch Đã Huấn Luyện</span>
+        <span class="stat-value text-cyan" id="stat-epochs">0</span>
+        <span class="stat-meta">Tổng số vòng lặp hiện có</span>
+      </div>
+      <div class="card-stat stat-emerald">
+        <span class="stat-label">mAP50 Cao Nhất</span>
+        <span class="stat-value text-emerald" id="stat-best-map50">--</span>
+        <span class="stat-meta" id="meta-best-map50">Epoch: --</span>
+      </div>
+      <div class="card-stat stat-pink">
+        <span class="stat-label">mAP50-95 Cao Nhất</span>
+        <span class="stat-value text-pink" id="stat-best-map50-95">--</span>
+        <span class="stat-meta" id="meta-best-map50-95">Epoch: --</span>
+      </div>
+      <div class="card-stat stat-purple">
+        <span class="stat-label">Val Box Loss Thấp Nhất</span>
+        <span class="stat-value text-purple" id="stat-min-val-box-loss"
+          >--</span
+        >
+        <span class="stat-meta" id="meta-min-val-box-loss">Epoch: --</span>
+      </div>
+      <div class="card-stat stat-amber">
+        <span class="stat-label">Val Cls Loss Thấp Nhất</span>
+        <span class="stat-value text-amber" id="stat-min-val-cls-loss">--</span>
+        <span class="stat-meta" id="meta-min-val-cls-loss">Epoch: --</span>
+      </div>
     </div>
 
     <!-- Main Content layout (Initially Hidden) -->
-    <div class="main-layout" id="main-content" style="display: none;">
-        <div>
-            <!-- Dashboard view Panel -->
-            <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/></svg>
-                        Kết quả huấn luyện
-                    </span>
-                    <div class="tabs">
-                        <button class="tab-btn active" onclick="switchTab('loss')">Đường Loss</button>
-                        <button class="tab-btn" onclick="switchTab('map')">Chỉ số mAP</button>
-                        <button class="tab-btn" onclick="switchTab('pr')">Precision & Recall</button>
-                        <button class="tab-btn" onclick="switchTab('lr')">Tốc độ học (LR)</button>
-                        <button class="tab-btn" onclick="switchTab('table')">Dữ liệu dạng bảng</button>
-                    </div>
-                </div>
-
-                <!-- Tab: Loss -->
-                <div id="tab-loss" class="tab-content active">
-                    <div class="charts-grid">
-                        <div class="chart-container" style="margin-bottom: 1.5rem;">
-                            <div id="box-loss-chart"></div>
-                        </div>
-                        <div class="charts-grid-2" style="display: grid; gap: 1.5rem;">
-                            <div class="chart-container">
-                                <div id="cls-loss-chart"></div>
-                            </div>
-                            <div class="chart-container">
-                                <div id="dfl-loss-chart"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: mAP -->
-                <div id="tab-map" class="tab-content">
-                    <div class="charts-grid">
-                        <div class="chart-container">
-                            <div id="map-chart"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: PR -->
-                <div id="tab-pr" class="tab-content">
-                    <div class="charts-grid">
-                        <div class="chart-container">
-                            <div id="pr-chart"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: LR -->
-                <div id="tab-lr" class="tab-content">
-                    <div class="charts-grid">
-                        <div class="chart-container">
-                            <div id="lr-chart"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Tab: Table -->
-                <div id="tab-table" class="tab-content">
-                    <div class="table-wrapper">
-                        <table id="logs-table">
-                            <thead>
-                                <tr id="table-headers">
-                                    <!-- Dynamic headers -->
-                                </tr>
-                            </thead>
-                            <tbody id="table-body">
-                                <!-- Dynamic data rows -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    <div class="main-layout" id="main-content" style="display: none">
+      <div>
+        <!-- Dashboard view Panel -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M3 3v18h18" />
+                <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
+              </svg>
+              Kết quả huấn luyện
+            </span>
+            <div class="tabs">
+              <button class="tab-btn active" onclick="switchTab('loss')">
+                Đường Loss
+              </button>
+              <button class="tab-btn" onclick="switchTab('map')">
+                Chỉ số mAP
+              </button>
+              <button class="tab-btn" onclick="switchTab('pr')">
+                Precision & Recall
+              </button>
+              <button class="tab-btn" onclick="switchTab('lr')">
+                Tốc độ học (LR)
+              </button>
+              <button class="tab-btn" onclick="switchTab('table')">
+                Dữ liệu dạng bảng
+              </button>
             </div>
+          </div>
+
+          <!-- Tab: Loss -->
+          <div id="tab-loss" class="tab-content active">
+            <div class="charts-grid">
+              <div class="chart-container" style="margin-bottom: 1.5rem">
+                <div id="box-loss-chart"></div>
+              </div>
+              <div class="charts-grid-2" style="display: grid; gap: 1.5rem">
+                <div class="chart-container">
+                  <div id="cls-loss-chart"></div>
+                </div>
+                <div class="chart-container">
+                  <div id="dfl-loss-chart"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: mAP -->
+          <div id="tab-map" class="tab-content">
+            <div class="charts-grid">
+              <div class="chart-container">
+                <div id="map-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: PR -->
+          <div id="tab-pr" class="tab-content">
+            <div class="charts-grid">
+              <div class="chart-container">
+                <div id="pr-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: LR -->
+          <div id="tab-lr" class="tab-content">
+            <div class="charts-grid">
+              <div class="chart-container">
+                <div id="lr-chart"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tab: Table -->
+          <div id="tab-table" class="tab-content">
+            <div class="table-wrapper">
+              <table id="logs-table">
+                <thead>
+                  <tr id="table-headers">
+                    <!-- Dynamic headers -->
+                  </tr>
+                </thead>
+                <tbody id="table-body">
+                  <!-- Dynamic data rows -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <!-- Sidebar Panel: Diagnostics & Expert Advisor -->
+        <div class="panel">
+          <div class="panel-header" style="margin-bottom: 1rem">
+            <span class="panel-title">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path
+                  d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"
+                />
+              </svg>
+              Khuyến nghị Huấn luyện
+            </span>
+          </div>
+
+          <div class="diag-section" id="expert-advisor-content">
+            <!-- Dynamic analysis goes here -->
+          </div>
         </div>
 
-        <div class="sidebar">
-            <!-- Sidebar Panel: Diagnostics & Expert Advisor -->
-            <div class="panel">
-                <div class="panel-header" style="margin-bottom: 1rem;">
-                    <span class="panel-title">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                        Khuyến nghị Huấn luyện
-                    </span>
-                </div>
-                
-                <div class="diag-section" id="expert-advisor-content">
-                    <!-- Dynamic analysis goes here -->
-                </div>
+        <!-- Troubleshooting guide -->
+        <div class="panel">
+          <div class="panel-header" style="margin-bottom: 1rem">
+            <span class="panel-title">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="12" r="3" />
+                <path
+                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"
+                />
+              </svg>
+              Khởi chạy cục bộ
+            </span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 0.5rem">
+            <div class="instruction-item" style="margin-bottom: 0.5rem">
+              <div class="instruction-num">1</div>
+              <div class="instruction-text">
+                <strong>Khởi động Web Server</strong>
+                <p>
+                  Để dùng tính năng Tự động quét cập nhật trực tiếp, hãy bật
+                  server Python tại project folder:
+                </p>
+                <pre>python3 -m http.server 8000</pre>
+                <p style="margin-top: 0.25rem">
+                  Truy cập:
+                  <code>http://localhost:8000/cameraip/train/train_dashboard/</code>
+                </p>
+              </div>
             </div>
-
-            <!-- Troubleshooting guide -->
-            <div class="panel">
-                <div class="panel-header" style="margin-bottom: 1rem;">
-                    <span class="panel-title">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                        Khởi chạy cục bộ
-                    </span>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                    <div class="instruction-item" style="margin-bottom: 0.5rem;">
-                        <div class="instruction-num">1</div>
-                        <div class="instruction-text">
-                            <strong>Khởi động Web Server</strong>
-                            <p>Để dùng tính năng Tự động quét cập nhật trực tiếp, hãy bật server Python tại project folder:</p>
-                            <pre>python3 -m http.server 8000</pre>
-                            <p style="margin-top: 0.25rem;">Truy cập: <code>http://localhost:8000/cameraip/train/train_dashboard/</code></p>
-                        </div>
-                    </div>
-                    <div class="instruction-item" style="margin-bottom: 0;">
-                        <div class="instruction-num">2</div>
-                        <div class="instruction-text">
-                            <strong>Kéo thả trực tiếp</strong>
-                            <p>Nếu mở file index.html trực tiếp không qua server, bạn chỉ cần kéo và thả tệp <code>results.csv</code> vào giao diện bất cứ lúc nào để xem cập nhật đồ thị.</p>
-                        </div>
-                    </div>
-                </div>
+            <div class="instruction-item" style="margin-bottom: 0">
+              <div class="instruction-num">2</div>
+              <div class="instruction-text">
+                <strong>Kéo thả trực tiếp</strong>
+                <p>
+                  Nếu mở file index.html trực tiếp không qua server, bạn chỉ cần
+                  kéo và thả tệp <code>results.csv</code> vào giao diện bất cứ
+                  lúc nào để xem cập nhật đồ thị.
+                </p>
+              </div>
             </div>
+          </div>
         </div>
+      </div>
     </div>
 
     <script>
-        // Chart object references
-        let boxLossChart = null;
-        let clsLossChart = null;
-        let dflLossChart = null;
-        let mapChart = null;
-        let prChart = null;
-        let lrChart = null;
-        
-        let autoRefreshInterval = null;
-        let lastCSVText = "";
+      // Chart object references
+      let boxLossChart = null;
+      let clsLossChart = null;
+      let dflLossChart = null;
+      let mapChart = null;
+      let prChart = null;
+      let lrChart = null;
 
-        // Start listeners on load
-        window.addEventListener('DOMContentLoaded', () => {
-            attemptAutoLoad();
-            setupAutoRefresh();
-            setupDragAndDrop();
+      let lastCSVText = "";
+
+      // Table deferred loading variables
+      let cachedHeaders = null;
+      let cachedData = null;
+      let cachedEpochKey = null;
+      let tableNeedsUpdate = false;
+
+      // Start listeners on load
+      window.addEventListener("DOMContentLoaded", () => {
+        setupDragAndDrop();
+      });
+
+      function updateStatus(text, dotClass) {
+        const dot = document.getElementById("status-dot");
+        const statusLabel = document.getElementById("status-text");
+        dot.className = "status-indicator " + dotClass;
+        statusLabel.textContent = text;
+      }
+
+      // Hide CORS warning or load methods since we only support manual files now
+
+      function triggerFileInput() {
+        document.getElementById("file-input").click();
+      }
+
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) readFile(file);
+      }
+
+      function setupDragAndDrop() {
+        const dropzone = document.getElementById("dropzone");
+
+        window.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          dropzone.classList.add("dragover");
         });
 
-        function setupAutoRefresh() {
-            const refreshCheckbox = document.getElementById('auto-refresh');
-            autoRefreshInterval = setInterval(() => {
-                if (refreshCheckbox.checked) {
-                    attemptAutoLoad();
-                }
-            }, 5000);
+        window.addEventListener("dragleave", (e) => {
+          e.preventDefault();
+          dropzone.classList.remove("dragover");
+        });
 
-            refreshCheckbox.addEventListener('change', (e) => {
-                if (e.target.checked) {
-                    attemptAutoLoad();
-                }
-            });
-        }
+        window.addEventListener("drop", (e) => {
+          e.preventDefault();
+          dropzone.classList.remove("dragover");
+          const files = e.dataTransfer.files;
+          if (files.length > 0 && files[0].name.endsWith(".csv")) {
+            readFile(files[0]);
+          }
+        });
+      }
 
-        function attemptAutoLoad() {
-            // YOLO writes results.csv in the run output folder, 
-            // but we can try to fetch from same directory or relative path for server hosting
-            fetch('../runs/detect/train_tiny/results.csv', { cache: 'no-store' })
-                .then(res => {
-                    if (!res.ok) return fetch('results.csv', { cache: 'no-store' });
-                    return res;
-                })
-                .then(response => {
-                    if (!response.ok) throw new Error("File not found");
-                    return response.text();
-                })
-                .then(text => {
-                    if (text !== lastCSVText) {
-                        lastCSVText = text;
-                        processCSVData(text);
-                        updateStatus("Tự động quét: Đang hoạt động", "active");
-                    }
-                    document.getElementById('cors-banner').style.display = 'none';
-                    document.getElementById('refresh-control-box').style.display = 'flex';
-                })
-                .catch(() => {
-                    if (window.location.protocol === 'file:') {
-                        document.getElementById('cors-banner').style.display = 'flex';
-                        updateStatus("CORS Protocol Blocked", "error");
-                    } else {
-                        updateStatus("Đang chờ file kết quả...", "active");
-                    }
-                });
-        }
+      function readFile(file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const text = e.target.result;
+          lastCSVText = text;
+          processCSVData(text);
+          updateStatus("Đã tải thủ công: " + file.name, "connected");
+        };
+        reader.readAsText(file);
+      }
 
-        function updateStatus(text, dotClass) {
-            const dot = document.getElementById('status-dot');
-            const statusLabel = document.getElementById('status-text');
-            dot.className = "status-indicator " + dotClass;
-            statusLabel.textContent = text;
-        }
+      function parseCSV(text) {
+        const lines = text.split(/\r?\n/);
+        if (lines.length === 0 || !lines[0].trim()) return null;
 
-        function triggerFileInput() {
-            document.getElementById('file-input').click();
-        }
+        // Normalize header names to lowercase, trim whitespaces and remove quotes if any
+        const rawHeaders = lines[0].split(",");
+        const headers = rawHeaders.map((h) => h.trim().toLowerCase());
 
-        function handleFileSelect(event) {
-            const file = event.target.files[0];
-            if (file) readFile(file);
-        }
+        const data = [];
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const values = line.split(",");
+          if (values.length < headers.length) continue;
 
-        function setupDragAndDrop() {
-            const dropzone = document.getElementById('dropzone');
-            
-            window.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                dropzone.classList.add('dragover');
-            });
-
-            window.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                dropzone.classList.remove('dragover');
-            });
-
-            window.addEventListener('drop', (e) => {
-                e.preventDefault();
-                dropzone.classList.remove('dragover');
-                const files = e.dataTransfer.files;
-                if (files.length > 0 && files[0].name.endsWith('.csv')) {
-                    readFile(files[0]);
-                }
-            });
-        }
-
-        function readFile(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                processCSVData(text);
-                updateStatus("Đã tải thủ công: " + file.name, "connected");
-                document.getElementById('cors-banner').style.display = 'none';
-            };
-            reader.readAsText(file);
-        }
-
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/);
-            if (lines.length === 0 || !lines[0].trim()) return null;
-            
-            // Normalize header names to lowercase, trim whitespaces and remove quotes if any
-            const rawHeaders = lines[0].split(',');
-            const headers = rawHeaders.map(h => h.trim().toLowerCase());
-            
-            const data = [];
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line) continue;
-                const values = line.split(',');
-                if (values.length < headers.length) continue;
-                
-                const row = {};
-                let isValid = true;
-                for (let j = 0; j < headers.length; j++) {
-                    const val = parseFloat(values[j]);
-                    if (isNaN(val)) {
-                        isValid = false;
-                        break;
-                    }
-                    row[headers[j]] = val;
-                }
-                if (isValid) data.push(row);
+          const row = {};
+          let isValid = true;
+          for (let j = 0; j < headers.length; j++) {
+            const val = parseFloat(values[j]);
+            if (isNaN(val)) {
+              isValid = false;
+              break;
             }
-            return { headers, data };
+            row[headers[j]] = val;
+          }
+          if (isValid) data.push(row);
+        }
+        return { headers, data };
+      }
+
+      function processCSVData(csvText) {
+        const parsed = parseCSV(csvText);
+        if (!parsed || parsed.data.length === 0) {
+          updateStatus("Lỗi phân tích cú pháp CSV", "error");
+          return;
         }
 
-        function processCSVData(csvText) {
-            const parsed = parseCSV(csvText);
-            if (!parsed || parsed.data.length === 0) {
-                updateStatus("Lỗi phân tích cú pháp CSV", "error");
-                return;
-            }
+        // Unhide Dashboard Layout and hide Dropzone guide
+        document.getElementById("dropzone").style.display = "none";
+        document.getElementById("stats-grid").style.display = "grid";
+        document.getElementById("main-content").style.display = "grid";
 
-            // Unhide Dashboard Layout and hide Dropzone guide
-            document.getElementById('dropzone').style.display = 'none';
-            document.getElementById('stats-grid').style.display = 'grid';
-            document.getElementById('main-content').style.display = 'grid';
+        const headers = parsed.headers;
+        const data = parsed.data;
 
-            const headers = parsed.headers;
-            const data = parsed.data;
+        // Find columns by patterns (handling minor header formatting changes in YOLO versions)
+        const epochKey = headers.find(
+          (h) => h === "epoch" || h.includes("epoch"),
+        );
+        const trainBoxKey = headers.find(
+          (h) => h.includes("train/box_loss") || h.includes("train/box"),
+        );
+        const trainClsKey = headers.find(
+          (h) => h.includes("train/cls_loss") || h.includes("train/cls"),
+        );
+        const trainDflKey = headers.find(
+          (h) => h.includes("train/dfl_loss") || h.includes("train/dfl"),
+        );
 
-            // Find columns by patterns (handling minor header formatting changes in YOLO versions)
-            const epochKey = headers.find(h => h === 'epoch' || h.includes('epoch'));
-            const trainBoxKey = headers.find(h => h.includes('train/box_loss') || h.includes('train/box'));
-            const trainClsKey = headers.find(h => h.includes('train/cls_loss') || h.includes('train/cls'));
-            const trainDflKey = headers.find(h => h.includes('train/dfl_loss') || h.includes('train/dfl'));
-            
-            const valBoxKey = headers.find(h => h.includes('val/box_loss') || h.includes('val/box'));
-            const valClsKey = headers.find(h => h.includes('val/cls_loss') || h.includes('val/cls'));
-            const valDflKey = headers.find(h => h.includes('val/dfl_loss') || h.includes('val/dfl'));
+        const valBoxKey = headers.find(
+          (h) => h.includes("val/box_loss") || h.includes("val/box"),
+        );
+        const valClsKey = headers.find(
+          (h) => h.includes("val/cls_loss") || h.includes("val/cls"),
+        );
+        const valDflKey = headers.find(
+          (h) => h.includes("val/dfl_loss") || h.includes("val/dfl"),
+        );
 
-            const map50Key = headers.find(h => h.includes('map50(b)') || h.includes('map50'));
-            const map50_95Key = headers.find(h => h.includes('map50-95(b)') || h.includes('map50-95'));
-            const precisionKey = headers.find(h => h.includes('precision(b)') || h.includes('precision'));
-            const recallKey = headers.find(h => h.includes('recall(b)') || h.includes('recall'));
+        const map50Key = headers.find(
+          (h) => h.includes("map50(b)") || h.includes("map50"),
+        );
+        const map50_95Key = headers.find(
+          (h) => h.includes("map50-95(b)") || h.includes("map50-95"),
+        );
+        const precisionKey = headers.find(
+          (h) => h.includes("precision(b)") || h.includes("precision"),
+        );
+        const recallKey = headers.find(
+          (h) => h.includes("recall(b)") || h.includes("recall"),
+        );
 
-            const lr0Key = headers.find(h => h.includes('lr/pg0') || h.includes('lr0'));
-            const lr1Key = headers.find(h => h.includes('lr/pg1') || h.includes('lr1'));
-            const lr2Key = headers.find(h => h.includes('lr/pg2') || h.includes('lr2'));
+        const lr0Key = headers.find(
+          (h) => h.includes("lr/pg0") || h.includes("lr0"),
+        );
+        const lr1Key = headers.find(
+          (h) => h.includes("lr/pg1") || h.includes("lr1"),
+        );
+        const lr2Key = headers.find(
+          (h) => h.includes("lr/pg2") || h.includes("lr2"),
+        );
 
-            // Arrays mapping for plotting
-            const epochs = data.map(d => Math.round(d[epochKey]));
-            const trainBox = data.map(d => d[trainBoxKey] || 0);
-            const trainCls = data.map(d => d[trainClsKey] || 0);
-            const trainDfl = data.map(d => d[trainDflKey] || 0);
+        // Arrays mapping for plotting
+        const epochs = data.map((d) => Math.round(d[epochKey]));
+        const trainBox = data.map((d) => d[trainBoxKey] || 0);
+        const trainCls = data.map((d) => d[trainClsKey] || 0);
+        const trainDfl = data.map((d) => d[trainDflKey] || 0);
 
-            const valBox = data.map(d => d[valBoxKey] || 0);
-            const valCls = data.map(d => d[valClsKey] || 0);
-            const valDfl = data.map(d => d[valDflKey] || 0);
+        const valBox = data.map((d) => d[valBoxKey] || 0);
+        const valCls = data.map((d) => d[valClsKey] || 0);
+        const valDfl = data.map((d) => d[valDflKey] || 0);
 
-            const map50 = data.map(d => d[map50Key] || 0);
-            const map50_95 = data.map(d => d[map50_95Key] || 0);
-            const precision = data.map(d => d[precisionKey] || 0);
-            const recall = data.map(d => d[recallKey] || 0);
+        const map50 = data.map((d) => d[map50Key] || 0);
+        const map50_95 = data.map((d) => d[map50_95Key] || 0);
+        const precision = data.map((d) => d[precisionKey] || 0);
+        const recall = data.map((d) => d[recallKey] || 0);
 
-            const lr0 = data.map(d => d[lr0Key] || 0);
-            const lr1 = data.map(d => d[lr1Key] || 0);
-            const lr2 = data.map(d => d[lr2Key] || 0);
+        const lr0 = data.map((d) => d[lr0Key] || 0);
+        const lr1 = data.map((d) => d[lr1Key] || 0);
+        const lr2 = data.map((d) => d[lr2Key] || 0);
 
-            // Compute Key Statistics
-            const totalEpochs = data.length;
-            
-            let bestMap50Idx = 0;
-            let bestMap50_95Idx = 0;
-            let minValBoxIdx = 0;
-            let minValClsIdx = 0;
+        // Compute Key Statistics
+        const totalEpochs = data.length;
 
-            for(let i=0; i<totalEpochs; i++) {
-                if (map50[i] > map50[bestMap50Idx]) bestMap50Idx = i;
-                if (map50_95[i] > map50_95[bestMap50_95Idx]) bestMap50_95Idx = i;
-                if (valBox[i] < valBox[minValBoxIdx]) minValBoxIdx = i;
-                if (valCls[i] < valCls[minValClsIdx]) minValClsIdx = i;
-            }
+        let bestMap50Idx = 0;
+        let bestMap50_95Idx = 0;
+        let minValBoxIdx = 0;
+        let minValClsIdx = 0;
 
-            // Update Metric Cards
-            document.getElementById('stat-epochs').innerText = totalEpochs;
-            document.getElementById('stat-best-map50').innerText = map50[bestMap50Idx].toFixed(4);
-            document.getElementById('meta-best-map50').innerText = `Epoch: ${epochs[bestMap50Idx]}`;
-            
-            document.getElementById('stat-best-map50-95').innerText = map50_95[bestMap50_95Idx].toFixed(4);
-            document.getElementById('meta-best-map50-95').innerText = `Epoch: ${epochs[bestMap50_95Idx]}`;
-
-            document.getElementById('stat-min-val-box-loss').innerText = valBox[minValBoxIdx].toFixed(4);
-            document.getElementById('meta-min-val-box-loss').innerText = `Epoch: ${epochs[minValBoxIdx]}`;
-
-            document.getElementById('stat-min-val-cls-loss').innerText = valCls[minValClsIdx].toFixed(4);
-            document.getElementById('meta-min-val-cls-loss').innerText = `Epoch: ${epochs[minValClsIdx]}`;
-
-            // Render Charts
-            renderLossChart('box-loss-chart', epochs, 'Box Loss (Lỗi Bounding Box)', trainBox, valBox, '#8b5cf6', '#fda4af');
-            renderLossChart('cls-loss-chart', epochs, 'Classification Loss (Lỗi Phân Lớp)', trainCls, valCls, '#ec4899', '#fbcfe8');
-            renderLossChart('dfl-loss-chart', epochs, 'Distribution Focal Loss (DFL)', trainDfl, valDfl, '#06b6d4', '#c5f2f7');
-            
-            renderMapChart(epochs, map50, map50_95);
-            renderPrChart(epochs, precision, recall);
-            renderLrChart(epochs, lr0, lr1, lr2);
-
-            // Render raw CSV table
-            populateTable(headers, data, epochKey);
-
-            // Execute diagnostics & generate recommendations
-            runDiagnostics({
-                totalEpochs,
-                epochs,
-                trainBox, trainCls, trainDfl,
-                valBox, valCls, valDfl,
-                map50, map50_95,
-                precision, recall,
-                lr0,
-                bestMap50Idx,
-                bestMap50_95Idx,
-                minValBoxIdx,
-                minValClsIdx
-            });
+        for (let i = 0; i < totalEpochs; i++) {
+          if (map50[i] > map50[bestMap50Idx]) bestMap50Idx = i;
+          if (map50_95[i] > map50_95[bestMap50_95Idx]) bestMap50_95Idx = i;
+          if (valBox[i] < valBox[minValBoxIdx]) minValBoxIdx = i;
+          if (valCls[i] < valCls[minValClsIdx]) minValClsIdx = i;
         }
 
-        // Standard Loss chart builder (Train vs Val)
-        function renderLossChart(elementId, epochs, title, trainSeries, valSeries, trainColor, valColor) {
-            const series = [
-                { name: 'Train Loss', data: trainSeries },
-                { name: 'Val Loss', data: valSeries }
-            ];
+        // Update Metric Cards
+        document.getElementById("stat-epochs").innerText = totalEpochs;
+        document.getElementById("stat-best-map50").innerText =
+          map50[bestMap50Idx].toFixed(4);
+        document.getElementById("meta-best-map50").innerText =
+          `Epoch: ${epochs[bestMap50Idx]}`;
 
-            const options = {
-                chart: {
-                    type: 'line',
-                    height: 330,
-                    background: 'transparent',
-                    foreColor: '#94a3b8',
-                    toolbar: { show: true },
-                    animations: { enabled: true, speed: 600 }
-                },
-                stroke: { width: 2.5, curve: 'smooth' },
-                colors: [trainColor, valColor],
-                series: series,
-                xaxis: {
-                    categories: epochs,
-                    title: { text: 'Epoch', style: { color: '#94a3b8' } },
-                    tickAmount: Math.min(10, epochs.length)
-                },
-                yaxis: {
-                    title: { text: 'Loss Value', style: { color: '#94a3b8' } },
-                    labels: { formatter: (v) => v ? v.toFixed(4) : '' }
-                },
-                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                tooltip: { theme: 'dark' },
-                legend: { position: 'top', horizontalAlign: 'right' },
-                title: {
-                    text: title,
-                    align: 'left',
-                    style: { fontSize: '13px', fontWeight: 600, color: '#f8fafc' }
-                }
-            };
+        document.getElementById("stat-best-map50-95").innerText =
+          map50_95[bestMap50_95Idx].toFixed(4);
+        document.getElementById("meta-best-map50-95").innerText =
+          `Epoch: ${epochs[bestMap50_95Idx]}`;
 
-            const container = document.querySelector("#" + elementId);
-            container.innerHTML = "";
-            const chartObj = new ApexCharts(container, options);
-            chartObj.render();
+        document.getElementById("stat-min-val-box-loss").innerText =
+          valBox[minValBoxIdx].toFixed(4);
+        document.getElementById("meta-min-val-box-loss").innerText =
+          `Epoch: ${epochs[minValBoxIdx]}`;
+
+        document.getElementById("stat-min-val-cls-loss").innerText =
+          valCls[minValClsIdx].toFixed(4);
+        document.getElementById("meta-min-val-cls-loss").innerText =
+          `Epoch: ${epochs[minValClsIdx]}`;
+
+        // Render Charts
+        renderLossChart(
+          "box-loss-chart",
+          epochs,
+          "Box Loss (Lỗi Bounding Box)",
+          trainBox,
+          valBox,
+          "#8b5cf6",
+          "#fda4af",
+        );
+        renderLossChart(
+          "cls-loss-chart",
+          epochs,
+          "Classification Loss (Lỗi Phân Lớp)",
+          trainCls,
+          valCls,
+          "#ec4899",
+          "#fbcfe8",
+        );
+        renderLossChart(
+          "dfl-loss-chart",
+          epochs,
+          "Distribution Focal Loss (DFL)",
+          trainDfl,
+          valDfl,
+          "#06b6d4",
+          "#c5f2f7",
+        );
+
+        renderMapChart(epochs, map50, map50_95);
+        renderPrChart(epochs, precision, recall);
+        renderLrChart(epochs, lr0, lr1, lr2);
+
+        // Cache table data and defer rendering
+        cachedHeaders = headers;
+        cachedData = data;
+        cachedEpochKey = epochKey;
+        tableNeedsUpdate = true;
+
+        const tableTabBtn = document.querySelector(".tab-btn[onclick*='table']");
+        if (tableTabBtn && tableTabBtn.classList.contains("active")) {
+          renderTable();
         }
 
-        function renderMapChart(epochs, map50, map50_95) {
-            const series = [
-                { name: 'mAP50', data: map50 },
-                { name: 'mAP50-95', data: map50_95 }
-            ];
+        // Execute diagnostics & generate recommendations
+        runDiagnostics({
+          totalEpochs,
+          epochs,
+          trainBox,
+          trainCls,
+          trainDfl,
+          valBox,
+          valCls,
+          valDfl,
+          map50,
+          map50_95,
+          precision,
+          recall,
+          lr0,
+          bestMap50Idx,
+          bestMap50_95Idx,
+          minValBoxIdx,
+          minValClsIdx,
+        });
+      }
 
-            const options = {
-                chart: {
-                    type: 'line',
-                    height: 330,
-                    background: 'transparent',
-                    foreColor: '#94a3b8',
-                    toolbar: { show: true }
-                },
-                stroke: { width: 3, curve: 'smooth' },
-                colors: ['#10b981', '#f59e0b'],
-                series: series,
-                xaxis: {
-                    categories: epochs,
-                    title: { text: 'Epoch', style: { color: '#94a3b8' } },
-                    tickAmount: Math.min(10, epochs.length)
-                },
-                yaxis: {
-                    title: { text: 'mAP Value', style: { color: '#94a3b8' } },
-                    max: 1.0,
-                    min: 0.0,
-                    labels: { formatter: (v) => v ? v.toFixed(3) : '0.000' }
-                },
-                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                tooltip: { theme: 'dark' },
-                legend: { position: 'top', horizontalAlign: 'right' },
-                title: {
-                    text: 'Validation Mean Average Precision (mAP)',
-                    align: 'left',
-                    style: { fontSize: '14px', fontWeight: 600, color: '#f8fafc' }
-                }
-            };
+      // Standard Loss chart builder (Train vs Val)
+      function renderLossChart(
+        elementId,
+        epochs,
+        title,
+        trainSeries,
+        valSeries,
+        trainColor,
+        valColor,
+      ) {
+        const series = [
+          { name: "Train Loss", data: trainSeries },
+          { name: "Val Loss", data: valSeries },
+        ];
 
-            const container = document.querySelector("#map-chart");
-            container.innerHTML = "";
-            const chartObj = new ApexCharts(container, options);
-            chartObj.render();
+        let chartRef = null;
+        if (elementId === "box-loss-chart") {
+          chartRef = boxLossChart;
+        } else if (elementId === "cls-loss-chart") {
+          chartRef = clsLossChart;
+        } else if (elementId === "dfl-loss-chart") {
+          chartRef = dflLossChart;
         }
 
-        function renderPrChart(epochs, precision, recall) {
-            const series = [
-                { name: 'Precision', data: precision },
-                { name: 'Recall', data: recall }
-            ];
-
-            const options = {
-                chart: {
-                    type: 'line',
-                    height: 330,
-                    background: 'transparent',
-                    foreColor: '#94a3b8',
-                    toolbar: { show: true }
-                },
-                stroke: { width: 2.5, curve: 'smooth' },
-                colors: ['#06b6d4', '#ec4899'],
-                series: series,
-                xaxis: {
-                    categories: epochs,
-                    title: { text: 'Epoch', style: { color: '#94a3b8' } },
-                    tickAmount: Math.min(10, epochs.length)
-                },
-                yaxis: {
-                    title: { text: 'Value', style: { color: '#94a3b8' } },
-                    max: 1.0,
-                    min: 0.0,
-                    labels: { formatter: (v) => v ? v.toFixed(3) : '0.000' }
-                },
-                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                tooltip: { theme: 'dark' },
-                legend: { position: 'top', horizontalAlign: 'right' },
-                title: {
-                    text: 'Precision & Recall Curves',
-                    align: 'left',
-                    style: { fontSize: '14px', fontWeight: 600, color: '#f8fafc' }
-                }
-            };
-
-            const container = document.querySelector("#pr-chart");
-            container.innerHTML = "";
-            const chartObj = new ApexCharts(container, options);
-            chartObj.render();
+        if (chartRef) {
+          chartRef.updateOptions(
+            {
+              xaxis: {
+                categories: epochs,
+                tickAmount: Math.min(10, epochs.length),
+              },
+              series: series,
+            },
+            false,
+            true,
+          );
+          return;
         }
 
-        // Render Learning rate curves
-        function renderLrChart(epochs, lr0, lr1, lr2) {
-            const series = [
-                { name: 'LR Parameter Group 0', data: lr0 },
-                { name: 'LR Parameter Group 1', data: lr1 },
-                { name: 'LR Parameter Group 2', data: lr2 }
-            ];
+        const options = {
+          chart: {
+            type: "line",
+            height: 330,
+            background: "transparent",
+            foreColor: "#94a3b8",
+            toolbar: { show: true },
+            animations: { enabled: true, speed: 600 },
+          },
+          stroke: { width: 2.5, curve: "smooth" },
+          colors: [trainColor, valColor],
+          series: series,
+          xaxis: {
+            categories: epochs,
+            title: { text: "Epoch", style: { color: "#94a3b8" } },
+            tickAmount: Math.min(10, epochs.length),
+          },
+          yaxis: {
+            title: { text: "Loss Value", style: { color: "#94a3b8" } },
+            labels: { formatter: (v) => (v ? v.toFixed(4) : "") },
+          },
+          grid: { borderColor: "rgba(255, 255, 255, 0.05)" },
+          tooltip: { theme: "dark" },
+          legend: { position: "top", horizontalAlign: "right" },
+          title: {
+            text: title,
+            align: "left",
+            style: { fontSize: "13px", fontWeight: 600, color: "#f8fafc" },
+          },
+        };
 
-            const options = {
-                chart: {
-                    type: 'line',
-                    height: 330,
-                    background: 'transparent',
-                    foreColor: '#94a3b8',
-                    toolbar: { show: true }
-                },
-                stroke: { width: 2, curve: 'straight' },
-                colors: ['#a855f7', '#6366f1', '#3b82f6'],
-                series: series,
-                xaxis: {
-                    categories: epochs,
-                    title: { text: 'Epoch', style: { color: '#94a3b8' } },
-                    tickAmount: Math.min(10, epochs.length)
-                },
-                yaxis: {
-                    title: { text: 'Learning Rate', style: { color: '#94a3b8' } },
-                    labels: { formatter: (v) => v ? v.toExponential(3) : '' }
-                },
-                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
-                tooltip: { theme: 'dark' },
-                legend: { position: 'top', horizontalAlign: 'right' },
-                title: {
-                    text: 'Learning Rate (Decay Schedule)',
-                    align: 'left',
-                    style: { fontSize: '14px', fontWeight: 600, color: '#f8fafc' }
-                }
-            };
+        const container = document.querySelector("#" + elementId);
+        container.innerHTML = "";
+        const chartObj = new ApexCharts(container, options);
+        chartObj.render();
 
-            const container = document.querySelector("#lr-chart");
-            container.innerHTML = "";
-            const chartObj = new ApexCharts(container, options);
-            chartObj.render();
+        if (elementId === "box-loss-chart") {
+          boxLossChart = chartObj;
+        } else if (elementId === "cls-loss-chart") {
+          clsLossChart = chartObj;
+        } else if (elementId === "dfl-loss-chart") {
+          dflLossChart = chartObj;
+        }
+      }
+
+      function renderMapChart(epochs, map50, map50_95) {
+        const series = [
+          { name: "mAP50", data: map50 },
+          { name: "mAP50-95", data: map50_95 },
+        ];
+
+        if (mapChart) {
+          mapChart.updateOptions(
+            {
+              xaxis: {
+                categories: epochs,
+                tickAmount: Math.min(10, epochs.length),
+              },
+              series: series,
+            },
+            false,
+            true,
+          );
+          return;
         }
 
-        function populateTable(headers, data, epochKey) {
-            const headerRow = document.getElementById('table-headers');
-            const tableBody = document.getElementById('table-body');
-            
-            headerRow.innerHTML = "";
-            headers.forEach(h => {
-                const th = document.createElement('th');
-                th.innerText = h.toUpperCase().replace('_', ' ');
-                headerRow.appendChild(th);
-            });
+        const options = {
+          chart: {
+            type: "line",
+            height: 330,
+            background: "transparent",
+            foreColor: "#94a3b8",
+            toolbar: { show: true },
+          },
+          stroke: { width: 3, curve: "smooth" },
+          colors: ["#10b981", "#f59e0b"],
+          series: series,
+          xaxis: {
+            categories: epochs,
+            title: { text: "Epoch", style: { color: "#94a3b8" } },
+            tickAmount: Math.min(10, epochs.length),
+          },
+          yaxis: {
+            title: { text: "mAP Value", style: { color: "#94a3b8" } },
+            max: 1.0,
+            min: 0.0,
+            labels: { formatter: (v) => (v ? v.toFixed(3) : "0.000") },
+          },
+          grid: { borderColor: "rgba(255, 255, 255, 0.05)" },
+          tooltip: { theme: "dark" },
+          legend: { position: "top", horizontalAlign: "right" },
+          title: {
+            text: "Validation Mean Average Precision (mAP)",
+            align: "left",
+            style: { fontSize: "14px", fontWeight: 600, color: "#f8fafc" },
+          },
+        };
 
-            tableBody.innerHTML = "";
-            // Reverse list to show the latest epoch first
-            for (let i = data.length - 1; i >= 0; i--) {
-                const tr = document.createElement('tr');
-                const rowData = data[i];
-                headers.forEach(h => {
-                    const td = document.createElement('td');
-                    let val = rowData[h];
-                    
-                    if (h === epochKey) {
-                        td.innerHTML = `<strong>${Math.round(val)}</strong>`;
-                    } else if (h.includes('loss')) {
-                        td.innerText = val.toFixed(5);
-                        td.classList.add(h.startsWith('val') ? 'hl-val-loss' : 'hl-loss');
-                    } else if (h.includes('map') || h.includes('precision') || h.includes('recall')) {
-                        td.innerText = val.toFixed(5);
-                        td.classList.add('hl-map');
-                    } else if (h.includes('lr/')) {
-                        td.innerText = val.toExponential(3);
-                        td.classList.add('hl-lr');
-                    } else {
-                        td.innerText = val.toFixed(4);
-                    }
-                    tr.appendChild(td);
-                });
-                tableBody.appendChild(tr);
-            }
+        const container = document.querySelector("#map-chart");
+        container.innerHTML = "";
+        const chartObj = new ApexCharts(container, options);
+        chartObj.render();
+        mapChart = chartObj;
+      }
+
+      function renderPrChart(epochs, precision, recall) {
+        const series = [
+          { name: "Precision", data: precision },
+          { name: "Recall", data: recall },
+        ];
+
+        if (prChart) {
+          prChart.updateOptions(
+            {
+              xaxis: {
+                categories: epochs,
+                tickAmount: Math.min(10, epochs.length),
+              },
+              series: series,
+            },
+            false,
+            true,
+          );
+          return;
         }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                if (btn.getAttribute('onclick').includes(tabId)) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
+        const options = {
+          chart: {
+            type: "line",
+            height: 330,
+            background: "transparent",
+            foreColor: "#94a3b8",
+            toolbar: { show: true },
+          },
+          stroke: { width: 2.5, curve: "smooth" },
+          colors: ["#06b6d4", "#ec4899"],
+          series: series,
+          xaxis: {
+            categories: epochs,
+            title: { text: "Epoch", style: { color: "#94a3b8" } },
+            tickAmount: Math.min(10, epochs.length),
+          },
+          yaxis: {
+            title: { text: "Value", style: { color: "#94a3b8" } },
+            max: 1.0,
+            min: 0.0,
+            labels: { formatter: (v) => (v ? v.toFixed(3) : "0.000") },
+          },
+          grid: { borderColor: "rgba(255, 255, 255, 0.05)" },
+          tooltip: { theme: "dark" },
+          legend: { position: "top", horizontalAlign: "right" },
+          title: {
+            text: "Precision & Recall Curves",
+            align: "left",
+            style: { fontSize: "14px", fontWeight: 600, color: "#f8fafc" },
+          },
+        };
 
-            document.querySelectorAll('.tab-content').forEach(content => {
-                if (content.id === `tab-${tabId}`) {
-                    content.classList.add('active');
-                } else {
-                    content.classList.remove('active');
-                }
-            });
+        const container = document.querySelector("#pr-chart");
+        container.innerHTML = "";
+        const chartObj = new ApexCharts(container, options);
+        chartObj.render();
+        prChart = chartObj;
+      }
+
+      // Render Learning rate curves
+      function renderLrChart(epochs, lr0, lr1, lr2) {
+        const series = [
+          { name: "LR Parameter Group 0", data: lr0 },
+          { name: "LR Parameter Group 1", data: lr1 },
+          { name: "LR Parameter Group 2", data: lr2 },
+        ];
+
+        if (lrChart) {
+          lrChart.updateOptions(
+            {
+              xaxis: {
+                categories: epochs,
+                tickAmount: Math.min(10, epochs.length),
+              },
+              series: series,
+            },
+            false,
+            true,
+          );
+          return;
         }
 
-        // Diagnostic Advisor Engine
-        function runDiagnostics(metrics) {
-            const container = document.getElementById('expert-advisor-content');
-            container.innerHTML = "";
+        const options = {
+          chart: {
+            type: "line",
+            height: 330,
+            background: "transparent",
+            foreColor: "#94a3b8",
+            toolbar: { show: true },
+          },
+          stroke: { width: 2, curve: "straight" },
+          colors: ["#a855f7", "#6366f1", "#3b82f6"],
+          series: series,
+          xaxis: {
+            categories: epochs,
+            title: { text: "Epoch", style: { color: "#94a3b8" } },
+            tickAmount: Math.min(10, epochs.length),
+          },
+          yaxis: {
+            title: { text: "Learning Rate", style: { color: "#94a3b8" } },
+            labels: { formatter: (v) => (v ? v.toExponential(3) : "") },
+          },
+          grid: { borderColor: "rgba(255, 255, 255, 0.05)" },
+          tooltip: { theme: "dark" },
+          legend: { position: "top", horizontalAlign: "right" },
+          title: {
+            text: "Learning Rate (Decay Schedule)",
+            align: "left",
+            style: { fontSize: "14px", fontWeight: 600, color: "#f8fafc" },
+          },
+        };
 
-            const total = metrics.totalEpochs;
-            const finalEpoch = metrics.epochs[total - 1];
-            
-            // Extract core data arrays
-            const trainBox = metrics.trainBox;
-            const valBox = metrics.valBox;
-            const valCls = metrics.valCls;
-            const map50 = metrics.map50;
-            const map50_95 = metrics.map50_95;
+        const container = document.querySelector("#lr-chart");
+        container.innerHTML = "";
+        const chartObj = new ApexCharts(container, options);
+        chartObj.render();
+        lrChart = chartObj;
+      }
 
-            // 1. Evaluate Overall Model Quality Rating
-            let bestMap50 = map50[metrics.bestMap50Idx];
-            let bestMap50_95 = map50_95[metrics.bestMap50_95Idx];
-            let quality = "Bình thường";
-            let qClass = "warning";
-            
-            if (bestMap50 >= 0.85) {
-                quality = "Xuất sắc (Excellent)";
-                qClass = "normal";
-            } else if (bestMap50 >= 0.70) {
-                quality = "Tốt (Good)";
-                qClass = "normal";
-            } else if (bestMap50 >= 0.45) {
-                quality = "Trung bình (Fair)";
-                qClass = "warning";
+      function populateTable(headers, data, epochKey) {
+        const headerRow = document.getElementById("table-headers");
+        const tableBody = document.getElementById("table-body");
+
+        headerRow.innerHTML = "";
+        headers.forEach((h) => {
+          const th = document.createElement("th");
+          th.innerText = h.toUpperCase().replace("_", " ");
+          headerRow.appendChild(th);
+        });
+
+        tableBody.innerHTML = "";
+        // Reverse list to show the latest epoch first
+        for (let i = data.length - 1; i >= 0; i--) {
+          const tr = document.createElement("tr");
+          const rowData = data[i];
+          headers.forEach((h) => {
+            const td = document.createElement("td");
+            let val = rowData[h];
+
+            if (h === epochKey) {
+              td.innerHTML = `<strong>${Math.round(val)}</strong>`;
+            } else if (h.includes("loss")) {
+              td.innerText = val.toFixed(5);
+              td.classList.add(h.startsWith("val") ? "hl-val-loss" : "hl-loss");
+            } else if (
+              h.includes("map") ||
+              h.includes("precision") ||
+              h.includes("recall")
+            ) {
+              td.innerText = val.toFixed(5);
+              td.classList.add("hl-map");
+            } else if (h.includes("lr/")) {
+              td.innerText = val.toExponential(3);
+              td.classList.add("hl-lr");
             } else {
-                quality = "Kém (Poor) - Cần cải thiện";
-                qClass = "danger";
+              td.innerText = val.toFixed(4);
             }
+            tr.appendChild(td);
+          });
+          tableBody.appendChild(tr);
+        }
+      }
 
-            // Create Model Rating Card
-            let html = `
+      function switchTab(tabId) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          if (btn.getAttribute("onclick").includes(tabId)) {
+            btn.classList.add("active");
+          } else {
+            btn.classList.remove("active");
+          }
+        });
+
+        document.querySelectorAll(".tab-content").forEach((content) => {
+          if (content.id === `tab-${tabId}`) {
+            content.classList.add("active");
+          } else {
+            content.classList.remove("active");
+          }
+        });
+
+        if (tabId === "table") {
+          renderTable();
+        }
+      }
+
+      function renderTable() {
+        if (!tableNeedsUpdate || !cachedData) return;
+        populateTable(cachedHeaders, cachedData, cachedEpochKey);
+        tableNeedsUpdate = false;
+      }
+
+      // Diagnostic Advisor Engine
+      function runDiagnostics(metrics) {
+        const container = document.getElementById("expert-advisor-content");
+        container.innerHTML = "";
+
+        const total = metrics.totalEpochs;
+        const finalEpoch = metrics.epochs[total - 1];
+
+        // Extract core data arrays
+        const trainBox = metrics.trainBox;
+        const valBox = metrics.valBox;
+        const valCls = metrics.valCls;
+        const map50 = metrics.map50;
+        const map50_95 = metrics.map50_95;
+
+        // 1. Evaluate Overall Model Quality Rating
+        let bestMap50 = map50[metrics.bestMap50Idx];
+        let bestMap50_95 = map50_95[metrics.bestMap50_95Idx];
+        let quality = "Bình thường";
+        let qClass = "warning";
+
+        if (bestMap50 >= 0.85) {
+          quality = "Xuất sắc (Excellent)";
+          qClass = "normal";
+        } else if (bestMap50 >= 0.7) {
+          quality = "Tốt (Good)";
+          qClass = "normal";
+        } else if (bestMap50 >= 0.45) {
+          quality = "Trung bình (Fair)";
+          qClass = "warning";
+        } else {
+          quality = "Kém (Poor) - Cần cải thiện";
+          qClass = "danger";
+        }
+
+        // Create Model Rating Card
+        let html = `
                 <div class="diag-card">
                     <div class="diag-card-header">
                         <span>Đánh giá Mô hình:</span>
@@ -1380,42 +1669,46 @@
                 </div>
             `;
 
-            // 2. Diagnose Overfitting
-            // Criteria: Validation Box/Cls Loss has a minimum somewhere in the middle 
-            // and starts growing continuously towards the end, while Train Box Loss keeps dropping.
-            let isOverfitting = false;
-            let overfitSeverity = "normal";
-            let overfitReason = "";
-            let overfitRecommendations = [];
+        // 2. Diagnose Overfitting
+        // Criteria: Validation Box/Cls Loss has a minimum somewhere in the middle
+        // and starts growing continuously towards the end, while Train Box Loss keeps dropping.
+        let isOverfitting = false;
+        let overfitSeverity = "normal";
+        let overfitReason = "";
+        let overfitRecommendations = [];
 
-            // Let's compute average val loss in the last 15% of epochs and compare with minimum
-            const checkWindow = Math.max(2, Math.round(total * 0.15));
-            if (total >= 5) {
-                const minValBoxEpoch = metrics.epochs[metrics.minValBoxIdx];
-                const minValClsEpoch = metrics.epochs[metrics.minValClsIdx];
-                
-                // Average of last few validation losses
-                const lastValBoxes = valBox.slice(-checkWindow);
-                const avgLastValBox = lastValBoxes.reduce((a,b) => a+b, 0) / checkWindow;
-                const minValBoxValue = valBox[metrics.minValBoxIdx];
-                
-                // If average val loss in last window is 10% higher than the minimum box loss
-                if (avgLastValBox > minValBoxValue * 1.10 && metrics.minValBoxIdx < (total - checkWindow)) {
-                    isOverfitting = true;
-                    overfitSeverity = "danger";
-                    overfitReason = `Validation Box Loss đã đạt cực tiểu tại Epoch ${minValBoxEpoch} (${minValBoxValue.toFixed(4)}) nhưng sau đó tăng ngược trở lại đạt trung bình ${avgLastValBox.toFixed(4)} ở cuối phiên huấn luyện.`;
-                    
-                    overfitRecommendations = [
-                        `<strong>Giảm số lượng Epoch:</strong> Rút ngắn số lượng Epoch huấn luyện khoảng <code>--epochs ${minValBoxEpoch + 15}</code> hoặc kích hoạt/tăng cờ dừng sớm.`,
-                        `<strong>Tăng cường lớp đóng băng:</strong> Tăng tham số đóng băng lớp backbone <code>--freeze 12</code> hoặc cao hơn để giữ nguyên đặc trưng mô hình pre-trained, chống nhiễu tập dữ liệu nhỏ.`,
-                        `<strong>Tăng Data Augmentation:</strong> Tăng cường biến đổi ảnh (augmentation) trong script chuẩn bị hoặc tăng cờ <code>--scale</code> lên 0.6.`,
-                        `<strong>Sử dụng kích cỡ model nhỏ hơn:</strong> Nếu đang dùng <code>yolo11m.pt</code>, thử chuyển sang <code>yolo11s.pt</code> để giảm overfitting.`
-                    ];
-                }
-            }
+        // Let's compute average val loss in the last 15% of epochs and compare with minimum
+        const checkWindow = Math.max(2, Math.round(total * 0.15));
+        if (total >= 5) {
+          const minValBoxEpoch = metrics.epochs[metrics.minValBoxIdx];
+          const minValClsEpoch = metrics.epochs[metrics.minValClsIdx];
 
-            if (isOverfitting) {
-                html += `
+          // Average of last few validation losses
+          const lastValBoxes = valBox.slice(-checkWindow);
+          const avgLastValBox =
+            lastValBoxes.reduce((a, b) => a + b, 0) / checkWindow;
+          const minValBoxValue = valBox[metrics.minValBoxIdx];
+
+          // If average val loss in last window is 10% higher than the minimum box loss
+          if (
+            avgLastValBox > minValBoxValue * 1.1 &&
+            metrics.minValBoxIdx < total - checkWindow
+          ) {
+            isOverfitting = true;
+            overfitSeverity = "danger";
+            overfitReason = `Validation Box Loss đã đạt cực tiểu tại Epoch ${minValBoxEpoch} (${minValBoxValue.toFixed(4)}) nhưng sau đó tăng ngược trở lại đạt trung bình ${avgLastValBox.toFixed(4)} ở cuối phiên huấn luyện.`;
+
+            overfitRecommendations = [
+              `<strong>Giảm số lượng Epoch:</strong> Rút ngắn số lượng Epoch huấn luyện khoảng <code>--epochs ${minValBoxEpoch + 15}</code> hoặc kích hoạt/tăng cờ dừng sớm.`,
+              `<strong>Tăng cường lớp đóng băng:</strong> Tăng tham số đóng băng lớp backbone <code>--freeze 12</code> hoặc cao hơn để giữ nguyên đặc trưng mô hình pre-trained, chống nhiễu tập dữ liệu nhỏ.`,
+              `<strong>Tăng Data Augmentation:</strong> Tăng cường biến đổi ảnh (augmentation) trong script chuẩn bị hoặc tăng cờ <code>--scale</code> lên 0.6.`,
+              `<strong>Sử dụng kích cỡ model nhỏ hơn:</strong> Nếu đang dùng <code>yolo11m.pt</code>, thử chuyển sang <code>yolo11s.pt</code> để giảm overfitting.`,
+            ];
+          }
+        }
+
+        if (isOverfitting) {
+          html += `
                     <div class="diag-card" style="border-left: 4px solid var(--rose);">
                         <div class="diag-card-header">
                             <span>Phát hiện: Quá Khớp (Overfitting)</span>
@@ -1425,26 +1718,26 @@
                             ${overfitReason} Mô hình đang học thuộc lòng tập dữ liệu train và giảm hiệu quả tổng quát hóa trên tập validation.
                         </div>
                         <ul class="recommendation-list">
-                            ${overfitRecommendations.map(r => `<li class="recommendation-item">${r}</li>`).join('')}
+                            ${overfitRecommendations.map((r) => `<li class="recommendation-item">${r}</li>`).join("")}
                         </ul>
                     </div>
                 `;
-            }
+        }
 
-            // 3. Diagnose Underfitting / Early Stop
-            // Criteria: Loss curves are still dropping at the very end and validation mAP is still growing.
-            // i.e., Minimum validation box loss occurs in the last 10% of epochs, and total epochs is small.
-            let isUnderfitting = false;
-            if (!isOverfitting && total >= 5) {
-                const minValBoxValue = valBox[metrics.minValBoxIdx];
-                const lastValBoxes = valBox.slice(-3);
-                const avgLastValBox = lastValBoxes.reduce((a,b) => a+b, 0) / 3;
-                
-                // If min val loss is at the very end
-                const endThreshold = Math.max(2, Math.round(total * 0.1));
-                if (metrics.minValBoxIdx >= (total - endThreshold) && total < 120) {
-                    isUnderfitting = true;
-                    html += `
+        // 3. Diagnose Underfitting / Early Stop
+        // Criteria: Loss curves are still dropping at the very end and validation mAP is still growing.
+        // i.e., Minimum validation box loss occurs in the last 10% of epochs, and total epochs is small.
+        let isUnderfitting = false;
+        if (!isOverfitting && total >= 5) {
+          const minValBoxValue = valBox[metrics.minValBoxIdx];
+          const lastValBoxes = valBox.slice(-3);
+          const avgLastValBox = lastValBoxes.reduce((a, b) => a + b, 0) / 3;
+
+          // If min val loss is at the very end
+          const endThreshold = Math.max(2, Math.round(total * 0.1));
+          if (metrics.minValBoxIdx >= total - endThreshold && total < 120) {
+            isUnderfitting = true;
+            html += `
                         <div class="diag-card" style="border-left: 4px solid var(--amber);">
                             <div class="diag-card-header">
                                 <span>Phát hiện: Chưa Hội Tụ (Underfitting/Early Stop)</span>
@@ -1460,15 +1753,15 @@
                             </ul>
                         </div>
                     `;
-                }
-            }
+          }
+        }
 
-            // 4. Diagnose Learning Rate Settings
-            // Check if lr is too high (metrics show zero or flat throughout training, loss remains unusually high or oscillates heavily)
-            let isLrAnomaly = false;
-            if (total >= 5 && bestMap50 < 0.01) {
-                isLrAnomaly = true;
-                html += `
+        // 4. Diagnose Learning Rate Settings
+        // Check if lr is too high (metrics show zero or flat throughout training, loss remains unusually high or oscillates heavily)
+        let isLrAnomaly = false;
+        if (total >= 5 && bestMap50 < 0.01) {
+          isLrAnomaly = true;
+          html += `
                     <div class="diag-card" style="border-left: 4px solid var(--rose);">
                         <div class="diag-card-header">
                             <span>Phát hiện: Lỗi Tốc Độ Học (Learning Rate Issue)</span>
@@ -1484,10 +1777,10 @@
                         </ul>
                     </div>
                 `;
-            }
+        }
 
-            // 5. General Small Object / Tiny Advice (Always show at bottom as tips)
-            html += `
+        // 5. General Small Object / Tiny Advice (Always show at bottom as tips)
+        html += `
                 <div class="diag-card">
                     <div class="diag-card-header">
                         <span>💡 Tư Vấn Nhận Diện Vật Thể Nhỏ (Tiny Objects)</span>
@@ -1504,8 +1797,8 @@
                 </div>
             `;
 
-            container.innerHTML = html;
-        }
+        container.innerHTML = html;
+      }
     </script>
-</body>
+  </body>
 </html>
