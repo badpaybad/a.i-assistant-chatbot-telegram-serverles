@@ -23,3 +23,5 @@ cập nhật cho code esp32 , api esp32 hub ở yêu cầu esp32/esp32os/esp32ch
 cần tạo memory list unique esp32client mac address để:
     mỗi esp32 có 1 MAC cần tạo unique id để nhận diện esp32 , device esp32 hiện tại MAC: 14:c1:9f:2e:3a:18 
     ở esp32/esp32os/esp32wifi.ino lấy MAC address để khi gọi websocket hoặc http client post get gửi kèm lên để xác thực truy cập hợp lệ của esp32 lên api esp32 hub  
+
+**cập nhật 6** mic/train.py cần bổ xung log quá trình train để xem loss ... ra file csv vào folder train_dashboard có index.html để xem biểu đồ loss và các thông số khác để đánh giá kết quả train 

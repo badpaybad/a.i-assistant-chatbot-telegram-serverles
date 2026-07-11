@@ -437,8 +437,21 @@ model = models.Sequential([
 
 model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
+# Cấu hình log quá trình train ra file CSV để xem trên dashboard
+dashboard_dir = "train_dashboard"
+os.makedirs(dashboard_dir, exist_ok=True)
+csv_log_path = os.path.join(dashboard_dir, "training_log.csv")
+csv_logger = tf.keras.callbacks.CSVLogger(csv_log_path, append=False)
+
 print("\n🚀 Bắt đầu huấn luyện mô hình...")
-model.fit(X_train, y_train, epochs=args.epochs, batch_size=args.batch, validation_data=(X_val, y_val))
+model.fit(
+    X_train, 
+    y_train, 
+    epochs=args.epochs, 
+    batch_size=args.batch, 
+    validation_data=(X_val, y_val),
+    callbacks=[csv_logger]
+)
 
 # Lưu model gốc (.h5)
 model.save("vietnam_wakeup_model.h5")

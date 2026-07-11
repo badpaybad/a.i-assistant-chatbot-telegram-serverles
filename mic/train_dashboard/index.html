@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TinyML Audio Wake-Word Train Dashboard</title>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- ApexCharts for modern charts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary-accent: #06b6d4; /* Neon cyan */
+            --primary-accent-glow: rgba(6, 182, 212, 0.15);
+            --secondary-accent: #a855f7; /* Neon purple */
+            --secondary-accent-glow: rgba(168, 85, 247, 0.15);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.1);
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --card-radius: 16px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(6, 182, 212, 0.08) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.08) 0px, transparent 50%);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        .header-title p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border-color);
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
+        }
+
+        .status-indicator.connected {
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+        }
+
+        .status-indicator.error {
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--primary-accent), #0891b2);
+            color: #0b0f19;
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--primary-accent-glow);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
+        }
+
+        /* Auto-refresh control */
+        .refresh-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.02);
+            padding: 0.5rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .refresh-control input[type="checkbox"] {
+            accent-color: var(--primary-accent);
+            cursor: pointer;
+        }
+
+        /* Dashboard grid */
+        .grid-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.25rem;
+            margin-bottom: 2rem;
+        }
+
+        .card-stat {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card-stat:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .stat-meta {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .text-accent-cyan { color: var(--primary-accent); }
+        .text-accent-purple { color: var(--secondary-accent); }
+        .text-success { color: var(--success); }
+
+        /* Main layout split */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 3fr 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--card-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Tabs styling */
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 0.25rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            border: none;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Charts grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .charts-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.01);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 1rem;
+            min-height: 350px;
+        }
+
+        /* Dropzone / Upload area */
+        .dropzone-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.01);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 1.5rem;
+        }
+
+        .dropzone-container:hover, .dropzone-container.dragover {
+            border-color: var(--primary-accent);
+            background: rgba(6, 182, 212, 0.02);
+        }
+
+        .dropzone-icon {
+            font-size: 2.5rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .dropzone-text h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .dropzone-text p {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* Data table styling */
+        .table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        th {
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        /* Instructions list */
+        .instruction-item {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .instruction-num {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            background: var(--primary-accent-glow);
+            color: var(--primary-accent);
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid rgba(6, 182, 212, 0.3);
+        }
+
+        .instruction-text p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.15rem;
+        }
+
+        .instruction-text strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        code {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #ec4899;
+        }
+
+        pre {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 0.5rem;
+            overflow-x: auto;
+            color: #a7f3d0;
+        }
+
+        /* CORS Notification Banner */
+        .cors-banner {
+            display: none;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            align-items: flex-start;
+            gap: 0.75rem;
+            color: #fca5a5;
+            font-size: 0.85rem;
+        }
+
+        .cors-banner svg {
+            flex-shrink: 0;
+            color: var(--danger);
+        }
+
+        .cors-banner button {
+            background: transparent;
+            border: none;
+            color: #fca5a5;
+            text-decoration: underline;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Grid for sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1>TinyML Wake-Word Trainer</h1>
+            <p id="dashboard-subtitle">Visualizing training logs & model metrics</p>
+        </div>
+        <div class="header-controls">
+            <div class="refresh-control">
+                <input type="checkbox" id="auto-refresh" checked>
+                <label for="auto-refresh">Live Auto-Refresh (5s)</label>
+            </div>
+            <div class="status-badge">
+                <span class="status-indicator" id="status-dot"></span>
+                <span id="status-text">Not Loaded</span>
+            </div>
+            <button class="btn btn-secondary" onclick="triggerFileInput()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Import CSV
+            </button>
+        </div>
+    </header>
+
+    <!-- CORS alert banner -->
+    <div class="cors-banner" id="cors-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <div>
+            <strong>CORS Policy Blocked:</strong> Cannot auto-fetch local CSV directly via <code>file://</code> protocol. 
+            Please <button onclick="triggerFileInput()">Select training_log.csv manually</button> or host this folder using a web server.
+        </div>
+    </div>
+
+    <!-- Dropzone fallback if no file loaded -->
+    <div class="dropzone-container" id="dropzone" onclick="triggerFileInput()">
+        <div class="dropzone-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="dropzone-text">
+            <h3>Drag & Drop <code>training_log.csv</code> here</h3>
+            <p>Or click to browse files from your computer</p>
+        </div>
+        <input type="file" id="file-input" accept=".csv" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Metrics Cards (Hidden initially, shown after load) -->
+    <div class="grid-stats" id="stats-grid" style="display: none;">
+        <div class="card-stat">
+            <span class="stat-label">Epoch Progress</span>
+            <span class="stat-value text-accent-cyan" id="stat-epochs">0 / --</span>
+            <span class="stat-meta">Current training status</span>
+        </div>
+        <div class="card-stat">
+            <span class="stat-label">Best Training Loss</span>
+            <span class="stat-value text-accent-purple" id="stat-best-loss">--</span>
+            <span class="stat-meta" id="meta-best-loss">Epoch: --</span>
+        </div>
+        <div class="card-stat">
+            <span class="stat-label">Min Val Loss</span>
+            <span class="stat-value text-accent-purple" id="stat-min-val-loss">--</span>
+            <span class="stat-meta text-success" id="meta-min-val-loss">Epoch: --</span>
+        </div>
+        <div class="card-stat">
+            <span class="stat-label">Max Val Accuracy</span>
+            <span class="stat-value text-success" id="stat-max-val-acc">--</span>
+            <span class="stat-meta text-success" id="meta-max-val-acc">Epoch: --</span>
+        </div>
+    </div>
+
+    <!-- Main Content layout -->
+    <div class="main-layout" id="main-content" style="display: none;">
+        <div>
+            <!-- Dashboard view Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        Training Charts
+                    </span>
+                    <div class="tabs">
+                        <button class="tab-btn active" onclick="switchTab('charts')">Loss & Acc Charts</button>
+                        <button class="tab-btn" onclick="switchTab('table')">Raw CSV Logs</button>
+                    </div>
+                </div>
+
+                <!-- Tab: Charts -->
+                <div id="tab-charts" class="tab-content active">
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <div id="loss-chart"></div>
+                        </div>
+                        <div class="chart-container">
+                            <div id="accuracy-chart"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab: Data Table -->
+                <div id="tab-table" class="tab-content">
+                    <div class="table-wrapper">
+                        <table id="logs-table">
+                            <thead>
+                                <tr id="table-headers">
+                                    <!-- Dynamic headers go here -->
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Dynamic rows go here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <!-- Sidebar Panel: Model & Run config -->
+            <div class="panel" style="margin-bottom: 0;">
+                <div class="panel-header" style="margin-bottom: 1rem;">
+                    <span class="panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+                        Troubleshooting
+                    </span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                    <div class="instruction-item">
+                        <div class="instruction-num">1</div>
+                        <div class="instruction-text">
+                            <strong>Host via Local Server</strong>
+                            <p>To use auto-refresh, start a simple HTTP server in the project folder:</p>
+                            <pre>python3 -m http.server 8000</pre>
+                            <p style="margin-top: 0.25rem;">Then open: <code>http://localhost:8000/mic/train_dashboard/</code></p>
+                        </div>
+                    </div>
+                    <div class="instruction-item" style="margin-bottom: 0;">
+                        <div class="instruction-num">2</div>
+                        <div class="instruction-text">
+                            <strong>Direct CSV Reading</strong>
+                            <p>If you don't use a web server, you can drag and drop your file into this screen anytime to update the metrics.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lossChartObj = null;
+        let accChartObj = null;
+        let autoRefreshInterval = null;
+        let lastCSVText = "";
+
+        // On Load, try to automatically load the CSV
+        window.addEventListener('DOMContentLoaded', () => {
+            attemptAutoLoad();
+            setupAutoRefresh();
+            setupDragAndDrop();
+        });
+
+        function setupAutoRefresh() {
+            const refreshCheckbox = document.getElementById('auto-refresh');
+            
+            // Periodically check/reload
+            autoRefreshInterval = setInterval(() => {
+                if (refreshCheckbox.checked) {
+                    attemptAutoLoad();
+                }
+            }, 5000);
+
+            refreshCheckbox.addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    attemptAutoLoad();
+                }
+            });
+        }
+
+        function attemptAutoLoad() {
+            fetch('training_log.csv', { cache: 'no-store' })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    if (text !== lastCSVText) {
+                        lastCSVText = text;
+                        processCSVData(text);
+                        updateStatus("Connected & Active", "connected");
+                    }
+                    document.getElementById('cors-banner').style.display = 'none';
+                })
+                .catch(err => {
+                    // Check if it's likely a CORS error (file:// protocol)
+                    if (window.location.protocol === 'file:') {
+                        document.getElementById('cors-banner').style.display = 'flex';
+                        updateStatus("Local Protocol CORS Block", "error");
+                    } else {
+                        updateStatus("CSV File Not Found", "warning");
+                    }
+                });
+        }
+
+        function updateStatus(text, dotClass) {
+            const dot = document.getElementById('status-dot');
+            const statusLabel = document.getElementById('status-text');
+            
+            dot.className = "status-indicator " + dotClass;
+            statusLabel.textContent = text;
+        }
+
+        function triggerFileInput() {
+            document.getElementById('file-input').click();
+        }
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                readFile(file);
+            }
+        }
+
+        function setupDragAndDrop() {
+            const dropzone = document.getElementById('dropzone');
+            
+            window.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('dragover');
+            });
+
+            window.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+            });
+
+            window.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                    readFile(files[0]);
+                }
+            });
+        }
+
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                processCSVData(text);
+                updateStatus("Manually Loaded: " + file.name, "connected");
+                document.getElementById('cors-banner').style.display = 'none';
+            };
+            reader.readAsText(file);
+        }
+
+        function processCSVData(csvText) {
+            const parsed = parseCSV(csvText);
+            if (!parsed || parsed.data.length === 0) {
+                updateStatus("Error Parsing CSV", "error");
+                return;
+            }
+
+            // Unhide layout elements and hide initial dropzone helper
+            document.getElementById('dropzone').style.display = 'none';
+            document.getElementById('stats-grid').style.display = 'grid';
+            document.getElementById('main-content').style.display = 'grid';
+
+            // Find headers maps
+            const headers = parsed.headers;
+            const data = parsed.data;
+
+            const epochCol = headers.find(h => h === 'epoch');
+            const lossCol = headers.find(h => h === 'loss');
+            const valLossCol = headers.find(h => h === 'val_loss');
+            const accuracyCol = headers.find(h => h === 'accuracy' || h === 'acc');
+            const valAccuracyCol = headers.find(h => h === 'val_accuracy' || h === 'val_acc');
+
+            // Format lists for charts
+            const epochs = data.map(d => (d[epochCol] + 1)); // 1-indexed epoch for charts display
+            const lossVals = data.map(d => d[lossCol]);
+            const valLossVals = data.map(d => d[valLossCol]);
+            const accuracyVals = data.map(d => d[accuracyCol]);
+            const valAccuracyVals = data.map(d => d[valAccuracyCol]);
+
+            // Calculate Best Stats
+            const totalEpochs = data.length;
+            
+            let bestLossIdx = 0;
+            let minValLossIdx = 0;
+            let maxValAccIdx = 0;
+
+            for (let i = 0; i < data.length; i++) {
+                if (lossVals[i] < lossVals[bestLossIdx]) bestLossIdx = i;
+                if (valLossVals[i] < valLossVals[minValLossIdx]) minValLossIdx = i;
+                if (valAccuracyVals[i] > valAccuracyVals[maxValAccIdx]) maxValAccIdx = i;
+            }
+
+            // Update DOM Summary Card Values
+            document.getElementById('stat-epochs').innerText = `${totalEpochs} / --`;
+            
+            if (lossVals[bestLossIdx] !== undefined) {
+                document.getElementById('stat-best-loss').innerText = Number(lossVals[bestLossIdx]).toFixed(4);
+                document.getElementById('meta-best-loss').innerText = `Epoch: ${bestLossIdx + 1}`;
+            }
+            if (valLossVals[minValLossIdx] !== undefined) {
+                document.getElementById('stat-min-val-loss').innerText = Number(valLossVals[minValLossIdx]).toFixed(4);
+                document.getElementById('meta-min-val-loss').innerText = `Epoch: ${minValLossIdx + 1}`;
+            }
+            if (valAccuracyVals[maxValAccIdx] !== undefined) {
+                document.getElementById('stat-max-val-acc').innerText = (Number(valAccuracyVals[maxValAccIdx]) * 100).toFixed(2) + "%";
+                document.getElementById('meta-max-val-acc').innerText = `Epoch: ${maxValAccIdx + 1}`;
+            }
+
+            // Render/Update Charts
+            renderLossChart(epochs, lossVals, valLossVals);
+            renderAccuracyChart(epochs, accuracyVals, valAccuracyVals);
+
+            // Populate Logs Table
+            populateTable(headers, data);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split(/\r?\n/);
+            if (lines.length === 0 || !lines[0].trim()) return null;
+            
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const data = [];
+            
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                const values = line.split(',');
+                if (values.length < headers.length) continue;
+                
+                const row = {};
+                let isValidRow = true;
+                for (let j = 0; j < headers.length; j++) {
+                    const parsedVal = parseFloat(values[j]);
+                    if (isNaN(parsedVal)) {
+                        isValidRow = false;
+                        break;
+                    }
+                    row[headers[j]] = parsedVal;
+                }
+                if (isValidRow) {
+                    data.push(row);
+                }
+            }
+            return { headers, data };
+        }
+
+        function renderLossChart(epochs, lossVals, valLossVals) {
+            const series = [
+                { name: 'Training Loss', data: lossVals },
+                { name: 'Validation Loss', data: valLossVals }
+            ];
+
+            if (lossChartObj) {
+                lossChartObj.updateSeries(series);
+                return;
+            }
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 330,
+                    background: 'transparent',
+                    foreColor: '#94a3b8',
+                    toolbar: { show: true },
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
+                stroke: { width: 3, curve: 'smooth' },
+                colors: ['#a855f7', '#06b6d4'], // purple & cyan
+                series: series,
+                xaxis: {
+                    categories: epochs,
+                    title: { text: 'Epoch', style: { color: '#94a3b8' } }
+                },
+                yaxis: {
+                    title: { text: 'Loss', style: { color: '#94a3b8' } },
+                    labels: {
+                        formatter: function (val) { return val.toFixed(4); }
+                    }
+                },
+                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                tooltip: { theme: 'dark' },
+                legend: { position: 'top', horizontalAlign: 'right' },
+                title: {
+                    text: 'Loss vs Epoch',
+                    align: 'left',
+                    style: { fontSize: '14px', fontWeight: 600, color: '#f8fafc' }
+                }
+            };
+
+            lossChartObj = new ApexCharts(document.querySelector("#loss-chart"), options);
+            lossChartObj.render();
+        }
+
+        function renderAccuracyChart(epochs, accuracyVals, valAccuracyVals) {
+            const series = [
+                { name: 'Training Accuracy', data: accuracyVals },
+                { name: 'Validation Accuracy', data: valAccuracyVals }
+            ];
+
+            if (accChartObj) {
+                accChartObj.updateSeries(series);
+                return;
+            }
+
+            const options = {
+                chart: {
+                    type: 'line',
+                    height: 330,
+                    background: 'transparent',
+                    foreColor: '#94a3b8',
+                    toolbar: { show: true },
+                    animations: { enabled: true, easing: 'easeinout', speed: 800 }
+                },
+                stroke: { width: 3, curve: 'smooth' },
+                colors: ['#3b82f6', '#10b981'], // blue & green
+                series: series,
+                xaxis: {
+                    categories: epochs,
+                    title: { text: 'Epoch', style: { color: '#94a3b8' } }
+                },
+                yaxis: {
+                    title: { text: 'Accuracy', style: { color: '#94a3b8' } },
+                    labels: {
+                        formatter: function (val) { return (val * 100).toFixed(1) + "%"; }
+                    }
+                },
+                grid: { borderColor: 'rgba(255, 255, 255, 0.05)' },
+                tooltip: { theme: 'dark' },
+                legend: { position: 'top', horizontalAlign: 'right' },
+                title: {
+                    text: 'Accuracy vs Epoch',
+                    align: 'left',
+                    style: { fontSize: '14px', fontWeight: 600, color: '#f8fafc' }
+                }
+            };
+
+            accChartObj = new ApexCharts(document.querySelector("#accuracy-chart"), options);
+            accChartObj.render();
+        }
+
+        function populateTable(headers, data) {
+            const headerRow = document.getElementById('table-headers');
+            const tableBody = document.getElementById('table-body');
+            
+            // Setup headers
+            headerRow.innerHTML = "";
+            headers.forEach(h => {
+                const th = document.createElement('th');
+                th.innerText = h.toUpperCase();
+                headerRow.appendChild(th);
+            });
+
+            // Setup rows (in reverse order to show latest epoch first)
+            tableBody.innerHTML = "";
+            for (let i = data.length - 1; i >= 0; i--) {
+                const tr = document.createElement('tr');
+                const rowData = data[i];
+                headers.forEach(h => {
+                    const td = document.createElement('td');
+                    let val = rowData[h];
+                    if (h === 'epoch') {
+                        td.innerHTML = `<strong>${val + 1}</strong>`;
+                    } else if (h.includes('accuracy') || h.includes('acc')) {
+                        td.innerText = (val * 100).toFixed(2) + "%";
+                        td.classList.add('text-success');
+                    } else {
+                        td.innerText = val.toFixed(5);
+                    }
+                    tr.appendChild(td);
+                });
+                tableBody.appendChild(tr);
+            }
+        }
+
+        function switchTab(tabId) {
+            // Manage tab buttons class
+            const buttons = document.querySelectorAll('.tab-btn');
+            buttons.forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(tabId)) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Manage tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => {
+                if (content.id === `tab-${tabId}`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

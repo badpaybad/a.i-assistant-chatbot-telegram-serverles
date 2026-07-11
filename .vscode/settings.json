@@ -46,5 +46,8 @@
     "activityBar.inactiveForeground": "#00000090",
     "activityBarBadge.foreground": "#000000",
     "activityBarBadge.background": "#e69d00"
-  }
+  },
+  "dotrush.roslyn.projectOrSolutionFiles": [
+    "/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.sln"
+  ]
 }
