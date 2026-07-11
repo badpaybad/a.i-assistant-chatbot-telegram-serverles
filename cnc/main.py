@@ -973,6 +973,166 @@ def _v48_save_last_pos(target_px: float, target_py: float, cnc_x: float, cnc_y: 
     })
 
 
+def pixel_to_cnc_v49(px: float, py: float) -> Optional[Tuple[float, float]]:
+    """
+    Cập nhật 49: Hàm chuyển đổi tọa độ dựa trên tứ giác (TL, TR, BR, BL) và gốc tọa độ (O).
+    Phép biến đổi liên tục phi tuyến (Piecewise Affine with Tangent Perspective Correction).
+    """
+    if not state.home_set:
+        return None
+
+    # Lấy gốc tọa độ frame và camera height
+    fo = state.v48_frame_o
+    co = state.v48_cnc_o
+    h = getattr(state, "camera_height", 542.0)
+    if h <= 0:
+        h = 542.0
+
+    fox, foy = float(fo.get("x", 360.0)), float(fo.get("y", 360.0))
+    cox, coy = float(co.get("x", 0.0)),   float(co.get("y", 0.0))
+
+    dx = px - fox
+    dy = py - foy
+    r_px = math.sqrt(dx**2 + dy**2)
+    if r_px < 1e-5:
+        return cox, coy
+
+    # Lấy tọa độ 4 góc
+    corners = {
+        "TL": state.v48_frame_tl,
+        "TR": state.v48_frame_tr,
+        "BR": state.v48_frame_br,
+        "BL": state.v48_frame_bl
+    }
+    
+    cnc_corners = {
+        "TL": state.v48_cnc_tl,
+        "TR": state.v48_cnc_tr,
+        "BR": state.v48_cnc_br,
+        "BL": state.v48_cnc_bl
+    }
+
+    # Kiểm tra calibration đầy đủ
+    for k in ["TL", "TR", "BR", "BL"]:
+        if corners[k] is None or cnc_corners[k] is None:
+            logger.warning(f"[v49] pixel_to_cnc_v49: Góc {k} chưa được cấu hình.")
+            return None
+
+    # Định nghĩa 4 tam giác nối từ tâm O tới các cạnh của tứ giác
+    triangles = [
+        ("TR", "BR"),  # Triangle 0 (Right-ish)
+        ("BR", "BL"),  # Triangle 1 (Bottom-ish)
+        ("BL", "TL"),  # Triangle 2 (Left-ish)
+        ("TL", "TR")   # Triangle 3 (Top-ish)
+    ]
+
+    best_val = -float('inf')
+    best_coords = None
+    best_tri = None
+
+    # Tìm tam giác chứa tia O->P bằng cách cực đại hóa min(w1, w2)
+    for A_name, B_name in triangles:
+        A_pt = corners[A_name]
+        B_pt = corners[B_name]
+        
+        ax_val = float(A_pt["x"])
+        ay_val = float(A_pt["y"])
+        bx_val = float(B_pt["x"])
+        by_val = float(B_pt["y"])
+        
+        v1_x = ax_val - fox
+        v1_y = ay_val - foy
+        v2_x = bx_val - fox
+        v2_y = by_val - foy
+        vp_x = px - fox
+        vp_y = py - foy
+        
+        D = v1_x * v2_y - v1_y * v2_x
+        if abs(D) < 1e-6:
+            continue
+            
+        w1 = (vp_x * v2_y - vp_y * v2_x) / D
+        w2 = (v1_x * vp_y - v1_y * vp_x) / D
+        w0 = 1.0 - w1 - w2
+        
+        val = min(w1, w2)
+        if val > best_val:
+            best_val = val
+            best_coords = (w0, w1, w2)
+            best_tri = (A_name, B_name)
+
+    if best_coords is None:
+        logger.warning(f"[v49] pixel_to_cnc_v49: Không tìm thấy tam giác bao quanh cho điểm ({px:.1f}, {py:.1f})")
+        return None
+
+    w0, w1, w2 = best_coords
+    A_name, B_name = best_tri
+
+    # Tọa độ các điểm góc của tam giác được chọn
+    A_px = (float(corners[A_name]["x"]), float(corners[A_name]["y"]))
+    B_px = (float(corners[B_name]["x"]), float(corners[B_name]["y"]))
+    A_cnc = (float(cnc_corners[A_name]["x"]), float(cnc_corners[A_name]["y"]))
+    B_cnc = (float(cnc_corners[B_name]["x"]), float(cnc_corners[B_name]["y"]))
+    O_cnc = (cox, coy)
+
+    # 2. Tìm điểm giao K của tia O->P với cạnh AB
+    sum_w = w1 + w2
+    if abs(sum_w) < 1e-6:
+        # Tránh chia cho 0, fallback về linear map của tam giác
+        return w0 * O_cnc[0] + w1 * A_cnc[0] + w2 * B_cnc[0], w0 * O_cnc[1] + w1 * A_cnc[1] + w2 * B_cnc[1]
+
+    t = w2 / sum_w
+    t = max(0.0, min(1.0, t))  # Giới hạn trong khoảng đoạn thẳng AB
+
+    # Tọa độ giao điểm K trên ảnh và CNC
+    K_px = ((1.0 - t) * A_px[0] + t * B_px[0], (1.0 - t) * A_px[1] + t * B_px[1])
+    K_cnc = ((1.0 - t) * A_cnc[0] + t * B_cnc[0], (1.0 - t) * A_cnc[1] + t * B_cnc[1])
+
+    # Khoảng cách từ tâm
+    r_px_K = math.sqrt((K_px[0] - fox)**2 + (K_px[1] - foy)**2)
+    r_cnc_K = math.sqrt((K_cnc[0] - cox)**2 + (K_cnc[1] - coy)**2)
+
+    if r_px_K < 1e-5 or r_cnc_K < 1e-5:
+        # Fallback
+        return w0 * O_cnc[0] + w1 * A_cnc[0] + w2 * B_cnc[0], w0 * O_cnc[1] + w1 * A_cnc[1] + w2 * B_cnc[1]
+
+    # --- Công thức lượng giác tang góc thấu kính camera (v48) ---
+    theta_c_corner = math.atan(r_cnc_K / h)
+    theta_c_target = (r_px / r_px_K) * theta_c_corner
+    r_cnc_target = h * math.tan(theta_c_target)
+    r_cnc_linear = r_px * (r_cnc_K / r_px_K)
+
+    C = r_cnc_target / r_cnc_linear if r_cnc_linear > 1e-5 else 1.0
+    C = max(0.2, min(5.0, C))  # Giới hạn tránh giá trị ngoại lệ quá lớn
+
+    # Điểm nội suy tuyến tính cơ sở
+    cnc_x_lin = w0 * O_cnc[0] + w1 * A_cnc[0] + w2 * B_cnc[0]
+    cnc_y_lin = w0 * O_cnc[1] + w1 * A_cnc[1] + w2 * B_cnc[1]
+
+    # Áp dụng hệ số hiệu chỉnh C từ gốc tọa độ
+    cnc_x = O_cnc[0] + (cnc_x_lin - O_cnc[0]) * C
+    cnc_y = O_cnc[1] + (cnc_y_lin - O_cnc[1]) * C
+
+    logger.debug(
+        f"[v49] Tri({A_name},{B_name}) px=({px:.1f},{py:.1f}) r_px={r_px:.1f} "
+        f"theta_c_corner={math.degrees(theta_c_corner):.2f}° → theta_c_target={math.degrees(theta_c_target):.2f}° "
+        f"C={C:.4f} → CNC=({cnc_x:.3f},{cnc_y:.3f})"
+    )
+
+    return float(cnc_x), float(cnc_y)
+
+
+def _v49_save_last_pos(target_px: float, target_py: float, cnc_x: float, cnc_y: float):
+    """Cập nhật 49: Lưu vị trí cuối cùng của CNC head vào state và file."""
+    state.v48_frame_last = {"x": target_px, "y": target_py}
+    state.v48_cnc_last   = {"x": cnc_x,     "y": cnc_y}
+    save_calibration_settings({
+        "frame_last": state.v48_frame_last,
+        "cnc_last":   state.v48_cnc_last,
+    })
+
+
+
 # ONNX Detection Helper Functions (cập nhật 3)
 def get_ort_session(forceload=False):
     if forceload ==True:
@@ -3448,15 +3608,15 @@ async def move_to_largest(camera_index: int = 4):
         
     cx, cy = largest_obj["center"]
 
-    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
-    result = pixel_to_cnc_v48(cx, cy)
+    # Cập nhật 49: dùng pixel_to_cnc_v49 — không dùng lại code cũ
+    result = pixel_to_cnc_v49(cx, cy)
     if result is None:
         return JSONResponse({
             "status": "error",
-            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+            "message": "Chưa đủ dữ liệu calibration v49. Hãy set home và set 4 góc ArUco manual."
         }, status_code=400)
     wx, wy = result
-    logger.info(f"[v48] move_to_largest: px=({cx:.1f},{cy:.1f}) → CNC=({wx:.3f},{wy:.3f})")
+    logger.info(f"[v49] move_to_largest: px=({cx:.1f},{cy:.1f}) → CNC=({wx:.3f},{wy:.3f})")
 
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -3467,8 +3627,8 @@ async def move_to_largest(camera_index: int = 4):
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
 
-    # Cập nhật 48: lưu vị trí cuối
-    _v48_save_last_pos(cx, cy, wx, wy)
+    # Cập nhật 49: lưu vị trí cuối
+    _v49_save_last_pos(cx, cy, wx, wy)
     
     return {
         "status": "ok",
@@ -3496,15 +3656,15 @@ async def move_to_object(config: MoveToObjectConfig):
 
     cx_obj, cy_obj = config.center
 
-    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
-    result = pixel_to_cnc_v48(cx_obj, cy_obj)
+    # Cập nhật 49: dùng pixel_to_cnc_v49 — không dùng lại code cũ
+    result = pixel_to_cnc_v49(cx_obj, cy_obj)
     if result is None:
         return JSONResponse({
             "status": "error",
-            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+            "message": "Chưa đủ dữ liệu calibration v49. Hãy set home và set 4 góc ArUco manual."
         }, status_code=400)
     target_wx, target_wy = result
-    logger.info(f"[v48] move_to_object: px=({cx_obj:.1f},{cy_obj:.1f}) → CNC=({target_wx:.3f},{target_wy:.3f})")
+    logger.info(f"[v49] move_to_object: px=({cx_obj:.1f},{cy_obj:.1f}) → CNC=({target_wx:.3f},{target_wy:.3f})")
 
     # Send G1 command using global feedrate
     cmd = f"G90 G1 X{target_wx:.3f} Y{target_wy:.3f} F{state.gesture_feedrate:.0f}"
@@ -3515,8 +3675,8 @@ async def move_to_object(config: MoveToObjectConfig):
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
 
-    # Cập nhật 48: lưu vị trí cuối
-    _v48_save_last_pos(cx_obj, cy_obj, target_wx, target_wy)
+    # Cập nhật 49: lưu vị trí cuối
+    _v49_save_last_pos(cx_obj, cy_obj, target_wx, target_wy)
 
     label_name = state.class_names.get(config.class_id, f"Obj {config.class_id}")
     return {
@@ -3552,15 +3712,15 @@ async def click_go(config: ClickGoConfig):
                 logger.info(f"Click inside object {d['class_id']} detected. Snapping to center: {target_x}, {target_y}")
                 break
 
-    # Cập nhật 48: dùng pixel_to_cnc_v48 — không dùng lại code cũ
-    result = pixel_to_cnc_v48(target_x, target_y)
+    # Cập nhật 49: dùng pixel_to_cnc_v49 — không dùng lại code cũ
+    result = pixel_to_cnc_v49(target_x, target_y)
     if result is None:
         return JSONResponse({
             "status": "error",
-            "message": "Chưa đủ dữ liệu calibration v48. Hãy set home và set 4 góc ArUco manual."
+            "message": "Chưa đủ dữ liệu calibration v49. Hãy set home và set 4 góc ArUco manual."
         }, status_code=400)
     wx, wy = result
-    logger.info(f"[v48] click_go: px=({target_x:.1f},{target_y:.1f}) → CNC=({wx:.3f},{wy:.3f})")
+    logger.info(f"[v49] click_go: px=({target_x:.1f},{target_y:.1f}) → CNC=({wx:.3f},{wy:.3f})")
 
     cmd = f"G90 G1 X{wx:.3f} Y{wy:.3f} F{state.gesture_feedrate:.0f}"
     try:
@@ -3570,8 +3730,8 @@ async def click_go(config: ClickGoConfig):
     except Exception as e:
         return JSONResponse({"status": "error", "message": f"Failed to send movement command: {e}"}, status_code=500)
 
-    # Cập nhật 48: lưu vị trí cuối
-    _v48_save_last_pos(target_x, target_y, wx, wy)
+    # Cập nhật 49: lưu vị trí cuối
+    _v49_save_last_pos(target_x, target_y, wx, wy)
         
     return {
         "status": "ok",
