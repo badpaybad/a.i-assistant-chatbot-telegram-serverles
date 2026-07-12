@@ -43,6 +43,14 @@ Cnc preview
 **cập nhật 1** ảnh đầu vào khi chọn lên có thể làm background mờ mờ ở dưới ảnh Xem trước xử lý nét đơn để cho UI gọn
 việc test để tôi tự test không cần mở chronium lên test
 
-    
+**cập nhật 2**  Công cụ xử lý ảnh , hiện tại đang xử lý chữ viết thành vector tạo gcode để chạy cnc, bổ xung tạo tab để xử lý ảnh dạng chữ viết, và thêm tab xử lý ảnh bất kỳ dạng công cụ như cnc/whattodo.md
 
-    
+Các công cụ đều làm thanh trượt slide để tăng giảm số 
+Tab xử lý ảnh cần kiểm tra và bổ xung các thông số cho phép người dùng hiệu chỉnh 
+
+Công cụ xử lý ảnh có thêm chức năng lưu lại các thông số cho người dùng download lưu lại và có nút để load lại khi cần dùng lại
+
+Xử lý ảnh sketch có thể tham khảo bổ xung các thông số tham khảo cnc/drawtext/project_2 cosplay (1).json
+
+**cập nhật 3** công cụ xử lý ảnh cần có các check box để apply các chỉ số hoặc không. việc tự động nối liền các nét chữ cũng cần thành 1 option checkbox riêng. việc ảnh xử lý chữ viết nền trắng chữ đen cũng đã rõ ràng chủ yếu cần độ mịn và liền mạch các nét chữ nhờ các pixel liền nhau, nên cần bổ xung thêm các công cụ xử lý ảnh để tạo ra được các đường nét chữ tốt nhất 
+Công cụ xử lý ảnh cần xem code cnc/image2gcodesketch.py để tham khảo việc tạo sketch cho cả xử lý text lẫn ảnh 

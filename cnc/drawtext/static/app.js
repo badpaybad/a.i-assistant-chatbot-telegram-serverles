@@ -27,6 +27,7 @@ const ctx = previewCanvas.getContext("2d");
 
 // Debounce timer for auto image processing
 let processDebounceTimeout = null;
+let activeProcessingMode = "text";
 
 // Initialize Page
 window.addEventListener("DOMContentLoaded", async () => {
@@ -327,21 +328,349 @@ function setupEventListeners() {
     document.getElementById("btn-capture-cam").addEventListener("click", captureCameraSnapshot);
 
     // 5. Image processing sliders changes (trigger reprocessing)
-    const sliders = ["thresh-val", "morph-kernel", "min-line-len", "simplify-epsilon"];
+    const sliders = [
+        "thresh-val", "morph-kernel", "min-line-len", "simplify-epsilon", 
+        "clahe-limit", "clahe-grid", "blur-size", 
+        "canny-ultra-low", "canny-ultra-high", 
+        "canny-medium-low", "canny-medium-high", 
+        "canny-strong-low", "canny-strong-high",
+        "scale-factor",
+        "text-blur-size", "text-dilate-size", "path-connect-dist"
+    ];
     sliders.forEach(id => {
-        document.getElementById(id).addEventListener("input", () => {
-            updateSliderLabels();
-            triggerAutoReprocess();
-        });
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("input", () => {
+                updateSliderLabels();
+                triggerAutoReprocess();
+            });
+        }
     });
 
     document.getElementById("thresh-mode").addEventListener("change", () => {
-        toggleThresholdInput();
+        syncGroupVisibilities();
         triggerAutoReprocess();
     });
 
     document.getElementById("invert-img").addEventListener("change", triggerAutoReprocess);
     document.getElementById("skeleton-method").addEventListener("change", triggerAutoReprocess);
+
+    // 5b. Processing Tabs switching
+    const tabBtns = document.querySelectorAll(".processing-tabs .tab-btn");
+    tabBtns.forEach(btn => {
+        btn.addEventListener("click", () => {
+            tabBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            
+            const mode = btn.getAttribute("data-proc-mode");
+            activeProcessingMode = mode;
+            
+            // Toggle panels
+            document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
+            if (mode === "text") {
+                document.getElementById("panel-proc-text").classList.add("active");
+            } else {
+                document.getElementById("panel-proc-sketch").classList.add("active");
+            }
+            
+            // Reprocess automatically
+            triggerAutoReprocess();
+        });
+    });
+
+    // 5c. Listeners for Sketch and Text checkboxes
+    const checkboxes = [
+        "use-clahe", "use-blur", "use-connect", "use-thin", "use-len-filter",
+        "use-text-blur", "use-text-morph", "use-text-dilate", "use-path-connect"
+    ];
+    checkboxes.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("change", () => {
+                syncGroupVisibilities();
+                triggerAutoReprocess();
+            });
+        }
+    });
+
+    // Initial group visibility sync
+    syncGroupVisibilities();
+
+    // 5d. Import/Export Config Actions
+    const downloadConfigBtn = document.getElementById("btn-download-config");
+    const uploadConfigBtn = document.getElementById("btn-upload-config");
+    const configFileEl = document.getElementById("config-file-input");
+
+    if (downloadConfigBtn) {
+        downloadConfigBtn.addEventListener("click", () => {
+            const configData = {
+                activeProcessingMode: activeProcessingMode,
+                
+                // Common controls
+                min_line_len: parseInt(document.getElementById("min-line-len").value),
+                simplify_epsilon: parseFloat(document.getElementById("simplify-epsilon").value),
+                scale_factor: parseFloat(document.getElementById("scale-factor").value),
+
+                // Text mode controls
+                thresh_mode: document.getElementById("thresh-mode").value,
+                thresh_val: parseInt(document.getElementById("thresh-val").value),
+                invert_img: document.getElementById("invert-img").checked,
+                morph_kernel: parseInt(document.getElementById("morph-kernel").value),
+                skeleton_method: document.getElementById("skeleton-method").value,
+                use_text_blur: document.getElementById("use-text-blur").checked,
+                text_blur_size: parseInt(document.getElementById("text-blur-size").value),
+                use_text_morph: document.getElementById("use-text-morph").checked,
+                use_text_dilate: document.getElementById("use-text-dilate").checked,
+                text_dilate_size: parseInt(document.getElementById("text-dilate-size").value),
+                
+                // Path welding controls
+                use_path_connect: document.getElementById("use-path-connect").checked,
+                path_connect_dist: parseFloat(document.getElementById("path-connect-dist").value),
+
+                // Sketch mode controls
+                use_clahe: document.getElementById("use-clahe").checked,
+                clahe_limit: parseFloat(document.getElementById("clahe-limit").value),
+                clahe_grid: parseInt(document.getElementById("clahe-grid").value),
+                use_blur: document.getElementById("use-blur").checked,
+                blur_size: parseInt(document.getElementById("blur-size").value),
+                use_connect: document.getElementById("use-connect").checked,
+                use_thin: document.getElementById("use-thin").checked,
+                use_len_filter: document.getElementById("use-len-filter").checked,
+                canny_ultra_low: parseInt(document.getElementById("canny-ultra-low").value),
+                canny_ultra_high: parseInt(document.getElementById("canny-ultra-high").value),
+                canny_medium_low: parseInt(document.getElementById("canny-medium-low").value),
+                canny_medium_high: parseInt(document.getElementById("canny-medium-high").value),
+                canny_strong_low: parseInt(document.getElementById("canny-strong-low").value),
+                canny_strong_high: parseInt(document.getElementById("canny-strong-high").value)
+            };
+
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `drawtext_image_config_${activeProcessingMode}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            logToConsole(`System: Đã tải xuống tệp cấu hình drawtext_image_config_${activeProcessingMode}.json`, "system");
+        });
+    }
+
+    const selectPresetEl = document.getElementById("select-preset");
+    if (selectPresetEl) {
+        selectPresetEl.addEventListener("change", (e) => {
+            const val = e.target.value;
+            if (!val) return;
+            
+            const switchTab = (mode) => {
+                activeProcessingMode = mode;
+                const tabBtns = document.querySelectorAll(".processing-tabs .tab-btn");
+                tabBtns.forEach(btn => {
+                    if (btn.getAttribute("data-proc-mode") === mode) {
+                        btn.classList.add("active");
+                    } else {
+                        btn.classList.remove("active");
+                    }
+                });
+                document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
+                if (mode === "text") {
+                    document.getElementById("panel-proc-text").classList.add("active");
+                } else {
+                    document.getElementById("panel-proc-sketch").classList.add("active");
+                }
+            };
+            
+            const presetName = e.target.options[e.target.selectedIndex].text;
+            
+            if (val === "text-clean") {
+                switchTab("text");
+                document.getElementById("thresh-mode").value = "otsu";
+                document.getElementById("invert-img").checked = true;
+                document.getElementById("use-text-blur").checked = false;
+                document.getElementById("use-text-morph").checked = true;
+                document.getElementById("morph-kernel").value = 3;
+                document.getElementById("use-text-dilate").checked = false;
+                document.getElementById("use-path-connect").checked = true;
+                document.getElementById("path-connect-dist").value = 5;
+                document.getElementById("min-line-len").value = 5;
+                document.getElementById("simplify-epsilon").value = 1.0;
+            } else if (val === "text-raw") {
+                switchTab("text");
+                document.getElementById("thresh-mode").value = "otsu";
+                document.getElementById("invert-img").checked = true;
+                document.getElementById("use-text-blur").checked = false;
+                document.getElementById("use-text-morph").checked = false;
+                document.getElementById("use-text-dilate").checked = false;
+                document.getElementById("use-path-connect").checked = false;
+                document.getElementById("min-line-len").value = 10;
+                document.getElementById("simplify-epsilon").value = 0.5;
+            } else if (val === "sketch-minimal") {
+                switchTab("sketch");
+                document.getElementById("use-clahe").checked = true;
+                document.getElementById("clahe-limit").value = 1.5;
+                document.getElementById("clahe-grid").value = 8;
+                document.getElementById("use-blur").checked = true;
+                document.getElementById("blur-size").value = 5;
+                document.getElementById("use-connect").checked = true;
+                document.getElementById("use-thin").checked = true;
+                document.getElementById("use-len-filter").checked = true;
+                document.getElementById("min-line-len").value = 15;
+                document.getElementById("simplify-epsilon").value = 1.0;
+                document.getElementById("canny-ultra-low").value = 30;
+                document.getElementById("canny-ultra-high").value = 70;
+                document.getElementById("canny-medium-low").value = 50;
+                document.getElementById("canny-medium-high").value = 90;
+                document.getElementById("canny-strong-low").value = 80;
+                document.getElementById("canny-strong-high").value = 140;
+            } else if (val === "sketch-realistic") {
+                switchTab("sketch");
+                document.getElementById("use-clahe").checked = true;
+                document.getElementById("clahe-limit").value = 2.0;
+                document.getElementById("clahe-grid").value = 8;
+                document.getElementById("use-blur").checked = true;
+                document.getElementById("blur-size").value = 3;
+                document.getElementById("use-connect").checked = true;
+                document.getElementById("use-thin").checked = true;
+                document.getElementById("use-len-filter").checked = true;
+                document.getElementById("min-line-len").value = 5;
+                document.getElementById("simplify-epsilon").value = 1.0;
+                document.getElementById("canny-ultra-low").value = 3;
+                document.getElementById("canny-ultra-high").value = 15;
+                document.getElementById("canny-medium-low").value = 10;
+                document.getElementById("canny-medium-high").value = 30;
+                document.getElementById("canny-strong-low").value = 30;
+                document.getElementById("canny-strong-high").value = 80;
+            }
+            
+            syncGroupVisibilities();
+            updateSliderLabels();
+            triggerAutoReprocess();
+            
+            selectPresetEl.value = "";
+            logToConsole(`System: Đã nạp cấu hình nhanh "${presetName}".`, "system");
+        });
+    }
+
+    if (uploadConfigBtn) {
+        uploadConfigBtn.addEventListener("click", () => {
+            configFileEl.click();
+        });
+    }
+
+    if (configFileEl) {
+        configFileEl.addEventListener("change", (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const loaded = JSON.parse(evt.target.result);
+                    
+                    // Check if it's a project JSON file like "project_2 cosplay (1).json"
+                    const isProjectFile = (loaded.sketchUseClahe !== undefined || loaded.sketchCannyUltraLow !== undefined);
+                    if (isProjectFile) {
+                        loaded.activeProcessingMode = "sketch";
+                        loaded.use_clahe = loaded.sketchUseClahe;
+                        loaded.clahe_limit = loaded.sketchClaheClip;
+                        loaded.use_blur = loaded.sketchUseBlur;
+                        loaded.blur_size = loaded.sketchBlurSize;
+                        loaded.use_connect = loaded.sketchUseConnect;
+                        loaded.use_thin = loaded.sketchUseThin;
+                        loaded.use_len_filter = loaded.sketchUseLenFilter;
+                        loaded.min_line_len = loaded.sketchMinContourLen;
+                        loaded.canny_ultra_low = loaded.sketchCannyUltraLow;
+                        loaded.canny_ultra_high = loaded.sketchCannyUltraHigh;
+                        loaded.canny_medium_low = loaded.sketchCannyMediumLow;
+                        loaded.canny_medium_high = loaded.sketchCannyMediumHigh;
+                        loaded.canny_strong_low = loaded.sketchCannyStrongLow;
+                        loaded.canny_strong_high = loaded.sketchCannyStrongHigh;
+                    }
+                    
+                    // Set active mode if present
+                    if (loaded.activeProcessingMode) {
+                        activeProcessingMode = loaded.activeProcessingMode;
+                        // Select corresponding button
+                        const tabBtn = document.querySelector(`.processing-tabs .tab-btn[data-proc-mode="${activeProcessingMode}"]`);
+                        if (tabBtn) {
+                            document.querySelectorAll(".processing-tabs .tab-btn").forEach(b => b.classList.remove("active"));
+                            tabBtn.classList.add("active");
+                        }
+                        // Toggle panels
+                        document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
+                        if (activeProcessingMode === "text") {
+                            document.getElementById("panel-proc-text").classList.add("active");
+                        } else {
+                            document.getElementById("panel-proc-sketch").classList.add("active");
+                        }
+                    }
+
+                    // Mapping helper
+                    const setVal = (id, val) => {
+                        const el = document.getElementById(id);
+                        if (el && val !== undefined) {
+                            if (el.type === "checkbox") {
+                                el.checked = !!val;
+                            } else {
+                                el.value = val;
+                            }
+                        }
+                    };
+
+                    // Common
+                    setVal("min-line-len", loaded.min_line_len);
+                    setVal("simplify-epsilon", loaded.simplify_epsilon);
+                    setVal("scale-factor", loaded.scale_factor);
+
+                    // Text
+                    setVal("thresh-mode", loaded.thresh_mode);
+                    setVal("thresh-val", loaded.thresh_val);
+                    setVal("invert-img", loaded.invert_img);
+                    setVal("morph-kernel", loaded.morph_kernel);
+                    setVal("skeleton-method", loaded.skeleton_method);
+                    setVal("use-text-blur", loaded.use_text_blur);
+                    setVal("text-blur-size", loaded.text_blur_size);
+                    setVal("use-text-morph", loaded.use_text_morph);
+                    setVal("use-text-dilate", loaded.use_text_dilate);
+                    setVal("text-dilate-size", loaded.text_dilate_size);
+                    
+                    // Path welding
+                    setVal("use-path-connect", loaded.use_path_connect);
+                    setVal("path-connect-dist", loaded.path_connect_dist);
+
+                    // Sketch
+                    setVal("use-clahe", loaded.use_clahe);
+                    setVal("clahe-limit", loaded.clahe_limit);
+                    setVal("clahe-grid", loaded.clahe_grid);
+                    setVal("use-blur", loaded.use_blur);
+                    setVal("blur-size", loaded.blur_size);
+                    setVal("use-connect", loaded.use_connect);
+                    setVal("use-thin", loaded.use_thin);
+                    setVal("use-len-filter", loaded.use_len_filter);
+                    setVal("canny-ultra-low", loaded.canny_ultra_low);
+                    setVal("canny-ultra-high", loaded.canny_ultra_high);
+                    setVal("canny-medium-low", loaded.canny_medium_low);
+                    setVal("canny-medium-high", loaded.canny_medium_high);
+                    setVal("canny-strong-low", loaded.canny_strong_low);
+                    setVal("canny-strong-high", loaded.canny_strong_high);
+
+                    // Sync group visibilities
+                    syncGroupVisibilities();
+
+                    // Update range labels text
+                    updateSliderLabels();
+
+                    logToConsole("System: Nạp tệp cấu hình thành công! Đang xử lý lại...", "system");
+                    
+                    // Reprocess
+                    reprocessImage();
+                } catch(err) {
+                    logToConsole("System Error: Định dạng tệp cấu hình không hợp lệ.", "system");
+                }
+            };
+            reader.readAsText(file);
+            configFileEl.value = ""; // Clear file selection
+        });
+    }
 
     // 6. CNC Jog actions
     document.querySelectorAll(".btn-jog[data-dir]").forEach(btn => {
@@ -547,13 +876,41 @@ function triggerAutoReprocess() {
 // Trigger Image Process Pipeline on server
 async function reprocessImage() {
     const updatedParams = {
+        mode: activeProcessingMode,
+        min_line_len: parseInt(document.getElementById("min-line-len").value),
+        epsilon: parseFloat(document.getElementById("simplify-epsilon").value),
+        
+        // Text mode parameters
         thresh_mode: document.getElementById("thresh-mode").value,
         thresh_val: parseInt(document.getElementById("thresh-val").value),
         invert_img: document.getElementById("invert-img").checked,
         morph_kernel: parseInt(document.getElementById("morph-kernel").value),
         skeleton_method: document.getElementById("skeleton-method").value,
-        min_line_len: parseInt(document.getElementById("min-line-len").value),
-        epsilon: parseFloat(document.getElementById("simplify-epsilon").value)
+        use_text_blur: document.getElementById("use-text-blur").checked,
+        text_blur_size: parseInt(document.getElementById("text-blur-size").value),
+        use_text_morph: document.getElementById("use-text-morph").checked,
+        use_text_dilate: document.getElementById("use-text-dilate").checked,
+        text_dilate_size: parseInt(document.getElementById("text-dilate-size").value),
+        
+        // Path welding
+        use_path_connect: document.getElementById("use-path-connect").checked,
+        path_connect_dist: parseFloat(document.getElementById("path-connect-dist").value),
+        
+        // Sketch mode parameters
+        use_clahe: document.getElementById("use-clahe").checked,
+        clahe_clip_limit: parseFloat(document.getElementById("clahe-limit").value),
+        clahe_tile_grid_size: parseInt(document.getElementById("clahe-grid").value),
+        use_blur: document.getElementById("use-blur").checked,
+        blur_size: parseInt(document.getElementById("blur-size").value),
+        use_connect: document.getElementById("use-connect").checked,
+        use_thin: document.getElementById("use-thin").checked,
+        use_len_filter: document.getElementById("use-len-filter").checked,
+        canny_ultra_low: parseInt(document.getElementById("canny-ultra-low").value),
+        canny_ultra_high: parseInt(document.getElementById("canny-ultra-high").value),
+        canny_medium_low: parseInt(document.getElementById("canny-medium-low").value),
+        canny_medium_high: parseInt(document.getElementById("canny-medium-high").value),
+        canny_strong_low: parseInt(document.getElementById("canny-strong-low").value),
+        canny_strong_high: parseInt(document.getElementById("canny-strong-high").value)
     };
 
     try {
@@ -1004,10 +1361,55 @@ function resizeCanvases() {
 
 // Update text label display alongside slide values
 function updateSliderLabels() {
-    document.getElementById("lbl-thresh-val").textContent = document.getElementById("thresh-val").value;
-    document.getElementById("lbl-morph-kernel").textContent = document.getElementById("morph-kernel").value;
-    document.getElementById("lbl-min-line-len").textContent = document.getElementById("min-line-len").value;
-    document.getElementById("lbl-simplify-epsilon").textContent = parseFloat(document.getElementById("simplify-epsilon").value).toFixed(1);
+    const threshVal = document.getElementById("thresh-val");
+    if (threshVal) document.getElementById("lbl-thresh-val").textContent = threshVal.value;
+
+    const morphKernel = document.getElementById("morph-kernel");
+    if (morphKernel) document.getElementById("lbl-morph-kernel").textContent = morphKernel.value;
+
+    const minLineLen = document.getElementById("min-line-len");
+    if (minLineLen) document.getElementById("lbl-min-line-len").textContent = minLineLen.value;
+
+    const simplifyEps = document.getElementById("simplify-epsilon");
+    if (simplifyEps) document.getElementById("lbl-simplify-epsilon").textContent = parseFloat(simplifyEps.value).toFixed(1);
+
+    const claheLimit = document.getElementById("clahe-limit");
+    if (claheLimit) document.getElementById("lbl-clahe-limit").textContent = parseFloat(claheLimit.value).toFixed(1);
+
+    const claheGrid = document.getElementById("clahe-grid");
+    if (claheGrid) document.getElementById("lbl-clahe-grid").textContent = claheGrid.value;
+
+    const blurSize = document.getElementById("blur-size");
+    if (blurSize) document.getElementById("lbl-blur-size").textContent = blurSize.value;
+
+    const textBlurSize = document.getElementById("text-blur-size");
+    if (textBlurSize) document.getElementById("lbl-text-blur-size").textContent = textBlurSize.value;
+
+    const textDilateSize = document.getElementById("text-dilate-size");
+    if (textDilateSize) document.getElementById("lbl-text-dilate-size").textContent = textDilateSize.value;
+
+    const pathConnectDist = document.getElementById("path-connect-dist");
+    if (pathConnectDist) document.getElementById("lbl-path-connect-dist").textContent = pathConnectDist.value;
+
+    // Canny thresholds
+    const cannyUltraLow = document.getElementById("canny-ultra-low");
+    if (cannyUltraLow) document.getElementById("lbl-canny-ultra-low").textContent = cannyUltraLow.value;
+    const cannyUltraHigh = document.getElementById("canny-ultra-high");
+    if (cannyUltraHigh) document.getElementById("lbl-canny-ultra-high").textContent = cannyUltraHigh.value;
+
+    const cannyMediumLow = document.getElementById("canny-medium-low");
+    if (cannyMediumLow) document.getElementById("lbl-canny-medium-low").textContent = cannyMediumLow.value;
+    const cannyMediumHigh = document.getElementById("canny-medium-high");
+    if (cannyMediumHigh) document.getElementById("lbl-canny-medium-high").textContent = cannyMediumHigh.value;
+
+    const cannyStrongLow = document.getElementById("canny-strong-low");
+    if (cannyStrongLow) document.getElementById("lbl-canny-strong-low").textContent = cannyStrongLow.value;
+    const cannyStrongHigh = document.getElementById("canny-strong-high");
+    if (cannyStrongHigh) document.getElementById("lbl-canny-strong-high").textContent = cannyStrongHigh.value;
+
+    // Scale factor
+    const scaleFactor = document.getElementById("scale-factor");
+    if (scaleFactor) document.getElementById("lbl-scale-factor").textContent = parseFloat(scaleFactor.value).toFixed(3);
 }
 
 // Toggle manual threshold value control depending on threshold selection type
@@ -1018,6 +1420,55 @@ function toggleThresholdInput() {
         div.style.display = "block";
     } else {
         div.style.display = "none";
+    }
+}
+
+// Sync the visual display of all slider controls depending on their checkbox state
+function syncGroupVisibilities() {
+    toggleThresholdInput();
+    
+    // CLAHE
+    const useClaheEl = document.getElementById("use-clahe");
+    if (useClaheEl) {
+        const grp = document.getElementById("clahe-limit-group");
+        if (grp) grp.style.display = useClaheEl.checked ? "block" : "none";
+        const grpGrid = document.getElementById("clahe-grid-group");
+        if (grpGrid) grpGrid.style.display = useClaheEl.checked ? "block" : "none";
+    }
+    
+    // Sketch Blur
+    const useBlurEl = document.getElementById("use-blur");
+    if (useBlurEl) {
+        const grp = document.getElementById("blur-size-group");
+        if (grp) grp.style.display = useBlurEl.checked ? "block" : "none";
+    }
+    
+    // Text Blur
+    const useTextBlurEl = document.getElementById("use-text-blur");
+    if (useTextBlurEl) {
+        const grp = document.getElementById("text-blur-size-group");
+        if (grp) grp.style.display = useTextBlurEl.checked ? "block" : "none";
+    }
+    
+    // Text Morph Close
+    const useTextMorphEl = document.getElementById("use-text-morph");
+    if (useTextMorphEl) {
+        const grp = document.getElementById("morph-kernel-group");
+        if (grp) grp.style.display = useTextMorphEl.checked ? "block" : "none";
+    }
+    
+    // Text Morph Dilate
+    const useTextDilateEl = document.getElementById("use-text-dilate");
+    if (useTextDilateEl) {
+        const grp = document.getElementById("text-dilate-size-group");
+        if (grp) grp.style.display = useTextDilateEl.checked ? "block" : "none";
+    }
+    
+    // Path Welding
+    const usePathConnectEl = document.getElementById("use-path-connect");
+    if (usePathConnectEl) {
+        const grp = document.getElementById("path-connect-dist-group");
+        if (grp) grp.style.display = usePathConnectEl.checked ? "block" : "none";
     }
 }
 

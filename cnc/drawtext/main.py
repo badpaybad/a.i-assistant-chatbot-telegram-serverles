@@ -482,12 +482,35 @@ def rdp_simplify(points: List[Tuple[float, float]], epsilon: float) -> List[Tupl
     else:
         return [points[0], points[end]]
 
+def weld_paths(paths: List[List[Tuple[float, float]]], threshold: float) -> List[List[Tuple[float, float]]]:
+    if not paths:
+        return []
+    
+    welded = [list(paths[0])]
+    for path in paths[1:]:
+        prev_end = np.array(welded[-1][-1])
+        curr_start = np.array(path[0])
+        
+        dist = np.linalg.norm(prev_end - curr_start)
+        if dist <= threshold:
+            welded[-1].extend(path[1:])
+        else:
+            welded.append(list(path))
+    return welded
+
 # Image Processing Pipeline to extract text contours as single stroke curves
 def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, float]]]:
     # 1. Read grayscale
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
         raise ValueError(f"Could not load image at {image_path}")
+        
+    # Optional Gaussian Blur to smooth raw lines
+    if params.get("use_text_blur", False):
+        bsize = params.get("text_blur_size", 3)
+        if bsize % 2 == 0:
+            bsize = max(1, bsize - 1)
+        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
         
     # 2. Resizing threshold logic
     if params.get("thresh_mode", "otsu") == "otsu":
@@ -508,12 +531,20 @@ def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, 
         pass
         
     # 3. Morphological close to clean up gaps
-    ksize = params.get("morph_kernel", 3)
-    if ksize > 1:
-        if ksize % 2 == 0:
-            ksize += 1
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (ksize, ksize))
-        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+    if params.get("use_text_morph", True):
+        ksize = params.get("morph_kernel", 3)
+        if ksize > 1:
+            if ksize % 2 == 0:
+                ksize += 1
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (ksize, ksize))
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+            
+    # 3b. Morphological dilation to thicken strokes before thinning (helps bridge pixel gaps)
+    if params.get("use_text_dilate", False):
+        dsize = params.get("text_dilate_size", 1)
+        if dsize > 0:
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dsize, dsize))
+            thresh = cv2.dilate(thresh, kernel, iterations=1)
         
     # 4. Thinning / Skeletonization
     bool_thresh = thresh > 0
@@ -600,6 +631,109 @@ def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, 
             chosen.reverse()
         sorted_paths.append(chosen)
         current_pos = np.array(chosen[-1])
+        
+    # Path welding post-processing
+    if params.get("use_path_connect", True):
+        weld_dist = params.get("path_connect_dist", 5.0)
+        sorted_paths = weld_paths(sorted_paths, weld_dist)
+        
+    return sorted_paths
+
+def process_sketch_image(image_path: str, params: dict) -> List[List[Tuple[float, float]]]:
+    img = cv2.imread(image_path)
+    if img is None:
+        raise ValueError(f"Could not load image at {image_path}")
+        
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    
+    # 1. CLAHE Contrast Equalization
+    if params.get("use_clahe", True):
+        clip_limit = params.get("clahe_clip_limit", 1.5)
+        tile_size = params.get("clahe_tile_grid_size", 8)
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(tile_size, tile_size))
+        gray = clahe.apply(gray)
+        
+    # 2. Gaussian Blur
+    if params.get("use_blur", True):
+        bsize = params.get("blur_size", 3)
+        if bsize % 2 == 0:
+            bsize = max(1, bsize - 1)
+        gray = cv2.GaussianBlur(gray, (bsize, bsize), 0)
+        
+    # 3. Multi-threshold Canny Detector
+    edges_ultra = cv2.Canny(gray, params.get("canny_ultra_low", 5), params.get("canny_ultra_high", 25))
+    edges_medium = cv2.Canny(gray, params.get("canny_medium_low", 20), params.get("canny_medium_high", 60))
+    edges_strong = cv2.Canny(gray, params.get("canny_strong_low", 50), params.get("canny_strong_high", 120))
+    
+    combined = cv2.bitwise_or(edges_ultra, edges_medium)
+    combined = cv2.bitwise_or(combined, edges_strong)
+    
+    # 4. Connect dots and contours (morphological close)
+    if params.get("use_connect", True):
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+        combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
+        
+    # 5. Thinning to single pixel width
+    if params.get("use_thin", True):
+        kernel_thin = np.ones((2, 2), np.uint8)
+        combined = cv2.morphologyEx(combined, cv2.MORPH_ERODE, kernel_thin)
+        
+    # 6. Find contours
+    contours, _ = cv2.findContours(combined, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    
+    raw_paths = []
+    min_len = params.get("min_line_len", 5)
+    epsilon = params.get("epsilon", 1.0)
+    
+    for contour in contours:
+        pts = [tuple(pt[0]) for pt in contour]
+        if params.get("use_len_filter", True) and len(pts) < min_len:
+            continue
+            
+        float_pts = [(float(px), float(py)) for px, py in pts]
+        if epsilon > 0:
+            simplified = rdp_simplify(float_pts, epsilon)
+            raw_paths.append(simplified)
+        else:
+            raw_paths.append(float_pts)
+            
+    if not raw_paths:
+        return []
+        
+    # 7. Sắp xếp thứ tự vẽ tối ưu (Greedy Nearest Neighbor)
+    sorted_paths = []
+    current_pos = np.array([0.0, 0.0])
+    
+    while raw_paths:
+        closest_idx = -1
+        min_dist = float('inf')
+        reverse_path = False
+        
+        for idx, path in enumerate(raw_paths):
+            start_pt = np.array(path[0])
+            end_pt = np.array(path[-1])
+            dist_start = np.linalg.norm(current_pos - start_pt)
+            dist_end = np.linalg.norm(current_pos - end_pt)
+            
+            if dist_start < min_dist:
+                min_dist = dist_start
+                closest_idx = idx
+                reverse_path = False
+            if dist_end < min_dist:
+                min_dist = dist_end
+                closest_idx = idx
+                reverse_path = True
+                
+        chosen = raw_paths.pop(closest_idx)
+        if reverse_path:
+            chosen.reverse()
+        sorted_paths.append(chosen)
+        current_pos = np.array(chosen[-1])
+        
+    # Path welding post-processing
+    if params.get("use_path_connect", True):
+        weld_dist = params.get("path_connect_dist", 5.0)
+        sorted_paths = weld_paths(sorted_paths, weld_dist)
         
     return sorted_paths
 
@@ -777,7 +911,11 @@ async def process_image_route(params: dict):
         return JSONResponse({"status": "error", "message": "No image loaded yet. Please upload or capture first."}, status_code=400)
         
     try:
-        paths = process_text_image(working_path, params)
+        mode = params.get("mode", "text")
+        if mode == "sketch":
+            paths = process_sketch_image(working_path, params)
+        else:
+            paths = process_text_image(working_path, params)
         state.latest_paths = paths
         
         # Generate paths visualization colored with order gradient
