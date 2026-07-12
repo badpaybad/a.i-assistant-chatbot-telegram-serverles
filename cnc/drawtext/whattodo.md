@@ -53,4 +53,4 @@ Công cụ xử lý ảnh có thêm chức năng lưu lại các thông số cho
 Xử lý ảnh sketch có thể tham khảo bổ xung các thông số tham khảo cnc/drawtext/project_2 cosplay (1).json
 
 **cập nhật 3** công cụ xử lý ảnh cần có các check box để apply các chỉ số hoặc không. việc tự động nối liền các nét chữ cũng cần thành 1 option checkbox riêng. việc ảnh xử lý chữ viết nền trắng chữ đen cũng đã rõ ràng chủ yếu cần độ mịn và liền mạch các nét chữ nhờ các pixel liền nhau, nên cần bổ xung thêm các công cụ xử lý ảnh để tạo ra được các đường nét chữ tốt nhất 
-Công cụ xử lý ảnh cần xem code cnc/image2gcodesketch.py để tham khảo việc tạo sketch cho cả xử lý text lẫn ảnh 
+Công cụ xử lý ảnh cần xem code cnc/image2gcodesketch.py và cnc/image2gcode.py để tham khảo việc tạo sketch cho cả xử lý text, vector hóa để có thể tạo gcode điều khiển cnc  

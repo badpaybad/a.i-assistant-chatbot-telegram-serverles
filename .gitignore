@@ -141,3 +141,7 @@ mic/chat_history.db
 cameraip/train/dataraw/obj_train_data/capture_cropped_20260706_135239_1.txt
 **/train/dataraw/*.jpg
 **/mic/spectrogram/*.png
+cnc/drawtext/python-3.12.3-amd64.exe
+cnc/drawtext/main.spec
+**/build/**
+**/dist/**
