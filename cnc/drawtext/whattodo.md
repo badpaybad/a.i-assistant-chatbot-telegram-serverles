@@ -1,0 +1,48 @@
+folder làm việc cnc/drawtext có thể dùng venv /work/a.i-assistant-chatbot-telegram-serverles/venv 
+tham khảo cách làm web để điều khiển cnc ở cnc/whattodo.md để làm 1 web chuyên vẽ chữ, các yêu cầu
+Thiết kế UI là responsive design 
+Trên cùng là thanh công cụ: 
+    Vùng hoạt động cnc: chiều rộng, chiều dài
+    tốc dộ di chuyển, bước di chuyển
+    nút Lưu 
+        khi clcik nút Lưu thì lưu thông số để tắt máy đi mở lên có thể dùng lại 
+dưới thanh công cụ là 2 nửa màn hình, nửa trái: Xử lý text, nửa phải: Cnc preview
+
+Xử lý text
+    header 
+        drop list cho phép chọn ảnh, hoặc camera (mặc định chọn ảnh)
+            chọn ảnh người dùng cần browse ảnh từ máy tính, 
+            chọn camera người dùng cần chọn camera lên để và có nút chụp để chụp 
+    nửa trên
+        Vùng hiển thị ảnh, khi người dùng chọn ảnh, hoặc chụp ảnh, ảnh hiện lên đây
+            Kích thước sẽ tuân theo tỷ lệ của Vùng hoạt động cnc, rộng và dài
+    nửa dưới: 
+        Công cụ xử lý ảnh: dùng opencv contours và các thông số điều khiển chỉnh sửa ảnh, mục tiêu
+            ảnh đưa vào sẽ cần xử lý để có thể xử lý ảnh thành chữ 1 nét như chữ viết tay, chữ in hoa 
+            đưa về 1 nét để chuyển thành vector và gcode để điều khiển đầu cnc viết chữ cho đẹp nét liền mạch mượt mà
+            chủ yếu là xử lý ảnh thành nét chữ, người dùng có thể chỉnh sửa ảnh để lấy các đường nét đặc trưng để có thể tạo vector rồi thành gcode để điều khiển cnc head
+        
+Cnc preview
+    nửa trên là hiển thị cnc preview, mô phỏng đường nét di chuyển của cnc head
+        Kích thước sẽ tuân theo tỷ lệ của Vùng hoạt động cnc, rộng và dài
+    
+    dửa dưới cần bảng điều khiển cnc gồm các nút:  
+        nút: Up, Down, Left, Right, UpLeft, UpRight, DownLeft, DownRight
+            để di chuyển đầu cnc thủ công với khoảng cách cố định, ví dụ 1mm
+        nút: Set home (set home + spidle 0 bút nhấc lên G10 L20 P1 X0 Y0 Z0 và M5 (hoặc M3 S0) )
+            cần lưu thông số để khi tắt máy đi mở lên có thể dùng lại 
+        nút: nhấc bút, hạ bút 
+        nút: Xem trước 
+            click nút này thì sẽ dựa vào ảnh đã xử lý contours chuyển thành vector gcode và chạy giả lập trên cnc preview
+        nút: Vẽ chữ 
+            click nút này thì sẽ gửi lệnh điều khiển cnc head thật, và cnc preview cũng vẽ các nét thực tế cnc đang chạy ngoài đời 
+            Khi vẽ thì vẽ bắt đầu từ vị trí hiện tại của cnc head, vẽ xong cần về lại vị trí ban đầu trước khi vẽ 
+        nút: Dừng và Go home
+            click nút này thì dừng vẽ, nhấc dao lên và về gốc set home trước đó
+
+**cập nhật 1** ảnh đầu vào khi chọn lên có thể làm background mờ mờ ở dưới ảnh Xem trước xử lý nét đơn để cho UI gọn
+việc test để tôi tự test không cần mở chronium lên test
+
+    
+
+    

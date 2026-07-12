@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CNC Text Drawing Controller</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom stylesheet -->
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <!-- Top Global Config Bar -->
+    <header class="app-header">
+        <div class="logo">
+            <i class="fa-solid fa-pen-nib nib-icon"></i>
+            <h1>CNC DrawText <span class="badge">PRO</span></h1>
+        </div>
+        
+        <div class="header-settings">
+            <!-- Serial Connection -->
+            <div class="control-group">
+                <label for="serial-port"><i class="fa-solid fa-plug"></i> Cổng Serial:</label>
+                <select id="serial-port">
+                    <option value="dummy">GRBL Simulator (Mock)</option>
+                </select>
+                <button id="btn-connect" class="btn btn-primary"><i class="fa-solid fa-link"></i> Kết nối</button>
+            </div>
+
+            <!-- CNC Workspace Dimensions -->
+            <div class="control-group">
+                <label for="cnc-width"><i class="fa-solid fa-maximize"></i> Rộng (mm):</label>
+                <input type="number" id="cnc-width" value="200" step="10">
+            </div>
+            <div class="control-group">
+                <label for="cnc-height"><i class="fa-solid fa-maximize"></i> Cao (mm):</label>
+                <input type="number" id="cnc-height" value="200" step="10">
+            </div>
+
+            <!-- Jog parameters -->
+            <div class="control-group">
+                <label for="cnc-speed"><i class="fa-solid fa-gauge-high"></i> Tốc độ (mm/phút):</label>
+                <input type="number" id="cnc-speed" value="2000" step="100">
+            </div>
+            <div class="control-group">
+                <label for="cnc-step"><i class="fa-solid fa-ruler"></i> Bước (mm):</label>
+                <input type="number" id="cnc-step" value="10" step="1">
+            </div>
+
+            <button id="btn-save-settings" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Layout -->
+    <main class="app-layout">
+        <!-- LEFT HALF: Text Processing -->
+        <section class="panel-left">
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-font"></i> Xử lý Text</h2>
+                    <div class="source-selector">
+                        <label for="source-type">Nguồn:</label>
+                        <select id="source-type">
+                            <option value="image">Chọn ảnh</option>
+                            <option value="camera">USB Camera</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card-body text-processing-body">
+                    <!-- Source Panels -->
+                    <div id="panel-source-image" class="source-panel active">
+                        <div class="upload-area" id="upload-zone">
+                            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
+                            <p>Kéo thả ảnh hoặc click để chọn file</p>
+                            <input type="file" id="file-input" accept="image/*" style="display: none;">
+                        </div>
+                    </div>
+
+                    <div id="panel-source-camera" class="source-panel">
+                        <div class="camera-controls">
+                            <select id="camera-select">
+                                <option value="">Đang tìm Camera...</option>
+                            </select>
+                            <button id="btn-capture-cam" class="btn btn-secondary"><i class="fa-solid fa-camera"></i> Chụp ảnh</button>
+                        </div>
+                    </div>
+
+                    <!-- Display original/captured image stacked with processed stroke paths -->
+                    <div class="image-preview-container">
+                        <div class="canvas-wrapper" id="combined-canvas-wrapper">
+                            <div class="canvas-label">Xem trước xử lý nét đơn</div>
+                            <!-- Background: raw input image or camera stream -->
+                            <img id="raw-img-preview" src="" alt="Chưa có ảnh đầu vào" class="image-preview-placeholder bg-preview">
+                            <img id="camera-stream" src="" alt="Camera feed" class="bg-preview" style="display: none;">
+                            <!-- Foreground: processed single-stroke vectors overlay -->
+                            <img id="processed-img-preview" src="" class="fg-preview" style="display: none;">
+                        </div>
+                    </div>
+
+                    <!-- Image processing tools -->
+                    <div class="image-tools-container">
+                        <h3><i class="fa-solid fa-sliders"></i> Công cụ xử lý ảnh</h3>
+                        <div class="tools-grid">
+                            <!-- Thresholding -->
+                            <div class="tool-item">
+                                <label for="thresh-mode">Chế độ Threshold:</label>
+                                <select id="thresh-mode">
+                                    <option value="otsu">Tự động (Otsu)</option>
+                                    <option value="manual">Thủ công</option>
+                                </select>
+                            </div>
+                            <div class="tool-item" id="threshold-val-group" style="display: none;">
+                                <label for="thresh-val">Ngưỡng Threshold: <span id="lbl-thresh-val">127</span></label>
+                                <input type="range" id="thresh-val" min="0" max="255" value="127">
+                            </div>
+                            <div class="tool-item checkbox-item">
+                                <input type="checkbox" id="invert-img" checked>
+                                <label for="invert-img">Đảo màu chữ (Thinning cần chữ trắng nền đen)</label>
+                            </div>
+
+                            <!-- Morphological operations -->
+                            <div class="tool-item">
+                                <label for="morph-kernel">Làm mịn rìa chữ (Close Kernel Size): <span id="lbl-morph-kernel">3</span></label>
+                                <input type="range" id="morph-kernel" min="1" max="15" step="2" value="3">
+                            </div>
+
+                            <!-- Thinning method -->
+                            <div class="tool-item">
+                                <label for="skeleton-method">Thuật toán làm mảnh:</label>
+                                <select id="skeleton-method">
+                                    <option value="thin">Thinning (skimage)</option>
+                                    <option value="skeletonize">Skeletonize (skimage)</option>
+                                </select>
+                            </div>
+
+                            <!-- Filtering noise -->
+                            <div class="tool-item">
+                                <label for="min-line-len">Bỏ nét ngắn (Min Contour Length): <span id="lbl-min-line-len">5</span> px</label>
+                                <input type="range" id="min-line-len" min="1" max="50" value="5">
+                            </div>
+
+                            <!-- Path Simplification Epsilon -->
+                            <div class="tool-item">
+                                <label for="simplify-epsilon">Độ mịn vector (Epsilon): <span id="lbl-simplify-epsilon">1.0</span> px</label>
+                                <input type="range" id="simplify-epsilon" min="0" max="5" step="0.1" value="1.0">
+                            </div>
+
+                            <!-- Scale factor -->
+                            <div class="tool-item">
+                                <label for="scale-factor">Tỷ lệ vẽ (mm/pixel):</label>
+                                <input type="number" id="scale-factor" value="0.15" step="0.01" min="0.001">
+                            </div>
+                        </div>
+
+                        <!-- Pen settings -->
+                        <h3><i class="fa-solid fa-pen-clip"></i> Cấu hình nhấc bút</h3>
+                        <div class="tools-grid">
+                            <div class="tool-item">
+                                <label for="pen-mode">Chế độ Nhấc:</label>
+                                <select id="pen-mode">
+                                    <option value="servo">Servo Spindle Speed (M3 S...)</option>
+                                    <option value="spindle-z">Spindle / Laser Z Height (G0 Z...)</option>
+                                </select>
+                            </div>
+                            <div class="tool-item">
+                                <label for="pen-up-cmd">Lệnh Nhấc Bút (Pen Up):</label>
+                                <input type="text" id="pen-up-cmd" value="M3 S10">
+                            </div>
+                            <div class="tool-item">
+                                <label for="pen-down-cmd">Lệnh Hạ Bút (Pen Down):</label>
+                                <input type="text" id="pen-down-cmd" value="M3 S90">
+                            </div>
+                            <div class="tool-item">
+                                <label for="pen-dwell">Thời gian chờ (Dwell - s):</label>
+                                <input type="number" id="pen-dwell" value="0.20" step="0.05" min="0">
+                            </div>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </section>
+
+        <!-- RIGHT HALF: CNC Preview & Control -->
+        <section class="panel-right">
+            <!-- DRO Telemetry Indicator -->
+            <div class="card dro-card">
+                <div class="dro-grid">
+                    <div class="dro-item">
+                        <span class="dro-label">Trạng thái</span>
+                        <span class="dro-value" id="dro-state">Offline</span>
+                    </div>
+                    <div class="dro-item">
+                        <span class="dro-label">X Coordinate</span>
+                        <span class="dro-value coords" id="dro-x">0.000</span>
+                    </div>
+                    <div class="dro-item">
+                        <span class="dro-label">Y Coordinate</span>
+                        <span class="dro-value coords" id="dro-y">0.000</span>
+                    </div>
+                    <div class="dro-item">
+                        <span class="dro-label">Z Coordinate</span>
+                        <span class="dro-value coords" id="dro-z">0.000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CNC Toolpath Canvas Preview -->
+            <div class="card canvas-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-compass-drafting"></i> CNC Preview</h2>
+                    <div class="canvas-controls">
+                        <button id="btn-zoom-in" class="btn btn-icon" title="Phóng to"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                        <button id="btn-zoom-out" class="btn btn-icon" title="Thu nhỏ"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                        <button id="btn-reset-zoom" class="btn btn-icon" title="Reset View"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                </div>
+                <div class="card-body preview-canvas-body">
+                    <div class="preview-canvas-wrapper" id="preview-canvas-wrapper">
+                        <!-- Simulated CNC paths will be drawn on this HTML5 canvas -->
+                        <canvas id="cnc-preview-canvas" width="600" height="400"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CNC Jog & Action Commands Panel -->
+            <div class="card control-card">
+                <div class="card-header">
+                    <h2><i class="fa-solid fa-gamepad"></i> Bảng điều khiển CNC</h2>
+                </div>
+                <div class="card-body controls-body">
+                    <div class="control-actions-grid">
+                        <!-- Jog Keypad -->
+                        <div class="jog-section">
+                            <h3>Di chuyển Jog</h3>
+                            <div class="jog-keypad">
+                                <button class="btn-jog" data-dir="upleft" title="Up-Left"><i class="fa-solid fa-arrow-up-left"></i>↖</button>
+                                <button class="btn-jog" data-dir="up" title="Up"><i class="fa-solid fa-arrow-up"></i>↑</button>
+                                <button class="btn-jog" data-dir="upright" title="Up-Right"><i class="fa-solid fa-arrow-up-right"></i>↗</button>
+                                <button class="btn-jog" data-dir="left" title="Left"><i class="fa-solid fa-arrow-left"></i>←</button>
+                                <button id="btn-set-home" class="btn-jog btn-jog-home" title="Set Home G10 L20 P1 X0 Y0 Z0"><i class="fa-solid fa-house-user"></i><br>Home</button>
+                                <button class="btn-jog" data-dir="right" title="Right"><i class="fa-solid fa-arrow-right"></i>→</button>
+                                <button class="btn-jog" data-dir="downleft" title="Down-Left"><i class="fa-solid fa-arrow-down-left"></i>↙</button>
+                                <button class="btn-jog" data-dir="down" title="Down"><i class="fa-solid fa-arrow-down"></i>↓</button>
+                                <button class="btn-jog" data-dir="downright" title="Down-Right"><i class="fa-solid fa-arrow-down-right"></i>↘</button>
+                            </div>
+                        </div>
+
+                        <!-- Manual Actions -->
+                        <div class="actions-section">
+                            <h3>Bút vẽ</h3>
+                            <div class="pen-quick-actions">
+                                <button id="btn-pen-up" class="btn btn-secondary"><i class="fa-solid fa-arrow-up-from-bracket"></i> Nhấc bút</button>
+                                <button id="btn-pen-down" class="btn btn-secondary"><i class="fa-solid fa-arrow-down-to-bracket"></i> Hạ bút</button>
+                            </div>
+
+                            <h3>Chạy tác vụ</h3>
+                            <div class="task-actions">
+                                <button id="btn-preview" class="btn btn-info btn-block"><i class="fa-solid fa-circle-play"></i> Xem trước (Mô phỏng)</button>
+                                <button id="btn-draw" class="btn btn-primary btn-block"><i class="fa-solid fa-pencil"></i> Vẽ chữ (Chạy CNC)</button>
+                                <button id="btn-stop" class="btn btn-danger btn-block"><i class="fa-solid fa-circle-stop"></i> Dừng và Go Home</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Log console -->
+                    <div class="console-section">
+                        <h3>Console logs</h3>
+                        <div class="console-box" id="console-logs">
+                            <div class="log-line system">Thiết bị ngoại vi chưa kết nối. Vui lòng kết nối Serial Port.</div>
+                        </div>
+                        <div class="console-input-group">
+                            <input type="text" id="console-input" placeholder="Gõ lệnh Gcode trực tiếp (ví dụ: G0 X10 Y10)...">
+                            <button id="btn-send-console" class="btn btn-secondary">Gửi</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- JS script -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

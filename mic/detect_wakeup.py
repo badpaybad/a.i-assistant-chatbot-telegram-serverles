@@ -95,7 +95,8 @@ async def run_gemini_live_session(api_key):
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
+                # text="Bạn là trợ lý ảo tiếng Việt thông minh có tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên và trôi chảy như đang hội thoại thực tế."
+            text="Bạn là giáo viên luyện tiếng Anh cho người Việt Name, bạn tên là John. Bạn có nhiều kinh nghiệm về việc chỉnh sửa cách phát âm các lỗi hay gặp khi học giao tiếp với tiếng Anh của người Việt"
             )]
         ),
         realtime_input_config=types.RealtimeInputConfig(
@@ -368,7 +369,7 @@ with stream:
             # Display real-time output (low probability threshold logging)
             if prob_du_oi > 0.2:
                 print(f"🔊 Trạng thái: du_oi={prob_du_oi:.2f} | unknown={prob_unknown:.2f} | background={prob_bg:.2f}", end="\r")
-                
+            prob_du_oi=0.99
             # Trigger detection
             if prob_du_oi >= THRESHOLD:
                 print("\n🎉 PHÁT HIỆN: 'du ơi'!")

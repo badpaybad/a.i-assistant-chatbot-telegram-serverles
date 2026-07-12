@@ -18,6 +18,7 @@ venv/bin/python cameraip/train/prepare_data.py --src cameraip/train/dataraw --de
 
 venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8m.pt --epochs 80 --batch 4 --device cpu --p2 
 
+venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8s.pt --epochs 121 --batch 4 --device cuda --p2 --freeze 12 --scale 0.6
 
 venv/bin/python cameraip/train/train_yolo_tiny.py --data cameraip/train/data/dataset.yaml --model yolov8s.pt --epochs 150 --batch 4 --device cuda --p2 --freeze 5 --lr0 0.0015 --mosaic 0.5 --cls 2.0
 
