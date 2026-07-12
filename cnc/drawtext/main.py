@@ -573,24 +573,50 @@ def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, 
                     G.add_edge((x, y), neighbor)
                     
     raw_paths = []
-    for c in nx.connected_components(G):
-        subgraph = G.subgraph(c).copy()
-        # Find endpoints (nodes with degree == 1)
-        endpoints = [node for node, degree in subgraph.degree() if degree == 1]
-        
-        if endpoints:
-            start_node = endpoints[0]
-        elif len(subgraph.nodes()) > 0:
-            start_node = list(subgraph.nodes())[0]
-        else:
+    
+    # Split graph at junctions (degree > 2) to prevent jump lines
+    junctions = [node for node, deg in G.degree() if deg > 2]
+    G_simple = G.copy()
+    G_simple.remove_nodes_from(junctions)
+    
+    for c in nx.connected_components(G_simple):
+        subgraph = G_simple.subgraph(c).copy()
+        nodes = list(subgraph.nodes())
+        if not nodes:
             continue
             
-        # DFS traversal for continuous coordinate sequence
-        path = list(nx.dfs_preorder_nodes(subgraph, source=start_node))
+        endpoints = [node for node, deg in subgraph.degree() if deg <= 1]
+        start_node = endpoints[0] if endpoints else nodes[0]
         
+        # Walk simple path segment
+        path = []
+        curr = start_node
+        visited = {curr}
+        path.append(curr)
+        
+        while True:
+            neighbors = [n for n in subgraph.neighbors(curr) if n not in visited]
+            if not neighbors:
+                break
+            curr = neighbors[0]
+            visited.add(curr)
+            path.append(curr)
+            
+        # Reconnect endpoints back to nearby junctions
+        if path:
+            start_neighbors = list(G.neighbors(path[0]))
+            for n in start_neighbors:
+                if n in junctions:
+                    path.insert(0, n)
+                    break
+            end_neighbors = list(G.neighbors(path[-1]))
+            for n in end_neighbors:
+                if n in junctions:
+                    path.append(n)
+                    break
+                    
         # Filter noise paths
         if len(path) >= params.get("min_line_len", 5):
-            # Apply Ramer-Douglas-Peucker point simplification
             epsilon = params.get("epsilon", 1.0)
             if epsilon > 0:
                 simplified = rdp_simplify(path, epsilon)
