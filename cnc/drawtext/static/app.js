@@ -31,12 +31,12 @@ let activeProcessingMode = "text";
 
 // Initialize Page
 window.addEventListener("DOMContentLoaded", async () => {
-    // 1. Fetch available serial ports and USB cameras
+    // 1. Load settings from server
+    await fetchSettings();
+
+    // 2. Fetch available serial ports and USB cameras
     await loadSerialPorts();
     await loadCameras();
-
-    // 2. Load settings from server
-    await fetchSettings();
 
     // 3. Setup event listeners
     setupEventListeners();
@@ -55,12 +55,25 @@ async function loadSerialPorts() {
         const ports = await res.json();
         const select = document.getElementById("serial-port");
         select.innerHTML = "";
+        let hasDefault = false;
         ports.forEach(p => {
             const opt = document.createElement("option");
             opt.value = p.port;
             opt.textContent = p.description;
             select.appendChild(opt);
+            if (p.port === settings.serial_port) {
+                hasDefault = true;
+            }
         });
+        if (settings.serial_port && !hasDefault) {
+            const opt = document.createElement("option");
+            opt.value = settings.serial_port;
+            opt.textContent = `${settings.serial_port} (Chưa kết nối)`;
+            select.appendChild(opt);
+        }
+        if (settings.serial_port) {
+            select.value = settings.serial_port;
+        }
     } catch (e) {
         logToConsole("System Error: Không thể tải danh sách cổng serial.", "system");
     }
@@ -112,6 +125,8 @@ async function fetchSettings() {
         document.getElementById("skeleton-method").value = settings.skeleton_method;
         document.getElementById("min-line-len").value = settings.min_line_len;
         document.getElementById("simplify-epsilon").value = settings.epsilon;
+        document.getElementById("mirror-x").checked = !!settings.mirror_x;
+        document.getElementById("mirror-y").checked = !!settings.mirror_y;
         
         if (settings.pen_mode) document.getElementById("pen-mode").value = settings.pen_mode;
         document.getElementById("pen-up-cmd").value = settings.pen_up_cmd;
@@ -144,7 +159,9 @@ async function saveSettingsToServer() {
         pen_mode: document.getElementById("pen-mode").value,
         pen_up_cmd: document.getElementById("pen-up-cmd").value,
         pen_down_cmd: document.getElementById("pen-down-cmd").value,
-        pen_dwell: parseFloat(document.getElementById("pen-dwell").value)
+        pen_dwell: parseFloat(document.getElementById("pen-dwell").value),
+        mirror_x: document.getElementById("mirror-x").checked,
+        mirror_y: document.getElementById("mirror-y").checked
     };
 
     try {
@@ -335,7 +352,12 @@ function setupEventListeners() {
         "canny-medium-low", "canny-medium-high", 
         "canny-strong-low", "canny-strong-high",
         "scale-factor",
-        "text-blur-size", "text-dilate-size", "path-connect-dist"
+        "text-blur-size", "text-dilate-size", "path-connect-dist",
+        "potrace-thresh-val", "potrace-blur-size", "potrace-morph-kernel", 
+        "potrace-dilate-size", "potrace-turdsize", "potrace-alphamax", 
+        "potrace-opttolerance", "potrace-bezier-steps",
+        "erode-thinness-level", "erode-thresh-val", "erode-blur-size", 
+        "erode-turdsize", "erode-alphamax", "erode-opttolerance", "erode-bezier-steps"
     ];
     sliders.forEach(id => {
         const el = document.getElementById(id);
@@ -347,13 +369,15 @@ function setupEventListeners() {
         }
     });
 
-    document.getElementById("thresh-mode").addEventListener("change", () => {
-        syncGroupVisibilities();
-        triggerAutoReprocess();
+    ["thresh-mode", "potrace-thresh-mode", "potrace-turnpolicy", "skeleton-method", "erode-thresh-mode", "erode-turnpolicy"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("change", () => {
+                syncGroupVisibilities();
+                triggerAutoReprocess();
+            });
+        }
     });
-
-    document.getElementById("invert-img").addEventListener("change", triggerAutoReprocess);
-    document.getElementById("skeleton-method").addEventListener("change", triggerAutoReprocess);
 
     // 5b. Processing Tabs switching
     const tabBtns = document.querySelectorAll(".processing-tabs .tab-btn");
@@ -367,10 +391,9 @@ function setupEventListeners() {
             
             // Toggle panels
             document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
-            if (mode === "text") {
-                document.getElementById("panel-proc-text").classList.add("active");
-            } else {
-                document.getElementById("panel-proc-sketch").classList.add("active");
+            const targetPanel = document.getElementById(`panel-proc-${mode}`);
+            if (targetPanel) {
+                targetPanel.classList.add("active");
             }
             
             // Reprocess automatically
@@ -381,13 +404,28 @@ function setupEventListeners() {
     // 5c. Listeners for Sketch and Text checkboxes
     const checkboxes = [
         "use-clahe", "use-blur", "use-connect", "use-thin", "use-len-filter",
-        "use-text-blur", "use-text-morph", "use-text-dilate", "use-path-connect"
+        "use-text-blur", "use-text-morph", "use-text-dilate", "use-path-connect",
+        "invert-img", "potrace-invert-img", "potrace-use-blur", 
+        "potrace-use-morph", "potrace-use-dilate", "potrace-opticurve",
+        "use-simplify-epsilon", "use-potrace-turdsize", "use-potrace-alphamax", "use-potrace-opttolerance",
+        "use-erode-thinness", "erode-invert-img", "erode-use-blur", "use-erode-turdsize", "use-erode-alphamax", "use-erode-opttolerance", "erode-opticurve"
     ];
     checkboxes.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
             el.addEventListener("change", () => {
                 syncGroupVisibilities();
+                triggerAutoReprocess();
+            });
+        }
+    });
+
+    // Listeners for mirror checkboxes
+    ["mirror-x", "mirror-y"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener("change", () => {
+                drawPreviewCanvas();
                 triggerAutoReprocess();
             });
         }
@@ -408,6 +446,7 @@ function setupEventListeners() {
                 
                 // Common controls
                 min_line_len: parseInt(document.getElementById("min-line-len").value),
+                use_simplify_epsilon: document.getElementById("use-simplify-epsilon").checked,
                 simplify_epsilon: parseFloat(document.getElementById("simplify-epsilon").value),
                 scale_factor: parseFloat(document.getElementById("scale-factor").value),
 
@@ -441,7 +480,45 @@ function setupEventListeners() {
                 canny_medium_low: parseInt(document.getElementById("canny-medium-low").value),
                 canny_medium_high: parseInt(document.getElementById("canny-medium-high").value),
                 canny_strong_low: parseInt(document.getElementById("canny-strong-low").value),
-                canny_strong_high: parseInt(document.getElementById("canny-strong-high").value)
+                canny_strong_high: parseInt(document.getElementById("canny-strong-high").value),
+
+                // Potrace mode controls
+                potrace_thresh_mode: document.getElementById("potrace-thresh-mode").value,
+                potrace_thresh_val: parseInt(document.getElementById("potrace-thresh-val").value),
+                potrace_invert_img: document.getElementById("potrace-invert-img").checked,
+                potrace_use_blur: document.getElementById("potrace-use-blur").checked,
+                potrace_blur_size: parseInt(document.getElementById("potrace-blur-size").value),
+                potrace_use_morph: document.getElementById("potrace-use-morph").checked,
+                potrace_morph_kernel: parseInt(document.getElementById("potrace-morph-kernel").value),
+                potrace_use_dilate: document.getElementById("potrace-use-dilate").checked,
+                potrace_dilate_size: parseInt(document.getElementById("potrace-dilate-size").value),
+                use_potrace_turdsize: document.getElementById("use-potrace-turdsize").checked,
+                potrace_turdsize: parseInt(document.getElementById("potrace-turdsize").value),
+                use_potrace_alphamax: document.getElementById("use-potrace-alphamax").checked,
+                potrace_alphamax: parseFloat(document.getElementById("potrace-alphamax").value),
+                use_potrace_opttolerance: document.getElementById("use-potrace-opttolerance").checked,
+                potrace_opttolerance: parseFloat(document.getElementById("potrace-opttolerance").value),
+                potrace_opticurve: document.getElementById("potrace-opticurve").checked,
+                potrace_turnpolicy: document.getElementById("potrace-turnpolicy").value,
+                potrace_bezier_steps: parseInt(document.getElementById("potrace-bezier-steps").value),
+
+                // Erode Outline mode controls
+                erode_thinness_level: parseInt(document.getElementById("erode-thinness-level").value),
+                use_erode_thinness: document.getElementById("use-erode-thinness").checked,
+                erode_thresh_mode: document.getElementById("erode-thresh-mode").value,
+                erode_thresh_val: parseInt(document.getElementById("erode-thresh-val").value),
+                erode_invert_img: document.getElementById("erode-invert-img").checked,
+                erode_use_blur: document.getElementById("erode-use-blur").checked,
+                erode_blur_size: parseInt(document.getElementById("erode-blur-size").value),
+                use_erode_turdsize: document.getElementById("use-erode-turdsize").checked,
+                erode_turdsize: parseInt(document.getElementById("erode-turdsize").value),
+                use_erode_alphamax: document.getElementById("use-erode-alphamax").checked,
+                erode_alphamax: parseFloat(document.getElementById("erode-alphamax").value),
+                use_erode_opttolerance: document.getElementById("use-erode-opttolerance").checked,
+                erode_opttolerance: parseFloat(document.getElementById("erode-opttolerance").value),
+                erode_opticurve: document.getElementById("erode-opticurve").checked,
+                erode_turnpolicy: document.getElementById("erode-turnpolicy").value,
+                erode_bezier_steps: parseInt(document.getElementById("erode-bezier-steps").value)
             };
 
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(configData, null, 2));
@@ -472,10 +549,9 @@ function setupEventListeners() {
                     }
                 });
                 document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
-                if (mode === "text") {
-                    document.getElementById("panel-proc-text").classList.add("active");
-                } else {
-                    document.getElementById("panel-proc-sketch").classList.add("active");
+                const targetPanel = document.getElementById(`panel-proc-${mode}`);
+                if (targetPanel) {
+                    targetPanel.classList.add("active");
                 }
             };
             
@@ -597,10 +673,9 @@ function setupEventListeners() {
                         }
                         // Toggle panels
                         document.querySelectorAll(".proc-tab-panel").forEach(p => p.classList.remove("active"));
-                        if (activeProcessingMode === "text") {
-                            document.getElementById("panel-proc-text").classList.add("active");
-                        } else {
-                            document.getElementById("panel-proc-sketch").classList.add("active");
+                        const targetPanel = document.getElementById(`panel-proc-${activeProcessingMode}`);
+                        if (targetPanel) {
+                            targetPanel.classList.add("active");
                         }
                     }
 
@@ -618,6 +693,7 @@ function setupEventListeners() {
 
                     // Common
                     setVal("min-line-len", loaded.min_line_len);
+                    setVal("use-simplify-epsilon", loaded.use_simplify_epsilon !== undefined ? loaded.use_simplify_epsilon : true);
                     setVal("simplify-epsilon", loaded.simplify_epsilon);
                     setVal("scale-factor", loaded.scale_factor);
 
@@ -652,6 +728,44 @@ function setupEventListeners() {
                     setVal("canny-medium-high", loaded.canny_medium_high);
                     setVal("canny-strong-low", loaded.canny_strong_low);
                     setVal("canny-strong-high", loaded.canny_strong_high);
+
+                    // Potrace
+                    setVal("potrace-thresh-mode", loaded.potrace_thresh_mode);
+                    setVal("potrace-thresh-val", loaded.potrace_thresh_val);
+                    setVal("potrace-invert-img", loaded.potrace_invert_img);
+                    setVal("potrace-use-blur", loaded.potrace_use_blur);
+                    setVal("potrace-blur-size", loaded.potrace_blur_size);
+                    setVal("potrace-use-morph", loaded.potrace_use_morph);
+                    setVal("potrace-morph-kernel", loaded.potrace_morph_kernel);
+                    setVal("potrace-use-dilate", loaded.potrace_use_dilate);
+                    setVal("potrace-dilate-size", loaded.potrace_dilate_size);
+                    setVal("use-potrace-turdsize", loaded.use_potrace_turdsize !== undefined ? loaded.use_potrace_turdsize : true);
+                    setVal("potrace-turdsize", loaded.potrace_turdsize);
+                    setVal("use-potrace-alphamax", loaded.use_potrace_alphamax !== undefined ? loaded.use_potrace_alphamax : true);
+                    setVal("potrace-alphamax", loaded.potrace_alphamax);
+                    setVal("use-potrace-opttolerance", loaded.use_potrace_opttolerance !== undefined ? loaded.use_potrace_opttolerance : true);
+                    setVal("potrace-opttolerance", loaded.potrace_opttolerance);
+                    setVal("potrace-opticurve", loaded.potrace_opticurve);
+                    setVal("potrace-turnpolicy", loaded.potrace_turnpolicy);
+                    setVal("potrace-bezier-steps", loaded.potrace_bezier_steps);
+
+                    // Erode Outline controls
+                    setVal("erode-thinness-level", loaded.erode_thinness_level);
+                    setVal("use-erode-thinness", loaded.use_erode_thinness !== undefined ? loaded.use_erode_thinness : true);
+                    setVal("erode-thresh-mode", loaded.erode_thresh_mode);
+                    setVal("erode-thresh-val", loaded.erode_thresh_val);
+                    setVal("erode-invert-img", loaded.erode_invert_img);
+                    setVal("erode-use-blur", loaded.erode_use_blur);
+                    setVal("erode-blur-size", loaded.erode_blur_size);
+                    setVal("use-erode-turdsize", loaded.use_erode_turdsize !== undefined ? loaded.use_erode_turdsize : true);
+                    setVal("erode-turdsize", loaded.erode_turdsize);
+                    setVal("use-erode-alphamax", loaded.use_erode_alphamax !== undefined ? loaded.use_erode_alphamax : true);
+                    setVal("erode-alphamax", loaded.erode_alphamax);
+                    setVal("use-erode-opttolerance", loaded.use_erode_opttolerance !== undefined ? loaded.use_erode_opttolerance : true);
+                    setVal("erode-opttolerance", loaded.erode_opttolerance);
+                    setVal("erode-opticurve", loaded.erode_opticurve);
+                    setVal("erode-turnpolicy", loaded.erode_turnpolicy);
+                    setVal("erode-bezier-steps", loaded.erode_bezier_steps);
 
                     // Sync group visibilities
                     syncGroupVisibilities();
@@ -878,7 +992,13 @@ async function reprocessImage() {
     const updatedParams = {
         mode: activeProcessingMode,
         min_line_len: parseInt(document.getElementById("min-line-len").value),
+        use_simplify_epsilon: document.getElementById("use-simplify-epsilon").checked,
         epsilon: parseFloat(document.getElementById("simplify-epsilon").value),
+        scale_factor: parseFloat(document.getElementById("scale-factor").value),
+        pen_up_cmd: document.getElementById("pen-up-cmd").value,
+        pen_down_cmd: document.getElementById("pen-down-cmd").value,
+        pen_dwell: parseFloat(document.getElementById("pen-dwell").value),
+        feedrate: parseFloat(document.getElementById("cnc-speed").value),
         
         // Text mode parameters
         thresh_mode: document.getElementById("thresh-mode").value,
@@ -910,7 +1030,35 @@ async function reprocessImage() {
         canny_medium_low: parseInt(document.getElementById("canny-medium-low").value),
         canny_medium_high: parseInt(document.getElementById("canny-medium-high").value),
         canny_strong_low: parseInt(document.getElementById("canny-strong-low").value),
-        canny_strong_high: parseInt(document.getElementById("canny-strong-high").value)
+        canny_strong_high: parseInt(document.getElementById("canny-strong-high").value),
+
+        // Potrace parameters
+        potrace_thresh_mode: activeProcessingMode === "erode_outline" ? document.getElementById("erode-thresh-mode").value : document.getElementById("potrace-thresh-mode").value,
+        potrace_thresh_val: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-thresh-val").value) : parseInt(document.getElementById("potrace-thresh-val").value),
+        potrace_invert_img: activeProcessingMode === "erode_outline" ? document.getElementById("erode-invert-img").checked : document.getElementById("potrace-invert-img").checked,
+        potrace_use_blur: activeProcessingMode === "erode_outline" ? document.getElementById("erode-use-blur").checked : document.getElementById("potrace-use-blur").checked,
+        potrace_blur_size: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-blur-size").value) : parseInt(document.getElementById("potrace-blur-size").value),
+        potrace_use_morph: activeProcessingMode === "erode_outline" ? false : document.getElementById("potrace-use-morph").checked,
+        potrace_morph_kernel: activeProcessingMode === "erode_outline" ? 3 : parseInt(document.getElementById("potrace-morph-kernel").value),
+        potrace_use_dilate: activeProcessingMode === "erode_outline" ? false : document.getElementById("potrace-use-dilate").checked,
+        potrace_dilate_size: activeProcessingMode === "erode_outline" ? 1 : parseInt(document.getElementById("potrace-dilate-size").value),
+        use_potrace_turdsize: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-turdsize").checked : document.getElementById("use-potrace-turdsize").checked,
+        potrace_turdsize: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-turdsize").value) : parseInt(document.getElementById("potrace-turdsize").value),
+        use_potrace_alphamax: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-alphamax").checked : document.getElementById("use-potrace-alphamax").checked,
+        potrace_alphamax: activeProcessingMode === "erode_outline" ? parseFloat(document.getElementById("erode-alphamax").value) : parseFloat(document.getElementById("potrace-alphamax").value),
+        use_potrace_opttolerance: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-opttolerance").checked : document.getElementById("use-potrace-opttolerance").checked,
+        potrace_opttolerance: activeProcessingMode === "erode_outline" ? parseFloat(document.getElementById("erode-opttolerance").value) : parseFloat(document.getElementById("potrace-opttolerance").value),
+        potrace_opticurve: activeProcessingMode === "erode_outline" ? document.getElementById("erode-opticurve").checked : document.getElementById("potrace-opticurve").checked,
+        potrace_turnpolicy: activeProcessingMode === "erode_outline" ? document.getElementById("erode-turnpolicy").value : document.getElementById("potrace-turnpolicy").value,
+        potrace_bezier_steps: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-bezier-steps").value) : parseInt(document.getElementById("potrace-bezier-steps").value),
+
+        // Erode Outline parameters
+        erode_thinness_level: parseInt(document.getElementById("erode-thinness-level").value),
+        use_erode_thinness: document.getElementById("use-erode-thinness").checked,
+
+        // Mirror parameters
+        mirror_x: document.getElementById("mirror-x").checked,
+        mirror_y: document.getElementById("mirror-y").checked
     };
 
     try {
@@ -932,6 +1080,23 @@ async function reprocessImage() {
             
             logToConsole(`System: Trích xuất thành công ${activePaths.length} nét vẽ nét đơn.`, "system");
             
+            // Update download links
+            const svgBtn = document.getElementById("btn-download-svg");
+            if (ans.svg_url) {
+                svgBtn.href = `${ans.svg_url}?t=${Date.now()}`;
+                svgBtn.style.display = "block";
+            } else {
+                svgBtn.style.display = "none";
+            }
+
+            const gcodeBtn = document.getElementById("btn-download-gcode");
+            if (activePaths && activePaths.length > 0) {
+                gcodeBtn.href = `/static/cnc_output.nc?t=${Date.now()}`;
+                gcodeBtn.style.display = "block";
+            } else {
+                gcodeBtn.style.display = "none";
+            }
+
             // Redraw CNC preview canvas with new paths
             drawPreviewCanvas();
         } else {
@@ -1182,8 +1347,8 @@ function drawPreviewCanvas() {
     // Horizontal grid lines
     for (let gy = 0; gy <= h_mm; gy += gridStep) {
         ctx.beginPath();
-        ctx.moveTo(tx, ty + (h_mm - gy) * cncScale);
-        ctx.lineTo(tx + tableW, ty + (h_mm - gy) * cncScale);
+        ctx.moveTo(tx, ty + gy * cncScale);
+        ctx.lineTo(tx + tableW, ty + gy * cncScale);
         ctx.stroke();
     }
 
@@ -1195,7 +1360,7 @@ function drawPreviewCanvas() {
     // Label origin
     ctx.fillStyle = "var(--text-muted)";
     ctx.font = "10px sans-serif";
-    ctx.fillText("0,0", tx - 5, ty + tableH + 12);
+    ctx.fillText("0,0", tx - 5, ty - 6);
 
     // DRAW THE PATH VECTORS
     if (activePaths.length > 0) {
@@ -1213,19 +1378,24 @@ function drawPreviewCanvas() {
             start_cnc_y = currentCoords.y;
         }
 
+        const mirrorX = document.getElementById("mirror-x").checked;
+        const mirrorY = document.getElementById("mirror-y").checked;
+
         // Draw all extracted toolpaths
         activePaths.forEach((path, pIdx) => {
             ctx.beginPath();
             
             // Map image path relative to origin to simulated CNC positions
             path.forEach((pt, idx) => {
-                const dx = pt[0] - ref_x;
-                const dy = -(pt[1] - ref_y); // Invert Y
+                let dx = pt[0] - ref_x;
+                let dy = pt[1] - ref_y; // Y positive down
+                if (mirrorX) dx = -dx;
+                if (mirrorY) dy = -dy;
                 const px = (dx * drawScale + start_cnc_x) * cncScale;
                 const py = (dy * drawScale + start_cnc_y) * cncScale;
                 
                 const screenX = tx + px;
-                const screenY = ty + tableH - py; // Map positive Y up
+                const screenY = ty + py; // Map Y down
                 
                 if (idx === 0) {
                     ctx.moveTo(screenX, screenY);
@@ -1245,18 +1415,22 @@ function drawPreviewCanvas() {
                 const lastPt = lastPath[lastPath.length - 1];
                 const startPt = path[0];
                 
-                const ldx = lastPt[0] - ref_x;
-                const ldy = -(lastPt[1] - ref_y);
+                let ldx = lastPt[0] - ref_x;
+                let ldy = lastPt[1] - ref_y;
+                if (mirrorX) ldx = -ldx;
+                if (mirrorY) ldy = -ldy;
                 const l_px = (ldx * drawScale + start_cnc_x) * cncScale;
                 const l_py = (ldy * drawScale + start_cnc_y) * cncScale;
                 
-                const sdx = startPt[0] - ref_x;
-                const sdy = -(startPt[1] - ref_y);
+                let sdx = startPt[0] - ref_x;
+                let sdy = startPt[1] - ref_y;
+                if (mirrorX) sdx = -sdx;
+                if (mirrorY) sdy = -sdy;
                 const s_px = (sdx * drawScale + start_cnc_x) * cncScale;
                 const s_py = (sdy * drawScale + start_cnc_y) * cncScale;
 
-                ctx.moveTo(tx + l_px, ty + tableH - l_py);
-                ctx.lineTo(tx + s_px, ty + tableH - s_py);
+                ctx.moveTo(tx + l_px, ty + l_py);
+                ctx.lineTo(tx + s_px, ty + s_py);
                 ctx.strokeStyle = "rgba(245, 158, 11, 0.35)"; // Dashed orange
                 ctx.setLineDash([4, 4]);
                 ctx.lineWidth = 1.0;
@@ -1269,13 +1443,15 @@ function drawPreviewCanvas() {
         if (isSimulating && simDrawHistory.length > 0) {
             ctx.beginPath();
             simDrawHistory.forEach((pt, idx) => {
-                const dx = pt.x - ref_x;
-                const dy = -(pt.y - ref_y);
+                let dx = pt.x - ref_x;
+                let dy = pt.y - ref_y; // Y positive down
+                if (mirrorX) dx = -dx;
+                if (mirrorY) dy = -dy;
                 const px = (dx * drawScale + start_cnc_x) * cncScale;
                 const py = (dy * drawScale + start_cnc_y) * cncScale;
                 
                 const screenX = tx + px;
-                const screenY = ty + tableH - py;
+                const screenY = ty + py; // Map Y down
                 
                 if (idx === 0) {
                     ctx.moveTo(screenX, screenY);
@@ -1297,13 +1473,15 @@ function drawPreviewCanvas() {
             // Draw simulated active pen tip location
             if (simDrawHistory.length > 0) {
                 const last = simDrawHistory[simDrawHistory.length - 1];
-                const dx = last.x - ref_x;
-                const dy = -(last.y - ref_y);
+                let dx = last.x - ref_x;
+                let dy = last.y - ref_y; // Y positive down
+                if (mirrorX) dx = -dx;
+                if (mirrorY) dy = -dy;
                 const px = (dx * drawScale + start_cnc_x) * cncScale;
                 const py = (dy * drawScale + start_cnc_y) * cncScale;
                 
                 ctx.beginPath();
-                ctx.arc(tx + px, ty + tableH - py, 6, 0, 2 * Math.PI);
+                ctx.arc(tx + px, ty + py, 6, 0, 2 * Math.PI); // Map Y down
                 ctx.fillStyle = "#22d3ee";
                 ctx.fill();
                 ctx.strokeStyle = "#ffffff";
@@ -1316,7 +1494,7 @@ function drawPreviewCanvas() {
     // DRAW CURRENT CNC HARDWARE PEN POSITION (RED TARGET MARKER)
     if (!isSimulating) {
         const penScreenX = tx + currentCoords.x * cncScale;
-        const penScreenY = ty + tableH - currentCoords.y * cncScale;
+        const penScreenY = ty + currentCoords.y * cncScale; // Y positive down
 
         // Draw crosshair target
         ctx.beginPath();
@@ -1410,16 +1588,73 @@ function updateSliderLabels() {
     // Scale factor
     const scaleFactor = document.getElementById("scale-factor");
     if (scaleFactor) document.getElementById("lbl-scale-factor").textContent = parseFloat(scaleFactor.value).toFixed(3);
+
+    // Potrace
+    const potraceThreshVal = document.getElementById("potrace-thresh-val");
+    if (potraceThreshVal) document.getElementById("lbl-potrace-thresh-val").textContent = potraceThreshVal.value;
+
+    const potraceBlurSize = document.getElementById("potrace-blur-size");
+    if (potraceBlurSize) document.getElementById("lbl-potrace-blur-size").textContent = potraceBlurSize.value;
+
+    const potraceMorphKernel = document.getElementById("potrace-morph-kernel");
+    if (potraceMorphKernel) document.getElementById("lbl-potrace-morph-kernel").textContent = potraceMorphKernel.value;
+
+    const potraceDilateSize = document.getElementById("potrace-dilate-size");
+    if (potraceDilateSize) document.getElementById("lbl-potrace-dilate-size").textContent = potraceDilateSize.value;
+
+    const potraceTurdsize = document.getElementById("potrace-turdsize");
+    if (potraceTurdsize) document.getElementById("lbl-potrace-turdsize").textContent = potraceTurdsize.value;
+
+    const potraceAlphamax = document.getElementById("potrace-alphamax");
+    if (potraceAlphamax) document.getElementById("lbl-potrace-alphamax").textContent = parseFloat(potraceAlphamax.value).toFixed(2);
+
+    const potraceOptolerance = document.getElementById("potrace-opttolerance");
+    if (potraceOptolerance) document.getElementById("lbl-potrace-opttolerance").textContent = parseFloat(potraceOptolerance.value).toFixed(2);
+
+    const potraceBezierSteps = document.getElementById("potrace-bezier-steps");
+    if (potraceBezierSteps) document.getElementById("lbl-potrace-bezier-steps").textContent = potraceBezierSteps.value;
+
+    // Erode Outline
+    const erodeThinnessLevel = document.getElementById("erode-thinness-level");
+    if (erodeThinnessLevel) document.getElementById("lbl-erode-thinness-level").textContent = erodeThinnessLevel.value;
+
+    const erodeThreshVal = document.getElementById("erode-thresh-val");
+    if (erodeThreshVal) document.getElementById("lbl-erode-thresh-val").textContent = erodeThreshVal.value;
+
+    const erodeBlurSize = document.getElementById("erode-blur-size");
+    if (erodeBlurSize) document.getElementById("lbl-erode-blur-size").textContent = erodeBlurSize.value;
+
+    const erodeTurdsize = document.getElementById("erode-turdsize");
+    if (erodeTurdsize) document.getElementById("lbl-erode-turdsize").textContent = erodeTurdsize.value;
+
+    const erodeAlphamax = document.getElementById("erode-alphamax");
+    if (erodeAlphamax) document.getElementById("lbl-erode-alphamax").textContent = parseFloat(erodeAlphamax.value).toFixed(2);
+
+    const erodeOptolerance = document.getElementById("erode-opttolerance");
+    if (erodeOptolerance) document.getElementById("lbl-erode-opttolerance").textContent = parseFloat(erodeOptolerance.value).toFixed(2);
+
+    const erodeBezierSteps = document.getElementById("erode-bezier-steps");
+    if (erodeBezierSteps) document.getElementById("lbl-erode-bezier-steps").textContent = erodeBezierSteps.value;
 }
 
 // Toggle manual threshold value control depending on threshold selection type
 function toggleThresholdInput() {
     const mode = document.getElementById("thresh-mode").value;
     const div = document.getElementById("threshold-val-group");
-    if (mode === "manual") {
-        div.style.display = "block";
-    } else {
-        div.style.display = "none";
+    if (div) div.style.display = (mode === "manual") ? "block" : "none";
+
+    const potraceThreshMode = document.getElementById("potrace-thresh-mode");
+    if (potraceThreshMode) {
+        const potraceMode = potraceThreshMode.value;
+        const potraceDiv = document.getElementById("potrace-thresh-val-group");
+        if (potraceDiv) potraceDiv.style.display = (potraceMode === "manual") ? "block" : "none";
+    }
+
+    const erodeThreshMode = document.getElementById("erode-thresh-mode");
+    if (erodeThreshMode) {
+        const erodeMode = erodeThreshMode.value;
+        const erodeDiv = document.getElementById("erode-thresh-val-group");
+        if (erodeDiv) erodeDiv.style.display = (erodeMode === "manual") ? "block" : "none";
     }
 }
 
@@ -1463,12 +1698,96 @@ function syncGroupVisibilities() {
         const grp = document.getElementById("text-dilate-size-group");
         if (grp) grp.style.display = useTextDilateEl.checked ? "block" : "none";
     }
+
+    // Potrace Blur
+    const usePotraceBlurEl = document.getElementById("potrace-use-blur");
+    if (usePotraceBlurEl) {
+        const grp = document.getElementById("potrace-blur-size-group");
+        if (grp) grp.style.display = usePotraceBlurEl.checked ? "block" : "none";
+    }
+
+    // Potrace Morph Close
+    const usePotraceMorphEl = document.getElementById("potrace-use-morph");
+    if (usePotraceMorphEl) {
+        const grp = document.getElementById("potrace-morph-kernel-group");
+        if (grp) grp.style.display = usePotraceMorphEl.checked ? "block" : "none";
+    }
+
+    // Potrace Morph Dilate
+    const usePotraceDilateEl = document.getElementById("potrace-use-dilate");
+    if (usePotraceDilateEl) {
+        const grp = document.getElementById("potrace-dilate-size-group");
+        if (grp) grp.style.display = usePotraceDilateEl.checked ? "block" : "none";
+    }
     
     // Path Welding
     const usePathConnectEl = document.getElementById("use-path-connect");
     if (usePathConnectEl) {
         const grp = document.getElementById("path-connect-dist-group");
         if (grp) grp.style.display = usePathConnectEl.checked ? "block" : "none";
+    }
+
+    // Epsilon Simplification
+    const useSimplifyEpsilonEl = document.getElementById("use-simplify-epsilon");
+    if (useSimplifyEpsilonEl) {
+        const grp = document.getElementById("simplify-epsilon-group");
+        if (grp) grp.style.display = useSimplifyEpsilonEl.checked ? "block" : "none";
+    }
+
+    // Potrace Turd Size
+    const usePotraceTurdsizeEl = document.getElementById("use-potrace-turdsize");
+    if (usePotraceTurdsizeEl) {
+        const grp = document.getElementById("potrace-turdsize-group");
+        if (grp) grp.style.display = usePotraceTurdsizeEl.checked ? "block" : "none";
+    }
+
+    // Potrace Alphamax
+    const usePotraceAlphamaxEl = document.getElementById("use-potrace-alphamax");
+    if (usePotraceAlphamaxEl) {
+        const grp = document.getElementById("potrace-alphamax-group");
+        if (grp) grp.style.display = usePotraceAlphamaxEl.checked ? "block" : "none";
+    }
+
+    // Potrace Optolerance
+    const usePotraceOptoleranceEl = document.getElementById("use-potrace-opttolerance");
+    if (usePotraceOptoleranceEl) {
+        const grp = document.getElementById("potrace-opttolerance-group");
+        if (grp) grp.style.display = usePotraceOptoleranceEl.checked ? "block" : "none";
+    }
+
+    // Erode thinness
+    const useErodeThinnessEl = document.getElementById("use-erode-thinness");
+    if (useErodeThinnessEl) {
+        const grp = document.getElementById("erode-thinness-level-group");
+        if (grp) grp.style.display = useErodeThinnessEl.checked ? "block" : "none";
+    }
+
+    // Erode Blur
+    const erodeUseBlurEl = document.getElementById("erode-use-blur");
+    if (erodeUseBlurEl) {
+        const grp = document.getElementById("erode-blur-size-group");
+        if (grp) grp.style.display = erodeUseBlurEl.checked ? "block" : "none";
+    }
+
+    // Erode Turd Size
+    const useErodeTurdsizeEl = document.getElementById("use-erode-turdsize");
+    if (useErodeTurdsizeEl) {
+        const grp = document.getElementById("erode-turdsize-group");
+        if (grp) grp.style.display = useErodeTurdsizeEl.checked ? "block" : "none";
+    }
+
+    // Erode Alphamax
+    const useErodeAlphamaxEl = document.getElementById("use-erode-alphamax");
+    if (useErodeAlphamaxEl) {
+        const grp = document.getElementById("erode-alphamax-group");
+        if (grp) grp.style.display = useErodeAlphamaxEl.checked ? "block" : "none";
+    }
+
+    // Erode Optolerance
+    const useErodeOptoleranceEl = document.getElementById("use-erode-opttolerance");
+    if (useErodeOptoleranceEl) {
+        const grp = document.getElementById("erode-opttolerance-group");
+        if (grp) grp.style.display = useErodeOptoleranceEl.checked ? "block" : "none";
     }
 }
 

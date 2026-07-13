@@ -13,6 +13,7 @@ import cv2
 import numpy as np
 from skimage.morphology import thin, skeletonize
 import networkx as nx
+import potrace
 import serial
 import serial.tools.list_ports
 
@@ -231,7 +232,7 @@ DEFAULT_SETTINGS = {
     "cnc_height": 200.0,
     "feedrate": 2000.0,
     "step_size": 10.0,
-    "serial_port": "dummy",
+    "serial_port": "/dev/ttyACM0",
     "thresh_mode": "otsu",
     "thresh_val": 127,
     "invert_img": True,
@@ -242,7 +243,9 @@ DEFAULT_SETTINGS = {
     "pen_mode": "servo",
     "pen_up_cmd": "M3 S10",
     "pen_down_cmd": "M3 S90",
-    "pen_dwell": 0.2
+    "pen_dwell": 0.2,
+    "mirror_x": False,
+    "mirror_y": False
 }
 
 def load_settings() -> dict:
@@ -498,6 +501,20 @@ def weld_paths(paths: List[List[Tuple[float, float]]], threshold: float) -> List
             welded.append(list(path))
     return welded
 
+def clean_junction_loops(skeleton_img, max_area=120):
+    contours, hierarchy = cv2.findContours(skeleton_img, cv2.RETR_CCOMP, cv2.CHAIN_APPROX_SIMPLE)
+    if hierarchy is None:
+        return skeleton_img
+    filled_skeleton = skeleton_img.copy()
+    hierarchy = hierarchy[0]
+    for i, contour in enumerate(contours):
+        # If hierarchy[i][3] != -1 (this contour is inside another, representing a loop hole)
+        if hierarchy[i][3] != -1:
+            area = cv2.contourArea(contour)
+            if area < max_area:
+                cv2.drawContours(filled_skeleton, [contour], -1, 255, -1)
+    return filled_skeleton
+
 # Image Processing Pipeline to extract text contours as single stroke curves
 def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, float]]]:
     # 1. Read grayscale
@@ -546,88 +563,110 @@ def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, 
             kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dsize, dsize))
             thresh = cv2.dilate(thresh, kernel, iterations=1)
         
-    # 4. Thinning / Skeletonization
-    bool_thresh = thresh > 0
-    if params.get("skeleton_method", "thin") == "thin":
-        skeleton_bool = thin(bool_thresh)
-    else:
-        skeleton_bool = skeletonize(bool_thresh)
-        
-    skeleton = np.zeros(thresh.shape, dtype=np.uint8)
-    skeleton[skeleton_bool] = 255
+    # 4. Thinning and Cleaning junction loop bubbles
+    skeleton = cv2.ximgproc.thinning(thresh, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
+    skeleton = clean_junction_loops(skeleton, max_area=120)
+    skeleton = cv2.ximgproc.thinning(skeleton, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
     
-    # 5. Extract paths using NetworkX Graph representation for precise single line
-    y_indices, x_indices = np.where(skeleton > 0)
-    points = set(zip(x_indices, y_indices))
+    # 5. Potrace Tracing for perfect single line vector curves
+    bitmap_data = skeleton.astype(bool)
+    bitmap = potrace.Bitmap(bitmap_data)
     
-    G = nx.Graph()
-    for (x, y) in points:
-        G.add_node((x, y))
-        # Add edges to 8-neighbors
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                if dx == 0 and dy == 0:
-                    continue
-                neighbor = (x + dx, y + dy)
-                if neighbor in points:
-                    G.add_edge((x, y), neighbor)
-                    
-    raw_paths = []
+    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
+    alphamax = params.get("potrace_alphamax", 1.2) if params.get("use_potrace_alphamax", True) else 1.2
+    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
+    opticurve = params.get("potrace_opticurve", True)
     
-    # Split graph at junctions (degree > 2) to prevent jump lines
-    junctions = [node for node, deg in G.degree() if deg > 2]
-    G_simple = G.copy()
-    G_simple.remove_nodes_from(junctions)
+    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
+    policy_map = {
+        "black": potrace.TURNPOLICY_BLACK,
+        "white": potrace.TURNPOLICY_WHITE,
+        "left": potrace.TURNPOLICY_LEFT,
+        "right": potrace.TURNPOLICY_RIGHT,
+        "minority": potrace.TURNPOLICY_MINORITY,
+        "majority": potrace.TURNPOLICY_MAJORITY,
+        "random": potrace.TURNPOLICY_RANDOM
+    }
+    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
     
-    for c in nx.connected_components(G_simple):
-        subgraph = G_simple.subgraph(c).copy()
-        nodes = list(subgraph.nodes())
-        if not nodes:
-            continue
-            
-        endpoints = [node for node, deg in subgraph.degree() if deg <= 1]
-        start_node = endpoints[0] if endpoints else nodes[0]
-        
-        # Walk simple path segment
-        path = []
-        curr = start_node
-        visited = {curr}
-        path.append(curr)
-        
-        while True:
-            neighbors = [n for n in subgraph.neighbors(curr) if n not in visited]
-            if not neighbors:
-                break
-            curr = neighbors[0]
-            visited.add(curr)
-            path.append(curr)
-            
-        # Reconnect endpoints back to nearby junctions
-        if path:
-            start_neighbors = list(G.neighbors(path[0]))
-            for n in start_neighbors:
-                if n in junctions:
-                    path.insert(0, n)
-                    break
-            end_neighbors = list(G.neighbors(path[-1]))
-            for n in end_neighbors:
-                if n in junctions:
-                    path.append(n)
-                    break
-                    
-        # Filter noise paths
-        if len(path) >= params.get("min_line_len", 5):
-            epsilon = params.get("epsilon", 1.0)
-            if epsilon > 0:
-                simplified = rdp_simplify(path, epsilon)
-                raw_paths.append([(float(px), float(py)) for px, py in simplified])
+    path = bitmap.trace(
+        turdsize=turdsize,
+        turnpolicy=turnpolicy,
+        alphamax=alphamax,
+        opticurve=1 if opticurve else 0,
+        opttolerance=opttolerance
+    )
+    
+    # Save the SVG file in single stroke style
+    output_svg_path = os.path.join(STATIC_DIR, "text_output.svg")
+    all_paths_combined = []
+    
+    for curve in path:
+        svg_path_data = []
+        start = curve.start_point
+        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
+        for segment in curve.segments:
+            if segment.is_corner:
+                c = segment.c
+                end = segment.end_point
+                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
             else:
-                raw_paths.append([(float(px), float(py)) for px, py in path])
+                c1 = segment.c1
+                c2 = segment.c2
+                end = segment.end_point
+                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
+        all_paths_combined.append(" ".join(svg_path_data))
+        
+    full_d_attribute = " ".join(all_paths_combined)
+    with open(output_svg_path, "w") as svg_file:
+        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
+        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
+        svg_file.write(f'  <path d="{full_d_attribute}" fill="none" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />\n')
+        svg_file.write('</svg>\n')
+        
+    # 6. Evaluate paths as coordinates list
+    raw_paths = []
+    num_steps = params.get("potrace_bezier_steps", 20)
+    
+    for curve in path:
+        pts = []
+        curr = curve.start_point
+        pts.append((float(curr[0]), float(curr[1])))
+        
+        for segment in curve.segments:
+            if segment.is_corner:
+                pts.append((float(segment.c[0]), float(segment.c[1])))
+                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
+                curr = segment.end_point
+            else:
+                p0 = curr
+                p1 = segment.c1
+                p2 = segment.c2
+                p3 = segment.end_point
+                
+                # Sample Bezier points
+                for i in range(1, num_steps + 1):
+                    t = i / num_steps
+                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
+                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
+                    pts.append((float(x), float(y)))
+                curr = segment.end_point
+                
+        # Filter noise paths
+        min_len = params.get("min_line_len", 5)
+        if len(pts) >= min_len:
+            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
+            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
+            if epsilon > 0:
+                simplified = rdp_simplify(pts, epsilon)
+                raw_paths.append(simplified)
+            else:
+                raw_paths.append(pts)
                 
     if not raw_paths:
         return []
         
-    # 6. Sắp xếp thứ tự vẽ tối ưu (Greedy Nearest Neighbor)
+    # 7. Sắp xếp thứ tự vẽ tối ưu (Greedy Nearest Neighbor)
     sorted_paths = []
     current_pos = np.array([0.0, 0.0])
     
@@ -762,6 +801,406 @@ def process_sketch_image(image_path: str, params: dict) -> List[List[Tuple[float
         sorted_paths = weld_paths(sorted_paths, weld_dist)
         
     return sorted_paths
+
+def generate_gcode_lines(paths: List[List[Tuple[float, float]]], settings: dict, scale_factor: float, start_pos: List[float]) -> List[str]:
+    if not paths:
+        return []
+    gcode_lines = []
+    gcode_lines.append("; --- START CNC G-CODE ---")
+    gcode_lines.append("G21 ; Units in mm")
+    gcode_lines.append("G90 ; Absolute coordinates")
+    gcode_lines.append(settings.get("pen_up_cmd", "M3 S10"))
+    gcode_lines.append(f"F{settings.get('feedrate', 2000.0):.0f}")
+    
+    # First point of the first stroke path is used as the relative reference origin
+    ref_x = paths[0][0][0]
+    ref_y = paths[0][0][1]
+    
+    x_curr = start_pos[0]
+    y_curr = start_pos[1]
+    
+    mirror_x = settings.get("mirror_x", False)
+    mirror_y = settings.get("mirror_y", False)
+    
+    for idx, path in enumerate(paths):
+        if not path:
+            continue
+        gcode_lines.append(f"; --- Path Contour {idx+1} ---")
+        
+        dx_start = path[0][0] - ref_x
+        dy_start = path[0][1] - ref_y
+        
+        if mirror_x:
+            dx_start = -dx_start
+        if mirror_y:
+            dy_start = -dy_start
+            
+        x_start = dx_start * scale_factor + x_curr
+        y_start = dy_start * scale_factor + y_curr
+        
+        gcode_lines.append(f"G0 X{x_start:.3f} Y{y_start:.3f}")
+        gcode_lines.append(settings.get("pen_down_cmd", "M3 S90"))
+        
+        pen_dwell = settings.get("pen_dwell", 0.2)
+        if pen_dwell > 0:
+            gcode_lines.append(f"G4 P{pen_dwell:.3f}")
+            
+        for pt in path[1:]:
+            dx = pt[0] - ref_x
+            dy = pt[1] - ref_y
+            if mirror_x:
+                dx = -dx
+            if mirror_y:
+                dy = -dy
+            x_val = dx * scale_factor + x_curr
+            y_val = dy * scale_factor + y_curr
+            gcode_lines.append(f"G1 X{x_val:.3f} Y{y_val:.3f}")
+            
+        gcode_lines.append(settings.get("pen_up_cmd", "M3 S10"))
+        if pen_dwell > 0:
+            gcode_lines.append(f"G4 P{pen_dwell:.3f}")
+            
+    gcode_lines.append("; --- END CNC G-CODE ---")
+    return gcode_lines
+
+def process_potrace_image(image_path: str, params: dict) -> Tuple[List[List[Tuple[float, float]]], str]:
+    # 1. Read grayscale
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise ValueError(f"Could not load image at {image_path}")
+        
+    # Apply Gaussian Blur if required
+    if params.get("potrace_use_blur", False):
+        bsize = params.get("potrace_blur_size", 3)
+        if bsize % 2 == 0:
+            bsize = max(1, bsize - 1)
+        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
+        
+    # 2. Resizing threshold logic
+    if params.get("potrace_thresh_mode", "otsu") == "otsu":
+        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    else:
+        thresh_val = params.get("potrace_thresh_val", 127)
+        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
+        
+    height, width = img.shape
+    
+    # Invert image if required (standard: black text on white background is inverted to white on black)
+    if params.get("potrace_invert_img", True):
+        if cv2.countNonZero(thresh) > (height * width / 2):
+            thresh = cv2.bitwise_not(thresh)
+            
+    # 3. Morphological close to clean up gaps
+    if params.get("potrace_use_morph", True):
+        ksize = params.get("potrace_morph_kernel", 3)
+        if ksize > 1:
+            if ksize % 2 == 0:
+                ksize += 1
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (ksize, ksize))
+            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+            
+    # 3b. Morphological dilation to thicken strokes before tracing
+    if params.get("potrace_use_dilate", False):
+        dsize = params.get("potrace_dilate_size", 1)
+        if dsize > 0:
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dsize, dsize))
+            thresh = cv2.dilate(thresh, kernel, iterations=1)
+            
+    # 4. Potrace tracing
+    bitmap_data = thresh.astype(bool)
+    bitmap = potrace.Bitmap(bitmap_data)
+    
+    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
+    alphamax = params.get("potrace_alphamax", 1.0) if params.get("use_potrace_alphamax", True) else 1.0
+    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
+    opticurve = params.get("potrace_opticurve", True)
+    
+    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
+    policy_map = {
+        "black": potrace.TURNPOLICY_BLACK,
+        "white": potrace.TURNPOLICY_WHITE,
+        "left": potrace.TURNPOLICY_LEFT,
+        "right": potrace.TURNPOLICY_RIGHT,
+        "minority": potrace.TURNPOLICY_MINORITY,
+        "majority": potrace.TURNPOLICY_MAJORITY,
+        "random": potrace.TURNPOLICY_RANDOM
+    }
+    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
+    
+    path = bitmap.trace(
+        turdsize=turdsize,
+        turnpolicy=turnpolicy,
+        alphamax=alphamax,
+        opticurve=1 if opticurve else 0,
+        opttolerance=opttolerance
+    )
+    
+    # 5. Save the SVG file
+    output_svg_path = os.path.join(STATIC_DIR, "potrace_output.svg")
+    all_paths_combined = []
+    
+    for curve in path:
+        svg_path_data = []
+        start = curve.start_point
+        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
+        for segment in curve.segments:
+            if segment.is_corner:
+                c = segment.c
+                end = segment.end_point
+                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
+            else:
+                c1 = segment.c1
+                c2 = segment.c2
+                end = segment.end_point
+                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
+        svg_path_data.append("Z")
+        all_paths_combined.append(" ".join(svg_path_data))
+        
+    full_d_attribute = " ".join(all_paths_combined)
+    with open(output_svg_path, "w") as svg_file:
+        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
+        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
+        svg_file.write(f'  <path d="{full_d_attribute}" fill="black" stroke="none" fill-rule="evenodd" />\n')
+        svg_file.write('</svg>\n')
+        
+    # 6. Evaluate paths as coordinates list
+    sampled_paths = []
+    num_steps = params.get("potrace_bezier_steps", 20)
+    
+    for curve in path:
+        pts = []
+        curr = curve.start_point
+        pts.append((float(curr[0]), float(curr[1])))
+        
+        for segment in curve.segments:
+            if segment.is_corner:
+                pts.append((float(segment.c[0]), float(segment.c[1])))
+                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
+                curr = segment.end_point
+            else:
+                p0 = curr
+                p1 = segment.c1
+                p2 = segment.c2
+                p3 = segment.end_point
+                
+                # Sample Bezier points
+                for i in range(1, num_steps + 1):
+                    t = i / num_steps
+                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
+                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
+                    pts.append((float(x), float(y)))
+                curr = segment.end_point
+                
+        # Filter noise paths
+        min_len = params.get("min_line_len", 5)
+        if len(pts) >= min_len:
+            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
+            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
+            if epsilon > 0:
+                simplified = rdp_simplify(pts, epsilon)
+                sampled_paths.append(simplified)
+            else:
+                sampled_paths.append(pts)
+                
+    # Sort paths if path connect is checked
+    if sampled_paths and params.get("use_path_connect", True):
+        sorted_paths = []
+        current_pos = np.array([0.0, 0.0])
+        while sampled_paths:
+            closest_idx = -1
+            min_dist = float('inf')
+            reverse_path = False
+            for idx, path_pts in enumerate(sampled_paths):
+                start_pt = np.array(path_pts[0])
+                end_pt = np.array(path_pts[-1])
+                dist_start = np.linalg.norm(current_pos - start_pt)
+                dist_end = np.linalg.norm(current_pos - end_pt)
+                if dist_start < min_dist:
+                    min_dist = dist_start
+                    closest_idx = idx
+                    reverse_path = False
+                if dist_end < min_dist:
+                    min_dist = dist_end
+                    closest_idx = idx
+                    reverse_path = True
+            chosen = sampled_paths.pop(closest_idx)
+            if reverse_path:
+                chosen.reverse()
+            sorted_paths.append(chosen)
+            current_pos = np.array(chosen[-1])
+            
+        weld_dist = params.get("path_connect_dist", 5.0)
+        sorted_paths = weld_paths(sorted_paths, weld_dist)
+        sampled_paths = sorted_paths
+        
+    return sampled_paths, "/static/potrace_output.svg"
+
+def process_erode_outline_image(image_path: str, params: dict) -> Tuple[List[List[Tuple[float, float]]], str]:
+    # 1. Read grayscale
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise ValueError(f"Could not load image at {image_path}")
+        
+    # Apply Gaussian Blur if required
+    if params.get("potrace_use_blur", False):
+        bsize = params.get("potrace_blur_size", 3)
+        if bsize % 2 == 0:
+            bsize = max(1, bsize - 1)
+        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
+        
+    # 2. Resizing threshold logic
+    if params.get("potrace_thresh_mode", "otsu") == "otsu":
+        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    else:
+        thresh_val = params.get("potrace_thresh_val", 127)
+        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
+        
+    height, width = img.shape
+    
+    # Invert image if required (standard: black text on white background is inverted to white on black)
+    if params.get("potrace_invert_img", True):
+        if cv2.countNonZero(thresh) > (height * width / 2):
+            thresh = cv2.bitwise_not(thresh)
+            
+    # Erosion (from erode_and_trace_outline.py)
+    if params.get("use_erode_thinness", True):
+        thinness_level = params.get("erode_thinness_level", 2)
+        if thinness_level > 0:
+            kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
+            thresh = cv2.erode(thresh, kernel, iterations=thinness_level)
+            
+    # Potrace tracing
+    bitmap_data = thresh.astype(bool)
+    bitmap = potrace.Bitmap(bitmap_data)
+    
+    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
+    alphamax = params.get("potrace_alphamax", 1.2) if params.get("use_potrace_alphamax", True) else 1.2
+    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
+    opticurve = params.get("potrace_opticurve", True)
+    
+    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
+    policy_map = {
+        "black": potrace.TURNPOLICY_BLACK,
+        "white": potrace.TURNPOLICY_WHITE,
+        "left": potrace.TURNPOLICY_LEFT,
+        "right": potrace.TURNPOLICY_RIGHT,
+        "minority": potrace.TURNPOLICY_MINORITY,
+        "majority": potrace.TURNPOLICY_MAJORITY,
+        "random": potrace.TURNPOLICY_RANDOM
+    }
+    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
+    
+    path = bitmap.trace(
+        turdsize=turdsize,
+        turnpolicy=turnpolicy,
+        alphamax=alphamax,
+        opticurve=1 if opticurve else 0,
+        opttolerance=opttolerance
+    )
+    
+    # Save the SVG file (fill="none", stroke="black", stroke-width="0.5")
+    output_svg_path = os.path.join(STATIC_DIR, "erode_outline_output.svg")
+    all_paths_combined = []
+    
+    for curve in path:
+        svg_path_data = []
+        start = curve.start_point
+        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
+        for segment in curve.segments:
+            if segment.is_corner:
+                c = segment.c
+                end = segment.end_point
+                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
+            else:
+                c1 = segment.c1
+                c2 = segment.c2
+                end = segment.end_point
+                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
+        svg_path_data.append("Z")
+        all_paths_combined.append(" ".join(svg_path_data))
+        
+    full_d_attribute = " ".join(all_paths_combined)
+    with open(output_svg_path, "w") as svg_file:
+        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
+        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
+        svg_file.write(f'  <path d="{full_d_attribute}" fill="none" stroke="black" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" />\n')
+        svg_file.write('</svg>\n')
+        
+    # Evaluate paths as coordinates list
+    sampled_paths = []
+    num_steps = params.get("potrace_bezier_steps", 20)
+    
+    for curve in path:
+        pts = []
+        curr = curve.start_point
+        pts.append((float(curr[0]), float(curr[1])))
+        
+        for segment in curve.segments:
+            if segment.is_corner:
+                pts.append((float(segment.c[0]), float(segment.c[1])))
+                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
+                curr = segment.end_point
+            else:
+                p0 = curr
+                p1 = segment.c1
+                p2 = segment.c2
+                p3 = segment.end_point
+                
+                # Sample Bezier points
+                for i in range(1, num_steps + 1):
+                    t = i / num_steps
+                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
+                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
+                    pts.append((float(x), float(y)))
+                curr = segment.end_point
+                
+        # Close path (Potrace shapes are closed loop boundaries)
+        if pts and pts[0] != pts[-1]:
+            pts.append(pts[0])
+            
+        # Filter noise paths
+        min_len = params.get("min_line_len", 5)
+        if len(pts) >= min_len:
+            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
+            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
+            if epsilon > 0:
+                simplified = rdp_simplify(pts, epsilon)
+                sampled_paths.append(simplified)
+            else:
+                sampled_paths.append(pts)
+                
+    # Sort paths if path connect is checked
+    if sampled_paths and params.get("use_path_connect", True):
+        sorted_paths = []
+        current_pos = np.array([0.0, 0.0])
+        while sampled_paths:
+            closest_idx = -1
+            min_dist = float('inf')
+            reverse_path = False
+            for idx, path in enumerate(sampled_paths):
+                start_pt = np.array(path[0])
+                end_pt = np.array(path[-1])
+                dist_start = np.linalg.norm(current_pos - start_pt)
+                dist_end = np.linalg.norm(current_pos - end_pt)
+                if dist_start < min_dist:
+                    min_dist = dist_start
+                    closest_idx = idx
+                    reverse_path = False
+                if dist_end < min_dist:
+                    min_dist = dist_end
+                    closest_idx = idx
+                    reverse_path = True
+            chosen = sampled_paths.pop(closest_idx)
+            if reverse_path:
+                chosen.reverse()
+            sorted_paths.append(chosen)
+            current_pos = np.array(chosen[-1])
+        sampled_paths = sorted_paths
+        
+        weld_dist = params.get("path_connect_dist", 5.0)
+        sampled_paths = weld_paths(sampled_paths, weld_dist)
+        
+    return sampled_paths, "/static/erode_outline_output.svg"
 
 # FastAPI endpoints
 
@@ -938,11 +1377,34 @@ async def process_image_route(params: dict):
         
     try:
         mode = params.get("mode", "text")
+        svg_url = None
         if mode == "sketch":
             paths = process_sketch_image(working_path, params)
+        elif mode == "potrace":
+            paths, svg_url = process_potrace_image(working_path, params)
+        elif mode == "erode_outline":
+            paths, svg_url = process_erode_outline_image(working_path, params)
         else:
             paths = process_text_image(working_path, params)
+            svg_url = "/static/text_output.svg"
         state.latest_paths = paths
+        
+        # Save standard G-code relative to (0,0) so the user can download it immediately
+        if paths:
+            settings = load_settings()
+            gcode_settings = {
+                "pen_up_cmd": params.get("pen_up_cmd", settings.get("pen_up_cmd", "M3 S10")),
+                "pen_down_cmd": params.get("pen_down_cmd", settings.get("pen_down_cmd", "M3 S90")),
+                "pen_dwell": params.get("pen_dwell", settings.get("pen_dwell", 0.2)),
+                "feedrate": params.get("feedrate", settings.get("feedrate", 2000.0)),
+                "mirror_x": params.get("mirror_x", settings.get("mirror_x", False)),
+                "mirror_y": params.get("mirror_y", settings.get("mirror_y", False))
+            }
+            scale_factor = params.get("scale_factor", 0.15)
+            gcode_lines = generate_gcode_lines(paths, gcode_settings, scale_factor, [0.0, 0.0, 0.0])
+            gcode_file_path = os.path.join(STATIC_DIR, "cnc_output.nc")
+            with open(gcode_file_path, "w") as f:
+                f.write("\n".join(gcode_lines))
         
         # Generate paths visualization colored with order gradient
         img = cv2.imread(working_path)
@@ -970,12 +1432,15 @@ async def process_image_route(params: dict):
         # Calculate aspect ratio
         aspect = w / h if h > 0 else 1.0
         
-        return {
+        resp = {
             "status": "ok",
             "paths": paths,
             "preview_image": f"data:image/png;base64,{b64_str}",
             "dimensions": {"width": w, "height": h, "aspect": aspect}
         }
+        if svg_url:
+            resp["svg_url"] = svg_url
+        return resp
     except Exception as e:
         logger.error(f"Error processing image: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
@@ -1074,56 +1539,16 @@ async def start_drawing_paths(scale_factor: float = Form(...)):
     state.draw_start_pos = list(state.wpos)
     
     # Generate G-code lines with starting position offsets
-    gcode_lines = []
-    gcode_lines.append("; --- START DRAWING TEXT ---")
-    gcode_lines.append("G21 ; Units in mm")
-    gcode_lines.append("G90 ; Absolute coordinates")
-    gcode_lines.append(settings["pen_up_cmd"])
-    gcode_lines.append(f"F{settings['feedrate']:.0f}")
+    gcode_lines = generate_gcode_lines(state.latest_paths, settings, scale_factor, state.draw_start_pos)
     
-    # First point of the first stroke path is used as the relative reference origin
-    ref_x = state.latest_paths[0][0][0]
-    ref_y = state.latest_paths[0][0][1]
-    
-    # Starting offset is the current physical CNC coordinate
-    x_curr = state.draw_start_pos[0]
-    y_curr = state.draw_start_pos[1]
-    
-    for idx, path in enumerate(state.latest_paths):
-        gcode_lines.append(f"; --- Stroke Path {idx+1} ---")
+    # Save the streamed G-code to static directory for download
+    try:
+        gcode_file_path = os.path.join(STATIC_DIR, "cnc_output.nc")
+        with open(gcode_file_path, "w") as f:
+            f.write("\n".join(gcode_lines))
+    except Exception as e:
+        logger.error(f"Error saving cnc_output.nc: {e}")
         
-        # Calculate start point
-        # X: left-to-right (same direction)
-        # Y: top-to-bottom on image maps to bottom-to-top on CNC, so invert relative difference
-        dx_start = path[0][0] - ref_x
-        dy_start = -(path[0][1] - ref_y)
-        
-        x_start = dx_start * scale_factor + x_curr
-        y_start = dy_start * scale_factor + y_curr
-        
-        # Rapid move to start of line with pen UP
-        gcode_lines.append(f"G0 X{x_start:.3f} Y{y_start:.3f}")
-        
-        # Pen DOWN
-        gcode_lines.append(settings["pen_down_cmd"])
-        if settings["pen_dwell"] > 0:
-            gcode_lines.append(f"G4 P{settings['pen_dwell']:.3f}")
-            
-        # Draw all intermediate path coordinates
-        for pt in path[1:]:
-            dx = pt[0] - ref_x
-            dy = -(pt[1] - ref_y)
-            x_val = dx * scale_factor + x_curr
-            y_val = dy * scale_factor + y_curr
-            gcode_lines.append(f"G1 X{x_val:.3f} Y{y_val:.3f}")
-            
-        # Pen UP
-        gcode_lines.append(settings["pen_up_cmd"])
-        if settings["pen_dwell"] > 0:
-            gcode_lines.append(f"G4 P{settings['pen_dwell']:.3f}")
-            
-    gcode_lines.append("; --- END DRAWING TEXT ---")
-    
     state.stream_gcode_lines = gcode_lines
     state.gcode_index = 0
     state.is_streaming = True

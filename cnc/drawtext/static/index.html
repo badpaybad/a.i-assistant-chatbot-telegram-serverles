@@ -49,6 +49,16 @@
                 <input type="number" id="cnc-step" value="10" step="1">
             </div>
 
+            <!-- Mirror Preferences -->
+            <div class="control-group checkbox-item" style="display: flex; align-items: center; gap: 6px; margin: 0 10px 0 0; background: none; border: none; padding: 0;">
+                <input type="checkbox" id="mirror-x" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+                <label for="mirror-x" style="margin: 0; cursor: pointer; white-space: nowrap;"><i class="fa-solid fa-arrows-left-right"></i> Lật X</label>
+            </div>
+            <div class="control-group checkbox-item" style="display: flex; align-items: center; gap: 6px; margin: 0 15px 0 0; background: none; border: none; padding: 0;">
+                <input type="checkbox" id="mirror-y" style="width: 16px; height: 16px; margin: 0; cursor: pointer;">
+                <label for="mirror-y" style="margin: 0; cursor: pointer; white-space: nowrap;"><i class="fa-solid fa-arrows-up-down"></i> Lật Y</label>
+            </div>
+
             <button id="btn-save-settings" class="btn btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
         </div>
     </header>
@@ -122,6 +132,8 @@
                         <div class="processing-tabs">
                             <button type="button" class="tab-btn active" data-proc-mode="text"><i class="fa-solid fa-font"></i> Chữ viết (1 nét)</button>
                             <button type="button" class="tab-btn" data-proc-mode="sketch"><i class="fa-solid fa-image"></i> Ảnh phác họa (Sketch)</button>
+                            <button type="button" class="tab-btn" data-proc-mode="potrace"><i class="fa-solid fa-shapes"></i> Vector (Potrace)</button>
+                            <button type="button" class="tab-btn" data-proc-mode="erode_outline"><i class="fa-solid fa-compress"></i> Outline (Erode)</button>
                         </div>
 
                         <!-- Tab 1: Text Mode Specific Controls -->
@@ -256,6 +268,197 @@
                             </div>
                         </div>
 
+                        <!-- Tab 3: Potrace Mode Specific Controls -->
+                        <div id="panel-proc-potrace" class="proc-tab-panel">
+                            <div class="tools-grid">
+                                <!-- Thresholding -->
+                                <div class="tool-item">
+                                    <label for="potrace-thresh-mode">Chế độ Threshold:</label>
+                                    <select id="potrace-thresh-mode">
+                                        <option value="otsu">Tự động (Otsu)</option>
+                                        <option value="manual">Thủ công</option>
+                                    </select>
+                                </div>
+                                <div class="tool-item" id="potrace-thresh-val-group" style="display: none;">
+                                    <label for="potrace-thresh-val">Ngưỡng Threshold: <span id="lbl-potrace-thresh-val">127</span></label>
+                                    <input type="range" id="potrace-thresh-val" min="0" max="255" value="127">
+                                </div>
+                                <div class="tool-item checkbox-item">
+                                    <input type="checkbox" id="potrace-invert-img" checked>
+                                    <label for="potrace-invert-img">Đảo màu chữ (Trắng nền đen)</label>
+                                </div>
+                                
+                                <!-- Gaussian Blur options -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0;">
+                                    <input type="checkbox" id="potrace-use-blur">
+                                    <label for="potrace-use-blur">Khử nhiễu chữ (Blur)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-blur-size-group" style="display: none;">
+                                    <label for="potrace-blur-size">Blur Size: <span id="lbl-potrace-blur-size">3</span> px</label>
+                                    <input type="range" id="potrace-blur-size" min="1" max="15" step="2" value="3">
+                                </div>
+
+                                <!-- Morph close options -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0;">
+                                    <input type="checkbox" id="potrace-use-morph" checked>
+                                    <label for="potrace-use-morph">Làm mịn rìa chữ (Close)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-morph-kernel-group">
+                                    <label for="potrace-morph-kernel">Close Size: <span id="lbl-potrace-morph-kernel">3</span></label>
+                                    <input type="range" id="potrace-morph-kernel" min="1" max="15" step="2" value="3">
+                                </div>
+
+                                <!-- Morph dilate options -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0;">
+                                    <input type="checkbox" id="potrace-use-dilate">
+                                    <label for="potrace-use-dilate">Nối vết rạn chữ (Dilate)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-dilate-size-group" style="display: none;">
+                                    <label for="potrace-dilate-size">Dilate Size: <span id="lbl-potrace-dilate-size">1</span> px</label>
+                                    <input type="range" id="potrace-dilate-size" min="1" max="7" step="2" value="1">
+                                </div>
+
+                                <!-- Potrace core settings -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-potrace-turdsize" checked>
+                                    <label for="use-potrace-turdsize">Lọc chấm nhiễu (Turd Size)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-turdsize-group">
+                                    <label for="potrace-turdsize">Kích thước chấm nhỏ: <span id="lbl-potrace-turdsize">2</span> px</label>
+                                    <input type="range" id="potrace-turdsize" min="0" max="100" value="2">
+                                </div>
+
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-potrace-alphamax" checked>
+                                    <label for="use-potrace-alphamax">Độ trơn góc (Alphamax)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-alphamax-group">
+                                    <label for="potrace-alphamax">Hệ số Alphamax: <span id="lbl-potrace-alphamax">1.00</span></label>
+                                    <input type="range" id="potrace-alphamax" min="0.0" max="1.33" step="0.05" value="1.0">
+                                </div>
+
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-potrace-opttolerance" checked>
+                                    <label for="use-potrace-opttolerance">Sai lệch tối ưu (Optolerance)</label>
+                                </div>
+                                <div class="tool-item" id="potrace-opttolerance-group">
+                                    <label for="potrace-opttolerance">Hệ số Optolerance: <span id="lbl-potrace-opttolerance">0.20</span></label>
+                                    <input type="range" id="potrace-opttolerance" min="0.0" max="2.0" step="0.05" value="0.2">
+                                </div>
+                                <div class="tool-item checkbox-item">
+                                    <input type="checkbox" id="potrace-opticurve" checked>
+                                    <label for="potrace-opticurve">Tối ưu hóa số nét (Opticurve)</label>
+                                </div>
+                                <div class="tool-item">
+                                    <label for="potrace-turnpolicy">Quy tắc rẽ nét (Turn Policy):</label>
+                                    <select id="potrace-turnpolicy">
+                                        <option value="minority">Minority (Mặc định)</option>
+                                        <option value="majority">Majority</option>
+                                        <option value="black">Black</option>
+                                        <option value="white">White</option>
+                                        <option value="left">Left</option>
+                                        <option value="right">Right</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </div>
+                                <div class="tool-item">
+                                    <label for="potrace-bezier-steps">Số điểm chia nét cong: <span id="lbl-potrace-bezier-steps">20</span></label>
+                                    <input type="range" id="potrace-bezier-steps" min="5" max="50" step="1" value="20">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 4: Erode Outline Specific Controls -->
+                        <div id="panel-proc-erode-outline" class="proc-tab-panel">
+                            <div class="tools-grid">
+                                <!-- Erode thinness level -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-erode-thinness" checked>
+                                    <label for="use-erode-thinness">Co hẹp nét (Erosion)</label>
+                                </div>
+                                <div class="tool-item" id="erode-thinness-level-group">
+                                    <label for="erode-thinness-level">Cấp độ co hẹp nét: <span id="lbl-erode-thinness-level">2</span></label>
+                                    <input type="range" id="erode-thinness-level" min="1" max="15" step="1" value="2">
+                                </div>
+
+                                <!-- Preprocessing section -->
+                                <div class="tool-item">
+                                    <label for="erode-thresh-mode">Chế độ Nhị phân (Threshold Mode):</label>
+                                    <select id="erode-thresh-mode">
+                                        <option value="otsu">Tự động (Otsu)</option>
+                                        <option value="manual">Thủ công (Manual)</option>
+                                    </select>
+                                </div>
+                                <div class="tool-item" id="erode-thresh-val-group" style="display: none;">
+                                    <label for="erode-thresh-val">Ngưỡng nhị phân: <span id="lbl-erode-thresh-val">127</span></label>
+                                    <input type="range" id="erode-thresh-val" min="0" max="255" value="127">
+                                </div>
+                                <div class="tool-item checkbox-item">
+                                    <input type="checkbox" id="erode-invert-img" checked>
+                                    <label for="erode-invert-img">Đảo ngược màu ảnh (Invert)</label>
+                                </div>
+
+                                <!-- Gaussian Blur options -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0;">
+                                    <input type="checkbox" id="erode-use-blur" checked>
+                                    <label for="erode-use-blur">Làm mịn ảnh (Blur)</label>
+                                </div>
+                                <div class="tool-item" id="erode-blur-size-group">
+                                    <label for="erode-blur-size">Blur Size: <span id="lbl-erode-blur-size">3</span> px</label>
+                                    <input type="range" id="erode-blur-size" min="1" max="15" step="2" value="3">
+                                </div>
+
+                                <!-- Potrace parameters -->
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-erode-turdsize" checked>
+                                    <label for="use-erode-turdsize">Lọc chấm nhiễu (Turd Size)</label>
+                                </div>
+                                <div class="tool-item" id="erode-turdsize-group">
+                                    <label for="erode-turdsize">Kích thước chấm nhỏ: <span id="lbl-erode-turdsize">2</span> px</label>
+                                    <input type="range" id="erode-turdsize" min="0" max="100" value="2">
+                                </div>
+
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-erode-alphamax" checked>
+                                    <label for="use-erode-alphamax">Độ trơn góc (Alphamax)</label>
+                                </div>
+                                <div class="tool-item" id="erode-alphamax-group">
+                                    <label for="erode-alphamax">Hệ số Alphamax: <span id="lbl-erode-alphamax">1.20</span></label>
+                                    <input type="range" id="erode-alphamax" min="0.0" max="1.33" step="0.05" value="1.2">
+                                </div>
+
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-erode-opttolerance" checked>
+                                    <label for="use-erode-opttolerance">Sai lệch tối ưu (Optolerance)</label>
+                                </div>
+                                <div class="tool-item" id="erode-opttolerance-group">
+                                    <label for="erode-opttolerance">Hệ số Optolerance: <span id="lbl-erode-opttolerance">0.20</span></label>
+                                    <input type="range" id="erode-opttolerance" min="0.0" max="2.0" step="0.05" value="0.2">
+                                </div>
+
+                                <div class="tool-item checkbox-item">
+                                    <input type="checkbox" id="erode-opticurve" checked>
+                                    <label for="erode-opticurve">Tối ưu hóa số nét (Opticurve)</label>
+                                </div>
+                                <div class="tool-item">
+                                    <label for="erode-turnpolicy">Quy tắc rẽ nét (Turn Policy):</label>
+                                    <select id="erode-turnpolicy">
+                                        <option value="minority">Minority (Mặc định)</option>
+                                        <option value="majority">Majority</option>
+                                        <option value="black">Black</option>
+                                        <option value="white">White</option>
+                                        <option value="left">Left</option>
+                                        <option value="right">Right</option>
+                                        <option value="random">Random</option>
+                                    </select>
+                                </div>
+                                <div class="tool-item">
+                                    <label for="erode-bezier-steps">Số điểm chia nét cong: <span id="lbl-erode-bezier-steps">20</span></label>
+                                    <input type="range" id="erode-bezier-steps" min="5" max="50" step="1" value="20">
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Common Controls: Noise, Epsilon, Scale Factor -->
                         <div class="common-processing-controls" style="margin-top: 16px; border-top: 1px solid var(--border-color); padding-top: 16px;">
                             <div class="tools-grid">
@@ -266,9 +469,14 @@
                                 </div>
 
                                 <!-- Path Simplification Epsilon -->
-                                <div class="tool-item">
+                                <div class="tool-item checkbox-item" style="grid-column: span 1; margin: 0; display: flex; align-items: center;">
+                                    <input type="checkbox" id="use-simplify-epsilon" checked>
+                                    <label for="use-simplify-epsilon">Tối giản số đỉnh (Simplify)</label>
+                                </div>
+
+                                <div class="tool-item" id="simplify-epsilon-group">
                                     <label for="simplify-epsilon">Độ mịn vector (Epsilon): <span id="lbl-simplify-epsilon">1.0</span> px</label>
-                                    <input type="range" id="simplify-epsilon" min="0" max="5" step="0.1" value="1.0">
+                                    <input type="range" id="simplify-epsilon" min="0.1" max="5" step="0.1" value="1.0">
                                 </div>
 
                                 <!-- Path Welding -->
@@ -374,6 +582,11 @@
                                 <button id="btn-preview" class="btn btn-info btn-block"><i class="fa-solid fa-circle-play"></i> Xem trước (Mô phỏng)</button>
                                 <button id="btn-draw" class="btn btn-primary btn-block"><i class="fa-solid fa-pencil"></i> Vẽ chữ (Chạy CNC)</button>
                                 <button id="btn-stop" class="btn btn-danger btn-block"><i class="fa-solid fa-circle-stop"></i> Dừng và Go Home</button>
+                            </div>
+                            
+                            <div class="download-actions" style="margin-top: 10px; display: flex; gap: 8px;">
+                                <a id="btn-download-svg" href="/static/potrace_output.svg" download class="btn btn-secondary btn-block" style="display: none; text-align: center; text-decoration: none; line-height: 2.2; flex: 1;"><i class="fa-solid fa-file-image"></i> Tải SVG</a>
+                                <a id="btn-download-gcode" href="/static/cnc_output.nc" download class="btn btn-secondary btn-block" style="display: none; text-align: center; text-decoration: none; line-height: 2.2; flex: 1;"><i class="fa-solid fa-file-code"></i> Tải G-code</a>
                             </div>
                         </div>
                     </div>
