@@ -42,8 +42,7 @@ void loop(void) {
       unsigned long startTime = millis();
       
       while (millis() - startTime < 2000) { // Timeout chờ bắt tay trong 2 giây
-        Serial.write(0xDE);
-        // Bắn liên tục byte yêu cầu bắt tay
+        Serial.write(0xDE); // Bắn liên tục byte yêu cầu bắt tay
         delay(10);
         if (Serial.available() > 0) {
           if (Serial.read() == 0xAC) { // Nhận được byte phản hồi (ACK) từ Python
@@ -60,8 +59,7 @@ void loop(void) {
           Serial.read();
         }
         
-        cardSelected = true;
-        // Sẵn sàng trao đổi APDU
+        cardSelected = true; // Sẵn sàng trao đổi APDU
         
         // Gửi Header báo hiệu SẴN SÀNG lên PC
         uint8_t detectBuf[4] = {0xDE, 0xAD, 0xBE, 0xEF};
@@ -77,6 +75,16 @@ void loop(void) {
     uint8_t lenBuf[2];
     Serial.readBytes(lenBuf, 2); // Đọc 2 byte kích thước gói tin (Big Endian)
     uint16_t apduLen = (lenBuf[0] << 8) | lenBuf[1];
+    
+    // [BỔ SUNG] Nhận tín hiệu Reset từ Python (Gói tin độ dài 0xFFFF) để quét thẻ mới
+    if (apduLen == 0xFFFF) {
+        cardSelected = false; // Reset trạng thái để quay lại bước 1
+        delay(100);
+        while(Serial.available() > 0) {
+          Serial.read(); // Dọn sạch buffer
+        }
+        return;
+    }
     
     // Khởi tạo bộ đệm đủ lớn để chứa gói tin APDU bảo mật (SM)
     uint8_t apdu[512];
@@ -95,8 +103,7 @@ void loop(void) {
         respLenBuf[1] = responseLength & 0xFF;
         
         Serial.write(respLenBuf, 2);
-        Serial.write(response, responseLength);
-        // Trả dữ liệu thô về cho Python xử lý
+        Serial.write(response, responseLength); // Trả dữ liệu thô về cho Python xử lý
       } else {
         // Nếu giao tiếp lỗi (mất sóng NFC hoặc sụt áp), reset trạng thái kết nối
         cardSelected = false;
