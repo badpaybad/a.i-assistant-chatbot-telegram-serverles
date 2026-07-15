@@ -15,3 +15,6 @@ Ngày hết hạn của thẻ (định dạng YYMMDD).
 // Sử dụng chân I2C an toàn đã thống nhất
 #define NFC_SDA 8
 #define NFC_SCL 18
+
+
+https://github.com/Vanhoai/AndroidSCReader

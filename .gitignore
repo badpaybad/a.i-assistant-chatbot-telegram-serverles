@@ -145,3 +145,6 @@ cnc/drawtext/python-3.12.3-amd64.exe
 cnc/drawtext/main.spec
 **/build/**
 **/dist/**
+**/pn532_test/cccd_face_converted.jpg
+**/pn532_test/cccd_security.sod
+**/pn532_test/cccd_face.jp2
