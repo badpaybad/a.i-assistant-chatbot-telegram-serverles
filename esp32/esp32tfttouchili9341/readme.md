@@ -1,0 +1,1 @@
+Mô-đun 4 Dây 2.8-inch tft lcd Cổng spi Màn Hình Cảm Ứng ili9341 240320 đấu màn hình vào esp32 s3 n16r8 và code để vẽ lên màn hình , phát hiện touch và vẽ hình tròn điểm vừa touch 

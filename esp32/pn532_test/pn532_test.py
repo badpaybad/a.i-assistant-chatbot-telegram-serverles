@@ -6,13 +6,17 @@ from Crypto.Cipher import DES, DES3
 from PIL import Image
 import io
 
+import pn532_config
+
 # =====================================================================
 # 1. CẤU HÌNH THÔNG TIN THÈ CCCD
 # =====================================================================
 PORT = "/dev/ttyACM0"      # Đổi thành "COMx" nếu dùng Windows (ví dụ: "COM3")
 BAUDRATE = 921600
 
-
+SO_CCCD = pn532_config.SO_CCCD   # Thay bằng số CCCD thực tế
+NGAY_SINH = pn532_config.NGAY_SINH       # Định dạng YYMMDD
+NGAY_EXP = pn532_config.NGAY_EXP        # Định dạng YYMMDD
 doc_number = SO_CCCD[-9:]
 
 # =====================================================================

@@ -148,3 +148,5 @@ cnc/drawtext/main.spec
 **/pn532_test/cccd_face_converted.jpg
 **/pn532_test/cccd_security.sod
 **/pn532_test/cccd_face.jp2
+
+**/pn532_test/pn532_config.py
