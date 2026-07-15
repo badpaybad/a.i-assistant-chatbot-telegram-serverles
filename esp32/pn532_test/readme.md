@@ -16,6 +16,13 @@ Ngày hết hạn của thẻ (định dạng YYMMDD).
 #define NFC_SDA 8
 #define NFC_SCL 18
 
+code arduino thư viện cần sửa esp32/Adafruit_PN532.cpp 
+
+comment code 
+      // PN532DEBUGPRINT.print(F("Tag number: "));
+      // PN532DEBUGPRINT.println(_inListedTag);
+và 
+    // #define PN532DEBUG
 
 https://github.com/Vanhoai/AndroidSCReader
 
