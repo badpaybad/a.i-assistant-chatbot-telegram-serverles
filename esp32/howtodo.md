@@ -122,7 +122,7 @@ sequenceDiagram
 * Nếu tất cả kết nối thất bại, ESP32 sẽ phát WiFi `esp32os_dunp` và khởi tạo Captive Portal (DNS Hijacking). Mọi truy cập web từ thiết bị kết nối sẽ được tự động điều hướng về trang chủ cấu hình kính mờ (Glassmorphism UI) để nhập thông tin mạng mới.
 * **Nút Reset Config - Factory Reset (nhấn giữ 10 giây)**:
   * **Kiến trúc: `buttonPollingTask` (FreeRTOS task)**:
-    * Task chạy độc lập trên **Core 0**, priority 1, đọc `digitalRead(GPIO 1)` mỗi **50ms**. Nút nhấn ngoài được kết nối giữa chân GPIO 1 và chân GND.
+    * Task chạy độc lập trên **Core 0**, priority 1, đọc `digitalRead(GPIO 9)` mỗi **50ms**. Nút nhấn ngoài được kết nối giữa chân GPIO 9 và chân GND.
     * **Guard 1 - Startup delay**: Task ngủ 2 giây (`vTaskDelay(2000ms)`) sau khi khởi động để ổn định điện áp tránh nhiễu khởi động.
     * **Guard 2 - Xác nhận nhấn liên tiếp**: Cần **3 lần đọc LOW liên tiếp** (= 150ms duy trì LOW) mới xác nhận là nhấn thật, giúp chống nhiễu tiếp điểm (debounce).
   * **Phản hồi theo tiến độ giữ**:

@@ -89,4 +89,7 @@ nếu firebase jwt access token đã có và chưa expired thì cần firestore 
 
 **cập nhật 18** cần cấp thêm api cho esp32 hub để tạo Google OAuth 2.0 Access Token (đại diện cho services account ) để client esp32 lưu lại, việc lấy access token này vẫn dùng MAC address validate, cần 1 số dịch vụ chạy distributed trên các client esp32. 
 
+
+**cập nhật 19** PN532 RFID 13.56Mhz để đọc NFC , chỉ ra chân đấu với esp32 s3 n16r8 và code để đọc NFC 
+
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md
