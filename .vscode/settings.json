@@ -1,24 +1,12 @@
 {
   "liveServer.settings.port": 5501,
   "workbench.colorCustomizations": {
-    "titleBar.activeBackground": "#e69d00",
-    "titleBar.activeForeground": "#000000",
-    "titleBar.inactiveBackground": "#e69d00",
-    "titleBar.inactiveForeground": "#00000090",
     "statusBarItem.warningBackground": "#e69d00",
     "statusBarItem.warningForeground": "#000000",
     "statusBarItem.warningHoverBackground": "#e69d00",
     "statusBarItem.warningHoverForeground": "#00000090",
-    "statusBarItem.remoteBackground": "#f3aa0d",
-    "statusBarItem.remoteForeground": "#000000",
     "statusBarItem.remoteHoverBackground": "#ffb71a",
     "statusBarItem.remoteHoverForeground": "#00000090",
-    "statusBar.background": "#e69d00",
-    "statusBar.foreground": "#000000",
-    "statusBar.border": "#e69d00",
-    "statusBar.debuggingBackground": "#e69d00",
-    "statusBar.debuggingForeground": "#000000",
-    "statusBar.debuggingBorder": "#e69d00",
     "statusBar.noFolderBackground": "#e69d00",
     "statusBar.noFolderForeground": "#000000",
     "statusBar.noFolderBorder": "#e69d00",
@@ -40,14 +28,27 @@
     "pickerGroup.foreground": "#f3aa0d",
     "list.activeSelectionBackground": "#e69d004d",
     "panelTitle.activeBorder": "#f3aa0d",
-    "activityBar.background": "#e69d00",
-    "activityBar.foreground": "#000000",
     "activityBar.activeBorder": "#e69d00",
-    "activityBar.inactiveForeground": "#00000090",
-    "activityBarBadge.foreground": "#000000",
-    "activityBarBadge.background": "#e69d00"
+    "activityBar.activeBackground": "#fbed80",
+    "activityBar.background": "#fbed80",
+    "activityBar.foreground": "#15202b",
+    "activityBar.inactiveForeground": "#15202b99",
+    "activityBarBadge.background": "#06b9a5",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#15202b99",
+    "sash.hoverBorder": "#fbed80",
+    "statusBar.background": "#f9e64f",
+    "statusBar.foreground": "#15202b",
+    "statusBarItem.hoverBackground": "#f7df1e",
+    "statusBarItem.remoteBackground": "#f9e64f",
+    "statusBarItem.remoteForeground": "#15202b",
+    "titleBar.activeBackground": "#f9e64f",
+    "titleBar.activeForeground": "#15202b",
+    "titleBar.inactiveBackground": "#f9e64f99",
+    "titleBar.inactiveForeground": "#15202b99"
   },
   "dotrush.roslyn.projectOrSolutionFiles": [
     "/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.sln"
-  ]
+  ],
+  "peacock.color": "#f9e64f"
 }
