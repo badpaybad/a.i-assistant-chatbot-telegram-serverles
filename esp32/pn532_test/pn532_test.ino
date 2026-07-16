@@ -1,5 +1,6 @@
 #include <Wire.h>
-#include <Adafruit_PN532.h>
+#include "hotfix/Adafruit_PN532.h"
+#include "hotfix/Adafruit_PN532.cpp"
 
 #define NFC_SDA 8
 #define NFC_SCL 18
