@@ -89,7 +89,7 @@ void wakeup_detection_task(void *pvParameters);
 // SETUP & INITIALIZATION
 // ==========================================
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(921600);
     while (!Serial);
     
     Serial.println("Initializing Audio AI System (Dual-Mic configuration)...");

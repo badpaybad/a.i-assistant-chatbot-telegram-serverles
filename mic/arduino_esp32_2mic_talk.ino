@@ -107,7 +107,7 @@ void base64_encode_to_buf(const uint8_t *input, size_t input_len, char *output);
 // SETUP & INITIALIZATION
 // ==========================================
 void setup() {
-    Serial.begin(115200);
+    Serial.begin(921600);
     while (!Serial);
     
     Serial.println("Initializing Audio AI & Gemini Live Streaming System...");

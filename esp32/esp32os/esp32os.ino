@@ -136,7 +136,7 @@ void onWakeupwordReceived(const String& topic, const String& payload) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   delay(1000); // Brief delay for Serial monitor connection
 
   Serial.println("\n====================================");

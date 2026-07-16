@@ -1,7 +1,8 @@
 
-#include "hotfix/User_Setup.h"
+
 #include <SPI.h>
 #include <TFT_eSPI.h>
+#include "User_Setup.h"
 
 TFT_eSPI tft = TFT_eSPI();
 
@@ -10,7 +11,7 @@ TFT_eSPI tft = TFT_eSPI();
 uint16_t calData[5] = { 270, 3611, 252, 3545, 7 };
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(921600);
   delay(1000); 
 
   pinMode(TFT_BL, OUTPUT);

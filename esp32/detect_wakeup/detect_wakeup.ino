@@ -130,7 +130,7 @@ void* dma_malloc(size_t size) {
 // SETUP
 // =========================================================================
 void setup() {
-    Serial.begin(1000000);
+    Serial.begin(921600);
     delay(1000);
 
     // Allocate global audio buffers (DMA buffers MUST be in internal SRAM)
