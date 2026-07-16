@@ -4,7 +4,8 @@
 TFT_eSPI tft = TFT_eSPI();
 
 // Thay thế 5 con số dưới đây bằng 5 con số thực tế bạn đọc được từ Serial Monitor của bạn
-uint16_t calData[5] = {324, 3450, 280, 3560, 2}; 
+// uint16_t calData[5] = {324, 3450, 280, 3560, 2}; 
+uint16_t calData[5] = { 270, 3611, 252, 3545, 7 };
 
 void setup() {
   Serial.begin(115200);
@@ -29,21 +30,33 @@ void setup() {
 void loop() {
   uint16_t x = 0, y = 0;
   
-  if (tft.getTouchRaw(&x, &y)) {
-    // Đảo ngược dải map của trục X (đổi 300, 3900 thành 3900, 300) để sửa lỗi ngược Trái - Phải
-    uint16_t screen_x = map(y, 3900, 300, 0, 320); 
-    
-    // Giữ nguyên trục Y nếu chiều Lên - Xuống đã đúng. 
-    // (Nếu sau khi đổi X mà bạn thấy chiều Lên - Xuống bị ngược, hãy đổi nốt dòng dưới thành map(x, 3900, 300, 0, 240))
-    uint16_t screen_y = map(x, 3900, 300, 0, 240); 
-    
-    // Giới hạn tọa độ
-    screen_x = constrain(screen_x, 0, 320);
-    screen_y = constrain(screen_y, 0, 240);
-    
-    Serial.printf("Raw X=%d, Y=%d | Screen X=%d, Y=%d\n", x, y, screen_x, screen_y);
-    
-    tft.fillCircle(screen_x, screen_y, 4, TFT_GREEN);
+  // Hàm getTouch() trả về true/false và tự động áp dụng calData để map ra tọa độ screen (0->320, 0->240)
+  if (tft.getTouch(&x, &y)) {
+    // Lúc này x, y chính là tọa độ màn hình (screen coordinates) chứ không phải tọa độ Raw nữa
+    Serial.printf("Screen X=%d, Y=%d\n", x, y);
+    tft.fillCircle(x, y, 4, TFT_GREEN);
   }
   delay(10);
 }
+// void loop() {
+//   uint16_t x = 0, y = 0;
+  
+//   if (tft.getTouchRaw(&x, &y)) {
+//     // LỌC NHIỄU: Chỉ xử lý nếu tọa độ Raw nằm trong khoảng hợp lý của màn hình cảm ứng
+//     // (Thông thường touch thật sẽ nằm trong khoảng từ 150 đến 3900)
+//     if (x > 150 && x < 3950 && y > 150 && y < 3950) {
+      
+//       // Đảo ngược dải map của trục X để sửa lỗi ngược Trái - Phải
+//       uint16_t screen_x = map(y, 3900, 300, 0, 320);
+//       uint16_t screen_y = map(x, 3900, 300, 0, 240);
+      
+//       // Giới hạn tọa độ
+//       screen_x = constrain(screen_x, 0, 320);
+//       screen_y = constrain(screen_y, 0, 240);
+      
+//       Serial.printf("Raw X=%d, Y=%d | Screen X=%d, Y=%d\n", x, y, screen_x, screen_y);
+//       tft.fillCircle(screen_x, screen_y, 4, TFT_GREEN);
+//     }
+//   }
+//   delay(10);
+// }

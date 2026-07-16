@@ -47,3 +47,10 @@ Nối chân T_DO chung vào đường dây của chân SDO/MISO (GPIO 41).
 Chân T_CS nối riêng biệt vào GPIO 39.
 
 Chân T_IRQ nối riêng biệt vào GPIO 47 (như bạn vừa cấu hình ở cuối file User_Setup.h).
+
+
+Mở phần mềm Arduino IDE.
+
+Vào File -> Examples -> TFT_eSPI -> Generic -> mở bài Touch_calibrate.
+sau khi làm xong lấy thông số đó vào code 
+uint16_t calData[5] = { 270, 3611, 252, 3545, 7 };
