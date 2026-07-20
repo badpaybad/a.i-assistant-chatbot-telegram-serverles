@@ -121,3 +121,11 @@ Dự án này được tối ưu để làm việc cùng **Antigravity**. Bạn 
 ---
 *Dự án là một phần của hệ sinh thái a.i-assistant-chatbot-telegram-serverles.*
 
+
+# 1. Reverse port 5000 để ứng dụng kết nối Backend API localhost
+~/Android/Sdk/platform-tools/adb -s R58MB68NAFW reverse tcp:5000 tcp:5000
+
+# 2. Deploy và khởi chạy ứng dụng Flutter trên thiết bị Samsung SM A507FN
+cd TreeOfThought/frontend/mobi/my_pc_assistant && flutter run -d R58MB68NAFW
+
+

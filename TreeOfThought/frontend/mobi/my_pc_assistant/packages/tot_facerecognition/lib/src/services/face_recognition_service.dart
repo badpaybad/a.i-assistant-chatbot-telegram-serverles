@@ -62,6 +62,68 @@ class _ProcessRecMessage {
   _ProcessRecMessage(this.image, this.detectedFaces, this.replyPort);
 }
 
+class _ProcessYuvDetMessage {
+  final Uint8List yPlane;
+  final Uint8List uPlane;
+  final Uint8List vPlane;
+  final int width;
+  final int height;
+  final int yRowStride;
+  final int uRowStride;
+  final int vRowStride;
+  final int uPixelStride;
+  final int vPixelStride;
+  final bool isFrontCamera;
+  final SendPort replyPort;
+
+  _ProcessYuvDetMessage({
+    required this.yPlane,
+    required this.uPlane,
+    required this.vPlane,
+    required this.width,
+    required this.height,
+    required this.yRowStride,
+    required this.uRowStride,
+    required this.vRowStride,
+    required this.uPixelStride,
+    required this.vPixelStride,
+    required this.isFrontCamera,
+    required this.replyPort,
+  });
+}
+
+class _ProcessYuvRecMessage {
+  final Uint8List yPlane;
+  final Uint8List uPlane;
+  final Uint8List vPlane;
+  final int width;
+  final int height;
+  final int yRowStride;
+  final int uRowStride;
+  final int vRowStride;
+  final int uPixelStride;
+  final int vPixelStride;
+  final bool isFrontCamera;
+  final List<FaceDetectionResult> detectedFaces;
+  final SendPort replyPort;
+
+  _ProcessYuvRecMessage({
+    required this.yPlane,
+    required this.uPlane,
+    required this.vPlane,
+    required this.width,
+    required this.height,
+    required this.yRowStride,
+    required this.uRowStride,
+    required this.vRowStride,
+    required this.uPixelStride,
+    required this.vPixelStride,
+    required this.isFrontCamera,
+    required this.detectedFaces,
+    required this.replyPort,
+  });
+}
+
 // ─────────────────────────────────────────────────────────
 // MAIN SERVICE CLASS (UI THREAD MANAGER)
 // ─────────────────────────────────────────────────────────
@@ -129,9 +191,74 @@ class FaceRecognitionService {
     }
   }
 
-  /// Xử lý 1 frame theo luồng bất đồng bộ độc lập:
-  /// - BƯỚC 1: Luồng 1 (Detect) trả về bbox ngay -> gọi onDetected(faces)
-  /// - BƯỚC 2: Luồng 2 (Recognize) tính vector & compare ngầm -> gọi onRecognized(finalFaces)
+  /// Xử lý 1 frame YUV trực tiếp không cần convert trên UI thread (Zero-Copy 60 FPS)
+  void processYuvFrameAsync({
+    required Uint8List yPlane,
+    required Uint8List uPlane,
+    required Uint8List vPlane,
+    required int width,
+    required int height,
+    required int yRowStride,
+    required int uRowStride,
+    required int vRowStride,
+    required int uPixelStride,
+    required int vPixelStride,
+    required bool isFrontCamera,
+    required Function(List<FaceDetectionResult> detectedFaces) onDetected,
+    required Function(List<FaceDetectionResult> recognizedFaces) onRecognized,
+  }) {
+    if (!_isInitialized || _detSendPort == null || _recSendPort == null) return;
+
+    final detReplyPort = ReceivePort();
+    detReplyPort.listen((detMessage) {
+      detReplyPort.close();
+      if (detMessage is List<FaceDetectionResult>) {
+        onDetected(detMessage);
+
+        if (detMessage.isEmpty) return;
+
+        final recReplyPort = ReceivePort();
+        recReplyPort.listen((recMessage) {
+          recReplyPort.close();
+          if (recMessage is List<FaceDetectionResult>) {
+            onRecognized(recMessage);
+          }
+        });
+
+        _recSendPort!.send(_ProcessYuvRecMessage(
+          yPlane: yPlane,
+          uPlane: uPlane,
+          vPlane: vPlane,
+          width: width,
+          height: height,
+          yRowStride: yRowStride,
+          uRowStride: uRowStride,
+          vRowStride: vRowStride,
+          uPixelStride: uPixelStride,
+          vPixelStride: vPixelStride,
+          isFrontCamera: isFrontCamera,
+          detectedFaces: detMessage,
+          replyPort: recReplyPort.sendPort,
+        ));
+      }
+    });
+
+    _detSendPort!.send(_ProcessYuvDetMessage(
+      yPlane: yPlane,
+      uPlane: uPlane,
+      vPlane: vPlane,
+      width: width,
+      height: height,
+      yRowStride: yRowStride,
+      uRowStride: uRowStride,
+      vRowStride: vRowStride,
+      uPixelStride: uPixelStride,
+      vPixelStride: vPixelStride,
+      isFrontCamera: isFrontCamera,
+      replyPort: detReplyPort.sendPort,
+    ));
+  }
+
   void processFrameAsync(
     img.Image frame, {
     required Function(List<FaceDetectionResult> detectedFaces) onDetected,
@@ -143,12 +270,10 @@ class FaceRecognitionService {
     detReplyPort.listen((detMessage) {
       detReplyPort.close();
       if (detMessage is List<FaceDetectionResult>) {
-        // 1. Trả về vị trí Bbox & Keypoints ngay lập tức cho UI vẽ màn hình
         onDetected(detMessage);
 
         if (detMessage.isEmpty) return;
 
-        // 2. Chuyển tiếp tới Luồng 2 để tính vector & compare độc lập ở background
         final recReplyPort = ReceivePort();
         recReplyPort.listen((recMessage) {
           recReplyPort.close();
@@ -224,6 +349,13 @@ void _detectionIsolateEntryPoint(SendPort mainToDetPort) {
       }
       final faces = _detectFacesInIsolate(detSession!, message.image);
       message.replyPort.send(faces);
+    } else if (message is _ProcessYuvDetMessage) {
+      if (detSession == null) {
+        message.replyPort.send(<FaceDetectionResult>[]);
+        return;
+      }
+      final faces = _detectFacesFromYuvInIsolate(detSession!, message);
+      message.replyPort.send(faces);
     }
   });
 }
@@ -276,6 +408,23 @@ void _recognitionIsolateEntryPoint(SendPort mainToRecPort) {
       for (final face in message.detectedFaces) {
         final embedding =
             _extractEmbeddingInIsolate(recSession!, message.image, face);
+        double? score;
+        if (userEmbedding != null && embedding != null) {
+          score = _cosineSimilarityHelper(userEmbedding!, embedding);
+        }
+        results.add(face.copyWith(embedding: embedding, similarityScore: score));
+      }
+      message.replyPort.send(results);
+    } else if (message is _ProcessYuvRecMessage) {
+      if (recSession == null) {
+        message.replyPort.send(message.detectedFaces);
+        return;
+      }
+
+      final results = <FaceDetectionResult>[];
+      for (final face in message.detectedFaces) {
+        final embedding =
+            _extractEmbeddingFromYuvInIsolate(recSession!, message, face);
         double? score;
         if (userEmbedding != null && embedding != null) {
           score = _cosineSimilarityHelper(userEmbedding!, embedding);
@@ -360,10 +509,14 @@ List<FaceDetectionResult> _detectFacesInIsolate(
         ? (data[0] as List).length
         : 1;
 
+    final s8 = (_detInputSize ~/ 8) * (_detInputSize ~/ 8) * 2;
+    final s16 = (_detInputSize ~/ 16) * (_detInputSize ~/ 16) * 2;
+    final s32 = (_detInputSize ~/ 32) * (_detInputSize ~/ 32) * 2;
+
     int strideIdx = -1;
-    if (anchorNum == 12800) strideIdx = 0;
-    else if (anchorNum == 3200) strideIdx = 1;
-    else if (anchorNum == 800) strideIdx = 2;
+    if (anchorNum == s8) strideIdx = 0;
+    else if (anchorNum == s16) strideIdx = 1;
+    else if (anchorNum == s32) strideIdx = 2;
 
     int typeIdx = -1;
     if (contentSize == 1) typeIdx = 0;
@@ -440,6 +593,315 @@ List<FaceDetectionResult> _detectFacesInIsolate(
     print('[DetIsolate] Frame ${srcW}x${srcH}: maxScore=${maxScore.toStringAsFixed(3)}, candidates=${candidates.length}');
   }
   return _nmsHelper(candidates, _nmsThresh);
+}
+
+List<FaceDetectionResult> _detectFacesFromYuvInIsolate(
+    OrtSession detSession, _ProcessYuvDetMessage msg) {
+  final int srcW = msg.width;
+  final int srcH = msg.height;
+  final bool isFront = msg.isFrontCamera;
+
+  final int portW = srcH;
+  final int portH = srcW;
+
+  final double imRatio = portH / portW;
+  const double modelRatio = 1.0;
+  int newW, newH;
+  if (imRatio > modelRatio) {
+    newH = _detInputSize;
+    newW = (newH / imRatio).round();
+  } else {
+    newW = _detInputSize;
+    newH = (newW * imRatio).round();
+  }
+  final double detScaleX = newW / portW;
+  final double detScaleY = newH / portH;
+
+  final inputData = Float32List(1 * 3 * _detInputSize * _detInputSize);
+  const double bgVal = -127.5 / 128.0;
+  inputData.fillRange(0, inputData.length, bgVal);
+
+  final int planeSize = _detInputSize * _detInputSize;
+  final yPlane = msg.yPlane;
+  final uPlane = msg.uPlane;
+  final vPlane = msg.vPlane;
+
+  for (int py = 0; py < newH; py++) {
+    final int portY = (py * portH) ~/ newH;
+    final int offsetRow = py * _detInputSize;
+
+    for (int px = 0; px < newW; px++) {
+      final int portX = (px * portW) ~/ newW;
+
+      int srcX, srcY;
+      if (isFront) {
+        srcX = srcW - 1 - portY;
+        srcY = portX;
+      } else {
+        srcX = portY;
+        srcY = srcH - 1 - portX;
+      }
+
+      srcX = srcX.clamp(0, srcW - 1);
+      srcY = srcY.clamp(0, srcH - 1);
+
+      final int yIdx = srcY * msg.yRowStride + srcX;
+      final int Y = yPlane[yIdx];
+
+      final int uvY = srcY ~/ 2;
+      final int uvX = srcX ~/ 2;
+      final int uIdx = uvY * msg.uRowStride + uvX * msg.uPixelStride;
+      final int vIdx = uvY * msg.vRowStride + uvX * msg.vPixelStride;
+
+      final int U = uIdx < uPlane.length ? uPlane[uIdx] : 128;
+      final int V = vIdx < vPlane.length ? vPlane[vIdx] : 128;
+
+      final double r = (Y + 1.402 * (V - 128)).clamp(0.0, 255.0);
+      final double g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0.0, 255.0);
+      final double b = (Y + 1.772 * (U - 128)).clamp(0.0, 255.0);
+
+      final int offset = offsetRow + px;
+      inputData[offset] = (r - 127.5) / 128.0;
+      inputData[planeSize + offset] = (g - 127.5) / 128.0;
+      inputData[2 * planeSize + offset] = (b - 127.5) / 128.0;
+    }
+  }
+
+  return _runDetInference(detSession, inputData, detScaleX, detScaleY, portW, portH);
+}
+
+List<FaceDetectionResult> _runDetInference(
+    OrtSession detSession,
+    Float32List inputData,
+    double detScaleX,
+    double detScaleY,
+    int srcW,
+    int srcH) {
+  final inputName = detSession.inputNames.first;
+  final inputTensor = OrtValueTensor.createTensorWithDataList(
+    inputData,
+    [1, 3, _detInputSize, _detInputSize],
+  );
+
+  final runOptions = OrtRunOptions();
+  final outputs = detSession.run(runOptions, {inputName: inputTensor});
+  inputTensor.release();
+  runOptions.release();
+
+  final Map<int, Map<int, List<dynamic>>> mappedOutputs = {};
+
+  for (final ortValue in outputs) {
+    if (ortValue == null) continue;
+    final tensor = ortValue as OrtValueTensor;
+    final rawValue = tensor.value;
+    if (rawValue == null) {
+      tensor.release();
+      continue;
+    }
+
+    List data = rawValue as List;
+    if (data.length == 1 && data.first is List) {
+      data = data.first as List;
+    }
+
+    final anchorNum = data.length;
+    final contentSize = (data.isNotEmpty && data[0] is List)
+        ? (data[0] as List).length
+        : 0;
+
+    tensor.release();
+
+    final s8 = (_detInputSize ~/ 8) * (_detInputSize ~/ 8) * 2;
+    final s16 = (_detInputSize ~/ 16) * (_detInputSize ~/ 16) * 2;
+    final s32 = (_detInputSize ~/ 32) * (_detInputSize ~/ 32) * 2;
+
+    if (anchorNum == s8) {
+      mappedOutputs[8] ??= {};
+      if (contentSize == 1) mappedOutputs[8]![0] = data as List<dynamic>;
+      if (contentSize == 4) mappedOutputs[8]![1] = data as List<dynamic>;
+      if (contentSize == 10) mappedOutputs[8]![2] = data as List<dynamic>;
+    } else if (anchorNum == s16) {
+      mappedOutputs[16] ??= {};
+      if (contentSize == 1) mappedOutputs[16]![0] = data as List<dynamic>;
+      if (contentSize == 4) mappedOutputs[16]![1] = data as List<dynamic>;
+      if (contentSize == 10) mappedOutputs[16]![2] = data as List<dynamic>;
+    } else if (anchorNum == s32) {
+      mappedOutputs[32] ??= {};
+      if (contentSize == 1) mappedOutputs[32]![0] = data as List<dynamic>;
+      if (contentSize == 4) mappedOutputs[32]![1] = data as List<dynamic>;
+      if (contentSize == 10) mappedOutputs[32]![2] = data as List<dynamic>;
+    }
+  }
+
+  final candidates = <FaceDetectionResult>[];
+  double maxScore = 0.0;
+
+  for (final stride in _featStrides) {
+    final strideOutputs = mappedOutputs[stride];
+    if (strideOutputs == null) continue;
+
+    final scoreData = strideOutputs[0];
+    final bboxData = strideOutputs[1];
+    final kpsData = strideOutputs[2];
+    if (scoreData == null || bboxData == null || kpsData == null) continue;
+
+    final gridH = _detInputSize ~/ stride;
+    final gridW = _detInputSize ~/ stride;
+    final anchorCenters = _getAnchorCentersHelper(gridH, gridW, stride);
+
+    for (int i = 0; i < anchorCenters.length; i++) {
+      final scoreRow = scoreData[i];
+      final double score = (scoreRow is List)
+          ? (scoreRow[0] as num).toDouble()
+          : (scoreRow as num).toDouble();
+
+      if (score > maxScore) maxScore = score;
+      if (score < _detThresh) continue;
+
+      final pt = anchorCenters[i];
+      final bboxRow = bboxData[i] as List;
+      final dx1 = (bboxRow[0] as num).toDouble() * stride;
+      final dy1 = (bboxRow[1] as num).toDouble() * stride;
+      final dx2 = (bboxRow[2] as num).toDouble() * stride;
+      final dy2 = (bboxRow[3] as num).toDouble() * stride;
+
+      final x1 = ((pt[0] - dx1) / detScaleX).clamp(0, srcW.toDouble());
+      final y1 = ((pt[1] - dy1) / detScaleY).clamp(0, srcH.toDouble());
+      final x2 = ((pt[0] + dx2) / detScaleX).clamp(0, srcW.toDouble());
+      final y2 = ((pt[1] + dy2) / detScaleY).clamp(0, srcH.toDouble());
+
+      final kpsRow = kpsData[i] as List;
+      final kps = <List<double>>[];
+      for (int k = 0; k < 5; k++) {
+        final dx = (kpsRow[k * 2] as num).toDouble() * stride;
+        final dy = (kpsRow[k * 2 + 1] as num).toDouble() * stride;
+        final kx = ((pt[0] + dx) / detScaleX).clamp(0, srcW.toDouble());
+        final ky = ((pt[1] + dy) / detScaleY).clamp(0, srcH.toDouble());
+        kps.add([kx.toDouble(), ky.toDouble()]);
+      }
+
+      candidates.add(FaceDetectionResult(
+        bbox: [x1.toDouble(), y1.toDouble(), (x2 - x1).toDouble(), (y2 - y1).toDouble()],
+        keypoints: kps,
+        detectionScore: score,
+      ));
+    }
+  }
+
+  return _nmsHelper(candidates, _nmsThresh);
+}
+
+Float32List? _extractEmbeddingFromYuvInIsolate(
+    OrtSession recSession, _ProcessYuvRecMessage msg, FaceDetectionResult face) {
+  if (face.keypoints.length < 5) return null;
+  final transform = _estimateAffinePartial2DHelper(face.keypoints, _refPoints);
+  if (transform == null) return null;
+
+  final inputData = _warpAffineAndBuildTensorFromYuv(
+      msg, transform, _recInputSize, _recInputSize);
+  if (inputData == null) return null;
+
+  final inputName = recSession.inputNames.first;
+  final inputTensor = OrtValueTensor.createTensorWithDataList(
+    inputData,
+    [1, 3, _recInputSize, _recInputSize],
+  );
+
+  final runOptions = OrtRunOptions();
+  final outputs = recSession.run(runOptions, {inputName: inputTensor});
+  inputTensor.release();
+  runOptions.release();
+
+  final outValue = outputs.firstOrNull;
+  if (outValue == null) return null;
+
+  final rawData = (outValue as OrtValueTensor).value;
+  outValue.release();
+  if (rawData == null) return null;
+
+  final flatList =
+      (rawData is List && rawData.isNotEmpty && rawData.first is List)
+          ? (rawData.first as List)
+          : rawData as List;
+  final embedding = Float32List(flatList.length);
+  double norm = 0.0;
+  for (int i = 0; i < flatList.length; i++) {
+    final v = (flatList[i] as num).toDouble();
+    embedding[i] = v;
+    norm += v * v;
+  }
+  norm = math.sqrt(norm);
+  if (norm > 0) {
+    for (int i = 0; i < embedding.length; i++) {
+      embedding[i] = embedding[i] / norm;
+    }
+  }
+  return embedding;
+}
+
+Float32List? _warpAffineAndBuildTensorFromYuv(
+    _ProcessYuvRecMessage msg, List<List<double>> M, int dstW, int dstH) {
+  final a = M[0][0], b_ = M[0][1], tx = M[0][2];
+  final c = M[1][0], d = M[1][1], ty = M[1][2];
+  final det = a * d - b_ * c;
+  if (det.abs() < 1e-10) return null;
+
+  final ia = d / det, ib = -b_ / det;
+  final ic = -c / det, id_ = a / det;
+
+  final inputData = Float32List(1 * 3 * dstW * dstH);
+  final planeSize = dstW * dstH;
+
+  final int srcW = msg.width;
+  final int srcH = msg.height;
+  final bool isFront = msg.isFrontCamera;
+  final yPlane = msg.yPlane;
+  final uPlane = msg.uPlane;
+  final vPlane = msg.vPlane;
+
+  for (int dy = 0; dy < dstH; dy++) {
+    final nyBase = dy - ty;
+    final rowOffset = dy * dstW;
+
+    for (int dx = 0; dx < dstW; dx++) {
+      final nx = dx - tx;
+      final portX = (ia * nx + ib * nyBase).round();
+      final portY = (ic * nx + id_ * nyBase).round();
+
+      int srcX, srcY;
+      if (isFront) {
+        srcX = srcW - 1 - portY;
+        srcY = portX;
+      } else {
+        srcX = portY;
+        srcY = srcH - 1 - portX;
+      }
+
+      if (srcX >= 0 && srcX < srcW && srcY >= 0 && srcY < srcH) {
+        final int yIdx = srcY * msg.yRowStride + srcX;
+        final int Y = yPlane[yIdx];
+
+        final int uvY = srcY ~/ 2;
+        final int uvX = srcX ~/ 2;
+        final int uIdx = uvY * msg.uRowStride + uvX * msg.uPixelStride;
+        final int vIdx = uvY * msg.vRowStride + uvX * msg.vPixelStride;
+
+        final int U = uIdx < uPlane.length ? uPlane[uIdx] : 128;
+        final int V = vIdx < vPlane.length ? vPlane[vIdx] : 128;
+
+        final double r = (Y + 1.402 * (V - 128)).clamp(0.0, 255.0);
+        final double g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0.0, 255.0);
+        final double b = (Y + 1.772 * (U - 128)).clamp(0.0, 255.0);
+
+        final int offset = rowOffset + dx;
+        inputData[offset] = b;
+        inputData[planeSize + offset] = g;
+        inputData[2 * planeSize + offset] = r;
+      }
+    }
+  }
+
+  return inputData;
 }
 
 Float32List? _extractEmbeddingInIsolate(

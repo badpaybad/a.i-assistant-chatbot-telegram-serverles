@@ -172,42 +172,36 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
   // ─── Frame processing ───
 
   void _onCameraFrame(CameraImage cameraImage) {
-    final now = DateTime.now();
-    if (now.difference(_lastFrameTime) < _frameInterval) return;
     if (_isProcessing) return;
-    _lastFrameTime = now;
     _isProcessing = true;
 
-    _processFrameAsync(cameraImage);
-  }
-
-  void _processFrameAsync(CameraImage cameraImage) {
     try {
-      final image = _convertCameraImageSync(cameraImage);
-      if (image == null) {
-        _isProcessing = false;
-        return;
-      }
-
-      _faceService.processFrameAsync(
-        image,
+      _faceService.processYuvFrameAsync(
+        yPlane: cameraImage.planes[0].bytes,
+        uPlane: cameraImage.planes[1].bytes,
+        vPlane: cameraImage.planes[2].bytes,
+        width: cameraImage.width,
+        height: cameraImage.height,
+        yRowStride: cameraImage.planes[0].bytesPerRow,
+        uRowStride: cameraImage.planes[1].bytesPerRow,
+        vRowStride: cameraImage.planes[2].bytesPerRow,
+        uPixelStride: cameraImage.planes[1].bytesPerPixel ?? 1,
+        vPixelStride: cameraImage.planes[2].bytesPerPixel ?? 1,
+        isFrontCamera: _isFrontCamera,
         onDetected: (faces) {
           if (mounted) {
             setState(() => _detectedFaces = faces);
           }
-          if (faces.isEmpty) {
-            _isProcessing = false;
-          }
+          _isProcessing = false;
         },
         onRecognized: (finalFaces) {
           if (mounted) {
             setState(() => _detectedFaces = finalFaces);
           }
-          _isProcessing = false;
         },
       );
     } catch (e, st) {
-      print('[FaceRecognitionPage] Frame processing error: $e\n$st');
+      print('[FaceRecognitionPage] Zero-Copy Frame Stream error: $e\n$st');
       _isProcessing = false;
     }
   }
