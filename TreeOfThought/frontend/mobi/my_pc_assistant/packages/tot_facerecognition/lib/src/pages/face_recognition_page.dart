@@ -181,18 +181,33 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
     _processFrameAsync(cameraImage);
   }
 
-  Future<void> _processFrameAsync(CameraImage cameraImage) async {
+  void _processFrameAsync(CameraImage cameraImage) {
     try {
       final image = _convertCameraImageSync(cameraImage);
-      if (image == null) return;
-
-      final faces = await _faceService.processFrame(image);
-      if (mounted) {
-        setState(() => _detectedFaces = faces);
+      if (image == null) {
+        _isProcessing = false;
+        return;
       }
+
+      _faceService.processFrameAsync(
+        image,
+        onDetected: (faces) {
+          if (mounted) {
+            setState(() => _detectedFaces = faces);
+          }
+          if (faces.isEmpty) {
+            _isProcessing = false;
+          }
+        },
+        onRecognized: (finalFaces) {
+          if (mounted) {
+            setState(() => _detectedFaces = finalFaces);
+          }
+          _isProcessing = false;
+        },
+      );
     } catch (e, st) {
       print('[FaceRecognitionPage] Frame processing error: $e\n$st');
-    } finally {
       _isProcessing = false;
     }
   }

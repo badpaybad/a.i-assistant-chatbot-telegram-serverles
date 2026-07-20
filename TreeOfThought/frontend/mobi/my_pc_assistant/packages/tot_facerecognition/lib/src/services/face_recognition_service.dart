@@ -129,14 +129,45 @@ class FaceRecognitionService {
     }
   }
 
-  /// Xử lý 1 frame theo pipeline 2 luồng riêng biệt:
-  /// UI Thread → Luồng 1 (Detect) → Luồng 2 (Vector & Compare) → UI Thread
+  /// Xử lý 1 frame theo luồng bất đồng bộ độc lập:
+  /// - BƯỚC 1: Luồng 1 (Detect) trả về bbox ngay -> gọi onDetected(faces)
+  /// - BƯỚC 2: Luồng 2 (Recognize) tính vector & compare ngầm -> gọi onRecognized(finalFaces)
+  void processFrameAsync(
+    img.Image frame, {
+    required Function(List<FaceDetectionResult> detectedFaces) onDetected,
+    required Function(List<FaceDetectionResult> recognizedFaces) onRecognized,
+  }) {
+    if (!_isInitialized || _detSendPort == null || _recSendPort == null) return;
+
+    final detReplyPort = ReceivePort();
+    detReplyPort.listen((detMessage) {
+      detReplyPort.close();
+      if (detMessage is List<FaceDetectionResult>) {
+        // 1. Trả về vị trí Bbox & Keypoints ngay lập tức cho UI vẽ màn hình
+        onDetected(detMessage);
+
+        if (detMessage.isEmpty) return;
+
+        // 2. Chuyển tiếp tới Luồng 2 để tính vector & compare độc lập ở background
+        final recReplyPort = ReceivePort();
+        recReplyPort.listen((recMessage) {
+          recReplyPort.close();
+          if (recMessage is List<FaceDetectionResult>) {
+            onRecognized(recMessage);
+          }
+        });
+        _recSendPort!.send(_ProcessRecMessage(frame, detMessage, recReplyPort.sendPort));
+      }
+    });
+
+    _detSendPort!.send(_ProcessDetMessage(frame, detReplyPort.sendPort));
+  }
+
   Future<List<FaceDetectionResult>> processFrame(img.Image frame) async {
     if (!_isInitialized || _detSendPort == null || _recSendPort == null) {
       return [];
     }
 
-    // BƯỚC 1: Gửi frame tới Luồng 1 (Detection Isolate)
     final detReplyPort = ReceivePort();
     _detSendPort!.send(_ProcessDetMessage(frame, detReplyPort.sendPort));
     final detectedFaces =
@@ -146,7 +177,6 @@ class FaceRecognitionService {
       return [];
     }
 
-    // BƯỚC 2: Gửi frame & detectedFaces tới Luồng 2 (Recognition Isolate)
     final recReplyPort = ReceivePort();
     _recSendPort!
         .send(_ProcessRecMessage(frame, detectedFaces, recReplyPort.sendPort));
@@ -414,31 +444,13 @@ List<FaceDetectionResult> _detectFacesInIsolate(
 
 Float32List? _extractEmbeddingInIsolate(
     OrtSession recSession, img.Image src, FaceDetectionResult face) {
-  final aligned = _alignFaceHelper(src, face.keypoints);
-  if (aligned == null) return null;
-  return _vectorFaceInIsolate(recSession, aligned);
-}
-
-img.Image? _alignFaceHelper(img.Image src, List<List<double>> kps) {
-  if (kps.length < 5) return null;
-  final transform = _estimateAffinePartial2DHelper(kps, _refPoints);
+  if (face.keypoints.length < 5) return null;
+  final transform = _estimateAffinePartial2DHelper(face.keypoints, _refPoints);
   if (transform == null) return null;
-  return _warpAffineHelper(src, transform, _recInputSize, _recInputSize);
-}
 
-Float32List? _vectorFaceInIsolate(OrtSession recSession, img.Image aligned) {
-  final inputData = Float32List(1 * 3 * _recInputSize * _recInputSize);
-  for (int y = 0; y < _recInputSize; y++) {
-    for (int x = 0; x < _recInputSize; x++) {
-      final pixel = aligned.getPixel(x, y);
-      inputData[0 * _recInputSize * _recInputSize + y * _recInputSize + x] =
-          pixel.b.toDouble();
-      inputData[1 * _recInputSize * _recInputSize + y * _recInputSize + x] =
-          pixel.g.toDouble();
-      inputData[2 * _recInputSize * _recInputSize + y * _recInputSize + x] =
-          pixel.r.toDouble();
-    }
-  }
+  final inputData = _warpAffineAndBuildTensor(
+      src, transform, _recInputSize, _recInputSize);
+  if (inputData == null) return null;
 
   final inputName = recSession.inputNames.first;
   final inputTensor = OrtValueTensor.createTensorWithDataList(
@@ -478,6 +490,41 @@ Float32List? _vectorFaceInIsolate(OrtSession recSession, img.Image aligned) {
   return embedding;
 }
 
+Float32List? _warpAffineAndBuildTensor(
+    img.Image src, List<List<double>> M, int dstW, int dstH) {
+  final a = M[0][0], b_ = M[0][1], tx = M[0][2];
+  final c = M[1][0], d = M[1][1], ty = M[1][2];
+  final det = a * d - b_ * c;
+  if (det.abs() < 1e-10) return null;
+
+  final ia = d / det, ib = -b_ / det;
+  final ic = -c / det, id_ = a / det;
+
+  final inputData = Float32List(1 * 3 * dstW * dstH);
+  final planeSize = dstW * dstH;
+
+  for (int dy = 0; dy < dstH; dy++) {
+    final nyBase = dy - ty;
+    final rowOffset = dy * dstW;
+
+    for (int dx = 0; dx < dstW; dx++) {
+      final nx = dx - tx;
+      final sx = (ia * nx + ib * nyBase).round();
+      final sy = (ic * nx + id_ * nyBase).round();
+
+      if (sx >= 0 && sx < src.width && sy >= 0 && sy < src.height) {
+        final pixel = src.getPixel(sx, sy);
+        final int offset = rowOffset + dx;
+        inputData[offset] = pixel.b.toDouble();
+        inputData[planeSize + offset] = pixel.g.toDouble();
+        inputData[2 * planeSize + offset] = pixel.r.toDouble();
+      }
+    }
+  }
+
+  return inputData;
+}
+
 double _cosineSimilarityHelper(Float32List v1, Float32List v2) {
   if (v1.length != v2.length) return 0.0;
   double dot = 0.0;
@@ -487,7 +534,13 @@ double _cosineSimilarityHelper(Float32List v1, Float32List v2) {
   return dot.clamp(-1.0, 1.0);
 }
 
+final Map<int, List<List<double>>> _anchorCache = {};
+
 List<List<double>> _getAnchorCentersHelper(int gridH, int gridW, int stride) {
+  if (_anchorCache.containsKey(stride)) {
+    return _anchorCache[stride]!;
+  }
+
   final centers = <List<double>>[];
   for (int y = 0; y < gridH; y++) {
     for (int x = 0; x < gridW; x++) {
@@ -498,6 +551,7 @@ List<List<double>> _getAnchorCentersHelper(int gridH, int gridW, int stride) {
       }
     }
   }
+  _anchorCache[stride] = centers;
   return centers;
 }
 
