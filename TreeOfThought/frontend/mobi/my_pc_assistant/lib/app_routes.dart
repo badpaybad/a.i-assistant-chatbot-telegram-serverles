@@ -6,6 +6,7 @@ import 'pages/hardware_page.dart';
 import 'pages/vector_search_page.dart';
 import 'package:tot_core/tot_core.dart';
 import 'package:tot_buss_files/tot_buss_files.dart';
+import 'package:tot_facerecognition/tot_facerecognition.dart';
 
 class AppRoutes {
   static const String signIn = '/sign-in';
@@ -14,6 +15,7 @@ class AppRoutes {
   static const String hardware = '/hardware';
   static const String vectorSearch = '/vector-search';
   static const String filesFolders = '/files-folders';
+  static const String faceRecognition = '/face-recognition';
 
   static Map<String, WidgetBuilder> get routes => {
     signIn: (context) => const SignInPage(),
@@ -25,6 +27,7 @@ class AppRoutes {
       requiredPermission: 'files.view',
       child: FolderContentPage(),
     ),
+    faceRecognition: (context) => const FaceRecognitionPage(),
   };
 
   static String get initialRoute => signIn;

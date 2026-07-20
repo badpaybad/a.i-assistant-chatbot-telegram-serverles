@@ -1,0 +1,26 @@
+name: tot_facerecognition
+description: "Business module for real-time face detection and recognition using InsightFace ONNX models."
+version: 1.0.0
+publish_to: "none"
+
+environment:
+  sdk: ^3.7.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  camera: ^0.11.2+1
+  image: ^4.2.0
+  onnxruntime: ^1.4.1
+  path_provider: ^2.1.5
+  path: ^1.9.0
+  permission_handler: ^12.0.1
+  tot_core:
+    path: ../tot_core
+
+flutter:
+  assets:
+    - assets/models/det_10g.onnx
+    - assets/models/2d106det.onnx
+    - assets/models/resnet100.onnx
+    - assets/faces/user_cccd.jpg

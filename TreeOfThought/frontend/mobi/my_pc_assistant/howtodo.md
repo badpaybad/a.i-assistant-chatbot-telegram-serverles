@@ -89,7 +89,80 @@ Tuân thủ yêu cầu chia tách rõ ràng:
 - **Hỗ trợ OIDC Logout**: Khi đăng xuất, ứng dụng sẽ mở trình duyệt để gọi endpoint `api/auth/logout` của OIDC Provider nhằm xóa session cookie trên server, đảm bảo đăng xuất hoàn toàn (Single Sign-Out).
 - Sau khi OIDC Provider callback về app, ứng dụng sẽ xóa session cục bộ và chuyển hướng người dùng quay lại màn hình Đăng nhập (`SignInPage`).
 
---- 
+---
+
+### Bước 15: Feature Nhận diện khuôn mặt (tot_facerecognition) - [HOÀN THÀNH]
+
+#### Mục tiêu
+Thêm tính năng nhận diện khuôn mặt thời gian thực sử dụng ONNX InsightFace models, hiển thị bbox overlay trên camera stream và so sánh với ảnh mẫu CCCD của người dùng.
+
+#### Models sẵn có (từ /work/ekycwebapi/.../aimodels/)
+| Model | File | Kích thước | Chức năng |
+|-------|------|------------|-----------|
+| Face Detector | `buffalo_l/det_10g.onnx` | ~16MB | Detect bbox + 5 keypoints |
+| Landmark 106 | `buffalo_l/2d106det.onnx` | ~5MB | 106 điểm landmark khuôn mặt |
+| Face Embedding | `weights/models/updated_resnet100.onnx` | ~249MB | ArcFace embedding 512-dim |
+
+#### Pipeline xử lý (port từ InsightFaceHelper.cs)
+```
+Frame camera → DetectFace (det_10g) → Bbox + 5 Kps
+            → ExtractLandmarks106 (2d106det) → 106 landmarks
+            → AlignFace (affine warp 112x112) → VectorFace (resnet100)
+            → Embedding [512] → CompareVector (cosine similarity)
+```
+
+#### Cấu trúc Package mới: `packages/tot_facerecognition/`
+```
+packages/tot_facerecognition/
+├── pubspec.yaml
+├── assets/
+│   ├── models/
+│   │   ├── det_10g.onnx       (~16MB, copy từ aimodels)
+│   │   ├── 2d106det.onnx      (~5MB, copy từ aimodels)
+│   │   └── resnet100.onnx     (~249MB, copy từ aimodels - chỉ bundled trong debug)
+│   └── faces/
+│       └── user_cccd.jpg      (copy từ faceids/038084019679/cccd.jpg)
+└── lib/
+    ├── tot_facerecognition.dart     # barrel export
+    └── src/
+        ├── models/
+        │   └── face_detection_result.dart    # Data class: bbox, score, embedding
+        ├── services/
+        │   ├── face_recognition_service.dart  # Xử lý detect, embed, compare
+        │   └── model_loader_service.dart      # Load/copy ONNX model từ assets
+        ├── pages/
+        │   └── face_recognition_page.dart     # Page chính: camera + UI
+        └── widgets/
+            ├── camera_bbox_painter.dart       # CustomPainter vẽ bbox overlay
+            └── face_score_overlay.dart        # Widget hiển thị score
+```
+
+#### Thư viện bổ sung (thêm vào pubspec.yaml của package)
+- `onnxruntime: ^1.5.1` — chạy ONNX model trực tiếp (không cần convert sang TFLite)
+- `image: ^4.0.0` — xử lý ảnh, resize, affine transform
+
+#### Cập nhật App Shell
+- **`pubspec.yaml`**: thêm `tot_facerecognition: path: ./packages/tot_facerecognition`
+- **`lib/app_routes.dart`**: thêm route `faceRecognition: '/face-recognition'`
+- **`lib/pages/home_page.dart`**: thêm `FeatureItem` "Face Recognition" vào GridView
+
+#### Luồng UI
+1. Tap "Face Recognition" trên Home → mở `FaceRecognitionPage`
+2. Init camera (front cam mặc định) → stream frames
+3. Throttle 5fps gọi `FaceRecognitionService.processFrame()`
+4. Detect → Embed → Compare với `userEmbedding` (tính từ cccd.jpg lúc khởi động)
+5. Vẽ bbox (xanh nếu score > 0.4, đỏ nếu không khớp) + hiển thị score %
+6. FAB icon camera flip → đổi giữa camera trước và camera sau
+
+#### Lưu ý kỹ thuật
+- **Isolate**: Xử lý inference trong `Isolate` riêng để không block UI thread
+- **Throttle**: Chỉ process 1 frame mỗi 200ms (5fps) tránh quá tải
+- **Model lớn**: resnet100.onnx (~249MB) bundle vào assets của package; với production cần xem xét download on-demand
+- **Normalization**: 
+  - det_10g: `(pixel - 127.5) / 128.0` (RGB order)
+  - resnet100: pixel raw (không normalize), giá trị 0-255
+
+---
 Lưu ý quan trọng:
 Để các tính năng Firebase hoạt động, bạn cần thực hiện bước cuối cùng là thêm các tệp cấu hình từ Firebase Console:
 

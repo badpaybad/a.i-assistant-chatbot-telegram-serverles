@@ -42,3 +42,11 @@ bổ xung thêm nút sigout ở trong home , ngay cạnh avatar , khi click vào
 
 **cập nhật 2026-05-18 12:09:09**
 dropdown đang cho còn 3 IP , có thể dropdown list cho thêm việc người dùng gõ text dạng IP port vào để test SSO OIDC server ip đó 
+
+**cập nhật 2026-07-20 19:20:07** dựa vào /work/ekycwebapi/WebSafeBrowserFW47/CameraController/InsightFaceHelper.cs cần lấy model về cho app mobi ở /work/ekycwebapi/WebSafeBrowserFW47/CameraController/aimodels tạo thêm feature nghiệp vụ tot_facerecognition vào TreeOfThought/frontend/mobi/my_pc_assistant/packages 
+    dùng onnxruntime để load các model onnx cho việc detection và face vector và compare facce.
+    cho phép chọn qua lại giữa camera trước và camera sau 
+    đưa tính năng vào feature main menu của app mobi 
+    khi mở tính năng lên màn hình sẽ hiển thị camera stream, khi detect được thì cần vẽ bbox overlay lên video 
+    lấy face image /work/ekycwebapi/WebSafeBrowserFW47/CameraController/faceids/038084019679/cccd.jpg để làm ảnh gốc giả lập là face của người dùng đang đăng nhập để compare với face detected và hiển thị score  
+
