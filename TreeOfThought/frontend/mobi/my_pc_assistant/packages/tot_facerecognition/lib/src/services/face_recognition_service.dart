@@ -335,7 +335,13 @@ void _detectionIsolateEntryPoint(SendPort mainToDetPort) {
     if (message is _InitDetMessage) {
       try {
         OrtEnv.instance.init();
-        final options = OrtSessionOptions();
+        final options = OrtSessionOptions()
+        // 1. Tối ưu hóa đồ thị mô hình ở mức cao nhất
+  ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll)
+  // 2. Tối ưu số luồng xử lý đa nhân (đặt 2-4 luồng tùy cấu hình máy)
+  ..setIntraOpNumThreads(4)
+  ..setInterOpNumThreads(4);
+
         detSession = OrtSession.fromFile(File(message.modelPath), options);
         message.replyPort.send(true);
       } catch (e) {
@@ -375,7 +381,19 @@ void _recognitionIsolateEntryPoint(SendPort mainToRecPort) {
     if (message is _InitRecMessage) {
       try {
         OrtEnv.instance.init();
-        final options = OrtSessionOptions();
+        final options = OrtSessionOptions()
+        // 1. Tối ưu hóa đồ thị mô hình ở mức cao nhất
+  ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll)
+  // 2. Tối ưu số luồng xử lý đa nhân (đặt 2-4 luồng tùy cấu hình máy)
+  ..setIntraOpNumThreads(4)
+  ..setInterOpNumThreads(4);
+
+      // 🚀 Bật cờ NNAPI chuẩn cho package onnxruntime Flutter
+// if (Platform.isAndroid) {
+//   options.appendExecutionProviderCustom({"NNAPI": {}});
+// }
+// options.appendDefaultProviders(); // Tự động kích hoạt NNAPI/CoreML/CUDA...
+
         recSession = OrtSession.fromFile(File(message.recModelPath), options);
 
         final detSessionForUserCCCD =
