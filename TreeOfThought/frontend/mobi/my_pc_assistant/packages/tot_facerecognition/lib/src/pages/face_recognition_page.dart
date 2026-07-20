@@ -355,7 +355,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
                 faces: _detectedFaces,
                 imageSize: _imageSize,
                 previewSize: previewSize,
-                isFrontCamera: false, // Đã mirror ở Transform, không cần mirror lại
+                isFrontCamera: _isFrontCamera,
               ),
             ),
           ],

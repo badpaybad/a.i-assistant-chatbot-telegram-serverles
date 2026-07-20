@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/face_detection_result.dart';
 
@@ -24,6 +25,16 @@ class CameraBboxPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (faces.isEmpty || imageSize.width == 0 || imageSize.height == 0) return;
+
+    // Tính toán scale và offset theo BoxFit.cover
+    final scaleX = size.width / imageSize.width;
+    final scaleY = size.height / imageSize.height;
+    final fittedScale = math.max(scaleX, scaleY);
+
+    final offsetX = (size.width - imageSize.width * fittedScale) / 2;
+    final offsetY = (size.height - imageSize.height * fittedScale) / 2;
+
     for (final face in faces) {
       final color = face.isMatched
           ? const Color(0xFF00E676) // xanh lá nếu khớp
@@ -32,24 +43,19 @@ class CameraBboxPainter extends CustomPainter {
       final boxPaint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.5;
+        ..strokeWidth = 3.0;
 
       final cornerPaint = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 4.0
+        ..strokeWidth = 5.0
         ..strokeCap = StrokeCap.round;
 
-      // Scale bbox từ image space → preview space
-      final scaleX = size.width / imageSize.width;
-      final scaleY = size.height / imageSize.height;
+      double bx = offsetX + face.x * fittedScale;
+      double by = offsetY + face.y * fittedScale;
+      double bw = face.width * fittedScale;
+      double bh = face.height * fittedScale;
 
-      double bx = face.x * scaleX;
-      double by = face.y * scaleY;
-      double bw = face.width * scaleX;
-      double bh = face.height * scaleY;
-
-      // Mirror trục X nếu là camera trước
       if (isFrontCamera) {
         bx = size.width - bx - bw;
       }
@@ -57,13 +63,16 @@ class CameraBboxPainter extends CustomPainter {
       final rect = Rect.fromLTWH(bx, by, bw, bh);
 
       // Vẽ box mờ
-      canvas.drawRect(
-        rect,
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(8)),
         Paint()
-          ..color = color.withOpacity(0.15)
+          ..color = color.withOpacity(0.20)
           ..style = PaintingStyle.fill,
       );
-      canvas.drawRect(rect, boxPaint);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(rect, const Radius.circular(8)),
+        boxPaint,
+      );
 
       // Vẽ 4 góc nổi bật
       _drawCorners(canvas, rect, cornerPaint);
@@ -73,27 +82,21 @@ class CameraBboxPainter extends CustomPainter {
         ..color = Colors.yellowAccent
         ..style = PaintingStyle.fill;
       for (final kp in face.keypoints) {
-        double kpX = kp[0] * scaleX;
-        double kpY = kp[1] * scaleY;
+        double kpX = offsetX + kp[0] * fittedScale;
+        double kpY = offsetY + kp[1] * fittedScale;
         if (isFrontCamera) kpX = size.width - kpX;
-        canvas.drawCircle(Offset(kpX, kpY), 3, kpsPaint);
+        canvas.drawCircle(Offset(kpX, kpY), 4, kpsPaint);
       }
 
       // Score text
       final score = face.similarityScore;
       if (score != null) {
         final scoreText = '${(score * 100).clamp(0, 100).toStringAsFixed(1)}%';
-        final label = face.isMatched ? '✓ $scoreText' : '✗ $scoreText';
-        _drawLabel(canvas, label, Offset(bx, by - 6), color);
+        final label = face.isMatched ? '✓ MATCH $scoreText' : '✗ UNKNOWN $scoreText';
+        _drawLabel(canvas, label, Offset(bx, math.max(20.0, by - 26)), color);
+      } else {
+        _drawLabel(canvas, 'DETECTED', Offset(bx, math.max(20.0, by - 26)), color);
       }
-
-      // Detection confidence
-      _drawLabel(
-        canvas,
-        'det: ${(face.detectionScore * 100).toStringAsFixed(0)}%',
-        Offset(bx, by + bh + 4),
-        color.withOpacity(0.8),
-      );
     }
   }
 

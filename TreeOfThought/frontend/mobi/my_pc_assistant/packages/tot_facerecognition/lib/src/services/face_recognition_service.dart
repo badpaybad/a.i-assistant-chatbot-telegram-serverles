@@ -345,6 +345,7 @@ List<FaceDetectionResult> _detectFacesInIsolate(
   }
 
   final candidates = <FaceDetectionResult>[];
+  double maxScore = 0.0;
 
   for (int s = 0; s < _featStrides.length; s++) {
     final strideMap = mappedOutputs[s];
@@ -364,6 +365,7 @@ List<FaceDetectionResult> _detectFacesInIsolate(
       final double score = (scoreRow is List
           ? (scoreRow[0] as num).toDouble()
           : (scoreRow as num).toDouble());
+      if (score > maxScore) maxScore = score;
       if (score < _detThresh) continue;
 
       final pt = anchorCenters[i];
@@ -402,6 +404,9 @@ List<FaceDetectionResult> _detectFacesInIsolate(
     }
   }
 
+  if (candidates.isNotEmpty || maxScore > 0.1) {
+    print('[DetIsolate] Frame ${srcW}x${srcH}: maxScore=${maxScore.toStringAsFixed(3)}, candidates=${candidates.length}');
+  }
   return _nmsHelper(candidates, _nmsThresh);
 }
 
