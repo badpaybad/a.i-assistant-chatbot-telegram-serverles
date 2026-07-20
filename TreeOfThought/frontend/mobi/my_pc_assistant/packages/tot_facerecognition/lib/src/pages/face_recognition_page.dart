@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:permission_handler/permission_handler.dart';
@@ -181,60 +183,41 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
   Future<void> _processFrameAsync(CameraImage cameraImage) async {
     try {
-      final image = _convertCameraImage(cameraImage);
+      img.Image? image;
+      if (Platform.isAndroid) {
+        final args = _YuvArgs(
+          yBytes: cameraImage.planes[0].bytes,
+          uBytes: cameraImage.planes[1].bytes,
+          vBytes: cameraImage.planes[2].bytes,
+          width: cameraImage.width,
+          height: cameraImage.height,
+          uvRowStride: cameraImage.planes[1].bytesPerRow,
+          uvPixelStride: cameraImage.planes[1].bytesPerPixel ?? 1,
+          isFrontCamera: _isFrontCamera,
+        );
+        image = await compute(_convertYuv420Background, args);
+      } else {
+        image = img.Image.fromBytes(
+          width: cameraImage.width,
+          height: cameraImage.height,
+          bytes: cameraImage.planes[0].bytes.buffer,
+          format: img.Format.uint8,
+          numChannels: 4,
+          order: img.ChannelOrder.bgra,
+        );
+      }
+
       if (image == null) return;
 
       final faces = await _faceService.processFrame(image);
       if (mounted) {
         setState(() => _detectedFaces = faces);
       }
-    } catch (_) {
+    } catch (e) {
       // Bỏ qua frame lỗi
     } finally {
       _isProcessing = false;
     }
-  }
-
-  /// Convert CameraImage (YUV420 hoặc BGRA) sang img.Image
-  img.Image? _convertCameraImage(CameraImage cameraImage) {
-    if (Platform.isAndroid) {
-      return _convertYuv420(cameraImage);
-    } else {
-      return img.Image.fromBytes(
-        width: cameraImage.width,
-        height: cameraImage.height,
-        bytes: cameraImage.planes[0].bytes.buffer,
-        format: img.Format.uint8,
-        numChannels: 4,
-        order: img.ChannelOrder.bgra,
-      );
-    }
-  }
-
-  img.Image _convertYuv420(CameraImage image) {
-    final int width = image.width;
-    final int height = image.height;
-    final int uvRowStride = image.planes[1].bytesPerRow;
-    final int uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
-    final yPlane = image.planes[0].bytes;
-    final uPlane = image.planes[1].bytes;
-    final vPlane = image.planes[2].bytes;
-
-    final out = img.Image(width: width, height: height);
-    for (int y = 0; y < height; y++) {
-      for (int x = 0; x < width; x++) {
-        final Y = yPlane[y * width + x];
-        final uvIdx = (y ~/ 2) * uvRowStride + (x ~/ 2) * uvPixelStride;
-        final U = uPlane[uvIdx];
-        final V = vPlane[uvIdx];
-
-        int r = (Y + 1.402 * (V - 128)).clamp(0, 255).toInt();
-        int g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0, 255).toInt();
-        int b = (Y + 1.772 * (U - 128)).clamp(0, 255).toInt();
-        out.setPixelRgb(x, y, r, g, b);
-      }
-    }
-    return out;
   }
 
   // ─── Camera flip ───
@@ -422,6 +405,71 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
     _faceService.dispose();
     super.dispose();
   }
+}
+
+class _YuvArgs {
+  final Uint8List yBytes;
+  final Uint8List uBytes;
+  final Uint8List vBytes;
+  final int width;
+  final int height;
+  final int uvRowStride;
+  final int uvPixelStride;
+  final bool isFrontCamera;
+
+  _YuvArgs({
+    required this.yBytes,
+    required this.uBytes,
+    required this.vBytes,
+    required this.width,
+    required this.height,
+    required this.uvRowStride,
+    required this.uvPixelStride,
+    required this.isFrontCamera,
+  });
+}
+
+/// Convert YUV420 sang img.Image theo chiều xoay Portrait ở Isolate riêng (compute)
+img.Image _convertYuv420Background(_YuvArgs args) {
+  final int srcW = args.width;
+  final int srcH = args.height;
+  final int uvRowStride = args.uvRowStride;
+  final int uvPixelStride = args.uvPixelStride;
+  final yPlane = args.yBytes;
+  final uPlane = args.uBytes;
+  final vPlane = args.vBytes;
+
+  final int outW = srcH;
+  final int outH = srcW;
+  final out = img.Image(width: outW, height: outH);
+  final bool rotate270 = args.isFrontCamera;
+
+  for (int y = 0; y < srcH; y++) {
+    final int yRowOffset = y * srcW;
+    final int uvRowOffset = (y ~/ 2) * uvRowStride;
+
+    for (int x = 0; x < srcW; x++) {
+      final Y = yPlane[yRowOffset + x];
+      final uvIdx = uvRowOffset + (x ~/ 2) * uvPixelStride;
+      final U = uPlane[uvIdx];
+      final V = vPlane[uvIdx];
+
+      int r = (Y + 1.402 * (V - 128)).clamp(0, 255).toInt();
+      int g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0, 255).toInt();
+      int b = (Y + 1.772 * (U - 128)).clamp(0, 255).toInt();
+
+      int dstX, dstY;
+      if (rotate270) {
+        dstX = y;
+        dstY = srcW - 1 - x;
+      } else {
+        dstX = srcH - 1 - y;
+        dstY = x;
+      }
+      out.setPixelRgb(dstX, dstY, r, g, b);
+    }
+  }
+  return out;
 }
 
 // ─── Enums & helper widgets ───

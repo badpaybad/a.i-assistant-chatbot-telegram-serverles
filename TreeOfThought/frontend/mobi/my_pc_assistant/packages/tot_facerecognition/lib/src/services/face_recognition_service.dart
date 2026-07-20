@@ -64,14 +64,19 @@ class FaceRecognitionService {
           .load('packages/tot_facerecognition/assets/faces/user_cccd.jpg');
       final imageBytes = bytes.buffer.asUint8List();
       final image = img.decodeImage(imageBytes);
-      if (image == null) return;
+      if (image == null) {
+        print('[FaceRecognition] Cannot decode user_cccd.jpg image');
+        return;
+      }
 
       final faces = await detectFaces(image);
+      print('[FaceRecognition] User CCCD image detected ${faces.length} faces');
       if (faces.isEmpty) return;
 
       _userEmbedding = await _extractEmbedding(image, faces.first);
-    } catch (e) {
-      // Không block init nếu ảnh user lỗi
+      print('[FaceRecognition] User CCCD embedding extracted successfully');
+    } catch (e, st) {
+      print('[FaceRecognition] Error initializing user embedding: $e\n$st');
     }
   }
 
@@ -114,23 +119,23 @@ class FaceRecognitionService {
     }
     final double detScale = newH / srcH;
 
-    // Resize + pad to 640x640
+    // Resize image
     final resized = img.copyResize(src, width: newW, height: newH,
         interpolation: img.Interpolation.linear);
-    final padded = img.Image(width: _detInputSize, height: _detInputSize);
-    img.compositeImage(padded, resized, dstX: 0, dstY: 0);
 
-    // Normalize → Float32List NCHW (R, G, B), (pixel - 127.5) / 128.0
+    // Prepare 640x640 float tensor input (NCHW format, RGB order, (pixel-127.5)/128.0)
     final inputData = Float32List(1 * 3 * _detInputSize * _detInputSize);
-    for (int y = 0; y < _detInputSize; y++) {
-      for (int x = 0; x < _detInputSize; x++) {
-        final pixel = padded.getPixel(x, y);
-        inputData[0 * _detInputSize * _detInputSize + y * _detInputSize + x] =
-            (pixel.r.toDouble() - 127.5) / 128.0;
-        inputData[1 * _detInputSize * _detInputSize + y * _detInputSize + x] =
-            (pixel.g.toDouble() - 127.5) / 128.0;
-        inputData[2 * _detInputSize * _detInputSize + y * _detInputSize + x] =
-            (pixel.b.toDouble() - 127.5) / 128.0;
+    const double bgVal = -127.5 / 128.0;
+    inputData.fillRange(0, inputData.length, bgVal);
+
+    final int planeSize = _detInputSize * _detInputSize;
+    for (int y = 0; y < newH; y++) {
+      for (int x = 0; x < newW; x++) {
+        final pixel = resized.getPixel(x, y);
+        final int offset = y * _detInputSize + x;
+        inputData[offset] = (pixel.r.toDouble() - 127.5) / 128.0;
+        inputData[planeSize + offset] = (pixel.g.toDouble() - 127.5) / 128.0;
+        inputData[2 * planeSize + offset] = (pixel.b.toDouble() - 127.5) / 128.0;
       }
     }
 
@@ -156,8 +161,12 @@ class FaceRecognitionService {
       final rawValue = tensor.value;
       if (rawValue == null) { tensor.release(); continue; }
 
-      // rawValue là List<List<double>> khi shape là [n, m]
-      final data = rawValue as List;
+      // ONNX Runtime returns 3D shape [1, N, C] -> unwrap batch dimension to [N, C]
+      List data = rawValue as List;
+      if (data.length == 1 && data.first is List) {
+        data = data.first as List;
+      }
+
       final anchorNum = data.length;
       final contentSize = (data.isNotEmpty && data[0] is List)
           ? (data[0] as List).length
@@ -196,8 +205,8 @@ class FaceRecognitionService {
 
       for (int i = 0; i < anchorCenters.length; i++) {
         final scoreRow = scoreData[i];
-        final score = (scoreRow is List ? scoreRow[0] : scoreRow) as num;
-        if (score.toDouble() < _detThresh) continue;
+        final double score = (scoreRow is List ? (scoreRow[0] as num).toDouble() : (scoreRow as num).toDouble());
+        if (score < _detThresh) continue;
 
         final pt = anchorCenters[i];
         final bbox = bboxData[i] as List;
@@ -230,7 +239,7 @@ class FaceRecognitionService {
         candidates.add(FaceDetectionResult(
           bbox: [x1, y1, x2 - x1, y2 - y1],
           keypoints: kps,
-          detectionScore: score.toDouble(),
+          detectionScore: score,
         ));
       }
     }

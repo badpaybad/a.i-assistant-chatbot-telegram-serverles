@@ -139,7 +139,7 @@ class _HomePageState extends State<HomePage> {
                             onTap: () => Navigator.pushNamed(context, AppRoutes.vectorSearch),
                           ),
                           FeatureItem(
-                            title: 'Face\nRecognition', 
+                            title: 'Face Recognition', 
                             icon: Icons.face_retouching_natural, 
                             color: Colors.tealAccent.shade700,
                             onTap: () => Navigator.pushNamed(context, AppRoutes.faceRecognition),

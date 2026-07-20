@@ -38,10 +38,12 @@ class FeatureItem extends StatelessWidget {
             ),
             child: Icon(icon, color: color, size: 30),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
           Text(
             title,
             textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
