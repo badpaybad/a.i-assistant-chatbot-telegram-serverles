@@ -29,7 +29,7 @@ class FaceRecognitionService {
   static const int _detInputSize = 640;
   static const List<int> _featStrides = [8, 16, 32];
   static const int _numAnchors = 2;
-  static const double _detThresh = 0.5;
+  static const double _detThresh = 0.20;
   static const double _nmsThresh = 0.4;
 
   // Tham số rec model (ArcFace resnet100)
@@ -190,6 +190,7 @@ class FaceRecognitionService {
 
     final candidates = <FaceDetectionResult>[];
 
+    double maxScore = 0.0;
     for (int s = 0; s < _featStrides.length; s++) {
       final strideMap = mappedOutputs[s];
       if (strideMap == null) continue;
@@ -206,6 +207,7 @@ class FaceRecognitionService {
       for (int i = 0; i < anchorCenters.length; i++) {
         final scoreRow = scoreData[i];
         final double score = (scoreRow is List ? (scoreRow[0] as num).toDouble() : (scoreRow as num).toDouble());
+        if (score > maxScore) maxScore = score;
         if (score < _detThresh) continue;
 
         final pt = anchorCenters[i];
@@ -244,7 +246,12 @@ class FaceRecognitionService {
       }
     }
 
-    return _nms(candidates, _nmsThresh);
+    print('[FaceRecognition] Max anchor score: $maxScore, candidates above threshold: ${candidates.length}');
+    final finalFaces = _nms(candidates, _nmsThresh);
+    if (finalFaces.isNotEmpty) {
+      print('[FaceRecognition] DETECTED ${finalFaces.length} faces! (candidates: ${candidates.length})');
+    }
+    return finalFaces;
   }
 
   // ─────────────────────────────────────────────────────────

@@ -21,12 +21,20 @@ import 'services/objectbox.dart';
 import 'package:tot_core/tot_core.dart';
 import 'package:tot_buss_files/tot_buss_files.dart';
 
+import 'dart:io';
+import 'package:camera_android/camera_android.dart';
+import 'package:camera_platform_interface/camera_platform_interface.dart';
+
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 late ObjectBox objectbox;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  if (Platform.isAndroid) {
+    AndroidCamera.registerWith();
+  }
   
   // Khởi tạo Local Storage (SharedPreferences) trước tiên để các dịch vụ truy cập đồng bộ
   await LocalStorageService.init();

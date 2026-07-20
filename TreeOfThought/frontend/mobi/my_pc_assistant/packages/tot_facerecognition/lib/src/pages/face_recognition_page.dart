@@ -148,7 +148,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
     final controller = CameraController(
       camera,
-      ResolutionPreset.medium, // 720p để đủ nhẹ cho inference
+      ResolutionPreset.medium, // Native 720p/480p hardware supported stream
       enableAudio: false,
       imageFormatGroup: Platform.isAndroid
           ? ImageFormatGroup.yuv420
@@ -160,7 +160,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
     _cameraController = controller;
     _imageSize = Size(
-      controller.value.previewSize!.height, // landscape swap
+      controller.value.previewSize!.height, // landscape swap (portrait)
       controller.value.previewSize!.width,
     );
 
@@ -183,41 +183,77 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
   Future<void> _processFrameAsync(CameraImage cameraImage) async {
     try {
-      img.Image? image;
-      if (Platform.isAndroid) {
-        final args = _YuvArgs(
-          yBytes: cameraImage.planes[0].bytes,
-          uBytes: cameraImage.planes[1].bytes,
-          vBytes: cameraImage.planes[2].bytes,
-          width: cameraImage.width,
-          height: cameraImage.height,
-          uvRowStride: cameraImage.planes[1].bytesPerRow,
-          uvPixelStride: cameraImage.planes[1].bytesPerPixel ?? 1,
-          isFrontCamera: _isFrontCamera,
-        );
-        image = await compute(_convertYuv420Background, args);
-      } else {
-        image = img.Image.fromBytes(
-          width: cameraImage.width,
-          height: cameraImage.height,
-          bytes: cameraImage.planes[0].bytes.buffer,
-          format: img.Format.uint8,
-          numChannels: 4,
-          order: img.ChannelOrder.bgra,
-        );
-      }
-
+      final image = _convertCameraImageSync(cameraImage);
       if (image == null) return;
 
       final faces = await _faceService.processFrame(image);
       if (mounted) {
         setState(() => _detectedFaces = faces);
       }
-    } catch (e) {
-      // Bỏ qua frame lỗi
+    } catch (e, st) {
+      print('[FaceRecognitionPage] Frame processing error: $e\n$st');
     } finally {
       _isProcessing = false;
     }
+  }
+
+  img.Image? _convertCameraImageSync(CameraImage cameraImage) {
+    if (Platform.isAndroid) {
+      return _convertYuv420Sync(cameraImage);
+    } else {
+      return img.Image.fromBytes(
+        width: cameraImage.width,
+        height: cameraImage.height,
+        bytes: cameraImage.planes[0].bytes.buffer,
+        format: img.Format.uint8,
+        numChannels: 4,
+        order: img.ChannelOrder.bgra,
+      );
+    }
+  }
+
+  img.Image _convertYuv420Sync(CameraImage image) {
+    final int srcW = image.width;
+    final int srcH = image.height;
+    final int uvRowStride = image.planes[1].bytesPerRow;
+    final int uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
+    final yPlane = image.planes[0].bytes;
+    final uPlane = image.planes[1].bytes;
+    final vPlane = image.planes[2].bytes;
+
+    final int outW = srcH;
+    final int outH = srcW;
+    final out = img.Image(width: outW, height: outH);
+    final bool rotate270 = _isFrontCamera;
+
+    for (int y = 0; y < srcH; y++) {
+      final int yRowOffset = y * srcW;
+      final int uvRowOffset = (y ~/ 2) * uvRowStride;
+
+      for (int x = 0; x < srcW; x++) {
+        final Y = yPlane[yRowOffset + x];
+        final uvIdx = uvRowOffset + (x ~/ 2) * uvPixelStride;
+        final U = uPlane[uvIdx];
+        final V = vPlane[uvIdx];
+
+        int r = (Y + 1.402 * (V - 128)).clamp(0, 255).toInt();
+        int g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0, 255).toInt();
+        int b = (Y + 1.772 * (U - 128)).clamp(0, 255).toInt();
+
+        int dstX, dstY;
+        if (_isFrontCamera) {
+          // Front camera (270° CW)
+          dstX = srcH - 1 - y;
+          dstY = x;
+        } else {
+          // Back camera (90° CW)
+          dstX = y;
+          dstY = srcW - 1 - x;
+        }
+        out.setPixelRgb(dstX, dstY, r, g, b);
+      }
+    }
+    return out;
   }
 
   // ─── Camera flip ───
