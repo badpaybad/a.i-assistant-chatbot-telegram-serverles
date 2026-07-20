@@ -51,14 +51,10 @@ class CameraBboxPainter extends CustomPainter {
         ..strokeWidth = 5.0
         ..strokeCap = StrokeCap.round;
 
-      double bx = offsetX + face.x * fittedScale;
-      double by = offsetY + face.y * fittedScale;
-      double bw = face.width * fittedScale;
-      double bh = face.height * fittedScale;
-
-      if (isFrontCamera) {
-        bx = size.width - bx - bw;
-      }
+      double bx = face.x * scaleX;
+      double by = face.y * scaleY;
+      double bw = face.width * scaleX;
+      double bh = face.height * scaleY;
 
       final rect = Rect.fromLTWH(bx, by, bw, bh);
 
@@ -82,9 +78,8 @@ class CameraBboxPainter extends CustomPainter {
         ..color = Colors.yellowAccent
         ..style = PaintingStyle.fill;
       for (final kp in face.keypoints) {
-        double kpX = offsetX + kp[0] * fittedScale;
-        double kpY = offsetY + kp[1] * fittedScale;
-        if (isFrontCamera) kpX = size.width - kpX;
+        double kpX = kp[0] * scaleX;
+        double kpY = kp[1] * scaleY;
         canvas.drawCircle(Offset(kpX, kpY), 4, kpsPaint);
       }
 

@@ -18,7 +18,7 @@ import 'model_loader_service.dart';
 const int _detInputSize = 640;
 const List<int> _featStrides = [8, 16, 32];
 const int _numAnchors = 2;
-const double _detThresh = 0.20;
+const double _detThresh = 0.15;
 const double _nmsThresh = 0.4;
 const int _recInputSize = 112;
 
@@ -276,10 +276,8 @@ List<FaceDetectionResult> _detectFacesInIsolate(
     newW = _detInputSize;
     newH = (newW * imRatio).round();
   }
-  final double detScale = newH / srcH;
-
-  final resized = img.copyResize(src,
-      width: newW, height: newH, interpolation: img.Interpolation.linear);
+  final double detScaleX = newW / srcW;
+  final double detScaleY = newH / srcH;
 
   final inputData = Float32List(1 * 3 * _detInputSize * _detInputSize);
   const double bgVal = -127.5 / 128.0;
@@ -287,12 +285,16 @@ List<FaceDetectionResult> _detectFacesInIsolate(
 
   final int planeSize = _detInputSize * _detInputSize;
   for (int y = 0; y < newH; y++) {
+    final int srcY = (y * srcH) ~/ newH;
+    final int offsetRow = y * _detInputSize;
+
     for (int x = 0; x < newW; x++) {
-      final pixel = resized.getPixel(x, y);
-      final int offset = y * _detInputSize + x;
-      inputData[offset] = (pixel.r.toDouble() - 127.5) / 128.0;
-      inputData[planeSize + offset] = (pixel.g.toDouble() - 127.5) / 128.0;
-      inputData[2 * planeSize + offset] = (pixel.b.toDouble() - 127.5) / 128.0;
+      final int srcX = (x * srcW) ~/ newW;
+      final pixel = src.getPixel(srcX, srcY);
+      final int offset = offsetRow + x;
+      inputData[offset] = (pixel.r - 127.5) / 128.0;
+      inputData[planeSize + offset] = (pixel.g - 127.5) / 128.0;
+      inputData[2 * planeSize + offset] = (pixel.b - 127.5) / 128.0;
     }
   }
 
@@ -376,10 +378,10 @@ List<FaceDetectionResult> _detectFacesInIsolate(
       final dRight = (bbox[2] as num).toDouble() * stride;
       final dBottom = (bbox[3] as num).toDouble() * stride;
 
-      double x1 = (pt[0] - dLeft) / detScale;
-      double y1 = (pt[1] - dTop) / detScale;
-      double x2 = (pt[0] + dRight) / detScale;
-      double y2 = (pt[1] + dBottom) / detScale;
+      double x1 = (pt[0] - dLeft) / detScaleX;
+      double y1 = (pt[1] - dTop) / detScaleY;
+      double x2 = (pt[0] + dRight) / detScaleX;
+      double y2 = (pt[1] + dBottom) / detScaleY;
 
       x1 = x1.clamp(0, srcW.toDouble());
       y1 = y1.clamp(0, srcH.toDouble());
@@ -391,8 +393,8 @@ List<FaceDetectionResult> _detectFacesInIsolate(
       for (int k = 0; k < 5; k++) {
         final dx = (kpsRow[k * 2] as num).toDouble() * stride;
         final dy = (kpsRow[k * 2 + 1] as num).toDouble() * stride;
-        final kx = ((pt[0] + dx) / detScale).clamp(0, srcW.toDouble());
-        final ky = ((pt[1] + dy) / detScale).clamp(0, srcH.toDouble());
+        final kx = ((pt[0] + dx) / detScaleX).clamp(0, srcW.toDouble());
+        final ky = ((pt[1] + dy) / detScaleY).clamp(0, srcH.toDouble());
         kps.add([kx.toDouble(), ky.toDouble()]);
       }
 

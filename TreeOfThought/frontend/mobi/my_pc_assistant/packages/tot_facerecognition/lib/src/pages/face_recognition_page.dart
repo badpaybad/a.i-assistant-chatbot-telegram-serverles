@@ -46,7 +46,7 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
   // Throttle: chỉ process 1 frame mỗi 200ms
   DateTime _lastFrameTime = DateTime.fromMillisecondsSinceEpoch(0);
-  static const Duration _frameInterval = Duration(milliseconds: 200);
+  static const Duration _frameInterval = Duration(milliseconds: 50);
 
   @override
   void initState() {
@@ -215,26 +215,35 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
   img.Image _convertYuv420Sync(CameraImage image) {
     final int srcW = image.width;
     final int srcH = image.height;
-    final int uvRowStride = image.planes[1].bytesPerRow;
-    final int uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
+
     final yPlane = image.planes[0].bytes;
     final uPlane = image.planes[1].bytes;
     final vPlane = image.planes[2].bytes;
 
+    final int yRowStride = image.planes[0].bytesPerRow;
+    final int uRowStride = image.planes[1].bytesPerRow;
+    final int uPixelStride = image.planes[1].bytesPerPixel ?? 1;
+    final int vRowStride = image.planes[2].bytesPerRow;
+    final int vPixelStride = image.planes[2].bytesPerPixel ?? 1;
+
     final int outW = srcH;
     final int outH = srcW;
     final out = img.Image(width: outW, height: outH);
-    final bool rotate270 = _isFrontCamera;
 
     for (int y = 0; y < srcH; y++) {
-      final int yRowOffset = y * srcW;
-      final int uvRowOffset = (y ~/ 2) * uvRowStride;
+      final int yRowOffset = y * yRowStride;
+      final int uvY = y ~/ 2;
+      final int uRowOffset = uvY * uRowStride;
+      final int vRowOffset = uvY * vRowStride;
 
       for (int x = 0; x < srcW; x++) {
-        final Y = yPlane[yRowOffset + x];
-        final uvIdx = uvRowOffset + (x ~/ 2) * uvPixelStride;
-        final U = uPlane[uvIdx];
-        final V = vPlane[uvIdx];
+        final int uvX = x ~/ 2;
+        final int Y = yPlane[yRowOffset + x];
+        final int uIdx = uRowOffset + uvX * uPixelStride;
+        final int vIdx = vRowOffset + uvX * vPixelStride;
+
+        final int U = uIdx < uPlane.length ? uPlane[uIdx] : 128;
+        final int V = vIdx < vPlane.length ? vPlane[vIdx] : 128;
 
         int r = (Y + 1.402 * (V - 128)).clamp(0, 255).toInt();
         int g = (Y - 0.344 * (U - 128) - 0.714 * (V - 128)).clamp(0, 255).toInt();
@@ -242,13 +251,13 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
         int dstX, dstY;
         if (_isFrontCamera) {
-          // Front camera (270° CW)
-          dstX = srcH - 1 - y;
-          dstY = x;
-        } else {
-          // Back camera (90° CW)
+          // Front camera (selfie mirror view alignment)
           dstX = y;
           dstY = srcW - 1 - x;
+        } else {
+          // Back camera (90° CW portrait alignment)
+          dstX = srcH - 1 - y;
+          dstY = x;
         }
         out.setPixelRgb(dstX, dstY, r, g, b);
       }
@@ -330,35 +339,57 @@ class _FaceRecognitionPageState extends State<FaceRecognitionPage>
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final previewSize = Size(constraints.maxWidth, constraints.maxHeight);
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            // Camera preview
-            ClipRect(
-              child: SizedOverflowBox(
-                size: previewSize,
-                alignment: Alignment.center,
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: _isFrontCamera
-                      ? (Matrix4.identity()..scale(-1.0, 1.0)) // mirror front
-                      : Matrix4.identity(),
-                  child: CameraPreview(_cameraController!),
-                ),
-              ),
-            ),
+        final screenWidth = constraints.maxWidth;
+        final screenHeight = constraints.maxHeight;
+        final isPortrait = screenHeight >= screenWidth;
 
-            // Bbox overlay
-            CustomPaint(
-              painter: CameraBboxPainter(
-                faces: _detectedFaces,
-                imageSize: _imageSize,
-                previewSize: previewSize,
-                isFrontCamera: _isFrontCamera,
-              ),
+        // Tỷ lệ camera ở dạng Portrait: height / width (ví dụ 720 / 480 = 1.5)
+        final cameraAspectRatio = _cameraController!.value.previewSize!.width /
+            _cameraController!.value.previewSize!.height;
+
+        double previewW, previewH;
+        if (isPortrait) {
+          // Khi để đứng: fit theo độ rộng màn hình
+          previewW = screenWidth;
+          previewH = previewW * cameraAspectRatio;
+        } else {
+          // Khi để ngang: fit theo độ cao màn hình
+          previewH = screenHeight;
+          previewW = previewH * cameraAspectRatio;
+        }
+
+        final previewSize = Size(previewW, previewH);
+
+        return Center(
+          child: SizedBox(
+            width: previewW,
+            height: previewH,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // 1. Camera preview chính xác tỷ lệ, không bị co giãn
+                ClipRect(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: _isFrontCamera
+                        ? (Matrix4.identity()..scale(-1.0, 1.0))
+                        : Matrix4.identity(),
+                    child: CameraPreview(_cameraController!),
+                  ),
+                ),
+
+                // 2. Bbox overlay vẽ đè trực tiếp lên camera view (tỷ lệ 1:1)
+                CustomPaint(
+                  painter: CameraBboxPainter(
+                    faces: _detectedFaces,
+                    imageSize: _imageSize,
+                    previewSize: previewSize,
+                    isFrontCamera: _isFrontCamera,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );
