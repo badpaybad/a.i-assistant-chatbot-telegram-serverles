@@ -894,9 +894,9 @@ Float32List? _warpAffineAndBuildTensorFromYuv(
         final double b = (Y + 1.772 * (U - 128)).clamp(0.0, 255.0);
 
         final int offset = rowOffset + dx;
-        inputData[offset] = r;
+        inputData[offset] = b;
         inputData[planeSize + offset] = g;
-        inputData[2 * planeSize + offset] = b;
+        inputData[2 * planeSize + offset] = r;
       }
     }
   }
@@ -977,9 +977,9 @@ Float32List? _warpAffineAndBuildTensor(
       if (sx >= 0 && sx < src.width && sy >= 0 && sy < src.height) {
         final pixel = src.getPixel(sx, sy);
         final int offset = rowOffset + dx;
-        inputData[offset] = pixel.r.toDouble();
+        inputData[offset] = pixel.b.toDouble();
         inputData[planeSize + offset] = pixel.g.toDouble();
-        inputData[2 * planeSize + offset] = pixel.b.toDouble();
+        inputData[2 * planeSize + offset] = pixel.r.toDouble();
       }
     }
   }

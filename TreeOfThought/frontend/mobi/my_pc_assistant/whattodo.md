@@ -50,3 +50,4 @@ dropdown đang cho còn 3 IP , có thể dropdown list cho thêm việc người
     khi mở tính năng lên màn hình sẽ hiển thị camera stream, khi detect được thì cần vẽ bbox overlay lên video 
     lấy face image /work/ekycwebapi/WebSafeBrowserFW47/CameraController/faceids/038084019679/cccd.jpg để làm ảnh gốc giả lập là face của người dùng đang đăng nhập để compare với face detected và hiển thị score  
 
+**cập nhật 2026-07-20 21:20:07** /work/ekycwebapi/InsightFaceTest/run.sh khi chạy test thì 1.jpg (chính là ảnh cccd.jpg) và 11.jpg (ảnh chụp từ điện thoại) có độ tương đồng >0.7 vì sao chạy trên điện thoại độ chính xác giảm 
