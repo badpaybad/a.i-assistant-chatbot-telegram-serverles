@@ -11,9 +11,10 @@ import asyncio
 from typing import List, Dict, Tuple, Optional
 import cv2
 import numpy as np
-from skimage.morphology import thin, skeletonize
-import networkx as nx
 import potrace
+from svgpathtools import svg2paths
+from shapely.geometry import Polygon, MultiPolygon
+from shapely.ops import unary_union
 import serial
 import serial.tools.list_ports
 
@@ -313,16 +314,39 @@ async def broadcast(message: dict):
             pass
     state.ws_clients = alive_clients
 
+serial_lock = threading.Lock()
+
+def send_serial_bytes(b_data: bytes) -> bool:
+    if state.connected and state.serial_port:
+        with serial_lock:
+            try:
+                if state.serial_port and state.serial_port.is_open:
+                    state.serial_port.write(b_data)
+                    state.serial_port.flush()
+                    return True
+            except Exception as e:
+                logger.error(f"Serial write error: {e}")
+                return False
+    return False
+
 # Serial Background Reading Loop
 async def serial_reader_loop():
     loop = asyncio.get_running_loop()
     buffer = ""
+    error_count = 0
     while state.connected and state.serial_port:
         try:
-            if state.serial_port.in_waiting > 0:
-                data = await loop.run_in_executor(None, state.serial_port.read, state.serial_port.in_waiting)
+            def _read_data():
+                with serial_lock:
+                    if state.serial_port and state.serial_port.is_open and state.serial_port.in_waiting > 0:
+                        return state.serial_port.read(state.serial_port.in_waiting)
+                return b""
+
+            data = await loop.run_in_executor(None, _read_data)
+            error_count = 0
+            
+            if data:
                 buffer += data.decode('utf-8', errors='ignore')
-                
                 while "\n" in buffer:
                     line, buffer = buffer.split("\n", 1)
                     line = line.strip()
@@ -343,12 +367,16 @@ async def serial_reader_loop():
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
             else:
-                await asyncio.sleep(0.01)
+                await asyncio.sleep(0.02)
         except Exception as e:
-            logger.error(f"Error in serial reader: {e}")
-            state.connected = False
-            await broadcast({"type": "connection", "connected": False, "message": f"Connection lost: {e}"})
-            break
+            error_count += 1
+            logger.warning(f"Warning in serial reader loop ({error_count}/5): {e}")
+            if error_count >= 5:
+                logger.error(f"Serial reader lost connection: {e}")
+                state.connected = False
+                await broadcast({"type": "connection", "connected": False, "message": f"Connection lost: {e}"})
+                break
+            await asyncio.sleep(0.1)
 
 # Parse GRBL Status (WPos, Machine State)
 def parse_grbl_status(line: str):
@@ -359,24 +387,27 @@ def parse_grbl_status(line: str):
         if state_match:
             state.machine_state = state_match.group(1)
             
-        # Extract WPos
+        # Extract WPos or MPos
         matches = re.findall(r"([a-zA-Z]+):([-+0-9.,]*)", clean)
+        found_wpos = False
         for key, val in matches:
             val = val.strip(",")
             if key == "WPos":
-                parts = [float(x) for x in val.split(",")]
-                state.wpos = parts
+                parts = [float(x) for x in val.split(",") if x.strip()]
+                if len(parts) >= 2:
+                    state.wpos = parts
+                    found_wpos = True
+            elif key == "MPos" and not found_wpos:
+                parts = [float(x) for x in val.split(",") if x.strip()]
+                if len(parts) >= 2:
+                    state.wpos = parts
     except Exception as e:
         logger.error(f"Error parsing status: {e}")
 
 # Status Polling Loop (sends '?' command periodically)
 async def status_polling_loop():
     while state.connected and state.serial_port:
-        try:
-            state.serial_port.write(b"?")
-            state.serial_port.flush()
-        except Exception as e:
-            logger.error(f"Error writing status poll: {e}")
+        send_serial_bytes(b"?")
         await asyncio.sleep(0.2)
 
 # G-code streaming background task
@@ -402,13 +433,13 @@ async def gcode_streamer_task():
             # Pen up
             pen_up = settings["pen_up_cmd"]
             try:
-                state.serial_port.write(f"{pen_up}\n".encode())
+                send_serial_bytes(f"{pen_up}\n".encode())
                 await broadcast({"type": "log", "direction": "out", "content": pen_up})
                 await asyncio.sleep(settings["pen_dwell"])
                 
                 # Move home to draw start
                 move_home = f"G0 X{state.draw_start_pos[0]:.3f} Y{state.draw_start_pos[1]:.3f}"
-                state.serial_port.write(f"{move_home}\n".encode())
+                send_serial_bytes(f"{move_home}\n".encode())
                 await broadcast({"type": "log", "direction": "out", "content": move_home})
             except Exception as e:
                 logger.error(f"Error sending return-to-start coordinates: {e}")
@@ -435,8 +466,7 @@ async def gcode_streamer_task():
         try:
             state.sent_buffer_lengths.append(line_len)
             state.grbl_ack_event.clear()
-            state.serial_port.write((clean_line + "\n").encode())
-            state.serial_port.flush()
+            send_serial_bytes((clean_line + "\n").encode())
             
             await broadcast({"type": "log", "direction": "out", "content": clean_line})
             state.gcode_index += 1
@@ -515,692 +545,227 @@ def clean_junction_loops(skeleton_img, max_area=120):
                 cv2.drawContours(filled_skeleton, [contour], -1, 255, -1)
     return filled_skeleton
 
-# Image Processing Pipeline to extract text contours as single stroke curves
-def process_text_image(image_path: str, params: dict) -> List[List[Tuple[float, float]]]:
-    # 1. Read grayscale
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise ValueError(f"Could not load image at {image_path}")
-        
-    # Optional Gaussian Blur to smooth raw lines
-    if params.get("use_text_blur", False):
-        bsize = params.get("text_blur_size", 3)
-        if bsize % 2 == 0:
-            bsize = max(1, bsize - 1)
-        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
-        
-    # 2. Resizing threshold logic
-    if params.get("thresh_mode", "otsu") == "otsu":
-        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    else:
-        thresh_val = params.get("thresh_val", 127)
-        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
-        
-    height, width = img.shape
-    
-    # Invert image if required (thinning expects white text on black background)
-    if params.get("invert_img", True):
-        # If text is dark on light background, invert
-        if cv2.countNonZero(thresh) > (height * width / 2):
-            thresh = cv2.bitwise_not(thresh)
-    else:
-        # Keep as is, but ensure white text/black bg
-        pass
-        
-    # 3. Morphological close to clean up gaps
-    if params.get("use_text_morph", True):
-        ksize = params.get("morph_kernel", 3)
-        if ksize > 1:
-            if ksize % 2 == 0:
-                ksize += 1
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (ksize, ksize))
-            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-            
-    # 3b. Morphological dilation to thicken strokes before thinning (helps bridge pixel gaps)
-    if params.get("use_text_dilate", False):
-        dsize = params.get("text_dilate_size", 1)
-        if dsize > 0:
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dsize, dsize))
-            thresh = cv2.dilate(thresh, kernel, iterations=1)
-        
-    # 4. Thinning and Cleaning junction loop bubbles
-    skeleton = cv2.ximgproc.thinning(thresh, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-    skeleton = clean_junction_loops(skeleton, max_area=120)
-    skeleton = cv2.ximgproc.thinning(skeleton, thinningType=cv2.ximgproc.THINNING_ZHANGSUEN)
-    
-    # 5. Potrace Tracing for perfect single line vector curves
-    bitmap_data = skeleton.astype(bool)
-    bitmap = potrace.Bitmap(bitmap_data)
-    
-    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
-    alphamax = params.get("potrace_alphamax", 1.2) if params.get("use_potrace_alphamax", True) else 1.2
-    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
-    opticurve = params.get("potrace_opticurve", True)
-    
-    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
-    policy_map = {
-        "black": potrace.TURNPOLICY_BLACK,
-        "white": potrace.TURNPOLICY_WHITE,
-        "left": potrace.TURNPOLICY_LEFT,
-        "right": potrace.TURNPOLICY_RIGHT,
-        "minority": potrace.TURNPOLICY_MINORITY,
-        "majority": potrace.TURNPOLICY_MAJORITY,
-        "random": potrace.TURNPOLICY_RANDOM
-    }
-    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
-    
-    path = bitmap.trace(
-        turdsize=turdsize,
-        turnpolicy=turnpolicy,
-        alphamax=alphamax,
-        opticurve=1 if opticurve else 0,
-        opttolerance=opttolerance
-    )
-    
-    # Save the SVG file in single stroke style
-    output_svg_path = os.path.join(STATIC_DIR, "text_output.svg")
-    all_paths_combined = []
-    
-    for curve in path:
-        svg_path_data = []
-        start = curve.start_point
-        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
-        for segment in curve.segments:
-            if segment.is_corner:
-                c = segment.c
-                end = segment.end_point
-                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
-            else:
-                c1 = segment.c1
-                c2 = segment.c2
-                end = segment.end_point
-                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
-        all_paths_combined.append(" ".join(svg_path_data))
-        
-    full_d_attribute = " ".join(all_paths_combined)
-    with open(output_svg_path, "w") as svg_file:
-        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
-        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
-        svg_file.write(f'  <path d="{full_d_attribute}" fill="none" stroke="black" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />\n')
-        svg_file.write('</svg>\n')
-        
-    # 6. Evaluate paths as coordinates list
-    raw_paths = []
-    num_steps = params.get("potrace_bezier_steps", 20)
-    
-    for curve in path:
-        pts = []
-        curr = curve.start_point
-        pts.append((float(curr[0]), float(curr[1])))
-        
-        for segment in curve.segments:
-            if segment.is_corner:
-                pts.append((float(segment.c[0]), float(segment.c[1])))
-                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
-                curr = segment.end_point
-            else:
-                p0 = curr
-                p1 = segment.c1
-                p2 = segment.c2
-                p3 = segment.end_point
-                
-                # Sample Bezier points
-                for i in range(1, num_steps + 1):
-                    t = i / num_steps
-                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
-                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
-                    pts.append((float(x), float(y)))
-                curr = segment.end_point
-                
-        # Filter noise paths
-        min_len = params.get("min_line_len", 5)
-        if len(pts) >= min_len:
-            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
-            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
-            if epsilon > 0:
-                simplified = rdp_simplify(pts, epsilon)
-                raw_paths.append(simplified)
-            else:
-                raw_paths.append(pts)
-                
-    if not raw_paths:
-        return []
-        
-    # 7. Sắp xếp thứ tự vẽ tối ưu (Greedy Nearest Neighbor)
-    sorted_paths = []
-    current_pos = np.array([0.0, 0.0])
-    
-    while raw_paths:
-        closest_idx = -1
-        min_dist = float('inf')
-        reverse_path = False
-        
-        for idx, path in enumerate(raw_paths):
-            start_pt = np.array(path[0])
-            end_pt = np.array(path[-1])
-            
-            dist_start = np.linalg.norm(current_pos - start_pt)
-            dist_end = np.linalg.norm(current_pos - end_pt)
-            
-            if dist_start < min_dist:
-                min_dist = dist_start
-                closest_idx = idx
-                reverse_path = False
-            if dist_end < min_dist:
-                min_dist = dist_end
-                closest_idx = idx
-                reverse_path = True
-                
-        chosen = raw_paths.pop(closest_idx)
-        if reverse_path:
-            chosen.reverse()
-        sorted_paths.append(chosen)
-        current_pos = np.array(chosen[-1])
-        
-    # Path welding post-processing
-    if params.get("use_path_connect", True):
-        weld_dist = params.get("path_connect_dist", 5.0)
-        sorted_paths = weld_paths(sorted_paths, weld_dist)
-        
-    return sorted_paths
-
-def process_sketch_image(image_path: str, params: dict) -> List[List[Tuple[float, float]]]:
-    img = cv2.imread(image_path)
-    if img is None:
-        raise ValueError(f"Could not load image at {image_path}")
-        
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    
-    # 1. CLAHE Contrast Equalization
-    if params.get("use_clahe", True):
-        clip_limit = params.get("clahe_clip_limit", 1.5)
-        tile_size = params.get("clahe_tile_grid_size", 8)
-        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(tile_size, tile_size))
-        gray = clahe.apply(gray)
-        
-    # 2. Gaussian Blur
-    if params.get("use_blur", True):
-        bsize = params.get("blur_size", 3)
-        if bsize % 2 == 0:
-            bsize = max(1, bsize - 1)
-        gray = cv2.GaussianBlur(gray, (bsize, bsize), 0)
-        
-    # 3. Multi-threshold Canny Detector
-    edges_ultra = cv2.Canny(gray, params.get("canny_ultra_low", 5), params.get("canny_ultra_high", 25))
-    edges_medium = cv2.Canny(gray, params.get("canny_medium_low", 20), params.get("canny_medium_high", 60))
-    edges_strong = cv2.Canny(gray, params.get("canny_strong_low", 50), params.get("canny_strong_high", 120))
-    
-    combined = cv2.bitwise_or(edges_ultra, edges_medium)
-    combined = cv2.bitwise_or(combined, edges_strong)
-    
-    # 4. Connect dots and contours (morphological close)
-    if params.get("use_connect", True):
-        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-        combined = cv2.morphologyEx(combined, cv2.MORPH_CLOSE, kernel)
-        
-    # 5. Thinning to single pixel width
-    if params.get("use_thin", True):
-        kernel_thin = np.ones((2, 2), np.uint8)
-        combined = cv2.morphologyEx(combined, cv2.MORPH_ERODE, kernel_thin)
-        
-    # 6. Find contours
-    contours, _ = cv2.findContours(combined, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    
-    raw_paths = []
-    min_len = params.get("min_line_len", 5)
-    epsilon = params.get("epsilon", 1.0)
-    
-    for contour in contours:
-        pts = [tuple(pt[0]) for pt in contour]
-        if params.get("use_len_filter", True) and len(pts) < min_len:
-            continue
-            
-        float_pts = [(float(px), float(py)) for px, py in pts]
-        if epsilon > 0:
-            simplified = rdp_simplify(float_pts, epsilon)
-            raw_paths.append(simplified)
-        else:
-            raw_paths.append(float_pts)
-            
-    if not raw_paths:
-        return []
-        
-    # 7. Sắp xếp thứ tự vẽ tối ưu (Greedy Nearest Neighbor)
-    sorted_paths = []
-    current_pos = np.array([0.0, 0.0])
-    
-    while raw_paths:
-        closest_idx = -1
-        min_dist = float('inf')
-        reverse_path = False
-        
-        for idx, path in enumerate(raw_paths):
-            start_pt = np.array(path[0])
-            end_pt = np.array(path[-1])
-            dist_start = np.linalg.norm(current_pos - start_pt)
-            dist_end = np.linalg.norm(current_pos - end_pt)
-            
-            if dist_start < min_dist:
-                min_dist = dist_start
-                closest_idx = idx
-                reverse_path = False
-            if dist_end < min_dist:
-                min_dist = dist_end
-                closest_idx = idx
-                reverse_path = True
-                
-        chosen = raw_paths.pop(closest_idx)
-        if reverse_path:
-            chosen.reverse()
-        sorted_paths.append(chosen)
-        current_pos = np.array(chosen[-1])
-        
-    # Path welding post-processing
-    if params.get("use_path_connect", True):
-        weld_dist = params.get("path_connect_dist", 5.0)
-        sorted_paths = weld_paths(sorted_paths, weld_dist)
-        
-    return sorted_paths
-
-def generate_gcode_lines(paths: List[List[Tuple[float, float]]], settings: dict, scale_factor: float, start_pos: List[float]) -> List[str]:
+def generate_concentric_infill_from_svg(svg_path: str, step_mm: float = 0.4) -> List[List[Tuple[float, float]]]:
+    """
+    Phương pháp B: Thu nhỏ đường viền đồng dạng vào trong (Concentric Infill)
+    Tạo các đường vòng kín lấp kín ruột chữ.
+    """
+    paths, _ = svg2paths(svg_path)
     if not paths:
         return []
-    gcode_lines = []
-    gcode_lines.append("; --- START CNC G-CODE ---")
-    gcode_lines.append("G21 ; Units in mm")
-    gcode_lines.append("G90 ; Absolute coordinates")
-    gcode_lines.append(settings.get("pen_up_cmd", "M3 S10"))
-    gcode_lines.append(f"F{settings.get('feedrate', 2000.0):.0f}")
-    
-    # First point of the first stroke path is used as the relative reference origin
-    ref_x = paths[0][0][0]
-    ref_y = paths[0][0][1]
-    
-    x_curr = start_pos[0]
-    y_curr = start_pos[1]
-    
+
+    subpaths = paths[0].continuous_subpaths()
+    polys = []
+
+    for sp in subpaths:
+        pts = []
+        for seg in sp:
+            for t in np.linspace(0, 1, 10, endpoint=False):
+                pt = seg.point(t)
+                pts.append((pt.real, pt.imag))
+        if len(pts) >= 3:
+            poly = Polygon(pts)
+            if not poly.is_valid:
+                poly = poly.buffer(0)
+            if poly.area > 0.05:
+                polys.append(poly)
+
+    if not polys:
+        return []
+
+    polys.sort(key=lambda p: p.area, reverse=True)
+    outer_polys = []
+    hole_polys = []
+
+    for i, p1 in enumerate(polys):
+        contains_count = 0
+        for j, p2 in enumerate(polys):
+            if i != j and p2.contains(p1):
+                contains_count += 1
+        if contains_count % 2 == 0:
+            outer_polys.append(p1)
+        else:
+            hole_polys.append(p1)
+
+    composite = unary_union(outer_polys)
+    for hp in hole_polys:
+        composite = composite.difference(hp)
+
+    curr = composite
+    level = 0
+    all_rings = []
+
+    def extract_rings(geom):
+        rings = []
+        if geom.is_empty:
+            return rings
+        if isinstance(geom, Polygon):
+            rings.append([(float(x), float(y)) for x, y in geom.exterior.coords])
+            for hole in geom.interiors:
+                rings.append([(float(x), float(y)) for x, y in hole.coords])
+        elif isinstance(geom, MultiPolygon):
+            for poly in geom.geoms:
+                rings.append([(float(x), float(y)) for x, y in poly.exterior.coords])
+                for hole in poly.interiors:
+                    rings.append([(float(x), float(y)) for x, y in hole.coords])
+        return rings
+
+    while not curr.is_empty and curr.area > 0.1:
+        rings = extract_rings(curr)
+        if rings:
+            all_rings.extend(rings)
+            level += 1
+        curr = curr.buffer(-step_mm)
+
+    return all_rings
+
+def process_text_concentric(image_path: str, params: dict) -> Tuple[List[List[Tuple[float, float]]], str]:
+    """
+    Cập nhật 5:
+    1. Thu nhỏ ảnh phù hợp khung hoạt động CNC (tối đa 299px mỗi chiều).
+    2. Dùng Potrace chuyển thành SVG vector (pypotrace_img2vector.py).
+    3. Tạo Concentric Infill (Phương pháp B - pypo_ket_qua_vector_co_lo.svg.py).
+    """
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        raise ValueError(f"Không thể đọc ảnh: {image_path}")
+
+    h, w = img.shape
+    cnc_w = float(params.get("cnc_width", 200.0))
+    cnc_h = float(params.get("cnc_height", 200.0))
+
+    # Resize để vừa khung CNC và tối đa 299px giữ tỉ lệ khung hình
+    max_dim = min(299, int(min(cnc_w, cnc_h)))
+    if max_dim < 50:
+        max_dim = 299
+
+    scale = max_dim / max(h, w)
+    new_w = max(10, int(w * scale))
+    new_h = max(10, int(h * scale))
+
+    resized_img = cv2.resize(img, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    _, thresh = cv2.threshold(resized_img, 127, 255, cv2.THRESH_BINARY_INV)
+
+    bitmap = potrace.Bitmap(thresh.astype(bool))
+    path = bitmap.trace()
+
+    output_svg_path = os.path.join(STATIC_DIR, "pypo_ket_qua_vector_co_lo.small.svg")
+    all_paths = []
+    for curve in path:
+        svg_path_data = []
+        start = curve.start_point
+        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
+        for segment in curve.segments:
+            if segment.is_corner:
+                c = segment.c
+                end = segment.end_point
+                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
+            else:
+                c1 = segment.c1
+                c2 = segment.c2
+                end = segment.end_point
+                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
+        svg_path_data.append("Z")
+        all_paths.append(" ".join(svg_path_data))
+
+    full_d = " ".join(all_paths)
+    with open(output_svg_path, "w", encoding="utf-8") as f:
+        f.write(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {new_w} {new_h}" width="{new_w}" height="{new_h}">\n')
+        f.write(f'  <path d="{full_d}" fill="black" stroke="none" fill-rule="evenodd" />\n')
+        f.write('</svg>\n')
+
+    step_mm = float(params.get("step_mm", 0.4))
+    all_rings = generate_concentric_infill_from_svg(output_svg_path, step_mm=step_mm)
+
+    return all_rings, "/static/pypo_ket_qua_vector_co_lo.small.svg"
+
+def generate_gcode_lines_concentric(all_rings: List[List[Tuple[float, float]]], settings: dict) -> List[str]:
+    """Biên dịch các vòng Concentric Infill thành G-code chuẩn GRBL đúng chiều không bị soi gương"""
+    if not all_rings:
+        return []
+
+    # Tính toán bounding box chuẩn của toàn bộ nét vẽ
+    all_pts = [pt for ring in all_rings for pt in ring]
+    if not all_pts:
+        return []
+
+    min_x = min(pt[0] for pt in all_pts)
+    min_y = min(pt[1] for pt in all_pts)
+    max_y = max(pt[1] for pt in all_pts)
+
+    pen_up = settings.get("pen_up_cmd", "M3 S10")
+    pen_down = settings.get("pen_down_cmd", "M3 S90")
+    pen_dwell = float(settings.get("pen_dwell", 0.2))
+
+    safe_z = float(settings.get("safe_z", 5.0))
+    cut_z = float(settings.get("cut_z", -1.0))
+    feed_rate = float(settings.get("feedrate", 1000.0))
     mirror_x = settings.get("mirror_x", False)
     mirror_y = settings.get("mirror_y", False)
-    
-    for idx, path in enumerate(paths):
-        if not path:
+
+    gcode = []
+    gcode.append("; --- GRBL G-CODE: CONCENTRIC INFILL METHOD B ---")
+    gcode.append("G21 ; Units in mm")
+    gcode.append("G90 ; Absolute coordinates")
+    gcode.append("G92 X0 Y0 Z0 ; Set current CNC head position as origin (0,0,0)")
+
+    def add_pen_up():
+        gcode.append(pen_up)
+        if pen_dwell > 0:
+            gcode.append(f"G4 P{pen_dwell:.2f}")
+        gcode.append(f"G0 Z{safe_z:.2f}")
+
+    def add_pen_down():
+        gcode.append(pen_down)
+        if pen_dwell > 0:
+            gcode.append(f"G4 P{pen_dwell:.2f}")
+        gcode.append(f"G1 Z{cut_z:.3f} F{feed_rate:.0f}")
+
+    # 1. Nhấc bút trước khi di chuyển
+    add_pen_up()
+
+    # 2. Hạ bút tại vị trí gốc (0,0) hiện tại
+    gcode.append("G0 X0.000 Y0.000")
+    add_pen_down()
+
+    # 3. Nhấc bút để di chuyển đến nét đầu tiên
+    add_pen_up()
+
+    for ring in all_rings:
+        if len(ring) < 2:
             continue
-        gcode_lines.append(f"; --- Path Contour {idx+1} ---")
-        
-        dx_start = path[0][0] - ref_x
-        dy_start = path[0][1] - ref_y
-        
-        if mirror_x:
-            dx_start = -dx_start
-        if mirror_y:
-            dy_start = -dy_start
             
-        x_start = dx_start * scale_factor + x_curr
-        y_start = dy_start * scale_factor + y_curr
-        
-        gcode_lines.append(f"G0 X{x_start:.3f} Y{y_start:.3f}")
-        gcode_lines.append(settings.get("pen_down_cmd", "M3 S90"))
-        
-        pen_dwell = settings.get("pen_dwell", 0.2)
-        if pen_dwell > 0:
-            gcode_lines.append(f"G4 P{pen_dwell:.3f}")
-            
-        for pt in path[1:]:
-            dx = pt[0] - ref_x
-            dy = pt[1] - ref_y
-            if mirror_x:
-                dx = -dx
-            if mirror_y:
-                dy = -dy
-            x_val = dx * scale_factor + x_curr
-            y_val = dy * scale_factor + y_curr
-            gcode_lines.append(f"G1 X{x_val:.3f} Y{y_val:.3f}")
-            
-        gcode_lines.append(settings.get("pen_up_cmd", "M3 S10"))
-        if pen_dwell > 0:
-            gcode_lines.append(f"G4 P{pen_dwell:.3f}")
-            
-    gcode_lines.append("; --- END CNC G-CODE ---")
-    return gcode_lines
+        dx = ring[0][0] - min_x
+        dy = max_y - ring[0][1]
+        if mirror_x: dx = -dx
+        if mirror_y: dy = -dy
+        start_x = dx
+        start_y = dy
 
-def process_potrace_image(image_path: str, params: dict) -> Tuple[List[List[Tuple[float, float]]], str]:
-    # 1. Read grayscale
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise ValueError(f"Could not load image at {image_path}")
-        
-    # Apply Gaussian Blur if required
-    if params.get("potrace_use_blur", False):
-        bsize = params.get("potrace_blur_size", 3)
-        if bsize % 2 == 0:
-            bsize = max(1, bsize - 1)
-        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
-        
-    # 2. Resizing threshold logic
-    if params.get("potrace_thresh_mode", "otsu") == "otsu":
-        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    else:
-        thresh_val = params.get("potrace_thresh_val", 127)
-        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
-        
-    height, width = img.shape
-    
-    # Invert image if required (standard: black text on white background is inverted to white on black)
-    if params.get("potrace_invert_img", True):
-        if cv2.countNonZero(thresh) > (height * width / 2):
-            thresh = cv2.bitwise_not(thresh)
-            
-    # 3. Morphological close to clean up gaps
-    if params.get("potrace_use_morph", True):
-        ksize = params.get("potrace_morph_kernel", 3)
-        if ksize > 1:
-            if ksize % 2 == 0:
-                ksize += 1
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (ksize, ksize))
-            thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
-            
-    # 3b. Morphological dilation to thicken strokes before tracing
-    if params.get("potrace_use_dilate", False):
-        dsize = params.get("potrace_dilate_size", 1)
-        if dsize > 0:
-            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (dsize, dsize))
-            thresh = cv2.dilate(thresh, kernel, iterations=1)
-            
-    # 4. Potrace tracing
-    bitmap_data = thresh.astype(bool)
-    bitmap = potrace.Bitmap(bitmap_data)
-    
-    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
-    alphamax = params.get("potrace_alphamax", 1.0) if params.get("use_potrace_alphamax", True) else 1.0
-    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
-    opticurve = params.get("potrace_opticurve", True)
-    
-    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
-    policy_map = {
-        "black": potrace.TURNPOLICY_BLACK,
-        "white": potrace.TURNPOLICY_WHITE,
-        "left": potrace.TURNPOLICY_LEFT,
-        "right": potrace.TURNPOLICY_RIGHT,
-        "minority": potrace.TURNPOLICY_MINORITY,
-        "majority": potrace.TURNPOLICY_MAJORITY,
-        "random": potrace.TURNPOLICY_RANDOM
-    }
-    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
-    
-    path = bitmap.trace(
-        turdsize=turdsize,
-        turnpolicy=turnpolicy,
-        alphamax=alphamax,
-        opticurve=1 if opticurve else 0,
-        opttolerance=opttolerance
-    )
-    
-    # 5. Save the SVG file
-    output_svg_path = os.path.join(STATIC_DIR, "potrace_output.svg")
-    all_paths_combined = []
-    
-    for curve in path:
-        svg_path_data = []
-        start = curve.start_point
-        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
-        for segment in curve.segments:
-            if segment.is_corner:
-                c = segment.c
-                end = segment.end_point
-                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
-            else:
-                c1 = segment.c1
-                c2 = segment.c2
-                end = segment.end_point
-                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
-        svg_path_data.append("Z")
-        all_paths_combined.append(" ".join(svg_path_data))
-        
-    full_d_attribute = " ".join(all_paths_combined)
-    with open(output_svg_path, "w") as svg_file:
-        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
-        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
-        svg_file.write(f'  <path d="{full_d_attribute}" fill="black" stroke="none" fill-rule="evenodd" />\n')
-        svg_file.write('</svg>\n')
-        
-    # 6. Evaluate paths as coordinates list
-    sampled_paths = []
-    num_steps = params.get("potrace_bezier_steps", 20)
-    
-    for curve in path:
-        pts = []
-        curr = curve.start_point
-        pts.append((float(curr[0]), float(curr[1])))
-        
-        for segment in curve.segments:
-            if segment.is_corner:
-                pts.append((float(segment.c[0]), float(segment.c[1])))
-                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
-                curr = segment.end_point
-            else:
-                p0 = curr
-                p1 = segment.c1
-                p2 = segment.c2
-                p3 = segment.end_point
-                
-                # Sample Bezier points
-                for i in range(1, num_steps + 1):
-                    t = i / num_steps
-                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
-                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
-                    pts.append((float(x), float(y)))
-                curr = segment.end_point
-                
-        # Filter noise paths
-        min_len = params.get("min_line_len", 5)
-        if len(pts) >= min_len:
-            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
-            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
-            if epsilon > 0:
-                simplified = rdp_simplify(pts, epsilon)
-                sampled_paths.append(simplified)
-            else:
-                sampled_paths.append(pts)
-                
-    # Sort paths if path connect is checked
-    if sampled_paths and params.get("use_path_connect", True):
-        sorted_paths = []
-        current_pos = np.array([0.0, 0.0])
-        while sampled_paths:
-            closest_idx = -1
-            min_dist = float('inf')
-            reverse_path = False
-            for idx, path_pts in enumerate(sampled_paths):
-                start_pt = np.array(path_pts[0])
-                end_pt = np.array(path_pts[-1])
-                dist_start = np.linalg.norm(current_pos - start_pt)
-                dist_end = np.linalg.norm(current_pos - end_pt)
-                if dist_start < min_dist:
-                    min_dist = dist_start
-                    closest_idx = idx
-                    reverse_path = False
-                if dist_end < min_dist:
-                    min_dist = dist_end
-                    closest_idx = idx
-                    reverse_path = True
-            chosen = sampled_paths.pop(closest_idx)
-            if reverse_path:
-                chosen.reverse()
-            sorted_paths.append(chosen)
-            current_pos = np.array(chosen[-1])
-            
-        weld_dist = params.get("path_connect_dist", 5.0)
-        sorted_paths = weld_paths(sorted_paths, weld_dist)
-        sampled_paths = sorted_paths
-        
-    return sampled_paths, "/static/potrace_output.svg"
+        # Di chuyển không tải tới đầu vòng
+        gcode.append(f"G0 X{start_x:.3f} Y{start_y:.3f}")
+        # Hạ bút
+        add_pen_down()
 
-def process_erode_outline_image(image_path: str, params: dict) -> Tuple[List[List[Tuple[float, float]]], str]:
-    # 1. Read grayscale
-    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
-    if img is None:
-        raise ValueError(f"Could not load image at {image_path}")
-        
-    # Apply Gaussian Blur if required
-    if params.get("potrace_use_blur", False):
-        bsize = params.get("potrace_blur_size", 3)
-        if bsize % 2 == 0:
-            bsize = max(1, bsize - 1)
-        img = cv2.GaussianBlur(img, (bsize, bsize), 0)
-        
-    # 2. Resizing threshold logic
-    if params.get("potrace_thresh_mode", "otsu") == "otsu":
-        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    else:
-        thresh_val = params.get("potrace_thresh_val", 127)
-        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
-        
-    height, width = img.shape
-    
-    # Invert image if required (standard: black text on white background is inverted to white on black)
-    if params.get("potrace_invert_img", True):
-        if cv2.countNonZero(thresh) > (height * width / 2):
-            thresh = cv2.bitwise_not(thresh)
-            
-    # Erosion (from erode_and_trace_outline.py)
-    if params.get("use_erode_thinness", True):
-        thinness_level = params.get("erode_thinness_level", 2)
-        if thinness_level > 0:
-            kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (3, 3))
-            thresh = cv2.erode(thresh, kernel, iterations=thinness_level)
-            
-    # Potrace tracing
-    bitmap_data = thresh.astype(bool)
-    bitmap = potrace.Bitmap(bitmap_data)
-    
-    turdsize = params.get("potrace_turdsize", 2) if params.get("use_potrace_turdsize", True) else 2
-    alphamax = params.get("potrace_alphamax", 1.2) if params.get("use_potrace_alphamax", True) else 1.2
-    opttolerance = params.get("potrace_opttolerance", 0.2) if params.get("use_potrace_opttolerance", True) else 0.2
-    opticurve = params.get("potrace_opticurve", True)
-    
-    turnpolicy_str = params.get("potrace_turnpolicy", "minority")
-    policy_map = {
-        "black": potrace.TURNPOLICY_BLACK,
-        "white": potrace.TURNPOLICY_WHITE,
-        "left": potrace.TURNPOLICY_LEFT,
-        "right": potrace.TURNPOLICY_RIGHT,
-        "minority": potrace.TURNPOLICY_MINORITY,
-        "majority": potrace.TURNPOLICY_MAJORITY,
-        "random": potrace.TURNPOLICY_RANDOM
-    }
-    turnpolicy = policy_map.get(turnpolicy_str, potrace.TURNPOLICY_MINORITY)
-    
-    path = bitmap.trace(
-        turdsize=turdsize,
-        turnpolicy=turnpolicy,
-        alphamax=alphamax,
-        opticurve=1 if opticurve else 0,
-        opttolerance=opttolerance
-    )
-    
-    # Save the SVG file (fill="none", stroke="black", stroke-width="0.5")
-    output_svg_path = os.path.join(STATIC_DIR, "erode_outline_output.svg")
-    all_paths_combined = []
-    
-    for curve in path:
-        svg_path_data = []
-        start = curve.start_point
-        svg_path_data.append(f"M {start[0]:.2f},{start[1]:.2f}")
-        for segment in curve.segments:
-            if segment.is_corner:
-                c = segment.c
-                end = segment.end_point
-                svg_path_data.append(f"L {c[0]:.2f},{c[1]:.2f} L {end[0]:.2f},{end[1]:.2f}")
-            else:
-                c1 = segment.c1
-                c2 = segment.c2
-                end = segment.end_point
-                svg_path_data.append(f"C {c1[0]:.2f},{c1[1]:.2f} {c2[0]:.2f},{c2[1]:.2f} {end[0]:.2f},{end[1]:.2f}")
-        svg_path_data.append("Z")
-        all_paths_combined.append(" ".join(svg_path_data))
-        
-    full_d_attribute = " ".join(all_paths_combined)
-    with open(output_svg_path, "w") as svg_file:
-        svg_file.write(f'<svg xmlns="http://www.w3.org/2000/svg" ')
-        svg_file.write(f'viewBox="0 0 {width} {height}" width="{width}" height="{height}">\n')
-        svg_file.write(f'  <path d="{full_d_attribute}" fill="none" stroke="black" stroke-width="0.5" stroke-linecap="round" stroke-linejoin="round" />\n')
-        svg_file.write('</svg>\n')
-        
-    # Evaluate paths as coordinates list
-    sampled_paths = []
-    num_steps = params.get("potrace_bezier_steps", 20)
-    
-    for curve in path:
-        pts = []
-        curr = curve.start_point
-        pts.append((float(curr[0]), float(curr[1])))
-        
-        for segment in curve.segments:
-            if segment.is_corner:
-                pts.append((float(segment.c[0]), float(segment.c[1])))
-                pts.append((float(segment.end_point[0]), float(segment.end_point[1])))
-                curr = segment.end_point
-            else:
-                p0 = curr
-                p1 = segment.c1
-                p2 = segment.c2
-                p3 = segment.end_point
-                
-                # Sample Bezier points
-                for i in range(1, num_steps + 1):
-                    t = i / num_steps
-                    x = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * p1[0] + 3*(1-t) * t**2 * p2[0] + t**3 * p3[0]
-                    y = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * p1[1] + 3*(1-t) * t**2 * p2[1] + t**3 * p3[1]
-                    pts.append((float(x), float(y)))
-                curr = segment.end_point
-                
-        # Close path (Potrace shapes are closed loop boundaries)
-        if pts and pts[0] != pts[-1]:
-            pts.append(pts[0])
-            
-        # Filter noise paths
-        min_len = params.get("min_line_len", 5)
-        if len(pts) >= min_len:
-            use_simplify_epsilon = params.get("use_simplify_epsilon", True)
-            epsilon = params.get("epsilon", 1.0) if use_simplify_epsilon else 0.0
-            if epsilon > 0:
-                simplified = rdp_simplify(pts, epsilon)
-                sampled_paths.append(simplified)
-            else:
-                sampled_paths.append(pts)
-                
-    # Sort paths if path connect is checked
-    if sampled_paths and params.get("use_path_connect", True):
-        sorted_paths = []
-        current_pos = np.array([0.0, 0.0])
-        while sampled_paths:
-            closest_idx = -1
-            min_dist = float('inf')
-            reverse_path = False
-            for idx, path in enumerate(sampled_paths):
-                start_pt = np.array(path[0])
-                end_pt = np.array(path[-1])
-                dist_start = np.linalg.norm(current_pos - start_pt)
-                dist_end = np.linalg.norm(current_pos - end_pt)
-                if dist_start < min_dist:
-                    min_dist = dist_start
-                    closest_idx = idx
-                    reverse_path = False
-                if dist_end < min_dist:
-                    min_dist = dist_end
-                    closest_idx = idx
-                    reverse_path = True
-            chosen = sampled_paths.pop(closest_idx)
-            if reverse_path:
-                chosen.reverse()
-            sorted_paths.append(chosen)
-            current_pos = np.array(chosen[-1])
-        sampled_paths = sorted_paths
-        
-        weld_dist = params.get("path_connect_dist", 5.0)
-        sampled_paths = weld_paths(sampled_paths, weld_dist)
-        
-    return sampled_paths, "/static/erode_outline_output.svg"
+        for pt in ring[1:]:
+            dx_pt = pt[0] - min_x
+            dy_pt = max_y - pt[1]
+            if mirror_x: dx_pt = -dx_pt
+            if mirror_y: dy_pt = -dy_pt
+            x_val = dx_pt
+            y_val = dy_pt
+            gcode.append(f"G1 X{x_val:.3f} Y{y_val:.3f} F{feed_rate:.0f}")
+
+        # Nhấc bút kết thúc vòng
+        add_pen_up()
+
+    gcode.append("; --- END CNC G-CODE ---")
+    add_pen_up()
+    gcode.append("G0 X0 Y0")
+    gcode.append("M5")
+    gcode.append("M30")
+
+    return gcode
 
 # FastAPI endpoints
 
@@ -1266,20 +831,19 @@ async def connect_device(port: str = Form(...), baudrate: int = Form(115200)):
             state.serial_port = MockSerial()
             state.connected = True
             state.machine_state = "Idle"
-            await broadcast({"type": "connection", "connected": True, "message": "Connected to GRBL Mock Simulator"})
+            await broadcast({"type": "connection", "connected": True, "port": port, "message": "Connected to GRBL Mock Simulator"})
         else:
             state.serial_port = serial.Serial(port, baudrate, timeout=0.1)
             state.connected = True
             state.machine_state = "Connecting"
             # GRBL boot time sleep
             await asyncio.sleep(1.5)
-            state.serial_port.write(b"\r\n\r\n")
-            state.serial_port.flush()
+            send_serial_bytes(b"\r\n\r\n")
             
             # Start threads/tasks
             asyncio.create_task(serial_reader_loop())
             asyncio.create_task(status_polling_loop())
-            await broadcast({"type": "connection", "connected": True, "message": "Connected to GRBL Hardware Device"})
+            await broadcast({"type": "connection", "connected": True, "port": port, "message": "Connected to GRBL Hardware Device"})
             
         return {"status": "ok", "message": f"Connected to {port} successfully"}
     except Exception as e:
@@ -1376,70 +940,50 @@ async def process_image_route(params: dict):
         return JSONResponse({"status": "error", "message": "No image loaded yet. Please upload or capture first."}, status_code=400)
         
     try:
-        mode = params.get("mode", "text")
-        svg_url = None
-        if mode == "sketch":
-            paths = process_sketch_image(working_path, params)
-        elif mode == "potrace":
-            paths, svg_url = process_potrace_image(working_path, params)
-        elif mode == "erode_outline":
-            paths, svg_url = process_erode_outline_image(working_path, params)
-        else:
-            paths = process_text_image(working_path, params)
-            svg_url = "/static/text_output.svg"
+        paths, svg_url = process_text_concentric(working_path, params)
         state.latest_paths = paths
         
-        # Save standard G-code relative to (0,0) so the user can download it immediately
+        # Save standard G-code relative to (0,0) with Concentric Infill
         if paths:
             settings = load_settings()
             gcode_settings = {
                 "pen_up_cmd": params.get("pen_up_cmd", settings.get("pen_up_cmd", "M3 S10")),
                 "pen_down_cmd": params.get("pen_down_cmd", settings.get("pen_down_cmd", "M3 S90")),
                 "pen_dwell": params.get("pen_dwell", settings.get("pen_dwell", 0.2)),
-                "feedrate": params.get("feedrate", settings.get("feedrate", 2000.0)),
+                "feedrate": params.get("feedrate", settings.get("feedrate", 1000.0)),
+                "travel_rate": params.get("travel_rate", 1500.0),
+                "safe_z": params.get("safe_z", 5.0),
+                "cut_z": params.get("cut_z", -1.0),
                 "mirror_x": params.get("mirror_x", settings.get("mirror_x", False)),
                 "mirror_y": params.get("mirror_y", settings.get("mirror_y", False))
             }
-            scale_factor = params.get("scale_factor", 0.15)
-            gcode_lines = generate_gcode_lines(paths, gcode_settings, scale_factor, [0.0, 0.0, 0.0])
+            gcode_lines = generate_gcode_lines_concentric(paths, gcode_settings)
             gcode_file_path = os.path.join(STATIC_DIR, "cnc_output.nc")
-            with open(gcode_file_path, "w") as f:
+            with open(gcode_file_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(gcode_lines))
         
-        # Generate paths visualization colored with order gradient
+        # Generate paths visualization
         img = cv2.imread(working_path)
         h, w = img.shape[:2]
         preview_img = np.zeros((h, w, 4), dtype=np.uint8)
         
         for idx, path in enumerate(paths):
             color_ratio = idx / len(paths) if len(paths) > 1 else 0.0
-            # Green to red transition (B, G, R, A)
             color = (0, int(255 * (1 - color_ratio)), int(255 * color_ratio), 255)
-            
             pts_array = np.array(path, dtype=np.int32).reshape((-1, 1, 2))
-            cv2.polylines(preview_img, [pts_array], isClosed=False, color=color, thickness=2)
-            
-            # Draw path index at first coordinate
-            if len(path) > 0:
-                first = path[0]
-                cv2.putText(preview_img, str(idx+1), (int(first[0]), int(first[1]) - 4), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255, 255), 1, cv2.LINE_AA)
+            cv2.polylines(preview_img, [pts_array], isClosed=True, color=color, thickness=1)
                 
-        # Encode preview image as base64
         _, buffer = cv2.imencode('.png', preview_img)
         b64_str = base64.b64encode(buffer).decode('utf-8')
-        
-        # Calculate aspect ratio
         aspect = w / h if h > 0 else 1.0
         
         resp = {
             "status": "ok",
             "paths": paths,
             "preview_image": f"data:image/png;base64,{b64_str}",
-            "dimensions": {"width": w, "height": h, "aspect": aspect}
+            "dimensions": {"width": w, "height": h, "aspect": aspect},
+            "svg_url": svg_url
         }
-        if svg_url:
-            resp["svg_url"] = svg_url
         return resp
     except Exception as e:
         logger.error(f"Error processing image: {e}")
@@ -1452,8 +996,7 @@ async def send_direct_command(command: str = Form(...)):
     try:
         clean_cmd = command.strip()
         if clean_cmd:
-            state.serial_port.write((clean_cmd + "\n").encode())
-            state.serial_port.flush()
+            send_serial_bytes((clean_cmd + "\n").encode())
             await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
         return {"status": "ok"}
     except Exception as e:
@@ -1464,7 +1007,7 @@ async def jog_movement(direction: str = Form(...), step: float = Form(...), feed
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
         
-    dx, dy = 0.0, 0.0
+    dx, dy, dz = 0.0, 0.0, 0.0
     if direction == "up": dy = step
     elif direction == "down": dy = -step
     elif direction == "left": dx = -step
@@ -1473,16 +1016,23 @@ async def jog_movement(direction: str = Form(...), step: float = Form(...), feed
     elif direction == "upright": dx, dy = step, step
     elif direction == "downleft": dx, dy = -step, -step
     elif direction == "downright": dx, dy = step, -step
+    elif direction == "zup": dz = step
+    elif direction == "zdown": dz = -step
     
-    cmd = f"G91 G0 X{dx:.3f} Y{dy:.3f} F{feedrate:.0f}"
+    parts = []
+    if dx != 0: parts.append(f"X{dx:.3f}")
+    if dy != 0: parts.append(f"Y{dy:.3f}")
+    if dz != 0: parts.append(f"Z{dz:.3f}")
+    
+    if not parts:
+        return {"status": "ok"}
+        
+    cmd = f"G91 G0 {' '.join(parts)}"
     
     try:
-        # Jog relative move
-        state.serial_port.write((cmd + "\n").encode())
-        state.serial_port.flush()
+        send_serial_bytes((cmd + "\n").encode())
+        send_serial_bytes(b"G90\n")
         await broadcast({"type": "log", "direction": "out", "content": cmd})
-        # After relative jog, restore absolute positioning mode
-        state.serial_port.write(b"G90\n")
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
@@ -1492,19 +1042,17 @@ async def set_home_coords():
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
     try:
-        # G10 L20 P1 X0 Y0 Z0 -> Reset work coordinates to 0 for all axes
-        # M5 (or M3 S0) spindle off
         cmd = "G10 L20 P1 X0 Y0 Z0"
-        state.serial_port.write((cmd + "\n").encode())
-        state.serial_port.flush()
+        send_serial_bytes((cmd + "\n").encode())
         await broadcast({"type": "log", "direction": "out", "content": cmd})
         
-        # Spindle off
         settings = load_settings()
         pen_up = settings["pen_up_cmd"]
-        state.serial_port.write(f"{pen_up}\n".encode())
-        state.serial_port.flush()
+        send_serial_bytes(f"{pen_up}\n".encode())
         await broadcast({"type": "log", "direction": "out", "content": pen_up})
+        
+        state.wpos = [0.0, 0.0, 0.0]
+        await broadcast({"type": "telemetry", "wpos": state.wpos, "state": state.machine_state})
         
         return {"status": "ok", "message": "Home set and pen raised"}
     except Exception as e:
@@ -1517,15 +1065,14 @@ async def control_pen(action: str = Form(...)):
     settings = load_settings()
     cmd = settings["pen_down_cmd"] if action == "down" else settings["pen_up_cmd"]
     try:
-        state.serial_port.write((cmd + "\n").encode())
-        state.serial_port.flush()
+        send_serial_bytes((cmd + "\n").encode())
         await broadcast({"type": "log", "direction": "out", "content": cmd})
         return {"status": "ok"}
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/api/draw/start")
-async def start_drawing_paths(scale_factor: float = Form(...)):
+async def start_drawing_paths(scale_factor: float = Form(1.0)):
     if not state.connected or not state.serial_port:
         return JSONResponse({"status": "error", "message": "Not connected"}, status_code=400)
     if not state.latest_paths:
@@ -1534,27 +1081,18 @@ async def start_drawing_paths(scale_factor: float = Form(...)):
         return JSONResponse({"status": "error", "message": "Drawing stream already running"}, status_code=400)
         
     settings = load_settings()
-    
-    # Save the initial coordinates before drawing (to return back to it later)
     state.draw_start_pos = list(state.wpos)
     
-    # Generate G-code lines with starting position offsets
-    gcode_lines = generate_gcode_lines(state.latest_paths, settings, scale_factor, state.draw_start_pos)
-    
-    # Save the streamed G-code to static directory for download
-    try:
-        gcode_file_path = os.path.join(STATIC_DIR, "cnc_output.nc")
-        with open(gcode_file_path, "w") as f:
-            f.write("\n".join(gcode_lines))
-    except Exception as e:
-        logger.error(f"Error saving cnc_output.nc: {e}")
+    gcode_lines = generate_gcode_lines_concentric(state.latest_paths, settings)
+    gcode_file_path = os.path.join(STATIC_DIR, "cnc_output.nc")
+    with open(gcode_file_path, "w", encoding="utf-8") as f:
+        f.write("\n".join(gcode_lines))
         
     state.stream_gcode_lines = gcode_lines
     state.gcode_index = 0
     state.is_streaming = True
     state.is_paused = False
     
-    # Start streamer task
     state.stream_task = asyncio.create_task(gcode_streamer_task())
     await broadcast({"type": "stream_status", "status": "started"})
     

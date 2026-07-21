@@ -1,0 +1,5 @@
+﻿BaseImage,TestImage,Similarity,BaseFaceDetected,TestFaceDetected,BaseFaceScore,TestFaceScore
+11.jpg,1.jpg,0.996724,True,True,0.8411,0.8247
+11.jpg,2026-07-17_09-42.png,0.997534,True,True,0.8411,0.8444
+11.jpg,du1.jpeg,0.993666,True,True,0.8411,0.8742
+11.jpg,IMG_20230110_141005_504.jpg,0.997089,True,True,0.8411,0.8695

@@ -63,3 +63,5 @@ có thể kết hợp cả cnc/drawtext/pypotrace_img2vector.py và cnc/drawtext
 cnc/drawtext/erode_and_trace_outline.py bổ xung thêm tab option này và cho chỉnh thông số tương ứng 
 
 cnc chạy thực tế vẽ ra đang bị như nhìn qua gương so với ảnh hiển thị cần sửa lại , xem code xử lý ở cnc/main.py để điều khiển cnc không bị ngược so với ảnh hiển thị hoặc cnc preview
+
+**cập nhật 5** bỏ hết các công cụ xử lý ảnh viết chữ,  cần làm chữ theo xem code cnc/drawtext/pypotrace_img2vector.py cần ảnh phải resize để nằm trong khung hoạt động của cnc , khi resize xong gọi Tạo G-code Tô Fill Concentric (Phương pháp B) xem code cnc/drawtext/pypo_ket_qua_vector_co_lo.svg.py để dùng vào cnc/drawtext/main.py 

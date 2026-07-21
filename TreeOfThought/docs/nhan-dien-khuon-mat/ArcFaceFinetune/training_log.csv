@@ -1,0 +1,1 @@
+epoch,stage,learning_rate,margin,train_loss,train_acc,val_loss,val_acc,is_best,timestamp

@@ -258,8 +258,12 @@ function updateConnectionUI(connected, port) {
     if (connected) {
         btn.textContent = "Ngắt kết nối";
         btn.className = "btn btn-danger";
-        select.value = port;
+        if (port) select.value = port;
         select.disabled = true;
+        if (stateEl.textContent === "Offline") {
+            stateEl.textContent = "Idle";
+            stateEl.className = "dro-value Idle";
+        }
     } else {
         btn.textContent = "Kết nối";
         btn.className = "btn btn-primary";
@@ -796,7 +800,11 @@ function setupEventListeners() {
         });
     });
 
-    document.getElementById("btn-set-home").addEventListener("click", setHomeCoordinate);
+    const setHomeBtn = document.getElementById("btn-set-home");
+    if (setHomeBtn) setHomeBtn.addEventListener("click", setHomeCoordinate);
+    const setHomeMainBtn = document.getElementById("btn-set-home-main");
+    if (setHomeMainBtn) setHomeMainBtn.addEventListener("click", setHomeCoordinate);
+
     document.getElementById("btn-pen-up").addEventListener("click", () => setPenState("up"));
     document.getElementById("btn-pen-down").addEventListener("click", () => setPenState("down"));
 
@@ -875,10 +883,18 @@ async function connectDevice() {
             body: fd
         });
         const ans = await res.json();
-        if (ans.status === "error") {
+        if (ans.status === "ok") {
+            isConnected = true;
+            updateConnectionUI(true, port);
+            logToConsole("System: " + ans.message, "system");
+        } else {
+            isConnected = false;
+            updateConnectionUI(false, port);
             logToConsole("System Error: Kết nối thất bại: " + ans.message, "system");
         }
     } catch (e) {
+        isConnected = false;
+        updateConnectionUI(false, port);
         logToConsole("System Error: Không thể kết nối tới server.", "system");
     }
 }
@@ -888,8 +904,13 @@ async function disconnectDevice() {
     try {
         const res = await fetch("/api/disconnect", { method: "POST" });
         const ans = await res.json();
+        isConnected = false;
+        const port = document.getElementById("serial-port").value;
+        updateConnectionUI(false, port);
         if (ans.status === "error") {
             logToConsole("System Error: Ngắt kết nối thất bại: " + ans.message, "system");
+        } else {
+            logToConsole("System: Đã ngắt kết nối với máy CNC.", "system");
         }
     } catch (e) {
         logToConsole("System Error: Không thể gửi yêu cầu ngắt kết nối.", "system");
@@ -989,76 +1010,23 @@ function triggerAutoReprocess() {
 
 // Trigger Image Process Pipeline on server
 async function reprocessImage() {
+    const stepEl = document.getElementById("step-mm");
+    const step_mm = stepEl ? parseFloat(stepEl.value) : 0.4;
+    const cncWidthEl = document.getElementById("cnc-width");
+    const cncHeightEl = document.getElementById("cnc-height");
+    const cnc_width = cncWidthEl ? parseFloat(cncWidthEl.value) : 300.0;
+    const cnc_height = cncHeightEl ? parseFloat(cncHeightEl.value) : 200.0;
+    
     const updatedParams = {
-        mode: activeProcessingMode,
-        min_line_len: parseInt(document.getElementById("min-line-len").value),
-        use_simplify_epsilon: document.getElementById("use-simplify-epsilon").checked,
-        epsilon: parseFloat(document.getElementById("simplify-epsilon").value),
-        scale_factor: parseFloat(document.getElementById("scale-factor").value),
-        pen_up_cmd: document.getElementById("pen-up-cmd").value,
-        pen_down_cmd: document.getElementById("pen-down-cmd").value,
-        pen_dwell: parseFloat(document.getElementById("pen-dwell").value),
-        feedrate: parseFloat(document.getElementById("cnc-speed").value),
-        
-        // Text mode parameters
-        thresh_mode: document.getElementById("thresh-mode").value,
-        thresh_val: parseInt(document.getElementById("thresh-val").value),
-        invert_img: document.getElementById("invert-img").checked,
-        morph_kernel: parseInt(document.getElementById("morph-kernel").value),
-        skeleton_method: document.getElementById("skeleton-method").value,
-        use_text_blur: document.getElementById("use-text-blur").checked,
-        text_blur_size: parseInt(document.getElementById("text-blur-size").value),
-        use_text_morph: document.getElementById("use-text-morph").checked,
-        use_text_dilate: document.getElementById("use-text-dilate").checked,
-        text_dilate_size: parseInt(document.getElementById("text-dilate-size").value),
-        
-        // Path welding
-        use_path_connect: document.getElementById("use-path-connect").checked,
-        path_connect_dist: parseFloat(document.getElementById("path-connect-dist").value),
-        
-        // Sketch mode parameters
-        use_clahe: document.getElementById("use-clahe").checked,
-        clahe_clip_limit: parseFloat(document.getElementById("clahe-limit").value),
-        clahe_tile_grid_size: parseInt(document.getElementById("clahe-grid").value),
-        use_blur: document.getElementById("use-blur").checked,
-        blur_size: parseInt(document.getElementById("blur-size").value),
-        use_connect: document.getElementById("use-connect").checked,
-        use_thin: document.getElementById("use-thin").checked,
-        use_len_filter: document.getElementById("use-len-filter").checked,
-        canny_ultra_low: parseInt(document.getElementById("canny-ultra-low").value),
-        canny_ultra_high: parseInt(document.getElementById("canny-ultra-high").value),
-        canny_medium_low: parseInt(document.getElementById("canny-medium-low").value),
-        canny_medium_high: parseInt(document.getElementById("canny-medium-high").value),
-        canny_strong_low: parseInt(document.getElementById("canny-strong-low").value),
-        canny_strong_high: parseInt(document.getElementById("canny-strong-high").value),
-
-        // Potrace parameters
-        potrace_thresh_mode: activeProcessingMode === "erode_outline" ? document.getElementById("erode-thresh-mode").value : document.getElementById("potrace-thresh-mode").value,
-        potrace_thresh_val: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-thresh-val").value) : parseInt(document.getElementById("potrace-thresh-val").value),
-        potrace_invert_img: activeProcessingMode === "erode_outline" ? document.getElementById("erode-invert-img").checked : document.getElementById("potrace-invert-img").checked,
-        potrace_use_blur: activeProcessingMode === "erode_outline" ? document.getElementById("erode-use-blur").checked : document.getElementById("potrace-use-blur").checked,
-        potrace_blur_size: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-blur-size").value) : parseInt(document.getElementById("potrace-blur-size").value),
-        potrace_use_morph: activeProcessingMode === "erode_outline" ? false : document.getElementById("potrace-use-morph").checked,
-        potrace_morph_kernel: activeProcessingMode === "erode_outline" ? 3 : parseInt(document.getElementById("potrace-morph-kernel").value),
-        potrace_use_dilate: activeProcessingMode === "erode_outline" ? false : document.getElementById("potrace-use-dilate").checked,
-        potrace_dilate_size: activeProcessingMode === "erode_outline" ? 1 : parseInt(document.getElementById("potrace-dilate-size").value),
-        use_potrace_turdsize: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-turdsize").checked : document.getElementById("use-potrace-turdsize").checked,
-        potrace_turdsize: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-turdsize").value) : parseInt(document.getElementById("potrace-turdsize").value),
-        use_potrace_alphamax: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-alphamax").checked : document.getElementById("use-potrace-alphamax").checked,
-        potrace_alphamax: activeProcessingMode === "erode_outline" ? parseFloat(document.getElementById("erode-alphamax").value) : parseFloat(document.getElementById("potrace-alphamax").value),
-        use_potrace_opttolerance: activeProcessingMode === "erode_outline" ? document.getElementById("use-erode-opttolerance").checked : document.getElementById("use-potrace-opttolerance").checked,
-        potrace_opttolerance: activeProcessingMode === "erode_outline" ? parseFloat(document.getElementById("erode-opttolerance").value) : parseFloat(document.getElementById("potrace-opttolerance").value),
-        potrace_opticurve: activeProcessingMode === "erode_outline" ? document.getElementById("erode-opticurve").checked : document.getElementById("potrace-opticurve").checked,
-        potrace_turnpolicy: activeProcessingMode === "erode_outline" ? document.getElementById("erode-turnpolicy").value : document.getElementById("potrace-turnpolicy").value,
-        potrace_bezier_steps: activeProcessingMode === "erode_outline" ? parseInt(document.getElementById("erode-bezier-steps").value) : parseInt(document.getElementById("potrace-bezier-steps").value),
-
-        // Erode Outline parameters
-        erode_thinness_level: parseInt(document.getElementById("erode-thinness-level").value),
-        use_erode_thinness: document.getElementById("use-erode-thinness").checked,
-
-        // Mirror parameters
-        mirror_x: document.getElementById("mirror-x").checked,
-        mirror_y: document.getElementById("mirror-y").checked
+        step_mm: step_mm,
+        cnc_width: cnc_width,
+        cnc_height: cnc_height,
+        pen_up_cmd: document.getElementById("pen-up-cmd") ? document.getElementById("pen-up-cmd").value : "M3 S10",
+        pen_down_cmd: document.getElementById("pen-down-cmd") ? document.getElementById("pen-down-cmd").value : "M3 S90",
+        pen_dwell: document.getElementById("pen-dwell") ? parseFloat(document.getElementById("pen-dwell").value) : 0.2,
+        feedrate: document.getElementById("cnc-speed") ? parseFloat(document.getElementById("cnc-speed").value) : 1000.0,
+        mirror_x: document.getElementById("mirror-x") ? document.getElementById("mirror-x").checked : false,
+        mirror_y: document.getElementById("mirror-y") ? document.getElementById("mirror-y").checked : false
     };
 
     try {
@@ -1163,7 +1131,8 @@ async function startActualDrawing() {
         return;
     }
 
-    const scale = parseFloat(document.getElementById("scale-factor").value);
+    const scaleEl = document.getElementById("scale-factor");
+    const scale = scaleEl ? parseFloat(scaleEl.value) : 1.0;
     
     // Save starting position
     drawStartCoords.x = currentCoords.x;
@@ -1364,12 +1333,16 @@ function drawPreviewCanvas() {
 
     // DRAW THE PATH VECTORS
     if (activePaths.length > 0) {
-        const drawScale = parseFloat(document.getElementById("scale-factor").value) || 0.15;
+        const scaleEl = document.getElementById("scale-factor");
+        const drawScale = scaleEl ? parseFloat(scaleEl.value) : 1.0;
         
         // References (relative coordinates translation)
-        const ref_x = activePaths[0][0][0];
-        const ref_y = activePaths[0][0][1];
-        
+        let min_x = Infinity, max_y = -Infinity;
+        activePaths.forEach(p => p.forEach(pt => {
+            if (pt[0] < min_x) min_x = pt[0];
+            if (pt[1] > max_y) max_y = pt[1];
+        }));
+
         let start_cnc_x = drawStartCoords.x;
         let start_cnc_y = drawStartCoords.y;
         if (!isStreaming && !isSimulating) {
@@ -1378,8 +1351,10 @@ function drawPreviewCanvas() {
             start_cnc_y = currentCoords.y;
         }
 
-        const mirrorX = document.getElementById("mirror-x").checked;
-        const mirrorY = document.getElementById("mirror-y").checked;
+        const mirrorXEl = document.getElementById("mirror-x");
+        const mirrorYEl = document.getElementById("mirror-y");
+        const mirrorX = mirrorXEl ? mirrorXEl.checked : false;
+        const mirrorY = mirrorYEl ? mirrorYEl.checked : false;
 
         // Draw all extracted toolpaths
         activePaths.forEach((path, pIdx) => {
@@ -1387,15 +1362,15 @@ function drawPreviewCanvas() {
             
             // Map image path relative to origin to simulated CNC positions
             path.forEach((pt, idx) => {
-                let dx = pt[0] - ref_x;
-                let dy = pt[1] - ref_y; // Y positive down
+                let dx = pt[0] - min_x;
+                let dy = max_y - pt[1];
                 if (mirrorX) dx = -dx;
                 if (mirrorY) dy = -dy;
                 const px = (dx * drawScale + start_cnc_x) * cncScale;
                 const py = (dy * drawScale + start_cnc_y) * cncScale;
                 
                 const screenX = tx + px;
-                const screenY = ty + py; // Map Y down
+                const screenY = ty + tableH - py;
                 
                 if (idx === 0) {
                     ctx.moveTo(screenX, screenY);
@@ -1639,9 +1614,12 @@ function updateSliderLabels() {
 
 // Toggle manual threshold value control depending on threshold selection type
 function toggleThresholdInput() {
-    const mode = document.getElementById("thresh-mode").value;
-    const div = document.getElementById("threshold-val-group");
-    if (div) div.style.display = (mode === "manual") ? "block" : "none";
+    const threshMode = document.getElementById("thresh-mode");
+    if (threshMode) {
+        const mode = threshMode.value;
+        const div = document.getElementById("threshold-val-group");
+        if (div) div.style.display = (mode === "manual") ? "block" : "none";
+    }
 
     const potraceThreshMode = document.getElementById("potrace-thresh-mode");
     if (potraceThreshMode) {

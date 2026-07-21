@@ -67,6 +67,6 @@ def bitmap_to_svg_perfect_holes(input_image_path, output_svg_path):
 
 # --- CHẠY THỬ NGHIỆM VỚI FILE CỦA BẠN ---
 try:
-    bitmap_to_svg_perfect_holes("/work/a.i-assistant-chatbot-telegram-serverles/cnc/drawtext/nguyenphandu.png", "pypo_ket_qua_vector_co_lo.svg")
+    bitmap_to_svg_perfect_holes("/work/a.i-assistant-chatbot-telegram-serverles/cnc/drawtext/2026-07-12_18-10.png", "pypo_ket_qua_vector_co_lo.svg")
 except Exception as e:
     print(f"Có lỗi xảy ra: {e}")
