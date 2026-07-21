@@ -3223,6 +3223,7 @@ function initGcodeEditor() {
                 formData.append("handwriting_morph_kernel", parseInt(document.getElementById("hw-morph-kernel")?.value, 10) || 3);
                 formData.append("handwriting_min_len", parseInt(document.getElementById("hw-min-len")?.value, 10) || 5);
                 formData.append("handwriting_mode", document.getElementById("hw-mode")?.value || "centerline");
+                formData.append("handwriting_raster_step", parseInt(document.getElementById("hw-raster-step")?.value, 10) || 2);
             }
 
             try {
@@ -4590,6 +4591,10 @@ function initGcodeEditor() {
     const hwMinLen = document.getElementById("hw-min-len");
     const valHwMinLen = document.getElementById("val-hw-min-len");
 
+    const hwRasterStep = document.getElementById("hw-raster-step");
+    const valHwRasterStep = document.getElementById("val-hw-raster-step");
+    const groupHwRasterStep = document.getElementById("group-hw-raster-step");
+
     if (hwAutoInvert) hwAutoInvert.addEventListener("change", () => debouncedConvert());
     if (hwUseOtsu) {
         hwUseOtsu.addEventListener("change", () => {
@@ -4601,7 +4606,20 @@ function initGcodeEditor() {
     }
     if (hwUseThinning) hwUseThinning.addEventListener("change", () => debouncedConvert());
     if (hwUseSmooth) hwUseSmooth.addEventListener("change", () => debouncedConvert());
-    if (hwMode) hwMode.addEventListener("change", () => debouncedConvert());
+    if (hwMode) {
+        hwMode.addEventListener("change", () => {
+            if (groupHwRasterStep) {
+                groupHwRasterStep.style.display = (hwMode.value === "raster") ? "block" : "none";
+            }
+            debouncedConvert();
+        });
+    }
+    if (hwRasterStep && valHwRasterStep) {
+        hwRasterStep.addEventListener("input", () => {
+            valHwRasterStep.innerText = `${hwRasterStep.value} px`;
+            debouncedConvert();
+        });
+    }
     if (hwThreshVal && valHwThreshVal) {
         hwThreshVal.addEventListener("input", () => {
             valHwThreshVal.innerText = hwThreshVal.value;

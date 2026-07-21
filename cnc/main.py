@@ -3939,7 +3939,8 @@ async def gcode_editor_convert(
     handwriting_use_smooth: bool = Form(True),
     handwriting_morph_kernel: int = Form(3),
     handwriting_min_len: int = Form(5),
-    handwriting_mode: str = Form("centerline")
+    handwriting_mode: str = Form("centerline"),
+    handwriting_raster_step: int = Form(2)
 ):
     try:
         # Create temp folder if not exists
@@ -3984,7 +3985,8 @@ async def gcode_editor_convert(
                         use_smooth=handwriting_use_smooth,
                         morph_kernel=handwriting_morph_kernel,
                         min_len=handwriting_min_len,
-                        handwriting_mode=handwriting_mode
+                        handwriting_mode=handwriting_mode,
+                        raster_step=handwriting_raster_step
                     )
                 except Exception as ex:
                     logger.error(f"Error in handwriting conversion: {ex}")

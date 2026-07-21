@@ -419,11 +419,12 @@ def handwriting_text_to_gcode(
     use_smooth=True,
     morph_kernel=3,
     min_len=5,
-    handwriting_mode="centerline"
+    handwriting_mode="centerline",
+    raster_step=2
 ):
     """
     Cập nhật 50: Xử lý chữ viết tay, chữ đen trên nền trắng thành G-code.
-    Hỗ trợ 4 chế độ nét: centerline (1 nét đơn), potrace (mượt Bezier), outline (viền nét chữ), concentric (tô lấp đầy).
+    Hỗ trợ 5 chế độ nét: centerline (1 nét đơn), potrace (mượt Bezier), outline (viền nét chữ), concentric (tô lấp đầy), raster (tô quét Ziczac 2px).
     """
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
@@ -450,7 +451,47 @@ def handwriting_text_to_gcode(
 
     valid_contours = []
 
-    if handwriting_mode == "potrace":
+    if handwriting_mode == "raster":
+        # Tô quét native Ziczac (Raster scanline fill)
+        step = max(1, int(raster_step))
+        contours_list = []
+        direction = 1  # 1: left->right, -1: right->left
+
+        for y in range(0, height, step):
+            row = thresh[y, :]
+            runs = []
+            in_run = False
+            start_x = 0
+            for x in range(width):
+                if row[x] > 0:
+                    if not in_run:
+                        in_run = True
+                        start_x = x
+                else:
+                    if in_run:
+                        in_run = False
+                        if (x - 1 - start_x) >= 1:
+                            runs.append((start_x, x - 1))
+            if in_run:
+                if (width - 1 - start_x) >= 1:
+                    runs.append((start_x, width - 1))
+
+            if not runs:
+                continue
+
+            if direction == -1:
+                runs.reverse()
+                runs = [(x2, x1) for (x1, x2) in runs]
+
+            for x1, x2 in runs:
+                pts = np.array([[[float(x1), float(y)]], [[float(x2), float(y)]]], dtype=np.float32)
+                contours_list.append(pts)
+
+            direction *= -1
+
+        valid_contours = contours_list
+
+    elif handwriting_mode == "potrace":
         try:
             import potrace
             if use_thinning:
@@ -526,39 +567,42 @@ def handwriting_text_to_gcode(
         print("❌ Không tìm thấy nét chữ nào hợp lệ.")
         return False
 
-    # 4. Tối ưu hóa thứ tự nét vẽ (Greedy Nearest Neighbor)
-    valid_c_list = list(valid_contours)
-    sorted_contours = []
-    current_pos = np.array([0.0, 0.0])
+    # 4. Tối ưu hóa thứ tự nét vẽ
+    if handwriting_mode == "raster":
+        sorted_contours = list(valid_contours)
+    else:
+        valid_c_list = list(valid_contours)
+        sorted_contours = []
+        current_pos = np.array([0.0, 0.0])
 
-    while valid_c_list:
-        closest_idx = -1
-        min_dist = float('inf')
-        reverse_contour = False
+        while valid_c_list:
+            closest_idx = -1
+            min_dist = float('inf')
+            reverse_contour = False
 
-        for idx, contour in enumerate(valid_c_list):
-            start_pt = contour[0][0]
-            end_pt = contour[-1][0]
+            for idx, contour in enumerate(valid_c_list):
+                start_pt = contour[0][0]
+                end_pt = contour[-1][0]
 
-            dist_to_start = np.linalg.norm(current_pos - start_pt)
-            dist_to_end = np.linalg.norm(current_pos - end_pt)
+                dist_to_start = np.linalg.norm(current_pos - start_pt)
+                dist_to_end = np.linalg.norm(current_pos - end_pt)
 
-            if dist_to_start < min_dist:
-                min_dist = dist_to_start
-                closest_idx = idx
-                reverse_contour = False
+                if dist_to_start < min_dist:
+                    min_dist = dist_to_start
+                    closest_idx = idx
+                    reverse_contour = False
 
-            if dist_to_end < min_dist:
-                min_dist = dist_to_end
-                closest_idx = idx
-                reverse_contour = True
+                if dist_to_end < min_dist:
+                    min_dist = dist_to_end
+                    closest_idx = idx
+                    reverse_contour = True
 
-        chosen_contour = valid_c_list.pop(closest_idx)
-        if reverse_contour:
-            chosen_contour = np.flip(chosen_contour, axis=0)
+            chosen_contour = valid_c_list.pop(closest_idx)
+            if reverse_contour:
+                chosen_contour = np.flip(chosen_contour, axis=0)
 
-        sorted_contours.append(chosen_contour)
-        current_pos = chosen_contour[-1][0]
+            sorted_contours.append(chosen_contour)
+            current_pos = chosen_contour[-1][0]
 
     # 5. Tạo file G-code
     if mode == "servo":
