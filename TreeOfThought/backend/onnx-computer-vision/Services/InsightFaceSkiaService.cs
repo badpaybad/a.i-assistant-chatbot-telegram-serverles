@@ -25,10 +25,15 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
 
     public InsightFaceSkiaService(string? detModelPath = null, string? lmkModelPath = null, string? recModelPath = null)
     {
-        string baseDir = "/work/ekycwebapi/aimodels/weights/models";
-        detModelPath ??= Path.Combine(baseDir, "buffalo_l", "det_10g.onnx");
-        lmkModelPath ??= Path.Combine(baseDir, "buffalo_l", "2d106det.onnx");
-        recModelPath ??= Path.Combine(baseDir, "updated_resnet100.onnx");
+        string defaultBaseDir = "/work/ekycwebapi/aimodels/weights/models";
+        if (!Directory.Exists(defaultBaseDir))
+        {
+            defaultBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aimodels", "weights", "models");
+        }
+
+        detModelPath ??= Path.Combine(defaultBaseDir, "buffalo_l", "det_10g.onnx");
+        lmkModelPath ??= Path.Combine(defaultBaseDir, "buffalo_l", "2d106det.onnx");
+        recModelPath ??= Path.Combine(defaultBaseDir, "updated_resnet100.onnx");
 
         if (!File.Exists(detModelPath))
             throw new FileNotFoundException($"ONNX Detection model not found at {detModelPath}");
@@ -80,7 +85,7 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
             canvas.Flush();
         }
 
-        // 2. Prepare ONNX input tensor [1, 3, 640, 640]
+        // 2. Prepare ONNX input tensor [1, 3, 640, 640] (float32 for ONNX)
         float[] inputData = new float[1 * 3 * targetHeight * targetWidth];
         ReadOnlySpan<byte> pixelSpan = detImg.GetPixelSpan();
 
@@ -94,7 +99,6 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
                 byte g = pixelSpan[pxOffset + 1];
                 byte b = pixelSpan[pxOffset + 2];
 
-                // SCRFD ONNX expects RGB order normalized (val - 127.5) / 128.0
                 int pixelIdx = y * targetWidth + x;
                 inputData[0 * targetHeight * targetWidth + pixelIdx] = (r - 127.5f) / 128.0f;
                 inputData[1 * targetHeight * targetWidth + pixelIdx] = (g - 127.5f) / 128.0f;
@@ -315,8 +319,6 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
                 byte b = pixelSpan[pxOffset + 2];
 
                 int pixelIdx = y * targetSize + x;
-                // Channel order matching ArcFace Python swapRB=True from RGB aligned mat:
-                // Channel 0 = B, Channel 1 = G, Channel 2 = R
                 inputData[0 * targetSize * targetSize + pixelIdx] = b;
                 inputData[1 * targetSize * targetSize + pixelIdx] = g;
                 inputData[2 * targetSize * targetSize + pixelIdx] = r;

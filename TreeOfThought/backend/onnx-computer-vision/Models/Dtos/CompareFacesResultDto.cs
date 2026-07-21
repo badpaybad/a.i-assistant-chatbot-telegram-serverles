@@ -15,5 +15,5 @@ public class CompareEmbeddingsRequestDto
 {
     public float[] Vector1 { get; set; } = System.Array.Empty<float>();
     public float[] Vector2 { get; set; } = System.Array.Empty<float>();
-    public double Threshold { get; set; } = 0.4;
+    public float? Threshold { get; set; } = 0.4f;
 }

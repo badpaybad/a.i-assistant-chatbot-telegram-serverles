@@ -44,7 +44,7 @@ public class Program
         // 2. Extract Embedding
         if (faces1.Count > 0)
         {
-            var emb = service.VectorFace(bmp1, faces1[0]);
+            float[] emb = service.VectorFace(bmp1, faces1[0]);
             Console.WriteLine($"Embedding vector length: {emb.Length}");
             float norm = 0f;
             foreach (var v in emb) norm += v * v;

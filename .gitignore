@@ -150,3 +150,4 @@ cnc/drawtext/main.spec
 **/**_cccd_face.jp2
 **/**_info.txt
 **/**pn532_config.py
+**/TreeOfThought/backend/Core.Web.Api/aimodels/**

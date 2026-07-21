@@ -16,7 +16,7 @@ namespace Core.Infra.OnnxComputerVision.Controllers;
 
 [ApiController]
 [Route("api/onnx-cv")]
-[AppAuthorize]
+// [AppAuthorize]
 [AllowAnonymous]
 public class OnnxComputerVisionController : BaseController
 {
@@ -37,7 +37,7 @@ public class OnnxComputerVisionController : BaseController
     public async Task<IActionResult> DetectFace([FromForm] DetectFaceFormRequest request)
     {
         var image = request.Image;
-        var scoreThreshold = request.ScoreThreshold;
+        float scoreThreshold = request.ScoreThreshold ?? 0.5f;
 
         if (image == null || image.Length == 0)
             return BadRequest(new FaceDetectionResultDto { Success = false, Message = "Tệp ảnh không hợp lệ." });
@@ -132,7 +132,7 @@ public class OnnxComputerVisionController : BaseController
     {
         var image1 = request.Image1;
         var image2 = request.Image2;
-        var threshold = request.Threshold;
+        float threshold = request.Threshold ?? 0.4f;
 
         if (image1 == null || image1.Length == 0 || image2 == null || image2.Length == 0)
             return BadRequest(new CompareFacesResultDto { Success = false, Message = "Tệp ảnh không hợp lệ." });
@@ -150,7 +150,7 @@ public class OnnxComputerVisionController : BaseController
         if (bitmap1 == null || bitmap2 == null)
             return BadRequest(new CompareFacesResultDto { Success = false, Message = "Không thể giải mã một trong hai ảnh." });
 
-        var res = _insightFaceService.CompareFaces(bitmap1, bitmap2);
+        var res = _insightFaceService.CompareFaces(bitmap1, bitmap2, threshold);
 
         if (res.Similarity == -1.0)
             return Ok(new CompareFacesResultDto { Success = true, Similarity = -1.0, IsSamePerson = false, Message = "Không tìm thấy khuôn mặt ở ảnh 1." });
@@ -181,7 +181,7 @@ public class OnnxComputerVisionController : BaseController
             return BadRequest(new CompareFacesResultDto { Success = false, Message = "Vector không hợp lệ." });
 
         double sim = _insightFaceService.CompareVector(request.Vector1, request.Vector2);
-        double threshold = request.Threshold > 0 ? request.Threshold : 0.4;
+        float threshold = request.Threshold ?? 0.4f;
         bool isSame = sim >= threshold;
 
         return Ok(new CompareFacesResultDto
