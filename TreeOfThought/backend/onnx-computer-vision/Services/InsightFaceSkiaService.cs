@@ -367,10 +367,10 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
         return embedding;
     }
 
-    public double CompareVector(float[] v1, float[] v2)
+    public float CompareVector(float[] v1, float[] v2)
     {
         if (v1 == null || v2 == null || v1.Length != v2.Length)
-            return 0.0;
+            return 0.0f;
 
         float dot = 0f;
         for (int i = 0; i < v1.Length; i++)
@@ -380,13 +380,13 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
         return dot;
     }
 
-    public (double Similarity, FaceInfo? f1, FaceInfo? f2, float[]? v1, float[]? v2) CompareFaces(SKBitmap img1, SKBitmap img2, float detThresh = 0.5f)
+    public (float Similarity, FaceInfo? f1, FaceInfo? f2, float[]? v1, float[]? v2) CompareFaces(SKBitmap img1, SKBitmap img2, float detThresh = 0.5f)
     {
         var faces1 = DetectFace(img1, detThresh);
         var faces2 = DetectFace(img2, detThresh);
 
-        if (!faces1.Any()) return (-1.0, null, null, null, null);
-        if (!faces2.Any()) return (-2.0, null, null, null, null);
+        if (!faces1.Any()) return (-1.0f, null, null, null, null);
+        if (!faces2.Any()) return (-2.0f, null, null, null, null);
 
         var f1 = faces1.OrderByDescending(f => f.Score).First();
         var f2 = faces2.OrderByDescending(f => f.Score).First();
@@ -394,7 +394,7 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
         var v1 = VectorFace(img1, f1);
         var v2 = VectorFace(img2, f2);
 
-        double similarity = CompareVector(v1, v2);
+        float similarity = CompareVector(v1, v2);
 
         return (similarity, f1, f2, v1, v2);
     }

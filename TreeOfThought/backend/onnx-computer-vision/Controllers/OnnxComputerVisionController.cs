@@ -140,9 +140,9 @@ public class OnnxComputerVisionController : BaseController
         var res = _insightFaceService.CompareFaces(bitmap1, bitmap2, threshold);
 
         if (res.Similarity == -1.0)
-            return Ok(new CompareFacesResultDto { Success = true, Similarity = -1.0, IsSamePerson = false, Message = "Không tìm thấy khuôn mặt ở ảnh 1." });
+            return Ok(new CompareFacesResultDto { Success = true, Similarity = -1.0f, IsSamePerson = false, Message = "Không tìm thấy khuôn mặt ở ảnh 1." });
         if (res.Similarity == -2.0)
-            return Ok(new CompareFacesResultDto { Success = true, Similarity = -2.0, IsSamePerson = false, Message = "Không tìm thấy khuôn mặt ở ảnh 2." });
+            return Ok(new CompareFacesResultDto { Success = true, Similarity = -2.0f, IsSamePerson = false, Message = "Không tìm thấy khuôn mặt ở ảnh 2." });
 
         bool isSame = res.Similarity >= threshold;
 
@@ -167,7 +167,7 @@ public class OnnxComputerVisionController : BaseController
         if (request.Vector1 == null || request.Vector2 == null || request.Vector1.Length == 0 || request.Vector2.Length == 0)
             return BadRequest(new CompareFacesResultDto { Success = false, Message = "Vector không hợp lệ." });
 
-        double sim = _insightFaceService.CompareVector(request.Vector1, request.Vector2);
+        var sim = _insightFaceService.CompareVector(request.Vector1, request.Vector2);
         float threshold = request.Threshold ?? 0.4f;
         bool isSame = sim >= threshold;
 

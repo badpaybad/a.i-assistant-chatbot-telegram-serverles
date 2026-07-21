@@ -3,9 +3,9 @@ namespace Core.Infra.OnnxComputerVision.Models.Dtos;
 public class CompareFacesResultDto
 {
     public bool Success { get; set; }
-    public double Similarity { get; set; }
+    public float Similarity { get; set; }
     public bool IsSamePerson { get; set; }
-    public double Threshold { get; set; }
+    public float? Threshold { get; set; } = 0.4f;
     public FaceInfoDto? Face1 { get; set; }
     public FaceInfoDto? Face2 { get; set; }
     public string? Message { get; set; }
