@@ -395,3 +395,5 @@ Cần bổ xung thêm tab cho việc xử lý chữ viết tay, chữ đen trên
 
 Có thể bổ xung thêm kiểu fill native tức là ảnh cho về đen trắng để nổi bật chữ với nền rồi đầu cnc cứ di chuyển 2 pixel gần nhau liên tục như nề lại chữ
 ✅ Đã bổ sung chế độ "Raster Scanline (Tô quét Ziczac 2px)" trong tab Chữ Viết Tay. Cho phép đầu CNC di chuyển ziczac liên tục theo từng dòng cách nhau 2px (tùy chỉnh từ 1px - 10px) qua toàn bộ diện tích nét chữ để tô phủ kín chữ như nề lại chữ.
+✅ Đã bổ sung Phương án 2: "Local Raster (Tô Ziczac từng chữ)" - Tự động tách từng ký tự liên thông (Connected Components) và chỉ quét Ziczac ngắn trong phạm vi từng con chữ, giúp loại bỏ di chuyển không tải xa và không nhấc bút giữa chừng.
+✅ Đã bổ sung Phương án 3: "Cross-Hatch (Tô gạch chéo 45°)" - Tô lấp đầy nét chữ theo các đường gạch chéo nghiêng 45° liền mạch, tạo hiệu ứng tô bóng nét chữ mỹ thuật và mềm mại.

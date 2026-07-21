@@ -3224,6 +3224,7 @@ function initGcodeEditor() {
                 formData.append("handwriting_min_len", parseInt(document.getElementById("hw-min-len")?.value, 10) || 5);
                 formData.append("handwriting_mode", document.getElementById("hw-mode")?.value || "centerline");
                 formData.append("handwriting_raster_step", parseInt(document.getElementById("hw-raster-step")?.value, 10) || 2);
+                formData.append("handwriting_offset_step", parseInt(document.getElementById("hw-offset-step")?.value, 10) || 2);
             }
 
             try {
@@ -4595,6 +4596,10 @@ function initGcodeEditor() {
     const valHwRasterStep = document.getElementById("val-hw-raster-step");
     const groupHwRasterStep = document.getElementById("group-hw-raster-step");
 
+    const hwOffsetStep = document.getElementById("hw-offset-step");
+    const valHwOffsetStep = document.getElementById("val-hw-offset-step");
+    const groupHwOffsetStep = document.getElementById("group-hw-offset-step");
+
     if (hwAutoInvert) hwAutoInvert.addEventListener("change", () => debouncedConvert());
     if (hwUseOtsu) {
         hwUseOtsu.addEventListener("change", () => {
@@ -4609,8 +4614,17 @@ function initGcodeEditor() {
     if (hwMode) {
         hwMode.addEventListener("change", () => {
             if (groupHwRasterStep) {
-                groupHwRasterStep.style.display = (hwMode.value === "raster") ? "block" : "none";
+                groupHwRasterStep.style.display = (["raster", "local_raster", "cross_hatch"].includes(hwMode.value)) ? "block" : "none";
             }
+            if (groupHwOffsetStep) {
+                groupHwOffsetStep.style.display = (hwMode.value === "offset") ? "block" : "none";
+            }
+            debouncedConvert();
+        });
+    }
+    if (hwOffsetStep && valHwOffsetStep) {
+        hwOffsetStep.addEventListener("input", () => {
+            valHwOffsetStep.innerText = `${hwOffsetStep.value} px`;
             debouncedConvert();
         });
     }

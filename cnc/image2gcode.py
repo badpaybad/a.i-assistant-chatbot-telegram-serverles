@@ -420,11 +420,12 @@ def handwriting_text_to_gcode(
     morph_kernel=3,
     min_len=5,
     handwriting_mode="centerline",
-    raster_step=2
+    raster_step=2,
+    offset_step=2
 ):
     """
     Cập nhật 50: Xử lý chữ viết tay, chữ đen trên nền trắng thành G-code.
-    Hỗ trợ 5 chế độ nét: centerline (1 nét đơn), potrace (mượt Bezier), outline (viền nét chữ), concentric (tô lấp đầy), raster (tô quét Ziczac 2px).
+    Hỗ trợ 6 chế độ nét: centerline (1 nét đơn), offset (tô cuộn từ viền vào trong), raster (tô quét Ziczac), potrace (mượt Bezier), outline (viền nét chữ), concentric (tô lấp đầy).
     """
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
@@ -451,7 +452,154 @@ def handwriting_text_to_gcode(
 
     valid_contours = []
 
-    if handwriting_mode == "raster":
+    if handwriting_mode == "local_raster":
+        # Tô quét Ziczac cục bộ theo từng ký tự (Local Bounding-Box Scanline)
+        step = max(1, int(raster_step))
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+        local_contours = []
+
+        component_indices = list(range(1, num_labels))
+        # Sắp xếp các ký tự theo vị trí y, rồi x
+        component_indices.sort(key=lambda idx: (stats[idx, cv2.CC_STAT_TOP] // 30, stats[idx, cv2.CC_STAT_LEFT]))
+
+        for comp_idx in component_indices:
+            x_min = stats[comp_idx, cv2.CC_STAT_LEFT]
+            y_min = stats[comp_idx, cv2.CC_STAT_TOP]
+            w_comp = stats[comp_idx, cv2.CC_STAT_WIDTH]
+            h_comp = stats[comp_idx, cv2.CC_STAT_HEIGHT]
+            area = stats[comp_idx, cv2.CC_STAT_AREA]
+
+            if area < min_len:
+                continue
+
+            comp_mask = (labels[y_min:y_min+h_comp, x_min:x_min+w_comp] == comp_idx)
+            direction = 1
+
+            for local_y in range(0, h_comp, step):
+                row_mask = comp_mask[local_y, :]
+                runs = []
+                in_run = False
+                start_x = 0
+                for local_x in range(w_comp):
+                    if row_mask[local_x]:
+                        if not in_run:
+                            in_run = True
+                            start_x = local_x
+                    else:
+                        if in_run:
+                            in_run = False
+                            if (local_x - 1 - start_x) >= 1:
+                                runs.append((start_x, local_x - 1))
+                if in_run:
+                    if (w_comp - 1 - start_x) >= 1:
+                        runs.append((start_x, w_comp - 1))
+
+                if not runs:
+                    continue
+
+                if direction == -1:
+                    runs.reverse()
+                    runs = [(x2, x1) for (x1, x2) in runs]
+
+                for lx1, lx2 in runs:
+                    gx1 = x_min + lx1
+                    gx2 = x_min + lx2
+                    gy = y_min + local_y
+                    pts = np.array([[[float(gx1), float(gy)]], [[float(gx2), float(gy)]]], dtype=np.float32)
+                    local_contours.append(pts)
+
+                direction *= -1
+
+        valid_contours = local_contours
+
+    elif handwriting_mode == "cross_hatch":
+        # Tô gạch chéo 45° kín nét chữ (Cross-Hatch 45° Infill)
+        step = max(1, int(raster_step))
+        hatch_contours = []
+        direction = 1
+
+        diag_step = int(step * 1.414)
+        if diag_step < 1:
+            diag_step = 1
+
+        for k in range(0, width + height, diag_step):
+            x_start = max(0, k - height + 1)
+            x_end = min(width - 1, k)
+            if x_start > x_end:
+                continue
+
+            line_pts = []
+            for x in range(x_start, x_end + 1):
+                y = k - x
+                if 0 <= y < height:
+                    line_pts.append((x, y))
+
+            if not line_pts:
+                continue
+
+            runs = []
+            in_run = False
+            r_start = None
+            for idx_p, (px, py) in enumerate(line_pts):
+                if thresh[py, px] > 0:
+                    if not in_run:
+                        in_run = True
+                        r_start = (px, py)
+                else:
+                    if in_run:
+                        in_run = False
+                        r_end = line_pts[idx_p - 1]
+                        runs.append((r_start, r_end))
+            if in_run:
+                r_end = line_pts[-1]
+                runs.append((r_start, r_end))
+
+            if not runs:
+                continue
+
+            if direction == -1:
+                runs.reverse()
+                runs = [(p2, p1) for (p1, p2) in runs]
+
+            for (p1, p2) in runs:
+                pts = np.array([[[float(p1[0]), float(p1[1])]], [[float(p2[0]), float(p2[1])]]], dtype=np.float32)
+                hatch_contours.append(pts)
+
+            direction *= -1
+
+        valid_contours = hatch_contours
+
+    elif handwriting_mode == "offset":
+        # Tô cuộn uốn lượn từ viền vào trong (Offset Infill)
+        step = max(1, int(offset_step))
+        curr_img = thresh.copy()
+        offset_contours = []
+        max_iterations = 100
+        iter_cnt = 0
+        
+        kernel_dim = step * 2 + 1
+        erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_dim, kernel_dim))
+
+        while cv2.countNonZero(curr_img) > 0 and iter_cnt < max_iterations:
+            iter_cnt += 1
+            contours, _ = cv2.findContours(curr_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+            if not contours:
+                break
+
+            for c in contours:
+                if len(c) >= min_len:
+                    if use_smooth:
+                        epsilon = 0.002 * cv2.arcLength(c, True)
+                        approx = cv2.approxPolyDP(c, epsilon, True)
+                        offset_contours.append(approx if len(approx) >= 3 else c)
+                    else:
+                        offset_contours.append(c)
+
+            curr_img = cv2.erode(curr_img, erode_kernel, iterations=1)
+
+        valid_contours = offset_contours
+
+    elif handwriting_mode == "raster":
         # Tô quét native Ziczac (Raster scanline fill)
         step = max(1, int(raster_step))
         contours_list = []
@@ -568,7 +716,7 @@ def handwriting_text_to_gcode(
         return False
 
     # 4. Tối ưu hóa thứ tự nét vẽ
-    if handwriting_mode == "raster":
+    if handwriting_mode in ["raster", "local_raster", "cross_hatch"]:
         sorted_contours = list(valid_contours)
     else:
         valid_c_list = list(valid_contours)

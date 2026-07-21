@@ -816,15 +816,26 @@
                                 <div class="sketch-param-group">
                                     <div class="group-title">Chế độ nét chữ</div>
                                     <select id="hw-mode" style="width: 100%; font-size: 11px; padding: 6px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
-                                        <option value="centerline" selected>Centerline (Nét đơn giữa 1px)</option>
-                                        <option value="raster">Raster Scanline (Tô quét Ziczac 2px)</option>
+                                        <option value="centerline">Centerline (Nét đơn giữa 1px)</option>
+                                        <option value="offset" selected>Offset Infill (Tô cuộn viền vào trong)</option>
+                                        <option value="local_raster">Local Raster (Tô Ziczac từng chữ)</option>
+                                        <option value="cross_hatch">Cross-Hatch (Tô gạch chéo 45°)</option>
+                                        <option value="raster">Raster Scanline (Tô Ziczac toàn trang)</option>
                                         <option value="potrace">Potrace Bezier (Đường cong mượt)</option>
                                         <option value="outline">Outline (Bao quanh viền chữ)</option>
                                         <option value="concentric">Concentric (Tô lấp đầy đồng tâm)</option>
                                     </select>
                                 </div>
 
-                                <div class="sketch-param-group" id="group-hw-raster-step">
+                                <div class="sketch-param-group" id="group-hw-offset-step">
+                                    <div class="slider-header-flex">
+                                        <label for="hw-offset-step">Bước tô Offset</label>
+                                        <span class="param-val" id="val-hw-offset-step">2 px</span>
+                                    </div>
+                                    <input type="range" id="hw-offset-step" min="1" max="10" step="1" value="2">
+                                </div>
+
+                                <div class="sketch-param-group" id="group-hw-raster-step" style="display: none;">
                                     <div class="slider-header-flex">
                                         <label for="hw-raster-step">Bước tô quét Ziczac</label>
                                         <span class="param-val" id="val-hw-raster-step">2 px</span>
