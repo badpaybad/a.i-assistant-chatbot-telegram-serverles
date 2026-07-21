@@ -2053,18 +2053,55 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 
 .sketch-sidebar-header {
-    padding: 12px 16px;
+    padding: 8px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(0, 0, 0, 0.2);
 }
 
-.sketch-sidebar-header h4 {
-    margin: 0;
-    font-size: 13px;
-    font-weight: 700;
+.sketch-tabs-nav {
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 3px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sketch-tab-btn {
+    flex: 1;
+    padding: 6px 4px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    text-align: center;
+}
+
+.sketch-tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sketch-tab-btn.active {
     color: var(--warning);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    background: rgba(255, 179, 0, 0.15);
+    border: 1px solid rgba(255, 179, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.sketch-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sketch-tab-content.hidden {
+    display: none !important;
 }
 
 .sketch-sidebar-body {

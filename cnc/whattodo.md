@@ -388,3 +388,7 @@ cnc/calibration_settings.json cần lưu cả cnc_wpos cơ học (cnc_wpos_o, cn
 dùng tính tính 1 pixel là bao nhiêu milimet cho từng góc phần tư để tính target {x,y} ra gcode milimet, do càng xa gốc tọa độ thì camera càng bị nhìn chéo cần bù thêm dùng  công thức lượng giác tang góc từ camera nhìn tới 4 điểm aruco manual cho từng góc phần tư
 
 **cập nhật 49** dựa vào **cập nhật 48** làm 1 hàm mới để dựa vào gốc tọa độ frame và 4 điểm manual aruco (frame_o, frame_tl, frame_tr,frame_bl, frame_br) và tọa độ của cnc head tại các điểm đó (cnc_o, cnc_tl, cnc_tr,cnc_bl, cnc_br) , gốc tọa độ trùng nhau frame_o và cnc_o đã được thiết lập ngoài đời là trùng nhau. dựa vào tứ giác tạo bới 4 điểm tl,tr,bl,br tương ứng cho frame và cnc . khi người dùng click trên frame hoặc tâm của bbox object detected sẽ có target {x,y} cần chuyển thành tọa độ cnc gcode tương ứng để di chuyển cnc head 
+
+**cập nhật 50** gcode editor CẤU HÌNH NÉT VẼ đang hỗ trợ rất tốt về việc sketch hình khối vd ảnh khuôn mặt 
+Cần bổ xung thêm tab cho việc xử lý chữ viết tay, chữ đen trên nền trắng 
+✅ Đã bổ sung thanh chuyển Tab trong sidebar "CẤU HÌNH NÉT VẼ": Tab "🎨 Sketch Hình Khối" và Tab "✍️ Chữ Viết Tay" (Chữ đen nền trắng). Hỗ trợ nhị phân hóa (Otsu / Manual), tự động đảo màu, rút xương (Thinning 1px), bo cong (Potrace Bezier / Smooth), lọc nhiễu nét ngắn và 4 chế độ nét chữ (Centerline, Potrace Bezier, Outline, Concentric Fill). 

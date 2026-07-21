@@ -665,122 +665,187 @@
                     <!-- Sketch Parameters Side Menu -->
                     <div class="editor-sketch-sidebar" id="editor-sketch-sidebar">
                         <div class="sketch-sidebar-header">
-                            <h4 data-i18n>Cấu HÌnh Nét Vẽ</h4>
+                            <div class="sketch-tabs-nav">
+                                <button class="sketch-tab-btn active" id="tab-btn-sketch" type="button" data-tab="sketch">🎨 Sketch Hình Khối</button>
+                                <button class="sketch-tab-btn" id="tab-btn-handwriting" type="button" data-tab="handwriting">✍️ Chữ Viết Tay</button>
+                            </div>
                         </div>
                         <div class="sketch-sidebar-body">
-                            <!-- Preprocessing & Processing Filters -->
-                            <div class="sketch-param-group">
-                                <div class="group-title">Cấu HÌnh Bộ Lọc</div>
-                                <div class="checkbox-row"
-                                    style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
-                                    <label class="checkbox-label"
-                                        style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="sketch-use-clahe" checked
-                                            style="accent-color: var(--warning); cursor: pointer;">
-                                        Áp dụng CLAHE (Tương phản)
-                                    </label>
-                                    <label class="checkbox-label"
-                                        style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="sketch-use-blur" checked
-                                            style="accent-color: var(--warning); cursor: pointer;">
-                                        Áp dụng Gaussian Blur
-                                    </label>
-                                    <label class="checkbox-label"
-                                        style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="sketch-use-connect" checked
-                                            style="accent-color: var(--warning); cursor: pointer;">
-                                        Nối kín nét vẽ
-                                    </label>
-                                    <label class="checkbox-label"
-                                        style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="sketch-use-thin" checked
-                                            style="accent-color: var(--warning); cursor: pointer;">
-                                        Làm mảnh nét vẽ (Erode)
-                                    </label>
-                                    <label class="checkbox-label"
-                                        style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
-                                        <input type="checkbox" id="sketch-use-len-filter" checked
-                                            style="accent-color: var(--warning); cursor: pointer;">
-                                        Lọc bỏ nét ngắn
-                                    </label>
+                            <!-- TAB 1: SKETCH HÌNH KHỐI (MH / Khuôn mặt / Ảnh general) -->
+                            <div class="sketch-tab-content" id="tab-content-sketch">
+                                <!-- Preprocessing & Processing Filters -->
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Cấu HÌnh Bộ Lọc</div>
+                                    <div class="checkbox-row"
+                                        style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
+                                        <label class="checkbox-label"
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="sketch-use-clahe" checked
+                                                style="accent-color: var(--warning); cursor: pointer;">
+                                            Áp dụng CLAHE (Tương phản)
+                                        </label>
+                                        <label class="checkbox-label"
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="sketch-use-blur" checked
+                                                style="accent-color: var(--warning); cursor: pointer;">
+                                            Áp dụng Gaussian Blur
+                                        </label>
+                                        <label class="checkbox-label"
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="sketch-use-connect" checked
+                                                style="accent-color: var(--warning); cursor: pointer;">
+                                            Nối kín nét vẽ
+                                        </label>
+                                        <label class="checkbox-label"
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="sketch-use-thin" checked
+                                                style="accent-color: var(--warning); cursor: pointer;">
+                                            Làm mảnh nét vẽ (Erode)
+                                        </label>
+                                        <label class="checkbox-label"
+                                            style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="sketch-use-len-filter" checked
+                                                style="accent-color: var(--warning); cursor: pointer;">
+                                            Lọc bỏ nét ngắn
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- CLAHE Group -->
+                                <div class="sketch-param-group">
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-clahe-clip" data-i18n>Ngưỡng CLAHE Clip</label>
+                                        <span class="param-val" id="val-sketch-clahe-clip">1.5</span>
+                                    </div>
+                                    <input type="range" id="sketch-clahe-clip" min="1.0" max="5.0" step="0.1" value="1.5">
+                                </div>
+
+                                <!-- Blur Group -->
+                                <div class="sketch-param-group">
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-blur-size" data-i18n>Kích thước Blur</label>
+                                        <span class="param-val" id="val-sketch-blur-size">3 px</span>
+                                    </div>
+                                    <input type="range" id="sketch-blur-size" min="1" max="15" step="2" value="3">
+                                </div>
+
+                                <!-- Canny Ultra Group -->
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Canny Ultra (Nét siêu mịn)</div>
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-canny-ultra-low">Ngưỡng dưới</label>
+                                        <span class="param-val" id="val-sketch-canny-ultra-low">5</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-ultra-low" min="1" max="100" step="1" value="5">
+
+                                    <div class="slider-header-flex" style="margin-top: 6px;">
+                                        <label for="sketch-canny-ultra-high">Ngưỡng trên</label>
+                                        <span class="param-val" id="val-sketch-canny-ultra-high">25</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-ultra-high" min="5" max="150" step="1" value="25">
+                                </div>
+
+                                <!-- Canny Medium Group -->
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Canny Medium (Nét vừa)</div>
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-canny-medium-low">Ngưỡng dưới</label>
+                                        <span class="param-val" id="val-sketch-canny-medium-low">20</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-medium-low" min="5" max="150" step="1" value="20">
+
+                                    <div class="slider-header-flex" style="margin-top: 6px;">
+                                        <label for="sketch-canny-medium-high">Ngưỡng trên</label>
+                                        <span class="param-val" id="val-sketch-canny-medium-high">60</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-medium-high" min="10" max="250" step="1"
+                                        value="60">
+                                </div>
+
+                                <!-- Canny Strong Group -->
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Canny Strong (Nét biên)</div>
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-canny-strong-low">Ngưỡng dưới</label>
+                                        <span class="param-val" id="val-sketch-canny-strong-low">50</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-strong-low" min="10" max="250" step="1" value="50">
+
+                                    <div class="slider-header-flex" style="margin-top: 6px;">
+                                        <label for="sketch-canny-strong-high">Ngưỡng trên</label>
+                                        <span class="param-val" id="val-sketch-canny-strong-high">120</span>
+                                    </div>
+                                    <input type="range" id="sketch-canny-strong-high" min="20" max="500" step="1"
+                                        value="120">
+                                </div>
+
+                                <!-- Min Contour Length Group -->
+                                <div class="sketch-param-group">
+                                    <div class="slider-header-flex">
+                                        <label for="sketch-min-contour-len" data-i18n>Chiều dài nét tối thiểu</label>
+                                        <span class="param-val" id="val-sketch-min-contour-len">5 px</span>
+                                    </div>
+                                    <input type="range" id="sketch-min-contour-len" min="1" max="50" step="1" value="5">
                                 </div>
                             </div>
 
-                            <!-- CLAHE Group -->
-                            <div class="sketch-param-group">
-                                <div class="slider-header-flex">
-                                    <label for="sketch-clahe-clip" data-i18n>Ngưỡng CLAHE Clip</label>
-                                    <span class="param-val" id="val-sketch-clahe-clip">1.5</span>
+                            <!-- TAB 2: CHỮ VIẾT TAY (CHỮ ĐEN NỀN TRẮNG) -->
+                            <div class="sketch-tab-content hidden" id="tab-content-handwriting">
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Xử Lý Chữ Viết Tay (Đen / Trắng)</div>
+                                    <div class="checkbox-row" style="display: flex; gap: 8px; flex-direction: column; margin-top: 4px;">
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="hw-auto-invert" checked style="accent-color: var(--warning); cursor: pointer;">
+                                            Tự động đảo màu (Đen ↔ Trắng)
+                                        </label>
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="hw-use-otsu" checked style="accent-color: var(--warning); cursor: pointer;">
+                                            Tự động ngưỡng (Otsu Threshold)
+                                        </label>
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="hw-use-thinning" checked style="accent-color: var(--warning); cursor: pointer;">
+                                            Rút xương nét chữ (Thinning 1px)
+                                        </label>
+                                        <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); cursor: pointer;">
+                                            <input type="checkbox" id="hw-use-smooth" checked style="accent-color: var(--warning); cursor: pointer;">
+                                            Bo cong & Làm mịn nét chữ
+                                        </label>
+                                    </div>
                                 </div>
-                                <input type="range" id="sketch-clahe-clip" min="1.0" max="5.0" step="0.1" value="1.5">
-                            </div>
 
-                            <!-- Blur Group -->
-                            <div class="sketch-param-group">
-                                <div class="slider-header-flex">
-                                    <label for="sketch-blur-size" data-i18n>Kích thước Blur</label>
-                                    <span class="param-val" id="val-sketch-blur-size">3 px</span>
+                                <div class="sketch-param-group">
+                                    <div class="group-title">Chế độ nét chữ</div>
+                                    <select id="hw-mode" style="width: 100%; font-size: 11px; padding: 6px; background: rgba(0,0,0,0.4); color: var(--text-main); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px;">
+                                        <option value="centerline" selected>Centerline (Nét đơn giữa 1px)</option>
+                                        <option value="potrace">Potrace Bezier (Đường cong mượt)</option>
+                                        <option value="outline">Outline (Bao quanh viền chữ)</option>
+                                        <option value="concentric">Concentric (Tô lấp đầy chữ)</option>
+                                    </select>
                                 </div>
-                                <input type="range" id="sketch-blur-size" min="1" max="15" step="2" value="3">
-                            </div>
 
-                            <!-- Canny Ultra Group -->
-                            <div class="sketch-param-group">
-                                <div class="group-title">Canny Ultra (Nét siêu mịn)</div>
-                                <div class="slider-header-flex">
-                                    <label for="sketch-canny-ultra-low">Ngưỡng dưới</label>
-                                    <span class="param-val" id="val-sketch-canny-ultra-low">5</span>
+                                <div class="sketch-param-group" id="group-hw-thresh-val" style="display: none;">
+                                    <div class="slider-header-flex">
+                                        <label for="hw-thresh-val">Ngưỡng nhị phân thủ công</label>
+                                        <span class="param-val" id="val-hw-thresh-val">127</span>
+                                    </div>
+                                    <input type="range" id="hw-thresh-val" min="1" max="254" step="1" value="127">
                                 </div>
-                                <input type="range" id="sketch-canny-ultra-low" min="1" max="100" step="1" value="5">
 
-                                <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-ultra-high">Ngưỡng trên</label>
-                                    <span class="param-val" id="val-sketch-canny-ultra-high">25</span>
+                                <div class="sketch-param-group">
+                                    <div class="slider-header-flex">
+                                        <label for="hw-morph-kernel">Khử nhiễu & Nối nét (Kernel)</label>
+                                        <span class="param-val" id="val-hw-morph-kernel">3 px</span>
+                                    </div>
+                                    <input type="range" id="hw-morph-kernel" min="1" max="15" step="2" value="3">
                                 </div>
-                                <input type="range" id="sketch-canny-ultra-high" min="5" max="150" step="1" value="25">
-                            </div>
 
-                            <!-- Canny Medium Group -->
-                            <div class="sketch-param-group">
-                                <div class="group-title">Canny Medium (Nét vừa)</div>
-                                <div class="slider-header-flex">
-                                    <label for="sketch-canny-medium-low">Ngưỡng dưới</label>
-                                    <span class="param-val" id="val-sketch-canny-medium-low">20</span>
+                                <div class="sketch-param-group">
+                                    <div class="slider-header-flex">
+                                        <label for="hw-min-len">Chiều dài nét tối thiểu</label>
+                                        <span class="param-val" id="val-hw-min-len">5 px</span>
+                                    </div>
+                                    <input type="range" id="hw-min-len" min="1" max="50" step="1" value="5">
                                 </div>
-                                <input type="range" id="sketch-canny-medium-low" min="5" max="150" step="1" value="20">
-
-                                <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-medium-high">Ngưỡng trên</label>
-                                    <span class="param-val" id="val-sketch-canny-medium-high">60</span>
-                                </div>
-                                <input type="range" id="sketch-canny-medium-high" min="10" max="250" step="1"
-                                    value="60">
-                            </div>
-
-                            <!-- Canny Strong Group -->
-                            <div class="sketch-param-group">
-                                <div class="group-title">Canny Strong (Nét biên)</div>
-                                <div class="slider-header-flex">
-                                    <label for="sketch-canny-strong-low">Ngưỡng dưới</label>
-                                    <span class="param-val" id="val-sketch-canny-strong-low">50</span>
-                                </div>
-                                <input type="range" id="sketch-canny-strong-low" min="10" max="250" step="1" value="50">
-
-                                <div class="slider-header-flex" style="margin-top: 6px;">
-                                    <label for="sketch-canny-strong-high">Ngưỡng trên</label>
-                                    <span class="param-val" id="val-sketch-canny-strong-high">120</span>
-                                </div>
-                                <input type="range" id="sketch-canny-strong-high" min="20" max="500" step="1"
-                                    value="120">
-                            </div>
-
-                            <!-- Min Contour Length Group -->
-                            <div class="sketch-param-group">
-                                <div class="slider-header-flex">
-                                    <label for="sketch-min-contour-len" data-i18n>Chiều dài nét tối thiểu</label>
-                                    <span class="param-val" id="val-sketch-min-contour-len">5 px</span>
-                                </div>
-                                <input type="range" id="sketch-min-contour-len" min="1" max="50" step="1" value="5">
                             </div>
                         </div>
                     </div>
@@ -831,9 +896,10 @@
                         <div class="input-group" id="group-editor-algo">
                             <label for="editor-algo" data-i18n>Thuật toán</label>
                             <select id="editor-algo">
-                                <option value="centerline" selected>Centerline (Nét giữa)</option>
+                                <option value="centerline">Centerline (Nét giữa)</option>
                                 <option value="contour">Contour (Bao quanh)</option>
-                                <option value="sketch">Sketch (Đa ngưỡng Canny)</option>
+                                <option value="sketch" selected>Sketch (Đa ngưỡng Canny)</option>
+                                <option value="handwriting">Chữ viết tay (Nền trắng chữ đen)</option>
                             </select>
                         </div>
                     </div>

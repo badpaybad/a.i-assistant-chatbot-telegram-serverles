@@ -3195,8 +3195,9 @@ function initGcodeEditor() {
             formData.append("feed_rate", parseInt(editorFeedrate.value, 10) || 2000);
             formData.append("mode", editorMode.value);
             formData.append("algorithm", editorAlgo.value);
+            formData.append("active_tab", typeof activeSketchTab !== "undefined" ? activeSketchTab : "sketch");
 
-            if (editorAlgo.value === "sketch") {
+            if (editorAlgo.value === "sketch" || (typeof activeSketchTab !== "undefined" && activeSketchTab === "sketch")) {
                 formData.append("clahe_clip_limit", parseFloat(document.getElementById("sketch-clahe-clip").value) || 1.5);
                 formData.append("blur_size", parseInt(document.getElementById("sketch-blur-size").value, 10) || 3);
                 formData.append("canny_ultra_low", parseInt(document.getElementById("sketch-canny-ultra-low").value, 10) || 5);
@@ -3211,6 +3212,17 @@ function initGcodeEditor() {
                 formData.append("use_connect", document.getElementById("sketch-use-connect").checked);
                 formData.append("use_thin", document.getElementById("sketch-use-thin").checked);
                 formData.append("use_len_filter", document.getElementById("sketch-use-len-filter").checked);
+            }
+
+            if (editorAlgo.value === "handwriting" || (typeof activeSketchTab !== "undefined" && activeSketchTab === "handwriting")) {
+                formData.append("handwriting_auto_invert", document.getElementById("hw-auto-invert")?.checked ? "true" : "false");
+                formData.append("handwriting_use_otsu", document.getElementById("hw-use-otsu")?.checked ? "true" : "false");
+                formData.append("handwriting_thresh_val", parseInt(document.getElementById("hw-thresh-val")?.value, 10) || 127);
+                formData.append("handwriting_use_thinning", document.getElementById("hw-use-thinning")?.checked ? "true" : "false");
+                formData.append("handwriting_use_smooth", document.getElementById("hw-use-smooth")?.checked ? "true" : "false");
+                formData.append("handwriting_morph_kernel", parseInt(document.getElementById("hw-morph-kernel")?.value, 10) || 3);
+                formData.append("handwriting_min_len", parseInt(document.getElementById("hw-min-len")?.value, 10) || 5);
+                formData.append("handwriting_mode", document.getElementById("hw-mode")?.value || "centerline");
             }
 
             try {
@@ -4484,6 +4496,50 @@ function initGcodeEditor() {
     }
 
     // --- Sketch Sidebar Controls & Auto-reconversion with Debounce ---
+    let activeSketchTab = "sketch";
+
+    function switchSketchTab(tabName) {
+        activeSketchTab = tabName;
+        const btnSketch = document.getElementById("tab-btn-sketch");
+        const btnHw = document.getElementById("tab-btn-handwriting");
+        const contentSketch = document.getElementById("tab-content-sketch");
+        const contentHw = document.getElementById("tab-content-handwriting");
+        const sidebar = document.getElementById("editor-sketch-sidebar");
+
+        if (tabName === "handwriting") {
+            if (btnSketch) btnSketch.classList.remove("active");
+            if (btnHw) btnHw.classList.add("active");
+            if (contentSketch) contentSketch.classList.add("hidden");
+            if (contentHw) contentHw.classList.remove("hidden");
+            if (editorAlgo) editorAlgo.value = "handwriting";
+        } else {
+            if (btnHw) btnHw.classList.remove("active");
+            if (btnSketch) btnSketch.classList.add("active");
+            if (contentHw) contentHw.classList.add("hidden");
+            if (contentSketch) contentSketch.classList.remove("hidden");
+            if (editorAlgo && editorAlgo.value === "handwriting") editorAlgo.value = "sketch";
+        }
+        if (panelGcodeEditor) panelGcodeEditor.classList.add("wide");
+        if (sidebar) sidebar.classList.remove("hidden");
+        resizeEditorCanvas();
+        drawEditorCanvas();
+    }
+
+    const tabBtnSketch = document.getElementById("tab-btn-sketch");
+    const tabBtnHandwriting = document.getElementById("tab-btn-handwriting");
+    if (tabBtnSketch) {
+        tabBtnSketch.addEventListener("click", () => {
+            switchSketchTab("sketch");
+            if (editorOriginalImageFile) debouncedConvert();
+        });
+    }
+    if (tabBtnHandwriting) {
+        tabBtnHandwriting.addEventListener("click", () => {
+            switchSketchTab("handwriting");
+            if (editorOriginalImageFile) debouncedConvert();
+        });
+    }
+
     function debounce(func, wait) {
         let timeout;
         return function (...args) {
@@ -4493,7 +4549,7 @@ function initGcodeEditor() {
     }
 
     const debouncedConvert = debounce(() => {
-        if (editorOriginalImageFile && editorAlgo.value === "sketch") {
+        if (editorOriginalImageFile && (editorAlgo.value === "sketch" || editorAlgo.value === "handwriting")) {
             btnEditorConvert.click();
         }
     }, 250);
@@ -4514,28 +4570,53 @@ function initGcodeEditor() {
     const chkUseConnect = document.getElementById("sketch-use-connect");
     const chkUseThin = document.getElementById("sketch-use-thin");
     const chkUseLenFilter = document.getElementById("sketch-use-len-filter");
-    if (chkUseClahe) {
-        chkUseClahe.addEventListener("change", () => {
+    if (chkUseClahe) chkUseClahe.addEventListener("change", () => debouncedConvert());
+    if (chkUseBlur) chkUseBlur.addEventListener("change", () => debouncedConvert());
+    if (chkUseConnect) chkUseConnect.addEventListener("change", () => debouncedConvert());
+    if (chkUseThin) chkUseThin.addEventListener("change", () => debouncedConvert());
+    if (chkUseLenFilter) chkUseLenFilter.addEventListener("change", () => debouncedConvert());
+
+    // Handwriting controls listeners
+    const hwAutoInvert = document.getElementById("hw-auto-invert");
+    const hwUseOtsu = document.getElementById("hw-use-otsu");
+    const hwUseThinning = document.getElementById("hw-use-thinning");
+    const hwUseSmooth = document.getElementById("hw-use-smooth");
+    const hwMode = document.getElementById("hw-mode");
+    const hwThreshVal = document.getElementById("hw-thresh-val");
+    const valHwThreshVal = document.getElementById("val-hw-thresh-val");
+    const groupHwThreshVal = document.getElementById("group-hw-thresh-val");
+    const hwMorphKernel = document.getElementById("hw-morph-kernel");
+    const valHwMorphKernel = document.getElementById("val-hw-morph-kernel");
+    const hwMinLen = document.getElementById("hw-min-len");
+    const valHwMinLen = document.getElementById("val-hw-min-len");
+
+    if (hwAutoInvert) hwAutoInvert.addEventListener("change", () => debouncedConvert());
+    if (hwUseOtsu) {
+        hwUseOtsu.addEventListener("change", () => {
+            if (groupHwThreshVal) {
+                groupHwThreshVal.style.display = hwUseOtsu.checked ? "none" : "block";
+            }
             debouncedConvert();
         });
     }
-    if (chkUseBlur) {
-        chkUseBlur.addEventListener("change", () => {
+    if (hwUseThinning) hwUseThinning.addEventListener("change", () => debouncedConvert());
+    if (hwUseSmooth) hwUseSmooth.addEventListener("change", () => debouncedConvert());
+    if (hwMode) hwMode.addEventListener("change", () => debouncedConvert());
+    if (hwThreshVal && valHwThreshVal) {
+        hwThreshVal.addEventListener("input", () => {
+            valHwThreshVal.innerText = hwThreshVal.value;
             debouncedConvert();
         });
     }
-    if (chkUseConnect) {
-        chkUseConnect.addEventListener("change", () => {
+    if (hwMorphKernel && valHwMorphKernel) {
+        hwMorphKernel.addEventListener("input", () => {
+            valHwMorphKernel.innerText = `${hwMorphKernel.value} px`;
             debouncedConvert();
         });
     }
-    if (chkUseThin) {
-        chkUseThin.addEventListener("change", () => {
-            debouncedConvert();
-        });
-    }
-    if (chkUseLenFilter) {
-        chkUseLenFilter.addEventListener("change", () => {
+    if (hwMinLen && valHwMinLen) {
+        hwMinLen.addEventListener("input", () => {
+            valHwMinLen.innerText = `${hwMinLen.value} px`;
             debouncedConvert();
         });
     }
@@ -4543,10 +4624,14 @@ function initGcodeEditor() {
     if (editorAlgo) {
         editorAlgo.addEventListener("change", () => {
             const sidebar = document.getElementById("editor-sketch-sidebar");
-            if (editorAlgo.value === "sketch") {
+            if (editorAlgo.value === "sketch" || editorAlgo.value === "handwriting") {
                 panelGcodeEditor.classList.add("wide");
                 if (sidebar) sidebar.classList.remove("hidden");
-                // Automatically run convert once if file is selected
+                if (editorAlgo.value === "handwriting") {
+                    switchSketchTab("handwriting");
+                } else {
+                    switchSketchTab("sketch");
+                }
                 if (editorOriginalImageFile) {
                     btnEditorConvert.click();
                 }

@@ -404,3 +404,196 @@ if __name__ == "__main__":
     #     if success:
     #         # send_gcode_to_grbl(serial_port, output_gcode)
     #         send_gcode_to_grbl(serial_port, output_gcode +"1.cn")
+
+
+def handwriting_text_to_gcode(
+    image_path,
+    gcode_path="output.gcode",
+    scale_factor=0.1,
+    feed_rate=2000,
+    mode="servo",
+    auto_invert=True,
+    use_otsu=True,
+    thresh_val=127,
+    use_thinning=True,
+    use_smooth=True,
+    morph_kernel=3,
+    min_len=5,
+    handwriting_mode="centerline"
+):
+    """
+    Cập nhật 50: Xử lý chữ viết tay, chữ đen trên nền trắng thành G-code.
+    Hỗ trợ 4 chế độ nét: centerline (1 nét đơn), potrace (mượt Bezier), outline (viền nét chữ), concentric (tô lấp đầy).
+    """
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f"❌ Không tìm thấy ảnh: {image_path}")
+        return False
+    height, width = img.shape
+
+    # 1. Nhị phân hóa ảnh
+    if use_otsu:
+        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    else:
+        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
+
+    # 2. Tự động đảo màu (Đảm bảo chữ luôn màu TRẮNG 255, nền ĐEN 0)
+    if auto_invert and cv2.countNonZero(thresh) > (height * width / 2):
+        thresh = cv2.bitwise_not(thresh)
+
+    # 3. Kết nối nét chữ & làm sạch vết bẩn bằng Morphological Closing
+    if morph_kernel > 1:
+        if morph_kernel % 2 == 0:
+            morph_kernel += 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (morph_kernel, morph_kernel))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    valid_contours = []
+
+    if handwriting_mode == "potrace":
+        try:
+            import potrace
+            if use_thinning:
+                bool_thresh = np.where(thresh > 0, True, False)
+                thinned_bool = thin(bool_thresh)
+                bitmap_data = thinned_bool.astype(bool)
+            else:
+                bitmap_data = (thresh > 0).astype(bool)
+
+            bitmap = potrace.Bitmap(bitmap_data)
+            path = bitmap.trace(alphamax=1.0 if use_smooth else 0.0)
+
+            for curve in path:
+                pts = []
+                start = curve.start_point
+                pts.append([start[0], start[1]])
+                for segment in curve.segments:
+                    if segment.is_corner:
+                        c = segment.c
+                        end = segment.end_point
+                        pts.append([c[0], c[1]])
+                        pts.append([end[0], end[1]])
+                    else:
+                        c1 = segment.c1
+                        c2 = segment.c2
+                        end = segment.end_point
+                        p0 = pts[-1]
+                        num_samples = 8 if use_smooth else 4
+                        for t_step in range(1, num_samples + 1):
+                            t = t_step / float(num_samples)
+                            bx = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * c1[0] + 3*(1-t) * t**2 * c2[0] + t**3 * end[0]
+                            by = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * c1[1] + 3*(1-t) * t**2 * c2[1] + t**3 * end[1]
+                            pts.append([bx, by])
+                if len(pts) >= min_len:
+                    c_arr = np.array(pts, dtype=np.float32).reshape((-1, 1, 2))
+                    valid_contours.append(c_arr)
+        except Exception as e:
+            print(f"⚠️ Potrace error: {e}, fallback to centerline")
+            handwriting_mode = "centerline"
+
+    if handwriting_mode == "centerline" or (not valid_contours and handwriting_mode == "potrace"):
+        bool_thresh = np.where(thresh > 0, True, False)
+        thinned_bool = thin(bool_thresh)
+        skeleton = np.zeros(thresh.shape, dtype=np.uint8)
+        skeleton[thinned_bool] = 255
+
+        contours, _ = cv2.findContours(skeleton, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for c in contours:
+            if len(c) >= min_len:
+                if use_smooth:
+                    epsilon = 0.003 * cv2.arcLength(c, False)
+                    approx = cv2.approxPolyDP(c, epsilon, False)
+                    valid_contours.append(approx if len(approx) > 1 else c)
+                else:
+                    valid_contours.append(c)
+
+    elif handwriting_mode == "outline":
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for c in contours:
+            if len(c) >= min_len:
+                if use_smooth:
+                    epsilon = 0.002 * cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c, epsilon, True)
+                    valid_contours.append(approx if len(approx) >= 3 else c)
+                else:
+                    valid_contours.append(c)
+
+    elif handwriting_mode == "concentric":
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        valid_contours = [c for c in contours if len(c) >= min_len]
+
+    if not valid_contours:
+        print("❌ Không tìm thấy nét chữ nào hợp lệ.")
+        return False
+
+    # 4. Tối ưu hóa thứ tự nét vẽ (Greedy Nearest Neighbor)
+    valid_c_list = list(valid_contours)
+    sorted_contours = []
+    current_pos = np.array([0.0, 0.0])
+
+    while valid_c_list:
+        closest_idx = -1
+        min_dist = float('inf')
+        reverse_contour = False
+
+        for idx, contour in enumerate(valid_c_list):
+            start_pt = contour[0][0]
+            end_pt = contour[-1][0]
+
+            dist_to_start = np.linalg.norm(current_pos - start_pt)
+            dist_to_end = np.linalg.norm(current_pos - end_pt)
+
+            if dist_to_start < min_dist:
+                min_dist = dist_to_start
+                closest_idx = idx
+                reverse_contour = False
+
+            if dist_to_end < min_dist:
+                min_dist = dist_to_end
+                closest_idx = idx
+                reverse_contour = True
+
+        chosen_contour = valid_c_list.pop(closest_idx)
+        if reverse_contour:
+            chosen_contour = np.flip(chosen_contour, axis=0)
+
+        sorted_contours.append(chosen_contour)
+        current_pos = chosen_contour[-1][0]
+
+    # 5. Tạo file G-code
+    if mode == "servo":
+        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
+        PEN_UP   = "M3 S10 ; Nhac but\nG4 P0.2"
+    else:
+        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dau dao xuong"
+        PEN_UP   = "G0 Z2.0 ; Nhac dau dao len"
+
+    with open(gcode_path, "w", encoding="utf-8") as f:
+        f.write(";--- CHU VIET TAY / CHU DEN NEN TRANG G-CODE ---\n")
+        f.write("G21 ; Don vi: mm\n")
+        f.write("G90 ; Toa do tuyet doi\n")
+        f.write("G0 Z2.0\n")
+        f.write(f"F{feed_rate}\n\n")
+
+        for i, contour in enumerate(sorted_contours):
+            f.write(f"; Net {i+1}\n")
+            first_point = contour[0][0]
+            x_start = first_point[0] * scale_factor
+            y_start = first_point[1] * scale_factor
+
+            f.write(f"G0 X{x_start:.3f} Y{y_start:.3f}\n")
+            f.write(f"{PEN_DOWN}\n")
+
+            for point in contour[1:]:
+                pt = point[0]
+                x = pt[0] * scale_factor
+                y = pt[1] * scale_factor
+                f.write(f"G1 X{x:.3f} Y{y:.3f}\n")
+
+            f.write(f"{PEN_UP}\n\n")
+
+        f.write(";--- KET THUC ---\n")
+        f.write("G0 Z2.0\nG0 X0 Y0\nM30\n")
+
+    print(f"✅ Đã tạo file G-code chữ viết tay thành công: {gcode_path}")
+    return True

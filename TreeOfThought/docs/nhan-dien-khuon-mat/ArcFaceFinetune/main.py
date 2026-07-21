@@ -195,7 +195,7 @@ except ImportError:
 try:
     import onnx
     import onnxruntime as ort
-except ImportError:
+except (ImportError, AttributeError, Exception):
     missing_libs.append("onnx")
     missing_libs.append("onnxruntime")
 

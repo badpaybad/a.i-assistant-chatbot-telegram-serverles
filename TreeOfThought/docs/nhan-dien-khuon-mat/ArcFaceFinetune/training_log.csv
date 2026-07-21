@@ -1,1 +1,2 @@
 epoch,stage,learning_rate,margin,train_loss,train_acc,val_loss,val_acc,is_best,timestamp
+1,1,0.000100,0.0000,2.5207,17.11,1.9567,40.43,False,2026-07-21 15:11:08

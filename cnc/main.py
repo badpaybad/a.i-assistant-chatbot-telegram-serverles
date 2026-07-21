@@ -3916,6 +3916,7 @@ async def gcode_editor_convert(
     feed_rate: int = Form(2000),
     mode: str = Form("servo"),
     algorithm: str = Form("centerline"),
+    active_tab: str = Form("sketch"),
     clahe_clip_limit: float = Form(1.5),
     blur_size: int = Form(3),
     canny_ultra_low: int = Form(5),
@@ -3929,7 +3930,16 @@ async def gcode_editor_convert(
     use_blur: bool = Form(True),
     use_connect: bool = Form(True),
     use_thin: bool = Form(True),
-    use_len_filter: bool = Form(True)
+    use_len_filter: bool = Form(True),
+    # Handwriting tab parameters (Cập nhật 50)
+    handwriting_auto_invert: bool = Form(True),
+    handwriting_use_otsu: bool = Form(True),
+    handwriting_thresh_val: int = Form(127),
+    handwriting_use_thinning: bool = Form(True),
+    handwriting_use_smooth: bool = Form(True),
+    handwriting_morph_kernel: int = Form(3),
+    handwriting_min_len: int = Form(5),
+    handwriting_mode: str = Form("centerline")
 ):
     try:
         # Create temp folder if not exists
@@ -3958,8 +3968,28 @@ async def gcode_editor_convert(
             )
         # Image Conversion
         elif file_ext in [".png", ".jpg", ".jpeg", ".webp"]:
-            from image2gcode import image_to_perfect_single_line_gcode, image_to_gcode
-            if algorithm == "centerline":
+            from image2gcode import image_to_perfect_single_line_gcode, image_to_gcode, handwriting_text_to_gcode
+            if algorithm == "handwriting" or active_tab == "handwriting":
+                try:
+                    success = handwriting_text_to_gcode(
+                        image_path=temp_input_path,
+                        gcode_path=temp_gcode_path,
+                        scale_factor=scale_factor,
+                        feed_rate=feed_rate,
+                        mode=mode,
+                        auto_invert=handwriting_auto_invert,
+                        use_otsu=handwriting_use_otsu,
+                        thresh_val=handwriting_thresh_val,
+                        use_thinning=handwriting_use_thinning,
+                        use_smooth=handwriting_use_smooth,
+                        morph_kernel=handwriting_morph_kernel,
+                        min_len=handwriting_min_len,
+                        handwriting_mode=handwriting_mode
+                    )
+                except Exception as ex:
+                    logger.error(f"Error in handwriting conversion: {ex}")
+                    success = False
+            elif algorithm == "centerline":
                 success = image_to_perfect_single_line_gcode(
                     image_path=temp_input_path,
                     gcode_path=temp_gcode_path,
