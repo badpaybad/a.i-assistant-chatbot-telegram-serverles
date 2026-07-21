@@ -28,6 +28,7 @@ using Core.Infra.NhanDienKhuonMat.Contexts;
 using Core.Infra.BusinessTest.Extensions;
 using Core.Infra.BusinessTest.Handlers;
 using Core.Infra.CqrsDashboard.Extensions;
+using Core.Infra.OnnxComputerVision.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,6 +36,7 @@ var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 builder.Services.AddMemoryCache();
 builder.Services.AddAppFirebase(config);
+builder.Services.AddOnnxComputerVision();
 
 // --- Default Redis Service (for general caching) ---
 var defaultRedisConn = config["Redis:ConnectionString"];
@@ -66,6 +68,7 @@ builder.Services.AddControllers()
     .AddOidcControllers()
     .AddBusinessTestControllers()
     .AddCqrsDashboardControllers()
+    .AddOnnxComputerVisionControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
