@@ -16,7 +16,7 @@ namespace Core.Infra.OnnxComputerVision.Controllers;
 
 [ApiController]
 [Route("api/onnx-cv")]
-// [AppAuthorize]
+[AppAuthorize]
 [AllowAnonymous]
 public class OnnxComputerVisionController : BaseController
 {
@@ -52,14 +52,7 @@ public class OnnxComputerVisionController : BaseController
 
         var faces = _insightFaceService.DetectFace(bitmap, scoreThreshold);
 
-        var faceDtos = faces.Select(f => new FaceInfoDto
-        {
-            Bbox = f.Bbox,
-            Score = f.Score,
-            Kps = f.Kps,
-            Landmark106Count = f.Landmark106.Length,
-            Landmark106 = f.Landmark106
-        }).ToList();
+        var faceDtos = faces.Select(f => MapToFaceInfoDto(f)).ToList();
 
         return Ok(new FaceDetectionResultDto
         {
@@ -104,13 +97,7 @@ public class OnnxComputerVisionController : BaseController
         var topFace = faces.OrderByDescending(f => f.Score).First();
         var embedding = _insightFaceService.VectorFace(bitmap, topFace);
 
-        var faceDto = new FaceInfoDto
-        {
-            Bbox = topFace.Bbox,
-            Score = topFace.Score,
-            Kps = topFace.Kps,
-            Landmark106Count = topFace.Landmark106.Length
-        };
+        var faceDto = MapToFaceInfoDto(topFace);
 
         return Ok(new FaceEmbeddingResultDto
         {
@@ -165,8 +152,8 @@ public class OnnxComputerVisionController : BaseController
             Similarity = res.Similarity,
             IsSamePerson = isSame,
             Threshold = threshold,
-            Face1 = res.f1 != null ? new FaceInfoDto { Bbox = res.f1.Bbox, Score = res.f1.Score, Kps = res.f1.Kps } : null,
-            Face2 = res.f2 != null ? new FaceInfoDto { Bbox = res.f2.Bbox, Score = res.f2.Score, Kps = res.f2.Kps } : null,
+            Face1 = res.f1 != null ? MapToFaceInfoDto(res.f1) : null,
+            Face2 = res.f2 != null ? MapToFaceInfoDto(res.f2) : null,
             Message = isSame ? "Hai khuôn mặt thuộc cùng một người." : "Hai khuôn mặt thuộc hai người khác nhau."
         });
     }
@@ -192,5 +179,17 @@ public class OnnxComputerVisionController : BaseController
             Threshold = threshold,
             Message = isSame ? "Hai vector thuộc cùng một người." : "Hai vector thuộc hai người khác nhau."
         });
+    }
+
+    private static FaceInfoDto MapToFaceInfoDto(FaceInfo f)
+    {
+        return new FaceInfoDto
+        {
+            Bbox = f.Bbox,
+            Score = f.Score,
+            Kps = f.Kps,
+            Landmark106Count = f.Landmark106 != null ? f.Landmark106.Length : 0,
+            Landmark106 = f.Landmark106
+        };
     }
 }

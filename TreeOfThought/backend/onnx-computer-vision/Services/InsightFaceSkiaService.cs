@@ -25,15 +25,29 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
 
     public InsightFaceSkiaService(string? detModelPath = null, string? lmkModelPath = null, string? recModelPath = null)
     {
-        string defaultBaseDir = "/work/ekycwebapi/aimodels/weights/models";
-        if (!Directory.Exists(defaultBaseDir))
+        string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+        string fallbackDir = "/work/ekycwebapi/aimodels/weights/models";
+
+        if (string.IsNullOrEmpty(detModelPath) || !File.Exists(detModelPath))
         {
-            defaultBaseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "aimodels", "weights", "models");
+            string p1 = Path.Combine(baseDir, "aimodels", "weights", "models", "buffalo_l", "det_10g.onnx");
+            string p2 = Path.Combine(fallbackDir, "buffalo_l", "det_10g.onnx");
+            detModelPath = File.Exists(p1) ? p1 : p2;
         }
 
-        detModelPath ??= Path.Combine(defaultBaseDir, "buffalo_l", "det_10g.onnx");
-        lmkModelPath ??= Path.Combine(defaultBaseDir, "buffalo_l", "2d106det.onnx");
-        recModelPath ??= Path.Combine(defaultBaseDir, "updated_resnet100.onnx");
+        if (string.IsNullOrEmpty(lmkModelPath) || !File.Exists(lmkModelPath))
+        {
+            string p1 = Path.Combine(baseDir, "aimodels", "weights", "models", "buffalo_l", "2d106det.onnx");
+            string p2 = Path.Combine(fallbackDir, "buffalo_l", "2d106det.onnx");
+            lmkModelPath = File.Exists(p1) ? p1 : p2;
+        }
+
+        if (string.IsNullOrEmpty(recModelPath) || !File.Exists(recModelPath))
+        {
+            string p1 = Path.Combine(baseDir, "aimodels", "weights", "models", "updated_resnet100.onnx");
+            string p2 = Path.Combine(fallbackDir, "updated_resnet100.onnx");
+            recModelPath = File.Exists(p1) ? p1 : p2;
+        }
 
         if (!File.Exists(detModelPath))
             throw new FileNotFoundException($"ONNX Detection model not found at {detModelPath}");
@@ -85,7 +99,7 @@ public class InsightFaceSkiaService : IInsightFaceSkiaService
             canvas.Flush();
         }
 
-        // 2. Prepare ONNX input tensor [1, 3, 640, 640] (float32 for ONNX)
+        // 2. Prepare ONNX input tensor [1, 3, 640, 640]
         float[] inputData = new float[1 * 3 * targetHeight * targetWidth];
         ReadOnlySpan<byte> pixelSpan = detImg.GetPixelSpan();
 
