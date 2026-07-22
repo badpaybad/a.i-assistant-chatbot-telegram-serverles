@@ -1,5 +1,5 @@
 ﻿BaseImage,TestImage,updated_resnet100_similarity,arcface_model_best_similarity,Evaluation
-11.jpg,1.jpg,0.581272,0.996724,"INVALID: False positive due to embedding collapse across all images (Sim: 0.9967)"
-11.jpg,2026-07-17_09-42.png,0.094908,0.997534,"FAIL: Feature Collapse / Supervised collapse (Diff person sim too high: 0.9975)"
-11.jpg,du1.jpeg,0.658922,0.993666,"INVALID: False positive due to embedding collapse across all images (Sim: 0.9937)"
-11.jpg,IMG_20230110_141005_504.jpg,0.735457,0.997089,"INVALID: False positive due to embedding collapse across all images (Sim: 0.9971)"
+11.jpg,1.jpg,0.581272,0.760010,"INVALID: False positive due to embedding collapse across all images (Sim: 0.7600)"
+11.jpg,2026-07-17_09-42.png,0.094908,0.892430,"FAIL: Feature Collapse / Supervised collapse (Diff person sim too high: 0.8924)"
+11.jpg,du1.jpeg,0.658922,0.816983,"INVALID: False positive due to embedding collapse across all images (Sim: 0.8170)"
+11.jpg,IMG_20230110_141005_504.jpg,0.735457,0.864458,"INVALID: False positive due to embedding collapse across all images (Sim: 0.8645)"

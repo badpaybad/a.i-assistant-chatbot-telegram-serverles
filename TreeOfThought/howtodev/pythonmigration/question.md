@@ -6,14 +6,14 @@ Tài liệu này định nghĩa bộ câu hỏi phỏng vấn tuyển dụng và
 
 ## 1. Mục Đích & Phạm Vi Đánh Giá
 
-Hệ thống Backend C# hiện tại được xây dựng theo mô hình **Modular Monolith** kết hợp **Clean Architecture**, **CQRS**, **Hybrid Session (JWT + Redis)**, **Bitmask ACL**, **Server-Side Paging chuẩn hóa** và **Realtime UI Notification (Firebase Firestore)**.
+Hệ thống Backend C# hiện tại được thiết kế theo mô hình **Distributed Microservices / Isolated Services** (hỗ trợ distributed auto-scaling độc lập cho từng nghiệp vụ, cô lập hoàn toàn về mặt mã nguồn, logic và cơ sở dữ liệu) kết hợp với **Clean Architecture**, **CQRS**, **Hybrid Session (JWT + Redis)**, **Bitmask ACL**, **Server-Side Paging chuẩn hóa** và **Realtime UI Notification (Firebase Firestore)**.
 
-Khi chuyển đổi sang Python, mục tiêu là bảo tồn **100% tư duy kiến trúc**, **tính cô lập module (Isolation)**, **hiệu năng cao bất đồng bộ (AsyncIO)**, **Multithreading/Multiprocessing**, và khả năng duy trì bảo trì đường dài.
+Khi chuyển đổi sang Python, mục tiêu là bảo tồn **100% tư duy kiến trúc**, **tính cô lập nghiệp vụ (Isolation & Database-per-service)**, **hiệu năng cao bất đồng bộ (AsyncIO)**, **Multithreading/Multiprocessing**, và khả năng duy trì bảo trì đường dài.
 
 Bộ câu hỏi này được thiết kế theo phân cấp từ **Cơ bản (Fundamental)** đến **Nâng cao (Advanced/Architect)** và **Live Coding Migration**, nhằm kiểm tra:
 1. Độ am hiểu sâu sắc về **Python Core**, **AsyncIO**, **GIL**, **Multithreading / Multiprocessing**, và **Inter-Process Data Sharing**.
 2. Nắm vững **Request Lifecycle (ASGI/FastAPI)** và cơ chế **Dependency Injection (DI)** cùng **Lifespan Scopes (Singleton, Scoped, Transient)** trong Python so với C# (.NET).
-3. Tư duy thiết kế **Clean Architecture**, **CQRS**, và **Modular Monolith**.
+3. Tư duy thiết kế **Clean Architecture**, **CQRS**, và **Distributed Services / Microservices**.
 4. Kỹ năng thực chiến với **SQLAlchemy 2.0 Async**, **FastAPI**, và **Redis**.
 5. Khả năng chuyển đổi mã nguồn thực tế từ **C# (.NET)** sang **Python**.
 
@@ -244,14 +244,14 @@ Bộ câu hỏi này được thiết kế theo phân cấp từ **Cơ bản (Fu
 
 ### PHẦN 3: THIẾT KẾ KIẾN TRÚC CLEAN ARCHITECTURE & CQRS PATTERN (NÂNG CAO / ARCHITECT)
 
-#### Câu 8 (Nâng cao): Trong kiến trúc Modular Monolith của TreeOfThought, làm sao để đảm bảo 2 module (ví dụ `FilesFolders` và `NhanDienKhuonMat`) giữ tính cô lập tuyệt đối (Strict Isolation), không import chéo mã nguồn của nhau mà vẫn trao đổi được dữ liệu?
-* **Mục đích kiểm tra**: Tư duy thiết kế Loose Coupling và khả năng tuân thủ quy chuẩn hệ thống.
+#### Câu 8 (Nâng cao): Trong kiến trúc dịch vụ phân tán (Distributed Services / Microservices) của TreeOfThought, làm sao để đảm bảo các nghiệp vụ (ví dụ `FilesFolders` và `NhanDienKhuonMat`) giữ tính cô lập tuyệt đối (Strict Isolation), không import chéo mã nguồn của nhau mà vẫn truy xuất được dữ liệu liên nghiệp vụ khi cần?
+* **Mục đích kiểm tra**: Tư duy thiết kế Loose Coupling, Distributed Architecture và khả năng tuân thủ quy chuẩn hệ thống.
 * **Gợi ý trả lời & Tiêu chí đánh giá**:
-  * **Quy tắc cô lập**: Tuyệt đối không bao giờ `import modules.filesfolders...` từ bên trong `modules.nhan_dien_khuon_mat`.
+  * **Quy tắc cô lập**: Tuyệt đối không bao giờ `import modules.filesfolders...` từ bên trong `modules.nhan_dien_khuon_mat` (hoặc ngược lại). Mỗi nghiệp vụ được đóng gói và deploy như một dịch vụ độc lập, hỗ trợ auto-scale riêng.
   * **Cơ chế trao đổi dữ liệu**:
-    1. **Bất đồng bộ / Event-Driven**: Gửi thông điệp qua **In-Memory CQRS Event Bus** hoặc **Redis Pub/Sub**.
-    2. **Định nghĩa Abstraction chung**: Các DTOs/Contracts chung được đặt ở package hạ tầng cơ sở (`core.infra.base`).
-    3. **Truy vấn Read-Only**: Nếu module B cần đọc dữ liệu từ CSDL của module A, module B tự tạo một `DbContext` / `Model` phụ trong module B nhưng **chỉ ở chế độ Read-Only**.
+    1. **Bất đồng bộ / Event-Driven**: Gửi thông điệp qua **Event Bus** hoặc **Redis Pub/Sub / Message Queue** nếu là xử lý bất đồng bộ/liên kết lỏng.
+    2. **Định nghĩa Abstraction chung**: Các DTOs/Contracts hoặc Event Schemas chung được đặt ở package hạ tầng cơ sở (`core.infra.base`).
+    3. **Truy vấn liên nghiệp vụ (Cross-service read-only access)**: Nếu dịch vụ B cần truy xuất dữ liệu từ CSDL của dịch vụ A, dịch vụ B tự tạo một `DbContext` / `Model` phụ trong module của mình và kết nối trực tiếp đến database của dịch vụ A sử dụng **tài khoản chỉ đọc (Read-only Account)** để lấy dữ liệu. Tuyệt đối không dùng chung code model hoặc thực hiện write operations trên database của dịch vụ khác.
 
 ---
 
@@ -451,7 +451,95 @@ Bộ câu hỏi này được thiết kế theo phân cấp từ **Cơ bản (Fu
 
 ---
 
-### PHẦN 7: BÀI TẬP LIVE CODING MIGRATION (C# .NET SANG PYTHON FASTAPI)
+### PHẦN 7: KIẾN TRÚC HỆ THỐNG PHÂN TÁN & TƯ DUY THIẾT KẾ LIÊN NGÔN NGỮ (C# / PYTHON AGNOSTIC)
+
+#### Câu 17 (Nâng cao/Architect): Hãy giải thích mô hình so sánh "Tòa nhà lớn và các phòng độc lập" (Large Building vs Independent Rooms) trong thiết kế hệ thống của TreeOfThought. Sự phân chia trách nhiệm giữa Leader (Core Infra) và Developer (Domain Business) được thể hiện như thế nào để đảm bảo khả năng Distributed Auto-scaling?
+* **Mục đích kiểm tra**: Hiểu rõ kiến trúc thượng tầng, triết lý thiết kế chia sẻ hạ tầng nhưng cô lập nghiệp vụ, và khả năng vận hành của đội ngũ.
+* **Gợi ý trả lời & Tiêu chí đánh giá**:
+  * **Phép so sánh**:
+    * **Core Infra (Hạ tầng tòa nhà)**: Là hạ tầng cốt lõi dùng chung (hệ thống điện nước, thông gió, hành lang, cầu thang). Cung cấp các service nền tảng như Backbone Message, DB Connect & Batch Processing, Firebase FCM/Firestore Notification, Cloud Services, Authentication/Session, Cypher, OIDC, Contracts, và Logs & Monitoring.
+    * **Domain Business (Từng căn phòng)**: Đảm nhiệm một chức năng nghiệp vụ độc lập (ví dụ: FilesFolders, NhanDienKhuonMat). Các nghiệp vụ chạy độc lập, có CSDL riêng, và có thể auto-scale độc lập nhưng sử dụng chung hạ tầng tòa nhà.
+  * **Phân chia trách nhiệm**:
+    * **Leader (Core/Infra)**: Tập trung xây dựng, tối ưu hóa hạ tầng dùng chung nhằm đảm bảo logging/monitoring tự động, bảo mật, xác thực OIDC/JWT, phân phối message, và hỗ trợ auto-scaling tự động cho các container.
+    * **Developer (Domain)**: Chỉ tập trung viết logic nghiệp vụ. Developer quan tâm đến việc xử lý logic nghiệp vụ trong các Command Handler (lớp có hàm `handle`) và viết các API query dữ liệu ở Controller. Không cần lo lắng về hạ tầng, auto-scaling hay logs/exception tracking thủ công.
+
+---
+
+#### Câu 18 (Nâng cao/Architect): Trục dữ liệu xương sống "Backbone Message" đóng vai trò gì trong kiến trúc CQRS của TreeOfThought? Sự khác biệt giữa Command và Event trong giao tiếp liên nghiệp vụ là gì? Tại sao hệ thống cấm chia sẻ query dữ liệu hoặc cache dùng chung giữa các nghiệp vụ?
+* **Mục đích kiểm tra**: Tư duy thiết kế CQRS, hiểu biết về Loose Coupling và các hình thức giao tiếp trong hệ thống phân tán.
+* **Gợi ý trả lời & Tiêu chí đánh giá**:
+  * **Vai trò Backbone Message**: Là trục dữ liệu trung tâm (Queue, Pub/Sub, Cache, State) dùng để truyền tải Command, Event và chia sẻ Session/Cache giữa các container được auto-scale độc lập.
+  * **Command vs Event**:
+    * **Command**: Yêu cầu thực thi một nghiệp vụ cụ thể từ UI hoặc từ nghiệp vụ khác. Mang tính chất định hướng hành động (Imperative), thường gửi qua Queue để duy nhất một Handler xử lý.
+    * **Event**: Phát ra sau khi Command Handler đã xử lý xong nghiệp vụ để thông báo cho toàn hệ thống. Mang tính chất lịch sử (Event-driven), sử dụng Pub/Sub để nhiều nghiệp vụ khác cùng lúc lắng nghe và xử lý (nếu quan tâm).
+  * **Tại sao cấm chia sẻ Query và Cache**:
+    * Để tránh **kiến trúc phụ thuộc chéo (Tight Coupling)**. Nếu nghiệp vụ B gọi trực tiếp query hay cache của nghiệp vụ A, khi nghiệp vụ A thay đổi cấu trúc dữ liệu hoặc logic lưu trữ, nghiệp vụ B sẽ bị vỡ (break).
+    * Mỗi nghiệp vụ chỉ chịu trách nhiệm duy nhất cho dữ liệu của mình. Mọi chia sẻ dữ liệu chỉ thực hiện qua DB Read-only connection hoặc thông qua Command/Event contract dùng chung (`core.infra.base.contract`).
+
+---
+
+#### Câu 19 (Trung cấp/Nâng cao): Hệ thống TreeOfThought quy chuẩn hai loại Caching: InMemory Cache (dưới 5s) và Network Cache (Redis). Hãy phân biệt mục đích sử dụng và rủi ro của từng loại khi các container auto-scale độc lập?
+* **Mục đích kiểm tra**: Kỹ năng tối ưu hóa hiệu năng, quản lý state và phân phối cache trong hệ thống distributed.
+* **Gợi ý trả lời & Tiêu chí đánh giá**:
+  * **InMemory Cache (< 5s)**:
+    * *Mục đích*: Lưu trữ các dữ liệu truy xuất siêu nhanh trong bộ nhớ RAM của chính container đang chạy (ví dụ: config tĩnh, các biến tạm). Thời gian hết hạn rất ngắn (< 5s) để tránh dữ liệu bị stale (lỗi thời) lâu.
+    * *Rủi ro*: Khi auto-scale hoặc phân tải (Load Balancing), các container khác nhau sẽ có vùng RAM cô lập khác nhau dẫn đến dữ liệu không đồng nhất (Cache Inconsistency). Do đó chỉ dùng cho dữ liệu cực kỳ ngắn hạn hoặc cấu hình ít thay đổi.
+  * **Network Cache (Redis / Backbone Message)**:
+    * *Mục đích*: Chia sẻ dữ liệu cache (Session, State, dữ liệu trung gian lớn) giữa các container được auto-scale độc lập.
+    * *Rủi ro*: Phải serialize/deserialize dữ liệu qua mạng (tốn CPU/băng thông mạng). Cần xử lý concurrency (Race condition) thông qua Redis lock khi ghi.
+
+---
+
+#### Câu 20 (Nâng cao/Architect): Khi viết logic nghiệp vụ trong Command Handler, nếu cần throw exception, Developer cần tuân thủ quy tắc gì để hệ thống Logs & Monitoring của Core Infra tự động tracking hiệu quả? Cho ví dụ minh họa bằng code (C# hoặc Python)?
+* **Mục đích kiểm tra**: Hiểu rõ cơ chế Exception Handling trung tâm và kỹ năng viết code sạch dễ debug.
+* **Gợi ý trả lời & Tiêu chí đánh giá**:
+  * **Quy tắc**: Domain Business không cần viết code ghi log thủ công. Khi gặp lỗi nghiệp vụ, Developer chỉ cần **throw exception nghiệp vụ cụ thể** nhưng bắt buộc phải cung cấp đầy đủ **message context** rõ ràng cùng với **các giá trị tham số liên quan (value context)**. Hệ thống Core Exception Middleware ở infra sẽ tự động bắt được, trích xuất dữ liệu này và lưu vào hệ thống tracking tập trung.
+  * **Ví dụ C#**:
+    ```csharp
+    throw new BusinessRuleException(
+        "Không thể thực hiện nhận diện khuôn mặt vì ảnh đầu vào không đạt chất lượng.",
+        new Dictionary<string, object> {
+            { "SessionId", command.SessionId },
+            { "ImageSize", command.ImageBytes.Length },
+            { "MinConfidence", command.MinConfidence }
+        }
+    );
+    ```
+  * **Ví dụ Python**:
+    ```python
+    raise BusinessRuleException(
+        detail="Không thể thực hiện nhận diện khuôn mặt vì ảnh đầu vào không đạt chất lượng.",
+        context={
+            "session_id": command.session_id,
+            "image_size": len(command.image_bytes),
+            "min_confidence": command.min_confidence
+        }
+    )
+    ```
+
+---
+
+#### Câu 21 (Nâng cao/Architect): Hãy lập bảng đối chiếu kiến trúc và các pattern thông dụng giữa C# (.NET 8.0) và Python (FastAPI + SQLAlchemy) để hỗ trợ quá trình tuyển dụng và chuyển giao công nghệ?
+* **Mục đích kiểm tra**: Khả năng làm việc đa ngôn ngữ (C# và Python), hiểu rõ bản chất công cụ thay vì chỉ nhớ cú pháp.
+* **Gợi ý trả lời & Tiêu chí đánh giá**:
+  * Yêu cầu ứng viên liệt kê được các thành phần tương đương để dù lập trình viên C# hay Python tham gia đều có thể hiểu nhanh cấu trúc:
+
+| Component / Pattern | ASP.NET Core C# (.NET 8.0) | Python (FastAPI + SQLAlchemy 2.0) |
+| :--- | :--- | :--- |
+| **API Entry Point** | Controllers (`[ApiController]`) / Minimal APIs | FastAPI APIRouter (`@router.get(...)`) |
+| **Dependency Injection** | `IServiceCollection` (`AddScoped`, `AddSingleton`) | FastAPI `Depends()` / `dependency-injector` container |
+| **App Startup/Cleanup** | `IHostedService` / `Program.cs` pipelines | FastAPI `@asynccontextmanager` Lifespan Manager |
+| **In-Memory CQRS** | MediatR (`IMediator`, `IRequestHandler`) | Custom `CqrsDispatcher` + `@register_handler` |
+| **Database ORM** | Entity Framework Core (`DbContext`, `DbSet`) | SQLAlchemy Declarative Base & `AsyncSession` |
+| **DB Migrations** | EF Core Migrations | Alembic (`alembic upgrade head`) |
+| **Data Validation** | Model Binding & Data Annotations / FluentValidation | Pydantic v2 BaseModels & Field validators |
+| **Async Operations** | Task Parallel Library (`async / await / Task`) | AsyncIO library (`async / await / coroutine`) |
+| **App Configurations** | `appsettings.json` / `IOptions<T>` | Pydantic `BaseSettings` (`.env` or OS Env variables) |
+| **Middleware Pipeline** | `UseMiddleware<T>()` / `HttpContext` | ASGI middleware / Starlette Middlewares / Depends |
+
+---
+
+### PHẦN 8: BÀI TẬP LIVE CODING MIGRATION (C# .NET SANG PYTHON FASTAPI)
 
 #### Bài Tập 1: Chuyển đổi C# Extension Method `UseNhanDienKhuonMat` sang FastAPI Lifespan Manager
 
