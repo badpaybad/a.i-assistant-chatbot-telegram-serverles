@@ -81,14 +81,14 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
     {
         var value = await _db.ListRightPopAsync(queueName);
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value!);
+        return JsonSerializer.Deserialize<T>(value.ToString()!);
     }
 
     public async Task<T?> DequeueReliableAsync<T>(string queueName, string processingQueueName)
     {
         var value = await _db.ListRightPopLeftPushAsync(queueName, processingQueueName);
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value!);
+        return JsonSerializer.Deserialize<T>(value.ToString()!);
     }
 
     public async Task<DequeuedMessage<T>?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
