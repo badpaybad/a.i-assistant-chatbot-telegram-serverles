@@ -3,10 +3,10 @@
     <!-- <div class="brand-logo">
       <span nz-icon nzType="cluster" nzTheme="outline"></span>
     </div> -->
-    <h2>{{ (ssoClientName ? 'Đăng nhập SSO' : 'Đăng nhập') | transloco }}</h2>
-    <p>{{ (ssoClientName ? 'Bạn đang đăng nhập vào' : 'Nhập thông tin của bạn để truy cập hệ thống') | transloco }}</p>
+    <h2>{{ (requiresMfa ? 'Xác thực 2 lớp (MFA)' : (ssoClientName ? 'Đăng nhập SSO' : 'Đăng nhập')) | transloco }}</h2>
+    <p>{{ (requiresMfa ? 'Nhập mã xác thực OTP từ ứng dụng hoặc mã khôi phục để đăng nhập' : (ssoClientName ? 'Bạn đang đăng nhập vào' : 'Nhập thông tin của bạn để truy cập hệ thống')) | transloco }}</p>
     
-    <div *ngIf="ssoClientName" class="sso-badge glass-card">
+    <div *ngIf="ssoClientName && !requiresMfa" class="sso-badge glass-card">
       <span class="client-name">{{ ssoClientName }}</span>
       <div class="security-check">
         <span nz-icon nzType="safety-certificate" nzTheme="fill"></span>
@@ -15,7 +15,27 @@
     </div>
   </div>
 
-  <form nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
+  <!-- MFA Code Form -->
+  <form *ngIf="requiresMfa" nz-form [formGroup]="mfaForm" (ngSubmit)="$event.preventDefault(); submitMfaForm()">
+    <nz-form-item>
+      <nz-form-control [nzErrorTip]="'Vui lòng nhập mã OTP hoặc mã dự phòng!' | transloco">
+        <tot-input type="text" formControlName="code" [placeholder]="'Mã xác thực (OTP / Backup code)' | transloco" prefixIcon="key" class="premium-input"></tot-input>
+      </nz-form-control>
+    </nz-form-item>
+
+    <tot-button nzHtmlType="submit" class="login-btn premium-button" [nzType]="'primary'" [loading]="loading">
+      <span>{{ 'Xác nhận' | transloco }}</span>
+      <span nz-icon nzType="check"></span>
+    </tot-button>
+    
+    <tot-button type="button" class="login-btn premium-button" [nzType]="'default'" [loading]="loading" (click)="cancelMfa()" style="margin-top: 12px; background: rgba(0,0,0,0.05); color: inherit; border: 1px solid rgba(0,0,0,0.15);">
+      <span>{{ 'Quay lại đăng nhập' | transloco }}</span>
+      <span nz-icon nzType="arrow-left"></span>
+    </tot-button>
+  </form>
+
+  <!-- Normal Login Form -->
+  <form *ngIf="!requiresMfa" nz-form [formGroup]="validateForm" (ngSubmit)="$event.preventDefault(); submitForm()">
     <nz-form-item>
       <nz-form-control [nzErrorTip]="'Vui lòng nhập tên đăng nhập!' | transloco">
         <tot-input type="text" formControlName="username" [placeholder]="'Tên đăng nhập' | transloco" prefixIcon="user" class="premium-input"></tot-input>
@@ -49,17 +69,19 @@
     </div>
   </form>
 
-  <nz-divider [nzText]="dividerText"></nz-divider>
-  <ng-template #dividerText>
-    <span class="divider-text">{{ 'Hoặc đăng nhập với' | transloco }}</span>
-  </ng-template>
+  <ng-container *ngIf="!requiresMfa">
+    <nz-divider [nzText]="dividerText"></nz-divider>
+    <ng-template #dividerText>
+      <span class="divider-text">{{ 'Hoặc đăng nhập với' | transloco }}</span>
+    </ng-template>
 
-  <div class="sso-social-buttons">
-    <tot-button [nzBlock]="true" type="button" class="social-btn google" (click)="loginWithGoogle()">
-      <span nz-icon nzType="google"></span> {{ 'Google' | transloco }}
-    </tot-button>
-    <tot-button [nzBlock]="true" type="button" class="social-btn ms" (click)="loginWithMS()">
-      <span nz-icon nzType="windows"></span> {{ 'Microsoft' | transloco }}
-    </tot-button>
-  </div>
+    <div class="sso-social-buttons">
+      <tot-button [nzBlock]="true" type="button" class="social-btn google" (click)="loginWithGoogle()">
+        <span nz-icon nzType="google"></span> {{ 'Google' | transloco }}
+      </tot-button>
+      <tot-button [nzBlock]="true" type="button" class="social-btn ms" (click)="loginWithMS()">
+        <span nz-icon nzType="windows"></span> {{ 'Microsoft' | transloco }}
+      </tot-button>
+    </div>
+  </ng-container>
 </div>

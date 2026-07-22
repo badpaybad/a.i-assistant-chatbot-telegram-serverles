@@ -730,6 +730,7 @@ Bản cập nhật mới nhất hỗ trợ cấu hình động thông qua các t
 | `--mobile_model_output_path` | `string` | `"./arcface_model_final_mobile.onnx"` | Đường dẫn xuất mô hình ONNX di động cuối cùng |
 | `--best_model_output_path` | `string` | `"./arcface_model_best.onnx"` | Đường dẫn xuất mô hình ONNX tốt nhất (best loss) |
 | `--best_mobile_model_output_path` | `string` | `"./arcface_model_best_mobile.onnx"` | Đường dẫn xuất mô hình ONNX di động tốt nhất |
+| `--csv_log_path` | `string` | `"./training_log.csv"` | Đường dẫn xuất tệp CSV ghi nhận log huấn luyện theo từng epoch |
 | `--device` | `string` | `"cpu"` | Thiết bị phần cứng hoạt động (`auto`, `cuda`, `amd`, hoặc `cpu`). Mặc định: `cpu` |
 | `--margin` | `float` | `0.50` | Biên độ góc Margin cho ArcFace (Mặc định: 0.50) |
 | `--workers` | `int` | `4` | Số lượng subprocesses chạy dataloader tối ưu hóa song song tải ảnh (Mặc định: 4, chỉ áp dụng khi train GPU) |
@@ -1500,8 +1501,6 @@ Trong đó:
           print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ mạng để tinh chỉnh sâu. Learning Rate: {current_lr} | Margin m: {MARGIN}")
   ```
 
-Giải pháp Dynamic Margin Warmup này giúp chặn đứng 100% rủi ro sập Accuracy, đảm bảo mô hình luôn hội tụ mượt mà và sinh ra file ONNX đạt chất lượng tối ưu nhất cho C# Backend!
-
 ---
 
 ## 10. Các Bản cập nhật sửa lỗi nghiêm trọng & Tối ưu hóa mới nhất (2026-05-30)
@@ -1644,8 +1643,39 @@ python test_inference.py --test_image ../du1.jpeg --threshold 0.50
 4. Tính toán độ tương đồng Cosine (Cosine Similarity) giữa ảnh kiểm thử với tất cả các vector đại diện danh tính.
 5. In kết quả và thực hiện assert để kiểm chứng danh tính trùng khớp kỳ vọng là `dunp`.
 
+---
 
+## 13. Ghi log dữ liệu huấn luyện ra tệp CSV & Đánh giá Tối ưu hóa (Cập nhật 2026-07-21)
 
+Để phục vụ phân tích chuyên sâu, đánh giá đường cong hội tụ (convergence curve) và hỗ trợ tự động điều chỉnh các tham số huấn luyện (`learning_rate`, `margin`, `epochs`, `batch_size`) sau mỗi lần chạy, `main.py` tự động xuất các thông số từng epoch ra tệp CSV (mặc định: `./training_log.csv` hoặc tùy chỉnh qua tham số `--csv_log_path`).
 
+### 13.1. Cấu trúc Tệp Log CSV (`training_log.csv`)
 
+| Tên cột | Ý nghĩa | Ví dụ |
+| :--- | :--- | :--- |
+| `epoch` | Số thứ tự Epoch (1-indexed) | `1`, `2`, `59`, `200` |
+| `stage` | Giai đoạn huấn luyện (1: Freeze conv / 2: Unfreeze full) | `1`, `2` |
+| `learning_rate` | Tốc độ học (Learning Rate) của optimizer tại epoch | `0.000100`, `0.000050` |
+| `margin` | Biên độ góc ArcFace Margin $m$ tại epoch | `0.0000`, `0.5000` |
+| `train_loss` | Sai số trung bình trên tập huấn luyện (80% Train) | `0.2443` |
+| `train_acc` | Độ chính xác trung bình trên tập huấn luyện (80% Train) | `98.40` |
+| `val_loss` | Sai số trung bình trên tập kiểm thử (20% Validation) | `3.3881` |
+| `val_acc` | Độ chính xác trung bình trên tập kiểm thử (20% Validation) | `95.74` |
+| `is_best` | Cờ ghi nhận checkpoint `arcface_model_best.onnx` | `True` / `False` |
+| `timestamp` | Thời gian hoàn thành Epoch | `2026-07-21 14:15:30` |
 
+### 13.2. Đánh giá Chỉ số từ File CSV để Điều chỉnh Tham số
+
+Dựa vào dữ liệu từ tệp CSV sau mỗi đợt train, người vận hành hệ thống hoặc C# Backend có thể đưa ra các điều chỉnh tối ưu:
+
+1. **Hiện tượng Overfitting (Quá khớp):**
+   - *Dấu hiệu CSV:* `train_loss` giảm rất thấp (`< 0.05`), `train_acc` đạt `100%`, nhưng `val_loss` bắt đầu tăng vọt (`> 3.0`) và `val_acc` không tăng thêm hoặc đi xuống.
+   - *Khắc phục:* Giảm `--epochs`, giảm nhẹ `--learning_rate` hoặc bổ sung thêm ảnh thô đa dạng vào `dataraw/`.
+
+2. **Hiện tượng Underfitting (Chưa hội tụ đủ):**
+   - *Dấu hiệu CSV:* Cả `train_acc` và `val_acc` đều chưa đạt kỳ vọng (`< 90%`), `train_loss` còn cao (`> 1.0`).
+   - *Khắc phục:* Tăng `--epochs` (ví dụ từ 100 up to 200/300), giữ `--learning_rate` ở mức `0.00005`–`0.0001`.
+
+3. **Hiện tượng Bất ổn định / Oscillations (Mô hình dao động mạnh):**
+   - *Dấu hiệu CSV:* `val_loss` và `val_acc` trồi sụt thất thường giữa các epoch ở Giai đoạn 2.
+   - *Khắc phục:* Giảm `--learning_rate` xuống một nửa (ví dụ từ `0.0001` về `0.00005`), hoặc dùng `--batch_size` lớn hơn.

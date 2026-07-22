@@ -12,7 +12,7 @@ import {
   NzInputGroupWhitSuffixOrPrefixDirective,
   NzInputModule,
   Router
-} from "./chunk-E3D7IGGX.js";
+} from "./chunk-IZ4YJLPT.js";
 import {
   BehaviorSubject,
   Component,
@@ -157,9 +157,28 @@ var _AuthService = class _AuthService {
       appType
     });
     const response = await this.http.post("/api/auth/login", payload);
-    const { token, firebaseToken } = response;
-    await this.saveSession(token, firebaseToken);
+    const { token, firebaseToken, requiresMfa } = response;
+    if (!requiresMfa && token) {
+      await this.saveSession(token, firebaseToken);
+    }
     return response;
+  }
+  async verifyMfa(mfaToken, code) {
+    const response = await this.http.post("/api/auth/verify-mfa", { mfaToken, code });
+    const { token, firebaseToken } = response;
+    if (token) {
+      await this.saveSession(token, firebaseToken);
+    }
+    return response;
+  }
+  async setupMfa(provider) {
+    return this.http.post("/api/auth/mfa/setup", { provider });
+  }
+  async enableMfa(provider, code) {
+    return this.http.post("/api/auth/mfa/enable", { provider, code });
+  }
+  async disableMfa(code) {
+    return this.http.post("/api/auth/mfa/disable", { code });
   }
   async signup(data) {
     const response = await this.http.post("/api/auth/signup", data);
@@ -605,4 +624,4 @@ export {
   AuthService,
   TotInputComponent
 };
-//# sourceMappingURL=chunk-YUBDPU36.js.map
+//# sourceMappingURL=chunk-KINHTBS4.js.map

@@ -138,7 +138,9 @@ public class AuthController : ControllerBase
       picture = user.AvatarUrl,
       roles = roles,
       claims = claims,
-      permissions = claims // Keep for backward compatibility if any
+      permissions = claims, // Keep for backward compatibility if any
+      isMfaEnabled = user.IsMfaEnabled,
+      preferredMfaProvider = user.PreferredMfaProvider
     });
   }
 
@@ -667,10 +669,10 @@ public class AuthController : ControllerBase
 
     try
     {
-      var success = await _authService.VerifyAndEnableMfaAsync(userId, request.Provider, request.Code);
-      if (success)
+      var recoveryCodes = await _authService.VerifyAndEnableMfaAsync(userId, request.Provider, request.Code);
+      if (recoveryCodes != null)
       {
-        return Ok(new { message = "MFA enabled successfully" });
+        return Ok(new { message = "MFA enabled successfully", backupCodes = recoveryCodes });
       }
       return BadRequest(new { message = "Invalid code" });
     }

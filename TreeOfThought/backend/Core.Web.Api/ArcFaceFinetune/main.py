@@ -4,6 +4,8 @@ import math
 import shutil
 import urllib.request
 import argparse
+import csv
+import datetime
 
 # ── Fix AMD GPU & Nvidia GPU environments before importing torch/onnxruntime ── 
 def detect_real_amd_gpu_arch():
@@ -126,7 +128,12 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Tinh chỉnh mô hình ArcFace với các tham số dòng lệnh.")
     parser.add_argument("--epochs", type=int, default=200, help="Số lượng Epochs huấn luyện (mặc định: 200)")
     parser.add_argument("--batch_size", type=int, default=16, help="Kích thước Batch size (mặc định: 16)")
-    parser.add_argument("--learning_rate", type=float, default=0.00005, help="Tốc độ học Learning Rate (mặc định: 0.00005)")
+    parser.add_argument("--learning_rate", type=float, default=0.00005, help="Tốc độ học Learning Rate cho ArcFace Head (mặc định: 0.00005 = 5e-5)")
+    parser.add_argument("--backbone_lr", type=float, default=0.000005, help="Tốc độ học Learning Rate riêng cho Backbone để tránh feature collapse (mặc định: 0.000005 = 5e-6)")
+    parser.add_argument("--scale", type=float, default=30.0, help="Hệ số Scale 's' cho ArcFace (mặc định: 30.0, tối ưu cho fine-tune số lượng lớp ít)")
+    parser.add_argument("--weight_decay", type=float, default=0.0005, help="Hệ số suy giảm trọng số Weight Decay cho Optimizer (mặc định: 0.0005)")
+    parser.add_argument("--triplet_weight", type=float, default=0.1, help="Trọng số hệ số nhân cho Triplet Loss (mặc định: 0.1)")
+    parser.add_argument("--unfreeze_all", action="store_true", help="Mở khóa toàn bộ backbone trong Giai đoạn 2 thay vì đóng băng các layer ban đầu (conv1, layer1, layer2).")
     parser.add_argument("--align_mode", type=str, default="advanced", choices=["standard", "advanced"], help="Chế độ căn chỉnh khuôn mặt (mặc định: advanced)")
     parser.add_argument("--raw_dir", type=str, default="./dataraw", help="Thư mục chứa ảnh thô (mặc định: ./dataraw)")
     parser.add_argument("--data_dir", type=str, default="./data", help="Thư mục chứa ảnh đã căn chỉnh (mặc định: ./data)")
@@ -134,6 +141,7 @@ def parse_args():
     parser.add_argument("--mobile_model_output_path", type=str, default="./arcface_model_final_mobile.onnx", help="Đường dẫn xuất mô hình ONNX final cho di động (mặc định: ./arcface_model_final_mobile.onnx)")
     parser.add_argument("--best_model_output_path", type=str, default="./arcface_model_best.onnx", help="Đường dẫn xuất mô hình ONNX best (mặc định: ./arcface_model_best.onnx)")
     parser.add_argument("--best_mobile_model_output_path", type=str, default="./arcface_model_best_mobile.onnx", help="Đường dẫn xuất mô hình ONNX best cho di động (mặc định: ./arcface_model_best_mobile.onnx)")
+    parser.add_argument("--csv_log_path", type=str, default="./training_log.csv", help="Đường dẫn xuất file CSV ghi nhận log huấn luyện theo từng epoch (mặc định: ./training_log.csv)")
     parser.add_argument("--device", type=str, default="cpu", choices=["auto", "cuda", "amd", "cpu"], help="Thiết bị huấn luyện: auto, cuda, amd, cpu (mặc định: cpu)")
     parser.add_argument("--margin", type=float, default=0.50, help="Ranh giới góc Margin cho ArcFace (mặc định: 0.50)")
     parser.add_argument("--use_opencv_only", action="store_true", help="Bỏ qua MediaPipe và chỉ sử dụng OpenCV Haar Cascade để tránh crash trên một số môi trường.")
@@ -187,7 +195,7 @@ except ImportError:
 try:
     import onnx
     import onnxruntime as ort
-except ImportError:
+except (ImportError, AttributeError, Exception):
     missing_libs.append("onnx")
     missing_libs.append("onnxruntime")
 
@@ -1197,16 +1205,22 @@ def main():
     pretrained_path = PRETRAINED_MODEL_PATH if has_pretrained else None
     backbone = ArcFaceIResNet100(embedding_size=EMBEDDING_SIZE, pretrained_path=pretrained_path).to(device)
     
-    # Nâng cấp s=64.0 mặc định (tối ưu tuyệt đối cho sinh đôi/sinh ba và các trường hợp che khuất)
-    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=64.0, m=MARGIN).to(device)
+    SCALE = getattr(args, 'scale', 30.0)
+    BACKBONE_LR = getattr(args, 'backbone_lr', 0.000005)
+    WEIGHT_DECAY = getattr(args, 'weight_decay', 0.0005)
+    TRIPLET_WEIGHT = getattr(args, 'triplet_weight', 0.1)
+    UNFREEZE_ALL = getattr(args, 'unfreeze_all', False)
 
-    # Khởi tạo Optimizer (Tối ưu hóa cả Backbone và ArcFace Head)
+    # Sử dụng scale s=30.0 mặc định (tối ưu cho fine-tune số lượng lớp nhỏ, tránh gradient shock gây collapse)
+    arcface_head = ArcMarginProduct(in_features=EMBEDDING_SIZE, out_features=num_classes, s=SCALE, m=MARGIN).to(device)
+
+    # Khởi tạo Optimizer với Parameter Groups riêng cho Backbone (learning rate nhỏ hơn) và ArcFace Head + Weight Decay
     criterion = nn.CrossEntropyLoss()
     triplet_criterion = BatchHardTripletLoss(margin=0.3).to(device)
     optimizer = torch.optim.Adam([
-        {'params': backbone.parameters()},
-        {'params': arcface_head.parameters()}
-    ], lr=LEARNING_RATE)
+        {'params': backbone.parameters(), 'lr': BACKBONE_LR},
+        {'params': arcface_head.parameters(), 'lr': LEARNING_RATE}
+    ], weight_decay=WEIGHT_DECAY)
 
     # Bắt đầu vòng lặp huấn luyện Fine-tune
     import copy
@@ -1233,40 +1247,67 @@ def main():
 
     scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
-    print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}]...")
+    csv_log_path = getattr(args, 'csv_log_path', './training_log.csv')
+    csv_file = None
+    csv_writer = None
+    if csv_log_path:
+        try:
+            csv_dir = os.path.dirname(os.path.abspath(csv_log_path))
+            if csv_dir:
+                os.makedirs(csv_dir, exist_ok=True)
+            csv_file = open(csv_log_path, mode='w', newline='', encoding='utf-8')
+            csv_writer = csv.writer(csv_file)
+            csv_writer.writerow(['epoch', 'stage', 'learning_rate', 'margin', 'train_loss', 'train_acc', 'val_loss', 'val_acc', 'is_best', 'timestamp'])
+            csv_file.flush()
+            print(f"[+] Đã khởi tạo tệp log CSV tại: {os.path.abspath(csv_log_path)}", flush=True)
+        except Exception as e:
+            print(f"[-] Không thể tạo tệp log CSV ({csv_log_path}): {e}", flush=True)
+
+    print(f"\n[*] Bắt đầu huấn luyện Fine-tune trên [{device}] (Head LR: {LEARNING_RATE}, Backbone LR: {BACKBONE_LR}, Scale s: {SCALE}, Weight Decay: {WEIGHT_DECAY})...")
     
     for epoch in range(EPOCHS):
         if epoch < 5:
-            # Giai đoạn 1: learning_rate của optimizer cần gấp đôi so với args đầu vào
+            # Giai đoạn 1: Đóng băng toàn bộ Backbone, chỉ cho Head học với LR nhân đôi
             current_lr = LEARNING_RATE * 2
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = current_lr
-            for name, param in backbone.backbone.named_parameters():
-                if "fc" not in name and "features" not in name:
-                    param.requires_grad = False
-            
-            # Giai đoạn 1: tạm thời set margin = 0.0 để căn chỉnh phân tách các lớp thô trước mà không bị sụt giảm accuracy
-            arcface_head.update_margin(0.0)
-            print(f"[*] [Giai đoạn 1] Epoch {epoch+1}/{EPOCHS}: Đóng băng Convolutional Layers, chỉ huấn luyện Fully Connected Head. Learning Rate: {current_lr} | Margin m: 0.0")
-        else:
-            # Giai đoạn 2: set lại optimizer learning_rate theo giá trị args đưa vào
-            current_lr = LEARNING_RATE
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = current_lr
+            current_margin = 0.0
+            optimizer.param_groups[0]['lr'] = 0.0
+            optimizer.param_groups[1]['lr'] = current_lr
             for param in backbone.parameters():
+                param.requires_grad = False
+            for param in arcface_head.parameters():
                 param.requires_grad = True
+            
+            # Giai đoạn 1: tạm thời set margin = 0.0 để căn chỉnh phân tách các lớp thô trước
+            arcface_head.update_margin(0.0)
+            print(f"[*] [Giai đoạn 1] Epoch {epoch+1}/{EPOCHS}: Đóng băng toàn bộ Backbone, chỉ huấn luyện ArcFace Head. Head LR: {current_lr} | Margin m: 0.0")
+        else:
+            # Giai đoạn 2: Tinh chỉnh deep layers của backbone với Backbone LR nhỏ và Head LR chuẩn
+            current_lr = LEARNING_RATE
+            optimizer.param_groups[0]['lr'] = BACKBONE_LR
+            optimizer.param_groups[1]['lr'] = current_lr
             
             # Giai đoạn 2: Tăng dần margin (Gradual Margin Warmup) trong 5 epoch (Epoch 6-10) để tránh gradient shock/collapse
             warmup_epochs = 5
             if epoch < 5 + warmup_epochs:
-                # epoch chạy từ 5 đến 9
                 step = epoch - 4
                 current_margin = MARGIN * (step / warmup_epochs)
             else:
                 current_margin = MARGIN
+
+            if not UNFREEZE_ALL:
+                # Selective freezing: Đóng băng early layers (conv1, layer1, layer2) để bảo vệ low-level features, chỉ mở khóa deep layers
+                for name, param in backbone.named_parameters():
+                    if any(part in name for part in ["conv1", "bn1", "layer1", "layer2"]):
+                        param.requires_grad = False
+                    else:
+                        param.requires_grad = True
+                print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Đóng băng early layers (conv1, layer1, layer2), mở khóa deep layers & Head. Backbone LR: {BACKBONE_LR} | Head LR: {current_lr} | Margin m: {current_margin:.4f}")
+            else:
+                for param in backbone.parameters():
+                    param.requires_grad = True
+                print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ Backbone. Backbone LR: {BACKBONE_LR} | Head LR: {current_lr} | Margin m: {current_margin:.4f}")
                 
             arcface_head.update_margin(current_margin)
-            print(f"[*] [Giai đoạn 2] Epoch {epoch+1}/{EPOCHS}: Mở khóa toàn bộ mạng để tinh chỉnh sâu. Learning Rate: {current_lr} | Margin m: {current_margin:.4f}")
 
         # --- BƯỚC HUẤN LUYỆN / TRAINING ---
         backbone.train()
@@ -1293,7 +1334,7 @@ def main():
                 loss_ce = criterion(outputs, labels)
                 if getattr(args, 'use_triplet', True):
                     loss_triplet = triplet_criterion(embeddings, labels)
-                    loss = loss_ce + loss_triplet
+                    loss = loss_ce + TRIPLET_WEIGHT * loss_triplet
                 else:
                     loss = loss_ce
             
@@ -1343,7 +1384,7 @@ def main():
                     loss_ce = criterion(val_outputs, val_labels)
                     if getattr(args, 'use_triplet', True):
                         loss_triplet = triplet_criterion(val_embeddings, val_labels)
-                        loss = loss_ce + loss_triplet
+                        loss = loss_ce + TRIPLET_WEIGHT * loss_triplet
                     else:
                         loss = loss_ce
                 
@@ -1362,6 +1403,7 @@ def main():
         
         # Theo dõi độ chính xác kiểm thử (Validation Accuracy) tốt nhất và Loss để tránh Overfitting
         # Chỉ theo dõi từ Epoch 6 trở đi (Giai đoạn 2) để đảm bảo mô hình đã được huấn luyện với Margin thực tế
+        is_best_epoch = False
         if epoch >= 5:
             is_better = False
             if epoch_val_acc > best_val_acc:
@@ -1374,6 +1416,29 @@ def main():
                 best_loss = epoch_val_loss
                 best_epoch = epoch + 1
                 best_model_state = copy.deepcopy(backbone.state_dict())
+                is_best_epoch = True
+
+        # Ghi thông số của Epoch hiện tại ra tệp log CSV
+        if csv_writer and csv_file:
+            stage_num = 1 if epoch < 5 else 2
+            now_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            csv_writer.writerow([
+                epoch + 1,
+                stage_num,
+                f"{current_lr:.6f}",
+                f"{current_margin:.4f}",
+                f"{epoch_loss:.4f}",
+                f"{epoch_acc:.2f}",
+                f"{epoch_val_loss:.4f}",
+                f"{epoch_val_acc:.2f}",
+                is_best_epoch,
+                now_str
+            ])
+            csv_file.flush()
+
+    if csv_file:
+        csv_file.close()
+        print(f"[+] Đã ghi xong dữ liệu huấn luyện ra tệp CSV log: {os.path.abspath(csv_log_path)}")
 
     if best_epoch != -1:
         print(f"[+] Huấn luyện Fine-tune hoàn tất thành công. Validation Accuracy tốt nhất đạt: {best_val_acc:.2f}% (Loss: {best_loss:.4f}) ở Epoch {best_epoch}.")

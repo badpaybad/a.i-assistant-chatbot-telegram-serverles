@@ -101,9 +101,32 @@ export class AuthService {
     };
 
     const response = await this.http.post('/api/auth/login', payload);
-    const { token, firebaseToken } = response;
-    await this.saveSession(token, firebaseToken);
+    const { token, firebaseToken, requiresMfa } = response;
+    if (!requiresMfa && token) {
+      await this.saveSession(token, firebaseToken);
+    }
     return response;
+  }
+
+  async verifyMfa(mfaToken: string, code: string) {
+    const response = await this.http.post('/api/auth/verify-mfa', { mfaToken, code });
+    const { token, firebaseToken } = response;
+    if (token) {
+      await this.saveSession(token, firebaseToken);
+    }
+    return response;
+  }
+
+  async setupMfa(provider: string) {
+    return this.http.post('/api/auth/mfa/setup', { provider });
+  }
+
+  async enableMfa(provider: string, code: string) {
+    return this.http.post('/api/auth/mfa/enable', { provider, code });
+  }
+
+  async disableMfa(code: string) {
+    return this.http.post('/api/auth/mfa/disable', { code });
   }
 
   async signup(data: any) {

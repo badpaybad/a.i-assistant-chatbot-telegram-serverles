@@ -198,3 +198,5 @@ Bổ sung tính năng xác thực 2 lớp (MFA) vào phân hệ OIDC:
   - `POST /api/auth/mfa/setup`: Sinh thông tin cài đặt (mã QR/Secret) cho người dùng đăng nhập.
   - `POST /api/auth/mfa/enable`: Xác nhận mã OTP đầu tiên để chính thức bật MFA và sinh mã dự phòng.
   - `POST /api/auth/mfa/disable`: Xác nhận tắt MFA.
+
+**cập nhật 2026-07-22 20:02:00** cần cập nhật bổ xung UI tương ứng MFA cho người dùng với các api ở cập nhật 2026-07-22 17:42:00

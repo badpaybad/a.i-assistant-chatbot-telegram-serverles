@@ -422,17 +422,26 @@ public class AuthService
         var provider = GetMfaProvider(providerName);
         var result = await provider.SetupAsync(user);
         
-        if (result.Success && !string.IsNullOrEmpty(result.SecretKey))
+        if (result.Success)
         {
-            // Store the pending secret temporarily in Redis for verification before enabling
-            var cacheKey = $"pending_mfa_secret:{user.Id}";
-            await _sessionService.SaveAuthCodeAsync(cacheKey, result.SecretKey, TimeSpan.FromMinutes(10));
+            if (!string.IsNullOrEmpty(result.SecretKey))
+            {
+                // Store the pending secret temporarily in Redis for verification before enabling
+                var cacheKey = $"pending_mfa_secret:{user.Id}";
+                await _sessionService.SaveAuthCodeAsync(cacheKey, result.SecretKey, TimeSpan.FromMinutes(10));
+            }
+
+            // Automatically send the first verification code for Sms and Email providers
+            if (!providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
+            {
+                await provider.SendCodeAsync(user);
+            }
         }
 
         return result;
     }
 
-    public async Task<bool> VerifyAndEnableMfaAsync(Guid userId, string providerName, string code)
+    public async Task<System.Collections.Generic.List<string>?> VerifyAndEnableMfaAsync(Guid userId, string providerName, string code)
     {
         var user = await _userRepo.GetUserByIdAsync(userId);
         if (user == null) throw new Exception("User not found");
@@ -444,7 +453,7 @@ public class AuthService
         {
             var cacheKey = $"pending_mfa_secret:{user.Id}";
             var cachedSecret = await _sessionService.GetAuthCodeAsync<string>(cacheKey);
-            if (string.IsNullOrEmpty(cachedSecret)) return false;
+            if (string.IsNullOrEmpty(cachedSecret)) return null;
             secret = cachedSecret;
         }
         else
@@ -484,10 +493,10 @@ public class AuthService
             await _userRepo.UpdateUserAsync(user);
             
             Console.WriteLine($"[MFA] MFA enabled for user {user.Username}. Backup codes: {string.Join(", ", rawRecoveryCodes)}");
-            return true;
+            return rawRecoveryCodes;
         }
 
-        return false;
+        return null;
     }
 
     public async Task<bool> DisableMfaAsync(Guid userId, string code)

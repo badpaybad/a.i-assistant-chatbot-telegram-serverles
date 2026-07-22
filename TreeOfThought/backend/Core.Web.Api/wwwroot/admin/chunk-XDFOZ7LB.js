@@ -6,31 +6,31 @@ import {
   AuthService,
   CLAIMS_VERSION,
   TotInputComponent
-} from "./chunk-YUBDPU36.js";
+} from "./chunk-KINHTBS4.js";
 import {
   NzDescriptionsComponent,
   NzDescriptionsItemComponent,
   NzDescriptionsModule
-} from "./chunk-PYTRI5ZM.js";
+} from "./chunk-DIAOOS57.js";
 import {
   NzAvatarComponent,
   NzAvatarModule
-} from "./chunk-5HUUWRJA.js";
+} from "./chunk-4X3HTNKE.js";
 import {
   NzFormControlComponent,
   NzFormDirective,
   NzFormItemComponent,
   NzFormLabelComponent,
   NzFormModule
-} from "./chunk-EO35QUJX.js";
+} from "./chunk-Q3NQ6ZDJ.js";
 import {
   NzDatePickerComponent,
   NzDatePickerModule,
   NzRangePickerComponent
-} from "./chunk-RDD4GU72.js";
+} from "./chunk-A2D53BH6.js";
 import {
   TotAutocompleteComponent
-} from "./chunk-3QJVCMLC.js";
+} from "./chunk-PKGODJKK.js";
 import {
   A11yModule,
   AppNotificationService,
@@ -48,6 +48,7 @@ import {
   FormsModule,
   HttpClientService,
   LEFT_ARROW,
+  MaxLengthValidator,
   NavigationEnd,
   NgControlStatus,
   NgControlStatusGroup,
@@ -58,6 +59,7 @@ import {
   NgTemplateOutlet,
   NonNullableFormBuilder,
   NzAutosizeDirective,
+  NzButtonComponent,
   NzButtonModule,
   NzCardComponent,
   NzCardModule,
@@ -103,6 +105,7 @@ import {
   NzTagComponent,
   NzTagModule,
   NzTransitionPatchDirective,
+  NzWaveDirective,
   PREFIX,
   RIGHT_ARROW,
   ReactiveFormsModule,
@@ -131,7 +134,7 @@ import {
   takeUntilDestroyed,
   wrapIntoObservable,
   ɵNgNoValidate
-} from "./chunk-E3D7IGGX.js";
+} from "./chunk-IZ4YJLPT.js";
 import "./chunk-IRGOCD6C.js";
 import {
   ChangeDetectionStrategy,
@@ -217,6 +220,7 @@ import {
   ɵɵrepeaterTrackByIdentity,
   ɵɵresetView,
   ɵɵrestoreView,
+  ɵɵsanitizeUrl,
   ɵɵstyleMap,
   ɵɵstyleProp,
   ɵɵtemplate,
@@ -6753,21 +6757,21 @@ var NzTabsModule = _NzTabsModule;
 // projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts
 function AuthorizeInfoComponent_nz_tag_17_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 14);
+    \u0275\u0275elementStart(0, "nz-tag", 20);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const role_r1 = ctx.$implicit;
-    const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzColor", role_r1 === ctx_r1.ADMIN_ROLE ? "gold" : "blue");
+    const role_r2 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzColor", role_r2 === ctx_r2.ADMIN_ROLE ? "gold" : "blue");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", role_r1, " ");
+    \u0275\u0275textInterpolate1(" ", role_r2, " ");
   }
 }
 function AuthorizeInfoComponent_span_18_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 15);
+    \u0275\u0275elementStart(0, "span", 21);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -6779,21 +6783,21 @@ function AuthorizeInfoComponent_span_18_Template(rf, ctx) {
 }
 function AuthorizeInfoComponent_nz_tag_22_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-tag", 14);
+    \u0275\u0275elementStart(0, "nz-tag", 20);
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const claim_r3 = ctx.$implicit;
-    const ctx_r1 = \u0275\u0275nextContext();
-    \u0275\u0275property("nzColor", claim_r3 === ctx_r1.ADMIN_CLAIM ? "volcano" : "green");
+    const claim_r4 = ctx.$implicit;
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275property("nzColor", claim_r4 === ctx_r2.ADMIN_CLAIM ? "volcano" : "green");
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate1(" ", claim_r3, " ");
+    \u0275\u0275textInterpolate1(" ", claim_r4, " ");
   }
 }
 function AuthorizeInfoComponent_span_23_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "span", 15);
+    \u0275\u0275elementStart(0, "span", 21);
     \u0275\u0275text(1);
     \u0275\u0275pipe(2, "transloco");
     \u0275\u0275elementEnd();
@@ -6805,10 +6809,10 @@ function AuthorizeInfoComponent_span_23_Template(rf, ctx) {
 }
 function AuthorizeInfoComponent_nz_card_24_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "nz-card", 5);
+    \u0275\u0275elementStart(0, "nz-card", 7);
     \u0275\u0275pipe(1, "transloco");
-    \u0275\u0275elementStart(2, "div", 16);
-    \u0275\u0275element(3, "span", 17);
+    \u0275\u0275elementStart(2, "div", 22);
+    \u0275\u0275element(3, "span", 23);
     \u0275\u0275elementStart(4, "p")(5, "strong");
     \u0275\u0275text(6);
     \u0275\u0275pipe(7, "transloco");
@@ -6828,21 +6832,416 @@ function AuthorizeInfoComponent_nz_card_24_Template(rf, ctx) {
     \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 8, "H\u1EC7 th\u1ED1ng s\u1EBD b\u1ECF qua m\u1ECDi b\u01B0\u1EDBc ki\u1EC3m tra quy\u1EC1n h\u1EA1n v\xE0 cho ph\xE9p b\u1EA1n truy c\u1EADp t\u1EA5t c\u1EA3 c\xE1c t\xEDnh n\u0103ng."));
   }
 }
-function AuthorizeInfoComponent_ng_template_42_Template(rf, ctx) {
+function AuthorizeInfoComponent_div_28_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r5 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 24)(1, "nz-card", 25)(2, "div", 26);
+    \u0275\u0275element(3, "span", 27);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "h3", 28);
+    \u0275\u0275text(5);
+    \u0275\u0275pipe(6, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(7, "p", 29);
+    \u0275\u0275text(8);
+    \u0275\u0275pipe(9, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(10, "div", 30)(11, "span", 31);
+    \u0275\u0275text(12);
+    \u0275\u0275pipe(13, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(14, "nz-tag", 32);
+    \u0275\u0275element(15, "span", 33);
+    \u0275\u0275text(16);
+    \u0275\u0275pipe(17, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(18, "div", 34)(19, "button", 35);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_28_Template_button_click_19_listener() {
+      \u0275\u0275restoreView(_r5);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.showDisableModal());
+    });
+    \u0275\u0275element(20, "span", 36);
+    \u0275\u0275text(21);
+    \u0275\u0275pipe(22, "transloco");
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("nzBordered", false);
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(6, 8, "X\xE1c th\u1EF1c 2 l\u1EDBp (MFA) \u0111ang ho\u1EA1t \u0111\u1ED9ng"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(9, 10, "T\xE0i kho\u1EA3n c\u1EE7a b\u1EA1n \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 b\u1EB1ng l\u1EDBp b\u1EA3o m\u1EADt b\u1ED5 sung. Khi \u0111\u0103ng nh\u1EADp, b\u1EA1n c\u1EA7n nh\u1EADp m\xE3 x\xE1c th\u1EF1c OTP t\u1EEB thi\u1EBFt b\u1ECB."), " ");
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(13, 12, "Ph\u01B0\u01A1ng th\u1EE9c hi\u1EC7n t\u1EA1i:"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzType", ctx_r2.preferredMfaProvider === "Totp" ? "key" : ctx_r2.preferredMfaProvider === "Sms" ? "phone" : "mail");
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" \xA0", \u0275\u0275pipeBind1(17, 14, ctx_r2.preferredMfaProvider === "Totp" ? "\u1EE8ng d\u1EE5ng Authenticator" : ctx_r2.preferredMfaProvider === "Sms" ? "Tin nh\u1EAFn SMS" : "Email OTP"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzLoading", ctx_r2.loading);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(22, 16, "T\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp"), " ");
+  }
+}
+function AuthorizeInfoComponent_div_29_div_1_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r6 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 7);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementStart(3, "p", 39);
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "div", 40)(7, "label", 41)(8, "strong");
+    \u0275\u0275text(9);
+    \u0275\u0275pipe(10, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(11, "nz-select", 42);
+    \u0275\u0275twoWayListener("ngModelChange", function AuthorizeInfoComponent_div_29_div_1_Template_nz_select_ngModelChange_11_listener($event) {
+      \u0275\u0275restoreView(_r6);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      \u0275\u0275twoWayBindingSet(ctx_r2.selectedProvider, $event) || (ctx_r2.selectedProvider = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275element(12, "nz-option", 43);
+    \u0275\u0275pipe(13, "transloco");
+    \u0275\u0275element(14, "nz-option", 44);
+    \u0275\u0275pipe(15, "transloco");
+    \u0275\u0275element(16, "nz-option", 45);
+    \u0275\u0275pipe(17, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(18, "div", 46)(19, "button", 47);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_1_Template_button_click_19_listener() {
+      \u0275\u0275restoreView(_r6);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.setupMfa());
+    });
+    \u0275\u0275text(20);
+    \u0275\u0275pipe(21, "transloco");
+    \u0275\u0275element(22, "span", 48);
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 9, "K\xEDch ho\u1EA1t X\xE1c th\u1EF1c 2 l\u1EDBp"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(5, 11, "X\xE1c th\u1EF1c 2 l\u1EDBp (MFA) b\u1ED5 sung th\xEAm m\u1ED9t b\u01B0\u1EDBc b\u1EA3o m\u1EADt khi \u0111\u0103ng nh\u1EADp, y\xEAu c\u1EA7u m\xE3 OTP t\u1EEB \u1EE9ng d\u1EE5ng \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c qua SMS/Email."), " ");
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 13, "Ch\u1ECDn ph\u01B0\u01A1ng th\u1EE9c x\xE1c th\u1EF1c:"));
+    \u0275\u0275advance(2);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.selectedProvider);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(13, 15, "\u1EE8ng d\u1EE5ng x\xE1c th\u1EF1c (Google/Microsoft Authenticator)"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(15, 17, "Tin nh\u1EAFn SMS OTP"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzLabel", \u0275\u0275pipeBind1(17, 19, "Email OTP"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzLoading", ctx_r2.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(21, 21, "B\u1EAFt \u0111\u1EA7u thi\u1EBFt l\u1EADp"), " ");
+  }
+}
+function AuthorizeInfoComponent_div_29_div_2_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 58)(1, "p");
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 59);
+    \u0275\u0275element(5, "img", 60);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(6, "p", 61);
+    \u0275\u0275text(7);
+    \u0275\u0275pipe(8, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(9, "div", 62)(10, "code");
+    \u0275\u0275text(11);
+    \u0275\u0275elementEnd()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 4, "B\u01B0\u1EDBc 1: Qu\xE9t m\xE3 QR d\u01B0\u1EDBi \u0111\xE2y b\u1EB1ng \u1EE9ng d\u1EE5ng x\xE1c th\u1EF1c c\u1EE7a b\u1EA1n (v\xED d\u1EE5: Google Authenticator, Microsoft Authenticator ho\u1EB7c Authy)."));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("src", ctx_r2.getQrCodeUrl(ctx_r2.mfaSetupResult == null ? null : ctx_r2.mfaSetupResult.qrCodeUri), \u0275\u0275sanitizeUrl);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(8, 6, "Ho\u1EB7c nh\u1EADp kh\xF3a b\xED m\u1EADt n\xE0y th\u1EE7 c\xF4ng v\xE0o \u1EE9ng d\u1EE5ng:"));
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate(ctx_r2.mfaSetupResult == null ? null : ctx_r2.mfaSetupResult.secretKey);
+  }
+}
+function AuthorizeInfoComponent_div_29_div_2_div_4_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 63)(1, "p");
+    \u0275\u0275text(2);
+    \u0275\u0275pipe(3, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(4, "div", 64);
+    \u0275\u0275element(5, "span", 33);
+    \u0275\u0275elementStart(6, "strong");
+    \u0275\u0275text(7);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(8, "p", 65);
+    \u0275\u0275text(9);
+    \u0275\u0275pipe(10, "transloco");
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(3);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(3, 4, "M\xE3 x\xE1c th\u1EF1c OTP \u0111\xE3 \u0111\u01B0\u1EE3c g\u1EEDi \u0111\u1EBFn thi\u1EBFt b\u1ECB c\u1EE7a b\u1EA1n:"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzType", ctx_r2.selectedProvider === "Sms" ? "phone" : "mail");
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(ctx_r2.mfaSetupResult == null ? null : ctx_r2.mfaSetupResult.destination);
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 6, "Vui l\xF2ng ki\u1EC3m tra console log / thi\u1EBFt b\u1ECB v\xE0 nh\u1EADp m\xE3 OTP 6 s\u1ED1 \u0111\u1EC3 ho\xE0n t\u1EA5t k\xEDch ho\u1EA1t."));
+  }
+}
+function AuthorizeInfoComponent_div_29_div_2_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r7 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 7);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275template(3, AuthorizeInfoComponent_div_29_div_2_div_3_Template, 12, 8, "div", 49)(4, AuthorizeInfoComponent_div_29_div_2_div_4_Template, 11, 8, "div", 50);
+    \u0275\u0275element(5, "nz-divider");
+    \u0275\u0275elementStart(6, "div", 51)(7, "label")(8, "strong");
+    \u0275\u0275text(9);
+    \u0275\u0275pipe(10, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(11, "div", 52)(12, "input", 53);
+    \u0275\u0275pipe(13, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function AuthorizeInfoComponent_div_29_div_2_Template_input_ngModelChange_12_listener($event) {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      \u0275\u0275twoWayBindingSet(ctx_r2.otpCode, $event) || (ctx_r2.otpCode = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()()();
+    \u0275\u0275elementStart(14, "div", 54)(15, "button", 55);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_2_Template_button_click_15_listener() {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.verifyAndEnableMfa());
+    });
+    \u0275\u0275text(16);
+    \u0275\u0275pipe(17, "transloco");
+    \u0275\u0275element(18, "span", 56);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(19, "button", 57);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_2_Template_button_click_19_listener() {
+      \u0275\u0275restoreView(_r7);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.cancelMfaSetup());
+    });
+    \u0275\u0275text(20);
+    \u0275\u0275pipe(21, "transloco");
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 10, "Thi\u1EBFt l\u1EADp ph\u01B0\u01A1ng th\u1EE9c x\xE1c th\u1EF1c"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("ngIf", ctx_r2.selectedProvider === "Totp");
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.selectedProvider !== "Totp");
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(10, 12, "B\u01B0\u1EDBc 2: Nh\u1EADp m\xE3 x\xE1c th\u1EF1c \u0111\u1EC3 k\xEDch ho\u1EA1t:"));
+    \u0275\u0275advance(3);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.otpCode);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(13, 14, "Nh\u1EADp m\xE3 OTP"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzLoading", ctx_r2.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(17, 16, "K\xEDch ho\u1EA1t"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275property("disabled", ctx_r2.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(21, 18, "H\u1EE7y"), " ");
+  }
+}
+function AuthorizeInfoComponent_div_29_div_3_div_16_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 78)(1, "code");
+    \u0275\u0275text(2);
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const code_r9 = ctx.$implicit;
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(code_r9);
+  }
+}
+function AuthorizeInfoComponent_div_29_div_3_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r8 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div")(1, "nz-card", 66);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementStart(3, "div", 67);
+    \u0275\u0275element(4, "span", 68);
+    \u0275\u0275elementStart(5, "h4");
+    \u0275\u0275text(6);
+    \u0275\u0275pipe(7, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(8, "div", 69)(9, "p", 70)(10, "strong");
+    \u0275\u0275text(11);
+    \u0275\u0275pipe(12, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275text(13);
+    \u0275\u0275pipe(14, "transloco");
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(15, "div", 71);
+    \u0275\u0275template(16, AuthorizeInfoComponent_div_29_div_3_div_16_Template, 3, 1, "div", 72);
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(17, "div", 73)(18, "button", 74);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_3_Template_button_click_18_listener() {
+      \u0275\u0275restoreView(_r8);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.copyBackupCodes());
+    });
+    \u0275\u0275element(19, "span", 75);
+    \u0275\u0275text(20);
+    \u0275\u0275pipe(21, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(22, "button", 74);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_3_Template_button_click_22_listener() {
+      \u0275\u0275restoreView(_r8);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.downloadBackupCodes());
+    });
+    \u0275\u0275element(23, "span", 76);
+    \u0275\u0275text(24);
+    \u0275\u0275pipe(25, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(26, "button", 77);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_div_29_div_3_Template_button_click_26_listener() {
+      \u0275\u0275restoreView(_r8);
+      const ctx_r2 = \u0275\u0275nextContext(2);
+      return \u0275\u0275resetView(ctx_r2.finishMfaSetup());
+    });
+    \u0275\u0275text(27);
+    \u0275\u0275pipe(28, "transloco");
+    \u0275\u0275elementEnd()()()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext(2);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(2, 9, "K\xEDch ho\u1EA1t th\xE0nh c\xF4ng!"));
+    \u0275\u0275advance(3);
+    \u0275\u0275property("nzTwotoneColor", "#52c41a");
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 11, "L\u01B0u l\u1EA1i c\xE1c m\xE3 kh\xF4i ph\u1EE5c d\u1EF1 ph\xF2ng"));
+    \u0275\u0275advance(5);
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(12, 13, "QUAN TR\u1ECCNG: H\xE3y sao ch\xE9p ho\u1EB7c t\u1EA3i c\xE1c m\xE3 n\xE0y v\u1EC1 m\xE1y."));
+    \u0275\u0275advance(2);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(14, 15, "Ch\xFAng ch\u1EC9 \u0111\u01B0\u1EE3c hi\u1EC3n th\u1ECB M\u1ED8T L\u1EA6N DUY NH\u1EA4T. N\u1EBFu b\u1EA1n m\u1EA5t \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c kh\xF4ng nh\u1EADn \u0111\u01B0\u1EE3c OTP, b\u1EA1n c\xF3 th\u1EC3 d\xF9ng c\xE1c m\xE3 n\xE0y \u0111\u1EC3 \u0111\u0103ng nh\u1EADp."), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275property("ngForOf", ctx_r2.backupCodes);
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(21, 17, "Sao ch\xE9p t\u1EA5t c\u1EA3"), " ");
+    \u0275\u0275advance(4);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(25, 19, "T\u1EA3i file txt"), " ");
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1(" ", \u0275\u0275pipeBind1(28, 21, "Ho\xE0n t\u1EA5t"), " ");
+  }
+}
+function AuthorizeInfoComponent_div_29_Template(rf, ctx) {
+  if (rf & 1) {
+    \u0275\u0275elementStart(0, "div", 37);
+    \u0275\u0275template(1, AuthorizeInfoComponent_div_29_div_1_Template, 23, 23, "div", 38)(2, AuthorizeInfoComponent_div_29_div_2_Template, 22, 20, "div", 38)(3, AuthorizeInfoComponent_div_29_div_3_Template, 29, 23, "div", 38);
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.mfaSetupStep === 0);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.mfaSetupStep === 1);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", ctx_r2.mfaSetupStep === 2);
+  }
+}
+function AuthorizeInfoComponent_ng_template_47_Template(rf, ctx) {
   if (rf & 1) {
     \u0275\u0275elementStart(0, "code");
     \u0275\u0275text(1);
     \u0275\u0275elementEnd();
   }
   if (rf & 2) {
-    const data_r4 = ctx.$implicit;
+    const data_r10 = ctx.$implicit;
     \u0275\u0275advance();
-    \u0275\u0275textInterpolate(data_r4.value);
+    \u0275\u0275textInterpolate(data_r10.value);
+  }
+}
+function AuthorizeInfoComponent_ng_template_50_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r11 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "p");
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "div", 61)(4, "input", 79);
+    \u0275\u0275pipe(5, "transloco");
+    \u0275\u0275twoWayListener("ngModelChange", function AuthorizeInfoComponent_ng_template_50_Template_input_ngModelChange_4_listener($event) {
+      \u0275\u0275restoreView(_r11);
+      const ctx_r2 = \u0275\u0275nextContext();
+      \u0275\u0275twoWayBindingSet(ctx_r2.disableCode, $event) || (ctx_r2.disableCode = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275elementEnd()();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 3, "\u0110\u1EC3 t\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp, vui l\xF2ng nh\u1EADp m\xE3 x\xE1c th\u1EF1c OTP hi\u1EC7n t\u1EA1i ho\u1EB7c m\u1ED9t m\xE3 kh\xF4i ph\u1EE5c d\u1EF1 ph\xF2ng:"));
+    \u0275\u0275advance(3);
+    \u0275\u0275twoWayProperty("ngModel", ctx_r2.disableCode);
+    \u0275\u0275property("placeholder", \u0275\u0275pipeBind1(5, 5, "Nh\u1EADp m\xE3 OTP ho\u1EB7c m\xE3 d\u1EF1 ph\xF2ng"));
+  }
+}
+function AuthorizeInfoComponent_ng_template_52_Template(rf, ctx) {
+  if (rf & 1) {
+    const _r12 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "button", 80);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_ng_template_52_Template_button_click_0_listener() {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.closeDisableModal());
+    });
+    \u0275\u0275text(1);
+    \u0275\u0275pipe(2, "transloco");
+    \u0275\u0275elementEnd();
+    \u0275\u0275elementStart(3, "button", 81);
+    \u0275\u0275listener("click", function AuthorizeInfoComponent_ng_template_52_Template_button_click_3_listener() {
+      \u0275\u0275restoreView(_r12);
+      const ctx_r2 = \u0275\u0275nextContext();
+      return \u0275\u0275resetView(ctx_r2.disableMfa());
+    });
+    \u0275\u0275text(4);
+    \u0275\u0275pipe(5, "transloco");
+    \u0275\u0275elementEnd();
+  }
+  if (rf & 2) {
+    const ctx_r2 = \u0275\u0275nextContext();
+    \u0275\u0275property("disabled", ctx_r2.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(2, 4, "H\u1EE7y"));
+    \u0275\u0275advance(2);
+    \u0275\u0275property("nzLoading", ctx_r2.loading);
+    \u0275\u0275advance();
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(5, 6, "X\xE1c nh\u1EADn t\u1EAFt"));
   }
 }
 var _AuthorizeInfoComponent = class _AuthorizeInfoComponent {
   constructor() {
     this.authService = inject(AuthService);
+    this.notification = inject(AppNotificationService);
     this.userRoles = [];
     this.userClaims = [];
     this.isAdmin = false;
@@ -6852,6 +7251,16 @@ var _AuthorizeInfoComponent = class _AuthorizeInfoComponent {
     this.ADMIN_CLAIM = ADMIN_CLAIM;
     this.pageIndex = 1;
     this.pageSize = 10;
+    this.isMfaEnabled = false;
+    this.preferredMfaProvider = "";
+    this.selectedProvider = "Totp";
+    this.mfaSetupStep = 0;
+    this.mfaSetupResult = null;
+    this.otpCode = "";
+    this.disableCode = "";
+    this.disableModalVisible = false;
+    this.backupCodes = [];
+    this.loading = false;
     this.appClaimsList = [];
     this.claimsColumns = [];
   }
@@ -6871,6 +7280,7 @@ var _AuthorizeInfoComponent = class _AuthorizeInfoComponent {
   loadUserData() {
     const rawRoles = localStorage.getItem("roles");
     const rawClaims = localStorage.getItem("claims");
+    const userProfileRaw = localStorage.getItem("user_profile");
     if (rawRoles) {
       try {
         this.userRoles = JSON.parse(rawRoles);
@@ -6880,6 +7290,14 @@ var _AuthorizeInfoComponent = class _AuthorizeInfoComponent {
     if (rawClaims) {
       try {
         this.userClaims = JSON.parse(rawClaims);
+      } catch (e) {
+      }
+    }
+    if (userProfileRaw) {
+      try {
+        const profile = JSON.parse(userProfileRaw);
+        this.isMfaEnabled = !!profile.isMfaEnabled;
+        this.preferredMfaProvider = profile.preferredMfaProvider || "";
       } catch (e) {
       }
     }
@@ -6896,83 +7314,211 @@ var _AuthorizeInfoComponent = class _AuthorizeInfoComponent {
       }
     }
   }
+  async setupMfa() {
+    var _a;
+    this.loading = true;
+    try {
+      const res = await this.authService.setupMfa(this.selectedProvider);
+      this.mfaSetupResult = res;
+      this.mfaSetupStep = 1;
+      this.otpCode = "";
+      this.notification.success("MFA", "Kh\u1EDFi t\u1EA1o thi\u1EBFt l\u1EADp MFA th\xE0nh c\xF4ng.");
+    } catch (e) {
+      console.error(e);
+      this.notification.error("L\u1ED7i", ((_a = e.error) == null ? void 0 : _a.message) || "Kh\xF4ng th\u1EC3 thi\u1EBFt l\u1EADp MFA");
+    } finally {
+      this.loading = false;
+    }
+  }
+  async verifyAndEnableMfa() {
+    var _a;
+    if (!this.otpCode) {
+      this.notification.warning("C\u1EA3nh b\xE1o", "Vui l\xF2ng nh\u1EADp m\xE3 OTP \u0111\u1EC3 x\xE1c nh\u1EADn.");
+      return;
+    }
+    this.loading = true;
+    try {
+      const res = await this.authService.enableMfa(this.selectedProvider, this.otpCode);
+      this.backupCodes = res.backupCodes || [];
+      this.mfaSetupStep = 2;
+      await this.authService.syncClaims();
+      this.loadUserData();
+      this.notification.success("Th\xE0nh c\xF4ng", "MFA \u0111\xE3 \u0111\u01B0\u1EE3c k\xEDch ho\u1EA1t th\xE0nh c\xF4ng.");
+    } catch (e) {
+      console.error(e);
+      this.notification.error("L\u1ED7i", ((_a = e.error) == null ? void 0 : _a.message) || "M\xE3 OTP kh\xF4ng ch\xEDnh x\xE1c");
+    } finally {
+      this.loading = false;
+    }
+  }
+  cancelMfaSetup() {
+    this.mfaSetupStep = 0;
+    this.mfaSetupResult = null;
+    this.otpCode = "";
+  }
+  finishMfaSetup() {
+    this.mfaSetupStep = 0;
+    this.mfaSetupResult = null;
+    this.otpCode = "";
+    this.backupCodes = [];
+  }
+  showDisableModal() {
+    this.disableModalVisible = true;
+    this.disableCode = "";
+  }
+  closeDisableModal() {
+    this.disableModalVisible = false;
+    this.disableCode = "";
+  }
+  async disableMfa() {
+    var _a;
+    if (!this.disableCode) {
+      this.notification.warning("C\u1EA3nh b\xE1o", "Vui l\xF2ng nh\u1EADp m\xE3 x\xE1c th\u1EF1c ho\u1EB7c m\xE3 d\u1EF1 ph\xF2ng.");
+      return;
+    }
+    this.loading = true;
+    try {
+      await this.authService.disableMfa(this.disableCode);
+      this.disableModalVisible = false;
+      await this.authService.syncClaims();
+      this.loadUserData();
+      this.notification.success("Th\xE0nh c\xF4ng", "MFA \u0111\xE3 \u0111\u01B0\u1EE3c t\u1EAFt th\xE0nh c\xF4ng.");
+    } catch (e) {
+      console.error(e);
+      this.notification.error("L\u1ED7i", ((_a = e.error) == null ? void 0 : _a.message) || "M\xE3 x\xE1c th\u1EF1c kh\xF4ng ch\xEDnh x\xE1c");
+    } finally {
+      this.loading = false;
+    }
+  }
+  downloadBackupCodes() {
+    var _a;
+    const username = ((_a = this.authService.getCurrentUser()) == null ? void 0 : _a.preferred_username) || "user";
+    const text = `M\xC3 KH\xD4I PH\u1EE4C D\u1EF0 PH\xD2NG MFA - TREE OF THOUGHT
+
+T\xE0i kho\u1EA3n: ${username}
+Ng\xE0y t\u1EA1o: ${(/* @__PURE__ */ new Date()).toLocaleString()}
+
+Danh s\xE1ch m\xE3 d\u1EF1 ph\xF2ng (M\u1ED7i m\xE3 ch\u1EC9 s\u1EED d\u1EE5ng 1 l\u1EA7n):
+` + this.backupCodes.map((c, i) => `${i + 1}. ${c}`).join("\n") + `
+
+H\xE3y l\u01B0u tr\u1EEF t\u1EC7p tin n\xE0y \u1EDF n\u01A1i an to\xE0n.`;
+    const blob = new Blob([text], { type: "text/plain" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `mfa-backup-codes-${username}.txt`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  }
+  copyBackupCodes() {
+    const text = this.backupCodes.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      this.notification.success("Th\xE0nh c\xF4ng", "\u0110\xE3 sao ch\xE9p c\xE1c m\xE3 d\u1EF1 ph\xF2ng v\xE0o clipboard.");
+    });
+  }
+  getQrCodeUrl(uri) {
+    if (!uri)
+      return "";
+    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(uri)}`;
+  }
 };
 _AuthorizeInfoComponent.\u0275fac = function AuthorizeInfoComponent_Factory(__ngFactoryType__) {
   return new (__ngFactoryType__ || _AuthorizeInfoComponent)();
 };
-_AuthorizeInfoComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AuthorizeInfoComponent, selectors: [["app-authorize-info"]], decls: 43, vars: 47, consts: [[1, "authorize-info-container"], [1, "page-header"], [1, "subtitle"], [3, "nzTitle"], [1, "tab-content"], [1, "info-card", 3, "nzTitle"], ["nzBordered", "", 3, "nzColumn"], [3, "nzColor", 4, "ngFor", "ngForOf"], ["class", "empty-text", 4, "ngIf"], [1, "claims-list"], ["class", "info-card", 3, "nzTitle", 4, "ngIf"], ["nzColor", "volcano"], [3, "pageIndexChange", "pageSizeChange", "title", "data", "columns", "total", "pageIndex", "pageSize", "frontPagination"], ["totCell", "value"], [3, "nzColor"], [1, "empty-text"], [1, "admin-notice"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "twotone", 3, "nzTwotoneColor"]], template: function AuthorizeInfoComponent_Template(rf, ctx) {
+_AuthorizeInfoComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent({ type: _AuthorizeInfoComponent, selectors: [["app-authorize-info"]], decls: 54, vars: 58, consts: [["modalContent", ""], ["modalFooter", ""], [1, "authorize-info-container"], [1, "page-header"], [1, "subtitle"], [3, "nzTitle"], [1, "tab-content"], [1, "info-card", 3, "nzTitle"], ["nzBordered", "", 3, "nzColumn"], [3, "nzColor", 4, "ngFor", "ngForOf"], ["class", "empty-text", 4, "ngIf"], [1, "claims-list"], ["class", "info-card", 3, "nzTitle", 4, "ngIf"], [1, "tab-content", "mfa-tab"], ["class", "mfa-enabled-container animate-fade-in", 4, "ngIf"], ["class", "mfa-disabled-container animate-fade-in", 4, "ngIf"], ["nzColor", "volcano"], [3, "pageIndexChange", "pageSizeChange", "title", "data", "columns", "total", "pageIndex", "pageSize", "frontPagination"], ["totCell", "value"], [3, "nzVisibleChange", "nzOnCancel", "nzVisible", "nzTitle", "nzContent", "nzFooter"], [3, "nzColor"], [1, "empty-text"], [1, "admin-notice"], ["nz-icon", "", "nzType", "safety-certificate", "nzTheme", "twotone", 3, "nzTwotoneColor"], [1, "mfa-enabled-container", "animate-fade-in"], [1, "info-card", "premium-card", "text-center", 3, "nzBordered"], [1, "mfa-success-icon"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "fill", 1, "green-icon"], [1, "mfa-status-title"], [1, "mfa-status-desc"], [1, "mfa-provider-badge"], [1, "label"], ["nzColor", "success", 1, "mfa-tag"], ["nz-icon", "", 3, "nzType"], [1, "mfa-actions"], ["nz-button", "", "nzType", "primary", "nzDanger", "", 1, "premium-button", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "stop"], [1, "mfa-disabled-container", "animate-fade-in"], [4, "ngIf"], [1, "mfa-intro-text"], [1, "provider-selector-section"], [1, "provider-label"], [1, "premium-select", 2, "width", "100%", "max-width", "400px", "margin-top", "8px", "display", "block", 3, "ngModelChange", "ngModel"], ["nzValue", "Totp", 3, "nzLabel"], ["nzValue", "Sms", 3, "nzLabel"], ["nzValue", "Email", 3, "nzLabel"], [2, "margin-top", "24px"], ["nz-button", "", "nzType", "primary", 1, "premium-button", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "arrow-right"], ["class", "totp-setup-flow", 4, "ngIf"], ["class", "out-of-band-setup-flow", 4, "ngIf"], [1, "otp-verification-section"], [2, "margin-top", "8px", "max-width", "300px"], ["nz-input", "", "maxlength", "8", 1, "premium-input", 2, "text-align", "center", "font-size", "18px", "letter-spacing", "4px", 3, "ngModelChange", "ngModel", "placeholder"], [1, "setup-actions", 2, "margin-top", "24px"], ["nz-button", "", "nzType", "primary", 1, "premium-button", 2, "margin-right", "12px", 3, "click", "nzLoading"], ["nz-icon", "", "nzType", "check"], ["nz-button", "", "nzType", "default", 1, "premium-button", 3, "click", "disabled"], [1, "totp-setup-flow"], [1, "qr-code-wrapper", "text-center"], ["alt", "MFA QR Code", 1, "mfa-qr-img", 3, "src"], [2, "margin-top", "16px"], [1, "secret-key-box"], [1, "out-of-band-setup-flow"], [1, "destination-box"], [1, "helper-text"], [1, "info-card", "premium-card", 3, "nzTitle"], [1, "success-notice"], ["nz-icon", "", "nzType", "check-circle", "nzTheme", "twotone", 3, "nzTwotoneColor"], [1, "backup-codes-warning"], [1, "warning-text"], [1, "backup-codes-grid"], ["class", "backup-code-item", 4, "ngFor", "ngForOf"], [1, "backup-actions", "text-center", 2, "margin-top", "24px"], ["nz-button", "", "nzType", "default", 1, "premium-button", 2, "margin-right", "12px", 3, "click"], ["nz-icon", "", "nzType", "copy"], ["nz-icon", "", "nzType", "download"], ["nz-button", "", "nzType", "primary", 1, "premium-button", 3, "click"], [1, "backup-code-item"], ["nz-input", "", "maxlength", "10", 1, "premium-input", 2, "text-align", "center", "font-size", "16px", 3, "ngModelChange", "ngModel", "placeholder"], ["nz-button", "", "nzType", "default", 3, "click", "disabled"], ["nz-button", "", "nzType", "primary", "nzDanger", "", 3, "click", "nzLoading"]], template: function AuthorizeInfoComponent_Template(rf, ctx) {
   if (rf & 1) {
-    \u0275\u0275elementStart(0, "div", 0)(1, "div", 1)(2, "h2");
+    const _r1 = \u0275\u0275getCurrentView();
+    \u0275\u0275elementStart(0, "div", 2)(1, "div", 3)(2, "h2");
     \u0275\u0275text(3);
     \u0275\u0275pipe(4, "transloco");
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(5, "p", 2);
+    \u0275\u0275elementStart(5, "p", 4);
     \u0275\u0275text(6);
     \u0275\u0275pipe(7, "transloco");
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(8, "nz-tabs")(9, "nz-tab", 3);
+    \u0275\u0275elementStart(8, "nz-tabs")(9, "nz-tab", 5);
     \u0275\u0275pipe(10, "transloco");
-    \u0275\u0275elementStart(11, "div", 4)(12, "nz-card", 5);
+    \u0275\u0275elementStart(11, "div", 6)(12, "nz-card", 7);
     \u0275\u0275pipe(13, "transloco");
-    \u0275\u0275elementStart(14, "nz-descriptions", 6)(15, "nz-descriptions-item", 3);
+    \u0275\u0275elementStart(14, "nz-descriptions", 8)(15, "nz-descriptions-item", 5);
     \u0275\u0275pipe(16, "transloco");
-    \u0275\u0275template(17, AuthorizeInfoComponent_nz_tag_17_Template, 2, 2, "nz-tag", 7)(18, AuthorizeInfoComponent_span_18_Template, 3, 3, "span", 8);
+    \u0275\u0275template(17, AuthorizeInfoComponent_nz_tag_17_Template, 2, 2, "nz-tag", 9)(18, AuthorizeInfoComponent_span_18_Template, 3, 3, "span", 10);
     \u0275\u0275elementEnd();
-    \u0275\u0275elementStart(19, "nz-descriptions-item", 3);
+    \u0275\u0275elementStart(19, "nz-descriptions-item", 5);
     \u0275\u0275pipe(20, "transloco");
-    \u0275\u0275elementStart(21, "div", 9);
-    \u0275\u0275template(22, AuthorizeInfoComponent_nz_tag_22_Template, 2, 2, "nz-tag", 7);
+    \u0275\u0275elementStart(21, "div", 11);
+    \u0275\u0275template(22, AuthorizeInfoComponent_nz_tag_22_Template, 2, 2, "nz-tag", 9);
     \u0275\u0275elementEnd();
-    \u0275\u0275template(23, AuthorizeInfoComponent_span_23_Template, 3, 3, "span", 8);
+    \u0275\u0275template(23, AuthorizeInfoComponent_span_23_Template, 3, 3, "span", 10);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275template(24, AuthorizeInfoComponent_nz_card_24_Template, 11, 10, "nz-card", 10);
+    \u0275\u0275template(24, AuthorizeInfoComponent_nz_card_24_Template, 11, 10, "nz-card", 12);
     \u0275\u0275elementEnd()();
-    \u0275\u0275elementStart(25, "nz-tab", 3);
+    \u0275\u0275elementStart(25, "nz-tab", 5);
     \u0275\u0275pipe(26, "transloco");
-    \u0275\u0275elementStart(27, "div", 4)(28, "nz-card", 5);
-    \u0275\u0275pipe(29, "transloco");
-    \u0275\u0275elementStart(30, "p");
-    \u0275\u0275text(31);
-    \u0275\u0275pipe(32, "transloco");
-    \u0275\u0275elementStart(33, "strong");
-    \u0275\u0275text(34);
+    \u0275\u0275elementStart(27, "div", 13);
+    \u0275\u0275template(28, AuthorizeInfoComponent_div_28_Template, 23, 18, "div", 14)(29, AuthorizeInfoComponent_div_29_Template, 4, 3, "div", 15);
     \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(30, "nz-tab", 5);
+    \u0275\u0275pipe(31, "transloco");
+    \u0275\u0275elementStart(32, "div", 6)(33, "nz-card", 7);
+    \u0275\u0275pipe(34, "transloco");
     \u0275\u0275elementStart(35, "p");
     \u0275\u0275text(36);
     \u0275\u0275pipe(37, "transloco");
-    \u0275\u0275elementStart(38, "nz-tag", 11);
+    \u0275\u0275elementStart(38, "strong");
     \u0275\u0275text(39);
+    \u0275\u0275elementEnd()();
+    \u0275\u0275elementStart(40, "p");
+    \u0275\u0275text(41);
+    \u0275\u0275pipe(42, "transloco");
+    \u0275\u0275elementStart(43, "nz-tag", 16);
+    \u0275\u0275text(44);
     \u0275\u0275elementEnd()()();
-    \u0275\u0275elementStart(40, "tot-table", 12);
-    \u0275\u0275pipe(41, "transloco");
-    \u0275\u0275listener("pageIndexChange", function AuthorizeInfoComponent_Template_tot_table_pageIndexChange_40_listener($event) {
+    \u0275\u0275elementStart(45, "tot-table", 17);
+    \u0275\u0275pipe(46, "transloco");
+    \u0275\u0275listener("pageIndexChange", function AuthorizeInfoComponent_Template_tot_table_pageIndexChange_45_listener($event) {
       return ctx.pageIndex = $event;
-    })("pageSizeChange", function AuthorizeInfoComponent_Template_tot_table_pageSizeChange_40_listener($event) {
+    })("pageSizeChange", function AuthorizeInfoComponent_Template_tot_table_pageSizeChange_45_listener($event) {
+      \u0275\u0275restoreView(_r1);
       ctx.pageSize = $event;
-      return ctx.pageIndex = 1;
+      return \u0275\u0275resetView(ctx.pageIndex = 1);
     });
-    \u0275\u0275template(42, AuthorizeInfoComponent_ng_template_42_Template, 2, 1, "ng-template", 13);
-    \u0275\u0275elementEnd()()()()();
+    \u0275\u0275template(47, AuthorizeInfoComponent_ng_template_47_Template, 2, 1, "ng-template", 18);
+    \u0275\u0275elementEnd()()()();
+    \u0275\u0275elementStart(48, "nz-modal", 19);
+    \u0275\u0275pipe(49, "transloco");
+    \u0275\u0275twoWayListener("nzVisibleChange", function AuthorizeInfoComponent_Template_nz_modal_nzVisibleChange_48_listener($event) {
+      \u0275\u0275restoreView(_r1);
+      \u0275\u0275twoWayBindingSet(ctx.disableModalVisible, $event) || (ctx.disableModalVisible = $event);
+      return \u0275\u0275resetView($event);
+    });
+    \u0275\u0275listener("nzOnCancel", function AuthorizeInfoComponent_Template_nz_modal_nzOnCancel_48_listener() {
+      return ctx.closeDisableModal();
+    });
+    \u0275\u0275template(50, AuthorizeInfoComponent_ng_template_50_Template, 6, 7, "ng-template", null, 0, \u0275\u0275templateRefExtractor)(52, AuthorizeInfoComponent_ng_template_52_Template, 6, 8, "ng-template", null, 1, \u0275\u0275templateRefExtractor);
+    \u0275\u0275elementEnd()();
   }
   if (rf & 2) {
+    const modalContent_r13 = \u0275\u0275reference(51);
+    const modalFooter_r14 = \u0275\u0275reference(53);
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 25, "Th\xF4ng tin ph\xE2n quy\u1EC1n"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(4, 32, "Th\xF4ng tin ph\xE2n quy\u1EC1n"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 27, "T\u1ED5ng quan v\u1EC1 c\u01A1 ch\u1EBF ph\xE2n quy\u1EC1n \u0111ang \u0111\u01B0\u1EE3c \xE1p d\u1EE5ng"));
+    \u0275\u0275textInterpolate(\u0275\u0275pipeBind1(7, 34, "T\u1ED5ng quan v\u1EC1 c\u01A1 ch\u1EBF ph\xE2n quy\u1EC1n \u0111ang \u0111\u01B0\u1EE3c \xE1p d\u1EE5ng"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(10, 29, "Quy\u1EC1n c\u1EE7a t\xF4i"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(10, 36, "Quy\u1EC1n c\u1EE7a t\xF4i"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(13, 31, "Th\xF4ng tin ng\u01B0\u1EDDi d\xF9ng"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(13, 38, "Th\xF4ng tin ng\u01B0\u1EDDi d\xF9ng"));
     \u0275\u0275advance(2);
     \u0275\u0275property("nzColumn", 1);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(16, 33, "Vai tr\xF2 (Roles)"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(16, 40, "Vai tr\xF2 (Roles)"));
     \u0275\u0275advance(2);
     \u0275\u0275property("ngForOf", ctx.userRoles);
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx.userRoles.length === 0);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(20, 35, "Quy\u1EC1n h\u1EA1n (Claims)"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(20, 42, "Quy\u1EC1n h\u1EA1n (Claims)"));
     \u0275\u0275advance(3);
     \u0275\u0275property("ngForOf", ctx.userClaims);
     \u0275\u0275advance();
@@ -6980,24 +7526,38 @@ _AuthorizeInfoComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent(
     \u0275\u0275advance();
     \u0275\u0275property("ngIf", ctx.isAdmin);
     \u0275\u0275advance();
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(26, 37, "C\u1EA5u h\xECnh \u1EE9ng d\u1EE5ng"));
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(26, 44, "B\u1EA3o m\u1EADt & MFA"));
     \u0275\u0275advance(3);
-    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(29, 39, "Phi\xEAn b\u1EA3n c\u1EA5u h\xECnh"));
+    \u0275\u0275property("ngIf", ctx.isMfaEnabled);
+    \u0275\u0275advance();
+    \u0275\u0275property("ngIf", !ctx.isMfaEnabled);
+    \u0275\u0275advance();
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(31, 46, "C\u1EA5u h\xECnh \u1EE9ng d\u1EE5ng"));
     \u0275\u0275advance(3);
-    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(32, 41, "Phi\xEAn b\u1EA3n hi\u1EC7n t\u1EA1i:"), " ");
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(34, 48, "Phi\xEAn b\u1EA3n c\u1EA5u h\xECnh"));
+    \u0275\u0275advance(3);
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(37, 50, "Phi\xEAn b\u1EA3n hi\u1EC7n t\u1EA1i:"), " ");
     \u0275\u0275advance(3);
     \u0275\u0275textInterpolate(ctx.version);
     \u0275\u0275advance(2);
-    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(37, 43, "Admin Claim:"), " ");
+    \u0275\u0275textInterpolate1("", \u0275\u0275pipeBind1(42, 52, "Admin Claim:"), " ");
     \u0275\u0275advance(3);
     \u0275\u0275textInterpolate(ctx.adminClaim);
     \u0275\u0275advance();
-    \u0275\u0275property("title", \u0275\u0275pipeBind1(41, 45, "Danh s\xE1ch Quy\u1EC1n h\u1EA1n \u0111\u1ECBnh ngh\u0129a trong FE"))("data", ctx.pagedClaims)("columns", ctx.claimsColumns)("total", ctx.appClaimsList.length)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("frontPagination", false);
+    \u0275\u0275property("title", \u0275\u0275pipeBind1(46, 54, "Danh s\xE1ch Quy\u1EC1n h\u1EA1n \u0111\u1ECBnh ngh\u0129a trong FE"))("data", ctx.pagedClaims)("columns", ctx.claimsColumns)("total", ctx.appClaimsList.length)("pageIndex", ctx.pageIndex)("pageSize", ctx.pageSize)("frontPagination", false);
+    \u0275\u0275advance(3);
+    \u0275\u0275twoWayProperty("nzVisible", ctx.disableModalVisible);
+    \u0275\u0275property("nzTitle", \u0275\u0275pipeBind1(49, 56, "T\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp (MFA)"))("nzContent", modalContent_r13)("nzFooter", modalFooter_r14);
   }
 }, dependencies: [
   CommonModule,
   NgForOf,
   NgIf,
+  FormsModule,
+  DefaultValueAccessor,
+  NgControlStatus,
+  MaxLengthValidator,
+  NgModel,
   NzCardModule,
   NzCardComponent,
   NzTagModule,
@@ -7010,22 +7570,41 @@ _AuthorizeInfoComponent.\u0275cmp = /* @__PURE__ */ \u0275\u0275defineComponent(
   NzTabComponent,
   NzIconModule,
   NzIconDirective,
+  NzSelectModule,
+  NzOptionComponent,
+  NzSelectComponent,
+  NzInputModule,
+  NzInputDirective,
+  NzButtonModule,
+  NzButtonComponent,
+  NzTransitionPatchDirective,
+  NzWaveDirective,
+  NzModalModule,
+  NzModalComponent,
+  NzDividerModule,
+  NzDividerComponent,
   TranslocoModule,
   TotTableComponent,
   TotCellDirective,
   TranslocoPipe
-], styles: ["\n.authorize-info-container[_ngcontent-%COMP%] {\n  padding: 0;\n}\n.page-header[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.subtitle[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content[_ngcontent-%COMP%] {\n  padding: 16px 0;\n}\n.info-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.claims-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice[_ngcontent-%COMP%]   span[_ngcontent-%COMP%] {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode[_ngcontent-%COMP%] {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n/*# sourceMappingURL=authorize-info.component.css.map */"] });
+], styles: ["\n.authorize-info-container[_ngcontent-%COMP%] {\n  padding: 0;\n}\n.page-header[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.subtitle[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content[_ngcontent-%COMP%] {\n  padding: 16px 0;\n}\n.info-card[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n}\n.claims-list[_ngcontent-%COMP%] {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice[_ngcontent-%COMP%]   span[_ngcontent-%COMP%] {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode[_ngcontent-%COMP%] {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n.mfa-tab[_ngcontent-%COMP%] {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  width: 100%;\n}\n.mfa-enabled-container[_ngcontent-%COMP%], \n.mfa-disabled-container[_ngcontent-%COMP%] {\n  width: 100%;\n  max-width: 600px;\n}\n.text-center[_ngcontent-%COMP%] {\n  text-align: center;\n}\n.green-icon[_ngcontent-%COMP%] {\n  font-size: 64px;\n  color: #52c41a;\n  margin-bottom: 16px;\n}\n.mfa-status-title[_ngcontent-%COMP%] {\n  font-size: 20px;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.mfa-status-desc[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  margin-bottom: 24px;\n  line-height: 1.5;\n}\n.mfa-provider-badge[_ngcontent-%COMP%] {\n  margin-bottom: 24px;\n  background: rgba(0, 0, 0, 0.02);\n  padding: 12px;\n  border-radius: 8px;\n  border: 1px dashed rgba(0, 0, 0, 0.1);\n  display: inline-block;\n  width: 100%;\n  box-sizing: border-box;\n}\n.mfa-provider-badge[_ngcontent-%COMP%]   .label[_ngcontent-%COMP%] {\n  margin-right: 8px;\n  font-size: 14px;\n  color: rgba(0, 0, 0, 0.65);\n}\n.provider-selector-section[_ngcontent-%COMP%] {\n  margin-top: 16px;\n}\n.provider-label[_ngcontent-%COMP%] {\n  font-size: 14px;\n}\n.mfa-intro-text[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.65);\n  line-height: 1.6;\n}\n.qr-code-wrapper[_ngcontent-%COMP%] {\n  background: white;\n  padding: 16px;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  display: inline-block;\n  margin: 16px 0;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.mfa-qr-img[_ngcontent-%COMP%] {\n  width: 200px;\n  height: 200px;\n  display: block;\n}\n.secret-key-box[_ngcontent-%COMP%], \n.destination-box[_ngcontent-%COMP%] {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  padding: 12px;\n  border-radius: 6px;\n  font-size: 16px;\n  letter-spacing: 1px;\n  margin: 12px 0;\n  display: inline-block;\n}\n.destination-box[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  color: #1890ff;\n  justify-content: center;\n}\n.helper-text[_ngcontent-%COMP%] {\n  color: rgba(0, 0, 0, 0.45);\n  font-size: 13px;\n  margin-top: 8px;\n}\n.success-notice[_ngcontent-%COMP%] {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.success-notice[_ngcontent-%COMP%]   span[_ngcontent-%COMP%] {\n  font-size: 32px;\n}\n.success-notice[_ngcontent-%COMP%]   h4[_ngcontent-%COMP%] {\n  margin: 0;\n  font-size: 18px;\n  color: #52c41a;\n}\n.backup-codes-warning[_ngcontent-%COMP%] {\n  background: #fffbe6;\n  border: 1px solid #ffe58f;\n  padding: 12px 16px;\n  border-radius: 8px;\n  margin-bottom: 24px;\n}\n.warning-text[_ngcontent-%COMP%] {\n  color: #d46b08;\n  font-size: 13px;\n  line-height: 1.5;\n  margin: 0;\n}\n.backup-codes-grid[_ngcontent-%COMP%] {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));\n  gap: 12px;\n  margin-bottom: 24px;\n}\n.backup-code-item[_ngcontent-%COMP%] {\n  background: #f5f5f5;\n  border: 1px solid #d9d9d9;\n  border-radius: 6px;\n  padding: 10px;\n  text-align: center;\n  font-size: 15px;\n  font-weight: bold;\n}\n.backup-code-item[_ngcontent-%COMP%]   code[_ngcontent-%COMP%] {\n  background: transparent;\n  padding: 0;\n}\n.animate-fade-in[_ngcontent-%COMP%] {\n  animation: _ngcontent-%COMP%_fadeIn 0.4s ease-out;\n}\n@keyframes _ngcontent-%COMP%_fadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(10px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n/*# sourceMappingURL=authorize-info.component.css.map */"] });
 var AuthorizeInfoComponent = _AuthorizeInfoComponent;
 (() => {
   (typeof ngDevMode === "undefined" || ngDevMode) && setClassMetadata(AuthorizeInfoComponent, [{
     type: Component,
     args: [{ selector: "app-authorize-info", standalone: true, imports: [
       CommonModule,
+      FormsModule,
       NzCardModule,
       NzTagModule,
       NzDescriptionsModule,
       NzTabsModule,
       NzIconModule,
+      NzSelectModule,
+      NzInputModule,
+      NzButtonModule,
+      NzModalModule,
+      NzDividerModule,
       TranslocoModule,
       TotTableComponent,
       TotCellDirective
@@ -7068,6 +7647,146 @@ var AuthorizeInfoComponent = _AuthorizeInfoComponent;
           </div>
         </nz-tab>
 
+        <nz-tab [nzTitle]="'B\u1EA3o m\u1EADt & MFA' | transloco">
+          <div class="tab-content mfa-tab">
+            <!-- Case 1: MFA is enabled -->
+            <div *ngIf="isMfaEnabled" class="mfa-enabled-container animate-fade-in">
+              <nz-card class="info-card premium-card text-center" [nzBordered]="false">
+                <div class="mfa-success-icon">
+                  <span nz-icon nzType="check-circle" nzTheme="fill" class="green-icon"></span>
+                </div>
+                <h3 class="mfa-status-title">{{ 'X\xE1c th\u1EF1c 2 l\u1EDBp (MFA) \u0111ang ho\u1EA1t \u0111\u1ED9ng' | transloco }}</h3>
+                <p class="mfa-status-desc">
+                  {{ 'T\xE0i kho\u1EA3n c\u1EE7a b\u1EA1n \u0111\u01B0\u1EE3c b\u1EA3o v\u1EC7 b\u1EB1ng l\u1EDBp b\u1EA3o m\u1EADt b\u1ED5 sung. Khi \u0111\u0103ng nh\u1EADp, b\u1EA1n c\u1EA7n nh\u1EADp m\xE3 x\xE1c th\u1EF1c OTP t\u1EEB thi\u1EBFt b\u1ECB.' | transloco }}
+                </p>
+                <div class="mfa-provider-badge">
+                  <span class="label">{{ 'Ph\u01B0\u01A1ng th\u1EE9c hi\u1EC7n t\u1EA1i:' | transloco }}</span>
+                  <nz-tag nzColor="success" class="mfa-tag">
+                    <span nz-icon [nzType]="preferredMfaProvider === 'Totp' ? 'key' : preferredMfaProvider === 'Sms' ? 'phone' : 'mail'"></span>
+                    &nbsp;{{ (preferredMfaProvider === 'Totp' ? '\u1EE8ng d\u1EE5ng Authenticator' : preferredMfaProvider === 'Sms' ? 'Tin nh\u1EAFn SMS' : 'Email OTP') | transloco }}
+                  </nz-tag>
+                </div>
+                <div class="mfa-actions">
+                  <button nz-button nzType="primary" nzDanger (click)="showDisableModal()" [nzLoading]="loading" class="premium-button">
+                    <span nz-icon nzType="stop"></span> {{ 'T\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp' | transloco }}
+                  </button>
+                </div>
+              </nz-card>
+            </div>
+
+            <!-- Case 2: MFA is disabled -->
+            <div *ngIf="!isMfaEnabled" class="mfa-disabled-container animate-fade-in">
+              
+              <!-- Step 0: Select Provider -->
+              <div *ngIf="mfaSetupStep === 0">
+                <nz-card [nzTitle]="'K\xEDch ho\u1EA1t X\xE1c th\u1EF1c 2 l\u1EDBp' | transloco" class="info-card">
+                  <p class="mfa-intro-text">
+                    {{ 'X\xE1c th\u1EF1c 2 l\u1EDBp (MFA) b\u1ED5 sung th\xEAm m\u1ED9t b\u01B0\u1EDBc b\u1EA3o m\u1EADt khi \u0111\u0103ng nh\u1EADp, y\xEAu c\u1EA7u m\xE3 OTP t\u1EEB \u1EE9ng d\u1EE5ng \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c qua SMS/Email.' | transloco }}
+                  </p>
+                  
+                  <div class="provider-selector-section">
+                    <label class="provider-label"><strong>{{ 'Ch\u1ECDn ph\u01B0\u01A1ng th\u1EE9c x\xE1c th\u1EF1c:' | transloco }}</strong></label>
+                    <nz-select [(ngModel)]="selectedProvider" style="width: 100%; max-width: 400px; margin-top: 8px; display: block;" class="premium-select">
+                      <nz-option nzValue="Totp" [nzLabel]="'\u1EE8ng d\u1EE5ng x\xE1c th\u1EF1c (Google/Microsoft Authenticator)' | transloco"></nz-option>
+                      <nz-option nzValue="Sms" [nzLabel]="'Tin nh\u1EAFn SMS OTP' | transloco"></nz-option>
+                      <nz-option nzValue="Email" [nzLabel]="'Email OTP' | transloco"></nz-option>
+                    </nz-select>
+                  </div>
+
+                  <div style="margin-top: 24px;">
+                    <button nz-button nzType="primary" (click)="setupMfa()" [nzLoading]="loading" class="premium-button">
+                      {{ 'B\u1EAFt \u0111\u1EA7u thi\u1EBFt l\u1EADp' | transloco }} <span nz-icon nzType="arrow-right"></span>
+                    </button>
+                  </div>
+                </nz-card>
+              </div>
+
+              <!-- Step 1: Scan QR / Receive Code & Verify -->
+              <div *ngIf="mfaSetupStep === 1">
+                <nz-card [nzTitle]="'Thi\u1EBFt l\u1EADp ph\u01B0\u01A1ng th\u1EE9c x\xE1c th\u1EF1c' | transloco" class="info-card">
+                  
+                  <!-- TOTP setup details -->
+                  <div *ngIf="selectedProvider === 'Totp'" class="totp-setup-flow">
+                    <p>{{ 'B\u01B0\u1EDBc 1: Qu\xE9t m\xE3 QR d\u01B0\u1EDBi \u0111\xE2y b\u1EB1ng \u1EE9ng d\u1EE5ng x\xE1c th\u1EF1c c\u1EE7a b\u1EA1n (v\xED d\u1EE5: Google Authenticator, Microsoft Authenticator ho\u1EB7c Authy).' | transloco }}</p>
+                    <div class="qr-code-wrapper text-center">
+                      <img [src]="getQrCodeUrl(mfaSetupResult?.qrCodeUri)" alt="MFA QR Code" class="mfa-qr-img" />
+                    </div>
+                    
+                    <p style="margin-top: 16px;">{{ 'Ho\u1EB7c nh\u1EADp kh\xF3a b\xED m\u1EADt n\xE0y th\u1EE7 c\xF4ng v\xE0o \u1EE9ng d\u1EE5ng:' | transloco }}</p>
+                    <div class="secret-key-box">
+                      <code>{{ mfaSetupResult?.secretKey }}</code>
+                    </div>
+                  </div>
+
+                  <!-- SMS / Email setup details -->
+                  <div *ngIf="selectedProvider !== 'Totp'" class="out-of-band-setup-flow">
+                    <p>{{ 'M\xE3 x\xE1c th\u1EF1c OTP \u0111\xE3 \u0111\u01B0\u1EE3c g\u1EEDi \u0111\u1EBFn thi\u1EBFt b\u1ECB c\u1EE7a b\u1EA1n:' | transloco }}</p>
+                    <div class="destination-box">
+                      <span nz-icon [nzType]="selectedProvider === 'Sms' ? 'phone' : 'mail'"></span>
+                      <strong>{{ mfaSetupResult?.destination }}</strong>
+                    </div>
+                    <p class="helper-text">{{ 'Vui l\xF2ng ki\u1EC3m tra console log / thi\u1EBFt b\u1ECB v\xE0 nh\u1EADp m\xE3 OTP 6 s\u1ED1 \u0111\u1EC3 ho\xE0n t\u1EA5t k\xEDch ho\u1EA1t.' | transloco }}</p>
+                  </div>
+
+                  <nz-divider></nz-divider>
+
+                  <div class="otp-verification-section">
+                    <label><strong>{{ 'B\u01B0\u1EDBc 2: Nh\u1EADp m\xE3 x\xE1c th\u1EF1c \u0111\u1EC3 k\xEDch ho\u1EA1t:' | transloco }}</strong></label>
+                    <div style="margin-top: 8px; max-width: 300px;">
+                      <input nz-input [(ngModel)]="otpCode" [placeholder]="'Nh\u1EADp m\xE3 OTP' | transloco" class="premium-input" style="text-align: center; font-size: 18px; letter-spacing: 4px;" maxlength="8" />
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 24px;" class="setup-actions">
+                    <button nz-button nzType="primary" (click)="verifyAndEnableMfa()" [nzLoading]="loading" class="premium-button" style="margin-right: 12px;">
+                      {{ 'K\xEDch ho\u1EA1t' | transloco }} <span nz-icon nzType="check"></span>
+                    </button>
+                    <button nz-button nzType="default" (click)="cancelMfaSetup()" [disabled]="loading" class="premium-button">
+                      {{ 'H\u1EE7y' | transloco }}
+                    </button>
+                  </div>
+                </nz-card>
+              </div>
+
+              <!-- Step 2: Show Backup Codes -->
+              <div *ngIf="mfaSetupStep === 2">
+                <nz-card [nzTitle]="'K\xEDch ho\u1EA1t th\xE0nh c\xF4ng!' | transloco" class="info-card premium-card">
+                  <div class="success-notice">
+                    <span nz-icon nzType="check-circle" nzTheme="twotone" [nzTwotoneColor]="'#52c41a'"></span>
+                    <h4>{{ 'L\u01B0u l\u1EA1i c\xE1c m\xE3 kh\xF4i ph\u1EE5c d\u1EF1 ph\xF2ng' | transloco }}</h4>
+                  </div>
+                  
+                  <div class="backup-codes-warning">
+                    <p class="warning-text">
+                      <strong>{{ 'QUAN TR\u1ECCNG: H\xE3y sao ch\xE9p ho\u1EB7c t\u1EA3i c\xE1c m\xE3 n\xE0y v\u1EC1 m\xE1y.' | transloco }}</strong> 
+                      {{ 'Ch\xFAng ch\u1EC9 \u0111\u01B0\u1EE3c hi\u1EC3n th\u1ECB M\u1ED8T L\u1EA6N DUY NH\u1EA4T. N\u1EBFu b\u1EA1n m\u1EA5t \u0111i\u1EC7n tho\u1EA1i ho\u1EB7c kh\xF4ng nh\u1EADn \u0111\u01B0\u1EE3c OTP, b\u1EA1n c\xF3 th\u1EC3 d\xF9ng c\xE1c m\xE3 n\xE0y \u0111\u1EC3 \u0111\u0103ng nh\u1EADp.' | transloco }}
+                    </p>
+                  </div>
+
+                  <div class="backup-codes-grid">
+                    <div *ngFor="let code of backupCodes" class="backup-code-item">
+                      <code>{{ code }}</code>
+                    </div>
+                  </div>
+
+                  <div class="backup-actions text-center" style="margin-top: 24px;">
+                    <button nz-button nzType="default" (click)="copyBackupCodes()" class="premium-button" style="margin-right: 12px;">
+                      <span nz-icon nzType="copy"></span> {{ 'Sao ch\xE9p t\u1EA5t c\u1EA3' | transloco }}
+                    </button>
+                    <button nz-button nzType="default" (click)="downloadBackupCodes()" class="premium-button" style="margin-right: 12px;">
+                      <span nz-icon nzType="download"></span> {{ 'T\u1EA3i file txt' | transloco }}
+                    </button>
+                    <button nz-button nzType="primary" (click)="finishMfaSetup()" class="premium-button">
+                      {{ 'Ho\xE0n t\u1EA5t' | transloco }}
+                    </button>
+                  </div>
+                </nz-card>
+              </div>
+
+            </div>
+          </div>
+        </nz-tab>
+
         <nz-tab [nzTitle]="'C\u1EA5u h\xECnh \u1EE9ng d\u1EE5ng' | transloco">
           <div class="tab-content">
             <nz-card [nzTitle]="'Phi\xEAn b\u1EA3n c\u1EA5u h\xECnh' | transloco" class="info-card">
@@ -7094,12 +7813,31 @@ var AuthorizeInfoComponent = _AuthorizeInfoComponent;
         </nz-tab>
       </nz-tabs>
 
+      <!-- Modal disable MFA -->
+      <nz-modal
+        [(nzVisible)]="disableModalVisible"
+        [nzTitle]="'T\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp (MFA)' | transloco"
+        [nzContent]="modalContent"
+        [nzFooter]="modalFooter"
+        (nzOnCancel)="closeDisableModal()"
+      >
+        <ng-template #modalContent>
+          <p>{{ '\u0110\u1EC3 t\u1EAFt x\xE1c th\u1EF1c 2 l\u1EDBp, vui l\xF2ng nh\u1EADp m\xE3 x\xE1c th\u1EF1c OTP hi\u1EC7n t\u1EA1i ho\u1EB7c m\u1ED9t m\xE3 kh\xF4i ph\u1EE5c d\u1EF1 ph\xF2ng:' | transloco }}</p>
+          <div style="margin-top: 16px;">
+            <input nz-input [(ngModel)]="disableCode" [placeholder]="'Nh\u1EADp m\xE3 OTP ho\u1EB7c m\xE3 d\u1EF1 ph\xF2ng' | transloco" class="premium-input" style="text-align: center; font-size: 16px;" maxlength="10" />
+          </div>
+        </ng-template>
+        <ng-template #modalFooter>
+          <button nz-button nzType="default" (click)="closeDisableModal()" [disabled]="loading">{{ 'H\u1EE7y' | transloco }}</button>
+          <button nz-button nzType="primary" nzDanger (click)="disableMfa()" [nzLoading]="loading">{{ 'X\xE1c nh\u1EADn t\u1EAFt' | transloco }}</button>
+        </ng-template>
+      </nz-modal>
     </div>
-  `, styles: ["/* angular:styles/component:css;70efadc8f01df98a16b477d44f79bf19b355eff90c2a62fef78074449633cbfa;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts */\n.authorize-info-container {\n  padding: 0;\n}\n.page-header {\n  margin-bottom: 24px;\n}\n.subtitle {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content {\n  padding: 16px 0;\n}\n.info-card {\n  margin-bottom: 24px;\n}\n.claims-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice span {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n/*# sourceMappingURL=authorize-info.component.css.map */\n"] }]
+  `, styles: ["/* angular:styles/component:css;ac540cad15c2c07e7329f2569e4636c02b9d252409a7ea0e04b6aab725a5b4dd;/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/frontend/web/projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts */\n.authorize-info-container {\n  padding: 0;\n}\n.page-header {\n  margin-bottom: 24px;\n}\n.subtitle {\n  color: rgba(0, 0, 0, 0.45);\n  margin-top: -16px;\n}\n.tab-content {\n  padding: 16px 0;\n}\n.info-card {\n  margin-bottom: 24px;\n}\n.claims-list {\n  display: flex;\n  flex-wrap: wrap;\n  gap: 8px;\n}\n.empty-text {\n  color: rgba(0, 0, 0, 0.25);\n  font-style: italic;\n}\n.admin-notice {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  text-align: center;\n  padding: 16px;\n}\n.admin-notice span {\n  font-size: 48px;\n  margin-bottom: 16px;\n}\ncode {\n  background: #f5f5f5;\n  padding: 2px 4px;\n  border-radius: 4px;\n  font-size: 12px;\n}\n.mfa-tab {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n  width: 100%;\n}\n.mfa-enabled-container,\n.mfa-disabled-container {\n  width: 100%;\n  max-width: 600px;\n}\n.text-center {\n  text-align: center;\n}\n.green-icon {\n  font-size: 64px;\n  color: #52c41a;\n  margin-bottom: 16px;\n}\n.mfa-status-title {\n  font-size: 20px;\n  font-weight: 600;\n  margin-bottom: 8px;\n}\n.mfa-status-desc {\n  color: rgba(0, 0, 0, 0.45);\n  margin-bottom: 24px;\n  line-height: 1.5;\n}\n.mfa-provider-badge {\n  margin-bottom: 24px;\n  background: rgba(0, 0, 0, 0.02);\n  padding: 12px;\n  border-radius: 8px;\n  border: 1px dashed rgba(0, 0, 0, 0.1);\n  display: inline-block;\n  width: 100%;\n  box-sizing: border-box;\n}\n.mfa-provider-badge .label {\n  margin-right: 8px;\n  font-size: 14px;\n  color: rgba(0, 0, 0, 0.65);\n}\n.provider-selector-section {\n  margin-top: 16px;\n}\n.provider-label {\n  font-size: 14px;\n}\n.mfa-intro-text {\n  color: rgba(0, 0, 0, 0.65);\n  line-height: 1.6;\n}\n.qr-code-wrapper {\n  background: white;\n  padding: 16px;\n  border: 1px solid #f0f0f0;\n  border-radius: 8px;\n  display: inline-block;\n  margin: 16px 0;\n  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n}\n.mfa-qr-img {\n  width: 200px;\n  height: 200px;\n  display: block;\n}\n.secret-key-box,\n.destination-box {\n  background: #fafafa;\n  border: 1px solid #f0f0f0;\n  padding: 12px;\n  border-radius: 6px;\n  font-size: 16px;\n  letter-spacing: 1px;\n  margin: 12px 0;\n  display: inline-block;\n}\n.destination-box {\n  display: flex;\n  align-items: center;\n  gap: 8px;\n  color: #1890ff;\n  justify-content: center;\n}\n.helper-text {\n  color: rgba(0, 0, 0, 0.45);\n  font-size: 13px;\n  margin-top: 8px;\n}\n.success-notice {\n  display: flex;\n  align-items: center;\n  justify-content: center;\n  gap: 12px;\n  margin-bottom: 16px;\n}\n.success-notice span {\n  font-size: 32px;\n}\n.success-notice h4 {\n  margin: 0;\n  font-size: 18px;\n  color: #52c41a;\n}\n.backup-codes-warning {\n  background: #fffbe6;\n  border: 1px solid #ffe58f;\n  padding: 12px 16px;\n  border-radius: 8px;\n  margin-bottom: 24px;\n}\n.warning-text {\n  color: #d46b08;\n  font-size: 13px;\n  line-height: 1.5;\n  margin: 0;\n}\n.backup-codes-grid {\n  display: grid;\n  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));\n  gap: 12px;\n  margin-bottom: 24px;\n}\n.backup-code-item {\n  background: #f5f5f5;\n  border: 1px solid #d9d9d9;\n  border-radius: 6px;\n  padding: 10px;\n  text-align: center;\n  font-size: 15px;\n  font-weight: bold;\n}\n.backup-code-item code {\n  background: transparent;\n  padding: 0;\n}\n.animate-fade-in {\n  animation: fadeIn 0.4s ease-out;\n}\n@keyframes fadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(10px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n/*# sourceMappingURL=authorize-info.component.css.map */\n"] }]
   }], null, null);
 })();
 (() => {
-  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AuthorizeInfoComponent, { className: "AuthorizeInfoComponent", filePath: "projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts", lineNumber: 139 });
+  (typeof ngDevMode === "undefined" || ngDevMode) && \u0275setClassDebugInfo(AuthorizeInfoComponent, { className: "AuthorizeInfoComponent", filePath: "projects/tot/business-oidc/src/lib/authorize-info/authorize-info.component.ts", lineNumber: 453 });
 })();
 
 // projects/tot/business-oidc/src/lib/notify/notify.component.ts
@@ -7751,4 +8489,4 @@ export {
   RoleListComponent,
   UserListComponent
 };
-//# sourceMappingURL=chunk-SHULCWTZ.js.map
+//# sourceMappingURL=chunk-XDFOZ7LB.js.map

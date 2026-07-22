@@ -57,6 +57,12 @@ export class LoginComponent implements OnInit {
     remember: [true],
   });
 
+  requiresMfa = false;
+  mfaToken = '';
+  mfaForm = this.fb.group({
+    code: ['', [Validators.required]]
+  });
+
   loading = false;
   ssoClientName: string | null = null;
   ssoRedirectUri: string | null = null;
@@ -132,6 +138,17 @@ export class LoginComponent implements OnInit {
       try {
         const response = await this.authService.login(this.validateForm.value);
 
+        if (response.requiresMfa) {
+          this.requiresMfa = true;
+          this.mfaToken = response.mfaToken;
+          this.loading = false;
+          this.notification.info(
+            this.translate.translate('Xác thực 2 lớp'),
+            this.translate.translate('Vui lòng nhập mã xác thực OTP gửi đến thiết bị của bạn hoặc mã dự phòng')
+          );
+          return;
+        }
+
         if (this.handleRedirect()) return;
 
         if (response.mustChangePassword) {
@@ -160,6 +177,49 @@ export class LoginComponent implements OnInit {
         }
       });
     }
+  }
+
+  async submitMfaForm(): Promise<void> {
+    if (this.mfaForm.valid) {
+      this.loading = true;
+      try {
+        const code = this.mfaForm.value.code!;
+        const response = await this.authService.verifyMfa(this.mfaToken, code);
+
+        if (this.handleRedirect()) return;
+
+        if (response.mustChangePassword) {
+          this.notification.warning(
+            this.translate.translate('Yêu cầu đổi mật khẩu'),
+            this.translate.translate('Bạn cần đổi mật khẩu mặc định trước khi tiếp tục'),
+          );
+          this.router.navigate(['/modules/core-infra-auth/change-password']);
+        } else {
+          this.router.navigate(['/']);
+        }
+      } catch (e: any) {
+        console.error(e);
+        this.notification.error(
+          this.translate.translate('Lỗi'),
+          this.translate.translate(e.error?.message || 'Mã xác thực không hợp lệ'),
+        );
+      } finally {
+        this.loading = false;
+      }
+    } else {
+      Object.values(this.mfaForm.controls).forEach((control) => {
+        if (control.invalid) {
+          control.markAsDirty();
+          control.updateValueAndValidity({ onlySelf: true });
+        }
+      });
+    }
+  }
+
+  cancelMfa(): void {
+    this.requiresMfa = false;
+    this.mfaToken = '';
+    this.mfaForm.reset();
   }
 
   async loginWithGoogle() {
