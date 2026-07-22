@@ -71,3 +71,4 @@ A.I workforce (google antigravity-ide)
                     end loop
                 viết Yêu cầu A.I chỉnh sửa vào whattodo.md 
 
+Về tương lai việc có 1 MCP (model context protocol) để người dùng có thể dùng dạng như antigravity, claude desktop để có thể tương tác với hệ thống, hệ thống cần thiết kế thêm ngoài restful api cần thiết kế cả MCP để A.I có thể làm việc với hệ thống thông qua MCP 
