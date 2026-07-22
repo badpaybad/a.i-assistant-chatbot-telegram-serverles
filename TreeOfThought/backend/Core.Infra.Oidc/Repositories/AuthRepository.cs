@@ -582,6 +582,19 @@ public class AuthRepository : IAuthRepository
                 // Log or handle other creation errors
                 Console.WriteLine($"Table creation info: {ex.Message}");
             }
+
+            // Dynamically ensure new MFA columns exist on Users table
+            try
+            {
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"IsMfaEnabled\" boolean NOT NULL DEFAULT false;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"MfaSecret\" text NULL;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"MfaBackupCodes\" text NULL;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"PreferredMfaProvider\" text NULL;");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"MFA column migration info: {ex.Message}");
+            }
         }
     }
 }

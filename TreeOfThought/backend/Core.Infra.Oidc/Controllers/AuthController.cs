@@ -158,6 +158,32 @@ public class AuthController : ControllerBase
 
       Console.WriteLine($"[AUTH] Authentication successful for user: {user.Username} (ID: {user.Id})");
 
+      // Check if MFA is enabled for the user
+      if (user.IsMfaEnabled)
+      {
+        var mfaToken = Guid.NewGuid().ToString("N");
+        await _sessionService.SaveAuthCodeAsync("temp_mfa_" + mfaToken, user.Id.ToString(), TimeSpan.FromMinutes(5));
+
+        var providerName = user.PreferredMfaProvider ?? "Totp";
+        try
+        {
+          var provider = _authService.GetMfaProvider(providerName);
+          await provider.SendCodeAsync(user);
+        }
+        catch (Exception ex)
+        {
+          Console.WriteLine($"[AUTH] MFA SendCode error for {user.Username}: {ex.Message}");
+        }
+
+        Console.WriteLine($"[AUTH] MFA required for user: {user.Username}. Returning temp session token.");
+        return Ok(new
+        {
+          requiresMfa = true,
+          mfaToken = mfaToken,
+          provider = providerName
+        });
+      }
+
       Console.WriteLine("[AUTH] Creating SSO Session Cookie...");
       await CreateSsoSessionCookie(user);
       Console.WriteLine("[AUTH] SSO Session Cookie created.");
@@ -557,6 +583,123 @@ public class AuthController : ControllerBase
     {
       Console.WriteLine($"[AUTH] Error registering FCM token for user ID {userId}: {ex.Message}");
       return StatusCode(500, new { message = "Error registering FCM token", error = ex.Message });
+    }
+  }
+
+  [HttpPost("verify-mfa")]
+  public async Task<IActionResult> VerifyMfa([FromBody] VerifyMfaRequest request)
+  {
+    if (string.IsNullOrEmpty(request.MfaToken) || string.IsNullOrEmpty(request.Code))
+    {
+      return BadRequest(new { message = "MfaToken and Code are required" });
+    }
+
+    var userIdStr = await _sessionService.GetAuthCodeAsync<string>("temp_mfa_" + request.MfaToken);
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+    {
+      return BadRequest(new { message = "Invalid or expired MFA token" });
+    }
+
+    var user = await _authService.GetUserByIdAsync(userId);
+    if (user == null)
+    {
+      return NotFound(new { message = "User not found" });
+    }
+
+    var isValid = await _authService.VerifyMfaCodeAsync(user, request.Code);
+    if (!isValid)
+    {
+      return BadRequest(new { message = "Invalid MFA code" });
+    }
+
+    // MFA code is valid! Authenticate fully:
+    await _sessionService.RemoveAuthCodeAsync("temp_mfa_" + request.MfaToken);
+
+    Console.WriteLine($"[AUTH] MFA successful for user: {user.Username} (ID: {user.Id})");
+
+    Console.WriteLine("[AUTH] Creating SSO Session Cookie...");
+    await CreateSsoSessionCookie(user);
+    Console.WriteLine("[AUTH] SSO Session Cookie created.");
+
+    Console.WriteLine("[AUTH] Generating JWT Token...");
+    var token = await _authService.GenerateJwtToken(user);
+
+    Console.WriteLine("[AUTH] Generating Firebase Token...");
+    var firebaseToken = await _authService.GenerateFirebaseToken(user);
+    var firebaseAccessToken = await _authService.GenerateFirebaseAccessTokenAsync();
+
+    return Ok(new
+    {
+      token,
+      firebaseToken,
+      firebaseAccessToken,
+      mustChangePassword = user.MustChangePassword,
+      user = new { user.Username, user.DisplayName, user.Email }
+    });
+  }
+
+  [HttpPost("mfa/setup")]
+  [AppAuthorize]
+  public async Task<IActionResult> SetupMfa([FromBody] MfaSetupRequest request)
+  {
+    var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+      return Unauthorized();
+
+    try
+    {
+      var result = await _authService.SetupMfaAsync(userId, request.Provider);
+      return Ok(result);
+    }
+    catch (Exception ex)
+    {
+      return BadRequest(new { message = ex.Message });
+    }
+  }
+
+  [HttpPost("mfa/enable")]
+  [AppAuthorize]
+  public async Task<IActionResult> EnableMfa([FromBody] MfaEnableRequest request)
+  {
+    var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+      return Unauthorized();
+
+    try
+    {
+      var success = await _authService.VerifyAndEnableMfaAsync(userId, request.Provider, request.Code);
+      if (success)
+      {
+        return Ok(new { message = "MFA enabled successfully" });
+      }
+      return BadRequest(new { message = "Invalid code" });
+    }
+    catch (Exception ex)
+    {
+      return BadRequest(new { message = ex.Message });
+    }
+  }
+
+  [HttpPost("mfa/disable")]
+  [AppAuthorize]
+  public async Task<IActionResult> DisableMfa([FromBody] MfaDisableRequest request)
+  {
+    var userIdStr = User.FindFirst(AuthConstants.UserIdClaim)?.Value;
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+      return Unauthorized();
+
+    try
+    {
+      var success = await _authService.DisableMfaAsync(userId, request.Code);
+      if (success)
+      {
+        return Ok(new { message = "MFA disabled successfully" });
+      }
+      return BadRequest(new { message = "Invalid code" });
+    }
+    catch (Exception ex)
+    {
+      return BadRequest(new { message = ex.Message });
     }
   }
 

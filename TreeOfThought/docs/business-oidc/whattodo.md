@@ -182,3 +182,19 @@ paging của /modules/core-infra-auth/claims không hoạt động kiểm ra và
 **cập nhật 2026-07-09 15:25:21**
 ở esp32/whattodo.md có đề cập Google OAuth 2.0 Access Token (đại diện cho services account )  khác với Custom token (custom token khi client nhận được cần exchange id token rồi mới gọi được dịch vụ firebase). cần bổ xung cho việc đăng nhập qua oidc sẽ trả ra cả 2 loại token cho client. 
 FirebaseService cần bổ xung hàm để trả ra thêm Google OAuth 2.0 Access Token (đại diện cho services account ). client đăng nhập xong cũng sẽ nhận được cả 2 loại token . 
+
+**cập nhật 2026-07-22 17:42:00**
+Bổ sung tính năng xác thực 2 lớp (MFA) vào phân hệ OIDC:
+- Hỗ trợ tuỳ chọn cấu hình bật/tắt MFA toàn cục và mã hoá khoá bí mật qua cấu hình `appsettings.json`.
+- Thiết kế dạng Provider Pattern (`IMfaProvider`) với các lớp cụ thể:
+  - `TotpMfaProvider` (Google/Microsoft Authenticator)
+  - `SmsMfaProvider` (Gửi SMS OTP giả lập qua Console)
+  - `EmailMfaProvider` (Gửi Email OTP giả lập qua Console)
+- Bổ sung các trường `IsMfaEnabled`, `MfaSecret`, `MfaBackupCodes` và `PreferredMfaProvider` vào bảng `Users` (tự động cập nhật qua ALTER TABLE ở database startup).
+- Cập nhật luồng đăng nhập trong API `/api/auth/login`:
+  - Nếu mật khẩu hợp lệ và người dùng bật MFA, lưu phiên tạm vào Redis và trả về trạng thái yêu cầu MFA `{ "requiresMfa": true, "mfaToken": "..." }`.
+- Viết mới các API:
+  - `POST /api/auth/verify-mfa`: Nhận `mfaToken` + `code` để hoàn tất đăng nhập và cấp token chính thức.
+  - `POST /api/auth/mfa/setup`: Sinh thông tin cài đặt (mã QR/Secret) cho người dùng đăng nhập.
+  - `POST /api/auth/mfa/enable`: Xác nhận mã OTP đầu tiên để chính thức bật MFA và sinh mã dự phòng.
+  - `POST /api/auth/mfa/disable`: Xác nhận tắt MFA.

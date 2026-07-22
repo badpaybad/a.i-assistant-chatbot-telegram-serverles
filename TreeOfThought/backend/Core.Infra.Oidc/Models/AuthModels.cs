@@ -102,3 +102,25 @@ public class RegisterFcmRequest
     public string? DeviceId { get; set; }
     public string? AppType { get; set; }
 }
+
+public class VerifyMfaRequest
+{
+    public string MfaToken { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
+}
+
+public class MfaSetupRequest
+{
+    public string Provider { get; set; } = "Totp";
+}
+
+public class MfaEnableRequest
+{
+    public string Provider { get; set; } = "Totp";
+    public string Code { get; set; } = string.Empty;
+}
+
+public class MfaDisableRequest
+{
+    public string Code { get; set; } = string.Empty;
+}

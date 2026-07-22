@@ -20,6 +20,12 @@ public class User : IBaseTrackingEntity<Guid>
     
     public bool MustChangePassword { get; set; } = false;
 
+    // MFA Configuration
+    public bool IsMfaEnabled { get; set; } = false;
+    public string? MfaSecret { get; set; }
+    public string? MfaBackupCodes { get; set; }
+    public string? PreferredMfaProvider { get; set; }
+
     // IBaseTrackingEntity implementation
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

@@ -15,6 +15,7 @@ public class AuthService
     private readonly FirebaseService _firebaseService;
     private readonly IUserSessionService _sessionService;
     private readonly IJwtService _jwtService;
+    private readonly System.Collections.Generic.IEnumerable<IMfaProvider> _mfaProviders;
 
     private static bool _isBeClaimsSynced = false;
     private static bool _isFeClaimsSynced = false;
@@ -25,13 +26,15 @@ public class AuthService
         IAuthRepository userRepo, 
         FirebaseService firebaseService, 
         IUserSessionService sessionService,
-        IJwtService jwtService)
+        IJwtService jwtService,
+        System.Collections.Generic.IEnumerable<IMfaProvider> mfaProviders)
     {
         _config = config;
         _userRepo = userRepo;
         _firebaseService = firebaseService;
         _sessionService = sessionService;
         _jwtService = jwtService;
+        _mfaProviders = mfaProviders;
     }
 
     public async Task InitializeAsync()
@@ -383,6 +386,197 @@ public class AuthService
 
         var user = await _userRepo.GetUserByIdAsync(data.UserId);
         return (user, data.Nonce);
+    }
+
+    public IMfaProvider GetMfaProvider(string providerName)
+    {
+        return _mfaProviders.FirstOrDefault(p => p.ProviderName.Equals(providerName, StringComparison.OrdinalIgnoreCase))
+            ?? throw new NotSupportedException($"MFA Provider '{providerName}' is not supported.");
+    }
+
+    private string EncryptSecret(string plainText)
+    {
+        var encryptionKey = _config["Mfa:EncryptionKey"] ?? "TreeOfThoughtSecretKeyForMfaAES256";
+        if (Core.Infra.Base.StringCipher.AesEncript(plainText, encryptionKey, out string encrypted))
+        {
+            return encrypted;
+        }
+        throw new Exception("MFA secret encryption failed");
+    }
+
+    private string DecryptSecret(string cipherText)
+    {
+        var encryptionKey = _config["Mfa:EncryptionKey"] ?? "TreeOfThoughtSecretKeyForMfaAES256";
+        if (Core.Infra.Base.StringCipher.AesDecript(cipherText, encryptionKey, out string decrypted))
+        {
+            return decrypted;
+        }
+        throw new Exception("MFA secret decryption failed");
+    }
+
+    public async Task<MfaSetupResult> SetupMfaAsync(Guid userId, string providerName)
+    {
+        var user = await _userRepo.GetUserByIdAsync(userId);
+        if (user == null) throw new Exception("User not found");
+
+        var provider = GetMfaProvider(providerName);
+        var result = await provider.SetupAsync(user);
+        
+        if (result.Success && !string.IsNullOrEmpty(result.SecretKey))
+        {
+            // Store the pending secret temporarily in Redis for verification before enabling
+            var cacheKey = $"pending_mfa_secret:{user.Id}";
+            await _sessionService.SaveAuthCodeAsync(cacheKey, result.SecretKey, TimeSpan.FromMinutes(10));
+        }
+
+        return result;
+    }
+
+    public async Task<bool> VerifyAndEnableMfaAsync(Guid userId, string providerName, string code)
+    {
+        var user = await _userRepo.GetUserByIdAsync(userId);
+        if (user == null) throw new Exception("User not found");
+
+        var provider = GetMfaProvider(providerName);
+        
+        string secret;
+        if (providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
+        {
+            var cacheKey = $"pending_mfa_secret:{user.Id}";
+            var cachedSecret = await _sessionService.GetAuthCodeAsync<string>(cacheKey);
+            if (string.IsNullOrEmpty(cachedSecret)) return false;
+            secret = cachedSecret;
+        }
+        else
+        {
+            // For out-of-band MFA (SMS/Email), we verify using the provider's logic
+            // (e.g. verifying the OTP sent to their device/email)
+            secret = providerName;
+        }
+
+        // We create a temporary user object with the raw secret to verify
+        var tempUser = new User { Email = user.Email, Username = user.Username, MfaSecret = secret, Id = user.Id };
+        bool isValid = await provider.VerifyCodeAsync(tempUser, code);
+        
+        if (isValid)
+        {
+            user.IsMfaEnabled = true;
+            user.PreferredMfaProvider = providerName;
+            
+            if (providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
+            {
+                user.MfaSecret = EncryptSecret(secret);
+                // Clean up cache
+                await _sessionService.RemoveAuthCodeAsync($"pending_mfa_secret:{user.Id}");
+            }
+            
+            // Generate recovery codes (simulated, e.g. 5 random codes)
+            var recoveryCodes = new System.Collections.Generic.List<string>();
+            var rawRecoveryCodes = new System.Collections.Generic.List<string>();
+            for (int i = 0; i < 5; i++)
+            {
+                var rc = new Random().Next(10000000, 99999999).ToString();
+                rawRecoveryCodes.Add(rc);
+                recoveryCodes.Add(BCrypt.Net.BCrypt.HashPassword(rc));
+            }
+            user.MfaBackupCodes = string.Join(",", recoveryCodes);
+            
+            await _userRepo.UpdateUserAsync(user);
+            
+            Console.WriteLine($"[MFA] MFA enabled for user {user.Username}. Backup codes: {string.Join(", ", rawRecoveryCodes)}");
+            return true;
+        }
+
+        return false;
+    }
+
+    public async Task<bool> DisableMfaAsync(Guid userId, string code)
+    {
+        var user = await _userRepo.GetUserByIdAsync(userId);
+        if (user == null || !user.IsMfaEnabled) return false;
+
+        var providerName = user.PreferredMfaProvider ?? "Totp";
+        var provider = GetMfaProvider(providerName);
+
+        var decryptedUser = new User
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            MfaSecret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.MfaSecret) 
+                ? DecryptSecret(user.MfaSecret) 
+                : null
+        };
+
+        bool isValid = await provider.VerifyCodeAsync(decryptedUser, code);
+        if (!isValid)
+        {
+            // Check if backup codes match
+            if (!string.IsNullOrEmpty(user.MfaBackupCodes))
+            {
+                var codes = user.MfaBackupCodes.Split(',');
+                foreach (var hashedCode in codes)
+                {
+                    if (BCrypt.Net.BCrypt.Verify(code, hashedCode))
+                    {
+                        isValid = true;
+                        // Remove this code
+                        user.MfaBackupCodes = string.Join(",", codes.Where(c => c != hashedCode));
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (isValid)
+        {
+            user.IsMfaEnabled = false;
+            user.MfaSecret = null;
+            user.MfaBackupCodes = null;
+            user.PreferredMfaProvider = null;
+            await _userRepo.UpdateUserAsync(user);
+            return true;
+        }
+
+        return false;
+    }
+
+    public async Task<bool> VerifyMfaCodeAsync(User user, string code)
+    {
+        if (!user.IsMfaEnabled) return true;
+
+        var providerName = user.PreferredMfaProvider ?? "Totp";
+        var provider = GetMfaProvider(providerName);
+
+        var decryptedUser = new User
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email,
+            MfaSecret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.MfaSecret) 
+                ? DecryptSecret(user.MfaSecret) 
+                : null
+        };
+
+        bool isValid = await provider.VerifyCodeAsync(decryptedUser, code);
+        if (!isValid && !string.IsNullOrEmpty(user.MfaBackupCodes))
+        {
+            // Fallback to backup recovery codes
+            var codes = user.MfaBackupCodes.Split(',');
+            foreach (var hashedCode in codes)
+            {
+                if (BCrypt.Net.BCrypt.Verify(code, hashedCode))
+                {
+                    isValid = true;
+                    // Remove used backup code
+                    user.MfaBackupCodes = string.Join(",", codes.Where(c => c != hashedCode));
+                    await _userRepo.UpdateUserAsync(user);
+                    break;
+                }
+            }
+        }
+
+        return isValid;
     }
 }
 

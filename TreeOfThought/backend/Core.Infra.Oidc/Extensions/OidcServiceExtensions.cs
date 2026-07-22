@@ -88,6 +88,11 @@ public static class OidcServiceExtensions
         services.AddScoped<AuthService>();
         services.AddScoped<ClaimScannerService>();
 
+        // MFA Providers
+        services.AddScoped<IMfaProvider, TotpMfaProvider>();
+        services.AddScoped<IMfaProvider, SmsMfaProvider>();
+        services.AddScoped<IMfaProvider, EmailMfaProvider>();
+
         return services;
     }
 

@@ -218,4 +218,81 @@ Chúng ta tạo ra một DB Context riêng biệt mang tên `NotifyDbContext` đ
    - Khi Admin mở Modal gửi thông báo cho một người dùng bất kỳ:
      - Component sẽ lấy token của trình duyệt hiện tại thông qua `FirebaseService.getCurrentFCMToken()` (đã được cache toàn cục khi tải trang).
      - Token này sẽ được gắn thẻ đặc biệt `(Thiết bị hiện tại)` và hiển thị ngay trên danh sách lựa chọn thiết bị nhận của Modal.
-     - Nếu token thiết bị hiện tại chưa được đăng ký trong DB của user nhận tin, hệ thống tự động chèn thêm một tùy chọn giả định `Thiết bị hiện tại (Chưa lưu)` lên đầu danh sách. Điều này cho phép gửi thông báo thử nghiệm trực tiếp đến chính trình duyệt đang thao tác một cách tức thì và vô cùng thuận lợi.
+      - Nếu token thiết bị hiện tại chưa được đăng ký trong DB của user nhận tin, hệ thống tự động chèn thêm một tùy chọn giả định `Thiết bị hiện tại (Chưa lưu)` lên đầu danh sách. Điều này cho phép gửi thông báo thử nghiệm trực tiếp đến chính trình duyệt đang thao tác một cách tức thì và vô cùng thuận lợi.
+
+---
+
+## 4. Tích hợp Xác thực 2 lớp (MFA) - Cập nhật 2026-07-22
+
+Dưới đây là tài liệu chi tiết về kiến trúc, cách hoạt động và hướng dẫn sử dụng tính năng Xác thực 2 lớp (MFA/2FA) đã được tích hợp vào phân hệ OIDC Server.
+
+### A. Cấu trúc cấu hình (`appsettings.json`)
+Cấu hình MFA nằm dưới khóa `"Mfa"` trong file cấu hình dự án:
+```json
+"Mfa": {
+  "Enabled": false, // Bật/tắt tính năng MFA toàn hệ thống
+  "EncryptionKey": "TreeOfThoughtSecretKeyForMfaAES256", // Khóa dùng để mã hóa bí mật TOTP trước khi lưu DB
+  "Providers": {
+    "Totp": {
+      "IssuerName": "TreeOfThought" // Tên hiển thị trên Google Authenticator
+    }
+  }
+}
+```
+
+### B. Cơ chế lưu trữ và Mã hóa bí mật
+- Các thuộc tính bổ sung trên bảng `Users` bao gồm:
+  - `IsMfaEnabled` (bool): Đánh dấu user đã hoàn tất kích hoạt MFA.
+  - `MfaSecret` (string): Khóa bí mật (Base32) đã được **mã hóa đối xứng AES-256-CBC** sử dụng khóa `EncryptionKey` cấu hình trong `appsettings.json`. Điều này ngăn chặn việc quản trị viên hoặc bên thứ ba đọc trộm khóa bí mật trực tiếp từ database.
+  - `MfaBackupCodes` (string): Chuỗi các mã dự phòng (recovery codes) được băm bằng giải thuật **BCrypt**. Khi mất thiết bị, người dùng có thể sử dụng các mã này để đăng nhập/tắt MFA (mỗi mã chỉ sử dụng được 1 lần, sau khi dùng sẽ bị xóa khỏi danh sách).
+  - `PreferredMfaProvider` (string): Tên nhà cung cấp (ví dụ: `Totp`, `Sms`, `Email`).
+- Việc cập nhật cấu trúc DB được xử lý tự động khi khởi động ứng dụng qua phương thức `EnsureTablesCreatedAsync` của repository.
+
+### C. Luồng Đăng nhập 2 bước (MFA Challenge)
+1. Người dùng gửi Username/Password đến `POST /api/auth/login`.
+2. Hệ thống kiểm tra thông tin đăng nhập:
+   - Nếu sai: Trả về `Unauthorized`.
+   - Nếu đúng và `IsMfaEnabled == false`: Tiến hành tạo phiên SSO Cookie và trả về JWT/Firebase tokens như bình thường.
+   - Nếu đúng và `IsMfaEnabled == true`:
+     - Không sinh JWT và không tạo SSO Cookie.
+     - Sinh mã GUID làm `mfaToken` tạm thời.
+     - Lưu UserId và Provider tương ứng vào Redis (`IUserSessionService`) thông qua khóa `"temp_mfa_" + mfaToken` với thời hạn hết hạn là 5 phút.
+     - Nếu Provider yêu cầu gửi mã (SMS/Email), hệ thống tự động sinh OTP 6 số, lưu vào Redis và gửi đi. Với `Totp` (offline) thì bỏ qua bước gửi.
+     - Trả về phản hồi:
+       ```json
+       {
+         "requiresMfa": true,
+         "mfaToken": "GUID-TOKEN-TAM-THOI",
+         "provider": "Totp"
+       }
+       ```
+3. Người dùng nhập mã OTP từ ứng dụng xác thực (hoặc từ SMS/Email nhận được).
+4. Client gửi yêu cầu đến `POST /api/auth/verify-mfa`:
+   ```json
+   {
+     "mfaToken": "GUID-TOKEN-TAM-THOI",
+     "code": "123456"
+   }
+   ```
+5. Backend lấy UserId từ Redis dựa trên `mfaToken`, tải thông tin User, giải mã `MfaSecret` (đối với TOTP) và tiến hành so khớp mã OTP.
+6. Nếu khớp: Xóa `mfaToken` khỏi Redis, thiết lập SSO Session Cookie, sinh đầy đủ JWT/Firebase Access Tokens và trả về cho Client.
+
+### D. Luồng kích hoạt xác thực 2 lớp (MFA Setup)
+Để kích hoạt MFA cho tài khoản, người dùng thực hiện 3 bước:
+1. **Lấy thông tin cài đặt (`POST /api/auth/mfa/setup`)**:
+   - Gửi yêu cầu kèm Token đăng nhập của phiên hiện tại.
+   - Trả về mã bí mật `secretKey` và chuỗi URI quét mã QR `qrCodeUri`.
+   - Lưu `secretKey` tạm thời vào Redis dưới khóa `"pending_mfa_secret:" + UserId` (thời hạn 10 phút).
+2. **Quét mã QR**: Người dùng quét mã QR vào ứng dụng xác thực (Google/Microsoft Authenticator) để nhận chuỗi OTP đổi mới mỗi 30 giây.
+3. **Xác nhận kích hoạt (`POST /api/auth/mfa/enable`)**:
+   - Gửi yêu cầu chứa mã OTP hiện tại: `{ "Provider": "Totp", "Code": "123456" }`.
+   - Backend lấy mã bí mật tạm thời từ Redis, đối chiếu mã OTP.
+   - Nếu hợp lệ: Mã hóa mã bí mật, cập nhật `IsMfaEnabled = true` và `MfaSecret` vào DB. Đồng thời, sinh ra **5 mã khôi phục dự phòng** (được băm bằng BCrypt) trả về cho người dùng lưu trữ an toàn.
+
+### E. Luồng hủy kích hoạt (MFA Disable)
+- Người dùng gửi yêu cầu đến `POST /api/auth/mfa/disable` kèm mã OTP hiện tại (hoặc mã dự phòng):
+  ```json
+  { "Code": "123456" }
+  ```
+- Backend đối chiếu mã OTP hoặc kiểm tra danh sách mã khôi phục dự phòng.
+- Nếu hợp lệ, gỡ bỏ cấu hình MFA (`IsMfaEnabled = false`, xóa `MfaSecret`, `MfaBackupCodes` và `PreferredMfaProvider` khỏi DB).
