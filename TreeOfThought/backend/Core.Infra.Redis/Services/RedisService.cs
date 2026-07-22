@@ -30,7 +30,7 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
         {
             try
             {
-                return JsonSerializer.Deserialize<T>(str);
+                return JsonSerializer.Deserialize<T>(str, CqrsJsonOptions.Default);
             }
             catch
             {
@@ -38,7 +38,7 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
             }
         }
         
-        return JsonSerializer.Deserialize<T>(str);
+        return JsonSerializer.Deserialize<T>(str, CqrsJsonOptions.Default);
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiry = null)
@@ -81,14 +81,14 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
     {
         var value = await _db.ListRightPopAsync(queueName);
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value.ToString()!);
+        return JsonSerializer.Deserialize<T>(value.ToString()!, CqrsJsonOptions.Default);
     }
 
     public async Task<T?> DequeueReliableAsync<T>(string queueName, string processingQueueName)
     {
         var value = await _db.ListRightPopLeftPushAsync(queueName, processingQueueName);
         if (!value.HasValue) return default;
-        return JsonSerializer.Deserialize<T>(value.ToString()!);
+        return JsonSerializer.Deserialize<T>(value.ToString()!, CqrsJsonOptions.Default);
     }
 
     public async Task<DequeuedMessage<T>?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
