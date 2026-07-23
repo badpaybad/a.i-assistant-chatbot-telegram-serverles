@@ -126,7 +126,8 @@ class Gemma4Manager:
                 config = AutoConfig.from_pretrained(model_id, trust_remote_code=True)
                 self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
                 
-                # Setup BitsAndBytes Q4 quantization configuration for CUDA (RTX 3060 8GB VRAM optimization)
+                # Setup BitsAndBytes Q4 NF4 quantization for RTX 3060 8GB VRAM
+                # device_map={"":0} forces ALL layers onto GPU 0 (no CPU offloading)
                 if torch_device == "cuda":
                     from transformers import BitsAndBytesConfig
                     compute_dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
@@ -136,32 +137,32 @@ class Gemma4Manager:
                         bnb_4bit_quant_type="nf4",
                         bnb_4bit_use_double_quant=True
                     )
-                    print(f"[*] Attempting to load HF model in 4-bit (NF4) on GPU...")
+                    print(f"[*] Attempting to load HF model in 4-bit (NF4) fully on RTX 3060 GPU 0...")
                     try:
                         self.hf_model = AutoModelForMultimodalLM.from_pretrained(
                             model_id,
                             config=config,
                             torch_dtype=compute_dtype,
-                            device_map="auto",
+                            device_map={"":0},   # Force 100% on GPU 0 (RTX 3060)
                             quantization_config=quantization_config,
                             trust_remote_code=True,
                             low_cpu_mem_usage=True,
                             attn_implementation="sdpa"
                         )
-                        print(f"[+] Loaded HF Model in 4-bit (NF4) on GPU successfully.")
+                        print(f"[+] Loaded HF Model in 4-bit (NF4) on GPU 0 successfully.")
                     except Exception as q_err:
-                        print(f"[!] Warning: Failed to load with BitsAndBytes Q4 quantization ({q_err}). Falling back to standard GPU precision load...")
+                        print(f"[!] Warning: 4-bit load failed ({q_err}). Falling back to bfloat16 on GPU...")
                         self.hf_model = AutoModelForMultimodalLM.from_pretrained(
                             model_id,
                             config=config,
                             torch_dtype=compute_dtype,
-                            device_map="auto",
+                            device_map={"":0},
                             trust_remote_code=True,
                             low_cpu_mem_usage=True,
                             attn_implementation="sdpa"
                         )
                 else:
-                    print(f"[*] Loading HF model on CPU...")
+                    print(f"[*] Loading HF model on CPU (no CUDA available)...")
                     self.hf_model = AutoModelForMultimodalLM.from_pretrained(
                         model_id,
                         config=config,
@@ -171,12 +172,19 @@ class Gemma4Manager:
                         low_cpu_mem_usage=True,
                         attn_implementation="sdpa"
                     )
-                
+
                 if torch_device == "cpu" and not hasattr(self.hf_model, "quantization_config"):
-                     self.hf_model = self.hf_model.to("cpu")
-                     
+                    self.hf_model = self.hf_model.to("cpu")
+
                 self.hf_model.eval()
                 print(f"[+] Multimodal HF model {model_id} initialization complete.")
+
+                # Log VRAM usage to confirm GPU placement
+                if torch.cuda.is_available():
+                    allocated = torch.cuda.memory_allocated(0) / 1024**3
+                    reserved  = torch.cuda.memory_reserved(0)  / 1024**3
+                    total     = torch.cuda.get_device_properties(0).total_memory / 1024**3
+                    print(f"[GPU] RTX 3060 VRAM: {allocated:.2f}GB allocated | {reserved:.2f}GB reserved | {total:.2f}GB total")
             except Exception as e:
                 print(f"[-] ERROR loading gemma4 HF model: {str(e)}")
                 raise e
@@ -326,32 +334,30 @@ class Gemma4Manager:
                 return_tensors="pt"
             ).to(self.hf_model.device)
 
-            # KV Cache Quantization configuration (Q4/Q8)
+            # Standard GPU cache — fastest for NF4 model on RTX 3060.
+            # NOTE: optimum-quanto / hqq KV Cache runs on CPU kernels → extremely slow.
+            # With E4B 4-bit NF4, VRAM usage is ~3-4GB, no KV quantization needed.
             generate_kwargs = {
                 "max_new_tokens": max_tokens,
                 "do_sample": True,
                 "temperature": 0.7,
                 "top_p": 0.9,
+                "use_cache": True,   # Standard HF dynamic cache (on GPU)
             }
-            
-            # Configure Q4/Q8 KV Cache if optimum-quanto or hqq is available
-            from transformers.cache_utils import is_optimum_quanto_available, is_hqq_available
-            if is_optimum_quanto_available():
-                nbits = globals().get("KV_CACHE_BITS", 4)
-                generate_kwargs["cache_implementation"] = "quantized"
-                generate_kwargs["cache_config"] = {"backend": "quanto", "nbits": nbits}
-                print(f"[*] Using quantized KV Cache (Quanto backend, nbits={nbits})")
-            elif is_hqq_available():
-                nbits = globals().get("KV_CACHE_BITS", 4)
-                generate_kwargs["cache_implementation"] = "quantized"
-                generate_kwargs["cache_config"] = {"backend": "hqq", "nbits": nbits}
-                print(f"[*] Using quantized KV Cache (HQQ backend, nbits={nbits})")
+
+            if torch.cuda.is_available():
+                pre_alloc = torch.cuda.memory_allocated(0) / 1024**3
+                print(f"[GPU] Before generate: {pre_alloc:.2f}GB VRAM allocated")
 
             with torch.no_grad():
                 outputs = self.hf_model.generate(
                     **inputs,
                     **generate_kwargs
                 )
+
+            if torch.cuda.is_available():
+                post_alloc = torch.cuda.memory_allocated(0) / 1024**3
+                print(f"[GPU] After generate:  {post_alloc:.2f}GB VRAM allocated")
                 
             input_len = inputs['input_ids'].shape[1]
             response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=True)
