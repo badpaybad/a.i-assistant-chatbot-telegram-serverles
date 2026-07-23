@@ -12,7 +12,7 @@ from config import *
 # Import shared manager
 from gemma4.manager import get_manager
 
-def transcribe_audio(audio_file_path: str, model_id: str = "google/gemma-4-e4b-it") -> str:
+def transcribe_audio(audio_file_path: str, model_id: str = "google/gemma-4-e4b-it", device: str = "cuda") -> str:
     """
     Chuyển đổi file âm thanh thành văn bản sử dụng mô hình Multimodal Gemma 4.
     Yêu cầu: nạp âm thanh 16kHz mono.
@@ -20,6 +20,7 @@ def transcribe_audio(audio_file_path: str, model_id: str = "google/gemma-4-e4b-i
     Args:
         audio_file_path (str): Đường dẫn đến file âm thanh.
         model_id (str): ID của mô hình Gemma 4.
+        device (str): Thiết bị tính toán (mặc định 'cuda' cho RTX 3060).
     
     Returns:
         str: Văn bản đã được chuyển đổi (Tiếng Việt).
@@ -35,8 +36,8 @@ def transcribe_audio(audio_file_path: str, model_id: str = "google/gemma-4-e4b-i
         # Đảm bảo là float32 và nằm trong khoảng [-1, 1] (librosa mặc định thực hiện việc này)
         audio_array = audio_array.astype(np.float32)
 
-        # Sử dụng manager singleton để lấy model/processor
-        manager = get_manager(model_id)
+        # Sử dụng manager singleton để lấy model/processor trên RTX 3060 GPU
+        manager = get_manager(model_id=model_id, device=device)
         
         # Prompt yêu cầu trích xuất text từ âm thanh bằng tiếng Việt
         prompt = "Hãy lắng nghe âm thanh đính kèm và chuyển đổi nó thành văn bản tiếng Việt chính xác nhất. Không giải thích gì thêm, chỉ trả về nội dung audio."

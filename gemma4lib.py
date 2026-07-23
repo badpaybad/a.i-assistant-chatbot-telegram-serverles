@@ -7,27 +7,21 @@ import datetime
 import json
 import time
 
-# ROCm Optimization for Radeon 780M (gfx1102)
+# CUDA Optimization for NVIDIA RTX 3060 8GB GPU
 # MUST set environment variables BEFORE importing torch or gemma4.manager
-os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-os.environ["HSA_ENABLE_SDMA"] = "1"
-os.environ["MIOPEN_DEBUG_DISABLE_FIND_DB"] = "1"
-os.environ["ROCM_RELAXED_ASIC_CHECK"] = "1"
-os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
 
-# Add the 'gemma4' directory to PATH so bitsandbytes can find our 'rocminfo' shim
+# Add the 'gemma4' directory to PATH
 current_dir = os.path.dirname(os.path.abspath(__file__))
 gemma4_dir = os.path.join(current_dir, "gemma4")
 os.environ["PATH"] = gemma4_dir + os.pathsep + os.environ.get("PATH", "")
 
-# Point to bundled ROCm libraries in torch if they exist
-# Since gemma4lib.py is in the root, project_root is current_dir
+# Point to bundled CUDA libraries in torch if they exist
 project_root = current_dir
 torch_lib_path = os.path.join(project_root, "venv/lib/python3.12/site-packages/torch/lib")
 if os.path.exists(torch_lib_path):
     os.environ["LD_LIBRARY_PATH"] = torch_lib_path + os.pathsep + os.environ.get("LD_LIBRARY_PATH", "")
-    os.environ["ROCM_PATH"] = torch_lib_path
 
 from typing import List, Optional, Union, Dict, Any, Callable
 from pydantic import BaseModel, Field
@@ -351,9 +345,11 @@ class Files:
         return types.FileMetadata(**_FILES_STORE[file_id])
 
 class Client:
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, device: str = "cuda"):
+        import torch
         self.api_key = api_key
-        self.manager = get_manager()
+        device = "cuda" if (device in ["cuda", "gpu"] or device is None) and torch.cuda.is_available() else device
+        self.manager = get_manager(model_id="google/gemma-4-e4b-it", device=device)
         self.models = Models(self.manager)
         self.files = Files()
 

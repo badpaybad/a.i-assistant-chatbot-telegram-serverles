@@ -1,12 +1,8 @@
 import os
 
-# ROCm Optimization for Radeon 780M (gfx1102)
+# CUDA Optimization for NVIDIA RTX 3060 8GB GPU
 # MUST set environment variables BEFORE importing torch or gemma4.manager
-os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-os.environ["HSA_ENABLE_SDMA"] = "1"
-os.environ["MIOPEN_DEBUG_DISABLE_FIND_DB"] = "1"
-os.environ["ROCM_RELAXED_ASIC_CHECK"] = "1"
-os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,max_split_size_mb:128"
 
 import sys
@@ -150,9 +146,9 @@ def get_file_path(file_id: str):
 # --- Helpers ---
 
 def get_gemma_manager():
-    device = "gpu" if torch.cuda.is_available() else "cpu"
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     # Choose engine based on user preference or fallback
-    return get_manager(device=device)
+    return get_manager(model_id="google/gemma-4-e4b-it", device=device)
 
 def process_omni_parts(parts: List[Part]):
     """

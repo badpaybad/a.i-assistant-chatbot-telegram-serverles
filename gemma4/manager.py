@@ -62,7 +62,11 @@ class Gemma4Manager:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, model_id: str = "google/gemma-4-e4b-it", device: str = "cpu", engine: str = "gguf"):
+    def __new__(cls, model_id: str = "google/gemma-4-e4b-it", device: str = "cuda", engine: str = "gguf"):
+        import torch
+        if device in ["cuda", "gpu"] or device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -85,7 +89,11 @@ class Gemma4Manager:
                     cls._instance._load_model(model_id, device, engine)
         return cls._instance
 
-    def _load_model(self, model_id: str, device: str = "cpu", engine: str = "gguf"):
+    def _load_model(self, model_id: str, device: str = "cuda", engine: str = "gguf"):
+        import torch
+        if device in ["cuda", "gpu"] or device is None:
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+
         self.model_id = model_id
         self.device = device
         self.engine = engine
@@ -94,20 +102,25 @@ class Gemma4Manager:
         
         if engine == "gguf":
             # --- GGUF Engine via llama-cpp-python ---
-            model_name = "gemma-4-12b-it"
+            model_name = "gemma-4-e4b-it"
             if "e2b" in model_id.lower() or "2b" in model_id.lower():
                 model_name = "gemma-4-e2b-it"
-                
-            model_dir = os.path.join(base_dir, "model", model_name)
-            
-            if model_name == "gemma-4-e2b-it":
+                model_dir = os.path.join(base_dir, "model", model_name)
                 self.model_path = os.path.join(model_dir, "gemma-4-e2b-it-Q4_K_M.gguf")
                 self.proj_path = os.path.join(model_dir, "mmproj-F16.gguf")
                 self.repo_id = "unsloth/gemma-4-e2b-it-GGUF"
-            else:
+            elif "12b" in model_id.lower():
+                model_name = "gemma-4-12b-it"
+                model_dir = os.path.join(base_dir, "model", model_name)
                 self.model_path = os.path.join(model_dir, "gemma-4-12b-it-Q4_K_M.gguf")
                 self.proj_path = os.path.join(model_dir, "mmproj-F16.gguf")
                 self.repo_id = "unsloth/gemma-4-12b-it-GGUF"
+            else:
+                model_name = "gemma-4-e4b-it"
+                model_dir = os.path.join(base_dir, "model", model_name)
+                self.model_path = os.path.join(model_dir, "gemma-4-e4b-it-Q4_K_M.gguf")
+                self.proj_path = os.path.join(model_dir, "mmproj-F16.gguf")
+                self.repo_id = "unsloth/gemma-4-e4b-it-GGUF"
             
             if not os.path.exists(self.model_path) or not os.path.exists(self.proj_path):
                 print(f"[*] Model files not found locally in {model_dir}. Triggering download...")
@@ -116,8 +129,8 @@ class Gemma4Manager:
             print(f"[*] Initializing Gemma 4 Llama engine for GGUF model: {self.model_path} on {device}")
             
             n_gpu_layers = 0
-            if device == "gpu" or device == "cuda":
-                n_gpu_layers = -1  # Offload all layers to GPU
+            if device in ["gpu", "cuda"]:
+                n_gpu_layers = -1  # Offload 100% layers to RTX 3060 GPU
                 
             try:
                 from llama_cpp import Llama
@@ -135,7 +148,7 @@ class Gemma4Manager:
                     n_threads=4,
                     verbose=False
                 )
-                print("[+] Llama engine initialized successfully.")
+                print("[+] Llama engine initialized successfully on RTX 3060 CUDA GPU.")
             except Exception as e:
                 print(f"[-] ERROR initializing llama-cpp-python engine: {str(e)}. Falling back to Hugging Face backend...")
                 self.engine = "huggingface"
@@ -550,5 +563,8 @@ class Gemma4Manager:
             except Exception as e:
                 raise RuntimeError(f"Lỗi khi trích xuất embedding ảnh: {str(e)}")
 
-def get_manager(model_id: str = "google/gemma-4-e4b-it", device: str = "cpu", engine: str = "gguf"):
+def get_manager(model_id: str = "google/gemma-4-e4b-it", device: str = "cuda", engine: str = "gguf"):
+    import torch
+    if device in ["cuda", "gpu"] or device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
     return Gemma4Manager(model_id, device, engine)
