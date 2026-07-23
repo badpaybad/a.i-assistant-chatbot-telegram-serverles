@@ -7,9 +7,11 @@ dùng api gemma4 local thay cho gemini api
         system prompt là một trợ lý đa năng hỗ trợ việc đọc converation với 20 message gần nhất, có thể cần đọc nội dung đường link, đọc ảnh, đọc audio để hiểu điều cần nói
         khi có câu trả lời có thể gửi lại message cho người dùng (await bot_telegram.send_telegram_message)
             chỉ reply nếu được tag tên hoặc được đề cập tên trong message hiện tại 
+                hoặc người dùng chat private 1-1 với chatbot 
             bot_telegram.send_telegram_message cần nâng cấp hàm để nếu cần reply text nếu cần ảnh đính kèm, audio
             nếu có thể hiểu được cần tag cụ thể cho người đã mention thì cần phải có hàm để trả lời đúng cho người cần trả lời 
-        
+
+khi tiến trình program.py tắt thì cần kill cả tiến trình gemma4, có thể dùng các lệnh dạng fuser -k 8000/tcp và fuser -k {PORT}/tcp 
 
                 
         

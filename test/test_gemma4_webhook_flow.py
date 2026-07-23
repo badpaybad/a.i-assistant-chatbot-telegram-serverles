@@ -23,43 +23,42 @@ async def test_mention_format():
     print("--- Test 1 PASSED ---")
 
 async def test_bot_tag_filter():
-    print("--- Test 2: gemma4_process_chat_history_and_current_msg Tag Filter ---")
+    print("--- Test 2: gemma4_process_chat_history_and_current_msg Tag & Private Chat Filter ---")
     
-    # Untagged message
-    msg_untagged = telegram_types.OrchestrationMessage(
-        chat_id="12345678",
+    # Group untagged message -> Should skip
+    msg_untagged_group = telegram_types.OrchestrationMessage(
+        chat_id="-10012345678",
         text="Xin chào các bạn trong nhóm",
         message=telegram_types.TelegramUpdate(
             message=telegram_types.Message(
                 message_id=1,
                 date=1700000000,
-                chat=telegram_types.Chat(id=12345678, type="group"),
+                chat=telegram_types.Chat(id=-10012345678, type="group"),
                 text="Xin chào các bạn trong nhóm",
                 from_user=telegram_types.FromUser(id=999, first_name="Tester", username="tester")
             )
         )
     )
 
-    res1 = await program.gemma4_process_chat_history_and_current_msg(msg_untagged)
-    assert res1 is None, "Should skip replying when bot is not tagged/mentioned"
-    print("Untagged message skipped as expected.")
+    res1 = await program.gemma4_process_chat_history_and_current_msg(msg_untagged_group)
+    assert res1 is None, "Should skip replying when bot is not tagged in group chat"
+    print("Group untagged message skipped as expected.")
 
-    # Tagged message test (Checking tag detection logic)
-    bot_name = config.TELEGRAM_BOT_USERNAME.replace("@", "")
-    msg_tagged = telegram_types.OrchestrationMessage(
-        chat_id="12345678",
-        text=f"Chào @{bot_name} bạn có khỏe không?",
+    # Private 1-1 chat (untagged) -> Should process and reply!
+    msg_private = telegram_types.OrchestrationMessage(
+        chat_id="730806080",
+        text="Chào bot, tư vấn cho mình với",
         message=telegram_types.TelegramUpdate(
             message=telegram_types.Message(
-                message_id=2,
-                date=1700000005,
-                chat=telegram_types.Chat(id=12345678, type="group"),
-                text=f"Chào @{bot_name} bạn có khỏe không?",
-                from_user=telegram_types.FromUser(id=999, first_name="Tester", username="tester")
+                message_id=3,
+                date=1700000010,
+                chat=telegram_types.Chat(id=730806080, type="private"),
+                text="Chào bot, tư vấn cho mình với",
+                from_user=telegram_types.FromUser(id=730806080, first_name="Du", username="badpaybad")
             )
         )
     )
-    
+
     # Mocking Gemma4 API endpoint response for offline test
     import httpx
     original_post = httpx.AsyncClient.post
@@ -71,7 +70,7 @@ async def test_bot_tag_filter():
                 def json(self):
                     return {
                         "candidates": [
-                            {"content": {"parts": [{"text": "Chào bạn, mình khỏe!"}]}}
+                            {"content": {"parts": [{"text": "Chào bạn! Mình có thể giúp gì cho bạn?"}]}}
                         ]
                     }
             return DummyResp()
@@ -80,16 +79,16 @@ async def test_bot_tag_filter():
                 status_code = 200
                 def raise_for_status(self): pass
                 def json(self):
-                    return {"ok": True, "result": {"message_id": 100, "chat": {"id": 12345678}, "date": 1700000010, "text": "Chào bạn, mình khỏe!"}}
+                    return {"ok": True, "result": {"message_id": 101, "chat": {"id": 730806080}, "date": 1700000015, "text": "Chào bạn! Mình có thể giúp gì cho bạn?"}}
             return DummyResp()
         return await original_post(self, url, *args, **kwargs)
 
     httpx.AsyncClient.post = mock_post
 
     try:
-        res2 = await program.gemma4_process_chat_history_and_current_msg(msg_tagged)
-        print(f"Tagged message processed successfully. Response: {res2}")
-        assert res2 is not None, "Tagged message should be processed"
+        res_priv = await program.gemma4_process_chat_history_and_current_msg(msg_private)
+        print(f"Private 1-1 chat message processed successfully. Response: {res_priv}")
+        assert res_priv is not None, "Private 1-1 chat message should be processed without needing explicit tag"
     finally:
         httpx.AsyncClient.post = original_post
 

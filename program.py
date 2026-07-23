@@ -8,7 +8,9 @@ import os
 import sys
 import json
 import time
+import atexit
 from typing import Any
+
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import httpx
@@ -226,6 +228,21 @@ async def ensure_gemma4_local_server_running():
     return False
 
 
+def kill_ports():
+    print(f"Đang giải phóng tiến trình gemma4 (port 8000) và program (port {PORT})...")
+    try:
+        subprocess.run("fuser -k -9 8000/tcp", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"Lỗi kill port 8000: {e}")
+
+    try:
+        subprocess.run(f"fuser -k -9 {PORT}/tcp", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except Exception as e:
+        print(f"Lỗi kill port {PORT}: {e}")
+
+atexit.register(kill_ports)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if getattr(config, "USE_GEMMA4_LOCAL", True):
@@ -246,13 +263,22 @@ async def lifespan(app: FastAPI):
     # --- TẮT SERVER ---
     print("Đang đóng Tunnel...")
     if tunnel_process:
-        tunnel_process.terminate()
-        tunnel_process.wait()
+        try:
+            tunnel_process.terminate()
+            tunnel_process.wait(timeout=2)
+        except Exception:
+            pass
     if gemma4_process:
         print("Đang đóng Gemma4 Local Server...")
-        gemma4_process.terminate()
-        gemma4_process.wait()
+        try:
+            gemma4_process.terminate()
+            gemma4_process.wait(timeout=2)
+        except Exception:
+            pass
+
+    kill_ports()
     print("Server đã tắt hoàn toàn.")
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -323,7 +349,19 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
     bot_username = TELEGRAM_BOT_USERNAME or ""
     bot_username_clean = bot_username.replace("@", "").strip().lower()
 
-    # 1. KIỂM TRA BOT CÓ ĐƯỢC TAG / MENTION TRONG MESSAGE HIỆN TẠI KHÔNG
+    # 1. KIỂM TRA BOT CÓ ĐƯỢC TAG / MENTION TRONG MESSAGE HIỆN TẠI KHÔNG HOẶC LÀ CHAT PRIVATE 1-1
+    is_private_chat = False
+    if orchestration_message.message and orchestration_message.message.message and orchestration_message.message.message.chat:
+        chat_type = orchestration_message.message.message.chat.type
+        if chat_type == "private":
+            is_private_chat = True
+
+    try:
+        if int(chat_id) > 0:
+            is_private_chat = True
+    except (ValueError, TypeError):
+        pass
+
     is_mentioned = False
     if not bot_username_clean:
         is_mentioned = True
@@ -339,9 +377,10 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                     break
 
     reply_on_tag = getattr(config, "REPLY_ON_TAG_BOT_USERNAME", True)
-    if reply_on_tag and not is_mentioned:
-        print(f"[Gemma4 Process] Skipping message: Bot ({TELEGRAM_BOT_USERNAME}) is not tagged or mentioned.")
+    if reply_on_tag and not is_mentioned and not is_private_chat:
+        print(f"[Gemma4 Process] Skipping message: Bot ({TELEGRAM_BOT_USERNAME}) is not tagged/mentioned and chat is not private 1-1.")
         return
+
 
     # 2. LƯU ORCHESTRATION_MESSAGE VÀO DB
     try:
