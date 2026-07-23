@@ -151,3 +151,11 @@ cnc/drawtext/main.spec
 **/**_info.txt
 **/**pn532_config.py
 **/TreeOfThought/backend/Core.Web.Api/aimodels/**
+cloudflared
+cameraip/train/dataraw/**
+**/output/**.wav
+temp/**.wav
+1234.zip
+=2.6.0
+cameraip/train/i3.jpg
+cameraip/train/i3output_detect.jpg

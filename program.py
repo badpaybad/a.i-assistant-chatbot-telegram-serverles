@@ -5,6 +5,8 @@ from fastapi import FastAPI, Request, HTTPException
 import subprocess
 import re
 import os
+import sys
+import json
 import time
 from typing import Any
 from fastapi import FastAPI, Request
@@ -42,8 +44,9 @@ set_dir_program(DIR_PROGRAM)
 
 # --- CẤU HÌNH ---
 
-# Biến toàn cục để quản lý tiến trình tunnel
+# Biến toàn cục để quản lý tiến trình tunnel và gemma4 local server
 tunnel_process = None
+gemma4_process = None
 webhook_base_url = None
 
 # --- LỊCH SỬ CHAT ---
@@ -94,23 +97,42 @@ cloudflared tunnel --url http://localhost:8088
 """
 
 
+import shutil
+
 async def cloudflare_tunel_get_baseurl():
 
     global tunnel_process
     global webhook_base_url
 
+    cloudflared_cmd = shutil.which("cloudflared")
+    if not cloudflared_cmd:
+        local_bin = os.path.join(DIR_PROGRAM, "cloudflared")
+        if os.path.exists(local_bin):
+            cloudflared_cmd = local_bin
+    if not cloudflared_cmd:
+        cloudflared_cmd = "cloudflared"
+
     # 1. Khởi động Cloudflared
-    print("Đang khởi tạo Cloudflare Tunnel...")
-    tunnel_process = subprocess.Popen(
-        ["cloudflared", "tunnel", "--url",
-            f"http://localhost:{PORT}", "--no-autoupdate"],
-        stderr=subprocess.PIPE,
-        text=True
-    )
+    print(f"Đang khởi tạo Cloudflare Tunnel bằng lệnh '{cloudflared_cmd}'...")
+    try:
+        tunnel_process = subprocess.Popen(
+            [cloudflared_cmd, "tunnel", "--url",
+                f"http://localhost:{PORT}", "--no-autoupdate"],
+            stderr=subprocess.PIPE,
+            text=True
+        )
+    except FileNotFoundError as e:
+        print(f"[!] Lỗi: Không tìm thấy file thực thi cloudflared ({cloudflared_cmd}): {e}")
+        return None
+    except Exception as e:
+        print(f"[!] Lỗi khi khởi tạo cloudflared process: {e}")
+        return None
 
     await asyncio.sleep(0.5)
     # 2. Lấy URL từ log (non-blocking)
     for _ in range(500):
+        if not tunnel_process or not tunnel_process.stderr:
+            break
         line = tunnel_process.stderr.readline()
         if "https://" in line and ".trycloudflare.com" in line:
             match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
@@ -121,7 +143,7 @@ async def cloudflare_tunel_get_baseurl():
 
     if not webhook_base_url:
         print("Không lấy được URL từ Cloudflare")
-        return
+        return None
 
     return webhook_base_url
 
@@ -140,28 +162,74 @@ async def zalo_oa_register_webhook(base_url):
     pass
 
 async def background_tunnel_and_webhook():
-    await cloudflare_tunel_get_baseurl()
+    try:
+        base_url = await cloudflare_tunel_get_baseurl()
+        if not base_url:
+            print("Bỏ qua đăng ký Webhook do không lấy được URL Cloudflare Tunnel.")
+            return
 
-    # 3. Đợi cho đến khi port 8088 thông (FastAPI đã boot xong)
-    if await wait_for_server_ready(webhook_base_url):
-        # 4. Cuối cùng mới đăng ký với Telegram
-        full_url = f"{webhook_base_url}/webhook"
-        print(f"Đang gửi Webhook tới Telegram: {full_url}")
+        # 3. Đợi cho đến khi port 8088 thông (FastAPI đã boot xong)
+        if await wait_for_server_ready(base_url):
+            # 4. Cuối cùng mới đăng ký với Telegram
+            full_url = f"{base_url}/webhook"
+            print(f"Đang gửi Webhook tới Telegram: {full_url}")
 
-        await asyncio.sleep(5)
-        # await register_webhook_to_telegram(full_url)
-        await bot_telegram.register_webhook(webhook_base_url)
-        # await bot_discord.update_discord_endpoint(webhook_base_url)
-        await jira_register_webhook(webhook_base_url)
-        await zalo_oa_register_webhook(webhook_base_url)
+            await asyncio.sleep(5)
+            # await register_webhook_to_telegram(full_url)
+            await bot_telegram.register_webhook(base_url)
+            # await bot_discord.update_discord_endpoint(base_url)
+            await jira_register_webhook(base_url)
+            await zalo_oa_register_webhook(base_url)
 
-        if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID != 0:
+            if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID != 0:
+                await asyncio.sleep(2)
+                await bot_telegram.send_telegram_message(TELEGRAM_BOT_CHATID, base_url)
+    except Exception as e:
+        print(f"Lỗi trong background_tunnel_and_webhook: {e}")
+
+
+
+async def ensure_gemma4_local_server_running():
+    global gemma4_process
+    gemma4_url = getattr(config, "GEMMA4_LOCAL_URL", "http://localhost:8000")
+    health_url = f"{gemma4_url}/health"
+
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.get(health_url, timeout=2.0)
+            if resp.status_code == 200:
+                print(f"[Gemma4] Local API server is already running on {gemma4_url}")
+                return True
+        except Exception:
+            pass
+
+    print(f"[Gemma4] Starting Gemma4 local server on port 8000...")
+    gemma4_script = os.path.join(DIR_PROGRAM, "gemma4", "program.py")
+    gemma4_process = subprocess.Popen(
+        [sys.executable, gemma4_script],
+        cwd=DIR_PROGRAM
+    )
+
+    async with httpx.AsyncClient() as client:
+        start_t = time.time()
+        while time.time() - start_t < 60:
             await asyncio.sleep(2)
-            await bot_telegram.send_telegram_message(TELEGRAM_BOT_CHATID, webhook_base_url)
+            try:
+                resp = await client.get(health_url, timeout=2.0)
+                if resp.status_code == 200:
+                    print(f"[Gemma4] Local API server started successfully!")
+                    return True
+            except Exception:
+                pass
+
+    print("[Gemma4] Warning: Local Gemma4 server startup check timed out.")
+    return False
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if getattr(config, "USE_GEMMA4_LOCAL", True):
+        asyncio.create_task(ensure_gemma4_local_server_running())
 
     if TELEGRAM_BOT_TOKEN is None or TELEGRAM_BOT_TOKEN != "":
         print("Server đang khởi động, bắt đầu đăng ký Webhook...")
@@ -180,6 +248,10 @@ async def lifespan(app: FastAPI):
     if tunnel_process:
         tunnel_process.terminate()
         tunnel_process.wait()
+    if gemma4_process:
+        print("Đang đóng Gemma4 Local Server...")
+        gemma4_process.terminate()
+        gemma4_process.wait()
     print("Server đã tắt hoàn toàn.")
 
 app = FastAPI(lifespan=lifespan)
@@ -232,6 +304,213 @@ async def handle_zalo_oa(request: Request):
     # todo: tất cả các loại chát khác, zalo, discord, whatsapp ... cần convert về dạng message của telegram, dùng để hỗ trợ cho zalo group chat tương tự telegram chat bot 
     pass
 
+
+async def gemma4_process_chat_history_and_current_msg(orchestration_message: telegram_types.OrchestrationMessage):
+    """
+    Xử lý gọi API Gemma4 local cho tin nhắn Telegram:
+    1. Kiểm tra bot_telegram tag/mention trong current message (nếu có config REPLY_ON_TAG_BOT_USERNAME thì chỉ reply khi được tag/mention).
+    2. Lưu orchestration_message vào DB.
+    3. Lấy 20 tin nhắn gần nhất từ DB cho chat_id.
+    4. Trích xuất links, audio, image, text chat, reply, quote từ 20 tin nhắn.
+    5. Gọi local Gemma4 API (port 8000 /v1beta/models/gemma-4-e4b-it:generateContent).
+    6. Trả lời người dùng bằng bot_telegram.send_telegram_message (nâng cấp reply_to_message_id, format tag người được trả lời, gửi kèm text/ảnh/audio/files nếu có).
+    """
+    if not orchestration_message or not orchestration_message.chat_id:
+        return
+
+    chat_id = orchestration_message.chat_id
+    user_text = orchestration_message.text or ""
+    bot_username = TELEGRAM_BOT_USERNAME or ""
+    bot_username_clean = bot_username.replace("@", "").strip().lower()
+
+    # 1. KIỂM TRA BOT CÓ ĐƯỢC TAG / MENTION TRONG MESSAGE HIỆN TẠI KHÔNG
+    is_mentioned = False
+    if not bot_username_clean:
+        is_mentioned = True
+    else:
+        if bot_username_clean in user_text.lower():
+            is_mentioned = True
+        if orchestration_message.message:
+            mentions = orchestration_message.message.get_users_mention()
+            for m in mentions:
+                u_name = (m.get("username") or "").lower()
+                if u_name == bot_username_clean:
+                    is_mentioned = True
+                    break
+
+    reply_on_tag = getattr(config, "REPLY_ON_TAG_BOT_USERNAME", True)
+    if reply_on_tag and not is_mentioned:
+        print(f"[Gemma4 Process] Skipping message: Bot ({TELEGRAM_BOT_USERNAME}) is not tagged or mentioned.")
+        return
+
+    # 2. LƯU ORCHESTRATION_MESSAGE VÀO DB
+    try:
+        knowledgebase.dbcontext.db_orchestration_all_message.insert(orchestration_message.model_dump_json(by_alias=True))
+    except Exception as ex_db:
+        print(f"[Gemma4 Process] Warning inserting DB: {ex_db}")
+
+    # 3. LẤY 20 MESSAGE GẦN NHẤT
+    history_limit = getattr(config, "HISTORY_CHAT_MAX_LEN", 20)
+    db_msgs = knowledgebase.orchestrationcontext.get_list_current_orchestration_messages(str(chat_id))
+    recent_msgs = db_msgs[-history_limit:] if len(db_msgs) > history_limit else db_msgs
+
+    # 4. CHUẨN BỊ BỐ CỤC LỊCH SỬ CHAT VÀ CONTEXT DÀNH CHO GEMMA4
+    gemma4_url = getattr(config, "GEMMA4_LOCAL_URL", "http://localhost:8000")
+    accumulated_file_uris = []
+    url_pattern = r'https?://[^\s<>"]+|www\.[^\s<>"]+'
+    history_formatted_str = []
+
+    for idx, rec in enumerate(recent_msgs):
+        msg_obj = rec.get("json", {}) if isinstance(rec, dict) and "json" in rec else rec
+        if isinstance(msg_obj, str):
+            try:
+                msg_obj = json.loads(msg_obj)
+            except:
+                msg_obj = {}
+
+        msg_text = msg_obj.get("text", "") or ""
+        msg_files = msg_obj.get("files", []) or []
+        update_info = msg_obj.get("message", {}) or {}
+        msg_info = update_info.get("message") or update_info.get("edited_message") or {}
+        
+        from_user = msg_info.get("from_user") or msg_info.get("from") or {}
+        sender_id = from_user.get("id")
+        sender_name = f"{from_user.get('first_name', '')} {from_user.get('last_name', '')}".strip() or from_user.get("username") or "User"
+        sender_username = from_user.get("username")
+        msg_id = msg_info.get("message_id")
+
+        reply_to = msg_info.get("reply_to_message")
+        reply_info_str = ""
+        if reply_to:
+            r_sender = reply_to.get("from_user") or reply_to.get("from") or {}
+            r_name = r_sender.get("first_name") or r_sender.get("username") or "someone"
+            r_text = reply_to.get("text") or reply_to.get("caption") or ""
+            reply_info_str = f" [Replying to {r_name} (Msg ID {reply_to.get('message_id')}): \"{r_text[:60]}\"]"
+
+        msg_str = f"Message #{idx+1} [ID:{msg_id}] from {sender_name} (@{sender_username or 'none'}, UserID:{sender_id}){reply_info_str}:\n{msg_text}"
+        
+        # Check URLs in this message
+        urls = re.findall(url_pattern, msg_text)
+        for u in set(urls):
+            fetch_res, mime_type, res_type = knowledgebase.orchestrationcontext.fetch_url_content(u)
+            if res_type == "text" and fetch_res:
+                msg_str += f"\n[Link Content from {u}]:\n{fetch_res[:1000]}"
+            elif res_type == "file" and fetch_res:
+                if fetch_res not in msg_files:
+                    msg_files.append(fetch_res)
+
+        history_formatted_str.append(msg_str)
+
+        if msg_files:
+            async with httpx.AsyncClient() as client:
+                for fpath in msg_files:
+                    if os.path.exists(fpath):
+                        try:
+                            import mimetypes
+                            mime_guess, _ = mimetypes.guess_type(fpath)
+                            mime = mime_guess or "application/octet-stream"
+                            with open(fpath, "rb") as f_data:
+                                files_upload = {"file": (os.path.basename(fpath), f_data, mime)}
+                                r_up = await client.post(f"{gemma4_url}/v1beta/files", files=files_upload, timeout=15.0)
+                                if r_up.status_code == 200:
+                                    f_meta = r_up.json()
+                                    accumulated_file_uris.append({"uri": f_meta["name"], "mime_type": f_meta["mimeType"]})
+                        except Exception as ex_up:
+                            print(f"[Gemma4 File Upload] Error uploading {fpath}: {ex_up}")
+
+    full_conversation_history_text = "\n\n".join(history_formatted_str)
+
+    # 5. SOẠN PROMPT VÀ GỌI GEMMA4 LOCAL API
+    system_instruction_text = (
+        "Bạn là một trợ lý AI đa năng thông minh hỗ trợ nhóm Telegram. "
+        "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...). "
+        "Hãy đọc kỹ ngữ cảnh cuộc trò chuyện để hiểu rõ câu hỏi hoặc yêu cầu hiện tại. "
+        "Nếu người dùng yêu cầu trả lời cho một cá nhân cụ thể hoặc tag người được đề cập, hãy sử dụng thông tin UserID hoặc @username của người đó để tag/trả lời chính xác. "
+        "Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
+    )
+
+    parts_payload = [
+        {"text": f"### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n### TIN NHẮN HIỆN TẠI:\n{user_text}"}
+    ]
+
+    for file_item in accumulated_file_uris:
+        parts_payload.append({
+            "file_data": {
+                "file_uri": file_item["uri"],
+                "mime_type": file_item["mime_type"]
+            }
+        })
+
+    gen_request_body = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": parts_payload
+            }
+        ],
+        "system_instruction": {
+            "role": "system",
+            "parts": [{"text": system_instruction_text}]
+        },
+        "generationConfig": {
+            "temperature": 0.7,
+            "maxOutputTokens": 1024
+        }
+    }
+
+    try:
+        async with httpx.AsyncClient() as client:
+            print(f"[Gemma4 Process] Calling Gemma4 API at {gemma4_url}/v1beta/models/gemma-4-e4b-it:generateContent ...")
+            resp = await client.post(
+                f"{gemma4_url}/v1beta/models/gemma-4-e4b-it:generateContent",
+                json=gen_request_body,
+                timeout=120.0
+            )
+            resp.raise_for_status()
+            resp_data = resp.json()
+
+            reply_text = ""
+            if resp_data.get("candidates"):
+                candidate = resp_data["candidates"][0]
+                c_parts = candidate.get("content", {}).get("parts", [])
+                for p in c_parts:
+                    if p.get("text"):
+                        reply_text += p["text"]
+
+            if not reply_text:
+                reply_text = "Em đã nhận thông tin nhưng không sinh được câu trả lời."
+
+            # 6. GỬI LẠI MESSAGE CHO NGƯỜI DÙNG BẰNG BOT_TELEGRAM
+            current_msg_info = orchestration_message.message.message if orchestration_message.message else None
+            reply_msg_id = current_msg_info.message_id if current_msg_info else None
+            
+            from_user = orchestration_message.message.get_from_user() if orchestration_message.message else None
+            user_tag = ""
+            if from_user:
+                user_tag = bot_telegram.format_user_mention(user_id=from_user.id, username=from_user.username, fullname=f"{from_user.first_name or ''} {from_user.last_name or ''}".strip())
+
+            final_reply_text = reply_text
+            if user_tag and user_tag not in final_reply_text:
+                final_reply_text = f"{user_tag} {final_reply_text}"
+
+            sent_res = await bot_telegram.send_telegram_message(
+                chat_id=chat_id,
+                text=final_reply_text,
+                files=None,
+                reply_to_message_id=reply_msg_id,
+                parse_mode="HTML"
+            )
+            print(f"[Gemma4 Process] Reply sent to chat {chat_id}: {final_reply_text[:80]}...")
+            return sent_res
+
+    except Exception as ex_gemma:
+        print(f"[Gemma4 Process] Error calling Gemma4 API or sending reply: {ex_gemma}")
+        err_reply = f"Lỗi khi xử lý với Gemma4 API: {str(ex_gemma)}"
+        await bot_telegram.send_telegram_message(
+            chat_id=chat_id,
+            text=err_reply,
+            reply_to_message_id=orchestration_message.message.message.message_id if orchestration_message.message and orchestration_message.message.message else None
+        )
 
 @app.post("/webhook")
 async def handle_webhook(request: Request):
@@ -410,14 +689,16 @@ async def handle_webhook(request: Request):
         orchestration_message.chat_id=chat_id
         orchestration_message.webhook_base_url=webhook_base_url
 
-        if config.CONFIG_NAME=="config_ngoc":
-            await domain_handlers.ngoc_ddd.handle(orchestration_message)
-            # return  {"status": "ok"}
-            pass
+        # if config.CONFIG_NAME=="config_ngoc":
+        #     await domain_handlers.ngoc_ddd.handle(orchestration_message)
+        #     # return  {"status": "ok"}
+        #     pass
         
-        if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME :
-            if orchestration_message.text and TELEGRAM_BOT_USERNAME in orchestration_message.text:
-                await skills_decision(orchestration_message)
+        # if REPLY_ON_TAG_BOT_USERNAME is not None and REPLY_ON_TAG_BOT_USERNAME :
+        #     if orchestration_message.text and TELEGRAM_BOT_USERNAME in orchestration_message.text:
+        #         await skills_decision(orchestration_message)
+
+        await gemma4_process_chat_history_and_current_msg(orchestration_message)
 
         return {"status": "ok"}
     except Exception as ex:
