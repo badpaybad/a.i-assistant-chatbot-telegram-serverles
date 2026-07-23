@@ -7,11 +7,22 @@ namespace Core.Infra.Data.Contexts;
 
 public abstract class BaseDbContext : DbContext
 {
-    public enum DbProviderType { SqlServer, PostgreSql, MySql }
+    public enum DbProviderType { SqlServer, PostgreSql, MySql, Sqlite, Oracle }
 
     private readonly string _connectionString;
     private readonly DbProviderType _provider;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BaseDbContext"/> class.
+    /// </summary>
+    /// <param name="connectionString">The connection string. Examples:
+    /// <para>- <b>SqlServer:</b> <c>Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;TrustServerCertificate=True;</c></para>
+    /// <para>- <b>PostgreSql:</b> <c>Host=myServer;Database=myDataBase;Username=myUsername;Password=myPassword;</c></para>
+    /// <para>- <b>MySql:</b> <c>Server=myServer;Database=myDataBase;Uid=myUsername;Pwd=myPassword;</c></para>
+    /// <para>- <b>Sqlite:</b> <c>Data Source=filename.db</c> or <c>Data Source=:memory:</c></para>
+    /// <para>- <b>Oracle:</b> <c>User Id=myUsername;Password=myPassword;Data Source=myOracleService</c> or <c>Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myHost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=myServiceName)));User Id=myUsername;Password=myPassword;</c></para>
+    /// </param>
+    /// <param name="provider">The database provider type.</param>
     protected BaseDbContext(string connectionString, DbProviderType provider)
     {
         _connectionString = connectionString;
@@ -30,6 +41,12 @@ public abstract class BaseDbContext : DbContext
                 break;
             case DbProviderType.MySql:
                 optionsBuilder.UseMySql(_connectionString, ServerVersion.AutoDetect(_connectionString));
+                break;
+            case DbProviderType.Sqlite:
+                optionsBuilder.UseSqlite(_connectionString);
+                break;
+            case DbProviderType.Oracle:
+                optionsBuilder.UseOracle(_connectionString);
                 break;
         }
 
