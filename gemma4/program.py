@@ -29,8 +29,42 @@ from gemma4.tools import Gemma4Tools
 from gemma4.tts import save_tts
 from gemma4.stt import transcribe_audio
 from gemma4.files import read_file_content
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Gemma 4 Omni-File API")
+IS_MODEL_LOADED = False
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global IS_MODEL_LOADED
+    print("==================================================")
+    print("[*] [Gemma4 Startup] 1/3: Checking local models (download if missing)...")
+    from gemma4.download_model import setup_gemma, setup_kokoro
+    setup_kokoro()
+    setup_gemma(model_name="gemma-4-e4b-it")
+    
+    print("[*] [Gemma4 Startup] 2/3: Pre-loading Gemma 4 model into GPU VRAM (RTX 3060 CUDA)...")
+    manager = get_gemma_manager()
+    
+    print("[*] [Gemma4 Startup] 3/3: Pre-loading Kokoro TTS ONNX model...")
+    try:
+        from gemma4.tts import Gemma4TTS
+        _ = Gemma4TTS()
+    except Exception as tts_e:
+        print(f"[!] Warning pre-loading Kokoro TTS: {tts_e}")
+        
+    # Warmup model for instant first response
+    try:
+        print("[*] [Gemma4 Startup] Warming up GPU CUDA kernels for instant response...")
+        _ = manager.generate("Xin chào", max_tokens=5)
+    except Exception as warm_e:
+        print(f"[!] Warmup notice: {warm_e}")
+        
+    IS_MODEL_LOADED = True
+    print("[+] [Gemma4 Startup] ALL Models fully loaded and ready for instant response!")
+    print("==================================================")
+    yield
+
+app = FastAPI(title="Gemma 4 Omni-File API", lifespan=lifespan)
 
 # Cấu hình folder
 TEMP_DIR = os.path.join(project_root, "temp")
@@ -540,11 +574,15 @@ async def stream_generate_content(request: GenerateContentRequest, req: Request,
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "model": "gemma-4", "capabilities": ["text", "audio", "vision", "files", "tools"]}
+    return {
+        "status": "ok" if IS_MODEL_LOADED else "loading",
+        "ready": IS_MODEL_LOADED,
+        "model": "gemma-4-e4b-it",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "capabilities": ["text", "audio", "vision", "files", "tools"]
+    }
 
 if __name__ == "__main__":
-    # print("[*] Pre-loading Gemma 4 model...")
-    # get_gemma_manager()
     port = 8000
-    print(f"[*] Starting server on port {port}...")
+    print(f"[*] Starting Gemma 4 local server on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)

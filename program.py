@@ -199,13 +199,13 @@ async def ensure_gemma4_local_server_running():
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(health_url, timeout=2.0)
-            if resp.status_code == 200:
-                print(f"[Gemma4] Local API server is already running on {gemma4_url}")
+            if resp.status_code == 200 and resp.json().get("ready", True):
+                print(f"[Gemma4] Local API server is already running and ready on {gemma4_url}")
                 return True
         except Exception:
             pass
 
-    print(f"[Gemma4] Starting Gemma4 local server on port 8000...")
+    print(f"[Gemma4] Starting Gemma4 local server on port 8000 (pre-downloading & pre-loading models into GPU VRAM)...")
     gemma4_script = os.path.join(DIR_PROGRAM, "gemma4", "program.py")
     gemma4_process = subprocess.Popen(
         [sys.executable, gemma4_script],
@@ -214,12 +214,12 @@ async def ensure_gemma4_local_server_running():
 
     async with httpx.AsyncClient() as client:
         start_t = time.time()
-        while time.time() - start_t < 60:
+        while time.time() - start_t < 180:
             await asyncio.sleep(2)
             try:
                 resp = await client.get(health_url, timeout=2.0)
-                if resp.status_code == 200:
-                    print(f"[Gemma4] Local API server started successfully!")
+                if resp.status_code == 200 and resp.json().get("ready", True):
+                    print(f"[Gemma4] Local API server started and models are 100% pre-loaded!")
                     return True
             except Exception:
                 pass
