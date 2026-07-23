@@ -214,7 +214,7 @@ async def ensure_gemma4_local_server_running():
 
     async with httpx.AsyncClient() as client:
         start_t = time.time()
-        while time.time() - start_t < 180:
+        while time.time() - start_t < 450:
             await asyncio.sleep(2)
             try:
                 resp = await client.get(health_url, timeout=2.0)
@@ -725,7 +725,7 @@ async def handle_webhook(request: Request):
             orchestration_message.files_type.append("file")
             
         orchestration_message.text=user_text
-        orchestration_message.chat_id=chat_id
+        orchestration_message.chat_id=str(chat_id)
         orchestration_message.webhook_base_url=webhook_base_url
 
         # if config.CONFIG_NAME=="config_ngoc":

@@ -1,4 +1,5 @@
 import os
+os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = "4"
 import sys
 import torch
 import asyncio

@@ -4,6 +4,7 @@ import os
 # MUST set environment variables BEFORE importing torch or gemma4.manager
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,max_split_size_mb:128"
+os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = "4"
 
 import sys
 import base64
@@ -52,17 +53,33 @@ async def lifespan(app: FastAPI):
     except Exception as tts_e:
         print(f"[!] Warning pre-loading Kokoro TTS: {tts_e}")
         
-    # Warmup model for instant first response
-    try:
-        print("[*] [Gemma4 Startup] Warming up GPU CUDA kernels for instant response...")
-        _ = manager.generate("Xin chào", max_tokens=5)
-    except Exception as warm_e:
-        print(f"[!] Warmup notice: {warm_e}")
-        
+    # Mark server as ready before warmup — uvicorn will start accepting requests now
     IS_MODEL_LOADED = True
-    print("[+] [Gemma4 Startup] ALL Models fully loaded and ready for instant response!")
-    print("==================================================")
+    print("[+] [Gemma4 Startup] Models loaded and server is ready for incoming requests!")
+    print("[*] [Gemma4 Startup] Background GPU warmup will run after server starts...")
+    print("==================================================" )
+
+    # Schedule warmup as a background task that runs AFTER the server starts
+    # (after yield). This means the server is already reachable by health checks
+    # during the first-time JIT compilation.
+    async def _background_warmup():
+        import asyncio as _asyncio
+        await _asyncio.sleep(1)  # small delay to let uvicorn fully start
+        try:
+            loop = _asyncio.get_event_loop()
+            await loop.run_in_executor(None, lambda: manager.generate("Xin chào", max_tokens=5))
+            print("[+] [Gemma4 Startup] Background GPU warmup complete — next response will be instant!")
+        except Exception as warm_e:
+            print(f"[!] Background warmup notice: {warm_e}")
+
+    import asyncio as _asyncio
+    warmup_task = _asyncio.ensure_future(_background_warmup())
+
     yield
+
+    # Cancel warmup if still running on shutdown
+    if not warmup_task.done():
+        warmup_task.cancel()
 
 app = FastAPI(title="Gemma 4 Omni-File API", lifespan=lifespan)
 
