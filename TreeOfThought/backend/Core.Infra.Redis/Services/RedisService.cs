@@ -12,6 +12,22 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
     protected readonly IDatabase _db;
     protected readonly ILogger<RedisService> _logger;
 
+    /// <summary>
+    /// Khởi tạo một instance mới của <see cref="RedisService"/>.
+    /// </summary>
+    /// <param name="connectionString">
+    /// Chuỗi kết nối tới Redis, hỗ trợ cả cấu hình Redis độc lập (Standalone) và Redis Sentinel.
+    /// <para>Ví dụ chuỗi kết nối:</para>
+    /// <list type="bullet">
+    /// <item>
+    /// <description><b>Standalone:</b> <c>localhost:6379,password=mypassword,ssl=false,abortConnect=false</c></description>
+    /// </item>
+    /// <item>
+    /// <description><b>Sentinel:</b> <c>sentinel1:26379,sentinel2:26379,sentinel3:26379,password=mypassword,serviceName=mymaster,abortConnect=false</c></description>
+    /// </item>
+    /// </list>
+    /// </param>
+    /// <param name="logger">Instance logger để ghi log/nhật ký.</param>
     protected RedisService(string connectionString, ILogger<RedisService> logger)
     {
         _logger = logger;
