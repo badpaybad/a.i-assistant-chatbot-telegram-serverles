@@ -6,7 +6,7 @@ Tài liệu này định nghĩa thiết kế kiến trúc tổng quan và các t
 
 ## 1. Tổng quan Kiến trúc Nền tảng (General Base Infra)
 
-Backend được thiết kế theo mô hình **Modular Monolith** kết hợp với **Clean Architecture** và **CQRS**. Hệ thống cung cấp một hạ tầng cơ sở vững chắc (Base Infrastructure) để mọi module nghiệp vụ khi tích hợp vào đều có thể kế thừa và hoạt động nhất quán về: **Database, Cache, Session, CQRS, Firebase và Security/Auth**.
+Backend được thiết kế theo mô hình **Distributed, Modular Monolith** kết hợp với **Clean Architecture** và **CQRS**. Hệ thống cung cấp một hạ tầng cơ sở vững chắc (Base Infrastructure) để mọi module nghiệp vụ khi tích hợp vào đều có thể kế thừa và hoạt động nhất quán về: **Database, Cache, Session, CQRS, Firebase và Security/Auth**.
 
 ### Các thư viện hạ tầng cốt lõi (Core Infra Base):
 *   **Core.Infra.Base**: Định nghĩa toàn bộ Contracts dùng chung (Interface như `ICacheService`, `IQueueService`, `IEventBus`, `IEventHandler`, `INotifyUiEvent`, `IDispatcher`), các hằng số và các model dùng chung cho toàn bộ giải pháp.
@@ -543,7 +543,7 @@ app.MapControllerRoute(
 Sự nhất quán trong cách đăng ký này đảm bảo tất cả các ứng dụng trong giải pháp đều sử dụng chung một cơ chế đánh giá quyền lực của `[AppAuthorize]`, đồng thời duy trì khả năng co giãn và chịu tải mượt mà của hệ thống SSO.
 
 ---
-**Ghi chú**: Hạ tầng Core Base và tiêu chuẩn thiết kế Modular Monolith hiện tại của solution cực kỳ vững chắc và mạch lạc. Việc tuân thủ nghiêm ngặt các quy tắc trên sẽ giúp giải pháp luôn sạch sẽ, dễ dàng tích hợp thêm các dịch vụ mới mà không sợ phát sinh lỗi dây chuyền.
+**Ghi chú**: Hạ tầng Core Base và tiêu chuẩn thiết kế Distributed, Modular Monolith hiện tại của solution cực kỳ vững chắc và mạch lạc. Việc tuân thủ nghiêm ngặt các quy tắc trên sẽ giúp giải pháp luôn sạch sẽ, dễ dàng tích hợp thêm các dịch vụ mới mà không sợ phát sinh lỗi dây chuyền.
 
 ---
 

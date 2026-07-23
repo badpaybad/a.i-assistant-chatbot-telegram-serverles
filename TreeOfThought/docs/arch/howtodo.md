@@ -6,7 +6,7 @@ Tài liệu này là **Nguồn Sự Thật Duy Nhất (Single Source of Truth - 
 
 ## 🗺️ 1. Tổng Quan Kiến Trúc Nền Tảng (System Overview)
 
-Hệ thống **TreeOfThought** được thiết kế theo mô hình kiến trúc **Modular Monolith** (Đơn khối dạng Module hóa) kết hợp với các nguyên lý của **Clean Architecture** ở phía Backend và cấu trúc **Workspace Libraries** đa thư viện ở phía Frontend. 
+Hệ thống **TreeOfThought** được thiết kế theo mô hình kiến trúc **Distributed, Modular Monolith** (Đơn khối dạng Module hóa) kết hợp với các nguyên lý của **Clean Architecture** ở phía Backend và cấu trúc **Workspace Libraries** đa thư viện ở phía Frontend. 
 
 Mô hình này mang lại sự cân bằng hoàn hảo giữa tính đơn giản trong vận hành (deploy một khối duy nhất) và khả năng mở rộng, độc lập nghiệp vụ của kiến trúc Microservices (các module nghiệp vụ cô lập hoàn toàn).
 
@@ -23,7 +23,7 @@ graph TD
     end
 
     %% Backend Structure
-    subgraph Backend_Monolith [Backend Modular Monolith .NET 8]
+    subgraph Backend_Monolith [Backend Distributed, Modular Monolith .NET 8]
         WebApi[Core.Web.Api App Shell]
         CoreInfra[Core Infrastructure Libraries]
         BizOidcBE[(Core.Infra.Oidc BE)]
@@ -76,7 +76,7 @@ graph TD
 
 ---
 
-## 🖥️ 2. Thiết Kế Kiến Trúc Backend (.NET 8.0)
+## 🖥️ 2. Thiết Kế Kiến Trúc Backend (.net 10.0)
 
 Phần Backend hoạt động trong thư mục `TreeOfThought/backend`, sử dụng nền tảng **.NET Core 8.0**.
 
@@ -91,7 +91,7 @@ Hạ tầng dùng chung được phân tách thành các thư viện nền tản
 *   **`Core.Infra.Cqrs`**: Cung cấp hạ tầng Command/Handler và Event/PubSub in-memory, tích hợp tự động quét đăng ký Handler và xuất bản thông báo trạng thái xử lý lên Firestore.
 
 ### 2.2. Quy Chuẩn Cô Lập Nghiệp Vụ Nghiêm Ngặt (Strict Isolation)
-Để đảm bảo Modular Monolith không biến thành "Big Ball of Mud" (Đống bùn lầy công nghệ):
+Để đảm bảo Distributed, Modular Monolith không biến thành "Big Ball of Mud" (Đống bùn lầy công nghệ):
 1.  **Dự án độc lập**: Mỗi nghiệp vụ bắt buộc phải là một project riêng biệt trong `TreeOfThought/backend/`.
 2.  **Tuyệt đối không gọi chéo**: Nghiêm cấm việc Add Reference hoặc gọi trực tiếp code từ module nghiệp vụ này sang module nghiệp vụ khác.
 3.  **Giao tiếp lỏng (Loose Coupling)**: Mọi trao đổi thông tin hoặc kích hoạt hành động liên nghiệp vụ bắt buộc phải đi qua **Command/Event** hoặc **Redis Pub/Sub**.

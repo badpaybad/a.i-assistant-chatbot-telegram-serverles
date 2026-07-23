@@ -2,6 +2,7 @@ using Core.Infra.Base.Models;
 using Core.Infra.Base.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using Core.Infra.Data.Models;
 
 namespace Core.Infra.Data.Contexts;
 
@@ -23,10 +24,25 @@ public abstract class BaseDbContext : DbContext
     /// <para>- <b>Oracle:</b> <c>User Id=myUsername;Password=myPassword;Data Source=myOracleService</c> or <c>Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myHost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=myServiceName)));User Id=myUsername;Password=myPassword;</c></para>
     /// </param>
     /// <param name="provider">The database provider type.</param>
+    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+
     protected BaseDbContext(string connectionString, DbProviderType provider)
     {
         _connectionString = connectionString;
         _provider = provider;
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<AuditLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TableName).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.Action).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.EntityId).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.UserId).HasMaxLength(256);
+        });
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -126,40 +142,43 @@ public abstract class BaseDbContext : DbContext
         return source.Provider.CreateQuery<T>(resultExpression);
     }
 
-    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var entries = ChangeTracker.Entries()
-            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified));
-
-        foreach (var entry in entries)
+        var entries = ChangeTracker.Entries().ToList();
+        if (entries.All(e => e.Entity is AuditLog))
         {
-            // Check if entity implements IBaseTrackingEntity<TKey>
-            var entityType = entry.Entity.GetType();
-            var trackingInterface = entityType.GetInterfaces()
-                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
-
-            if (trackingInterface != null)
-            {
-                if (entry.State == EntityState.Added)
-                {
-                    entityType.GetProperty("CreatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
-                }
-                else
-                {
-                    entityType.GetProperty("UpdatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
-                }
-            }
+            return await base.SaveChangesAsync(cancellationToken);
         }
 
-        return base.SaveChangesAsync(cancellationToken);
+        var auditEntries = OnBeforeSaveChanges();
+        var result = await base.SaveChangesAsync(cancellationToken);
+        await OnAfterSaveChangesAsync(auditEntries, cancellationToken);
+        return result;
     }
 
     public override int SaveChanges()
     {
-        var entries = ChangeTracker.Entries()
-            .Where(e => (e.State == EntityState.Added || e.State == EntityState.Modified));
+        var entries = ChangeTracker.Entries().ToList();
+        if (entries.All(e => e.Entity is AuditLog))
+        {
+            return base.SaveChanges();
+        }
 
-        foreach (var entry in entries)
+        var auditEntries = OnBeforeSaveChanges();
+        var result = base.SaveChanges();
+        OnAfterSaveChanges(auditEntries);
+        return result;
+    }
+
+    private List<AuditEntry> OnBeforeSaveChanges()
+    {
+        ChangeTracker.DetectChanges();
+        var auditEntries = new List<AuditEntry>();
+
+        var trackingEntries = ChangeTracker.Entries()
+            .Where(e => e.State == EntityState.Added || e.State == EntityState.Modified);
+
+        foreach (var entry in trackingEntries)
         {
             var entityType = entry.Entity.GetType();
             var trackingInterface = entityType.GetInterfaces()
@@ -178,6 +197,138 @@ public abstract class BaseDbContext : DbContext
             }
         }
 
-        return base.SaveChanges();
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+                continue;
+
+            var auditEntry = new AuditEntry(entry)
+            {
+                TableName = entry.Metadata.GetTableName() ?? entry.Entity.GetType().Name,
+                Action = entry.State.ToString()
+            };
+
+            var entityType = entry.Entity.GetType();
+            var trackingInterface = entityType.GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+            if (trackingInterface != null)
+            {
+                if (entry.State == EntityState.Added)
+                {
+                    auditEntry.UserId = entityType.GetProperty("CreatedBy")?.GetValue(entry.Entity) as string;
+                }
+                else
+                {
+                    auditEntry.UserId = entityType.GetProperty("UpdatedBy")?.GetValue(entry.Entity) as string;
+                }
+            }
+
+            auditEntries.Add(auditEntry);
+
+            foreach (var property in entry.Properties)
+            {
+                string propertyName = property.Metadata.Name;
+                if (property.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[propertyName] = property.CurrentValue;
+                    continue;
+                }
+
+                switch (entry.State)
+                {
+                    case EntityState.Added:
+                        auditEntry.AfterValues[propertyName] = property.CurrentValue;
+                        break;
+                    case EntityState.Deleted:
+                        auditEntry.BeforeValues[propertyName] = property.OriginalValue;
+                        break;
+                    case EntityState.Modified:
+                        if (property.IsModified)
+                        {
+                            auditEntry.BeforeValues[propertyName] = property.OriginalValue;
+                            auditEntry.AfterValues[propertyName] = property.CurrentValue;
+                        }
+                        break;
+                }
+            }
+        }
+
+        return auditEntries;
+    }
+
+    private async Task OnAfterSaveChangesAsync(List<AuditEntry> auditEntries, CancellationToken cancellationToken = default)
+    {
+        if (auditEntries == null || auditEntries.Count == 0)
+            return;
+
+        foreach (var auditEntry in auditEntries)
+        {
+            foreach (var prop in auditEntry.Entry.Properties)
+            {
+                if (prop.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[prop.Metadata.Name] = prop.CurrentValue;
+                }
+            }
+
+            auditEntry.EntityId = System.Text.Json.JsonSerializer.Serialize(auditEntry.KeyValues);
+            AuditLogs.Add(auditEntry.ToAuditLog());
+        }
+
+        await base.SaveChangesAsync(cancellationToken);
+    }
+
+    private void OnAfterSaveChanges(List<AuditEntry> auditEntries)
+    {
+        if (auditEntries == null || auditEntries.Count == 0)
+            return;
+
+        foreach (var auditEntry in auditEntries)
+        {
+            foreach (var prop in auditEntry.Entry.Properties)
+            {
+                if (prop.Metadata.IsPrimaryKey())
+                {
+                    auditEntry.KeyValues[prop.Metadata.Name] = prop.CurrentValue;
+                }
+            }
+
+            auditEntry.EntityId = System.Text.Json.JsonSerializer.Serialize(auditEntry.KeyValues);
+            AuditLogs.Add(auditEntry.ToAuditLog());
+        }
+
+        base.SaveChanges();
+    }
+}
+
+internal class AuditEntry
+{
+    public Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry Entry { get; }
+    public string TableName { get; set; } = default!;
+    public string Action { get; set; } = default!;
+    public string EntityId { get; set; } = default!;
+    public Dictionary<string, object?> KeyValues { get; } = new();
+    public Dictionary<string, object?> BeforeValues { get; } = new();
+    public Dictionary<string, object?> AfterValues { get; } = new();
+    public string? UserId { get; set; }
+
+    public AuditEntry(Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry entry)
+    {
+        Entry = entry;
+    }
+
+    public AuditLog ToAuditLog()
+    {
+        return new AuditLog
+        {
+            Id = Guid.NewGuid(),
+            TableName = TableName,
+            Action = Action,
+            EntityId = EntityId,
+            BeforeState = BeforeValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(BeforeValues),
+            AfterState = AfterValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(AfterValues),
+            Timestamp = DateTime.UtcNow,
+            UserId = UserId
+        };
     }
 }

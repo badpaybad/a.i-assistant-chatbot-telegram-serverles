@@ -80,7 +80,7 @@ Thiết lập quyền linh hoạt cho từng tệp tin với các lựa chọn:
 
 ## 4. Yêu cầu kỹ thuật (Tuân thủ Base Infra)
 
-- **Kiến trúc:** Modular Monolith kết hợp CQRS.
+- **Kiến trúc:** Distributed, Modular Monolith kết hợp CQRS.
 - **Xử lý bất đồng bộ:** Toàn bộ tác vụ ghi (Tạo/Xóa thư mục, Di chuyển, Upload, Cập nhật quyền) phải chạy ngầm thông qua `IDispatcher` (MemoryMode).
 - **Realtime UI Feedback:** Trạng thái tác vụ chạy ngầm được cập nhật liên tục lên UI thông qua Firestore dựa trên `TrackingId`.
 - **Bảo mật:**

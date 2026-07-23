@@ -7,7 +7,7 @@
 
 ## 1. Kiến trúc Hệ thống & Luồng xử lý Bất đồng bộ
 
-Hệ thống tuân thủ nghiêm ngặt mô hình **Modular Monolith + CQRS** của Base Infra:
+Hệ thống tuân thủ nghiêm ngặt mô hình **Distributed, Modular Monolith + CQRS** của Base Infra:
 
 ```mermaid
 graph TD

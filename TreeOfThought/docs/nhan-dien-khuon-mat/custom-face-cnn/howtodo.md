@@ -485,7 +485,7 @@ def quantize_onnx_model(input_path, output_quant_path):
 
 #### C. Hướng dẫn tích hợp mô hình ONNX đa nền tảng
 
-##### 1. Tích hợp trên C# .NET 8.0 (Backend & Desktop App)
+##### 1. Tích hợp trên C# .net 10.0 (Backend & Desktop App)
 Sử dụng gói thư viện chính thức từ Microsoft: `Microsoft.ML.OnnxRuntime` và `SixLabors.ImageSharp` để nạp dữ liệu ảnh thô và chạy suy luận đa đầu vào.
 
 ```csharp
@@ -760,7 +760,7 @@ class FaissVectorDatabase:
         print(f"🔌 Đã nạp thành công Database với {len(self.user_ids)} người dùng.")
 ```
 
-##### 2. Tính Cosine Similarity trong C# .NET 8.0 (So khớp trực tiếp hoặc pgvector)
+##### 2. Tính Cosine Similarity trong C# .net 10.0 (So khớp trực tiếp hoặc pgvector)
 Đối với C# chạy trên PC hoặc máy chủ, ta có thể so khớp nhanh bằng hàm tính tích vô hướng trực tiếp trên bộ nhớ:
 
 ```csharp
@@ -950,7 +950,7 @@ Sau khi đã huấn luyện ra file mô hình `custom_face_cnn.onnx` thành côn
 * **Pha 1 (Chuẩn bị dữ liệu - 3 ngày):** Viết script tự động quét `dataraw/` cắt ảnh thành 3 luồng (Global, Eye, Nose) bằng MediaPipe 3D.
 * **Pha 2 (Xây dựng Model - 5 ngày):** Triển khai mạng `CustomPartBasedFaceCNN` bằng PyTorch, nạp trọng số pre-trained cho nhánh Global.
 * **Pha 3 (Huấn luyện Tinh chỉnh - 4 ngày):** Thiết lập hàm tổn thất ArcFace với Margin $m = 0.55$, huấn luyện với dữ liệu `dataraw` kết hợp kỹ thuật giả lập khẩu trang/kính cận và gia tăng độ tuổi (Gaussian Blur, Texture noise).
-* **Pha 4 (Xuất bản & Tích hợp - 2 ngày):** Xuất mô hình ONNX lượng tử hóa (Quantized ONNX) để tích hợp siêu nhanh vào backend **C# .NET 8.0** hoặc chạy offline trực tiếp trên app di động **Flutter**.
+* **Pha 4 (Xuất bản & Tích hợp - 2 ngày):** Xuất mô hình ONNX lượng tử hóa (Quantized ONNX) để tích hợp siêu nhanh vào backend **C# .net 10.0** hoặc chạy offline trực tiếp trên app di động **Flutter**.
 
 ---
 
@@ -1079,7 +1079,7 @@ Sau đó, lọc ra đúng danh sách 26 landmarks cốt lõi theo thứ tự ind
 
 ### 2. Mã nguồn mẫu sử dụng ONNX trên các nền tảng
 
-#### A. C# .NET 8.0 (Inference Sample)
+#### A. C# .net 10.0 (Inference Sample)
 ```csharp
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;

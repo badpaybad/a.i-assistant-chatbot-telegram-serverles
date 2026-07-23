@@ -11,7 +11,7 @@
 Sau khi khảo sát chi tiết toàn bộ mã nguồn (`TreeOfThought/backend`, `TreeOfThought/frontend`) và toàn bộ tài liệu kiến trúc thiết kế (`TreeOfThought/docs`, `TreeOfThought/docs_arch_design`, `TreeOfThought/howtodev`), chúng tôi đưa ra đánh giá tổng quan:
 
 > [!IMPORTANT]
-> **Hệ thống TreeOfThought hiện tại đã ĐÁP ỨNG TRÊN 90% TỔNG THỂ CÁC YÊU CẦU** của Bộ khung nền tảng kỹ thuật phục vụ hoạt động phát triển hệ thống Adaptive ERP. Architecture được thiết kế theo mô hình **Modular Monolith + Clean Architecture + CQRS Event-Driven**, cho phép mở rộng độc lập, build/deploy dễ dàng, bảo vệ Core Base và đảm bảo tính nhất quán cao.
+> **Hệ thống TreeOfThought hiện tại đã ĐÁP ỨNG TRÊN 90% TỔNG THỂ CÁC YÊU CẦU** của Bộ khung nền tảng kỹ thuật phục vụ hoạt động phát triển hệ thống Adaptive ERP. Architecture được thiết kế theo mô hình **Distributed, Modular Monolith + Clean Architecture + CQRS Event-Driven**, cho phép mở rộng độc lập, build/deploy dễ dàng, bảo vệ Core Base và đảm bảo tính nhất quán cao.
 
 ### Bảng Tổng Hợp Khả Năng Đáp Ứng 10 Yêu Cầu
 

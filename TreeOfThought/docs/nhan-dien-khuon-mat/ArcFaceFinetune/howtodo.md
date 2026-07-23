@@ -1,6 +1,6 @@
-# Hướng dẫn và Giải pháp Tinh chỉnh (Fine-tune) ArcFace, Quản lý Vector & Xuất ONNX cho .NET 8.0
+# Hướng dẫn và Giải pháp Tinh chỉnh (Fine-tune) ArcFace, Quản lý Vector & Xuất ONNX cho .net 10.0
 
-Tài liệu này cung cấp toàn bộ thiết kế hệ thống, hướng dẫn tổ chức dữ liệu, tiêu chuẩn tiền xử lý hình ảnh, kỹ thuật cắt (crop) & căn chỉnh (alignment) khuôn mặt, cách quản lý vector embedding bằng FAISS/Qdrant/PostgreSQL (pgvector) và hướng dẫn tích hợp mô hình ONNX trong **C# .NET 8.0**.
+Tài liệu này cung cấp toàn bộ thiết kế hệ thống, hướng dẫn tổ chức dữ liệu, tiêu chuẩn tiền xử lý hình ảnh, kỹ thuật cắt (crop) & căn chỉnh (alignment) khuôn mặt, cách quản lý vector embedding bằng FAISS/Qdrant/PostgreSQL (pgvector) và hướng dẫn tích hợp mô hình ONNX trong **C# .net 10.0**.
 
 ---
 
@@ -153,7 +153,7 @@ Khi chạy `python main.py`, các model sau sẽ được **tự động tải v
    - ONNX di động: `./arcface_model_best_mobile.onnx`
    - *Đây là mô hình đạt được sai số tối thiểu trên tập dữ liệu huấn luyện, đảm bảo độ tổng quát cao nhất mà không bị quá khớp ở các epoch dao động phía sau.*
 
-Trong C# .NET 8.0, nạp mô hình Best Loss bằng:
+Trong C# .net 10.0, nạp mô hình Best Loss bằng:
 ```csharp
 var session = new InferenceSession(@"/work/.../arcface_model_best.onnx");
 ```
@@ -384,7 +384,7 @@ graph TD
     I --> I4[arcface_model_final_mobile.onnx lượng tử hóa - ~93MB]
 
     
-    subgraph Tích hợp C# .NET 8.0 Backend
+    subgraph Tích hợp C# .net 10.0 Backend
         I1 --> J[Nạp ONNX qua Microsoft.ML.OnnxRuntime]
         K[Ảnh truy vấn mới] --> L[Căn chỉnh & Trích xuất Embedding 512-D]
         L --> M[L2 Normalization]
@@ -617,7 +617,7 @@ function alignFaceBrowser(
 }
 ```
 
-### 3.3. Mã nguồn C# .NET 8.0 (Dùng ở Backend khi trích xuất vector điểm danh)
+### 3.3. Mã nguồn C# .net 10.0 (Dùng ở Backend khi trích xuất vector điểm danh)
 Sử dụng thuật toán ánh xạ pixel trực tiếp (Inverse Affine Mapping), hoàn toàn độc lập với các thư viện xử lý ma trận và chạy cực nhanh trên mọi hệ điều hành:
 ```csharp
 using SixLabors.ImageSharp;
@@ -762,7 +762,7 @@ python main.py --epochs 200 --batch_size 16 --learning_rate 0.0001 --align_mode 
 ---
 
 ### 5.3 Hướng dẫn C# tích hợp gọi Tiến trình Huấn luyện & Đọc tiến độ
-Dưới đây là mã nguồn C# .NET 8.0 chuẩn hóa để khởi chạy tiến trình Python `main.py`, chuyển tiếp các cấu hình dạng tham số động, đồng thời đọc luồng `stdout` không đồng bộ bằng Regex để bóc tách tiến độ:
+Dưới đây là mã nguồn C# .net 10.0 chuẩn hóa để khởi chạy tiến trình Python `main.py`, chuyển tiếp các cấu hình dạng tham số động, đồng thời đọc luồng `stdout` không đồng bộ bằng Regex để bóc tách tiến độ:
 
 ```csharp
 using System;
@@ -1017,7 +1017,7 @@ sequenceDiagram
     actor Admin
     actor User
     participant WebApp as Client Browser (TS)
-    participant Backend as .NET 8.0 Core API (C#)
+    participant Backend as .net 10.0 Core API (C#)
     participant Python as Fine-Tuning Pipeline
     participant DB as PostgreSQL + pgvector
     
@@ -1070,7 +1070,7 @@ CREATE INDEX ON "CroppedFaces" USING hnsw ("Embedding" vector_cosine_ops)
 WITH (m = 16, ef_construction = 64);
 ```
 
-### 7.2. Tích hợp Entity Framework Core (EF Core) trong C# .NET 8.0
+### 7.2. Tích hợp Entity Framework Core (EF Core) trong C# .net 10.0
 
 #### Cài đặt thư viện NuGet:
 ```xml

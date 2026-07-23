@@ -415,7 +415,7 @@ Bộ câu hỏi này gồm **5 phần chuyên sâu** nhằm kiểm tra từ tư 
 * **Kỳ vọng câu trả lời**:
   * Developer không tự ghi log lỗi. Khi có lỗi nghiệp vụ, throw Exception cụ thể kèm theo **message context** và **các giá trị tham số liên quan (value context)**. Exception Middleware ở Core Infra sẽ tự động bắt được và lưu vào hệ thống tracking tập trung.
 
-#### Câu 14: Hãy lập bảng đối chiếu các pattern thông dụng giữa C# (.NET 8.0) và Python (FastAPI + SQLAlchemy) để hỗ trợ quá trình tuyển dụng/chuyển đổi?
+#### Câu 14: Hãy lập bảng đối chiếu các pattern thông dụng giữa C# (.net 10.0) và Python (FastAPI + SQLAlchemy) để hỗ trợ quá trình tuyển dụng/chuyển đổi?
 * **Mục đích kiểm tra**: Tư duy liên ngôn ngữ để dễ dàng chuyển giao công nghệ.
 * **Kỳ vọng câu trả lời**:
   * API Entry Point: Controllers (C#) $\leftrightarrow$ APIRouter (FastAPI).

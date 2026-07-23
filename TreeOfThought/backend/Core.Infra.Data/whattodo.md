@@ -1,0 +1,2 @@
+bổ xung triển khai Audit Log (Trước - Sau) vào base với DbContext cho cả mongodb lẫn relation dbcontext 
+Ý tưởng chính: Override hàm SaveChangesAsync SaveChange của DbContext để can thiệp vào trước khi dữ liệu thật sự được ghi xuống Database.  của TreeOfThought/backend/Core.Infra.Data các dbcontext sẽ luôn có bảng audit log để tracking  

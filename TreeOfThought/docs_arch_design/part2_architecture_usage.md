@@ -720,7 +720,7 @@ Khi làm việc với TreeOfThought, AI IDE đóng vai trò **đồng thời 3 c
 | Vai Trò | Trách Nhiệm |
 |---------|-------------|
 | **BA (Business Analyst)** | Đọc `whattodo.md`, hiểu yêu cầu, viết `howtodo.md` như tài liệu thiết kế hệ thống |
-| **System Architect** | Đảm bảo tuân thủ kiến trúc Modular Monolith, KISS, DRY, quy ước folder |
+| **System Architect** | Đảm bảo tuân thủ kiến trúc Distributed, Modular Monolith, KISS, DRY, quy ước folder |
 | **Full Stack Developer** | Triển khai code BE (.NET 8), FE (Angular), Database (PostgreSQL), Mobile (Flutter) |
 
 ### 10.4. Quy Trình Kiểm Soát Chất Lượng (Quality Gate)

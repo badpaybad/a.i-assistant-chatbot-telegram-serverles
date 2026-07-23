@@ -9,7 +9,7 @@
 ## 1. Kiến trúc Tổng quan & Công nghệ
 
 ### 1.1. Công nghệ sử dụng
-- **Framework:** .NET 8.0 (C# 12)
+- **Framework:** .net 10.0 (C# 12)
 - **AI Runtime:** `Microsoft.ML.OnnxRuntime` (v1.17.1+)
 - **Xử lý Ảnh:** `SkiaSharp` & `SkiaSharp.NativeAssets.Linux.NoDependencies` (Loại bỏ hoàn toàn `OpenCvSharp4` nhằm đơn giản hóa deployment trên Linux Docker/Serverless không phụ thuộc thư viện OpenCV native).
 - **Hệ thống Base:** Tích hợp trực tiếp vào `TreeOfThought/backend/Core.Web.Api` thông qua `Core.Infra.OnnxComputerVision.csproj`.

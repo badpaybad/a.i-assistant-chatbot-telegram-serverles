@@ -6,7 +6,7 @@ Tài liệu này tổng hợp toàn bộ giải pháp kỹ thuật, cấu trúc 
 
 ## 1. Tổng quan Kiến trúc Kỹ thuật
 
-Hệ thống OIDC được thiết kế theo mô hình **Modular Monolith** kết hợp các chuẩn bảo mật **OIDC/OAuth2** và cơ chế **Hybrid Authorization** để tối ưu hóa hiệu năng, bảo mật và khả năng đồng bộ thời gian thực.
+Hệ thống OIDC được thiết kế theo mô hình **Distributed, Modular Monolith** kết hợp các chuẩn bảo mật **OIDC/OAuth2** và cơ chế **Hybrid Authorization** để tối ưu hóa hiệu năng, bảo mật và khả năng đồng bộ thời gian thực.
 
 ```mermaid
 graph TD
@@ -35,7 +35,7 @@ graph TD
 ```
 
 ### Các thành phần Công nghệ áp dụng:
-- **Backend:** .NET 8.0, ASP.NET Core Web API, Identity base, cookie-based SSO session, RSA signing keys.
+- **Backend:** .net 10.0, ASP.NET Core Web API, Identity base, cookie-based SSO session, RSA signing keys.
 - **Frontend:** Angular 17+, Standalone Components, Ng-Zorro-Antd UI, Transloco i18n, `@tot/shared` UI library (gồm `tot-table`, `tot-button`, `tot-autocomplete`).
 - **Caching & Session State:** Redis (Hybrid Mode: basic roles trong JWT, detail permissions lưu ở Redis Session để tránh phình to kích thước JWT Token).
 - **Storage:** Google Cloud Storage (Firebase Storage Bucket) dùng cho upload tệp ảnh đại diện của người dùng.

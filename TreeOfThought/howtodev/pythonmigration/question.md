@@ -1,6 +1,6 @@
 # Bộ Câu Hỏi Phỏng Vấn & Kiểm Tra Năng Lực Lập Trình Viên Python (Python Senior Interview & Assessment Guide)
 
-Tài liệu này định nghĩa bộ câu hỏi phỏng vấn tuyển dụng và đánh giá năng lực dành cho ứng viên **Senior Python Developer / Backend Architect** tham gia vào dự án chuyển đổi (migration) toàn bộ hệ thống Backend từ **C# (.NET 8.0)** sang **Python (FastAPI + SQLAlchemy 2.0)** tại `TreeOfThought`.
+Tài liệu này định nghĩa bộ câu hỏi phỏng vấn tuyển dụng và đánh giá năng lực dành cho ứng viên **Senior Python Developer / Backend Architect** tham gia vào dự án chuyển đổi (migration) toàn bộ hệ thống Backend từ **C# (.net 10.0)** sang **Python (FastAPI + SQLAlchemy 2.0)** tại `TreeOfThought`.
 
 ---
 
@@ -519,12 +519,12 @@ Bộ câu hỏi này được thiết kế theo phân cấp từ **Cơ bản (Fu
 
 ---
 
-#### Câu 21 (Nâng cao/Architect): Hãy lập bảng đối chiếu kiến trúc và các pattern thông dụng giữa C# (.NET 8.0) và Python (FastAPI + SQLAlchemy) để hỗ trợ quá trình tuyển dụng và chuyển giao công nghệ?
+#### Câu 21 (Nâng cao/Architect): Hãy lập bảng đối chiếu kiến trúc và các pattern thông dụng giữa C# (.net 10.0) và Python (FastAPI + SQLAlchemy) để hỗ trợ quá trình tuyển dụng và chuyển giao công nghệ?
 * **Mục đích kiểm tra**: Khả năng làm việc đa ngôn ngữ (C# và Python), hiểu rõ bản chất công cụ thay vì chỉ nhớ cú pháp.
 * **Gợi ý trả lời & Tiêu chí đánh giá**:
   * Yêu cầu ứng viên liệt kê được các thành phần tương đương để dù lập trình viên C# hay Python tham gia đều có thể hiểu nhanh cấu trúc:
 
-| Component / Pattern | ASP.NET Core C# (.NET 8.0) | Python (FastAPI + SQLAlchemy 2.0) |
+| Component / Pattern | ASP.NET Core C# (.net 10.0) | Python (FastAPI + SQLAlchemy 2.0) |
 | :--- | :--- | :--- |
 | **API Entry Point** | Controllers (`[ApiController]`) / Minimal APIs | FastAPI APIRouter (`@router.get(...)`) |
 | **Dependency Injection** | `IServiceCollection` (`AddScoped`, `AddSingleton`) | FastAPI `Depends()` / `dependency-injector` container |

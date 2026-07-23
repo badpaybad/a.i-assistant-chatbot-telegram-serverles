@@ -10,11 +10,13 @@ using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Core.Infra.Base.Interfaces;
+using Core.Infra.Data.Models;
 
 namespace Core.Infra.Data.Mongo;
 
 public class DbSet<T> : IDbSet<T> where T : class
 {
+    private readonly IMongoDatabase _database;
     private readonly IMongoCollection<T> _collection;
     private readonly IQueryable<T> _queryable;
     private readonly string _collectionName;
@@ -24,12 +26,29 @@ public class DbSet<T> : IDbSet<T> where T : class
 
     public DbSet(IMongoDatabase database, string? collectionName = null)
     {
+        _database = database;
         _collectionName = collectionName ?? typeof(T).Name;
         
         EnsureClassMapRegistered();
         
         _collection = database.GetCollection<T>(_collectionName);
         _queryable = _collection.AsQueryable();
+    }
+
+    private async Task WriteAuditLogInternalAsync(AuditLog auditLog)
+    {
+        if (_collectionName == "AuditLogs") return;
+        var auditCollection = _database.GetCollection<AuditLog>("AuditLogs");
+        await auditCollection.InsertOneAsync(auditLog);
+    }
+
+    private async Task WriteAuditLogsInternalAsync(IEnumerable<AuditLog> auditLogs)
+    {
+        if (_collectionName == "AuditLogs") return;
+        var logs = auditLogs.ToList();
+        if (logs.Count == 0) return;
+        var auditCollection = _database.GetCollection<AuditLog>("AuditLogs");
+        await auditCollection.InsertManyAsync(logs);
     }
 
     private void EnsureClassMapRegistered()
@@ -82,7 +101,60 @@ public class DbSet<T> : IDbSet<T> where T : class
         if (idValue != null)
         {
             var filter = Builders<T>.Filter.Eq("Id", idValue);
+
+            // Fetch Before State
+            string? beforeState = null;
+            try
+            {
+                var original = await _collection.Find(filter).FirstOrDefaultAsync();
+                if (original != null)
+                {
+                    beforeState = original.ToJson();
+                }
+                else
+                {
+                    beforeState = entity.ToJson();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error fetching original in RemoveAsync: {ex}");
+                beforeState = entity.ToJson();
+            }
+
+            // Perform Delete
             await _collection.DeleteOneAsync(filter);
+
+            // Audit Log
+            try
+            {
+                string? userId = null;
+                var trackingInterface = typeof(T).GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+                if (trackingInterface != null)
+                {
+                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
+                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                }
+
+                var auditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    TableName = _collectionName,
+                    Action = "Delete",
+                    EntityId = idValue.ToString() ?? string.Empty,
+                    BeforeState = beforeState,
+                    AfterState = null,
+                    Timestamp = DateTime.UtcNow,
+                    UserId = userId
+                };
+
+                await WriteAuditLogInternalAsync(auditLog);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error writing log in RemoveAsync: {ex}");
+            }
         }
         else
         {
@@ -101,13 +173,84 @@ public class DbSet<T> : IDbSet<T> where T : class
     public Task RemoveAsync(Expression<Func<T, bool>> predicate) => DeleteAsync(predicate);
 
     // CRUD Operations (Original/Aliases)
-    public async Task InsertAsync(T entity) => await _collection.InsertOneAsync(entity);
+    public async Task InsertAsync(T entity)
+    {
+        await _collection.InsertOneAsync(entity);
+
+        try
+        {
+            var idProp = typeof(T).GetProperty("Id");
+            var idValue = idProp?.GetValue(entity)?.ToString() ?? string.Empty;
+
+            string? userId = null;
+            var trackingInterface = typeof(T).GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+            if (trackingInterface != null)
+            {
+                userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+            }
+
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TableName = _collectionName,
+                Action = "Insert",
+                EntityId = idValue,
+                BeforeState = null,
+                AfterState = entity.ToJson(),
+                Timestamp = DateTime.UtcNow,
+                UserId = userId
+            };
+
+            await WriteAuditLogInternalAsync(auditLog);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Audit log error in InsertAsync: {ex}");
+        }
+    }
     
     public async Task InsertManyAsync(IEnumerable<T> entities)
     {
         if (entities != null && entities.Any())
         {
             await _collection.InsertManyAsync(entities);
+
+            try
+            {
+                var auditLogs = new List<AuditLog>();
+                var idProp = typeof(T).GetProperty("Id");
+                var trackingInterface = typeof(T).GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+
+                foreach (var entity in entities)
+                {
+                    var idValue = idProp?.GetValue(entity)?.ToString() ?? string.Empty;
+                    string? userId = null;
+                    if (trackingInterface != null)
+                    {
+                        userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    }
+
+                    auditLogs.Add(new AuditLog
+                    {
+                        Id = Guid.NewGuid(),
+                        TableName = _collectionName,
+                        Action = "Insert",
+                        EntityId = idValue,
+                        BeforeState = null,
+                        AfterState = entity.ToJson(),
+                        Timestamp = DateTime.UtcNow,
+                        UserId = userId
+                    });
+                }
+
+                await WriteAuditLogsInternalAsync(auditLogs);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error in InsertManyAsync: {ex}");
+            }
         }
     }
 
@@ -124,7 +267,55 @@ public class DbSet<T> : IDbSet<T> where T : class
         if (idValue != null)
         {
             var filter = Builders<T>.Filter.Eq("Id", idValue);
+
+            // Fetch Before State
+            string? beforeState = null;
+            try
+            {
+                var original = await _collection.Find(filter).FirstOrDefaultAsync();
+                if (original != null)
+                {
+                    beforeState = original.ToJson();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error fetching original in UpdateAsync: {ex}");
+            }
+
+            // Update
             await _collection.ReplaceOneAsync(filter, entity);
+
+            // Audit
+            try
+            {
+                string? userId = null;
+                var trackingInterface = typeof(T).GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+                if (trackingInterface != null)
+                {
+                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
+                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                }
+
+                var auditLog = new AuditLog
+                {
+                    Id = Guid.NewGuid(),
+                    TableName = _collectionName,
+                    Action = "Update",
+                    EntityId = idValue.ToString() ?? string.Empty,
+                    BeforeState = beforeState,
+                    AfterState = entity.ToJson(),
+                    Timestamp = DateTime.UtcNow,
+                    UserId = userId
+                };
+
+                await WriteAuditLogInternalAsync(auditLog);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error writing log in UpdateAsync: {ex}");
+            }
         } 
         else
         {
@@ -143,12 +334,118 @@ public class DbSet<T> : IDbSet<T> where T : class
 
     public async Task DeleteAsync(Expression<Func<T, bool>> predicate)
     {
+        List<T> originals = new();
+        try
+        {
+            originals = await _collection.Find(predicate).ToListAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Audit log error fetching originals in DeleteAsync: {ex}");
+        }
+
         await _collection.DeleteManyAsync(predicate);
+
+        if (originals.Any())
+        {
+            try
+            {
+                var auditLogs = new List<AuditLog>();
+                var idProp = typeof(T).GetProperty("Id");
+                var trackingInterface = typeof(T).GetInterfaces()
+                    .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+
+                foreach (var original in originals)
+                {
+                    var idValue = idProp?.GetValue(original)?.ToString() ?? string.Empty;
+                    string? userId = null;
+                    if (trackingInterface != null)
+                    {
+                        userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(original) as string 
+                                 ?? typeof(T).GetProperty("CreatedBy")?.GetValue(original) as string;
+                    }
+
+                    auditLogs.Add(new AuditLog
+                    {
+                        Id = Guid.NewGuid(),
+                        TableName = _collectionName,
+                        Action = "Delete",
+                        EntityId = idValue,
+                        BeforeState = original.ToJson(),
+                        AfterState = null,
+                        Timestamp = DateTime.UtcNow,
+                        UserId = userId
+                    });
+                }
+
+                await WriteAuditLogsInternalAsync(auditLogs);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Audit log error writing logs in DeleteAsync: {ex}");
+            }
+        }
     }
 
     public async Task UpsertAsync(Expression<Func<T, bool>> predicate, T entity)
     {
+        string? beforeState = null;
+        bool exists = false;
+        try
+        {
+            var original = await _collection.Find(predicate).FirstOrDefaultAsync();
+            if (original != null)
+            {
+                beforeState = original.ToJson();
+                exists = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Audit log error checking original in UpsertAsync: {ex}");
+        }
+
         var options = new ReplaceOptions { IsUpsert = true };
         await _collection.ReplaceOneAsync(predicate, entity, options);
+
+        try
+        {
+            var idProp = typeof(T).GetProperty("Id");
+            var idValue = idProp?.GetValue(entity)?.ToString() ?? string.Empty;
+
+            string? userId = null;
+            var trackingInterface = typeof(T).GetInterfaces()
+                .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
+            if (trackingInterface != null)
+            {
+                if (exists)
+                {
+                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
+                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                }
+                else
+                {
+                    userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                }
+            }
+
+            var auditLog = new AuditLog
+            {
+                Id = Guid.NewGuid(),
+                TableName = _collectionName,
+                Action = exists ? "Update" : "Insert",
+                EntityId = idValue,
+                BeforeState = beforeState,
+                AfterState = entity.ToJson(),
+                Timestamp = DateTime.UtcNow,
+                UserId = userId
+            };
+
+            await WriteAuditLogInternalAsync(auditLog);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Audit log error writing log in UpsertAsync: {ex}");
+        }
     }
 }

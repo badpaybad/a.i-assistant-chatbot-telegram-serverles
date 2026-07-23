@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Xunit;
+using Core.Infra.Data.Models;
 
 namespace Core.Infra.DataTest;
 
@@ -73,6 +74,75 @@ public class DataCrudTests
 
         // Cleanup
         await context.BulkDeleteAsync(list);
+    }
+
+    [Theory]
+    [InlineData("PostgreSql")]
+    public async Task Relational_AuditLog_Test(string provider)
+    {
+        var connStr = _config.GetConnectionString(provider);
+        if (string.IsNullOrEmpty(connStr)) return;
+
+        using var context = new TestRelationalContext(connStr, provider);
+        await context.Database.EnsureCreatedAsync();
+
+        // Clear out old records
+        context.Samples.RemoveRange(context.Samples);
+        context.AuditLogs.RemoveRange(context.AuditLogs);
+        await context.SaveChangesAsync();
+
+        // 1. Test Insert Audit Log
+        var entity = new SampleEntity 
+        { 
+            Name = "Audit Test Item", 
+            Description = "Initial description", 
+            Price = 100, 
+            Stock = 5,
+            CreatedBy = "SystemTest"
+        };
+        context.Samples.Add(entity);
+        await context.SaveChangesAsync();
+
+        // Retrieve Audit Log for Insert
+        var logs = await context.AuditLogs.ToListAsync();
+        Assert.Single(logs);
+        var insertLog = logs[0];
+        Assert.Equal("Samples", insertLog.TableName);
+        Assert.Equal("Added", insertLog.Action);
+        Assert.Contains("Audit Test Item", insertLog.AfterState ?? "");
+        Assert.Null(insertLog.BeforeState);
+        Assert.Equal("SystemTest", insertLog.UserId);
+
+        // 2. Test Update Audit Log
+        entity.Price = 150;
+        entity.UpdatedBy = "ModifierTest";
+        await context.SaveChangesAsync();
+
+        logs = await context.AuditLogs.OrderBy(l => l.Timestamp).ToListAsync();
+        Assert.Equal(2, logs.Count);
+        var updateLog = logs[1];
+        Assert.Equal("Samples", updateLog.TableName);
+        Assert.Equal("Modified", updateLog.Action);
+        Assert.Contains("100", updateLog.BeforeState ?? "");
+        Assert.Contains("150", updateLog.AfterState ?? "");
+        Assert.Equal("ModifierTest", updateLog.UserId);
+
+        // 3. Test Delete Audit Log
+        context.Samples.Remove(entity);
+        await context.SaveChangesAsync();
+
+        logs = await context.AuditLogs.OrderBy(l => l.Timestamp).ToListAsync();
+        Assert.Equal(3, logs.Count);
+        var deleteLog = logs[2];
+        Assert.Equal("Samples", deleteLog.TableName);
+        Assert.Equal("Deleted", deleteLog.Action);
+        Assert.Contains("150", deleteLog.BeforeState ?? "");
+        Assert.Null(deleteLog.AfterState);
+        Assert.Equal("ModifierTest", deleteLog.UserId);
+
+        // Cleanup
+        context.AuditLogs.RemoveRange(context.AuditLogs);
+        await context.SaveChangesAsync();
     }
 
     [Fact]

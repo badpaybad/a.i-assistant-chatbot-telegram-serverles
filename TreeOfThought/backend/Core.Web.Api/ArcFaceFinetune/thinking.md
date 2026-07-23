@@ -9,7 +9,7 @@ Tài liệu này ghi lại kết quả đánh giá chi tiết về mặt kỹ th
 Qua phân tích cấu trúc mã nguồn tại `main.py` và các tài liệu hướng dẫn `howtodo.md`, `whattodo.md`, pipeline tinh chỉnh hiện tại được thiết kế rất bài bản, thực dụng và có độ hoàn thiện cao cho môi trường sản xuất.
 
 ### 1.1. Các điểm sáng vượt trội (Pros)
-*   **Đồng nhất hóa thuật toán Căn chỉnh (Alignment):** Việc triển khai thuật toán `2-Eye Similarity Transform` đồng bộ 100% bằng 3 ngôn ngữ (**Python** khi huấn luyện, **TypeScript/JavaScript** trên trình duyệt khi đăng ký ảnh mẫu, và **C# .NET 8.0** ở backend khi so khớp) là điểm cộng kỹ thuật cực kỳ lớn. Do ArcFace rất nhạy cảm với căn chỉnh hình học, sự nhất quán này chặn đứng việc tụt giảm độ tương đồng Cosine (thường tụt xuống dưới `0.3` nếu dùng sai lệch thuật toán).
+*   **Đồng nhất hóa thuật toán Căn chỉnh (Alignment):** Việc triển khai thuật toán `2-Eye Similarity Transform` đồng bộ 100% bằng 3 ngôn ngữ (**Python** khi huấn luyện, **TypeScript/JavaScript** trên trình duyệt khi đăng ký ảnh mẫu, và **C# .net 10.0** ở backend khi so khớp) là điểm cộng kỹ thuật cực kỳ lớn. Do ArcFace rất nhạy cảm với căn chỉnh hình học, sự nhất quán này chặn đứng việc tụt giảm độ tương đồng Cosine (thường tụt xuống dưới `0.3` nếu dùng sai lệch thuật toán).
 *   **Chiến lược Tăng cường dữ liệu thực tế (Augmentation):** Tích hợp giả lập khẩu trang màu ngẫu nhiên (`Mask Synthesis` - 25%), gọng kính (`Glass Synthesis` - 15%), làm mờ (`GaussianBlur` - 30%) và biến đổi ánh sáng (`ColorJitter`) giúp mô hình chống chọi cực tốt với môi trường doanh nghiệp thực tế tại Việt Nam.
 *   **MediaPipe Face Landmarker 3D (468 điểm):** Lựa chọn chế độ căn chỉnh `advanced` để định vị hốc mắt bằng lưới hình học 3D giúp pipeline hoạt động ổn định bất chấp sự thay đổi cơ mặt lớn do biểu cảm, góc nghiêng hoặc tuổi tác (trẻ em 2 tuổi đến người già 70 tuổi).
 *   **Lượng tử hóa INT8 cho Mobile:** Pipeline tích hợp sẵn bước lượng tử hóa động (`quantize_dynamic`) giúp nén mô hình ONNX từ ~100MB xuống còn **~25MB** (`arcface_model_best_mobile.onnx`), sẵn sàng cho các ứng dụng di động chạy Flutter với hiệu năng CPU/NPU tối ưu.
@@ -135,7 +135,7 @@ Nếu bạn nhìn thấy thông báo trên, điều đó có nghĩa là mô hìn
 
 ### 5.1. Khả năng gọi trực tiếp `face_landmarker.task` từ C#
 *   **Bản chất kỹ thuật:** File `.task` là một bundle đóng gói mô hình **TFLite** cùng với siêu dữ liệu (metadata) độc quyền của Google MediaPipe.
-*   **Khả năng tương thích:** **C#/.NET 8.0 không thể gọi trực tiếp file này.** Google chỉ cung cấp SDK chính thức cho C++, Python, Android, iOS và Web (JavaScript/TypeScript WebAssembly). Google không phát hành bất kỳ thư viện đầu tiên (first-party) nào cho .NET.
+*   **Khả năng tương thích:** **C#/.net 10.0 không thể gọi trực tiếp file này.** Google chỉ cung cấp SDK chính thức cho C++, Python, Android, iOS và Web (JavaScript/TypeScript WebAssembly). Google không phát hành bất kỳ thư viện đầu tiên (first-party) nào cho .NET.
 *   **Giải pháp wrapper cộng đồng:** Các dự án như `MediaPipe.NET` cố gắng bọc (wrap) mã C++ của MediaPipe. Tuy nhiên, chúng có cấu trúc rất cồng kềnh, độ ổn định thấp và rất dễ gây crash hệ thống khi deploy đa nền tảng (như trên Linux Docker hay Windows Server) do xung đột tệp liên kết động native (`.dll` / `.so`).
 
 ---

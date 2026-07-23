@@ -6,7 +6,7 @@ Tài liệu này định nghĩa giải pháp kỹ thuật, cấu trúc cơ sở 
 
 ## 1. Mục tiêu & Nguyên lý Thiết kế
 
-Khi một yêu cầu (Request) đi từ client (UI/API Controller) vào hệ thống Modular Monolith, nó có thể được phân rã thành nhiều bước xử lý bất đồng bộ thông qua Command và Event:
+Khi một yêu cầu (Request) đi từ client (UI/API Controller) vào hệ thống Distributed, Modular Monolith, nó có thể được phân rã thành nhiều bước xử lý bất đồng bộ thông qua Command và Event:
 - API nhận yêu cầu -> Enqueue **Command A** (Priority Queue trên Redis).
 - Command Worker xử lý **Command A** -> Publish **Event B** (Topic trên Redis).
 - Event Worker đăng ký subscribe nhận được **Event B** -> Enqueue tiếp **Command C** hoặc gửi realtime phản hồi lên UI qua Firestore.

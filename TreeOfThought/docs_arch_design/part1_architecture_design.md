@@ -17,11 +17,11 @@
 - 🤖 **Nhận diện khuôn mặt** (AI Face Detection) — Xử lý ảnh bằng AI
 - 📊 **CQRS Dashboard** — Bảng điều khiển theo dõi toàn bộ luồng xử lý bất đồng bộ trong hệ thống
 
-### 1.2. Kiến Trúc Lõi: Modular Monolith + Clean Architecture
+### 1.2. Kiến Trúc Lõi: Distributed, Modular Monolith + Clean Architecture
 
 > **Tưởng tượng thế này**: Thay vì xây một tòa nhà khổng lồ không có tường ngăn (Monolith thuần), hệ thống chia thành các **căn hộ riêng biệt** (Modules) trong cùng một tòa nhà. Mỗi căn hộ có cửa riêng, nội thất riêng, không ai tự tiện vào nhà người khác. Nhưng tất cả vẫn dùng chung hệ thống điện, nước, thang máy (Core Infrastructure).
 
-| Đặc điểm | Microservices | Monolith thuần | **Modular Monolith (TreeOfThought)** |
+| Đặc điểm | Microservices | Monolith thuần | **Distributed, Modular Monolith (TreeOfThought)** |
 |-----------|:---:|:---:|:---:|
 | Deploy đơn giản | ❌ | ✅ | ✅ |
 | Module độc lập | ✅ | ❌ | ✅ |
@@ -39,7 +39,7 @@
 │  └───────────────────────────┬──────────────────────────────────┘  │
 │                              │ RESTful API / JWT                   │
 │  ┌───────────────────────────▼──────────────────────────────────┐  │
-│  │           BACKEND MODULAR MONOLITH (.NET 8)                  │  │
+│  │           BACKEND Distributed, Modular Monolith (.NET 8)                  │  │
 │  │  [Core.Web.Api] ← Entry Point                                │  │
 │  │       ├── [Core.Infra.Auth]     ← Bảo mật, JWT, ACL          │  │
 │  │       ├── [Core.Infra.Cqrs]     ← Event Bus, Queue           │  │
