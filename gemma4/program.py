@@ -77,6 +77,9 @@ class Tool(BaseModel):
 class ThinkingConfig(BaseModel):
     include_thoughts: Optional[bool] = False
 
+class SpeechConfig(BaseModel):
+    voiceConfig: Optional[Dict[str, Any]] = None
+
 class GenerationConfig(BaseModel):
     temperature: Optional[float] = 0.7
     topP: Optional[float] = 0.9
@@ -87,6 +90,21 @@ class GenerationConfig(BaseModel):
     responseMimeType: Optional[str] = "text/plain"
     responseJsonSchema: Optional[Dict[str, Any]] = None
     thinkingConfig: Optional[ThinkingConfig] = None
+    responseModalities: Optional[List[str]] = None
+    speechConfig: Optional[SpeechConfig] = None
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: Optional[str] = "af_sarah"
+    speed: Optional[float] = 1.0
+
+class TTSResponse(BaseModel):
+    audio_content: str  # base64 encoded audio
+    mime_type: str = "audio/wav"
+    download_url: Optional[str] = None
+
+class ASRResponse(BaseModel):
+    text: str
 
 class GenerateContentRequest(BaseModel):
     contents: List[Content]
@@ -132,7 +150,9 @@ def get_file_path(file_id: str):
 # --- Helpers ---
 
 def get_gemma_manager():
-    return get_manager()
+    device = "gpu" if torch.cuda.is_available() else "cpu"
+    # Choose engine based on user preference or fallback
+    return get_manager(device=device)
 
 def process_omni_parts(parts: List[Part]):
     """
@@ -294,6 +314,62 @@ async def delete_file(file_id: str):
         return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="File not found")
 
+@app.post("/v1beta/tts", response_model=TTSResponse)
+async def text_to_speech_api(request: TTSRequest, req: Request):
+    """
+    Text-to-Speech API using Kokoro ONNX.
+    """
+    try:
+        # Generate unique filename
+        filename = f"tts_{uuid.uuid4()}.wav"
+        
+        # Save TTS file
+        output_path = save_tts(request.text, filename=filename, voice=request.voice)
+        
+        # Read file content and encode to base64
+        with open(output_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        
+        base_url = str(req.base_url).rstrip("/")
+        download_url = f"{base_url}/download/{filename}"
+        
+        return TTSResponse(
+            audio_content=audio_b64,
+            download_url=download_url
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS generation error: {str(e)}")
+
+@app.post("/v1beta/stt", response_model=ASRResponse)
+async def speech_to_text_api(file: UploadFile = File(...)):
+    """
+    ASR (Speech-to-Text) API using Gemma 4.
+    """
+    # Save uploaded audio file to a temporary location
+    temp_file_id = f"stt_{uuid.uuid4()}_{file.filename}"
+    temp_file_path = os.path.join(TEMP_DIR, temp_file_id)
+    
+    try:
+        with open(temp_file_path, "wb") as f:
+            f.write(await file.read())
+            
+        # Transcribe using stt module
+        transcription = transcribe_audio(temp_file_path)
+        
+        # Clean up
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            
+        if transcription.startswith("Lỗi"):
+            raise HTTPException(status_code=500, detail=transcription)
+            
+        return ASRResponse(text=transcription)
+    except Exception as e:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Endpoints ---
 
 from fastapi.responses import FileResponse, StreamingResponse
@@ -385,6 +461,38 @@ async def generate_content(request: GenerateContentRequest, req: Request, model:
     
     elapsed = time.time() - start_time
 
+    # Check if the user requested audio output (TTS)
+    if config.responseModalities and any(m.upper() == "AUDIO" for m in config.responseModalities):
+        voice_name = "af_sarah"
+        if config.speechConfig and config.speechConfig.voiceConfig:
+            prebuilt_voice = config.speechConfig.voiceConfig.get("prebuiltVoiceConfig", {})
+            voice_name = prebuilt_voice.get("voiceName", "af_sarah")
+            
+        try:
+            filename = f"tts_{uuid.uuid4()}.wav"
+            output_path = save_tts(response_text, filename=filename, voice=voice_name)
+            
+            with open(output_path, "rb") as f:
+                audio_bytes = f.read()
+            audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+            
+            return GenerateContentResponse(
+                candidates=[Candidate(content=Content(role="model", parts=[
+                    Part(text=response_text),
+                    Part(inline_data=Blob(mime_type="audio/wav", data=audio_b64))
+                ]))],
+                usageMetadata=UsageMetadata(
+                    promptTokenCount=0,
+                    candidatesTokenCount=0,
+                    totalTokenCount=0,
+                    elapsedTimeSeconds=round(elapsed + (time.time() - start_time - elapsed), 3)
+                )
+            )
+        except Exception as tts_err:
+            print(f"[-] Failed to generate TTS in generateContent: {tts_err}")
+            # Fallback to plain text if TTS fails
+            pass
+
     return GenerateContentResponse(
         candidates=[Candidate(content=Content(role="model", parts=[Part(text=response_text)]))],
         usageMetadata=UsageMetadata(
@@ -439,8 +547,8 @@ async def health_check():
     return {"status": "ok", "model": "gemma-4", "capabilities": ["text", "audio", "vision", "files", "tools"]}
 
 if __name__ == "__main__":
-    print("[*] Pre-loading Gemma 4 model...")
-    get_gemma_manager()
+    # print("[*] Pre-loading Gemma 4 model...")
+    # get_gemma_manager()
     port = 8000
     print(f"[*] Starting server on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)

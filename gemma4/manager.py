@@ -137,8 +137,9 @@ class Gemma4Manager:
                 )
                 print("[+] Llama engine initialized successfully.")
             except Exception as e:
-                print(f"[-] ERROR initializing llama-cpp-python engine: {str(e)}")
-                raise e
+                print(f"[-] ERROR initializing llama-cpp-python engine: {str(e)}. Falling back to Hugging Face backend...")
+                self.engine = "huggingface"
+                self._load_model(model_id, device, engine="huggingface")
         else:
             # --- Hugging Face Transformers / PyTorch Engine ---
             import torch
@@ -168,16 +169,53 @@ class Gemma4Manager:
                 config = AutoConfig.from_pretrained(model_id, trust_remote_code=True)
                 self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
                 
-                self.hf_model = AutoModelForMultimodalLM.from_pretrained(
-                    model_id,
-                    config=config,
-                    torch_dtype=torch.float16 if torch_device == "cuda" else torch.bfloat16,
-                    device_map="auto" if torch_device == "cuda" else None,
-                    trust_remote_code=True,
-                    low_cpu_mem_usage=True,
-                    attn_implementation="sdpa"
-                )
-                if torch_device == "cpu":
+                # Setup BitsAndBytes Q4 quantization configuration for CUDA (RTX 3060 8GB VRAM optimization)
+                if torch_device == "cuda":
+                    from transformers import BitsAndBytesConfig
+                    compute_dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+                    quantization_config = BitsAndBytesConfig(
+                        load_in_4bit=True,
+                        bnb_4bit_compute_dtype=compute_dtype,
+                        bnb_4bit_quant_type="nf4",
+                        bnb_4bit_use_double_quant=True
+                    )
+                    print(f"[*] Attempting to load HF model in 4-bit (NF4) on GPU...")
+                    try:
+                        self.hf_model = AutoModelForMultimodalLM.from_pretrained(
+                            model_id,
+                            config=config,
+                            torch_dtype=compute_dtype,
+                            device_map="auto",
+                            quantization_config=quantization_config,
+                            trust_remote_code=True,
+                            low_cpu_mem_usage=True,
+                            attn_implementation="sdpa"
+                        )
+                        print(f"[+] Loaded HF Model in 4-bit (NF4) on GPU successfully.")
+                    except Exception as q_err:
+                        print(f"[!] Warning: Failed to load with BitsAndBytes Q4 quantization ({q_err}). Falling back to standard GPU precision load...")
+                        self.hf_model = AutoModelForMultimodalLM.from_pretrained(
+                            model_id,
+                            config=config,
+                            torch_dtype=compute_dtype,
+                            device_map="auto",
+                            trust_remote_code=True,
+                            low_cpu_mem_usage=True,
+                            attn_implementation="sdpa"
+                        )
+                else:
+                    print(f"[*] Loading HF model on CPU...")
+                    self.hf_model = AutoModelForMultimodalLM.from_pretrained(
+                        model_id,
+                        config=config,
+                        torch_dtype=torch.bfloat16,
+                        device_map=None,
+                        trust_remote_code=True,
+                        low_cpu_mem_usage=True,
+                        attn_implementation="sdpa"
+                    )
+                
+                if torch_device == "cpu" and not hasattr(self.hf_model, "quantization_config"):
                      self.hf_model = self.hf_model.to("cpu")
                      
                 self.hf_model.eval()
@@ -334,13 +372,31 @@ class Gemma4Manager:
                 return_tensors="pt"
             ).to(self.hf_model.device)
 
+            # KV Cache Quantization configuration (Q4/Q8)
+            generate_kwargs = {
+                "max_new_tokens": max_tokens,
+                "do_sample": True,
+                "temperature": 0.7,
+                "top_p": 0.9,
+            }
+            
+            # Configure Q4/Q8 KV Cache if optimum-quanto or hqq is available
+            from transformers.cache_utils import is_optimum_quanto_available, is_hqq_available
+            if is_optimum_quanto_available():
+                nbits = globals().get("KV_CACHE_BITS", 4)
+                generate_kwargs["cache_implementation"] = "quantized"
+                generate_kwargs["cache_config"] = {"backend": "quanto", "nbits": nbits}
+                print(f"[*] Using quantized KV Cache (Quanto backend, nbits={nbits})")
+            elif is_hqq_available():
+                nbits = globals().get("KV_CACHE_BITS", 4)
+                generate_kwargs["cache_implementation"] = "quantized"
+                generate_kwargs["cache_config"] = {"backend": "hqq", "nbits": nbits}
+                print(f"[*] Using quantized KV Cache (HQQ backend, nbits={nbits})")
+
             with torch.no_grad():
                 outputs = self.hf_model.generate(
                     **inputs,
-                    max_new_tokens=max_tokens,
-                    do_sample=True,
-                    temperature=0.7,
-                    top_p=0.9
+                    **generate_kwargs
                 )
                 
             input_len = inputs['input_ids'].shape[1]
