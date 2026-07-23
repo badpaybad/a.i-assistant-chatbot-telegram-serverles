@@ -199,7 +199,7 @@ async def ensure_gemma4_local_server_running():
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(health_url, timeout=2.0)
-            if resp.status_code == 200 and resp.json().get("ready", True):
+            if resp.status_code == 200 and resp.json().get("ready") is True:
                 print(f"[Gemma4] Local API server is already running and ready on {gemma4_url}")
                 return True
         except Exception:
@@ -218,7 +218,7 @@ async def ensure_gemma4_local_server_running():
             await asyncio.sleep(2)
             try:
                 resp = await client.get(health_url, timeout=2.0)
-                if resp.status_code == 200 and resp.json().get("ready", True):
+                if resp.status_code == 200 and resp.json().get("ready") is True:
                     print(f"[Gemma4] Local API server started and models are 100% pre-loaded!")
                     return True
             except Exception:

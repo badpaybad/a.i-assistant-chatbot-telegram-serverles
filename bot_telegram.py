@@ -243,13 +243,18 @@ async def send_telegram_message(
                 try:
                     response = await client.post(url, json=data_payload, timeout=30.0)
                     response.raise_for_status()
-                except Exception as ex_html:
-                    if parse_mode and "can't parse entities" in str(ex_html).lower():
+                except Exception as ex_err:
+                    err_msg = str(ex_err).lower()
+                    if parse_mode and "can't parse entities" in err_msg:
                         data_payload.pop("parse_mode", None)
+                    if reply_to_message_id and "reply" in err_msg and "not found" in err_msg:
+                        data_payload.pop("reply_to_message_id", None)
+                    
+                    if "parse_mode" not in data_payload or "reply_to_message_id" not in data_payload:
                         response = await client.post(url, json=data_payload, timeout=30.0)
                         response.raise_for_status()
                     else:
-                        raise ex_html
+                        raise ex_err
 
                 last_telegram_response = telegram_types.TelegramUpdate(**response.json())
 
