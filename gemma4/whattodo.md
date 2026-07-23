@@ -34,3 +34,7 @@ Cần chắc chắn mọi model a.i gemma bắt buộc dùng gpu cude RTX 3060 8
 
 **cập nhật 6**
 cần download các model sẵn sàng trước khi start web, lưu vào local để lần tới dùng lại, load sẵn model để khi có request thì response luôn không bị chờ lâu
+
+**cập nhật 7**
+Gemma 4 E2B dùng model này nếu bị out of memory. Cần tìm cách Gemma 4 E4B chạy tốt trên RTX 3060 8GB , model gemma bắt buộc dùng gpu, còn các model khác có thể chạy cpu  .
+dùng mặc định Gemma 4 E4B unsloth

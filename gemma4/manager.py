@@ -17,6 +17,10 @@ if project_root not in sys.path:
 from config import *
 from .download_model import setup_gemma, setup_kokoro
 
+# Fix CUDA memory fragmentation — allows small allocations to succeed even when
+# VRAM is mostly used by the model (avoids OOM from non-contiguous free blocks)
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+
 # Shim to prevent unit tests checking PyTorch parameters from crashing (GGUF mode)
 class DummyParameter:
     def __init__(self):
@@ -123,44 +127,122 @@ class Gemma4Manager:
             torch_device = "cuda" if (device == "gpu" or device == "cuda") and torch.cuda.is_available() else "cpu"
             
             try:
+                # Clear fragmented VRAM before loading to free reserved-but-unallocated blocks
+                if torch.cuda.is_available():
+                    import gc
+                    gc.collect()
+                    torch.cuda.empty_cache()
+                    free_mem = (torch.cuda.get_device_properties(0).total_memory
+                                - torch.cuda.memory_allocated(0)) / 1024**3
+                    print(f"[GPU] Free VRAM before load: {free_mem:.2f}GB")
+
                 config = AutoConfig.from_pretrained(model_id, trust_remote_code=True)
                 self.processor = AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
                 
-                # Setup BitsAndBytes Q4 NF4 quantization for RTX 3060 8GB VRAM
-                # device_map={"":0} forces ALL layers onto GPU 0 (no CPU offloading)
+                # Setup BitsAndBytes NF4 4-bit quantization for RTX 3060 8GB
+                # Note: use device_map="cuda:0" (string) instead of {"":0} (dict) to avoid
+                # transformers' caching_allocator_warmup which tries to allocate model-sized
+                # contiguous blocks and causes OOM on already-loaded GPUs.
                 if torch_device == "cuda":
                     from transformers import BitsAndBytesConfig
-                    compute_dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float16
+                    compute_dtype = (torch.bfloat16
+                                     if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+                                     else torch.float16)
+                    # BitsAndBytes runtime quantization config (fallback path)
                     quantization_config = BitsAndBytesConfig(
                         load_in_4bit=True,
                         bnb_4bit_compute_dtype=compute_dtype,
                         bnb_4bit_quant_type="nf4",
-                        bnb_4bit_use_double_quant=True
+                        bnb_4bit_use_double_quant=True,
                     )
-                    print(f"[*] Attempting to load HF model in 4-bit (NF4) fully on RTX 3060 GPU 0...")
-                    try:
-                        self.hf_model = AutoModelForMultimodalLM.from_pretrained(
-                            model_id,
-                            config=config,
+
+                    # Unsloth pre-quantized HF repos: weights already in 4-bit, no BitsAndBytes overhead
+                    _UNSLOTH_REPOS = {
+                        "gemma-4-e2b-it": "unsloth/gemma-4-e2b-it-unsloth-bnb-4bit",
+                        "gemma-4-e4b-it": "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit",
+                    }
+
+                    def _try_load_unsloth(name):
+                        """Load from Unsloth pre-quantized HF checkpoint (no BitsAndBytes runtime)."""
+                        repo = _UNSLOTH_REPOS.get(name)
+                        if not repo:
+                            raise ValueError(f"No Unsloth repo defined for {name}")
+                        local_dir = os.path.join(base_dir, "model", name + "-unsloth-bnb-4bit")
+                        if not os.path.exists(os.path.join(local_dir, "config.json")):
+                            print(f"[*] Downloading Unsloth pre-quantized model {repo}...")
+                            from huggingface_hub import snapshot_download
+                            os.makedirs(local_dir, exist_ok=True)
+                            snapshot_download(repo_id=repo, local_dir=local_dir, local_dir_use_symlinks=False)
+                        source = local_dir if os.path.exists(os.path.join(local_dir, "config.json")) else repo
+                        cfg  = AutoConfig.from_pretrained(source, trust_remote_code=True)
+                        proc = AutoProcessor.from_pretrained(source, trust_remote_code=True)
+                        mdl  = AutoModelForMultimodalLM.from_pretrained(
+                            source,
+                            config=cfg,
                             torch_dtype=compute_dtype,
-                            device_map={"":0},   # Force 100% on GPU 0 (RTX 3060)
+                            device_map="cuda:0",
+                            # No quantization_config — weights are already pre-quantized by Unsloth
+                            trust_remote_code=True,
+                            low_cpu_mem_usage=True,
+                            attn_implementation="sdpa",
+                        )
+                        return mdl, proc
+
+                    def _try_load_bnb(mid, cfg):
+                        """Load with BitsAndBytes NF4 runtime quantization."""
+                        return AutoModelForMultimodalLM.from_pretrained(
+                            mid,
+                            config=cfg,
+                            torch_dtype=compute_dtype,
+                            device_map="cuda:0",
                             quantization_config=quantization_config,
                             trust_remote_code=True,
                             low_cpu_mem_usage=True,
-                            attn_implementation="sdpa"
+                            attn_implementation="sdpa",
                         )
-                        print(f"[+] Loaded HF Model in 4-bit (NF4) on GPU 0 successfully.")
-                    except Exception as q_err:
-                        print(f"[!] Warning: 4-bit load failed ({q_err}). Falling back to bfloat16 on GPU...")
-                        self.hf_model = AutoModelForMultimodalLM.from_pretrained(
-                            model_id,
-                            config=config,
-                            torch_dtype=compute_dtype,
-                            device_map={"":0},
-                            trust_remote_code=True,
-                            low_cpu_mem_usage=True,
-                            attn_implementation="sdpa"
-                        )
+
+                    def _load_model_for(name, mid, cfg):
+                        """Try Unsloth pre-quantized first, fall back to BitsAndBytes NF4."""
+                        # 1) Unsloth pre-quantized (preferred — less VRAM, no runtime overhead)
+                        try:
+                            print(f"[*] Trying Unsloth pre-quantized checkpoint for {name}...")
+                            mdl, proc = _try_load_unsloth(name)
+                            self.processor = proc
+                            print(f"[+] Loaded Unsloth pre-quantized {name} on GPU 0 (minimal VRAM).")
+                            return mdl
+                        except Exception as unsloth_err:
+                            print(f"[!] Unsloth load failed ({unsloth_err}). Falling back to BitsAndBytes NF4...")
+                        # 2) BitsAndBytes NF4 runtime quantization
+                        mdl = _try_load_bnb(mid, cfg)
+                        print(f"[+] Loaded {name} 4-bit NF4 (BitsAndBytes) on GPU 0.")
+                        return mdl
+
+                    # --- Primary model ---
+                    try:
+                        print(f"[*] Loading {model_name} in 4-bit NF4 on RTX 3060 (GPU 0)...")
+                        self.hf_model = _load_model_for(model_name, model_id, config)
+                    except torch.cuda.OutOfMemoryError as oom_primary:
+                        print(f"[!] OOM loading {model_name}: {oom_primary}")
+                        print(f"[*] Auto-fallback: switching to gemma-4-e2b-it (smaller model)...")
+                        import gc; gc.collect(); torch.cuda.empty_cache()
+
+                        e2b_name = "gemma-4-e2b-it"
+                        e2b_dir  = os.path.join(base_dir, "model", e2b_name)
+                        if not os.path.exists(os.path.join(e2b_dir, "config.json")):
+                            print(f"[*] E2B model not found locally, downloading...")
+                            from .download_model import setup_gemma as hf_setup
+                            hf_setup("google/gemma-4-e2b-it")
+                        e2b_id  = e2b_dir if os.path.exists(os.path.join(e2b_dir, "config.json")) else "google/gemma-4-e2b-it"
+                        e2b_cfg = AutoConfig.from_pretrained(e2b_id, trust_remote_code=True)
+                        self.model_id = "google/gemma-4-e2b-it"
+
+                        try:
+                            self.hf_model = _load_model_for(e2b_name, e2b_id, e2b_cfg)
+                        except torch.cuda.OutOfMemoryError as oom_e2b:
+                            raise RuntimeError(
+                                f"Both {model_name} and E2B OOM on RTX 3060. "
+                                f"Free VRAM and restart.\nE2B error: {oom_e2b}"
+                            ) from oom_e2b
                 else:
                     print(f"[*] Loading HF model on CPU (no CUDA available)...")
                     self.hf_model = AutoModelForMultimodalLM.from_pretrained(
@@ -170,21 +252,19 @@ class Gemma4Manager:
                         device_map=None,
                         trust_remote_code=True,
                         low_cpu_mem_usage=True,
-                        attn_implementation="sdpa"
+                        attn_implementation="sdpa",
                     )
 
-                if torch_device == "cpu" and not hasattr(self.hf_model, "quantization_config"):
-                    self.hf_model = self.hf_model.to("cpu")
-
                 self.hf_model.eval()
-                print(f"[+] Multimodal HF model {model_id} initialization complete.")
+                print(f"[+] Multimodal HF model initialization complete.")
 
-                # Log VRAM usage to confirm GPU placement
+                # Confirm GPU placement
                 if torch.cuda.is_available():
                     allocated = torch.cuda.memory_allocated(0) / 1024**3
                     reserved  = torch.cuda.memory_reserved(0)  / 1024**3
                     total     = torch.cuda.get_device_properties(0).total_memory / 1024**3
-                    print(f"[GPU] RTX 3060 VRAM: {allocated:.2f}GB allocated | {reserved:.2f}GB reserved | {total:.2f}GB total")
+                    print(f"[GPU] RTX 3060 VRAM: {allocated:.2f}GB allocated | "
+                          f"{reserved:.2f}GB reserved | {total:.2f}GB total")
             except Exception as e:
                 print(f"[-] ERROR loading gemma4 HF model: {str(e)}")
                 raise e

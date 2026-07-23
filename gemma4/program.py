@@ -429,7 +429,7 @@ async def download_file(filename: str):
     return FileResponse(file_path)
 
 @app.post("/v1beta/models/{model}:generateContent", response_model=GenerateContentResponse)
-async def generate_content(request: GenerateContentRequest, req: Request, model: str = "gemma-4-e4b-it"):
+async def generate_content(request: GenerateContentRequest, req: Request, model: str = "gemma-4-e4b-it-unsloth-bnb-4bit"):
     manager = get_gemma_manager()
     base_url = str(req.base_url).rstrip("/")
     
