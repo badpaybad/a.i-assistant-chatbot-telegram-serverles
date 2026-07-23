@@ -21,7 +21,7 @@ class Gemma4Tools:
     Hỗ trợ đăng ký hàm động và trích xuất từ docstring.
     """
 
-    def __init__(self, model_id: str = "google/gemma-4-e4b-it"):
+    def __init__(self, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit"):
         self.manager = get_manager(model_id)
         self.tools = []
 

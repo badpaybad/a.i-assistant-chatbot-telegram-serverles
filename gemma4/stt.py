@@ -12,7 +12,7 @@ from config import *
 # Import shared manager
 from gemma4.manager import get_manager
 
-def transcribe_audio(audio_file_path: str, model_id: str = "google/gemma-4-e4b-it", device: str = "cuda") -> str:
+def transcribe_audio(audio_file_path: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device: str = "cuda") -> str:
     """
     Chuyển đổi file âm thanh thành văn bản sử dụng mô hình Multimodal Gemma 4.
     Yêu cầu: nạp âm thanh 16kHz mono.

@@ -199,7 +199,7 @@ def get_file_path(file_id: str):
 def get_gemma_manager():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     # Choose engine based on user preference or fallback
-    return get_manager(model_id="google/gemma-4-e4b-it", device=device)
+    return get_manager(model_id="unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device=device)
 
 def process_omni_parts(parts: List[Part]):
     """

@@ -8,7 +8,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 from config import *
 
-def generate_text(prompt: str, model_id: str = "google/gemma-4-e4b-it") -> str:
+def generate_text(prompt: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> str:
     """
     Hàm wrapper để tạo text từ input, sử dụng Gemma4Manager.
     """

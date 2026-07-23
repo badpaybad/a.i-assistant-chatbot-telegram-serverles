@@ -80,7 +80,7 @@ def read_file_content(file_path: str) -> str:
     except Exception as e:
         return f"Lỗi khi đọc file {ext}: {str(e)}"
 
-def process_file_with_prompt(file_path: str, prompt: str, model_id: str = "google/gemma-4-e4b-it") -> str:
+def process_file_with_prompt(file_path: str, prompt: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> str:
     """
     Đọc nội dung file và đưa vào Gemma 4 kèm theo prompt để xử lý.
     """

@@ -66,7 +66,7 @@ class Gemma4Manager:
     _instance = None
     _lock = threading.Lock()
 
-    def __new__(cls, model_id: str = "google/gemma-4-e4b-it", device: str = "cuda", engine: str = "huggingface"):
+    def __new__(cls, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device: str = "cuda", engine: str = "huggingface"):
         import torch
         if device in ["cuda", "gpu"] or device is None:
             device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -158,8 +158,12 @@ class Gemma4Manager:
 
                     # Unsloth pre-quantized HF repos: weights already in 4-bit, no BitsAndBytes overhead
                     _UNSLOTH_REPOS = {
+                        # Google model names → Unsloth pre-quantized repos
                         "gemma-4-e2b-it": "unsloth/gemma-4-e2b-it-unsloth-bnb-4bit",
                         "gemma-4-e4b-it": "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit",
+                        # Direct Unsloth names (already pre-quantized) → point to themselves
+                        "gemma-4-e2b-it-unsloth-bnb-4bit": "unsloth/gemma-4-e2b-it-unsloth-bnb-4bit",
+                        "gemma-4-e4b-it-unsloth-bnb-4bit": "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit",
                     }
 
                     def _try_load_unsloth(name):
@@ -167,7 +171,12 @@ class Gemma4Manager:
                         repo = _UNSLOTH_REPOS.get(name)
                         if not repo:
                             raise ValueError(f"No Unsloth repo defined for {name}")
-                        local_dir = os.path.join(base_dir, "model", name + "-unsloth-bnb-4bit")
+                        # If name already ends with '-unsloth-bnb-4bit', local_dir = model/<name>/
+                        # Otherwise append the suffix so all Unsloth models share same dir layout
+                        if name.endswith("-unsloth-bnb-4bit"):
+                            local_dir = os.path.join(base_dir, "model", name)
+                        else:
+                            local_dir = os.path.join(base_dir, "model", name + "-unsloth-bnb-4bit")
                         if not os.path.exists(os.path.join(local_dir, "config.json")):
                             print(f"[*] Downloading Unsloth pre-quantized model {repo}...")
                             from huggingface_hub import snapshot_download
@@ -187,6 +196,7 @@ class Gemma4Manager:
                             attn_implementation="sdpa",
                         )
                         return mdl, proc
+
 
                     def _try_load_bnb(mid, cfg):
                         """Load with BitsAndBytes NF4 runtime quantization."""
@@ -590,7 +600,7 @@ class Gemma4Manager:
             except Exception as e:
                 raise RuntimeError(f"Lỗi khi trích xuất embedding ảnh: {str(e)}")
 
-def get_manager(model_id: str = "google/gemma-4-e4b-it", device: str = "cuda", engine: str = "huggingface"):
+def get_manager(model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device: str = "cuda", engine: str = "huggingface"):
     import torch
     if device in ["cuda", "gpu"] or device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
