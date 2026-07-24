@@ -128,4 +128,6 @@ async def exec(skill, curret_message, list_current_msg, list_summary_chat, uniqu
         
     except Exception as e:
         print(f"Dynamic gemini overall error: {e}")
-        await bot_telegram.send_telegram_message(chat_id, f"Đã xảy ra lỗi khi thực thi yêu cầu: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        await bot_telegram.send_telegram_message(chat_id, "Đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau.")

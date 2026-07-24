@@ -3,7 +3,7 @@ aiofiles
 telethon
 google-generativeai
 faiss-cpu
-numpy
+numpy<2.4
 pypdf
 python-docx
 pandas

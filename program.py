@@ -722,12 +722,17 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
 
     except Exception as ex_gemma:
         print(f"[Gemma4 Process] Error calling Gemma4 API or sending reply: {ex_gemma}")
-        err_reply = f"Lỗi khi xử lý với Gemma4 API: {str(ex_gemma)}"
-        await bot_telegram.send_telegram_message(
-            chat_id=chat_id,
-            text=err_reply,
-            reply_to_message_id=orchestration_message.message.message.message_id if orchestration_message.message and orchestration_message.message.message else None
-        )
+        import traceback
+        traceback.print_exc()
+        err_reply = "Đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau."
+        try:
+            await bot_telegram.send_telegram_message(
+                chat_id=chat_id,
+                text=err_reply,
+                reply_to_message_id=orchestration_message.message.message.message_id if orchestration_message.message and orchestration_message.message.message else None
+            )
+        except Exception as ex_send:
+            print(f"[Gemma4 Process] Error sending generic error message to Telegram: {ex_send}")
 
 @app.post("/webhook")
 async def handle_webhook(request: Request):
@@ -920,8 +925,16 @@ async def handle_webhook(request: Request):
         return {"status": "ok"}
     except Exception as ex:
         print(f"Lỗi khi xử lý tin nhắn: {ex}")
-        # return {"status": "error", "reason": str(ex)}
-
+        import traceback
+        traceback.print_exc()
+        try:
+            if 'chat_id' in locals() and chat_id:
+                await bot_telegram.send_telegram_message(
+                    chat_id=chat_id,
+                    text="Đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau."
+                )
+        except Exception as send_ex:
+            print(f"Lỗi khi gửi thông báo lỗi tới Telegram: {send_ex}")
         return {"status": "ok"}
 # Đoạn này để chạy trực tiếp bằng python main.py (hoặc dùng lệnh uvicorn ở ngoài)
 
