@@ -37,7 +37,7 @@ import knowledgebase.dbcontext
 
 import knowledgebase.orchestrationcontext 
 
-from knowledgebase.orchestrationcontext import set_dir_program, skills_decision
+from knowledgebase.orchestrationcontext import set_dir_program, skills_decision, CLEAR_CHAT_HISTORY_TOOL_DEF, clear_chat_history_data
 from knowledgebase.gemini_search import is_search_requested, is_search_needed, search_with_gemini, SEARCH_TOOL_DEF
 import jira_helper
 from gemma4 import read_file_content, transcribe_audio
@@ -407,6 +407,18 @@ async def handle_zalo_oa(request: Request):
     pass
 
 
+def is_clear_history_requested(text: str) -> bool:
+    if not text:
+        return False
+    keywords = [
+        "quên hết message", "quên hết tin nhắn", "xóa hết message", "xóa hết tin nhắn",
+        "xoá hết message", "xoá hết tin nhắn", "xóa lịch sử", "xoá lịch sử",
+        "xóa lịch sử chat", "xoá lịch sử chat", "quên lịch sử chat", "xóa bộ nhớ chat", "xoá bộ nhớ chat"
+    ]
+    low_text = text.lower()
+    return any(k in low_text for k in keywords)
+
+
 async def gemma4_process_chat_history_and_current_msg(orchestration_message: telegram_types.OrchestrationMessage):
     """
     Xử lý gọi API Gemma4 local cho tin nhắn Telegram:
@@ -456,6 +468,20 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
     if reply_on_tag and not is_mentioned and not is_private_chat:
         print(f"[Gemma4 Process] Skipping message: Bot ({TELEGRAM_BOT_USERNAME}) is not tagged/mentioned and chat is not private 1-1.")
         return
+
+    if is_clear_history_requested(user_text):
+        print(f"[Clear History] Direct request to clear chat history for chat_id {chat_id}")
+        clear_chat_history_data(chat_id)
+        current_msg_info = orchestration_message.message.message if orchestration_message.message else None
+        reply_msg_id = current_msg_info.message_id if current_msg_info else None
+        sent_res = await bot_telegram.send_telegram_message(
+            chat_id=chat_id,
+            text="Đã xóa toàn bộ lịch sử trò chuyện (bao gồm bộ nhớ RAM và cơ sở dữ liệu trên ổ cứng) của cuộc trò chuyện này thành công.",
+            files=None,
+            reply_to_message_id=reply_msg_id,
+            parse_mode="HTML"
+        )
+        return sent_res
 
 
     # 2. LƯU ORCHESTRATION_MESSAGE VÀO DB
@@ -619,7 +645,7 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         },
         "tools": [
             {
-                "function_declarations": [SEARCH_TOOL_DEF]
+                "function_declarations": [SEARCH_TOOL_DEF, CLEAR_CHAT_HISTORY_TOOL_DEF]
             }
         ],
         "generationConfig": {
@@ -627,26 +653,6 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
             "maxOutputTokens": 1024
         }
     }
-
-    # Pre-check is_search_needed không còn bắt buộc vì đã chuyển sang tự động đánh giá qua Tool Call trong Gemma4 API
-    # if is_search_needed(user_text, full_conversation_history_text) and not accumulated_file_uris:
-    #     try:
-    #         print(f"[Gemini Search] Triggering Google Search tool for query: {user_text[:60]}")
-    #         search_prompt = f"{quoted_msg_block}### TIN NHẮN HIỆN TẠI (YÊU CẦU TÌM KIẾM):\n{user_text}"
-    #         search_reply = search_with_gemini(search_prompt, full_conversation_history_text, is_private_chat)
-    #         if search_reply and not search_reply.startswith("Lỗi"):
-    #             final_reply_text = search_reply.strip()
-    #             sent_res = await bot_telegram.send_telegram_message(
-    #                 chat_id=chat_id,
-    #                 text=final_reply_text,
-    #                 files=None,
-    #                 reply_to_message_id=reply_msg_id,
-    #                 parse_mode="HTML"
-    #             )
-    #             print(f"[Gemini Search] Reply sent to chat {chat_id}: {final_reply_text[:80]}...")
-    #             return sent_res
-    #     except Exception as ex_search:
-    #         print(f"[Gemini Search] Error during web search: {ex_search}")
 
     try:
         async with httpx.AsyncClient() as client:
@@ -673,6 +679,10 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                             search_reply = search_with_gemini(search_prompt, full_conversation_history_text, is_private_chat)
                             if search_reply and not search_reply.startswith("Lỗi"):
                                 reply_text = search_reply.strip()
+                        elif fcall.get("name") == "clear_chat_history":
+                            print(f"[Gemma4 API Tool Call] Function call clear_chat_history triggered for chat_id {chat_id}")
+                            deleted_records = clear_chat_history_data(chat_id)
+                            reply_text = f"Đã xóa toàn bộ lịch sử trò chuyện (bao gồm bộ nhớ RAM và cơ sở dữ liệu trên ổ cứng) của cuộc trò chuyện này thành công."
                     elif p.get("text"):
                         reply_text += p["text"]
 

@@ -180,6 +180,27 @@ class SQLiteDB:
             conn.commit()
             return cursor.rowcount > 0
 
+    def delete_json(self, field_name: str, value):
+        """
+        Delete records where a specific field in the json column matches value.
+        field_name: The name of the field (e.g., 'chat_id') or JSON path (e.g., '$.message.chat.id').
+        value: The value to search for deletion (matches string or integer representation).
+        """
+        path = field_name if field_name.startswith("$") else f"$.{field_name}"
+        str_val = str(value)
+        try:
+            int_val = int(value)
+            query = f"DELETE FROM {self.table_name} WHERE json_extract(json, ?) = ? OR json_extract(json, ?) = ?"
+            params = (path, str_val, path, int_val)
+        except (ValueError, TypeError):
+            query = f"DELETE FROM {self.table_name} WHERE json_extract(json, ?) = ?"
+            params = (path, str_val)
+            
+        with self._get_connection() as conn:
+            cursor = conn.execute(query, params)
+            conn.commit()
+            return cursor.rowcount
+
     def search_json(self, field_name: str, value, fromAt: int | None = None, toAt: int | None = None, limit: int | None = None):
         """
         Search for records where a specific field in the json column matches a value.
