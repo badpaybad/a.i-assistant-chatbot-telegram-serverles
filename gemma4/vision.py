@@ -1,7 +1,7 @@
 import os
 from gemma4.manager import get_manager
 
-def describe_image(image_path: str, model_id: str = "google/gemma-4-e4b-it") -> str:
+def describe_image(image_path: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> str:
     """
     Tạo mô tả chi tiết cho hình ảnh bằng tiếng Việt.
     """
@@ -12,7 +12,7 @@ def describe_image(image_path: str, model_id: str = "google/gemma-4-e4b-it") -> 
     prompt = "Mô tả hình ảnh này một cách chi tiết và sinh động bằng tiếng Việt."
     return manager.generate_with_image(image_path, prompt)
 
-def query_image(image_path: str, prompt: str, model_id: str = "google/gemma-4-e4b-it") -> str:
+def query_image(image_path: str, prompt: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> str:
     """
     Thao tác với file ảnh (hỏi đáp, phân tích) theo yêu cầu (prompt).
     """

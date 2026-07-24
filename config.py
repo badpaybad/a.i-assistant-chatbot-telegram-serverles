@@ -7,7 +7,9 @@ import shutil
 import os
 from pathlib import Path
 PORT = 8888
-HISTORY_CHAT_MAX_LEN=10
+HISTORY_CHAT_MAX_LEN=20
+USE_GEMMA4_LOCAL = True
+GEMMA4_LOCAL_URL = "http://localhost:8000"
 
 CONFIG_NAME="config_dunp"
 print("sys.argv",sys.argv)
@@ -133,14 +135,30 @@ def setup_curl():
         except FileNotFoundError:
             print("[!] Lỗi: Không tìm thấy trình quản lý gói 'apt-get'. Bạn có đang dùng Linux (Debian/Ubuntu) không?")
 
+def setup_cloudflared():
+    print("[*] Đang kiểm tra cloudflared...")
+    if shutil.which("cloudflared") or os.path.exists("./cloudflared"):
+        print("[+] cloudflared đã có sẵn.")
+        return
+    print("[!] Không tìm thấy cloudflared. Đang tự động tải xuống...")
+    try:
+        url = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64"
+        cmd = ["curl", "-L", "-o", "./cloudflared", url]
+        subprocess.run(cmd, check=True)
+        os.chmod("./cloudflared", 0o755)
+        print("[+] Tải cloudflared thành công!")
+    except Exception as e:
+        print(f"[!] Lỗi khi tải cloudflared: {e}")
+
 def init():
     # skills/cli/tool_call_cli.py , các tool phục vụ skill cli cần được cài và cấu hình trước 
     setup_curl()
     setup_swaks_tool()
-
     setup_playwright()
+    setup_cloudflared()
 
 init()
+
 
 def get_random_free_port(start=8999, end=9999):
     while True:

@@ -1,13 +1,10 @@
 import os
 
-# ROCm Optimization for Radeon 780M (gfx1102)
+# CUDA Optimization for NVIDIA RTX 3060 8GB GPU
 # MUST set environment variables BEFORE importing torch or gemma4.manager
-os.environ["HSA_OVERRIDE_GFX_VERSION"] = "11.0.0"
-os.environ["HSA_ENABLE_SDMA"] = "1"
-os.environ["MIOPEN_DEBUG_DISABLE_FIND_DB"] = "1"
-os.environ["ROCM_RELAXED_ASIC_CHECK"] = "1"
-os.environ["TORCH_ROCM_AOTRITON_ENABLE_EXPERIMENTAL"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True,max_split_size_mb:128"
+os.environ["TORCHINDUCTOR_COMPILE_THREADS"] = "4"
 
 import sys
 import base64
@@ -33,8 +30,58 @@ from gemma4.tools import Gemma4Tools
 from gemma4.tts import save_tts
 from gemma4.stt import transcribe_audio
 from gemma4.files import read_file_content
+from contextlib import asynccontextmanager
 
-app = FastAPI(title="Gemma 4 Omni-File API")
+IS_MODEL_LOADED = False
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global IS_MODEL_LOADED
+    print("==================================================")
+    print("[*] [Gemma4 Startup] 1/3: Checking local models (download if missing)...")
+    from gemma4.download_model import setup_gemma, setup_kokoro
+    setup_kokoro()
+    setup_gemma(model_name="gemma-4-e4b-it")
+    
+    print("[*] [Gemma4 Startup] 2/3: Pre-loading Gemma 4 model into GPU VRAM (RTX 3060 CUDA)...")
+    manager = get_gemma_manager()
+    
+    print("[*] [Gemma4 Startup] 3/3: Pre-loading Kokoro TTS ONNX model...")
+    try:
+        from gemma4.tts import Gemma4TTS
+        _ = Gemma4TTS()
+    except Exception as tts_e:
+        print(f"[!] Warning pre-loading Kokoro TTS: {tts_e}")
+        
+    # Mark server as ready before warmup — uvicorn will start accepting requests now
+    IS_MODEL_LOADED = True
+    print("[+] [Gemma4 Startup] Models loaded and server is ready for incoming requests!")
+    print("[*] [Gemma4 Startup] Background GPU warmup will run after server starts...")
+    print("==================================================" )
+
+    # Schedule warmup as a background task that runs AFTER the server starts
+    # (after yield). This means the server is already reachable by health checks
+    # during the first-time JIT compilation.
+    async def _background_warmup():
+        import asyncio as _asyncio
+        await _asyncio.sleep(1)  # small delay to let uvicorn fully start
+        try:
+            loop = _asyncio.get_event_loop()
+            await loop.run_in_executor(None, lambda: manager.generate("Xin chào", max_tokens=5))
+            print("[+] [Gemma4 Startup] Background GPU warmup complete — next response will be instant!")
+        except Exception as warm_e:
+            print(f"[!] Background warmup notice: {warm_e}")
+
+    import asyncio as _asyncio
+    warmup_task = _asyncio.ensure_future(_background_warmup())
+
+    yield
+
+    # Cancel warmup if still running on shutdown
+    if not warmup_task.done():
+        warmup_task.cancel()
+
+app = FastAPI(title="Gemma 4 Omni-File API", lifespan=lifespan)
 
 # Cấu hình folder
 TEMP_DIR = os.path.join(project_root, "temp")
@@ -77,6 +124,9 @@ class Tool(BaseModel):
 class ThinkingConfig(BaseModel):
     include_thoughts: Optional[bool] = False
 
+class SpeechConfig(BaseModel):
+    voiceConfig: Optional[Dict[str, Any]] = None
+
 class GenerationConfig(BaseModel):
     temperature: Optional[float] = 0.7
     topP: Optional[float] = 0.9
@@ -87,6 +137,21 @@ class GenerationConfig(BaseModel):
     responseMimeType: Optional[str] = "text/plain"
     responseJsonSchema: Optional[Dict[str, Any]] = None
     thinkingConfig: Optional[ThinkingConfig] = None
+    responseModalities: Optional[List[str]] = None
+    speechConfig: Optional[SpeechConfig] = None
+
+class TTSRequest(BaseModel):
+    text: str
+    voice: Optional[str] = "af_sarah"
+    speed: Optional[float] = 1.0
+
+class TTSResponse(BaseModel):
+    audio_content: str  # base64 encoded audio
+    mime_type: str = "audio/wav"
+    download_url: Optional[str] = None
+
+class ASRResponse(BaseModel):
+    text: str
 
 class GenerateContentRequest(BaseModel):
     contents: List[Content]
@@ -132,7 +197,9 @@ def get_file_path(file_id: str):
 # --- Helpers ---
 
 def get_gemma_manager():
-    return get_manager()
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Choose engine based on user preference or fallback
+    return get_manager(model_id="unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device=device)
 
 def process_omni_parts(parts: List[Part]):
     """
@@ -294,6 +361,62 @@ async def delete_file(file_id: str):
         return {"status": "deleted"}
     raise HTTPException(status_code=404, detail="File not found")
 
+@app.post("/v1beta/tts", response_model=TTSResponse)
+async def text_to_speech_api(request: TTSRequest, req: Request):
+    """
+    Text-to-Speech API using Kokoro ONNX.
+    """
+    try:
+        # Generate unique filename
+        filename = f"tts_{uuid.uuid4()}.wav"
+        
+        # Save TTS file
+        output_path = save_tts(request.text, filename=filename, voice=request.voice)
+        
+        # Read file content and encode to base64
+        with open(output_path, "rb") as f:
+            audio_bytes = f.read()
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+        
+        base_url = str(req.base_url).rstrip("/")
+        download_url = f"{base_url}/download/{filename}"
+        
+        return TTSResponse(
+            audio_content=audio_b64,
+            download_url=download_url
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"TTS generation error: {str(e)}")
+
+@app.post("/v1beta/stt", response_model=ASRResponse)
+async def speech_to_text_api(file: UploadFile = File(...)):
+    """
+    ASR (Speech-to-Text) API using Gemma 4.
+    """
+    # Save uploaded audio file to a temporary location
+    temp_file_id = f"stt_{uuid.uuid4()}_{file.filename}"
+    temp_file_path = os.path.join(TEMP_DIR, temp_file_id)
+    
+    try:
+        with open(temp_file_path, "wb") as f:
+            f.write(await file.read())
+            
+        # Transcribe using stt module
+        transcription = transcribe_audio(temp_file_path)
+        
+        # Clean up
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+            
+        if transcription.startswith("Lỗi"):
+            raise HTTPException(status_code=500, detail=transcription)
+            
+        return ASRResponse(text=transcription)
+    except Exception as e:
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
+        raise HTTPException(status_code=500, detail=str(e))
+
 # --- Endpoints ---
 
 from fastapi.responses import FileResponse, StreamingResponse
@@ -306,7 +429,7 @@ async def download_file(filename: str):
     return FileResponse(file_path)
 
 @app.post("/v1beta/models/{model}:generateContent", response_model=GenerateContentResponse)
-async def generate_content(request: GenerateContentRequest, req: Request, model: str = "gemma-4-e4b-it"):
+async def generate_content(request: GenerateContentRequest, req: Request, model: str = "gemma-4-e4b-it-unsloth-bnb-4bit"):
     manager = get_gemma_manager()
     base_url = str(req.base_url).rstrip("/")
     
@@ -385,6 +508,38 @@ async def generate_content(request: GenerateContentRequest, req: Request, model:
     
     elapsed = time.time() - start_time
 
+    # Check if the user requested audio output (TTS)
+    if config.responseModalities and any(m.upper() == "AUDIO" for m in config.responseModalities):
+        voice_name = "af_sarah"
+        if config.speechConfig and config.speechConfig.voiceConfig:
+            prebuilt_voice = config.speechConfig.voiceConfig.get("prebuiltVoiceConfig", {})
+            voice_name = prebuilt_voice.get("voiceName", "af_sarah")
+            
+        try:
+            filename = f"tts_{uuid.uuid4()}.wav"
+            output_path = save_tts(response_text, filename=filename, voice=voice_name)
+            
+            with open(output_path, "rb") as f:
+                audio_bytes = f.read()
+            audio_b64 = base64.b64encode(audio_bytes).decode("utf-8")
+            
+            return GenerateContentResponse(
+                candidates=[Candidate(content=Content(role="model", parts=[
+                    Part(text=response_text),
+                    Part(inline_data=Blob(mime_type="audio/wav", data=audio_b64))
+                ]))],
+                usageMetadata=UsageMetadata(
+                    promptTokenCount=0,
+                    candidatesTokenCount=0,
+                    totalTokenCount=0,
+                    elapsedTimeSeconds=round(elapsed + (time.time() - start_time - elapsed), 3)
+                )
+            )
+        except Exception as tts_err:
+            print(f"[-] Failed to generate TTS in generateContent: {tts_err}")
+            # Fallback to plain text if TTS fails
+            pass
+
     return GenerateContentResponse(
         candidates=[Candidate(content=Content(role="model", parts=[Part(text=response_text)]))],
         usageMetadata=UsageMetadata(
@@ -436,11 +591,15 @@ async def stream_generate_content(request: GenerateContentRequest, req: Request,
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "model": "gemma-4", "capabilities": ["text", "audio", "vision", "files", "tools"]}
+    return {
+        "status": "ok" if IS_MODEL_LOADED else "loading",
+        "ready": IS_MODEL_LOADED,
+        "model": "gemma-4-e4b-it",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "capabilities": ["text", "audio", "vision", "files", "tools"]
+    }
 
 if __name__ == "__main__":
-    print("[*] Pre-loading Gemma 4 model...")
-    get_gemma_manager()
     port = 8000
-    print(f"[*] Starting server on port {port}...")
+    print(f"[*] Starting Gemma 4 local server on port {port}...")
     uvicorn.run(app, host="0.0.0.0", port=port)

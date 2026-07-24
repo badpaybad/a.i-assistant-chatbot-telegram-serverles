@@ -8,14 +8,14 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 from config import *
 
-def get_text_embedding(text: str, model_id: str = "google/gemma-4-e4b-it") -> list:
+def get_text_embedding(text: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> list:
     """
     Hàm wrapper để lấy embedding của văn bản.
     """
     manager = get_manager(model_id)
     return manager.get_embeddings(text)
 
-def get_image_embedding(image_path: str, model_id: str = "google/gemma-4-e4b-it") -> list:
+def get_image_embedding(image_path: str, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit") -> list:
     """
     Hàm wrapper để lấy embedding của hình ảnh.
     """

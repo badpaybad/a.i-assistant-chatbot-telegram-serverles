@@ -13,11 +13,18 @@ class Gemma4TTS:
     def __init__(self, model_id: str = "kokoro-v1.0"):
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.model_path = os.path.join(self.base_dir, "model", "kokoro", "kokoro-v1.0.onnx")
-        self.voices_path = os.path.join(self.base_dir, "model", "kokoro", "voices.bin")
+        self.voices_path = os.path.join(self.base_dir, "model", "kokoro", "voices.json")
+        if not os.path.exists(self.voices_path):
+            self.voices_path = os.path.join(self.base_dir, "model", "kokoro", "voices.bin")
         
         if not os.path.exists(self.model_path) or not os.path.exists(self.voices_path):
             raise FileNotFoundError("Kokoro ONNX model or voices not found. Please run download_kokoro.py first.")
         
+        # Dynamically inject "vi" language code into supported languages of kokoro-onnx
+        import kokoro_onnx
+        if "vi" not in kokoro_onnx.config.SUPPORTED_LANGUAGES:
+            kokoro_onnx.config.SUPPORTED_LANGUAGES.append("vi")
+            
         self.kokoro = Kokoro(self.model_path, self.voices_path)
 
     def text_to_speech(self, text: str, output_path: str, voice: str = "af_sky", speed: float = 1.0):

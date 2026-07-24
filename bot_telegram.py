@@ -127,72 +127,145 @@ async def send_telegram_welcome(chat_id: int , text:str|None=None):
             pass
     pass
 
-async def send_telegram_message(chat_id: int, text: str, files: list[str] | None = None, isSendToGroup: bool = True) -> telegram_types.TelegramUpdate | None:
-    """_summary_
+def format_user_mention(user_id: int | str | None = None, username: str | None = None, fullname: str | None = None) -> str:
+    """Tạo chuỗi tag/mention phù hợp cho người dùng Telegram (HTML format hoặc @username)."""
+    if username:
+        clean_user = username.replace("@", "").strip()
+        if clean_user:
+            return f"@{clean_user}"
+    if user_id and fullname:
+        return f'<a href="tg://user?id={user_id}">{fullname}</a>'
+    elif user_id:
+        return f'<a href="tg://user?id={user_id}">User {user_id}</a>'
+    elif fullname:
+        return fullname
+    return ""
 
-    Args:
-        chat_id (int): group chat_id vd -5251554348 or user_id individual vd 730806080 
-        text (str): _description_
-        files (list[str] | None, optional): _description_. Defaults to None.
-        isSendToGroup (bool, optional): _description_. Defaults to True.
 
-    Returns:
-        telegram_types.TelegramUpdate | None: _description_
+async def send_telegram_message(
+    chat_id: int | str,
+    text: str | None = None,
+    files: list[str] | None = None,
+    isSendToGroup: bool = True,
+    reply_to_message_id: int | str | None = None,
+    parse_mode: str | None = "HTML"
+) -> telegram_types.TelegramUpdate | None:
+    """
+    Hàm gửi tin nhắn Telegram nâng cấp hỗ trợ:
+    - Text, Photo, Audio/Voice, Video, Document
+    - Gửi kèm reply_to_message_id để trả lời đúng tin nhắn/người cần trả lời
+    - Format parse_mode HTML/Markdown
     """
     if (text is None or text == "") and not files:
         return None
 
-    # if chat_id == -1:
-    #     chat_id = int(TELEGRAM_BOT_CHATID)
+    last_telegram_response = None
 
     async with httpx.AsyncClient() as client:
         try:
             if files and len(files) > 0:
-                # Determine which method to use based on file extension
-                file_path = files[0]
-                if not os.path.exists(file_path):
-                    print(f"File không tồn tại: {file_path}")
-                    # Fallback to sendMessage if text exists
-                    if text:
-                        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-                        response = await client.post(url, json={"chat_id": chat_id, "text": text}, timeout=30.0)
-                    else:
-                        return None
-                else:
+                for idx, file_path in enumerate(files):
+                    caption_text = text if idx == 0 else ""
+                    if not os.path.exists(file_path):
+                        print(f"File không tồn tại: {file_path}")
+                        if caption_text:
+                            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+                            data_payload = {"chat_id": chat_id, "text": caption_text}
+                            if reply_to_message_id:
+                                data_payload["reply_to_message_id"] = reply_to_message_id
+                            if parse_mode:
+                                data_payload["parse_mode"] = parse_mode
+                            try:
+                                response = await client.post(url, json=data_payload, timeout=30.0)
+                                response.raise_for_status()
+                                last_telegram_response = telegram_types.TelegramUpdate(**response.json())
+                            except Exception as ex_html:
+                                if parse_mode and "can't parse entities" in str(ex_html).lower():
+                                    data_payload.pop("parse_mode", None)
+                                    response = await client.post(url, json=data_payload, timeout=30.0)
+                                    response.raise_for_status()
+                                    last_telegram_response = telegram_types.TelegramUpdate(**response.json())
+                                else:
+                                    raise ex_html
+                        continue
+
                     ext = os.path.splitext(file_path)[1].lower()
-                    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp']:
+                    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp']:
                         method = "sendPhoto"
                         file_key = "photo"
+                    elif ext in ['.mp3', '.wav', '.aac', '.flac', '.m4a']:
+                        method = "sendAudio"
+                        file_key = "audio"
+                    elif ext in ['.ogg']:
+                        method = "sendVoice"
+                        file_key = "voice"
+                    elif ext in ['.mp4', '.avi', '.mov', '.mkv', '.webm']:
+                        method = "sendVideo"
+                        file_key = "video"
                     else:
                         method = "sendDocument"
                         file_key = "document"
 
                     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/{method}"
-                    
-                    # Read file content
+
                     async with aiofiles.open(file_path, "rb") as f:
                         file_content = await f.read()
-                    
+
                     files_payload = {file_key: (os.path.basename(file_path), file_content)}
-                    data_payload = {"chat_id": chat_id, "caption": text}
-                    
-                    response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
+                    data_payload = {"chat_id": chat_id}
+                    if caption_text:
+                        data_payload["caption"] = caption_text
+                    if reply_to_message_id:
+                        data_payload["reply_to_message_id"] = reply_to_message_id
+                    if parse_mode:
+                        data_payload["parse_mode"] = parse_mode
+
+                    try:
+                        response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
+                        response.raise_for_status()
+                    except Exception as ex_html:
+                        if parse_mode and "can't parse entities" in str(ex_html).lower():
+                            data_payload.pop("parse_mode", None)
+                            response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
+                            response.raise_for_status()
+                        else:
+                            raise ex_html
+
+                    last_telegram_response = telegram_types.TelegramUpdate(**response.json())
             else:
-                # No files, just send message
                 url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
                 data_payload = {"chat_id": chat_id, "text": text}
-                response = await client.post(url, json=data_payload, timeout=30.0)
+                if reply_to_message_id:
+                    data_payload["reply_to_message_id"] = reply_to_message_id
+                if parse_mode:
+                    data_payload["parse_mode"] = parse_mode
 
-            # print(f"send_telegram_message Response: {response.json()}")
-            response.raise_for_status()
+                try:
+                    response = await client.post(url, json=data_payload, timeout=30.0)
+                    response.raise_for_status()
+                except Exception as ex_err:
+                    err_msg = str(ex_err).lower()
+                    if parse_mode and "can't parse entities" in err_msg:
+                        data_payload.pop("parse_mode", None)
+                    if reply_to_message_id and "reply" in err_msg and "not found" in err_msg:
+                        data_payload.pop("reply_to_message_id", None)
+                    
+                    if "parse_mode" not in data_payload or "reply_to_message_id" not in data_payload:
+                        response = await client.post(url, json=data_payload, timeout=30.0)
+                        response.raise_for_status()
+                    else:
+                        raise ex_err
 
-            telegram_response = telegram_types.TelegramUpdate(**response.json())
+                last_telegram_response = telegram_types.TelegramUpdate(**response.json())
 
-            if telegram_response:
-                knowledgebase.dbcontext.sqllite_all_message.insert(telegram_response.json())
-                knowledgebase.orchestrationcontext.summarychat.enqueue_update(telegram_response)
+            if last_telegram_response:
+                try:
+                    knowledgebase.dbcontext.sqllite_all_message.insert(last_telegram_response.json())
+                    knowledgebase.orchestrationcontext.summarychat.enqueue_update(last_telegram_response)
+                except Exception as ex_db:
+                    print(f"Error persisting sent message to DB: {ex_db}")
 
-            return telegram_response
+            return last_telegram_response
         except Exception as e:
             print(f"Lỗi khi gửi tin: {e}")
             if 'response' in locals() and response is not None:
@@ -201,6 +274,7 @@ async def send_telegram_message(chat_id: int, text: str, files: list[str] | None
                 except:
                     pass
             return None
+
 
 
 async def register_webhook(webhook_base_url: str):
