@@ -27,12 +27,12 @@ public class MongoDbSetTests
     [Table("CustomCollectionName")]
     public class AttributedEntity : IBaseTrackingEntity<Guid>
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; set; }
+        public Guid id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public DateTime created_at { get; set; }
+        public DateTime? updated_at { get; set; }
+        public string? created_by { get; set; }
+        public string? updated_by { get; set; }
     }
 
     public class TestEnhancedMongoContext : MongoDbContext
@@ -51,12 +51,12 @@ public class MongoDbSetTests
 
     public class ExtraFieldEntity : IBaseTrackingEntity<Guid>
     {
-        public Guid Id { get; set; }
-        public string Name { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public DateTime? UpdatedAt { get; set; }
-        public string? CreatedBy { get; set; }
-        public string? UpdatedBy { get; set; }
+        public Guid id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public DateTime created_at { get; set; }
+        public DateTime? updated_at { get; set; }
+        public string? created_by { get; set; }
+        public string? updated_by { get; set; }
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class MongoDbSetTests
             { "_id", new BsonBinaryData(extraId, GuidRepresentation.Standard) },
             { "Name", "Entity with extra field" },
             { "MissingInModel", "This field is not in C# class" },
-            { "CreatedAt", DateTime.UtcNow }
+            { "created_at", DateTime.UtcNow }
         };
         await collection.InsertOneAsync(extraDoc);
 
@@ -125,51 +125,51 @@ public class MongoDbSetTests
 
         // Clear existing collection records
         await context.Samples.RemoveAsync(x => true);
-        await context.AuditLogs.RemoveAsync(x => true);
+        await context.audit_logs.RemoveAsync(x => true);
 
         // 1. Test Insert
         var entity = new SampleEntity 
         { 
             Name = "Mongo Audit Item", 
             Price = 100,
-            CreatedBy = "MongoInserter"
+            created_by = "MongoInserter"
         };
         await context.Samples.AddAsync(entity);
 
         // Verify Insert Log
-        var insertLogs = await context.AuditLogs.ToListAsync();
+        var insertLogs = await context.audit_logs.Collection.AsQueryable().ToListAsync();
         Assert.Single(insertLogs);
         var insertLog = insertLogs[0];
-        Assert.Equal("SampleEntity", insertLog.TableName);
-        Assert.Equal("Insert", insertLog.Action);
-        Assert.Contains("Mongo Audit Item", insertLog.AfterState ?? "");
-        Assert.Null(insertLog.BeforeState);
-        Assert.Equal("MongoInserter", insertLog.UserId);
+        Assert.Equal("SampleEntity", insertLog.table_name);
+        Assert.Equal("Insert", insertLog.action);
+        Assert.Contains("Mongo Audit Item", insertLog.after_state ?? "");
+        Assert.Null(insertLog.before_state);
+        Assert.Equal("MongoInserter", insertLog.user_id);
 
         // 2. Test Update
         entity.Price = 200;
-        entity.UpdatedBy = "MongoUpdater";
+        entity.updated_by = "MongoUpdater";
         await context.Samples.UpdateAsync(entity);
 
-        var allLogs = await context.AuditLogs.ToListAsync();
+        var allLogs = await context.audit_logs.Collection.AsQueryable().ToListAsync();
         Assert.Equal(2, allLogs.Count);
         var updateLog = allLogs[1];
-        Assert.Equal("SampleEntity", updateLog.TableName);
-        Assert.Equal("Update", updateLog.Action);
-        Assert.Contains("100", updateLog.BeforeState ?? "");
-        Assert.Contains("200", updateLog.AfterState ?? "");
-        Assert.Equal("MongoUpdater", updateLog.UserId);
+        Assert.Equal("SampleEntity", updateLog.table_name);
+        Assert.Equal("Update", updateLog.action);
+        Assert.Contains("100", updateLog.before_state ?? "");
+        Assert.Contains("200", updateLog.after_state ?? "");
+        Assert.Equal("MongoUpdater", updateLog.user_id);
 
         // 3. Test Delete
         await context.Samples.RemoveAsync(entity);
 
-        allLogs = await context.AuditLogs.ToListAsync();
+        allLogs = await context.audit_logs.Collection.AsQueryable().ToListAsync();
         Assert.Equal(3, allLogs.Count);
         var deleteLog = allLogs[2];
-        Assert.Equal("SampleEntity", deleteLog.TableName);
-        Assert.Equal("Delete", deleteLog.Action);
-        Assert.Contains("200", deleteLog.BeforeState ?? "");
-        Assert.Null(deleteLog.AfterState);
-        Assert.Equal("MongoUpdater", deleteLog.UserId);
+        Assert.Equal("SampleEntity", deleteLog.table_name);
+        Assert.Equal("Delete", deleteLog.action);
+        Assert.Contains("200", deleteLog.before_state ?? "");
+        Assert.Null(deleteLog.after_state);
+        Assert.Equal("MongoUpdater", deleteLog.user_id);
     }
 }

@@ -88,7 +88,7 @@ public class DataCrudTests
 
         // Clear out old records
         context.Samples.RemoveRange(context.Samples);
-        context.AuditLogs.RemoveRange(context.AuditLogs);
+        context.audit_logs.RemoveRange(context.audit_logs);
         await context.SaveChangesAsync();
 
         // 1. Test Insert Audit Log
@@ -98,50 +98,50 @@ public class DataCrudTests
             Description = "Initial description", 
             Price = 100, 
             Stock = 5,
-            CreatedBy = "SystemTest"
+            created_by = "SystemTest"
         };
         context.Samples.Add(entity);
         await context.SaveChangesAsync();
 
         // Retrieve Audit Log for Insert
-        var logs = await context.AuditLogs.ToListAsync();
+        var logs = await context.audit_logs.ToListAsync();
         Assert.Single(logs);
         var insertLog = logs[0];
-        Assert.Equal("Samples", insertLog.TableName);
-        Assert.Equal("Added", insertLog.Action);
-        Assert.Contains("Audit Test Item", insertLog.AfterState ?? "");
-        Assert.Null(insertLog.BeforeState);
-        Assert.Equal("SystemTest", insertLog.UserId);
+        Assert.Equal("Samples", insertLog.table_name);
+        Assert.Equal("Added", insertLog.action);
+        Assert.Contains("Audit Test Item", insertLog.after_state ?? "");
+        Assert.Null(insertLog.before_state);
+        Assert.Equal("SystemTest", insertLog.user_id);
 
         // 2. Test Update Audit Log
         entity.Price = 150;
-        entity.UpdatedBy = "ModifierTest";
+        entity.updated_by = "ModifierTest";
         await context.SaveChangesAsync();
 
-        logs = await context.AuditLogs.OrderBy(l => l.Timestamp).ToListAsync();
+        logs = await context.audit_logs.OrderBy(l => l.timestamp).ToListAsync();
         Assert.Equal(2, logs.Count);
         var updateLog = logs[1];
-        Assert.Equal("Samples", updateLog.TableName);
-        Assert.Equal("Modified", updateLog.Action);
-        Assert.Contains("100", updateLog.BeforeState ?? "");
-        Assert.Contains("150", updateLog.AfterState ?? "");
-        Assert.Equal("ModifierTest", updateLog.UserId);
+        Assert.Equal("Samples", updateLog.table_name);
+        Assert.Equal("Modified", updateLog.action);
+        Assert.Contains("100", updateLog.before_state ?? "");
+        Assert.Contains("150", updateLog.after_state ?? "");
+        Assert.Equal("ModifierTest", updateLog.user_id);
 
         // 3. Test Delete Audit Log
         context.Samples.Remove(entity);
         await context.SaveChangesAsync();
 
-        logs = await context.AuditLogs.OrderBy(l => l.Timestamp).ToListAsync();
+        logs = await context.audit_logs.OrderBy(l => l.timestamp).ToListAsync();
         Assert.Equal(3, logs.Count);
         var deleteLog = logs[2];
-        Assert.Equal("Samples", deleteLog.TableName);
-        Assert.Equal("Deleted", deleteLog.Action);
-        Assert.Contains("150", deleteLog.BeforeState ?? "");
-        Assert.Null(deleteLog.AfterState);
-        Assert.Equal("ModifierTest", deleteLog.UserId);
+        Assert.Equal("Samples", deleteLog.table_name);
+        Assert.Equal("Deleted", deleteLog.action);
+        Assert.Contains("150", deleteLog.before_state ?? "");
+        Assert.Null(deleteLog.after_state);
+        Assert.Equal("ModifierTest", deleteLog.user_id);
 
         // Cleanup
-        context.AuditLogs.RemoveRange(context.AuditLogs);
+        context.audit_logs.RemoveRange(context.audit_logs);
         await context.SaveChangesAsync();
     }
 

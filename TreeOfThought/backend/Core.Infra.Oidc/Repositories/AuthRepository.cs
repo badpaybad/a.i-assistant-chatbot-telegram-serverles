@@ -566,18 +566,11 @@ public class AuthRepository : IAuthRepository
                 await databaseCreator.CreateAsync();
             }
 
-            try
-            {
-                await databaseCreator.CreateTablesAsync();
-            }
-            catch (PostgresException ex) when (ex.SqlState == "42P07") // duplicate_table
-            {
-                // Tables already exist, ignore
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Table creation info: {ex.Message}");
-            }
+            // EnsureCreatedAsync is idempotent: creates only missing tables, skips existing ones.
+            // This avoids the silent partial-creation bug where CreateTablesAsync fails atomically
+            // on the first duplicate table (e.g. audit_logs from BaseDbContext) and leaves the
+            // remaining tables (users, roles, app_claims, etc.) uncreated.
+            await _context.Database.EnsureCreatedAsync();
 
             try
             {
