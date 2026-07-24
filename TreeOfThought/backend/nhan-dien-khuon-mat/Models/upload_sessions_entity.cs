@@ -13,13 +13,6 @@ public class upload_sessions_entity : IEntity<Guid>
     [Column("id")]
     public Guid id { get; set; } = Guid.NewGuid();
 
-    [NotMapped]
-    Guid IEntity<Guid>.Id
-    {
-        get => id;
-        set => id = value;
-    }
-
     [Required]
     [MaxLength(255)]
     [Column("name")]

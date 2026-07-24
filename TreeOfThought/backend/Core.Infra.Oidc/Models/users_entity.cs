@@ -12,13 +12,6 @@ public class users_entity : IBaseTrackingEntity<Guid>
     [Column("id")]
     public Guid id { get; set; } = Guid.NewGuid();
 
-    [NotMapped]
-    Guid IEntity<Guid>.Id
-    {
-        get => id;
-        set => id = value;
-    }
-
     [Required]
     [MaxLength(255)]
     [Column("username")]
@@ -86,32 +79,4 @@ public class users_entity : IBaseTrackingEntity<Guid>
 
     [Column("updated_by")]
     public string? updated_by { get; set; }
-
-    [NotMapped]
-    DateTime IBaseTrackingEntity<Guid>.CreatedAt
-    {
-        get => created_at;
-        set => created_at = value;
-    }
-
-    [NotMapped]
-    DateTime? IBaseTrackingEntity<Guid>.UpdatedAt
-    {
-        get => updated_at;
-        set => updated_at = value;
-    }
-
-    [NotMapped]
-    string? IBaseTrackingEntity<Guid>.CreatedBy
-    {
-        get => created_by;
-        set => created_by = value;
-    }
-
-    [NotMapped]
-    string? IBaseTrackingEntity<Guid>.UpdatedBy
-    {
-        get => updated_by;
-        set => updated_by = value;
-    }
 }

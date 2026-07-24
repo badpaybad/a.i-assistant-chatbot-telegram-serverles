@@ -4,9 +4,9 @@ namespace Core.Infra.Base.Models;
 
 public abstract class BaseEntity<TKey> : IBaseTrackingEntity<TKey>, IBaseEntity
 {
-    public TKey Id { get; set; } = default!;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-    public string? CreatedBy { get; set; }
-    public string? UpdatedBy { get; set; }
+    public TKey id { get; set; } = default!;
+    public DateTime created_at { get; set; } = DateTime.UtcNow;
+    public DateTime? updated_at { get; set; }
+    public string? created_by { get; set; }
+    public string? updated_by { get; set; }
 }

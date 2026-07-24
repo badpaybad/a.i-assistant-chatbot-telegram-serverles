@@ -296,3 +296,4 @@ tuân thủ về việc nghiệp vụ sinh ra theo cấu trúc folder. việc ng
                 CREATE INDEX IX_users_status ON users(status);
 
 cần chỉnh sửa code tương ứng cho các project ở TreeOfThought/backend ,  sửa cho tất cả các project c#, các nghiệp vụ có liên quan đến việc ánh xạ bảng thành entity theo chuẩn, đảm bảo tính thống nhất của toàn hệ thống
+các base cho entity cũng cần tuân thủ vd IBaseTrackingEntity chuyển CreatedAt thành created_at

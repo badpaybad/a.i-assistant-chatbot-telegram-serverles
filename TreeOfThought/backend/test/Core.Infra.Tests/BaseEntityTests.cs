@@ -7,7 +7,7 @@ public class BaseEntityTests
 {
     private class TestEntity : BaseEntity<Guid> 
     { 
-        public TestEntity() { Id = Guid.NewGuid(); }
+        public TestEntity() { id = Guid.NewGuid(); }
     }
 
     [Fact]
@@ -17,7 +17,7 @@ public class BaseEntityTests
         var entity = new TestEntity();
 
         // Assert
-        Assert.NotEqual(Guid.Empty, entity.Id);
-        Assert.True(entity.CreatedAt <= DateTime.UtcNow);
+        Assert.NotEqual(Guid.Empty, entity.id);
+        Assert.True(entity.created_at <= DateTime.UtcNow);
     }
 }

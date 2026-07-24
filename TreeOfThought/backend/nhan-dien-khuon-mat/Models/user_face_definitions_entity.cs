@@ -12,13 +12,6 @@ public class user_face_definitions_entity : IEntity<Guid>
     [Column("id")]
     public Guid id { get; set; } = Guid.NewGuid();
 
-    [NotMapped]
-    Guid IEntity<Guid>.Id
-    {
-        get => id;
-        set => id = value;
-    }
-
     [Column("user_id")]
     public Guid user_id { get; set; }
 

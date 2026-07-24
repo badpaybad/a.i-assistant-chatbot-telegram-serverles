@@ -12,13 +12,6 @@ public class cropped_faces_entity : IEntity<Guid>
     [Column("id")]
     public Guid id { get; set; } = Guid.NewGuid();
 
-    [NotMapped]
-    Guid IEntity<Guid>.Id
-    {
-        get => id;
-        set => id = value;
-    }
-
     [Column("original_image_id")]
     public Guid original_image_id { get; set; }
 

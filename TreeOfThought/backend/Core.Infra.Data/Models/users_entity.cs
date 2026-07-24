@@ -16,14 +16,7 @@ public class users_entity : IEntity<Guid>
     [BsonRepresentation(BsonType.String)]
     public Guid id { get; set; } = Guid.NewGuid();
 
-    // Explicit interface implementation to satisfy IEntity<Guid> constraint
-    [NotMapped]
-    [BsonIgnore]
-    Guid IEntity<Guid>.Id 
-    { 
-        get => id; 
-        set => id = value; 
-    }
+
 
     [Required]
     [MaxLength(255)]

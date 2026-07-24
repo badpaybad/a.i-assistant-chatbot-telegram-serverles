@@ -194,6 +194,6 @@ public class DataCrudTests
         Assert.NotEmpty(results);
 
         // Cleanup
-        await context.BulkDeleteAsync<SampleEntity, Guid>(list.Select(x => x.Id));
+        await context.BulkDeleteAsync<SampleEntity, Guid>(list.Select(x => x.id));
     }
 }

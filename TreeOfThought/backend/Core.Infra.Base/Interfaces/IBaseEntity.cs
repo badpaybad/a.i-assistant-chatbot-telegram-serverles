@@ -8,14 +8,14 @@ internal interface IBaseEntity
 // Public: Project khác nhìn được và sử dụng để định nghĩa Entity có Id
 public interface IEntity<TKey>
 {
-    TKey Id { get; set; }
+    TKey id { get; set; }
 }
 
 // Public: Tracking interface kế thừa từ IEntity<TKey>
 public interface IBaseTrackingEntity<TKey> : IEntity<TKey>
 {
-    DateTime CreatedAt { get; set; }
-    DateTime? UpdatedAt { get; set; }
-    string? CreatedBy { get; set; }
-    string? UpdatedBy { get; set; }
+    DateTime created_at { get; set; }
+    DateTime? updated_at { get; set; }
+    string? created_by { get; set; }
+    string? updated_by { get; set; }
 }

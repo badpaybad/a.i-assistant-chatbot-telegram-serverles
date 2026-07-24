@@ -92,7 +92,7 @@ public class DbSet<T> : IDbSet<T> where T : class
         object? idValue = null;
         
         // Try to get Id via Reflection first to be most flexible
-        var idProp = typeof(T).GetProperty("Id");
+        var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
         if (idProp != null)
         {
             idValue = idProp.GetValue(entity);
@@ -100,7 +100,7 @@ public class DbSet<T> : IDbSet<T> where T : class
 
         if (idValue != null)
         {
-            var filter = Builders<T>.Filter.Eq("Id", idValue);
+            var filter = Builders<T>.Filter.Eq(idProp?.Name ?? "id", idValue);
 
             // Fetch Before State
             string? beforeState = null;
@@ -133,8 +133,8 @@ public class DbSet<T> : IDbSet<T> where T : class
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
                 if (trackingInterface != null)
                 {
-                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
-                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(entity) as string 
+                             ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
 
                 var auditLog = new audit_logs_entity
@@ -179,7 +179,7 @@ public class DbSet<T> : IDbSet<T> where T : class
 
         try
         {
-            var idProp = typeof(T).GetProperty("Id");
+            var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
             var idValue = idProp?.GetValue(entity)?.ToString() ?? string.Empty;
 
             string? userId = null;
@@ -187,7 +187,7 @@ public class DbSet<T> : IDbSet<T> where T : class
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
             if (trackingInterface != null)
             {
-                userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                userId = (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
             }
 
             var auditLog = new audit_logs_entity
@@ -219,7 +219,7 @@ public class DbSet<T> : IDbSet<T> where T : class
             try
             {
                 var auditLogs = new List<audit_logs_entity>();
-                var idProp = typeof(T).GetProperty("Id");
+                var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
                 var trackingInterface = typeof(T).GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
 
@@ -229,7 +229,7 @@ public class DbSet<T> : IDbSet<T> where T : class
                     string? userId = null;
                     if (trackingInterface != null)
                     {
-                        userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                        userId = (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                     }
 
                     auditLogs.Add(new audit_logs_entity
@@ -258,7 +258,7 @@ public class DbSet<T> : IDbSet<T> where T : class
     {
         object? idValue = null;
         
-        var idProp = typeof(T).GetProperty("Id");
+        var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
         if (idProp != null)
         {
             idValue = idProp.GetValue(entity);
@@ -266,7 +266,7 @@ public class DbSet<T> : IDbSet<T> where T : class
 
         if (idValue != null)
         {
-            var filter = Builders<T>.Filter.Eq("Id", idValue);
+            var filter = Builders<T>.Filter.Eq(idProp?.Name ?? "id", idValue);
 
             // Fetch Before State
             string? beforeState = null;
@@ -294,8 +294,8 @@ public class DbSet<T> : IDbSet<T> where T : class
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
                 if (trackingInterface != null)
                 {
-                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
-                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(entity) as string 
+                             ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
 
                 var auditLog = new audit_logs_entity
@@ -351,7 +351,7 @@ public class DbSet<T> : IDbSet<T> where T : class
             try
             {
                 var auditLogs = new List<audit_logs_entity>();
-                var idProp = typeof(T).GetProperty("Id");
+                var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
                 var trackingInterface = typeof(T).GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
 
@@ -361,8 +361,8 @@ public class DbSet<T> : IDbSet<T> where T : class
                     string? userId = null;
                     if (trackingInterface != null)
                     {
-                        userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(original) as string 
-                                 ?? typeof(T).GetProperty("CreatedBy")?.GetValue(original) as string;
+                        userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(original) as string 
+                                 ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(original) as string;
                     }
 
                     auditLogs.Add(new audit_logs_entity
@@ -410,7 +410,7 @@ public class DbSet<T> : IDbSet<T> where T : class
 
         try
         {
-            var idProp = typeof(T).GetProperty("Id");
+            var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
             var idValue = idProp?.GetValue(entity)?.ToString() ?? string.Empty;
 
             string? userId = null;
@@ -420,12 +420,12 @@ public class DbSet<T> : IDbSet<T> where T : class
             {
                 if (exists)
                 {
-                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
-                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(entity) as string 
+                             ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
                 else
                 {
-                    userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
             }
 

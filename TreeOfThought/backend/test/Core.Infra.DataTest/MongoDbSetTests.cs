@@ -89,7 +89,7 @@ public class MongoDbSetTests
         found.Price = 200;
         await context.Samples.UpdateAsync(found);
         
-        var updated = context.Samples.FirstOrDefault(x => x.Id == found.Id);
+        var updated = context.Samples.FirstOrDefault(x => x.id == found.id);
         Assert.Equal(200, updated.Price);
 
         // 4. Test Missing Fields (Extra Elements)

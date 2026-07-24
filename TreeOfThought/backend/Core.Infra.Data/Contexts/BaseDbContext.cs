@@ -188,11 +188,11 @@ public abstract class BaseDbContext : DbContext
             {
                 if (entry.State == EntityState.Added)
                 {
-                    entityType.GetProperty("CreatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                    (entityType.GetProperty("created_at") ?? entityType.GetProperty("CreatedAt"))?.SetValue(entry.Entity, DateTime.UtcNow);
                 }
                 else
                 {
-                    entityType.GetProperty("UpdatedAt")?.SetValue(entry.Entity, DateTime.UtcNow);
+                    (entityType.GetProperty("updated_at") ?? entityType.GetProperty("UpdatedAt"))?.SetValue(entry.Entity, DateTime.UtcNow);
                 }
             }
         }
@@ -215,11 +215,11 @@ public abstract class BaseDbContext : DbContext
             {
                 if (entry.State == EntityState.Added)
                 {
-                    auditEntry.UserId = entityType.GetProperty("CreatedBy")?.GetValue(entry.Entity) as string;
+                    auditEntry.UserId = (entityType.GetProperty("created_by") ?? entityType.GetProperty("CreatedBy"))?.GetValue(entry.Entity) as string;
                 }
                 else
                 {
-                    auditEntry.UserId = entityType.GetProperty("UpdatedBy")?.GetValue(entry.Entity) as string;
+                    auditEntry.UserId = (entityType.GetProperty("updated_by") ?? entityType.GetProperty("UpdatedBy"))?.GetValue(entry.Entity) as string;
                 }
             }
 
