@@ -1,33 +1,38 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Core.Infra.Oidc.Models;
 
 namespace Core.Infra.Oidc.Repositories;
 
+
+
 public interface IAuthRepository
 {
     // User operations
-    Task<User?> GetUserByIdAsync(Guid id);
-    Task<User?> GetUserByUsernameAsync(string username);
-    Task<User?> GetUserByEmailAsync(string email);
-    Task CreateUserAsync(User user);
-    Task UpdateUserAsync(User user);
+    Task<users_entity?> GetUserByIdAsync(Guid id);
+    Task<users_entity?> GetUserByUsernameAsync(string username);
+    Task<users_entity?> GetUserByEmailAsync(string email);
+    Task CreateUserAsync(users_entity user);
+    Task UpdateUserAsync(users_entity user);
     Task DeleteUserAsync(Guid id);
-    Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null);
+    Task<(List<users_entity> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null);
 
     // Role operations
-    Task<Role?> GetRoleByIdAsync(Guid id);
-    Task<Role?> GetRoleByNameAsync(string name);
-    Task CreateRoleAsync(Role role);
-    Task UpdateRoleAsync(Role role);
+    Task<roles_entity?> GetRoleByIdAsync(Guid id);
+    Task<roles_entity?> GetRoleByNameAsync(string name);
+    Task CreateRoleAsync(roles_entity role);
+    Task UpdateRoleAsync(roles_entity role);
     Task DeleteRoleAsync(Guid id);
-    Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null);
+    Task<(List<roles_entity> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null);
 
     // Claim operations
-    Task<AppClaim?> GetClaimByIdAsync(Guid id);
-    Task<AppClaim?> GetClaimByNameAsync(string name);
-    Task CreateClaimAsync(AppClaim claim);
-    Task UpdateClaimAsync(AppClaim claim);
+    Task<app_claims_entity?> GetClaimByIdAsync(Guid id);
+    Task<app_claims_entity?> GetClaimByNameAsync(string name);
+    Task CreateClaimAsync(app_claims_entity claim);
+    Task UpdateClaimAsync(app_claims_entity claim);
     Task DeleteClaimAsync(Guid id);
-    Task<(List<AppClaim> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null);
+    Task<(List<app_claims_entity> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null);
 
     // Mapping operations
     Task AssignRoleToUserAsync(Guid userId, Guid roleId);
@@ -41,25 +46,25 @@ public interface IAuthRepository
     Task RemoveClaimFromUserAsync(Guid userId, Guid claimId);
 
     // Fetching related data
-    Task<List<Role>> GetUserRolesAsync(Guid userId);
-    Task<List<AppClaim>> GetRoleClaimsAsync(Guid roleId);
-    Task<List<AppClaim>> GetUserDirectClaimsAsync(Guid userId);
-    Task<List<AppClaim>> GetUserEffectiveClaimsAsync(Guid userId);
-    Task<List<User>> GetUsersInRoleAsync(Guid roleId);
+    Task<List<roles_entity>> GetUserRolesAsync(Guid userId);
+    Task<List<app_claims_entity>> GetRoleClaimsAsync(Guid roleId);
+    Task<List<app_claims_entity>> GetUserDirectClaimsAsync(Guid userId);
+    Task<List<app_claims_entity>> GetUserEffectiveClaimsAsync(Guid userId);
+    Task<List<users_entity>> GetUsersInRoleAsync(Guid roleId);
 
     // ACL operations
-    Task<AclEntry?> GetAclEntryByIdAsync(Guid id);
-    Task AddAclAsync(AclEntry entry);
+    Task<acl_entries_entity?> GetAclEntryByIdAsync(Guid id);
+    Task AddAclAsync(acl_entries_entity entry);
     Task RemoveAclAsync(Guid id);
     Task<bool> CheckAclAsync(Guid? userId, List<string> roleNames, string resourceType, string resourceId, int actionMask);
-    Task<(List<AclEntry> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null);
-    Task<List<AclEntry>> GetUserAclEntriesAsync(Guid userId);
+    Task<(List<acl_entries_entity> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null);
+    Task<List<acl_entries_entity>> GetUserAclEntriesAsync(Guid userId);
 
     // UserEmail operations
-    Task<List<UserEmail>> GetUserEmailsAsync(Guid userId);
-    Task AddUserEmailAsync(UserEmail email);
-    Task<UserEmail?> GetUserEmailByValueAsync(string email);
-    Task UpdateUserEmailAsync(UserEmail email);
+    Task<List<user_emails_entity>> GetUserEmailsAsync(Guid userId);
+    Task AddUserEmailAsync(user_emails_entity email);
+    Task<user_emails_entity?> GetUserEmailByValueAsync(string email);
+    Task UpdateUserEmailAsync(user_emails_entity email);
 
     // Initialization
     Task EnsureAdminExistsAsync(string adminUsername, string adminPassword, string adminEmail);

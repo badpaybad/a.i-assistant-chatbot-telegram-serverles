@@ -182,6 +182,138 @@ await app.UseNhanDienKhuonMat();
 await app.UseCqrs();
 ```
 
+### 2.6. Quy chuẩn Đặt tên Đồng bộ & Thiết kế DB tuân thủ Bảo vệ Dữ liệu cá nhân (Nghị định 13/2023/NĐ-CP)
+
+> [!IMPORTANT]
+> **Cập nhật ngày 2026-07-24 07:50:24**: Để tránh khó khăn và nhầm lẫn trong quá trình code/truy vấn, hệ thống áp dụng chung một tiêu chuẩn đồng nhất 100% giữa **tên cột trong cơ sở dữ liệu** và **tên thuộc tính (Property) của Class ORM**. 
+> Đồng thời, việc thiết kế cơ sở dữ liệu (SQL & NoSQL) bắt buộc phải đi kèm với **Từ điển dữ liệu (Data Dictionary) chi tiết 100%** và phân loại mức độ nhạy cảm của dữ liệu theo đúng **Nghị định 13/2023/NĐ-CP** về bảo vệ dữ liệu cá nhân tại Việt Nam.
+
+#### 1. Nguyên tắc Đồng bộ hóa Đặt tên (Naming Alignment)
+- Tên thuộc tính trong Class ORM (C# Entity Properties) phải trùng khớp hoàn toàn (cả về mặt ký tự và kiểu viết) với tên cột trong DB.
+- Không sử dụng cơ chế tự động chuyển đổi PascalCase sang snake_case ngầm định mà không khai báo tường minh. Nếu cơ sở dữ liệu sử dụng định dạng `snake_case`, các thuộc tính C# ORM cũng bắt buộc phải được khai báo bằng `snake_case` (ví dụ: `full_name`, `phone_number`), hoặc map tường minh qua Annotation `[Column("column_name")]` / Fluent API nhưng giữ cho tên thuộc tính class tương đồng với tên cột trong database để dễ dàng tra cứu và đồng bộ hóa code.
+
+#### 2. Phân loại Dữ liệu theo Nghị định 13/2023/NĐ-CP
+Khi xây dựng và tài liệu hóa cơ sở dữ liệu, mọi cột chứa thông tin cá nhân phải được phân loại rõ ràng:
+- **Dữ liệu cá nhân cơ bản (Basic)**: Họ tên, ngày sinh, số điện thoại, địa chỉ email, giới tính, số định danh cá nhân (CMND/CCCD/Hộ chiếu), quốc tịch, ảnh cá nhân...
+- **Dữ liệu cá nhân nhạy cảm (Sensitive)**: Thông tin tài khoản ngân hàng/tài chính, dữ liệu sinh trắc học (vân tay, khuôn mặt, mống mắt dưới dạng hash/template), dữ liệu vị trí thực tế của cá nhân (vị trí GPS thời gian thực hoặc lịch sử di chuyển chi tiết), thông tin tình trạng sức khỏe, đời tư...
+
+#### 3. Thiết kế mẫu cho bảng `users` (PostgreSQL & MongoDB ORM)
+
+##### A. Script tạo bảng PostgreSQL (DDL)
+```sql
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    full_name VARCHAR(255) NOT NULL,
+    national_id VARCHAR(12) NOT NULL UNIQUE,
+    phone_number VARCHAR(15) NOT NULL UNIQUE,
+    email VARCHAR(255) DEFAULT NULL,
+    bank_account_number VARCHAR(30) DEFAULT NULL,
+    biometric_data_hash TEXT DEFAULT NULL,
+    current_location_lat DECIMAL(9, 6) DEFAULT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'LOCKED')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tạo chỉ mục (Indexes)
+CREATE INDEX IX_users_phone ON users(phone_number);
+CREATE INDEX IX_users_email ON users(email);
+CREATE INDEX IX_users_status ON users(status);
+```
+
+##### B. C# Entity Class (Unified users_entity for EF Core & MongoDB)
+```csharp
+using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using Core.Infra.Base.Interfaces;
+
+namespace Core.Infra.Data.Models;
+
+[Table("users")]
+public class users_entity : IEntity<Guid>
+{
+    [Key]
+    [Column("id")]
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
+    public Guid id { get; set; } = Guid.NewGuid();
+
+    // Explicit interface implementation to satisfy generic repository constraints
+    [NotMapped]
+    [BsonIgnore]
+    Guid IEntity<Guid>.Id 
+    { 
+        get => id; 
+        set => id = value; 
+    }
+
+    [Required]
+    [MaxLength(255)]
+    [Column("full_name")]
+    [BsonElement("full_name")]
+    public string full_name { get; set; } = default!;
+
+    [Required]
+    [MaxLength(12)]
+    [Column("national_id")]
+    [BsonElement("national_id")]
+    public string national_id { get; set; } = default!;
+
+    [Required]
+    [MaxLength(15)]
+    [Column("phone_number")]
+    [BsonElement("phone_number")]
+    public string phone_number { get; set; } = default!;
+
+    [MaxLength(255)]
+    [Column("email")]
+    [BsonElement("email")]
+    public string? email { get; set; }
+
+    [MaxLength(30)]
+    [Column("bank_account_number")]
+    [BsonElement("bank_account_number")]
+    public string? bank_account_number { get; set; }
+
+    [Column("biometric_data_hash")]
+    [BsonElement("biometric_data_hash")]
+    public string? biometric_data_hash { get; set; }
+
+    [Column("current_location_lat", TypeName = "decimal(9, 6)")]
+    [BsonElement("current_location_lat")]
+    public decimal? current_location_lat { get; set; }
+
+    [Required]
+    [MaxLength(20)]
+    [Column("status")]
+    [BsonElement("status")]
+    public string status { get; set; } = "ACTIVE";
+
+    [Required]
+    [Column("created_at")]
+    [BsonElement("created_at")]
+    public DateTime created_at { get; set; } = DateTime.UtcNow;
+}
+```
+
+#### 4. Từ điển Dữ liệu (Data Dictionary) chi tiết 100% cho bảng `users`
+
+| Tên Cột / Property | Kiểu Dữ Liệu (DB / C#) | Độ dài | Ràng buộc / Ràng buộc CHECK | Mặc định | Chỉ mục (Index) | Mức độ Nhạy cảm (NĐ 13/2023/NĐ-CP) | Mô tả |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `id` | `UUID` / `Guid` | - | `PRIMARY KEY` | `gen_random_uuid()` | Clustered Index | Không nhạy cảm | Khóa chính của bảng người dùng |
+| `full_name` | `VARCHAR(255)` / `string` | 255 | `NOT NULL` | - | - | **Cơ bản** | Họ và tên đầy đủ của người dùng |
+| `national_id` | `VARCHAR(12)` / `string` | 12 | `NOT NULL`, `UNIQUE` | - | - | **Cơ bản** | Số CCCD/CMND (12 chữ số) |
+| `phone_number` | `VARCHAR(15)` / `string` | 15 | `NOT NULL`, `UNIQUE` | - | `IX_users_phone` (Non-Unique) | **Cơ bản** | Số điện thoại liên lạc chính |
+| `email` | `VARCHAR(255)` / `string?` | 255 | - | `NULL` | `IX_users_email` (Non-Unique) | **Cơ bản** | Địa chỉ email người dùng |
+| `bank_account_number`| `VARCHAR(30)` / `string?` | 30 | - | `NULL` | - | **Nhạy cảm** | Số tài khoản ngân hàng liên kết |
+| `biometric_data_hash`| `TEXT` / `string?` | - | - | `NULL` | - | **Nhạy cảm** | Chuỗi băm dữ liệu sinh trắc học khuôn mặt/vân tay |
+| `current_location_lat`| `DECIMAL(9, 6)` / `decimal?`| - | - | `NULL` | - | **Nhạy cảm** | Vĩ độ vị trí thực tế của người dùng (GPS) |
+| `status` | `VARCHAR(20)` / `string` | 20 | `NOT NULL`, `CHECK (status IN ('ACTIVE', 'LOCKED'))` | `'ACTIVE'` | `IX_users_status` (Non-Unique) | Không nhạy cảm | Trạng thái hoạt động của tài khoản |
+| `created_at` | `TIMESTAMPTZ` / `DateTime` | - | `NOT NULL` | `CURRENT_TIMESTAMP` | - | Không nhạy cảm | Thời điểm tạo tài khoản (Có múi giờ) |
+```
+
 ---
 
 ## 3. Ví dụ Minh họa về Triển khai Nghiệp vụ đúng chuẩn

@@ -54,68 +54,65 @@ public class NotifyRepository : INotifyRepository
         fcmToken = fcmToken.Trim();
 
         // 1. Clean up conflict mappings:
-        // Any existing token registrations with the same FCM token or Device ID for OTHER users are deleted.
-        var conflictTokens = await _context.UserFcmTokens
-            .Where(t => t.UserId != userId && (t.FcmToken == fcmToken || (!string.IsNullOrEmpty(deviceId) && t.DeviceId == deviceId)))
+        var conflictTokens = await _context.user_fcm_tokens
+            .Where(t => t.user_id != userId && (t.fcm_token == fcmToken || (!string.IsNullOrEmpty(deviceId) && t.device_id == deviceId)))
             .ToListAsync();
 
         if (conflictTokens.Any())
         {
-            _context.UserFcmTokens.RemoveRange(conflictTokens);
+            _context.user_fcm_tokens.RemoveRange(conflictTokens);
         }
 
         // 2. Upsert logic:
-        UserFcmToken? existing = null;
+        user_fcm_tokens_entity? existing = null;
         if (!string.IsNullOrEmpty(deviceId))
         {
-            // If device ID is provided, look up by UserId + DeviceId
-            existing = await _context.UserFcmTokens
-                .FirstOrDefaultAsync(t => t.UserId == userId && t.DeviceId == deviceId);
+            existing = await _context.user_fcm_tokens
+                .FirstOrDefaultAsync(t => t.user_id == userId && t.device_id == deviceId);
         }
         else
         {
-            // If device ID is absent, look up by UserId + FcmToken
-            existing = await _context.UserFcmTokens
-                .FirstOrDefaultAsync(t => t.UserId == userId && t.FcmToken == fcmToken);
+            existing = await _context.user_fcm_tokens
+                .FirstOrDefaultAsync(t => t.user_id == userId && t.fcm_token == fcmToken);
         }
 
         if (existing != null)
         {
-            existing.FcmToken = fcmToken;
-            existing.AppType = appType;
-            existing.UpdatedAt = DateTime.UtcNow;
-            _context.UserFcmTokens.Update(existing);
+            existing.fcm_token = fcmToken;
+            existing.app_type = appType;
+            existing.updated_at = DateTime.UtcNow;
+            _context.user_fcm_tokens.Update(existing);
         }
         else
         {
-            var newToken = new UserFcmToken
+            var newToken = new user_fcm_tokens_entity
             {
-                UserId = userId,
-                FcmToken = fcmToken,
-                DeviceId = deviceId,
-                AppType = appType,
-                CreatedAt = DateTime.UtcNow
+                user_id = userId,
+                fcm_token = fcmToken,
+                device_id = deviceId,
+                app_type = appType,
+                created_at = DateTime.UtcNow
             };
-            await _context.UserFcmTokens.AddAsync(newToken);
+            await _context.user_fcm_tokens.AddAsync(newToken);
         }
 
         await _context.SaveChangesAsync();
     }
 
-    public async Task<List<UserFcmToken>> GetTokensByUserIdAsync(Guid userId)
+    public async Task<List<user_fcm_tokens_entity>> GetTokensByUserIdAsync(Guid userId)
     {
-        return await _context.UserFcmTokens
-            .Where(t => t.UserId == userId)
-            .OrderByDescending(t => t.CreatedAt)
+        return await _context.user_fcm_tokens
+            .Where(t => t.user_id == userId)
+            .OrderByDescending(t => t.created_at)
             .ToListAsync();
     }
 
     public async Task DeleteTokenAsync(Guid id)
     {
-        var token = await _context.UserFcmTokens.FindAsync(id);
+        var token = await _context.user_fcm_tokens.FindAsync(id);
         if (token != null)
         {
-            _context.UserFcmTokens.Remove(token);
+            _context.user_fcm_tokens.Remove(token);
             await _context.SaveChangesAsync();
         }
     }

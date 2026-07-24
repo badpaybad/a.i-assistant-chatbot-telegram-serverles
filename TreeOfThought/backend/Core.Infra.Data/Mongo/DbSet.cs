@@ -35,19 +35,19 @@ public class DbSet<T> : IDbSet<T> where T : class
         _queryable = _collection.AsQueryable();
     }
 
-    private async Task WriteAuditLogInternalAsync(AuditLog auditLog)
+    private async Task WriteAuditLogInternalAsync(audit_logs_entity auditLog)
     {
-        if (_collectionName == "AuditLogs") return;
-        var auditCollection = _database.GetCollection<AuditLog>("AuditLogs");
+        if (_collectionName == "audit_logs") return;
+        var auditCollection = _database.GetCollection<audit_logs_entity>("audit_logs");
         await auditCollection.InsertOneAsync(auditLog);
     }
 
-    private async Task WriteAuditLogsInternalAsync(IEnumerable<AuditLog> auditLogs)
+    private async Task WriteAuditLogsInternalAsync(IEnumerable<audit_logs_entity> auditLogs)
     {
-        if (_collectionName == "AuditLogs") return;
+        if (_collectionName == "audit_logs") return;
         var logs = auditLogs.ToList();
         if (logs.Count == 0) return;
-        var auditCollection = _database.GetCollection<AuditLog>("AuditLogs");
+        var auditCollection = _database.GetCollection<audit_logs_entity>("audit_logs");
         await auditCollection.InsertManyAsync(logs);
     }
 
@@ -137,16 +137,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                              ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
                 }
 
-                var auditLog = new AuditLog
+                var auditLog = new audit_logs_entity
                 {
-                    Id = Guid.NewGuid(),
-                    TableName = _collectionName,
-                    Action = "Delete",
-                    EntityId = idValue.ToString() ?? string.Empty,
-                    BeforeState = beforeState,
-                    AfterState = null,
-                    Timestamp = DateTime.UtcNow,
-                    UserId = userId
+                    id = Guid.NewGuid(),
+                    table_name = _collectionName,
+                    action = "Delete",
+                    entity_id = idValue.ToString() ?? string.Empty,
+                    before_state = beforeState,
+                    after_state = null,
+                    timestamp = DateTime.UtcNow,
+                    user_id = userId
                 };
 
                 await WriteAuditLogInternalAsync(auditLog);
@@ -190,16 +190,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                 userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
             }
 
-            var auditLog = new AuditLog
+            var auditLog = new audit_logs_entity
             {
-                Id = Guid.NewGuid(),
-                TableName = _collectionName,
-                Action = "Insert",
-                EntityId = idValue,
-                BeforeState = null,
-                AfterState = entity.ToJson(),
-                Timestamp = DateTime.UtcNow,
-                UserId = userId
+                id = Guid.NewGuid(),
+                table_name = _collectionName,
+                action = "Insert",
+                entity_id = idValue,
+                before_state = null,
+                after_state = entity.ToJson(),
+                timestamp = DateTime.UtcNow,
+                user_id = userId
             };
 
             await WriteAuditLogInternalAsync(auditLog);
@@ -218,7 +218,7 @@ public class DbSet<T> : IDbSet<T> where T : class
 
             try
             {
-                var auditLogs = new List<AuditLog>();
+                var auditLogs = new List<audit_logs_entity>();
                 var idProp = typeof(T).GetProperty("Id");
                 var trackingInterface = typeof(T).GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
@@ -232,16 +232,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                         userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
                     }
 
-                    auditLogs.Add(new AuditLog
+                    auditLogs.Add(new audit_logs_entity
                     {
-                        Id = Guid.NewGuid(),
-                        TableName = _collectionName,
-                        Action = "Insert",
-                        EntityId = idValue,
-                        BeforeState = null,
-                        AfterState = entity.ToJson(),
-                        Timestamp = DateTime.UtcNow,
-                        UserId = userId
+                        id = Guid.NewGuid(),
+                        table_name = _collectionName,
+                        action = "Insert",
+                        entity_id = idValue,
+                        before_state = null,
+                        after_state = entity.ToJson(),
+                        timestamp = DateTime.UtcNow,
+                        user_id = userId
                     });
                 }
 
@@ -298,16 +298,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                              ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
                 }
 
-                var auditLog = new AuditLog
+                var auditLog = new audit_logs_entity
                 {
-                    Id = Guid.NewGuid(),
-                    TableName = _collectionName,
-                    Action = "Update",
-                    EntityId = idValue.ToString() ?? string.Empty,
-                    BeforeState = beforeState,
-                    AfterState = entity.ToJson(),
-                    Timestamp = DateTime.UtcNow,
-                    UserId = userId
+                    id = Guid.NewGuid(),
+                    table_name = _collectionName,
+                    action = "Update",
+                    entity_id = idValue.ToString() ?? string.Empty,
+                    before_state = beforeState,
+                    after_state = entity.ToJson(),
+                    timestamp = DateTime.UtcNow,
+                    user_id = userId
                 };
 
                 await WriteAuditLogInternalAsync(auditLog);
@@ -350,7 +350,7 @@ public class DbSet<T> : IDbSet<T> where T : class
         {
             try
             {
-                var auditLogs = new List<AuditLog>();
+                var auditLogs = new List<audit_logs_entity>();
                 var idProp = typeof(T).GetProperty("Id");
                 var trackingInterface = typeof(T).GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
@@ -365,16 +365,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                                  ?? typeof(T).GetProperty("CreatedBy")?.GetValue(original) as string;
                     }
 
-                    auditLogs.Add(new AuditLog
+                    auditLogs.Add(new audit_logs_entity
                     {
-                        Id = Guid.NewGuid(),
-                        TableName = _collectionName,
-                        Action = "Delete",
-                        EntityId = idValue,
-                        BeforeState = original.ToJson(),
-                        AfterState = null,
-                        Timestamp = DateTime.UtcNow,
-                        UserId = userId
+                        id = Guid.NewGuid(),
+                        table_name = _collectionName,
+                        action = "Delete",
+                        entity_id = idValue,
+                        before_state = original.ToJson(),
+                        after_state = null,
+                        timestamp = DateTime.UtcNow,
+                        user_id = userId
                     });
                 }
 
@@ -429,16 +429,16 @@ public class DbSet<T> : IDbSet<T> where T : class
                 }
             }
 
-            var auditLog = new AuditLog
+            var auditLog = new audit_logs_entity
             {
-                Id = Guid.NewGuid(),
-                TableName = _collectionName,
-                Action = exists ? "Update" : "Insert",
-                EntityId = idValue,
-                BeforeState = beforeState,
-                AfterState = entity.ToJson(),
-                Timestamp = DateTime.UtcNow,
-                UserId = userId
+                id = Guid.NewGuid(),
+                table_name = _collectionName,
+                action = exists ? "Update" : "Insert",
+                entity_id = idValue,
+                before_state = beforeState,
+                after_state = entity.ToJson(),
+                timestamp = DateTime.UtcNow,
+                user_id = userId
             };
 
             await WriteAuditLogInternalAsync(auditLog);

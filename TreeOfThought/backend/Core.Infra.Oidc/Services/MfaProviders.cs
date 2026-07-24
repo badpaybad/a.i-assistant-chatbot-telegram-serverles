@@ -18,12 +18,12 @@ public class TotpMfaProvider : IMfaProvider
 
     public string ProviderName => "Totp";
 
-    public Task<MfaSetupResult> SetupAsync(User user)
+    public Task<MfaSetupResult> SetupAsync(users_entity user)
     {
         var secretKeyBytes = KeyGeneration.GenerateRandomKey(20);
         var base32Secret = Base32Encoding.ToString(secretKeyBytes);
         var issuer = _config["Mfa:Providers:Totp:IssuerName"] ?? "TreeOfThought";
-        var qrCodeUri = $"otpauth://totp/{issuer}:{user.Email}?secret={base32Secret}&issuer={issuer}";
+        var qrCodeUri = $"otpauth://totp/{issuer}:{user.email}?secret={base32Secret}&issuer={issuer}";
 
         return Task.FromResult(new MfaSetupResult
         {
@@ -33,15 +33,15 @@ public class TotpMfaProvider : IMfaProvider
         });
     }
 
-    public Task<bool> SendCodeAsync(User user)
+    public Task<bool> SendCodeAsync(users_entity user)
     {
         // TOTP is offline; no need to send code
         return Task.FromResult(true);
     }
 
-    public Task<bool> VerifyCodeAsync(User user, string code)
+    public Task<bool> VerifyCodeAsync(users_entity user, string code)
     {
-        if (string.IsNullOrEmpty(user.MfaSecret))
+        if (string.IsNullOrEmpty(user.mfa_secret))
         {
             return Task.FromResult(false);
         }
@@ -49,7 +49,7 @@ public class TotpMfaProvider : IMfaProvider
         try
         {
             // The secret key is passed in decrypted base32 format
-            var bytes = Base32Encoding.ToBytes(user.MfaSecret);
+            var bytes = Base32Encoding.ToBytes(user.mfa_secret);
             var totp = new Totp(bytes);
             bool isValid = totp.VerifyTotp(code, out _, new VerificationWindow(1, 1));
             return Task.FromResult(isValid);
@@ -72,9 +72,9 @@ public class SmsMfaProvider : IMfaProvider
 
     public string ProviderName => "Sms";
 
-    public Task<MfaSetupResult> SetupAsync(User user)
+    public Task<MfaSetupResult> SetupAsync(users_entity user)
     {
-        var phone = "09******" + (user.Username.Length > 2 ? user.Username.Substring(user.Username.Length - 2) : "99");
+        var phone = "09******" + (user.username.Length > 2 ? user.username.Substring(user.username.Length - 2) : "99");
         return Task.FromResult(new MfaSetupResult
         {
             Success = true,
@@ -82,21 +82,21 @@ public class SmsMfaProvider : IMfaProvider
         });
     }
 
-    public async Task<bool> SendCodeAsync(User user)
+    public async Task<bool> SendCodeAsync(users_entity user)
     {
         var code = new Random().Next(100000, 999999).ToString();
-        await _sessionService.SaveAuthCodeAsync($"mfa_code:sms:{user.Id}", code, TimeSpan.FromMinutes(5));
+        await _sessionService.SaveAuthCodeAsync($"mfa_code:sms:{user.id}", code, TimeSpan.FromMinutes(5));
         
-        Console.WriteLine($"[SMS MFA SIMULATION] Send to user '{user.Username}' - Code: {code}");
+        Console.WriteLine($"[SMS MFA SIMULATION] Send to user '{user.username}' - Code: {code}");
         return true;
     }
 
-    public async Task<bool> VerifyCodeAsync(User user, string code)
+    public async Task<bool> VerifyCodeAsync(users_entity user, string code)
     {
-        var cached = await _sessionService.GetAuthCodeAsync<string>($"mfa_code:sms:{user.Id}");
+        var cached = await _sessionService.GetAuthCodeAsync<string>($"mfa_code:sms:{user.id}");
         if (cached == code)
         {
-            await _sessionService.RemoveAuthCodeAsync($"mfa_code:sms:{user.Id}");
+            await _sessionService.RemoveAuthCodeAsync($"mfa_code:sms:{user.id}");
             return true;
         }
         return false;
@@ -114,9 +114,9 @@ public class EmailMfaProvider : IMfaProvider
 
     public string ProviderName => "Email";
 
-    public Task<MfaSetupResult> SetupAsync(User user)
+    public Task<MfaSetupResult> SetupAsync(users_entity user)
     {
-        var email = user.Email;
+        var email = user.email;
         var obfuscated = string.IsNullOrEmpty(email) ? "user@example.com" : 
             email.Substring(0, Math.Min(3, email.Length)) + "***" + email.Substring(email.IndexOf('@'));
             
@@ -127,21 +127,21 @@ public class EmailMfaProvider : IMfaProvider
         });
     }
 
-    public async Task<bool> SendCodeAsync(User user)
+    public async Task<bool> SendCodeAsync(users_entity user)
     {
         var code = new Random().Next(100000, 999999).ToString();
-        await _sessionService.SaveAuthCodeAsync($"mfa_code:email:{user.Id}", code, TimeSpan.FromMinutes(5));
+        await _sessionService.SaveAuthCodeAsync($"mfa_code:email:{user.id}", code, TimeSpan.FromMinutes(5));
         
-        Console.WriteLine($"[EMAIL MFA SIMULATION] Send to {user.Email} - Code: {code}");
+        Console.WriteLine($"[EMAIL MFA SIMULATION] Send to {user.email} - Code: {code}");
         return true;
     }
 
-    public async Task<bool> VerifyCodeAsync(User user, string code)
+    public async Task<bool> VerifyCodeAsync(users_entity user, string code)
     {
-        var cached = await _sessionService.GetAuthCodeAsync<string>($"mfa_code:email:{user.Id}");
+        var cached = await _sessionService.GetAuthCodeAsync<string>($"mfa_code:email:{user.id}");
         if (cached == code)
         {
-            await _sessionService.RemoveAuthCodeAsync($"mfa_code:email:{user.Id}");
+            await _sessionService.RemoveAuthCodeAsync($"mfa_code:email:{user.id}");
             return true;
         }
         return false;

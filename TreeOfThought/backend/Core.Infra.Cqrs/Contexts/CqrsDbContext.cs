@@ -58,25 +58,25 @@ public class CqrsDbContext : BaseDbContext
         }
     }
 
-    public DbSet<CqrsTrackingLog> CqrsTrackingLogs { get; set; }
+    public DbSet<cqrs_tracking_logs_entity> cqrs_tracking_logs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<CqrsTrackingLog>(entity =>
+        modelBuilder.Entity<cqrs_tracking_logs_entity>(entity =>
         {
             entity.ToTable("cqrs_tracking_logs");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.id).UseIdentityAlwaysColumn();
             
-            entity.HasIndex(e => e.TrackingId);
-            entity.HasIndex(e => e.QueueOrTopicName);
-            entity.HasIndex(e => e.MessageType);
-            entity.HasIndex(e => e.CreatedAt);
-            entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => e.Type);
-            entity.HasIndex(e => e.ElapsedMilliseconds);
+            entity.HasIndex(e => e.tracking_id);
+            entity.HasIndex(e => e.queue_or_topic_name);
+            entity.HasIndex(e => e.message_type);
+            entity.HasIndex(e => e.created_at);
+            entity.HasIndex(e => e.status);
+            entity.HasIndex(e => e.type);
+            entity.HasIndex(e => e.elapsed_milliseconds);
         });
     }
 }

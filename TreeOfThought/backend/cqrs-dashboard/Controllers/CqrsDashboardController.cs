@@ -46,32 +46,32 @@ public class CqrsDashboardController : ControllerBase
         var stats = new Dictionary<string, long>();
 
         // 1. General System Stats (Queue / Topic counters)
-        stats["queue_send_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "send" && l.Status == "success");
-        stats["queue_send_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "send" && l.Status == "error");
-        stats["queue_done_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "done" && l.Status == "success");
-        stats["queue_done_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "queue" && l.Step == "done" && l.Status == "error");
+        stats["queue_send_success"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "queue" && l.step == "send" && l.status == "success");
+        stats["queue_send_error"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "queue" && l.step == "send" && l.status == "error");
+        stats["queue_done_success"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "queue" && l.step == "done" && l.status == "success");
+        stats["queue_done_error"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "queue" && l.step == "done" && l.status == "error");
 
-        stats["topic_send_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "send" && l.Status == "success");
-        stats["topic_send_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "send" && l.Status == "error");
-        stats["topic_done_success"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "done" && l.Status == "success" && l.SubscriberName != null);
-        stats["topic_done_error"] = await db.CqrsTrackingLogs.CountAsync(l => l.Type == "topic" && l.Step == "done" && l.Status == "error" && l.SubscriberName != null);
+        stats["topic_send_success"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "topic" && l.step == "send" && l.status == "success");
+        stats["topic_send_error"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "topic" && l.step == "send" && l.status == "error");
+        stats["topic_done_success"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "topic" && l.step == "done" && l.status == "success" && l.subscriber_name != null);
+        stats["topic_done_error"] = await db.cqrs_tracking_logs.CountAsync(l => l.type == "topic" && l.step == "done" && l.status == "error" && l.subscriber_name != null);
 
         // 2. Active Processing
-        stats["total:processing"] = await db.CqrsTrackingLogs
-            .Where(p => p.Step == "dequeue")
-            .Where(p => !db.CqrsTrackingLogs.Any(c => 
-                c.TrackingId == p.TrackingId && 
-                c.Step == "done" && 
-                (c.HandlerName == p.HandlerName)))
-            .Select(p => p.TrackingId)
+        stats["total:processing"] = await db.cqrs_tracking_logs
+            .Where(p => p.step == "dequeue")
+            .Where(p => !db.cqrs_tracking_logs.Any(c => 
+                c.tracking_id == p.tracking_id && 
+                c.step == "done" && 
+                (c.handler_name == p.handler_name)))
+            .Select(p => p.tracking_id)
             .Distinct()
             .CountAsync();
 
         // 3. Specific Entity Groups (Group by Name, Step, Status)
-        var groups = await db.CqrsTrackingLogs
-            .Where(l => (l.Step == "send" || l.Step == "done") && (l.Status == "success" || l.Status == "error"))
-            .GroupBy(l => new { l.QueueOrTopicName, l.Step, l.Status })
-            .Select(g => new { g.Key.QueueOrTopicName, g.Key.Step, g.Key.Status, Count = g.Count() })
+        var groups = await db.cqrs_tracking_logs
+            .Where(l => (l.step == "send" || l.step == "done") && (l.status == "success" || l.status == "error"))
+            .GroupBy(l => new { l.queue_or_topic_name, l.step, l.status })
+            .Select(g => new { QueueOrTopicName = g.Key.queue_or_topic_name, Step = g.Key.step, Status = g.Key.status, Count = g.Count() })
             .ToListAsync();
 
         foreach (var g in groups)
@@ -289,49 +289,49 @@ public class CqrsDashboardController : ControllerBase
             }
 
             // 2. Query historical logs from PostgreSQL
-            var trackingIds = await db.CqrsTrackingLogs
-                .Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName)
-                .Select(l => l.TrackingId)
+            var trackingIds = await db.cqrs_tracking_logs
+                .Where(l => l.queue_or_topic_name == queueName || l.destination_queue_name == queueName)
+                .Select(l => l.tracking_id)
                 .Distinct()
                 .Take(100)
                 .ToListAsync();
 
             foreach (var tid in trackingIds)
             {
-                var logsQuery = db.CqrsTrackingLogs.Where(l => l.TrackingId == tid);
+                var logsQuery = db.cqrs_tracking_logs.Where(l => l.tracking_id == tid);
 
                 if (queueName.StartsWith("sub_queue:"))
                 {
-                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName);
+                    logsQuery = logsQuery.Where(l => l.queue_or_topic_name == queueName || l.destination_queue_name == queueName);
                 }
                 else if (_dispatcher.GetAllTopics().Contains(queueName))
                 {
-                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName ||
-                        (l.QueueOrTopicName != null && l.QueueOrTopicName.StartsWith("sub_queue:" + queueName + ":")) ||
-                        (l.DestinationQueueName != null && l.DestinationQueueName.StartsWith("sub_queue:" + queueName + ":")));
+                    logsQuery = logsQuery.Where(l => l.queue_or_topic_name == queueName || l.destination_queue_name == queueName ||
+                        (l.queue_or_topic_name != null && l.queue_or_topic_name.StartsWith("sub_queue:" + queueName + ":")) ||
+                        (l.destination_queue_name != null && l.destination_queue_name.StartsWith("sub_queue:" + queueName + ":")));
                 }
                 else
                 {
-                    logsQuery = logsQuery.Where(l => l.QueueOrTopicName == queueName || l.DestinationQueueName == queueName);
+                    logsQuery = logsQuery.Where(l => l.queue_or_topic_name == queueName || l.destination_queue_name == queueName);
                 }
 
                 var logs = await logsQuery
-                    .OrderBy(l => l.CreatedAt)
+                    .OrderBy(l => l.created_at)
                     .ToListAsync();
 
                 if (logs.Count > 0)
                 {
-                    var doneLog = logs.FirstOrDefault(l => l.Step == "done");
-                    var dequeueLog = logs.FirstOrDefault(l => l.Step == "dequeue");
-                    var sendLog = logs.FirstOrDefault(l => l.Step == "send");
+                    var doneLog = logs.FirstOrDefault(l => l.step == "done");
+                    var dequeueLog = logs.FirstOrDefault(l => l.step == "dequeue");
+                    var sendLog = logs.FirstOrDefault(l => l.step == "send");
 
                     string statusStr = "pending";
                     string detailsStr = "Waiting in queue";
 
                     if (doneLog != null)
                     {
-                        statusStr = doneLog.Status.ToLower();
-                        detailsStr = doneLog.ErrorMessage ?? (statusStr == "success" ? "Handled successfully" : "Failed");
+                        statusStr = doneLog.status.ToLower();
+                        detailsStr = doneLog.error_message ?? (statusStr == "success" ? "Handled successfully" : "Failed");
                     }
                     else if (dequeueLog != null)
                     {
@@ -340,16 +340,16 @@ public class CqrsDashboardController : ControllerBase
                     }
                     else if (sendLog != null)
                     {
-                        statusStr = sendLog.Status == "success" ? "pending" : "error";
-                        detailsStr = sendLog.Status == "success" ? "Waiting in queue" : (sendLog.ErrorMessage ?? "Failed to send");
+                        statusStr = sendLog.status == "success" ? "pending" : "error";
+                        detailsStr = sendLog.status == "success" ? "Waiting in queue" : (sendLog.error_message ?? "Failed to send");
                     }
 
-                    var contentEntry = logs.FirstOrDefault(l => !string.IsNullOrEmpty(l.MessageData));
+                    var contentEntry = logs.FirstOrDefault(l => !string.IsNullOrEmpty(l.message_data));
                     
                     resultList.Add(new {
                         trackingId = tid,
-                        timestamp = logs.Min(l => l.CreatedAt),
-                        content = contentEntry?.MessageData ?? "",
+                        timestamp = logs.Min(l => l.created_at),
+                        content = contentEntry?.message_data ?? "",
                         status = statusStr,
                         details = detailsStr
                     });
@@ -414,27 +414,27 @@ public class CqrsDashboardController : ControllerBase
     [HttpGet("tracking/{trackingId}")]
     public async Task<IActionResult> GetTracking([FromServices] CqrsDbContext db, Guid trackingId)
     {
-        var history = await db.CqrsTrackingLogs
-            .Where(l => l.TrackingId == trackingId)
-            .OrderBy(l => l.CreatedAt)
-            .ThenBy(l => l.Id)
+        var history = await db.cqrs_tracking_logs
+            .Where(l => l.tracking_id == trackingId)
+            .OrderBy(l => l.created_at)
+            .ThenBy(l => l.id)
             .Select(l => new {
-                trackingId = l.TrackingId,
-                step = l.Step,
-                timestamp = l.CreatedAt,
-                time = l.CreatedAt,
-                messageContent = l.MessageData,
-                status = l.Status,
-                queueOrTopicName = l.QueueOrTopicName,
-                subscriberName = l.SubscriberName,
-                destinationQueueName = l.DestinationQueueName,
-                sourceComponent = l.SourceComponent,
-                handlerOrEventName = l.HandlerName ?? "",
-                workerName = l.WorkerId ?? "",
-                type = l.Type,
-                elapsedMilliseconds = l.ElapsedMilliseconds,
-                details = l.ErrorMessage ?? (l.Status.ToLower() == "success"
-                    ? (l.Step == "send" ? "Sent successfully" : (l.Step == "dequeue" ? "Dequeued successfully" : "Handled successfully"))
+                trackingId = l.tracking_id,
+                step = l.step,
+                timestamp = l.created_at,
+                time = l.created_at,
+                messageContent = l.message_data,
+                status = l.status,
+                queueOrTopicName = l.queue_or_topic_name,
+                subscriberName = l.subscriber_name,
+                destinationQueueName = l.destination_queue_name,
+                sourceComponent = l.source_component,
+                handlerOrEventName = l.handler_name ?? "",
+                workerName = l.worker_id ?? "",
+                type = l.type,
+                elapsedMilliseconds = l.elapsed_milliseconds,
+                details = l.error_message ?? (l.status.ToLower() == "success"
+                    ? (l.step == "send" ? "Sent successfully" : (l.step == "dequeue" ? "Dequeued successfully" : "Handled successfully"))
                     : "Processing...")
             })
             .ToListAsync();
@@ -452,46 +452,46 @@ public class CqrsDashboardController : ControllerBase
         [FromQuery] string? status = null)
     {
         _logger.LogInformation("[DEBUG Backend GetRecentTracking] Received pageIndex: {PageIndex}, pageSize: {PageSize}", pageIndex, pageSize);
-        var query = db.CqrsTrackingLogs.Where(l => l.IsRoot);
+        var query = db.cqrs_tracking_logs.Where(l => l.is_root);
 
         if (!string.IsNullOrEmpty(trackingId))
         {
             if (Guid.TryParse(trackingId, out var gId))
             {
-                query = query.Where(l => l.TrackingId == gId);
+                query = query.Where(l => l.tracking_id == gId);
             }
             else
             {
                 var tIdStr = trackingId.ToLower();
-                query = query.Where(l => EF.Functions.Like(l.TrackingId.ToString(), $"%{tIdStr}%"));
+                query = query.Where(l => EF.Functions.Like(l.tracking_id.ToString(), $"%{tIdStr}%"));
             }
         }
 
         if (!string.IsNullOrEmpty(content))
         {
-            query = query.Where(l => EF.Functions.Like(l.MessageData, $"%{content}%"));
+            query = query.Where(l => EF.Functions.Like(l.message_data, $"%{content}%"));
         }
 
         if (!string.IsNullOrEmpty(status))
         {
             var statusLower = status.ToLower();
-            var trackingIdsWithStatus = db.CqrsTrackingLogs
-                .GroupBy(l => l.TrackingId)
+            var trackingIdsWithStatus = db.cqrs_tracking_logs
+                .GroupBy(l => l.tracking_id)
                 .Select(g => new
                 {
                     TrackingId = g.Key,
-                    LatestStatus = g.OrderByDescending(l => l.Id).Select(l => l.Status).FirstOrDefault()
+                    LatestStatus = g.OrderByDescending(l => l.id).Select(l => l.status).FirstOrDefault()
                 })
                 .Where(x => x.LatestStatus != null && x.LatestStatus.ToLower() == statusLower)
                 .Select(x => x.TrackingId);
 
-            query = query.Where(l => trackingIdsWithStatus.Contains(l.TrackingId));
+            query = query.Where(l => trackingIdsWithStatus.Contains(l.tracking_id));
         }
 
         var total = await query.CountAsync();
         _logger.LogInformation("[DEBUG Backend GetRecentTracking] Counted Total: {Total}, Skip: {Skip}, Take: {Take}", total, (pageIndex - 1) * pageSize, pageSize);
         var rootLogs = await query
-            .OrderByDescending(l => l.CreatedAt)
+            .OrderByDescending(l => l.created_at)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync();
@@ -501,26 +501,26 @@ public class CqrsDashboardController : ControllerBase
 
         foreach (var rootLog in rootLogs)
         {
-            var latestLog = await db.CqrsTrackingLogs
-                .Where(l => l.TrackingId == rootLog.TrackingId)
-                .OrderByDescending(l => l.Id)
+            var latestLog = await db.cqrs_tracking_logs
+                .Where(l => l.tracking_id == rootLog.tracking_id)
+                .OrderByDescending(l => l.id)
                 .FirstOrDefaultAsync() ?? rootLog;
 
             resultItems.Add(new {
-                id = rootLog.TrackingId,
-                step = latestLog.Step,
-                time = rootLog.CreatedAt.ToString("O"),
-                content = rootLog.MessageData,
-                status = latestLog.Status,
-                queueOrTopic = rootLog.QueueOrTopicName,
-                subscriberName = latestLog.SubscriberName,
-                destinationQueueName = latestLog.DestinationQueueName,
-                sourceComponent = rootLog.SourceComponent,
-                handler = latestLog.HandlerName ?? "",
-                worker = latestLog.WorkerId ?? "",
-                type = latestLog.Type,
-                elapsedMilliseconds = latestLog.ElapsedMilliseconds,
-                errorMessage = latestLog.ErrorMessage,
+                id = rootLog.tracking_id,
+                step = latestLog.step,
+                time = rootLog.created_at.ToString("O"),
+                content = rootLog.message_data,
+                status = latestLog.status,
+                queueOrTopic = rootLog.queue_or_topic_name,
+                subscriberName = latestLog.subscriber_name,
+                destinationQueueName = latestLog.destination_queue_name,
+                sourceComponent = rootLog.source_component,
+                handler = latestLog.handler_name ?? "",
+                worker = latestLog.worker_id ?? "",
+                type = latestLog.type,
+                elapsedMilliseconds = latestLog.elapsed_milliseconds,
+                errorMessage = latestLog.error_message,
                 isRoot = true
             });
         }
@@ -531,26 +531,26 @@ public class CqrsDashboardController : ControllerBase
     [HttpPost("tracking/{trackingId}/resend")]
     public async Task<IActionResult> ResendTracking([FromServices] CqrsDbContext db, string trackingId)
     {
-        var logs = await db.CqrsTrackingLogs
-            .Where(l => l.TrackingId == Guid.Parse(trackingId))
-            .OrderBy(l => l.CreatedAt)
+        var logs = await db.cqrs_tracking_logs
+            .Where(l => l.tracking_id == Guid.Parse(trackingId))
+            .OrderBy(l => l.created_at)
             .ToListAsync();
 
         if (logs.Count == 0) return NotFound("Tracking not found");
 
-        var firstEntry = logs.FirstOrDefault(l => l.IsRoot) ?? logs.First();
-        if (string.IsNullOrEmpty(firstEntry.MessageData)) return BadRequest("No message content found in tracking");
+        var firstEntry = logs.FirstOrDefault(l => l.is_root) ?? logs.First();
+        if (string.IsNullOrEmpty(firstEntry.message_data)) return BadRequest("No message content found in tracking");
 
-        var queueOrTopic = firstEntry.QueueOrTopicName;
+        var queueOrTopic = firstEntry.queue_or_topic_name;
         if (string.IsNullOrEmpty(queueOrTopic)) return BadRequest("Could not determine queue or topic");
 
-        var obj = JsonSerializer.Deserialize<JsonElement>(firstEntry.MessageData);
+        var obj = JsonSerializer.Deserialize<JsonElement>(firstEntry.message_data);
         
-        if (firstEntry.Step == "Enqueue")
+        if (firstEntry.step == "Enqueue")
         {
             await _queueService.EnqueueAsync(queueOrTopic, obj);
         }
-        else if (firstEntry.Step == "Publish")
+        else if (firstEntry.step == "Publish")
         {
             await _eventBus.PublishAsync(queueOrTopic, obj);
         }
@@ -565,13 +565,13 @@ public class CqrsDashboardController : ControllerBase
     [HttpDelete("tracking/{trackingId}")]
     public async Task<IActionResult> DeleteTracking([FromServices] CqrsDbContext db, string trackingId)
     {
-        var logs = await db.CqrsTrackingLogs
-            .Where(l => l.TrackingId == Guid.Parse(trackingId))
+        var logs = await db.cqrs_tracking_logs
+            .Where(l => l.tracking_id == Guid.Parse(trackingId))
             .ToListAsync();
 
         if (logs.Count > 0)
         {
-            db.CqrsTrackingLogs.RemoveRange(logs);
+            db.cqrs_tracking_logs.RemoveRange(logs);
             await db.SaveChangesAsync();
         }
 

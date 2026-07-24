@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Models;
 
@@ -48,8 +50,8 @@ public class UpdateRoleCommand : OidcCommand
 
 public class DeleteRoleCommand : OidcCommand { public Guid Id { get; set; } }
 
-public class CreateClaimCommand : OidcCommand { public AppClaim Claim { get; set; } = null!; }
-public class UpdateClaimCommand : OidcCommand { public Guid Id { get; set; } public AppClaim Claim { get; set; } = null!; }
+public class CreateClaimCommand : OidcCommand { public app_claims_entity Claim { get; set; } = null!; }
+public class UpdateClaimCommand : OidcCommand { public Guid Id { get; set; } public app_claims_entity Claim { get; set; } = null!; }
 public class DeleteClaimCommand : OidcCommand { public Guid Id { get; set; } }
 
 public class UploadAvatarCommand : OidcCommand 
@@ -73,9 +75,9 @@ public class RemoveDirectClaimCommand : OidcCommand { new public Guid UserId { g
 
 public class RemoveClaimFromRoleCommand : OidcCommand { public Guid RoleId { get; set; } public Guid ClaimId { get; set; } }
 
-public class AddAclCommand : OidcCommand { public AclEntry Entry { get; set; } = null!; }
+public class AddAclCommand : OidcCommand { public acl_entries_entity Entry { get; set; } = null!; }
 public class RemoveAclCommand : OidcCommand { public Guid Id { get; set; } }
 
-public class AddUserEmailCommand : OidcCommand { new public Guid UserId { get; set; } public UserEmail Email { get; set; } = null!; }
+public class AddUserEmailCommand : OidcCommand { new public Guid UserId { get; set; } public user_emails_entity Email { get; set; } = null!; }
 
 public class SendNotificationCommand : OidcCommand { public SendNotificationRequest Request { get; set; } = null!; }

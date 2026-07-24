@@ -10,21 +10,21 @@ public class NotifyDbContext : BaseDbContext
     {
     }
 
-    public DbSet<UserFcmToken> UserFcmTokens { get; set; }
+    public DbSet<user_fcm_tokens_entity> user_fcm_tokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Configure table name
-        modelBuilder.Entity<UserFcmToken>().ToTable("UserFcmTokens");
+        modelBuilder.Entity<user_fcm_tokens_entity>().ToTable("user_fcm_tokens");
 
         // Indexes for performance and querying
-        modelBuilder.Entity<UserFcmToken>().HasIndex(t => t.UserId);
-        modelBuilder.Entity<UserFcmToken>().HasIndex(t => t.FcmToken);
-        modelBuilder.Entity<UserFcmToken>().HasIndex(t => t.DeviceId);
+        modelBuilder.Entity<user_fcm_tokens_entity>().HasIndex(t => t.user_id);
+        modelBuilder.Entity<user_fcm_tokens_entity>().HasIndex(t => t.fcm_token);
+        modelBuilder.Entity<user_fcm_tokens_entity>().HasIndex(t => t.device_id);
         
         // Composite index to speed up device-specific lookups
-        modelBuilder.Entity<UserFcmToken>().HasIndex(t => new { t.UserId, t.DeviceId });
+        modelBuilder.Entity<user_fcm_tokens_entity>().HasIndex(t => new { t.user_id, t.device_id });
     }
 }

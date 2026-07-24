@@ -11,16 +11,16 @@ public class FaceUserDbContext : BaseDbContext
     {
     }
 
-    public DbSet<FaceUser> Users { get; set; }
+    public DbSet<users_entity> users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
         
-        modelBuilder.Entity<FaceUser>(entity =>
+        modelBuilder.Entity<users_entity>(entity =>
         {
-            entity.ToTable("Users");
-            entity.HasKey(e => e.Id);
+            entity.ToTable("users");
+            entity.HasKey(e => e.id);
         });
     }
 }

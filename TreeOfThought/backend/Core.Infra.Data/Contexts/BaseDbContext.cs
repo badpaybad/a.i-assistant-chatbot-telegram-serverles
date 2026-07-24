@@ -24,7 +24,7 @@ public abstract class BaseDbContext : DbContext
     /// <para>- <b>Oracle:</b> <c>User Id=myUsername;Password=myPassword;Data Source=myOracleService</c> or <c>Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=myHost)(PORT=1521))(CONNECT_DATA=(SERVICE_NAME=myServiceName)));User Id=myUsername;Password=myPassword;</c></para>
     /// </param>
     /// <param name="provider">The database provider type.</param>
-    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public DbSet<audit_logs_entity> audit_logs { get; set; } = null!;
 
     protected BaseDbContext(string connectionString, DbProviderType provider)
     {
@@ -35,13 +35,13 @@ public abstract class BaseDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<AuditLog>(entity =>
+        modelBuilder.Entity<audit_logs_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.TableName).HasMaxLength(256).IsRequired();
-            entity.Property(e => e.Action).HasMaxLength(50).IsRequired();
-            entity.Property(e => e.EntityId).HasMaxLength(1000).IsRequired();
-            entity.Property(e => e.UserId).HasMaxLength(256);
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.table_name).HasMaxLength(256).IsRequired();
+            entity.Property(e => e.action).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.entity_id).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.user_id).HasMaxLength(256);
         });
     }
 
@@ -145,7 +145,7 @@ public abstract class BaseDbContext : DbContext
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var entries = ChangeTracker.Entries().ToList();
-        if (entries.All(e => e.Entity is AuditLog))
+        if (entries.All(e => e.Entity is audit_logs_entity))
         {
             return await base.SaveChangesAsync(cancellationToken);
         }
@@ -159,7 +159,7 @@ public abstract class BaseDbContext : DbContext
     public override int SaveChanges()
     {
         var entries = ChangeTracker.Entries().ToList();
-        if (entries.All(e => e.Entity is AuditLog))
+        if (entries.All(e => e.Entity is audit_logs_entity))
         {
             return base.SaveChanges();
         }
@@ -199,7 +199,7 @@ public abstract class BaseDbContext : DbContext
 
         foreach (var entry in ChangeTracker.Entries())
         {
-            if (entry.Entity is AuditLog || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
+            if (entry.Entity is audit_logs_entity || entry.State == EntityState.Detached || entry.State == EntityState.Unchanged)
                 continue;
 
             var auditEntry = new AuditEntry(entry)
@@ -272,7 +272,7 @@ public abstract class BaseDbContext : DbContext
             }
 
             auditEntry.EntityId = System.Text.Json.JsonSerializer.Serialize(auditEntry.KeyValues);
-            AuditLogs.Add(auditEntry.ToAuditLog());
+            audit_logs.Add(auditEntry.ToAuditLog());
         }
 
         await base.SaveChangesAsync(cancellationToken);
@@ -294,7 +294,7 @@ public abstract class BaseDbContext : DbContext
             }
 
             auditEntry.EntityId = System.Text.Json.JsonSerializer.Serialize(auditEntry.KeyValues);
-            AuditLogs.Add(auditEntry.ToAuditLog());
+            audit_logs.Add(auditEntry.ToAuditLog());
         }
 
         base.SaveChanges();
@@ -317,18 +317,18 @@ internal class AuditEntry
         Entry = entry;
     }
 
-    public AuditLog ToAuditLog()
+    public audit_logs_entity ToAuditLog()
     {
-        return new AuditLog
+        return new audit_logs_entity
         {
-            Id = Guid.NewGuid(),
-            TableName = TableName,
-            Action = Action,
-            EntityId = EntityId,
-            BeforeState = BeforeValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(BeforeValues),
-            AfterState = AfterValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(AfterValues),
-            Timestamp = DateTime.UtcNow,
-            UserId = UserId
+            id = Guid.NewGuid(),
+            table_name = TableName,
+            action = Action,
+            entity_id = EntityId,
+            before_state = BeforeValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(BeforeValues),
+            after_state = AfterValues.Count == 0 ? null : System.Text.Json.JsonSerializer.Serialize(AfterValues),
+            timestamp = DateTime.UtcNow,
+            user_id = UserId
         };
     }
 }

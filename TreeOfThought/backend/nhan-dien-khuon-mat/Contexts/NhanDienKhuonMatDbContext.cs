@@ -1,9 +1,8 @@
 using Core.Infra.Data.Contexts;
 using Core.Infra.NhanDienKhuonMat.Models;
 using Microsoft.EntityFrameworkCore;
-
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace Core.Infra.NhanDienKhuonMat.Contexts;
 
@@ -18,82 +17,83 @@ public class NhanDienKhuonMatDbContext : BaseDbContext
     {
         try
         {
-            // 1. Create UploadSessions table
+            // 1. Create upload_sessions table
             await Database.ExecuteSqlRawAsync(@"
-                CREATE TABLE IF NOT EXISTS ""UploadSessions"" (
-                    ""Id"" uuid NOT NULL,
-                    ""Name"" character varying(255) NOT NULL,
-                    ""UserId"" uuid NOT NULL,
-                    ""CreatedAt"" timestamp with time zone NOT NULL,
-                    ""CreatedBy"" character varying(255) NULL,
-                    CONSTRAINT ""PK_UploadSessions"" PRIMARY KEY (""Id"")
+                CREATE TABLE IF NOT EXISTS ""upload_sessions"" (
+                    ""id"" uuid NOT NULL,
+                    ""name"" character varying(255) NOT NULL,
+                    ""user_id"" uuid NOT NULL,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""created_by"" character varying(255) NULL,
+                    CONSTRAINT ""PK_upload_sessions"" PRIMARY KEY (""id"")
                 );
-                CREATE INDEX IF NOT EXISTS ""IX_UploadSessions_UserId"" ON ""UploadSessions"" (""UserId"");
+                CREATE INDEX IF NOT EXISTS ""IX_upload_sessions_user_id"" ON ""upload_sessions"" (""user_id"");
             ");
 
-            // Convert UploadSessions.UserId to uuid if it was varchar
+            // Convert upload_sessions.user_id to uuid if it was varchar
             try
             {
                 await Database.ExecuteSqlRawAsync(@"
-                    ALTER TABLE ""UploadSessions"" ALTER COLUMN ""UserId"" TYPE uuid USING ""UserId""::uuid;
+                    ALTER TABLE ""upload_sessions"" ALTER COLUMN ""user_id"" TYPE uuid USING ""user_id""::uuid;
                 ");
             }
             catch {}
 
-            // 2. Create OriginalImages table (without UploadSessionId initially to prevent index fail on pre-existing tables)
+            // 2. Create original_images table
             await Database.ExecuteSqlRawAsync(@"
-                CREATE TABLE IF NOT EXISTS ""OriginalImages"" (
-                    ""Id"" uuid NOT NULL,
-                    ""FileName"" character varying(255) NOT NULL,
-                    ""Url"" text NOT NULL,
-                    ""Size"" bigint NOT NULL,
-                    ""UserId"" uuid NOT NULL,
-                    ""CreatedAt"" timestamp with time zone NOT NULL,
-                    CONSTRAINT ""PK_OriginalImages"" PRIMARY KEY (""Id"")
+                CREATE TABLE IF NOT EXISTS ""original_images"" (
+                    ""id"" uuid NOT NULL,
+                    ""file_name"" character varying(255) NOT NULL,
+                    ""url"" text NOT NULL,
+                    ""size"" bigint NOT NULL,
+                    ""user_id"" uuid NOT NULL,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""created_by"" character varying(255) NULL,
+                    CONSTRAINT ""PK_original_images"" PRIMARY KEY (""id"")
                 );
-                CREATE INDEX IF NOT EXISTS ""IX_OriginalImages_UserId"" ON ""OriginalImages"" (""UserId"");
+                CREATE INDEX IF NOT EXISTS ""IX_original_images_user_id"" ON ""original_images"" (""user_id"");
             ");
 
-            // Convert OriginalImages.UserId to uuid if it was varchar
+            // Convert original_images.user_id to uuid if it was varchar
             try
             {
                 await Database.ExecuteSqlRawAsync(@"
-                    ALTER TABLE ""OriginalImages"" ALTER COLUMN ""UserId"" TYPE uuid USING ""UserId""::uuid;
+                    ALTER TABLE ""original_images"" ALTER COLUMN ""user_id"" TYPE uuid USING ""user_id""::uuid;
                 ");
             }
             catch {}
 
-            // 3. Ensure UploadSessionId column exists in OriginalImages
+            // 3. Ensure upload_session_id column exists in original_images
             try
             {
                 await Database.ExecuteSqlRawAsync(@"
-                    ALTER TABLE ""OriginalImages"" ADD COLUMN IF NOT EXISTS ""UploadSessionId"" uuid NULL;
+                    ALTER TABLE ""original_images"" ADD COLUMN IF NOT EXISTS ""upload_session_id"" uuid NULL;
                 ");
             }
             catch (System.Exception ex)
             {
-                System.Console.WriteLine($"[NhanDienKhuonMat DbContext] Note: UploadSessionId column adding: {ex.Message}");
+                System.Console.WriteLine($"[NhanDienKhuonMat DbContext] Note: upload_session_id column adding: {ex.Message}");
             }
 
-            // 4. Create Index on UploadSessionId
+            // 4. Create Index on upload_session_id
             try
             {
                 await Database.ExecuteSqlRawAsync(@"
-                    CREATE INDEX IF NOT EXISTS ""IX_OriginalImages_UploadSessionId"" ON ""OriginalImages"" (""UploadSessionId"");
+                    CREATE INDEX IF NOT EXISTS ""IX_original_images_upload_session_id"" ON ""original_images"" (""upload_session_id"");
                 ");
             }
             catch (System.Exception ex)
             {
-                System.Console.WriteLine($"[NhanDienKhuonMat DbContext] Note: UploadSessionId index creation: {ex.Message}");
+                System.Console.WriteLine($"[NhanDienKhuonMat DbContext] Note: upload_session_id index creation: {ex.Message}");
             }
 
             // 5. Add Foreign Key Constraint
             try
             {
                 await Database.ExecuteSqlRawAsync(@"
-                    ALTER TABLE ""OriginalImages"" 
-                    ADD CONSTRAINT ""FK_OriginalImages_UploadSessions_UploadSessionId"" 
-                    FOREIGN KEY (""UploadSessionId"") REFERENCES ""UploadSessions"" (""Id"") ON DELETE CASCADE;
+                    ALTER TABLE ""original_images"" 
+                    ADD CONSTRAINT ""FK_original_images_upload_sessions_upload_session_id"" 
+                    FOREIGN KEY (""upload_session_id"") REFERENCES ""upload_sessions"" (""id"") ON DELETE CASCADE;
                 ");
             }
             catch (System.Exception ex)
@@ -101,18 +101,19 @@ public class NhanDienKhuonMatDbContext : BaseDbContext
                 System.Console.WriteLine($"[NhanDienKhuonMat DbContext] Note: FK constraint addition: {ex.Message}");
             }
 
-            // 6. Create CroppedFaces table
+            // 6. Create cropped_faces table
             await Database.ExecuteSqlRawAsync(@"
-                CREATE TABLE IF NOT EXISTS ""CroppedFaces"" (
-                    ""Id"" uuid NOT NULL,
-                    ""OriginalImageId"" uuid NOT NULL,
-                    ""Url"" text NOT NULL,
-                    ""BoundingBox"" character varying(500) NOT NULL,
-                    ""CreatedAt"" timestamp with time zone NOT NULL,
-                    CONSTRAINT ""PK_CroppedFaces"" PRIMARY KEY (""Id""),
-                    CONSTRAINT ""FK_CroppedFaces_OriginalImages_OriginalImageId"" FOREIGN KEY (""OriginalImageId"") REFERENCES ""OriginalImages"" (""Id"") ON DELETE CASCADE
+                CREATE TABLE IF NOT EXISTS ""cropped_faces"" (
+                    ""id"" uuid NOT NULL,
+                    ""original_image_id"" uuid NOT NULL,
+                    ""url"" text NOT NULL,
+                    ""bounding_box"" character varying(500) NOT NULL,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    ""created_by"" character varying(255) NULL,
+                    CONSTRAINT ""PK_cropped_faces"" PRIMARY KEY (""id""),
+                    CONSTRAINT ""FK_cropped_faces_original_images_original_image_id"" FOREIGN KEY (""original_image_id"") REFERENCES ""original_images"" (""id"") ON DELETE CASCADE
                 );
-                CREATE INDEX IF NOT EXISTS ""IX_CroppedFaces_OriginalImageId"" ON ""CroppedFaces"" (""OriginalImageId"");
+                CREATE INDEX IF NOT EXISTS ""IX_cropped_faces_original_image_id"" ON ""cropped_faces"" (""original_image_id"");
             ");
 
             await SeedDefaultSessionAsync();
@@ -128,31 +129,31 @@ public class NhanDienKhuonMatDbContext : BaseDbContext
         try
         {
             // Seed "Phiên đầu tiên" for existing images without a session, grouped by user
-            var imagesWithoutSession = await OriginalImages.Where(i => i.UploadSessionId == null).ToListAsync();
+            var imagesWithoutSession = await original_images.Where(i => i.upload_session_id == null).ToListAsync();
             if (imagesWithoutSession.Any())
             {
-                var groups = imagesWithoutSession.GroupBy(i => i.UserId);
+                var groups = imagesWithoutSession.GroupBy(i => i.user_id);
                 foreach (var group in groups)
                 {
                     var userId = group.Key;
-                    var firstSession = await UploadSessions.FirstOrDefaultAsync(s => s.UserId == userId && s.Name == "Phiên đầu tiên");
+                    var firstSession = await upload_sessions.FirstOrDefaultAsync(s => s.user_id == userId && s.name == "Phiên đầu tiên");
                     if (firstSession == null)
                     {
-                        firstSession = new UploadSession
+                        firstSession = new upload_sessions_entity
                         {
-                            Id = Guid.NewGuid(),
-                            Name = "Phiên đầu tiên",
-                            UserId = userId,
-                            CreatedAt = DateTime.UtcNow,
-                            CreatedBy = "System"
+                            id = Guid.NewGuid(),
+                            name = "Phiên đầu tiên",
+                            user_id = userId,
+                            created_at = DateTime.UtcNow,
+                            created_by = "System"
                         };
-                        UploadSessions.Add(firstSession);
+                        upload_sessions.Add(firstSession);
                         await SaveChangesAsync();
                     }
 
                     foreach (var img in group)
                     {
-                        img.UploadSessionId = firstSession.Id;
+                        img.upload_session_id = firstSession.id;
                     }
                 }
                 await SaveChangesAsync();
@@ -164,43 +165,46 @@ public class NhanDienKhuonMatDbContext : BaseDbContext
         }
     }
 
-    public DbSet<UploadSession> UploadSessions { get; set; }
-    public DbSet<OriginalImage> OriginalImages { get; set; }
-    public DbSet<CroppedFace> CroppedFaces { get; set; }
+    public DbSet<upload_sessions_entity> upload_sessions { get; set; }
+    public DbSet<original_images_entity> original_images { get; set; }
+    public DbSet<cropped_faces_entity> cropped_faces { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<UploadSession>(entity =>
+        modelBuilder.Entity<upload_sessions_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
-            entity.HasIndex(e => e.UserId);
+            entity.ToTable("upload_sessions");
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.name).IsRequired().HasMaxLength(255);
+            entity.HasIndex(e => e.user_id);
         });
 
-        modelBuilder.Entity<OriginalImage>(entity =>
+        modelBuilder.Entity<original_images_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Url).IsRequired();
-            entity.HasIndex(e => e.UserId);
+            entity.ToTable("original_images");
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.file_name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.url).IsRequired();
+            entity.HasIndex(e => e.user_id);
 
-            entity.HasOne(d => d.UploadSession)
-                .WithMany(p => p.OriginalImages)
-                .HasForeignKey(d => d.UploadSessionId)
+            entity.HasOne(d => d.upload_session)
+                .WithMany(p => p.original_images)
+                .HasForeignKey(d => d.upload_session_id)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<CroppedFace>(entity =>
+        modelBuilder.Entity<cropped_faces_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Url).IsRequired();
-            entity.Property(e => e.BoundingBox).IsRequired().HasMaxLength(500);
+            entity.ToTable("cropped_faces");
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.url).IsRequired();
+            entity.Property(e => e.bounding_box).IsRequired().HasMaxLength(500);
 
-            entity.HasOne(d => d.OriginalImage)
-                .WithMany(p => p.CroppedFaces)
-                .HasForeignKey(d => d.OriginalImageId)
+            entity.HasOne(d => d.original_image)
+                .WithMany(p => p.cropped_faces)
+                .HasForeignKey(d => d.original_image_id)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }
