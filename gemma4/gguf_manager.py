@@ -97,8 +97,56 @@ class GGUFModelWrapper:
             )
             return response["choices"][0]["message"]["content"].strip()
         except Exception as e:
-            print(f"[-] Error during GGUF generation: {e}")
-            return f"Lỗi sinh nội dung: {str(e)}"
+            err_str = str(e)
+            print(f"[-] Error during GGUF generation: {err_str}")
+            if "exceeds n_ctx" in err_str.lower() or "context" in err_str.lower():
+                print("[!] Prompt exceeds n_ctx. Auto-truncating context and retrying...")
+                try:
+                    pruned_messages = []
+                    for m in messages:
+                        m_copy = dict(m)
+                        if isinstance(m_copy.get("content"), str):
+                            c_str = m_copy["content"]
+                            if len(c_str) > 2500:
+                                m_copy["content"] = c_str[:1800] + "\n...[Cắt bớt để vừa cửa sổ n_ctx]...\n" + c_str[-600:]
+                        pruned_messages.append(m_copy)
+
+                    response = self._llm.create_chat_completion(
+                        messages=pruned_messages,
+                        max_tokens=max_tokens,
+                        temperature=temperature,
+                        top_p=top_p,
+                        top_k=top_k,
+                    )
+                    return response["choices"][0]["message"]["content"].strip()
+                except Exception as ex_retry:
+                    print(f"[-] Retry after truncation failed: {ex_retry}. Trying aggressive Stage 2 fallback...")
+                    try:
+                        minimal_messages = []
+                        if messages and messages[0].get("role") == "system":
+                            sys_m = dict(messages[0])
+                            if isinstance(sys_m.get("content"), str) and len(sys_m["content"]) > 3000:
+                                sys_m["content"] = sys_m["content"][:3000] + "\n...[Rút gọn system context]..."
+                            minimal_messages.append(sys_m)
+                        
+                        last_msg = dict(messages[-1])
+                        if isinstance(last_msg.get("content"), str) and len(last_msg["content"]) > 4000:
+                            last_msg["content"] = last_msg["content"][:4000] + "\n...[Rút gọn current message]..."
+                        minimal_messages.append(last_msg)
+
+                        response = self._llm.create_chat_completion(
+                            messages=minimal_messages,
+                            max_tokens=max_tokens,
+                            temperature=temperature,
+                            top_p=top_p,
+                            top_k=top_k,
+                        )
+                        return response["choices"][0]["message"]["content"].strip()
+                    except Exception as ex_stage2:
+                        print(f"[-] Stage 2 fallback failed: {ex_stage2}")
+                        return f"Lỗi sinh nội dung do prompt quá dài: {str(ex_stage2)}"
+
+            return f"Lỗi sinh nội dung: {str(err_str)}"
 
     # ------------------------------------------------------------------
     # Streaming generation

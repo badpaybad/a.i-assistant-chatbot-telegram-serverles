@@ -38,7 +38,7 @@ GGUF_MODEL_PATH: Path = Path(
 GGUF_MMPROJ_PATH: Path = GGUF_MODEL_DIR / GGUF_MMPROJ_FILENAME
 
 # Context window — larger = more VRAM for KV cache
-GGUF_N_CTX: int = int(os.getenv("GEMMA_GGUF_N_CTX", "4096"))
+GGUF_N_CTX: int = int(os.getenv("GEMMA_GGUF_N_CTX", "8192"))
 
 # Number of GPU layers: -1 = all layers on GPU (100% GPU)
 GGUF_N_GPU_LAYERS: int = int(os.getenv("GEMMA_GGUF_N_GPU_LAYERS", "-1"))

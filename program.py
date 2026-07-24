@@ -493,9 +493,10 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         r_text = r_msg.text or r_msg.caption or ""
         quoted_msg_block = f"### TIN NHẮN ĐƯỢC QUOTE / REPLY (QUOTED MESSAGE [ID:{r_msg.message_id}]) từ {r_name}:\n\"{r_text}\"\n\n"
 
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # 5. SOẠN PROMPT VÀ GỌI GEMMA4 LOCAL API
     system_instruction_text = (
-        "Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram.\n"
+        f"Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram. Thời gian hiện tại: {now}\n"
         "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...).\n"
         f"Loại hình trò chuyện hiện tại: {chat_type_desc}.\n\n"
         "Quy tắc ưu tiên xử lý và trả lời:\n"
@@ -517,9 +518,8 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         "   - Nhóm chat (Group Chat): Phân tích ngữ cảnh để tag đúng @username của người cần trả lời khi cần.\n\n"
         "5. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
     )
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     parts_payload = [
-        {"text": f"Thời gian hiện tại: {now} ### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n{quoted_msg_block}### TIN NHẮN HIỆN TẠI (CURRENT MESSAGE - ƯU TIÊN XỬ LÝ):\n{user_text}"}
+        {"text": f"### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n{quoted_msg_block}### TIN NHẮN HIỆN TẠI (CURRENT MESSAGE - ƯU TIÊN XỬ LÝ):\n{user_text}"}
     ]
 
     for file_item in accumulated_file_uris:
@@ -639,7 +639,7 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                         "from": {"id": 0, "first_name": "Assistant Bot", "username": TELEGRAM_BOT_USERNAME},
                         "text": final_reply_text
                     }
-                    bot_reply_orch.message = telegram_types.Update(update_id=0, message=telegram_types.Message.model_validate(bot_msg_dict))
+                    bot_reply_orch.message = telegram_types.TelegramUpdate(update_id=0, message=telegram_types.Message.model_validate(bot_msg_dict))
                     knowledgebase.dbcontext.db_orchestration_all_message.insert(bot_reply_orch.model_dump_json(by_alias=True))
                 except Exception as ex_save_bot:
                     print(f"[Gemma4 Process] Warning saving bot reply to DB: {ex_save_bot}")
