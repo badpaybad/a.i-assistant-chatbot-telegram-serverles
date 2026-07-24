@@ -20,7 +20,7 @@ from contextlib import asynccontextmanager
 from google import genai
 from google.genai import types
 from gemini_truyenkieu import chat_voi_cu_nguyen_du, chat_voi_cu_nguyen_du_memory
-
+from datetime import datetime
 from config import HISTORY_CHAT_MAX_LEN,TELEGRAM_BOT_TOKEN, TELEGRAM_API_URL, PORT, TELEGRAM_BOT_CHATID, TELEGRAM_BOT_USERNAME, GEMINI_APIKEY, DISCORD_PUBKEY, DISCORD_APPID, DISCORD_TOKEN,  TELEGRAM_API_ID, TELEGRAM_API_HASH, REPLY_ON_TAG_BOT_USERNAME
 
 import config
@@ -517,9 +517,9 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         "   - Nhóm chat (Group Chat): Phân tích ngữ cảnh để tag đúng @username của người cần trả lời khi cần.\n\n"
         "5. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
     )
-
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     parts_payload = [
-        {"text": f"### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n{quoted_msg_block}### TIN NHẮN HIỆN TẠI (CURRENT MESSAGE - ƯU TIÊN XỬ LÝ):\n{user_text}"}
+        {"text": f"Thời gian hiện tại: {now} ### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n{quoted_msg_block}### TIN NHẮN HIỆN TẠI (CURRENT MESSAGE - ƯU TIÊN XỬ LÝ):\n{user_text}"}
     ]
 
     for file_item in accumulated_file_uris:
