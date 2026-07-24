@@ -38,14 +38,14 @@ class GGUFModelWrapper:
                 "Download command: python -m gemma4.download_model"
             )
 
-        # Check for multimodal projector
+        # Check for multimodal projector (Vision / Image understanding)
         chat_handler = None
         mmproj_str = str(mmproj_path) if mmproj_path else None
         if mmproj_str and os.path.isfile(mmproj_str):
             try:
-                from llama_cpp.llama_chat_format import Gemma3ChatHandler
-                chat_handler = Gemma3ChatHandler(clip_model_path=mmproj_str, verbose=verbose)
-                print(f"[+] GGUF multimodal projector loaded: {mmproj_str}")
+                from llama_cpp.llama_chat_format import Gemma4ChatHandler
+                chat_handler = Gemma4ChatHandler(clip_model_path=mmproj_str, verbose=verbose)
+                print(f"[+] GGUF Gemma4 Vision multimodal projector loaded: {mmproj_str}")
             except Exception as e:
                 print(f"[!] Warning: Could not load mmproj ({e}). Vision features disabled.")
 
