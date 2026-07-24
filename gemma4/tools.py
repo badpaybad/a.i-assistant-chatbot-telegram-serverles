@@ -12,7 +12,10 @@ from gemma4.manager import get_manager
 project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.append(project_root)
-from config import *
+try:
+    from knowledgebase.gemini_search import SEARCH_TOOL_DEF
+except ImportError:
+    SEARCH_TOOL_DEF = None
 
 class Gemma4Tools:
     """
@@ -24,6 +27,8 @@ class Gemma4Tools:
     def __init__(self, model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit"):
         self.manager = get_manager(model_id)
         self.tools = []
+        if SEARCH_TOOL_DEF:
+            self.add_tool(SEARCH_TOOL_DEF)
 
     def add_tool(self, tool_def: Dict[str, Any]):
         """

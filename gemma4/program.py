@@ -470,8 +470,14 @@ async def generate_content(request: GenerateContentRequest, req: Request, model:
             }
         })
 
+    eval_prompt_for_tools = current_prompt
+    if request.system_instruction and request.system_instruction.parts:
+        sys_text = "".join([p.text for p in request.system_instruction.parts if p.text])
+        if sys_text:
+            eval_prompt_for_tools = f"NGỮ CẢNH HỘI THOẠI:\n{sys_text}\n\nTIN NHẮN HIỆN TẠI:\n{current_prompt}"
+
     tool_engine = Gemma4Tools()
-    match_results = tool_engine.match_tools(current_prompt, available_funcs)
+    match_results = tool_engine.match_tools(eval_prompt_for_tools, available_funcs)
     top_match = match_results[0] if match_results else None
     
     if top_match and top_match.get("score", 0) > 0.7 and top_match.get("function_name") != "none":

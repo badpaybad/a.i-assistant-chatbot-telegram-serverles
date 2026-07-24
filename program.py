@@ -10,7 +10,7 @@ import json
 import time
 import atexit
 from typing import Any
-
+import uuid
 from fastapi import FastAPI, Request
 from pydantic import BaseModel
 import httpx
@@ -38,7 +38,9 @@ import knowledgebase.dbcontext
 import knowledgebase.orchestrationcontext 
 
 from knowledgebase.orchestrationcontext import set_dir_program, skills_decision
+from knowledgebase.gemini_search import is_search_requested, is_search_needed, search_with_gemini, SEARCH_TOOL_DEF
 import jira_helper
+from gemma4 import read_file_content, transcribe_audio
 
 DIR_PROGRAM=os.path.dirname(os.path.abspath(__file__))
 
@@ -539,11 +541,36 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
             "role": "system",
             "parts": [{"text": system_instruction_text}]
         },
+        "tools": [
+            {
+                "function_declarations": [SEARCH_TOOL_DEF]
+            }
+        ],
         "generationConfig": {
             "temperature": 0.7,
             "maxOutputTokens": 1024
         }
     }
+
+    # Pre-check is_search_needed không còn bắt buộc vì đã chuyển sang tự động đánh giá qua Tool Call trong Gemma4 API
+    # if is_search_needed(user_text, full_conversation_history_text) and not accumulated_file_uris:
+    #     try:
+    #         print(f"[Gemini Search] Triggering Google Search tool for query: {user_text[:60]}")
+    #         search_prompt = f"{quoted_msg_block}### TIN NHẮN HIỆN TẠI (YÊU CẦU TÌM KIẾM):\n{user_text}"
+    #         search_reply = search_with_gemini(search_prompt, full_conversation_history_text, is_private_chat)
+    #         if search_reply and not search_reply.startswith("Lỗi"):
+    #             final_reply_text = search_reply.strip()
+    #             sent_res = await bot_telegram.send_telegram_message(
+    #                 chat_id=chat_id,
+    #                 text=final_reply_text,
+    #                 files=None,
+    #                 reply_to_message_id=reply_msg_id,
+    #                 parse_mode="HTML"
+    #             )
+    #             print(f"[Gemini Search] Reply sent to chat {chat_id}: {final_reply_text[:80]}...")
+    #             return sent_res
+    #     except Exception as ex_search:
+    #         print(f"[Gemini Search] Error during web search: {ex_search}")
 
     try:
         async with httpx.AsyncClient() as client:
@@ -561,7 +588,16 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                 candidate = resp_data["candidates"][0]
                 c_parts = candidate.get("content", {}).get("parts", [])
                 for p in c_parts:
-                    if p.get("text"):
+                    if p.get("function_call"):
+                        fcall = p["function_call"]
+                        if fcall.get("name") == "search_with_gemini":
+                            print(f"[Gemma4 API Tool Call] Function call search_with_gemini triggered: {fcall.get('args')}")
+                            query_param = fcall.get("args", {}).get("query") or user_text
+                            search_prompt = f"{quoted_msg_block}### TIN NHẮN HIỆN TẠI (YÊU CẦU TÌM KIẾM):\n{query_param}"
+                            search_reply = search_with_gemini(search_prompt, full_conversation_history_text, is_private_chat)
+                            if search_reply and not search_reply.startswith("Lỗi"):
+                                reply_text = search_reply.strip()
+                    elif p.get("text"):
                         reply_text += p["text"]
 
             if not reply_text:
