@@ -311,9 +311,11 @@ async def register_webhook(webhook_base_url: str):
             f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setWebhook",
             params={"url": webhook_url}
         )
-        print("Telegram Response:", response.json())
-        if response.status_code != 200:
-            raise Exception("Không đăng ký webhook cho telegram được")
+        res_json = response.json()
+        print("Telegram Response:", res_json)
+        if response.status_code != 200 or not res_json.get("ok"):
+            desc = res_json.get("description", "Unknown error")
+            raise Exception(f"Không đăng ký webhook cho telegram được: {desc}")
 
     print(f"Webhook đang chạy: {webhook_url}")
     # Lưu ý: Khi dùng cách này, tunnel sẽ chạy song song với ứng dụng của bạn.

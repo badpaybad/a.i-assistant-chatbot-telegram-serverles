@@ -104,7 +104,6 @@ cloudflared tunnel --url http://localhost:8088
 import shutil
 
 async def cloudflare_tunel_get_baseurl():
-
     global tunnel_process
     global webhook_base_url
 
@@ -116,80 +115,154 @@ async def cloudflare_tunel_get_baseurl():
     if not cloudflared_cmd:
         cloudflared_cmd = "cloudflared"
 
-    # 1. Khởi động Cloudflared
-    print(f"Đang khởi tạo Cloudflare Tunnel bằng lệnh '{cloudflared_cmd}'...")
-    try:
-        tunnel_process = subprocess.Popen(
-            [cloudflared_cmd, "tunnel", "--url",
-                f"http://localhost:{PORT}", "--no-autoupdate"],
-            stderr=subprocess.PIPE,
-            text=True
-        )
-    except FileNotFoundError as e:
-        print(f"[!] Lỗi: Không tìm thấy file thực thi cloudflared ({cloudflared_cmd}): {e}")
-        return None
-    except Exception as e:
-        print(f"[!] Lỗi khi khởi tạo cloudflared process: {e}")
-        return None
+    retry_count = 0
+    while True:
+        retry_count += 1
+        print(f"[Cloudflare Tunnel] Đang khởi tạo Cloudflare Tunnel (Lần thử {retry_count})...")
 
-    await asyncio.sleep(0.5)
-    # 2. Lấy URL từ log (non-blocking)
-    for _ in range(500):
-        if not tunnel_process or not tunnel_process.stderr:
-            break
-        line = tunnel_process.stderr.readline()
-        if "https://" in line and ".trycloudflare.com" in line:
-            match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
-            if match:
-                webhook_base_url = match.group(0)
+        # Discard previous tunnel process if present
+        if tunnel_process:
+            try:
+                tunnel_process.terminate()
+                tunnel_process.wait(timeout=2)
+            except Exception:
+                pass
+            tunnel_process = None
+
+        try:
+            tunnel_process = subprocess.Popen(
+                [cloudflared_cmd, "tunnel", "--url", f"http://localhost:{PORT}", "--no-autoupdate"],
+                stderr=subprocess.PIPE,
+                text=True
+            )
+        except Exception as e:
+            print(f"[!] Lỗi khi khởi tạo cloudflared process (Lần thử {retry_count}): {e}")
+            await asyncio.sleep(3)
+            continue
+
+        await asyncio.sleep(1.0)
+        webhook_base_url = None
+
+        for _ in range(300):
+            if not tunnel_process or not tunnel_process.stderr:
                 break
-        await asyncio.sleep(0.1)
+            line = tunnel_process.stderr.readline()
+            if "https://" in line and ".trycloudflare.com" in line:
+                match = re.search(r"https://[a-z0-9-]+\.trycloudflare\.com", line)
+                if match:
+                    webhook_base_url = match.group(0)
+                    print(f"[+] [Cloudflare Tunnel] Lấy thành công URL: {webhook_base_url}")
+                    return webhook_base_url
+            await asyncio.sleep(0.1)
 
-    if not webhook_base_url:
-        print("Không lấy được URL từ Cloudflare")
-        return None
-
-    return webhook_base_url
+        print(f"[-] [Cloudflare Tunnel] Lần thử {retry_count} chưa lấy được URL trycloudflare. Đang khởi động lại tunnel...")
+        await asyncio.sleep(2)
 
 async def jira_register_webhook(base_url):
-
     full_url = f"{base_url}/webhook-jira"
-
     jira_helper.create_or_update_webhook("chatbot-jira", full_url)
-    
-    pass
-async def zalo_oa_register_webhook(base_url):
 
+async def zalo_oa_register_webhook(base_url):
     full_url = f"{base_url}/webhook-zalo-oa"
-    # todo: cần gọi lên zalo để update webhook url mới theo tunnel base_url
-    
     pass
+
+async def verify_public_url_accessible(base_url: str, timeout_sec: int = 90) -> bool:
+    """
+    Kiểm tra tên miền public HTTPS Cloudflare xem DNS đã lan truyền trên Internet
+    và phản hồi Status 200 OK hay chưa trước khi gọi Telegram setWebhook (tránh spam API Telegram).
+    """
+    health_url = f"{base_url}/health"
+    print(f"[*] [DNS Verification] Đang kiểm tra tên miền public {health_url}...")
+    start_time = asyncio.get_event_loop().time()
+    
+    async with httpx.AsyncClient(verify=False) as client:
+        attempt = 0
+        while True:
+            attempt += 1
+            try:
+                resp = await client.get(health_url, timeout=5.0)
+                if resp.status_code == 200:
+                    print(f"[+] [DNS Verification] Tên miền public {base_url} đã lan truyền DNS thành công (Status 200 OK từ Internet) (Lần {attempt})!")
+                    return True
+            except Exception as ex:
+                print(f"[-] [DNS Verification] Tên miền public chưa lan truyền DNS xong (Lần {attempt}): {ex}. Chờ 3s...")
+            
+            if (asyncio.get_event_loop().time() - start_time) > timeout_sec:
+                print("[-] [DNS Verification] Quá thời gian chờ DNS lan truyền công khai.")
+                return False
+                
+            await asyncio.sleep(3)
 
 async def background_tunnel_and_webhook():
-    try:
-        base_url = await cloudflare_tunel_get_baseurl()
-        if not base_url:
-            print("Bỏ qua đăng ký Webhook do không lấy được URL Cloudflare Tunnel.")
-            return
+    while True:
+        try:
+            # 1. BƯỚC 1: Lấy subdomain HTTPS free từ Cloudflare (retry đến khi lấy được)
+            base_url = await cloudflare_tunel_get_baseurl()
+            if not base_url:
+                print("[-] Không lấy được Cloudflare Subdomain. Thử lại sau 3s...")
+                await asyncio.sleep(3)
+                continue
 
-        # 3. Đợi cho đến khi port 8088 thông (FastAPI đã boot xong)
-        if await wait_for_server_ready(base_url):
-            # 4. Cuối cùng mới đăng ký với Telegram
+            print(f"[+] [Bước 1] Đã lấy thành công Cloudflare Subdomain: {base_url}")
+            await asyncio.sleep(3)
+
+            # 2. BƯỚC 2: Kiểm tra Web Server (localhost:{PORT}) sẵn sàng
+            print(f"[*] [Bước 2] Đang kiểm tra Web Server trên port {PORT}...")
+            server_ready = await wait_for_server_ready(base_url)
+            if not server_ready:
+                print("[-] Web Server chưa sẵn sàng. Tái khởi động quy trình sau 3s...")
+                await asyncio.sleep(3)
+                continue
+
+            print(f"[+] [Bước 2] Web Server local đã sẵn sàng trên port {PORT}!")
+            await asyncio.sleep(3)
+
+            # 3. BƯỚC 3: Kiểm tra Public HTTPS Domain đã lan truyền DNS thành công trên Internet
+            print(f"[*] [Bước 3] Đang chờ Cloudflare DNS lan truyền cho tên miền public HTTPS {base_url}...")
+            public_ready = await verify_public_url_accessible(base_url, timeout_sec=90)
+            if not public_ready:
+                print("[-] Tên miền public Cloudflare chưa lan truyền DNS xong. Tái khởi tạo Cloudflare Tunnel...")
+                await asyncio.sleep(3)
+                continue
+
+            print(f"[+] [Bước 3] Tên miền public {base_url} đã lan truyền DNS và sẵn sàng nhận request từ Internet!")
+            await asyncio.sleep(3)
+
+            # 4. BƯỚC 4: Đăng ký Telegram Webhook (Lúc này Telegram chắc chắn sẽ phân giải DNS thành công ngay từ lần đầu)
             full_url = f"{base_url}/webhook"
-            print(f"Đang gửi Webhook tới Telegram: {full_url}")
+            print(f"[*] [Bước 4] Bắt đầu đăng ký Telegram Webhook: {full_url}")
 
-            await asyncio.sleep(5)
-            # await register_webhook_to_telegram(full_url)
-            await bot_telegram.register_webhook(base_url)
-            # await bot_discord.update_discord_endpoint(base_url)
+            telegram_success = False
+            for attempt in range(1, 10):
+                try:
+                    await bot_telegram.register_webhook(base_url)
+                    telegram_success = True
+                    print(f"[+] [Bước 4] Đăng ký Telegram Webhook THÀNH CÔNG trên {base_url}!")
+                    break
+                except Exception as ex_tg:
+                    print(f"[-] [Bước 4] Đăng ký Telegram Webhook thử lần {attempt} chưa thành công ({ex_tg}). Chờ 3s...")
+                    await asyncio.sleep(3)
+
+            if not telegram_success:
+                print("[!] Đăng ký Telegram Webhook chưa thành công. Tái khởi tạo quy trình...")
+                await asyncio.sleep(3)
+                continue
+
+            # 5. BƯỚC 5: Đăng ký các dịch vụ bổ sung (Jira, Zalo OA) & Thông báo hoạt động
             await jira_register_webhook(base_url)
             await zalo_oa_register_webhook(base_url)
 
             if TELEGRAM_BOT_CHATID is not None and TELEGRAM_BOT_CHATID != "" and TELEGRAM_BOT_CHATID != 0:
                 await asyncio.sleep(2)
-                await bot_telegram.send_telegram_message(TELEGRAM_BOT_CHATID, base_url)
-    except Exception as e:
-        print(f"Lỗi trong background_tunnel_and_webhook: {e}")
+                await bot_telegram.send_telegram_message(TELEGRAM_BOT_CHATID, f"🚀 Chatbot Webhook is live: {base_url}")
+
+            # Đăng ký thành công hoàn toàn 100% -> kết thúc vòng lặp
+            print(f"[🎉 HOÀN TẤT QUY TRÌNH] Đã đăng ký thành công 100% Telegram Webhook trên {base_url}")
+            break
+
+        except Exception as e:
+            print(f"[!] Lỗi trong background_tunnel_and_webhook: {e}. Thử lại quy trình sau 3s...")
+            await asyncio.sleep(3)
 
 
 
@@ -285,6 +358,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 @app.get("/")
+@app.get("/health")
 async def health_check():
     return {"status": "ok", "message": "Bot is running!"}
 
