@@ -107,29 +107,28 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
         return JsonSerializer.Deserialize<T>(value.ToString()!, CqrsJsonOptions.Default);
     }
 
+    private static readonly LuaScript _dequeuePriorityScript = LuaScript.Prepare(@"
+        local typeinfo = redis.call('TYPE', @queueName)
+        local type = typeinfo['ok']
+        local val = nil
+        if type == 'zset' then
+            local pop = redis.call('ZPOPMIN', @queueName)
+            if pop and #pop > 0 then
+                val = pop[1]
+            end
+        else
+            val = redis.call('RPOP', @queueName)
+        end
+        
+        if val then
+            redis.call('LPUSH', @processingQueueName, val)
+            return val
+        end
+        return nil");
+
     public async Task<DequeuedMessage<T>?> DequeuePriorityAsync<T>(string queueName, string processingQueueName)
     {
-        // Lua script for reliable priority dequeue (handles both List and ZSet for source)
-        const string script = @"
-            local typeinfo = redis.call('TYPE', KEYS[1])
-            local type = typeinfo['ok']
-            local val = nil
-            if type == 'zset' then
-                local pop = redis.call('ZPOPMIN', KEYS[1])
-                if pop and #pop > 0 then
-                    val = pop[1]
-                end
-            else
-                val = redis.call('RPOP', KEYS[1])
-            end
-            
-            if val then
-                redis.call('LPUSH', KEYS[2], val)
-                return val
-            end
-            return nil";
-
-        var result = await _db.ScriptEvaluateAsync(script, new RedisKey[] { queueName, processingQueueName });
+        var result = await _dequeuePriorityScript.EvaluateAsync(_db, new { queueName = (RedisKey)queueName, processingQueueName = (RedisKey)processingQueueName });
         if (result.IsNull) return default;
 
         var json = result.ToString()!;
