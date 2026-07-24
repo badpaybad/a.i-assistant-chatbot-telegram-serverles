@@ -482,28 +482,41 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
 
     chat_type_desc = "Trò chuyện cá nhân 1-1 (Private Chat)" if is_private_chat else "Nhóm chat Telegram (Group Chat)"
 
+    # Build Quoted Message Block if user replied to/quoted a previous message
+    quoted_msg_block = ""
+    if orchestration_message.message and orchestration_message.message.message and orchestration_message.message.message.reply_to_message:
+        r_msg = orchestration_message.message.message.reply_to_message
+        r_user = r_msg.from_user or getattr(r_msg, "from_", None)
+        r_name = f"{r_user.first_name or ''} {r_user.last_name or ''}".strip() if r_user else "someone"
+        r_text = r_msg.text or r_msg.caption or ""
+        quoted_msg_block = f"### TIN NHẮN ĐƯỢC QUOTE / REPLY (QUOTED MESSAGE [ID:{r_msg.message_id}]) từ {r_name}:\n\"{r_text}\"\n\n"
+
     # 5. SOẠN PROMPT VÀ GỌI GEMMA4 LOCAL API
     system_instruction_text = (
         "Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram.\n"
         "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...).\n"
         f"Loại hình trò chuyện hiện tại: {chat_type_desc}.\n\n"
-        "Quy tắc khi xử lý và trả lời:\n"
-        "1. Xử lý Đường link (URL) & File đính kèm (Ảnh, Audio, Tài liệu):\n"
-        "   - Hệ thống đã tự động cào/đọc nội dung các đường link (URL) và đính kèm trực tiếp dưới nhãn `[Link Content from <URL>]: ...`.\n"
-        "   - Hệ thống đã tự động trích xuất nội dung các file tài liệu (PDF, Word, Excel, CSV, PPTX, TXT...) đính kèm dưới nhãn `[Nội dung file tài liệu (...)]`.\n"
-        "   - Hệ thống đã tự động chuyển âm thanh/voice thành văn bản (STT) đính kèm dưới nhãn `[Nội dung Audio/Voice (...)]`.\n"
-        "   - Hãy đọc kỹ các thông tin đính kèm này để tổng hợp, hiểu nội dung và trả lời chính xác yêu cầu của người dùng khi người dùng gửi link, gửi file hay gửi audio.\n\n"
-        "2. Kiểm tra xem câu hỏi/yêu cầu đã được trả lời chưa:\n"
+        "Quy tắc ưu tiên xử lý và trả lời:\n"
+        "1. ƯU TIÊN HÀNG ĐẦU - Tin nhắn hiện tại (CURRENT MESSAGE) & Tin nhắn được Quote (QUOTED MESSAGE):\n"
+        "   - Nhiệm vụ trọng tâm của bạn là giải quyết đúng câu hỏi/yêu cầu nằm trong TIN NHẮN HIỆN TẠI (CURRENT MESSAGE).\n"
+        "   - Nếu người dùng có reply/quote một tin nhắn trước đó (QUOTED MESSAGE): Hãy ĐẶC BIỆT ƯU TIÊN đọc nội dung tin nhắn được quote đó để xử lý đúng ý định của người dùng!\n"
+        "   - Lịch sử 20 tin nhắn gần nhất là ngữ cảnh phụ hỗ trợ bạn nắm được mạch trò chuyện.\n\n"
+        "2. Xử lý Đường link (URL) & File đính kèm (Ảnh, Audio, Tài liệu):\n"
+        "   - Các đường link (URL) đã được tự động cào nội dung đính kèm dưới nhãn `[Link Content from <URL>]: ...`.\n"
+        "   - Các file tài liệu (PDF, Word, Excel, CSV, PPTX, TXT...) đã được tự động trích xuất dưới nhãn `[Nội dung file tài liệu (...)]`.\n"
+        "   - Các âm thanh/voice đã được tự động chuyển thành văn bản (STT) đính kèm dưới nhãn `[Nội dung Audio/Voice (...)]`.\n"
+        "   - Đọc kỹ các thông tin đính kèm này để giải quyết yêu cầu trong tin nhắn hiện tại.\n\n"
+        "3. Kiểm tra xem câu hỏi/yêu cầu đã được trả lời chưa:\n"
         "   - Phân tích ngữ cảnh 20 tin nhắn gần nhất. Nếu câu hỏi/yêu cầu ĐÃ ĐƯỢC TRẢ LỜI ĐẦY ĐỦ trước đó và người dùng KHÔNG yêu cầu hỏi lại hay làm rõ thêm: Hãy chỉ trả về duy nhất cụm từ `[NO_REPLY]` (không kèm văn bản nào khác).\n"
-        "   - Nếu yêu cầu CHƯA được trả lời, hoặc người dùng hỏi lại/yêu cầu thông tin mới: Hãy trả lời chi tiết và hữu ích.\n\n"
-        "3. Tagging & Phân loại trò chuyện:\n"
+        "   - Nếu yêu cầu CHƯA được trả lời, hoặc người dùng hỏi lại/yêu cầu thông tin mới: Trả lời đầy đủ.\n\n"
+        "4. Tagging & Phân loại trò chuyện:\n"
         "   - Trò chuyện cá nhân 1-1 (Private Chat): Trả lời trực tiếp, tự nhiên, KHÔNG tag @username.\n"
-        "   - Nhóm chat (Group Chat): Phân tích ngữ cảnh 20 tin nhắn gần nhất để xác định người cần trả lời và tag đúng @username của người đó khi cần.\n\n"
-        "4. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
+        "   - Nhóm chat (Group Chat): Phân tích ngữ cảnh để tag đúng @username của người cần trả lời khi cần.\n\n"
+        "5. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
     )
 
     parts_payload = [
-        {"text": f"### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n### TIN NHẮN HIỆN TẠI:\n{user_text}"}
+        {"text": f"### LỊCH SỬ 20 TIN NHẮN GẦN NHẤT:\n{full_conversation_history_text}\n\n{quoted_msg_block}### TIN NHẮN HIỆN TẠI (CURRENT MESSAGE - ƯU TIÊN XỬ LÝ):\n{user_text}"}
     ]
 
     for file_item in accumulated_file_uris:

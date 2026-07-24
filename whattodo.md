@@ -23,4 +23,4 @@ Cũng dựa vào context xác định xem đã trả lời khi có yêu cầu ch
 
 **cập nhật 3** cần lưu 20 message gần nhất xuống ổ để khi restart có thể hiểu được context trước đó, cần lưu theo từng cá nhân chat 1-1 , từng nhóm chát tránh việc lẫn lộn context của các nhóm chát với nhau, hoặc cá nhân chát 1-1 với chatbot 
 
-
+cần ưu tiên việc xử lý yêu cầu ở message mới nhất (current message), cần hiểu context để hỗ trợ việc trả lời current message hợp lý, nếu có quote message cũng cần ưu tiên xử lý quote message
