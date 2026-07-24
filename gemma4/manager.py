@@ -154,6 +154,7 @@ class Gemma4Manager:
                         bnb_4bit_compute_dtype=compute_dtype,
                         bnb_4bit_quant_type="nf4",
                         bnb_4bit_use_double_quant=True,
+                        llm_int8_enable_fp32_cpu_offload=True,
                     )
 
                     # Unsloth pre-quantized HF repos: weights already in 4-bit, no BitsAndBytes overhead
@@ -165,6 +166,91 @@ class Gemma4Manager:
                         "gemma-4-e2b-it-unsloth-bnb-4bit": "unsloth/gemma-4-e2b-it-unsloth-bnb-4bit",
                         "gemma-4-e4b-it-unsloth-bnb-4bit": "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit",
                     }
+
+                    def load_quantized_model(source_dir, model_cfg, comp_dtype, quant_cfg):
+                        from accelerate import init_empty_weights
+                        from accelerate.hooks import remove_hook_from_module
+                        from safetensors import safe_open
+                        import json
+                        
+                        # 1. Inspect model structure on meta device to build device map dynamically
+                        with init_empty_weights():
+                            temp_model = AutoModelForMultimodalLM.from_config(model_cfg, trust_remote_code=True)
+                            
+                        cpu_modules = ["model.language_model.embed_tokens", "model.language_model.embed_tokens_per_layer", "lm_head"]
+                        gpu_candidates = [
+                            "model.language_model.layers",
+                            "model.language_model.norm",
+                            "model.language_model.rotary_emb",
+                            "model.language_model.per_layer_model_projection",
+                            "model.language_model.per_layer_projection_norm",
+                            "model.vision_tower",
+                            "model.embed_vision",
+                            "model.audio_tower",
+                            "model.embed_audio",
+                        ]
+                        
+                        all_names = {n for n, _ in temp_model.named_modules()}
+                        
+                        dev_map = {}
+                        for name in cpu_modules:
+                            if name in all_names:
+                                dev_map[name] = "cpu"
+                        for name in gpu_candidates:
+                            if name in all_names:
+                                dev_map[name] = "cuda:0"
+                                
+                        # 2. Load the model with the device map
+                        model_loaded = AutoModelForMultimodalLM.from_pretrained(
+                            source_dir,
+                            config=model_cfg,
+                            torch_dtype=comp_dtype,
+                            device_map=dev_map,
+                            quantization_config=quant_cfg,
+                            trust_remote_code=True,
+                            low_cpu_mem_usage=True,
+                            attn_implementation="sdpa",
+                        )
+                        
+                        # 3. Materialize meta parameters from the checkpoint files
+                        meta_params = [name for name, param in model_loaded.named_parameters() if param.device.type == 'meta']
+                        if meta_params:
+                            print(f"[*] Materializing meta params on CPU: {meta_params}")
+                            index_file = os.path.join(source_dir, "model.safetensors.index.json")
+                            if os.path.exists(index_file):
+                                with open(index_file, "r") as f:
+                                    weight_map = json.load(f)["weight_map"]
+                            else:
+                                files = [f for f in os.listdir(source_dir) if f.endswith(".safetensors")]
+                                weight_map = {name: files[0] for name in meta_params}
+                                
+                            for name in meta_params:
+                                if name == "lm_head.weight":
+                                    print("[*] Tying lm_head.weight to model.language_model.embed_tokens.weight on CPU...")
+                                    model_loaded.lm_head.weight = model_loaded.model.language_model.embed_tokens.weight
+                                    continue
+                                    
+                                filepath = os.path.join(source_dir, weight_map[name])
+                                with safe_open(filepath, framework="pt") as f:
+                                    tensor = f.get_tensor(name)
+                                    
+                                attrs = name.split(".")
+                                submodule = model_loaded
+                                for attr in attrs[:-1]:
+                                    submodule = getattr(submodule, attr)
+                                new_param = torch.nn.Parameter(tensor.to(device="cpu", dtype=torch.bfloat16))
+                                setattr(submodule, attrs[-1], new_param)
+                                
+                        # 4. Remove hooks from CPU-offloaded modules
+                        for name in cpu_modules:
+                            if name in all_names:
+                                attrs = name.split(".")
+                                submodule = model_loaded
+                                for attr in attrs:
+                                    submodule = getattr(submodule, attr)
+                                remove_hook_from_module(submodule)
+                                
+                        return model_loaded
 
                     def _try_load_unsloth(name):
                         """Load from Unsloth pre-quantized HF checkpoint (no BitsAndBytes runtime)."""
@@ -185,31 +271,13 @@ class Gemma4Manager:
                         source = local_dir if os.path.exists(os.path.join(local_dir, "config.json")) else repo
                         cfg  = AutoConfig.from_pretrained(source, trust_remote_code=True)
                         proc = AutoProcessor.from_pretrained(source, trust_remote_code=True)
-                        mdl  = AutoModelForMultimodalLM.from_pretrained(
-                            source,
-                            config=cfg,
-                            torch_dtype=compute_dtype,
-                            device_map="cuda:0",
-                            # No quantization_config — weights are already pre-quantized by Unsloth
-                            trust_remote_code=True,
-                            low_cpu_mem_usage=True,
-                            attn_implementation="sdpa",
-                        )
+                        mdl  = load_quantized_model(source, cfg, compute_dtype, quantization_config)
                         return mdl, proc
 
 
                     def _try_load_bnb(mid, cfg):
                         """Load with BitsAndBytes NF4 runtime quantization."""
-                        return AutoModelForMultimodalLM.from_pretrained(
-                            mid,
-                            config=cfg,
-                            torch_dtype=compute_dtype,
-                            device_map="cuda:0",
-                            quantization_config=quantization_config,
-                            trust_remote_code=True,
-                            low_cpu_mem_usage=True,
-                            attn_implementation="sdpa",
-                        )
+                        return load_quantized_model(mid, cfg, compute_dtype, quantization_config)
 
                     def _load_model_for(name, mid, cfg):
                         """Try Unsloth pre-quantized first, fall back to BitsAndBytes NF4."""
@@ -222,6 +290,7 @@ class Gemma4Manager:
                             return mdl
                         except Exception as unsloth_err:
                             print(f"[!] Unsloth load failed ({unsloth_err}). Falling back to BitsAndBytes NF4...")
+                            import gc; gc.collect(); torch.cuda.empty_cache()
                         # 2) BitsAndBytes NF4 runtime quantization
                         mdl = _try_load_bnb(mid, cfg)
                         print(f"[+] Loaded {name} 4-bit NF4 (BitsAndBytes) on GPU 0.")
@@ -422,7 +491,9 @@ class Gemma4Manager:
                 audio=final_audio, 
                 sampling_rate=sampling_rate, 
                 return_tensors="pt"
-            ).to(self.hf_model.device)
+            )
+            inputs_device = "cuda" if torch.cuda.is_available() and "cuda" in str(self.device) else self.hf_model.device
+            inputs = inputs.to(inputs_device)
 
             # Standard GPU cache — fastest for NF4 model on RTX 3060.
             # NOTE: optimum-quanto / hqq KV Cache runs on CPU kernels → extremely slow.
@@ -517,7 +588,8 @@ class Gemma4Manager:
                 raise RuntimeError("Lỗi: Hệ thống HF chưa sẵn sàng.")
                 
             import torch
-            inputs = self.processor(text=text, return_tensors="pt").to(self.hf_model.device)
+            inputs_device = "cuda" if torch.cuda.is_available() and "cuda" in str(self.device) else self.hf_model.device
+            inputs = self.processor(text=text, return_tensors="pt").to(inputs_device)
             
             with torch.no_grad():
                 outputs = self.hf_model(**inputs, output_hidden_states=True)
@@ -561,7 +633,8 @@ class Gemma4Manager:
 
             try:
                 image = Image.open(image_path).convert("RGB")
-                inputs = self.processor(text="", images=image, return_tensors="pt").to(self.hf_model.device)
+                inputs_device = "cuda" if torch.cuda.is_available() and "cuda" in str(self.device) else self.hf_model.device
+                inputs = self.processor(text="", images=image, return_tensors="pt").to(inputs_device)
                 
                 with torch.no_grad():
                     if hasattr(self.hf_model, "model") and hasattr(self.hf_model.model, "vision_tower"):
