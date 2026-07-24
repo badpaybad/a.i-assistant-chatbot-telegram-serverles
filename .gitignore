@@ -159,3 +159,4 @@ temp/**.wav
 =2.6.0
 cameraip/train/i3.jpg
 cameraip/train/i3output_detect.jpg
+temp/**
