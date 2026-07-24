@@ -224,7 +224,14 @@ async def send_telegram_message(
                         response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
                         response.raise_for_status()
                     except Exception as ex_html:
-                        if parse_mode and "can't parse entities" in str(ex_html).lower():
+                        resp_text = ""
+                        if 'response' in locals() and response is not None:
+                            try:
+                                resp_text = response.text.lower()
+                            except:
+                                pass
+                        err_msg = (str(ex_html) + " " + resp_text).lower()
+                        if "parse_mode" in data_payload and ("can't parse entities" in err_msg or "unsupported" in err_msg or "400" in err_msg):
                             data_payload.pop("parse_mode", None)
                             response = await client.post(url, data=data_payload, files=files_payload, timeout=30.0)
                             response.raise_for_status()
@@ -244,17 +251,27 @@ async def send_telegram_message(
                     response = await client.post(url, json=data_payload, timeout=30.0)
                     response.raise_for_status()
                 except Exception as ex_err:
-                    err_msg = str(ex_err).lower()
-                    if parse_mode and "can't parse entities" in err_msg:
+                    resp_text = ""
+                    if 'response' in locals() and response is not None:
+                        try:
+                            resp_text = response.text.lower()
+                        except:
+                            pass
+                    err_msg = (str(ex_err) + " " + resp_text).lower()
+
+                    if "parse_mode" in data_payload and ("can't parse entities" in err_msg or "unsupported" in err_msg or "400" in err_msg):
+                        print(f"[Telegram API] HTML parse failed due to unescaped tags. Retrying in plain text format...")
                         data_payload.pop("parse_mode", None)
-                    if reply_to_message_id and "reply" in err_msg and "not found" in err_msg:
-                        data_payload.pop("reply_to_message_id", None)
-                    
-                    if "parse_mode" not in data_payload or "reply_to_message_id" not in data_payload:
+
+                    try:
                         response = await client.post(url, json=data_payload, timeout=30.0)
                         response.raise_for_status()
-                    else:
-                        raise ex_err
+                    except Exception as ex_retry:
+                        # Final safe fallback: strip both parse_mode and reply_to_message_id
+                        data_payload.pop("parse_mode", None)
+                        data_payload.pop("reply_to_message_id", None)
+                        response = await client.post(url, json=data_payload, timeout=30.0)
+                        response.raise_for_status()
 
                 last_telegram_response = telegram_types.TelegramUpdate(**response.json())
 
