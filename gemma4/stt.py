@@ -48,7 +48,8 @@ def transcribe_audio(audio_file_path: str, model_id: str = "unsloth/gemma-4-e4b-
         return transcription.strip()
         
     except Exception as e:
-        return f"Lỗi khi thực hiện Multimodal STT: {str(e)}"
+        # print(f"Lỗi khi thực hiện Multimodal STT: {str(e)}")
+        return f"Lỗi khi thực hiện Multimodal STT"
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
