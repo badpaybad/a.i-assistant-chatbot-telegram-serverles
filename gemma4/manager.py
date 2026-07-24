@@ -97,11 +97,45 @@ class Gemma4Manager:
 
         self.model_id = model_id
         self.device = device
-        self.engine = "huggingface"
+        self.engine = engine
         
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        
-        if True:  # HuggingFace engine only
+
+        # ====== GGUF Engine (llama-cpp-python) ======
+        if engine == "gguf":
+            from .gemma4_config import (
+                GGUF_MODEL_PATH, GGUF_MMPROJ_PATH,
+                GGUF_N_CTX, GGUF_N_GPU_LAYERS, GGUF_MODEL_DIR,
+                GGUF_MODEL_FILENAME, GGUF_HF_REPO,
+            )
+            from .gguf_manager import GGUFModelWrapper
+
+            # Auto-download GGUF if missing or 0-byte
+            if not GGUF_MODEL_PATH.is_file() or GGUF_MODEL_PATH.stat().st_size == 0:
+                print(f"[*] GGUF model not found at {GGUF_MODEL_PATH}. Downloading...")
+                from .download_model import setup_gemma
+                setup_gemma(
+                    repo_id=GGUF_HF_REPO,
+                    model_name=GGUF_MODEL_DIR.name
+                )
+
+            wrapper = GGUFModelWrapper(
+                model_path=GGUF_MODEL_PATH,
+                mmproj_path=GGUF_MMPROJ_PATH,
+                n_ctx=GGUF_N_CTX,
+                n_gpu_layers=GGUF_N_GPU_LAYERS,
+                verbose=True,
+            )
+
+            # Copy attributes from wrapper so this singleton exposes the same interface
+            self.llm = wrapper._llm
+            self.engine = "gguf"
+            self._gguf_wrapper = wrapper
+            print(f"[+] GGUF engine ready (Q4_K_M, 100% GPU, n_ctx={GGUF_N_CTX}).")
+            return
+
+        # ====== HuggingFace Engine (original path) ======
+        if True:  # HuggingFace engine
             # --- Hugging Face Transformers / PyTorch Engine ---
             import torch
             from transformers import AutoProcessor, AutoModelForMultimodalLM, AutoConfig
@@ -142,20 +176,20 @@ class Gemma4Manager:
                 # Setup BitsAndBytes NF4 4-bit quantization for RTX 3060 8GB
                 # Note: use device_map="cuda:0" (string) instead of {"":0} (dict) to avoid
                 # transformers' caching_allocator_warmup which tries to allocate model-sized
-                # contiguous blocks and causes OOM on already-loaded GPUs.
+                # contiguous blocks and causes OOM on already-loaded GPUs
                 if torch_device == "cuda":
                     from transformers import BitsAndBytesConfig
-                    compute_dtype = (torch.bfloat16
-                                     if torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-                                     else torch.float16)
-                    # BitsAndBytes runtime quantization config (fallback path)
+                    # Use bfloat16 compute dtype for HF fallback path
+                    compute_dtype = torch.bfloat16
+                    # BitsAndBytes quantization config for 4-bit NF4
                     quantization_config = BitsAndBytesConfig(
                         load_in_4bit=True,
-                        bnb_4bit_compute_dtype=compute_dtype,
                         bnb_4bit_quant_type="nf4",
+                        bnb_4bit_compute_dtype=compute_dtype,
                         bnb_4bit_use_double_quant=True,
                         llm_int8_enable_fp32_cpu_offload=True,
                     )
+
 
                     # Unsloth pre-quantized HF repos: weights already in 4-bit, no BitsAndBytes overhead
                     _UNSLOTH_REPOS = {
@@ -215,7 +249,7 @@ class Gemma4Manager:
                         # 3. Materialize meta parameters from the checkpoint files
                         meta_params = [name for name, param in model_loaded.named_parameters() if param.device.type == 'meta']
                         if meta_params:
-                            print(f"[*] Materializing meta params on CPU: {meta_params}")
+                            print(f"[*] Materializing meta params: {meta_params}")
                             index_file = os.path.join(source_dir, "model.safetensors.index.json")
                             if os.path.exists(index_file):
                                 with open(index_file, "r") as f:
@@ -226,20 +260,27 @@ class Gemma4Manager:
                                 
                             for name in meta_params:
                                 if name == "lm_head.weight":
-                                    print("[*] Tying lm_head.weight to model.language_model.embed_tokens.weight on CPU...")
-                                    model_loaded.lm_head.weight = model_loaded.model.language_model.embed_tokens.weight
                                     continue
                                     
-                                filepath = os.path.join(source_dir, weight_map[name])
-                                with safe_open(filepath, framework="pt") as f:
-                                    tensor = f.get_tensor(name)
-                                    
+                                # Resolve submodule path
                                 attrs = name.split(".")
                                 submodule = model_loaded
                                 for attr in attrs[:-1]:
                                     submodule = getattr(submodule, attr)
-                                new_param = torch.nn.Parameter(tensor.to(device="cpu", dtype=torch.bfloat16))
+
+                                filepath = os.path.join(source_dir, weight_map[name])
+                                with safe_open(filepath, framework="pt") as f:
+                                    tensor = f.get_tensor(name)
+                                    
+                                print(f"[*] Placing {name} on GPU in bfloat16...")
+                                new_param = torch.nn.Parameter(tensor.to(device="cuda", dtype=torch.bfloat16))
                                 setattr(submodule, attrs[-1], new_param)
+                                import gc
+                                gc.collect()
+                                torch.cuda.empty_cache()
+                                
+                            print("[*] Tying lm_head.weight to model.language_model.embed_tokens.weight on GPU...")
+                            model_loaded.lm_head.weight = model_loaded.model.language_model.embed_tokens.weight
                                 
                         # 4. Remove hooks from CPU-offloaded modules
                         for name in cpu_modules:
@@ -427,7 +468,7 @@ class Gemma4Manager:
 
         return formatted_messages
 
-    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, sampling_rate: int = 16000) -> str:
+    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000) -> str:
         if self.engine == "gguf":
             if not hasattr(self, 'llm') or self.llm is None:
                 return "Lỗi: Hệ thống GGUF chưa sẵn sàng."
@@ -438,8 +479,9 @@ class Gemma4Manager:
                 response = self.llm.create_chat_completion(
                     messages=formatted_messages,
                     max_tokens=max_tokens,
-                    temperature=0.7,
-                    top_p=0.9
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
                 )
                 return response["choices"][0]["message"]["content"].strip()
             except Exception as e:
@@ -501,8 +543,9 @@ class Gemma4Manager:
             generate_kwargs = {
                 "max_new_tokens": max_tokens,
                 "do_sample": True,
-                "temperature": 0.7,
-                "top_p": 0.9,
+                "temperature": temperature,
+                "top_p": top_p,
+                "top_k": top_k,
                 "use_cache": True,   # Standard HF dynamic cache (on GPU)
             }
 
@@ -524,7 +567,7 @@ class Gemma4Manager:
             response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=True)
             return response.strip()
 
-    def generate_stream(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, sampling_rate: int = 16000):
+    def generate_stream(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000):
         if self.engine == "gguf":
             if not hasattr(self, 'llm') or self.llm is None:
                 yield "Lỗi: Hệ thống GGUF chưa sẵn sàng."
@@ -536,8 +579,9 @@ class Gemma4Manager:
                 response_iter = self.llm.create_chat_completion(
                     messages=formatted_messages,
                     max_tokens=max_tokens,
-                    temperature=0.7,
-                    top_p=0.9,
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
                     stream=True
                 )
                 for chunk in response_iter:
@@ -555,7 +599,10 @@ class Gemma4Manager:
                 image_path=image_path, 
                 images_list=images_list, 
                 audio_list=audio_list, 
-                max_tokens=max_tokens, 
+                max_tokens=max_tokens,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
                 sampling_rate=sampling_rate
             )
             words = full_response.split(" ")
@@ -673,8 +720,19 @@ class Gemma4Manager:
             except Exception as e:
                 raise RuntimeError(f"Lỗi khi trích xuất embedding ảnh: {str(e)}")
 
-def get_manager(model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device: str = "cuda", engine: str = "huggingface"):
+def get_manager(model_id: str = "unsloth/gemma-4-e4b-it-unsloth-bnb-4bit", device: str = "cuda", engine: str = None):
+    """Factory function to create/get the Gemma4Manager singleton.
+    
+    When engine is None (default), auto-selects based on gemma4_config.USE_GGUF:
+      - USE_GGUF=True  → engine='gguf' (llama-cpp-python, Q4_K_M)
+      - USE_GGUF=False → engine='huggingface' (Transformers + BitsAndBytes)
+    """
     import torch
     if device in ["cuda", "gpu"] or device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
-    return Gemma4Manager(model_id, device, "huggingface")
+    
+    if engine is None:
+        from .gemma4_config import USE_GGUF
+        engine = "gguf" if USE_GGUF else "huggingface"
+        
+    return Gemma4Manager(model_id, device, engine)

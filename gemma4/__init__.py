@@ -18,12 +18,15 @@ from .embeddings import get_text_embedding, get_image_embedding
 from .vision import describe_image, query_image
 from .files import process_file_with_prompt, read_file_content
 from .tts import save_tts, Gemma4TTS
+from .gemma4_config import USE_GGUF, GGUF_MODEL_PATH, HF_MODEL_ID
+from .gguf_manager import GGUFModelWrapper
 
 __all__ = [
     "transcribe_audio",
     "generate_text",
     "get_manager",
     "Gemma4Manager",
+    "GGUFModelWrapper",
     "match_tools",
     "Gemma4Tools",
     "get_text_embedding",
@@ -33,5 +36,9 @@ __all__ = [
     "process_file_with_prompt",
     "read_file_content",
     "save_tts",
-    "Gemma4TTS"
+    "Gemma4TTS",
+    "USE_GGUF",
+    "GGUF_MODEL_PATH",
+    "HF_MODEL_ID",
 ]
+

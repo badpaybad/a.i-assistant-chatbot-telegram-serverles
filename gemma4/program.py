@@ -501,7 +501,10 @@ async def generate_content(request: GenerateContentRequest, req: Request, model:
             input_data=gemma_msgs, 
             audio_list=audios, 
             images_list=images,
-            max_tokens=config.maxOutputTokens or 1024
+            max_tokens=config.maxOutputTokens or 1024,
+            temperature=config.temperature or 0.7,
+            top_p=config.topP or 0.9,
+            top_k=config.topK or 40,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Generation error: {str(e)}")
@@ -569,7 +572,10 @@ async def stream_generate_content(request: GenerateContentRequest, req: Request,
                 input_data=gemma_msgs, 
                 audio_list=audios, 
                 images_list=images,
-                max_tokens=config.maxOutputTokens or 1024
+                max_tokens=config.maxOutputTokens or 1024,
+                temperature=config.temperature or 0.7,
+                top_p=config.topP or 0.9,
+                top_k=config.topK or 40,
             )
             
             for chunk_text in response_stream:

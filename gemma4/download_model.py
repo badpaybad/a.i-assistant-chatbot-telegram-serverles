@@ -52,16 +52,16 @@ def setup_gemma(repo_id=None, model_name="gemma-4-e4b-it"):
     target_id = repo_id or "google/gemma-4-e4b-it"
     
     # If GGUF is requested or implied by unsloth/GGUF repo
-    if "GGUF" in target_id or "gguf" in target_id.lower() or model_name.endswith("gguf"):
-        if "e2b" in model_name:
-            gguf_filename = "gemma-4-e2b-it-Q4_K_M.gguf"
-            default_repo = "unsloth/gemma-4-e2b-it-GGUF"
-        elif "12b" in model_name:
+    if "GGUF" in target_id or "gguf" in target_id.lower() or model_name.endswith("gguf") or model_name.endswith("GGUF"):
+        if "e2b" in model_name.lower():
+            gguf_filename = "gemma-4-E2B-it-Q4_K_M.gguf"
+            default_repo = "unsloth/gemma-4-E2B-it-GGUF"
+        elif "12b" in model_name.lower():
             gguf_filename = "gemma-4-12b-it-Q4_K_M.gguf"
             default_repo = "unsloth/gemma-4-12b-it-GGUF"
         else:
-            gguf_filename = "gemma-4-e4b-it-Q4_K_M.gguf"
-            default_repo = "unsloth/gemma-4-e4b-it-GGUF"
+            gguf_filename = "gemma-4-E4B-it-Q4_K_M.gguf"
+            default_repo = "unsloth/gemma-4-E4B-it-GGUF"
 
         target_id = repo_id or default_repo
         gemma_dir = os.path.join(BASE_DIR, "model", model_name)
@@ -71,17 +71,29 @@ def setup_gemma(repo_id=None, model_name="gemma-4-e4b-it"):
         proj_path = os.path.join(gemma_dir, "mmproj-F16.gguf")
         
         try:
-            import subprocess
-            if not os.path.exists(model_path):
-                print(f"[*] Downloading {model_path} via wget...")
-                url = f"https://huggingface.co/{target_id}/resolve/main/{gguf_filename}"
-                res = subprocess.run(["wget", "-c", url, "-O", model_path])
-                if res.returncode != 0:
-                    print(f"[!] Warning: Failed to download GGUF from {url}")
-            if not os.path.exists(proj_path):
-                print(f"[*] Downloading {proj_path} via wget...")
-                url = f"https://huggingface.co/{target_id}/resolve/main/mmproj-F16.gguf"
-                subprocess.run(["wget", "-c", url, "-O", proj_path])
+            from huggingface_hub import hf_hub_download
+            if not os.path.exists(model_path) or os.path.getsize(model_path) == 0:
+                if os.path.exists(model_path):
+                    os.remove(model_path)  # Remove 0-byte placeholder
+                print(f"[*] Downloading {gguf_filename} from {target_id}...")
+                hf_hub_download(
+                    repo_id=target_id,
+                    filename=gguf_filename,
+                    local_dir=gemma_dir,
+                    local_dir_use_symlinks=False,
+                )
+                print(f"[+] Download complete: {model_path}")
+            if not os.path.exists(proj_path) or os.path.getsize(proj_path) == 0:
+                if os.path.exists(proj_path):
+                    os.remove(proj_path)
+                print(f"[*] Downloading mmproj-F16.gguf from {target_id}...")
+                hf_hub_download(
+                    repo_id=target_id,
+                    filename="mmproj-F16.gguf",
+                    local_dir=gemma_dir,
+                    local_dir_use_symlinks=False,
+                )
+                print(f"[+] Download complete: {proj_path}")
             return True
         except Exception as e:
             print(f"[-] Error downloading Gemma 4 GGUF: {str(e)}")
