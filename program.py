@@ -459,13 +459,20 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
 
     full_conversation_history_text = "\n\n".join(history_formatted_str)
 
+    chat_type_desc = "Trò chuyện cá nhân 1-1 (Private Chat)" if is_private_chat else "Nhóm chat Telegram (Group Chat)"
+
     # 5. SOẠN PROMPT VÀ GỌI GEMMA4 LOCAL API
     system_instruction_text = (
-        "Bạn là một trợ lý AI đa năng thông minh hỗ trợ nhóm Telegram. "
-        "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...). "
-        "Hãy đọc kỹ ngữ cảnh cuộc trò chuyện để hiểu rõ câu hỏi hoặc yêu cầu hiện tại. "
-        "Nếu người dùng yêu cầu trả lời cho một cá nhân cụ thể hoặc tag người được đề cập, hãy sử dụng thông tin UserID hoặc @username của người đó để tag/trả lời chính xác. "
-        "Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
+        "Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram.\n"
+        "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...).\n"
+        f"Loại hình trò chuyện hiện tại: {chat_type_desc}.\n\n"
+        "Quy tắc khi trả lời:\n"
+        "1. Hãy đọc kỹ ngữ cảnh 20 tin nhắn gần nhất để xác định xem yêu cầu/câu hỏi hiện tại đã được trả lời đầy đủ trước đó hay chưa.\n"
+        "   - Nếu câu hỏi/yêu cầu ĐÃ ĐƯỢC TRẢ LỜI ĐẦY ĐỦ trong lịch sử trò chuyện và người dùng KHÔNG yêu cầu hỏi lại hay làm rõ thêm: Hãy chỉ trả về duy nhất cụm từ: `[NO_REPLY]` (không kèm thêm bất kỳ văn bản nào khác).\n"
+        "   - Nếu yêu cầu CHƯA được trả lời, hoặc người dùng có thắc mắc/yêu cầu mới/hỏi lại: Hãy trả lời chi tiết và hữu ích.\n"
+        "2. Nếu là Trò chuyện cá nhân 1-1 (Private Chat): Trả lời trực tiếp, tự nhiên, KHÔNG chèn tag @username vào câu trả lời.\n"
+        "3. Nếu là Nhóm chat (Group Chat): Phân tích ngữ cảnh 20 tin nhắn gần nhất để xác định xem đang trả lời cho ai hoặc cần tag ai. Tag đúng @username của người đó (ví dụ: @username) trong câu trả lời nếu ngữ cảnh nhóm yêu cầu trả lời cho một cá nhân cụ thể.\n"
+        "4. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
     )
 
     parts_payload = [
@@ -522,15 +529,13 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
             # 6. GỬI LẠI MESSAGE CHO NGƯỜI DÙNG BẰNG BOT_TELEGRAM
             current_msg_info = orchestration_message.message.message if orchestration_message.message else None
             reply_msg_id = current_msg_info.message_id if current_msg_info else None
-            
-            from_user = orchestration_message.message.get_from_user() if orchestration_message.message else None
-            user_tag = ""
-            if from_user:
-                user_tag = bot_telegram.format_user_mention(user_id=from_user.id, username=from_user.username, fullname=f"{from_user.first_name or ''} {from_user.last_name or ''}".strip())
 
-            final_reply_text = reply_text
-            if user_tag and user_tag not in final_reply_text:
-                final_reply_text = f"{user_tag} {final_reply_text}"
+            final_reply_text = reply_text.strip()
+
+            if final_reply_text == "[NO_REPLY]" or "[NO_REPLY]" in final_reply_text:
+                print(f"[Gemma4 Process] Request already answered in 20 messages context. Skipping reply to chat {chat_id}.")
+                return {"status": "skipped", "reason": "Already answered in context"}
+
 
             sent_res = await bot_telegram.send_telegram_message(
                 chat_id=chat_id,

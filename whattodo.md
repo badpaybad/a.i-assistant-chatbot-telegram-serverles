@@ -13,5 +13,8 @@ dùng api gemma4 local thay cho gemini api
 
 khi tiến trình program.py tắt thì cần kill cả tiến trình gemma4, có thể dùng các lệnh dạng fuser -k 8000/tcp và fuser -k {PORT}/tcp 
 
-                
-        
+**cập nhật 1** đã sử dụng lệnh PATH=/usr/local/cuda-12.4/bin:$PATH CUDACXX=/usr/local/cuda-12.4/bin/nvcc CMAKE_ARGS="-DGGML_CUDA=on" pip3 install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
+
+Khi reply nếu chat 1-1 telegram thì ko cần tag để reply. trong nhóm chát thì cần xác định tag người nào là do phân tích được context của 20 message gần nhất            
+
+Cũng dựa vào context xác định xem đã trả lời khi có yêu cầu chưa, nếu đã trả lời rồi thì không cần trả lời lại, trừ khi được yêu cầu. đợi context mới để xủ lý tiếp 
