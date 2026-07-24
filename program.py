@@ -573,6 +573,8 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         f"Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram. Thời gian hiện tại: {now}\n"
         "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...).\n"
         f"Loại hình trò chuyện hiện tại: {chat_type_desc}.\n\n"
+        "KHÔNG ẢO TƯỞNG (NO HALLUCINATION): Nếu thông tin không đủ để khẳng định, hãy thừa nhận rõ ràng hoặc hỏi lại người dùng. Không đưa ra các giả định phi thực tế.\n"
+        "TƯ DUY LOGIC TỪNG BƯỚC: Phân tích từng bước nguyên nhân - kết quả trước khi đưa ra lời khuyên hoặc kết luận cuối cùng.\n\n"       
         "Quy tắc ưu tiên xử lý và trả lời:\n"
         "1. ƯU TIÊN HÀNG ĐẦU - Tin nhắn hiện tại (CURRENT MESSAGE) & Tin nhắn được Quote (QUOTED MESSAGE):\n"
         "   - Nhiệm vụ trọng tâm của bạn là giải quyết đúng câu hỏi/yêu cầu nằm trong TIN NHẮN HIỆN TẠI (CURRENT MESSAGE).\n"
