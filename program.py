@@ -438,12 +438,31 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                 if fetch_res not in msg_files:
                     msg_files.append(fetch_res)
 
-        history_formatted_str.append(msg_str)
-
+        # Parse attached files (documents, audio, images)
         if msg_files:
             async with httpx.AsyncClient() as client:
                 for fpath in msg_files:
                     if os.path.exists(fpath):
+                        ext = os.path.splitext(fpath)[1].lower()
+                        # Extract document content (PDF, DOCX, TXT, CSV, XLSX, PPTX)
+                        if ext in [".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv"]:
+                            try:
+                                file_text = read_file_content(fpath)
+                                if file_text and not file_text.startswith("Lỗi:"):
+                                    msg_str += f"\n[Nội dung file tài liệu ({os.path.basename(fpath)})]:\n{file_text[:3000]}"
+                            except Exception as ex_f:
+                                print(f"[File Parse Error] {fpath}: {ex_f}")
+
+                        # Extract audio transcription (voice, mp3, wav, ogg, m4a, opus)
+                        elif ext in [".mp3", ".wav", ".ogg", ".m4a", ".aac", ".flac", ".opus"]:
+                            try:
+                                audio_text = transcribe_audio(fpath)
+                                if audio_text and not audio_text.startswith("Lỗi:"):
+                                    msg_str += f"\n[Nội dung Audio/Voice ({os.path.basename(fpath)})]:\n{audio_text}"
+                            except Exception as ex_a:
+                                print(f"[Audio STT Error] {fpath}: {ex_a}")
+
+                        # Upload file to Gemma4 files endpoint (images, vision, multimodal)
                         try:
                             import mimetypes
                             mime_guess, _ = mimetypes.guess_type(fpath)
@@ -457,6 +476,8 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                         except Exception as ex_up:
                             print(f"[Gemma4 File Upload] Error uploading {fpath}: {ex_up}")
 
+        history_formatted_str.append(msg_str)
+
     full_conversation_history_text = "\n\n".join(history_formatted_str)
 
     chat_type_desc = "Trò chuyện cá nhân 1-1 (Private Chat)" if is_private_chat else "Nhóm chat Telegram (Group Chat)"
@@ -466,12 +487,18 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
         "Bạn là một trợ lý AI đa năng thông minh hỗ trợ Telegram.\n"
         "Dưới đây là lịch sử cuộc trò chuyện 20 tin nhắn gần nhất (bao gồm nội dung văn bản, đường link, hình ảnh, audio, tin nhắn reply, quote...).\n"
         f"Loại hình trò chuyện hiện tại: {chat_type_desc}.\n\n"
-        "Quy tắc khi trả lời:\n"
-        "1. Hãy đọc kỹ ngữ cảnh 20 tin nhắn gần nhất để xác định xem yêu cầu/câu hỏi hiện tại đã được trả lời đầy đủ trước đó hay chưa.\n"
-        "   - Nếu câu hỏi/yêu cầu ĐÃ ĐƯỢC TRẢ LỜI ĐẦY ĐỦ trong lịch sử trò chuyện và người dùng KHÔNG yêu cầu hỏi lại hay làm rõ thêm: Hãy chỉ trả về duy nhất cụm từ: `[NO_REPLY]` (không kèm thêm bất kỳ văn bản nào khác).\n"
-        "   - Nếu yêu cầu CHƯA được trả lời, hoặc người dùng có thắc mắc/yêu cầu mới/hỏi lại: Hãy trả lời chi tiết và hữu ích.\n"
-        "2. Nếu là Trò chuyện cá nhân 1-1 (Private Chat): Trả lời trực tiếp, tự nhiên, KHÔNG chèn tag @username vào câu trả lời.\n"
-        "3. Nếu là Nhóm chat (Group Chat): Phân tích ngữ cảnh 20 tin nhắn gần nhất để xác định xem đang trả lời cho ai hoặc cần tag ai. Tag đúng @username của người đó (ví dụ: @username) trong câu trả lời nếu ngữ cảnh nhóm yêu cầu trả lời cho một cá nhân cụ thể.\n"
+        "Quy tắc khi xử lý và trả lời:\n"
+        "1. Xử lý Đường link (URL) & File đính kèm (Ảnh, Audio, Tài liệu):\n"
+        "   - Hệ thống đã tự động cào/đọc nội dung các đường link (URL) và đính kèm trực tiếp dưới nhãn `[Link Content from <URL>]: ...`.\n"
+        "   - Hệ thống đã tự động trích xuất nội dung các file tài liệu (PDF, Word, Excel, CSV, PPTX, TXT...) đính kèm dưới nhãn `[Nội dung file tài liệu (...)]`.\n"
+        "   - Hệ thống đã tự động chuyển âm thanh/voice thành văn bản (STT) đính kèm dưới nhãn `[Nội dung Audio/Voice (...)]`.\n"
+        "   - Hãy đọc kỹ các thông tin đính kèm này để tổng hợp, hiểu nội dung và trả lời chính xác yêu cầu của người dùng khi người dùng gửi link, gửi file hay gửi audio.\n\n"
+        "2. Kiểm tra xem câu hỏi/yêu cầu đã được trả lời chưa:\n"
+        "   - Phân tích ngữ cảnh 20 tin nhắn gần nhất. Nếu câu hỏi/yêu cầu ĐÃ ĐƯỢC TRẢ LỜI ĐẦY ĐỦ trước đó và người dùng KHÔNG yêu cầu hỏi lại hay làm rõ thêm: Hãy chỉ trả về duy nhất cụm từ `[NO_REPLY]` (không kèm văn bản nào khác).\n"
+        "   - Nếu yêu cầu CHƯA được trả lời, hoặc người dùng hỏi lại/yêu cầu thông tin mới: Hãy trả lời chi tiết và hữu ích.\n\n"
+        "3. Tagging & Phân loại trò chuyện:\n"
+        "   - Trò chuyện cá nhân 1-1 (Private Chat): Trả lời trực tiếp, tự nhiên, KHÔNG tag @username.\n"
+        "   - Nhóm chat (Group Chat): Phân tích ngữ cảnh 20 tin nhắn gần nhất để xác định người cần trả lời và tag đúng @username của người đó khi cần.\n\n"
         "4. Trả lời ngắn gọn, rõ ràng, thân thiện và hữu ích bằng tiếng Việt."
     )
 
