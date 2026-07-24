@@ -154,17 +154,27 @@ def get_list_current_orchestration_messages(chat_id: str | int):
     Retrieve the 20 latest messages for a specific chat_id.
     Handles both string and integer chat_id for database matching.
     """
-    # 1. Try as integer (common for Telegram)
+    str_id = str(chat_id)
+    # 1. Search by top-level chat_id string
+    results = knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.chat_id", str_id, limit=HISTORY_CHAT_MAX_LEN)
+    if results:
+        return results
+
+    # 2. Search by integer chat_id if applicable
     try:
         chat_id_int = int(chat_id)
-        results = knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.message.chat.id", chat_id_int, limit=HISTORY_CHAT_MAX_LEN)
+        results = knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.chat_id", chat_id_int, limit=HISTORY_CHAT_MAX_LEN)
         if results:
             return results
     except (ValueError, TypeError):
         pass
     
-    # 2. Try as string (fallback)
-    return knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.message.chat.id", str(chat_id), limit=HISTORY_CHAT_MAX_LEN)
+    # 3. Fallback search by $.message.message.chat.id
+    results = knowledgebase.dbcontext.db_orchestration_all_message.search_json("$.message.message.chat.id", str_id, limit=HISTORY_CHAT_MAX_LEN)
+    if results:
+        return results
+
+    return []
 
 async def do_decision(skill, curret_message, list_current_msg, list_summary_chat,unique_urls,contents_from_url):
     """_summary_

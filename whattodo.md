@@ -21,4 +21,6 @@ Cũng dựa vào context xác định xem đã trả lời khi có yêu cầu ch
 
 **cập nhật 2** khi người dùng chát đính kèm ảnh, audio, file tài liêu cần dùng telegram api để lấy file về xử lý, cố gắng đọc hiểu được nội dung, nếu có đường link và được yêu cầu đọc nội dung cần xử lý để lấy thông tin để đọc hiểu và với context của 20 message gần nhất để trả lời cho phù hợp. 
 
+**cập nhật 3** cần lưu 20 message gần nhất xuống ổ để khi restart có thể hiểu được context trước đó, cần lưu theo từng cá nhân chat 1-1 , từng nhóm chát tránh việc lẫn lộn context của các nhóm chát với nhau, hoặc cá nhân chát 1-1 với chatbot 
+
 

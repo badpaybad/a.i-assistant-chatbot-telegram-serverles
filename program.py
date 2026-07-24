@@ -572,6 +572,28 @@ async def gemma4_process_chat_history_and_current_msg(orchestration_message: tel
                 parse_mode="HTML"
             )
             print(f"[Gemma4 Process] Reply sent to chat {chat_id}: {final_reply_text[:80]}...")
+
+            if sent_res:
+                try:
+                    # Save bot's reply to DB so history context includes the bot's answers per chat_id across restarts
+                    bot_reply_orch = telegram_types.OrchestrationMessage()
+                    bot_reply_orch.msg_id = str(uuid.uuid4())
+                    bot_reply_orch.chat_id = str(chat_id)
+                    bot_reply_orch.text = final_reply_text
+                    
+                    msg_id_val = getattr(sent_res, "message_id", None) or (sent_res.get("result", {}).get("message_id") if isinstance(sent_res, dict) else int(time.time()))
+                    bot_msg_dict = {
+                        "message_id": msg_id_val,
+                        "date": int(time.time()),
+                        "chat": {"id": int(chat_id) if str(chat_id).lstrip('-').isdigit() else chat_id},
+                        "from": {"id": 0, "first_name": "Assistant Bot", "username": TELEGRAM_BOT_USERNAME},
+                        "text": final_reply_text
+                    }
+                    bot_reply_orch.message = telegram_types.Update(update_id=0, message=telegram_types.Message.model_validate(bot_msg_dict))
+                    knowledgebase.dbcontext.db_orchestration_all_message.insert(bot_reply_orch.model_dump_json(by_alias=True))
+                except Exception as ex_save_bot:
+                    print(f"[Gemma4 Process] Warning saving bot reply to DB: {ex_save_bot}")
+
             return sent_res
 
     except Exception as ex_gemma:
