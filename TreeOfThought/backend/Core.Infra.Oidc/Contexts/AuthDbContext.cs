@@ -10,30 +10,30 @@ public class AuthDbContext : BaseDbContext
     {
     }
 
-    public DbSet<User> Users { get; set; }
-    public DbSet<Role> Roles { get; set; }
-    public DbSet<AppClaim> Claims { get; set; }
-    public DbSet<UserRole> UserRoles { get; set; }
-    public DbSet<RoleClaim> RoleClaims { get; set; }
-    public DbSet<UserClaim> UserClaims { get; set; }
-    public DbSet<AclEntry> AclEntries { get; set; }
-    public DbSet<UserEmail> UserEmails { get; set; }
+    public DbSet<users_entity> users { get; set; }
+    public DbSet<roles_entity> roles { get; set; }
+    public DbSet<app_claims_entity> app_claims { get; set; }
+    public DbSet<user_roles_entity> user_roles { get; set; }
+    public DbSet<role_claims_entity> role_claims { get; set; }
+    public DbSet<user_claims_entity> user_claims { get; set; }
+    public DbSet<acl_entries_entity> acl_entries { get; set; }
+    public DbSet<user_emails_entity> user_emails { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         // Configure indexes
-        modelBuilder.Entity<User>().HasIndex(u => u.Username).IsUnique();
-        modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
-        modelBuilder.Entity<Role>().HasIndex(r => r.Name).IsUnique();
-        modelBuilder.Entity<AppClaim>().HasIndex(p => p.Name).IsUnique();
+        modelBuilder.Entity<users_entity>().HasIndex(u => u.username).IsUnique();
+        modelBuilder.Entity<users_entity>().HasIndex(u => u.email).IsUnique();
+        modelBuilder.Entity<roles_entity>().HasIndex(r => r.name).IsUnique();
+        modelBuilder.Entity<app_claims_entity>().HasIndex(p => p.name).IsUnique();
 
-        modelBuilder.Entity<UserRole>().HasIndex(ur => new { ur.UserId, ur.RoleId }).IsUnique();
-        modelBuilder.Entity<RoleClaim>().HasIndex(rp => new { rp.RoleId, rp.ClaimId }).IsUnique();
-        modelBuilder.Entity<UserClaim>().HasIndex(up => new { up.UserId, up.ClaimId }).IsUnique();
+        modelBuilder.Entity<user_roles_entity>().HasIndex(ur => new { ur.user_id, ur.role_id }).IsUnique();
+        modelBuilder.Entity<role_claims_entity>().HasIndex(rp => new { rp.role_id, rp.claim_id }).IsUnique();
+        modelBuilder.Entity<user_claims_entity>().HasIndex(up => new { up.user_id, up.claim_id }).IsUnique();
         
-        modelBuilder.Entity<UserEmail>().HasIndex(ue => ue.Email).IsUnique();
-        modelBuilder.Entity<AclEntry>().HasIndex(a => new { a.UserId, a.RoleId, a.ResourceType, a.ResourceId, a.PermissionMask });
+        modelBuilder.Entity<user_emails_entity>().HasIndex(ue => ue.email).IsUnique();
+        modelBuilder.Entity<acl_entries_entity>().HasIndex(a => new { a.user_id, a.role_id, a.resource_type, a.resource_id, a.permission_mask });
     }
 }

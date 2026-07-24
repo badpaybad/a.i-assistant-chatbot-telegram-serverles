@@ -62,7 +62,7 @@ public class CqrsDbLoggerTests
 
     private class FakeCqrsDbContext : CqrsDbContext
     {
-        public List<CqrsTrackingLog> SavedLogs { get; } = new();
+        public List<cqrs_tracking_logs_entity> SavedLogs { get; } = new();
 
         public FakeCqrsDbContext() : base("Server=dummy;Database=dummy", DbProviderType.SqlServer)
         {
@@ -75,7 +75,7 @@ public class CqrsDbLoggerTests
 
         public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            foreach (var entry in ChangeTracker.Entries<CqrsTrackingLog>())
+            foreach (var entry in ChangeTracker.Entries<cqrs_tracking_logs_entity>())
             {
                 if (entry.State == EntityState.Added)
                 {
@@ -127,8 +127,8 @@ public class CqrsDbLoggerTests
         Assert.Equal(150, db.SavedLogs.Count);
         foreach (var log in db.SavedLogs)
         {
-            Assert.Equal("test-queue", log.QueueOrTopicName);
-            Assert.Equal("TestMessage", log.MessageType);
+            Assert.Equal("test-queue", log.queue_or_topic_name);
+            Assert.Equal("TestMessage", log.message_type);
         }
     }
 }

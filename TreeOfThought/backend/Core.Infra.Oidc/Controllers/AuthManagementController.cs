@@ -10,6 +10,11 @@ using Core.Infra.Oidc.Services;
 using Core.Infra.Base.Interfaces;
 using Core.Infra.Base.Controllers;
 using Core.Infra.Base.Models;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Oidc.Controllers;
 
@@ -46,21 +51,21 @@ public class AuthManagementController : BaseController
         
         foreach (var user in users)
         {
-            var roles = await _authRepo.GetUserRolesAsync(user.Id);
-            var claims = await _authRepo.GetUserDirectClaimsAsync(user.Id);
+            var roles = await _authRepo.GetUserRolesAsync(user.id);
+            var claims = await _authRepo.GetUserDirectClaimsAsync(user.id);
             
             result.Add(new UserDto
             {
-                Id = user.Id,
-                Username = user.Username,
-                DisplayName = user.DisplayName,
-                Email = user.Email,
-                AvatarUrl = user.AvatarUrl,
-                IsEmailVerified = user.IsEmailVerified,
-                CreatedAt = user.CreatedAt,
-                UpdatedAt = user.UpdatedAt,
-                Roles = roles.Select(r => new IdNameDto { Id = r.Id, Name = r.Name }).ToList(),
-                DirectClaims = claims.Select(c => new IdNameDto { Id = c.Id, Name = c.Name }).ToList()
+                Id = user.id,
+                Username = user.username,
+                DisplayName = user.display_name,
+                Email = user.email,
+                AvatarUrl = user.avatar_url,
+                IsEmailVerified = user.is_email_verified,
+                CreatedAt = user.created_at,
+                UpdatedAt = user.updated_at,
+                Roles = roles.Select(r => new IdNameDto { Id = r.id, Name = r.name }).ToList(),
+                DirectClaims = claims.Select(c => new IdNameDto { Id = c.id, Name = c.name }).ToList()
             });
         }
         
@@ -77,6 +82,7 @@ public class AuthManagementController : BaseController
         return Ok(new { trackingId = command.TrackingId });
     }
 
+    [AppAuthorize]
     [HttpPut("users/{id}")]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserCommand command)
     {
@@ -95,13 +101,13 @@ public class AuthManagementController : BaseController
         
         foreach (var role in roles)
         {
-            var claims = await _authRepo.GetRoleClaimsAsync(role.Id);
+            var claims = await _authRepo.GetRoleClaimsAsync(role.id);
             result.Add(new RoleDto
             {
-                Id = role.Id,
-                Name = role.Name,
-                Description = role.Description,
-                Claims = claims.Select(c => new IdNameDto { Id = c.Id, Name = c.Name }).ToList()
+                Id = role.id,
+                Name = role.name,
+                Description = role.description,
+                Claims = claims.Select(c => new IdNameDto { Id = c.id, Name = c.name }).ToList()
             });
         }
         
@@ -135,7 +141,7 @@ public class AuthManagementController : BaseController
     }
 
     [HttpPost("claims")]
-    public async Task<IActionResult> CreateClaim([FromBody] AppClaim claim)
+    public async Task<IActionResult> CreateClaim([FromBody] app_claims_entity claim)
     {
         var command = new CreateClaimCommand
         {
@@ -148,7 +154,7 @@ public class AuthManagementController : BaseController
     }
 
     [HttpPut("claims/{id}")]
-    public async Task<IActionResult> UpdateClaim(Guid id, [FromBody] AppClaim claim)
+    public async Task<IActionResult> UpdateClaim(Guid id, [FromBody] app_claims_entity claim)
     {
         var command = new UpdateClaimCommand
         {
@@ -203,7 +209,6 @@ public class AuthManagementController : BaseController
             Content = ms.ToArray(),
             TrackingId = GetTrackingId()
         };
-        // Explicitly set inherited string? UserId
         ((BaseMessage)command).UserId = GetUserId().ToString();
 
         await _dispatcher.SendAsync(command);
@@ -363,7 +368,7 @@ public class AuthManagementController : BaseController
     }
 
     [HttpPost("acl")]
-    public async Task<IActionResult> AddAcl([FromBody] AclEntry entry)
+    public async Task<IActionResult> AddAcl([FromBody] acl_entries_entity entry)
     {
         var command = new AddAclCommand
         {
@@ -395,7 +400,7 @@ public class AuthManagementController : BaseController
     }
 
     [HttpPost("users/{userId}/emails")]
-    public async Task<IActionResult> AddUserEmail(Guid userId, [FromBody] UserEmail email)
+    public async Task<IActionResult> AddUserEmail(Guid userId, [FromBody] user_emails_entity email)
     {
         var command = new AddUserEmailCommand
         {

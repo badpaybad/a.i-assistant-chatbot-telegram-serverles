@@ -274,3 +274,26 @@ tuân thủ về việc nghiệp vụ sinh ra theo cấu trúc folder. việc ng
     kiểm tra xem TreeOfThought/backend/Core.Web.Api/Program.cs đã đúng chưa , nếu chưa cần sửa extesion cho các nghiệp vụ chưa đúng 
 
 **cập nhật 2026-07-01 09:30:24** Tạo thêm project shared contracts vào folder backend dành cho việc tạo các event, command dùng chung cho các nghiệp vụ cần trao đổi chia sẻ dữ liệu 
+
+**cập nhật 2026-07-24 07:50:24** các bảng trong cơ sở dữ liệu cần tuân thủ, để tránh tìm kiếm khó khăn trong quá trình code, ta sử dụng chung 1 tiêu chuẩn đặt tên cột và tên class property tương đồng với bảng trong DB. các class ORM cho relation db và nosql như mongodb cần tuân thủ việc thiết kế DB theo chuẩn: Từ điển dữ liệu (Data Dictionary) chi tiết 100% bảng và cột (định nghĩa rõ tên, kiểu dữ liệu, độ dài, các ràng buộc, giá trị mặc định, chỉ mục và mức độ nhạy cảm dữ liệu theo Nghị định 13/2023/NĐ-CP). table_name_in_db, class là {table_name_in_db}_entity ví dụ: nếu bảng users thì class là users_entity
+
+                CREATE TABLE users (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    full_name VARCHAR(255) NOT NULL,
+                    national_id VARCHAR(12) NOT NULL UNIQUE,
+                    phone_number VARCHAR(15) NOT NULL UNIQUE,
+                    email VARCHAR(255) DEFAULT NULL,
+                    bank_account_number VARCHAR(30) DEFAULT NULL,
+                    biometric_data_hash TEXT DEFAULT NULL,
+                    current_location_lat DECIMAL(9, 6) DEFAULT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'LOCKED')),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+                );
+
+                -- Tạo chỉ mục (Indexes)
+                CREATE INDEX IX_users_phone ON users(phone_number);
+                CREATE INDEX IX_users_email ON users(email);
+                CREATE INDEX IX_users_status ON users(status);
+
+cần chỉnh sửa code tương ứng cho các project ở TreeOfThought/backend ,  sửa cho tất cả các project c#, các nghiệp vụ có liên quan đến việc ánh xạ bảng thành entity theo chuẩn, đảm bảo tính thống nhất của toàn hệ thống
+các base cho entity cũng cần tuân thủ vd IBaseTrackingEntity chuyển CreatedAt thành created_at

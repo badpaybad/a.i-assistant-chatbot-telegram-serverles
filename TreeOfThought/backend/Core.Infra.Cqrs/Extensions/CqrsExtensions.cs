@@ -19,6 +19,9 @@ public static class CqrsExtensions
 
     public static IServiceCollection AddCqrs(this IServiceCollection services, IConfiguration config, params Assembly[] handlerAssemblies)
     {
+        // Prevent ThreadPool starvation during high async/Redis activity
+        ThreadPool.SetMinThreads(100, 100);
+
         var redisConn = config["Cqrs:Redis"]!;
 
         // 1. Redis Infrastructure for CQRS (Specific Service Inheritance)

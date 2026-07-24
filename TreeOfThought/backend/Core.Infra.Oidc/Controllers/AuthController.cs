@@ -130,17 +130,17 @@ public class AuthController : ControllerBase
 
     return Ok(new
     {
-      sub = user.Id.ToString(),
-      preferred_username = user.Username,
-      name = user.DisplayName,
-      email = user.Email,
-      email_verified = user.IsEmailVerified,
-      picture = user.AvatarUrl,
+      sub = user.id.ToString(),
+      preferred_username = user.username,
+      name = user.display_name,
+      email = user.email,
+      email_verified = user.is_email_verified,
+      picture = user.avatar_url,
       roles = roles,
       claims = claims,
       permissions = claims, // Keep for backward compatibility if any
-      isMfaEnabled = user.IsMfaEnabled,
-      preferredMfaProvider = user.PreferredMfaProvider
+      isMfaEnabled = user.is_mfa_enabled,
+      preferredMfaProvider = user.preferred_mfa_provider
     });
   }
 
@@ -158,15 +158,15 @@ public class AuthController : ControllerBase
         return Unauthorized(new { message = "Invalid credentials" });
       }
 
-      Console.WriteLine($"[AUTH] Authentication successful for user: {user.Username} (ID: {user.Id})");
+      Console.WriteLine($"[AUTH] Authentication successful for user: {user.username} (ID: {user.id})");
 
       // Check if MFA is enabled for the user
-      if (user.IsMfaEnabled)
+      if (user.is_mfa_enabled)
       {
         var mfaToken = Guid.NewGuid().ToString("N");
-        await _sessionService.SaveAuthCodeAsync("temp_mfa_" + mfaToken, user.Id.ToString(), TimeSpan.FromMinutes(5));
+        await _sessionService.SaveAuthCodeAsync("temp_mfa_" + mfaToken, user.id.ToString(), TimeSpan.FromMinutes(5));
 
-        var providerName = user.PreferredMfaProvider ?? "Totp";
+        var providerName = user.preferred_mfa_provider ?? "Totp";
         try
         {
           var provider = _authService.GetMfaProvider(providerName);
@@ -174,10 +174,10 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-          Console.WriteLine($"[AUTH] MFA SendCode error for {user.Username}: {ex.Message}");
+          Console.WriteLine($"[AUTH] MFA SendCode error for {user.username}: {ex.Message}");
         }
 
-        Console.WriteLine($"[AUTH] MFA required for user: {user.Username}. Returning temp session token.");
+        Console.WriteLine($"[AUTH] MFA required for user: {user.username}. Returning temp session token.");
         return Ok(new
         {
           requiresMfa = true,
@@ -197,32 +197,32 @@ public class AuthController : ControllerBase
       var firebaseToken = await _authService.GenerateFirebaseToken(user);
       var firebaseAccessToken = await _authService.GenerateFirebaseAccessTokenAsync();
 
-      Console.WriteLine($"[AUTH] Login completed for {user.Username}. Returning tokens.");
+      Console.WriteLine($"[AUTH] Login completed for {user.username}. Returning tokens.");
 
       try
       {
         await _dispatcher.PublishAsync(new LoginSuccessEvent
         {
-          UserId = user.Id.ToString(),
-          Username = user.Username,
-          DisplayName = user.DisplayName,
-          Email = user.Email ?? string.Empty
+          UserId = user.id.ToString(),
+          Username = user.username,
+          DisplayName = user.display_name,
+          Email = user.email ?? string.Empty
         });
       }
       catch (Exception ex)
       {
-        Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for user {user.Username}: {ex.Message}");
+        Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for user {user.username}: {ex.Message}");
       }
 
       if (!string.IsNullOrEmpty(request.FcmToken))
       {
         try
         {
-          await _notifyRepo.SaveTokenAsync(user.Id, request.FcmToken, request.DeviceId, request.AppType);
+          await _notifyRepo.SaveTokenAsync(user.id, request.FcmToken, request.DeviceId, request.AppType);
         }
         catch (Exception ex)
         {
-          Console.WriteLine($"[AUTH] Error saving FCM token for user {user.Username}: {ex.Message}");
+          Console.WriteLine($"[AUTH] Error saving FCM token for user {user.username}: {ex.Message}");
         }
       }
 
@@ -231,8 +231,8 @@ public class AuthController : ControllerBase
         token,
         firebaseToken,
         firebaseAccessToken,
-        mustChangePassword = user.MustChangePassword,
-        user = new { user.Username, user.DisplayName, user.Email }
+        mustChangePassword = user.must_change_password,
+        user = new { user.username, user.display_name, user.email }
       });
     }
     catch (Exception ex)
@@ -242,12 +242,12 @@ public class AuthController : ControllerBase
     }
   }
 
-  private async Task CreateSsoSessionCookie(Core.Infra.Oidc.Models.User user)
+  private async Task CreateSsoSessionCookie(Core.Infra.Oidc.Models.users_entity user)
   {
     var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, user.Username),
-            new Claim(AuthConstants.UserIdClaim, user.Id.ToString())
+            new Claim(ClaimTypes.Name, user.username),
+            new Claim(AuthConstants.UserIdClaim, user.id.ToString())
         };
     var identity = new ClaimsIdentity(claims, AuthConstants.SsoSessionScheme);
     var principal = new ClaimsPrincipal(identity);
@@ -456,7 +456,7 @@ public class AuthController : ControllerBase
       return BadRequest(new { error = "invalid_grant" });
     }
 
-    Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.Username}. Generating separate tokens with nonce: {nonce}...");
+    Console.WriteLine($"[OIDC] Code exchanged successfully for user: {user.username}. Generating separate tokens with nonce: {nonce}...");
     var defaultAudience = _config["Auth:Jwt:Audience"] ?? "TreeOfThought.FE";
     var accessToken = await _authService.GenerateJwtToken(user, defaultAudience, null);
     var idToken = await _authService.GenerateJwtToken(user, request.ClientId ?? defaultAudience, nonce);
@@ -488,7 +488,7 @@ public class AuthController : ControllerBase
     try
     {
       var user = await _authService.SignupAsync(request.Username, request.Password, request.DisplayName, request.Email);
-      return Ok(new { message = "Signup successful. Please verify your email.", email = user.Email });
+      return Ok(new { message = "Signup successful. Please verify your email.", email = user.email });
     }
     catch (Exception ex)
     {
@@ -520,15 +520,15 @@ public class AuthController : ControllerBase
     {
       await _dispatcher.PublishAsync(new LoginSuccessEvent
       {
-        UserId = user.Id.ToString(),
-        Username = user.Username,
-        DisplayName = user.DisplayName,
-        Email = user.Email ?? string.Empty
+        UserId = user.id.ToString(),
+        Username = user.username,
+        DisplayName = user.display_name,
+        Email = user.email ?? string.Empty
       });
     }
     catch (Exception ex)
     {
-      Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for SSO user {user.Username}: {ex.Message}");
+      Console.WriteLine($"[AUTH] Error publishing LoginSuccessEvent for SSO user {user.username}: {ex.Message}");
     }
 
     return Ok(new
@@ -536,7 +536,7 @@ public class AuthController : ControllerBase
       token,
       firebaseToken,
       firebaseAccessToken,
-      user = new { user.Username, user.DisplayName, user.Email }
+      user = new { user.username, user.display_name, user.email }
     });
   }
 
@@ -617,7 +617,7 @@ public class AuthController : ControllerBase
     // MFA code is valid! Authenticate fully:
     await _sessionService.RemoveAuthCodeAsync("temp_mfa_" + request.MfaToken);
 
-    Console.WriteLine($"[AUTH] MFA successful for user: {user.Username} (ID: {user.Id})");
+    Console.WriteLine($"[AUTH] MFA successful for user: {user.username} (ID: {user.id})");
 
     Console.WriteLine("[AUTH] Creating SSO Session Cookie...");
     await CreateSsoSessionCookie(user);
@@ -635,8 +635,8 @@ public class AuthController : ControllerBase
       token,
       firebaseToken,
       firebaseAccessToken,
-      mustChangePassword = user.MustChangePassword,
-      user = new { user.Username, user.DisplayName, user.Email }
+      mustChangePassword = user.must_change_password,
+      user = new { user.username, user.display_name, user.email }
     });
   }
 

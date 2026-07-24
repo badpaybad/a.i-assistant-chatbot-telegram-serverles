@@ -119,7 +119,7 @@ public class FilesController : BaseController
 
         var file = await _filesFoldersService.UploadEditorFileAsync(userId, upload.FileName, upload.ContentType, ms.ToArray());
 
-        return Ok(new { url = file.Url });
+        return Ok(new { url = file.url });
     }
 
     [HttpGet("search")]

@@ -26,30 +26,73 @@ public class CqrsDbContext : BaseDbContext
             // Ignore database creation errors if it already exists
         }
 
-        try
-        {
-            var databaseCreator = Database.GetService<IDatabaseCreator>() as IRelationalDatabaseCreator;
-            if (databaseCreator != null)
-            {
-                await databaseCreator.CreateTablesAsync();
-            }
-        }
-        catch (Exception ex)
-        {
-            // CreateTablesAsync throws an exception if the tables already exist (e.g. duplicate table)
-            // We can safely ignore this exception as the goal is to make sure tables are created.
-            Console.WriteLine($"[CqrsDbContext] Table creation skipped or table already exists: {ex.Message}");
-        }
+
+
 
         try
         {
-            // Auto-migrate schema: add 'Type' and 'ElapsedMilliseconds' columns if they do not exist
+            // Auto-migrate schema: rename existing PascalCase columns to lowercase snake_case if they exist,
+            // and add 'type' and 'elapsed_milliseconds' in lowercase snake_case.
             await Database.ExecuteSqlRawAsync(@"
-                ALTER TABLE public.cqrs_tracking_logs 
-                ADD COLUMN IF NOT EXISTS ""Type"" VARCHAR(50) NOT NULL DEFAULT '';
+                DO $$
+                BEGIN
+                    -- Rename old PascalCase columns to lowercase snake_case if they exist
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='Id') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""Id"" TO id;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='TrackingId') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""TrackingId"" TO tracking_id;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='MessageType') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""MessageType"" TO message_type;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='MessageData') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""MessageData"" TO message_data;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='QueueOrTopicName') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""QueueOrTopicName"" TO queue_or_topic_name;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='SubscriberName') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""SubscriberName"" TO subscriber_name;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='DestinationQueueName') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""DestinationQueueName"" TO destination_queue_name;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='SourceComponent') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""SourceComponent"" TO source_component;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='HandlerName') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""HandlerName"" TO handler_name;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='WorkerId') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""WorkerId"" TO worker_id;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='Step') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""Step"" TO step;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='Status') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""Status"" TO status;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='ErrorMessage') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""ErrorMessage"" TO error_message;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='IsRoot') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""IsRoot"" TO is_root;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='CreatedAt') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""CreatedAt"" TO created_at;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='Type') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""Type"" TO type;
+                    END IF;
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='cqrs_tracking_logs' AND column_name='ElapsedMilliseconds') THEN
+                        ALTER TABLE public.cqrs_tracking_logs RENAME COLUMN ""ElapsedMilliseconds"" TO elapsed_milliseconds;
+                    END IF;
 
-                ALTER TABLE public.cqrs_tracking_logs 
-                ADD COLUMN IF NOT EXISTS ""ElapsedMilliseconds"" BIGINT NULL;
+                    -- Add type and elapsed_milliseconds columns if they do not exist
+                    ALTER TABLE public.cqrs_tracking_logs ADD COLUMN IF NOT EXISTS type VARCHAR(50) NOT NULL DEFAULT '';
+                    ALTER TABLE public.cqrs_tracking_logs ADD COLUMN IF NOT EXISTS elapsed_milliseconds BIGINT NULL;
+                END $$;
             ");
         }
         catch (Exception ex)
@@ -58,25 +101,25 @@ public class CqrsDbContext : BaseDbContext
         }
     }
 
-    public DbSet<CqrsTrackingLog> CqrsTrackingLogs { get; set; }
+    public DbSet<cqrs_tracking_logs_entity> cqrs_tracking_logs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<CqrsTrackingLog>(entity =>
+        modelBuilder.Entity<cqrs_tracking_logs_entity>(entity =>
         {
             entity.ToTable("cqrs_tracking_logs");
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.id).UseIdentityAlwaysColumn();
             
-            entity.HasIndex(e => e.TrackingId);
-            entity.HasIndex(e => e.QueueOrTopicName);
-            entity.HasIndex(e => e.MessageType);
-            entity.HasIndex(e => e.CreatedAt);
-            entity.HasIndex(e => e.Status);
-            entity.HasIndex(e => e.Type);
-            entity.HasIndex(e => e.ElapsedMilliseconds);
+            entity.HasIndex(e => e.tracking_id);
+            entity.HasIndex(e => e.queue_or_topic_name);
+            entity.HasIndex(e => e.message_type);
+            entity.HasIndex(e => e.created_at);
+            entity.HasIndex(e => e.status);
+            entity.HasIndex(e => e.type);
+            entity.HasIndex(e => e.elapsed_milliseconds);
         });
     }
 }

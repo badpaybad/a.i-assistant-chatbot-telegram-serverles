@@ -888,7 +888,7 @@ public class CqrsDispatcher : IDispatcher
                 else
                 {
                     if (stopWhenEmpty) break;
-                    await Task.Delay(10, ct);
+                    await Task.Delay(100, ct);
                 }
             }
             catch (OperationCanceledException) { break; }

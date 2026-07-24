@@ -5,6 +5,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
 using Npgsql;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Oidc.Repositories;
 
@@ -17,32 +21,32 @@ public class AuthRepository : IAuthRepository
         _context = context;
     }
 
-    public async Task<User?> GetUserByIdAsync(Guid id) => await _context.Users.FindAsync(id);
+    public async Task<users_entity?> GetUserByIdAsync(Guid id) => await _context.users.FindAsync(id);
 
-    public async Task<User?> GetUserByUsernameAsync(string username) => 
-        await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
+    public async Task<users_entity?> GetUserByUsernameAsync(string username) => 
+        await _context.users.FirstOrDefaultAsync(u => u.username.ToLower() == username.ToLower());
 
-    public async Task<User?> GetUserByEmailAsync(string email) => 
-        await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+    public async Task<users_entity?> GetUserByEmailAsync(string email) => 
+        await _context.users.FirstOrDefaultAsync(u => u.email == email);
 
-    public async Task CreateUserAsync(User user)
+    public async Task CreateUserAsync(users_entity user)
     {
-        await _context.Users.AddAsync(user);
+        await _context.users.AddAsync(user);
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateUserAsync(User user)
+    public async Task UpdateUserAsync(users_entity user)
     {
-        var existing = await _context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
+        var existing = await _context.users.AsNoTracking().FirstOrDefaultAsync(u => u.id == user.id);
         if (existing != null)
         {
-            if (existing.Username.Equals("admin", StringComparison.OrdinalIgnoreCase) && 
-                !user.Username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            if (existing.username.Equals("admin", StringComparison.OrdinalIgnoreCase) && 
+                !user.username.Equals("admin", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot rename the system admin account.");
             }
         }
-        _context.Users.Update(user);
+        _context.users.Update(user);
         await _context.SaveChangesAsync();
     }
 
@@ -51,62 +55,62 @@ public class AuthRepository : IAuthRepository
         var user = await GetUserByIdAsync(id);
         if (user != null)
         {
-            if (user.Username.Equals("admin", StringComparison.OrdinalIgnoreCase))
+            if (user.username.Equals("admin", StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot delete the system admin account.");
             }
-            _context.Users.Remove(user);
+            _context.users.Remove(user);
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task<(List<User> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null)
+    public async Task<(List<users_entity> Items, int TotalCount)> GetAllUsersAsync(UserSearchQuery? query = null)
     {
-        var usersQuery = _context.Users.OrderBy(u => u.Username).AsQueryable();
+        var usersQuery = _context.users.OrderBy(u => u.username).AsQueryable();
 
         if (query != null)
         {
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var keyword = query.Keyword.ToLower();
-                usersQuery = usersQuery.Where(u => u.Username.ToLower().Contains(keyword) || 
-                                                   u.DisplayName.ToLower().Contains(keyword) || 
-                                                   u.Email.ToLower().Contains(keyword));
+                usersQuery = usersQuery.Where(u => u.username.ToLower().Contains(keyword) || 
+                                                   u.display_name.ToLower().Contains(keyword) || 
+                                                   u.email.ToLower().Contains(keyword));
             }
 
             if (query.IsEmailVerified.HasValue)
             {
-                usersQuery = usersQuery.Where(u => u.IsEmailVerified == query.IsEmailVerified.Value);
+                usersQuery = usersQuery.Where(u => u.is_email_verified == query.IsEmailVerified.Value);
             }
 
             if (query.RoleIds != null && query.RoleIds.Any())
             {
-                usersQuery = usersQuery.Where(u => _context.UserRoles.Any(ur => ur.UserId == u.Id && query.RoleIds.Contains(ur.RoleId)));
+                usersQuery = usersQuery.Where(u => _context.user_roles.Any(ur => ur.user_id == u.id && query.RoleIds.Contains(ur.role_id)));
             }
 
             if (query.ClaimIds != null && query.ClaimIds.Any())
             {
-                usersQuery = usersQuery.Where(u => _context.UserClaims.Any(uc => uc.UserId == u.Id && query.ClaimIds.Contains(uc.ClaimId)));
+                usersQuery = usersQuery.Where(u => _context.user_claims.Any(uc => uc.user_id == u.id && query.ClaimIds.Contains(uc.claim_id)));
             }
 
             if (query.StartDate.HasValue)
             {
-                usersQuery = usersQuery.Where(u => u.CreatedAt >= query.StartDate.Value);
+                usersQuery = usersQuery.Where(u => u.created_at >= query.StartDate.Value);
             }
 
             if (query.EndDate.HasValue)
             {
-                usersQuery = usersQuery.Where(u => u.CreatedAt <= query.EndDate.Value);
+                usersQuery = usersQuery.Where(u => u.created_at <= query.EndDate.Value);
             }
 
             if (!string.IsNullOrWhiteSpace(query.SsoProvider))
             {
-                usersQuery = usersQuery.Where(u => u.SsoProvider == query.SsoProvider);
+                usersQuery = usersQuery.Where(u => u.sso_provider == query.SsoProvider);
             }
 
             if (!string.IsNullOrWhiteSpace(query.SsoId))
             {
-                usersQuery = usersQuery.Where(u => u.SsoId == query.SsoId);
+                usersQuery = usersQuery.Where(u => u.sso_id == query.SsoId);
             }
         }
 
@@ -123,53 +127,53 @@ public class AuthRepository : IAuthRepository
         return (items, totalCount);
     }
 
-    public async Task<Role?> GetRoleByIdAsync(Guid id) => await _context.Roles.FindAsync(id);
+    public async Task<roles_entity?> GetRoleByIdAsync(Guid id) => await _context.roles.FindAsync(id);
 
-    public async Task<Role?> GetRoleByNameAsync(string name) => 
-        await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == name.ToLower());
+    public async Task<roles_entity?> GetRoleByNameAsync(string name) => 
+        await _context.roles.FirstOrDefaultAsync(r => r.name.ToLower() == name.ToLower());
 
-    public async Task CreateRoleAsync(Role role)
+    public async Task CreateRoleAsync(roles_entity role)
     {
-        await _context.Roles.AddAsync(role);
+        await _context.roles.AddAsync(role);
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateRoleAsync(Role role)
+    public async Task UpdateRoleAsync(roles_entity role)
     {
-        _context.Roles.Update(role);
+        _context.roles.Update(role);
         await _context.SaveChangesAsync();
     }
 
     public async Task DeleteRoleAsync(Guid id)
     {
-        var role = await _context.Roles.FindAsync(id);
+        var role = await _context.roles.FindAsync(id);
         if (role != null)
         {
-            if (role.Name.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase))
+            if (role.name.Equals(AuthConstants.AdminRole, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot delete the system Admin role.");
             }
-            _context.Roles.Remove(role);
+            _context.roles.Remove(role);
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task<(List<Role> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null)
+    public async Task<(List<roles_entity> Items, int TotalCount)> GetAllRolesAsync(RoleSearchQuery? query = null)
     {
-        var rolesQuery = _context.Roles.OrderBy(r => r.Name).AsQueryable();
+        var rolesQuery = _context.roles.OrderBy(r => r.name).AsQueryable();
 
         if (query != null)
         {
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var keyword = query.Keyword.ToLower();
-                rolesQuery = rolesQuery.Where(r => r.Name.ToLower().Contains(keyword) || 
-                                                   (r.Description != null && r.Description.ToLower().Contains(keyword)));
+                rolesQuery = rolesQuery.Where(r => r.name.ToLower().Contains(keyword) || 
+                                                   (r.description != null && r.description.ToLower().Contains(keyword)));
             }
 
             if (query.ClaimIds != null && query.ClaimIds.Any())
             {
-                rolesQuery = rolesQuery.Where(r => _context.RoleClaims.Any(rc => rc.RoleId == r.Id && query.ClaimIds.Contains(rc.ClaimId)));
+                rolesQuery = rolesQuery.Where(r => _context.role_claims.Any(rc => rc.role_id == r.id && query.ClaimIds.Contains(rc.claim_id)));
             }
         }
 
@@ -186,58 +190,58 @@ public class AuthRepository : IAuthRepository
         return (items, totalCount);
     }
 
-    public async Task<AppClaim?> GetClaimByIdAsync(Guid id) => await _context.Claims.FindAsync(id);
+    public async Task<app_claims_entity?> GetClaimByIdAsync(Guid id) => await _context.app_claims.FindAsync(id);
 
-    public async Task<AppClaim?> GetClaimByNameAsync(string name) => 
-        await _context.Claims.FirstOrDefaultAsync(p => p.Name.ToLower() == name.ToLower());
+    public async Task<app_claims_entity?> GetClaimByNameAsync(string name) => 
+        await _context.app_claims.FirstOrDefaultAsync(p => p.name.ToLower() == name.ToLower());
 
-    public async Task CreateClaimAsync(AppClaim claim)
+    public async Task CreateClaimAsync(app_claims_entity claim)
     {
-        await _context.Claims.AddAsync(claim);
+        await _context.app_claims.AddAsync(claim);
         await _context.SaveChangesAsync();
     }
 
-    public async Task UpdateClaimAsync(AppClaim claim)
+    public async Task UpdateClaimAsync(app_claims_entity claim)
     {
-        _context.Claims.Update(claim);
+        _context.app_claims.Update(claim);
         await _context.SaveChangesAsync();
     }
 
     public async Task DeleteClaimAsync(Guid id)
     {
-        var claim = await _context.Claims.FindAsync(id);
+        var claim = await _context.app_claims.FindAsync(id);
         if (claim != null)
         {
-            if (claim.Name.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))
+            if (claim.name.Equals(AuthConstants.AdminClaim, StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException("Cannot delete the system admin claim.");
             }
-            _context.Claims.Remove(claim);
+            _context.app_claims.Remove(claim);
             await _context.SaveChangesAsync();
         }
     }
 
-    public async Task<(List<AppClaim> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null)
+    public async Task<(List<app_claims_entity> Items, int TotalCount)> GetAllClaimsAsync(ClaimSearchQuery? query = null)
     {
-        var claimsQuery = _context.Claims.OrderBy(c => c.Name).AsQueryable();
+        var claimsQuery = _context.app_claims.OrderBy(c => c.name).AsQueryable();
 
         if (query != null)
         {
             if (!string.IsNullOrWhiteSpace(query.Keyword))
             {
                 var keyword = query.Keyword.ToLower();
-                claimsQuery = claimsQuery.Where(c => c.Name.ToLower().Contains(keyword) || 
-                                                   (c.Description != null && c.Description.ToLower().Contains(keyword)));
+                claimsQuery = claimsQuery.Where(c => c.name.ToLower().Contains(keyword) || 
+                                                   (c.description != null && c.description.ToLower().Contains(keyword)));
             }
 
             if (query.StartDate.HasValue)
             {
-                claimsQuery = claimsQuery.Where(c => c.CreatedAt >= query.StartDate.Value);
+                claimsQuery = claimsQuery.Where(c => c.created_at >= query.StartDate.Value);
             }
 
             if (query.EndDate.HasValue)
             {
-                claimsQuery = claimsQuery.Where(c => c.CreatedAt <= query.EndDate.Value);
+                claimsQuery = claimsQuery.Where(c => c.created_at <= query.EndDate.Value);
             }
         }
 
@@ -256,18 +260,18 @@ public class AuthRepository : IAuthRepository
 
     public async Task AssignRoleToUserAsync(Guid userId, Guid roleId)
     {
-        if (!await _context.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId))
+        if (!await _context.user_roles.AnyAsync(ur => ur.user_id == userId && ur.role_id == roleId))
         {
-            await _context.UserRoles.AddAsync(new UserRole { UserId = userId, RoleId = roleId });
+            await _context.user_roles.AddAsync(new user_roles_entity { user_id = userId, role_id = roleId });
             await _context.SaveChangesAsync();
         }
     }
 
     public async Task AssignRolesToUserAsync(Guid userId, List<Guid> roleIds)
     {
-        var existingRoleIds = await _context.UserRoles
-            .Where(ur => ur.UserId == userId && roleIds.Contains(ur.RoleId))
-            .Select(ur => ur.RoleId)
+        var existingRoleIds = await _context.user_roles
+            .Where(ur => ur.user_id == userId && roleIds.Contains(ur.role_id))
+            .Select(ur => ur.role_id)
             .ToListAsync();
 
         var newRoleIds = roleIds.Except(existingRoleIds).ToList();
@@ -275,7 +279,7 @@ public class AuthRepository : IAuthRepository
         {
             foreach (var roleId in newRoleIds)
             {
-                await _context.UserRoles.AddAsync(new UserRole { UserId = userId, RoleId = roleId });
+                await _context.user_roles.AddAsync(new user_roles_entity { user_id = userId, role_id = roleId });
             }
             await _context.SaveChangesAsync();
         }
@@ -283,28 +287,28 @@ public class AuthRepository : IAuthRepository
 
     public async Task RemoveRoleFromUserAsync(Guid userId, Guid roleId)
     {
-        var mapping = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
+        var mapping = await _context.user_roles.FirstOrDefaultAsync(ur => ur.user_id == userId && ur.role_id == roleId);
         if (mapping != null)
         {
-            _context.UserRoles.Remove(mapping);
+            _context.user_roles.Remove(mapping);
             await _context.SaveChangesAsync();
         }
     }
 
     public async Task AssignClaimToRoleAsync(Guid roleId, Guid claimId)
     {
-        if (!await _context.RoleClaims.AnyAsync(rp => rp.RoleId == roleId && rp.ClaimId == claimId))
+        if (!await _context.role_claims.AnyAsync(rp => rp.role_id == roleId && rp.claim_id == claimId))
         {
-            await _context.RoleClaims.AddAsync(new RoleClaim { RoleId = roleId, ClaimId = claimId });
+            await _context.role_claims.AddAsync(new role_claims_entity { role_id = roleId, claim_id = claimId });
             await _context.SaveChangesAsync();
         }
     }
 
     public async Task AssignClaimsToRoleAsync(Guid roleId, List<Guid> claimIds)
     {
-        var existingClaimIds = await _context.RoleClaims
-            .Where(rc => rc.RoleId == roleId && claimIds.Contains(rc.ClaimId))
-            .Select(rc => rc.ClaimId)
+        var existingClaimIds = await _context.role_claims
+            .Where(rc => rc.role_id == roleId && claimIds.Contains(rc.claim_id))
+            .Select(rc => rc.claim_id)
             .ToListAsync();
 
         var newClaimIds = claimIds.Except(existingClaimIds).ToList();
@@ -312,7 +316,7 @@ public class AuthRepository : IAuthRepository
         {
             foreach (var claimId in newClaimIds)
             {
-                await _context.RoleClaims.AddAsync(new RoleClaim { RoleId = roleId, ClaimId = claimId });
+                await _context.role_claims.AddAsync(new role_claims_entity { role_id = roleId, claim_id = claimId });
             }
             await _context.SaveChangesAsync();
         }
@@ -320,28 +324,28 @@ public class AuthRepository : IAuthRepository
 
     public async Task RemoveClaimFromRoleAsync(Guid roleId, Guid claimId)
     {
-        var mapping = await _context.RoleClaims.FirstOrDefaultAsync(rp => rp.RoleId == roleId && rp.ClaimId == claimId);
+        var mapping = await _context.role_claims.FirstOrDefaultAsync(rp => rp.role_id == roleId && rp.claim_id == claimId);
         if (mapping != null)
         {
-            _context.RoleClaims.Remove(mapping);
+            _context.role_claims.Remove(mapping);
             await _context.SaveChangesAsync();
         }
     }
 
     public async Task AssignClaimToUserAsync(Guid userId, Guid claimId)
     {
-        if (!await _context.UserClaims.AnyAsync(up => up.UserId == userId && up.ClaimId == claimId))
+        if (!await _context.user_claims.AnyAsync(up => up.user_id == userId && up.claim_id == claimId))
         {
-            await _context.UserClaims.AddAsync(new UserClaim { UserId = userId, ClaimId = claimId });
+            await _context.user_claims.AddAsync(new user_claims_entity { user_id = userId, claim_id = claimId });
             await _context.SaveChangesAsync();
         }
     }
 
     public async Task AssignClaimsToUserAsync(Guid userId, List<Guid> claimIds)
     {
-        var existingClaimIds = await _context.UserClaims
-            .Where(uc => uc.UserId == userId && claimIds.Contains(uc.ClaimId))
-            .Select(uc => uc.ClaimId)
+        var existingClaimIds = await _context.user_claims
+            .Where(uc => uc.user_id == userId && claimIds.Contains(uc.claim_id))
+            .Select(uc => uc.claim_id)
             .ToListAsync();
 
         var newClaimIds = claimIds.Except(existingClaimIds).ToList();
@@ -349,7 +353,7 @@ public class AuthRepository : IAuthRepository
         {
             foreach (var claimId in newClaimIds)
             {
-                await _context.UserClaims.AddAsync(new UserClaim { UserId = userId, ClaimId = claimId });
+                await _context.user_claims.AddAsync(new user_claims_entity { user_id = userId, claim_id = claimId });
             }
             await _context.SaveChangesAsync();
         }
@@ -357,72 +361,73 @@ public class AuthRepository : IAuthRepository
 
     public async Task RemoveClaimFromUserAsync(Guid userId, Guid claimId)
     {
-        var mapping = await _context.UserClaims.FirstOrDefaultAsync(up => up.UserId == userId && up.ClaimId == claimId);
+        var mapping = await _context.user_claims.FirstOrDefaultAsync(up => up.user_id == userId && up.claim_id == claimId);
         if (mapping != null)
         {
-            _context.UserClaims.Remove(mapping);
+            _context.user_claims.Remove(mapping);
             await _context.SaveChangesAsync();
         }
     }
-    public async Task<List<Role>> GetUserRolesAsync(Guid userId)
+
+    public async Task<List<roles_entity>> GetUserRolesAsync(Guid userId)
     {
-        return await (from ur in _context.UserRoles
-                      join r in _context.Roles on ur.RoleId equals r.Id
-                      where ur.UserId == userId
+        return await (from ur in _context.user_roles
+                      join r in _context.roles on ur.role_id equals r.id
+                      where ur.user_id == userId
                       select r).ToListAsync();
     }
 
-    public async Task<List<AppClaim>> GetRoleClaimsAsync(Guid roleId)
+    public async Task<List<app_claims_entity>> GetRoleClaimsAsync(Guid roleId)
     {
-        return await (from rp in _context.RoleClaims
-                      join p in _context.Claims on rp.ClaimId equals p.Id
-                      where rp.RoleId == roleId
+        return await (from rp in _context.role_claims
+                      join p in _context.app_claims on rp.claim_id equals p.id
+                      where rp.role_id == roleId
                       select p).ToListAsync();
     }
 
-    public async Task<List<AppClaim>> GetUserDirectClaimsAsync(Guid userId)
+    public async Task<List<app_claims_entity>> GetUserDirectClaimsAsync(Guid userId)
     {
-        return await (from up in _context.UserClaims
-                      join p in _context.Claims on up.ClaimId equals p.Id
-                      where up.UserId == userId
+        return await (from up in _context.user_claims
+                      join p in _context.app_claims on up.claim_id equals p.id
+                      where up.user_id == userId
                       select p).ToListAsync();
     }
 
-    public async Task<List<AppClaim>> GetUserEffectiveClaimsAsync(Guid userId)
+    public async Task<List<app_claims_entity>> GetUserEffectiveClaimsAsync(Guid userId)
     {
-        var roleClaims = await (from ur in _context.UserRoles
-                                     join rp in _context.RoleClaims on ur.RoleId equals rp.RoleId
-                                     join p in _context.Claims on rp.ClaimId equals p.Id
-                                     where ur.UserId == userId
+        var roleClaims = await (from ur in _context.user_roles
+                                     join rp in _context.role_claims on ur.role_id equals rp.role_id
+                                     join p in _context.app_claims on rp.claim_id equals p.id
+                                     where ur.user_id == userId
                                      select p).ToListAsync();
 
         var directClaims = await GetUserDirectClaimsAsync(userId);
 
-        return roleClaims.Concat(directClaims).DistinctBy(p => p.Id).ToList();
+        return roleClaims.Concat(directClaims).DistinctBy(p => p.id).ToList();
     }
 
-    public async Task<List<User>> GetUsersInRoleAsync(Guid roleId)
+    public async Task<List<users_entity>> GetUsersInRoleAsync(Guid roleId)
     {
-        return await (from ur in _context.UserRoles
-                      join u in _context.Users on ur.UserId equals u.Id
-                      where ur.RoleId == roleId
+        return await (from ur in _context.user_roles
+                      join u in _context.users on ur.user_id equals u.id
+                      where ur.role_id == roleId
                       select u).ToListAsync();
     }
 
-    public async Task<AclEntry?> GetAclEntryByIdAsync(Guid id) => await _context.AclEntries.FindAsync(id);
+    public async Task<acl_entries_entity?> GetAclEntryByIdAsync(Guid id) => await _context.acl_entries.FindAsync(id);
 
-    public async Task AddAclAsync(AclEntry entry)
+    public async Task AddAclAsync(acl_entries_entity entry)
     {
-        await _context.AclEntries.AddAsync(entry);
+        await _context.acl_entries.AddAsync(entry);
         await _context.SaveChangesAsync();
     }
 
     public async Task RemoveAclAsync(Guid id)
     {
-        var entry = await _context.AclEntries.FindAsync(id);
+        var entry = await _context.acl_entries.FindAsync(id);
         if (entry != null)
         {
-            _context.AclEntries.Remove(entry);
+            _context.acl_entries.Remove(entry);
             await _context.SaveChangesAsync();
         }
     }
@@ -431,41 +436,40 @@ public class AuthRepository : IAuthRepository
     {
         if (userId.HasValue)
         {
-            var userAccess = await _context.AclEntries.FirstOrDefaultAsync(a => 
-                a.UserId == userId.Value && 
-                a.ResourceType == resourceType && 
-                a.ResourceId == resourceId);
+            var userAccess = await _context.acl_entries.FirstOrDefaultAsync(a => 
+                a.user_id == userId.Value && 
+                a.resource_type == resourceType && 
+                a.resource_id == resourceId);
             
-            if (userAccess != null && (userAccess.PermissionMask & actionMask) == actionMask) return true;
+            if (userAccess != null && (userAccess.permission_mask & actionMask) == actionMask) return true;
         }
 
         if (roleNames != null && roleNames.Any())
         {
-            var roles = await _context.Roles
-                .Where(r => roleNames.Select(rn => rn.ToLower()).Contains(r.Name.ToLower()))
-                .Select(r => r.Id)
+            var roles = await _context.roles
+                .Where(r => roleNames.Select(rn => rn.ToLower()).Contains(r.name.ToLower()))
+                .Select(r => r.id)
                 .ToListAsync();
-            var roleAccessEntries = await _context.AclEntries.Where(a => 
-                a.RoleId.HasValue && roles.Contains(a.RoleId.Value) && 
-                a.ResourceType == resourceType && 
-                a.ResourceId == resourceId).ToListAsync();
+            var roleAccessEntries = await _context.acl_entries.Where(a => 
+                a.role_id.HasValue && roles.Contains(a.role_id.Value) && 
+                a.resource_type == resourceType && 
+                a.resource_id == resourceId).ToListAsync();
 
-            var combinedMask = roleAccessEntries.Aggregate(0, (current, entry) => current | entry.PermissionMask);
+            var combinedMask = roleAccessEntries.Aggregate(0, (current, entry) => current | entry.permission_mask);
             if ((combinedMask & actionMask) == actionMask) return true;
         }
 
         return false;
     }
 
-
-    public async Task<(List<AclEntry> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null)
+    public async Task<(List<acl_entries_entity> Items, int TotalCount)> GetAclEntriesAsync(string resourceType, string resourceId, int? pageIndex = null, int? pageSize = null)
     {
-        var baseQuery = _context.AclEntries
-            .Where(a => a.ResourceType == resourceType && a.ResourceId == resourceId);
+        var baseQuery = _context.acl_entries
+            .Where(a => a.resource_type == resourceType && a.resource_id == resourceId);
 
         var totalCount = await baseQuery.CountAsync();
 
-        IQueryable<AclEntry> query = baseQuery.OrderBy(a => a.CreatedAt);
+        IQueryable<acl_entries_entity> query = baseQuery.OrderBy(a => a.created_at);
 
         if (pageIndex.HasValue && pageSize.HasValue)
         {
@@ -478,35 +482,34 @@ public class AuthRepository : IAuthRepository
         return (items, totalCount);
     }
 
-    public async Task<List<AclEntry>> GetUserAclEntriesAsync(Guid userId)
+    public async Task<List<acl_entries_entity>> GetUserAclEntriesAsync(Guid userId)
     {
-        // Get directly assigned ACLs + ACLs assigned to user's roles
-        var userRoleIds = await _context.UserRoles.Where(ur => ur.UserId == userId).Select(ur => ur.RoleId).ToListAsync();
+        var userRoleIds = await _context.user_roles.Where(ur => ur.user_id == userId).Select(ur => ur.role_id).ToListAsync();
         
-        return await _context.AclEntries
-            .Where(a => a.UserId == userId || (a.RoleId.HasValue && userRoleIds.Contains(a.RoleId.Value)))
+        return await _context.acl_entries
+            .Where(a => a.user_id == userId || (a.role_id.HasValue && userRoleIds.Contains(a.role_id.Value)))
             .ToListAsync();
     }
 
-    public async Task<List<UserEmail>> GetUserEmailsAsync(Guid userId)
+    public async Task<List<user_emails_entity>> GetUserEmailsAsync(Guid userId)
     {
-        return await _context.UserEmails.Where(ue => ue.UserId == userId).ToListAsync();
+        return await _context.user_emails.Where(ue => ue.user_id == userId).ToListAsync();
     }
 
-    public async Task AddUserEmailAsync(UserEmail email)
+    public async Task AddUserEmailAsync(user_emails_entity email)
     {
-        await _context.UserEmails.AddAsync(email);
+        await _context.user_emails.AddAsync(email);
         await _context.SaveChangesAsync();
     }
 
-    public async Task<UserEmail?> GetUserEmailByValueAsync(string email)
+    public async Task<user_emails_entity?> GetUserEmailByValueAsync(string email)
     {
-        return await _context.UserEmails.FirstOrDefaultAsync(ue => ue.Email == email);
+        return await _context.user_emails.FirstOrDefaultAsync(ue => ue.email == email);
     }
 
-    public async Task UpdateUserEmailAsync(UserEmail email)
+    public async Task UpdateUserEmailAsync(user_emails_entity email)
     {
-        _context.UserEmails.Update(email);
+        _context.user_emails.Update(email);
         await _context.SaveChangesAsync();
     }
 
@@ -516,51 +519,45 @@ public class AuthRepository : IAuthRepository
         if (admin == null)
         {
             Console.WriteLine($"[SEEDING] Creating admin user: {adminUsername}");
-            admin = new User
+            admin = new users_entity
             {
-                Username = adminUsername,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
-                Email = adminEmail,
-                DisplayName = "Administrator",
-                IsEmailVerified = true,
-                MustChangePassword = true,
-                CreatedAt = DateTime.UtcNow
+                username = adminUsername,
+                password_hash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
+                email = adminEmail,
+                display_name = "Administrator",
+                is_email_verified = true,
+                must_change_password = true,
+                created_at = DateTime.UtcNow
             };
             await CreateUserAsync(admin);
         }
         else
         {
-            // Do not overwrite password if user already exists
-            // Requirement: Allow UI to change password and persist it
             Console.WriteLine($"[SEEDING] Admin user exists: '{adminUsername}'");
         }
 
-        // Create Admin Role
         var adminRole = await GetRoleByNameAsync(AuthConstants.AdminRole);
         if (adminRole == null)
         {
             Console.WriteLine($"[SEEDING] Creating {AuthConstants.AdminRole} role");
-            adminRole = new Role { Name = AuthConstants.AdminRole, Description = "Full system access" };
+            adminRole = new roles_entity { name = AuthConstants.AdminRole, description = "Full system access" };
             await CreateRoleAsync(adminRole);
         }
 
-        await AssignRoleToUserAsync(admin.Id, adminRole.Id);
+        await AssignRoleToUserAsync(admin.id, adminRole.id);
 
-        // Ensure Admin claim exists and is assigned to Admin role
         var adminClaim = await GetClaimByNameAsync(AuthConstants.AdminClaim);
         if (adminClaim == null)
         {
             Console.WriteLine($"[SEEDING] Creating '{AuthConstants.AdminClaim}' claim");
-            adminClaim = new AppClaim { Name = AuthConstants.AdminClaim, Description = "God-mode claim", CreatedAt = DateTime.UtcNow };
+            adminClaim = new app_claims_entity { name = AuthConstants.AdminClaim, description = "God-mode claim", created_at = DateTime.UtcNow };
             await CreateClaimAsync(adminClaim);
         }
-        await AssignClaimToRoleAsync(adminRole.Id, adminClaim.Id);
+        await AssignClaimToRoleAsync(adminRole.id, adminClaim.id);
     }
 
     public async Task EnsureTablesCreatedAsync()
     {
-        // EnsureCreatedAsync only creates tables if the database is empty.
-        // If the database exists but some tables are missing, we use IRelationalDatabaseCreator.
         var databaseCreator = _context.Database.GetService<IDatabaseCreator>() as IRelationalDatabaseCreator;
         if (databaseCreator != null)
         {
@@ -569,27 +566,18 @@ public class AuthRepository : IAuthRepository
                 await databaseCreator.CreateAsync();
             }
 
-            try
-            {
-                await databaseCreator.CreateTablesAsync();
-            }
-            catch (PostgresException ex) when (ex.SqlState == "42P07") // duplicate_table
-            {
-                // Tables already exist, ignore
-            }
-            catch (Exception ex)
-            {
-                // Log or handle other creation errors
-                Console.WriteLine($"Table creation info: {ex.Message}");
-            }
+            // EnsureCreatedAsync is idempotent: creates only missing tables, skips existing ones.
+            // This avoids the silent partial-creation bug where CreateTablesAsync fails atomically
+            // on the first duplicate table (e.g. audit_logs from BaseDbContext) and leaves the
+            // remaining tables (users, roles, app_claims, etc.) uncreated.
+            await _context.Database.EnsureCreatedAsync();
 
-            // Dynamically ensure new MFA columns exist on Users table
             try
             {
-                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"IsMfaEnabled\" boolean NOT NULL DEFAULT false;");
-                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"MfaSecret\" text NULL;");
-                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"MfaBackupCodes\" text NULL;");
-                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"Users\" ADD COLUMN IF NOT EXISTS \"PreferredMfaProvider\" text NULL;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"users\" ADD COLUMN IF NOT EXISTS \"is_mfa_enabled\" boolean NOT NULL DEFAULT false;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"users\" ADD COLUMN IF NOT EXISTS \"mfa_secret\" text NULL;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"users\" ADD COLUMN IF NOT EXISTS \"mfa_backup_codes\" text NULL;");
+                await _context.Database.ExecuteSqlRawAsync("ALTER TABLE \"users\" ADD COLUMN IF NOT EXISTS \"preferred_mfa_provider\" text NULL;");
             }
             catch (Exception ex)
             {

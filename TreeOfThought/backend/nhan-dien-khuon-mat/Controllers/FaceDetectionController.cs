@@ -123,23 +123,23 @@ public class FaceDetectionController : BaseController
     {
         var userId = GetUserId();
 
-        var query = _db.UploadSessions
-            .Where(s => s.UserId == userId);
+        var query = _db.upload_sessions
+            .Where(s => s.user_id == userId);
 
         var totalCount = await query.CountAsync();
 
         var sessions = await query
-            .OrderByDescending(s => s.CreatedAt)
+            .OrderByDescending(s => s.created_at)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .Select(s => new
             {
-                s.Id,
-                s.Name,
-                s.CreatedAt,
-                s.CreatedBy,
-                ImageCount = s.OriginalImages.Count,
-                FaceCount = s.OriginalImages.SelectMany(i => i.CroppedFaces).Count()
+                s.id,
+                s.name,
+                s.created_at,
+                s.created_by,
+                ImageCount = s.original_images.Count,
+                FaceCount = s.original_images.SelectMany(i => i.cropped_faces).Count()
             })
             .ToListAsync();
 
@@ -157,36 +157,36 @@ public class FaceDetectionController : BaseController
     {
         var userId = GetUserId();
 
-        var session = await _db.UploadSessions
-            .FirstOrDefaultAsync(s => s.Id == sessionId && s.UserId == userId);
+        var session = await _db.upload_sessions
+            .FirstOrDefaultAsync(s => s.id == sessionId && s.user_id == userId);
 
         if (session == null)
             return NotFound("Không tìm thấy phiên upload.");
 
-        var images = await _db.OriginalImages
-            .Where(i => i.UploadSessionId == sessionId)
+        var images = await _db.original_images
+            .Where(i => i.upload_session_id == sessionId)
             .Select(i => new
             {
-                i.Id,
-                i.FileName,
-                i.Url,
-                i.Size,
-                i.CreatedAt,
-                CroppedFaces = i.CroppedFaces.Select(f => new
+                i.id,
+                i.file_name,
+                i.url,
+                i.size,
+                i.created_at,
+                CroppedFaces = i.cropped_faces.Select(f => new
                 {
-                    f.Id,
-                    f.Url,
-                    f.BoundingBox,
-                    f.CreatedAt
+                    f.id,
+                    f.url,
+                    f.bounding_box,
+                    f.created_at
                 }).ToList()
             })
             .ToListAsync();
 
         return Ok(new
         {
-            session.Id,
-            session.Name,
-            session.CreatedAt,
+            session.id,
+            session.name,
+            session.created_at,
             Images = images
         });
     }
@@ -224,7 +224,7 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> DeleteSession(Guid sessionId)
     {
         var userId = GetUserId();
-        var sessionExists = await _db.UploadSessions.AnyAsync(s => s.Id == sessionId && s.UserId == userId);
+        var sessionExists = await _db.upload_sessions.AnyAsync(s => s.id == sessionId && s.user_id == userId);
         if (!sessionExists)
             return NotFound("Không tìm thấy phiên upload.");
 
@@ -243,7 +243,7 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> DeleteOriginalImage(Guid imageId)
     {
         var userId = GetUserId();
-        var imageExists = await _db.OriginalImages.AnyAsync(i => i.Id == imageId && i.UserId == userId);
+        var imageExists = await _db.original_images.AnyAsync(i => i.id == imageId && i.user_id == userId);
         if (!imageExists)
             return NotFound("Không tìm thấy ảnh gốc.");
 
@@ -262,7 +262,7 @@ public class FaceDetectionController : BaseController
     public async Task<IActionResult> DeleteCroppedFace(Guid faceId)
     {
         var userId = GetUserId();
-        var faceExists = await _db.CroppedFaces.AnyAsync(f => f.Id == faceId && f.OriginalImage!.UserId == userId);
+        var faceExists = await _db.cropped_faces.AnyAsync(f => f.id == faceId && f.original_image!.user_id == userId);
         if (!faceExists)
             return NotFound("Không tìm thấy ảnh khuôn mặt crop.");
 
@@ -281,20 +281,20 @@ public class FaceDetectionController : BaseController
     [HttpGet("users")]
     public async Task<IActionResult> SearchUsers([FromQuery] string? keyword)
     {
-        var userQuery = _faceUserDb.Users.AsQueryable();
+        var userQuery = _faceUserDb.users.AsQueryable();
         if (!string.IsNullOrEmpty(keyword))
         {
             var q = keyword.ToLower();
-            userQuery = userQuery.Where(u => u.Username.ToLower().Contains(q) || u.DisplayName.ToLower().Contains(q) || u.Email.ToLower().Contains(q));
+            userQuery = userQuery.Where(u => u.username.ToLower().Contains(q) || u.display_name.ToLower().Contains(q) || u.email.ToLower().Contains(q));
         }
 
         var users = await userQuery.Take(20).Select(u => new
         {
-            u.Id,
-            u.Username,
-            u.DisplayName,
-            u.Email,
-            u.AvatarUrl
+            u.id,
+            u.username,
+            u.display_name,
+            u.email,
+            u.avatar_url
         }).ToListAsync();
 
         return Ok(users);
@@ -341,32 +341,32 @@ public class FaceDetectionController : BaseController
     [HttpGet("users/{userId}/definitions")]
     public async Task<IActionResult> GetUserDefinitions(Guid userId)
     {
-        var user = await _faceUserDb.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        var user = await _faceUserDb.users.FirstOrDefaultAsync(u => u.id == userId);
         if (user == null)
             return NotFound("Không tìm thấy người dùng.");
 
         // Get all definitions for this user
-        var definitions = await _faceDefinitionDb.UserFaceDefinitions
-            .Where(d => d.UserId == userId)
+        var definitions = await _faceDefinitionDb.user_face_definitions
+            .Where(d => d.user_id == userId)
             .ToListAsync();
 
-        var imageIds = definitions.Select(d => d.OriginalImageId).ToList();
+        var imageIds = definitions.Select(d => d.original_image_id).ToList();
 
         // Get all original images matching these IDs
-        var images = await _db.OriginalImages
-            .Where(i => imageIds.Contains(i.Id))
+        var images = await _db.original_images
+            .Where(i => imageIds.Contains(i.id))
             .Select(i => new
             {
-                i.Id,
-                i.FileName,
-                i.Url,
-                i.Size,
-                i.CreatedAt,
-                CroppedFaces = i.CroppedFaces.Select(c => new
+                i.id,
+                i.file_name,
+                i.url,
+                i.size,
+                i.created_at,
+                CroppedFaces = i.cropped_faces.Select(c => new
                 {
-                    c.Id,
-                    c.Url,
-                    c.BoundingBox
+                    c.id,
+                    c.url,
+                    c.bounding_box
                 }).ToList()
             })
             .ToListAsync();
@@ -374,12 +374,12 @@ public class FaceDetectionController : BaseController
         // Map them together
         var result = definitions.Select(d =>
         {
-            var img = images.FirstOrDefault(i => i.Id == d.OriginalImageId);
+            var img = images.FirstOrDefault(i => i.id == d.original_image_id);
             return new
             {
-                d.Id, // Definition mapping Id
-                d.OriginalImageId,
-                d.CreatedAt,
+                d.id, // Definition mapping Id
+                d.original_image_id,
+                d.created_at,
                 Image = img
             };
         }).Where(r => r.Image != null).ToList();
@@ -388,11 +388,11 @@ public class FaceDetectionController : BaseController
         {
             User = new
             {
-                user.Id,
-                user.Username,
-                user.DisplayName,
-                user.Email,
-                user.AvatarUrl
+                user.id,
+                user.username,
+                user.display_name,
+                user.email,
+                user.avatar_url
             },
             Definitions = result
         });
@@ -401,7 +401,7 @@ public class FaceDetectionController : BaseController
     [HttpDelete("definitions/{definitionId}")]
     public async Task<IActionResult> DeleteDefinition(Guid definitionId)
     {
-        var exists = await _faceDefinitionDb.UserFaceDefinitions.AnyAsync(d => d.Id == definitionId);
+        var exists = await _faceDefinitionDb.user_face_definitions.AnyAsync(d => d.id == definitionId);
         if (!exists)
             return NotFound("Không tìm thấy định nghĩa khuôn mặt.");
 
@@ -427,47 +427,47 @@ public class FaceDetectionController : BaseController
     [HttpGet("users-with-definitions")]
     public async Task<IActionResult> GetUsersWithDefinitions()
     {
-        var definitions = await _faceDefinitionDb.UserFaceDefinitions.ToListAsync();
+        var definitions = await _faceDefinitionDb.user_face_definitions.ToListAsync();
         if (!definitions.Any())
             return Ok(new List<object>());
 
-        var userIds = definitions.Select(d => d.UserId).Distinct().ToList();
-        var imageIds = definitions.Select(d => d.OriginalImageId).Distinct().ToList();
+        var userIds = definitions.Select(d => d.user_id).Distinct().ToList();
+        var imageIds = definitions.Select(d => d.original_image_id).Distinct().ToList();
 
         // Get all original images matching these IDs, along with their cropped faces
-        var images = await _db.OriginalImages
-            .Where(i => imageIds.Contains(i.Id))
+        var images = await _db.original_images
+            .Where(i => imageIds.Contains(i.id))
             .Select(i => new
             {
-                i.Id,
-                i.Url,
-                CroppedFaces = i.CroppedFaces.Select(c => new
+                i.id,
+                i.url,
+                CroppedFaces = i.cropped_faces.Select(c => new
                 {
-                    c.Id,
-                    c.Url
+                    c.id,
+                    c.url
                 }).ToList()
             })
             .ToListAsync();
 
-        var users = await _faceUserDb.Users
-            .Where(u => userIds.Contains(u.Id))
-            .Select(u => new { u.Id, u.Username, u.DisplayName, u.Email, u.AvatarUrl })
+        var users = await _faceUserDb.users
+            .Where(u => userIds.Contains(u.id))
+            .Select(u => new { u.id, u.username, u.display_name, u.email, u.avatar_url })
             .ToListAsync();
 
         var result = users.Select(u =>
         {
-            var userDefs = definitions.Where(d => d.UserId == u.Id).ToList();
-            var userImageIds = userDefs.Select(d => d.OriginalImageId).ToList();
-            var userImages = images.Where(i => userImageIds.Contains(i.Id)).ToList();
+            var userDefs = definitions.Where(d => d.user_id == u.id).ToList();
+            var userImageIds = userDefs.Select(d => d.original_image_id).ToList();
+            var userImages = images.Where(i => userImageIds.Contains(i.id)).ToList();
 
             var defs = userDefs.Select(d =>
             {
-                var img = userImages.FirstOrDefault(i => i.Id == d.OriginalImageId);
+                var img = userImages.FirstOrDefault(i => i.id == d.original_image_id);
                 return new
                 {
-                    DefinitionId = d.Id,
-                    OriginalImageId = d.OriginalImageId,
-                    OriginalImageUrl = img?.Url
+                    DefinitionId = d.id,
+                    OriginalImageId = d.original_image_id,
+                    OriginalImageUrl = img?.url
                 };
             })
             .Where(x => x.OriginalImageUrl != null)
@@ -475,15 +475,15 @@ public class FaceDetectionController : BaseController
 
             return new
             {
-                u.Id,
-                u.Username,
-                u.DisplayName,
-                u.Email,
-                u.AvatarUrl,
+                u.id,
+                u.username,
+                u.display_name,
+                u.email,
+                u.avatar_url,
                 DefinitionCount = defs.Count,
                 Definitions = defs
             };
-        }).OrderBy(u => u.DisplayName).ToList();
+        }).OrderBy(u => u.display_name).ToList();
 
         return Ok(result);
     }
@@ -1033,45 +1033,45 @@ public class FaceDetectionController : BaseController
     [HttpGet("embeddings")]
     public async Task<IActionResult> GetEmbeddings()
     {
-        var embeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
-        var userIds = embeddings.Select(e => e.UserId).Distinct().ToList();
-        var imageIds = embeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+        var embeddings = await _faceDefinitionDb.user_face_embeddings.ToListAsync();
+        var userIds = embeddings.Select(e => e.user_id).Distinct().ToList();
+        var imageIds = embeddings.Select(e => e.original_image_id).Distinct().ToList();
 
-        var users = await _faceUserDb.Users
-            .Where(u => userIds.Contains(u.Id))
+        var users = await _faceUserDb.users
+            .Where(u => userIds.Contains(u.id))
             .ToListAsync();
 
-        var images = await _db.OriginalImages
-            .Where(i => imageIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Url, i.FileName })
+        var images = await _db.original_images
+            .Where(i => imageIds.Contains(i.id))
+            .Select(i => new { i.id, i.url, i.file_name })
             .ToListAsync();
 
         var result = users.Select(u => new
         {
             User = new
             {
-                u.Id,
-                u.Username,
-                u.DisplayName,
-                u.Email,
-                u.AvatarUrl
+                u.id,
+                u.username,
+                u.display_name,
+                u.email,
+                u.avatar_url
             },
-            Embeddings = embeddings.Where(e => e.UserId == u.Id).Select(e =>
+            Embeddings = embeddings.Where(e => e.user_id == u.id).Select(e =>
             {
-                var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+                var img = images.FirstOrDefault(i => i.id == e.original_image_id);
                 return new
                 {
-                    e.Id,
-                    e.OriginalImageId,
-                    ImageUrl = img?.Url,
-                    ImageName = img?.FileName,
-                    e.BestModelPath,
-                    e.InputImagePath,
-                    Embedding = e.Embedding != null ? e.Embedding.ToArray() : Array.Empty<float>(),
-                    e.CreatedAt
+                    e.id,
+                    e.original_image_id,
+                    ImageUrl = img?.url,
+                    ImageName = img?.file_name,
+                    e.best_model_path,
+                    e.input_image_path,
+                    embedding = e.embedding != null ? e.embedding.ToArray() : Array.Empty<float>(),
+                    e.created_at
                 };
             }).ToList()
-        }).OrderBy(u => u.User.DisplayName).ToList();
+        }).OrderBy(u => u.User.display_name).ToList();
 
         return Ok(result);
     }
@@ -1080,11 +1080,11 @@ public class FaceDetectionController : BaseController
     [AllowAnonymous]
     public async Task<IActionResult> GetEmbeddingImage(Guid id)
     {
-        var embedding = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
+        var embedding = await _faceDefinitionDb.user_face_embeddings.FindAsync(id);
         if (embedding == null)
             return NotFound("Không tìm thấy embedding.");
 
-        var imagePath = embedding.InputImagePath;
+        var imagePath = embedding.input_image_path;
         if (string.IsNullOrEmpty(imagePath) || !System.IO.File.Exists(imagePath))
         {
             // Fallback: If the path is relative or not found, try to resolve it relative to ArcFaceDir
@@ -1117,7 +1117,7 @@ public class FaceDetectionController : BaseController
     [HttpDelete("embeddings/{id}")]
     public async Task<IActionResult> DeleteEmbedding(Guid id)
     {
-        var exists = await _faceDefinitionDb.UserFaceEmbeddings.AnyAsync(e => e.Id == id);
+        var exists = await _faceDefinitionDb.user_face_embeddings.AnyAsync(e => e.id == id);
         if (!exists)
             return NotFound("Không tìm thấy embedding.");
 
@@ -1152,11 +1152,11 @@ public class FaceDetectionController : BaseController
         if (image == null || image.Length == 0)
             return BadRequest("Tệp ảnh không hợp lệ.");
 
-        var targetEmbedding = await _faceDefinitionDb.UserFaceEmbeddings.FindAsync(id);
+        var targetEmbedding = await _faceDefinitionDb.user_face_embeddings.FindAsync(id);
         if (targetEmbedding == null)
             return NotFound("Không tìm thấy embedding đích.");
 
-        var bestModelPath = targetEmbedding.BestModelPath;
+        var bestModelPath = targetEmbedding.best_model_path;
         if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
         {
             // Fallback to resolve path
@@ -1227,41 +1227,41 @@ public class FaceDetectionController : BaseController
 
         // Perform fast vector neighbor comparison using HNSW + Inner Product via raw SQL <#> operator
         var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
-        List<UserFaceEmbedding> closestEmbeddings;
+        List<user_face_embeddings_entity> closestEmbeddings;
         try
         {
-            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
-                .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+            closestEmbeddings = await _faceDefinitionDb.user_face_embeddings
+                .FromSqlRaw("SELECT * FROM \"user_face_embeddings\" ORDER BY \"embedding\" <#> {0}::vector LIMIT 20", vectorStr)
                 .ToListAsync();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Truy vấn HNSW thất bại, sử dụng fallback đối sánh chéo bộ nhớ.");
-            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+            closestEmbeddings = await _faceDefinitionDb.user_face_embeddings.ToListAsync();
         }
 
         // Fetch User and Image Info
-        var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();
-        var imageIds = closestEmbeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+        var userIds = closestEmbeddings.Select(e => e.user_id).Distinct().ToList();
+        var imageIds = closestEmbeddings.Select(e => e.original_image_id).Distinct().ToList();
 
-        var users = await _faceUserDb.Users
-            .Where(u => userIds.Contains(u.Id))
+        var users = await _faceUserDb.users
+            .Where(u => userIds.Contains(u.id))
             .ToListAsync();
 
-        var images = await _db.OriginalImages
-            .Where(i => imageIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Url, i.FileName })
+        var images = await _db.original_images
+            .Where(i => imageIds.Contains(i.id))
+            .Select(i => new { i.id, i.url, i.file_name })
             .ToListAsync();
 
         // Map results and calculate exact metrics
         var compareResults = closestEmbeddings.Select(e =>
         {
-            var user = users.FirstOrDefault(u => u.Id == e.UserId);
-            var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+            var user = users.FirstOrDefault(u => u.id == e.user_id);
+            var img = images.FirstOrDefault(i => i.id == e.original_image_id);
 
             // Cosine Similarity = Inner Product for L2 normalized vectors
             float cosineSimilarity = 0f;
-            var embArray = e.Embedding?.ToArray();
+            var embArray = e.embedding?.ToArray();
             if (embArray != null && embArray.Length == testEmbedding.Length)
             {
                 for (int i = 0; i < testEmbedding.Length; i++)
@@ -1275,18 +1275,18 @@ public class FaceDetectionController : BaseController
 
             return new
             {
-                EmbeddingId = e.Id,
-                UserId = e.UserId,
-                Username = user?.Username ?? "Unknown",
-                DisplayName = user?.DisplayName ?? "Unknown",
-                Email = user?.Email ?? "",
-                AvatarUrl = user?.AvatarUrl ?? "",
-                OriginalImageId = e.OriginalImageId,
-                ImageUrl = img?.Url,
-                ImageName = img?.FileName,
+                EmbeddingId = e.id,
+                UserId = e.user_id,
+                Username = user?.username ?? "Unknown",
+                DisplayName = user?.display_name ?? "Unknown",
+                Email = user?.email ?? "",
+                AvatarUrl = user?.avatar_url ?? "",
+                OriginalImageId = e.original_image_id,
+                ImageUrl = img?.url,
+                ImageName = img?.file_name,
                 CosineSimilarity = cosineSimilarity,
                 L2Distance = l2Distance,
-                IsTarget = e.UserId == targetEmbedding.UserId
+                IsTarget = e.user_id == targetEmbedding.user_id
             };
         }).ToList();
 
@@ -1299,8 +1299,8 @@ public class FaceDetectionController : BaseController
             sortedResults = sortedResults.Where(r => r.CosineSimilarity >= threshold.Value).ToList();
         }
 
-        var targetUser = users.FirstOrDefault(u => u.Id == targetEmbedding.UserId);
-        var targetUserResult = compareResults.Where(r => r.UserId == targetEmbedding.UserId)
+        var targetUser = users.FirstOrDefault(u => u.id == targetEmbedding.user_id);
+        var targetUserResult = compareResults.Where(r => r.UserId == targetEmbedding.user_id)
             .OrderByDescending(r => r.CosineSimilarity)
             .FirstOrDefault();
 
@@ -1308,18 +1308,18 @@ public class FaceDetectionController : BaseController
         {
             TargetUser = new
             {
-                Id = targetEmbedding.UserId,
-                Username = targetUser?.Username ?? "Unknown",
-                DisplayName = targetUser?.DisplayName ?? "Unknown",
-                Email = targetUser?.Email ?? "",
-                AvatarUrl = targetUser?.AvatarUrl ?? ""
+                Id = targetEmbedding.user_id,
+                Username = targetUser?.username ?? "Unknown",
+                DisplayName = targetUser?.display_name ?? "Unknown",
+                Email = targetUser?.email ?? "",
+                AvatarUrl = targetUser?.avatar_url ?? ""
             },
             TargetUserBestMatch = targetUserResult,
             AllMatches = sortedResults
         });
     }
     public static readonly ConcurrentDictionary<string, Lazy<InferenceSession>> _sessions = new();
-    public static List<UserFaceEmbedding>? _cachedEmbeddings = null;
+    public static List<user_face_embeddings_entity>? _cachedEmbeddings = null;
     public static readonly object _cacheLock = new();
     public static string? _cachedBestModelPath = null;
     public static readonly object _modelPathLock = new();
@@ -1344,12 +1344,12 @@ public class FaceDetectionController : BaseController
 
         if (string.IsNullOrEmpty(bestModelPath) || !System.IO.File.Exists(bestModelPath))
         {
-            var anyEmbedding = await _faceDefinitionDb.UserFaceEmbeddings
-                .Where(e => !string.IsNullOrEmpty(e.BestModelPath))
+            var anyEmbedding = await _faceDefinitionDb.user_face_embeddings
+                .Where(e => !string.IsNullOrEmpty(e.best_model_path))
                 .FirstOrDefaultAsync();
-            if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.BestModelPath))
+            if (anyEmbedding != null && !string.IsNullOrEmpty(anyEmbedding.best_model_path))
             {
-                bestModelPath = anyEmbedding.BestModelPath;
+                bestModelPath = anyEmbedding.best_model_path;
             }
         }
 
@@ -1364,11 +1364,11 @@ public class FaceDetectionController : BaseController
         return bestModelPath;
     }
 
-    private async Task<List<UserFaceEmbedding>> GetCachedEmbeddingsAsync()
+    private async Task<List<user_face_embeddings_entity>> GetCachedEmbeddingsAsync()
     {
         if (_cachedEmbeddings == null)
         {
-            var embeddings = await _faceDefinitionDb.UserFaceEmbeddings.ToListAsync();
+            var embeddings = await _faceDefinitionDb.user_face_embeddings.ToListAsync();
             lock (_cacheLock)
             {
                 if (_cachedEmbeddings == null)
@@ -1496,14 +1496,14 @@ public class FaceDetectionController : BaseController
         }
 
         // Perform fast vector neighbor comparison in-memory using cached embeddings
-        List<UserFaceEmbedding> closestEmbeddings;
+        List<user_face_embeddings_entity> closestEmbeddings;
         try
         {
             var cached = await GetCachedEmbeddingsAsync();
             var scoredEmbeddings = cached.Select(e =>
             {
                 float cosineSimilarity = 0f;
-                var embArray = e.Embedding?.ToArray();
+                var embArray = e.embedding?.ToArray();
                 if (embArray != null && embArray.Length == testEmbedding.Length)
                 {
                     for (int i = 0; i < testEmbedding.Length; i++)
@@ -1511,45 +1511,45 @@ public class FaceDetectionController : BaseController
                         cosineSimilarity += embArray[i] * testEmbedding[i];
                     }
                 }
-                return new { Embedding = e, Score = cosineSimilarity };
+                return new { embedding = e, Score = cosineSimilarity };
             })
             .OrderByDescending(x => x.Score)
             .Take(20)
             .ToList();
 
-            closestEmbeddings = scoredEmbeddings.Select(x => x.Embedding).ToList();
+            closestEmbeddings = scoredEmbeddings.Select(x => x.embedding).ToList();
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Tính toán đối sánh chéo bộ nhớ thất bại, sử dụng fallback HNSW.");
             var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
-            closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
-                .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+            closestEmbeddings = await _faceDefinitionDb.user_face_embeddings
+                .FromSqlRaw("SELECT * FROM \"user_face_embeddings\" ORDER BY \"embedding\" <#> {0}::vector LIMIT 20", vectorStr)
                 .ToListAsync();
         }
 
         // Fetch User and Image Info
-        var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();
-        var imageIds = closestEmbeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+        var userIds = closestEmbeddings.Select(e => e.user_id).Distinct().ToList();
+        var imageIds = closestEmbeddings.Select(e => e.original_image_id).Distinct().ToList();
 
-        var users = await _faceUserDb.Users
-            .Where(u => userIds.Contains(u.Id))
+        var users = await _faceUserDb.users
+            .Where(u => userIds.Contains(u.id))
             .ToListAsync();
 
-        var images = await _db.OriginalImages
-            .Where(i => imageIds.Contains(i.Id))
-            .Select(i => new { i.Id, i.Url, i.FileName })
+        var images = await _db.original_images
+            .Where(i => imageIds.Contains(i.id))
+            .Select(i => new { i.id, i.url, i.file_name })
             .ToListAsync();
 
         // Map results and calculate exact metrics
         var compareResults = closestEmbeddings.Select(e =>
         {
-            var user = users.FirstOrDefault(u => u.Id == e.UserId);
-            var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+            var user = users.FirstOrDefault(u => u.id == e.user_id);
+            var img = images.FirstOrDefault(i => i.id == e.original_image_id);
 
             // Cosine Similarity = Inner Product for L2 normalized vectors
             float cosineSimilarity = 0f;
-            var embArray = e.Embedding?.ToArray();
+            var embArray = e.embedding?.ToArray();
             if (embArray != null && embArray.Length == testEmbedding.Length)
             {
                 for (int i = 0; i < testEmbedding.Length; i++)
@@ -1563,15 +1563,15 @@ public class FaceDetectionController : BaseController
 
             return new
             {
-                EmbeddingId = e.Id,
-                UserId = e.UserId,
-                Username = user?.Username ?? "Unknown",
-                DisplayName = user?.DisplayName ?? "Unknown",
-                Email = user?.Email ?? "",
-                AvatarUrl = user?.AvatarUrl ?? "",
-                OriginalImageId = e.OriginalImageId,
-                ImageUrl = img?.Url,
-                ImageName = img?.FileName,
+                EmbeddingId = e.id,
+                UserId = e.user_id,
+                Username = user?.username ?? "Unknown",
+                DisplayName = user?.display_name ?? "Unknown",
+                Email = user?.email ?? "",
+                AvatarUrl = user?.avatar_url ?? "",
+                OriginalImageId = e.original_image_id,
+                ImageUrl = img?.url,
+                ImageName = img?.file_name,
                 CosineSimilarity = cosineSimilarity,
                 L2Distance = l2Distance
             };
@@ -1682,14 +1682,14 @@ public class FaceDetectionController : BaseController
             await SendSseAsync(new { status = "searching" });
 
             // Perform fast vector neighbor comparison in-memory using cached embeddings
-            List<UserFaceEmbedding> closestEmbeddings;
+            List<user_face_embeddings_entity> closestEmbeddings;
             try
             {
                 var cached = await GetCachedEmbeddingsAsync();
                 var scoredEmbeddings = cached.Select(e =>
                 {
                     float cosineSimilarity = 0f;
-                    var embArray = e.Embedding?.ToArray();
+                    var embArray = e.embedding?.ToArray();
                     if (embArray != null && embArray.Length == testEmbedding.Length)
                     {
                         for (int i = 0; i < testEmbedding.Length; i++)
@@ -1697,43 +1697,43 @@ public class FaceDetectionController : BaseController
                             cosineSimilarity += embArray[i] * testEmbedding[i];
                         }
                     }
-                    return new { Embedding = e, Score = cosineSimilarity };
+                    return new { embedding = e, Score = cosineSimilarity };
                 })
                 .OrderByDescending(x => x.Score)
                 .Take(20)
                 .ToList();
 
-                closestEmbeddings = scoredEmbeddings.Select(x => x.Embedding).ToList();
+                closestEmbeddings = scoredEmbeddings.Select(x => x.embedding).ToList();
             }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Tính toán đối sánh chéo bộ nhớ thất bại, sử dụng fallback HNSW.");
                 var vectorStr = "[" + string.Join(",", testEmbedding.Select(v => v.ToString(System.Globalization.CultureInfo.InvariantCulture))) + "]";
-                closestEmbeddings = await _faceDefinitionDb.UserFaceEmbeddings
-                    .FromSqlRaw("SELECT * FROM \"UserFaceEmbeddings\" ORDER BY \"Embedding\" <#> {0}::vector LIMIT 20", vectorStr)
+                closestEmbeddings = await _faceDefinitionDb.user_face_embeddings
+                    .FromSqlRaw("SELECT * FROM \"user_face_embeddings\" ORDER BY \"embedding\" <#> {0}::vector LIMIT 20", vectorStr)
                     .ToListAsync();
             }
 
-            var userIds = closestEmbeddings.Select(e => e.UserId).Distinct().ToList();
-            var imageIds = closestEmbeddings.Select(e => e.OriginalImageId).Distinct().ToList();
+            var userIds = closestEmbeddings.Select(e => e.user_id).Distinct().ToList();
+            var imageIds = closestEmbeddings.Select(e => e.original_image_id).Distinct().ToList();
 
-            var users = await _faceUserDb.Users
-                .Where(u => userIds.Contains(u.Id))
+            var users = await _faceUserDb.users
+                .Where(u => userIds.Contains(u.id))
                 .ToListAsync();
 
-            var images = await _db.OriginalImages
-                .Where(i => imageIds.Contains(i.Id))
-                .Select(i => new { i.Id, i.Url, i.FileName })
+            var images = await _db.original_images
+                .Where(i => imageIds.Contains(i.id))
+                .Select(i => new { i.id, i.url, i.file_name })
                 .ToListAsync();
 
             var compareResults = closestEmbeddings.Select(e =>
             {
-                var user = users.FirstOrDefault(u => u.Id == e.UserId);
-                var img = images.FirstOrDefault(i => i.Id == e.OriginalImageId);
+                var user = users.FirstOrDefault(u => u.id == e.user_id);
+                var img = images.FirstOrDefault(i => i.id == e.original_image_id);
 
                 // Cosine Similarity = Inner Product for L2 normalized vectors
                 float cosineSimilarity = 0f;
-                var embArray = e.Embedding?.ToArray();
+                var embArray = e.embedding?.ToArray();
                 if (embArray != null && embArray.Length == testEmbedding.Length)
                 {
                     for (int i = 0; i < testEmbedding.Length; i++)
@@ -1747,15 +1747,15 @@ public class FaceDetectionController : BaseController
 
                 return new
                 {
-                    EmbeddingId = e.Id,
-                    UserId = e.UserId,
-                    Username = user?.Username ?? "Unknown",
-                    DisplayName = user?.DisplayName ?? "Unknown",
-                    Email = user?.Email ?? "",
-                    AvatarUrl = user?.AvatarUrl ?? "",
-                    OriginalImageId = e.OriginalImageId,
-                    ImageUrl = img?.Url,
-                    ImageName = img?.FileName,
+                    EmbeddingId = e.id,
+                    UserId = e.user_id,
+                    Username = user?.username ?? "Unknown",
+                    DisplayName = user?.display_name ?? "Unknown",
+                    Email = user?.email ?? "",
+                    AvatarUrl = user?.avatar_url ?? "",
+                    OriginalImageId = e.original_image_id,
+                    ImageUrl = img?.url,
+                    ImageName = img?.file_name,
                     CosineSimilarity = cosineSimilarity,
                     L2Distance = l2Distance
                 };

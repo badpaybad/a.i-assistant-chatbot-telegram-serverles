@@ -16,38 +16,38 @@ public class FilesFoldersDbContext : BaseDbContext
         await Database.EnsureCreatedAsync();
     }
 
-    public DbSet<Folder> Folders { get; set; }
-    public DbSet<FileItem> Files { get; set; }
-    public DbSet<EditorFileItem> EditorFiles { get; set; }
+    public DbSet<folders_entity> folders { get; set; }
+    public DbSet<files_entity> files { get; set; }
+    public DbSet<editor_files_entity> editor_files { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Folder>(entity =>
+        modelBuilder.Entity<folders_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.ParentId);
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.name).IsRequired().HasMaxLength(255);
+            entity.HasIndex(e => e.user_id);
+            entity.HasIndex(e => e.parent_id);
         });
 
-        modelBuilder.Entity<FileItem>(entity =>
+        modelBuilder.Entity<files_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Url).IsRequired();
-            entity.Property(e => e.FolderId).IsRequired(false);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.FolderId);
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.url).IsRequired();
+            entity.Property(e => e.folder_id).IsRequired(false);
+            entity.HasIndex(e => e.user_id);
+            entity.HasIndex(e => e.folder_id);
         });
 
-        modelBuilder.Entity<EditorFileItem>(entity =>
+        modelBuilder.Entity<editor_files_entity>(entity =>
         {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
-            entity.Property(e => e.Url).IsRequired();
-            entity.HasIndex(e => e.UserId);
+            entity.HasKey(e => e.id);
+            entity.Property(e => e.name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.url).IsRequired();
+            entity.HasIndex(e => e.user_id);
         });
     }
 }

@@ -4,6 +4,10 @@ using Core.Infra.Oidc.Repositories;
 using Core.Infra.Oidc.Services;
 using Core.Infra.Firebase.Services;
 using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Oidc.Handlers;
 
@@ -57,29 +61,29 @@ public class OidcCommandHandler :
 
     public async Task HandleAsync(CreateUserCommand command)
     {
-        var user = new User
+        var user = new users_entity
         {
-            Username = command.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(command.Password),
-            DisplayName = command.DisplayName,
-            Email = command.Email,
-            IsEmailVerified = command.IsEmailVerified,
-            CreatedBy = command.UserId,
-            CreatedAt = DateTime.UtcNow
+            username = command.Username,
+            password_hash = BCrypt.Net.BCrypt.HashPassword(command.Password),
+            display_name = command.DisplayName,
+            email = command.Email,
+            is_email_verified = command.IsEmailVerified,
+            created_by = command.UserId,
+            created_at = DateTime.UtcNow
         };
         await _authRepo.CreateUserAsync(user);
 
         if (command.RoleIds != null && command.RoleIds.Any())
         {
-            await _authRepo.AssignRolesToUserAsync(user.Id, command.RoleIds);
+            await _authRepo.AssignRolesToUserAsync(user.id, command.RoleIds);
         }
         
         if (command.ClaimIds != null && command.ClaimIds.Any())
         {
-            await _authRepo.AssignClaimsToUserAsync(user.Id, command.ClaimIds);
+            await _authRepo.AssignClaimsToUserAsync(user.id, command.ClaimIds);
         }
 
-        await _authService.SyncUserClaimsToRedisAsync(user.Id);
+        await _authService.SyncUserClaimsToRedisAsync(user.id);
 
         await _dispatcher.PublishAsync(new UserCreatedEvent
         {
@@ -95,18 +99,18 @@ public class OidcCommandHandler :
         var user = await _authRepo.GetUserByIdAsync(command.Id);
         if (user == null) throw new InvalidOperationException("User not found");
 
-        user.DisplayName = command.DisplayName;
-        user.Email = command.Email;
-        user.IsEmailVerified = command.IsEmailVerified;
-        user.UpdatedBy = command.UserId;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.display_name = command.DisplayName;
+        user.email = command.Email;
+        user.is_email_verified = command.IsEmailVerified;
+        user.updated_by = command.UserId;
+        user.updated_at = DateTime.UtcNow;
         await _authRepo.UpdateUserAsync(user);
 
         // Sync Roles
         var currentRoles = await _authRepo.GetUserRolesAsync(command.Id);
         foreach (var r in currentRoles)
         {
-            await _authRepo.RemoveRoleFromUserAsync(command.Id, r.Id);
+            await _authRepo.RemoveRoleFromUserAsync(command.Id, r.id);
         }
         if (command.RoleIds != null && command.RoleIds.Any())
         {
@@ -117,7 +121,7 @@ public class OidcCommandHandler :
         var currentClaims = await _authRepo.GetUserDirectClaimsAsync(command.Id);
         foreach (var c in currentClaims)
         {
-            await _authRepo.RemoveClaimFromUserAsync(command.Id, c.Id);
+            await _authRepo.RemoveClaimFromUserAsync(command.Id, c.id);
         }
         if (command.ClaimIds != null && command.ClaimIds.Any())
         {
@@ -150,18 +154,18 @@ public class OidcCommandHandler :
 
     public async Task HandleAsync(CreateRoleCommand command)
     {
-        var role = new Role
+        var role = new roles_entity
         {
-            Name = command.Name,
-            Description = command.Description,
-            CreatedBy = command.UserId,
-            CreatedAt = DateTime.UtcNow
+            name = command.Name,
+            description = command.Description,
+            created_by = command.UserId,
+            created_at = DateTime.UtcNow
         };
         await _authRepo.CreateRoleAsync(role);
 
         if (command.ClaimIds != null && command.ClaimIds.Any())
         {
-            await _authRepo.AssignClaimsToRoleAsync(role.Id, command.ClaimIds);
+            await _authRepo.AssignClaimsToRoleAsync(role.id, command.ClaimIds);
         }
 
         await _dispatcher.PublishAsync(new RoleCreatedEvent
@@ -178,26 +182,26 @@ public class OidcCommandHandler :
         var role = await _authRepo.GetRoleByIdAsync(command.Id);
         if (role == null) throw new InvalidOperationException("Role not found");
 
-        role.Description = command.Description;
-        role.UpdatedBy = command.UserId;
-        role.UpdatedAt = DateTime.UtcNow;
+        role.description = command.Description;
+        role.updated_by = command.UserId;
+        role.updated_at = DateTime.UtcNow;
         await _authRepo.UpdateRoleAsync(role);
 
         // Sync Claims
-        var currentClaims = await _authRepo.GetRoleClaimsAsync(role.Id);
+        var currentClaims = await _authRepo.GetRoleClaimsAsync(role.id);
         foreach (var c in currentClaims)
         {
-            await _authRepo.RemoveClaimFromRoleAsync(role.Id, c.Id);
+            await _authRepo.RemoveClaimFromRoleAsync(role.id, c.id);
         }
         if (command.ClaimIds != null && command.ClaimIds.Any())
         {
-            await _authRepo.AssignClaimsToRoleAsync(role.Id, command.ClaimIds);
+            await _authRepo.AssignClaimsToRoleAsync(role.id, command.ClaimIds);
         }
 
-        var users = await _authRepo.GetUsersInRoleAsync(role.Id);
+        var users = await _authRepo.GetUsersInRoleAsync(role.id);
         foreach (var u in users)
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+            await _authService.SyncUserClaimsToRedisAsync(u.id);
         }
 
         await _dispatcher.PublishAsync(new RoleUpdatedEvent
@@ -223,8 +227,8 @@ public class OidcCommandHandler :
 
     public async Task HandleAsync(CreateClaimCommand command)
     {
-        command.Claim.CreatedBy = command.UserId;
-        command.Claim.CreatedAt = DateTime.UtcNow;
+        command.Claim.created_by = command.UserId;
+        command.Claim.created_at = DateTime.UtcNow;
         await _authRepo.CreateClaimAsync(command.Claim);
 
         await _dispatcher.PublishAsync(new ClaimCreatedEvent
@@ -241,10 +245,10 @@ public class OidcCommandHandler :
         var claim = await _authRepo.GetClaimByIdAsync(command.Id);
         if (claim == null) throw new InvalidOperationException("Claim not found");
 
-        claim.Name = command.Claim.Name;
-        claim.Description = command.Claim.Description;
-        claim.UpdatedBy = command.UserId;
-        claim.UpdatedAt = DateTime.UtcNow;
+        claim.name = command.Claim.name;
+        claim.description = command.Claim.description;
+        claim.updated_by = command.UserId;
+        claim.updated_at = DateTime.UtcNow;
         await _authRepo.UpdateClaimAsync(claim);
 
         await _dispatcher.PublishAsync(new ClaimUpdatedEvent
@@ -276,7 +280,7 @@ public class OidcCommandHandler :
         using var stream = new MemoryStream(command.Content);
         var publicUrl = await _firebaseService.UploadFileAsync(command.FileName, stream, command.ContentType, isPublic: true);
 
-        user.AvatarUrl = publicUrl;
+        user.avatar_url = publicUrl;
         await _authRepo.UpdateUserAsync(user);
 
         await _dispatcher.PublishAsync(new AvatarUploadedEvent
@@ -333,7 +337,7 @@ public class OidcCommandHandler :
         var users = await _authRepo.GetUsersInRoleAsync(command.RoleId);
         foreach (var u in users)
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+            await _authService.SyncUserClaimsToRedisAsync(u.id);
         }
 
         await _dispatcher.PublishAsync(new ClaimAssignedToRoleEvent
@@ -350,7 +354,7 @@ public class OidcCommandHandler :
         var users = await _authRepo.GetUsersInRoleAsync(command.RoleId);
         foreach (var u in users)
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+            await _authService.SyncUserClaimsToRedisAsync(u.id);
         }
 
         await _dispatcher.PublishAsync(new ClaimsAssignedToRoleEvent
@@ -406,7 +410,7 @@ public class OidcCommandHandler :
         var users = await _authRepo.GetUsersInRoleAsync(command.RoleId);
         foreach (var u in users)
         {
-            await _authService.SyncUserClaimsToRedisAsync(u.Id);
+            await _authService.SyncUserClaimsToRedisAsync(u.id);
         }
 
         await _dispatcher.PublishAsync(new ClaimRemovedFromRoleEvent
@@ -420,9 +424,9 @@ public class OidcCommandHandler :
     public async Task HandleAsync(AddAclCommand command)
     {
         await _authRepo.AddAclAsync(command.Entry);
-        if (command.Entry.UserId.HasValue)
+        if (command.Entry.user_id.HasValue)
         {
-            await _authService.SyncUserAclToRedisAsync(command.Entry.UserId.Value);
+            await _authService.SyncUserAclToRedisAsync(command.Entry.user_id.Value);
         }
 
         await _dispatcher.PublishAsync(new AclAddedEvent
@@ -440,9 +444,9 @@ public class OidcCommandHandler :
         if (entry != null)
         {
             await _authRepo.RemoveAclAsync(command.Id);
-            if (entry.UserId.HasValue)
+            if (entry.user_id.HasValue)
             {
-                await _authService.SyncUserAclToRedisAsync(entry.UserId.Value);
+                await _authService.SyncUserAclToRedisAsync(entry.user_id.Value);
             }
         }
 
@@ -456,7 +460,7 @@ public class OidcCommandHandler :
 
     public async Task HandleAsync(AddUserEmailCommand command)
     {
-        command.Email.UserId = command.UserId;
+        command.Email.user_id = command.UserId;
         await _authRepo.AddUserEmailAsync(command.Email);
 
         await _dispatcher.PublishAsync(new UserEmailAddedEvent

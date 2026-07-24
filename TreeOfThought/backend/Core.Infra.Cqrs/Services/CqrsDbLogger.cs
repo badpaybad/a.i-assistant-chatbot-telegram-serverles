@@ -15,7 +15,7 @@ public class CqrsDbLogger : IDisposable, IAsyncDisposable
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<CqrsDbLogger> _logger;
-    private readonly ConcurrentQueue<CqrsTrackingLog> _queue = new();
+    private readonly ConcurrentQueue<cqrs_tracking_logs_entity> _queue = new();
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _backgroundTask;
     private bool _disposed;
@@ -50,24 +50,24 @@ public class CqrsDbLogger : IDisposable, IAsyncDisposable
             return Task.CompletedTask;
         }
 
-        var logEntry = new CqrsTrackingLog
+        var logEntry = new cqrs_tracking_logs_entity
         {
-            TrackingId = trackingId,
-            MessageType = messageType,
-            MessageData = messageData,
-            QueueOrTopicName = queueOrTopicName,
-            SubscriberName = subscriberName,
-            DestinationQueueName = destinationQueueName,
-            SourceComponent = sourceComponent,
-            HandlerName = handlerName,
-            WorkerId = workerId,
-            Step = step,
-            Status = status,
-            Type = type,
-            ElapsedMilliseconds = elapsedMilliseconds,
-            ErrorMessage = errorMessage,
-            IsRoot = isRoot,
-            CreatedAt = DateTime.UtcNow
+            tracking_id = trackingId,
+            message_type = messageType,
+            message_data = messageData,
+            queue_or_topic_name = queueOrTopicName,
+            subscriber_name = subscriberName,
+            destination_queue_name = destinationQueueName,
+            source_component = sourceComponent,
+            handler_name = handlerName,
+            worker_id = workerId,
+            step = step,
+            status = status,
+            type = type,
+            elapsed_milliseconds = elapsedMilliseconds,
+            error_message = errorMessage,
+            is_root = isRoot,
+            created_at = DateTime.UtcNow
         };
 
         _queue.Enqueue(logEntry);
@@ -101,7 +101,7 @@ public class CqrsDbLogger : IDisposable, IAsyncDisposable
             return;
         }
 
-        var items = new List<CqrsTrackingLog>();
+        var items = new List<cqrs_tracking_logs_entity>();
         while (items.Count < 1000 && _queue.TryDequeue(out var item))
         {
             items.Add(item);
@@ -124,7 +124,7 @@ public class CqrsDbLogger : IDisposable, IAsyncDisposable
                 var db = scope.ServiceProvider.GetService<CqrsDbContext>();
                 if (db != null)
                 {
-                    db.CqrsTrackingLogs.AddRange(batch);
+                    db.cqrs_tracking_logs.AddRange(batch);
                     await db.SaveChangesAsync();
                 }
             }

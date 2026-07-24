@@ -7,6 +7,11 @@ using Core.Infra.Firebase.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Collections.Generic;
 
 namespace Core.Infra.FilesFolders.Handlers;
 
@@ -43,52 +48,50 @@ public class FilesFoldersCommandHandler :
         var parentPath = "";
         if (command.ParentId.HasValue && command.ParentId.Value != Guid.Empty)
         {
-            var parent = await _db.Folders.FindAsync(command.ParentId.Value);
-            if (parent != null) parentPath = parent.Path;
+            var parent = await _db.folders.FindAsync(command.ParentId.Value);
+            if (parent != null) parentPath = parent.path;
         }
 
-        var folder = new Folder
+        var folder = new folders_entity
         {
-            ParentId = (command.ParentId == Guid.Empty) ? null : command.ParentId,
-            Name = command.Name,
-            UserId = Guid.Parse(command.UserId!),
-            Path = $"{parentPath}{command.Name}/",
-            CreatedBy = command.UserId
+            parent_id = (command.ParentId == Guid.Empty) ? null : command.ParentId,
+            name = command.Name,
+            user_id = Guid.Parse(command.UserId!),
+            path = $"{parentPath}{command.Name}/",
+            created_by = command.UserId
         };
 
-        _db.Folders.Add(folder);
+        _db.folders.Add(folder);
         await _db.SaveChangesAsync();
 
         await _dispatcher.PublishAsync(new FolderCreatedEvent
         {
             TrackingId = command.TrackingId,
             UserId = command.UserId,
-            FolderId = folder.Id,
-            Name = folder.Name,
-            Message = $"Thư mục '{folder.Name}' đã được tạo"
+            FolderId = folder.id,
+            Name = folder.name,
+            Message = $"Thư mục '{folder.name}' đã được tạo"
         });
     }
 
     public async Task HandleAsync(DeleteFolderCommand command)
     {
-        var folder = await _db.Folders.FindAsync(command.FolderId);
+        var folder = await _db.folders.FindAsync(command.FolderId);
         if (folder == null) return;
 
-        var folderPath = folder.Path;
-        var folderName = folder.Name;
+        var folderPath = folder.path;
+        var folderName = folder.name;
 
         // 1. Recursive DB search: find all descendant folders and their files
-        // Path.StartsWith ensures we get the folder itself and all nested subfolders
-        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(folderPath)).ToListAsync();
-        var folderIds = subfolders.Select(f => (Guid?)f.Id).ToList();
+        var subfolders = await _db.folders.Where(f => f.path.StartsWith(folderPath)).ToListAsync();
+        var folderIds = subfolders.Select(f => (Guid?)f.id).ToList();
 
-        var filesInDb = await _db.Files.Where(f => folderIds.Contains(f.FolderId)).ToListAsync();
+        var filesInDb = await _db.files.Where(f => folderIds.Contains(f.folder_id)).ToListAsync();
 
         _logger.LogInformation("Starting thorough deletion for folder '{FolderName}' (ID: {FolderId}, Path: {Path}). Found {SubfolderCount} subfolders and {FileCount} files in DB.", 
             folderName, command.FolderId, folderPath, subfolders.Count, filesInDb.Count);
 
         // 2. Individual GCS Deletion (from DB URLs)
-        // Ensures files with diverged paths (due to past moves/renames) are deleted.
         foreach (var file in filesInDb)
         {
             try 
@@ -98,12 +101,11 @@ public class FilesFoldersCommandHandler :
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Could not delete file {FileId} from GCS (URL={Url}). It might have been already deleted.", file.Id, file.Url);
+                _logger.LogWarning(ex, "Could not delete file {FileId} from GCS (URL={Url}). It might have been already deleted.", file.id, file.url);
             }
         }
 
         // 3. Prefix-based GCS Cleanup (Thorough cleanup of orphans)
-        // Ensures any files matching the prefix that are NOT in the DB are also removed to avoid storage costs.
         try
         {
             var gcsObjects = await _firebaseService.ListFilesAsync(folderPath);
@@ -125,8 +127,8 @@ public class FilesFoldersCommandHandler :
         }
 
         // 4. Final DB Wipe
-        _db.Files.RemoveRange(filesInDb);
-        _db.Folders.RemoveRange(subfolders);
+        _db.files.RemoveRange(filesInDb);
+        _db.folders.RemoveRange(subfolders);
         
         await _db.SaveChangesAsync();
 
@@ -141,27 +143,27 @@ public class FilesFoldersCommandHandler :
 
     public async Task HandleAsync(MoveFolderCommand command)
     {
-        var folder = await _db.Folders.FindAsync(command.FolderId);
+        var folder = await _db.folders.FindAsync(command.FolderId);
         if (folder == null) return;
 
-        var oldPath = folder.Path;
+        var oldPath = folder.path;
         var parentPath = "";
         if (command.NewParentId.HasValue && command.NewParentId.Value != Guid.Empty)
         {
-            var parent = await _db.Folders.FindAsync(command.NewParentId.Value);
-            if (parent != null) parentPath = parent.Path;
+            var parent = await _db.folders.FindAsync(command.NewParentId.Value);
+            if (parent != null) parentPath = parent.path;
         }
 
-        var newPath = $"{parentPath}{folder.Name}/";
-        folder.ParentId = (command.NewParentId == Guid.Empty) ? null : command.NewParentId;
-        folder.Path = newPath;
-        folder.UpdatedBy = command.UserId;
+        var newPath = $"{parentPath}{folder.name}/";
+        folder.parent_id = (command.NewParentId == Guid.Empty) ? null : command.NewParentId;
+        folder.path = newPath;
+        folder.updated_by = command.UserId;
 
         // Update all subfolders paths
-        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(oldPath) && f.Id != folder.Id).ToListAsync();
+        var subfolders = await _db.folders.Where(f => f.path.StartsWith(oldPath) && f.id != folder.id).ToListAsync();
         foreach (var sub in subfolders)
         {
-            sub.Path = sub.Path.Replace(oldPath, newPath);
+            sub.path = sub.path.Replace(oldPath, newPath);
         }
 
         await _db.SaveChangesAsync();
@@ -172,7 +174,7 @@ public class FilesFoldersCommandHandler :
             UserId = command.UserId,
             FolderId = command.FolderId,
             NewParentId = command.NewParentId,
-            Message = $"Thư mục '{folder.Name}' đã được di chuyển"
+            Message = $"Thư mục '{folder.name}' đã được di chuyển"
         });
     }
 
@@ -182,44 +184,44 @@ public class FilesFoldersCommandHandler :
         var path = "";
         if (command.FolderId.HasValue && command.FolderId.Value != Guid.Empty)
         {
-            var folder = await _db.Folders.FindAsync(command.FolderId.Value);
-            if (folder != null) path = folder.Path;
+            var folder = await _db.folders.FindAsync(command.FolderId.Value);
+            if (folder != null) path = folder.path;
         }
 
         var objectName = $"{path}{Guid.NewGuid()}_{command.FileName}";
         using var stream = new MemoryStream(command.Content);
         var url = await _firebaseService.UploadFileAsync(objectName, stream, command.ContentType, false);
 
-        var file = new FileItem
+        var file = new files_entity
         {
-            FolderId = (command.FolderId == Guid.Empty) ? null : command.FolderId,
-            Name = command.FileName,
-            Url = url,
-            Size = command.Content.Length,
-            MimeType = command.ContentType,
-            UserId = userId,
-            Permission = PermissionType.Private,
-            CreatedBy = command.UserId,
-            CreatedAt = DateTime.UtcNow
+            folder_id = (command.FolderId == Guid.Empty) ? null : command.FolderId,
+            name = command.FileName,
+            url = url,
+            size = command.Content.Length,
+            mime_type = command.ContentType,
+            user_id = userId,
+            permission = PermissionType.Private,
+            created_by = command.UserId,
+            created_at = DateTime.UtcNow
         };
 
-        _db.Files.Add(file);
+        _db.files.Add(file);
         await _db.SaveChangesAsync();
 
         await _dispatcher.PublishAsync(new FileUploadedEvent
         {
             TrackingId = command.TrackingId,
             UserId = command.UserId,
-            FileId = file.Id,
-            Name = file.Name,
-            Url = file.Url,
-            Message = $"File '{file.Name}' đã được upload thành công"
+            FileId = file.id,
+            Name = file.name,
+            Url = file.url,
+            Message = $"File '{file.name}' đã được upload thành công"
         });
     }
 
     public async Task HandleAsync(DeleteFileCommand command)
     {
-        var file = await _db.Files.FindAsync(command.FileId);
+        var file = await _db.files.FindAsync(command.FileId);
         if (file == null) return;
 
         try
@@ -229,10 +231,10 @@ public class FilesFoldersCommandHandler :
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error deleting file {FileId} from GCS", file.Id);
+            _logger.LogError(ex, "Error deleting file {FileId} from GCS", file.id);
         }
 
-        _db.Files.Remove(file);
+        _db.files.Remove(file);
         await _db.SaveChangesAsync();
 
         await _dispatcher.PublishAsync(new FileDeletedEvent
@@ -240,17 +242,17 @@ public class FilesFoldersCommandHandler :
             TrackingId = command.TrackingId,
             UserId = command.UserId,
             FileId = command.FileId,
-            Message = $"File '{file.Name}' đã được xóa"
+            Message = $"File '{file.name}' đã được xóa"
         });
     }
 
     public async Task HandleAsync(MoveFileCommand command)
     {
-        var file = await _db.Files.FindAsync(command.FileId);
+        var file = await _db.files.FindAsync(command.FileId);
         if (file == null) return;
 
-        file.FolderId = (command.NewFolderId == Guid.Empty) ? null : command.NewFolderId;
-        file.UpdatedBy = command.UserId;
+        file.folder_id = (command.NewFolderId == Guid.Empty) ? null : command.NewFolderId;
+        file.updated_by = command.UserId;
         await _db.SaveChangesAsync();
 
         await _dispatcher.PublishAsync(new FileMovedEvent
@@ -259,34 +261,32 @@ public class FilesFoldersCommandHandler :
             UserId = command.UserId,
             FileId = command.FileId,
             NewFolderId = command.NewFolderId,
-            Message = $"File '{file.Name}' đã được di chuyển"
+            Message = $"File '{file.name}' đã được di chuyển"
         });
     }
 
     public async Task HandleAsync(SetFilePermissionCommand command)
     {
-        var file = await _db.Files.FindAsync(command.FileId);
+        var file = await _db.files.FindAsync(command.FileId);
         if (file == null) return;
 
-        var oldPermission = file.Permission;
-        file.Permission = command.Permission;
-        file.ShareCode = command.ShareCode;
-        file.ExpiredAt = command.ExpiredAt;
-        file.UpdatedBy = command.UserId;
+        var oldPermission = file.permission;
+        file.permission = command.Permission;
+        file.share_code = command.ShareCode;
+        file.expired_at = command.ExpiredAt;
+        file.updated_by = command.UserId;
 
         // Ensure GCS ACL matches the permission
-        // Public (1) -> GCS Public
-        // Private (0) or Shared (2) -> GCS Private
         try
         {
             var objectName = GetGcsObjectName(file);
-            bool isPublic = file.Permission == PermissionType.Public;
-            _logger.LogInformation("Updating GCS ACL for {FileId}: ObjectName={ObjectName}, isPublic={IsPublic}", file.Id, objectName, isPublic);
+            bool isPublic = file.permission == PermissionType.Public;
+            _logger.LogInformation("Updating GCS ACL for {FileId}: ObjectName={ObjectName}, isPublic={IsPublic}", file.id, objectName, isPublic);
             await _firebaseService.UpdateObjectAclAsync(objectName, isPublic);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating GCS ACL for file {FileId}", file.Id);
+            _logger.LogError(ex, "Error updating GCS ACL for file {FileId}", file.id);
         }
 
         await _db.SaveChangesAsync();
@@ -297,36 +297,36 @@ public class FilesFoldersCommandHandler :
             UserId = command.UserId,
             FileId = command.FileId,
             Permission = command.Permission,
-            Message = $"Quyền của file '{file.Name}' đã được cập nhật thành {command.Permission}"
+            Message = $"Quyền của file '{file.name}' đã được cập nhật thành {command.Permission}"
         });
     }
 
     public async Task HandleAsync(RenameFolderCommand command)
     {
-        var folder = await _db.Folders.FindAsync(command.FolderId);
+        var folder = await _db.folders.FindAsync(command.FolderId);
         if (folder == null) return;
 
-        var oldName = folder.Name;
-        var oldPath = folder.Path;
+        var oldName = folder.name;
+        var oldPath = folder.path;
         
         // Calculate new path based on parent path + new name
         var parentPath = "";
-        if (folder.ParentId.HasValue)
+        if (folder.parent_id.HasValue)
         {
-            var parent = await _db.Folders.FindAsync(folder.ParentId.Value);
-            if (parent != null) parentPath = parent.Path;
+            var parent = await _db.folders.FindAsync(folder.parent_id.Value);
+            if (parent != null) parentPath = parent.path;
         }
         var newPath = $"{parentPath}{command.NewName}/";
 
-        folder.Name = command.NewName;
-        folder.Path = newPath;
-        folder.UpdatedBy = command.UserId;
+        folder.name = command.NewName;
+        folder.path = newPath;
+        folder.updated_by = command.UserId;
 
         // Update all subfolders paths recursively
-        var subfolders = await _db.Folders.Where(f => f.Path.StartsWith(oldPath) && f.Id != folder.Id).ToListAsync();
+        var subfolders = await _db.folders.Where(f => f.path.StartsWith(oldPath) && f.id != folder.id).ToListAsync();
         foreach (var sub in subfolders)
         {
-            sub.Path = sub.Path.Replace(oldPath, newPath);
+            sub.path = sub.path.Replace(oldPath, newPath);
         }
 
         await _db.SaveChangesAsync();
@@ -343,12 +343,12 @@ public class FilesFoldersCommandHandler :
 
     public async Task HandleAsync(RenameFileCommand command)
     {
-        var file = await _db.Files.FindAsync(command.FileId);
+        var file = await _db.files.FindAsync(command.FileId);
         if (file == null) return;
 
-        var oldName = file.Name;
-        file.Name = command.NewName;
-        file.UpdatedBy = command.UserId;
+        var oldName = file.name;
+        file.name = command.NewName;
+        file.updated_by = command.UserId;
 
         await _db.SaveChangesAsync();
 
@@ -362,12 +362,12 @@ public class FilesFoldersCommandHandler :
         });
     }
 
-    private string GetGcsObjectName(FileItem file)
+    private string GetGcsObjectName(files_entity file)
     {
         // Extract object name from URL: https://storage.googleapis.com/{bucket}/{objectName}
-        var uri = new Uri(file.Url);
+        var uri = new Uri(file.url);
         var path = uri.AbsolutePath; // /bucket/objectName
         var parts = path.Split('/', 3);
-        return Uri.UnescapeDataString(parts.Length > 2 ? parts[2] : file.Name);
+        return Uri.UnescapeDataString(parts.Length > 2 ? parts[2] : file.name);
     }
 }

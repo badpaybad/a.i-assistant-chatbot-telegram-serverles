@@ -19,7 +19,8 @@ public abstract class MongoDbContext
     public readonly IMongoClient Client;
     public readonly IMongoDatabase Database;
 
-    public IDbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public IDbSet<audit_logs_entity> audit_logs { get; set; } = null!;
+    public IDbSet<users_entity> users { get; set; } = null!;
 
     protected MongoDbContext(string connectionString, string databaseName)
     {
@@ -96,11 +97,11 @@ public abstract class MongoDbContext
         var collection = GetCollection<T>(name);
         await collection.InsertManyAsync(entities);
 
-        if (name == "AuditLogs") return;
+        if (name == "audit_logs") return;
         try
         {
-            var auditLogs = new List<AuditLog>();
-            var idProp = typeof(T).GetProperty("Id");
+            var auditLogs = new List<audit_logs_entity>();
+            var idProp = typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id");
             var trackingInterface = typeof(T).GetInterfaces()
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
 
@@ -110,23 +111,23 @@ public abstract class MongoDbContext
                 string? userId = null;
                 if (trackingInterface != null)
                 {
-                    userId = typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
 
-                auditLogs.Add(new AuditLog
+                auditLogs.Add(new audit_logs_entity
                 {
-                    Id = Guid.NewGuid(),
-                    TableName = name,
-                    Action = "Insert",
-                    EntityId = idValue,
-                    BeforeState = null,
-                    AfterState = entity.ToJson(),
-                    Timestamp = DateTime.UtcNow,
-                    UserId = userId
+                    id = Guid.NewGuid(),
+                    table_name = name,
+                    action = "Insert",
+                    entity_id = idValue,
+                    before_state = null,
+                    after_state = entity.ToJson(),
+                    timestamp = DateTime.UtcNow,
+                    user_id = userId
                 });
             }
 
-            var auditCollection = Database.GetCollection<AuditLog>("AuditLogs");
+            var auditCollection = Database.GetCollection<audit_logs_entity>("audit_logs");
             await auditCollection.InsertManyAsync(auditLogs);
         }
         catch (Exception ex)
@@ -140,9 +141,9 @@ public abstract class MongoDbContext
         string name = collectionName ?? typeof(T).Name;
         var collection = GetCollection<T>(name);
 
-        var entityDict = entities.ToDictionary(e => e.Id);
+        var entityDict = entities.ToDictionary(e => e.id);
         var ids = entityDict.Keys.ToList();
-        var filter = Builders<T>.Filter.In("Id", ids);
+        var filter = Builders<T>.Filter.In("id", ids);
 
         Dictionary<TKey, string> beforeStates = new();
         try
@@ -150,7 +151,7 @@ public abstract class MongoDbContext
             var originals = await collection.Find(filter).ToListAsync();
             foreach (var original in originals)
             {
-                beforeStates[original.Id] = original.ToJson();
+                beforeStates[original.id] = original.ToJson();
             }
         }
         catch (Exception ex)
@@ -159,14 +160,14 @@ public abstract class MongoDbContext
         }
 
         var models = entities.Select(e => new ReplaceOneModel<T>(
-            Builders<T>.Filter.Eq("Id", e.Id), e) { IsUpsert = true });
+            Builders<T>.Filter.Eq("id", e.id), e) { IsUpsert = true });
         
         await collection.BulkWriteAsync(models);
 
-        if (name == "AuditLogs") return;
+        if (name == "audit_logs") return;
         try
         {
-            var auditLogs = new List<AuditLog>();
+            var auditLogs = new List<audit_logs_entity>();
             var trackingInterface = typeof(T).GetInterfaces()
                 .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
 
@@ -175,26 +176,26 @@ public abstract class MongoDbContext
                 string? userId = null;
                 if (trackingInterface != null)
                 {
-                    userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(entity) as string 
-                             ?? typeof(T).GetProperty("CreatedBy")?.GetValue(entity) as string;
+                    userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(entity) as string 
+                             ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(entity) as string;
                 }
 
-                beforeStates.TryGetValue(entity.Id, out string? beforeState);
+                beforeStates.TryGetValue(entity.id, out string? beforeState);
 
-                auditLogs.Add(new AuditLog
+                auditLogs.Add(new audit_logs_entity
                 {
-                    Id = Guid.NewGuid(),
-                    TableName = name,
-                    Action = "Update",
-                    EntityId = entity.Id?.ToString() ?? string.Empty,
-                    BeforeState = beforeState,
-                    AfterState = entity.ToJson(),
-                    Timestamp = DateTime.UtcNow,
-                    UserId = userId
+                    id = Guid.NewGuid(),
+                    table_name = name,
+                    action = "Update",
+                    entity_id = entity.id?.ToString() ?? string.Empty,
+                    before_state = beforeState,
+                    after_state = entity.ToJson(),
+                    timestamp = DateTime.UtcNow,
+                    user_id = userId
                 });
             }
 
-            var auditCollection = Database.GetCollection<AuditLog>("AuditLogs");
+            var auditCollection = Database.GetCollection<audit_logs_entity>("audit_logs");
             await auditCollection.InsertManyAsync(auditLogs);
         }
         catch (Exception ex)
@@ -211,7 +212,7 @@ public abstract class MongoDbContext
         List<T> originals = new();
         try
         {
-            var filter = Builders<T>.Filter.In("Id", ids);
+            var filter = Builders<T>.Filter.In("id", ids);
             originals = await collection.Find(filter).ToListAsync();
         }
         catch (Exception ex)
@@ -219,42 +220,42 @@ public abstract class MongoDbContext
             Console.WriteLine($"Audit log error fetching originals in BulkDeleteAsync: {ex}");
         }
 
-        var models = ids.Select(id => new DeleteOneModel<T>(Builders<T>.Filter.Eq("Id", id)));
+        var models = ids.Select(id => new DeleteOneModel<T>(Builders<T>.Filter.Eq("id", id)));
         await collection.BulkWriteAsync(models);
 
-        if (name == "AuditLogs") return;
+        if (name == "audit_logs") return;
         if (originals.Any())
         {
             try
             {
-                var auditLogs = new List<AuditLog>();
+                var auditLogs = new List<audit_logs_entity>();
                 var trackingInterface = typeof(T).GetInterfaces()
                     .FirstOrDefault(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IBaseTrackingEntity<>));
 
                 foreach (var original in originals)
                 {
-                    object? idValue = typeof(T).GetProperty("Id")?.GetValue(original);
+                    object? idValue = (typeof(T).GetProperty("id") ?? typeof(T).GetProperty("Id"))?.GetValue(original);
                     string? userId = null;
                     if (trackingInterface != null)
                     {
-                        userId = typeof(T).GetProperty("UpdatedBy")?.GetValue(original) as string 
-                                 ?? typeof(T).GetProperty("CreatedBy")?.GetValue(original) as string;
+                        userId = (typeof(T).GetProperty("updated_by") ?? typeof(T).GetProperty("UpdatedBy"))?.GetValue(original) as string 
+                                 ?? (typeof(T).GetProperty("created_by") ?? typeof(T).GetProperty("CreatedBy"))?.GetValue(original) as string;
                     }
 
-                    auditLogs.Add(new AuditLog
+                    auditLogs.Add(new audit_logs_entity
                     {
-                        Id = Guid.NewGuid(),
-                        TableName = name,
-                        Action = "Delete",
-                        EntityId = idValue?.ToString() ?? string.Empty,
-                        BeforeState = original.ToJson(),
-                        AfterState = null,
-                        Timestamp = DateTime.UtcNow,
-                        UserId = userId
+                        id = Guid.NewGuid(),
+                        table_name = name,
+                        action = "Delete",
+                        entity_id = idValue?.ToString() ?? string.Empty,
+                        before_state = original.ToJson(),
+                        after_state = null,
+                        timestamp = DateTime.UtcNow,
+                        user_id = userId
                     });
                 }
 
-                var auditCollection = Database.GetCollection<AuditLog>("AuditLogs");
+                var auditCollection = Database.GetCollection<audit_logs_entity>("audit_logs");
                 await auditCollection.InsertManyAsync(auditLogs);
             }
             catch (Exception ex)

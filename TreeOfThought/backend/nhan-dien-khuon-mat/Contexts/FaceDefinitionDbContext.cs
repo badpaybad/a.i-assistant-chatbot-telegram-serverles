@@ -20,8 +20,8 @@ public class FaceDefinitionDbContext : BaseDbContext
         optionsBuilder.UseNpgsql(_connectionString, o => o.UseVector());
     }
 
-    public DbSet<UserFaceDefinition> UserFaceDefinitions { get; set; }
-    public DbSet<UserFaceEmbedding> UserFaceEmbeddings { get; set; }
+    public DbSet<user_face_definitions_entity> user_face_definitions { get; set; }
+    public DbSet<user_face_embeddings_entity> user_face_embeddings { get; set; }
 
     public async Task EnsureTablesCreatedAsync()
     {
@@ -30,38 +30,38 @@ public class FaceDefinitionDbContext : BaseDbContext
             await Database.ExecuteSqlRawAsync(@"
                 CREATE EXTENSION IF NOT EXISTS vector;
 
-                CREATE TABLE IF NOT EXISTS ""UserFaceDefinitions"" (
-                    ""Id"" uuid NOT NULL,
-                    ""UserId"" uuid NOT NULL,
-                    ""OriginalImageId"" uuid NOT NULL,
-                    ""CreatedAt"" timestamp with time zone NOT NULL,
-                    CONSTRAINT ""PK_UserFaceDefinitions"" PRIMARY KEY (""Id"")
+                CREATE TABLE IF NOT EXISTS ""user_face_definitions"" (
+                    ""id"" uuid NOT NULL,
+                    ""user_id"" uuid NOT NULL,
+                    ""original_image_id"" uuid NOT NULL,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    CONSTRAINT ""PK_user_face_definitions"" PRIMARY KEY (""id"")
                 );
-                CREATE INDEX IF NOT EXISTS ""IX_UserFaceDefinitions_UserId"" ON ""UserFaceDefinitions"" (""UserId"");
-                CREATE INDEX IF NOT EXISTS ""IX_UserFaceDefinitions_OriginalImageId"" ON ""UserFaceDefinitions"" (""OriginalImageId"");
+                CREATE INDEX IF NOT EXISTS ""IX_user_face_definitions_user_id"" ON ""user_face_definitions"" (""user_id"");
+                CREATE INDEX IF NOT EXISTS ""IX_user_face_definitions_original_image_id"" ON ""user_face_definitions"" (""original_image_id"");
 
-                CREATE TABLE IF NOT EXISTS ""UserFaceEmbeddings"" (
-                    ""Id"" uuid NOT NULL,
-                    ""UserId"" uuid NOT NULL,
-                    ""OriginalImageId"" uuid NOT NULL,
-                    ""Embedding"" vector(512) NOT NULL,
-                    ""BestModelPath"" text,
-                    ""InputImagePath"" text,
-                    ""CreatedAt"" timestamp with time zone NOT NULL,
-                    CONSTRAINT ""PK_UserFaceEmbeddings"" PRIMARY KEY (""Id"")
+                CREATE TABLE IF NOT EXISTS ""user_face_embeddings"" (
+                    ""id"" uuid NOT NULL,
+                    ""user_id"" uuid NOT NULL,
+                    ""original_image_id"" uuid NOT NULL,
+                    ""embedding"" vector(512) NOT NULL,
+                    ""best_model_path"" text,
+                    ""input_image_path"" text,
+                    ""created_at"" timestamp with time zone NOT NULL,
+                    CONSTRAINT ""PK_user_face_embeddings"" PRIMARY KEY (""id"")
                 );
-                CREATE INDEX IF NOT EXISTS ""IX_UserFaceEmbeddings_UserId"" ON ""UserFaceEmbeddings"" (""UserId"");
-                CREATE INDEX IF NOT EXISTS ""IX_UserFaceEmbeddings_OriginalImageId"" ON ""UserFaceEmbeddings"" (""OriginalImageId"");
+                CREATE INDEX IF NOT EXISTS ""IX_user_face_embeddings_user_id"" ON ""user_face_embeddings"" (""user_id"");
+                CREATE INDEX IF NOT EXISTS ""IX_user_face_embeddings_original_image_id"" ON ""user_face_embeddings"" (""original_image_id"");
 
-                -- Đảm bảo cột Embedding luôn có kiểu vector(512)
-                ALTER TABLE ""UserFaceEmbeddings"" ALTER COLUMN ""Embedding"" TYPE vector(512) USING ""Embedding""::vector(512);
+                -- Đảm bảo cột embedding luôn có kiểu vector(512)
+                ALTER TABLE ""user_face_embeddings"" ALTER COLUMN ""embedding"" TYPE vector(512) USING ""embedding""::vector(512);
 
                 -- Bổ sung cột mới cho metadata nếu chưa có
-                ALTER TABLE ""UserFaceEmbeddings"" ADD COLUMN IF NOT EXISTS ""BestModelPath"" text;
-                ALTER TABLE ""UserFaceEmbeddings"" ADD COLUMN IF NOT EXISTS ""InputImagePath"" text;
+                ALTER TABLE ""user_face_embeddings"" ADD COLUMN IF NOT EXISTS ""best_model_path"" text;
+                ALTER TABLE ""user_face_embeddings"" ADD COLUMN IF NOT EXISTS ""input_image_path"" text;
 
                 -- Tạo chỉ mục HNSW Inner Product
-                CREATE INDEX IF NOT EXISTS ""IX_UserFaceEmbeddings_HNSW_IP"" ON ""UserFaceEmbeddings"" USING hnsw (""Embedding"" vector_ip_ops);
+                CREATE INDEX IF NOT EXISTS ""IX_user_face_embeddings_HNSW_IP"" ON ""user_face_embeddings"" USING hnsw (""embedding"" vector_ip_ops);
             ");
         }
         catch (System.Exception ex)
@@ -75,21 +75,21 @@ public class FaceDefinitionDbContext : BaseDbContext
         base.OnModelCreating(modelBuilder);
         modelBuilder.HasPostgresExtension("vector");
 
-        modelBuilder.Entity<UserFaceDefinition>(entity =>
+        modelBuilder.Entity<user_face_definitions_entity>(entity =>
         {
-            entity.ToTable("UserFaceDefinitions");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.OriginalImageId);
+            entity.ToTable("user_face_definitions");
+            entity.HasKey(e => e.id);
+            entity.HasIndex(e => e.user_id);
+            entity.HasIndex(e => e.original_image_id);
         });
 
-        modelBuilder.Entity<UserFaceEmbedding>(entity =>
+        modelBuilder.Entity<user_face_embeddings_entity>(entity =>
         {
-            entity.ToTable("UserFaceEmbeddings");
-            entity.HasKey(e => e.Id);
-            entity.HasIndex(e => e.UserId);
-            entity.HasIndex(e => e.OriginalImageId);
-            entity.Property(e => e.Embedding)
+            entity.ToTable("user_face_embeddings");
+            entity.HasKey(e => e.id);
+            entity.HasIndex(e => e.user_id);
+            entity.HasIndex(e => e.original_image_id);
+            entity.Property(e => e.embedding)
                 .HasColumnType("vector(512)");
         });
     }

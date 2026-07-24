@@ -22,17 +22,17 @@ public class FilesFoldersService
 
     public async Task<List<FolderDto>> GetFolderTreeAsync(Guid userId)
     {
-        var folders = await _db.Folders
-            .Where(f => f.UserId == userId)
-            .OrderBy(f => f.Path)
+        var folders = await _db.folders
+            .Where(f => f.user_id == userId)
+            .OrderBy(f => f.path)
             .ToListAsync();
 
         var dtos = folders.Select(f => new FolderDto
         {
-            Id = f.Id,
-            ParentId = f.ParentId,
-            Name = f.Name,
-            Path = f.Path
+            Id = f.id,
+            ParentId = f.parent_id,
+            Name = f.name,
+            Path = f.path
         }).ToList();
 
         // Build tree
@@ -56,37 +56,37 @@ public class FilesFoldersService
 
     public async Task<FolderContentDto> GetFolderContentAsync(Guid userId, Guid? folderId, int pageIndex = 1, int pageSize = 10)
     {
-        var folders = await _db.Folders
-            .Where(f => f.UserId == userId && f.ParentId == folderId)
-            .OrderBy(f => f.Name)
+        var folders = await _db.folders
+            .Where(f => f.user_id == userId && f.parent_id == folderId)
+            .OrderBy(f => f.name)
             .Select(f => new FolderDto
             {
-                Id = f.Id,
-                ParentId = f.ParentId,
-                Name = f.Name,
-                Path = f.Path
+                Id = f.id,
+                ParentId = f.parent_id,
+                Name = f.name,
+                Path = f.path
             })
             .ToListAsync();
 
-        var query = _db.Files
-            .Where(f => f.UserId == userId && f.FolderId == folderId);
+        var query = _db.files
+            .Where(f => f.user_id == userId && f.folder_id == folderId);
 
         var totalFiles = await query.CountAsync();
 
         var files = await query
-            .OrderBy(f => f.Name)
+            .OrderBy(f => f.name)
             .Skip((pageIndex - 1) * pageSize)
             .Take(pageSize)
             .Select(f => new FileDto
             {
-                Id = f.Id,
-                FolderId = f.FolderId,
-                Name = f.Name,
-                Url = f.Url,
-                Size = f.Size,
-                MimeType = f.MimeType,
-                Permission = f.Permission,
-                CreatedAt = f.CreatedAt
+                Id = f.id,
+                FolderId = f.folder_id,
+                Name = f.name,
+                Url = f.url,
+                Size = f.size,
+                MimeType = f.mime_type,
+                Permission = f.permission,
+                CreatedAt = f.created_at
             })
             .ToListAsync();
 
@@ -96,17 +96,17 @@ public class FilesFoldersService
             var currentId = folderId;
             while (currentId.HasValue && currentId.Value != Guid.Empty)
             {
-                var folder = await _db.Folders.FindAsync(currentId.Value);
-                if (folder == null || folder.UserId != userId) break;
+                var folder = await _db.folders.FindAsync(currentId.Value);
+                if (folder == null || folder.user_id != userId) break;
 
                 breadcrumbs.Insert(0, new FolderDto
                 {
-                    Id = folder.Id,
-                    ParentId = folder.ParentId,
-                    Name = folder.Name,
-                    Path = folder.Path
+                    Id = folder.id,
+                    ParentId = folder.parent_id,
+                    Name = folder.name,
+                    Path = folder.path
                 });
-                currentId = folder.ParentId;
+                currentId = folder.parent_id;
             }
         }
 
@@ -121,19 +121,19 @@ public class FilesFoldersService
 
     public async Task<FileDto?> GetFileByIdAsync(Guid userId, Guid fileId)
     {
-        var f = await _db.Files.FirstOrDefaultAsync(f => f.Id == fileId && f.UserId == userId);
+        var f = await _db.files.FirstOrDefaultAsync(f => f.id == fileId && f.user_id == userId);
         if (f == null) return null;
 
         return new FileDto
         {
-            Id = f.Id,
-            FolderId = f.FolderId,
-            Name = f.Name,
-            Url = f.Url,
-            Size = f.Size,
-            MimeType = f.MimeType,
-            Permission = f.Permission,
-            CreatedAt = f.CreatedAt
+            Id = f.id,
+            FolderId = f.folder_id,
+            Name = f.name,
+            Url = f.url,
+            Size = f.size,
+            MimeType = f.mime_type,
+            Permission = f.permission,
+            CreatedAt = f.created_at
         };
     }
 
@@ -142,48 +142,48 @@ public class FilesFoldersService
         var path = "";
         if (folderId.HasValue && folderId.Value != Guid.Empty)
         {
-            var folder = await _db.Folders.FindAsync(folderId.Value);
-            if (folder != null) path = folder.Path;
+            var folder = await _db.folders.FindAsync(folderId.Value);
+            if (folder != null) path = folder.path;
         }
 
         var objectName = $"{path}{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
         var url = await _firebaseService.UploadFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, stream, contentType, permission == PermissionType.Public);
 
-        var file = new FileItem
+        var file = new files_entity
         {
-            FolderId = (folderId == Guid.Empty) ? null : folderId,
-            Name = fileName,
-            Url = url,
-            Size = content.Length,
-            MimeType = contentType,
-            UserId = userId,
-            Permission = permission,
-            CreatedBy = userId.ToString(),
-            CreatedAt = DateTime.UtcNow
+            folder_id = (folderId == Guid.Empty) ? null : folderId,
+            name = fileName,
+            url = url,
+            size = content.Length,
+            mime_type = contentType,
+            user_id = userId,
+            permission = permission,
+            created_by = userId.ToString(),
+            created_at = DateTime.UtcNow
         };
 
-        _db.Files.Add(file);
+        _db.files.Add(file);
         await _db.SaveChangesAsync();
 
         return new FileDto
         {
-            Id = file.Id,
-            FolderId = file.FolderId,
-            Name = file.Name,
-            Url = file.Url,
-            Size = file.Size,
-            MimeType = file.MimeType,
-            Permission = file.Permission,
-            CreatedAt = file.CreatedAt
+            Id = file.id,
+            FolderId = file.folder_id,
+            Name = file.name,
+            Url = file.url,
+            Size = file.size,
+            MimeType = file.mime_type,
+            Permission = file.permission,
+            CreatedAt = file.created_at
         };
     }
 
     public async Task<List<FileDto>> SearchFilesAsync(Guid userId, string query)
     {
-        var files = await _db.Files
-            .Where(f => f.UserId == userId && f.Name.ToLower().Contains(query.ToLower()))
-            .OrderByDescending(f => f.CreatedAt)
+        var files = await _db.files
+            .Where(f => f.user_id == userId && f.name.ToLower().Contains(query.ToLower()))
+            .OrderByDescending(f => f.created_at)
             .Take(50)
             .ToListAsync();
 
@@ -191,46 +191,46 @@ public class FilesFoldersService
         foreach (var file in files)
         {
             var folderPath = "/";
-            if (file.FolderId.HasValue)
+            if (file.folder_id.HasValue)
             {
-                var folder = await _db.Folders.FindAsync(file.FolderId.Value);
-                if (folder != null) folderPath = folder.Path;
+                var folder = await _db.folders.FindAsync(file.folder_id.Value);
+                if (folder != null) folderPath = folder.path;
             }
 
             result.Add(new FileDto
             {
-                Id = file.Id,
-                FolderId = file.FolderId,
-                Name = file.Name,
-                Url = file.Url,
-                Size = file.Size,
-                MimeType = file.MimeType,
-                Permission = file.Permission,
-                CreatedAt = file.CreatedAt,
+                Id = file.id,
+                FolderId = file.folder_id,
+                Name = file.name,
+                Url = file.url,
+                Size = file.size,
+                MimeType = file.mime_type,
+                Permission = file.permission,
+                CreatedAt = file.created_at,
                 FolderPath = folderPath
             });
         }
         return result;
     }
 
-    public async Task<EditorFileItem> UploadEditorFileAsync(Guid userId, string fileName, string contentType, byte[] content)
+    public async Task<editor_files_entity> UploadEditorFileAsync(Guid userId, string fileName, string contentType, byte[] content)
     {
         var objectName = $"editor/{Guid.NewGuid()}_{fileName}";
         using var stream = new MemoryStream(content);
         var url = await _firebaseService.UploadFileAsync(_firebaseOptions.AppName, _firebaseOptions.BucketName, objectName, stream, contentType, true);
 
-        var file = new EditorFileItem
+        var file = new editor_files_entity
         {
-            Name = fileName,
-            Url = url,
-            Size = content.Length,
-            MimeType = contentType,
-            UserId = userId,
-            CreatedBy = userId.ToString(),
-            CreatedAt = DateTime.UtcNow
+            name = fileName,
+            url = url,
+            size = content.Length,
+            mime_type = contentType,
+            user_id = userId,
+            created_by = userId.ToString(),
+            created_at = DateTime.UtcNow
         };
 
-        _db.EditorFiles.Add(file);
+        _db.editor_files.Add(file);
         await _db.SaveChangesAsync();
 
         return file;

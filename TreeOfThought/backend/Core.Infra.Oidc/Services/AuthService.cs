@@ -5,6 +5,10 @@ using Core.Infra.Oidc.Models;
 using Core.Infra.Oidc.Repositories;
 using Core.Infra.Firebase.Services;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Core.Infra.Oidc.Services;
 
@@ -15,7 +19,7 @@ public class AuthService
     private readonly FirebaseService _firebaseService;
     private readonly IUserSessionService _sessionService;
     private readonly IJwtService _jwtService;
-    private readonly System.Collections.Generic.IEnumerable<IMfaProvider> _mfaProviders;
+    private readonly IEnumerable<IMfaProvider> _mfaProviders;
 
     private static bool _isBeClaimsSynced = false;
     private static bool _isFeClaimsSynced = false;
@@ -27,7 +31,7 @@ public class AuthService
         FirebaseService firebaseService, 
         IUserSessionService sessionService,
         IJwtService jwtService,
-        System.Collections.Generic.IEnumerable<IMfaProvider> mfaProviders)
+        IEnumerable<IMfaProvider> mfaProviders)
     {
         _config = config;
         _userRepo = userRepo;
@@ -48,28 +52,27 @@ public class AuthService
         await _userRepo.EnsureAdminExistsAsync(adminUser, adminPass, adminEmail);
     }
 
-    public async Task<string> GenerateJwtToken(User user, string? audience = null, string? nonce = null)
+    public async Task<string> GenerateJwtToken(users_entity user, string? audience = null, string? nonce = null)
     {
-        var roles = (await _userRepo.GetUserRolesAsync(user.Id)).Select(r => r.Name).ToList();
-        var claims = (await _userRepo.GetUserEffectiveClaimsAsync(user.Id)).Select(c => c.Name).ToList();
+        var roles = (await _userRepo.GetUserRolesAsync(user.id)).Select(r => r.name).ToList();
+        var claims = (await _userRepo.GetUserEffectiveClaimsAsync(user.id)).Select(c => c.name).ToList();
 
-        // 1. Sync session state to Redis (Hybrid strategy: roles in JWT, granular claims in Redis if too many)
+        // 1. Sync session state to Redis
         if (claims.Count > 30)
         {
-            await _sessionService.SetUserClaimsAsync(user.Id, claims);
+            await _sessionService.SetUserClaimsAsync(user.id, claims);
         }
 
         // 2. Sync ACL to Redis
-        await SyncUserAclToRedisAsync(user.Id);
+        await SyncUserAclToRedisAsync(user.id);
 
         // 3. Generate token
-        return await _jwtService.GenerateTokenAsync(user.Id, user.Username, user.Email, user.DisplayName, roles, claims, user.AvatarUrl, audience, nonce);
+        return await _jwtService.GenerateTokenAsync(user.id, user.username, user.email, user.display_name, roles, claims, user.avatar_url, audience, nonce);
     }
 
-
-    public async Task<string> GenerateFirebaseToken(User user)
+    public async Task<string> GenerateFirebaseToken(users_entity user)
     {
-        return await _firebaseService.CreateCustomTokenAsync("Default", user.Id.ToString());
+        return await _firebaseService.CreateCustomTokenAsync("Default", user.id.ToString());
     }
 
     public async Task<string> GenerateFirebaseAccessTokenAsync()
@@ -77,7 +80,7 @@ public class AuthService
         return await _firebaseService.GetGoogleAccessTokenAsync("Default");
     }
 
-    public async Task<User?> AuthenticateAsync(string username, string password)
+    public async Task<users_entity?> AuthenticateAsync(string username, string password)
     {
         var user = await _userRepo.GetUserByUsernameAsync(username);
         if (user == null)
@@ -86,9 +89,9 @@ public class AuthService
             return null;
         }
 
-        if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
+        if (BCrypt.Net.BCrypt.Verify(password, user.password_hash))
         {
-            if (!user.IsEmailVerified) throw new Exception("Email not verified");
+            if (!user.is_email_verified) throw new Exception("Email not verified");
             return user;
         }
         
@@ -96,20 +99,20 @@ public class AuthService
         return null;
     }
 
-    public async Task<User> SignupAsync(string username, string password, string displayName, string email)
+    public async Task<users_entity> SignupAsync(string username, string password, string displayName, string email)
     {
         if (await _userRepo.GetUserByUsernameAsync(username) != null) throw new Exception("Username already exists");
         if (await _userRepo.GetUserByEmailAsync(email) != null) throw new Exception("Email already exists");
 
-        var user = new User
+        var user = new users_entity
         {
-            Username = username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            DisplayName = displayName,
-            Email = email,
-            IsEmailVerified = false,
-            VerificationCode = Guid.NewGuid().ToString("N").Substring(0, 8),
-            CreatedAt = DateTime.UtcNow
+            username = username,
+            password_hash = BCrypt.Net.BCrypt.HashPassword(password),
+            display_name = displayName,
+            email = email,
+            is_email_verified = false,
+            verification_code = Guid.NewGuid().ToString("N").Substring(0, 8),
+            created_at = DateTime.UtcNow
         };
 
         await _userRepo.CreateUserAsync(user);
@@ -118,10 +121,10 @@ public class AuthService
         var userRole = await _userRepo.GetRoleByNameAsync("User");
         if (userRole != null)
         {
-            await _userRepo.AssignRoleToUserAsync(user.Id, userRole.Id);
+            await _userRepo.AssignRoleToUserAsync(user.id, userRole.id);
         }
         
-        Console.WriteLine($"[EMAIL SIMULATION] To: {email}, Code: {user.VerificationCode}, Link: http://localhost:5000/api/auth/verify?email={email}&code={user.VerificationCode}");
+        Console.WriteLine($"[EMAIL SIMULATION] To: {email}, Code: {user.verification_code}, Link: http://localhost:5000/api/auth/verify?email={email}&code={user.verification_code}");
         
         return user;
     }
@@ -129,17 +132,17 @@ public class AuthService
     public async Task<bool> VerifyEmailAsync(string email, string code)
     {
         var user = await _userRepo.GetUserByEmailAsync(email);
-        if (user != null && user.VerificationCode == code)
+        if (user != null && user.verification_code == code)
         {
-            user.IsEmailVerified = true;
-            user.VerificationCode = null;
+            user.is_email_verified = true;
+            user.verification_code = null;
             await _userRepo.UpdateUserAsync(user);
             return true;
         }
         return false;
     }
 
-    public async Task<User> SsoLoginAsync(string provider, string ssoId, string email, string displayName, string? idToken = null)
+    public async Task<users_entity> SsoLoginAsync(string provider, string ssoId, string email, string displayName, string? idToken = null)
     {
         if (!string.IsNullOrEmpty(idToken))
         {
@@ -158,50 +161,46 @@ public class AuthService
 
         if (string.IsNullOrEmpty(email)) throw new Exception("Email is required for SSO login");
 
-        // Requirement: User can have many emails, but only 1 active verified email allowed for SSO
         var user = await _userRepo.GetUserByEmailAsync(email);
         
         if (user == null)
         {
-            // Check if this email exists in UserEmails as a secondary but verified email
             var userEmail = await _userRepo.GetUserEmailByValueAsync(email);
-            if (userEmail != null && userEmail.IsVerified)
+            if (userEmail != null && userEmail.is_verified)
             {
-                user = await _userRepo.GetUserByIdAsync(userEmail.UserId);
+                user = await _userRepo.GetUserByIdAsync(userEmail.user_id);
             }
         }
 
         if (user == null)
         {
-            // Create new user if not exists
-            user = new User
+            user = new users_entity
             {
-                Username = $"{provider}_{ssoId}",
-                DisplayName = displayName,
-                Email = email,
-                IsEmailVerified = true, // SSO provider already verified it
-                SsoProvider = provider,
-                SsoId = ssoId,
-                CreatedAt = DateTime.UtcNow
+                username = $"{provider}_{ssoId}",
+                display_name = displayName,
+                email = email,
+                is_email_verified = true, // SSO provider already verified it
+                sso_provider = provider,
+                sso_id = ssoId,
+                created_at = DateTime.UtcNow
             };
             await _userRepo.CreateUserAsync(user);
 
             var userRole = await _userRepo.GetRoleByNameAsync("User");
             if (userRole != null)
             {
-                await _userRepo.AssignRoleToUserAsync(user.Id, userRole.Id);
+                await _userRepo.AssignRoleToUserAsync(user.id, userRole.id);
             }
         }
         else
         {
-            // If user exists, ensure the email used for SSO is verified
-            if (user.Email == email && !user.IsEmailVerified)
+            if (user.email == email && !user.is_email_verified)
             {
                 throw new Exception("Primary email not verified. SSO login blocked.");
             }
             
-            user.SsoProvider = provider;
-            user.SsoId = ssoId;
+            user.sso_provider = provider;
+            user.sso_id = ssoId;
             await _userRepo.UpdateUserAsync(user);
         }
         return user;
@@ -212,7 +211,7 @@ public class AuthService
         return await _userRepo.CheckAclAsync(userId, roleNames, resourceType, resourceId, actionMask);
     }
 
-    public async Task<User?> GetUserByIdAsync(Guid id)
+    public async Task<users_entity?> GetUserByIdAsync(Guid id)
     {
         return await _userRepo.GetUserByIdAsync(id);
     }
@@ -236,11 +235,9 @@ public class AuthService
             if (isBeSource && _isBeClaimsSynced) return;
             if (!isBeSource && _isFeClaimsSynced) return;
 
-            // 1. Get all existing claims from DB to memory for fast checking
             var (existingClaims, _) = await _userRepo.GetAllClaimsAsync();
-            var existingNames = new HashSet<string>(existingClaims.Select(c => c.Name), StringComparer.OrdinalIgnoreCase);
+            var existingNames = new HashSet<string>(existingClaims.Select(c => c.name), StringComparer.OrdinalIgnoreCase);
 
-            // 2. Identify missing claims
             var missingClaims = claimNames
                 .Where(name => !string.IsNullOrEmpty(name) && !existingNames.Contains(name))
                 .Distinct()
@@ -251,11 +248,11 @@ public class AuthService
                 Console.WriteLine($"[{source}] Found {missingClaims.Count} new claims. Inserting...");
                 foreach (var name in missingClaims)
                 {
-                    await _userRepo.CreateClaimAsync(new AppClaim 
+                    await _userRepo.CreateClaimAsync(new app_claims_entity 
                     { 
-                        Name = name, 
-                        Description = $"Automatically created from {source}",
-                        CreatedAt = DateTime.UtcNow 
+                        name = name, 
+                        description = $"Automatically created from {source}",
+                        created_at = DateTime.UtcNow 
                     });
                     Console.WriteLine($"[{source}] Created claim: {name}");
                 }
@@ -273,7 +270,7 @@ public class AuthService
     public async Task SyncUserClaimsToRedisAsync(Guid userId)
     {
         var claims = await _userRepo.GetUserEffectiveClaimsAsync(userId);
-        var claimNames = claims.Select(c => c.Name).ToList();
+        var claimNames = claims.Select(c => c.name).ToList();
         
         await _sessionService.SetUserClaimsAsync(userId, claimNames);
         
@@ -290,18 +287,17 @@ public class AuthService
     {
         var aclEntries = await _userRepo.GetUserAclEntriesAsync(userId);
         
-        // Group by ResourceType and ResourceId to calculate ORed bitmask
         var groupedAcl = aclEntries
-            .GroupBy(a => new { a.ResourceType, a.ResourceId })
+            .GroupBy(a => new { a.resource_type, a.resource_id })
             .Select(g => new { 
-                g.Key.ResourceType, 
-                g.Key.ResourceId, 
-                Mask = g.Aggregate(0, (current, entry) => current | entry.PermissionMask)
+                g.Key.resource_type, 
+                g.Key.resource_id, 
+                Mask = g.Aggregate(0, (current, entry) => current | entry.permission_mask)
             });
 
         foreach (var entry in groupedAcl)
         {
-            await _sessionService.SetUserAclAsync(userId, entry.ResourceType, entry.ResourceId, entry.Mask);
+            await _sessionService.SetUserAclAsync(userId, entry.resource_type, entry.resource_id, entry.Mask);
         }
         
         Console.WriteLine($"[ACL SYNC] User: {userId}, Synced {groupedAcl.Count()} bitmasked resource keys to Redis.");
@@ -312,13 +308,13 @@ public class AuthService
         var user = await _userRepo.GetUserByIdAsync(userId);
         if (user == null) return false;
 
-        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+        if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.password_hash))
         {
             return false;
         }
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-        user.MustChangePassword = false;
+        user.password_hash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+        user.must_change_password = false;
         await _userRepo.UpdateUserAsync(user);
         return true;
     }
@@ -341,7 +337,7 @@ public class AuthService
         return code;
     }
 
-    public async Task<(User? User, string? Nonce)> ExchangeCodeForTokenAsync(string code, string clientId, string? codeVerifier = null)
+    public async Task<(users_entity? User, string? Nonce)> ExchangeCodeForTokenAsync(string code, string clientId, string? codeVerifier = null)
     {
         var data = await _sessionService.GetAuthCodeAsync<AuthCodeData>(code);
 
@@ -351,7 +347,6 @@ public class AuthService
             return (null, null);
         }
 
-        // PKCE Validation
         if (!string.IsNullOrEmpty(data.CodeChallenge))
         {
             if (string.IsNullOrEmpty(codeVerifier))
@@ -381,7 +376,6 @@ public class AuthService
             }
         }
 
-        // Remove code after use (One-time use)
         await _sessionService.RemoveAuthCodeAsync(code);
 
         var user = await _userRepo.GetUserByIdAsync(data.UserId);
@@ -426,12 +420,10 @@ public class AuthService
         {
             if (!string.IsNullOrEmpty(result.SecretKey))
             {
-                // Store the pending secret temporarily in Redis for verification before enabling
-                var cacheKey = $"pending_mfa_secret:{user.Id}";
+                var cacheKey = $"pending_mfa_secret:{user.id}";
                 await _sessionService.SaveAuthCodeAsync(cacheKey, result.SecretKey, TimeSpan.FromMinutes(10));
             }
 
-            // Automatically send the first verification code for Sms and Email providers
             if (!providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
             {
                 await provider.SendCodeAsync(user);
@@ -441,7 +433,7 @@ public class AuthService
         return result;
     }
 
-    public async Task<System.Collections.Generic.List<string>?> VerifyAndEnableMfaAsync(Guid userId, string providerName, string code)
+    public async Task<List<string>?> VerifyAndEnableMfaAsync(Guid userId, string providerName, string code)
     {
         var user = await _userRepo.GetUserByIdAsync(userId);
         if (user == null) throw new Exception("User not found");
@@ -451,48 +443,43 @@ public class AuthService
         string secret;
         if (providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
         {
-            var cacheKey = $"pending_mfa_secret:{user.Id}";
+            var cacheKey = $"pending_mfa_secret:{user.id}";
             var cachedSecret = await _sessionService.GetAuthCodeAsync<string>(cacheKey);
             if (string.IsNullOrEmpty(cachedSecret)) return null;
             secret = cachedSecret;
         }
         else
         {
-            // For out-of-band MFA (SMS/Email), we verify using the provider's logic
-            // (e.g. verifying the OTP sent to their device/email)
             secret = providerName;
         }
 
-        // We create a temporary user object with the raw secret to verify
-        var tempUser = new User { Email = user.Email, Username = user.Username, MfaSecret = secret, Id = user.Id };
+        var tempUser = new users_entity { email = user.email, username = user.username, mfa_secret = secret, id = user.id };
         bool isValid = await provider.VerifyCodeAsync(tempUser, code);
         
         if (isValid)
         {
-            user.IsMfaEnabled = true;
-            user.PreferredMfaProvider = providerName;
+            user.is_mfa_enabled = true;
+            user.preferred_mfa_provider = providerName;
             
             if (providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase))
             {
-                user.MfaSecret = EncryptSecret(secret);
-                // Clean up cache
-                await _sessionService.RemoveAuthCodeAsync($"pending_mfa_secret:{user.Id}");
+                user.mfa_secret = EncryptSecret(secret);
+                await _sessionService.RemoveAuthCodeAsync($"pending_mfa_secret:{user.id}");
             }
             
-            // Generate recovery codes (simulated, e.g. 5 random codes)
-            var recoveryCodes = new System.Collections.Generic.List<string>();
-            var rawRecoveryCodes = new System.Collections.Generic.List<string>();
+            var recoveryCodes = new List<string>();
+            var rawRecoveryCodes = new List<string>();
             for (int i = 0; i < 5; i++)
             {
                 var rc = new Random().Next(10000000, 99999999).ToString();
                 rawRecoveryCodes.Add(rc);
                 recoveryCodes.Add(BCrypt.Net.BCrypt.HashPassword(rc));
             }
-            user.MfaBackupCodes = string.Join(",", recoveryCodes);
+            user.mfa_backup_codes = string.Join(",", recoveryCodes);
             
             await _userRepo.UpdateUserAsync(user);
             
-            Console.WriteLine($"[MFA] MFA enabled for user {user.Username}. Backup codes: {string.Join(", ", rawRecoveryCodes)}");
+            Console.WriteLine($"[MFA] MFA enabled for user {user.username}. Backup codes: {string.Join(", ", rawRecoveryCodes)}");
             return rawRecoveryCodes;
         }
 
@@ -502,35 +489,33 @@ public class AuthService
     public async Task<bool> DisableMfaAsync(Guid userId, string code)
     {
         var user = await _userRepo.GetUserByIdAsync(userId);
-        if (user == null || !user.IsMfaEnabled) return false;
+        if (user == null || !user.is_mfa_enabled) return false;
 
-        var providerName = user.PreferredMfaProvider ?? "Totp";
+        var providerName = user.preferred_mfa_provider ?? "Totp";
         var provider = GetMfaProvider(providerName);
 
-        var decryptedUser = new User
+        var decryptedUser = new users_entity
         {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            MfaSecret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.MfaSecret) 
-                ? DecryptSecret(user.MfaSecret) 
+            id = user.id,
+            username = user.username,
+            email = user.email,
+            mfa_secret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.mfa_secret) 
+                ? DecryptSecret(user.mfa_secret) 
                 : null
         };
 
         bool isValid = await provider.VerifyCodeAsync(decryptedUser, code);
         if (!isValid)
         {
-            // Check if backup codes match
-            if (!string.IsNullOrEmpty(user.MfaBackupCodes))
+            if (!string.IsNullOrEmpty(user.mfa_backup_codes))
             {
-                var codes = user.MfaBackupCodes.Split(',');
+                var codes = user.mfa_backup_codes.Split(',');
                 foreach (var hashedCode in codes)
                 {
                     if (BCrypt.Net.BCrypt.Verify(code, hashedCode))
                     {
                         isValid = true;
-                        // Remove this code
-                        user.MfaBackupCodes = string.Join(",", codes.Where(c => c != hashedCode));
+                        user.mfa_backup_codes = string.Join(",", codes.Where(c => c != hashedCode));
                         break;
                     }
                 }
@@ -539,10 +524,10 @@ public class AuthService
 
         if (isValid)
         {
-            user.IsMfaEnabled = false;
-            user.MfaSecret = null;
-            user.MfaBackupCodes = null;
-            user.PreferredMfaProvider = null;
+            user.is_mfa_enabled = false;
+            user.mfa_secret = null;
+            user.mfa_backup_codes = null;
+            user.preferred_mfa_provider = null;
             await _userRepo.UpdateUserAsync(user);
             return true;
         }
@@ -550,35 +535,33 @@ public class AuthService
         return false;
     }
 
-    public async Task<bool> VerifyMfaCodeAsync(User user, string code)
+    public async Task<bool> VerifyMfaCodeAsync(users_entity user, string code)
     {
-        if (!user.IsMfaEnabled) return true;
+        if (!user.is_mfa_enabled) return true;
 
-        var providerName = user.PreferredMfaProvider ?? "Totp";
+        var providerName = user.preferred_mfa_provider ?? "Totp";
         var provider = GetMfaProvider(providerName);
 
-        var decryptedUser = new User
+        var decryptedUser = new users_entity
         {
-            Id = user.Id,
-            Username = user.Username,
-            Email = user.Email,
-            MfaSecret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.MfaSecret) 
-                ? DecryptSecret(user.MfaSecret) 
+            id = user.id,
+            username = user.username,
+            email = user.email,
+            mfa_secret = providerName.Equals("Totp", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(user.mfa_secret) 
+                ? DecryptSecret(user.mfa_secret) 
                 : null
         };
 
         bool isValid = await provider.VerifyCodeAsync(decryptedUser, code);
-        if (!isValid && !string.IsNullOrEmpty(user.MfaBackupCodes))
+        if (!isValid && !string.IsNullOrEmpty(user.mfa_backup_codes))
         {
-            // Fallback to backup recovery codes
-            var codes = user.MfaBackupCodes.Split(',');
+            var codes = user.mfa_backup_codes.Split(',');
             foreach (var hashedCode in codes)
             {
                 if (BCrypt.Net.BCrypt.Verify(code, hashedCode))
                 {
                     isValid = true;
-                    // Remove used backup code
-                    user.MfaBackupCodes = string.Join(",", codes.Where(c => c != hashedCode));
+                    user.mfa_backup_codes = string.Join(",", codes.Where(c => c != hashedCode));
                     await _userRepo.UpdateUserAsync(user);
                     break;
                 }
@@ -588,5 +571,3 @@ public class AuthService
         return isValid;
     }
 }
-
-
