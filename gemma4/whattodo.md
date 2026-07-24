@@ -38,3 +38,11 @@ cần download các model sẵn sàng trước khi start web, lưu vào local đ
 **cập nhật 7**
 Gemma 4 E2B dùng model này nếu bị out of memory. Cần tìm cách Gemma 4 E4B chạy tốt trên RTX 3060 8GB , model gemma bắt buộc dùng gpu, còn các model khác có thể chạy cpu  .
 dùng mặc định Gemma 4 E4B unsloth
+
+                # 1. Gỡ bản cũ (phiên bản CPU)
+                pip uninstall llama-cpp-python -y
+
+                # 2. Cài bản hỗ trợ CUDA (dành cho GPU NVIDIA như RTX 3060)
+                CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
+
+                PATH=/usr/local/cuda-12.4/bin:$PATH CUDACXX=/usr/local/cuda-12.4/bin/nvcc CMAKE_ARGS="-DGGML_CUDA=on" pip3 install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
