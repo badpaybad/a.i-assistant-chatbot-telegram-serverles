@@ -31,7 +31,11 @@ public abstract class RedisService : ICacheService, IQueueService, IEventBus
     protected RedisService(string connectionString, ILogger<RedisService> logger)
     {
         _logger = logger;
-        _redis = ConnectionMultiplexer.Connect(connectionString);
+        var options = ConfigurationOptions.Parse(connectionString);
+        options.AbortOnConnectFail = false;
+        options.ConnectTimeout = 10000;
+        options.SyncTimeout = 10000;
+        _redis = ConnectionMultiplexer.Connect(options);
         _db = _redis.GetDatabase();
     }
 
