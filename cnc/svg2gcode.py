@@ -130,9 +130,14 @@ def svg_to_exact_gcode(svg_path, gcode_path, scale_factor=1.0, feed_rate=2000, m
             f.write(f"{PEN_UP}\n\n")
 
         f.write(";--- KET THUC QUY TRINH ---\n")
-        if mode != "servo":
+        f.write(f"{PEN_UP}\n")
+        if mode == "servo":
+            f.write("G0 X0 Y0\n")
+            f.write(f"{PEN_UP}\n")
+        else:
             f.write("G0 Z2.0\n")
-        f.write("G0 X0 Y0\nM30\n")
+            f.write("G0 X0 Y0\n")
+            f.write("M30\n")
 
     print(f" Đã xuất file G-code vector hoàn hảo tại: {gcode_path}")
     return True

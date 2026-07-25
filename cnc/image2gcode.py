@@ -155,7 +155,14 @@ def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1,
             f.write(f"{PEN_UP}\n\n")
 
         f.write(";--- KET THUC ---\n")
-        f.write("G0 Z2.0\nG0 X0 Y0\nM30\n")
+        f.write(f"{PEN_UP}\n")
+        if mode == "servo":
+            f.write("G0 X0 Y0\n")
+            f.write(f"{PEN_UP}\n")
+        else:
+            f.write("G0 Z2.0\n")
+            f.write("G0 X0 Y0\n")
+            f.write("M30\n")
     
     print(f"Đã xuất file G-code nét đơn hoàn hảo tại: {gcode_path}")
     return True
@@ -317,10 +324,15 @@ def image_to_gcode(image_path, gcode_path, scale_factor=0.12, feed_rate=2000, mo
 
     # 6. KẾT THÚC CHƯƠNG TRÌNH
     gcode.append(";--- KET THUC ---")
-    gcode.append("G0 Z2.0")
-    gcode.append("G0 X0 Y0")
-    gcode.append("M5")
-    gcode.append("M30")
+    gcode.append(pen_up())
+    if mode == "servo":
+        gcode.append("G0 X0 Y0")
+        gcode.append(pen_up())
+    else:
+        gcode.append("G0 Z2.0")
+        gcode.append("G0 X0 Y0")
+        gcode.append("M5")
+        gcode.append("M30")
 
     with open(gcode_path, "w") as f:
         f.write("\n".join(gcode))
@@ -785,7 +797,14 @@ def handwriting_text_to_gcode(
             f.write(f"{PEN_UP}\n\n")
 
         f.write(";--- KET THUC ---\n")
-        f.write("G0 Z2.0\nG0 X0 Y0\nM30\n")
+        f.write(f"{PEN_UP}\n")
+        if mode == "servo":
+            f.write("G0 X0 Y0\n")
+            f.write(f"{PEN_UP}\n")
+        else:
+            f.write("G0 Z2.0\n")
+            f.write("G0 X0 Y0\n")
+            f.write("M30\n")
 
     print(f"✅ Đã tạo file G-code chữ viết tay thành công: {gcode_path}")
     return True
