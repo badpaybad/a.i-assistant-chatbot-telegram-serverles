@@ -189,14 +189,15 @@ def get_recent_processed_messages(group_id: str, limit: int = 10) -> List[Dict]:
 
 
 def get_pending_reply_messages(group_id: str) -> List[Dict]:
-    """Lấy các message cần chatbot trả lời (is_chatbot_reply=1), sắp xếp theo thời gian."""
+    """Lấy các message cần chatbot trả lời (is_chatbot_reply=1 và đã xử lý file is_processed=1), sắp xếp theo thời gian."""
     conn = get_conn()
     rows = conn.execute("""
         SELECT * FROM message_of_group
-        WHERE group_id=? AND is_chatbot_reply=1
+        WHERE group_id=? AND is_chatbot_reply=1 AND is_processed=1
         ORDER BY created_at ASC
     """, (str(group_id),)).fetchall()
     return [dict(r) for r in rows]
+
 
 
 def get_unprocessed_messages() -> List[Dict]:

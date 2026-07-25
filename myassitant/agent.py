@@ -208,13 +208,21 @@ class GroupChatAgent:
 
         # Lấy file summaries của message hiện tại
         files = db.get_files_of_message(msg_db_id)
-        file_context = ""
+        file_items = []
         for f in files:
             desc = f.get("description") or ""
             ftype = f.get("file_type", "file")
             url = f.get("url") or f.get("local_path") or ""
             if desc:
-                file_context += f"\n📎 [{ftype}] {url}: {desc}"
+                file_items.append(f"📎 [{ftype}] {url}: {desc}")
+
+        file_context = ""
+        if file_items:
+            file_context = (
+                "\n\n### THÔNG TIN VÀ NỘI DUNG FILE ĐÍNH KÈM (ĐÃ ĐƯỢC TRÍCH XUẤT/TÓM TẮT SẴN):\n"
+                + "\n".join(file_items)
+                + "\n(Lưu ý: Nội dung file đính kèm trên đã được trích xuất sẵn. Bạn hãy trực tiếp sử dụng thông tin này để trả lời người dùng, KHÔNG CẦN gọi tool read_file trừ khi thực sự cần thiết).\n"
+            )
 
         # reply_to context
         reply_context = ""
@@ -231,8 +239,16 @@ class GroupChatAgent:
         group_type = self._group_info.get("type", "group")
         is_private = group_type == "private" or (self.group_id and int(self.group_id) > 0)
 
+        if is_private:
+            prompt_rules = SYSTEM_PROMPT.replace(
+                "- Chỉ trả lời khi được tag trực tiếp hoặc được gọi tên trong tin nhắn mới nhất.",
+                "- Bạn đang trò chuyện riêng 1-1 với người dùng: Hãy trả lời trực tiếp TẤT CẢ tin nhắn của người dùng (không yêu cầu người dùng phải tag hay gọi tên bot)."
+            )
+        else:
+            prompt_rules = SYSTEM_PROMPT
+
         system_text = (
-            SYSTEM_PROMPT
+            prompt_rules
             + f"\n\nThông tin nhóm chat:\n- Tên nhóm: {group_title}\n"
             + f"- Loại: {group_type}\n- Thời gian hiện tại: {now_str}\n"
             + f"- {'Chat riêng 1-1' if is_private else 'Nhóm nhiều người'}"

@@ -210,6 +210,8 @@ def crawl_url(url: str) -> str:
 
 def read_file(file_path: str) -> str:
     """Đọc nội dung file."""
+    if not file_path or not str(file_path).strip():
+        return "[Lỗi: file_path không được để trống hoặc rỗng]"
     try:
         from gemma4.files import read_file_content
         content = read_file_content(file_path)

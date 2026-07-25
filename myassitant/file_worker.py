@@ -409,20 +409,27 @@ def _process_video_full(video_path: str) -> str:
                 if audio_text and not audio_text.startswith("[Lỗi"):
                     chunk_parts.append(f"[Âm thanh] {audio_text.strip()}")
 
-            # b. Lấy frame ảnh ở giữa chunk (hoặc các mốc 0s, CHUNK_SEC/2)
-            mid_sec = start + chunk_dur / 2
-            frame_path = _extract_frame_at_second(video_path, mid_sec, frame_dir)
-            if frame_path:
-                tmp_frames.append(frame_path)
-                frame_desc = _describe_frame_via_api(frame_path, mid_sec)
-                if frame_desc and not frame_desc.startswith("[Lỗi"):
-                    chunk_parts.append(f"[Ảnh tại {int(mid_sec)}s] {frame_desc}")
+            # b. Lấy keyframes ảnh trong chunk 15s (ví dụ: mốc 2s, giữa chunk, gần cuối chunk)
+            t_samples = [start + 2.0, start + chunk_dur / 2.0, start + max(2.0, chunk_dur - 2.0)]
+            t_samples = sorted(list(set([round(t, 1) for t in t_samples if t < start + chunk_dur])))
+            
+            frame_descs = []
+            for t_sec in t_samples:
+                frame_path = _extract_frame_at_second(video_path, t_sec, frame_dir)
+                if frame_path:
+                    tmp_frames.append(frame_path)
+                    frame_desc = _describe_frame_via_api(frame_path, t_sec)
+                    if frame_desc and not frame_desc.startswith("[Lỗi"):
+                        frame_descs.append(f"giây {int(t_sec)}s: {frame_desc}")
+            
+            if frame_descs:
+                chunk_parts.append("[Hình ảnh video] " + " | ".join(frame_descs))
 
             if chunk_parts:
                 chunk_descriptions.append(
                     f"=== [{int(start)}s – {int(end)}s] ===\n" + "\n".join(chunk_parts)
                 )
-            print(f"[FileWorker] Video chunk {idx+1}/{len(chunks)} [{int(start)}s-{int(end)}s] done.")
+            print(f"[FileWorker] Video chunk {idx+1}/{len(chunks)} [{int(start)}s-{int(end)}s] done ({len(frame_descs)} frames).")
 
     finally:
         # Dọn file tạm
@@ -477,73 +484,78 @@ def _process_file_record(file_record: dict):
     local_path = file_record.get("local_path")
     description = ""
 
-    if file_type == "url" and url:
-        # Crawl URL
-        print(f"[FileWorker] Crawling URL: {url}")
-        content = _crawl_url(url)
-        description = _summarize_with_gemma4(content, context=f"đường link {url}")
-        db.update_file_description(file_db_id, None, description or content[:500])
+    try:
+        if file_type == "url" and url:
+            # Crawl URL
+            print(f"[FileWorker] Crawling URL: {url}")
+            content = _crawl_url(url)
+            description = _summarize_with_gemma4(content, context=f"đường link {url}")
+            db.update_file_description(file_db_id, None, description or content[:500])
 
-    elif file_id:
-        # Download file nếu chưa có local_path
-        if not local_path or not os.path.exists(local_path):
-            ext_map = {
-                "photo": ".jpg",
-                "audio": ".mp3",
-                "voice": ".ogg",
-                "video": ".mp4",
-                "document": "",
-            }
-            ext = ext_map.get(file_type, "")
-            file_name = f"{file_id}{ext}"
-            local_path = _download_telegram_file(file_id, group_id, file_name)
+        elif file_id:
+            # Download file nếu chưa có local_path
+            if not local_path or not os.path.exists(local_path):
+                ext_map = {
+                    "photo": ".jpg",
+                    "audio": ".mp3",
+                    "voice": ".ogg",
+                    "video": ".mp4",
+                    "document": "",
+                }
+                ext = ext_map.get(file_type, "")
+                file_name = f"{file_id}{ext}"
+                local_path = _download_telegram_file(file_id, group_id, file_name)
 
-        if not local_path:
-            print(f"[FileWorker] Failed to download file_id={file_id}")
-            db.update_file_description(file_db_id, None, "[Download thất bại]")
-            return
+            if not local_path:
+                print(f"[FileWorker] Failed to download file_id={file_id}")
+                db.update_file_description(file_db_id, None, "[Download thất bại]")
+                return
 
-        # Đọc nội dung dựa theo loại file
-        ext = os.path.splitext(local_path)[1].lower()
-        content = ""
+            # Đọc nội dung dựa theo loại file
+            ext = os.path.splitext(local_path)[1].lower()
+            content = ""
 
-        # Audio (voice note, audio file) và Video → ffmpeg convert → STT
-        _is_audio = file_type in ("voice", "audio") or ext in _AUDIO_NATIVE_EXTS
-        _is_video = file_type == "video" or ext in _VIDEO_EXTS
+            # Audio (voice note, audio file) và Video → ffmpeg convert → STT
+            _is_audio = file_type in ("voice", "audio") or ext in _AUDIO_NATIVE_EXTS
+            _is_video = file_type == "video" or ext in _VIDEO_EXTS
 
-        if _is_audio or _is_video:
-            media_kind = "video" if _is_video else "audio"
-            print(f"[FileWorker] Transcribing {media_kind}: {local_path}")
-            content = _transcribe_audio_local(local_path)
-            if content and not content.startswith("[Lỗi"):
-                # Tóm tắt transcript nếu dài
-                if len(content) > 500:
-                    description = _summarize_with_gemma4(
-                        content, context=f"{media_kind} {os.path.basename(local_path)}"
-                    ) or content[:500]
+            if _is_audio or _is_video:
+                media_kind = "video" if _is_video else "audio"
+                print(f"[FileWorker] Transcribing {media_kind}: {local_path}")
+                content = _transcribe_audio_local(local_path)
+                if content and not content.startswith("[Lỗi"):
+                    # Tóm tắt transcript nếu dài
+                    if len(content) > 500:
+                        description = _summarize_with_gemma4(
+                            content, context=f"{media_kind} {os.path.basename(local_path)}"
+                        ) or content[:500]
+                    else:
+                        description = content
                 else:
-                    description = content
+                    description = content or f"[Không transcribe được {media_kind}]"
+            elif file_type == "photo" or ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
+                # Với ảnh: dùng Gemma4 vision (gọi qua API multimodal)
+                description = _describe_image_via_api(local_path) or "[Ảnh không mô tả được]"
+            elif ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json"):
+                content = _read_file_content_local(local_path)
+                description = _summarize_with_gemma4(content, context=f"file {os.path.basename(local_path)}")
+                if not description:
+                    description = content[:500]
             else:
-                description = content or f"[Không transcribe được {media_kind}]"
-        elif file_type == "photo" or ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
-            # Với ảnh: dùng Gemma4 vision (gọi qua API multimodal)
-            description = _describe_image_via_api(local_path) or "[Ảnh không mô tả được]"
-        elif ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json"):
-            content = _read_file_content_local(local_path)
-            description = _summarize_with_gemma4(content, context=f"file {os.path.basename(local_path)}")
-            if not description:
-                description = content[:500]
-        else:
-            # Fallback: thử đọc như text
-            try:
-                with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
-                    content = f.read(MAX_CONTENT_CHARS)
-                description = _summarize_with_gemma4(content, context="file text")
-            except Exception:
-                description = "[Không đọc được nội dung file]"
+                # Fallback: thử đọc như text
+                try:
+                    with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
+                        content = f.read(MAX_CONTENT_CHARS)
+                    description = _summarize_with_gemma4(content, context="file text")
+                except Exception:
+                    description = "[Không đọc được nội dung file]"
 
-        db.update_file_description(file_db_id, local_path, description)
-        print(f"[FileWorker] Processed file {local_path}: {description[:80]}...")
+            db.update_file_description(file_db_id, local_path, description)
+            print(f"[FileWorker] Processed file {local_path}: {description[:80]}...")
+
+    except Exception as err:
+        print(f"[FileWorker] Exception in _process_file_record {file_db_id}: {err}")
+        db.update_file_description(file_db_id, local_path, f"[Lỗi xử lý file: {err}]")
 
 
 def _describe_image_via_api(image_path: str) -> str:

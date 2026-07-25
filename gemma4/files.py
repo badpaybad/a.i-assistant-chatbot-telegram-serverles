@@ -62,7 +62,21 @@ def read_file_content(file_path: str) -> str:
     ext = os.path.splitext(file_path)[1].lower()
     
     try:
-        if ext == ".txt":
+        if ext in [".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"]:
+            try:
+                from myassitant.file_worker import _describe_image_via_api
+                desc = _describe_image_via_api(file_path)
+                return desc if desc else f"[File ảnh: {os.path.basename(file_path)}]"
+            except Exception as e:
+                return f"[File ảnh {os.path.basename(file_path)} - Không mô tả được: {e}]"
+        elif ext in [".mp4", ".mkv", ".avi", ".mov", ".webm", ".flv", ".3gp", ".ts", ".mp3", ".wav", ".flac", ".ogg", ".opus", ".m4a", ".aac"]:
+            try:
+                from myassitant.file_worker import _transcribe_audio_local
+                desc = _transcribe_audio_local(file_path)
+                return desc if desc else f"[File media {os.path.basename(file_path)}]"
+            except Exception as e:
+                return f"[File media {os.path.basename(file_path)} - Không xử lý được: {e}]"
+        elif ext == ".txt":
             return read_txt(file_path)
         elif ext == ".pdf":
             return read_pdf(file_path)
