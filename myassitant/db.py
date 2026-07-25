@@ -289,6 +289,19 @@ def update_file_description(file_db_id: int, local_path: Optional[str], descript
     conn.commit()
 
 
+def get_file_description_by_path(local_path: str) -> Optional[str]:
+    """Lấy description đã lưu của file từ local_path để tránh xử lý trùng."""
+    if not local_path:
+        return None
+    conn = get_conn()
+    row = conn.execute("""
+        SELECT description FROM file_of_message
+        WHERE (local_path=? OR url=?) AND description IS NOT NULL AND description NOT LIKE '[Đang xử lý%'
+        ORDER BY id DESC LIMIT 1
+    """, (local_path, local_path)).fetchone()
+    return row["description"] if row else None
+
+
 def get_files_of_message(message_id_fk: int) -> List[Dict]:
     conn = get_conn()
     rows = conn.execute(

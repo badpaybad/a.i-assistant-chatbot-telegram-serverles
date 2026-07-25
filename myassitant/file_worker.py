@@ -369,45 +369,44 @@ def _describe_frame_via_api(image_path: str, chunk_start_sec: float) -> str:
 
 def _transcribe_audio_chunked(audio_path: str) -> str:
     """
-    Transcribe file audio bằng cách:
-    1. Lấy độ dài tổng (ffprobe)
-    2. Nếu ngắn (≤ CHUNK_SEC) → transcribe trực tiếp
-    3. Nếu dài → cắt thành chunk CHUNK_SEC giây → STT từng đoạn → ghép lại
-    Trả về chuỗi text đầy đủ.
+    Transcribe file audio:
+    1. Ưu tiên chạy 1 lần trực tiếp với Whisper Large-v3 Turbo (nhanh, chính xác, không bị cắt từ).
+    2. Nếu file cực dài (> 3 phút), mới cắt đoạn 30s để xử lý lần lượt.
     """
     duration = _get_media_duration(audio_path)
     print(f"[FileWorker] Audio duration: {duration:.1f}s | file: {os.path.basename(audio_path)}")
 
-    tmp_wavs = []   # danh sách file tạm cần xóa
+    # 1. Với audio <= 180 giây (3 phút) hoặc không đo được độ dài, transcribe nguyên file trực tiếp
+    if duration <= 180 or duration == 0:
+        try:
+            from gemma4.stt import transcribe_audio
+            text = transcribe_audio(audio_path)
+            if text and not text.startswith("[Lỗi"):
+                return text.strip()
+        except Exception as e:
+            print(f"[FileWorker] Direct STT error: {e}")
+
+    # 2. Fallback hoặc với file dài > 3 phút: cắt chunk 30s
+    tmp_wavs = []
     transcripts = []
+    chunk_size = 30  # 30 giây per chunk cho file dài
 
     try:
-        if duration <= CHUNK_SEC or duration == 0:
-            # Ngắn hoặc không biết độ dài → convert rồi transcribe luôn
-            wav = _convert_to_wav_16k(audio_path)
+        n_chunks = min(int(duration / chunk_size) + 1, MAX_CHUNKS)
+        print(f"[FileWorker] Long audio ({duration:.1f}s): Chunking into {n_chunks} x {chunk_size}s chunks...")
+        for i in range(n_chunks):
+            start = i * chunk_size
+            if start >= duration:
+                break
+            chunk_dur = min(chunk_size, duration - start)
+            wav = _convert_to_wav_16k(audio_path, start_sec=start, duration_sec=chunk_dur)
             if wav:
                 tmp_wavs.append(wav)
-                transcripts.append(_transcribe_wav_chunk(wav))
-            else:
-                return "[Không convert được audio]"
-        else:
-            # Cắt chunk
-            n_chunks = min(int(duration / CHUNK_SEC) + 1, MAX_CHUNKS)
-            print(f"[FileWorker] Chunking audio into {n_chunks} x {CHUNK_SEC}s chunks...")
-            for i in range(n_chunks):
-                start = i * CHUNK_SEC
-                if start >= duration:
-                    break
-                chunk_dur = min(CHUNK_SEC, duration - start)
-                wav = _convert_to_wav_16k(audio_path, start_sec=start, duration_sec=chunk_dur)
-                if wav:
-                    tmp_wavs.append(wav)
-                    text = _transcribe_wav_chunk(wav)
-                    if text and not text.startswith("[Lỗi"):
-                        transcripts.append(f"[{int(start)}s-{int(start+chunk_dur)}s] {text}")
-                    print(f"[FileWorker] Audio chunk {i+1}/{n_chunks}: {text[:60]}...")
+                text = _transcribe_wav_chunk(wav)
+                if text and not text.startswith("[Lỗi"):
+                    transcripts.append(f"[{int(start)}s-{int(start+chunk_dur)}s] {text}")
+                print(f"[FileWorker] Audio chunk {i+1}/{n_chunks}: {text[:60]}...")
     finally:
-        # Dọn file WAV tạm
         for f in tmp_wavs:
             try:
                 if os.path.exists(f):
@@ -665,13 +664,18 @@ def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
 
                 all_done = True
                 for file_rec in files:
-                    # Chỉ xử lý nếu chưa có description
-                    if file_rec.get("description") is None:
+                    # Chỉ xử lý nếu chưa có description hoặc chưa hoàn thành
+                    desc = file_rec.get("description")
+                    if desc is None:
                         try:
+                            # Đánh dấu khóa tạm thời '[Đang xử lý...]' để tránh các tiến trình khác tranh chấp xử lý lặp
+                            db.update_file_description(file_rec["id"], file_rec.get("local_path"), "[Đang xử lý...]")
                             _process_file_record(file_rec)
                         except Exception as e:
                             print(f"[FileWorker] Error processing file {file_rec['id']}: {e}")
                             all_done = False
+                    elif desc == "[Đang xử lý...]":
+                        all_done = False
 
                 # Nếu không có file nào pending → đánh dấu processed
                 if all_done:
