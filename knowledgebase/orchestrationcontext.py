@@ -415,3 +415,54 @@ async def skills_decision(message: telegram_types.OrchestrationMessage):
 
     return skill_obj, []
 
+
+CLEAR_CHAT_HISTORY_TOOL_DEF = {
+    "name": "clear_chat_history",
+    "description": (
+        "Xóa sạch toàn bộ lịch sử trò chuyện (tin nhắn, context, bộ nhớ tạm RAM và toàn bộ cơ sở dữ liệu lưu trữ trên ổ cứng) của cuộc trò chuyện hiện tại khi người dùng yêu cầu xóa lịch sử chat, quên hết message/tin nhắn, làm sạch chat hoặc reset lịch sử."
+    ),
+    "parameters": {
+        "reason": "string"
+    }
+}
+
+def clear_chat_history_data(chat_id: str | int) -> int:
+    """
+    Xóa toàn bộ lịch sử trò chuyện của chat_id trên cả bộ nhớ RAM (chat_buffers)
+    và Cơ sở dữ liệu SQLite trên ổ cứng (db_orchestration_all_message, sqllite_all_message, db_summary_chat).
+    """
+    str_id = str(chat_id)
+    deleted_count = 0
+
+    # 1. Xóa dữ liệu trong SQLite Database trên ổ cứng
+    try:
+        deleted_count += knowledgebase.dbcontext.db_orchestration_all_message.delete_json("$.chat_id", chat_id)
+        deleted_count += knowledgebase.dbcontext.db_orchestration_all_message.delete_json("$.message.message.chat.id", chat_id)
+        deleted_count += knowledgebase.dbcontext.sqllite_all_message.delete_json("$.message.chat.id", chat_id)
+        deleted_count += knowledgebase.dbcontext.sqllite_all_message.delete_json("$.edited_message.chat.id", chat_id)
+        deleted_count += knowledgebase.dbcontext.db_summary_chat.delete_json("$.chat_id", chat_id)
+    except Exception as e:
+        print(f"[Clear History DB Error] Lỗi khi xóa dữ liệu chat_id {chat_id} từ DB: {e}")
+
+    # 2. Xóa bộ nhớ tạm RAM
+    try:
+        chat_buffers.pop(str_id, None)
+        chat_buffers.pop(str(chat_id), None)
+        try:
+            chat_buffers.pop(int(chat_id), None)
+        except (ValueError, TypeError):
+            pass
+
+        if hasattr(summarychat, "chat_buffers") and isinstance(summarychat.chat_buffers, dict):
+            summarychat.chat_buffers.pop(str_id, None)
+            summarychat.chat_buffers.pop(str(chat_id), None)
+            try:
+                summarychat.chat_buffers.pop(int(chat_id), None)
+            except (ValueError, TypeError):
+                pass
+    except Exception as e:
+        print(f"[Clear History Memory Error] Lỗi khi xóa bộ nhớ tạm chat_id {chat_id}: {e}")
+
+    print(f"[Clear History] Đã xóa thành công toàn bộ lịch sử chat của chat_id {chat_id} (Tổng số bản ghi DB đã xóa trên ổ cứng: {deleted_count})")
+    return deleted_count
+
