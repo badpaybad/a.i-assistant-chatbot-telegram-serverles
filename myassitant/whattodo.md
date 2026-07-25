@@ -10,7 +10,10 @@ Dùng sqllite để lưu các thông tin
     message của nhóm chát (message_of_group) 
         khi nhận webhook từ telegram về cần lưu và phân biệt được các message đó đến từ nhóm nào và từ người nào 
             nếu message có file cần download lưu vào folder myassitant/files , chỉ ra file thuộc message nào 
-            cần dùng sqllite lưu thông tin file (file_of_message) và dùng local gemma4 để lấy được mô tả hoặc tóm tắt nội dung file nếu có thể, ví dụ file pdf , image, audio, word , text , json ... hoặc có đường link cần crawl nội dung và dùng local gemma4 để tóm tắt 
+            cần dùng sqllite lưu thông tin file (file_of_message) và dùng local gemma4 để lấy được mô tả hoặc tóm tắt nội dung file nếu có thể, ví dụ file pdf , image, audio, word , text , json ... hoặc có đường link cần crawl nội dung và dùng local gemma4 để tóm tắt , việc xử lý audio, video có thể dùng ffmpeg để convert về chuẩn audio mà local gemma4 có thể đọc được rồi lấy nội dung text summary từ audio 
+                riêng video nếu dài quá cần cắt thành 15 giây lần 
+                    ngoài lấy audio nhờ ffmpeg có thể dùng ffmpeg lấy mỗi giây trong video là 1 frame ảnh rồi dùng local gemma4 để lấy mô tả ảnh , ghép các mô tả ảnh và audio summary lại với nhau để làm nội dung bổ xung cho việc lấy context 
+                nếu audio dài quá cũng cần cắt thành 15 giây 1 lần rồi dùng local gemma4 để tóm tắt từng đoạn  rồi ghép các mô tả lại với nhau để làm nội dung bổ xung cho việc lấy context 
             message có is_chatbot_reply: 0 (không cần trả lời):  do message không xuất hiện việc đề cập tên chatbot hoặc tag chatbot coi như chatbot không cần trả lời; 1 (chưa trả lời): có để cập tên hoặc tag chatbot thì là đang đợi chatbot trả lời; 2 (đã trả lời ): khi A.I agent chatbot trả lời sẽ cập nhật is_chatbot_reply thành 2 
             từng message có thêm trạng thái is_processed : 0: chưa xử lý, 1: đã xử lý (do liên quan tới việc download và dùng local gemma4) cần đợi các tiến trình đề cập phía trên xong thì mới chuyển sang trạng thái 1 (đã xử lý)
 
