@@ -225,10 +225,11 @@ def _inspect_file_media_type(file_path: str, file_type_hint: str = "") -> str:
 
     return "document"
 
-# Ngưỡng độ dài (giây) để cắt chunk — tương đương 15s theo yêu cầu
-CHUNK_SEC = 15
+# Ngưỡng độ dài (giây) để cắt chunk — 150s theo yêu cầu
+CHUNK_SEC = 150
 # Số chunk tối đa xử lý (tránh video quá dài xử lý mãi)
-MAX_CHUNKS = 20
+MAX_CHUNKS = 40
+
 
 
 def _ffmpeg_available() -> bool:
@@ -370,14 +371,13 @@ def _describe_frame_via_api(image_path: str, chunk_start_sec: float) -> str:
 def _transcribe_audio_chunked(audio_path: str) -> str:
     """
     Transcribe file audio:
-    1. Ưu tiên chạy 1 lần trực tiếp với Whisper Large-v3 Turbo (nhanh, chính xác, không bị cắt từ).
-    2. Nếu file cực dài (> 3 phút), mới cắt đoạn 30s để xử lý lần lượt.
+    Cắt đoạn 15s (CHUNK_SEC) để xử lý lần lượt theo yêu cầu.
     """
     duration = _get_media_duration(audio_path)
     print(f"[FileWorker] Audio duration: {duration:.1f}s | file: {os.path.basename(audio_path)}")
 
-    # 1. Với audio <= 180 giây (3 phút) hoặc không đo được độ dài, transcribe nguyên file trực tiếp
-    if duration <= 180 or duration == 0:
+    # Với audio ngắn <= 15s hoặc không đo được độ dài, transcribe 1 lần
+    if duration <= CHUNK_SEC or duration == 0:
         try:
             from gemma4.stt import transcribe_audio
             text = transcribe_audio(audio_path)
@@ -386,19 +386,19 @@ def _transcribe_audio_chunked(audio_path: str) -> str:
         except Exception as e:
             print(f"[FileWorker] Direct STT error: {e}")
 
-    # 2. Fallback hoặc với file dài > 3 phút: cắt chunk 30s
+    # Với audio > 15s: cắt chunk 15s
     tmp_wavs = []
     transcripts = []
-    chunk_size = 30  # 30 giây per chunk cho file dài
+    chunk_size = CHUNK_SEC  # 15s
 
     try:
-        n_chunks = min(int(duration / chunk_size) + 1, MAX_CHUNKS)
-        print(f"[FileWorker] Long audio ({duration:.1f}s): Chunking into {n_chunks} x {chunk_size}s chunks...")
+        n_chunks = min(int(duration / chunk_size) + (1 if duration % chunk_size > 0 else 0), MAX_CHUNKS)
+        print(f"[FileWorker] Audio ({duration:.1f}s): Chunking into {n_chunks} x {chunk_size}s chunks...")
         for i in range(n_chunks):
             start = i * chunk_size
-            if start >= duration:
+            if start >= duration and duration > 0:
                 break
-            chunk_dur = min(chunk_size, duration - start)
+            chunk_dur = min(chunk_size, duration - start) if duration > 0 else chunk_size
             wav = _convert_to_wav_16k(audio_path, start_sec=start, duration_sec=chunk_dur)
             if wav:
                 tmp_wavs.append(wav)
@@ -423,12 +423,11 @@ def _process_video_full(video_path: str) -> str:
     """
     Xử lý toàn diện một file video:
     1. Lấy độ dài (ffprobe)
-    2. Cắt thành chunk CHUNK_SEC giây (tối đa MAX_CHUNKS)
+    2. Cắt thành chunk 15s (CHUNK_SEC)
     3. Mỗi chunk:
        a. Extract audio → WAV 16kHz → STT
-       b. Lấy 1 frame ảnh (giữa chunk) → Gemma4 vision mô tả
+       b. Cứ 5s lấy 1 frame ảnh (mốc 0s, 5s, 10s...) → Gemma4 vision mô tả ảnh
     4. Ghép audio transcript + frame description thành context
-    Trả về chuỗi mô tả đầy đủ.
     """
     duration = _get_media_duration(video_path)
     print(f"[FileWorker] Video duration: {duration:.1f}s | file: {os.path.basename(video_path)}")
@@ -443,16 +442,15 @@ def _process_video_full(video_path: str) -> str:
 
     try:
         if duration <= CHUNK_SEC or duration == 0:
-            # Video ngắn → một chunk duy nhất
             chunks = [(0, min(duration, CHUNK_SEC) if duration > 0 else CHUNK_SEC)]
         else:
-            n_chunks = min(int(duration / CHUNK_SEC) + 1, MAX_CHUNKS)
+            n_chunks = min(int(duration / CHUNK_SEC) + (1 if duration % CHUNK_SEC > 0 else 0), MAX_CHUNKS)
             chunks = []
             for i in range(n_chunks):
                 start = i * CHUNK_SEC
-                if start >= duration:
+                if start >= duration and duration > 0:
                     break
-                chunk_dur = min(CHUNK_SEC, duration - start)
+                chunk_dur = min(CHUNK_SEC, duration - start) if duration > 0 else CHUNK_SEC
                 chunks.append((start, chunk_dur))
 
         print(f"[FileWorker] Processing video in {len(chunks)} chunk(s)...")
@@ -461,7 +459,7 @@ def _process_video_full(video_path: str) -> str:
             end = start + chunk_dur
             chunk_parts = []
 
-            # a. Audio STT cho chunk này
+            # a. Audio STT cho chunk 15s này
             wav = _convert_to_wav_16k(video_path, start_sec=start, duration_sec=chunk_dur)
             if wav:
                 tmp_wavs.append(wav)
@@ -469,10 +467,15 @@ def _process_video_full(video_path: str) -> str:
                 if audio_text and not audio_text.startswith("[Lỗi"):
                     chunk_parts.append(f"[Âm thanh] {audio_text.strip()}")
 
-            # b. Lấy keyframes ảnh trong chunk 15s (ví dụ: mốc 2s, giữa chunk, gần cuối chunk)
-            t_samples = [start + 2.0, start + chunk_dur / 2.0, start + max(2.0, chunk_dur - 2.0)]
-            t_samples = sorted(list(set([round(t, 1) for t in t_samples if t < start + chunk_dur])))
-            
+            # b. Lấy keyframes ảnh cứ mỗi 5 giây trong chunk (5s/frame theo yêu cầu)
+            t_samples = []
+            t_curr = start
+            while t_curr < start + chunk_dur:
+                t_samples.append(round(t_curr, 1))
+                t_curr += 5.0
+            if not t_samples and chunk_dur > 0:
+                t_samples = [round(start, 1)]
+
             frame_descs = []
             for t_sec in t_samples:
                 frame_path = _extract_frame_at_second(video_path, t_sec, frame_dir)

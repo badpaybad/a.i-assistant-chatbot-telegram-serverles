@@ -209,12 +209,16 @@ class GroupChatAgent:
         # Lấy file summaries của message hiện tại
         files = db.get_files_of_message(msg_db_id)
         file_items = []
+        raw_audio_texts = []
         for f in files:
             desc = f.get("description") or ""
             ftype = f.get("file_type", "file")
             url = f.get("url") or f.get("local_path") or ""
             if desc:
                 file_items.append(f"📎 [{ftype}] {url}: {desc}")
+                if ftype in ("audio", "voice", "video") and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
+                    raw_audio_texts.append(desc)
+
 
         file_context = ""
         if file_items:
@@ -356,9 +360,20 @@ class GroupChatAgent:
         if not is_private and tag_user and tag_user not in final_reply:
             final_reply = f"{tag_user} {final_reply}"
 
+        # Theo yêu cầu whattodo.md: audio/video cần trả thêm nguyên text lấy từ audio ra nằm sau content reply
+        if raw_audio_texts:
+            audio_suffix = "\n\n--- Nội dung văn bản từ Audio/Video ---\n" + "\n".join(raw_audio_texts)
+            if len(final_reply) + len(audio_suffix) <= 4000:
+                final_reply += audio_suffix
+            else:
+                max_avail = 3900 - len(final_reply)
+                if max_avail > 50:
+                    final_reply += audio_suffix[:max_avail]
+
         # Truncate nếu quá dài (Telegram limit 4096 chars)
         if len(final_reply) > 4000:
             final_reply = final_reply[:3950] + "\n...(Nội dung bị rút gọn)"
+
 
         send_result = _send_telegram_message(
             chat_id=self.group_id,

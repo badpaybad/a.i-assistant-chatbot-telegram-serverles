@@ -46,3 +46,11 @@ chương trình khi chạy lên thì cần tách thành các luồng hoặc proc
 
 audio đã được stt dùng Whisper Large-v3 Turbo chạy cpu 
 khi nhận webhook telegram message là reply hoặc quote lại 1 message trước đó tức là người dùng muốn dùng cả nội dùng message được chọn reply or quote. cần dùng cả 2 message ( current messagge và quote hoặc reply message) để xử lý và trả lời cho người dùng 
+
+khi message telegram nhận được từ webhook 
+có video xử lý video thì cứ 5 giây lấy 1 frame và gọi local gemma4 để lấy mô tả ảnh
+khi Video thành audio hoặc audio thì tức là cũng xử lý audio cần trả thêm nguyên text lấy từ audio ra 
+các text lấy được đều đưa vào context để trả lời người dùng , audio cần trả thêm nguyên text lấy từ audio ra nằm sau content reply cho người dùng 
+
+CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 15s để cắt thành các đoạn video phục vụ việc convert sang audio để xử lý lấy text 
+    ffmpeg sẽ convert video thành audio chuẩn gemma4 rồi gọi lên whipser hoặc gemma4, hiện tại default là whiper tubor

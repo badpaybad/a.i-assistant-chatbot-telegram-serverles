@@ -212,6 +212,13 @@ async def process_telegram_update(update: dict):
     entities = message.get("entities") or message.get("caption_entities") or []
     is_mentioned = _is_bot_mentioned(text, entities, bot_clean)
 
+    # Nếu người dùng quote/reply lại tin nhắn của bot → coi như mention bot
+    if reply_to:
+        reply_from = reply_to.get("from") or {}
+        r_user = reply_from.get("username", "").replace("@", "").strip().lower()
+        if bot_clean and r_user == bot_clean:
+            is_mentioned = True
+
     # Chat private 1-1 luôn coi là được mention
     if chat_type == "private":
         is_mentioned = True
@@ -221,6 +228,7 @@ async def process_telegram_update(update: dict):
             is_mentioned = True
     except (ValueError, TypeError):
         pass
+
 
     # is_chatbot_reply: 0 = không cần reply, 1 = cần reply
     if REPLY_ON_TAG_BOT_USERNAME:

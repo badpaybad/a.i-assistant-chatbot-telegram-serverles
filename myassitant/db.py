@@ -12,6 +12,7 @@ Tables:
 import sqlite3
 import json
 import os
+import re
 import threading
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -22,14 +23,35 @@ from myassitant.config import DB_PATH
 _local = threading.local()
 
 
+def _regexp_func(pattern: str, text: str) -> int:
+    """Hàm bổ trợ REGEXP cho SQLite (param1: pattern, param2: text column)."""
+    if not text or not pattern:
+        return 0
+    try:
+        return 1 if re.search(str(pattern), str(text), re.IGNORECASE) else 0
+    except Exception as e:
+        return 0
+
+
+
+
+
+
 def get_conn() -> sqlite3.Connection:
     """Lấy connection SQLite thread-safe."""
     if not hasattr(_local, "conn") or _local.conn is None:
-        _local.conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        _local.conn.row_factory = sqlite3.Row
-        _local.conn.execute("PRAGMA journal_mode=WAL")
-        _local.conn.execute("PRAGMA foreign_keys=ON")
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        _local.conn = conn
+    try:
+        _local.conn.create_function("REGEXP", 2, _regexp_func)
+    except Exception:
+        pass
     return _local.conn
+
+
 
 
 def init_db():
@@ -242,11 +264,17 @@ def get_message_by_telegram_id(group_id: str, message_id: int) -> Optional[Dict]
     return dict(rows[0]) if rows else None
 
 
-def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None) -> List[Dict]:
-    """Tìm kiếm message trong nhóm theo nội dung, khoảng thời gian."""
+def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None, use_regex: bool = False) -> List[Dict]:
+    """Tìm kiếm message trong nhóm theo nội dung, regex hoặc khoảng thời gian."""
     conn = get_conn()
-    sql = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ?"
-    params = [str(group_id), f"%{query}%"]
+    is_regex = use_regex or any(ch in query for ch in r".*+?^$[](){}\|")
+    if is_regex:
+        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text REGEXP ?"
+        params = [str(group_id), query]
+    else:
+        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ?"
+        params = [str(group_id), f"%{query}%"]
+
     if from_date:
         sql += " AND created_at >= ?"
         params.append(from_date)
@@ -254,8 +282,16 @@ def search_messages(group_id: str, query: str, from_date: str = None, to_date: s
         sql += " AND created_at <= ?"
         params.append(to_date)
     sql += " ORDER BY created_at DESC LIMIT 50"
-    rows = conn.execute(sql, params).fetchall()
-    return [dict(r) for r in rows]
+    try:
+        rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[DB] search_messages error: {e}")
+        # Fallback to simple LIKE
+        sql_fallback = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ? ORDER BY created_at DESC LIMIT 50"
+        rows = conn.execute(sql_fallback, (str(group_id), f"%{query}%")).fetchall()
+        return [dict(r) for r in rows]
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
