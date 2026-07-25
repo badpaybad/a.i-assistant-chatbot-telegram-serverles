@@ -105,8 +105,8 @@ class Gemma4Manager:
         if engine == "gguf":
             from .gemma4_config import (
                 GGUF_MODEL_PATH, GGUF_MMPROJ_PATH,
-                GGUF_N_CTX, GGUF_N_GPU_LAYERS, GGUF_MODEL_DIR,
-                GGUF_MODEL_FILENAME, GGUF_HF_REPO,
+                GGUF_N_CTX, GGUF_N_GPU_LAYERS, GGUF_N_BATCH, GGUF_MAIN_GPU, GGUF_USE_MMAP,
+                GGUF_MODEL_DIR, GGUF_MODEL_FILENAME, GGUF_HF_REPO,
             )
             from .gguf_manager import GGUFModelWrapper
 
@@ -124,6 +124,9 @@ class Gemma4Manager:
                 mmproj_path=GGUF_MMPROJ_PATH,
                 n_ctx=GGUF_N_CTX,
                 n_gpu_layers=GGUF_N_GPU_LAYERS,
+                n_batch=GGUF_N_BATCH,
+                main_gpu=GGUF_MAIN_GPU,
+                use_mmap=GGUF_USE_MMAP,
                 verbose=True,
             )
 
@@ -131,7 +134,7 @@ class Gemma4Manager:
             self.llm = wrapper._llm
             self.engine = "gguf"
             self._gguf_wrapper = wrapper
-            print(f"[+] GGUF engine ready (Q4_K_M, 100% GPU, n_ctx={GGUF_N_CTX}).")
+            print(f"[+] GGUF engine ready (Q4_K_M, 100% GPU, n_ctx={GGUF_N_CTX}, n_batch={GGUF_N_BATCH}).")
             return
 
         # ====== HuggingFace Engine (original path) ======

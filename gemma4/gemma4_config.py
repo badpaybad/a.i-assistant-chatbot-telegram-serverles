@@ -37,11 +37,20 @@ GGUF_MODEL_PATH: Path = Path(
 )
 GGUF_MMPROJ_PATH: Path = GGUF_MODEL_DIR / GGUF_MMPROJ_FILENAME
 
-# Context window — larger = more VRAM for KV cache
+# Context window — set to 8192 as requested
 GGUF_N_CTX: int = int(os.getenv("GEMMA_GGUF_N_CTX", "8192"))
 
 # Number of GPU layers: -1 = all layers on GPU (100% GPU)
 GGUF_N_GPU_LAYERS: int = int(os.getenv("GEMMA_GGUF_N_GPU_LAYERS", "-1"))
+
+# Batch size — 512 reduces scratch buffer size to fit within 8GB VRAM
+GGUF_N_BATCH: int = int(os.getenv("GEMMA_GGUF_N_BATCH", "512"))
+
+# Main GPU index — 0 for GPU 0
+GGUF_MAIN_GPU: int = int(os.getenv("GEMMA_GGUF_MAIN_GPU", "0"))
+
+# Memory mapping — set to False to avoid VRAM/RAM allocation bottlenecks during load
+GGUF_USE_MMAP: bool = os.getenv("GEMMA_GGUF_USE_MMAP", "False").lower() in ("true", "1", "yes")
 
 # HuggingFace repo for downloading GGUF files
 GGUF_HF_REPO: str = "unsloth/gemma-4-E4B-it-GGUF"

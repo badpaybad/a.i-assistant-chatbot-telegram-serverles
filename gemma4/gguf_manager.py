@@ -24,8 +24,11 @@ class GGUFModelWrapper:
         self,
         model_path: Path,
         mmproj_path: Optional[Path] = None,
-        n_ctx: int = 4096,
+        n_ctx: int = 2048,
         n_gpu_layers: int = -1,
+        n_batch: int = 512,
+        main_gpu: int = 0,
+        use_mmap: bool = False,
         verbose: bool = True,
     ):
         from llama_cpp import Llama
@@ -50,15 +53,35 @@ class GGUFModelWrapper:
                 print(f"[!] Warning: Could not load mmproj ({e}). Vision features disabled.")
 
         print(f"[*] Loading GGUF model: {model_path_str}")
-        print(f"    n_gpu_layers={n_gpu_layers}, n_ctx={n_ctx}")
+        print(f"    n_gpu_layers={n_gpu_layers}, n_ctx={n_ctx}, n_batch={n_batch}, main_gpu={main_gpu}, use_mmap={use_mmap}")
 
-        self._llm = Llama(
-            model_path=model_path_str,
-            n_gpu_layers=n_gpu_layers,
-            n_ctx=n_ctx,
-            verbose=verbose,
-            chat_handler=chat_handler,
-        )
+        try:
+            self._llm = Llama(
+                model_path=model_path_str,
+                n_gpu_layers=n_gpu_layers,
+                n_ctx=n_ctx,
+                n_batch=n_batch,
+                main_gpu=main_gpu,
+                use_mmap=use_mmap,
+                verbose=verbose,
+                chat_handler=chat_handler,
+            )
+        except Exception as ex:
+            if n_gpu_layers == -1:
+                print(f"[!] Warning: CUDA memory allocation failed with n_gpu_layers=-1 for n_ctx={n_ctx} ({ex}).")
+                print(f"[*] Retrying with partial GPU offload (n_gpu_layers=36) to preserve n_ctx={n_ctx}...")
+                self._llm = Llama(
+                    model_path=model_path_str,
+                    n_gpu_layers=36,
+                    n_ctx=n_ctx,
+                    n_batch=n_batch,
+                    main_gpu=main_gpu,
+                    use_mmap=use_mmap,
+                    verbose=verbose,
+                    chat_handler=chat_handler,
+                )
+            else:
+                raise ex
 
         self.engine = "gguf"
         self.model_id = str(model_path.stem)
