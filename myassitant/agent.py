@@ -224,11 +224,44 @@ class GroupChatAgent:
                 + "\n(Lưu ý: Nội dung file đính kèm trên đã được trích xuất sẵn. Bạn hãy trực tiếp sử dụng thông tin này để trả lời người dùng, KHÔNG CẦN gọi tool read_file trừ khi thực sự cần thiết).\n"
             )
 
-        # reply_to context
+        # reply_to context (Khi nhận message reply/quote, dùng nội dung cả 2 message: message được quote và current message)
         reply_context = ""
         reply_to_id = msg.get("reply_to_message_id")
         if reply_to_id:
-            reply_context = f"\n(Người dùng đang reply message_id={reply_to_id})"
+            reply_msg = db.get_message_by_telegram_id(self.group_id, reply_to_id)
+            if reply_msg:
+                reply_sender = reply_msg.get("from_full_name") or reply_msg.get("from_username") or "Unknown"
+                reply_user = reply_msg.get("from_username") or ""
+                reply_text = reply_msg.get("text") or ""
+                reply_ts = reply_msg.get("created_at", "")
+                reply_files = reply_msg.get("file_summaries") or ""
+                reply_context = (
+                    f"\n\n### NỘI DUNG TIN NHẮN ĐƯỢC QUOTE / REPLY (Message #{reply_to_id}):\n"
+                    f"[{reply_ts}] {reply_sender} (@{reply_user}): {reply_text}"
+                )
+                if reply_files:
+                    reply_context += f"\n    📎 File tóm tắt: {reply_files}"
+            else:
+                # Fallback: Cố parse từ raw_json nếu message gốc chưa lưu trong DB
+                raw_json = msg.get("raw_json")
+                if raw_json:
+                    try:
+                        update_data = json.loads(raw_json)
+                        m = update_data.get("message", {}) or update_data.get("edited_message", {})
+                        r = m.get("reply_to_message", {})
+                        if r:
+                            r_from = r.get("from", {})
+                            r_user = r_from.get("username", "")
+                            r_name = f"{r_from.get('first_name', '')} {r_from.get('last_name', '')}".strip() or r_user or "Unknown"
+                            r_text = r.get("text") or r.get("caption") or ""
+                            reply_context = (
+                                f"\n\n### NỘI DUNG TIN NHẮN ĐƯỢC QUOTE / REPLY (Message #{reply_to_id}):\n"
+                                f"{r_name} (@{r_user}): {r_text}"
+                            )
+                    except Exception:
+                        pass
+                if not reply_context:
+                    reply_context = f"\n\n(Người dùng đang reply/quote message_id={reply_to_id})"
 
         # Tag người dùng trong reply
         tag_user = f"@{from_username}" if from_username else from_full_name

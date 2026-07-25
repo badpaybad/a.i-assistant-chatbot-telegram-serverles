@@ -229,6 +229,19 @@ def get_message_by_db_id(msg_db_id: int) -> Optional[Dict]:
     return dict(row) if row else None
 
 
+def get_message_by_telegram_id(group_id: str, message_id: int) -> Optional[Dict]:
+    """Lấy message theo telegram message_id trong nhóm."""
+    conn = get_conn()
+    rows = conn.execute("""
+        SELECT m.*, GROUP_CONCAT(f.file_type || ':' || COALESCE(f.description,''), '|') as file_summaries
+        FROM message_of_group m
+        LEFT JOIN file_of_message f ON f.message_id_fk = m.id
+        WHERE m.group_id=? AND m.message_id=?
+        GROUP BY m.id
+    """, (str(group_id), message_id)).fetchall()
+    return dict(rows[0]) if rows else None
+
+
 def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None) -> List[Dict]:
     """Tìm kiếm message trong nhóm theo nội dung, khoảng thời gian."""
     conn = get_conn()

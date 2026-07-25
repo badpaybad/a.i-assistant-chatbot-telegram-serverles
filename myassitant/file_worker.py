@@ -70,9 +70,14 @@ def _download_telegram_file(file_id: str, group_id: str, file_name: str = None) 
         r2 = requests.get(download_url, timeout=60)
         r2.raise_for_status()
 
-        # Xác định tên file
+        # Xác định tên file & extension chuẩn từ Telegram API
+        tg_basename = os.path.basename(file_path)
+        tg_ext = os.path.splitext(tg_basename)[1].lower()
+
         if not file_name:
-            file_name = os.path.basename(file_path)
+            file_name = tg_basename
+        elif not os.path.splitext(file_name)[1] and tg_ext:
+            file_name = f"{file_name}{tg_ext}"
 
         # Thư mục lưu: files/<group_id>/
         save_dir = os.path.join(DIR_FILES, str(group_id))
@@ -160,9 +165,65 @@ def _read_file_content_local(file_path: str) -> str:
 # ─── ffmpeg helpers ───────────────────────────────────────────────────────────
 
 # Audio formats Gemma4 STT có thể xử lý (qua librosa)
-_AUDIO_NATIVE_EXTS = {'.wav', '.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac'}
+_AUDIO_NATIVE_EXTS = {'.wav', '.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac', '.oga', '.wma'}
 # Video formats cần extract audio trước
 _VIDEO_EXTS = {'.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.3gp', '.ts'}
+
+def _inspect_file_media_type(file_path: str, file_type_hint: str = "") -> str:
+    """
+    Xác định loại file: 'audio', 'video', 'photo', 'document', 'binary_unknown'
+    Dựa vào file_type_hint, extension và magic bytes.
+    """
+    if file_type_hint in ("voice", "audio"):
+        return "audio"
+    if file_type_hint == "video":
+        return "video"
+    if file_type_hint == "photo":
+        return "photo"
+
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext in _AUDIO_NATIVE_EXTS:
+        return "audio"
+    if ext in _VIDEO_EXTS:
+        return "video"
+    if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
+        return "photo"
+    if ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json", ".md", ".py", ".html", ".xml"):
+        return "document"
+
+    # Kiểm tra Magic Bytes ở đầu file nếu chưa xác định được qua extension
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, "rb") as f:
+                header = f.read(64)
+            if not header:
+                return "document"
+            # Audio magic bytes
+            if header.startswith(b"RIFF") and (b"WAVE" in header[:16] or b"AVI " in header[:16]):
+                return "audio" if b"WAVE" in header[:16] else "video"
+            if header.startswith(b"ID3") or header.startswith(b"OggS") or header.startswith(b"fLaC"):
+                return "audio"
+            if header.startswith(b"\xff\xfb") or header.startswith(b"\xff\xf3") or header.startswith(b"\xff\xf2"):
+                return "audio"
+            # Video magic bytes
+            if b"ftyp" in header[:20] or header.startswith(b"\x1a\x45\xdf\xa3"):
+                return "video"
+            # Image magic bytes
+            if header.startswith(b"\xff\xd8\xff") or header.startswith(b"\x89PNG") or header.startswith(b"GIF8") or (header.startswith(b"RIFF") and b"WEBP" in header[:16]):
+                return "photo"
+            # PDF magic bytes
+            if header.startswith(b"%PDF"):
+                return "document"
+
+            # Kiểm tra xem file có chứa byte nhị phân không
+            text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+            is_binary = bool(header.translate(None, text_chars))
+            if is_binary:
+                return "binary_unknown"
+    except Exception as e:
+        print(f"[FileWorker] Magic byte inspect error: {e}")
+
+    return "document"
 
 # Ngưỡng độ dài (giây) để cắt chunk — tương đương 15s theo yêu cầu
 CHUNK_SEC = 15
@@ -511,20 +572,16 @@ def _process_file_record(file_record: dict):
                 db.update_file_description(file_db_id, None, "[Download thất bại]")
                 return
 
-            # Đọc nội dung dựa theo loại file
+            # Đọc nội dung dựa theo loại file (kiểm tra ext + magic bytes)
+            media_type = _inspect_file_media_type(local_path, file_type)
             ext = os.path.splitext(local_path)[1].lower()
             content = ""
 
-            # Audio (voice note, audio file) và Video → ffmpeg convert → STT
-            _is_audio = file_type in ("voice", "audio") or ext in _AUDIO_NATIVE_EXTS
-            _is_video = file_type == "video" or ext in _VIDEO_EXTS
-
-            if _is_audio or _is_video:
-                media_kind = "video" if _is_video else "audio"
+            if media_type in ("audio", "video"):
+                media_kind = media_type
                 print(f"[FileWorker] Transcribing {media_kind}: {local_path}")
                 content = _transcribe_audio_local(local_path)
                 if content and not content.startswith("[Lỗi"):
-                    # Tóm tắt transcript nếu dài
                     if len(content) > 500:
                         description = _summarize_with_gemma4(
                             content, context=f"{media_kind} {os.path.basename(local_path)}"
@@ -533,22 +590,17 @@ def _process_file_record(file_record: dict):
                         description = content
                 else:
                     description = content or f"[Không transcribe được {media_kind}]"
-            elif file_type == "photo" or ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
+            elif media_type == "photo":
                 # Với ảnh: dùng Gemma4 vision (gọi qua API multimodal)
                 description = _describe_image_via_api(local_path) or "[Ảnh không mô tả được]"
-            elif ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json"):
+            elif media_type == "document":
                 content = _read_file_content_local(local_path)
                 description = _summarize_with_gemma4(content, context=f"file {os.path.basename(local_path)}")
                 if not description:
                     description = content[:500]
             else:
-                # Fallback: thử đọc như text
-                try:
-                    with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
-                        content = f.read(MAX_CONTENT_CHARS)
-                    description = _summarize_with_gemma4(content, context="file text")
-                except Exception:
-                    description = "[Không đọc được nội dung file]"
+                # File binary lạ không thể đọc text
+                description = f"[File nhị phân {os.path.basename(local_path)} không thể đọc dạng văn bản]"
 
             db.update_file_description(file_db_id, local_path, description)
             print(f"[FileWorker] Processed file {local_path}: {description[:80]}...")

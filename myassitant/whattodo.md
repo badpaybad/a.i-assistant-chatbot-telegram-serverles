@@ -43,3 +43,6 @@ chương trình khi chạy lên thì cần tách thành các luồng hoặc proc
     dựa vào bảng group_chat để khời tạo các A.I agent chatbot tương ứng, mỗi A.I agent chatbot là luồng riêng 
     trong quá trình chạy cần quan sát xem có group_chat mới không để khời tạo A.I agent chatbot tương ứng
     khi chương trình đóng cần giải phóng thực sự các port đang chiếm dụng vd của local gemma4, của chính myassistant 
+
+audio đã được stt dùng Whisper Large-v3 Turbo chạy cpu 
+khi nhận webhook telegram message là reply hoặc quote lại 1 message trước đó tức là người dùng muốn dùng cả nội dùng message được chọn reply or quote. cần dùng cả 2 message ( current messagge và quote hoặc reply message) để xử lý và trả lời cho người dùng 
