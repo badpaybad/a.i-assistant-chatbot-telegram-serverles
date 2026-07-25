@@ -286,7 +286,7 @@ def _describe_frame_via_api(image_path: str, chunk_start_sec: float) -> str:
                 "role": "user",
                 "parts": [
                     {"inline_data": {"mime_type": "image/jpeg", "data": img_data}},
-                    {"text": f"Mô tả ngắn gọng đây là frame tại giây {int(chunk_start_sec)} của video. Chỉ mô tả nhóm cảnh chính (đối tượng, hành động, nội dung hiển thị), bằng tiếng Việt."}
+                    {"text": f"Mô tả ngắn gọn đây là frame tại giây {int(chunk_start_sec)} của video. Chỉ mô tả nhóm cảnh chính (đối tượng, hành động, nội dung hiển thị), bằng tiếng Việt."}
                 ]
             }],
             "generationConfig": {"temperature": 0.2, "maxOutputTokens": 128},
