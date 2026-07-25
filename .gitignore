@@ -162,3 +162,5 @@ cameraip/train/i3output_detect.jpg
 temp/**
 myassitant/myassitant.db
 myassitant/files/**
+myassitant/myassitant.db-shm
+myassitant/myassitant.db-wal
