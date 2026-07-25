@@ -160,3 +160,5 @@ temp/**.wav
 cameraip/train/i3.jpg
 cameraip/train/i3output_detect.jpg
 temp/**
+myassitant/myassitant.db
+myassitant/files/**
