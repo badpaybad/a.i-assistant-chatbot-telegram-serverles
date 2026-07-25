@@ -67,3 +67,39 @@ DEFAULT_TEMPERATURE: float = 0.7
 DEFAULT_TOP_P: float = 0.9
 DEFAULT_TOP_K: int = 40
 DEFAULT_MAX_TOKENS: int = 1024
+
+# -------------------------------------------------
+# Thinking / Chain-of-Thought (CoT) Configuration
+# -------------------------------------------------
+# Gemma 4 supports a "thinking" mode where the model reasons step-by-step
+# internally before producing the final answer.
+#
+# Activation mechanism (GGUF / llama-cpp-python):
+#   Since llama-cpp-python does NOT expose chat_template_kwargs in the Python
+#   API, thinking is triggered via the "assistant prefill" technique:
+#   a partial assistant message starting with the Gemma 4 thinking channel
+#   token (<|channel>thought\n) is appended to the messages list, which
+#   forces the model to enter its chain-of-thought reasoning loop.
+#
+# Activation mechanism (HuggingFace backend):
+#   processor.apply_chat_template(..., enable_thinking=True) injects the
+#   correct thinking tokens automatically via the model's Jinja2 template.
+#
+# Recommended settings for RTX 3060 8GB:
+#   - Increase max_tokens when thinking is enabled (e.g., 2048) to give the
+#     model room for both its reasoning trace and the final answer.
+#   - Temperature: 1.0, Top_K: 64, Top_P: 0.95 (Google-recommended for CoT)
+#
+# Override via: export GEMMA_ENABLE_THINKING=True
+ENABLE_THINKING: bool = os.getenv("GEMMA_ENABLE_THINKING", "False").lower() in ("true", "1", "yes")
+
+# If True (default), the <|channel>thought...<channel|> block is stripped
+# from the returned string; only the final answer is returned.
+# Set to False to get the full reasoning trace (useful for debugging).
+# Override via: export GEMMA_STRIP_THINKING_OUTPUT=False
+STRIP_THINKING_OUTPUT: bool = os.getenv("GEMMA_STRIP_THINKING_OUTPUT", "True").lower() in ("true", "1", "yes")
+
+# Recommended temperature/top_k when thinking is enabled
+THINKING_TEMPERATURE: float = float(os.getenv("GEMMA_THINKING_TEMPERATURE", "1.0"))
+THINKING_TOP_K: int = int(os.getenv("GEMMA_THINKING_TOP_K", "64"))
+THINKING_TOP_P: float = float(os.getenv("GEMMA_THINKING_TOP_P", "0.95"))

@@ -46,3 +46,22 @@ dùng mặc định Gemma 4 E4B unsloth
                 CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
 
                 PATH=/usr/local/cuda-12.4/bin:$PATH CUDACXX=/usr/local/cuda-12.4/bin/nvcc CMAKE_ARGS="-DGGML_CUDA=on" pip3 install llama-cpp-python --force-reinstall --upgrade --no-cache-dir
+
+**cập nhật 8** DONE -- bo xung option thinking cho model gemma4
+
+Nghien cuu & phat hien:
+- Gemma 4 dung token channel dac biet: thinking channel tokens (khong phai <think> nhu DeepSeek/Qwen)
+- llama-cpp-python Python API KHONG ho tro chat_template_kwargs truc tiep
+- Giai phap GGUF: ky thuat "assistant prefill" -- inject partial assistant message bat dau bang thinking channel token
+- HuggingFace: processor.apply_chat_template(..., enable_thinking=True) -- ho tro chinh thuc
+
+Files da sua:
+- gguf_manager.py: them _get_thinking_prefill(), _parse_thinking_output(), enable_thinking/strip_thinking params
+- manager.py: forward thinking params qua _gguf_wrapper; HF path dung apply_chat_template(enable_thinking=True)
+- gemma4_config.py: them ENABLE_THINKING, STRIP_THINKING_OUTPUT, THINKING_TEMPERATURE/TOP_K/TOP_P
+
+Cach dung:
+  result = manager.generate(prompt, enable_thinking=True, max_tokens=2048)
+  for token in manager.generate_stream(prompt, enable_thinking=True):
+      print(token, end="")
+  # env var: export GEMMA_ENABLE_THINKING=True

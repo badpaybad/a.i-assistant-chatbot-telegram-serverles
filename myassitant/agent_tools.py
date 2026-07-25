@@ -181,14 +181,16 @@ def search_google(query: str) -> str:
         return response.text.strip() if response.text else "[Không tìm được kết quả]"
     except Exception as e:
         # Fallback: dùng Gemini API không có search
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_APIKEY)
-            model = genai.GenerativeModel(model_name=GEMINI_MODEL)
-            response = model.generate_content(f"Trả lời ngắn gọn câu hỏi sau (có thể bạn không có thông tin thời gian thực): {query}")
-            return response.text.strip()
-        except Exception as e2:
-            return f"[Lỗi tìm kiếm: {e2}]"
+        print(f"[Agent] Search fallback: {e}")
+        return f"[Lỗi tìm kiếm: {e}]"
+        # try:
+        #     import google.generativeai as genai
+        #     genai.configure(api_key=GEMINI_APIKEY)
+        #     model = genai.GenerativeModel(model_name=GEMINI_MODEL)
+        #     response = model.generate_content(f"Trả lời ngắn gọn câu hỏi sau (có thể bạn không có thông tin thời gian thực): {query}")
+        #     return response.text.strip()
+        # except Exception as e2:
+        #     return f"[Lỗi tìm kiếm: {e2}]"
 
 
 def crawl_url(url: str) -> str:
