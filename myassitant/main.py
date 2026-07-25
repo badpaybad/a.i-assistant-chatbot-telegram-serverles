@@ -2,11 +2,19 @@
 myassitant/main.py
 Entry point cho hệ thống myassitant Group Chat AI Bot.
 
-Khởi động các luồng độc lập:
-  1. Webhook server (FastAPI port 8090) + Cloudflare Tunnel
-  2. File/link processing worker
-  3. Agent manager (watch DB → spawn GroupChatAgent threads)
-  4. GroupChatAgent per group (spawned by agent manager)
+Khởi động các luồng/process độc lập:
+  0. gemma4/program.py   — Local Gemma4 API server (subprocess, port 8000)
+  1. Webhook server      — FastAPI port 8090 (thread)
+  2. Cloudflare Tunnel   — Lấy HTTPS URL + đăng ký Telegram webhook (thread)
+  3. File Worker         — Download & summarize file/link (thread)
+  4. Agent Manager       — Spawn GroupChatAgent theo group_chat DB (thread)
+  5. GroupChatAgent×N    — AI Agent cho từng nhóm (thread per group)
+
+Khi shutdown:
+  - Set _stop_event → tất cả thread dừng vòng lặp
+  - Kill gemma4 subprocess
+  - Kill cloudflared process
+  - Giải phóng port 8000 và 8090 bằng fuser/kill
 """
 import os
 import sys
@@ -14,8 +22,8 @@ import time
 import threading
 import subprocess
 import re
-import asyncio
 import signal
+import shutil
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_DIR)
@@ -35,14 +43,141 @@ from myassitant.file_worker import run_file_worker
 from myassitant.agent import GroupChatAgent
 
 import httpx
-import shutil
+
+# Port của gemma4 local server
+GEMMA4_PORT = 8000
 
 # ─── Global state ─────────────────────────────────────────────────────────────
 
 _stop_event = threading.Event()
-_active_agents: dict[str, GroupChatAgent] = {}   # group_id → agent
+_active_agents: dict[str, GroupChatAgent] = {}
 _agents_lock = threading.Lock()
 _tunnel_process = None
+_gemma4_process = None        # subprocess gemma4/program.py
+
+
+# ─── Giải phóng port (force kill process chiếm port) ─────────────────────────
+
+def _free_port(port: int):
+    """
+    Giải phóng port bằng cách kill tất cả process đang dùng port đó.
+    Dùng fuser (Linux) nếu có, fallback sang ss + kill.
+    """
+    print(f"[Shutdown] Giải phóng port {port}...")
+    try:
+        if shutil.which("fuser"):
+            subprocess.run(
+                ["fuser", "-k", f"{port}/tcp"],
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
+            )
+            print(f"[Shutdown] fuser -k {port}/tcp done.")
+            return
+    except Exception:
+        pass
+
+    # Fallback: lấy PID qua ss / lsof
+    try:
+        result = subprocess.run(
+            ["ss", "-tlnp", f"sport = :{port}"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, timeout=5
+        )
+        out = result.stdout.decode()
+        # Tìm pid từ output: pid=12345,
+        pids = re.findall(r"pid=(\d+)", out)
+        for pid in pids:
+            try:
+                os.kill(int(pid), signal.SIGTERM)
+                print(f"[Shutdown] Killed PID {pid} (port {port})")
+            except Exception:
+                pass
+    except Exception as e:
+        print(f"[Shutdown] Không giải phóng được port {port}: {e}")
+
+
+def _kill_process(proc: subprocess.Popen, name: str):
+    """Terminate + wait cho một subprocess, fallback SIGKILL nếu không dừng."""
+    if proc is None:
+        return
+    try:
+        if proc.poll() is None:
+            print(f"[Shutdown] Stopping {name} (PID={proc.pid})...")
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+                print(f"[Shutdown] {name} stopped.")
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=3)
+                print(f"[Shutdown] {name} force-killed.")
+    except Exception as e:
+        print(f"[Shutdown] Error stopping {name}: {e}")
+
+
+# ─── Gemma4 Server ────────────────────────────────────────────────────────────
+
+def _wait_gemma4_ready(timeout_sec: int = 120) -> bool:
+    """Chờ local Gemma4 API sẵn sàng (health check)."""
+    url = f"http://localhost:{GEMMA4_PORT}/health"
+    start = time.time()
+    attempt = 0
+    while time.time() - start < timeout_sec:
+        attempt += 1
+        try:
+            with httpx.Client(timeout=3) as client:
+                resp = client.get(url)
+                if resp.status_code == 200:
+                    print(f"[Gemma4] Ready! (attempt {attempt}, {time.time()-start:.1f}s)")
+                    return True
+        except Exception:
+            pass
+        time.sleep(2)
+    print(f"[Gemma4] Không sẵn sàng sau {timeout_sec}s!")
+    return False
+
+
+def start_gemma4() -> subprocess.Popen:
+    """
+    Khởi động gemma4/program.py như một subprocess độc lập.
+    Trả về Popen object.
+    """
+    global _gemma4_process
+    gemma4_script = os.path.join(_ROOT, "gemma4", "program.py")
+    python_exec = sys.executable
+
+    print(f"[Gemma4] Khởi động: {python_exec} {gemma4_script}")
+    try:
+        _gemma4_process = subprocess.Popen(
+            [python_exec, gemma4_script],
+            cwd=_ROOT,
+            stdout=sys.stdout,   # pipe output ra màn hình chung
+            stderr=sys.stderr,
+            env={**os.environ},  # dùng chung env (CUDA, PATH...)
+        )
+        print(f"[Gemma4] Process started (PID={_gemma4_process.pid})")
+        return _gemma4_process
+    except Exception as e:
+        print(f"[Gemma4] Không khởi động được: {e}")
+        return None
+
+
+def run_gemma4_monitor_thread():
+    """
+    Thread giám sát gemma4 process:
+    - Nếu process chết bất ngờ → restart
+    - Nếu _stop_event set → dừng
+    """
+    global _gemma4_process
+    print("[Gemma4Monitor] Started.")
+    while not _stop_event.is_set():
+        if _gemma4_process and _gemma4_process.poll() is not None:
+            rc = _gemma4_process.returncode
+            print(f"[Gemma4Monitor] Process died (rc={rc}). Restarting in 5s...")
+            time.sleep(5)
+            if not _stop_event.is_set():
+                start_gemma4()
+                _wait_gemma4_ready(timeout_sec=120)
+        time.sleep(5)
+    print("[Gemma4Monitor] Stopped.")
 
 
 # ─── Cloudflare Tunnel ────────────────────────────────────────────────────────
@@ -84,7 +219,6 @@ def _start_cloudflare_tunnel() -> str:
             continue
 
         time.sleep(1)
-        # Đọc stderr để lấy URL
         for _ in range(300):
             if _stop_event.is_set():
                 return ""
@@ -103,7 +237,7 @@ def _start_cloudflare_tunnel() -> str:
     return ""
 
 
-def _register_telegram_webhook(base_url: str):
+def _register_telegram_webhook(base_url: str) -> bool:
     """Đăng ký Telegram webhook."""
     webhook_url = f"{base_url}/webhook"
     api_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/setWebhook"
@@ -151,16 +285,13 @@ def run_tunnel_and_webhook_thread():
             time.sleep(5)
             continue
 
-        # Chờ URL accessible
         if not _verify_url_reachable(base_url, timeout_sec=90):
             print("[TunnelThread] URL không accessible. Thử lại...")
             time.sleep(3)
             continue
 
-        # Đăng ký webhook
         if _register_telegram_webhook(base_url):
             print(f"[TunnelThread] Hoàn tất! Webhook live tại {base_url}/webhook")
-            # Giữ tunnel alive — chỉ restart nếu process chết
             while not _stop_event.is_set():
                 if _tunnel_process and _tunnel_process.poll() is not None:
                     print("[TunnelThread] Tunnel process died. Restarting...")
@@ -171,7 +302,7 @@ def run_tunnel_and_webhook_thread():
             time.sleep(3)
 
 
-# ─── File Worker Thread ────────────────────────────────────────────────────────
+# ─── File Worker Thread ───────────────────────────────────────────────────────
 
 def run_file_worker_thread():
     """Thread xử lý file/link download + summarize."""
@@ -194,13 +325,11 @@ def run_agent_manager_thread():
                 for g in active_groups:
                     gid = g["group_id"]
                     if gid not in _active_agents or not _active_agents[gid].is_alive():
-                        # Spawn agent mới
                         agent = GroupChatAgent(gid)
                         agent.start()
                         _active_agents[gid] = agent
                         print(f"[AgentManager] Spawned agent for group {gid} ({g.get('title')})")
 
-                # Dọn agent cho nhóm đã inactive
                 inactive = [gid for gid, a in _active_agents.items() if not a.is_alive()]
                 for gid in inactive:
                     del _active_agents[gid]
@@ -208,7 +337,7 @@ def run_agent_manager_thread():
         except Exception as e:
             print(f"[AgentManager] Error: {e}")
 
-        time.sleep(10)  # Check mỗi 10 giây
+        time.sleep(10)
 
     # Dừng tất cả agents khi shutdown
     with _agents_lock:
@@ -232,61 +361,107 @@ def run_webhook_server_thread():
     )
 
 
+# ─── Shutdown sạch ───────────────────────────────────────────────────────────
+
+def _shutdown():
+    """Dừng tất cả resources, giải phóng port sạch sẽ."""
+    print("\n[Main] === BẮT ĐẦU SHUTDOWN ===")
+    _stop_event.set()
+
+    # 1. Dừng gemma4 subprocess
+    _kill_process(_gemma4_process, "gemma4/program.py")
+
+    # 2. Dừng cloudflared tunnel
+    _kill_process(_tunnel_process, "cloudflared")
+
+    # 3. Dừng tất cả AI agents
+    with _agents_lock:
+        for agent in _active_agents.values():
+            agent.stop()
+
+    # 4. Giải phóng port (force kill nếu vẫn còn process giữ port)
+    time.sleep(1)  # chờ process terminate trước
+    _free_port(MYASSITANT_PORT)
+    _free_port(GEMMA4_PORT)
+
+    print("[Main] === SHUTDOWN HOÀN TẤT ===")
+
+
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
 def main():
     print("=" * 60)
     print("  myassitant — Telegram Group AI Chatbot")
-    print(f"  Port: {MYASSITANT_PORT}")
+    print(f"  Webhook Port: {MYASSITANT_PORT}")
+    print(f"  Gemma4 Port:  {GEMMA4_PORT}")
     print("=" * 60)
 
-    # Xử lý SIGINT / SIGTERM để dừng sạch
+    # Xử lý SIGINT / SIGTERM → shutdown sạch
     def _signal_handler(sig, frame):
-        print("\n[Main] Nhận tín hiệu dừng. Đang shutdown...")
-        _stop_event.set()
+        print(f"\n[Main] Nhận tín hiệu {sig}. Đang shutdown...")
+        _shutdown()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
-    threads = []
+    # ── Bước 0: Khởi động Gemma4 local server ─────────────────────────────────
+    # Kiểm tra xem gemma4 đã chạy chưa (có thể đã start bên ngoài)
+    gemma4_already_running = False
+    try:
+        with httpx.Client(timeout=2) as c:
+            r = c.get(f"http://localhost:{GEMMA4_PORT}/health")
+            if r.status_code == 200:
+                gemma4_already_running = True
+                print(f"[Gemma4] Đã chạy sẵn tại port {GEMMA4_PORT}. Bỏ qua start.")
+    except Exception:
+        pass
 
-    # Thread 1: Webhook Server (uvicorn)
+    if not gemma4_already_running:
+        start_gemma4()
+        print(f"[Gemma4] Chờ sẵn sàng (tối đa 120s)...")
+        if not _wait_gemma4_ready(timeout_sec=120):
+            print("[Gemma4] CẢNH BÁO: Gemma4 chưa sẵn sàng. Tiếp tục nhưng có thể lỗi.")
+        # Thread giám sát tự động restart gemma4 nếu bị crash
+        t_gemma4 = threading.Thread(
+            target=run_gemma4_monitor_thread,
+            name="gemma4-monitor",
+            daemon=True
+        )
+        t_gemma4.start()
+
+    # ── Thread 1: Webhook Server ───────────────────────────────────────────────
     t_server = threading.Thread(
         target=run_webhook_server_thread,
         name="webhook-server",
         daemon=True
     )
     t_server.start()
-    threads.append(t_server)
-    time.sleep(1)  # Chờ server khởi động
+    time.sleep(1)
 
-    # Thread 2: Cloudflare Tunnel + Telegram Webhook Registration
+    # ── Thread 2: Cloudflare Tunnel + Telegram Webhook ─────────────────────────
     t_tunnel = threading.Thread(
         target=run_tunnel_and_webhook_thread,
         name="tunnel-webhook",
         daemon=True
     )
     t_tunnel.start()
-    threads.append(t_tunnel)
 
-    # Thread 3: File/Link Processing Worker
+    # ── Thread 3: File/Link Processing Worker ─────────────────────────────────
     t_file = threading.Thread(
         target=run_file_worker_thread,
         name="file-worker",
         daemon=True
     )
     t_file.start()
-    threads.append(t_file)
 
-    # Thread 4: Agent Manager (spawn GroupChatAgent per group)
+    # ── Thread 4: Agent Manager ────────────────────────────────────────────────
     t_manager = threading.Thread(
         target=run_agent_manager_thread,
         name="agent-manager",
         daemon=True
     )
     t_manager.start()
-    threads.append(t_manager)
 
     print("[Main] Tất cả threads đã khởi động.")
     print("[Main] Nhấn Ctrl+C để dừng.")
@@ -296,14 +471,7 @@ def main():
         while not _stop_event.is_set():
             time.sleep(1)
     except KeyboardInterrupt:
-        _stop_event.set()
-
-    print("[Main] Đang dừng tất cả threads...")
-    if _tunnel_process:
-        try:
-            _tunnel_process.terminate()
-        except Exception:
-            pass
+        _shutdown()
 
     print("[Main] myassitant đã dừng.")
 
