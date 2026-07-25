@@ -1,6 +1,6 @@
 """
 myassitant/file_worker.py
-Worker thread xử lý bất đồng bộ:
+Worker PROCESS xử lý bất đồng bộ (chạy dạng subprocess độc lập):
   1. Download file từ Telegram → lưu vào myassitant/files/<group_id>/
   2. Dùng gemma4/files.py đọc nội dung file (PDF, DOCX, txt, ảnh, audio...)
   3. Audio/Video: dùng ffmpeg convert về 16kHz WAV mono → Gemma4 STT → text summary
@@ -10,6 +10,8 @@ Worker thread xử lý bất đồng bộ:
   5. Crawl URL nếu message có link
   6. Cập nhật file_of_message.description
   7. Update message_of_group.is_processed = 1 khi xong tất cả file của message đó
+
+Chạy trực tiếp: python myassitant/file_worker.py
 """
 import os
 import sys
@@ -17,6 +19,7 @@ import re
 import json
 import time
 import shutil
+import signal
 import subprocess
 import mimetypes
 import threading
@@ -577,13 +580,15 @@ def _describe_image_via_api(image_path: str) -> str:
 
 def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
     """
-    Worker chạy liên tục trong thread riêng.
+    Worker chạy liên tục (dùng từ main hoặc standalone process).
     Poll DB lấy message chưa processed, xử lý file/url rồi đánh dấu processed.
+    stop_event: threading.Event (khi chạy từ thread trong main)
+    Nếu chạy standalone (process), stop_event=None, dùng SIGTERM để dừng.
     """
     print("[FileWorker] Started.")
     while True:
         if stop_event and stop_event.is_set():
-            print("[FileWorker] Stopping.")
+            print("[FileWorker] Stopping (stop_event).")
             break
 
         try:
@@ -612,3 +617,51 @@ def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
             print(f"[FileWorker] Loop error: {e}")
 
         time.sleep(sleep_sec)
+
+
+# ─── Entry point (standalone process) ─────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    """
+    Chạy file_worker dạng process độc lập.
+    Dùng SIGTERM / Ctrl+C để dừng sạch.
+    """
+    # Khởi tạo DB nếu chưa có
+    db.init_db()
+
+    _running = True
+
+    def _handle_signal(sig, frame):
+        global _running
+        print(f"\n[FileWorker] Nhận tín hiệu {sig}. Dừng...")
+        _running = False
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+    print("[FileWorker] Running as standalone process. Press Ctrl+C to stop.")
+
+    while _running:
+        try:
+            unprocessed = db.get_unprocessed_messages()
+            for msg in unprocessed:
+                if not _running:
+                    break
+                msg_db_id = msg["id"]
+                files = db.get_files_of_message(msg_db_id)
+                all_done = True
+                for file_rec in files:
+                    if file_rec.get("description") is None:
+                        try:
+                            _process_file_record(file_rec)
+                        except Exception as e:
+                            print(f"[FileWorker] Error: {e}")
+                            all_done = False
+                if all_done:
+                    db.update_message_processed(msg_db_id)
+        except Exception as e:
+            print(f"[FileWorker] Loop error: {e}")
+        time.sleep(3.0)
+
+    print("[FileWorker] Exited cleanly.")
+    sys.exit(0)

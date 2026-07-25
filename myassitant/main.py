@@ -3,18 +3,19 @@ myassitant/main.py
 Entry point cho hệ thống myassitant Group Chat AI Bot.
 
 Khởi động các luồng/process độc lập:
-  0. gemma4/program.py   — Local Gemma4 API server (subprocess, port 8000)
-  1. Webhook server      — FastAPI port 8090 (thread)
-  2. Cloudflare Tunnel   — Lấy HTTPS URL + đăng ký Telegram webhook (thread)
-  3. File Worker         — Download & summarize file/link (thread)
-  4. Agent Manager       — Spawn GroupChatAgent theo group_chat DB (thread)
-  5. GroupChatAgent×N    — AI Agent cho từng nhóm (thread per group)
+  0. gemma4/program.py      — Local Gemma4 API server  (subprocess, port 8000)
+  1. file_worker.py         — Download & summarize file (subprocess)
+  2. Webhook server         — FastAPI port 8090         (thread)
+  3. Cloudflare Tunnel      — HTTPS URL + Telegram wh   (thread)
+  4. Agent Manager          — Spawn GroupChatAgent      (thread)
+  5. GroupChatAgent ×N      — AI Agent per group        (thread per group)
 
 Khi shutdown:
-  - Set _stop_event → tất cả thread dừng vòng lặp
-  - Kill gemma4 subprocess
-  - Kill cloudflared process
-  - Giải phóng port 8000 và 8090 bằng fuser/kill
+  - Set _stop_event → tất cả thread dừng vòng lập
+  - SIGTERM gemma4 subprocess
+  - SIGTERM file_worker subprocess
+  - SIGTERM cloudflared process
+  - fuser -k 8000/tcp và 8090/tcp → giải phóng port hoàn toàn
 """
 import os
 import sys
@@ -39,7 +40,6 @@ from myassitant.config import (
     TELEGRAM_BOT_TOKEN,
     AGENT_SLEEP_INTERVAL,
 )
-from myassitant.file_worker import run_file_worker
 from myassitant.agent import GroupChatAgent
 
 import httpx
@@ -53,7 +53,8 @@ _stop_event = threading.Event()
 _active_agents: dict[str, GroupChatAgent] = {}
 _agents_lock = threading.Lock()
 _tunnel_process = None
-_gemma4_process = None        # subprocess gemma4/program.py
+_gemma4_process = None         # subprocess gemma4/program.py
+_file_worker_process = None    # subprocess myassitant/file_worker.py
 
 
 # ─── Giải phóng port (force kill process chiếm port) ─────────────────────────
@@ -302,12 +303,50 @@ def run_tunnel_and_webhook_thread():
             time.sleep(3)
 
 
-# ─── File Worker Thread ───────────────────────────────────────────────────────
+# ─── File Worker Process ─────────────────────────────────────────────────────
 
-def run_file_worker_thread():
-    """Thread xử lý file/link download + summarize."""
-    print("[FileWorkerThread] Started.")
-    run_file_worker(stop_event=_stop_event, sleep_sec=3.0)
+def start_file_worker() -> subprocess.Popen:
+    """
+    Khởi động file_worker.py dạng process độc lập.
+    Trả về Popen object hoặc None nếu lỗi.
+    """
+    global _file_worker_process
+    fw_script = os.path.join(_DIR, "file_worker.py")
+    python_exec = sys.executable
+
+    print(f"[FileWorker] Khởi động: {python_exec} {fw_script}")
+    try:
+        _file_worker_process = subprocess.Popen(
+            [python_exec, fw_script],
+            cwd=_ROOT,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            env={**os.environ},
+        )
+        print(f"[FileWorker] Process started (PID={_file_worker_process.pid})")
+        return _file_worker_process
+    except Exception as e:
+        print(f"[FileWorker] Không khởi động được: {e}")
+        return None
+
+
+def run_file_worker_monitor_thread():
+    """
+    Thread giám sát file_worker process:
+    - Nếu process chết bất ngờ → restart
+    - Nếu _stop_event set → dừng
+    """
+    global _file_worker_process
+    print("[FileWorkerMonitor] Started.")
+    while not _stop_event.is_set():
+        if _file_worker_process and _file_worker_process.poll() is not None:
+            rc = _file_worker_process.returncode
+            print(f"[FileWorkerMonitor] Process died (rc={rc}). Restarting in 3s...")
+            time.sleep(3)
+            if not _stop_event.is_set():
+                start_file_worker()
+        time.sleep(3)
+    print("[FileWorkerMonitor] Stopped.")
 
 
 # ─── Agent Manager Thread ─────────────────────────────────────────────────────
@@ -371,15 +410,18 @@ def _shutdown():
     # 1. Dừng gemma4 subprocess
     _kill_process(_gemma4_process, "gemma4/program.py")
 
-    # 2. Dừng cloudflared tunnel
+    # 2. Dừng file_worker subprocess
+    _kill_process(_file_worker_process, "file_worker.py")
+
+    # 3. Dừng cloudflared tunnel
     _kill_process(_tunnel_process, "cloudflared")
 
-    # 3. Dừng tất cả AI agents
+    # 4. Dừng tất cả AI agents
     with _agents_lock:
         for agent in _active_agents.values():
             agent.stop()
 
-    # 4. Giải phóng port (force kill nếu vẫn còn process giữ port)
+    # 5. Giải phóng port (force kill nếu vẫn còn process giữ port)
     time.sleep(1)  # chờ process terminate trước
     _free_port(MYASSITANT_PORT)
     _free_port(GEMMA4_PORT)
@@ -447,15 +489,16 @@ def main():
     )
     t_tunnel.start()
 
-    # ── Thread 3: File/Link Processing Worker ─────────────────────────────────
-    t_file = threading.Thread(
-        target=run_file_worker_thread,
-        name="file-worker",
+    # ── Process 2: File/Link Processing Worker (subprocess độc lập) ──────────
+    start_file_worker()
+    t_fw_monitor = threading.Thread(
+        target=run_file_worker_monitor_thread,
+        name="file-worker-monitor",
         daemon=True
     )
-    t_file.start()
+    t_fw_monitor.start()
 
-    # ── Thread 4: Agent Manager ────────────────────────────────────────────────
+    # ── Thread 3: Agent Manager ────────────────────────────────────────────────
     t_manager = threading.Thread(
         target=run_agent_manager_thread,
         name="agent-manager",
@@ -463,7 +506,7 @@ def main():
     )
     t_manager.start()
 
-    print("[Main] Tất cả threads đã khởi động.")
+    print("[Main] Tất cả processes/threads đã khởi động.")
     print("[Main] Nhấn Ctrl+C để dừng.")
 
     # Keep main thread alive
@@ -474,6 +517,8 @@ def main():
         _shutdown()
 
     print("[Main] myassitant đã dừng.")
+
+
 
 
 if __name__ == "__main__":

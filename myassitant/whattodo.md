@@ -33,9 +33,9 @@ cần build A.I agent chatbot dùng local gemma4, khi khởi tạo lên cần bi
         sqllite để tìm kiếm các thông tin ở các message trong nhóm, vd nếu cần tìm theo thời gian hoặc regex nội dung mà dựa vào context có thể cần tìm lại  hoặc do người dùng yêu cầu 
     A.I agent loop tối đa 3 lần để thu thập thông tin dựa vào context khi cần rồi dựa trên nguyên tắc không bịa đặt, cần trung thực về nội dung rồi trả lời với nội dung phù hợp và logic. cần suy nghĩ và rà soát kỹ lưỡng trước khi đưa ra câu trả lời. Cần tạo system prompt để chatbot hoạt động giống như 1 trợ lý chuyên nghiệp xử lý thông tin cho các cuộc chat group trên nền tảng telegram
 
-chương trình khi chạy lên thì cần tách thành các luồng độc lập 
-    cần start local gemma4 cùng gemma4/program.py 
-    cho việc lưu message và tóm tắt files ... để lưu vào sqllite
+chương trình khi chạy lên thì cần tách thành các luồng hoặc process độc lập 
+    cần start local gemma4 cùng gemma4/program.py start dạng process 
+    cho việc lưu message và tóm tắt files ... để lưu vào sqllite dạng process 
     dựa vào bảng group_chat để khời tạo các A.I agent chatbot tương ứng, mỗi A.I agent chatbot là luồng riêng 
     trong quá trình chạy cần quan sát xem có group_chat mới không để khời tạo A.I agent chatbot tương ứng
     khi chương trình đóng cần giải phóng thực sự các port đang chiếm dụng vd của local gemma4, của chính myassistant 
