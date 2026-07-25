@@ -6,7 +6,7 @@ import ollama
 from TTS.api import TTS
 
 # --- CẤU HÌNH ---
-MODEL_STT = "base" # Có thể dùng 'large-v3' nếu máy mạnh
+MODEL_STT = "turbo" # Whisper Large-v3 Turbo (chạy CPU INT8 tốc độ cao)
 LLM_NAME = "llama3" # Hoặc 'vistral' cho tiếng Việt tốt hơn
 VOICE_SAMPLE = "my_voice.wav" # File record giọng của bạn (dài khoảng 10s)
 
