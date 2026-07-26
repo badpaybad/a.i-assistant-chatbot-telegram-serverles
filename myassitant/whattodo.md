@@ -54,3 +54,5 @@ các text lấy được đều đưa vào context để trả lời người d�
 
 CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 15s để cắt thành các đoạn video phục vụ việc convert sang audio để xử lý lấy text 
     ffmpeg sẽ convert video thành audio chuẩn gemma4 rồi gọi lên whipser hoặc gemma4, hiện tại default là whiper tubor
+
+**cập nhật 1** bổ xung cho myassitant/webhook_handler.py làm proxy pass GEMMA4_GENERATE_URL , tạo route url path request response giống với GEMMA4_GENERATE_URL 

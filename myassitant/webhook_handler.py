@@ -17,7 +17,8 @@ import asyncio
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Response
+from fastapi.responses import StreamingResponse
 
 # Adjust path để import myassitant package
 _DIR = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,8 @@ from myassitant.config import (
     TELEGRAM_BOT_USERNAME,
     REPLY_ON_TAG_BOT_USERNAME,
     DIR_FILES,
+    GEMMA4_LOCAL_URL,
+    GEMMA4_GENERATE_URL,
 )
 
 # Tạo FastAPI app riêng (sẽ được mount hoặc chạy độc lập)
@@ -324,3 +327,66 @@ async def telegram_webhook(request: Request):
 async def list_groups():
     """API debug: Liệt kê tất cả nhóm đang active."""
     return db.get_all_active_groups()
+
+
+# ─── Proxy Pass Gemma4 API Endpoints ──────────────────────────────────────────
+
+async def _proxy_request_to_gemma4(target_url: str, request: Request):
+    """
+    Forward HTTP POST request tới backend Gemma4 API (GEMMA4_LOCAL_URL)
+    và stream response về cho client với đầy đủ status code & headers.
+    """
+    body = await request.body()
+    headers = {k: v for k, v in request.headers.items() if k.lower() not in ("host", "content-length")}
+
+    client = httpx.AsyncClient(timeout=300.0)
+    try:
+        req = client.build_request(
+            method=request.method,
+            url=target_url,
+            content=body,
+            headers=headers,
+            params=dict(request.query_params)
+        )
+        resp = await client.send(req, stream=True)
+
+        async def stream_content():
+            try:
+                async for chunk in resp.aiter_bytes():
+                    yield chunk
+            finally:
+                await resp.aclose()
+                await client.aclose()
+
+        resp_headers = {
+            k: v for k, v in resp.headers.items()
+            if k.lower() not in ("content-length", "content-encoding", "transfer-encoding")
+        }
+        return StreamingResponse(
+            stream_content(),
+            status_code=resp.status_code,
+            headers=resp_headers,
+            media_type=resp.headers.get("content-type", "application/json")
+        )
+    except Exception as e:
+        await client.aclose()
+        raise HTTPException(status_code=502, detail=f"Proxy error connecting to Gemma4 API: {str(e)}")
+
+
+@app.post("/v1beta/models/{model}:generateContent")
+async def proxy_gemma4_generate_content(model: str, request: Request):
+    """
+    Proxy pass cho route /v1beta/models/{model}:generateContent của GEMMA4_GENERATE_URL.
+    """
+    target_url = f"{GEMMA4_LOCAL_URL}/v1beta/models/{model}:generateContent"
+    return await _proxy_request_to_gemma4(target_url, request)
+
+
+@app.post("/v1beta/models/{model}:streamGenerateContent")
+async def proxy_gemma4_stream_generate_content(model: str, request: Request):
+    """
+    Proxy pass cho route /v1beta/models/{model}:streamGenerateContent của Gemma4 local server.
+    """
+    target_url = f"{GEMMA4_LOCAL_URL}/v1beta/models/{model}:streamGenerateContent"
+    return await _proxy_request_to_gemma4(target_url, request)
+
