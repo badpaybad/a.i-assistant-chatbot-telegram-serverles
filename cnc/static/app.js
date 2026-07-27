@@ -3116,10 +3116,184 @@ function initGcodeEditor() {
         });
     }
 
+    function parseGrblGCodeToSegments(gcodeText) {
+        const segments = [];
+        let currentX = 0.0;
+        let currentY = 0.0;
+        let isAbsolute = true;
+        let unitScale = 1.0;
+        let motionMode = "G0";
+        let isPenDown = true;
+
+        const xRegex = /X([\d\.-]+)/i;
+        const yRegex = /Y([\d\.-]+)/i;
+        const zRegex = /Z([\d\.-]+)/i;
+        const iRegex = /I([\d\.-]+)/i;
+        const jRegex = /J([\d\.-]+)/i;
+        const rRegex = /R([\d\.-]+)/i;
+
+        const lines = gcodeText.split(/\r?\n/);
+        for (let rawLine of lines) {
+            let line = rawLine.trim();
+            const commentIdx = line.indexOf(';');
+            if (commentIdx !== -1) line = line.substring(0, commentIdx).trim();
+            const parenIdx = line.indexOf('(');
+            if (parenIdx !== -1) line = line.substring(0, parenIdx).trim();
+
+            if (!line) continue;
+
+            const upperLine = line.toUpperCase();
+            if (upperLine.includes('G90')) isAbsolute = true;
+            if (upperLine.includes('G91')) isAbsolute = false;
+            if (upperLine.includes('G20')) unitScale = 25.4;
+            if (upperLine.includes('G21')) unitScale = 1.0;
+
+            if (upperLine.includes('M5')) isPenDown = false;
+            if (upperLine.includes('M3 S10') || upperLine.includes('M3 S0')) isPenDown = false;
+            if (upperLine.includes('M3 S90') || upperLine.includes('M3 S100')) isPenDown = true;
+
+            const zMatch = zRegex.exec(upperLine);
+            if (zMatch) {
+                const zVal = parseFloat(zMatch[1]) * unitScale;
+                isPenDown = (zVal <= 0);
+            }
+
+            const gMatch = upperLine.match(/\bG(00?|0?1|0?2|0?3)\b/);
+            if (gMatch) {
+                const gCode = parseInt(gMatch[1], 10);
+                if (gCode === 0) motionMode = "G0";
+                else if (gCode === 1) motionMode = "G1";
+                else if (gCode === 2) motionMode = "G2";
+                else if (gCode === 3) motionMode = "G3";
+            }
+
+            const xMatch = xRegex.exec(upperLine);
+            const yMatch = yRegex.exec(upperLine);
+
+            if (xMatch || yMatch) {
+                let targetX = currentX;
+                let targetY = currentY;
+
+                if (xMatch) {
+                    const val = parseFloat(xMatch[1]) * unitScale;
+                    targetX = isAbsolute ? val : currentX + val;
+                }
+                if (yMatch) {
+                    const val = parseFloat(yMatch[1]) * unitScale;
+                    targetY = isAbsolute ? val : currentY + val;
+                }
+
+                const isDrawing = (motionMode === "G1" || motionMode === "G2" || motionMode === "G3") && isPenDown;
+
+                if (motionMode === "G2" || motionMode === "G3") {
+                    const iMatch = iRegex.exec(upperLine);
+                    const jMatch = jRegex.exec(upperLine);
+                    const rMatch = rRegex.exec(upperLine);
+
+                    let centerX = currentX;
+                    let centerY = currentY;
+
+                    if (iMatch || jMatch) {
+                        const iVal = iMatch ? parseFloat(iMatch[1]) * unitScale : 0;
+                        const jVal = jMatch ? parseFloat(jMatch[1]) * unitScale : 0;
+                        centerX = currentX + iVal;
+                        centerY = currentY + jVal;
+                    } else if (rMatch) {
+                        const R = parseFloat(rMatch[1]) * unitScale;
+                        const dx = targetX - currentX;
+                        const dy = targetY - currentY;
+                        const d = Math.sqrt(dx * dx + dy * dy);
+                        if (d > 0 && Math.abs(R) >= d / 2) {
+                            const h = Math.sqrt(Math.max(0, R * R - (d / 2) * (d / 2)));
+                            const mx = (currentX + targetX) / 2;
+                            const my = (currentY + targetY) / 2;
+                            const sign = (motionMode === "G2") ? 1 : -1;
+                            centerX = mx + sign * h * (-dy / d);
+                            centerY = my + sign * h * (dx / d);
+                        }
+                    }
+
+                    const startAngle = Math.atan2(currentY - centerY, currentX - centerX);
+                    let endAngle = Math.atan2(targetY - centerY, targetX - centerX);
+                    let sweep = endAngle - startAngle;
+
+                    if (motionMode === "G2") {
+                        if (sweep >= 0) sweep -= 2 * Math.PI;
+                    } else {
+                        if (sweep <= 0) sweep += 2 * Math.PI;
+                    }
+
+                    const steps = Math.max(8, Math.ceil(Math.abs(sweep) / (Math.PI / 12)));
+                    let prevX = currentX;
+                    let prevY = currentY;
+
+                    const radius = Math.sqrt((currentX - centerX) ** 2 + (currentY - centerY) ** 2);
+                    for (let step = 1; step <= steps; step++) {
+                        const angle = startAngle + (sweep * step / steps);
+                        const stepX = centerX + radius * Math.cos(angle);
+                        const stepY = centerY + radius * Math.sin(angle);
+
+                        if (isDrawing) {
+                            segments.push({ x1: prevX, y1: prevY, x2: stepX, y2: stepY });
+                        }
+                        prevX = stepX;
+                        prevY = stepY;
+                    }
+                } else {
+                    if (isDrawing) {
+                        segments.push({
+                            x1: currentX, y1: currentY,
+                            x2: targetX, y2: targetY
+                        });
+                    }
+                }
+
+                currentX = targetX;
+                currentY = targetY;
+            }
+        }
+        return segments;
+    }
+
     function handleEditorFile(file) {
         const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-        if (![".svg", ".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-            alert(t("File không hỗ trợ! Vui lòng chọn ảnh JPG, PNG hoặc file SVG."));
+        if (![".svg", ".jpg", ".jpeg", ".png", ".webp", ".gcode", ".nc", ".cnc", ".txt"].includes(ext)) {
+            alert(t("File không hỗ trợ! Vui lòng chọn ảnh (JPG, PNG, WebP), SVG hoặc file GRBL G-Code (.gcode, .nc)."));
+            return;
+        }
+
+        if ([".gcode", ".nc", ".cnc", ".txt"].includes(ext)) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const gcodeText = e.target.result;
+                const parsedSegments = parseGrblGCodeToSegments(gcodeText);
+
+                editorOriginalImageFile = null;
+                editorOriginalImageBase64 = "";
+                editorBgImage = null;
+                editorOriginalFilename = file.name;
+                editorFileName.innerText = file.name;
+                editorDropZone.classList.add("hidden");
+                editorFileInfo.classList.remove("hidden");
+
+                groupEditorAlgo.classList.add("hidden");
+
+                editorOriginalGcodeText = gcodeText;
+                editorSegments = parsedSegments;
+                editorOriginalSegments = JSON.parse(JSON.stringify(parsedSegments));
+
+                editorZoom = 1.0;
+                editorPan = { x: 0, y: 0 };
+
+                updateBoundingBox();
+                updateScale();
+                drawEditorCanvas();
+
+                if (btnEditorPreviewInVideoFrame && !previewIntervalId) {
+                    btnEditorPreviewInVideoFrame.click();
+                }
+            };
+            reader.readAsText(file);
             return;
         }
 
@@ -3182,7 +3356,12 @@ function initGcodeEditor() {
     if (btnEditorConvert) {
         btnEditorConvert.addEventListener("click", async () => {
             if (!editorOriginalImageFile) {
-                alert(t("Vui lòng chọn một file ảnh hoặc SVG trước!"));
+                if (editorSegments.length > 0) {
+                    editorOriginalGcodeText = generateGcodeFromSegments();
+                    alert(t("Đã tái tạo G-Code thành công từ các nét vẽ hiện tại!"));
+                    return;
+                }
+                alert(t("Vui lòng chọn một file ảnh, SVG hoặc G-Code trước!"));
                 return;
             }
 

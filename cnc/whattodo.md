@@ -397,3 +397,8 @@ Có thể bổ xung thêm kiểu fill native tức là ảnh cho về đen trắ
 ✅ Đã bổ sung chế độ "Raster Scanline (Tô quét Ziczac 2px)" trong tab Chữ Viết Tay. Cho phép đầu CNC di chuyển ziczac liên tục theo từng dòng cách nhau 2px (tùy chỉnh từ 1px - 10px) qua toàn bộ diện tích nét chữ để tô phủ kín chữ như nề lại chữ.
 ✅ Đã bổ sung Phương án 2: "Local Raster (Tô Ziczac từng chữ)" - Tự động tách từng ký tự liên thông (Connected Components) và chỉ quét Ziczac ngắn trong phạm vi từng con chữ, giúp loại bỏ di chuyển không tải xa và không nhấc bút giữa chừng.
 ✅ Đã bổ sung Phương án 3: "Cross-Hatch (Tô gạch chéo 45°)" - Tô lấp đầy nét chữ theo các đường gạch chéo nghiêng 45° liền mạch, tạo hiệu ứng tô bóng nét chữ mỹ thuật và mềm mại.
+
+**cập nhật 51** bộ soạn thảo gcode ngoài việc chọn ảnh để tạo gcode từ ảnh. bổ xung thêm chọn thẳng file grbl gcode lên để edit bằng các công cụ chỉnh sửa 
+✅ Đã bổ sung khả năng chọn/kéo thả trực tiếp file GRBL G-code (`.gcode`, `.nc`, `.cnc`, `.txt`) vào bộ soạn thảo G-code Editor.
+✅ Tự động đọc và phân tích các lệnh GRBL G-code (`G0`, `G1`, `G2`, `G3`, `G90`, `G91`, trục `Z` và lệnh Servo `M3`/`M5`) thành các phân đoạn nét vẽ (`segments`) trực quan hiển thị ngay trên Canvas.
+✅ Hỗ trợ chỉnh sửa trực tiếp file G-code đã tải lên bằng đầy đủ bộ công cụ: xoá nét (🗑️), vẽ tay bổ sung (✏️), sửa điểm node (📍), di chuyển (✋), xóa tất cả (🗑️ X), làm mịn, xem trước trên khung hình video và xuất/truyền file G-code mới đến máy CNC.

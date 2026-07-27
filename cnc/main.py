@@ -4036,6 +4036,10 @@ async def gcode_editor_convert(
                     feed_rate=feed_rate,
                     mode=mode
                 )
+        elif file_ext in [".gcode", ".nc", ".cnc", ".txt"]:
+            import shutil
+            shutil.copyfile(temp_input_path, temp_gcode_path)
+            success = True
         else:
             return JSONResponse({"status": "error", "message": f"Unsupported file type: {file_ext}"}, status_code=400)
             

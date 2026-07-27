@@ -46,3 +46,7 @@ onnxscript
 pydub
 optimum-quanto
 llama-cpp-python
+freetype-py 
+shapely 
+scipy 
+numpy
