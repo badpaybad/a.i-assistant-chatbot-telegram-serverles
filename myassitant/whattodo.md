@@ -13,7 +13,9 @@ Dùng sqllite để lưu các thông tin
             cần dùng sqllite lưu thông tin file (file_of_message) và dùng local gemma4 để lấy được mô tả hoặc tóm tắt nội dung file nếu có thể, ví dụ file pdf , image, audio, word , text , json ... hoặc có đường link cần crawl nội dung và dùng local gemma4 để tóm tắt , việc xử lý audio, video có thể dùng ffmpeg để convert về chuẩn audio mà local gemma4 có thể đọc được rồi lấy nội dung text summary từ audio 
                 riêng video nếu dài quá cần cắt thành 15 giây lần 
                     ngoài lấy audio nhờ ffmpeg có thể dùng ffmpeg lấy mỗi giây trong video là 1 frame ảnh rồi dùng local gemma4 để lấy mô tả ảnh , ghép các mô tả ảnh và audio summary lại với nhau để làm nội dung bổ xung cho việc lấy context 
+                    lấy ffmpeg convert video thành audio để dùng local gemma4 lấy mô tả 
                 nếu audio dài quá cũng cần cắt thành 15 giây 1 lần rồi dùng local gemma4 để tóm tắt từng đoạn  rồi ghép các mô tả lại với nhau để làm nội dung bổ xung cho việc lấy context 
+                các mô tả cần ghép với nhau để dùng trong context 
             message có is_chatbot_reply: 0 (không cần trả lời):  do message không xuất hiện việc đề cập tên chatbot hoặc tag chatbot coi như chatbot không cần trả lời; 1 (chưa trả lời): có để cập tên hoặc tag chatbot thì là đang đợi chatbot trả lời; 2 (đã trả lời ): khi A.I agent chatbot trả lời sẽ cập nhật is_chatbot_reply thành 2 
             từng message có thêm trạng thái is_processed : 0: chưa xử lý, 1: đã xử lý (do liên quan tới việc download và dùng local gemma4) cần đợi các tiến trình đề cập phía trên xong thì mới chuyển sang trạng thái 1 (đã xử lý)
 
@@ -24,6 +26,8 @@ cần build A.I agent chatbot dùng local gemma4, khi khởi tạo lên cần bi
         nếu trước đó đã trả lời rồi thì không trả lời lại
         nếu người dùng có quote lại thì cần xem context nếu cần reply thì tag người hỏi để trả lời  
     cần lấy các message có is_chatbot_reply= 1 (chưa trả lời) để trả lời lại , sau khi trả lời cho message đó sẽ cập nhật is_chatbot_reply thành 2 (đã trả lời). cần xử lý lần lượt theo thời gian 
+    khi chát private 1-1 với chatbot message về cái là is_chatbot_reply= 1
+    message đến từ group chát nếu xuất hiện tên chatbot hoặc được chatbot được tag thì message về cái là is_chatbot_reply= 1
         10 message và các dữ liệu gần nhất để làm bổ xung context cho việc xử lý message và trả lời
     cần có các tools call , function calls để dùng cho local gemma4:
         có thể gọi gemini api kèm google search để làm công cụ tìm kiếm những gì cần thời gian thực do hiểu context mà cần ( ví dụ tin tức , thời tiết , tỷ giá ngoại tệ ...) hoặc do người dùng đích danh yêu cầu tìm kiếm google để lấy được thông tin cần dùng cho việc trả lời 
@@ -39,3 +43,16 @@ chương trình khi chạy lên thì cần tách thành các luồng hoặc proc
     dựa vào bảng group_chat để khời tạo các A.I agent chatbot tương ứng, mỗi A.I agent chatbot là luồng riêng 
     trong quá trình chạy cần quan sát xem có group_chat mới không để khời tạo A.I agent chatbot tương ứng
     khi chương trình đóng cần giải phóng thực sự các port đang chiếm dụng vd của local gemma4, của chính myassistant 
+
+audio đã được stt dùng Whisper Large-v3 Turbo chạy cpu 
+khi nhận webhook telegram message là reply hoặc quote lại 1 message trước đó tức là người dùng muốn dùng cả nội dùng message được chọn reply or quote. cần dùng cả 2 message ( current messagge và quote hoặc reply message) để xử lý và trả lời cho người dùng 
+
+khi message telegram nhận được từ webhook 
+có video xử lý video thì cứ 5 giây lấy 1 frame và gọi local gemma4 để lấy mô tả ảnh
+khi Video thành audio hoặc audio thì tức là cũng xử lý audio cần trả thêm nguyên text lấy từ audio ra 
+các text lấy được đều đưa vào context để trả lời người dùng , audio cần trả thêm nguyên text lấy từ audio ra nằm sau content reply cho người dùng 
+
+CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 15s để cắt thành các đoạn video phục vụ việc convert sang audio để xử lý lấy text 
+    ffmpeg sẽ convert video thành audio chuẩn gemma4 rồi gọi lên whipser hoặc gemma4, hiện tại default là whiper tubor
+
+**cập nhật 1** bổ xung cho myassitant/webhook_handler.py làm proxy pass GEMMA4_GENERATE_URL , tạo route url path request response giống với GEMMA4_GENERATE_URL 

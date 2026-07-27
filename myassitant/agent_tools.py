@@ -181,14 +181,16 @@ def search_google(query: str) -> str:
         return response.text.strip() if response.text else "[Không tìm được kết quả]"
     except Exception as e:
         # Fallback: dùng Gemini API không có search
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=GEMINI_APIKEY)
-            model = genai.GenerativeModel(model_name=GEMINI_MODEL)
-            response = model.generate_content(f"Trả lời ngắn gọn câu hỏi sau (có thể bạn không có thông tin thời gian thực): {query}")
-            return response.text.strip()
-        except Exception as e2:
-            return f"[Lỗi tìm kiếm: {e2}]"
+        print(f"[Agent] Search fallback: {e}")
+        return f"[Lỗi tìm kiếm: {e}]"
+        # try:
+        #     import google.generativeai as genai
+        #     genai.configure(api_key=GEMINI_APIKEY)
+        #     model = genai.GenerativeModel(model_name=GEMINI_MODEL)
+        #     response = model.generate_content(f"Trả lời ngắn gọn câu hỏi sau (có thể bạn không có thông tin thời gian thực): {query}")
+        #     return response.text.strip()
+        # except Exception as e2:
+        #     return f"[Lỗi tìm kiếm: {e2}]"
 
 
 def crawl_url(url: str) -> str:
@@ -210,7 +212,16 @@ def crawl_url(url: str) -> str:
 
 def read_file(file_path: str) -> str:
     """Đọc nội dung file."""
+    if not file_path or not str(file_path).strip():
+        return "[Lỗi: file_path không được để trống hoặc rỗng]"
     try:
+        # 1. Kiểm tra cache trong DB xem file đã được file_worker xử lý/tóm tắt chưa
+        cached_desc = db.get_file_description_by_path(file_path)
+        if cached_desc and cached_desc.strip():
+            print(f"[AgentTools] Dùng nội dung cache đã tóm tắt sẵn cho: {file_path}")
+            return cached_desc[:MAX_CONTENT_CHARS]
+
+        # 2. Nếu chưa có cache, đọc nội dung file
         from gemma4.files import read_file_content
         content = read_file_content(file_path)
         return content[:MAX_CONTENT_CHARS]

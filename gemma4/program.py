@@ -448,56 +448,56 @@ async def generate_content(request: GenerateContentRequest, req: Request, model:
          
     current_prompt, images, audios = process_omni_parts(last_user_msg.parts)
     
-    # 2. Xử lý Tools / Function Calling
-    available_funcs = []
+    # 2. Xử lý Tools / Function Calling (chỉ thực hiện nếu caller có truyền request.tools)
     if request.tools:
+        available_funcs = []
         for tool in request.tools:
             if tool.function_declarations:
                 available_funcs.extend(tool.function_declarations)
-    
-    # Thêm default tool generate_file nếu chưa có
-    if not any(f["name"] == "generate_file" for f in available_funcs):
-        available_funcs.append({
-            "name": "generate_file",
-            "description": "Tạo một file mới (csv, txt, md) từ nội dung văn bản.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "filename": {"type": "string", "description": "Tên file"},
-                    "content": {"type": "string", "description": "Nội dung văn bản"}
-                },
-                "required": ["filename", "content"]
-            }
-        })
-
-    eval_prompt_for_tools = current_prompt
-    if request.system_instruction and request.system_instruction.parts:
-        sys_text = "".join([p.text for p in request.system_instruction.parts if p.text])
-        if sys_text:
-            eval_prompt_for_tools = f"NGỮ CẢNH HỘI THOẠI:\n{sys_text}\n\nTIN NHẮN HIỆN TẠI:\n{current_prompt}"
-
-    tool_engine = Gemma4Tools()
-    match_results = tool_engine.match_tools(eval_prompt_for_tools, available_funcs)
-    top_match = match_results[0] if match_results else None
-    
-    if top_match and top_match.get("score", 0) > 0.7 and top_match.get("function_name") != "none":
-        func_name = top_match["function_name"]
-        args = top_match.get("parameters", {})
         
-        if func_name == "generate_file":
-            fname = args.get("filename", f"file_{uuid.uuid4()}.txt")
-            fcontent = args.get("content", "")
-            fpath = os.path.join(OUTPUT_DIR, fname)
-            with open(fpath, "w", encoding="utf-8") as f:
-                f.write(fcontent)
-            download_url = f"{base_url}/download/{fname}"
-            response_text = f"Tôi đã tạo file thành công: {download_url}"
-            return GenerateContentResponse(candidates=[Candidate(content=Content(role="model", parts=[Part(text=response_text)]))])
+        # Thêm default tool generate_file nếu chưa có
+        if not any(f["name"] == "generate_file" for f in available_funcs):
+            available_funcs.append({
+                "name": "generate_file",
+                "description": "Tạo một file mới (csv, txt, md) từ nội dung văn bản.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "filename": {"type": "string", "description": "Tên file"},
+                        "content": {"type": "string", "description": "Nội dung văn bản"}
+                    },
+                    "required": ["filename", "content"]
+                }
+            })
 
-        # Trả về Function Call chuẩn Gemini
-        return GenerateContentResponse(
-            candidates=[Candidate(content=Content(role="model", parts=[Part(function_call=FunctionCall(name=func_name, args=args))]))]
-        )
+        eval_prompt_for_tools = current_prompt
+        if request.system_instruction and request.system_instruction.parts:
+            sys_text = "".join([p.text for p in request.system_instruction.parts if p.text])
+            if sys_text:
+                eval_prompt_for_tools = f"NGỮ CẢNH HỘI THOẠI:\n{sys_text}\n\nTIN NHẮN HIỆN TẠI:\n{current_prompt}"
+
+        tool_engine = Gemma4Tools()
+        match_results = tool_engine.match_tools(eval_prompt_for_tools, available_funcs)
+        top_match = match_results[0] if match_results else None
+        
+        if top_match and top_match.get("score", 0) > 0.7 and top_match.get("function_name") != "none":
+            func_name = top_match["function_name"]
+            args = top_match.get("parameters", {})
+            
+            if func_name == "generate_file":
+                fname = args.get("filename", f"file_{uuid.uuid4()}.txt")
+                fcontent = args.get("content", "")
+                fpath = os.path.join(OUTPUT_DIR, fname)
+                with open(fpath, "w", encoding="utf-8") as f:
+                    f.write(fcontent)
+                download_url = f"{base_url}/download/{fname}"
+                response_text = f"Tôi đã tạo file thành công: {download_url}"
+                return GenerateContentResponse(candidates=[Candidate(content=Content(role="model", parts=[Part(text=response_text)]))])
+
+            # Trả về Function Call chuẩn Gemini
+            return GenerateContentResponse(
+                candidates=[Candidate(content=Content(role="model", parts=[Part(function_call=FunctionCall(name=func_name, args=args))]))]
+            )
 
     # 3. Thực hiện sinh text
     config = request.generationConfig or GenerationConfig()

@@ -70,9 +70,14 @@ def _download_telegram_file(file_id: str, group_id: str, file_name: str = None) 
         r2 = requests.get(download_url, timeout=60)
         r2.raise_for_status()
 
-        # Xác định tên file
+        # Xác định tên file & extension chuẩn từ Telegram API
+        tg_basename = os.path.basename(file_path)
+        tg_ext = os.path.splitext(tg_basename)[1].lower()
+
         if not file_name:
-            file_name = os.path.basename(file_path)
+            file_name = tg_basename
+        elif not os.path.splitext(file_name)[1] and tg_ext:
+            file_name = f"{file_name}{tg_ext}"
 
         # Thư mục lưu: files/<group_id>/
         save_dir = os.path.join(DIR_FILES, str(group_id))
@@ -160,14 +165,71 @@ def _read_file_content_local(file_path: str) -> str:
 # ─── ffmpeg helpers ───────────────────────────────────────────────────────────
 
 # Audio formats Gemma4 STT có thể xử lý (qua librosa)
-_AUDIO_NATIVE_EXTS = {'.wav', '.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac'}
+_AUDIO_NATIVE_EXTS = {'.wav', '.mp3', '.flac', '.ogg', '.opus', '.m4a', '.aac', '.oga', '.wma'}
 # Video formats cần extract audio trước
 _VIDEO_EXTS = {'.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.3gp', '.ts'}
 
-# Ngưỡng độ dài (giây) để cắt chunk — tương đương 15s theo yêu cầu
-CHUNK_SEC = 15
+def _inspect_file_media_type(file_path: str, file_type_hint: str = "") -> str:
+    """
+    Xác định loại file: 'audio', 'video', 'photo', 'document', 'binary_unknown'
+    Dựa vào file_type_hint, extension và magic bytes.
+    """
+    if file_type_hint in ("voice", "audio"):
+        return "audio"
+    if file_type_hint == "video":
+        return "video"
+    if file_type_hint == "photo":
+        return "photo"
+
+    ext = os.path.splitext(file_path)[1].lower()
+    if ext in _AUDIO_NATIVE_EXTS:
+        return "audio"
+    if ext in _VIDEO_EXTS:
+        return "video"
+    if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
+        return "photo"
+    if ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json", ".md", ".py", ".html", ".xml"):
+        return "document"
+
+    # Kiểm tra Magic Bytes ở đầu file nếu chưa xác định được qua extension
+    try:
+        if os.path.exists(file_path):
+            with open(file_path, "rb") as f:
+                header = f.read(64)
+            if not header:
+                return "document"
+            # Audio magic bytes
+            if header.startswith(b"RIFF") and (b"WAVE" in header[:16] or b"AVI " in header[:16]):
+                return "audio" if b"WAVE" in header[:16] else "video"
+            if header.startswith(b"ID3") or header.startswith(b"OggS") or header.startswith(b"fLaC"):
+                return "audio"
+            if header.startswith(b"\xff\xfb") or header.startswith(b"\xff\xf3") or header.startswith(b"\xff\xf2"):
+                return "audio"
+            # Video magic bytes
+            if b"ftyp" in header[:20] or header.startswith(b"\x1a\x45\xdf\xa3"):
+                return "video"
+            # Image magic bytes
+            if header.startswith(b"\xff\xd8\xff") or header.startswith(b"\x89PNG") or header.startswith(b"GIF8") or (header.startswith(b"RIFF") and b"WEBP" in header[:16]):
+                return "photo"
+            # PDF magic bytes
+            if header.startswith(b"%PDF"):
+                return "document"
+
+            # Kiểm tra xem file có chứa byte nhị phân không
+            text_chars = bytearray({7, 8, 9, 10, 12, 13, 27} | set(range(0x20, 0x100)) - {0x7f})
+            is_binary = bool(header.translate(None, text_chars))
+            if is_binary:
+                return "binary_unknown"
+    except Exception as e:
+        print(f"[FileWorker] Magic byte inspect error: {e}")
+
+    return "document"
+
+# Ngưỡng độ dài (giây) để cắt chunk — 150s theo yêu cầu
+CHUNK_SEC = 150
 # Số chunk tối đa xử lý (tránh video quá dài xử lý mãi)
-MAX_CHUNKS = 20
+MAX_CHUNKS = 40
+
 
 
 def _ffmpeg_available() -> bool:
@@ -308,45 +370,43 @@ def _describe_frame_via_api(image_path: str, chunk_start_sec: float) -> str:
 
 def _transcribe_audio_chunked(audio_path: str) -> str:
     """
-    Transcribe file audio bằng cách:
-    1. Lấy độ dài tổng (ffprobe)
-    2. Nếu ngắn (≤ CHUNK_SEC) → transcribe trực tiếp
-    3. Nếu dài → cắt thành chunk CHUNK_SEC giây → STT từng đoạn → ghép lại
-    Trả về chuỗi text đầy đủ.
+    Transcribe file audio:
+    Cắt đoạn 15s (CHUNK_SEC) để xử lý lần lượt theo yêu cầu.
     """
     duration = _get_media_duration(audio_path)
     print(f"[FileWorker] Audio duration: {duration:.1f}s | file: {os.path.basename(audio_path)}")
 
-    tmp_wavs = []   # danh sách file tạm cần xóa
+    # Với audio ngắn <= 15s hoặc không đo được độ dài, transcribe 1 lần
+    if duration <= CHUNK_SEC or duration == 0:
+        try:
+            from gemma4.stt import transcribe_audio
+            text = transcribe_audio(audio_path)
+            if text and not text.startswith("[Lỗi"):
+                return text.strip()
+        except Exception as e:
+            print(f"[FileWorker] Direct STT error: {e}")
+
+    # Với audio > 15s: cắt chunk 15s
+    tmp_wavs = []
     transcripts = []
+    chunk_size = CHUNK_SEC  # 15s
 
     try:
-        if duration <= CHUNK_SEC or duration == 0:
-            # Ngắn hoặc không biết độ dài → convert rồi transcribe luôn
-            wav = _convert_to_wav_16k(audio_path)
+        n_chunks = min(int(duration / chunk_size) + (1 if duration % chunk_size > 0 else 0), MAX_CHUNKS)
+        print(f"[FileWorker] Audio ({duration:.1f}s): Chunking into {n_chunks} x {chunk_size}s chunks...")
+        for i in range(n_chunks):
+            start = i * chunk_size
+            if start >= duration and duration > 0:
+                break
+            chunk_dur = min(chunk_size, duration - start) if duration > 0 else chunk_size
+            wav = _convert_to_wav_16k(audio_path, start_sec=start, duration_sec=chunk_dur)
             if wav:
                 tmp_wavs.append(wav)
-                transcripts.append(_transcribe_wav_chunk(wav))
-            else:
-                return "[Không convert được audio]"
-        else:
-            # Cắt chunk
-            n_chunks = min(int(duration / CHUNK_SEC) + 1, MAX_CHUNKS)
-            print(f"[FileWorker] Chunking audio into {n_chunks} x {CHUNK_SEC}s chunks...")
-            for i in range(n_chunks):
-                start = i * CHUNK_SEC
-                if start >= duration:
-                    break
-                chunk_dur = min(CHUNK_SEC, duration - start)
-                wav = _convert_to_wav_16k(audio_path, start_sec=start, duration_sec=chunk_dur)
-                if wav:
-                    tmp_wavs.append(wav)
-                    text = _transcribe_wav_chunk(wav)
-                    if text and not text.startswith("[Lỗi"):
-                        transcripts.append(f"[{int(start)}s-{int(start+chunk_dur)}s] {text}")
-                    print(f"[FileWorker] Audio chunk {i+1}/{n_chunks}: {text[:60]}...")
+                text = _transcribe_wav_chunk(wav)
+                if text and not text.startswith("[Lỗi"):
+                    transcripts.append(f"[{int(start)}s-{int(start+chunk_dur)}s] {text}")
+                print(f"[FileWorker] Audio chunk {i+1}/{n_chunks}: {text[:60]}...")
     finally:
-        # Dọn file WAV tạm
         for f in tmp_wavs:
             try:
                 if os.path.exists(f):
@@ -363,12 +423,11 @@ def _process_video_full(video_path: str) -> str:
     """
     Xử lý toàn diện một file video:
     1. Lấy độ dài (ffprobe)
-    2. Cắt thành chunk CHUNK_SEC giây (tối đa MAX_CHUNKS)
+    2. Cắt thành chunk 15s (CHUNK_SEC)
     3. Mỗi chunk:
        a. Extract audio → WAV 16kHz → STT
-       b. Lấy 1 frame ảnh (giữa chunk) → Gemma4 vision mô tả
+       b. Cứ 5s lấy 1 frame ảnh (mốc 0s, 5s, 10s...) → Gemma4 vision mô tả ảnh
     4. Ghép audio transcript + frame description thành context
-    Trả về chuỗi mô tả đầy đủ.
     """
     duration = _get_media_duration(video_path)
     print(f"[FileWorker] Video duration: {duration:.1f}s | file: {os.path.basename(video_path)}")
@@ -383,16 +442,15 @@ def _process_video_full(video_path: str) -> str:
 
     try:
         if duration <= CHUNK_SEC or duration == 0:
-            # Video ngắn → một chunk duy nhất
             chunks = [(0, min(duration, CHUNK_SEC) if duration > 0 else CHUNK_SEC)]
         else:
-            n_chunks = min(int(duration / CHUNK_SEC) + 1, MAX_CHUNKS)
+            n_chunks = min(int(duration / CHUNK_SEC) + (1 if duration % CHUNK_SEC > 0 else 0), MAX_CHUNKS)
             chunks = []
             for i in range(n_chunks):
                 start = i * CHUNK_SEC
-                if start >= duration:
+                if start >= duration and duration > 0:
                     break
-                chunk_dur = min(CHUNK_SEC, duration - start)
+                chunk_dur = min(CHUNK_SEC, duration - start) if duration > 0 else CHUNK_SEC
                 chunks.append((start, chunk_dur))
 
         print(f"[FileWorker] Processing video in {len(chunks)} chunk(s)...")
@@ -401,7 +459,7 @@ def _process_video_full(video_path: str) -> str:
             end = start + chunk_dur
             chunk_parts = []
 
-            # a. Audio STT cho chunk này
+            # a. Audio STT cho chunk 15s này
             wav = _convert_to_wav_16k(video_path, start_sec=start, duration_sec=chunk_dur)
             if wav:
                 tmp_wavs.append(wav)
@@ -409,20 +467,32 @@ def _process_video_full(video_path: str) -> str:
                 if audio_text and not audio_text.startswith("[Lỗi"):
                     chunk_parts.append(f"[Âm thanh] {audio_text.strip()}")
 
-            # b. Lấy frame ảnh ở giữa chunk (hoặc các mốc 0s, CHUNK_SEC/2)
-            mid_sec = start + chunk_dur / 2
-            frame_path = _extract_frame_at_second(video_path, mid_sec, frame_dir)
-            if frame_path:
-                tmp_frames.append(frame_path)
-                frame_desc = _describe_frame_via_api(frame_path, mid_sec)
-                if frame_desc and not frame_desc.startswith("[Lỗi"):
-                    chunk_parts.append(f"[Ảnh tại {int(mid_sec)}s] {frame_desc}")
+            # b. Lấy keyframes ảnh cứ mỗi 5 giây trong chunk (5s/frame theo yêu cầu)
+            t_samples = []
+            t_curr = start
+            while t_curr < start + chunk_dur:
+                t_samples.append(round(t_curr, 1))
+                t_curr += 5.0
+            if not t_samples and chunk_dur > 0:
+                t_samples = [round(start, 1)]
+
+            frame_descs = []
+            for t_sec in t_samples:
+                frame_path = _extract_frame_at_second(video_path, t_sec, frame_dir)
+                if frame_path:
+                    tmp_frames.append(frame_path)
+                    frame_desc = _describe_frame_via_api(frame_path, t_sec)
+                    if frame_desc and not frame_desc.startswith("[Lỗi"):
+                        frame_descs.append(f"giây {int(t_sec)}s: {frame_desc}")
+            
+            if frame_descs:
+                chunk_parts.append("[Hình ảnh video] " + " | ".join(frame_descs))
 
             if chunk_parts:
                 chunk_descriptions.append(
                     f"=== [{int(start)}s – {int(end)}s] ===\n" + "\n".join(chunk_parts)
                 )
-            print(f"[FileWorker] Video chunk {idx+1}/{len(chunks)} [{int(start)}s-{int(end)}s] done.")
+            print(f"[FileWorker] Video chunk {idx+1}/{len(chunks)} [{int(start)}s-{int(end)}s] done ({len(frame_descs)} frames).")
 
     finally:
         # Dọn file tạm
@@ -477,73 +547,69 @@ def _process_file_record(file_record: dict):
     local_path = file_record.get("local_path")
     description = ""
 
-    if file_type == "url" and url:
-        # Crawl URL
-        print(f"[FileWorker] Crawling URL: {url}")
-        content = _crawl_url(url)
-        description = _summarize_with_gemma4(content, context=f"đường link {url}")
-        db.update_file_description(file_db_id, None, description or content[:500])
+    try:
+        if file_type == "url" and url:
+            # Crawl URL
+            print(f"[FileWorker] Crawling URL: {url}")
+            content = _crawl_url(url)
+            description = _summarize_with_gemma4(content, context=f"đường link {url}")
+            db.update_file_description(file_db_id, None, description or content[:500])
 
-    elif file_id:
-        # Download file nếu chưa có local_path
-        if not local_path or not os.path.exists(local_path):
-            ext_map = {
-                "photo": ".jpg",
-                "audio": ".mp3",
-                "voice": ".ogg",
-                "video": ".mp4",
-                "document": "",
-            }
-            ext = ext_map.get(file_type, "")
-            file_name = f"{file_id}{ext}"
-            local_path = _download_telegram_file(file_id, group_id, file_name)
+        elif file_id:
+            # Download file nếu chưa có local_path
+            if not local_path or not os.path.exists(local_path):
+                ext_map = {
+                    "photo": ".jpg",
+                    "audio": ".mp3",
+                    "voice": ".ogg",
+                    "video": ".mp4",
+                    "document": "",
+                }
+                ext = ext_map.get(file_type, "")
+                file_name = f"{file_id}{ext}"
+                local_path = _download_telegram_file(file_id, group_id, file_name)
 
-        if not local_path:
-            print(f"[FileWorker] Failed to download file_id={file_id}")
-            db.update_file_description(file_db_id, None, "[Download thất bại]")
-            return
+            if not local_path:
+                print(f"[FileWorker] Failed to download file_id={file_id}")
+                db.update_file_description(file_db_id, None, "[Download thất bại]")
+                return
 
-        # Đọc nội dung dựa theo loại file
-        ext = os.path.splitext(local_path)[1].lower()
-        content = ""
+            # Đọc nội dung dựa theo loại file (kiểm tra ext + magic bytes)
+            media_type = _inspect_file_media_type(local_path, file_type)
+            ext = os.path.splitext(local_path)[1].lower()
+            content = ""
 
-        # Audio (voice note, audio file) và Video → ffmpeg convert → STT
-        _is_audio = file_type in ("voice", "audio") or ext in _AUDIO_NATIVE_EXTS
-        _is_video = file_type == "video" or ext in _VIDEO_EXTS
-
-        if _is_audio or _is_video:
-            media_kind = "video" if _is_video else "audio"
-            print(f"[FileWorker] Transcribing {media_kind}: {local_path}")
-            content = _transcribe_audio_local(local_path)
-            if content and not content.startswith("[Lỗi"):
-                # Tóm tắt transcript nếu dài
-                if len(content) > 500:
-                    description = _summarize_with_gemma4(
-                        content, context=f"{media_kind} {os.path.basename(local_path)}"
-                    ) or content[:500]
+            if media_type in ("audio", "video"):
+                media_kind = media_type
+                print(f"[FileWorker] Transcribing {media_kind}: {local_path}")
+                content = _transcribe_audio_local(local_path)
+                if content and not content.startswith("[Lỗi"):
+                    if len(content) > 500:
+                        description = _summarize_with_gemma4(
+                            content, context=f"{media_kind} {os.path.basename(local_path)}"
+                        ) or content[:500]
+                    else:
+                        description = content
                 else:
-                    description = content
+                    description = content or f"[Không transcribe được {media_kind}]"
+            elif media_type == "photo":
+                # Với ảnh: dùng Gemma4 vision (gọi qua API multimodal)
+                description = _describe_image_via_api(local_path) or "[Ảnh không mô tả được]"
+            elif media_type == "document":
+                content = _read_file_content_local(local_path)
+                description = _summarize_with_gemma4(content, context=f"file {os.path.basename(local_path)}")
+                if not description:
+                    description = content[:500]
             else:
-                description = content or f"[Không transcribe được {media_kind}]"
-        elif file_type == "photo" or ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"):
-            # Với ảnh: dùng Gemma4 vision (gọi qua API multimodal)
-            description = _describe_image_via_api(local_path) or "[Ảnh không mô tả được]"
-        elif ext in (".txt", ".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".csv", ".json"):
-            content = _read_file_content_local(local_path)
-            description = _summarize_with_gemma4(content, context=f"file {os.path.basename(local_path)}")
-            if not description:
-                description = content[:500]
-        else:
-            # Fallback: thử đọc như text
-            try:
-                with open(local_path, "r", encoding="utf-8", errors="ignore") as f:
-                    content = f.read(MAX_CONTENT_CHARS)
-                description = _summarize_with_gemma4(content, context="file text")
-            except Exception:
-                description = "[Không đọc được nội dung file]"
+                # File binary lạ không thể đọc text
+                description = f"[File nhị phân {os.path.basename(local_path)} không thể đọc dạng văn bản]"
 
-        db.update_file_description(file_db_id, local_path, description)
-        print(f"[FileWorker] Processed file {local_path}: {description[:80]}...")
+            db.update_file_description(file_db_id, local_path, description)
+            print(f"[FileWorker] Processed file {local_path}: {description[:80]}...")
+
+    except Exception as err:
+        print(f"[FileWorker] Exception in _process_file_record {file_db_id}: {err}")
+        db.update_file_description(file_db_id, local_path, f"[Lỗi xử lý file: {err}]")
 
 
 def _describe_image_via_api(image_path: str) -> str:
@@ -601,13 +667,18 @@ def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
 
                 all_done = True
                 for file_rec in files:
-                    # Chỉ xử lý nếu chưa có description
-                    if file_rec.get("description") is None:
+                    # Chỉ xử lý nếu chưa có description hoặc chưa hoàn thành
+                    desc = file_rec.get("description")
+                    if desc is None:
                         try:
+                            # Đánh dấu khóa tạm thời '[Đang xử lý...]' để tránh các tiến trình khác tranh chấp xử lý lặp
+                            db.update_file_description(file_rec["id"], file_rec.get("local_path"), "[Đang xử lý...]")
                             _process_file_record(file_rec)
                         except Exception as e:
                             print(f"[FileWorker] Error processing file {file_rec['id']}: {e}")
                             all_done = False
+                    elif desc == "[Đang xử lý...]":
+                        all_done = False
 
                 # Nếu không có file nào pending → đánh dấu processed
                 if all_done:

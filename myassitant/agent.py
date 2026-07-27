@@ -208,19 +208,64 @@ class GroupChatAgent:
 
         # Lấy file summaries của message hiện tại
         files = db.get_files_of_message(msg_db_id)
-        file_context = ""
+        file_items = []
+        raw_audio_texts = []
         for f in files:
             desc = f.get("description") or ""
             ftype = f.get("file_type", "file")
             url = f.get("url") or f.get("local_path") or ""
             if desc:
-                file_context += f"\n📎 [{ftype}] {url}: {desc}"
+                file_items.append(f"📎 [{ftype}] {url}: {desc}")
+                if ftype in ("audio", "voice", "video") and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
+                    raw_audio_texts.append(desc)
 
-        # reply_to context
+
+        file_context = ""
+        if file_items:
+            file_context = (
+                "\n\n### THÔNG TIN VÀ NỘI DUNG FILE ĐÍNH KÈM (ĐÃ ĐƯỢC TRÍCH XUẤT/TÓM TẮT SẴN):\n"
+                + "\n".join(file_items)
+                + "\n(Lưu ý: Nội dung file đính kèm trên đã được trích xuất sẵn. Bạn hãy trực tiếp sử dụng thông tin này để trả lời người dùng, KHÔNG CẦN gọi tool read_file trừ khi thực sự cần thiết).\n"
+            )
+
+        # reply_to context (Khi nhận message reply/quote, dùng nội dung cả 2 message: message được quote và current message)
         reply_context = ""
         reply_to_id = msg.get("reply_to_message_id")
         if reply_to_id:
-            reply_context = f"\n(Người dùng đang reply message_id={reply_to_id})"
+            reply_msg = db.get_message_by_telegram_id(self.group_id, reply_to_id)
+            if reply_msg:
+                reply_sender = reply_msg.get("from_full_name") or reply_msg.get("from_username") or "Unknown"
+                reply_user = reply_msg.get("from_username") or ""
+                reply_text = reply_msg.get("text") or ""
+                reply_ts = reply_msg.get("created_at", "")
+                reply_files = reply_msg.get("file_summaries") or ""
+                reply_context = (
+                    f"\n\n### NỘI DUNG TIN NHẮN ĐƯỢC QUOTE / REPLY (Message #{reply_to_id}):\n"
+                    f"[{reply_ts}] {reply_sender} (@{reply_user}): {reply_text}"
+                )
+                if reply_files:
+                    reply_context += f"\n    📎 File tóm tắt: {reply_files}"
+            else:
+                # Fallback: Cố parse từ raw_json nếu message gốc chưa lưu trong DB
+                raw_json = msg.get("raw_json")
+                if raw_json:
+                    try:
+                        update_data = json.loads(raw_json)
+                        m = update_data.get("message", {}) or update_data.get("edited_message", {})
+                        r = m.get("reply_to_message", {})
+                        if r:
+                            r_from = r.get("from", {})
+                            r_user = r_from.get("username", "")
+                            r_name = f"{r_from.get('first_name', '')} {r_from.get('last_name', '')}".strip() or r_user or "Unknown"
+                            r_text = r.get("text") or r.get("caption") or ""
+                            reply_context = (
+                                f"\n\n### NỘI DUNG TIN NHẮN ĐƯỢC QUOTE / REPLY (Message #{reply_to_id}):\n"
+                                f"{r_name} (@{r_user}): {r_text}"
+                            )
+                    except Exception:
+                        pass
+                if not reply_context:
+                    reply_context = f"\n\n(Người dùng đang reply/quote message_id={reply_to_id})"
 
         # Tag người dùng trong reply
         tag_user = f"@{from_username}" if from_username else from_full_name
@@ -231,8 +276,16 @@ class GroupChatAgent:
         group_type = self._group_info.get("type", "group")
         is_private = group_type == "private" or (self.group_id and int(self.group_id) > 0)
 
+        if is_private:
+            prompt_rules = SYSTEM_PROMPT.replace(
+                "- Chỉ trả lời khi được tag trực tiếp hoặc được gọi tên trong tin nhắn mới nhất.",
+                "- Bạn đang trò chuyện riêng 1-1 với người dùng: Hãy trả lời trực tiếp TẤT CẢ tin nhắn của người dùng (không yêu cầu người dùng phải tag hay gọi tên bot)."
+            )
+        else:
+            prompt_rules = SYSTEM_PROMPT
+
         system_text = (
-            SYSTEM_PROMPT
+            prompt_rules
             + f"\n\nThông tin nhóm chat:\n- Tên nhóm: {group_title}\n"
             + f"- Loại: {group_type}\n- Thời gian hiện tại: {now_str}\n"
             + f"- {'Chat riêng 1-1' if is_private else 'Nhóm nhiều người'}"
@@ -307,9 +360,20 @@ class GroupChatAgent:
         if not is_private and tag_user and tag_user not in final_reply:
             final_reply = f"{tag_user} {final_reply}"
 
+        # Theo yêu cầu whattodo.md: audio/video cần trả thêm nguyên text lấy từ audio ra nằm sau content reply
+        if raw_audio_texts:
+            audio_suffix = "\n\n--- Nội dung văn bản từ Audio/Video ---\n" + "\n".join(raw_audio_texts)
+            if len(final_reply) + len(audio_suffix) <= 4000:
+                final_reply += audio_suffix
+            else:
+                max_avail = 3900 - len(final_reply)
+                if max_avail > 50:
+                    final_reply += audio_suffix[:max_avail]
+
         # Truncate nếu quá dài (Telegram limit 4096 chars)
         if len(final_reply) > 4000:
             final_reply = final_reply[:3950] + "\n...(Nội dung bị rút gọn)"
+
 
         send_result = _send_telegram_message(
             chat_id=self.group_id,

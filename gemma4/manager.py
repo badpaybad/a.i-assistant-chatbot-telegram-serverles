@@ -471,13 +471,30 @@ class Gemma4Manager:
 
         return formatted_messages
 
-    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000) -> str:
+    def generate(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000, enable_thinking: bool = False, strip_thinking: bool = True) -> str:
         if self.engine == "gguf":
             if not hasattr(self, 'llm') or self.llm is None:
                 return "Lỗi: Hệ thống GGUF chưa sẵn sàng."
 
-            formatted_messages = self._format_messages_gguf(input_data, audio_array, image_path, images_list, audio_list)
+            # Delegate to GGUFModelWrapper which handles thinking prefill
+            if hasattr(self, '_gguf_wrapper') and self._gguf_wrapper is not None:
+                return self._gguf_wrapper.generate(
+                    input_data=input_data,
+                    audio_array=audio_array,
+                    image_path=image_path,
+                    images_list=images_list,
+                    audio_list=audio_list,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
+                    sampling_rate=sampling_rate,
+                    enable_thinking=enable_thinking,
+                    strip_thinking=strip_thinking,
+                )
 
+            # Fallback: direct llm call (no thinking support)
+            formatted_messages = self._format_messages_gguf(input_data, audio_array, image_path, images_list, audio_list)
             try:
                 response = self.llm.create_chat_completion(
                     messages=formatted_messages,
@@ -513,7 +530,19 @@ class Gemma4Manager:
                 msg_content.append({"type": "text", "text": f"{user_input}\n\nNote: Always answer in Vietnamese, naturally and concisely."})
                 messages = [{"role": "user", "content": msg_content}]
 
-            text_prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
+            # HuggingFace: apply_chat_template supports enable_thinking natively
+            try:
+                text_prompt = self.processor.apply_chat_template(
+                    messages,
+                    add_generation_prompt=True,
+                    tokenize=False,
+                    enable_thinking=enable_thinking,
+                )
+            except TypeError:
+                # Older processor versions may not support enable_thinking
+                if enable_thinking:
+                    print("[!] Processor does not support enable_thinking — falling back to standard prompt.")
+                text_prompt = self.processor.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
             
             final_images = []
             if images_list:
@@ -570,13 +599,31 @@ class Gemma4Manager:
             response = self.processor.decode(outputs[0][input_len:], skip_special_tokens=True)
             return response.strip()
 
-    def generate_stream(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000):
+    def generate_stream(self, input_data: any, audio_array=None, image_path=None, images_list: List[Image.Image] = None, audio_list: List[np.ndarray] = None, max_tokens: int = 512, temperature: float = 0.7, top_p: float = 0.9, top_k: int = 40, sampling_rate: int = 16000, enable_thinking: bool = False, strip_thinking: bool = True):
         if self.engine == "gguf":
             if not hasattr(self, 'llm') or self.llm is None:
                 yield "Lỗi: Hệ thống GGUF chưa sẵn sàng."
                 return
 
             formatted_messages = self._format_messages_gguf(input_data, audio_array, image_path, images_list, audio_list)
+
+            # Delegate to GGUFModelWrapper which handles thinking prefill + streaming
+            if hasattr(self, '_gguf_wrapper') and self._gguf_wrapper is not None:
+                yield from self._gguf_wrapper.generate_stream(
+                    input_data=input_data,
+                    audio_array=audio_array,
+                    image_path=image_path,
+                    images_list=images_list,
+                    audio_list=audio_list,
+                    max_tokens=max_tokens,
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
+                    sampling_rate=sampling_rate,
+                    enable_thinking=enable_thinking,
+                    strip_thinking=strip_thinking,
+                )
+                return
 
             try:
                 response_iter = self.llm.create_chat_completion(

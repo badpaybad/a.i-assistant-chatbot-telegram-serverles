@@ -4,13 +4,31 @@ GGUF Model Wrapper — Loads Gemma 4 GGUF (Q4_K_M) via llama-cpp-python.
 Provides the same generate() interface as Gemma4Manager so it can be used
 as a drop-in replacement. All layers are placed on GPU (n_gpu_layers=-1)
 for maximum inference speed (~4.2-4.8 GiB VRAM on RTX 3060).
+
+Thinking Mode (Chain-of-Thought):
+  Gemma 4 supports internal reasoning via special channel tokens:
+    <|channel>thought\n ... <channel|>
+  Since llama-cpp-python's Python API does NOT expose chat_template_kwargs
+  natively, thinking is activated via the "assistant prefill" technique:
+  we inject a partial assistant message that starts with the thinking
+  channel token, which forces the model to enter its reasoning loop before
+  generating the final answer.
+
+  Set enable_thinking=True in generate() / generate_stream() to activate.
+  The thinking block is stripped from the returned string by default
+  (set strip_thinking=False to keep it for debugging).
 """
 import os
+import re
 from pathlib import Path
 from typing import Any, List, Optional
 
 import numpy as np
 from PIL import Image
+
+# Gemma 4 thinking channel tokens
+_THINK_START = "<|channel>thought\n"  # injected as prefill to trigger thinking
+_THINK_END = "<channel|>"             # marks end of thought block
 
 
 class GGUFModelWrapper:
@@ -93,6 +111,50 @@ class GGUFModelWrapper:
     # Text generation
     # ------------------------------------------------------------------
 
+    # ------------------------------------------------------------------
+    # Thinking helpers
+    # ------------------------------------------------------------------
+
+    def _get_thinking_prefill(self) -> list:
+        """Return a partial assistant message that triggers Gemma 4 thinking.
+
+        llama-cpp-python does not support chat_template_kwargs in the Python
+        API, so we use the "assistant prefill" trick: adding a partial
+        assistant message whose content starts with the thinking channel
+        token causes the model to enter its CoT reasoning loop.
+        """
+        return [{"role": "assistant", "content": _THINK_START}]
+
+    @staticmethod
+    def _parse_thinking_output(text: str, strip_thinking: bool = True):
+        """Parse model output that may contain a thinking block.
+
+        Returns:
+            (thinking: str | None, answer: str)
+        """
+        # Match <|channel>thought\n...\n<channel|> at the start of output
+        pattern = re.compile(
+            r"^" + re.escape(_THINK_START) + r"(.*?)" + re.escape(_THINK_END),
+            re.DOTALL
+        )
+        m = pattern.search(text)
+        if m:
+            thinking_block = m.group(1).strip()
+            answer = text[m.end():].strip()
+            return thinking_block, answer
+        # Fallback: try generic <think>...</think> tags used by some GGUF builds
+        pattern2 = re.compile(r"<think>(.*?)</think>", re.DOTALL)
+        m2 = pattern2.search(text)
+        if m2:
+            thinking_block = m2.group(1).strip()
+            answer = text[m2.end():].strip()
+            return thinking_block, answer
+        return None, text
+
+    # ------------------------------------------------------------------
+    # Text generation
+    # ------------------------------------------------------------------
+
     def generate(
         self,
         input_data: Any,
@@ -105,10 +167,23 @@ class GGUFModelWrapper:
         top_p: float = 0.9,
         top_k: int = 40,
         sampling_rate: int = 16000,
+        enable_thinking: bool = False,
+        strip_thinking: bool = True,
         **_: Any,
     ) -> str:
-        """Generate a response. Accepts the same signature as Gemma4Manager.generate()."""
+        """Generate a response. Accepts the same signature as Gemma4Manager.generate().
+
+        Args:
+            enable_thinking: If True, inject thinking prefill so Gemma 4
+                performs chain-of-thought reasoning before answering.
+            strip_thinking: If True (default), return only the final answer
+                and log the thinking block. Set to False to include the
+                thinking block in the returned string (useful for debugging).
+        """
         messages = self._build_messages(input_data, image_path, images_list)
+        if enable_thinking:
+            messages = messages + self._get_thinking_prefill()
+            print("[*] Thinking mode ENABLED — injecting prefill for CoT reasoning.")
 
         try:
             response = self._llm.create_chat_completion(
@@ -118,7 +193,13 @@ class GGUFModelWrapper:
                 top_p=top_p,
                 top_k=top_k,
             )
-            return response["choices"][0]["message"]["content"].strip()
+            raw = response["choices"][0]["message"]["content"].strip()
+            if enable_thinking:
+                thinking, answer = self._parse_thinking_output(raw, strip_thinking)
+                if thinking:
+                    print(f"[~] Thinking block ({len(thinking)} chars): {thinking[:200]}{'...' if len(thinking) > 200 else ''}")
+                return answer if strip_thinking else raw
+            return raw
         except Exception as e:
             err_str = str(e)
             print(f"[-] Error during GGUF generation: {err_str}")
@@ -187,10 +268,19 @@ class GGUFModelWrapper:
         top_p: float = 0.9,
         top_k: int = 40,
         sampling_rate: int = 16000,
+        enable_thinking: bool = False,
+        strip_thinking: bool = True,
         **_: Any,
     ):
-        """Stream tokens one-by-one. Same interface as Gemma4Manager.generate_stream()."""
+        """Stream tokens one-by-one. Same interface as Gemma4Manager.generate_stream().
+
+        When enable_thinking=True and strip_thinking=True, thinking tokens are
+        buffered and dropped; only the final answer tokens are yielded.
+        """
         messages = self._build_messages(input_data, image_path, images_list)
+        if enable_thinking:
+            messages = messages + self._get_thinking_prefill()
+            print("[*] Thinking mode ENABLED (stream) — injecting prefill for CoT reasoning.")
 
         try:
             response_iter = self._llm.create_chat_completion(
@@ -201,10 +291,29 @@ class GGUFModelWrapper:
                 top_k=top_k,
                 stream=True,
             )
-            for chunk in response_iter:
-                delta = chunk["choices"][0].get("delta", {})
-                if "content" in delta:
-                    yield delta["content"]
+
+            if not enable_thinking or not strip_thinking:
+                # Normal streaming — yield every token
+                for chunk in response_iter:
+                    delta = chunk["choices"][0].get("delta", {})
+                    if "content" in delta:
+                        yield delta["content"]
+            else:
+                # Thinking-strip streaming:
+                # Buffer all tokens, then strip thinking block before yielding.
+                # (llama-cpp streams raw tokens; we can't split mid-stream reliably.)
+                full_text = ""
+                for chunk in response_iter:
+                    delta = chunk["choices"][0].get("delta", {})
+                    if "content" in delta:
+                        full_text += delta["content"]
+                thinking, answer = self._parse_thinking_output(full_text, strip_thinking=True)
+                if thinking:
+                    print(f"[~] Thinking block ({len(thinking)} chars): {thinking[:200]}{'...' if len(thinking) > 200 else ''}")
+                # Yield answer word-by-word to simulate streaming
+                words = answer.split(" ")
+                for i in range(0, len(words), 5):
+                    yield " ".join(words[i:i+5]) + (" " if i + 5 < len(words) else "")
         except Exception as e:
             print(f"[-] Error during stream generation: {e}")
             yield f"Lỗi sinh nội dung: {str(e)}"

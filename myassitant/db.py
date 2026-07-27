@@ -12,6 +12,7 @@ Tables:
 import sqlite3
 import json
 import os
+import re
 import threading
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -22,14 +23,35 @@ from myassitant.config import DB_PATH
 _local = threading.local()
 
 
+def _regexp_func(pattern: str, text: str) -> int:
+    """Hàm bổ trợ REGEXP cho SQLite (param1: pattern, param2: text column)."""
+    if not text or not pattern:
+        return 0
+    try:
+        return 1 if re.search(str(pattern), str(text), re.IGNORECASE) else 0
+    except Exception as e:
+        return 0
+
+
+
+
+
+
 def get_conn() -> sqlite3.Connection:
     """Lấy connection SQLite thread-safe."""
     if not hasattr(_local, "conn") or _local.conn is None:
-        _local.conn = sqlite3.connect(DB_PATH, check_same_thread=False)
-        _local.conn.row_factory = sqlite3.Row
-        _local.conn.execute("PRAGMA journal_mode=WAL")
-        _local.conn.execute("PRAGMA foreign_keys=ON")
+        conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        _local.conn = conn
+    try:
+        _local.conn.create_function("REGEXP", 2, _regexp_func)
+    except Exception:
+        pass
     return _local.conn
+
+
 
 
 def init_db():
@@ -189,14 +211,15 @@ def get_recent_processed_messages(group_id: str, limit: int = 10) -> List[Dict]:
 
 
 def get_pending_reply_messages(group_id: str) -> List[Dict]:
-    """Lấy các message cần chatbot trả lời (is_chatbot_reply=1), sắp xếp theo thời gian."""
+    """Lấy các message cần chatbot trả lời (is_chatbot_reply=1 và đã xử lý file is_processed=1), sắp xếp theo thời gian."""
     conn = get_conn()
     rows = conn.execute("""
         SELECT * FROM message_of_group
-        WHERE group_id=? AND is_chatbot_reply=1
+        WHERE group_id=? AND is_chatbot_reply=1 AND is_processed=1
         ORDER BY created_at ASC
     """, (str(group_id),)).fetchall()
     return [dict(r) for r in rows]
+
 
 
 def get_unprocessed_messages() -> List[Dict]:
@@ -228,11 +251,30 @@ def get_message_by_db_id(msg_db_id: int) -> Optional[Dict]:
     return dict(row) if row else None
 
 
-def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None) -> List[Dict]:
-    """Tìm kiếm message trong nhóm theo nội dung, khoảng thời gian."""
+def get_message_by_telegram_id(group_id: str, message_id: int) -> Optional[Dict]:
+    """Lấy message theo telegram message_id trong nhóm."""
     conn = get_conn()
-    sql = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ?"
-    params = [str(group_id), f"%{query}%"]
+    rows = conn.execute("""
+        SELECT m.*, GROUP_CONCAT(f.file_type || ':' || COALESCE(f.description,''), '|') as file_summaries
+        FROM message_of_group m
+        LEFT JOIN file_of_message f ON f.message_id_fk = m.id
+        WHERE m.group_id=? AND m.message_id=?
+        GROUP BY m.id
+    """, (str(group_id), message_id)).fetchall()
+    return dict(rows[0]) if rows else None
+
+
+def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None, use_regex: bool = False) -> List[Dict]:
+    """Tìm kiếm message trong nhóm theo nội dung, regex hoặc khoảng thời gian."""
+    conn = get_conn()
+    is_regex = use_regex or any(ch in query for ch in r".*+?^$[](){}\|")
+    if is_regex:
+        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text REGEXP ?"
+        params = [str(group_id), query]
+    else:
+        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ?"
+        params = [str(group_id), f"%{query}%"]
+
     if from_date:
         sql += " AND created_at >= ?"
         params.append(from_date)
@@ -240,8 +282,16 @@ def search_messages(group_id: str, query: str, from_date: str = None, to_date: s
         sql += " AND created_at <= ?"
         params.append(to_date)
     sql += " ORDER BY created_at DESC LIMIT 50"
-    rows = conn.execute(sql, params).fetchall()
-    return [dict(r) for r in rows]
+    try:
+        rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
+    except Exception as e:
+        print(f"[DB] search_messages error: {e}")
+        # Fallback to simple LIKE
+        sql_fallback = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ? ORDER BY created_at DESC LIMIT 50"
+        rows = conn.execute(sql_fallback, (str(group_id), f"%{query}%")).fetchall()
+        return [dict(r) for r in rows]
+
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -273,6 +323,19 @@ def update_file_description(file_db_id: int, local_path: Optional[str], descript
         UPDATE file_of_message SET local_path=?, description=? WHERE id=?
     """, (local_path, description, file_db_id))
     conn.commit()
+
+
+def get_file_description_by_path(local_path: str) -> Optional[str]:
+    """Lấy description đã lưu của file từ local_path để tránh xử lý trùng."""
+    if not local_path:
+        return None
+    conn = get_conn()
+    row = conn.execute("""
+        SELECT description FROM file_of_message
+        WHERE (local_path=? OR url=?) AND description IS NOT NULL AND description NOT LIKE '[Đang xử lý%'
+        ORDER BY id DESC LIMIT 1
+    """, (local_path, local_path)).fetchone()
+    return row["description"] if row else None
 
 
 def get_files_of_message(message_id_fk: int) -> List[Dict]:
