@@ -304,9 +304,9 @@ class GroupChatAgent:
                     tool_results_str += f"\n[{tr['tool']}]: {tr['result'][:1000]}"
 
             user_prompt = (
-                # f"### LỊCH SỬ {HISTORY_CONTEXT_LIMIT} TIN NHẮN GẦN NHẤT (đã xử lý):\n"
-                # f"{context_text}\n"
-                # f"{file_context}\n"
+                f"### LỊCH SỬ {HISTORY_CONTEXT_LIMIT} TIN NHẮN GẦN NHẤT (đã xử lý):\n"
+                f"{context_text}\n"
+                f"{file_context}\n"
                 f"{tool_results_str}\n\n"
                 f"### TIN NHẮN CẦN TRẢ LỜI:\n"
                 f"[{created_at}] {from_full_name} (@{from_username}): {text}"
