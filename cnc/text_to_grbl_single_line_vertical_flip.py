@@ -145,15 +145,15 @@ def text_to_grbl_single_line(
 
 # --- CHẠY THỬ NGHỆM ---
 if __name__ == "__main__":
-    FONT_PATH = "VL_ThuPhap.ttf"
-    TEXT_INPUT = "Nguyễn Phan Du"
+    FONT_PATH = "VL_GOATSKINBRUSHPERSONALUSE.OTF"
+    TEXT_INPUT = "Nguyễn Phan Du\nNguyên quán: Triệu Sơn, Thanh Hóa"
 
     text_to_grbl_single_line(
         text=TEXT_INPUT,
         font_path=FONT_PATH,
         output_gcode="nguyen_phan_du_bounded.gcode",
-        max_x=50.0,            # Rộng tối đa 150 mm
-        max_y=30.0,             # Cao tối đa 60 mm
+        max_x=150.0,            # Rộng tối đa 150 mm
+        max_y=150.0,             # Cao tối đa 60 mm
         margin_mm=3.0,          # Cách mép 3 mm
         z_safe=3.0,
         z_draw=0.0,
