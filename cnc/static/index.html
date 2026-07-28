@@ -33,7 +33,9 @@
                     <option value="en">English 🇬🇧</option>
                 </select>
                 <button class="btn btn-primary" id="btn-toggle-gcode-editor" data-i18n
-                    style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 16px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">Bộ Soạn Thảo G-Code</button>
+                    style="margin-right: 8px; font-size: 13px; font-weight: 600; padding: 6px 14px; background: linear-gradient(135deg, var(--primary), var(--danger)); border: none; box-shadow: 0 0 10px rgba(255, 75, 75, 0.3);">Bộ Soạn Thảo G-Code</button>
+                <button class="btn btn-secondary" id="btn-toggle-gcode-font-editor" data-i18n
+                    style="margin-right: 12px; font-size: 13px; font-weight: 600; padding: 6px 14px; background: linear-gradient(135deg, #8b5cf6, #ec4899); border: none; box-shadow: 0 0 10px rgba(139, 92, 246, 0.3); color: white;">✍️ Gcode with font</button>
                 <div class="status-badge disconnected" id="connection-status" data-i18n>MẤT KẾT NỐI</div>
                 <div class="state-badge disconnected" id="machine-state" data-i18n>NGOẠI TUYẾN</div>
             </div>
@@ -1003,6 +1005,124 @@
 
             </div>
 
+        </div>
+    </div>
+
+    <!-- FLOATING G-CODE WITH FONT EDITOR PANEL (CẬP NHẬT 52) -->
+    <div class="gcode-font-editor-panel glass-card hidden" id="gcode-font-editor-panel">
+        <div class="panel-header" id="font-editor-panel-header">
+            <div class="panel-title-wrapper">
+                <span class="panel-dot active" style="background: #8b5cf6; box-shadow: 0 0 8px #8b5cf6;"></span>
+                <span class="panel-title">✍️ Gcode with Font (Sinh G-code từ Font & Text)</span>
+            </div>
+            <button class="btn-toggle" id="btn-close-gcode-font-editor" title="Đóng Editor Font">✕</button>
+        </div>
+        <div class="font-editor-panel-body">
+            <!-- Left Controls Column -->
+            <div class="font-editor-sidebar">
+                <!-- 1. Font & Size selection -->
+                <div class="sketch-param-group">
+                    <div class="group-title">1. Chọn Font & Cỡ Chữ (Word pt)</div>
+                    <div class="param-row">
+                        <label for="font-select">Font Chữ (Folder cnc/fonts):</label>
+                        <select id="font-select" class="input-select" style="width: 100%; margin-top: 4px; font-weight: 600;">
+                            <option value="">Đang tải font...</option>
+                        </select>
+                    </div>
+                    <div class="param-row" style="margin-top: 8px;">
+                        <label for="font-size-input">Cỡ Chữ (Font Size pt):</label>
+                        <div style="display: flex; gap: 6px; align-items: center; margin-top: 4px;">
+                            <input type="number" id="font-size-input" value="72" min="6" max="500" step="1" style="flex: 1;">
+                            <span style="font-size: 12px; color: var(--text-muted);">pt</span>
+                        </div>
+                        <div class="font-preset-buttons" style="display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px;">
+                            <button type="button" class="btn-pill-small font-size-pill" data-size="18">18pt</button>
+                            <button type="button" class="btn-pill-small font-size-pill" data-size="24">24pt</button>
+                            <button type="button" class="btn-pill-small font-size-pill" data-size="36">36pt</button>
+                            <button type="button" class="btn-pill-small font-size-pill" data-size="48">48pt</button>
+                            <button type="button" class="btn-pill-small font-size-pill active" data-size="72">72pt</button>
+                            <button type="button" class="btn-pill-small font-size-pill" data-size="120">120pt</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Notepad Text Editor -->
+                <div class="sketch-param-group">
+                    <div class="group-title">2. Nội Dung Văn Bản (Notepad Text)</div>
+                    <div class="param-row">
+                        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                            💡 Hỗ trợ phím <strong>Tab</strong> để indent, <strong>Enter</strong> để xuống dòng.
+                        </div>
+                        <textarea id="font-text-input" rows="5" class="notepad-textarea" placeholder="Nhập văn bản tại đây (Ví dụ: Nguyễn Phan Du)...">Nguyễn Phan Du</textarea>
+                    </div>
+                </div>
+
+                <!-- 3. CNC Parameters -->
+                <div class="sketch-param-group">
+                    <div class="group-title">3. Tùy Chỉnh Thông Số G-Code</div>
+                    <div class="param-row-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>
+                            <label for="font-margin-mm">Cách Lề (mm):</label>
+                            <input type="number" id="font-margin-mm" value="5.0" step="0.5" min="0">
+                        </div>
+                        <div>
+                            <label for="font-epsilon">Độ mịn (Epsilon):</label>
+                            <input type="number" id="font-epsilon" value="1.2" step="0.1" min="0.1" max="10.0">
+                        </div>
+                        <div>
+                            <label for="font-z-safe">Safe Z (mm):</label>
+                            <input type="number" id="font-z-safe" value="3.0" step="0.5">
+                        </div>
+                        <div>
+                            <label for="font-z-draw">Draw Z (mm):</label>
+                            <input type="number" id="font-z-draw" value="0.0" step="0.5">
+                        </div>
+                    </div>
+                    <div class="param-row" style="margin-top: 8px;">
+                        <label for="font-feed-rate">Tốc Độ Vẽ F (mm/phút):</label>
+                        <input type="number" id="font-feed-rate" value="1200" step="100" min="100">
+                    </div>
+                    <div class="param-row" style="margin-top: 8px;">
+                        <label for="font-stroke-mode">Kiểu Nét Chữ:</label>
+                        <select id="font-stroke-mode" class="input-select" style="width: 100%; margin-top: 4px;">
+                            <option value="single_line">Centerline (Rút Xương 1 Nét)</option>
+                            <option value="outline">Outline (Nét Viền Chữ)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 4. Action Buttons -->
+                <div class="sketch-param-group">
+                    <button class="btn btn-primary" id="btn-generate-font-gcode" style="width: 100%; font-size: 14px; font-weight: bold; padding: 10px; margin-bottom: 8px; background: linear-gradient(135deg, #8b5cf6, #3b82f6); border: none;">
+                        ⚡ Tạo G-Code & Preview
+                    </button>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+                        <button class="btn btn-secondary btn-small" id="btn-download-font-gcode" style="flex: 1;">📥 Download .gcode</button>
+                        <button class="btn btn-secondary btn-small" id="btn-send-to-gcode-editor" style="flex: 1;">✏️ Mở ở Gcode Editor</button>
+                    </div>
+                    <button class="btn btn-success" id="btn-load-font-gcode-to-cnc" style="width: 100%; font-size: 14px; font-weight: bold; padding: 10px;">
+                        🚀 Nạp Trực Tiếp Vào Máy CNC
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Preview Canvas -->
+            <div class="font-editor-canvas-area">
+                <div class="font-canvas-toolbar">
+                    <div class="font-canvas-info" id="font-canvas-info">
+                        Kích thước: <strong>0 x 0 mm</strong> • Số nét: <strong>0</strong> • Số dòng Gcode: <strong>0</strong>
+                    </div>
+                    <div class="font-canvas-controls">
+                        <button class="btn-pill-small" id="btn-font-canvas-reset" title="Reset Camera View">🔍 Reset View</button>
+                        <label style="font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 4px; color: var(--text-muted); margin-left: 8px;">
+                            <input type="checkbox" id="chk-font-show-travel" checked> Hiện nét G0
+                        </label>
+                    </div>
+                </div>
+                <div class="font-canvas-wrapper" id="font-canvas-wrapper">
+                    <canvas id="font-gcode-canvas" width="700" height="700"></canvas>
+                </div>
+            </div>
         </div>
     </div>
 
