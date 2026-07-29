@@ -103,6 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchState();
     populateDevices();
     initGcodeEditor();
+    initGcodeFontEditor();
 
     if (!isConnected) connectBtn.click();
 });
@@ -3050,6 +3051,14 @@ function initGcodeEditor() {
         });
     }
 
+    window.loadSegmentsIntoGcodeEditor = (segments) => {
+        editorSegments = segments;
+        editorOriginalSegments = JSON.parse(JSON.stringify(segments));
+        if (typeof updateBoundingBox === "function") updateBoundingBox();
+        if (typeof updateScale === "function") updateScale();
+        if (typeof drawEditorCanvas === "function") drawEditorCanvas();
+    };
+
     // Resize Canvas to wrapper
     function resizeEditorCanvas() {
         const rect = editorCanvasWrapper.getBoundingClientRect();
@@ -3116,10 +3125,184 @@ function initGcodeEditor() {
         });
     }
 
+    function parseGrblGCodeToSegments(gcodeText) {
+        const segments = [];
+        let currentX = 0.0;
+        let currentY = 0.0;
+        let isAbsolute = true;
+        let unitScale = 1.0;
+        let motionMode = "G0";
+        let isPenDown = true;
+
+        const xRegex = /X([\d\.-]+)/i;
+        const yRegex = /Y([\d\.-]+)/i;
+        const zRegex = /Z([\d\.-]+)/i;
+        const iRegex = /I([\d\.-]+)/i;
+        const jRegex = /J([\d\.-]+)/i;
+        const rRegex = /R([\d\.-]+)/i;
+
+        const lines = gcodeText.split(/\r?\n/);
+        for (let rawLine of lines) {
+            let line = rawLine.trim();
+            const commentIdx = line.indexOf(';');
+            if (commentIdx !== -1) line = line.substring(0, commentIdx).trim();
+            const parenIdx = line.indexOf('(');
+            if (parenIdx !== -1) line = line.substring(0, parenIdx).trim();
+
+            if (!line) continue;
+
+            const upperLine = line.toUpperCase();
+            if (upperLine.includes('G90')) isAbsolute = true;
+            if (upperLine.includes('G91')) isAbsolute = false;
+            if (upperLine.includes('G20')) unitScale = 25.4;
+            if (upperLine.includes('G21')) unitScale = 1.0;
+
+            if (upperLine.includes('M5')) isPenDown = false;
+            if (upperLine.includes('M3 S10') || upperLine.includes('M3 S0')) isPenDown = false;
+            if (upperLine.includes('M3 S90') || upperLine.includes('M3 S100')) isPenDown = true;
+
+            const zMatch = zRegex.exec(upperLine);
+            if (zMatch) {
+                const zVal = parseFloat(zMatch[1]) * unitScale;
+                isPenDown = (zVal <= 0);
+            }
+
+            const gMatch = upperLine.match(/\bG(00?|0?1|0?2|0?3)\b/);
+            if (gMatch) {
+                const gCode = parseInt(gMatch[1], 10);
+                if (gCode === 0) motionMode = "G0";
+                else if (gCode === 1) motionMode = "G1";
+                else if (gCode === 2) motionMode = "G2";
+                else if (gCode === 3) motionMode = "G3";
+            }
+
+            const xMatch = xRegex.exec(upperLine);
+            const yMatch = yRegex.exec(upperLine);
+
+            if (xMatch || yMatch) {
+                let targetX = currentX;
+                let targetY = currentY;
+
+                if (xMatch) {
+                    const val = parseFloat(xMatch[1]) * unitScale;
+                    targetX = isAbsolute ? val : currentX + val;
+                }
+                if (yMatch) {
+                    const val = parseFloat(yMatch[1]) * unitScale;
+                    targetY = isAbsolute ? val : currentY + val;
+                }
+
+                const isDrawing = (motionMode === "G1" || motionMode === "G2" || motionMode === "G3") && isPenDown;
+
+                if (motionMode === "G2" || motionMode === "G3") {
+                    const iMatch = iRegex.exec(upperLine);
+                    const jMatch = jRegex.exec(upperLine);
+                    const rMatch = rRegex.exec(upperLine);
+
+                    let centerX = currentX;
+                    let centerY = currentY;
+
+                    if (iMatch || jMatch) {
+                        const iVal = iMatch ? parseFloat(iMatch[1]) * unitScale : 0;
+                        const jVal = jMatch ? parseFloat(jMatch[1]) * unitScale : 0;
+                        centerX = currentX + iVal;
+                        centerY = currentY + jVal;
+                    } else if (rMatch) {
+                        const R = parseFloat(rMatch[1]) * unitScale;
+                        const dx = targetX - currentX;
+                        const dy = targetY - currentY;
+                        const d = Math.sqrt(dx * dx + dy * dy);
+                        if (d > 0 && Math.abs(R) >= d / 2) {
+                            const h = Math.sqrt(Math.max(0, R * R - (d / 2) * (d / 2)));
+                            const mx = (currentX + targetX) / 2;
+                            const my = (currentY + targetY) / 2;
+                            const sign = (motionMode === "G2") ? 1 : -1;
+                            centerX = mx + sign * h * (-dy / d);
+                            centerY = my + sign * h * (dx / d);
+                        }
+                    }
+
+                    const startAngle = Math.atan2(currentY - centerY, currentX - centerX);
+                    let endAngle = Math.atan2(targetY - centerY, targetX - centerX);
+                    let sweep = endAngle - startAngle;
+
+                    if (motionMode === "G2") {
+                        if (sweep >= 0) sweep -= 2 * Math.PI;
+                    } else {
+                        if (sweep <= 0) sweep += 2 * Math.PI;
+                    }
+
+                    const steps = Math.max(8, Math.ceil(Math.abs(sweep) / (Math.PI / 12)));
+                    let prevX = currentX;
+                    let prevY = currentY;
+
+                    const radius = Math.sqrt((currentX - centerX) ** 2 + (currentY - centerY) ** 2);
+                    for (let step = 1; step <= steps; step++) {
+                        const angle = startAngle + (sweep * step / steps);
+                        const stepX = centerX + radius * Math.cos(angle);
+                        const stepY = centerY + radius * Math.sin(angle);
+
+                        if (isDrawing) {
+                            segments.push({ x1: prevX, y1: prevY, x2: stepX, y2: stepY });
+                        }
+                        prevX = stepX;
+                        prevY = stepY;
+                    }
+                } else {
+                    if (isDrawing) {
+                        segments.push({
+                            x1: currentX, y1: currentY,
+                            x2: targetX, y2: targetY
+                        });
+                    }
+                }
+
+                currentX = targetX;
+                currentY = targetY;
+            }
+        }
+        return segments;
+    }
+
     function handleEditorFile(file) {
         const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
-        if (![".svg", ".jpg", ".jpeg", ".png", ".webp"].includes(ext)) {
-            alert(t("File không hỗ trợ! Vui lòng chọn ảnh JPG, PNG hoặc file SVG."));
+        if (![".svg", ".jpg", ".jpeg", ".png", ".webp", ".gcode", ".nc", ".cnc", ".txt"].includes(ext)) {
+            alert(t("File không hỗ trợ! Vui lòng chọn ảnh (JPG, PNG, WebP), SVG hoặc file GRBL G-Code (.gcode, .nc)."));
+            return;
+        }
+
+        if ([".gcode", ".nc", ".cnc", ".txt"].includes(ext)) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const gcodeText = e.target.result;
+                const parsedSegments = parseGrblGCodeToSegments(gcodeText);
+
+                editorOriginalImageFile = null;
+                editorOriginalImageBase64 = "";
+                editorBgImage = null;
+                editorOriginalFilename = file.name;
+                editorFileName.innerText = file.name;
+                editorDropZone.classList.add("hidden");
+                editorFileInfo.classList.remove("hidden");
+
+                groupEditorAlgo.classList.add("hidden");
+
+                editorOriginalGcodeText = gcodeText;
+                editorSegments = parsedSegments;
+                editorOriginalSegments = JSON.parse(JSON.stringify(parsedSegments));
+
+                editorZoom = 1.0;
+                editorPan = { x: 0, y: 0 };
+
+                updateBoundingBox();
+                updateScale();
+                drawEditorCanvas();
+
+                if (btnEditorPreviewInVideoFrame && !previewIntervalId) {
+                    btnEditorPreviewInVideoFrame.click();
+                }
+            };
+            reader.readAsText(file);
             return;
         }
 
@@ -3182,7 +3365,12 @@ function initGcodeEditor() {
     if (btnEditorConvert) {
         btnEditorConvert.addEventListener("click", async () => {
             if (!editorOriginalImageFile) {
-                alert(t("Vui lòng chọn một file ảnh hoặc SVG trước!"));
+                if (editorSegments.length > 0) {
+                    editorOriginalGcodeText = generateGcodeFromSegments();
+                    alert(t("Đã tái tạo G-Code thành công từ các nét vẽ hiện tại!"));
+                    return;
+                }
+                alert(t("Vui lòng chọn một file ảnh, SVG hoặc G-Code trước!"));
                 return;
             }
 
@@ -5763,3 +5951,385 @@ function initGcodeEditor() {
         await loadLanguage(currentLang);
         setLanguage(currentLang);
     })();
+
+// --- G-CODE WITH FONT EDITOR CONTROLLER (CẬP NHẬT 52) ---
+function initGcodeFontEditor() {
+    const btnToggle = document.getElementById("btn-toggle-gcode-font-editor");
+    const panel = document.getElementById("gcode-font-editor-panel");
+    const btnClose = document.getElementById("btn-close-gcode-font-editor");
+    const fontSelect = document.getElementById("font-select");
+    const fontSizeInput = document.getElementById("font-size-input");
+    const fontSizePills = document.querySelectorAll(".font-size-pill");
+    const textInput = document.getElementById("font-text-input");
+    const marginInput = document.getElementById("font-margin-mm");
+    const epsilonInput = document.getElementById("font-epsilon");
+    const zSafeInput = document.getElementById("font-z-safe");
+    const zDrawInput = document.getElementById("font-z-draw");
+    const feedRateInput = document.getElementById("font-feed-rate");
+    const strokeModeSelect = document.getElementById("font-stroke-mode");
+    const btnGenerate = document.getElementById("btn-generate-font-gcode");
+    const btnDownload = document.getElementById("btn-download-font-gcode");
+    const btnLoadToCnc = document.getElementById("btn-load-font-gcode-to-cnc");
+    const btnSendToEditor = document.getElementById("btn-send-to-gcode-editor");
+    const canvasInfo = document.getElementById("font-canvas-info");
+    const btnResetView = document.getElementById("btn-font-canvas-reset");
+    const chkShowTravel = document.getElementById("chk-font-show-travel");
+    const canvas = document.getElementById("font-gcode-canvas");
+
+    if (!panel || !canvas) return;
+    const ctx = canvas.getContext("2d");
+
+    let fontsLoaded = false;
+    let lastResult = null;
+
+    // View camera state
+    let cameraZoom = 1.0;
+    let cameraPan = { x: 0, y: 0 };
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+
+    // Toggle panel
+    if (btnToggle) {
+        btnToggle.addEventListener("click", () => {
+            panel.classList.toggle("hidden");
+            if (!panel.classList.contains("hidden")) {
+                const mainEditorPanel = document.getElementById("gcode-editor-panel");
+                if (mainEditorPanel) mainEditorPanel.classList.add("hidden");
+                if (!fontsLoaded) loadFonts();
+                else if (!lastResult) generateFontGcode();
+            }
+        });
+    }
+
+    if (btnClose) {
+        btnClose.addEventListener("click", () => {
+            panel.classList.add("hidden");
+        });
+    }
+
+    // Notepad tab key handler
+    if (textInput) {
+        textInput.addEventListener("keydown", (e) => {
+            if (e.key === "Tab") {
+                e.preventDefault();
+                const start = textInput.selectionStart;
+                const end = textInput.selectionEnd;
+                textInput.value = textInput.value.substring(0, start) + "\t" + textInput.value.substring(end);
+                textInput.selectionStart = textInput.selectionEnd = start + 1;
+            }
+        });
+    }
+
+    // Preset font size pills
+    fontSizePills.forEach(pill => {
+        pill.addEventListener("click", () => {
+            fontSizePills.forEach(p => p.classList.remove("active"));
+            pill.classList.add("active");
+            fontSizeInput.value = pill.dataset.size;
+            generateFontGcode();
+        });
+    });
+
+    // Load available fonts from backend
+    async function loadFonts() {
+        try {
+            const res = await fetch("/api/fonts");
+            const data = await res.json();
+            if (data.fonts && data.fonts.length > 0) {
+                fontSelect.innerHTML = "";
+                data.fonts.forEach(f => {
+                    const opt = document.createElement("option");
+                    opt.value = f;
+                    opt.textContent = f;
+                    if (f === "VL_GREATVIBES.ttf") opt.selected = true;
+                    fontSelect.appendChild(opt);
+                });
+                fontsLoaded = true;
+                generateFontGcode();
+            }
+        } catch (e) {
+            console.error("Lỗi nạp danh sách font:", e);
+        }
+    }
+
+    // Generate Font G-code
+    async function generateFontGcode() {
+        const text = textInput.value;
+        const font_name = fontSelect.value;
+        if (!text.trim() || !font_name) return;
+
+        btnGenerate.disabled = true;
+        btnGenerate.innerText = "⏳ Đang tạo G-Code...";
+
+        try {
+            const payload = {
+                text: text,
+                font_name: font_name,
+                font_size_pt: parseFloat(fontSizeInput.value) || 72.0,
+                margin_mm: parseFloat(marginInput.value) || 5.0,
+                epsilon: parseFloat(epsilonInput.value) || 1.2,
+                z_safe: parseFloat(zSafeInput.value) || 3.0,
+                z_draw: parseFloat(zDrawInput.value) || 0.0,
+                feed_rate: parseFloat(feedRateInput.value) || 1200.0,
+                stroke_mode: strokeModeSelect.value || "single_line"
+            };
+
+            const res = await fetch("/api/generate-font-gcode", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+            if (data.status === "ok") {
+                lastResult = data;
+                if (canvasInfo) {
+                    canvasInfo.innerHTML = `Kích thước: <strong>${data.actual_w_mm} x ${data.actual_h_mm} mm</strong> • Số nét: <strong>${data.total_paths}</strong> • Số dòng Gcode: <strong>${data.lines_count}</strong>`;
+                }
+                resetCameraView();
+                renderCanvas();
+            } else {
+                alert("Lỗi tạo Gcode: " + (data.message || "Không xác định"));
+            }
+        } catch (e) {
+            console.error("Lỗi generate font gcode:", e);
+        } finally {
+            btnGenerate.disabled = false;
+            btnGenerate.innerText = "⚡ Tạo G-Code & Preview";
+        }
+    }
+
+    if (btnGenerate) btnGenerate.addEventListener("click", generateFontGcode);
+    if (fontSelect) fontSelect.addEventListener("change", generateFontGcode);
+    if (strokeModeSelect) strokeModeSelect.addEventListener("change", generateFontGcode);
+
+    // Reset camera view
+    function resetCameraView() {
+        if (!lastResult || !lastResult.actual_w_mm) {
+            cameraZoom = 1.0;
+            cameraPan = { x: 0, y: 0 };
+            return;
+        }
+        const cw = canvas.width;
+        const ch = canvas.height;
+        const margin = 50;
+        const maxW = lastResult.actual_w_mm + (parseFloat(marginInput.value) || 5) * 2;
+        const maxH = lastResult.actual_h_mm + (parseFloat(marginInput.value) || 5) * 2;
+
+        const zoomX = (cw - margin * 2) / Math.max(1, maxW);
+        const zoomY = (ch - margin * 2) / Math.max(1, maxH);
+        cameraZoom = Math.min(zoomX, zoomY);
+
+        cameraPan.x = margin;
+        cameraPan.y = margin; // Top-down preview orientation
+    }
+
+    if (btnResetView) {
+        btnResetView.addEventListener("click", () => {
+            resetCameraView();
+            renderCanvas();
+        });
+    }
+
+    if (chkShowTravel) {
+        chkShowTravel.addEventListener("change", renderCanvas);
+    }
+
+    // Pan & Zoom mouse controls on canvas
+    canvas.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        cameraPan.x = mouseX - (mouseX - cameraPan.x) * zoomFactor;
+        cameraPan.y = mouseY - (mouseY - cameraPan.y) * zoomFactor;
+        cameraZoom *= zoomFactor;
+        renderCanvas();
+    });
+
+    canvas.addEventListener("mousedown", (e) => {
+        if (e.button === 0 || e.button === 1 || e.button === 2) {
+            isPanning = true;
+            panStart = { x: e.clientX - cameraPan.x, y: e.clientY - cameraPan.y };
+        }
+    });
+
+    window.addEventListener("mousemove", (e) => {
+        if (isPanning) {
+            cameraPan.x = e.clientX - panStart.x;
+            cameraPan.y = e.clientY - panStart.y;
+            renderCanvas();
+        }
+    });
+
+    window.addEventListener("mouseup", () => {
+        isPanning = false;
+    });
+
+    // Render Preview Canvas
+    function renderCanvas() {
+        const cw = canvas.width;
+        const ch = canvas.height;
+        ctx.clearRect(0, 0, cw, ch);
+
+        // Background
+        ctx.fillStyle = "#080b10";
+        ctx.fillRect(0, 0, cw, ch);
+
+        if (!lastResult || !lastResult.preview_paths) return;
+
+        ctx.save();
+        ctx.translate(cameraPan.x, cameraPan.y);
+        ctx.scale(cameraZoom, cameraZoom); // Y direction inverted for natural text preview (Gcode unchanged)
+
+        // Draw Grid lines (every 10mm and 50mm)
+        ctx.lineWidth = 1 / cameraZoom;
+        const boundsW = Math.max(200, (lastResult.actual_w_mm || 100) + 50);
+        const boundsH = Math.max(200, (lastResult.actual_h_mm || 100) + 50);
+
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.05)";
+        ctx.beginPath();
+        for (let x = 0; x <= boundsW; x += 10) {
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, boundsH);
+        }
+        for (let y = 0; y <= boundsH; y += 10) {
+            ctx.moveTo(0, y);
+            ctx.lineTo(boundsW, y);
+        }
+        ctx.stroke();
+
+        // Major Axes (X in Red, Y in Green)
+        ctx.lineWidth = 2 / cameraZoom;
+        ctx.strokeStyle = "rgba(239, 68, 68, 0.6)"; // X-axis Red
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(boundsW, 0);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.6)"; // Y-axis Green
+        ctx.beginPath();
+        ctx.moveTo(0, 0); ctx.lineTo(0, boundsH);
+        ctx.stroke();
+
+        // Origin Dot
+        ctx.fillStyle = "#eab308";
+        ctx.beginPath();
+        ctx.arc(0, 0, 3 / cameraZoom, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Bounding box of content
+        if (lastResult.actual_w_mm && lastResult.actual_h_mm) {
+            const margin = parseFloat(marginInput.value) || 5.0;
+            ctx.strokeStyle = "rgba(139, 92, 246, 0.4)";
+            ctx.lineWidth = 1 / cameraZoom;
+            ctx.setLineDash([4 / cameraZoom, 4 / cameraZoom]);
+            ctx.strokeRect(margin, margin, lastResult.actual_w_mm, lastResult.actual_h_mm);
+            ctx.setLineDash([]);
+        }
+
+        // Draw G0 Travel lines (dashed cyan) if checked
+        if (chkShowTravel && chkShowTravel.checked && lastResult.preview_paths.length > 1) {
+            ctx.strokeStyle = "rgba(6, 182, 212, 0.35)";
+            ctx.lineWidth = 1 / cameraZoom;
+            ctx.setLineDash([3 / cameraZoom, 3 / cameraZoom]);
+            ctx.beginPath();
+            let lastEnd = [0, 0];
+            for (let i = 0; i < lastResult.preview_paths.length; i++) {
+                const path = lastResult.preview_paths[i];
+                if (path.length > 0) {
+                    ctx.moveTo(lastEnd[0], lastEnd[1]);
+                    ctx.lineTo(path[0][0], path[0][1]);
+                    lastEnd = path[path.length - 1];
+                }
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        // Draw G1 Stroke Paths (bright magenta/violet)
+        ctx.strokeStyle = "#c084fc";
+        ctx.lineWidth = 2 / cameraZoom;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        for (const path of lastResult.preview_paths) {
+            if (path.length < 2) continue;
+            ctx.beginPath();
+            ctx.moveTo(path[0][0], path[0][1]);
+            for (let i = 1; i < path.length; i++) {
+                ctx.lineTo(path[i][0], path[i][1]);
+            }
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    // Download .gcode file
+    if (btnDownload) {
+        btnDownload.addEventListener("click", () => {
+            if (!lastResult || !lastResult.gcode) {
+                alert("Vui lòng ấn Tạo G-Code trước!");
+                return;
+            }
+            const blob = new Blob([lastResult.gcode], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            const textSlug = (textInput.value || "font_gcode").trim().replace(/[^a-zA-Z0-9_\u00C0-\u024F]/g, "_").substring(0, 20);
+            a.download = `gcode_font_${textSlug}.gcode`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+    }
+
+    // Load direct to CNC machine controller
+    if (btnLoadToCnc) {
+        btnLoadToCnc.addEventListener("click", async () => {
+            if (!lastResult || !lastResult.gcode) {
+                alert("Vui lòng ấn Tạo G-Code trước!");
+                return;
+            }
+            try {
+                const res = await fetch("/api/gcode-editor/set-gcode", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ gcode: lastResult.gcode })
+                });
+                const data = await res.json();
+                if (data.status === "ok") {
+                    alert(`✅ Đã nạp ${data.lines_count} dòng G-code Font vào máy CNC!`);
+                    panel.classList.add("hidden");
+                } else {
+                    alert("Lỗi nạp G-code: " + (data.message || "Thất bại"));
+                }
+            } catch (e) {
+                console.error("Lỗi nạp G-code lên CNC:", e);
+            }
+        });
+    }
+
+    // Open in G-Code Editor panel
+    if (btnSendToEditor) {
+        btnSendToEditor.addEventListener("click", () => {
+            if (!lastResult || !lastResult.preview_paths || lastResult.preview_paths.length === 0) {
+                alert("Vui lòng ấn Tạo G-Code trước!");
+                return;
+            }
+            panel.classList.add("hidden");
+            const mainEditorPanel = document.getElementById("gcode-editor-panel");
+            if (mainEditorPanel) {
+                mainEditorPanel.classList.remove("hidden");
+                // Convert preview_paths to editor segments
+                if (window.loadSegmentsIntoGcodeEditor) {
+                    const segments = lastResult.preview_paths.map(path => ({
+                        pts: path.map(pt => ({ x: pt[0], y: pt[1] }))
+                    }));
+                    window.loadSegmentsIntoGcodeEditor(segments);
+                }
+            }
+        });
+    }
+}

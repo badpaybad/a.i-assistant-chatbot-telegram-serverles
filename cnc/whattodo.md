@@ -397,3 +397,21 @@ Có thể bổ xung thêm kiểu fill native tức là ảnh cho về đen trắ
 ✅ Đã bổ sung chế độ "Raster Scanline (Tô quét Ziczac 2px)" trong tab Chữ Viết Tay. Cho phép đầu CNC di chuyển ziczac liên tục theo từng dòng cách nhau 2px (tùy chỉnh từ 1px - 10px) qua toàn bộ diện tích nét chữ để tô phủ kín chữ như nề lại chữ.
 ✅ Đã bổ sung Phương án 2: "Local Raster (Tô Ziczac từng chữ)" - Tự động tách từng ký tự liên thông (Connected Components) và chỉ quét Ziczac ngắn trong phạm vi từng con chữ, giúp loại bỏ di chuyển không tải xa và không nhấc bút giữa chừng.
 ✅ Đã bổ sung Phương án 3: "Cross-Hatch (Tô gạch chéo 45°)" - Tô lấp đầy nét chữ theo các đường gạch chéo nghiêng 45° liền mạch, tạo hiệu ứng tô bóng nét chữ mỹ thuật và mềm mại.
+
+**cập nhật 51** bộ soạn thảo gcode ngoài việc chọn ảnh để tạo gcode từ ảnh. bổ xung thêm chọn thẳng file grbl gcode lên để edit bằng các công cụ chỉnh sửa 
+✅ Đã bổ sung khả năng chọn/kéo thả trực tiếp file GRBL G-code (`.gcode`, `.nc`, `.cnc`, `.txt`) vào bộ soạn thảo G-code Editor.
+✅ Tự động đọc và phân tích các lệnh GRBL G-code (`G0`, `G1`, `G2`, `G3`, `G90`, `G91`, trục `Z` và lệnh Servo `M3`/`M5`) thành các phân đoạn nét vẽ (`segments`) trực quan hiển thị ngay trên Canvas.
+✅ Hỗ trợ chỉnh sửa trực tiếp file G-code đã tải lên bằng đầy đủ bộ công cụ: xoá nét (🗑️), vẽ tay bổ sung (✏️), sửa điểm node (📍), di chuyển (✋), xóa tất cả (🗑️ X), làm mịn, xem trước trên khung hình video và xuất/truyền file G-code mới đến máy CNC.
+
+**cập nhật 52** bổ xung thêm nút cạnh bộ soạn thảo gcode hiện tại (gọi là Gcode with font). Khi click nút Gcode with font này cũng mở lên 1 editor chiếm nửa màn hình bên trái cho phép làm việc sau
+    cho người dùng droplist chọn font ở folder: cnc/fonts, chọn font size 
+    1 text editor simple để người dùng nhập text, text thuần không cần editor phức tạp và cho phép indent tab newline dạng notepad cơ bản
+    đơn giản để dựa vào font người dùng chọn và text để có thể gcode sinh ra cần mô phỏng theo code cnc/text_to_grbl_single_line_word.py để sinh gcode cho phép download về.
+    Cho phép xem preview dựa trên gcode để vẽ, có thể chỉnh thêm các option để điều chỉnh việc sinh gcode 
+✅ Đã bổ sung nút "✍️ Gcode with font" cạnh nút Bộ Soạn Thảo G-Code trên thanh Header.
+✅ Khi click sẽ mở Panel Editor chiếm 50% màn hình bên trái (`gcode-font-editor-panel`).
+✅ Hỗ trợ danh sách chọn Font động từ thư mục `cnc/fonts` (`GET /api/fonts`), chọn cỡ chữ Font size (pt) và các nút preset 18pt..120pt.
+✅ Soạn thảo văn bản Notepad đơn giản hỗ trợ thụt lề phím Tab (`\t`), Enter xuống dòng.
+✅ Sinh mã G-code CNC 1 nét chữ (`POST /api/generate-font-gcode`) mô phỏng hoàn toàn theo `cnc/text_to_grbl_single_line_word.py`.
+✅ Xem trước (Preview) nét vẽ 2D trực quan trên Canvas với hỗ trợ Zoom cuộn chuột, Kéo chuột Pan, lưới kích thước mm, hiển thị nét nhấc bút G0 (hiển thị chiều Y xuôi chiều đọc chữ tự nhiên, giữ nguyên mã G-code).
+✅ Hỗ trợ Tải về file `.gcode`, Nạp trực tiếp vào máy CNC, hoặc chuyển đường nét sang Bộ Soạn Thảo G-Code chính để chỉnh sửa node thủ công. 
