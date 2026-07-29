@@ -56,3 +56,11 @@ CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 
     ffmpeg sẽ convert video thành audio chuẩn gemma4 rồi gọi lên whipser hoặc gemma4, hiện tại default là whiper tubor
 
 **cập nhật 1** bổ xung cho myassitant/webhook_handler.py làm proxy pass GEMMA4_GENERATE_URL , tạo route url path request response giống với GEMMA4_GENERATE_URL 
+
+**cập nhật 2** ở myassitant/agent_tools.py bổ xung tool call dùng local gemma4 cho việc sinh ra các code như python hoặc bashshell để tạo các tool call cho python và bashshell, dựa vào ngữ cảnh cần sinh code gì và cần thực thi không khi thực thi sẽ cần đọc standar output để xem thành công hay lỗi, xem kết quả , cần đưa ra câu trả lời hợp lý cho người dùng. Nếu người dùng yêu cầu thực thi và đảm bảo thành công thì cần dùng local gemma4 dạng agent loop 5 lần để xử lý theo các bước : 
+    1. suy nghĩ để sinh code python hoặc bashshel người dùng cần, hoặc sửa lỗi nếu có 
+    2. thực thi code ( python có thể dùng /work/a.i-assistant-chatbot-telegram-serverles/venv và cài thêm nếu cần ) (bashshell chỉ chạy trong folder /work/a.i-assistant-chatbot-telegram-serverles/temp không thực thi những quyền cần sudo)
+    3.đọc kết quả từ standar output hoặc console log 
+        nếu kết quả thành công thì sẽ đưa ra kết quả cho người dùng
+        nếu có lỗi hoặc không thành công sẽ cần quay lại bước 1 
+
