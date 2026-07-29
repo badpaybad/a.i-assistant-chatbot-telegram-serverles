@@ -17,8 +17,13 @@ import os
 import sys
 import re
 import json
+import time
+import mimetypes
 import httpx
 from typing import Optional, List, Dict, Any
+
+from google import genai
+from google.genai import types
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_DIR)
@@ -30,6 +35,17 @@ from myassitant.config import GEMINI_APIKEY, GEMINI_MODEL
 
 MAX_CONTENT_CHARS = 6000
 
+
+def map_mime_type(mime_type: Optional[str]) -> str:
+    """Ánh xạ mime_type không được Gemini hỗ trợ sang mime_type hợp lệ (như text/plain)."""
+    if not mime_type:
+        return "text/plain"
+    unsupported_types = ["application/json", "application/javascript", "application/xml", "text/html", "text/css"]
+    if any(t in mime_type.lower() for t in unsupported_types):
+        return "text/plain"
+    return mime_type
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Tool Definitions (JSON schema cho Gemma4 function calling)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -40,12 +56,13 @@ TOOL_DEFINITIONS = [
         "description": (
             "Tìm kiếm thông tin trên Google thông qua Gemini API. "
             "Dùng khi cần thông tin thời gian thực: tin tức, thời tiết, tỷ giá, "
-            "sự kiện mới nhất hoặc khi người dùng yêu cầu tìm kiếm Google."
+            "sự kiện mới nhất, hoặc khi cần tìm kiếm/đối chiếu thông tin từ một file đính kèm. hoặc do người dùng chỉ định cần tìm trên google"
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "query": {"type": "string", "description": "Từ khóa hoặc câu hỏi cần tìm kiếm"}
+                "query": {"type": "string", "description": "Từ khóa hoặc câu hỏi cần tìm kiếm"},
+                "file_path": {"type": "string", "description": "Đường dẫn file (ảnh, PDF, video, text...) nếu muốn đính kèm để tìm kiếm cùng từ khóa"}
             },
             "required": ["query"]
         }
@@ -164,33 +181,68 @@ TOOL_DEFINITIONS = [
 # Tool Implementations
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def search_google(query: str) -> str:
-    """Tìm kiếm qua Gemini API + Google Search."""
+def search_google(query: str, file_path: Optional[str] = None) -> str:
+    """Tìm kiếm qua Gemini API + Google Search (hỗ trợ gửi kèm file tương tự gemini_truyenkieu.py)."""
     try:
-        # Dùng Google Generative AI với search grounding
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_APIKEY)
+        client = genai.Client(api_key=GEMINI_APIKEY)
+        user_parts = [types.Part.from_text(text=f"Tìm kiếm và trả lời ngắn gọn: {query}")]
 
-        model = genai.GenerativeModel(
-            model_name=GEMINI_MODEL,
-            tools=[{"google_search": {}}]
+        if file_path and os.path.exists(file_path):
+            print(f"[AgentTools] Uploading file for Google Search: {file_path}")
+            mime_type_guess, _ = mimetypes.guess_type(file_path)
+            upload_mime_type = map_mime_type(mime_type_guess)
+
+            uploaded_file = client.files.upload(
+                file=file_path,
+                config=types.UploadFileConfig(mime_type=upload_mime_type)
+            )
+
+            # Vòng lặp kiểm tra trạng thái file
+            while True:
+                file_info = client.files.get(name=uploaded_file.name)
+                state = file_info.state.name
+                if state == "ACTIVE":
+                    print(f"[AgentTools] Uploaded file ready (ACTIVE): {uploaded_file.name}")
+                    break
+                elif state == "FAILED":
+                    print(f"[AgentTools] Uploaded file state FAILED")
+                    break
+                time.sleep(2)
+
+            if file_info.state.name == "ACTIVE":
+                user_parts.append(
+                    types.Part.from_uri(
+                        file_uri=uploaded_file.uri,
+                        mime_type=uploaded_file.mime_type
+                    )
+                )
+
+        contents = [
+            types.Content(
+                role="user",
+                parts=user_parts
+            )
+        ]
+
+        google_search_tool = types.Tool(
+            google_search=types.GoogleSearch()
         )
-        response = model.generate_content(
-            f"Tìm kiếm và trả lời ngắn gọn: {query}",
+
+        dynamic_config = types.GenerateContentConfig(
+            tools=[google_search_tool]
         )
+
+        response = client.models.generate_content(
+            model=GEMINI_MODEL,
+            config=dynamic_config,
+            contents=contents
+        )
+
         return response.text.strip() if response.text else "[Không tìm được kết quả]"
+
     except Exception as e:
-        # Fallback: dùng Gemini API không có search
-        print(f"[Agent] Search fallback: {e}")
+        print(f"[AgentTools] Search google error: {e}")
         return f"[Lỗi tìm kiếm: {e}]"
-        # try:
-        #     import google.generativeai as genai
-        #     genai.configure(api_key=GEMINI_APIKEY)
-        #     model = genai.GenerativeModel(model_name=GEMINI_MODEL)
-        #     response = model.generate_content(f"Trả lời ngắn gọn câu hỏi sau (có thể bạn không có thông tin thời gian thực): {query}")
-        #     return response.text.strip()
-        # except Exception as e2:
-        #     return f"[Lỗi tìm kiếm: {e2}]"
 
 
 def crawl_url(url: str) -> str:
@@ -317,7 +369,7 @@ def execute_tool(
 
     try:
         if tool_name == "search_google":
-            return search_google(args.get("query", ""))
+            return search_google(args.get("query", ""), args.get("file_path"))
 
         elif tool_name == "crawl_url":
             return crawl_url(args.get("url", ""))
