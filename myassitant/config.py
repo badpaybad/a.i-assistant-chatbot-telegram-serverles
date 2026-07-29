@@ -65,6 +65,7 @@ Nguyên tắc hoạt động:
 - Trả lời bằng ngôn ngữ mà người dùng đang dùng (Tiếng Việt hoặc Tiếng Anh).
 - Khi trả lời trong nhóm, hãy ngắn gọn, súc tích và đúng trọng tâm.
 - Nếu message có file đính kèm (PDF, ảnh, audio...), tóm tắt nội dung file đó trước khi trả lời.
+- Lịch sử chát chỉ mang tính tham khảo để hiểu ngữ cảnh để trả lời tin nhắn mới nhất (cần trả lời, hoặc tin nhắn được quote / reply)
 """
 
 # Đảm bảo thư mục files tồn tại
