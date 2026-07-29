@@ -281,9 +281,49 @@ def search_google(query: str, file_path: Optional[str] = None) -> str:
 
 
 def crawl_url(url: str) -> str:
-    """Crawl nội dung URL."""
+    """Crawl và trích xuất văn bản từ URL bằng Playwright (hỗ trợ JS rendering) + BeautifulSoup, fallback httpx."""
+    if not url or not str(url).strip():
+        return "[Lỗi: URL không được để trống]"
+
+    # Cách 1: Thử dùng Playwright (render JS)
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; myassitant-bot/1.0)"}
+        from playwright.sync_api import sync_playwright
+        from bs4 import BeautifulSoup
+
+        print(f"[AgentTools] Crawling với Playwright: {url}")
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page(
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+            )
+            page.goto(url, wait_until="domcontentloaded", timeout=25000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=5000)
+            except Exception:
+                pass
+
+            html_content = page.content()
+            page_title = page.title()
+            browser.close()
+
+        soup = BeautifulSoup(html_content, "html.parser")
+        for tag in soup(["script", "style", "noscript", "header", "footer", "nav", "svg", "iframe"]):
+            tag.decompose()
+
+        text = soup.get_text(separator="\n")
+        lines = [line.strip() for line in text.splitlines() if line.strip()]
+        cleaned_text = "\n".join(lines)
+
+        if cleaned_text:
+            result = f"📌 Tiêu đề: {page_title}\n\n{cleaned_text}"
+            return result[:MAX_CONTENT_CHARS]
+
+    except Exception as e:
+        print(f"[AgentTools] Playwright crawl error cho {url}: {e}, fallback sang httpx")
+
+    # Cách 2: Fallback httpx (nếu Playwright lỗi)
+    try:
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
         with httpx.Client(timeout=15, headers=headers, follow_redirects=True) as client:
             resp = client.get(url)
             content_type = resp.headers.get("content-type", "")

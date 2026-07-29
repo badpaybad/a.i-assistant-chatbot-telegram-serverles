@@ -98,23 +98,9 @@ def _download_telegram_file(file_id: str, group_id: str, file_name: str = None) 
 # ─── Crawl URL ────────────────────────────────────────────────────────────────
 
 def _crawl_url(url: str) -> str:
-    """Crawl nội dung URL, trả về text. Dùng httpx sync."""
-    try:
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; myassitant-bot/1.0)"}
-        with httpx.Client(timeout=15, headers=headers, follow_redirects=True) as client:
-            resp = client.get(url)
-            content_type = resp.headers.get("content-type", "")
-            if "html" in content_type:
-                # Basic HTML → text (xóa tags)
-                text = re.sub(r"<[^>]+>", " ", resp.text)
-                text = re.sub(r"\s+", " ", text).strip()
-                return text[:MAX_CONTENT_CHARS]
-            elif "json" in content_type:
-                return resp.text[:MAX_CONTENT_CHARS]
-            else:
-                return resp.text[:MAX_CONTENT_CHARS]
-    except Exception as e:
-        return f"[Lỗi crawl URL {url}: {e}]"
+    """Crawl nội dung URL dùng Playwright render JS qua agent_tools."""
+    from myassitant.agent_tools import crawl_url
+    return crawl_url(url)
 
 
 # ─── Gọi Gemma4 để tóm tắt ────────────────────────────────────────────────────
