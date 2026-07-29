@@ -1,0 +1,1 @@
+const o={UpdateWebhook:"update-webhook",WebhookModelChanged:"webhook-model-changed",WebhookSaved:"webhook-saved"};export{o as E}

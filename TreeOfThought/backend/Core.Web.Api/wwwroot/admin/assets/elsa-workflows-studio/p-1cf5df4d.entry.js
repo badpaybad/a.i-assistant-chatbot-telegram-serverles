@@ -1,0 +1,1 @@
+import{r as e,h as i}from"./p-ee0b9025.js";let o=class{constructor(i){e(this,i)}componentWillLoad(){let e=this.match.params.id;e&&"new"==e.toLowerCase()&&(e=null),this.id=e}render(){return i("div",null,i("elsa-webhook-definition-editor-screen",{"webhook-definition-id":this.id}))}};export{o as elsa_studio_webhook_definitions_edit}

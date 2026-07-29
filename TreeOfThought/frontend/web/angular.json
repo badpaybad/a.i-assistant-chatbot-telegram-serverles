@@ -41,9 +41,15 @@
                 "glob": "**/*",
                 "input": "node_modules/tinymce",
                 "output": "/tinymce/"
+              },
+              {
+                "glob": "**/*",
+                "input": "node_modules/@elsa-workflows/elsa-workflows-studio/dist/elsa-workflows-studio",
+                "output": "/assets/elsa-workflows-studio/"
               }
             ],
             "styles": [
+              "node_modules/@elsa-workflows/elsa-workflows-studio/dist/elsa-workflows-studio/elsa-workflows-studio.css",
               "node_modules/ng-zorro-antd/ng-zorro-antd.min.css",
               "node_modules/ckeditor5/dist/ckeditor5.css",
               "node_modules/@wiris/mathtype-ckeditor5/dist/index.css",

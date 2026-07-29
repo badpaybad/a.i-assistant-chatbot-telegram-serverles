@@ -14,6 +14,18 @@ export const routes: Routes = [
     children: [
       { path: '', redirectTo: 'modules/cqrs-dashboard', pathMatch: 'full' },
       {
+        path: 'bpnm-workflow',
+        canActivate: [claimGuard(APP_CLAIMS.ELSA_WORKFLOW.VIEW)],
+        data: { breadcrumb: 'Elsa BPMN Workflow' },
+        loadComponent: () => import('@tot/elsa-bpnm-workflow').then(m => m.ElsaWorkflowMainComponent)
+      },
+      {
+        path: 'modules/elsa-bpnm-workflow',
+        canActivate: [claimGuard(APP_CLAIMS.ELSA_WORKFLOW.VIEW)],
+        data: { breadcrumb: 'Elsa BPMN Workflow' },
+        loadComponent: () => import('@tot/elsa-bpnm-workflow').then(m => m.ElsaWorkflowMainComponent)
+      },
+      {
         path: 'modules/cqrs-dashboard',
         data: { breadcrumb: 'CQRS Dashboard' },
         children: [
