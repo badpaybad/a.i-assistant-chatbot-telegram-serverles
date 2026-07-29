@@ -24,6 +24,7 @@
     <ProjectReference Include="..\onnx-computer-vision\Core.Infra.OnnxComputerVision.csproj" />
     <ProjectReference Include="..\business-test\Core.Infra.BusinessTest.csproj" />
     <ProjectReference Include="..\cqrs-dashboard\Core.Infra.CqrsDashboard.csproj" />
+    <ProjectReference Include="..\elsa-bpnm-workflow\Core.Infra.ElsaBpnmWorkflow.csproj" />
   </ItemGroup>
 
   <ItemGroup>

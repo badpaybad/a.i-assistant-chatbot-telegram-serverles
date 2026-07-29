@@ -1,0 +1,1 @@
+import{c as e}from"./p-83f217d4.js";import{h as r}from"./p-ee0b9025.js";const l=e({serverUrl:null,basePath:null,culture:null,monacoLibPath:null,serverFeatures:[],serverVersion:null},((e,l)=>r("context-consumer",{subscribe:e,renderer:l}))),s=Object.freeze({__proto__:null,default:l});export{l as T,s as d}

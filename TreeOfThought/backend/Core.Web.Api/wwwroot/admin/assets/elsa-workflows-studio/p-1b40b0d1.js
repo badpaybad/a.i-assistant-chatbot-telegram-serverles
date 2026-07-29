@@ -1,0 +1,1 @@
+class s{constructor(){this.monacoEditor=null,this.monacoEditorDialog=null,this.valueSaved=null}show(s,t,h){this.monacoEditor&&this.monacoEditorDialog&&(this.currentValue=t,this.monacoEditor.language=s,this.monacoEditor.setValue(t),this.valueSaved=h,this.monacoEditorDialog.show())}save(){this.valueSaved&&this.valueSaved(this.currentValue)}}const t=new s;export{s as M,t as m}

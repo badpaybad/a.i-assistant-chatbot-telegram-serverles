@@ -3,6 +3,14 @@
 # Ensure we are in the script's directory
 cd "$(dirname "$0")"
 
+# Configure .NET 10 PATH & Binary
+DOTNET_BIN="/home/dunp/.dotnet/dotnet"
+if [ ! -f "$DOTNET_BIN" ]; then
+    DOTNET_BIN="dotnet"
+fi
+export DOTNET_ROOT="/home/dunp/.config/Code/User/globalStorage/ms-dotnettools.vscode-dotnet-runtime/.dotnet/10.0.10~x64~aspnetcore"
+export PATH="$(dirname "$DOTNET_BIN"):$DOTNET_ROOT:$PATH"
+
 fuser -k 5000/tcp
 fuser -k 4200/tcp
 
@@ -32,6 +40,6 @@ cleanup() {
 # Start .NET backend by executing the compiled DLL directly to optimize RAM
 # TreeOfThought/backend/Core.Web.Api
 source ../../../venv/bin/activate
-dotnet build 
+"$DOTNET_BIN" build 
 echo "Starting Backend by executing DLL directly to prevent memory exhaustion..."
-dotnet bin/Debug/net8.0/Core.Web.Api.dll
+"$DOTNET_BIN" bin/Debug/net10.0/Core.Web.Api.dll

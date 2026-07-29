@@ -25,6 +25,10 @@ export const APP_CLAIMS = {
   },
   FILES_FOLDERS: {
     VIEW: 'fe.files_folders:view'
+  },
+  ELSA_WORKFLOW: {
+    VIEW: 'fe.elsa_workflow:view',
+    MANAGE: 'fe.elsa_workflow:manage'
   }
 };
 

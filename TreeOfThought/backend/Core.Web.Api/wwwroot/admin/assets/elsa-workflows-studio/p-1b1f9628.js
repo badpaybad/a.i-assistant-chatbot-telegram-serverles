@@ -1,0 +1,1 @@
+import{h as e}from"./p-ee0b9025.js";import{c as r}from"./p-83f217d4.js";const o=r({historyType:"browser",location:{pathname:"",query:{},key:""},titleSuffix:"",root:"/",routeViewsUpdated:()=>{}},((r,o)=>e("context-consumer",{subscribe:r,renderer:o})));export{o as A}

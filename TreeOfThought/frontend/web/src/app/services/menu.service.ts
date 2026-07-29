@@ -21,6 +21,11 @@ export class MenuService {
       claim: 'fe.cqrs:dashboard:view',
     },
     {
+      label: 'Elsa BPMN Workflow',
+      icon: 'branches',
+      route: '/bpnm-workflow',
+    },
+    {
       label: 'Quản trị hệ thống',
       icon: 'lock',
       claim: ['fe.auth:users:view', 'fe.auth:roles:view'],
