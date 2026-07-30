@@ -695,6 +695,21 @@ def send_telegram_file(group_id: str, file_path: str, caption: str = "", content
                 f.write(content)
 
         if not os.path.exists(target_path):
+            # Smart fallback resolution nếu đường dẫn file_path không tồn tại
+            fname = os.path.basename(target_path)
+            candidate = os.path.join(TEMP_DIR, fname)
+            if os.path.exists(candidate):
+                target_path = candidate
+            else:
+                import glob
+                ext = os.path.splitext(fname)[1]
+                matches = glob.glob(os.path.join(TEMP_DIR, f"*{ext}")) if ext else glob.glob(os.path.join(TEMP_DIR, "*"))
+                matches = [m for m in matches if os.path.isfile(m)]
+                matches.sort(key=lambda f: os.path.getmtime(f), reverse=True)
+                if matches:
+                    target_path = matches[0]
+
+        if not os.path.exists(target_path):
             return f"[Lỗi: Không tìm thấy file tại đường dẫn: {target_path}]"
 
         filename = os.path.basename(target_path)
@@ -791,8 +806,11 @@ def execute_tool(
             return execute_bash_script(requirement=req, script=script)
 
         elif tool_name == "send_telegram_file":
+            target_gid = args.get("group_id") or args.get("chat_id")
+            if not target_gid or not str(target_gid).lstrip("-").isdigit():
+                target_gid = group_id
             return send_telegram_file(
-                group_id=group_id,
+                group_id=target_gid,
                 file_path=args.get("file_path", ""),
                 caption=args.get("caption", ""),
                 content=args.get("content")
