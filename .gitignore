@@ -164,3 +164,4 @@ myassitant/myassitant.db
 myassitant/files/**
 myassitant/myassitant.db-shm
 myassitant/myassitant.db-wal
+dist/**
