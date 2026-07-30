@@ -98,23 +98,9 @@ def _download_telegram_file(file_id: str, group_id: str, file_name: str = None) 
 # ─── Crawl URL ────────────────────────────────────────────────────────────────
 
 def _crawl_url(url: str) -> str:
-    """Crawl nội dung URL, trả về text. Dùng httpx sync."""
-    try:
-        headers = {"User-Agent": "Mozilla/5.0 (compatible; myassitant-bot/1.0)"}
-        with httpx.Client(timeout=15, headers=headers, follow_redirects=True) as client:
-            resp = client.get(url)
-            content_type = resp.headers.get("content-type", "")
-            if "html" in content_type:
-                # Basic HTML → text (xóa tags)
-                text = re.sub(r"<[^>]+>", " ", resp.text)
-                text = re.sub(r"\s+", " ", text).strip()
-                return text[:MAX_CONTENT_CHARS]
-            elif "json" in content_type:
-                return resp.text[:MAX_CONTENT_CHARS]
-            else:
-                return resp.text[:MAX_CONTENT_CHARS]
-    except Exception as e:
-        return f"[Lỗi crawl URL {url}: {e}]"
+    """Crawl nội dung URL dùng Playwright render JS qua agent_tools."""
+    from myassitant.agent_tools import crawl_url
+    return crawl_url(url)
 
 
 # ─── Gọi Gemma4 để tóm tắt ────────────────────────────────────────────────────
@@ -612,8 +598,8 @@ def _process_file_record(file_record: dict):
         db.update_file_description(file_db_id, local_path, f"[Lỗi xử lý file: {err}]")
 
 
-def _describe_image_via_api(image_path: str) -> str:
-    """Gửi ảnh lên Gemma4 API để mô tả."""
+def _describe_image_via_api(image_path: str, prompt: Optional[str] = None) -> str:
+    """Gửi ảnh lên Gemma4 API để mô tả / trích xuất chữ (OCR)."""
     try:
         import base64
         with open(image_path, "rb") as f:
@@ -621,15 +607,21 @@ def _describe_image_via_api(image_path: str) -> str:
         mime_type, _ = mimetypes.guess_type(image_path)
         mime_type = mime_type or "image/jpeg"
 
+        if not prompt:
+            prompt = (
+                "Nếu trong ảnh có chứa văn bản/chữ (OCR), hãy ưu tiên trích xuất và đọc chính xác toàn bộ nội dung chữ trong ảnh trước. "
+                "Sau đó mới mô tả ngắn gọn bối cảnh/nội dung của ảnh bằng tiếng Việt (nếu cần)."
+            )
+
         request_body = {
             "contents": [{
                 "role": "user",
                 "parts": [
                     {"inline_data": {"mime_type": mime_type, "data": img_data}},
-                    {"text": "Mô tả ngắn gọn nội dung của ảnh này bằng tiếng Việt."}
+                    {"text": prompt}
                 ]
             }],
-            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 256},
+            "generationConfig": {"temperature": 0.2, "maxOutputTokens": 512},
         }
         with httpx.Client(timeout=60) as client:
             resp = client.post(GEMMA4_GENERATE_URL, json=request_body)
@@ -638,7 +630,7 @@ def _describe_image_via_api(image_path: str) -> str:
             parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
             return " ".join(p.get("text", "") for p in parts if p.get("text")).strip()
     except Exception as e:
-        return f"[Lỗi mô tả ảnh: {e}]"
+        return f"[Lỗi mô tả/trích xuất chữ ảnh: {e}]"
 
 
 # ─── Main worker loop ─────────────────────────────────────────────────────────
