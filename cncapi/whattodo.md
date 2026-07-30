@@ -14,9 +14,9 @@ Hàng 0
         cột 0
             Cấu hình kết nối cnc , cổng serial vẫn mặc dịnh /dev/ttyACM0 baudrate 115200
             các thông tin về cnc 
-                tọa độ gốc phôi, 
-                    tọa độ đầu cnc theo gốc phôi
-                tọa độ gốc làm việc 
+                tọa độ gốc máy (Machine Zero - G53)
+                    tọa độ đầu cnc theo gốc máy
+                tọa độ gốc làm việc, gốc phôi (Work Zero - G54)
                     tọa độ đầu cnc theo tọa độ làm việc 
                 tọa độ điểm đỗ ( dùng để rút dao)
 

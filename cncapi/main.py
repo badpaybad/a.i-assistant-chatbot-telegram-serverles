@@ -450,7 +450,9 @@ async def get_serial_ports():
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):
     if state.connected:
-        return {"status": "error", "message": "Đã kết nối với cổng khác."}
+        await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port}"})
+        await send_telemetry()
+        return {"status": "success", "message": "Đã kết nối với cổng khác."}
         
     state.port_name = config.port
     state.baudrate = config.baudrate

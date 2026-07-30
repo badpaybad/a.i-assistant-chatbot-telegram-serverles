@@ -130,14 +130,14 @@
         document.getElementById('btn-stop-cnc')?.addEventListener('click', stopCNC);
 
         // Jogging Keypad
-        bindJogKey('jog-y-minus', 0, 1, 0); // Top ▲ (Y+)
-        bindJogKey('jog-y-plus', 0, -1, 0); // Bottom ▼ (Y-)
-        bindJogKey('jog-x-minus', -1, 0, 0); // Left ◀ (X-)
-        bindJogKey('jog-x-plus', 1, 0, 0); // Right ▶ (X+)
-        bindJogKey('jog-y-plus-x-minus', -1, 1, 0);  // Top-Left ↖ (Y+ X-)
-        bindJogKey('jog-y-plus-x-plus', 1, 1, 0);   // Top-Right ↗ (Y+ X+)
-        bindJogKey('jog-y-minus-x-minus', -1, -1, 0); // Bottom-Left ↙ (Y- X-)
-        bindJogKey('jog-y-minus-x-plus', 1, -1, 0);  // Bottom-Right ↘ (Y- X+)
+        bindJogKey('jog-y-minus', 0, 1, 0); // Y+
+        bindJogKey('jog-y-plus', 0, -1, 0); // Y-
+        bindJogKey('jog-x-minus', -1, 0, 0); // X-
+        bindJogKey('jog-x-plus', 1, 0, 0); // X+
+        bindJogKey('jog-y-minus-x-minus', -1, -1, 0);
+        bindJogKey('jog-y-minus-x-plus', 1, -1, 0);
+        bindJogKey('jog-y-plus-x-minus', -1, 1, 0);
+        bindJogKey('jog-y-plus-x-plus', 1, 1, 0);
         bindJogKey('jog-z-plus', 0, 0, 1);
         bindJogKey('jog-z-minus', 0, 0, -1);
 
