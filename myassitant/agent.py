@@ -133,6 +133,8 @@ class GroupChatAgent:
         self.stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._last_reminder_check = 0.0
+        self._lock = threading.Lock()
+        self._processing_msg_ids = set()
 
         # Thông tin nhóm
         groups = db.get_all_active_groups()
@@ -176,10 +178,23 @@ class GroupChatAgent:
             return
 
         for msg in pending:
+            msg_db_id = msg["id"]
+            with self._lock:
+                if msg_db_id in self._processing_msg_ids:
+                    continue
+                # Atomic claim DB transition: is_chatbot_reply=1 -> 3
+                if not db.claim_pending_reply_message(msg_db_id):
+                    continue
+                self._processing_msg_ids.add(msg_db_id)
+
             try:
                 self._handle_message(msg)
             except Exception as e:
-                print(f"[Agent:{self.group_id}] Error handling msg #{msg['id']}: {e}")
+                print(f"[Agent:{self.group_id}] Error handling msg #{msg_db_id}: {e}")
+            finally:
+                with self._lock:
+                    self._processing_msg_ids.discard(msg_db_id)
+                db.update_message_chatbot_replied(msg_db_id)
 
     def _handle_message(self, msg: Dict):
         """Xử lý một message: agentic loop → reply → update DB."""

@@ -675,6 +675,10 @@ def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
 
             for msg in unprocessed:
                 msg_db_id = msg["id"]
+                # Atomic claim DB transition: is_processed=0 -> 3
+                if not db.claim_unprocessed_message(msg_db_id):
+                    continue
+
                 files = db.get_files_of_message(msg_db_id)
 
                 all_done = True

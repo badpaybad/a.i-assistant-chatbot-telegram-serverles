@@ -233,6 +233,34 @@ def get_unprocessed_messages() -> List[Dict]:
     return [dict(r) for r in rows]
 
 
+def claim_pending_reply_message(msg_db_id: int) -> bool:
+    """
+    Atomic claim: Chuyển is_chatbot_reply từ 1 sang 3 (đang xử lý).
+    Trả về True nếu claim thành công, False nếu luồng khác đã claim.
+    """
+    conn = get_conn()
+    cur = conn.execute(
+        "UPDATE message_of_group SET is_chatbot_reply=3 WHERE id=? AND is_chatbot_reply=1",
+        (msg_db_id,)
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
+def claim_unprocessed_message(msg_db_id: int) -> bool:
+    """
+    Atomic claim: Chuyển is_processed từ 0 sang 3 (đang xử lý file/link).
+    Trả về True nếu claim thành công.
+    """
+    conn = get_conn()
+    cur = conn.execute(
+        "UPDATE message_of_group SET is_processed=3 WHERE id=? AND is_processed=0",
+        (msg_db_id,)
+    )
+    conn.commit()
+    return cur.rowcount > 0
+
+
 def update_message_processed(msg_db_id: int):
     conn = get_conn()
     conn.execute("UPDATE message_of_group SET is_processed=1 WHERE id=?", (msg_db_id,))
