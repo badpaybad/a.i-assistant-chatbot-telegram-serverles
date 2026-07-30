@@ -73,6 +73,7 @@ class ControllerState:
         self.workpiece_origin = settings.get("workpiece_origin", {"x": 0.0, "y": 0.0, "z": 0.0})
         self.work_origin = settings.get("work_origin", {"x": 0.0, "y": 0.0, "z": 0.0})
         self.parking_point = settings.get("parking_point", {"x": 0.0, "y": 0.0, "z": 10.0})
+        self.home_set = settings.get("home_set", False)
         
         self.feedrate = 0.0
         self.spindle_speed = 0.0
@@ -344,7 +345,8 @@ async def send_telemetry():
         "streaming": state.is_streaming,
         "streaming_progress": (state.gcode_index / len(state.stream_gcode_lines)) if state.stream_gcode_lines else 0.0,
         "gcode_index": state.gcode_index,
-        "gcode_total": len(state.stream_gcode_lines)
+        "gcode_total": len(state.stream_gcode_lines),
+        "home_set": state.home_set
     })
 
 async def gcode_streamer_task():
@@ -590,7 +592,8 @@ async def set_workpiece_origin(pt: Point3D):
 @app.post("/api/origins/work")
 async def set_work_origin(pt: Point3D):
     state.work_origin = {"x": pt.x, "y": pt.y, "z": pt.z}
-    save_settings({"work_origin": state.work_origin})
+    state.home_set = True
+    save_settings({"work_origin": state.work_origin, "home_set": True})
     
     # Send G10 L20 P1 coordinate definition to CNC
     cmd = f"G10 L20 P1 X{pt.x:.3f} Y{pt.y:.3f} Z{pt.z:.3f}"
@@ -685,7 +688,8 @@ async def get_state():
         "feedrate": state.feedrate,
         "spindle_speed": state.spindle_speed,
         "buffer_rx": state.buffer_rx,
-        "streaming": state.is_streaming
+        "streaming": state.is_streaming,
+        "home_set": state.home_set
     }
 
 @app.websocket("/ws")

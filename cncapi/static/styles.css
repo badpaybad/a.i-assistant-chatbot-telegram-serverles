@@ -532,11 +532,55 @@ input:focus, select:focus {
     justify-content: space-between;
     align-items: center;
     background: rgba(30, 41, 59, 0.7);
-    padding: 3px 6px;
+    padding: 4px 6px;
     border-radius: var(--radius-sm);
     border-left: 3px solid var(--primary);
     font-size: 10px;
     font-family: var(--font-mono);
+    transition: all 0.2s ease;
+}
+
+.step-item.insert-active {
+    border-left-color: var(--warning);
+    background: rgba(245, 158, 11, 0.15);
+}
+
+.step-item-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.step-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-color);
+    border-radius: 3px;
+    padding: 2px 5px;
+    cursor: pointer;
+    font-size: 9px;
+    line-height: 1;
+    font-family: inherit;
+    transition: all 0.15s ease;
+}
+
+.step-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.step-btn.active {
+    background: var(--warning);
+    color: #000000;
+    border-color: var(--warning);
+}
+
+.step-btn.delete {
+    color: var(--danger);
+}
+
+.step-btn.delete:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: var(--danger);
 }
 
 /* ==================== HÀNG 2: CONSOLE & FOOTER ==================== */

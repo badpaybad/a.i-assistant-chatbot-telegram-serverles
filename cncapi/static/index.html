@@ -331,7 +331,12 @@
                 <!-- SCENARIO STEPS LIST PREVIEW -->
                 <div class="scenario-steps-container">
                     <div class="steps-header">
-                        <span data-i18n>Danh Sách Bước (<span id="scenario-steps-count">0</span>)</span>
+                        <span>
+                            <span data-i18n>Danh Sách Bước</span> (<span id="scenario-steps-count">0</span>)
+                            <span id="scenario-insert-info" style="display: none; color: var(--warning); font-size: 9px; margin-left: 6px;">
+                                [Chèn sau #<span id="scenario-insert-index-label">0</span>]
+                            </span>
+                        </span>
                         <button class="btn-text" id="btn-clear-scenario-steps" data-i18n>Xóa Hết</button>
                     </div>
                     <div class="steps-list" id="scenario-items-list">

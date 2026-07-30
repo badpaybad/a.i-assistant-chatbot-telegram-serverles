@@ -13,6 +13,8 @@
     
     let ws = null;
     let isConnected = false;
+    let isHomeSet = false;
+    let scenarioInsertIndex = -1;
 
     // Telemetry State
     let telemetry = {
@@ -181,6 +183,10 @@
         // Scenario Action Keys
         document.querySelectorAll('.btn-scenario-action').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                if (!isHomeSet) {
+                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                    return;
+                }
                 const actionType = e.currentTarget.getAttribute('data-action');
                 addScenarioAction(actionType);
             });
@@ -338,6 +344,7 @@
             const res = await fetch('/api/state');
             const data = await res.json();
             isConnected = data.connected;
+            isHomeSet = data.home_set || false;
             updateConnectionUI();
             
             const portInput = document.getElementById('port-input');
@@ -376,6 +383,9 @@
     function handleWSMessage(msg) {
         if (msg.type === 'telemetry') {
             telemetry = { ...telemetry, ...msg };
+            if (msg.home_set !== undefined) {
+                isHomeSet = msg.home_set;
+            }
             updateTelemetryUI();
         } else if (msg.type === 'connection') {
             isConnected = msg.connected;
@@ -540,6 +550,7 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ x: 0.0, y: 0.0, z: 0.0 })
             });
+            isHomeSet = true;
             alert(t('Đã thiết lập gốc tọa độ làm việc (0,0,0) tại vị trí hiện tại.'));
         } catch (e) {
             console.error('Error setting work origin:', e);
@@ -570,6 +581,11 @@
 
     // Touch & Swipe Gestures
     function executeGesture(type) {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
+        }
+
         const feed = parseFloat(document.getElementById('gesture-feedrate')?.value || '4000');
         const step = parseFloat(document.getElementById('gesture-step')?.value || '10');
         const tapDwell = parseFloat(document.getElementById('gesture-tap-dwell')?.value || '0.05');
@@ -583,60 +599,64 @@
         let gcode = [];
         gcode.push(`G90`);
 
+        const isSpindle = penMode === 'spindle-pwm';
+        const pDown = isSpindle ? `M3 S${penDownPwm}` : `G0 Z${penDownZ}`;
+        const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
+
         if (type === 'tap') {
             gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${tapDwell}`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'double_tap') {
             gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${tapDwell}`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
             gcode.push(`G4 P${tapDwell}`);
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${tapDwell}`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'long_press') {
             gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P1.0`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'swipe_custom') {
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
             gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${penDwell}`);
             gcode.push(`G1 X${endX.toFixed(2)} Y${endY.toFixed(2)} F${feed}`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'swipe_left') {
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${penDwell}`);
             gcode.push(`G91`);
             gcode.push(`G1 X-${swipeDist} F${feed}`);
             gcode.push(`G90`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'swipe_right') {
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${penDwell}`);
             gcode.push(`G91`);
             gcode.push(`G1 X${swipeDist} F${feed}`);
             gcode.push(`G90`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'swipe_up') {
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${penDwell}`);
             gcode.push(`G91`);
             gcode.push(`G1 Y${swipeDist} F${feed}`);
             gcode.push(`G90`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         } else if (type === 'swipe_down') {
-            gcode.push(`G0 Z${penDownZ}`);
+            gcode.push(pDown);
             gcode.push(`G4 P${penDwell}`);
             gcode.push(`G91`);
             gcode.push(`G1 Y-${swipeDist} F${feed}`);
             gcode.push(`G90`);
-            gcode.push(`G0 Z${penUpZ}`);
+            gcode.push(pUp);
         }
 
         sendCommand(gcode.join('\n'));
@@ -719,7 +739,7 @@
         ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX + 60, centerY); ctx.stroke();
         // Y Axis (Green) - inverted direction
         ctx.strokeStyle = '#22c55e';
-        ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX, centerY + 60); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX, centerY - 60); ctx.stroke();
 
         // Work Origin dot
         ctx.fillStyle = '#38bdf8';
@@ -735,7 +755,7 @@
             activeScenario.actions.forEach(action => {
                 if (action.x !== undefined && action.y !== undefined) {
                     const px = centerX + action.x * canvasScale;
-                    const py = centerY + action.y * canvasScale; // Inverted Y direction
+                    const py = centerY - action.y * canvasScale; // Inverted Y direction
                     if (!started) {
                         ctx.moveTo(px, py);
                         started = true;
@@ -755,7 +775,7 @@
             ctx.beginPath();
             penTrajectory.forEach((pt, i) => {
                 const px = centerX + pt.x * canvasScale;
-                const py = centerY + pt.y * canvasScale;
+                const py = centerY - pt.y * canvasScale;
                 if (i === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);
             });
@@ -765,7 +785,7 @@
         // Draw Pen Head Position (Y inverted)
         if (telemetry.wpos) {
             const headPx = centerX + telemetry.wpos[0] * canvasScale;
-            const headPy = centerY + telemetry.wpos[1] * canvasScale;
+            const headPy = centerY - telemetry.wpos[1] * canvasScale;
             ctx.fillStyle = '#f59e0b';
             ctx.beginPath(); ctx.arc(headPx, headPy, 6, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ffffff';
@@ -775,11 +795,17 @@
     }
 
     // Scenario Builder & Execution
+    // Scenario Builder & Execution
     function createNewScenario() {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
+        }
         activeScenario = {
             name: document.getElementById('scenario-name')?.value || 'kich_ban_1',
             actions: []
         };
+        scenarioInsertIndex = -1;
         renderScenarioSteps();
         drawCanvas();
     }
@@ -792,7 +818,12 @@
             y: parseFloat(relPos.y.toFixed(2)),
             z: parseFloat((telemetry.wpos ? telemetry.wpos[2] : 0).toFixed(2))
         };
-        activeScenario.actions.push(action);
+        if (scenarioInsertIndex !== -1) {
+            activeScenario.actions.splice(scenarioInsertIndex + 1, 0, action);
+            scenarioInsertIndex++;
+        } else {
+            activeScenario.actions.push(action);
+        }
         renderScenarioSteps();
         drawCanvas();
     }
@@ -800,9 +831,21 @@
     function renderScenarioSteps() {
         const container = document.getElementById('scenario-items-list');
         const countSpan = document.getElementById('scenario-steps-count');
+        const insertInfo = document.getElementById('scenario-insert-info');
+        const insertIndexLabel = document.getElementById('scenario-insert-index-label');
         if (!container) return;
 
         if (countSpan) countSpan.innerText = activeScenario.actions.length;
+
+        if (insertInfo && insertIndexLabel) {
+            if (scenarioInsertIndex !== -1 && scenarioInsertIndex < activeScenario.actions.length) {
+                insertInfo.style.display = 'inline';
+                insertIndexLabel.innerText = scenarioInsertIndex + 1;
+            } else {
+                insertInfo.style.display = 'none';
+                scenarioInsertIndex = -1;
+            }
+        }
 
         if (activeScenario.actions.length === 0) {
             container.innerHTML = `<div class="empty-steps-hint">${t('Chưa có bước nào trong kịch bản. Nhấn các phím phía trên để thêm bước.')}</div>`;
@@ -812,23 +855,91 @@
         container.innerHTML = '';
         activeScenario.actions.forEach((act, idx) => {
             const item = document.createElement('div');
-            item.className = 'step-item';
+            item.className = 'step-item' + (scenarioInsertIndex === idx ? ' insert-active' : '');
+            
+            let label = act.type.toUpperCase().replace(/_/g, ' ');
+            let details = '';
+            if (act.type.startsWith('dwell-')) {
+                details = `${act.type.split('-')[1]}s`;
+            } else if (act.type === 'dwell') {
+                details = `${act.duration ?? 0.25}s`;
+            } else if (act.x !== undefined && act.y !== undefined) {
+                details = `${act.x.toFixed(1)}, ${act.y.toFixed(1)}`;
+            }
+            
             item.innerHTML = `
-                <span>#${idx + 1} <strong>${act.type}</strong> (${act.x}, ${act.y})</span>
-                <button class="btn-text" style="color: var(--danger);" data-idx="${idx}">✕</button>
+                <span>#${idx + 1} <strong>${label}</strong> ${details ? `(${details})` : ''}</span>
+                <div class="step-item-actions">
+                    <button class="step-btn pin-btn ${scenarioInsertIndex === idx ? 'active' : ''}" title="${t('Đặt vị trí chèn sau bước này')}">📌</button>
+                    <button class="step-btn move-up-btn" title="${t('Di chuyển lên')}">▲</button>
+                    <button class="step-btn move-down-btn" title="${t('Di chuyển xuống')}">▼</button>
+                    <button class="step-btn delete" title="${t('Xóa bước này')}">✕</button>
+                </div>
             `;
-            item.querySelector('button').addEventListener('click', (e) => {
-                const deleteIdx = parseInt(e.target.getAttribute('data-idx'));
-                activeScenario.actions.splice(deleteIdx, 1);
+            
+            const btnPin = item.querySelector('.pin-btn');
+            const btnUp = item.querySelector('.move-up-btn');
+            const btnDown = item.querySelector('.move-down-btn');
+            const btnDel = item.querySelector('.delete');
+            
+            btnPin.addEventListener('click', () => {
+                if (scenarioInsertIndex === idx) {
+                    scenarioInsertIndex = -1;
+                } else {
+                    scenarioInsertIndex = idx;
+                }
                 renderScenarioSteps();
                 drawCanvas();
             });
+            
+            btnUp.addEventListener('click', () => {
+                if (idx > 0) {
+                    const temp = activeScenario.actions[idx];
+                    activeScenario.actions[idx] = activeScenario.actions[idx - 1];
+                    activeScenario.actions[idx - 1] = temp;
+                    if (scenarioInsertIndex === idx) {
+                        scenarioInsertIndex = idx - 1;
+                    } else if (scenarioInsertIndex === idx - 1) {
+                        scenarioInsertIndex = idx;
+                    }
+                    renderScenarioSteps();
+                    drawCanvas();
+                }
+            });
+            
+            btnDown.addEventListener('click', () => {
+                if (idx < activeScenario.actions.length - 1) {
+                    const temp = activeScenario.actions[idx];
+                    activeScenario.actions[idx] = activeScenario.actions[idx + 1];
+                    activeScenario.actions[idx + 1] = temp;
+                    if (scenarioInsertIndex === idx) {
+                        scenarioInsertIndex = idx + 1;
+                    } else if (scenarioInsertIndex === idx + 1) {
+                        scenarioInsertIndex = idx;
+                    }
+                    renderScenarioSteps();
+                    drawCanvas();
+                }
+            });
+            
+            btnDel.addEventListener('click', () => {
+                activeScenario.actions.splice(idx, 1);
+                if (scenarioInsertIndex === idx) {
+                    scenarioInsertIndex = -1;
+                } else if (scenarioInsertIndex > idx) {
+                    scenarioInsertIndex--;
+                }
+                renderScenarioSteps();
+                drawCanvas();
+            });
+            
             container.appendChild(item);
         });
     }
 
     function clearScenarioSteps() {
         activeScenario.actions = [];
+        scenarioInsertIndex = -1;
         renderScenarioSteps();
         drawCanvas();
     }
@@ -852,6 +963,7 @@
         reader.onload = (event) => {
             try {
                 activeScenario = JSON.parse(event.target.result);
+                scenarioInsertIndex = -1;
                 const nameInput = document.getElementById('scenario-name');
                 if (nameInput && activeScenario.name) nameInput.value = activeScenario.name;
                 renderScenarioSteps();
@@ -870,55 +982,86 @@
 
         let gcode = [];
         gcode.push('G90 G54');
+        
+        const isSpindle = penMode === 'spindle-pwm';
+        const pDown = isSpindle ? `M3 S${penDownPwm}` : `G0 Z${penDownZ}`;
+        const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
+
         activeScenario.actions.forEach(act => {
             if (act.type === 'set_begin' || act.type === 'go_to_here') {
+                gcode.push(pUp);
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
+                gcode.push(`G4 P0.25`);
+            } else if (act.type === 'go_to_keep_state') {
+                gcode.push(`G1 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
             } else if (act.type === 'pen_down') {
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${penDwell}`);
             } else if (act.type === 'pen_up') {
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
                 gcode.push(`G4 P${penDwell}`);
             } else if (act.type === 'tap') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${tapDwell}`);
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
+            } else if (act.type === 'double_tap') {
+                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
+                gcode.push(pDown);
+                gcode.push(`G4 P${tapDwell}`);
+                gcode.push(pUp);
+                gcode.push(`G4 P${tapDwell}`);
+                gcode.push(pDown);
+                gcode.push(`G4 P${tapDwell}`);
+                gcode.push(pUp);
+            } else if (act.type === 'long_press') {
+                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
+                gcode.push(pDown);
+                gcode.push(`G4 P1.0`);
+                gcode.push(pUp);
             } else if (act.type === 'swipe_down') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${penDwell}`);
                 gcode.push(`G1 Y${(act.y - swipeDist).toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
             } else if (act.type === 'swipe_up') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${penDwell}`);
                 gcode.push(`G1 Y${(act.y + swipeDist).toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
             } else if (act.type === 'swipe_left') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${penDwell}`);
                 gcode.push(`G1 X${(act.x - swipeDist).toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
             } else if (act.type === 'swipe_right') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penDownZ}`);
+                gcode.push(pDown);
                 gcode.push(`G4 P${penDwell}`);
                 gcode.push(`G1 X${(act.x + swipeDist).toFixed(2)} F${feed}`);
-                gcode.push(`G0 Z${penUpZ}`);
+                gcode.push(pUp);
             } else if (act.type.startsWith('dwell-')) {
                 const duration = act.type.split('-')[1];
                 gcode.push(`G4 P${duration}`);
+            } else if (act.type === 'dwell') {
+                gcode.push(`G4 P${(act.duration ?? 0.25).toFixed(2)}`);
             } else {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
             }
         });
+        
+        gcode.push(pUp);
         return gcode.join('\n');
     }
 
     async function runScenario() {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
+        }
         if (activeScenario.actions.length === 0) {
             alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
@@ -936,6 +1079,10 @@
     }
 
     function toggleRunLoopScenario() {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
+        }
         isScenarioLooping = !isScenarioLooping;
         const btn = document.getElementById('btn-run-loop-scenario');
         if (btn) {
@@ -946,6 +1093,10 @@
     }
 
     function runScenarioSimulation() {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
+        }
         if (activeScenario.actions.length === 0) return;
         isSimulating = true;
         let step = 0;
