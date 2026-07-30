@@ -1,0 +1,589 @@
+/* Modern CSS for 3-Row CNC Controller Interface */
+:root {
+    --bg-dark: #0b1120;
+    --bg-card: rgba(15, 23, 42, 0.75);
+    --border-color: rgba(51, 65, 85, 0.6);
+    
+    --primary: #38bdf8;
+    --primary-hover: #0284c7;
+    --primary-glow: rgba(56, 189, 248, 0.25);
+    
+    --success: #22c55e;
+    --success-hover: #16a34a;
+    --success-glow: rgba(34, 197, 94, 0.25);
+    
+    --warning: #f59e0b;
+    --warning-glow: rgba(245, 158, 11, 0.25);
+    
+    --danger: #ef4444;
+    --danger-hover: #dc2626;
+    --danger-glow: rgba(239, 68, 68, 0.25);
+
+    --info: #a855f7;
+    
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    
+    --font-ui: 'Outfit', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    
+    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-sm: 4px;
+    --shadow-main: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-color) transparent;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: var(--radius-sm);
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    font-family: var(--font-ui);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.glass-bg {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.08), transparent 40%),
+                radial-gradient(circle at 80% 80%, rgba(34, 197, 94, 0.05), transparent 40%),
+                radial-gradient(circle at 50% 50%, rgba(168, 85, 247, 0.05), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.app-layout {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 8px;
+    gap: 8px;
+}
+
+.card {
+    background: var(--bg-card);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 8px 12px;
+    box-shadow: var(--shadow-main);
+}
+
+.sub-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+}
+
+.section-divider {
+    border: none;
+    border-top: 1px solid var(--border-color);
+    margin: 6px 0;
+}
+
+/* ==================== HÀNG 0: HEADER & CONFIG ==================== */
+.row-header {
+    display: grid;
+    grid-template-columns: 1fr 1fr 260px;
+    gap: 8px;
+    min-height: 145px;
+}
+
+.header-col {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.col-title-row h3 {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.connection-form-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+
+.input-group label {
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+input[type="text"], input[type="number"], select {
+    background: rgba(15, 23, 42, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 4px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-family: var(--font-mono);
+    outline: none;
+    transition: border-color var(--transition-speed);
+    width: 100%;
+}
+
+input:focus, select:focus {
+    border-color: var(--primary);
+}
+
+.input-with-button {
+    display: flex;
+    gap: 4px;
+}
+
+.btn {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 5px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+}
+
+.btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+}
+
+.btn-primary { background: var(--primary); color: #000; font-weight: 700; border: none; }
+.btn-success { background: var(--success); color: #000; font-weight: 700; border: none; }
+.btn-warning { background: var(--warning); color: #000; font-weight: 700; border: none; }
+.btn-danger-soft { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+.btn-secondary { background: rgba(51, 65, 85, 0.5); }
+.btn-info { background: var(--info); color: #fff; border: none; }
+.btn-compact { padding: 3px 6px; font-size: 10px; }
+.btn-mini { padding: 2px 5px; font-size: 9px; }
+.btn-icon-only { padding: 3px 5px; min-width: 24px; }
+.full-btn { width: 100%; }
+
+/* CNC Info Grid */
+.cnc-info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px 8px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 5px 7px;
+    border-radius: var(--radius-sm);
+}
+
+.info-block {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-block.full-width {
+    grid-column: span 2;
+}
+
+.info-parking-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.info-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.info-value {
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--text-main);
+}
+
+.highlight-cyan { color: #38bdf8; font-weight: 700; }
+.highlight-green { color: #4ade80; font-weight: 700; }
+
+/* Spindle & Sub Config Boxes */
+.spindle-config-box, .sub-config-box {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 5px 7px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 4px;
+}
+
+.row-inputs {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.coordinate-input-group {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.coord-separator {
+    color: var(--text-muted);
+    font-weight: bold;
+}
+
+.pen-test-btns {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+/* Status Box */
+.col-status {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.status-box-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.status-badge, .state-badge {
+    padding: 4px;
+    border-radius: var(--radius-sm);
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.disconnected, .state-badge.disconnected {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+}
+
+.status-badge.connected, .state-badge.connected {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid var(--success);
+    color: var(--success);
+}
+
+.telemetry-mini-row {
+    display: flex;
+    justify-content: space-between;
+    background: rgba(0,0,0,0.3);
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 9px;
+}
+
+/* ==================== HÀNG 1: MAIN WORK AREA (25% - 50% - 25%) ==================== */
+.row-main {
+    display: flex;
+    gap: 8px;
+    flex: 1;
+    min-height: 0;
+}
+
+.main-col {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.col-25 { flex: 0 0 25%; max-width: 25%; }
+.col-50 { flex: 0 0 50%; max-width: 50%; }
+
+/* Jogging Keypad */
+.jog-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 4px;
+    max-width: 210px;
+    margin: 4px auto 6px auto;
+}
+
+.btn-jog {
+    height: 34px;
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.btn-jog:hover {
+    background: var(--primary);
+    color: #000;
+}
+
+.btn-jog.center {
+    background: rgba(56, 189, 248, 0.2);
+    color: var(--primary);
+}
+
+.btn-jog.btn-unlock {
+    background: rgba(245, 158, 11, 0.2);
+    color: var(--warning);
+}
+
+.jog-special-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Gesture Buttons Grid */
+.gesture-btn-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    margin-top: 6px;
+}
+
+/* Visualizer / Toolpath Canvas */
+.visualizer-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.visualizer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.canvas-wrapper {
+    position: relative;
+    flex: 1;
+    background: #040812;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    min-height: 250px;
+}
+
+#toolpath-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    cursor: grab;
+}
+
+#toolpath-canvas:active {
+    cursor: grabbing;
+}
+
+.canvas-instructions {
+    position: absolute;
+    bottom: 6px;
+    left: 6px;
+    font-size: 9px;
+    color: var(--text-muted);
+    background: rgba(0,0,0,0.6);
+    padding: 2px 5px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+}
+
+.canvas-overlay-info {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 10px;
+    font-family: var(--font-mono);
+    color: var(--primary);
+    background: rgba(0,0,0,0.6);
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    pointer-events: none;
+}
+
+/* Scenario Management */
+.scenario-ops-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.scenario-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 3px;
+    max-height: 140px;
+    overflow-y: auto;
+}
+
+.btn-scenario-action {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 4px 6px;
+    font-size: 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.btn-scenario-action:hover {
+    border-color: var(--primary);
+    background: rgba(56, 189, 248, 0.15);
+}
+
+.scenario-steps-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-top: 6px;
+    background: rgba(0,0,0,0.25);
+    border-radius: var(--radius-sm);
+    padding: 5px;
+    min-height: 100px;
+}
+
+.steps-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.btn-text {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 9px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.steps-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.empty-steps-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-align: center;
+    padding: 12px 6px;
+}
+
+.step-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(30, 41, 59, 0.7);
+    padding: 3px 6px;
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--primary);
+    font-size: 10px;
+    font-family: var(--font-mono);
+}
+
+/* ==================== HÀNG 2: CONSOLE & FOOTER ==================== */
+.row-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-height: 130px;
+    max-height: 155px;
+}
+
+.console-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.console-output {
+    flex: 1;
+    background: #020617;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.log-line {
+    word-break: break-all;
+}
+
+.log-line.in { color: #4ade80; }
+.log-line.out { color: #38bdf8; }
+.log-line.system { color: #a855f7; }
+
+.console-input-form {
+    display: flex;
+    gap: 6px;
+}
+
+.copyright-bar {
+    text-align: center;
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 1px;
+}

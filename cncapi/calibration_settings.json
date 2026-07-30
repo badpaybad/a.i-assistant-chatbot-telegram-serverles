@@ -1,0 +1,79 @@
+{
+  "step_distance": 10.0,
+  "jog_feedrate": 1000.0,
+  "gesture_feedrate": 4000.0,
+  "gesture_distance": 40.0,
+  "gesture_dwell": 0.15,
+  "gesture_tap_dwell": 0.05,
+  "pen_mode": "spindle-pwm",
+  "pen_up_z": 3.0,
+  "pen_down_z": 0.0,
+  "pen_up_pwm": 30.0,
+  "pen_down_pwm": 90.0,
+  "pen_dwell": 0.25,
+  "workpiece_origin": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "work_origin": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 0.0
+  },
+  "parking_point": {
+    "x": 0.0,
+    "y": 0.0,
+    "z": 10.0
+  },
+  "points": {},
+  "matrix": null,
+  "draw_overlay": true,
+  "home_set": true,
+  "home_markers": {},
+  "home_snapshot": "home_snapshot.jpg",
+  "home_pixel": [
+    360.0,
+    360.0
+  ],
+  "touch_pen_pixel": [
+    360.0,
+    360.0
+  ],
+  "home_mpos": [
+    0.0,
+    0.0,
+    0.0
+  ],
+  "saved_mpos": [
+    0.0,
+    0.0,
+    3.0
+  ],
+  "saved_pen_position": [
+    0.0,
+    0.0,
+    3.0
+  ],
+  "aruco_cnc_points": {},
+  "frame_o": {
+    "x": 360.0,
+    "y": 360.0
+  },
+  "cnc_o": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "cnc_mpos_o": {
+    "x": 0.0,
+    "y": 0.0
+  },
+  "frame_last": {
+    "x": 360.0,
+    "y": 360.0
+  },
+  "cnc_last": {
+    "x": 0.0,
+    "y": 0.0
+  }
+}
