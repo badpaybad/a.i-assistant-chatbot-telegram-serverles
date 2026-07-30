@@ -77,3 +77,5 @@ Tool Path View (Xem & Giả Lập Kịch Bản)
     tuân thủ Cấu Hình Spindle & Gốc Làm Việc (vị trí nâng hạ bút) có cấu hình nâng hạ
     Tuân thủ cấu hình Cử Chỉ Touch & Swipe Gestures Tốc Độ Feedrate 4000 Bước Chuyển (mm) Tap Độ Trễ (s) Swipe Độ Dài (mm)
     set begin và set end cần nhấc dao trước rồi mới thực hiện  
+
+**chú ý** để tôi tự test 

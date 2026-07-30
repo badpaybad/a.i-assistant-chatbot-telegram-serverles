@@ -988,7 +988,7 @@
         const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
 
         activeScenario.actions.forEach(act => {
-            if (act.type === 'set_begin' || act.type === 'go_to_here') {
+            if (act.type === 'set_begin' || act.type === 'set_end' || act.type === 'go_to_here') {
                 gcode.push(pUp);
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
                 gcode.push(`G4 P0.25`);
