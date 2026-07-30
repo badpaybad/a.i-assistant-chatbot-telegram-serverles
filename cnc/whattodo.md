@@ -415,3 +415,9 @@ Có thể bổ xung thêm kiểu fill native tức là ảnh cho về đen trắ
 ✅ Sinh mã G-code CNC 1 nét chữ (`POST /api/generate-font-gcode`) mô phỏng hoàn toàn theo `cnc/text_to_grbl_single_line_word.py`.
 ✅ Xem trước (Preview) nét vẽ 2D trực quan trên Canvas với hỗ trợ Zoom cuộn chuột, Kéo chuột Pan, lưới kích thước mm, hiển thị nét nhấc bút G0 (hiển thị chiều Y xuôi chiều đọc chữ tự nhiên, giữ nguyên mã G-code).
 ✅ Hỗ trợ Tải về file `.gcode`, Nạp trực tiếp vào máy CNC, hoặc chuyển đường nét sang Bộ Soạn Thảo G-Code chính để chỉnh sửa node thủ công. 
+
+**cập nhật 53** dùng nuitka để đóng gói cnc/main.py và những code liên quan thành file chạy để tránh rủi ro khi người dùng thông thường can thiệp code python , đóng gói vào folder dist/winx64 và dist/linuxx64. 
+Tạo lệnh bashshell để đóng gói build.sh 
+✅ Đã đóng gói thành công ứng dụng CNC (`cnc/main.py`) bằng Nuitka và tự động hóa quy trình đóng gói qua kịch bản Bash Shell [build.sh](file:///work/a.i-assistant-chatbot-telegram-serverles/cnc/build.sh).
+✅ Cấu hình đầu ra cho 2 nền tảng: `dist/linuxx64` (chứa file thực thi Linux `cnc_main` + tài nguyên) và `dist/winx64` (chứa file thực thi Windows `cnc_main.exe` + tài nguyên).
+✅ Tự động nạp các tài nguyên giao diện và AI đi kèm (`static/`, `fonts/`, `aimodels/`, `calibration_settings.json`, `camera_calibration_result.npz`), giúp chương trình chạy hoàn toàn độc lập, bảo mật và tránh nguy cơ người dùng thông thường can thiệp sửa đổi mã nguồn Python.
