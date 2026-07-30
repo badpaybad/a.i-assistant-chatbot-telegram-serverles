@@ -64,3 +64,5 @@ CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 
         nếu kết quả thành công thì sẽ đưa ra kết quả cho người dùng
         nếu có lỗi hoặc không thành công sẽ cần quay lại bước 1 
 
+**cập nhật 3**
+user_prompt ở myassitant/agent.py để  tiết kiệm và không bị loãng message chát hiện tại có thể gồm cả message quote or reply và các file đi theo message . việc xử lý history (  f"### LỊCH SỬ {HISTORY_CONTEXT_LIMIT} TIN NHẮN GẦN NHẤT (đã xử lý):\n") cần build thành dạng phân tích ngữ cảnh nếu cần truy cập các tool call gọi vào db sqllite để lấy thêm thông tin khi cần vd cần lấy các note gần nhất hay remind hay các message chát gần nhất ... lấy ra để xử lý bổ xung cho việc trả lời chát hiện tại 

@@ -61,29 +61,19 @@ def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optiona
 
 # ─── Build context từ lịch sử message ────────────────────────────────────────
 
-def _build_context_text(group_id: str) -> str:
-    """Xây dựng chuỗi context từ 10 message gần nhất đã xử lý."""
-    recent = db.get_recent_processed_messages(group_id, HISTORY_CONTEXT_LIMIT)
+def _build_context_text(group_id: str, limit: int = 5) -> str:
+    """Xây dựng chuỗi context rút gọn từ các message gần nhất để làm ngữ cảnh tham khảo nhẹ."""
+    recent = db.get_recent_processed_messages(group_id, limit)
     if not recent:
-        return "(Chưa có lịch sử tin nhắn nào được xử lý)"
+        return "(Chưa có lịch sử tin nhắn trước đó)"
 
     lines = []
     for i, msg in enumerate(recent, 1):
         sender = msg.get("from_full_name") or msg.get("from_username") or "Unknown"
-        username = msg.get("from_username") or ""
-        text = msg.get("text") or ""
+        text = (msg.get("text") or "").strip()
         ts = msg.get("created_at", "")
-
-        line = f"[{i}] [{ts}] {sender} (@{username}): {text}"
-
-        # Thêm tóm tắt file nếu có
-        file_summaries = msg.get("file_summaries") or ""
-        if file_summaries:
-            for fs in file_summaries.split("|"):
-                if ":" in fs and fs.split(":", 1)[1].strip():
-                    ftype, fdesc = fs.split(":", 1)
-                    line += f"\n    📎 [{ftype}]: {fdesc.strip()[:200]}"
-
+        short_text = text[:150] + ("..." if len(text) > 150 else "")
+        line = f"  [{ts}] {sender}: {short_text}"
         lines.append(line)
 
     return "\n".join(lines)
@@ -304,17 +294,22 @@ class GroupChatAgent:
                     tool_results_str += f"\n[{tr['tool']}]: {tr['result'][:1000]}"
 
             user_prompt = (
-                f"### LỊCH SỬ {HISTORY_CONTEXT_LIMIT} TIN NHẮN GẦN NHẤT (đã xử lý):\n"
-                f"{context_text}\n"
+                f"### TIN NHẮN CẦN TRẢ LỜI (ƯU TIÊN HÀNG ĐẦU):\n"
+                f"[{created_at}] {from_full_name} (@{from_username}): {text}\n"
+                f"{reply_context}\n"
                 f"{file_context}\n"
                 f"{tool_results_str}\n\n"
-                f"### TIN NHẮN CẦN TRẢ LỜI:\n"
-                f"[{created_at}] {from_full_name} (@{from_username}): {text}"
-                f"{reply_context}\n\n"
-                f"### YÊU CẦU:\n"
-                f"Hãy phân tích tin nhắn trên và {'dùng tools nếu cần thêm thông tin, sau đó ' if loop_i == 1 else ''}"
-                f"đưa ra câu trả lời phù hợp. "
-                f"{'Nếu không cần dùng thêm tool, hãy trả lời trực tiếp.' if loop_i > 1 else ''}"
+                f"### TÓM TẮT LỊCH SỬ TRÒ CHUYỆN GẦN ĐÂY (THAM KHẢO RÚT GỌN):\n"
+                f"{context_text}\n\n"
+                f"### HƯỚNG DẪN XỬ LÝ:\n"
+                f"- Tập trung phân tích và trả lời trực tiếp cho tin nhắn mới nhất, tin nhắn được quote/reply và các file đính kèm.\n"
+                f"- Nếu cần thêm thông tin từ lịch sử tin nhắn cũ hơn trong nhóm, các ghi chú (notes) hay danh sách nhắc nhở (reminders), HÃY GỌI TOOL CALL TRUY VẤN CSDL SQLITE:\n"
+                f"  + `db_search_messages`: Tìm kiếm tin nhắn trong lịch sử chat theo từ khóa.\n"
+                f"  + `db_search_notes`: Tìm kiếm trong các ghi chú đã lưu.\n"
+                f"  + `db_list_reminders`: Xem danh sách các nhắc nhở đang hoạt động.\n"
+                f"  + `search_google`: Tìm kiếm thông tin Google thời gian thực.\n"
+                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code khi có yêu cầu.\n"
+                f"{'Nếu không cần dùng thêm tool, hãy đưa ra câu trả lời trực tiếp.' if loop_i > 1 else ''}"
                 + (f"\nTag người dùng: {tag_user}" if not is_private else "")
             )
 
