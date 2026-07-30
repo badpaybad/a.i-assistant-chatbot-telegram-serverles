@@ -202,12 +202,18 @@ class GroupChatAgent:
         raw_audio_texts = []
         for f in files:
             desc = f.get("description") or ""
+            local_path = f.get("local_path") or ""
+            desc = f.get("description") or ""
             ftype = f.get("file_type", "file")
             url = f.get("url") or f.get("local_path") or ""
+            file_info_str = f"📎 [{ftype}]"
+            if local_path:
+                file_info_str += f" local_path: {local_path}"
             if desc:
-                file_items.append(f"📎 [{ftype}] {url}: {desc}")
-                if ftype in ("audio", "voice", "video") and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
-                    raw_audio_texts.append(desc)
+                file_info_str += f" | {desc}"
+            file_items.append(file_info_str)
+            if ftype in ("audio", "voice", "video") and desc and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
+                raw_audio_texts.append(desc)
 
 
         file_context = ""
@@ -303,12 +309,12 @@ class GroupChatAgent:
                 f"{context_text}\n\n"
                 f"### HƯỚNG DẪN XỬ LÝ:\n"
                 f"- Tập trung phân tích và trả lời trực tiếp cho tin nhắn mới nhất, tin nhắn được quote/reply và các file đính kèm.\n"
-                f"- Nếu cần thêm thông tin từ lịch sử tin nhắn cũ hơn trong nhóm, các ghi chú (notes) hay danh sách nhắc nhở (reminders), HÃY GỌI TOOL CALL TRUY VẤN CSDL SQLITE:\n"
-                f"  + `db_search_messages`: Tìm kiếm tin nhắn trong lịch sử chat theo từ khóa.\n"
-                f"  + `db_search_notes`: Tìm kiếm trong các ghi chú đã lưu.\n"
-                f"  + `db_list_reminders`: Xem danh sách các nhắc nhở đang hoạt động.\n"
+                f"- Các công cụ khả dụng (Tool Calls):\n"
+                f"  + `send_telegram_file`: BẮT BUỘC gọi tool này để gửi file (ảnh, pdf, icon, code, docx...) về lại Telegram cho người dùng sau khi đã tạo/chuyển đổi file xong.\n"
+                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code/script (VD: ffmpeg convert ảnh, xử lý dữ liệu) khi người dùng yêu cầu.\n"
+                f"  + `db_search_messages` / `db_search_notes` / `db_list_reminders`: Truy vấn CSDL SQLite khi cần thông tin cũ.\n"
                 f"  + `search_google`: Tìm kiếm thông tin Google thời gian thực.\n"
-                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code khi có yêu cầu.\n"
+                f"- LƯU Ý BẮT BUỘC: Nếu người dùng yêu cầu tạo file, convert ảnh/audio/video, hay gửi file, sau khi chạy lệnh tạo file xong, bạn PHẢI gọi tool `send_telegram_file` để gửi file đó lên Telegram. Tuyệt đối KHÔNG hứa 'Tôi sẽ gửi file ngay bây giờ' mà không thực hiện gọi tool `send_telegram_file`!\n"
                 f"{'Nếu không cần dùng thêm tool, hãy đưa ra câu trả lời trực tiếp.' if loop_i > 1 else ''}"
                 + (f"\nTag người dùng: {tag_user}" if not is_private else "")
             )

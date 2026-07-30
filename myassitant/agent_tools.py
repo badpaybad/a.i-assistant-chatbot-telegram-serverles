@@ -209,6 +209,24 @@ TOOL_DEFINITIONS = [
             "required": ["requirement"]
         }
     },
+    {
+        "name": "send_telegram_file",
+        "description": (
+            "Gửi một file (kèm lời nhắn/caption tùy chọn) tới nhóm Telegram hiện tại. "
+            "Hỗ trợ tất cả loại file: văn bản (.txt), PDF (.pdf), Word (.docx), ảnh (.png, .jpg), "
+            "âm thanh (.mp3, .ogg), JSON (.json), mã nguồn Python (.py), Bash script (.sh)... "
+            "Nếu truyền content, tool sẽ tự động tạo/lưu nội dung đó thành file rồi gửi."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {"type": "string", "description": "Đường dẫn file cần gửi (hoặc tên file muốn tạo và gửi)"},
+                "caption": {"type": "string", "description": "Lời nhắn / mô tả đính kèm file khi gửi trên Telegram (tùy chọn)"},
+                "content": {"type": "string", "description": "Nội dung văn bản/mã nguồn nếu muốn tạo file mới trước khi gửi (tùy chọn)"}
+            },
+            "required": ["file_path"]
+        }
+    },
 ]
 
 
@@ -651,6 +669,64 @@ def execute_bash_script(requirement: str, script: str = "") -> str:
     )
 
 
+def send_telegram_file(group_id: str, file_path: str, caption: str = "", content: Optional[str] = None) -> str:
+    """
+    Gửi file tới nhóm Telegram qua Telegram Bot API (sendDocument).
+    Hỗ trợ tất cả loại file: text, pdf, image, audio, docx, json, code py, sh...
+    Nếu content được cung cấp, tự động ghi ra file tại file_path trước khi gửi.
+    """
+    try:
+        from myassitant.config import TELEGRAM_BOT_TOKEN
+        if not TELEGRAM_BOT_TOKEN:
+            return "[Lỗi: Chưa cấu hình TELEGRAM_BOT_TOKEN]"
+
+        if not file_path or not str(file_path).strip():
+            return "[Lỗi: file_path không được để trống]"
+
+        target_path = file_path.strip()
+        if not os.path.isabs(target_path):
+            os.makedirs(TEMP_DIR, exist_ok=True)
+            target_path = os.path.join(TEMP_DIR, os.path.basename(target_path))
+
+        # Nếu truyền content, tạo/ghi file
+        if content is not None and content.strip():
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
+            with open(target_path, "w", encoding="utf-8") as f:
+                f.write(content)
+
+        if not os.path.exists(target_path):
+            return f"[Lỗi: Không tìm thấy file tại đường dẫn: {target_path}]"
+
+        filename = os.path.basename(target_path)
+        mime_type_guess, _ = mimetypes.guess_type(target_path)
+        mime_type = mime_type_guess or "application/octet-stream"
+
+        send_doc_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendDocument"
+
+        data = {"chat_id": group_id}
+        if caption and caption.strip():
+            data["caption"] = caption[:1024]
+
+        print(f"[AgentTools] Sending file '{filename}' ({mime_type}) to Telegram chat {group_id}...")
+
+        with open(target_path, "rb") as f_stream:
+            files = {
+                "document": (filename, f_stream, mime_type)
+            }
+            with httpx.Client(timeout=60) as client:
+                resp = client.post(send_doc_url, data=data, files=files)
+                res_data = resp.json()
+                if resp.status_code == 200 and res_data.get("ok"):
+                    return f"✅ Đã gửi thành công file '{filename}' tới nhóm Telegram."
+                else:
+                    err_msg = res_data.get("description") or resp.text
+                    return f"[Lỗi gửi file Telegram: {err_msg}]"
+
+    except Exception as e:
+        print(f"[AgentTools] send_telegram_file exception: {e}")
+        return f"[Lỗi gửi file qua Telegram: {e}]"
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Tool Dispatcher
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -713,6 +789,14 @@ def execute_tool(
             req = args.get("requirement") or args.get("script") or ""
             script = args.get("script") or ""
             return execute_bash_script(requirement=req, script=script)
+
+        elif tool_name == "send_telegram_file":
+            return send_telegram_file(
+                group_id=group_id,
+                file_path=args.get("file_path", ""),
+                caption=args.get("caption", ""),
+                content=args.get("content")
+            )
 
         else:
             return f"[Tool không tồn tại: {tool_name}]"

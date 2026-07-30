@@ -66,3 +66,5 @@ CHUNK_SEC = 150 cho video vì đang dùng whisper tubor nếu dùng gemma4 thì 
 
 **cập nhật 3**
 user_prompt ở myassitant/agent.py để  tiết kiệm và không bị loãng message chát hiện tại có thể gồm cả message quote or reply và các file đi theo message . việc xử lý history (  f"### LỊCH SỬ {HISTORY_CONTEXT_LIMIT} TIN NHẮN GẦN NHẤT (đã xử lý):\n") cần build thành dạng phân tích ngữ cảnh nếu cần truy cập các tool call gọi vào db sqllite để lấy thêm thông tin khi cần vd cần lấy các note gần nhất hay remind hay các message chát gần nhất ... lấy ra để xử lý bổ xung cho việc trả lời chát hiện tại 
+
+**cập nhật 4** myassitant/agent_tools.py bổ xung thêm tool calls nếu cần gửi file qua telegram lại cho người chat trong nhóm chát .file được sinh ra có thể : text, pdf, image, audio, word, json, file code pyhon, bash shell... trong quá trình sinh ra và xử lý file cần
