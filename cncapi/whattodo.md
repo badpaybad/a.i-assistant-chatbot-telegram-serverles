@@ -69,3 +69,10 @@ Chạy kịch bản cần dựa vào tọa độ gốc làm việc
 
 Tool Path View (Xem & Giả Lập Kịch Bản)
     chiều Y cần vẽ ngược lại 
+
+**cập nhật 1** Quản Lý & Phím Kịch Bản cần hoạt động được giống bên  cnc/main.py 
+    cho phép chỉnh sửa lại thứ tự các thao tác di chuyển 
+    cho phép insert thêm vào sau 1 bước nào đó
+
+    tuân thủ Cấu Hình Spindle & Gốc Làm Việc (vị trí nâng hạ bút) có cấu hình nâng hạ, cần tuân thủ     
+    Tuân thủ cấu hình Cử Chỉ Touch & Swipe Gestures Tốc Độ Feedrate 4000 Bước Chuyển (mm) Tap Độ Trễ (s) Swipe Độ Dài (mm)

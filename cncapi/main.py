@@ -450,9 +450,12 @@ async def get_serial_ports():
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):
     if state.connected:
-        await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port}"})
-        await send_telemetry()
-        return {"status": "success", "message": "Đã kết nối với cổng khác."}
+        if state.port_name == config.port:
+            await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port}"})
+            await send_telemetry()
+            return {"status": "success", "message": f"Đã kết nối {config.port}"}
+        else:
+            return {"status": "error", "message": f"Máy CNC đang kết nối ở cổng {state.port_name}. Vui lòng ngắt kết nối trước."}
         
     state.port_name = config.port
     state.baudrate = config.baudrate
@@ -671,6 +674,8 @@ async def stop_stream():
 async def get_state():
     return {
         "connected": state.connected,
+        "port": state.port_name,
+        "baudrate": state.baudrate,
         "machine_state": state.machine_state,
         "mpos": state.mpos,
         "wpos": state.wpos,
@@ -688,6 +693,11 @@ async def websocket_endpoint(ws: WebSocket):
     await ws.accept()
     state.websocket_connections.add(ws)
     try:
+        await ws.send_json({
+            "type": "connection",
+            "connected": state.connected,
+            "message": f"Đã kết nối {state.port_name}" if state.connected else "Chưa kết nối"
+        })
         await send_telemetry()
         while True:
             await ws.receive_text()

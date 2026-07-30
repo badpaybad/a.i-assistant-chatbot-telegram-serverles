@@ -36,6 +36,8 @@
     let penMode = 'z-axis';
     let penUpZ = 3.0;
     let penDownZ = 0.0;
+    let penUpPwm = 30.0;
+    let penDownPwm = 90.0;
     let penDwell = 0.25;
 
     // Scenario State
@@ -92,13 +94,14 @@
     }
 
     // Initialize Application
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
         initDOM();
         initCanvas();
         loadTranslations('vi');
         connectWebSocket();
-        fetchInitialSettings();
-        fetchPorts();
+        await fetchPorts();
+        await fetchInitialSettings();
+        await checkCurrentState();
     });
 
     function initDOM() {
@@ -117,6 +120,7 @@
         // Pen Mode & Controls
         document.getElementById('pen-control-mode')?.addEventListener('change', (e) => {
             penMode = e.target.value;
+            updatePenInputs();
             savePenSettings();
         });
 
@@ -230,16 +234,14 @@
             penMode = data.pen_mode || 'z-axis';
             penUpZ = data.pen_up_z || 3.0;
             penDownZ = data.pen_down_z || 0.0;
+            penUpPwm = data.pen_up_pwm || 30.0;
+            penDownPwm = data.pen_down_pwm || 90.0;
             penDwell = data.pen_dwell || 0.25;
 
             const modeSelect = document.getElementById('pen-control-mode');
             if (modeSelect) modeSelect.value = penMode;
 
-            const upInput = document.getElementById('pen-up-val');
-            if (upInput) upInput.value = penUpZ;
-
-            const downInput = document.getElementById('pen-down-val');
-            if (downInput) downInput.value = penDownZ;
+            updatePenInputs();
 
             if (data.workpiece_origin) telemetry.workpiece_origin = data.workpiece_origin;
             if (data.work_origin) telemetry.work_origin = data.work_origin;
@@ -250,11 +252,37 @@
         }
     }
 
+    function updatePenInputs() {
+        const upInput = document.getElementById('pen-up-val');
+        const downInput = document.getElementById('pen-down-val');
+        if (!upInput || !downInput) return;
+        if (penMode === 'spindle-pwm') {
+            upInput.value = penUpPwm;
+            downInput.value = penDownPwm;
+            upInput.step = "5";
+            downInput.step = "5";
+        } else {
+            upInput.value = penUpZ;
+            downInput.value = penDownZ;
+            upInput.step = "0.5";
+            downInput.step = "0.5";
+        }
+    }
+
     async function savePenSettings() {
         const upInput = document.getElementById('pen-up-val');
         const downInput = document.getElementById('pen-down-val');
-        if (upInput) penUpZ = parseFloat(upInput.value);
-        if (downInput) penDownZ = parseFloat(downInput.value);
+        if (upInput && downInput) {
+            const valUp = parseFloat(upInput.value);
+            const valDown = parseFloat(downInput.value);
+            if (penMode === 'spindle-pwm') {
+                penUpPwm = valUp;
+                penDownPwm = valDown;
+            } else {
+                penUpZ = valUp;
+                penDownZ = valDown;
+            }
+        }
 
         try {
             await fetch('/api/pen_settings', {
@@ -264,6 +292,8 @@
                     pen_mode: penMode,
                     pen_up_z: penUpZ,
                     pen_down_z: penDownZ,
+                    pen_up_pwm: penUpPwm,
+                    pen_down_pwm: penDownPwm,
                     pen_dwell: penDwell
                 })
             });
@@ -300,6 +330,27 @@
             } catch (e) {
                 console.error('Connect error:', e);
             }
+        }
+    }
+
+    async function checkCurrentState() {
+        try {
+            const res = await fetch('/api/state');
+            const data = await res.json();
+            isConnected = data.connected;
+            updateConnectionUI();
+            
+            const portInput = document.getElementById('port-input');
+            const baudrateSelect = document.getElementById('baudrate-input');
+            
+            if (isConnected) {
+                if (portInput && data.port) portInput.value = data.port;
+                if (baudrateSelect && data.baudrate) baudrateSelect.value = data.baudrate;
+            } else {
+                await toggleConnection();
+            }
+        } catch (e) {
+            console.error('Error checking state on load:', e);
         }
     }
 
@@ -442,13 +493,13 @@
         savePenSettings();
         if (stateType === 'up') {
             if (penMode === 'spindle-pwm') {
-                sendCommand(`M3 S${document.getElementById('pen-up-pwm')?.value || 30}`);
+                sendCommand(`M3 S${penUpPwm}`);
             } else {
                 sendCommand(`G0 Z${penUpZ}`);
             }
         } else {
             if (penMode === 'spindle-pwm') {
-                sendCommand(`M3 S${document.getElementById('pen-down-pwm')?.value || 90}`);
+                sendCommand(`M3 S${penDownPwm}`);
             } else {
                 sendCommand(`G0 Z${penDownZ}`);
             }
@@ -646,8 +697,8 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        const centerX = w / 2 + canvasOffsetX;
-        const centerY = h / 2 + canvasOffsetY;
+        const centerX = 0;//w / 2 + canvasOffsetX;
+        const centerY = 0;//h / 2 + canvasOffsetY;
 
         // Draw Grid
         ctx.strokeStyle = '#1e293b';
@@ -922,5 +973,6 @@
         }
         stopCNC();
     }
+
 
 })();
