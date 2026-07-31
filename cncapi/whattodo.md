@@ -78,4 +78,9 @@ Tool Path View (Xem & Giả Lập Kịch Bản)
     Tuân thủ cấu hình Cử Chỉ Touch & Swipe Gestures Tốc Độ Feedrate 4000 Bước Chuyển (mm) Tap Độ Trễ (s) Swipe Độ Dài (mm)
     set begin và set end cần nhấc dao trước rồi mới thực hiện  
 
-**chú ý** để tôi tự test 
+**cập nhật 2** Tool Path View (Xem & Giả Lập Kịch Bản) đùng để hiển thị các bước ở kịch bản tại Quản Lý & Phím Kịch Bản và thực tế của đầu cnc so với gốc tọa độ làm việc 
+    kịch bản sẽ cần được vẽ lên để người dùng nhìn thấy các bước 
+    Khi click chạy giả lập thì cnc sẽ đi theo các đường vẽ tương ứng , các đường vẽ sẽ mô phỏng thực tế của đầu cnc so với gốc tọa độ làm việc 
+**cập nhật 3** vuốt lên, vuốt xuóng  
+
+**chú ý** để tôi tự test manual, không cần mở chrome để tự verify

@@ -545,6 +545,12 @@ input:focus, select:focus {
     background: rgba(245, 158, 11, 0.15);
 }
 
+.step-item.sim-active {
+    border-left-color: var(--info);
+    background: rgba(168, 85, 247, 0.25);
+    box-shadow: 0 0 8px rgba(168, 85, 247, 0.4);
+}
+
 .step-item-actions {
     display: flex;
     gap: 4px;

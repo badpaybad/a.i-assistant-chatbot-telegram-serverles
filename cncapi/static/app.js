@@ -61,6 +61,14 @@
     let dragStartY = 0;
     let penTrajectory = [];
 
+    // Simulation state
+    let simAnimFrame = null;
+    let simPathSegments = []; // [{type, points:[{x,y}], penDown, stepLabel}]
+    let simCurrentSegIdx = 0;
+    let simCurrentPtIdx = 0;
+    let simHeadPos = { x: 0, y: 0 };
+    let simIsRunning = false;
+
     // Helper: i18n translation
     function t(key, vars = {}) {
         let text = translations[key] || key;
@@ -710,6 +718,73 @@
         drawCanvas();
     }
 
+    /**
+     * Tính toán tất cả segment đường đi của kịch bản để vẽ lên canvas.
+     * Trả về mảng segments: [{type, pts:[{x,y}], penDown, stepIndex, actionType}]
+     * chiều Y đảo ngược.
+     */
+    function computeScenarioPathSegments() {
+        const feed = parseFloat(document.getElementById('gesture-feedrate')?.value || '4000');
+        const swipeDist = parseFloat(document.getElementById('gesture-swipe-distance')?.value || '40');
+        const segments = [];
+        let curX = 0, curY = 0;
+        let penDown = false;
+
+        activeScenario.actions.forEach((act, idx) => {
+            const stepLabel = idx + 1;
+            if (act.type === 'set_begin' || act.type === 'set_end' || act.type === 'go_to_here') {
+                // Rapid move pen up to position
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = act.y;
+                penDown = false;
+            } else if (act.type === 'go_to_keep_state') {
+                segments.push({ type: penDown ? 'cut' : 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = act.y;
+            } else if (act.type === 'pen_down') {
+                penDown = true;
+                segments.push({ type: 'pendown', pts: [{x: curX, y: curY}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+            } else if (act.type === 'pen_up') {
+                penDown = false;
+                segments.push({ type: 'penup', pts: [{x: curX, y: curY}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+            } else if (act.type === 'tap') {
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'tap', pts: [{x: act.x, y: act.y}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = act.y; penDown = false;
+            } else if (act.type === 'double_tap') {
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'doubletap', pts: [{x: act.x, y: act.y}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = act.y; penDown = false;
+            } else if (act.type === 'long_press') {
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'longpress', pts: [{x: act.x, y: act.y}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = act.y; penDown = false;
+            } else if (act.type === 'swipe_down') {
+                const endY = act.y - swipeDist;
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'swipe', pts: [{x: act.x, y: act.y}, {x: act.x, y: endY}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = endY; penDown = false;
+            } else if (act.type === 'swipe_up') {
+                const endY = act.y + swipeDist;
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'swipe', pts: [{x: act.x, y: act.y}, {x: act.x, y: endY}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = act.x; curY = endY; penDown = false;
+            } else if (act.type === 'swipe_left') {
+                const endX = act.x - swipeDist;
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'swipe', pts: [{x: act.x, y: act.y}, {x: endX, y: act.y}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = endX; curY = act.y; penDown = false;
+            } else if (act.type === 'swipe_right') {
+                const endX = act.x + swipeDist;
+                segments.push({ type: 'rapid', pts: [{x: curX, y: curY}, {x: act.x, y: act.y}], penDown: false, stepIndex: stepLabel, actionType: act.type });
+                segments.push({ type: 'swipe', pts: [{x: act.x, y: act.y}, {x: endX, y: act.y}], penDown: true, stepIndex: stepLabel, actionType: act.type });
+                curX = endX; curY = act.y; penDown = false;
+            } else if (act.type.startsWith('dwell-') || act.type === 'dwell') {
+                segments.push({ type: 'dwell', pts: [{x: curX, y: curY}], penDown, stepIndex: stepLabel, actionType: act.type });
+            }
+        });
+        return segments;
+    }
+
     function drawCanvas() {
         if (!canvas || !ctx) return;
         const w = canvas.width;
@@ -717,81 +792,234 @@
 
         ctx.clearRect(0, 0, w, h);
 
-        const centerX = 0;//w / 2 + canvasOffsetX;
-        const centerY = 0;//h / 2 + canvasOffsetY;
+        // Origin at center of canvas + pan offset
+        const originX = w / 2 + canvasOffsetX;
+        const originY = h / 2 + canvasOffsetY;
 
-        // Draw Grid
-        ctx.strokeStyle = '#1e293b';
+        // ---- GRID ----
+        ctx.strokeStyle = 'rgba(30,41,59,0.8)';
         ctx.lineWidth = 1;
-        const gridSize = 20 * canvasScale; // 20mm grid
+        const gridMm = 10;
+        const gridPx = gridMm * canvasScale;
 
-        for (let x = centerX % gridSize; x < w; x += gridSize) {
+        // minor grid
+        ctx.strokeStyle = 'rgba(51,65,85,0.5)';
+        const startGX = originX % gridPx;
+        const startGY = originY % gridPx;
+        for (let x = startGX; x < w; x += gridPx) {
             ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
         }
-        for (let y = centerY % gridSize; y < h; y += gridSize) {
+        for (let y = startGY; y < h; y += gridPx) {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
         }
 
-        // Draw Work Origin Axes (0,0)
-        ctx.lineWidth = 2;
+        // major grid (50mm)
+        const majorGridPx = 50 * canvasScale;
+        ctx.strokeStyle = 'rgba(71,85,105,0.6)';
+        ctx.lineWidth = 1;
+        const startMX = originX % majorGridPx;
+        const startMY = originY % majorGridPx;
+        for (let x = startMX; x < w; x += majorGridPx) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = startMY; y < h; y += majorGridPx) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // ---- COORDINATE AXES ----
+        ctx.lineWidth = 2.5;
+        const axisLen = 60;
         // X Axis (Red)
         ctx.strokeStyle = '#ef4444';
-        ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX + 60, centerY); ctx.stroke();
-        // Y Axis (Green) - inverted direction
+        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX + axisLen, originY); ctx.stroke();
+        // arrowhead X
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath(); ctx.moveTo(originX + axisLen, originY); ctx.lineTo(originX + axisLen - 8, originY - 4); ctx.lineTo(originX + axisLen - 8, originY + 4); ctx.fill();
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 11px Outfit, sans-serif';
+        ctx.fillText('X', originX + axisLen + 4, originY + 4);
+
+        // Y Axis (Green) - inverted direction (Y+ goes up on screen)
         ctx.strokeStyle = '#22c55e';
-        ctx.beginPath(); ctx.moveTo(centerX, centerY); ctx.lineTo(centerX, centerY - 60); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX, originY - axisLen); ctx.stroke();
+        ctx.fillStyle = '#22c55e';
+        ctx.beginPath(); ctx.moveTo(originX, originY - axisLen); ctx.lineTo(originX - 4, originY - axisLen + 8); ctx.lineTo(originX + 4, originY - axisLen + 8); ctx.fill();
+        ctx.fillStyle = '#22c55e';
+        ctx.fillText('Y', originX - 14, originY - axisLen - 2);
 
         // Work Origin dot
         ctx.fillStyle = '#38bdf8';
-        ctx.beginPath(); ctx.arc(centerX, centerY, 5, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(originX, originY, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.fillStyle = 'rgba(56,189,248,0.9)';
+        ctx.font = '10px Outfit, sans-serif';
+        ctx.fillText('(0,0)', originX + 8, originY + 14);
 
-        // Draw Scenario Preview Path (Y inverted)
-        if (activeScenario.actions && activeScenario.actions.length > 0) {
-            ctx.strokeStyle = 'rgba(168, 85, 247, 0.8)';
-            ctx.lineWidth = 2;
-            ctx.setLineDash([4, 4]);
+        // ---- HELPER: world → canvas ----
+        function wx(x) { return originX + x * canvasScale; }
+        function wy(y) { return originY - y * canvasScale; } // Y inverted
+
+        // ---- DRAW SCENARIO PATH SEGMENTS ----
+        const segs = computeScenarioPathSegments();
+
+        // Pass 1: Draw all lines
+        segs.forEach(seg => {
+            if (seg.pts.length < 2) return;
             ctx.beginPath();
-            let started = false;
-            activeScenario.actions.forEach(action => {
-                if (action.x !== undefined && action.y !== undefined) {
-                    const px = centerX + action.x * canvasScale;
-                    const py = centerY - action.y * canvasScale; // Inverted Y direction
-                    if (!started) {
-                        ctx.moveTo(px, py);
-                        started = true;
-                    } else {
-                        ctx.lineTo(px, py);
-                    }
-                }
-            });
+            ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
+            for (let i = 1; i < seg.pts.length; i++) {
+                ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
+            }
+            if (seg.type === 'rapid') {
+                ctx.strokeStyle = 'rgba(100,116,139,0.7)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([5, 5]);
+            } else if (seg.type === 'cut') {
+                ctx.strokeStyle = 'rgba(251,146,60,0.95)';
+                ctx.lineWidth = 2.5;
+                ctx.setLineDash([]);
+            } else if (seg.type === 'swipe') {
+                ctx.strokeStyle = 'rgba(250,204,21,0.95)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([]);
+                // arrowhead at end
+                const p0 = seg.pts[seg.pts.length - 2];
+                const p1 = seg.pts[seg.pts.length - 1];
+                const angle = Math.atan2(-(p1.y - p0.y), p1.x - p0.x);
+                const ex = wx(p1.x), ey = wy(p1.y);
+                ctx.fillStyle = 'rgba(250,204,21,0.95)';
+                ctx.save();
+                ctx.translate(ex, ey);
+                ctx.rotate(-angle);
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -5); ctx.lineTo(-14, 5); ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            } else {
+                ctx.strokeStyle = 'rgba(100,116,139,0.4)';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([2, 4]);
+            }
             ctx.stroke();
             ctx.setLineDash([]);
-        }
+        });
 
-        // Draw Live Pen Trajectory (Y inverted)
+        // Pass 2: Draw action points with labels
+        const drawnPoints = new Map(); // track label positions
+        segs.forEach(seg => {
+            const pt = seg.pts[seg.pts.length - 1];
+            const pxX = wx(pt.x), pxY = wy(pt.y);
+            const key = `${Math.round(pt.x * 10)}_${Math.round(pt.y * 10)}`;
+
+            let dotColor = '#64748b';
+            let dotRadius = 5;
+            let icon = '';
+            if (seg.type === 'tap') { dotColor = '#38bdf8'; dotRadius = 7; icon = '●'; }
+            else if (seg.type === 'doubletap') { dotColor = '#818cf8'; dotRadius = 7; icon = '◉'; }
+            else if (seg.type === 'longpress') { dotColor = '#f472b6'; dotRadius = 8; icon = '⊕'; }
+            else if (seg.type === 'swipe') { dotColor = '#fbbf24'; dotRadius = 6; }
+            else if (seg.type === 'pendown') { dotColor = '#f97316'; dotRadius = 5; icon = '▼'; }
+            else if (seg.type === 'penup') { dotColor = '#34d399'; dotRadius = 5; icon = '▲'; }
+            else if (seg.type === 'dwell') { dotColor = '#a78bfa'; dotRadius = 5; icon = '⏸'; }
+            else if (seg.type === 'rapid') { dotColor = '#64748b'; dotRadius = 4; }
+            else if (seg.type === 'cut') { dotColor = '#fb923c'; dotRadius = 5; }
+
+            // Draw dot
+            ctx.fillStyle = dotColor;
+            ctx.beginPath(); ctx.arc(pxX, pxY, dotRadius, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw step number label (avoid duplicate at same coord)
+            if (!drawnPoints.has(key)) {
+                drawnPoints.set(key, true);
+                const labelX = pxX + dotRadius + 3;
+                const labelY = pxY - dotRadius - 2;
+                ctx.fillStyle = 'rgba(15,23,42,0.8)';
+                ctx.fillRect(labelX - 2, labelY - 10, 22, 13);
+                ctx.fillStyle = '#e2e8f0';
+                ctx.font = 'bold 9px Outfit, sans-serif';
+                ctx.fillText(`#${seg.stepIndex}`, labelX, labelY);
+            }
+        });
+
+        // ---- DRAW LIVE PEN TRAJECTORY ----
         if (penTrajectory.length > 1) {
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = 'rgba(56,189,248,0.85)';
             ctx.lineWidth = 2;
+            ctx.setLineDash([]);
             ctx.beginPath();
             penTrajectory.forEach((pt, i) => {
-                const px = centerX + pt.x * canvasScale;
-                const py = centerY - pt.y * canvasScale;
+                const px = wx(pt.x);
+                const py = wy(pt.y);
                 if (i === 0) ctx.moveTo(px, py);
                 else ctx.lineTo(px, py);
             });
             ctx.stroke();
         }
 
-        // Draw Pen Head Position (Y inverted)
-        if (telemetry.wpos) {
-            const headPx = centerX + telemetry.wpos[0] * canvasScale;
-            const headPy = centerY - telemetry.wpos[1] * canvasScale;
+        // ---- DRAW PEN HEAD POSITION ----
+        let headX, headY;
+        if (simIsRunning) {
+            headX = wx(simHeadPos.x);
+            headY = wy(simHeadPos.y);
+        } else if (telemetry.wpos) {
+            headX = wx(telemetry.wpos[0]);
+            headY = wy(telemetry.wpos[1]);
+        }
+        if (headX !== undefined) {
+            // Outer glow
+            const grad = ctx.createRadialGradient(headX, headY, 2, headX, headY, 12);
+            grad.addColorStop(0, 'rgba(245,158,11,0.9)');
+            grad.addColorStop(1, 'rgba(245,158,11,0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(headX, headY, 12, 0, Math.PI * 2); ctx.fill();
+            // Core dot
             ctx.fillStyle = '#f59e0b';
-            ctx.beginPath(); ctx.arc(headPx, headPy, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(headX, headY, 6, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
+            // Cross-hair
+            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(headX - 12, headY); ctx.lineTo(headX + 12, headY);
+            ctx.moveTo(headX, headY - 12); ctx.lineTo(headX, headY + 12);
+            ctx.stroke();
+            // Coordinate label
+            const lx = simIsRunning ? simHeadPos.x : (telemetry.wpos ? telemetry.wpos[0] : 0);
+            const ly = simIsRunning ? simHeadPos.y : (telemetry.wpos ? telemetry.wpos[1] : 0);
+            ctx.fillStyle = 'rgba(15,23,42,0.85)';
+            const labelStr = `${lx.toFixed(1)}, ${ly.toFixed(1)}`;
+            const lw = ctx.measureText(labelStr).width + 8;
+            ctx.fillRect(headX + 10, headY - 22, lw, 15);
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 10px Outfit, sans-serif';
+            ctx.fillText(labelStr, headX + 14, headY - 11);
         }
+
+        // ---- LEGEND ----
+        const legendX = 10, legendY = h - 90;
+        const legendItems = [
+            { color: 'rgba(100,116,139,0.7)', dash: true, label: 'Rapid (Pen Up)' },
+            { color: 'rgba(251,146,60,0.95)', dash: false, label: 'Cutting (Pen Down)' },
+            { color: 'rgba(250,204,21,0.95)', dash: false, label: 'Swipe' },
+            { color: '#38bdf8', dash: false, label: 'Đường thực tế' },
+        ];
+        ctx.font = '9px Outfit, sans-serif';
+        legendItems.forEach((item, i) => {
+            const ly2 = legendY + i * 18;
+            ctx.strokeStyle = item.color;
+            ctx.lineWidth = 2;
+            if (item.dash) ctx.setLineDash([4, 4]); else ctx.setLineDash([]);
+            ctx.beginPath(); ctx.moveTo(legendX, ly2); ctx.lineTo(legendX + 20, ly2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(item.label, legendX + 26, ly2 + 4);
+        });
     }
 
     // Scenario Builder & Execution
@@ -1097,31 +1325,104 @@
             alert(t('Cần đặt gốc tọa độ làm việc trước!'));
             return;
         }
-        if (activeScenario.actions.length === 0) return;
-        isSimulating = true;
-        let step = 0;
+        if (activeScenario.actions.length === 0) {
+            alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
+            return;
+        }
 
-        const interval = setInterval(() => {
-            if (step >= activeScenario.actions.length || !isSimulating) {
-                clearInterval(interval);
+        // Stop any running simulation
+        if (simAnimFrame) { cancelAnimationFrame(simAnimFrame); simAnimFrame = null; }
+        simIsRunning = true;
+        isSimulating = true;
+
+        // Build flat list of interpolated path points from segments
+        const segs = computeScenarioPathSegments();
+
+        // Convert segments to list of waypoints for animation
+        // Each waypoint: {x, y, segType, stepIndex}
+        const waypoints = [];
+        waypoints.push({ x: 0, y: 0, segType: 'start', stepIndex: 0 });
+
+        segs.forEach(seg => {
+            if (seg.pts.length >= 2) {
+                // Interpolate between pts
+                for (let i = 1; i < seg.pts.length; i++) {
+                    const p0 = seg.pts[i - 1], p1 = seg.pts[i];
+                    const dist = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+                    const steps = Math.max(2, Math.round(dist / 2)); // 1 pt per 2mm
+                    for (let s = 1; s <= steps; s++) {
+                        const t = s / steps;
+                        waypoints.push({
+                            x: p0.x + (p1.x - p0.x) * t,
+                            y: p0.y + (p1.y - p0.y) * t,
+                            segType: seg.type,
+                            stepIndex: seg.stepIndex
+                        });
+                    }
+                }
+            } else if (seg.pts.length === 1) {
+                // Single point action (tap, dwell, etc)
+                for (let r = 0; r < 8; r++) {
+                    waypoints.push({ x: seg.pts[0].x, y: seg.pts[0].y, segType: seg.type, stepIndex: seg.stepIndex });
+                }
+            }
+        });
+
+        if (waypoints.length === 0) { simIsRunning = false; isSimulating = false; return; }
+
+        let wpIdx = 0;
+        // Speed: rapid = faster, cut/swipe = slower
+        const RAPID_SPEED = 3; // waypoints per frame
+        const CUT_SPEED = 1;
+
+        // Highlight active step in scenario list
+        let lastHighlightStep = -1;
+        function highlightStep(idx) {
+            if (idx === lastHighlightStep) return;
+            lastHighlightStep = idx;
+            document.querySelectorAll('#scenario-items-list .step-item').forEach((el, i) => {
+                el.classList.toggle('sim-active', i === idx - 1);
+            });
+        }
+
+        function animFrame() {
+            if (!simIsRunning || wpIdx >= waypoints.length) {
+                simIsRunning = false;
                 isSimulating = false;
+                // Remove sim highlights
+                document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
+                drawCanvas();
                 return;
             }
-            const act = activeScenario.actions[step];
-            telemetry.wpos = [act.x, act.y, act.z || 0];
-            updateTelemetryUI();
-            step++;
-        }, 300);
+
+            const wp = waypoints[wpIdx];
+            simHeadPos.x = wp.x;
+            simHeadPos.y = wp.y;
+            highlightStep(wp.stepIndex);
+
+            const speed = (wp.segType === 'rapid') ? RAPID_SPEED : CUT_SPEED;
+            wpIdx += speed;
+            if (wpIdx >= waypoints.length) wpIdx = waypoints.length - 1;
+
+            drawCanvas();
+            simAnimFrame = requestAnimationFrame(animFrame);
+        }
+
+        simAnimFrame = requestAnimationFrame(animFrame);
     }
 
     function stopScenario() {
         isScenarioLooping = false;
         isSimulating = false;
+        simIsRunning = false;
+        if (simAnimFrame) { cancelAnimationFrame(simAnimFrame); simAnimFrame = null; }
+        document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
         const btn = document.getElementById('btn-run-loop-scenario');
         if (btn) {
             btn.className = 'btn btn-warning btn-small';
             btn.innerText = t('Chạy Lặp');
         }
+        drawCanvas();
         stopCNC();
     }
 
