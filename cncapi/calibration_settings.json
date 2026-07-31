@@ -1,11 +1,11 @@
 {
   "port": "/dev/ttyACM0",
   "baudrate": 115200,
+  "step_distance": 10.0,
   "jog_feedrate": 4000.0,
   "swipe_feedrate": 10000.0,
-  "step_distance": 10.0,
-  "gesture_tap_dwell": 0.05,
   "gesture_distance": 40.0,
+  "gesture_tap_dwell": 0.05,
   "pen_mode": "spindle-pwm",
   "pen_up_z": 0.0,
   "pen_down_z": 45.0,

@@ -499,17 +499,27 @@
     }
 
     function updateInfoDisplays() {
-        const wo = telemetry.workpiece_origin || { x: 0, y: 0, z: 0 };
-        const prw = telemetry.pen_rel_workpiece || { x: 0, y: 0, z: 0 };
+        const mpos = telemetry.mpos || [0, 0, 0];
         const wr = telemetry.work_origin || { x: 0, y: 0, z: 0 };
         const pr = telemetry.pen_rel_work || { x: 0, y: 0, z: 0 };
         const pk = telemetry.parking_point || { x: 0, y: 0, z: 10 };
 
-        document.getElementById('val-workpiece-orig').innerText = `X: ${wo.x.toFixed(2)} | Y: ${wo.y.toFixed(2)} | Z: ${wo.z.toFixed(2)}`;
-        document.getElementById('val-pen-rel-workpiece').innerText = `X: ${prw.x.toFixed(2)} | Y: ${prw.y.toFixed(2)} | Z: ${prw.z.toFixed(2)}`;
-        document.getElementById('val-work-orig').innerText = `X: ${wr.x.toFixed(2)} | Y: ${wr.y.toFixed(2)} | Z: ${wr.z.toFixed(2)}`;
-        document.getElementById('val-pen-rel-work').innerText = `X: ${pr.x.toFixed(2)} | Y: ${pr.y.toFixed(2)} | Z: ${pr.z.toFixed(2)}`;
-        document.getElementById('val-parking-point').innerText = `X: ${pk.x.toFixed(2)} | Y: ${pk.y.toFixed(2)} | Z: ${pk.z.toFixed(2)}`;
+        const mposEl = document.getElementById('val-mpos');
+        if (mposEl) {
+            mposEl.innerText = `X: ${mpos[0].toFixed(2)} | Y: ${mpos[1].toFixed(2)} | Z: ${mpos[2].toFixed(2)}`;
+        }
+        const wrEl = document.getElementById('val-work-orig');
+        if (wrEl) {
+            wrEl.innerText = `X: ${wr.x.toFixed(2)} | Y: ${wr.y.toFixed(2)} | Z: ${wr.z.toFixed(2)}`;
+        }
+        const prEl = document.getElementById('val-pen-rel-work');
+        if (prEl) {
+            prEl.innerText = `X: ${pr.x.toFixed(2)} | Y: ${pr.y.toFixed(2)} | Z: ${pr.z.toFixed(2)}`;
+        }
+        const pkEl = document.getElementById('val-parking-point');
+        if (pkEl) {
+            pkEl.innerText = `X: ${pk.x.toFixed(2)} | Y: ${pk.y.toFixed(2)} | Z: ${pk.z.toFixed(2)}`;
+        }
     }
 
     function appendConsoleLog(dir, text) {

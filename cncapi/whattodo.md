@@ -121,5 +121,17 @@ Cấu Hình Spindle & Gốc Làm Việc là dùng chung cho toàn bộ
 ở **cập nhật 6** đề cập về việc hiển thị vẽ trục x,y gốc tọa độ làm việc trên canvas
 cần đưa lên Cấu Hình Cấu Trúc & Gốc Làm Việc, để tập trung và gọn 
      
+**cập nhật 10** do nhầm lẫn trước đây hiện tại đang bị nhầm lẫn cần lấy thông tin tọa độ gốc máy thay cho tọa độ gốc phôi, gốc phôi và tọa độ gốc làm việc là 1 rồi.
+
+    Hàng 0
+        chia 3 cột
+            cột 0
+                Cấu hình kết nối cnc , cổng serial vẫn mặc dịnh /dev/ttyACM0 baudrate 115200
+                các thông tin về cnc 
+                    tọa độ gốc phôi -> cần lấy là tọa độ gốc máy (Machine Zero - G53)
+                        tọa độ đầu cnc theo gốc máy
+                    tọa độ gốc làm việc, gốc phôi (Work Zero - G54)
+                        tọa độ đầu cnc theo tọa độ làm việc 
+                    tọa độ điểm đỗ ( dùng để rút dao)
 
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify
