@@ -402,6 +402,28 @@
             if (msg.home_set !== undefined) {
                 isHomeSet = msg.home_set;
             }
+            if (msg.scenario_name !== undefined) {
+                activeScenario.name = msg.scenario_name;
+                const nameInput = document.getElementById('scenario-name');
+                if (nameInput && nameInput !== document.activeElement) {
+                    nameInput.value = msg.scenario_name;
+                }
+            }
+            if (msg.scenario_actions !== undefined) {
+                activeScenario.actions = msg.scenario_actions;
+            }
+            if (msg.scenario_insert_index !== undefined) {
+                scenarioInsertIndex = msg.scenario_insert_index;
+            }
+            if (msg.scenario_is_looping !== undefined) {
+                isScenarioLooping = msg.scenario_is_looping;
+                const btn = document.getElementById('btn-run-loop-scenario');
+                if (btn) {
+                    btn.className = isScenarioLooping ? 'btn btn-danger-soft btn-small' : 'btn btn-warning btn-small';
+                    btn.innerText = isScenarioLooping ? t('Dừng Lặp') : t('Chạy Lặp');
+                }
+            }
+            renderScenarioSteps();
             updateTelemetryUI();
         } else if (msg.type === 'connection') {
             isConnected = msg.connected;
@@ -604,29 +626,31 @@
     function bindJogKey(id, dx, dy, dz) {
         const btn = document.getElementById(id);
         if (!btn) return;
-        btn.addEventListener('click', () => {
+        btn.addEventListener('click', async () => {
+            let dir = '';
+            if (dx > 0) dir += 'X+';
+            else if (dx < 0) dir += 'X-';
+            if (dy > 0) dir += 'Y+';
+            else if (dy < 0) dir += 'Y-';
+            if (dz > 0) dir += 'Z+';
+            else if (dz < 0) dir += 'Z-';
+
             const { feed, step } = getSystemConfig();
-            const moveX = dx * step;
-            const moveY = dy * step;
-            const moveZ = dz * step;
-
-            let lines = ['G91'];
-            let moveCmd = 'G0';
-            if (dx !== 0) moveCmd += ` X${moveX.toFixed(2)}`;
-            if (dy !== 0) moveCmd += ` Y${moveY.toFixed(2)}`;
-            if (dz !== 0) moveCmd += ` Z${moveZ.toFixed(2)}`;
-            moveCmd += ` F${feed}`;
-            lines.push(moveCmd);
-            lines.push('G90');
-
-            sendCommand(lines.join('\n'));
+            try {
+                await fetch('/cncapi/v1/motion/jog', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ direction: dir, step_distance: step, feedrate: feed })
+                });
+            } catch (e) {
+                console.error('Jog error:', e);
+            }
         });
     }
 
     async function setWorkOriginCurrent() {
-        const currentWPos = telemetry.wpos || [0, 0, 0];
         try {
-            await fetch('/api/origins/work', {
+            await fetch('/cncapi/v1/origin/set_work', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ x: 0.0, y: 0.0, z: 0.0 })
@@ -638,14 +662,17 @@
         }
     }
 
-    function gotoWorkOrigin() {
-        const { feed } = getSystemConfig();
-        sendCommand(`G90\nG0 X0 Y0 F${feed}`);
+    async function gotoWorkOrigin() {
+        try {
+            await fetch('/cncapi/v1/origin/goto_work', { method: 'POST' });
+        } catch (e) {
+            console.error('Error going to work origin:', e);
+        }
     }
 
     async function gotoParkingPoint() {
         try {
-            await fetch('/api/origins/goto_parking', { method: 'POST' });
+            await fetch('/cncapi/v1/origin/goto_parking', { method: 'POST' });
         } catch (e) {
             console.error('Error going to parking point:', e);
         }
@@ -653,14 +680,14 @@
 
     async function stopCNC() {
         try {
-            await fetch('/api/stop', { method: 'POST' });
+            await fetch('/cncapi/v1/motion/stop', { method: 'POST' });
         } catch (e) {
             console.error('Error stopping CNC:', e);
         }
     }
 
     // Touch & Swipe Gestures
-    function executeGesture(type) {
+    async function executeGesture(type) {
         if (!isHomeSet) {
             alert(t('Cần đặt gốc tọa độ làm việc trước!'));
             return;
@@ -673,66 +700,25 @@
         const endX = parseFloat(document.getElementById('gesture-end-x')?.value || '0');
         const endY = parseFloat(document.getElementById('gesture-end-y')?.value || '0');
 
-        let gcode = [];
-        const isSpindle = penMode === 'spindle-pwm';
-        const pDown = isSpindle ? `M3 S${penDownPwm}` : `G0 Z${penDownZ}`;
-        const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
-
-        if (type === 'tap') {
-            gcode.push(pDown);
-            gcode.push(`G4 P${tapDwell}`);
-            gcode.push(pUp);
-        } else if (type === 'double_tap') {
-            gcode.push(pDown);
-            gcode.push(`G4 P${tapDwell}`);
-            gcode.push(pUp);
-            gcode.push(`G4 P${tapDwell}`);
-            gcode.push(pDown);
-            gcode.push(`G4 P${tapDwell}`);
-            gcode.push(pUp);
-        } else if (type === 'long_press') {
-            gcode.push(pDown);
-            gcode.push(`G4 P1.0`);
-            gcode.push(pUp);
-        } else if (type === 'swipe_custom') {
-            gcode.push(`G90`);
-            gcode.push(pUp);
-            gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
-            gcode.push(pDown);
-            gcode.push(`G4 P0.02`);
-            gcode.push(`G1 X${endX.toFixed(2)} Y${endY.toFixed(2)} F${swipeFeed}`);
-            gcode.push(pUp);
-        } else if (type === 'swipe_left') {
-            gcode.push(pDown);
-            gcode.push(`G4 P0.02`);
-            gcode.push(`G91`);
-            gcode.push(`G1 X-${swipeDist} F${swipeFeed}`);
-            gcode.push(`G90`);
-            gcode.push(pUp);
-        } else if (type === 'swipe_right') {
-            gcode.push(pDown);
-            gcode.push(`G4 P0.02`);
-            gcode.push(`G91`);
-            gcode.push(`G1 X${swipeDist} F${swipeFeed}`);
-            gcode.push(`G90`);
-            gcode.push(pUp);
-        } else if (type === 'swipe_up') {
-            gcode.push(pDown);
-            gcode.push(`G4 P0.02`);
-            gcode.push(`G91`);
-            gcode.push(`G1 Y${swipeDist} F${swipeFeed}`);
-            gcode.push(`G90`);
-            gcode.push(pUp);
-        } else if (type === 'swipe_down') {
-            gcode.push(pDown);
-            gcode.push(`G4 P0.02`);
-            gcode.push(`G91`);
-            gcode.push(`G1 Y-${swipeDist} F${swipeFeed}`);
-            gcode.push(`G90`);
-            gcode.push(pUp);
+        try {
+            await fetch('/cncapi/v1/gestures/execute', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: type,
+                    start_x: startX,
+                    start_y: startY,
+                    end_x: endX,
+                    end_y: endY,
+                    distance: swipeDist,
+                    feedrate: feed,
+                    swipe_feedrate: swipeFeed,
+                    tap_dwell: tapDwell
+                })
+            });
+        } catch (e) {
+            console.error('Error executing gesture:', e);
         }
-
-        sendCommand(gcode.join('\n'));
     }
 
     let isMouseDown = false;
@@ -1254,40 +1240,56 @@
 
     // Scenario Builder & Execution
     // Scenario Builder & Execution
-    function createNewScenario() {
+    // Scenario Builder & Execution
+    async function createNewScenario() {
         if (!isHomeSet) {
             alert(t('Cần đặt gốc tọa độ làm việc trước!'));
             return;
         }
-        activeScenario = {
-            name: document.getElementById('scenario-name')?.value || '',
-            actions: []
-        };
-        if (!activeScenario.name || activeScenario.name=='') {
+        const nameInput = document.getElementById('scenario-name');
+        const name = nameInput?.value || '';
+        if (!name || name.trim() === '') {
             alert(t('Cần nhập tên kịch bản trước!'));
             return;
         }
-        scenarioInsertIndex = -1;
-        renderScenarioSteps();
-        drawCanvas();
+        try {
+            const res = await fetch('/cncapi/v1/scenario/session/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: name.trim() })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                activeScenario.name = name.trim();
+                activeScenario.actions = [];
+                scenarioInsertIndex = -1;
+                renderScenarioSteps();
+                drawCanvas();
+            }
+        } catch (e) {
+            console.error('Error creating scenario:', e);
+        }
     }
 
-    function addScenarioAction(actionType) {
-        const relPos = telemetry.pen_rel_work || { x: 0, y: 0 };
-        const action = {
-            type: actionType,
-            x: parseFloat(relPos.x.toFixed(2)),
-            y: parseFloat(relPos.y.toFixed(2)),
-            z: parseFloat((telemetry.wpos ? telemetry.wpos[2] : 0).toFixed(2))
-        };
-        if (scenarioInsertIndex !== -1) {
-            activeScenario.actions.splice(scenarioInsertIndex + 1, 0, action);
-            scenarioInsertIndex++;
-        } else {
-            activeScenario.actions.push(action);
+    async function addScenarioAction(actionType) {
+        if (!isHomeSet) {
+            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            return;
         }
-        renderScenarioSteps();
-        drawCanvas();
+        try {
+            const res = await fetch('/cncapi/v1/scenario/session/add_step', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: actionType })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                renderScenarioSteps();
+                drawCanvas();
+            }
+        } catch (e) {
+            console.error('Error adding step:', e);
+        }
     }
 
     function renderScenarioSteps() {
@@ -1344,177 +1346,84 @@
             const btnDown = item.querySelector('.move-down-btn');
             const btnDel = item.querySelector('.delete');
             
-            btnPin.addEventListener('click', () => {
-                if (scenarioInsertIndex === idx) {
-                    scenarioInsertIndex = -1;
-                } else {
-                    scenarioInsertIndex = idx;
-                }
-                renderScenarioSteps();
-                drawCanvas();
+            btnPin.addEventListener('click', async () => {
+                try {
+                    await fetch('/cncapi/v1/scenario/session/pin', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ index: idx })
+                    });
+                } catch (e) { console.error(e); }
             });
             
-            btnUp.addEventListener('click', () => {
+            btnUp.addEventListener('click', async () => {
                 if (idx > 0) {
-                    const temp = activeScenario.actions[idx];
-                    activeScenario.actions[idx] = activeScenario.actions[idx - 1];
-                    activeScenario.actions[idx - 1] = temp;
-                    if (scenarioInsertIndex === idx) {
-                        scenarioInsertIndex = idx - 1;
-                    } else if (scenarioInsertIndex === idx - 1) {
-                        scenarioInsertIndex = idx;
-                    }
-                    renderScenarioSteps();
-                    drawCanvas();
+                    try {
+                        await fetch('/cncapi/v1/scenario/session/reorder', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ from_index: idx, to_index: idx - 1 })
+                        });
+                    } catch (e) { console.error(e); }
                 }
             });
             
-            btnDown.addEventListener('click', () => {
+            btnDown.addEventListener('click', async () => {
                 if (idx < activeScenario.actions.length - 1) {
-                    const temp = activeScenario.actions[idx];
-                    activeScenario.actions[idx] = activeScenario.actions[idx + 1];
-                    activeScenario.actions[idx + 1] = temp;
-                    if (scenarioInsertIndex === idx) {
-                        scenarioInsertIndex = idx + 1;
-                    } else if (scenarioInsertIndex === idx + 1) {
-                        scenarioInsertIndex = idx;
-                    }
-                    renderScenarioSteps();
-                    drawCanvas();
+                    try {
+                        await fetch('/cncapi/v1/scenario/session/reorder', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ from_index: idx, to_index: idx + 1 })
+                        });
+                    } catch (e) { console.error(e); }
                 }
             });
             
-            btnDel.addEventListener('click', () => {
-                activeScenario.actions.splice(idx, 1);
-                if (scenarioInsertIndex === idx) {
-                    scenarioInsertIndex = -1;
-                } else if (scenarioInsertIndex > idx) {
-                    scenarioInsertIndex--;
-                }
-                renderScenarioSteps();
-                drawCanvas();
+            btnDel.addEventListener('click', async () => {
+                try {
+                    await fetch(`/cncapi/v1/scenario/session/steps/${idx}`, {
+                        method: 'DELETE'
+                    });
+                } catch (e) { console.error(e); }
             });
             
             container.appendChild(item);
         });
     }
 
-    function clearScenarioSteps() {
-        activeScenario.actions = [];
-        scenarioInsertIndex = -1;
-        renderScenarioSteps();
-        drawCanvas();
+    async function clearScenarioSteps() {
+        try {
+            await fetch('/cncapi/v1/scenario/session/steps', { method: 'DELETE' });
+        } catch (e) {
+            console.error('Error clearing scenario steps:', e);
+        }
     }
 
     function saveScenarioJSON() {
-        const nameInput = document.getElementById('scenario-name');
-        if (nameInput) activeScenario.name = nameInput.value;
-        const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(activeScenario, null, 2));
-        const anchor = document.createElement('a');
-        anchor.setAttribute('href', dataStr);
-        anchor.setAttribute('download', `${activeScenario.name}.json`);
-        document.body.appendChild(anchor);
-        anchor.click();
-        anchor.remove();
+        window.location.href = '/cncapi/v1/scenario/session/export';
     }
 
     function loadScenarioJSON(e) {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
-        reader.onload = (event) => {
+        reader.onload = async (event) => {
             try {
-                activeScenario = JSON.parse(event.target.result);
-                scenarioInsertIndex = -1;
-                const nameInput = document.getElementById('scenario-name');
-                if (nameInput && activeScenario.name) nameInput.value = activeScenario.name;
-                renderScenarioSteps();
-                drawCanvas();
+                const parsed = JSON.parse(event.target.result);
+                await fetch('/cncapi/v1/scenario/session/import', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: parsed.name || 'kich_ban_1',
+                        actions: parsed.actions || []
+                    })
+                });
             } catch (err) {
                 alert(t('Lỗi đọc file JSON kịch bản!'));
             }
         };
         reader.readAsText(file);
-    }
-
-    function generateScenarioGCode() {
-        const { feed, swipeFeed, tapDwell, swipeDist } = getSystemConfig();
-
-        let gcode = [];
-        gcode.push('G90 G54');
-        
-        const isSpindle = penMode === 'spindle-pwm';
-        const pDown = isSpindle ? `M3 S${penDownPwm}` : `G0 Z${penDownZ}`;
-        const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
-
-        activeScenario.actions.forEach(act => {
-            if (act.type === 'set_begin' || act.type === 'set_end' || act.type === 'go_to_here') {
-                gcode.push(pUp);
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(`G4 P0.25`);
-            } else if (act.type === 'go_to_keep_state') {
-                gcode.push(`G1 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-            } else if (act.type === 'pen_down') {
-                gcode.push(pDown);
-                gcode.push(`G4 P${penDwell}`);
-            } else if (act.type === 'pen_up') {
-                gcode.push(pUp);
-                gcode.push(`G4 P${penDwell}`);
-            } else if (act.type === 'tap') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P${tapDwell}`);
-                gcode.push(pUp);
-            } else if (act.type === 'double_tap') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P${tapDwell}`);
-                gcode.push(pUp);
-                gcode.push(`G4 P${tapDwell}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P${tapDwell}`);
-                gcode.push(pUp);
-            } else if (act.type === 'long_press') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P1.0`);
-                gcode.push(pUp);
-            } else if (act.type === 'swipe_down') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P0.02`);
-                gcode.push(`G1 Y${(act.y - swipeDist).toFixed(2)} F${swipeFeed}`);
-                gcode.push(pUp);
-            } else if (act.type === 'swipe_up') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P0.02`);
-                gcode.push(`G1 Y${(act.y + swipeDist).toFixed(2)} F${swipeFeed}`);
-                gcode.push(pUp);
-            } else if (act.type === 'swipe_left') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P0.02`);
-                gcode.push(`G1 X${(act.x - swipeDist).toFixed(2)} F${swipeFeed}`);
-                gcode.push(pUp);
-            } else if (act.type === 'swipe_right') {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-                gcode.push(pDown);
-                gcode.push(`G4 P0.02`);
-                gcode.push(`G1 X${(act.x + swipeDist).toFixed(2)} F${swipeFeed}`);
-                gcode.push(pUp);
-            } else if (act.type.startsWith('dwell-')) {
-                const duration = act.type.split('-')[1];
-                gcode.push(`G4 P${duration}`);
-            } else if (act.type === 'dwell') {
-                gcode.push(`G4 P${(act.duration ?? 0.25).toFixed(2)}`);
-            } else {
-                gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
-            }
-        });
-        
-        gcode.push(pUp);
-        return gcode.join('\n');
     }
 
     async function runScenario() {
@@ -1526,36 +1435,35 @@
             alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
         }
-        const gcodeStr = generateScenarioGCode();
         try {
-            await fetch('/api/start', {
+            await fetch('/cncapi/v1/scenario/session/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ gcode: gcodeStr })
+                body: JSON.stringify({ loop: false })
             });
         } catch (e) {
-            console.error('Error starting scenario:', e);
+            console.error('Error running scenario:', e);
         }
     }
 
-    function toggleRunLoopScenario() {
+    async function toggleRunLoopScenario() {
         if (!isHomeSet) {
             alert(t('Cần đặt gốc tọa độ làm việc trước!'));
             return;
         }
-
         if (activeScenario.actions.length === 0) {
             alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
         }
-
-        isScenarioLooping = !isScenarioLooping;
-        const btn = document.getElementById('btn-run-loop-scenario');
-        if (btn) {
-            btn.className = isScenarioLooping ? 'btn btn-danger-soft btn-small' : 'btn btn-warning btn-small';
-            btn.innerText = isScenarioLooping ? t('Dừng Lặp') : t('Chạy Lặp');
+        try {
+            await fetch('/cncapi/v1/scenario/session/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ loop: !isScenarioLooping })
+            });
+        } catch (e) {
+            console.error('Error toggling run loop:', e);
         }
-        if (isScenarioLooping) runScenario();
     }
 
     function runScenarioSimulation() {

@@ -119,6 +119,12 @@ class ControllerState:
         self.gcode_index = 0
         self.sent_buffer_lengths = []
 
+        # Scenario Session state
+        self.scenario_name = "kich_ban_1"
+        self.scenario_actions = []
+        self.scenario_insert_index = -1
+        self.scenario_is_looping = False
+
 state = ControllerState()
 
 async def safe_write_serial(data: bytes):
@@ -370,8 +376,188 @@ async def send_telemetry():
         "streaming_progress": (state.gcode_index / len(state.stream_gcode_lines)) if state.stream_gcode_lines else 0.0,
         "gcode_index": state.gcode_index,
         "gcode_total": len(state.stream_gcode_lines),
-        "home_set": state.home_set
+        "home_set": state.home_set,
+        "scenario_name": state.scenario_name,
+        "scenario_actions": state.scenario_actions,
+        "scenario_insert_index": state.scenario_insert_index,
+        "scenario_is_looping": state.scenario_is_looping
     })
+
+def generate_scenario_gcode(actions: list) -> str:
+    feed = state.jog_feedrate
+    swipe_feed = getattr(state, 'swipe_feedrate', 10000.0)
+    tap_dwell = getattr(state, 'gesture_tap_dwell', 0.05)
+    swipe_dist = getattr(state, 'gesture_distance', 40.0)
+
+    gcode = ["G90 G54"]
+    is_spindle = state.pen_mode == "spindle-pwm"
+    p_down = f"M3 S{state.pen_down_pwm}" if is_spindle else f"G0 Z{state.pen_down_z}"
+    p_up = f"M3 S{state.pen_up_pwm}" if is_spindle else f"G0 Z{state.pen_up_z}"
+
+    for act in actions:
+        act_type = act.get("type", "")
+        x = float(act.get("x", 0.0))
+        y = float(act.get("y", 0.0))
+
+        if act_type in ["set_begin", "set_end", "go_to_here"]:
+            gcode.append(p_up)
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append("G4 P0.25")
+        elif act_type == "go_to_keep_state":
+            gcode.append(f"G1 X{x:.2f} Y{y:.2f} F{feed}")
+        elif act_type == "pen_down":
+            gcode.append(p_down)
+            gcode.append(f"G4 P{state.pen_dwell}")
+        elif act_type == "pen_up":
+            gcode.append(p_up)
+            gcode.append(f"G4 P{state.pen_dwell}")
+        elif act_type == "tap":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append(f"G4 P{tap_dwell}")
+            gcode.append(p_up)
+        elif act_type == "double_tap":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append(f"G4 P{tap_dwell}")
+            gcode.append(p_up)
+            gcode.append(f"G4 P{tap_dwell}")
+            gcode.append(p_down)
+            gcode.append(f"G4 P{tap_dwell}")
+            gcode.append(p_up)
+        elif act_type == "long_press":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append("G4 P1.0")
+            gcode.append(p_up)
+        elif act_type == "swipe_down":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append("G4 P0.02")
+            gcode.append(f"G1 Y{(y - swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(p_up)
+        elif act_type == "swipe_up":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append("G4 P0.02")
+            gcode.append(f"G1 Y{(y + swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(p_up)
+        elif act_type == "swipe_left":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append("G4 P0.02")
+            gcode.append(f"G1 X{(x - swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(p_up)
+        elif act_type == "swipe_right":
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+            gcode.append(p_down)
+            gcode.append("G4 P0.02")
+            gcode.append(f"G1 X{(x + swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(p_up)
+        elif act_type.startswith("dwell-"):
+            duration = act_type.split("-")[1]
+            gcode.append(f"G4 P{duration}")
+        elif act_type == "dwell":
+            dur = act.get("duration", 0.25)
+            gcode.append(f"G4 P{dur:.2f}")
+        else:
+            gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
+
+    gcode.append(p_up)
+    return "\n".join(gcode)
+
+def compute_scenario_segments(actions: list) -> list:
+    swipe_dist = getattr(state, 'gesture_distance', 40.0)
+    segments = []
+    cur_x, cur_y = 0.0, 0.0
+    pen_down = False
+
+    for idx, act in enumerate(actions):
+        step_label = idx + 1
+        act_type = act.get("type", "")
+        ax = float(act.get("x", 0.0))
+        ay = float(act.get("y", 0.0))
+
+        if act_type in ["set_begin", "set_end", "go_to_here"]:
+            segments.append({
+                "type": "rapid",
+                "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}],
+                "penDown": False,
+                "stepIndex": step_label,
+                "actionType": act_type
+            })
+            cur_x, cur_y = ax, ay
+            pen_down = False
+        elif act_type == "go_to_keep_state":
+            segments.append({
+                "type": "cut" if pen_down else "rapid",
+                "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}],
+                "penDown": pen_down,
+                "stepIndex": step_label,
+                "actionType": act_type
+            })
+            cur_x, cur_y = ax, ay
+        elif act_type == "pen_down":
+            pen_down = True
+            segments.append({
+                "type": "pendown",
+                "pts": [{"x": cur_x, "y": cur_y}],
+                "penDown": True,
+                "stepIndex": step_label,
+                "actionType": act_type
+            })
+        elif act_type == "pen_up":
+            pen_down = False
+            segments.append({
+                "type": "penup",
+                "pts": [{"x": cur_x, "y": cur_y}],
+                "penDown": False,
+                "stepIndex": step_label,
+                "actionType": act_type
+            })
+        elif act_type == "tap":
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "tap", "pts": [{"x": ax, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = ax, ay
+            pen_down = False
+        elif act_type == "double_tap":
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "doubletap", "pts": [{"x": ax, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = ax, ay
+            pen_down = False
+        elif act_type == "long_press":
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "longpress", "pts": [{"x": ax, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = ax, ay
+            pen_down = False
+        elif act_type == "swipe_down":
+            end_y = ay - swipe_dist
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = ax, end_y
+            pen_down = False
+        elif act_type == "swipe_up":
+            end_y = ay + swipe_dist
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = ax, end_y
+            pen_down = False
+        elif act_type == "swipe_left":
+            end_x = ax - swipe_dist
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": end_x, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = end_x, ay
+            pen_down = False
+        elif act_type == "swipe_right":
+            end_x = ax + swipe_dist
+            segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
+            segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": end_x, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
+            cur_x, cur_y = end_x, ay
+            pen_down = False
+        elif act_type.startswith("dwell-") or act_type == "dwell":
+            segments.append({"type": "dwell", "pts": [{"x": cur_x, "y": cur_y}], "penDown": pen_down, "stepIndex": step_label, "actionType": act_type})
+
+    return segments
 
 async def gcode_streamer_task():
     logger.info("Task nạp G-code bắt đầu")
@@ -385,6 +571,13 @@ async def gcode_streamer_task():
         if state.gcode_index >= len(state.stream_gcode_lines):
             while state.sent_buffer_lengths:
                 await asyncio.sleep(0.1)
+            
+            if state.scenario_is_looping and state.is_streaming:
+                state.gcode_index = 0
+                await broadcast({"type": "stream_status", "status": "looping"})
+                await asyncio.sleep(0.5)
+                continue
+
             state.is_streaming = False
             
             if state.connected and state.serial_port and not isinstance(state.serial_port, DummySerial):
@@ -765,6 +958,435 @@ async def get_state():
         "buffer_rx": state.buffer_rx,
         "streaming": state.is_streaming,
         "home_set": state.home_set
+    }
+
+# ----------------------------------------------------
+# CNC API V1 - RESTful Endpoints (/cncapi/v1/...)
+# ----------------------------------------------------
+
+class V1JogRequest(BaseModel):
+    direction: str  # "X+", "X-", "Y+", "Y-", "Z+", "Z-", "XY+", "X+Y+", "X-Y-", etc.
+    step_distance: Optional[float] = None
+    feedrate: Optional[float] = None
+
+class V1MoveToRequest(BaseModel):
+    x: float
+    y: float
+    z: Optional[float] = None
+    feedrate: Optional[float] = None
+
+class V1PenRequest(BaseModel):
+    state: str  # "up" | "down"
+
+class V1GestureRequest(BaseModel):
+    type: str  # tap, double_tap, long_press, swipe_custom, swipe_left, swipe_right, swipe_up, swipe_down
+    start_x: Optional[float] = 0.0
+    start_y: Optional[float] = 0.0
+    end_x: Optional[float] = 0.0
+    end_y: Optional[float] = 0.0
+    distance: Optional[float] = None
+    feedrate: Optional[float] = None
+    swipe_feedrate: Optional[float] = None
+    tap_dwell: Optional[float] = None
+
+class V1ScenarioCreateRequest(BaseModel):
+    name: str
+
+class V1ScenarioAddStepRequest(BaseModel):
+    type: str
+    x: Optional[float] = None
+    y: Optional[float] = None
+    z: Optional[float] = None
+    duration: Optional[float] = None
+
+class V1ScenarioReorderRequest(BaseModel):
+    from_index: int
+    to_index: int
+
+class V1ScenarioPinRequest(BaseModel):
+    index: int
+
+class V1ScenarioRunRequest(BaseModel):
+    loop: Optional[bool] = False
+
+class V1ScenarioImportRequest(BaseModel):
+    name: Optional[str] = "kich_ban_1"
+    actions: List[dict] = []
+
+# V1 Connection & Settings Endpoints
+@app.get("/cncapi/v1/connection/ports")
+async def v1_get_ports():
+    return await get_serial_ports()
+
+@app.post("/cncapi/v1/connection/connect")
+async def v1_connect(config: ConnectionConfig):
+    return await connect_cnc(config)
+
+@app.post("/cncapi/v1/connection/disconnect")
+async def v1_disconnect():
+    return await disconnect_cnc()
+
+@app.get("/cncapi/v1/settings")
+async def v1_get_settings():
+    return await get_system_settings()
+
+@app.post("/cncapi/v1/settings")
+async def v1_update_settings(req: SystemSettingsRequest):
+    return await update_system_settings(req)
+
+# V1 Motion Endpoints
+@app.post("/cncapi/v1/motion/jog")
+async def v1_jog(req: V1JogRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+
+    step = req.step_distance if req.step_distance is not None else state.step_distance
+    feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
+
+    dir_upper = req.direction.upper().strip()
+    dx, dy, dz = 0.0, 0.0, 0.0
+
+    if "X+" in dir_upper: dx += 1.0
+    elif "X-" in dir_upper: dx -= 1.0
+
+    if "Y+" in dir_upper: dy += 1.0
+    elif "Y-" in dir_upper: dy -= 1.0
+
+    if "Z+" in dir_upper: dz += 1.0
+    elif "Z-" in dir_upper: dz -= 1.0
+
+    move_x = dx * step
+    move_y = dy * step
+    move_z = dz * step
+
+    lines = ["G91"]
+    move_cmd = "G0"
+    if dx != 0: move_cmd += f" X{move_x:.2f}"
+    if dy != 0: move_cmd += f" Y{move_y:.2f}"
+    if dz != 0: move_cmd += f" Z{move_z:.2f}"
+    move_cmd += f" F{feed}"
+    lines.append(move_cmd)
+    lines.append("G90")
+
+    gcode = "\n".join(lines)
+    translated_cmds = translate_command(gcode)
+    results = []
+    for cmd in translated_cmds:
+        clean_cmd = cmd.strip()
+        if not clean_cmd: continue
+        await safe_write_serial((clean_cmd + "\n").encode())
+        await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
+        results.append(clean_cmd)
+
+    return {"status": "success", "sent": results}
+
+@app.post("/cncapi/v1/motion/move_to")
+async def v1_move_to(req: V1MoveToRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+
+    feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
+    cmd = f"G90\nG0 X{req.x:.2f} Y{req.y:.2f}"
+    if req.z is not None:
+        cmd += f" Z{req.z:.2f}"
+    cmd += f" F{feed}"
+
+    for raw in cmd.splitlines():
+        clean = raw.strip()
+        if clean:
+            await safe_write_serial((clean + "\n").encode())
+            await broadcast({"type": "log", "direction": "out", "content": clean})
+
+    return {"status": "success", "message": f"Đang di chuyển đến X:{req.x}, Y:{req.y}"}
+
+@app.post("/cncapi/v1/motion/stop")
+async def v1_motion_stop():
+    return await stop_stream()
+
+@app.post("/cncapi/v1/motion/pen")
+async def v1_motion_pen(req: V1PenRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+
+    state_type = req.state.lower().strip()
+    if state_type == "up":
+        cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G0 Z{state.pen_up_z}"
+    else:
+        cmd = f"M3 S{state.pen_down_pwm}" if state.pen_mode == "spindle-pwm" else f"G0 Z{state.pen_down_z}"
+
+    await safe_write_serial((cmd + "\n").encode())
+    await broadcast({"type": "log", "direction": "out", "content": cmd})
+    return {"status": "success", "command": cmd}
+
+# V1 Gestures Endpoints
+@app.post("/cncapi/v1/gestures/execute")
+async def v1_execute_gesture(req: V1GestureRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+    if not state.home_set:
+        raise HTTPException(status_code=400, detail="Cần đặt gốc tọa độ làm việc trước!")
+
+    feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
+    swipe_feed = req.swipe_feedrate if req.swipe_feedrate is not None else getattr(state, 'swipe_feedrate', 10000.0)
+    tap_dwell = req.tap_dwell if req.tap_dwell is not None else getattr(state, 'gesture_tap_dwell', 0.05)
+    swipe_dist = req.distance if req.distance is not None else getattr(state, 'gesture_distance', 40.0)
+
+    is_spindle = state.pen_mode == "spindle-pwm"
+    p_down = f"M3 S{state.pen_down_pwm}" if is_spindle else f"G0 Z{state.pen_down_z}"
+    p_up = f"M3 S{state.pen_up_pwm}" if is_spindle else f"G0 Z{state.pen_up_z}"
+
+    gcode = []
+    gtype = req.type.lower()
+
+    if gtype == "tap":
+        gcode.extend([p_down, f"G4 P{tap_dwell}", p_up])
+    elif gtype == "double_tap":
+        gcode.extend([p_down, f"G4 P{tap_dwell}", p_up, f"G4 P{tap_dwell}", p_down, f"G4 P{tap_dwell}", p_up])
+    elif gtype == "long_press":
+        gcode.extend([p_down, "G4 P1.0", p_up])
+    elif gtype == "swipe_custom":
+        gcode.extend(["G90", p_up, f"G0 X{req.start_x:.2f} Y{req.start_y:.2f} F{feed}", p_down, "G4 P0.02", f"G1 X{req.end_x:.2f} Y{req.end_y:.2f} F{swipe_feed}", p_up])
+    elif gtype == "swipe_left":
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 X-{swipe_dist} F{swipe_feed}", "G90", p_up])
+    elif gtype == "swipe_right":
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 X{swipe_dist} F{swipe_feed}", "G90", p_up])
+    elif gtype == "swipe_up":
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y{swipe_dist} F{swipe_feed}", "G90", p_up])
+    elif gtype == "swipe_down":
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y-{swipe_dist} F{swipe_feed}", "G90", p_up])
+    else:
+        raise HTTPException(status_code=400, detail=f"Loại cử chỉ không hợp lệ: {req.type}")
+
+    for line in gcode:
+        await safe_write_serial((line + "\n").encode())
+        await broadcast({"type": "log", "direction": "out", "content": line})
+
+    return {"status": "success", "type": req.type, "gcode": gcode}
+
+# V1 Origins Endpoints
+@app.post("/cncapi/v1/origin/set_work")
+async def v1_set_work_origin(pt: Optional[Point3D] = None):
+    if pt is None:
+        pt = Point3D(x=0.0, y=0.0, z=0.0)
+    return await set_work_origin(pt)
+
+@app.post("/cncapi/v1/origin/goto_work")
+async def v1_goto_work_origin():
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+
+    feed = state.jog_feedrate
+    cmds = ["G90", f"G0 X0 Y0 F{feed}"]
+    for cmd in cmds:
+        await safe_write_serial((cmd + "\n").encode())
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+
+    return {"status": "success", "message": "Đang di chuyển về gốc làm việc (0,0)"}
+
+@app.post("/cncapi/v1/origin/set_parking")
+async def v1_set_parking(pt: Point3D):
+    return await set_parking_point(pt)
+
+@app.post("/cncapi/v1/origin/goto_parking")
+async def v1_goto_parking():
+    return await goto_parking()
+
+@app.post("/cncapi/v1/origin/home")
+async def v1_origin_home():
+    return await send_command(CommandRequest(command="$H"))
+
+@app.post("/cncapi/v1/origin/unlock")
+async def v1_origin_unlock():
+    return await send_command(CommandRequest(command="$X"))
+
+# V1 Scenario Session Endpoints
+@app.get("/cncapi/v1/scenario/session")
+async def v1_get_scenario_session():
+    return {
+        "name": state.scenario_name,
+        "actions": state.scenario_actions,
+        "insert_index": state.scenario_insert_index,
+        "is_looping": state.scenario_is_looping,
+        "count": len(state.scenario_actions)
+    }
+
+@app.post("/cncapi/v1/scenario/session/create")
+async def v1_create_scenario_session(req: V1ScenarioCreateRequest):
+    if not req.name.strip():
+        raise HTTPException(status_code=400, detail="Cần nhập tên kịch bản!")
+    state.scenario_name = req.name.strip()
+    state.scenario_actions = []
+    state.scenario_insert_index = -1
+    state.scenario_is_looping = False
+    await send_telemetry()
+    return {"status": "success", "name": state.scenario_name}
+
+@app.post("/cncapi/v1/scenario/session/add_step")
+async def v1_add_scenario_step(req: V1ScenarioAddStepRequest):
+    if not state.home_set:
+        raise HTTPException(status_code=400, detail="Cần đặt gốc tọa độ làm việc trước!")
+
+    # Calculate relative work position if missing
+    rel_x = req.x if req.x is not None else (state.wpos[0] - state.work_origin.get("x", 0.0))
+    rel_y = req.y if req.y is not None else (state.wpos[1] - state.work_origin.get("y", 0.0))
+    rel_z = req.z if req.z is not None else state.wpos[2]
+
+    action = {
+        "type": req.type,
+        "x": round(float(rel_x), 2),
+        "y": round(float(rel_y), 2),
+        "z": round(float(rel_z), 2)
+    }
+    if req.duration is not None:
+        action["duration"] = float(req.duration)
+
+    if state.scenario_insert_index != -1 and state.scenario_insert_index < len(state.scenario_actions):
+        state.scenario_actions.insert(state.scenario_insert_index + 1, action)
+        state.scenario_insert_index += 1
+    else:
+        state.scenario_actions.append(action)
+
+    await send_telemetry()
+    return {
+        "status": "success",
+        "action": action,
+        "insert_index": state.scenario_insert_index,
+        "count": len(state.scenario_actions)
+    }
+
+@app.get("/cncapi/v1/scenario/session/steps")
+async def v1_get_scenario_steps():
+    return {
+        "actions": state.scenario_actions,
+        "insert_index": state.scenario_insert_index,
+        "count": len(state.scenario_actions)
+    }
+
+@app.delete("/cncapi/v1/scenario/session/steps/{step_index}")
+async def v1_delete_scenario_step(step_index: int):
+    if step_index < 0 or step_index >= len(state.scenario_actions):
+        raise HTTPException(status_code=404, detail="Chỉ số bước không hợp lệ")
+
+    deleted = state.scenario_actions.pop(step_index)
+    if state.scenario_insert_index == step_index:
+        state.scenario_insert_index = -1
+    elif state.scenario_insert_index > step_index:
+        state.scenario_insert_index -= 1
+
+    await send_telemetry()
+    return {"status": "success", "deleted": deleted, "count": len(state.scenario_actions)}
+
+@app.delete("/cncapi/v1/scenario/session/steps")
+async def v1_clear_scenario_steps():
+    state.scenario_actions = []
+    state.scenario_insert_index = -1
+    await send_telemetry()
+    return {"status": "success", "message": "Đã xóa toàn bộ bước kịch bản"}
+
+@app.post("/cncapi/v1/scenario/session/reorder")
+async def v1_reorder_scenario_step(req: V1ScenarioReorderRequest):
+    total = len(state.scenario_actions)
+    if req.from_index < 0 or req.from_index >= total or req.to_index < 0 or req.to_index >= total:
+        raise HTTPException(status_code=400, detail="Chỉ số sắp xếp không hợp lệ")
+
+    item = state.scenario_actions.pop(req.from_index)
+    state.scenario_actions.insert(req.to_index, item)
+
+    if state.scenario_insert_index == req.from_index:
+        state.scenario_insert_index = req.to_index
+    elif req.from_index < state.scenario_insert_index <= req.to_index:
+        state.scenario_insert_index -= 1
+    elif req.to_index <= state.scenario_insert_index < req.from_index:
+        state.scenario_insert_index += 1
+
+    await send_telemetry()
+    return {"status": "success", "actions": state.scenario_actions}
+
+@app.post("/cncapi/v1/scenario/session/pin")
+async def v1_pin_scenario_step(req: V1ScenarioPinRequest):
+    if req.index < -1 or req.index >= len(state.scenario_actions):
+        raise HTTPException(status_code=400, detail="Vị trí ghim không hợp lệ")
+
+    if state.scenario_insert_index == req.index:
+        state.scenario_insert_index = -1
+    else:
+        state.scenario_insert_index = req.index
+
+    await send_telemetry()
+    return {"status": "success", "insert_index": state.scenario_insert_index}
+
+@app.get("/cncapi/v1/scenario/session/gcode")
+async def v1_get_scenario_gcode():
+    gcode = generate_scenario_gcode(state.scenario_actions)
+    return {"status": "success", "gcode": gcode}
+
+@app.post("/cncapi/v1/scenario/session/run")
+async def v1_run_scenario_session(req: Optional[V1ScenarioRunRequest] = None):
+    if not state.home_set:
+        raise HTTPException(status_code=400, detail="Cần đặt gốc tọa độ làm việc trước!")
+    if not state.scenario_actions:
+        raise HTTPException(status_code=400, detail="Kịch bản trống! Vui lòng thêm các bước trước.")
+
+    loop = req.loop if req is not None and req.loop is not None else False
+    state.scenario_is_looping = loop
+
+    gcode_str = generate_scenario_gcode(state.scenario_actions)
+    res = await start_stream(StreamRequest(gcode=gcode_str))
+    await send_telemetry()
+    return {"status": "success", "looping": state.scenario_is_looping, "stream": res}
+
+@app.post("/cncapi/v1/scenario/session/stop")
+async def v1_stop_scenario_session():
+    state.scenario_is_looping = False
+    res = await stop_stream()
+    await send_telemetry()
+    return {"status": "success", "message": "Đã dừng chạy kịch bản", "stream": res}
+
+@app.get("/cncapi/v1/scenario/session/export")
+async def v1_export_scenario_session():
+    data = {
+        "name": state.scenario_name,
+        "actions": state.scenario_actions
+    }
+    return JSONResponse(
+        content=data,
+        headers={"Content-Disposition": f'attachment; filename="{state.scenario_name}.json"'}
+    )
+
+@app.post("/cncapi/v1/scenario/session/import")
+async def v1_import_scenario_session(req: V1ScenarioImportRequest):
+    state.scenario_name = req.name if req.name else "kich_ban_1"
+    state.scenario_actions = req.actions
+    state.scenario_insert_index = -1
+    await send_telemetry()
+    return {"status": "success", "name": state.scenario_name, "count": len(state.scenario_actions)}
+
+# V1 State & Visualizer Endpoints
+@app.get("/cncapi/v1/state")
+async def v1_get_full_state():
+    base_state = await get_state()
+    base_state.update({
+        "scenario": {
+            "name": state.scenario_name,
+            "actions": state.scenario_actions,
+            "insert_index": state.scenario_insert_index,
+            "is_looping": state.scenario_is_looping,
+            "count": len(state.scenario_actions)
+        }
+    })
+    return base_state
+
+@app.get("/cncapi/v1/visualizer/segments")
+async def v1_get_visualizer_segments():
+    segments = compute_scenario_segments(state.scenario_actions)
+    return {
+        "status": "success",
+        "segments": segments,
+        "wpos": state.wpos,
+        "mpos": state.mpos,
+        "mm_per_px": state.mm_per_px,
+        "axis_dir_x": state.axis_dir_x,
+        "axis_dir_y": state.axis_dir_y
     }
 
 @app.websocket("/ws")

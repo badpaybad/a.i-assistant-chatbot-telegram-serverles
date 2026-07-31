@@ -134,4 +134,16 @@ cần đưa lên Cấu Hình Cấu Trúc & Gốc Làm Việc, để tập trung 
                         tọa độ đầu cnc theo tọa độ làm việc 
                     tọa độ điểm đỗ ( dùng để rút dao)
 
+**cập nhật 11**
+hiện tại trên UI html js đang dùng để thao tác với cnc, cần dựa vào các cấu hình và thao tác để bổ xung tạo mới các api cho các ứng dụng khác có thể thao tác với cnc không phụ thuộc vào UI html js . chỉ cần gọi api là thực hiện được 
+    api bắt đầu với prefix: /cncapi/v1/... cần các api cho các chức năng của các chức năng đang có. các code không nằm trên UI client nữa mà cần là code ở api server 
+        Bộ Di Chuyển & Cử Chỉ
+        Cử Chỉ Touch & Swipe Gestures
+        về gốc làm việc
+        dùng di chuyển
+        Quản Lý & Phím Kịch Bản
+            việc tạo kịch bản chạy kịch bản là session, người dùng vẫn có thể lưu download thành file local và load lại để dùng 
+            các Phím Thêm Bước Kịch Bản lúc này code không nằm trên UI client nữa, cần là code ở api serverr 
+        việc trả ra các state, thông tin đang hoạt động cũng cần cung cấp api để nếu client cần vẽ UI minh họa khi cần 
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify
