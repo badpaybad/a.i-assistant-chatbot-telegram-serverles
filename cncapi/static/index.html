@@ -72,36 +72,60 @@
               <span class="info-value highlight-cyan" id="val-mpos"
                 >X: 0.00 | Y: 0.00 | Z: 0.00</span
               >
-            </div>
-            <div class="info-block">
-              <span class="info-label" data-i18n>Gốc Làm Việc / Gốc Phôi (G54)</span>
-              <span class="info-value" id="val-work-orig"
-                >X: 0.00 | Y: 0.00 | Z: 0.00</span
-              >
-            </div>
+
             <div class="info-block">
               <span class="info-label" data-i18n>Đầu CNC / Gốc Làm Việc (WPos)</span>
               <span class="info-value highlight-green" id="val-pen-rel-work"
                 >X: 0.00 | Y: 0.00 | Z: 0.00</span
               >
             </div>
-            <div class="info-block full-width">
+            </div>
+            <div class="info-block">
+              <span class="info-label" data-i18n>Gốc Làm Việc / Gốc Phôi (G54)</span>
+              <span class="info-value" id="val-work-orig"
+                >X: 0.00 | Y: 0.00 | Z: 0.00</span
+              >
+                  <div class="info-block full-width">
               <div class="info-parking-header">
                 <span class="info-label" data-i18n
                   >Điểm Đỗ Rút Dao (G28/G30)</span
                 >
                 <button
-                  class="btn btn-secondary btn-mini"
+                  class="btn btn-secondary"
                   id="btn-goto-parking"
                   data-i18n
                 >
                   Về Điểm Đỗ
                 </button>
+           
               </div>
               <span class="info-value" id="val-parking-point"
                 >X: 0.00 | Y: 0.00 | Z: 10.00</span
               >
             </div>
+            </div>
+          
+          </div>
+             <!-- Set Work Origin & Work Bounds Corner Points -->
+          <div class="set-work-origin-action" style="margin-top: 8px">
+            
+            <div style="margin-top: 6px; font-size: 0.78rem; text-align: center; color: var(--text-muted);" data-i18n>
+              📍 Đặt Khung Máy (So với Gốc WPOS): 
+           <button
+              class="btn btn-warning"
+              id="btn-set-work-origin"
+              data-i18n
+            >
+              🎯 Đặt Gốc Tọa Độ Làm Việc (0,0,0 tại vị trí hiện tại)
+            </button>
+            </div>
+            <div class="row-inputs" style="margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
+              <button class="btn btn-secondary btn-small" id="btn-set-cnc-tl" title="Góc Trên-Trái" data-i18n>↖️ TL (Trên-Trái)</button>
+              <button class="btn btn-secondary btn-small" id="btn-set-cnc-tr" title="Góc Trên-Phải" data-i18n>↗️ TR (Trên-Phải)</button>
+              <button class="btn btn-secondary btn-small" id="btn-set-cnc-bl" title="Góc Dưới-Trái" data-i18n>↙️ BL (Dưới-Trái)</button>
+              <button class="btn btn-secondary btn-small" id="btn-set-cnc-br" title="Góc Dưới-Phải" data-i18n>↘️ BR (Dưới-Phải)</button>
+            </div>
+            <div id="cnc-bounds-info" style="margin-top: 4px; font-size: 0.72rem; color: #38bdf8; text-align: center; font-family: monospace; min-height: 16px;"></div>
           </div>
         </div>
 
@@ -278,26 +302,7 @@
                 accept=".json"
                 style="display: none"
               />  
-          <!-- Set Work Origin & Work Bounds Corner Points -->
-          <div class="set-work-origin-action" style="margin-top: 8px">
-            <button
-              class="btn btn-warning full-btn"
-              id="btn-set-work-origin"
-              data-i18n
-            >
-              🎯 Đặt Gốc Tọa Độ Làm Việc (0,0,0 tại vị trí hiện tại)
-            </button>
-            <div style="margin-top: 6px; font-size: 0.78rem; text-align: center; color: var(--text-muted);" data-i18n>
-              📍 Định Vị Khung Khổ Máy (So với Gốc WPOS):
-            </div>
-            <div class="row-inputs" style="margin-top: 4px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px;">
-              <button class="btn btn-secondary btn-small" id="btn-set-cnc-tl" title="Góc Trên-Trái" data-i18n>↖️ TL (Trên-Trái)</button>
-              <button class="btn btn-secondary btn-small" id="btn-set-cnc-tr" title="Góc Trên-Phải" data-i18n>↗️ TR (Trên-Phải)</button>
-              <button class="btn btn-secondary btn-small" id="btn-set-cnc-bl" title="Góc Dưới-Trái" data-i18n>↙️ BL (Dưới-Trái)</button>
-              <button class="btn btn-secondary btn-small" id="btn-set-cnc-br" title="Góc Dưới-Phải" data-i18n>↘️ BR (Dưới-Phải)</button>
-            </div>
-            <div id="cnc-bounds-info" style="margin-top: 4px; font-size: 0.72rem; color: #38bdf8; text-align: center; font-family: monospace; min-height: 16px;"></div>
-          </div>
+       
             </div>
           </div>
 
