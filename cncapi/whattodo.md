@@ -146,4 +146,7 @@ hiện tại trên UI html js đang dùng để thao tác với cnc, cần dựa
             các Phím Thêm Bước Kịch Bản lúc này code không nằm trên UI client nữa, cần là code ở api serverr 
         việc trả ra các state, thông tin đang hoạt động cũng cần cung cấp api để nếu client cần vẽ UI minh họa khi cần 
 
+**cập nhật 12**
+Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình cho việc Cử Chỉ Touch & Swipe Gestures về Nhấn giữ cấu hình về thời gian nhấn giữ , cũng áp dụng thời gian nhấn giữ bao lâu cho bước trong kịch bản , mặc định là 1.5 giây 
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

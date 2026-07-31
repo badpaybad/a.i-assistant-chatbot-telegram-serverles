@@ -30,6 +30,7 @@ def load_settings() -> dict:
         "swipe_feedrate": 10000.0,
         "gesture_distance": 40.0,
         "gesture_tap_dwell": 0.05,
+        "gesture_long_press_dwell": 1.5,
         "pen_mode": "spindle-pwm",
         "pen_up_z": 0.0,
         "pen_down_z": 45.0,
@@ -93,6 +94,9 @@ class ControllerState:
         self.pen_down_pwm = float(settings.get("pen_down_pwm", 90.0))
         self.pen_dwell = float(settings.get("pen_dwell", 0.25))
         self.pen_state = None
+        
+        self.gesture_tap_dwell = float(settings.get("gesture_tap_dwell", 0.05))
+        self.gesture_long_press_dwell = float(settings.get("gesture_long_press_dwell", 1.5))
         
         # Motion parameters
         self.step_distance = float(settings.get("step_distance", 10.0))
@@ -387,6 +391,7 @@ def generate_scenario_gcode(actions: list) -> str:
     feed = state.jog_feedrate
     swipe_feed = getattr(state, 'swipe_feedrate', 10000.0)
     tap_dwell = getattr(state, 'gesture_tap_dwell', 0.05)
+    long_press_dwell = getattr(state, 'gesture_long_press_dwell', 1.5)
     swipe_dist = getattr(state, 'gesture_distance', 40.0)
 
     gcode = ["G90 G54"]
@@ -426,9 +431,10 @@ def generate_scenario_gcode(actions: list) -> str:
             gcode.append(f"G4 P{tap_dwell}")
             gcode.append(p_up)
         elif act_type == "long_press":
+            dur = float(act.get("duration", long_press_dwell))
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
-            gcode.append("G4 P1.0")
+            gcode.append(f"G4 P{dur}")
             gcode.append(p_up)
         elif act_type == "swipe_down":
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
@@ -640,6 +646,7 @@ class SystemSettingsRequest(BaseModel):
     swipe_feedrate: Optional[float] = None
     step_distance: Optional[float] = None
     tap_dwell: Optional[float] = None
+    long_press_dwell: Optional[float] = None
     swipe_distance: Optional[float] = None
     pen_mode: Optional[str] = None
     pen_up_z: Optional[float] = None
@@ -774,6 +781,7 @@ async def get_system_settings():
         "swipe_feedrate": getattr(state, 'swipe_feedrate', 10000.0),
         "step_distance": state.step_distance,
         "tap_dwell": getattr(state, 'gesture_tap_dwell', 0.05),
+        "long_press_dwell": getattr(state, 'gesture_long_press_dwell', 1.5),
         "swipe_distance": getattr(state, 'gesture_distance', 40.0),
         "pen_mode": state.pen_mode,
         "pen_up_z": state.pen_up_z,
@@ -797,6 +805,7 @@ async def update_system_settings(req: SystemSettingsRequest):
     if req.swipe_feedrate is not None: state.swipe_feedrate = req.swipe_feedrate
     if req.step_distance is not None: state.step_distance = req.step_distance
     if req.tap_dwell is not None: state.gesture_tap_dwell = req.tap_dwell
+    if req.long_press_dwell is not None: state.gesture_long_press_dwell = req.long_press_dwell
     if req.swipe_distance is not None: state.gesture_distance = req.swipe_distance
     if req.pen_mode is not None: state.pen_mode = req.pen_mode
     if req.pen_up_z is not None: state.pen_up_z = req.pen_up_z
@@ -818,6 +827,7 @@ async def update_system_settings(req: SystemSettingsRequest):
         "swipe_feedrate": getattr(state, 'swipe_feedrate', 10000.0),
         "step_distance": state.step_distance,
         "gesture_tap_dwell": getattr(state, 'gesture_tap_dwell', 0.05),
+        "gesture_long_press_dwell": getattr(state, 'gesture_long_press_dwell', 1.5),
         "gesture_distance": getattr(state, 'gesture_distance', 40.0),
         "pen_mode": state.pen_mode,
         "pen_up_z": state.pen_up_z,
@@ -988,6 +998,7 @@ class V1GestureRequest(BaseModel):
     feedrate: Optional[float] = None
     swipe_feedrate: Optional[float] = None
     tap_dwell: Optional[float] = None
+    long_press_dwell: Optional[float] = None
 
 class V1ScenarioCreateRequest(BaseModel):
     name: str
@@ -1129,6 +1140,7 @@ async def v1_execute_gesture(req: V1GestureRequest):
     feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
     swipe_feed = req.swipe_feedrate if req.swipe_feedrate is not None else getattr(state, 'swipe_feedrate', 10000.0)
     tap_dwell = req.tap_dwell if req.tap_dwell is not None else getattr(state, 'gesture_tap_dwell', 0.05)
+    long_press_dwell = req.long_press_dwell if req.long_press_dwell is not None else getattr(state, 'gesture_long_press_dwell', 1.5)
     swipe_dist = req.distance if req.distance is not None else getattr(state, 'gesture_distance', 40.0)
 
     is_spindle = state.pen_mode == "spindle-pwm"
@@ -1143,7 +1155,7 @@ async def v1_execute_gesture(req: V1GestureRequest):
     elif gtype == "double_tap":
         gcode.extend([p_down, f"G4 P{tap_dwell}", p_up, f"G4 P{tap_dwell}", p_down, f"G4 P{tap_dwell}", p_up])
     elif gtype == "long_press":
-        gcode.extend([p_down, "G4 P1.0", p_up])
+        gcode.extend([p_down, f"G4 P{long_press_dwell}", p_up])
     elif gtype == "swipe_custom":
         gcode.extend(["G90", p_up, f"G0 X{req.start_x:.2f} Y{req.start_y:.2f} F{feed}", p_down, "G4 P0.02", f"G1 X{req.end_x:.2f} Y{req.end_y:.2f} F{swipe_feed}", p_up])
     elif gtype == "swipe_left":

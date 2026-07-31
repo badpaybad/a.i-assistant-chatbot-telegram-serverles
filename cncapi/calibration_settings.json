@@ -6,6 +6,7 @@
   "swipe_feedrate": 10000.0,
   "gesture_distance": 40.0,
   "gesture_tap_dwell": 0.05,
+  "gesture_long_press_dwell": 1.5,
   "pen_mode": "spindle-pwm",
   "pen_up_z": 0.0,
   "pen_down_z": 45.0,

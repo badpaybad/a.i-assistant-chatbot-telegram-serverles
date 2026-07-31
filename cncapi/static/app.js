@@ -614,12 +614,16 @@
             document.getElementById('gesture-tap-dwell')?.value ||
             '0.05'
         );
+        const longPressDwell = parseFloat(
+            document.getElementById('sys-long-press-dwell')?.value ||
+            '1.5'
+        );
         const swipeDist = parseFloat(
             document.getElementById('sys-swipe-distance')?.value ||
             document.getElementById('gesture-swipe-distance')?.value ||
             '40'
         );
-        return { feed, swipeFeed, step, tapDwell, swipeDist };
+        return { feed, swipeFeed, step, tapDwell, longPressDwell, swipeDist };
     }
 
     // Machine Jogging Functions
@@ -693,7 +697,7 @@
             return;
         }
 
-        const { feed, swipeFeed, tapDwell, swipeDist } = getSystemConfig();
+        const { feed, swipeFeed, tapDwell, longPressDwell, swipeDist } = getSystemConfig();
 
         const startX = parseFloat(document.getElementById('gesture-start-x')?.value || '0');
         const startY = parseFloat(document.getElementById('gesture-start-y')?.value || '0');
@@ -713,7 +717,8 @@
                     distance: swipeDist,
                     feedrate: feed,
                     swipe_feedrate: swipeFeed,
-                    tap_dwell: tapDwell
+                    tap_dwell: tapDwell,
+                    long_press_dwell: longPressDwell
                 })
             });
         } catch (e) {
@@ -1594,6 +1599,7 @@
             swipe_feedrate: parseFloat(document.getElementById('sys-swipe-feedrate')?.value || '10000'),
             step_distance: parseFloat(document.getElementById('sys-step-distance')?.value || '10'),
             tap_dwell: parseFloat(document.getElementById('sys-tap-dwell')?.value || '0.05'),
+            long_press_dwell: parseFloat(document.getElementById('sys-long-press-dwell')?.value || '1.5'),
             swipe_distance: parseFloat(document.getElementById('sys-swipe-distance')?.value || '40'),
             pen_mode: penMode,
             pen_up_z: penUpZ,
@@ -1606,7 +1612,7 @@
         };
 
         try {
-            const res = await fetch('/api/settings', {
+            const res = await fetch('/cncapi/v1/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -1652,6 +1658,9 @@
         }
         if (data.tap_dwell !== undefined && document.getElementById('sys-tap-dwell')) {
             document.getElementById('sys-tap-dwell').value = data.tap_dwell;
+        }
+        if ((data.long_press_dwell !== undefined || data.gesture_long_press_dwell !== undefined) && document.getElementById('sys-long-press-dwell')) {
+            document.getElementById('sys-long-press-dwell').value = data.long_press_dwell ?? data.gesture_long_press_dwell;
         }
         if (data.swipe_distance !== undefined && document.getElementById('sys-swipe-distance')) {
             document.getElementById('sys-swipe-distance').value = data.swipe_distance;
