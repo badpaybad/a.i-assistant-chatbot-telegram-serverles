@@ -159,4 +159,10 @@ Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình ch
     set bottom left
     khi có 4 điểm chỉ cần vẽ khung theo 4 điểm này, chưa cần dùng để validate hay cần tính toán thêm gì. cần cấp thêm api để set 4 điểm này và lưu config , có 4 điểm thì vẽ không thì không cần vẽ 
 
+**cập nhật 15** xem cncapi/main.py cần đóng gói thành file chạy để tránh người dùng can thiệp đọc và sửa code, khi build tạo toàn bộ ứng dụng vào folder dist
+- Đã bổ sung cấu hình đường dẫn tài nguyên tĩnh (`STATIC_DIR`) tự động tương thích môi trường thực thi PyInstaller (`sys._MEIPASS`).
+- Đã tạo `main.spec` cấu hình đóng gói toàn bộ backend FastAPI và thư mục `static/` thành 1 file chạy duy nhất `cncapi`.
+- Tạo script build `build_dist.sh` để thực hiện đóng gói nhanh vào thư mục `dist/`.
+- File thực thi tạo ra: `cncapi/dist/cncapi`. Chạy `./dist/cncapi` từ thư mục `cncapi` sẽ khởi động ứng dụng Web API mà không lộ mã nguồn `.py`.
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

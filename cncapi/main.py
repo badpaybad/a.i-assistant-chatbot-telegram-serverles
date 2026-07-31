@@ -19,7 +19,15 @@ logger = logging.getLogger("cnc_controller")
 
 app = FastAPI(title="GRBL CNC Web Controller")
 
-SETTINGS_FILE = "calibration_settings.json"
+if getattr(sys, 'frozen', False):
+    EXEC_DIR = os.path.dirname(os.path.abspath(sys.executable))
+    BASE_DIR = getattr(sys, '_MEIPASS', EXEC_DIR)
+else:
+    EXEC_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = EXEC_DIR
+
+STATIC_DIR = os.path.join(BASE_DIR, "static")
+SETTINGS_FILE = os.path.join(EXEC_DIR, "calibration_settings.json")
 
 def load_settings() -> dict:
     default_settings = {
@@ -1528,11 +1536,11 @@ async def websocket_endpoint(ws: WebSocket):
         state.websocket_connections.discard(ws)
 
 # Static Files
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 @app.get("/")
 async def read_index():
-    return FileResponse("static/index.html")
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn
