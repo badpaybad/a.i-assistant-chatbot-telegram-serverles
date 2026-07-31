@@ -760,7 +760,12 @@
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
-                mouseHoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                mouseHoverPos = {
+                    x: (e.clientX - rect.left) * scaleX,
+                    y: (e.clientY - rect.top) * scaleY
+                };
             } else {
                 mouseHoverPos = null;
             }
@@ -779,8 +784,10 @@
             if (isMouseDown && !isDraggingCanvas) {
                 // Click event! Convert canvas (x, y) to Work Coordinates
                 const rect = canvas.getBoundingClientRect();
-                const clickX = e.clientX - rect.left;
-                const clickY = e.clientY - rect.top;
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const clickX = (e.clientX - rect.left) * scaleX;
+                const clickY = (e.clientY - rect.top) * scaleY;
 
                 const originX = canvas.width / 2 + canvasOffsetX;
                 const originY = canvas.height / 2 + canvasOffsetY;
@@ -928,6 +935,42 @@
         }
         for (let y = startMY; y < h; y += majorGridPx) {
             ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+        }
+
+        // Draw coordinate numbers on major grid lines (50mm steps)
+        ctx.font = '9px Outfit, sans-serif';
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        
+        // X grid numbers
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        const minMmX = Math.floor((-originX) / (axisDirX * canvasScale) / 50) * 50;
+        const maxMmX = Math.ceil((w - originX) / (axisDirX * canvasScale) / 50) * 50;
+        const startXmm = Math.min(minMmX, maxMmX);
+        const endXmm = Math.max(minMmX, maxMmX);
+        for (let mm = startXmm; mm <= endXmm; mm += 50) {
+            if (mm === 0) continue;
+            const px = originX + mm * axisDirX * canvasScale;
+            if (px >= 0 && px <= w) {
+                const labelY = Math.min(Math.max(originY + 4, 4), h - 14);
+                ctx.fillText(`${mm}`, px, labelY);
+            }
+        }
+
+        // Y grid numbers
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        const minMmY = Math.floor((-originY) / (axisDirY * canvasScale) / 50) * 50;
+        const maxMmY = Math.ceil((h - originY) / (axisDirY * canvasScale) / 50) * 50;
+        const startYmm = Math.min(minMmY, maxMmY);
+        const endYmm = Math.max(minMmY, maxMmY);
+        for (let mm = startYmm; mm <= endYmm; mm += 50) {
+            if (mm === 0) continue;
+            const py = originY + mm * axisDirY * canvasScale;
+            if (py >= 0 && py <= h) {
+                const labelX = Math.min(Math.max(originX - 6, 24), w - 4);
+                ctx.fillText(`${mm}`, labelX, py);
+            }
         }
 
         // ---- COORDINATE AXES ----
