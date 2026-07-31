@@ -170,6 +170,17 @@
                   max="30000"
                 />
               </div>
+              <div class="input-group">
+                <label data-i18n>Bước Nhích (mm)</label>
+                <input
+                  type="number"
+                  id="sys-step-distance"
+                  value="10"
+                  step="1"
+                  min="0.1"
+                  max="500"
+                />
+              </div>
             </div>
 
             <div class="row-inputs" style="margin-bottom: 4px">
@@ -330,7 +341,7 @@
       <main class="row-main">
         <!-- CỘT 0 (25%): BỘ DI CHUYỂN & GESTURES -->
         <section class="main-col col-25 card glass-card">
-          <h2 class="card-title" data-i18n>Bộ Di Chuyển & Cử Chỉ</h2>
+          <h4 class="card-title" data-i18n>Bộ Di Chuyển & Cử Chỉ</h2>
 
           <!-- JOGGING SECTION -->
           <div class="jog-section">
@@ -548,9 +559,9 @@
         <!-- CỘT 1 (50%): TOOL PATH VIEW (CANVAS SIMULATION / PREVIEW) -->
         <section class="main-col col-50 card glass-card visualizer-card">
           <div class="visualizer-header">
-            <h2 class="card-title" data-i18n>
+            <h4 class="card-title" data-i18n>
               Tool Path View (Xem & Giả Lập Kịch Bản)
-            </h2>
+            </h4>
             <div class="visualizer-actions">
               <button
                 class="btn btn-secondary btn-small"
@@ -582,7 +593,7 @@
 
         <!-- CỘT 2 (25%): THAO TÁC KỊCH BẢN & PHÍM KỊCH BẢN -->
         <section class="main-col col-25 card glass-card">
-          <h2 class="card-title" data-i18n>Quản Lý & Phím Kịch Bản</h2>
+          <h4 class="card-title" data-i18n>Quản Lý & Phím Kịch Bản</h4>
 
           <!-- Scenario File / Execution Bar -->
           <div class="scenario-management-box">
@@ -824,7 +835,7 @@
       <!-- ==================== HÀNG 2: SERIAL CONSOLE & FOOTER ==================== -->
       <footer class="row-footer card glass-card">
         <div class="console-header-row">
-          <h3 class="card-title" data-i18n>Cửa Sổ Console Serial</h3>
+          <h6 class="card-title" data-i18n>Cửa Sổ Console Serial</h6>
           <button class="btn-text" id="btn-clear-console" data-i18n>
             Xóa Nhật Ký
           </button>

@@ -149,4 +149,7 @@ hiện tại trên UI html js đang dùng để thao tác với cnc, cần dựa
 **cập nhật 12**
 Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình cho việc Cử Chỉ Touch & Swipe Gestures về Nhấn giữ cấu hình về thời gian nhấn giữ , cũng áp dụng thời gian nhấn giữ bao lâu cho bước trong kịch bản , mặc định là 1.5 giây 
 
+**cập nhật 13**
+ở Cấu Hình Cấu Trúc & Gốc Làm Việc thiếu sys-step-distance (step_distance) cần bổ xung 
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify
