@@ -91,7 +91,10 @@ class ControllerState:
         
         # Motion parameters
         self.step_distance = float(settings.get("step_distance", 10.0))
-        self.jog_feedrate = float(settings.get("jog_feedrate", 1000.0))
+        self.jog_feedrate = float(settings.get("jog_feedrate", 4000.0))
+        self.swipe_feedrate = float(settings.get("swipe_feedrate", 10000.0))
+        self.axis_dir_x = int(settings.get("axis_dir_x", 1))
+        self.axis_dir_y = int(settings.get("axis_dir_y", 1))
         
         # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
@@ -426,18 +429,30 @@ class ConnectionConfig(BaseModel):
 class CommandRequest(BaseModel):
     command: str
 
-class PenSettingsRequest(BaseModel):
+class Point3D(BaseModel):
+    x: float
+    y: float
+    z: float
+
+class SystemSettingsRequest(BaseModel):
+    port: Optional[str] = None
+    baudrate: Optional[int] = None
+    feedrate: Optional[float] = None
+    swipe_feedrate: Optional[float] = None
+    step_distance: Optional[float] = None
+    tap_dwell: Optional[float] = None
+    swipe_distance: Optional[float] = None
     pen_mode: Optional[str] = None
     pen_up_z: Optional[float] = None
     pen_down_z: Optional[float] = None
     pen_up_pwm: Optional[float] = None
     pen_down_pwm: Optional[float] = None
     pen_dwell: Optional[float] = None
+    axis_dir_x: Optional[int] = None
+    axis_dir_y: Optional[int] = None
+    work_origin: Optional[Point3D] = None
 
-class Point3D(BaseModel):
-    x: float
-    y: float
-    z: float
+PenSettingsRequest = SystemSettingsRequest
 
 class StreamRequest(BaseModel):
     gcode: str
@@ -550,21 +565,76 @@ async def send_command(req: CommandRequest):
             
     return {"status": "success", "sent": results}
 
-@app.get("/api/pen_settings")
-async def get_pen_settings():
+@app.get("/api/settings")
+async def get_system_settings():
     return {
+        "port": state.port_name,
+        "baudrate": state.baudrate,
+        "feedrate": state.jog_feedrate,
+        "swipe_feedrate": getattr(state, 'swipe_feedrate', 10000.0),
+        "step_distance": state.step_distance,
+        "tap_dwell": getattr(state, 'gesture_tap_dwell', 0.05),
+        "swipe_distance": getattr(state, 'gesture_distance', 40.0),
         "pen_mode": state.pen_mode,
         "pen_up_z": state.pen_up_z,
         "pen_down_z": state.pen_down_z,
         "pen_up_pwm": state.pen_up_pwm,
         "pen_down_pwm": state.pen_down_pwm,
         "pen_dwell": state.pen_dwell,
-        "step_distance": state.step_distance,
-        "jog_feedrate": state.jog_feedrate,
+        "axis_dir_x": getattr(state, 'axis_dir_x', 1),
+        "axis_dir_y": getattr(state, 'axis_dir_y', 1),
         "workpiece_origin": state.workpiece_origin,
         "work_origin": state.work_origin,
         "parking_point": state.parking_point,
     }
+
+@app.post("/api/settings")
+async def update_system_settings(req: SystemSettingsRequest):
+    if req.port is not None: state.port_name = req.port
+    if req.baudrate is not None: state.baudrate = req.baudrate
+    if req.feedrate is not None: state.jog_feedrate = req.feedrate
+    if req.swipe_feedrate is not None: state.swipe_feedrate = req.swipe_feedrate
+    if req.step_distance is not None: state.step_distance = req.step_distance
+    if req.tap_dwell is not None: state.gesture_tap_dwell = req.tap_dwell
+    if req.swipe_distance is not None: state.gesture_distance = req.swipe_distance
+    if req.pen_mode is not None: state.pen_mode = req.pen_mode
+    if req.pen_up_z is not None: state.pen_up_z = req.pen_up_z
+    if req.pen_down_z is not None: state.pen_down_z = req.pen_down_z
+    if req.pen_up_pwm is not None: state.pen_up_pwm = req.pen_up_pwm
+    if req.pen_down_pwm is not None: state.pen_down_pwm = req.pen_down_pwm
+    if req.pen_dwell is not None: state.pen_dwell = req.pen_dwell
+    if req.axis_dir_x is not None: state.axis_dir_x = req.axis_dir_x
+    if req.axis_dir_y is not None: state.axis_dir_y = req.axis_dir_y
+    if req.work_origin is not None:
+        state.work_origin = {"x": req.work_origin.x, "y": req.work_origin.y, "z": req.work_origin.z}
+        state.home_set = True
+
+    to_save = {
+        "port": state.port_name,
+        "baudrate": state.baudrate,
+        "jog_feedrate": state.jog_feedrate,
+        "swipe_feedrate": getattr(state, 'swipe_feedrate', 10000.0),
+        "step_distance": state.step_distance,
+        "gesture_tap_dwell": getattr(state, 'gesture_tap_dwell', 0.05),
+        "gesture_distance": getattr(state, 'gesture_distance', 40.0),
+        "pen_mode": state.pen_mode,
+        "pen_up_z": state.pen_up_z,
+        "pen_down_z": state.pen_down_z,
+        "pen_up_pwm": state.pen_up_pwm,
+        "pen_down_pwm": state.pen_down_pwm,
+        "pen_dwell": state.pen_dwell,
+        "axis_dir_x": getattr(state, 'axis_dir_x', 1),
+        "axis_dir_y": getattr(state, 'axis_dir_y', 1),
+        "work_origin": state.work_origin,
+        "home_set": state.home_set
+    }
+    save_settings(to_save)
+    await send_telemetry()
+    return {"status": "success", "settings": await get_system_settings()}
+
+@app.get("/api/pen_settings")
+async def get_pen_settings():
+    return await get_system_settings()
 
 @app.post("/api/pen_settings")
 async def update_pen_settings(req: PenSettingsRequest):

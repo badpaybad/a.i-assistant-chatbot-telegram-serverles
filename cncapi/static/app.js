@@ -110,9 +110,9 @@
         initDOM();
         initCanvas();
         loadTranslations('vi');
+        await loadSystemSettings();
         connectWebSocket();
         await fetchPorts();
-        await fetchInitialSettings();
         await checkCurrentState();
     });
 
@@ -135,9 +135,18 @@
             updatePenInputs();
             savePenSettings();
         });
+        document.getElementById('pen-up-val')?.addEventListener('change', savePenSettings);
+        document.getElementById('pen-down-val')?.addEventListener('change', savePenSettings);
+        document.getElementById('pen-up-val')?.addEventListener('input', savePenSettings);
+        document.getElementById('pen-down-val')?.addEventListener('input', savePenSettings);
 
         document.getElementById('btn-pen-up')?.addEventListener('click', () => sendPenCommand('up'));
         document.getElementById('btn-pen-down')?.addEventListener('click', () => sendPenCommand('down'));
+        document.getElementById('btn-save-settings')?.addEventListener('click', saveSystemSettings);
+        document.getElementById('btn-load-settings')?.addEventListener('click', () => {
+            document.getElementById('input-load-settings')?.click();
+        });
+        document.getElementById('input-load-settings')?.addEventListener('change', loadSystemSettingsFile);
 
         // Origins
         document.getElementById('btn-set-work-origin')?.addEventListener('click', setWorkOriginCurrent);
@@ -252,28 +261,7 @@
     }
 
     async function fetchInitialSettings() {
-        try {
-            const res = await fetch('/api/pen_settings');
-            const data = await res.json();
-            penMode = data.pen_mode || 'z-axis';
-            penUpZ = data.pen_up_z || 3.0;
-            penDownZ = data.pen_down_z || 0.0;
-            penUpPwm = data.pen_up_pwm || 30.0;
-            penDownPwm = data.pen_down_pwm || 90.0;
-            penDwell = data.pen_dwell || 0.25;
-
-            const modeSelect = document.getElementById('pen-control-mode');
-            if (modeSelect) modeSelect.value = penMode;
-
-            updatePenInputs();
-
-            if (data.workpiece_origin) telemetry.workpiece_origin = data.workpiece_origin;
-            if (data.work_origin) telemetry.work_origin = data.work_origin;
-            if (data.parking_point) telemetry.parking_point = data.parking_point;
-            updateInfoDisplays();
-        } catch (e) {
-            console.error('Error fetching initial settings:', e);
-        }
+        await loadSystemSettings();
     }
 
     function updatePenInputs() {
@@ -562,15 +550,42 @@
         }
     }
 
+    function getSystemConfig() {
+        const feed = parseFloat(
+            document.getElementById('sys-feedrate')?.value ||
+            document.getElementById('jog-feedrate-input')?.value ||
+            document.getElementById('gesture-feedrate')?.value ||
+            '4000'
+        );
+        const swipeFeed = parseFloat(
+            document.getElementById('sys-swipe-feedrate')?.value ||
+            '10000'
+        );
+        const step = parseFloat(
+            document.getElementById('sys-step-distance')?.value ||
+            document.getElementById('select-step-preset')?.value ||
+            document.getElementById('gesture-step')?.value ||
+            '10'
+        );
+        const tapDwell = parseFloat(
+            document.getElementById('sys-tap-dwell')?.value ||
+            document.getElementById('gesture-tap-dwell')?.value ||
+            '0.05'
+        );
+        const swipeDist = parseFloat(
+            document.getElementById('sys-swipe-distance')?.value ||
+            document.getElementById('gesture-swipe-distance')?.value ||
+            '40'
+        );
+        return { feed, swipeFeed, step, tapDwell, swipeDist };
+    }
+
     // Machine Jogging Functions
     function bindJogKey(id, dx, dy, dz) {
         const btn = document.getElementById(id);
         if (!btn) return;
         btn.addEventListener('click', () => {
-            const stepSelect = document.getElementById('select-step-preset');
-            const feedInput = document.getElementById('jog-feedrate-input');
-            const step = stepSelect ? parseFloat(stepSelect.value) : stepDistance;
-            const feed = feedInput ? parseFloat(feedInput.value) : jogFeedrate;
+            const { feed, step } = getSystemConfig();
             const moveX = dx * step;
             const moveY = dy * step;
             const moveZ = dz * step;
@@ -604,8 +619,7 @@
     }
 
     function gotoWorkOrigin() {
-        const feedInput = document.getElementById('jog-feedrate-input');
-        const feed = feedInput ? parseFloat(feedInput.value) : jogFeedrate;
+        const { feed } = getSystemConfig();
         sendCommand(`G90\nG0 X0 Y0 F${feed}`);
     }
 
@@ -632,10 +646,7 @@
             return;
         }
 
-        const feed = parseFloat(document.getElementById('gesture-feedrate')?.value || '4000');
-        const step = parseFloat(document.getElementById('gesture-step')?.value || '10');
-        const tapDwell = parseFloat(document.getElementById('gesture-tap-dwell')?.value || '0.05');
-        const swipeDist = parseFloat(document.getElementById('gesture-swipe-distance')?.value || '40');
+        const { feed, swipeFeed, tapDwell, swipeDist } = getSystemConfig();
 
         const startX = parseFloat(document.getElementById('gesture-start-x')?.value || '0');
         const startY = parseFloat(document.getElementById('gesture-start-y')?.value || '0');
@@ -643,19 +654,15 @@
         const endY = parseFloat(document.getElementById('gesture-end-y')?.value || '0');
 
         let gcode = [];
-        gcode.push(`G90`);
-
         const isSpindle = penMode === 'spindle-pwm';
         const pDown = isSpindle ? `M3 S${penDownPwm}` : `G0 Z${penDownZ}`;
         const pUp = isSpindle ? `M3 S${penUpPwm}` : `G0 Z${penUpZ}`;
 
         if (type === 'tap') {
-            gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
             gcode.push(pDown);
             gcode.push(`G4 P${tapDwell}`);
             gcode.push(pUp);
         } else if (type === 'double_tap') {
-            gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
             gcode.push(pDown);
             gcode.push(`G4 P${tapDwell}`);
             gcode.push(pUp);
@@ -664,43 +671,43 @@
             gcode.push(`G4 P${tapDwell}`);
             gcode.push(pUp);
         } else if (type === 'long_press') {
-            gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
             gcode.push(pDown);
             gcode.push(`G4 P1.0`);
             gcode.push(pUp);
         } else if (type === 'swipe_custom') {
+            gcode.push(`G90`);
             gcode.push(pUp);
             gcode.push(`G0 X${startX.toFixed(2)} Y${startY.toFixed(2)} F${feed}`);
             gcode.push(pDown);
-            gcode.push(`G4 P${penDwell}`);
-            gcode.push(`G1 X${endX.toFixed(2)} Y${endY.toFixed(2)} F${feed}`);
+            gcode.push(`G4 P0.02`);
+            gcode.push(`G1 X${endX.toFixed(2)} Y${endY.toFixed(2)} F${swipeFeed}`);
             gcode.push(pUp);
         } else if (type === 'swipe_left') {
             gcode.push(pDown);
-            gcode.push(`G4 P${penDwell}`);
+            gcode.push(`G4 P0.02`);
             gcode.push(`G91`);
-            gcode.push(`G1 X-${swipeDist} F${feed}`);
+            gcode.push(`G1 X-${swipeDist} F${swipeFeed}`);
             gcode.push(`G90`);
             gcode.push(pUp);
         } else if (type === 'swipe_right') {
             gcode.push(pDown);
-            gcode.push(`G4 P${penDwell}`);
+            gcode.push(`G4 P0.02`);
             gcode.push(`G91`);
-            gcode.push(`G1 X${swipeDist} F${feed}`);
+            gcode.push(`G1 X${swipeDist} F${swipeFeed}`);
             gcode.push(`G90`);
             gcode.push(pUp);
         } else if (type === 'swipe_up') {
             gcode.push(pDown);
-            gcode.push(`G4 P${penDwell}`);
+            gcode.push(`G4 P0.02`);
             gcode.push(`G91`);
-            gcode.push(`G1 Y${swipeDist} F${feed}`);
+            gcode.push(`G1 Y${swipeDist} F${swipeFeed}`);
             gcode.push(`G90`);
             gcode.push(pUp);
         } else if (type === 'swipe_down') {
             gcode.push(pDown);
-            gcode.push(`G4 P${penDwell}`);
+            gcode.push(`G4 P0.02`);
             gcode.push(`G91`);
-            gcode.push(`G1 Y-${swipeDist} F${feed}`);
+            gcode.push(`G1 Y-${swipeDist} F${swipeFeed}`);
             gcode.push(`G90`);
             gcode.push(pUp);
         }
@@ -776,8 +783,7 @@
                 } else if (!isHomeSet) {
                     alert(t('Cần đặt gốc tọa độ làm việc trước!'));
                 } else {
-                    const feedInput = document.getElementById('jog-feedrate-input');
-                    const feed = feedInput ? parseFloat(feedInput.value) : jogFeedrate;
+                    const { feed } = getSystemConfig();
                     sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
                 }
             }
@@ -812,8 +818,7 @@
      * chiều Y đảo ngược.
      */
     function computeScenarioPathSegments() {
-        const feed = parseFloat(document.getElementById('gesture-feedrate')?.value || '4000');
-        const swipeDist = parseFloat(document.getElementById('gesture-swipe-distance')?.value || '40');
+        const { feed, swipeDist } = getSystemConfig();
         const segments = [];
         let curX = 0, curY = 0;
         let penDown = false;
@@ -1191,9 +1196,13 @@
             return;
         }
         activeScenario = {
-            name: document.getElementById('scenario-name')?.value || 'kich_ban_1',
+            name: document.getElementById('scenario-name')?.value || '',
             actions: []
         };
+        if (!activeScenario.name || activeScenario.name=='') {
+            alert(t('Cần nhập tên kịch bản trước!'));
+            return;
+        }
         scenarioInsertIndex = -1;
         renderScenarioSteps();
         drawCanvas();
@@ -1365,9 +1374,7 @@
     }
 
     function generateScenarioGCode() {
-        const feed = parseFloat(document.getElementById('gesture-feedrate')?.value || '4000');
-        const tapDwell = parseFloat(document.getElementById('gesture-tap-dwell')?.value || '0.05');
-        const swipeDist = parseFloat(document.getElementById('gesture-swipe-distance')?.value || '40');
+        const { feed, swipeFeed, tapDwell, swipeDist } = getSystemConfig();
 
         let gcode = [];
         gcode.push('G90 G54');
@@ -1411,26 +1418,26 @@
             } else if (act.type === 'swipe_down') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
                 gcode.push(pDown);
-                gcode.push(`G4 P${penDwell}`);
-                gcode.push(`G1 Y${(act.y - swipeDist).toFixed(2)} F${feed}`);
+                gcode.push(`G4 P0.02`);
+                gcode.push(`G1 Y${(act.y - swipeDist).toFixed(2)} F${swipeFeed}`);
                 gcode.push(pUp);
             } else if (act.type === 'swipe_up') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
                 gcode.push(pDown);
-                gcode.push(`G4 P${penDwell}`);
-                gcode.push(`G1 Y${(act.y + swipeDist).toFixed(2)} F${feed}`);
+                gcode.push(`G4 P0.02`);
+                gcode.push(`G1 Y${(act.y + swipeDist).toFixed(2)} F${swipeFeed}`);
                 gcode.push(pUp);
             } else if (act.type === 'swipe_left') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
                 gcode.push(pDown);
-                gcode.push(`G4 P${penDwell}`);
-                gcode.push(`G1 X${(act.x - swipeDist).toFixed(2)} F${feed}`);
+                gcode.push(`G4 P0.02`);
+                gcode.push(`G1 X${(act.x - swipeDist).toFixed(2)} F${swipeFeed}`);
                 gcode.push(pUp);
             } else if (act.type === 'swipe_right') {
                 gcode.push(`G0 X${act.x.toFixed(2)} Y${act.y.toFixed(2)} F${feed}`);
                 gcode.push(pDown);
-                gcode.push(`G4 P${penDwell}`);
-                gcode.push(`G1 X${(act.x + swipeDist).toFixed(2)} F${feed}`);
+                gcode.push(`G4 P0.02`);
+                gcode.push(`G1 X${(act.x + swipeDist).toFixed(2)} F${swipeFeed}`);
                 gcode.push(pUp);
             } else if (act.type.startsWith('dwell-')) {
                 const duration = act.type.split('-')[1];
@@ -1472,6 +1479,12 @@
             alert(t('Cần đặt gốc tọa độ làm việc trước!'));
             return;
         }
+
+        if (activeScenario.actions.length === 0) {
+            alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
+            return;
+        }
+
         isScenarioLooping = !isScenarioLooping;
         const btn = document.getElementById('btn-run-loop-scenario');
         if (btn) {
@@ -1587,5 +1600,150 @@
         stopCNC();
     }
 
+    async function saveSystemSettings() {
+        const upInput = document.getElementById('pen-up-val');
+        const downInput = document.getElementById('pen-down-val');
+        if (upInput && downInput) {
+            const valUp = parseFloat(upInput.value) || 0;
+            const valDown = parseFloat(downInput.value) || 0;
+            if (penMode === 'spindle-pwm') {
+                penUpPwm = valUp;
+                penDownPwm = valDown;
+            } else {
+                penUpZ = valUp;
+                penDownZ = valDown;
+            }
+        }
+
+        const payload = {
+            port: document.getElementById('port-select')?.value || '',
+            baudrate: parseInt(document.getElementById('baudrate-select')?.value || '115200'),
+            feedrate: parseFloat(document.getElementById('sys-feedrate')?.value || '4000'),
+            swipe_feedrate: parseFloat(document.getElementById('sys-swipe-feedrate')?.value || '10000'),
+            step_distance: parseFloat(document.getElementById('sys-step-distance')?.value || '10'),
+            tap_dwell: parseFloat(document.getElementById('sys-tap-dwell')?.value || '0.05'),
+            swipe_distance: parseFloat(document.getElementById('sys-swipe-distance')?.value || '40'),
+            pen_mode: penMode,
+            pen_up_z: penUpZ,
+            pen_down_z: penDownZ,
+            pen_up_pwm: penUpPwm,
+            pen_down_pwm: penDownPwm,
+            axis_dir_x: parseInt(document.getElementById('select-axis-x')?.value || '1'),
+            axis_dir_y: parseInt(document.getElementById('select-axis-y')?.value || '1'),
+        };
+
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                // Download json config file to computer
+                const jsonStr = JSON.stringify(payload, null, 2);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'cnc_settings.json';
+                a.click();
+                URL.revokeObjectURL(url);
+
+                alert(t('Đã lưu cấu hình vào hệ thống và tải file cnc_settings.json về máy tính!'));
+            } else {
+                alert(t('Lỗi lưu cấu hình: ') + (data.message || 'Error'));
+            }
+        } catch (e) {
+            console.error('Error saving settings:', e);
+            alert(t('Không thể kết nối API lưu cấu hình'));
+        }
+    }
+
+    function applySettingsPayload(data) {
+        if (!data) return;
+        if (data.port && document.getElementById('port-select')) {
+            document.getElementById('port-select').value = data.port;
+        }
+        if (data.baudrate && document.getElementById('baudrate-select')) {
+            document.getElementById('baudrate-select').value = data.baudrate;
+        }
+        if (data.feedrate !== undefined && document.getElementById('sys-feedrate')) {
+            document.getElementById('sys-feedrate').value = data.feedrate;
+        }
+        if (data.swipe_feedrate !== undefined && document.getElementById('sys-swipe-feedrate')) {
+            document.getElementById('sys-swipe-feedrate').value = data.swipe_feedrate;
+        }
+        if (data.step_distance !== undefined && document.getElementById('sys-step-distance')) {
+            document.getElementById('sys-step-distance').value = data.step_distance;
+        }
+        if (data.tap_dwell !== undefined && document.getElementById('sys-tap-dwell')) {
+            document.getElementById('sys-tap-dwell').value = data.tap_dwell;
+        }
+        if (data.swipe_distance !== undefined && document.getElementById('sys-swipe-distance')) {
+            document.getElementById('sys-swipe-distance').value = data.swipe_distance;
+        }
+        if (data.pen_mode) {
+            penMode = data.pen_mode;
+            if (document.getElementById('pen-control-mode')) {
+                document.getElementById('pen-control-mode').value = penMode;
+            }
+        }
+        if (data.pen_up_z !== undefined) penUpZ = data.pen_up_z;
+        if (data.pen_down_z !== undefined) penDownZ = data.pen_down_z;
+        if (data.pen_up_pwm !== undefined) penUpPwm = data.pen_up_pwm;
+        if (data.pen_down_pwm !== undefined) penDownPwm = data.pen_down_pwm;
+
+        updatePenInputs();
+
+        if (data.axis_dir_x !== undefined && document.getElementById('select-axis-x')) {
+            document.getElementById('select-axis-x').value = data.axis_dir_x;
+            axisDirX = parseInt(data.axis_dir_x);
+        }
+        if (data.axis_dir_y !== undefined && document.getElementById('select-axis-y')) {
+            document.getElementById('select-axis-y').value = data.axis_dir_y;
+            axisDirY = parseInt(data.axis_dir_y);
+        }
+
+        if (data.workpiece_origin) telemetry.workpiece_origin = data.workpiece_origin;
+        if (data.work_origin) {
+            telemetry.work_origin = data.work_origin;
+            isHomeSet = true;
+        }
+        if (data.parking_point) telemetry.parking_point = data.parking_point;
+        updateInfoDisplays();
+        drawCanvas();
+    }
+
+    async function loadSystemSettingsFile(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            try {
+                const payload = JSON.parse(event.target.result);
+                applySettingsPayload(payload);
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                alert(t('Đã nạp file cấu hình thành công!'));
+            } catch (err) {
+                alert(t('File cấu hình không hợp lệ!'));
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    async function loadSystemSettings() {
+        try {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            applySettingsPayload(data);
+        } catch (e) {
+            console.error('Error loading settings:', e);
+        }
+    }
 
 })();

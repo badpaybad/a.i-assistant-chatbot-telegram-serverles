@@ -1,385 +1,840 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="vi">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bộ Điều Khiển CNC GRBL - Touch & Script Controller</title>
     <!-- Google Fonts: Outfit & Space Mono -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css?v=41">
-    <meta name="description" content="Hệ thống điều khiển máy CNC GRBL 3 hàng: Cấu hình kết nối, Bộ di chuyển Jog & Cử chỉ Touch/Swipe, Tool Path View, Quản lý kịch bản và Serial Console.">
-</head>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Mono:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=41" />
+    <meta
+      name="description"
+      content="Hệ thống điều khiển máy CNC GRBL 3 hàng: Cấu hình kết nối, Bộ di chuyển Jog & Cử chỉ Touch/Swipe, Tool Path View, Quản lý kịch bản và Serial Console."
+    />
+  </head>
 
-<body>
+  <body>
     <div class="glass-bg"></div>
     <div class="app-layout">
+      <!-- ==================== HÀNG 0: HEADER & CONFIGURATION ==================== -->
+      <header class="row-header">
+        <!-- CỘT 0: Cấu Hình Kết Nối & Thông Tin CNC -->
+        <div class="header-col card glass-card">
+          <div class="col-title-row">
+            <h3 data-i18n>Cấu Hình Kết Nối & Thông Tin CNC</h3>
+          </div>
+          <div class="connection-form-row">
+            <div class="input-group">
+              <label for="port-input" data-i18n>Cổng Serial</label>
+              <div class="input-with-button">
+                <input
+                  type="text"
+                  id="port-input"
+                  list="ports-datalist"
+                  value="/dev/ttyACM0"
+                  placeholder="/dev/ttyACM0"
+                />
+                <button
+                  class="btn btn-secondary btn-compact"
+                  id="btn-list-ports"
+                  title="Danh sách cổng Serial (ls)"
+                >
+                  ls
+                </button>
+              </div>
+              <datalist id="ports-datalist">
+                <option value="/dev/ttyACM0">/dev/ttyACM0</option>
+                <option value="/dev/ttyACM1">/dev/ttyACM1</option>
+                <option value="dummy">dummy (Chế độ giả lập)</option>
+              </datalist>
+            </div>
+            <div class="input-group">
+              <label for="baudrate-input" data-i18n>Baudrate</label>
+              <select id="baudrate-input">
+                <option value="115200" selected>115200</option>
+                <option value="9600">9600</option>
+                <option value="57600">57600</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="connect-btn" data-i18n>
+              Kết Nối
+            </button>
+          </div>
 
-        <!-- ==================== HÀNG 0: HEADER & CONFIGURATION ==================== -->
-        <header class="row-header">
-            <!-- CỘT 0: Cấu Hình Kết Nối & Thông Tin CNC -->
-            <div class="header-col card glass-card">
-                <div class="col-title-row">
-                    <h3 data-i18n>Cấu Hình Kết Nối & Thông Tin CNC</h3>
-                </div>
-                <div class="connection-form-row">
-                    <div class="input-group">
-                        <label for="port-input" data-i18n>Cổng Serial</label>
-                        <div class="input-with-button">
-                            <input type="text" id="port-input" list="ports-datalist" value="/dev/ttyACM0" placeholder="/dev/ttyACM0">
-                            <button class="btn btn-secondary btn-compact" id="btn-list-ports" title="Danh sách cổng Serial (ls)">ls</button>
-                        </div>
-                        <datalist id="ports-datalist">
-                            <option value="/dev/ttyACM0">/dev/ttyACM0</option>
-                            <option value="/dev/ttyACM1">/dev/ttyACM1</option>
-                            <option value="dummy">dummy (Chế độ giả lập)</option>
-                        </datalist>
-                    </div>
-                    <div class="input-group">
-                        <label for="baudrate-input" data-i18n>Baudrate</label>
-                        <select id="baudrate-input">
-                            <option value="115200" selected>115200</option>
-                            <option value="9600">9600</option>
-                            <option value="57600">57600</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary" id="connect-btn" data-i18n>Kết Nối</button>
-                </div>
+          <div class="cnc-info-grid">
+            <div class="info-block">
+              <span class="info-label" data-i18n>Gốc Phôi (G54)</span>
+              <span class="info-value" id="val-workpiece-orig"
+                >X: 0.00 | Y: 0.00 | Z: 0.00</span
+              >
+            </div>
+            <div class="info-block">
+              <span class="info-label" data-i18n>Đầu CNC / Gốc Phôi</span>
+              <span class="info-value highlight-cyan" id="val-pen-rel-workpiece"
+                >X: 0.00 | Y: 0.00 | Z: 0.00</span
+              >
+            </div>
+            <div class="info-block">
+              <span class="info-label" data-i18n>Gốc Làm Việc</span>
+              <span class="info-value" id="val-work-orig"
+                >X: 0.00 | Y: 0.00 | Z: 0.00</span
+              >
+            </div>
+            <div class="info-block">
+              <span class="info-label" data-i18n>Đầu CNC / Gốc Làm Việc</span>
+              <span class="info-value highlight-green" id="val-pen-rel-work"
+                >X: 0.00 | Y: 0.00 | Z: 0.00</span
+              >
+            </div>
+            <div class="info-block full-width">
+              <div class="info-parking-header">
+                <span class="info-label" data-i18n
+                  >Điểm Đỗ Rút Dao (G28/G30)</span
+                >
+                <button
+                  class="btn btn-secondary btn-mini"
+                  id="btn-goto-parking"
+                  data-i18n
+                >
+                  Về Điểm Đỗ
+                </button>
+              </div>
+              <span class="info-value" id="val-parking-point"
+                >X: 0.00 | Y: 0.00 | Z: 10.00</span
+              >
+            </div>
+          </div>
+        </div>
 
-                <div class="cnc-info-grid">
-                    <div class="info-block">
-                        <span class="info-label" data-i18n>Gốc Phôi (G54)</span>
-                        <span class="info-value" id="val-workpiece-orig">X: 0.00 | Y: 0.00 | Z: 0.00</span>
-                    </div>
-                    <div class="info-block">
-                        <span class="info-label" data-i18n>Đầu CNC / Gốc Phôi</span>
-                        <span class="info-value highlight-cyan" id="val-pen-rel-workpiece">X: 0.00 | Y: 0.00 | Z: 0.00</span>
-                    </div>
-                    <div class="info-block">
-                        <span class="info-label" data-i18n>Gốc Làm Việc</span>
-                        <span class="info-value" id="val-work-orig">X: 0.00 | Y: 0.00 | Z: 0.00</span>
-                    </div>
-                    <div class="info-block">
-                        <span class="info-label" data-i18n>Đầu CNC / Gốc Làm Việc</span>
-                        <span class="info-value highlight-green" id="val-pen-rel-work">X: 0.00 | Y: 0.00 | Z: 0.00</span>
-                    </div>
-                    <div class="info-block full-width">
-                        <div class="info-parking-header">
-                            <span class="info-label" data-i18n>Điểm Đỗ Rút Dao (G28/G30)</span>
-                            <button class="btn btn-secondary btn-mini" id="btn-goto-parking" data-i18n>Về Điểm Đỗ</button>
-                        </div>
-                        <span class="info-value" id="val-parking-point">X: 0.00 | Y: 0.00 | Z: 10.00</span>
-                    </div>
+        <!-- CỘT 1: Cấu Hình Spindle, Hệ Thống & Gốc Làm Việc -->
+        <div class="header-col card glass-card">
+          <div class="col-title-row">
+            <h3 data-i18n>Cấu Hình Cấu Trúc & Gốc Làm Việc</h3>
+          </div>
+
+          <!-- System & Spindle Config Box -->
+          <div class="spindle-config-box">
+            <div class="row-inputs" style="margin-bottom: 4px">
+              <div class="input-group">
+                <label data-i18n>Bút / Spindle</label>
+                <select id="pen-control-mode" class="input-select-small">
+                  <option value="z-axis" selected data-i18n>
+                    Vị Trí Trục Z (G0 Z...)
+                  </option>
+                  <option value="spindle-pwm" data-i18n>
+                    PWM Trục Chính (M3 S...)
+                  </option>
+                </select>
+              </div>
+              <div class="input-group">
+                <label data-i18n>NHẤC / HẠ</label>
+                <div class="coordinate-input-group">
+                  <input
+                    type="number"
+                    id="pen-up-val"
+                    value="0.0"
+                    step="0.5"
+                    title="Nhấc"
+                  />
+                  <span class="coord-separator">/</span>
+                  <input
+                    type="number"
+                    id="pen-down-val"
+                    value="45.0"
+                    step="0.5"
+                    title="Hạ"
+                  />
                 </div>
+              </div>
             </div>
 
-            <!-- CỘT 1: Cấu Hình Spindle & Đặt Gốc Làm Việc -->
-            <div class="header-col card glass-card">
-                <div class="col-title-row">
-                    <h3 data-i18n>Cấu Hình Spindle & Gốc Làm Việc</h3>
-                </div>
-                
-                <!-- Spindle Config -->
-                <div class="spindle-config-box">
-                    <div class="row-inputs" style="margin-bottom: 8px;">
-                        <div class="input-group">
-                            <label data-i18n>Chế Độ Điều Khiển Bút/Spindle</label>
-                            <select id="pen-control-mode" class="input-select-small">
-                                <option value="z-axis" selected data-i18n>Vị Trí Trục Z (G0 Z...)</option>
-                                <option value="spindle-pwm" data-i18n>PWM Trục Chính (M3 S...)</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label data-i18n>Vị Trí NHẤC / HẠ</label>
-                            <div class="coordinate-input-group">
-                                <input type="number" id="pen-up-val" value="3.0" step="0.5" title="Nhấc">
-                                <span class="coord-separator">/</span>
-                                <input type="number" id="pen-down-val" value="0.0" step="0.5" title="Hạ">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="pen-test-btns">
-                        <button class="btn btn-secondary btn-compact" id="btn-pen-up" data-i18n>Nhấc Bút</button>
-                        <button class="btn btn-success btn-compact" id="btn-pen-down" data-i18n>Hạ Bút</button>
-                    </div>
-                </div>
-
-                <!-- Set Work Origin -->
-                <div class="set-work-origin-action" style="margin-top: auto;">
-                    <button class="btn btn-warning full-btn" id="btn-set-work-origin" data-i18n>🎯 Đặt Gốc Tọa Độ Làm Việc (0,0,0 tại vị trí hiện tại)</button>
-                </div>
+            <div class="row-inputs" style="margin-bottom: 4px">
+              <div class="input-group">
+                <label data-i18n>Feedrate</label>
+                <input
+                  type="number"
+                  id="sys-feedrate"
+                  value="4000"
+                  step="100"
+                  min="100"
+                  max="20000"
+                />
+              </div>
+              <div class="input-group">
+                <label data-i18n>Tốc Độ Vuốt (F)</label>
+                <input
+                  type="number"
+                  id="sys-swipe-feedrate"
+                  value="10000"
+                  step="500"
+                  min="1000"
+                  max="30000"
+                />
+              </div>
             </div>
 
-            <!-- CỘT 2: Trạng Thái Kết Nối & Ngôn Ngữ -->
-            <div class="header-col card glass-card col-status">
-                <div class="col-title-row">
-                    <h3 data-i18n>Trạng Thái & Hệ Thống</h3>
-                </div>
-
-                <div class="status-box-wrapper">
-                    <div class="status-badge disconnected" id="connection-status" data-i18n>MẤT KẾT NỐI</div>
-                    <div class="state-badge disconnected" id="machine-state" data-i18n>NGOẠI TUYẾN</div>
-                </div>
-
-                <div class="lang-selector-wrapper">
-                    <label for="lang-switcher" data-i18n>Chọn Ngôn Ngữ</label>
-                    <select id="lang-switcher" class="input-select-full">
-                        <option value="vi">Tiếng Việt 🇻🇳</option>
-                        <option value="en">English 🇬🇧</option>
-                    </select>
-                </div>
-
-                <div class="telemetry-mini-row">
-                    <div class="tel-chip"><span data-i18n>F Rate</span>: <strong id="tel-feedrate">0</strong></div>
-                    <div class="tel-chip"><span data-i18n>Spindle</span>: <strong id="tel-spindle">0</strong></div>
-                    <div class="tel-chip"><span data-i18n>Buffer</span>: <strong id="tel-buffer">127</strong></div>
-                </div>
-            </div>
-        </header>
-
-        <!-- ==================== HÀNG 1: MAIN WORK AREA (25% - 50% - 25%) ==================== -->
-        <main class="row-main">
-
-            <!-- CỘT 0 (25%): BỘ DI CHUYỂN & GESTURES -->
-            <section class="main-col col-25 card glass-card">
-                <h2 class="card-title" data-i18n>Bộ Di Chuyển & Cử Chỉ</h2>
-
-                <!-- JOGGING SECTION -->
-                <div class="jog-section">
-                    <h4 class="sub-title" data-i18n>Bộ Di Chuyển (Machine Jogging)</h4>
-                    
-                    <!-- Jogging Config -->
-                    <div class="sub-config-box">
-                        <div class="row-inputs">
-                            <div class="input-group">
-                                <label for="slider-feed" data-i18n>Tốc Độ Feedrate</label>
-                                <input type="number" id="jog-feedrate-input" value="1000" step="100" min="100" max="10000">
-                            </div>
-                            <div class="input-group">
-                                <label for="select-step-preset" data-i18n>Bước Chuyển (mm)</label>
-                                <select id="select-step-preset" class="input-select-small">
-                                    <option value="0.1">0.1 mm</option>
-                                    <option value="1">1 mm</option>
-                                    <option value="10" selected>10 mm</option>
-                                    <option value="100">100 mm</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Keypad -->
-                    <div class="jog-grid">
-                        <button class="btn-jog diagonal" id="jog-y-plus-x-minus" title="Y+ X-">↖</button>
-                        <button class="btn-jog directional" id="jog-y-minus" title="Y-">▲ Y+</button>
-                        <button class="btn-jog diagonal" id="jog-y-plus-x-plus" title="Y+ X+">↗</button>
-
-                        <button class="btn-jog directional" id="jog-x-minus" title="X-">◀ X-</button>
-                        <button class="btn-jog center" id="jog-home" title="Về gốc máy ($H)">🏠</button>
-                        <button class="btn-jog directional" id="jog-x-plus" title="X+">X+ ▶</button>
-
-                        <button class="btn-jog diagonal" id="jog-y-minus-x-minus" title="Y- X-">↙</button>
-                        <button class="btn-jog directional" id="jog-y-plus" title="Y+">▼ Y-</button>
-                        <button class="btn-jog diagonal" id="jog-y-minus-x-plus" title="Y- X+">↘</button>
-
-                        <button class="btn-jog directional" id="jog-z-plus" title="Z+">▲ Z+</button>
-                        <button class="btn-jog center btn-unlock" id="jog-unlock" title="Mở khóa máy ($X)">🔓</button>
-                        <button class="btn-jog directional" id="jog-z-minus" title="Z-">▼ Z-</button>
-                    </div>
-
-                    <div class="jog-special-actions">
-                        <button class="btn btn-secondary btn-small" id="btn-goto-work-origin" data-i18n>📍 Về Gốc Làm Việc (0,0)</button>
-                        <button class="btn btn-danger-soft btn-small" id="btn-stop-cnc" data-i18n>🛑 Dừng Di Chuyển</button>
-                    </div>
-                </div>
-
-                <hr class="section-divider">
-
-                <!-- TOUCH & SWIPE GESTURES SECTION -->
-                <div class="gestures-container">
-                    <h4 class="sub-title" data-i18n>Cử Chỉ Touch & Swipe Gestures</h4>
-
-                    <!-- Gesture Config -->
-                    <div class="sub-config-box">
-                        <div class="row-inputs">
-                            <div class="input-group">
-                                <label data-i18n>Tốc Độ Feedrate</label>
-                                <input type="number" id="gesture-feedrate" value="4000" step="100">
-                            </div>
-                            <div class="input-group">
-                                <label data-i18n>Bước Chuyển (mm)</label>
-                                <input type="number" id="gesture-step" value="10" step="1">
-                            </div>
-                        </div>
-                        <div class="row-inputs" style="margin-top: 4px;">
-                            <div class="input-group">
-                                <label data-i18n>Tap Độ Trễ (s)</label>
-                                <input type="number" id="gesture-tap-dwell" value="0.05" step="0.01">
-                            </div>
-                            <div class="input-group">
-                                <label data-i18n>Swipe Độ Dài (mm)</label>
-                                <input type="number" id="gesture-swipe-distance" value="40" step="5">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Coordinates Setup -->
-                    <div class="row-inputs" style="margin-top: 6px;">
-                        <div class="input-group">
-                            <label data-i18n>Bắt Đầu (X,Y)</label>
-                            <div class="coordinate-input-group">
-                                <input type="number" id="gesture-start-x" value="0.0" step="1">
-                                <span class="coord-separator">,</span>
-                                <input type="number" id="gesture-start-y" value="0.0" step="1">
-                                <button class="btn btn-secondary btn-icon-only" id="btn-set-start" title="Lấy vị trí hiện tại">🎯</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row-inputs">
-                        <div class="input-group">
-                            <label data-i18n>Kết Thúc (X,Y)</label>
-                            <div class="coordinate-input-group">
-                                <input type="number" id="gesture-end-x" value="0.0" step="1">
-                                <span class="coord-separator">,</span>
-                                <input type="number" id="gesture-end-y" value="0.0" step="1">
-                                <button class="btn btn-secondary btn-icon-only" id="btn-set-end" title="Lấy vị trí hiện tại">🎯</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="gesture-btn-grid">
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-tap" data-i18n>Chạm (Tap)</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-doubletap" data-i18n>Chạm Đúp</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-longpress" data-i18n>Nhấn Giữ</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-custom" data-i18n>Vuốt Đ->C</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-left" data-i18n>⬅️ Trái</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-right" data-i18n>➡️ Phải</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-up" data-i18n>⬆️ Lên</button>
-                        <button class="btn btn-secondary btn-small" id="btn-gesture-swipe-down" data-i18n>⬇️ Xuống</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CỘT 1 (50%): TOOL PATH VIEW (CANVAS SIMULATION / PREVIEW) -->
-            <section class="main-col col-50 card glass-card visualizer-card">
-                <div class="visualizer-header">
-                    <h2 class="card-title" data-i18n>Tool Path View (Xem & Giả Lập Kịch Bản)</h2>
-                    <div class="visualizer-actions">
-                        <select id="select-axis-x" class="input-select-small" title="Hướng Trục X">
-                            <option value="1" selected>X: Trái ➔ Phải</option>
-                            <option value="-1">X: Phải ➔ Trái</option>
-                        </select>
-                        <select id="select-axis-y" class="input-select-small" title="Hướng Trục Y">
-                            <option value="1" selected>Y: Trên ➔ Dưới (Mặc định)</option>
-                            <option value="-1">Y: Dưới ➔ Trên</option>
-                        </select>
-                        <button class="btn btn-secondary btn-small" id="btn-reset-view" data-i18n>Đặt Lại Góc Nhìn</button>
-                        <button class="btn btn-secondary btn-small" id="btn-clear-path" data-i18n>Xóa Đồ Họa</button>
-                    </div>
-                </div>
-
-                <div class="canvas-wrapper" id="toolpath-wrapper">
-                    <canvas id="toolpath-canvas"></canvas>
-                    <div class="canvas-instructions" data-i18n>Click để Di chuyển đầu CNC • Kéo chuột để Pan • Cuộn để Zoom</div>
-                    <div class="canvas-overlay-info" id="canvas-overlay-info">
-                        <span id="canvas-scale-ratio">Tỷ lệ: 1 px = 0.50 mm</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- CỘT 2 (25%): THAO TÁC KỊCH BẢN & PHÍM KỊCH BẢN -->
-            <section class="main-col col-25 card glass-card">
-                <h2 class="card-title" data-i18n>Quản Lý & Phím Kịch Bản</h2>
-
-                <!-- Scenario File / Execution Bar -->
-                <div class="scenario-management-box">
-                    <div class="input-group">
-                        <label for="scenario-name" data-i18n>Tên Kịch Bản</label>
-                        <input type="text" id="scenario-name" value="kich_ban_1" placeholder="Nhập tên kịch bản...">
-                    </div>
-
-                    <div class="scenario-ops-grid">
-                        <button class="btn btn-primary btn-small" id="btn-create-scenario" data-i18n>Tạo Mới</button>
-                        <button class="btn btn-success btn-small" id="btn-save-scenario" data-i18n>Lưu JSON</button>
-                        <button class="btn btn-secondary btn-small" id="btn-load-scenario" data-i18n>Nạp JSON</button>
-                        <input type="file" id="input-load-scenario" accept=".json" class="hidden">
-                        
-                        <button class="btn btn-warning btn-small" id="btn-run-scenario" data-i18n>Chạy CNC</button>
-                        <button class="btn btn-warning btn-small" id="btn-run-loop-scenario" data-i18n>Chạy Lặp</button>
-                        <button class="btn btn-info btn-small" id="btn-sim-scenario" data-i18n>Giả Lập</button>
-                        <button class="btn btn-danger-soft btn-small" id="btn-stop-scenario" data-i18n>Dừng</button>
-                    </div>
-                </div>
-
-                <hr class="section-divider">
-
-                <!-- PHÍM KỊCH BẢN (ACTION BUTTONS) -->
-                <div class="scenario-keys-box">
-                    <h4 class="sub-title" data-i18n>Phím Thêm Bước Kịch Bản</h4>
-                    <div class="scenario-actions-grid">
-                        <button class="btn-scenario-action" data-action="set_begin" data-i18n>🏁 Đặt Bắt Đầu</button>
-                        <button class="btn-scenario-action" data-action="set_end" data-i18n>🛑 Đặt Kết Thúc</button>
-                        <button class="btn-scenario-action" data-action="go_to_here" data-i18n>📍 Đến Vị Trí Này</button>
-                        <button class="btn-scenario-action" data-action="go_to_keep_state" data-i18n>➡️ Đến Giữ Trạng Thái</button>
-                        <button class="btn-scenario-action" data-action="tap" data-i18n>👇 Chạm (Tap)</button>
-                        <button class="btn-scenario-action" data-action="double_tap" data-i18n>👇👇 Chạm Đúp</button>
-                        <button class="btn-scenario-action" data-action="long_press" data-i18n>⏱️ Nhấn Giữ</button>
-                        <button class="btn-scenario-action" data-action="swipe_down" data-i18n>👇 Vuốt Xuống</button>
-                        <button class="btn-scenario-action" data-action="swipe_up" data-i18n>👆 Vuốt Lên</button>
-                        <button class="btn-scenario-action" data-action="swipe_left" data-i18n>👈 Vuốt Trái</button>
-                        <button class="btn-scenario-action" data-action="swipe_right" data-i18n>👉 Vuốt Phải</button>
-                        <button class="btn-scenario-action" data-action="pen_down" data-i18n>✒️ Hạ Bút</button>
-                        <button class="btn-scenario-action" data-action="pen_up" data-i18n>✒️ Nhấc Bút</button>
-                        <button class="btn-scenario-action" data-action="dwell-0.25" data-i18n>⏸️ Dừng 0.25s</button>
-                        <button class="btn-scenario-action" data-action="dwell-0.5" data-i18n>⏸️ Dừng 0.5s</button>
-                        <button class="btn-scenario-action" data-action="dwell-1.0" data-i18n>⏸️ Dừng 1.0s</button>
-                    </div>
-                </div>
-
-                <!-- SCENARIO STEPS LIST PREVIEW -->
-                <div class="scenario-steps-container">
-                    <div class="steps-header">
-                        <span>
-                            <span data-i18n>Danh Sách Bước</span> (<span id="scenario-steps-count">0</span>)
-                            <span id="scenario-insert-info" style="display: none; color: var(--warning); font-size: 9px; margin-left: 6px;">
-                                [Chèn sau #<span id="scenario-insert-index-label">0</span>]
-                            </span>
-                        </span>
-                        <button class="btn-text" id="btn-clear-scenario-steps" data-i18n>Xóa Hết</button>
-                    </div>
-                    <div class="steps-list" id="scenario-items-list">
-                        <div class="empty-steps-hint" data-i18n>Chưa có bước nào trong kịch bản. Nhấn các phím phía trên để thêm bước.</div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- ==================== HÀNG 2: SERIAL CONSOLE & FOOTER ==================== -->
-        <footer class="row-footer card glass-card">
-            <div class="console-header-row">
-                <h3 class="card-title" data-i18n>Cửa Sổ Console Serial</h3>
-                <button class="btn-text" id="btn-clear-console" data-i18n>Xóa Nhật Ký</button>
-            </div>
-            
-            <div class="console-output" id="console-output">
-                <div class="log-line system" data-i18n>Đang chờ kết nối CNC...</div>
+            <div class="row-inputs" style="margin-bottom: 4px">
+              <div class="input-group">
+                <label data-i18n>Tap Trễ (s)</label>
+                <input
+                  type="number"
+                  id="sys-tap-dwell"
+                  value="0.05"
+                  step="0.01"
+                />
+              </div>
+              <div class="input-group">
+                <label data-i18n>Swipe Dài (mm)</label>
+                <input
+                  type="number"
+                  id="sys-swipe-distance"
+                  value="40"
+                  step="5"
+                />
+              </div>
             </div>
 
-            <form class="console-input-form" id="console-form">
-                <input type="text" id="console-input" placeholder="Nhập lệnh G-code (Ví dụ: G0 X10 Y20 F1000) rồi nhấn Enter..." autocomplete="off">
-                <button type="submit" class="btn btn-primary btn-small" data-i18n>Gửi Lệnh</button>
-            </form>
-
-            <div class="copyright-bar">
-                <span>Copyright @ 2026 CNC Script Controller System</span>
+            <div class="pen-test-btns" style="margin-bottom: 4px">
+              <button
+                class="btn btn-secondary btn-compact"
+                id="btn-pen-up"
+                data-i18n
+              >
+                Nhấc Bút
+              </button>
+              <button
+                class="btn btn-success btn-compact"
+                id="btn-pen-down"
+                data-i18n
+              >
+                Hạ Bút
+              </button>
+              <button
+                class="btn btn-primary btn-compact"
+                id="btn-save-settings"
+                data-i18n
+              >
+                💾 Lưu Cấu Hình
+              </button>
+              <button
+                class="btn btn-secondary btn-compact"
+                id="btn-load-settings"
+                data-i18n
+              >
+                🔄 Nạp Cấu Hình
+              </button>
+              <input
+                type="file"
+                id="input-load-settings"
+                accept=".json"
+                style="display: none"
+              />
             </div>
-        </footer>
+          </div>
 
+          <!-- Set Work Origin -->
+          <div class="set-work-origin-action" style="margin-top: auto">
+            <button
+              class="btn btn-warning full-btn"
+              id="btn-set-work-origin"
+              data-i18n
+            >
+              🎯 Đặt Gốc Tọa Độ Làm Việc (0,0,0 tại vị trí hiện tại)
+            </button>
+          </div>
+        </div>
+
+        <!-- CỘT 2: Trạng Thái Kết Nối & Ngôn Ngữ -->
+        <div class="header-col card glass-card col-status">
+          <div class="col-title-row">
+            <h3 data-i18n>Trạng Thái & Hệ Thống</h3>
+          </div>
+
+          <div class="status-box-wrapper">
+            <div
+              class="status-badge disconnected"
+              id="connection-status"
+              data-i18n
+            >
+              MẤT KẾT NỐI
+            </div>
+            <div class="state-badge disconnected" id="machine-state" data-i18n>
+              NGOẠI TUYẾN
+            </div>
+          </div>
+
+          <div class="lang-selector-wrapper">
+            <label for="lang-switcher" data-i18n>Chọn Ngôn Ngữ</label>
+            <select id="lang-switcher" class="input-select-full">
+              <option value="vi">Tiếng Việt 🇻🇳</option>
+              <option value="en">English 🇬🇧</option>
+            </select>
+          </div>
+
+          <div class="telemetry-mini-row">
+            <div class="tel-chip">
+              <span data-i18n>F Rate</span>:
+              <strong id="tel-feedrate">0</strong>
+            </div>
+            <div class="tel-chip">
+              <span data-i18n>Spindle</span>:
+              <strong id="tel-spindle">0</strong>
+            </div>
+            <div class="tel-chip">
+              <span data-i18n>Buffer</span>:
+              <strong id="tel-buffer">127</strong>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- ==================== HÀNG 1: MAIN WORK AREA (25% - 50% - 25%) ==================== -->
+      <main class="row-main">
+        <!-- CỘT 0 (25%): BỘ DI CHUYỂN & GESTURES -->
+        <section class="main-col col-25 card glass-card">
+          <h2 class="card-title" data-i18n>Bộ Di Chuyển & Cử Chỉ</h2>
+
+          <!-- JOGGING SECTION -->
+          <div class="jog-section">
+            <h4 class="sub-title" data-i18n>Bộ Di Chuyển (Machine Jogging)</h4>
+
+            <!-- Keypad -->
+            <div class="jog-grid">
+              <button
+                class="btn-jog diagonal"
+                id="jog-y-plus-x-minus"
+                title="Y+ X-"
+              >
+                ↖
+              </button>
+              <button class="btn-jog directional" id="jog-y-minus" title="Y-">
+                ▲ Y+
+              </button>
+              <button
+                class="btn-jog diagonal"
+                id="jog-y-plus-x-plus"
+                title="Y+ X+"
+              >
+                ↗
+              </button>
+
+              <button class="btn-jog directional" id="jog-x-minus" title="X-">
+                ◀ X-
+              </button>
+              <button
+                class="btn-jog center"
+                id="jog-home"
+                title="Về gốc máy ($H)"
+              >
+                🏠
+              </button>
+              <button class="btn-jog directional" id="jog-x-plus" title="X+">
+                X+ ▶
+              </button>
+
+              <button
+                class="btn-jog diagonal"
+                id="jog-y-minus-x-minus"
+                title="Y- X-"
+              >
+                ↙
+              </button>
+              <button class="btn-jog directional" id="jog-y-plus" title="Y+">
+                ▼ Y-
+              </button>
+              <button
+                class="btn-jog diagonal"
+                id="jog-y-minus-x-plus"
+                title="Y- X+"
+              >
+                ↘
+              </button>
+
+              <button class="btn-jog directional" id="jog-z-plus" title="Z+">
+                ▲ Z+
+              </button>
+              <button
+                class="btn-jog center btn-unlock"
+                id="jog-unlock"
+                title="Mở khóa máy ($X)"
+              >
+                🔓
+              </button>
+              <button class="btn-jog directional" id="jog-z-minus" title="Z-">
+                ▼ Z-
+              </button>
+            </div>
+
+            <div class="jog-special-actions">
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-goto-work-origin"
+                data-i18n
+              >
+                📍 Về Gốc Làm Việc (0,0)
+              </button>
+              <button
+                class="btn btn-danger-soft btn-small"
+                id="btn-stop-cnc"
+                data-i18n
+              >
+                🛑 Dừng Di Chuyển
+              </button>
+            </div>
+          </div>
+
+          <hr class="section-divider" />
+
+          <!-- TOUCH & SWIPE GESTURES SECTION -->
+          <div class="gestures-container">
+            <h4 class="sub-title" data-i18n>Cử Chỉ Touch & Swipe Gestures</h4>
+
+            <!-- Coordinates Setup -->
+            <div class="row-inputs" style="margin-top: 6px">
+              <div class="input-group">
+                <label data-i18n>Bắt Đầu (X,Y)</label>
+                <div class="coordinate-input-group">
+                  <input
+                    type="number"
+                    id="gesture-start-x"
+                    value="0.0"
+                    step="1"
+                  />
+                  <span class="coord-separator">,</span>
+                  <input
+                    type="number"
+                    id="gesture-start-y"
+                    value="0.0"
+                    step="1"
+                  />
+                  <button
+                    class="btn btn-secondary btn-icon-only"
+                    id="btn-set-start"
+                    title="Lấy vị trí hiện tại"
+                  >
+                    🎯
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="row-inputs">
+              <div class="input-group">
+                <label data-i18n>Kết Thúc (X,Y)</label>
+                <div class="coordinate-input-group">
+                  <input
+                    type="number"
+                    id="gesture-end-x"
+                    value="0.0"
+                    step="1"
+                  />
+                  <span class="coord-separator">,</span>
+                  <input
+                    type="number"
+                    id="gesture-end-y"
+                    value="0.0"
+                    step="1"
+                  />
+                  <button
+                    class="btn btn-secondary btn-icon-only"
+                    id="btn-set-end"
+                    title="Lấy vị trí hiện tại"
+                  >
+                    🎯
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="gesture-btn-grid">
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-tap"
+                data-i18n
+              >
+                Chạm (Tap)
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-doubletap"
+                data-i18n
+              >
+                Chạm Đúp
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-longpress"
+                data-i18n
+              >
+                Nhấn Giữ
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-swipe-custom"
+                data-i18n
+              >
+                Vuốt Đ->C
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-swipe-left"
+                data-i18n
+              >
+                ⬅️ Trái
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-swipe-right"
+                data-i18n
+              >
+                ➡️ Phải
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-swipe-up"
+                data-i18n
+              >
+                ⬆️ Lên
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-gesture-swipe-down"
+                data-i18n
+              >
+                ⬇️ Xuống
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- CỘT 1 (50%): TOOL PATH VIEW (CANVAS SIMULATION / PREVIEW) -->
+        <section class="main-col col-50 card glass-card visualizer-card">
+          <div class="visualizer-header">
+            <h2 class="card-title" data-i18n>
+              Tool Path View (Xem & Giả Lập Kịch Bản)
+            </h2>
+            <div class="visualizer-actions">
+              <select
+                id="select-axis-x"
+                class="input-select-small"
+                title="Hướng Trục X"
+              >
+                <option value="1" selected>X: Trái ➔ Phải</option>
+                <option value="-1">X: Phải ➔ Trái</option>
+              </select>
+              <select
+                id="select-axis-y"
+                class="input-select-small"
+                title="Hướng Trục Y"
+              >
+                <option value="1" selected>Y: Trên ➔ Dưới (Mặc định)</option>
+                <option value="-1">Y: Dưới ➔ Trên</option>
+              </select>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-reset-view"
+                data-i18n
+              >
+                Đặt Lại Góc Nhìn
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-clear-path"
+                data-i18n
+              >
+                Xóa Đồ Họa
+              </button>
+            </div>
+          </div>
+
+          <div class="canvas-wrapper" id="toolpath-wrapper">
+            <canvas id="toolpath-canvas"></canvas>
+            <div class="canvas-instructions" data-i18n>
+              Click để Di chuyển đầu CNC • Kéo chuột để Pan • Cuộn để Zoom
+            </div>
+            <div class="canvas-overlay-info" id="canvas-overlay-info">
+              <span id="canvas-scale-ratio">Tỷ lệ: 1 px = 0.50 mm</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- CỘT 2 (25%): THAO TÁC KỊCH BẢN & PHÍM KỊCH BẢN -->
+        <section class="main-col col-25 card glass-card">
+          <h2 class="card-title" data-i18n>Quản Lý & Phím Kịch Bản</h2>
+
+          <!-- Scenario File / Execution Bar -->
+          <div class="scenario-management-box">
+            <div class="input-group">
+              <label for="scenario-name" data-i18n>Tên Kịch Bản</label>
+              <input
+                type="text"
+                id="scenario-name"
+                value=""
+                placeholder="Nhập tên kịch bản..."
+              />
+            </div>
+
+            <div class="scenario-ops-grid">
+              <button
+                class="btn btn-primary btn-small"
+                id="btn-create-scenario"
+                data-i18n
+              >
+                Tạo Mới
+              </button>
+              <button
+                class="btn btn-success btn-small"
+                id="btn-save-scenario"
+                data-i18n
+              >
+                Lưu JSON
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-load-scenario"
+                data-i18n
+              >
+                Nạp JSON
+              </button>
+              <input
+                type="file"
+                id="input-load-scenario"
+                accept=".json"
+                class="hidden"
+              />
+
+              <button
+                class="btn btn-warning btn-small"
+                id="btn-run-scenario"
+                data-i18n
+              >
+                Chạy CNC
+              </button>
+              <button
+                class="btn btn-warning btn-small"
+                id="btn-run-loop-scenario"
+                data-i18n
+              >
+                Chạy Lặp
+              </button>
+              <button
+                class="btn btn-info btn-small"
+                id="btn-sim-scenario"
+                data-i18n
+              >
+                Giả Lập
+              </button>
+              <button
+                class="btn btn-danger-soft btn-small"
+                id="btn-stop-scenario"
+                data-i18n
+              >
+                Dừng
+              </button>
+            </div>
+          </div>
+
+          <hr class="section-divider" />
+
+          <!-- PHÍM KỊCH BẢN (ACTION BUTTONS) -->
+          <div class="scenario-keys-box">
+            <h4 class="sub-title" data-i18n>Phím Thêm Bước Kịch Bản</h4>
+            <div class="scenario-actions-grid">
+              <button
+                class="btn-scenario-action"
+                data-action="set_begin"
+                data-i18n
+              >
+                🏁 Đặt Bắt Đầu
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="set_end"
+                data-i18n
+              >
+                🛑 Đặt Kết Thúc
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="go_to_here"
+                data-i18n
+              >
+                📍 Đến Vị Trí Này
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="go_to_keep_state"
+                data-i18n
+              >
+                ➡️ Đến Giữ Trạng Thái
+              </button>
+              <button class="btn-scenario-action" data-action="tap" data-i18n>
+                👇 Chạm (Tap)
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="double_tap"
+                data-i18n
+              >
+                👇👇 Chạm Đúp
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="long_press"
+                data-i18n
+              >
+                ⏱️ Nhấn Giữ
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="swipe_down"
+                data-i18n
+              >
+                👇 Vuốt Xuống
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="swipe_up"
+                data-i18n
+              >
+                👆 Vuốt Lên
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="swipe_left"
+                data-i18n
+              >
+                👈 Vuốt Trái
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="swipe_right"
+                data-i18n
+              >
+                👉 Vuốt Phải
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="pen_down"
+                data-i18n
+              >
+                ✒️ Hạ Bút
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="pen_up"
+                data-i18n
+              >
+                ✒️ Nhấc Bút
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="dwell-0.25"
+                data-i18n
+              >
+                ⏸️ Dừng 0.25s
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="dwell-0.5"
+                data-i18n
+              >
+                ⏸️ Dừng 0.5s
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="dwell-1.0"
+                data-i18n
+              >
+                ⏸️ Dừng 1.0s
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="dwell-5.0"
+                data-i18n
+              >
+                ⏸️ Dừng 5.0s
+              </button>
+              <button
+                class="btn-scenario-action"
+                data-action="dwell-10.0"
+                data-i18n
+              >
+                ⏸️ Dừng 10.0s
+              </button>
+            </div>
+          </div>
+
+          <!-- SCENARIO STEPS LIST PREVIEW -->
+          <div class="scenario-steps-container">
+            <div class="steps-header">
+              <span>
+                <span data-i18n>Danh Sách Bước</span> (<span
+                  id="scenario-steps-count"
+                  >0</span
+                >)
+                <span
+                  id="scenario-insert-info"
+                  style="
+                    display: none;
+                    color: var(--warning);
+                    font-size: 9px;
+                    margin-left: 6px;
+                  "
+                >
+                  [Chèn sau #<span id="scenario-insert-index-label">0</span>]
+                </span>
+              </span>
+              <button class="btn-text" id="btn-clear-scenario-steps" data-i18n>
+                Xóa Hết
+              </button>
+            </div>
+            <div class="steps-list" id="scenario-items-list">
+              <div class="empty-steps-hint" data-i18n>
+                Chưa có bước nào trong kịch bản. Nhấn các phím phía trên để thêm
+                bước.
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <!-- ==================== HÀNG 2: SERIAL CONSOLE & FOOTER ==================== -->
+      <footer class="row-footer card glass-card">
+        <div class="console-header-row">
+          <h3 class="card-title" data-i18n>Cửa Sổ Console Serial</h3>
+          <button class="btn-text" id="btn-clear-console" data-i18n>
+            Xóa Nhật Ký
+          </button>
+        </div>
+
+        <div class="console-output" id="console-output">
+          <div class="log-line system" data-i18n>Đang chờ kết nối CNC...</div>
+        </div>
+
+        <form class="console-input-form" id="console-form">
+          <input
+            type="text"
+            id="console-input"
+            placeholder="Nhập lệnh G-code (Ví dụ: G0 X10 Y20 F1000) rồi nhấn Enter..."
+            autocomplete="off"
+          />
+          <button type="submit" class="btn btn-primary btn-small" data-i18n>
+            Gửi Lệnh
+          </button>
+        </form>
+
+        <div class="copyright-bar">
+          <span>Copyright @ 2026 CNC Script Controller System</span>
+        </div>
+      </footer>
     </div>
 
     <script src="/static/app.js?v=42"></script>
-</body>
-
+  </body>
 </html>

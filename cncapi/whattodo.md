@@ -90,8 +90,31 @@ Lúc chạy hoặc chạy lặp thì cần thể hiện thực tế đầu cnc h
     Tool Path View (Xem & Giả Lập Kịch Bản) bổ xung thêm tỷ lệ 1 pixel tương đương với bao nhiêu milimet (vd 1 px = 0.1mm)
 
 **cập nhật 6** Tool Path View (Xem & Giả Lập Kịch Bản) bổ xung option để hiển thị vẽ trục x,y gốc tọa độ làm việc trên canvas
-    x : cho phép chọn trái sang phải là chiều dương hoặc phải sang trái là chiều dương 
+    x: cho phép chọn trái sang phải là chiều dương hoặc phải sang trái là chiều dương 
     y: cho phép chọn dưới lên trên là chiều dương hoặc trên xuống dưới là chiều dương
     mặc định: x trái sang phải , y trên xuống dưới
+
+**cập nhật 7**  
+cần đưa các cấu hình:
+    Bộ Di Chuyển & Cử Chỉ có cấu hình : Tốc Độ Feedrate, Bước Chuyển (mm)
+    Cử Chỉ Touch & Swipe Gestures có cấu hình : Tốc Độ Feedrate, Bước Chuyển (mm), Tap Độ Trễ (s) , Swipe Độ Dài (mm)
+    về Cấu Hình Spindle & Gốc Làm Việc 
+        Tốc Độ Feedrate, Bước Chuyển (mm) cần dùng chung cho toàn bộ 
+
+Cấu Hình Spindle & Gốc Làm Việc là dùng chung cho toàn bộ
+    bổ xung nút lưu, load lại cấu hình 
+        cổng serial, baudrate 
+        tốc độ feedrate , bước chuyển 
+        Tốc Độ Vuốt (Swipe Feedrate) dành cho việc vuốt và giả lập tay người vuốt 
+        tab delay, swipe độ dài 
+        Chế Độ Điều Khiển Bút/Spindle ,Vị Trí NHẤC / HẠ 
+        gốc tọa độ làm việc 
+        tool path view về việc vẽ hướng trục x, trục y 
+
+        khi lưu cấu hình ngoài lưu nội bộ để dùng cho phép người dùng download file về máy tính
+        khi load cấu hình cho phép người dùng chọn file cấu hình đã lưu để dùng 
+
+**cập nhật 8**  
+ở các thao tác Cử Chỉ Touch & Swipe Gestures, đầu cnc đang ở đâu thì thực hiện tại đó, vd chạm (tab) thì tab tại đầu cnc. vuốt lên thì tại vị trí cnc đang đứng vuốt lên, không cần về gốc tọa độ làm việc rồi mới thực hiện 
 
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

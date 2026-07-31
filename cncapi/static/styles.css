@@ -468,7 +468,6 @@ input:focus, select:focus {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 3px;
-    max-height: 140px;
     overflow-y: auto;
 }
 
