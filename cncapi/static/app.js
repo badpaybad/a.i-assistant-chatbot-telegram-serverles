@@ -1223,10 +1223,10 @@
             const boxX = (hx + tw + 10 < w) ? hx + 10 : hx - tw - 10;
             const boxY = (hy - 25 > 0) ? hy - 25 : hy + 15;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            ctx.fillRect(boxX, boxY, tw, 20);
+            // ctx.fillRect(boxX, boxY, tw, 20);
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = 1;
-            ctx.strokeRect(boxX, boxY, tw, 20);
+            // ctx.strokeRect(boxX, boxY, tw, 20);
             ctx.fillStyle = '#38bdf8';
             ctx.fillText(hoverStr, boxX + 6, boxY + 14);
         }
