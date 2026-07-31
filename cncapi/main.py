@@ -943,7 +943,12 @@ async def stop_stream():
         
     if state.connected and state.serial_port:
         try:
-            await safe_write_serial(b"\x18")
+            await safe_write_serial(b"\x18")# Chờ 0.5 - 1 giây để board hoàn tất Reset
+            await asyncio.sleep(0.5) 
+            # Gửi lệnh Unlock Alarm
+            await safe_write_serial(b"$X\n")
+            # nhấc dao 
+            await safe_write_serial(f"G0 Z{state.pen_up_z}\n".encode())
             await broadcast({"type": "log", "direction": "out", "content": "<CTRL-X Reset>"})
         except Exception as e:
             logger.error(f"Lỗi khi gửi dừng khẩn cấp: {e}")

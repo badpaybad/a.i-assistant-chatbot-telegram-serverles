@@ -152,4 +152,11 @@ Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình ch
 **cập nhật 13**
 ở Cấu Hình Cấu Trúc & Gốc Làm Việc thiếu sys-step-distance (step_distance) cần bổ xung 
 
+**cập nhật 14** ở Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình với 4 nút cạnh nút Đặt gốc tọa độ làm việc, 4 nút set bổ xung thêm cho cấu hình các vị trí so với Gốc tọa độ làm việc. cnc_tl, cnc_tr, cnc_bl, cnc_br dùng để vẽ khung làm việc ngoài đời thực trên canvas  
+    set top left
+    set top right
+    set bottom right
+    set bottom left
+
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify
