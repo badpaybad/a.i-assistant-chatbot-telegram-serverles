@@ -227,3 +227,16 @@ curl -X 'POST' \
     }
   }
 }'
+
+
+# ubuntu check proces dùng port
+
+sudo netstat -tulpn | grep -E ':80|:443'
+
+sudo lsof -i :80 -i :443
+
+sudo ss -tulpn | grep -E ':80|:443'
+
+sudo systemctl stop apache2
+
+sudo systemctl disable apache2
