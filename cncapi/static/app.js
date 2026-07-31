@@ -56,6 +56,8 @@
     let canvasScale = 2.0; // pixels per mm
     let canvasOffsetX = 0;
     let canvasOffsetY = 0;
+    let axisDirX = 1; // 1: trái sang (+X sang phải), -1: phải sang (+X sang trái)
+    let axisDirY = 1; // 1: trên xuống (+Y xuống dưới - DEFAULT), -1: dưới lên (+Y lên trên)
     let isDraggingCanvas = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -218,6 +220,14 @@
         document.getElementById('btn-reset-view')?.addEventListener('click', resetCanvasView);
         document.getElementById('btn-clear-path')?.addEventListener('click', () => {
             penTrajectory = [];
+            drawCanvas();
+        });
+        document.getElementById('select-axis-x')?.addEventListener('change', (e) => {
+            axisDirX = parseInt(e.target.value);
+            drawCanvas();
+        });
+        document.getElementById('select-axis-y')?.addEventListener('change', (e) => {
+            axisDirY = parseInt(e.target.value);
             drawCanvas();
         });
     }
@@ -758,8 +768,8 @@
                 const originX = canvas.width / 2 + canvasOffsetX;
                 const originY = canvas.height / 2 + canvasOffsetY;
 
-                const targetWorkX = (clickX - originX) / canvasScale;
-                const targetWorkY = (originY - clickY) / canvasScale;
+                const targetWorkX = (clickX - originX) / (axisDirX * canvasScale);
+                const targetWorkY = (clickY - originY) / (axisDirY * canvasScale);
 
                 if (!isConnected) {
                     alert(t('Vui lòng Kết Nối CNC trước khi di chuyển!'));
@@ -908,22 +918,31 @@
         ctx.lineWidth = 2.5;
         const axisLen = 60;
         // X Axis (Red)
+        const endXx = originX + axisDirX * axisLen;
         ctx.strokeStyle = '#ef4444';
-        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX + axisLen, originY); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(endXx, originY); ctx.stroke();
         // arrowhead X
         ctx.fillStyle = '#ef4444';
-        ctx.beginPath(); ctx.moveTo(originX + axisLen, originY); ctx.lineTo(originX + axisLen - 8, originY - 4); ctx.lineTo(originX + axisLen - 8, originY + 4); ctx.fill();
-        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.moveTo(endXx, originY);
+        ctx.lineTo(endXx - axisDirX * 8, originY - 4);
+        ctx.lineTo(endXx - axisDirX * 8, originY + 4);
+        ctx.fill();
         ctx.font = 'bold 11px Outfit, sans-serif';
-        ctx.fillText('X', originX + axisLen + 4, originY + 4);
+        ctx.fillText('X', endXx + axisDirX * 4, originY + 4);
 
-        // Y Axis (Green) - inverted direction (Y+ goes up on screen)
+        // Y Axis (Green)
+        const endYy = originY + axisDirY * axisLen;
         ctx.strokeStyle = '#22c55e';
-        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX, originY - axisLen); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX, endYy); ctx.stroke();
+        // arrowhead Y
         ctx.fillStyle = '#22c55e';
-        ctx.beginPath(); ctx.moveTo(originX, originY - axisLen); ctx.lineTo(originX - 4, originY - axisLen + 8); ctx.lineTo(originX + 4, originY - axisLen + 8); ctx.fill();
-        ctx.fillStyle = '#22c55e';
-        ctx.fillText('Y', originX - 14, originY - axisLen - 2);
+        ctx.beginPath();
+        ctx.moveTo(originX, endYy);
+        ctx.lineTo(originX - 4, endYy - axisDirY * 8);
+        ctx.lineTo(originX + 4, endYy - axisDirY * 8);
+        ctx.fill();
+        ctx.fillText('Y', originX - 14, endYy + axisDirY * 4);
 
         // Work Origin dot
         ctx.fillStyle = '#38bdf8';
@@ -936,8 +955,8 @@
         ctx.fillText('(0,0)', originX + 8, originY + 14);
 
         // ---- HELPER: world → canvas ----
-        function wx(x) { return originX + x * canvasScale; }
-        function wy(y) { return originY - y * canvasScale; } // Y inverted
+        function wx(x) { return originX + x * axisDirX * canvasScale; }
+        function wy(y) { return originY + y * axisDirY * canvasScale; }
 
         // ---- DRAW SCENARIO PATH SEGMENTS ----
         const segs = computeScenarioPathSegments();
@@ -1116,8 +1135,8 @@
         if (mouseHoverPos && !isDraggingCanvas && !simIsRunning) {
             const hx = mouseHoverPos.x;
             const hy = mouseHoverPos.y;
-            const targetX = (hx - originX) / canvasScale;
-            const targetY = (originY - hy) / canvasScale;
+            const targetX = (hx - originX) / (axisDirX * canvasScale);
+            const targetY = (hy - originY) / (axisDirY * canvasScale);
 
             ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
             ctx.lineWidth = 1;

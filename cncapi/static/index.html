@@ -267,6 +267,14 @@
                 <div class="visualizer-header">
                     <h2 class="card-title" data-i18n>Tool Path View (Xem & Giả Lập Kịch Bản)</h2>
                     <div class="visualizer-actions">
+                        <select id="select-axis-x" class="input-select-small" title="Hướng Trục X">
+                            <option value="1" selected>X: Trái ➔ Phải</option>
+                            <option value="-1">X: Phải ➔ Trái</option>
+                        </select>
+                        <select id="select-axis-y" class="input-select-small" title="Hướng Trục Y">
+                            <option value="1" selected>Y: Trên ➔ Dưới (Mặc định)</option>
+                            <option value="-1">Y: Dưới ➔ Trên</option>
+                        </select>
                         <button class="btn btn-secondary btn-small" id="btn-reset-view" data-i18n>Đặt Lại Góc Nhìn</button>
                         <button class="btn btn-secondary btn-small" id="btn-clear-path" data-i18n>Xóa Đồ Họa</button>
                     </div>

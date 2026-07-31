@@ -89,5 +89,9 @@ Lúc chạy hoặc chạy lặp thì cần thể hiện thực tế đầu cnc h
 **cập nhật 5** bổ xung việc click chuột lên tool path view để di chuyển. cần quy đổi từ tọa độ điểm click trên canvas sang tọa độ máy để di chuyển tới đó dựa vào gốc tọa độ làm việc. click vị trí nào thì cnc di chuyển tới vị trí đó.
     Tool Path View (Xem & Giả Lập Kịch Bản) bổ xung thêm tỷ lệ 1 pixel tương đương với bao nhiêu milimet (vd 1 px = 0.1mm)
 
-**** Tool Path View (Xem & Giả Lập Kịch Bản)
+**cập nhật 6** Tool Path View (Xem & Giả Lập Kịch Bản) bổ xung option để hiển thị vẽ trục x,y gốc tọa độ làm việc trên canvas
+    x : cho phép chọn trái sang phải là chiều dương hoặc phải sang trái là chiều dương 
+    y: cho phép chọn dưới lên trên là chiều dương hoặc trên xuống dưới là chiều dương
+    mặc định: x trái sang phải , y trên xuống dưới
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

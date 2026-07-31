@@ -404,6 +404,12 @@ input:focus, select:focus {
     margin-bottom: 4px;
 }
 
+.visualizer-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
 .canvas-wrapper {
     position: relative;
     flex: 1;
