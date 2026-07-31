@@ -1,0 +1,50 @@
+name: Build CNC API Multi-Platform Executables
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: cncapi-linux
+            asset_name: cncapi
+          - os: windows-latest
+            artifact_name: cncapi-windows
+            asset_name: cncapi.exe
+          - os: macos-latest
+            artifact_name: cncapi-macos
+            asset_name: cncapi
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cncapi/requirements.txt
+
+      - name: Build Executable with PyInstaller
+        run: |
+          cd cncapi
+          pyinstaller --noconfirm main.spec
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: |
+            cncapi/dist/${{ matrix.asset_name }}
+            cncapi/dist/calibration_settings.json

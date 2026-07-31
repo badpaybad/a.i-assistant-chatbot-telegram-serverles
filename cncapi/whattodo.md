@@ -165,4 +165,24 @@ Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình ch
 - Tạo script build `build_dist.sh` để thực hiện đóng gói nhanh vào thư mục `dist/`.
 - File thực thi tạo ra: `cncapi/dist/cncapi`. Chạy `./dist/cncapi` từ thư mục `cncapi` sẽ khởi động ứng dụng Web API mà không lộ mã nguồn `.py`.
 
+**cập nhật 16** ở **cập nhật 15** build đã chạy cho linux (cụ thể ubuntu 24.04) có thể thêm option để build chạy trên window 10, window 11, macos . 
+- **Đóng gói trực tiếp trên Ubuntu 24.04 cho Linux & Windows**:
+  - Script `./build_dist.sh` đã tích hợp đóng gói song song: tạo ra file Linux `dist/cncapi` và file Windows `dist/cncapi.exe` (thông qua Wine Python).
+- **Hỗ trợ macOS qua GitHub Actions**:
+  - Do quy định bảo mật SDK của Apple, macOS không cho phép cross-compile từ Linux. Đã khởi tạo workflow `/.github/workflows/build_cncapi.yml` để đóng gói tự động file cho macOS (`cncapi-macos`), Windows (`cncapi.exe`) và Linux (`cncapi-linux`) trên GitHub CI/CD.
+- **Kịch bản Native cho người dùng muốn build trên Windows**:
+  - `build_dist.bat` (chạy trên Command Prompt) & `build_dist.ps1` (chạy trên PowerShell).
+
+**cập nhật 17** cấu hình Cổng Serial có thể dựa vào hệ điều hành để lấy các cổng serial tương ứng, cần lấy các cổng tương thích để kết nối được vào mạch cnc  cho người dùng chọn 
+- **Tự động nhận diện theo Hệ điều hành**:
+  - **Linux (Ubuntu)**: Tự động lọc và ưu tiên các cổng USB CNC (`/dev/ttyACM*`, `/dev/ttyUSB*`), đưa các cổng này lên đầu danh sách chọn.
+  - **Windows**: Tự động liệt kê các cổng COM (`COM1`, `COM3`, `COM4`...) kèm mô tả phần cứng chi tiết (`CH340`, `Arduino Uno`, `USB Serial Port`...).
+  - **macOS**: Tự động lọc các cổng `/dev/tty.usbmodem*`, `/dev/cu.usbmodem*`, `/dev/tty.usbserial*`...
+- **Giao diện Web UI (`app.js`)**: Cập nhật hàm `fetchPorts()` hiển thị đầy đủ tên cổng + thông tin thiết bị phụ trợ để người dùng dễ chọn đúng mạch CNC.
+
+**cập nhật 18** cần đưa các thư viện cần cài cho cncapi vào cncapi/requirements.txt để khi build trên các nền tảng hệ điều hành khác nhau hoạt động đúng, xem các file commandline build.dist cập nhật nếu cần 
+- Đã tạo/khởi tạo file [cncapi/requirements.txt](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/requirements.txt) khai báo đầy đủ 5 thư viện cần thiết (`fastapi`, `uvicorn[standard]`, `pyserial`, `pydantic`, `pyinstaller`).
+- Đã cập nhật tất cả các kịch bản build command-line (`build_dist.sh`, `build_dist.bat`, `build_dist.ps1`) tự động kiểm tra và cài đặt thư viện từ `requirements.txt` trước khi chạy đóng gói PyInstaller.
+- Đã cập nhật workflow CI/CD GitHub Actions cài đặt tự động từ `cncapi/requirements.txt` khi đóng gói trên các môi trường Windows, macOS và Linux.
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

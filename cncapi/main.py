@@ -29,9 +29,17 @@ else:
 STATIC_DIR = os.path.join(BASE_DIR, "static")
 SETTINGS_FILE = os.path.join(EXEC_DIR, "calibration_settings.json")
 
+def get_default_port_for_os() -> str:
+    if sys.platform.startswith('win'):
+        return "COM3"
+    elif sys.platform.startswith('darwin'):
+        return "/dev/tty.usbmodem1"
+    else:
+        return "/dev/ttyACM0"
+
 def load_settings() -> dict:
     default_settings = {
-        "port": "/dev/ttyACM0",
+        "port": get_default_port_for_os(),
         "baudrate": 115200,
         "step_distance": 10.0,
         "jog_feedrate": 4000.0,
@@ -696,17 +704,73 @@ class StreamRequest(BaseModel):
 # API Routes
 @app.get("/api/devices/ports")
 async def get_serial_ports():
-    ports = []
+    ports_info = []
+    seen = set()
+
+    try:
+        import serial.tools.list_ports
+        for p in serial.tools.list_ports.comports():
+            dev = p.device
+            desc = p.description or dev
+            hwid = p.hwid or ""
+            
+            # Identify OS-specific CNC compatible serial ports
+            is_cnc = False
+            if sys.platform.startswith('linux'):
+                if 'ttyUSB' in dev or 'ttyACM' in dev:
+                    is_cnc = True
+            elif sys.platform.startswith('darwin'):
+                if any(x in dev for x in ['tty.usb', 'cu.usb', 'tty.usbmodem', 'cu.usbmodem']):
+                    is_cnc = True
+            elif sys.platform.startswith('win'):
+                if dev.upper().startswith('COM'):
+                    is_cnc = True
+
+            ports_info.append({
+                "device": dev,
+                "description": desc,
+                "hwid": hwid,
+                "recommended": is_cnc
+            })
+            seen.add(dev)
+    except Exception as e:
+        logger.error(f"Error enumerating serial ports via pyserial: {e}")
+
+    # Fallback scanning if pyserial comports returned nothing or missed candidates
     if sys.platform.startswith('linux'):
         import glob
-        ports = glob.glob('/dev/tty[A-Za-z]*')
+        linux_candidates = glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')
+        for dev in sorted(linux_candidates):
+            if dev not in seen:
+                seen.add(dev)
+                ports_info.append({
+                    "device": dev,
+                    "description": f"USB Serial ({os.path.basename(dev)})",
+                    "hwid": "",
+                    "recommended": True
+                })
     elif sys.platform.startswith('darwin'):
         import glob
-        ports = glob.glob('/dev/tty.*')
-    elif sys.platform.startswith('win'):
-        import serial.tools.list_ports
-        ports = [p.device for p in serial.tools.list_ports.comports()]
-    return {"ports": sorted(ports)}
+        mac_candidates = glob.glob('/dev/tty.usb*') + glob.glob('/dev/cu.usb*')
+        for dev in sorted(mac_candidates):
+            if dev not in seen:
+                seen.add(dev)
+                ports_info.append({
+                    "device": dev,
+                    "description": f"USB Serial ({os.path.basename(dev)})",
+                    "hwid": "",
+                    "recommended": True
+                })
+
+    # Sort candidate ports first, then alphabetically by device name
+    ports_info.sort(key=lambda x: (not x["recommended"], x["device"]))
+    port_list = [p["device"] for p in ports_info]
+
+    return {
+        "ports": port_list,
+        "details": ports_info,
+        "platform": sys.platform
+    }
 
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):

@@ -261,11 +261,20 @@
             const datalist = document.getElementById('ports-datalist');
             if (datalist && data.ports) {
                 datalist.innerHTML = '<option value="dummy">dummy (Chế độ giả lập)</option>';
-                data.ports.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p;
-                    datalist.appendChild(opt);
-                });
+                if (data.details && Array.isArray(data.details)) {
+                    data.details.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.device;
+                        opt.textContent = (p.description && p.description !== p.device) ? `${p.device} (${p.description})` : p.device;
+                        datalist.appendChild(opt);
+                    });
+                } else {
+                    data.ports.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p;
+                        datalist.appendChild(opt);
+                    });
+                }
             }
         } catch (e) {
             console.error('Error fetching ports:', e);
