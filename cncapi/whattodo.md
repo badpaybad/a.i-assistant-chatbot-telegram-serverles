@@ -117,4 +117,9 @@ Cấu Hình Spindle & Gốc Làm Việc là dùng chung cho toàn bộ
 **cập nhật 8**  
 ở các thao tác Cử Chỉ Touch & Swipe Gestures, đầu cnc đang ở đâu thì thực hiện tại đó, vd chạm (tab) thì tab tại đầu cnc. vuốt lên thì tại vị trí cnc đang đứng vuốt lên, không cần về gốc tọa độ làm việc rồi mới thực hiện 
 
+**cập nhật 9** ở **cập nhật 5**  có đề cập tỷ lệ 1 pixel tương đương với bao nhiêu milimet cho Tool Path View (Xem & Giả Lập Kịch Bản) để vẽ trên canvas và quy đổi khi click chuột. Cho phép đưa thành cấu hình có thể thay đổi được khi người dùng muốn (mặc định 1px = 0.5mm)
+ở **cập nhật 6** đề cập về việc hiển thị vẽ trục x,y gốc tọa độ làm việc trên canvas
+cần đưa lên Cấu Hình Cấu Trúc & Gốc Làm Việc, để tập trung và gọn 
+     
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify

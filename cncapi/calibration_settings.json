@@ -79,5 +79,7 @@
   "port": "",
   "baudrate": 115200,
   "axis_dir_x": 1,
-  "axis_dir_y": 1
+  "axis_dir_y": 1,
+  "swipe_feedrate": 10000.0,
+  "mm_per_px": 0.5
 }

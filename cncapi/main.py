@@ -95,6 +95,7 @@ class ControllerState:
         self.swipe_feedrate = float(settings.get("swipe_feedrate", 10000.0))
         self.axis_dir_x = int(settings.get("axis_dir_x", 1))
         self.axis_dir_y = int(settings.get("axis_dir_y", 1))
+        self.mm_per_px = float(settings.get("mm_per_px", 0.05))
         
         # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
@@ -450,6 +451,7 @@ class SystemSettingsRequest(BaseModel):
     pen_dwell: Optional[float] = None
     axis_dir_x: Optional[int] = None
     axis_dir_y: Optional[int] = None
+    mm_per_px: Optional[float] = None
     work_origin: Optional[Point3D] = None
 
 PenSettingsRequest = SystemSettingsRequest
@@ -583,6 +585,7 @@ async def get_system_settings():
         "pen_dwell": state.pen_dwell,
         "axis_dir_x": getattr(state, 'axis_dir_x', 1),
         "axis_dir_y": getattr(state, 'axis_dir_y', 1),
+        "mm_per_px": getattr(state, 'mm_per_px', 0.05),
         "workpiece_origin": state.workpiece_origin,
         "work_origin": state.work_origin,
         "parking_point": state.parking_point,
@@ -605,6 +608,7 @@ async def update_system_settings(req: SystemSettingsRequest):
     if req.pen_dwell is not None: state.pen_dwell = req.pen_dwell
     if req.axis_dir_x is not None: state.axis_dir_x = req.axis_dir_x
     if req.axis_dir_y is not None: state.axis_dir_y = req.axis_dir_y
+    if req.mm_per_px is not None: state.mm_per_px = req.mm_per_px
     if req.work_origin is not None:
         state.work_origin = {"x": req.work_origin.x, "y": req.work_origin.y, "z": req.work_origin.z}
         state.home_set = True
@@ -625,6 +629,7 @@ async def update_system_settings(req: SystemSettingsRequest):
         "pen_dwell": state.pen_dwell,
         "axis_dir_x": getattr(state, 'axis_dir_x', 1),
         "axis_dir_y": getattr(state, 'axis_dir_y', 1),
+        "mm_per_px": getattr(state, 'mm_per_px', 0.05),
         "work_origin": state.work_origin,
         "home_set": state.home_set
     }

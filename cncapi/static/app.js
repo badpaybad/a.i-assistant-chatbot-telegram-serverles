@@ -53,7 +53,7 @@
     // Tool Path View Canvas State
     let canvas = null;
     let ctx = null;
-    let canvasScale = 2.0; // pixels per mm
+    let canvasScale = 20.0; // 1 px = 0.05 mm (20 px = 1 mm)
     let canvasOffsetX = 0;
     let canvasOffsetY = 0;
     let axisDirX = 1; // 1: trái sang (+X sang phải), -1: phải sang (+X sang trái)
@@ -237,6 +237,16 @@
         });
         document.getElementById('select-axis-y')?.addEventListener('change', (e) => {
             axisDirY = parseInt(e.target.value);
+            drawCanvas();
+        });
+        document.getElementById('sys-mm-per-px')?.addEventListener('change', (e) => {
+            const val = parseFloat(e.target.value) || 0.05;
+            canvasScale = 1.0 / val;
+            drawCanvas();
+        });
+        document.getElementById('sys-mm-per-px')?.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value) || 0.05;
+            canvasScale = 1.0 / val;
             drawCanvas();
         });
     }
@@ -806,7 +816,8 @@
     }
 
     function resetCanvasView() {
-        canvasScale = 2.0;
+        const mmPerPx = parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.05');
+        canvasScale = 1.0 / (mmPerPx > 0 ? mmPerPx : 0.05);
         canvasOffsetX = 0;
         canvasOffsetY = 0;
         drawCanvas();
@@ -1630,6 +1641,7 @@
             pen_down_pwm: penDownPwm,
             axis_dir_x: parseInt(document.getElementById('select-axis-x')?.value || '1'),
             axis_dir_y: parseInt(document.getElementById('select-axis-y')?.value || '1'),
+            mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.05'),
         };
 
         try {
@@ -1703,6 +1715,13 @@
         if (data.axis_dir_y !== undefined && document.getElementById('select-axis-y')) {
             document.getElementById('select-axis-y').value = data.axis_dir_y;
             axisDirY = parseInt(data.axis_dir_y);
+        }
+        if (data.mm_per_px !== undefined) {
+            const val = parseFloat(data.mm_per_px) || 0.05;
+            if (document.getElementById('sys-mm-per-px')) {
+                document.getElementById('sys-mm-per-px').value = val;
+            }
+            canvasScale = 1.0 / val;
         }
 
         if (data.workpiece_origin) telemetry.workpiece_origin = data.workpiece_origin;
