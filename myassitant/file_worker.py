@@ -598,8 +598,19 @@ def _process_file_record(file_record: dict):
         db.update_file_description(file_db_id, local_path, f"[Lỗi xử lý file: {err}]")
 
 
+def _get_image_info(image_path: str) -> str:
+    """Đo độ phân giải (width x height) của file ảnh."""
+    try:
+        from PIL import Image
+        with Image.open(image_path) as img:
+            return f"{img.width}x{img.height}px"
+    except Exception:
+        return ""
+
+
 def _describe_image_via_api(image_path: str, prompt: Optional[str] = None) -> str:
     """Gửi ảnh lên Gemma4 API để mô tả / trích xuất chữ (OCR)."""
+    img_info = _get_image_info(image_path)
     try:
         import base64
         with open(image_path, "rb") as f:
@@ -609,8 +620,8 @@ def _describe_image_via_api(image_path: str, prompt: Optional[str] = None) -> st
 
         if not prompt:
             prompt = (
-                "Nếu trong ảnh có chứa văn bản/chữ (OCR), hãy ưu tiên trích xuất và đọc chính xác toàn bộ nội dung chữ trong ảnh trước. "
-                "Sau đó mới mô tả ngắn gọn bối cảnh/nội dung của ảnh bằng tiếng Việt (nếu cần)."
+                "Mô tả ngắn gọn nội dung của bức ảnh này bằng tiếng Việt. "
+                "Nếu trong ảnh có chứa văn bản/chữ (OCR), hãy trích xuất toàn bộ văn bản có trong ảnh."
             )
 
         request_body = {
@@ -628,9 +639,18 @@ def _describe_image_via_api(image_path: str, prompt: Optional[str] = None) -> st
             resp.raise_for_status()
             data = resp.json()
             parts = data.get("candidates", [{}])[0].get("content", {}).get("parts", [])
-            return " ".join(p.get("text", "") for p in parts if p.get("text")).strip()
+            desc = " ".join(p.get("text", "") for p in parts if p.get("text")).strip()
+
+        invalid_keywords = ["chưa cung cấp", "không có hình ảnh", "không tìm thấy hình ảnh", "no image", "tải ảnh lên"]
+        if not desc or any(k in desc.lower() for k in invalid_keywords):
+            desc = f"[File ảnh cục bộ ({img_info if img_info else 'ảnh'}): {os.path.basename(image_path)}]"
+        elif img_info:
+            desc = f"[Ảnh độ phân giải {img_info}]\n{desc}"
+
+        return desc
+
     except Exception as e:
-        return f"[Lỗi mô tả/trích xuất chữ ảnh: {e}]"
+        return f"[File ảnh cục bộ ({img_info if img_info else 'ảnh'}): {os.path.basename(image_path)}] (Lỗi API mô tả: {e})"
 
 
 # ─── Main worker loop ─────────────────────────────────────────────────────────
@@ -655,6 +675,10 @@ def run_file_worker(stop_event: threading.Event = None, sleep_sec: float = 3.0):
 
             for msg in unprocessed:
                 msg_db_id = msg["id"]
+                # Atomic claim DB transition: is_processed=0 -> 3
+                if not db.claim_unprocessed_message(msg_db_id):
+                    continue
+
                 files = db.get_files_of_message(msg_db_id)
 
                 all_done = True

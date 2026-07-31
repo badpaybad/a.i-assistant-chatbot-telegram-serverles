@@ -67,6 +67,7 @@ Nguyên tắc hoạt động:
 - Nếu message có file đính kèm (PDF, ảnh, audio...), tóm tắt nội dung file đó trước khi trả lời.
 - Lịch sử chát chỉ mang tính tham khảo để hiểu ngữ cảnh để trả lời tin nhắn mới nhất (cần trả lời, hoặc tin nhắn được quote / reply và nếu có file theo tin nhắn thì dùng file đi theo , các file ở lịch sử trước đó dùng để tham khảo)
 - Cần phân tích xem nếu cần dùng tool_calls để lấy thêm thông tin nếu cần
+- Khi tạo hoặc chuyển đổi xong một file (như icon, pdf, image, docx, txt, script...), bạn BẮT BUỘC phải gọi tool send_telegram_file để gửi file đó về chat Telegram cho người dùng, tuyệt đối không được hứa gửi bằng lời mà không gọi tool.
 """
 
 # Đảm bảo thư mục files tồn tại

@@ -13,7 +13,7 @@ import time
 import threading
 import httpx
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 
 _DIR = os.path.dirname(os.path.abspath(__file__))
 _ROOT = os.path.dirname(_DIR)
@@ -81,6 +81,113 @@ def _build_context_text(group_id: str, limit: int = 5) -> str:
 
 # ─── Gọi Gemma4 API ─────────────────────────────────────────────────────────
 
+# ─── Gọi Gemma4 API ─────────────────────────────────────────────────────────
+
+KNOWN_TOOLS = {
+    "send_telegram_file", "execute_python_code", "execute_bash_script",
+    "search_google", "db_search_messages", "db_search_notes", "db_list_reminders",
+    "crawl_url", "read_file", "db_save_note", "db_set_reminder", "db_delete_reminder"
+}
+
+
+def _extract_tool_calls_from_text(text: str) -> Tuple[str, List[Dict]]:
+    """
+    Bóc tách các câu lệnh gọi hàm dạng [tool_code] ... [/tool_code],
+    thẻ pseudo-tag [tool_name: {args}], hoặc text code mà Gemma4 tự sinh trong phần text phản hồi.
+    """
+    if not text:
+        return text, []
+
+    import ast
+    import json
+    import re
+
+    tool_calls = []
+    clean_text = text
+
+    # 1. Bóc tách thẻ pseudo-tag dạng: [tool_name: {args}] hoặc [tool_name: args]
+    tag_matches = re.findall(r'\[([a-zA-Z0-9_]+)\s*:\s*(\{[\s\S]*?\}|[\s\S]*?)\]', text)
+    for tname, raw_args in tag_matches:
+        if tname in KNOWN_TOOLS:
+            args = {}
+            raw_args_s = raw_args.strip()
+            try:
+                args = json.loads(raw_args_s)
+            except Exception:
+                try:
+                    args = ast.literal_eval(raw_args_s)
+                except Exception:
+                    pairs = re.findall(r'([a-zA-Z0-9_]+)\s*:\s*[\"\']?([^,\"\'}]+)[\"\']?', raw_args_s)
+                    args = {k.strip(): v.strip() for k, v in pairs}
+
+            tool_calls.append({"name": tname, "args": args})
+            clean_text = re.sub(rf'\[{tname}\s*:\s*[\s\S]*?\]', '', clean_text).strip()
+
+    # 2. Pattern bóc tách khối [tool_code] ... [/tool_code] hoặc ```python ... ```
+    if not tool_calls:
+        tool_blocks = re.findall(r'(\[tool_code\][\s\S]*?\[/tool_code\]|```(?:python|tool_code|bash)?[\s\S]*?```)', text)
+
+        for block in tool_blocks:
+            inner = re.sub(r'\[/?tool_code\]', '', block)
+            inner = re.sub(r'```(?:python|tool_code|bash)?', '', inner).replace('```', '').strip()
+
+            for line in inner.split('\n'):
+                line_s = line.strip()
+                if line_s.startswith("print(") and line_s.endswith(")"):
+                    line_s = line_s[6:-1].strip()
+
+                for tool in KNOWN_TOOLS:
+                    if tool in line_s and "(" in line_s:
+                        try:
+                            tree = ast.parse(line_s)
+                            for node in ast.walk(tree):
+                                if isinstance(node, ast.Call):
+                                    func_name = None
+                                    if isinstance(node.func, ast.Name):
+                                        func_name = node.func.id
+                                    if func_name in KNOWN_TOOLS:
+                                        args = {}
+                                        for kw in node.keywords:
+                                            try:
+                                                args[kw.arg] = ast.literal_eval(kw.value)
+                                            except Exception:
+                                                pass
+                                        tool_calls.append({"name": func_name, "args": args})
+                        except Exception:
+                            pass
+
+            clean_text = clean_text.replace(block, "").strip()
+
+    # 3. Fallback cho trường hợp gọi trực tiếp không nằm trong tag: tool_name(...)
+    if not tool_calls:
+        for line in text.split('\n'):
+            line_s = line.strip()
+            if line_s.startswith("print(") and line_s.endswith(")"):
+                line_s = line_s[6:-1].strip()
+            for tool in KNOWN_TOOLS:
+                if tool in line_s and "(" in line_s:
+                    try:
+                        tree = ast.parse(line_s)
+                        for node in ast.walk(tree):
+                            if isinstance(node, ast.Call):
+                                func_name = None
+                                if isinstance(node.func, ast.Name):
+                                    func_name = node.func.id
+                                if func_name in KNOWN_TOOLS:
+                                    args = {}
+                                    for kw in node.keywords:
+                                        try:
+                                            args[kw.arg] = ast.literal_eval(kw.value)
+                                        except Exception:
+                                            pass
+                                    tool_calls.append({"name": func_name, "args": args})
+                                    clean_text = clean_text.replace(line, "").strip()
+                    except Exception:
+                        pass
+
+    return clean_text, tool_calls
+
+
 def _call_gemma4(system_prompt: str, user_message: str, tools: List[Dict] = None) -> Dict:
     """
     Gọi local Gemma4 API.
@@ -113,6 +220,14 @@ def _call_gemma4(system_prompt: str, user_message: str, tools: List[Dict] = None
                 elif p.get("text"):
                     result_text += p["text"]
 
+        # Nếu không có JSON function call nhưng có mã text dạng [tool_code], tự bóc tách tool call
+        if not tool_calls and result_text:
+            clean_text, text_tool_calls = _extract_tool_calls_from_text(result_text)
+            if text_tool_calls:
+                result_text = clean_text
+                tool_calls = text_tool_calls
+                print(f"[Agent] Extracted {len(tool_calls)} text-based tool call(s) from Gemma4 response.")
+
         return {"text": result_text.strip(), "tool_calls": tool_calls}
 
     except Exception as e:
@@ -133,6 +248,9 @@ class GroupChatAgent:
         self.stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
         self._last_reminder_check = 0.0
+        self._lock = threading.Lock()
+        self._semaphore = threading.Semaphore(1)  # Cập nhật 5: Semaphore Lock theo nhóm chat
+        self._processing_msg_ids = set()
 
         # Thông tin nhóm
         groups = db.get_all_active_groups()
@@ -176,10 +294,29 @@ class GroupChatAgent:
             return
 
         for msg in pending:
+            msg_db_id = msg["id"]
+            if not self._semaphore.acquire(blocking=False):
+                # Nhóm chat đang bận xử lý 1 message khác -> quay lại ở loop sau
+                break
             try:
-                self._handle_message(msg)
-            except Exception as e:
-                print(f"[Agent:{self.group_id}] Error handling msg #{msg['id']}: {e}")
+                with self._lock:
+                    if msg_db_id in self._processing_msg_ids:
+                        continue
+                    # Atomic claim DB transition: is_chatbot_reply=1 -> 3
+                    if not db.claim_pending_reply_message(msg_db_id):
+                        continue
+                    self._processing_msg_ids.add(msg_db_id)
+
+                try:
+                    self._handle_message(msg)
+                except Exception as e:
+                    print(f"[Agent:{self.group_id}] Error handling msg #{msg_db_id}: {e}")
+                finally:
+                    with self._lock:
+                        self._processing_msg_ids.discard(msg_db_id)
+                    db.update_message_chatbot_replied(msg_db_id)
+            finally:
+                self._semaphore.release()
 
     def _handle_message(self, msg: Dict):
         """Xử lý một message: agentic loop → reply → update DB."""
@@ -202,12 +339,18 @@ class GroupChatAgent:
         raw_audio_texts = []
         for f in files:
             desc = f.get("description") or ""
+            local_path = f.get("local_path") or ""
+            desc = f.get("description") or ""
             ftype = f.get("file_type", "file")
             url = f.get("url") or f.get("local_path") or ""
+            file_info_str = f"📎 [{ftype}]"
+            if local_path:
+                file_info_str += f" local_path: {local_path}"
             if desc:
-                file_items.append(f"📎 [{ftype}] {url}: {desc}")
-                if ftype in ("audio", "voice", "video") and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
-                    raw_audio_texts.append(desc)
+                file_info_str += f" | {desc}"
+            file_items.append(file_info_str)
+            if ftype in ("audio", "voice", "video") and desc and not desc.startswith("[Lỗi") and not desc.startswith("[Không"):
+                raw_audio_texts.append(desc)
 
 
         file_context = ""
@@ -303,12 +446,12 @@ class GroupChatAgent:
                 f"{context_text}\n\n"
                 f"### HƯỚNG DẪN XỬ LÝ:\n"
                 f"- Tập trung phân tích và trả lời trực tiếp cho tin nhắn mới nhất, tin nhắn được quote/reply và các file đính kèm.\n"
-                f"- Nếu cần thêm thông tin từ lịch sử tin nhắn cũ hơn trong nhóm, các ghi chú (notes) hay danh sách nhắc nhở (reminders), HÃY GỌI TOOL CALL TRUY VẤN CSDL SQLITE:\n"
-                f"  + `db_search_messages`: Tìm kiếm tin nhắn trong lịch sử chat theo từ khóa.\n"
-                f"  + `db_search_notes`: Tìm kiếm trong các ghi chú đã lưu.\n"
-                f"  + `db_list_reminders`: Xem danh sách các nhắc nhở đang hoạt động.\n"
+                f"- Các công cụ khả dụng (Tool Calls):\n"
+                f"  + `send_telegram_file`: BẮT BUỘC gọi tool này để gửi file (ảnh, pdf, icon, code, docx...) về lại Telegram cho người dùng sau khi đã tạo/chuyển đổi file xong.\n"
+                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code/script (VD: ffmpeg convert ảnh, xử lý dữ liệu) khi người dùng yêu cầu.\n"
+                f"  + `db_search_messages` / `db_search_notes` / `db_list_reminders`: Truy vấn CSDL SQLite khi cần thông tin cũ.\n"
                 f"  + `search_google`: Tìm kiếm thông tin Google thời gian thực.\n"
-                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code khi có yêu cầu.\n"
+                f"- LƯU Ý BẮT BUỘC: Nếu người dùng yêu cầu tạo file, convert ảnh/audio/video, hay gửi file, sau khi chạy lệnh tạo file xong, bạn PHẢI gọi tool `send_telegram_file` để gửi file đó lên Telegram. Tuyệt đối KHÔNG hứa 'Tôi sẽ gửi file ngay bây giờ' mà không thực hiện gọi tool `send_telegram_file`!\n"
                 f"{'Nếu không cần dùng thêm tool, hãy đưa ra câu trả lời trực tiếp.' if loop_i > 1 else ''}"
                 + (f"\nTag người dùng: {tag_user}" if not is_private else "")
             )
