@@ -44,6 +44,10 @@ def load_settings() -> dict:
         "workpiece_origin": {"x": 0.0, "y": 0.0, "z": 0.0},
         "work_origin": {"x": 0.0, "y": 0.0, "z": 0.0},
         "parking_point": {"x": 0.0, "y": 0.0, "z": 10.0},
+        "cnc_tl": None,
+        "cnc_tr": None,
+        "cnc_bl": None,
+        "cnc_br": None,
     }
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -79,6 +83,10 @@ class ControllerState:
         self.workpiece_origin = settings.get("workpiece_origin", {"x": 0.0, "y": 0.0, "z": 0.0})
         self.work_origin = settings.get("work_origin", {"x": 0.0, "y": 0.0, "z": 0.0})
         self.parking_point = settings.get("parking_point", {"x": 0.0, "y": 0.0, "z": 10.0})
+        self.cnc_tl = settings.get("cnc_tl")
+        self.cnc_tr = settings.get("cnc_tr")
+        self.cnc_bl = settings.get("cnc_bl")
+        self.cnc_br = settings.get("cnc_br")
         self.home_set = settings.get("home_set", False)
         
         self.feedrate = 0.0
@@ -370,6 +378,11 @@ async def send_telemetry():
         "workpiece_origin": state.workpiece_origin,
         "work_origin": state.work_origin,
         "parking_point": state.parking_point,
+        "cnc_tl": state.cnc_tl,
+        "cnc_tr": state.cnc_tr,
+        "cnc_bl": state.cnc_bl,
+        "cnc_br": state.cnc_br,
+        "cnc_bounds": {"tl": state.cnc_tl, "tr": state.cnc_tr, "bl": state.cnc_bl, "br": state.cnc_br},
         "pen_rel_workpiece": pen_rel_workpiece,
         "pen_rel_work": pen_rel_work,
         "feedrate": state.feedrate,
@@ -634,6 +647,10 @@ class ConnectionConfig(BaseModel):
 class CommandRequest(BaseModel):
     command: str
 
+class Point2D(BaseModel):
+    x: float
+    y: float
+
 class Point3D(BaseModel):
     x: float
     y: float
@@ -658,6 +675,10 @@ class SystemSettingsRequest(BaseModel):
     axis_dir_y: Optional[int] = None
     mm_per_px: Optional[float] = None
     work_origin: Optional[Point3D] = None
+    cnc_tl: Optional[Point2D] = None
+    cnc_tr: Optional[Point2D] = None
+    cnc_bl: Optional[Point2D] = None
+    cnc_br: Optional[Point2D] = None
 
 PenSettingsRequest = SystemSettingsRequest
 
@@ -795,6 +816,11 @@ async def get_system_settings():
         "workpiece_origin": state.workpiece_origin,
         "work_origin": state.work_origin,
         "parking_point": state.parking_point,
+        "cnc_tl": state.cnc_tl,
+        "cnc_tr": state.cnc_tr,
+        "cnc_bl": state.cnc_bl,
+        "cnc_br": state.cnc_br,
+        "cnc_bounds": {"tl": state.cnc_tl, "tr": state.cnc_tr, "bl": state.cnc_bl, "br": state.cnc_br},
     }
 
 @app.post("/api/settings")
@@ -819,6 +845,10 @@ async def update_system_settings(req: SystemSettingsRequest):
     if req.work_origin is not None:
         state.work_origin = {"x": req.work_origin.x, "y": req.work_origin.y, "z": req.work_origin.z}
         state.home_set = True
+    if req.cnc_tl is not None: state.cnc_tl = {"x": req.cnc_tl.x, "y": req.cnc_tl.y}
+    if req.cnc_tr is not None: state.cnc_tr = {"x": req.cnc_tr.x, "y": req.cnc_tr.y}
+    if req.cnc_bl is not None: state.cnc_bl = {"x": req.cnc_bl.x, "y": req.cnc_bl.y}
+    if req.cnc_br is not None: state.cnc_br = {"x": req.cnc_br.x, "y": req.cnc_br.y}
 
     to_save = {
         "port": state.port_name,
@@ -839,6 +869,10 @@ async def update_system_settings(req: SystemSettingsRequest):
         "axis_dir_y": getattr(state, 'axis_dir_y', 1),
         "mm_per_px": getattr(state, 'mm_per_px', 0.05),
         "work_origin": state.work_origin,
+        "cnc_tl": state.cnc_tl,
+        "cnc_tr": state.cnc_tr,
+        "cnc_bl": state.cnc_bl,
+        "cnc_br": state.cnc_br,
         "home_set": state.home_set
     }
     save_settings(to_save)
@@ -1004,6 +1038,11 @@ class V1GestureRequest(BaseModel):
     swipe_feedrate: Optional[float] = None
     tap_dwell: Optional[float] = None
     long_press_dwell: Optional[float] = None
+
+class V1SetBoundPointRequest(BaseModel):
+    corner: str  # "tl", "tr", "bl", "br"
+    x: Optional[float] = None
+    y: Optional[float] = None
 
 class V1ScenarioCreateRequest(BaseModel):
     name: str
@@ -1215,6 +1254,70 @@ async def v1_origin_home():
 @app.post("/cncapi/v1/origin/unlock")
 async def v1_origin_unlock():
     return await send_command(CommandRequest(command="$X"))
+
+@app.get("/cncapi/v1/origin/bounds")
+async def v1_get_origin_bounds():
+    return {
+        "status": "success",
+        "bounds": {
+            "tl": state.cnc_tl,
+            "tr": state.cnc_tr,
+            "bl": state.cnc_bl,
+            "br": state.cnc_br
+        }
+    }
+
+@app.post("/cncapi/v1/origin/set_bound_point")
+async def v1_set_bound_point(req: V1SetBoundPointRequest):
+    corner = req.corner.lower().strip()
+    if corner not in ["tl", "tr", "bl", "br"]:
+        raise HTTPException(status_code=400, detail="Góc không hợp lệ! Phải là 'tl', 'tr', 'bl', hoặc 'br'")
+
+    if req.x is not None and req.y is not None:
+        px = round(req.x, 2)
+        py = round(req.y, 2)
+    else:
+        # Defaults to current relative work position
+        rel_x = state.wpos[0] - state.work_origin.get("x", 0.0)
+        rel_y = state.wpos[1] - state.work_origin.get("y", 0.0)
+        px = round(rel_x, 2)
+        py = round(rel_y, 2)
+
+    point = {"x": px, "y": py}
+    if corner == "tl": state.cnc_tl = point
+    elif corner == "tr": state.cnc_tr = point
+    elif corner == "bl": state.cnc_bl = point
+    elif corner == "br": state.cnc_br = point
+
+    to_save = {
+        "cnc_tl": state.cnc_tl,
+        "cnc_tr": state.cnc_tr,
+        "cnc_bl": state.cnc_bl,
+        "cnc_br": state.cnc_br
+    }
+    save_settings(to_save)
+    await send_telemetry()
+    return {
+        "status": "success",
+        "corner": corner,
+        "point": point,
+        "bounds": {
+            "tl": state.cnc_tl,
+            "tr": state.cnc_tr,
+            "bl": state.cnc_bl,
+            "br": state.cnc_br
+        }
+    }
+
+@app.delete("/cncapi/v1/origin/bounds")
+async def v1_clear_origin_bounds():
+    state.cnc_tl = None
+    state.cnc_tr = None
+    state.cnc_bl = None
+    state.cnc_br = None
+    save_settings({"cnc_tl": None, "cnc_tr": None, "cnc_bl": None, "cnc_br": None})
+    await send_telemetry()
+    return {"status": "success", "message": "Đã xóa 4 góc định vị"}
 
 # V1 Scenario Session Endpoints
 @app.get("/cncapi/v1/scenario/session")

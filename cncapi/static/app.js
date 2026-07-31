@@ -15,6 +15,7 @@
     let isConnected = false;
     let isHomeSet = false;
     let scenarioInsertIndex = -1;
+    let cncBounds = { tl: null, tr: null, bl: null, br: null };
 
     // Telemetry State
     let telemetry = {
@@ -147,6 +148,7 @@
             document.getElementById('input-load-settings')?.click();
         });
         document.getElementById('input-load-settings')?.addEventListener('change', loadSystemSettingsFile);
+        bindCornerSetButtons();
 
         // Origins
         document.getElementById('btn-set-work-origin')?.addEventListener('click', setWorkOriginCurrent);
@@ -422,6 +424,18 @@
                     btn.className = isScenarioLooping ? 'btn btn-danger-soft btn-small' : 'btn btn-warning btn-small';
                     btn.innerText = isScenarioLooping ? t('Dừng Lặp') : t('Chạy Lặp');
                 }
+            }
+            if (msg.cnc_bounds !== undefined) {
+                cncBounds = msg.cnc_bounds;
+                updateBoundsDisplay();
+            } else if (msg.cnc_tl !== undefined || msg.cnc_tr !== undefined || msg.cnc_bl !== undefined || msg.cnc_br !== undefined) {
+                cncBounds = {
+                    tl: msg.cnc_tl || null,
+                    tr: msg.cnc_tr || null,
+                    bl: msg.cnc_bl || null,
+                    br: msg.cnc_br || null
+                };
+                updateBoundsDisplay();
             }
             renderScenarioSteps();
             updateTelemetryUI();
@@ -1017,6 +1031,51 @@
         // ---- HELPER: world → canvas ----
         function wx(x) { return originX + x * axisDirX * canvasScale; }
         function wy(y) { return originY + y * axisDirY * canvasScale; }
+
+        // ---- DRAW PHYSICAL WORK BOUNDS FRAME (If 4 corners are set) ----
+        if (cncBounds && cncBounds.tl && cncBounds.tr && cncBounds.br && cncBounds.bl) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(wx(cncBounds.tl.x), wy(cncBounds.tl.y));
+            ctx.lineTo(wx(cncBounds.tr.x), wy(cncBounds.tr.y));
+            ctx.lineTo(wx(cncBounds.br.x), wy(cncBounds.br.y));
+            ctx.lineTo(wx(cncBounds.bl.x), wy(cncBounds.bl.y));
+            ctx.closePath();
+
+            // Fill translucent area
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
+            ctx.fill();
+
+            // Dashed outline
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([6, 4]);
+            ctx.stroke();
+
+            // Corner labels & markers
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 10px Outfit, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const corners = [
+                { name: 'TL', pt: cncBounds.tl, dx: -12, dy: -8 },
+                { name: 'TR', pt: cncBounds.tr, dx: 12, dy: -8 },
+                { name: 'BR', pt: cncBounds.br, dx: 12, dy: 8 },
+                { name: 'BL', pt: cncBounds.bl, dx: -12, dy: 8 }
+            ];
+
+            corners.forEach(c => {
+                const cx = wx(c.pt.x);
+                const cy = wy(c.pt.y);
+                ctx.beginPath();
+                ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillText(c.name, cx + c.dx, cy + c.dy);
+            });
+
+            ctx.restore();
+        }
 
         // ---- DRAW SCENARIO PATH SEGMENTS ----
         const segs = computeScenarioPathSegments();
@@ -1694,14 +1753,70 @@
             canvasScale = 1.0 / val;
         }
 
+        if (data.cnc_bounds) {
+            cncBounds = data.cnc_bounds;
+        } else if (data.cnc_tl !== undefined || data.cnc_tr !== undefined || data.cnc_bl !== undefined || data.cnc_br !== undefined) {
+            cncBounds = {
+                tl: data.cnc_tl || null,
+                tr: data.cnc_tr || null,
+                bl: data.cnc_bl || null,
+                br: data.cnc_br || null
+            };
+        }
+
         if (data.workpiece_origin) telemetry.workpiece_origin = data.workpiece_origin;
         if (data.work_origin) {
             telemetry.work_origin = data.work_origin;
             isHomeSet = true;
         }
         if (data.parking_point) telemetry.parking_point = data.parking_point;
+        updateBoundsDisplay();
         updateInfoDisplays();
         drawCanvas();
+    }
+
+    function updateBoundsDisplay() {
+        const el = document.getElementById('cnc-bounds-info');
+        if (!el) return;
+        const parts = [];
+        if (cncBounds && cncBounds.tl) parts.push(`TL:(${cncBounds.tl.x},${cncBounds.tl.y})`);
+        if (cncBounds && cncBounds.tr) parts.push(`TR:(${cncBounds.tr.x},${cncBounds.tr.y})`);
+        if (cncBounds && cncBounds.bl) parts.push(`BL:(${cncBounds.bl.x},${cncBounds.bl.y})`);
+        if (cncBounds && cncBounds.br) parts.push(`BR:(${cncBounds.br.x},${cncBounds.br.y})`);
+        if (parts.length > 0) {
+            el.innerText = parts.join(' ');
+        } else {
+            el.innerText = t('Chưa định vị 4 góc khung');
+        }
+    }
+
+    function bindCornerSetButtons() {
+        const corners = ['tl', 'tr', 'bl', 'br'];
+        corners.forEach(corner => {
+            const btn = document.getElementById(`btn-set-cnc-${corner}`);
+            if (!btn) return;
+            btn.addEventListener('click', async () => {
+                if (!isHomeSet) {
+                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                    return;
+                }
+                try {
+                    const res = await fetch('/cncapi/v1/origin/set_bound_point', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ corner: corner })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        cncBounds = data.bounds;
+                        updateBoundsDisplay();
+                        drawCanvas();
+                    }
+                } catch (e) {
+                    console.error(`Error setting corner ${corner}:`, e);
+                }
+            });
+        });
     }
 
     async function loadSystemSettingsFile(e) {
