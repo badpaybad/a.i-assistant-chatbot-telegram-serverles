@@ -93,9 +93,10 @@ class ControllerState:
         self.step_distance = float(settings.get("step_distance", 10.0))
         self.jog_feedrate = float(settings.get("jog_feedrate", 1000.0))
         
-        # WebSockets
+        # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
         self.grbl_ack_event = asyncio.Event()
+        self.serial_lock = asyncio.Lock()
         
         # Tasks
         self.reader_task = None
@@ -110,6 +111,21 @@ class ControllerState:
         self.sent_buffer_lengths = []
 
 state = ControllerState()
+
+async def safe_write_serial(data: bytes):
+    if not state.connected or not state.serial_port:
+        return
+    async with state.serial_lock:
+        try:
+            loop = asyncio.get_running_loop()
+            if isinstance(state.serial_port, DummySerial):
+                state.serial_port.write(data)
+            else:
+                def _do_write():
+                    state.serial_port.write(data)
+                await loop.run_in_executor(None, _do_write)
+        except Exception as e:
+            logger.error(f"Lỗi safe_write_serial: {e}")
 
 # Mock Serial Class
 class DummySerial:
@@ -310,8 +326,7 @@ async def status_polling_loop():
     while state.connected and state.serial_port:
         try:
             if not isinstance(state.serial_port, DummySerial):
-                state.serial_port.write(b"?")
-                state.serial_port.flush()
+                await safe_write_serial(b"?")
         except Exception as e:
             logger.error(f"Error polling status: {e}")
         await asyncio.sleep(0.2)
@@ -365,11 +380,9 @@ async def gcode_streamer_task():
             
             if state.connected and state.serial_port and not isinstance(state.serial_port, DummySerial):
                 try:
-                    state.serial_port.write(b"\x18")
-                    state.serial_port.flush()
+                    await safe_write_serial(b"\x18")
                     await asyncio.sleep(1.0)
-                    state.serial_port.write(b"$X\n")
-                    state.serial_port.flush()
+                    await safe_write_serial(b"$X\n")
                 except Exception as e:
                     logger.error(f"Lỗi reset GRBL sau khi hoàn thành: {e}")
                     
@@ -393,12 +406,7 @@ async def gcode_streamer_task():
             
         try:
             state.sent_buffer_lengths.append(line_len)
-            if not isinstance(state.serial_port, DummySerial):
-                state.serial_port.write((clean_line + "\n").encode())
-                state.serial_port.flush()
-            else:
-                state.serial_port.write((clean_line + "\n").encode())
-                
+            await safe_write_serial((clean_line + "\n").encode())
             await broadcast({"type": "log", "direction": "out", "content": clean_line})
             
             state.gcode_index += 1
@@ -480,8 +488,7 @@ async def connect_cnc(config: ConnectionConfig):
         state.polling_task = asyncio.create_task(status_polling_loop())
         
         # Wake up GRBL
-        state.serial_port.write(b"\r\n\r\n")
-        state.serial_port.flush()
+        await safe_write_serial(b"\r\n\r\n")
         await asyncio.sleep(1.0)
         
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port}"})
@@ -534,11 +541,7 @@ async def send_command(req: CommandRequest):
             if not clean_cmd:
                 continue
             try:
-                if isinstance(state.serial_port, DummySerial):
-                    state.serial_port.write((clean_cmd + "\n").encode())
-                else:
-                    state.serial_port.write((clean_cmd + "\n").encode())
-                    state.serial_port.flush()
+                await safe_write_serial((clean_cmd + "\n").encode())
                 await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
                 results.append(clean_cmd)
             except Exception as e:
@@ -599,9 +602,7 @@ async def set_work_origin(pt: Point3D):
     cmd = f"G10 L20 P1 X{pt.x:.3f} Y{pt.y:.3f} Z{pt.z:.3f}"
     if state.connected and state.serial_port:
         try:
-            state.serial_port.write((cmd + "\n").encode())
-            if not isinstance(state.serial_port, DummySerial):
-                state.serial_port.flush()
+            await safe_write_serial((cmd + "\n").encode())
             await broadcast({"type": "log", "direction": "out", "content": cmd})
         except Exception as e:
             logger.error(f"Error setting G10 work origin: {e}")
@@ -627,11 +628,7 @@ async def goto_parking():
     
     cmds = [f"G0 Z{pz:.3f}", f"G0 X{px:.3f} Y{py:.3f}"]
     for cmd in cmds:
-        if isinstance(state.serial_port, DummySerial):
-            state.serial_port.write((cmd + "\n").encode())
-        else:
-            state.serial_port.write((cmd + "\n").encode())
-            state.serial_port.flush()
+        await safe_write_serial((cmd + "\n").encode())
         await broadcast({"type": "log", "direction": "out", "content": cmd})
         await asyncio.sleep(0.1)
         
@@ -663,9 +660,7 @@ async def stop_stream():
         
     if state.connected and state.serial_port:
         try:
-            if not isinstance(state.serial_port, DummySerial):
-                state.serial_port.write(b"\x18")
-                state.serial_port.flush()
+            await safe_write_serial(b"\x18")
             await broadcast({"type": "log", "direction": "out", "content": "<CTRL-X Reset>"})
         except Exception as e:
             logger.error(f"Lỗi khi gửi dừng khẩn cấp: {e}")

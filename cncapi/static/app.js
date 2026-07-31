@@ -403,6 +403,10 @@
         } else if (msg.type === 'stream_status') {
             if (msg.status === 'completed' && isScenarioLooping) {
                 setTimeout(runScenario, 500);
+            } else if (msg.status === 'completed' || msg.status === 'stopped' || msg.status === 'failed') {
+                telemetry.streaming = false;
+                document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
+                drawCanvas();
             }
         }
     }
@@ -454,12 +458,36 @@
         if (telemetry.wpos) {
             const currentWPos = { x: telemetry.wpos[0], y: telemetry.wpos[1] };
             if (penTrajectory.length === 0 || 
-                Math.hypot(currentWPos.x - penTrajectory[penTrajectory.length - 1].x, currentWPos.y - penTrajectory[penTrajectory.length - 1].y) > 0.5) {
+                Math.hypot(currentWPos.x - penTrajectory[penTrajectory.length - 1].x, currentWPos.y - penTrajectory[penTrajectory.length - 1].y) > 0.3) {
                 penTrajectory.push(currentWPos);
                 if (penTrajectory.length > 1000) penTrajectory.shift();
-                drawCanvas();
             }
         }
+
+        // Highlight active step in scenario list when running real CNC
+        if (telemetry.streaming && activeScenario.actions && activeScenario.actions.length > 0) {
+            const currentWPos = telemetry.wpos ? { x: telemetry.wpos[0], y: telemetry.wpos[1] } : { x: 0, y: 0 };
+            let closestStepIdx = -1;
+            let minDist = Infinity;
+            activeScenario.actions.forEach((act, idx) => {
+                if (act.x !== undefined && act.y !== undefined) {
+                    const dist = Math.hypot(currentWPos.x - act.x, currentWPos.y - act.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        closestStepIdx = idx;
+                    }
+                }
+            });
+            if (minDist < 20 && closestStepIdx !== -1) {
+                document.querySelectorAll('#scenario-items-list .step-item').forEach((el, i) => {
+                    el.classList.toggle('sim-active', i === closestStepIdx);
+                });
+            }
+        } else if (!isSimulating && !telemetry.streaming) {
+            document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
+        }
+
+        drawCanvas();
     }
 
     function updateInfoDisplays() {
@@ -670,6 +698,11 @@
         sendCommand(gcode.join('\n'));
     }
 
+    let isMouseDown = false;
+    let mouseDownX = 0;
+    let mouseDownY = 0;
+    let mouseHoverPos = null;
+
     // Tool Path View Canvas (Visualizer)
     function initCanvas() {
         canvas = document.getElementById('toolpath-canvas');
@@ -686,21 +719,66 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Mouse Pan & Zoom
+        // Mouse Pan & Click to Move
         canvas.addEventListener('mousedown', (e) => {
-            isDraggingCanvas = true;
+            if (e.button !== 0) return; // Left click only
+            isMouseDown = true;
+            isDraggingCanvas = false;
+            mouseDownX = e.clientX;
+            mouseDownY = e.clientY;
             dragStartX = e.clientX - canvasOffsetX;
             dragStartY = e.clientY - canvasOffsetY;
         });
 
         window.addEventListener('mousemove', (e) => {
-            if (!isDraggingCanvas) return;
-            canvasOffsetX = e.clientX - dragStartX;
-            canvasOffsetY = e.clientY - dragStartY;
+            const rect = canvas.getBoundingClientRect();
+            if (e.clientX >= rect.left && e.clientX <= rect.right && e.clientY >= rect.top && e.clientY <= rect.bottom) {
+                mouseHoverPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            } else {
+                mouseHoverPos = null;
+            }
+
+            if (isMouseDown) {
+                if (Math.hypot(e.clientX - mouseDownX, e.clientY - mouseDownY) > 4) {
+                    isDraggingCanvas = true;
+                    canvasOffsetX = e.clientX - dragStartX;
+                    canvasOffsetY = e.clientY - dragStartY;
+                }
+            }
             drawCanvas();
         });
 
-        window.addEventListener('mouseup', () => isDraggingCanvas = false);
+        window.addEventListener('mouseup', (e) => {
+            if (isMouseDown && !isDraggingCanvas) {
+                // Click event! Convert canvas (x, y) to Work Coordinates
+                const rect = canvas.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+
+                const originX = canvas.width / 2 + canvasOffsetX;
+                const originY = canvas.height / 2 + canvasOffsetY;
+
+                const targetWorkX = (clickX - originX) / canvasScale;
+                const targetWorkY = (originY - clickY) / canvasScale;
+
+                if (!isConnected) {
+                    alert(t('Vui lòng Kết Nối CNC trước khi di chuyển!'));
+                } else if (!isHomeSet) {
+                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                } else {
+                    const feedInput = document.getElementById('jog-feedrate-input');
+                    const feed = feedInput ? parseFloat(feedInput.value) : jogFeedrate;
+                    sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
+                }
+            }
+            isMouseDown = false;
+            isDraggingCanvas = false;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouseHoverPos = null;
+            drawCanvas();
+        });
 
         canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
@@ -863,49 +941,73 @@
 
         // ---- DRAW SCENARIO PATH SEGMENTS ----
         const segs = computeScenarioPathSegments();
+        const isRunningOrSimulating = simIsRunning || isSimulating || telemetry.streaming || isScenarioLooping;
 
-        // Pass 1: Draw all lines
-        segs.forEach(seg => {
-            if (seg.pts.length < 2) return;
-            ctx.beginPath();
-            ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
-            for (let i = 1; i < seg.pts.length; i++) {
-                ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
-            }
-            if (seg.type === 'rapid') {
-                ctx.strokeStyle = 'rgba(100,116,139,0.7)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([5, 5]);
-            } else if (seg.type === 'cut') {
-                ctx.strokeStyle = 'rgba(251,146,60,0.95)';
-                ctx.lineWidth = 2.5;
-                ctx.setLineDash([]);
-            } else if (seg.type === 'swipe') {
-                ctx.strokeStyle = 'rgba(250,204,21,0.95)';
-                ctx.lineWidth = 3;
-                ctx.setLineDash([]);
-                // arrowhead at end
-                const p0 = seg.pts[seg.pts.length - 2];
-                const p1 = seg.pts[seg.pts.length - 1];
-                const angle = Math.atan2(-(p1.y - p0.y), p1.x - p0.x);
-                const ex = wx(p1.x), ey = wy(p1.y);
-                ctx.fillStyle = 'rgba(250,204,21,0.95)';
-                ctx.save();
-                ctx.translate(ex, ey);
-                ctx.rotate(-angle);
-                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-14, -5); ctx.lineTo(-14, 5); ctx.closePath();
-                ctx.fill();
-                ctx.restore();
-            } else {
-                ctx.strokeStyle = 'rgba(100,116,139,0.4)';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([2, 4]);
-            }
-            ctx.stroke();
-            ctx.setLineDash([]);
-        });
+        // Determine range of steps between set_begin and set_end
+        let beginStepIdx = 1;
+        let endStepIdx = activeScenario.actions.length;
 
-        // Pass 2: Draw action points with labels
+        const firstBegin = activeScenario.actions.findIndex(a => a.type === 'set_begin');
+        if (firstBegin !== -1) {
+            beginStepIdx = firstBegin + 1;
+            const firstEnd = activeScenario.actions.findIndex((a, i) => i >= firstBegin && a.type === 'set_end');
+            if (firstEnd !== -1) {
+                endStepIdx = firstEnd + 1;
+            }
+        } else {
+            const firstEnd = activeScenario.actions.findIndex(a => a.type === 'set_end');
+            if (firstEnd !== -1) {
+                endStepIdx = firstEnd + 1;
+            }
+        }
+
+        // Pass 1: Draw scenario lines ONLY when running or simulating
+        if (isRunningOrSimulating) {
+            segs.forEach(seg => {
+                if (seg.pts.length < 2) return;
+                // Only draw line if segment is within set_begin and set_end range
+                if (seg.stepIndex < beginStepIdx || seg.stepIndex > endStepIdx) return;
+
+                ctx.beginPath();
+                ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
+                for (let i = 1; i < seg.pts.length; i++) {
+                    ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
+                }
+                if (seg.type === 'rapid') {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)'; // Vivid rapid line
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                } else if (seg.type === 'cut') {
+                    ctx.strokeStyle = '#f97316'; // Clear vivid orange line
+                    ctx.lineWidth = 3.5;
+                    ctx.setLineDash([]);
+                } else if (seg.type === 'swipe') {
+                    ctx.strokeStyle = '#eab308'; // Clear vivid yellow line
+                    ctx.lineWidth = 4;
+                    ctx.setLineDash([]);
+                    // Arrowhead at end
+                    const p0 = seg.pts[seg.pts.length - 2];
+                    const p1 = seg.pts[seg.pts.length - 1];
+                    const angle = Math.atan2(-(p1.y - p0.y), p1.x - p0.x);
+                    const ex = wx(p1.x), ey = wy(p1.y);
+                    ctx.fillStyle = '#eab308';
+                    ctx.save();
+                    ctx.translate(ex, ey);
+                    ctx.rotate(-angle);
+                    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-16, -6); ctx.lineTo(-16, 6); ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                } else {
+                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([3, 3]);
+                }
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+        }
+
+        // Pass 2: Draw action nodes with labels (Always drawn)
         const drawnPoints = new Map(); // track label positions
         segs.forEach(seg => {
             const pt = seg.pts[seg.pts.length - 1];
@@ -913,42 +1015,43 @@
             const key = `${Math.round(pt.x * 10)}_${Math.round(pt.y * 10)}`;
 
             let dotColor = '#64748b';
-            let dotRadius = 5;
-            let icon = '';
-            if (seg.type === 'tap') { dotColor = '#38bdf8'; dotRadius = 7; icon = '●'; }
-            else if (seg.type === 'doubletap') { dotColor = '#818cf8'; dotRadius = 7; icon = '◉'; }
-            else if (seg.type === 'longpress') { dotColor = '#f472b6'; dotRadius = 8; icon = '⊕'; }
-            else if (seg.type === 'swipe') { dotColor = '#fbbf24'; dotRadius = 6; }
-            else if (seg.type === 'pendown') { dotColor = '#f97316'; dotRadius = 5; icon = '▼'; }
-            else if (seg.type === 'penup') { dotColor = '#34d399'; dotRadius = 5; icon = '▲'; }
-            else if (seg.type === 'dwell') { dotColor = '#a78bfa'; dotRadius = 5; icon = '⏸'; }
-            else if (seg.type === 'rapid') { dotColor = '#64748b'; dotRadius = 4; }
-            else if (seg.type === 'cut') { dotColor = '#fb923c'; dotRadius = 5; }
+            let dotRadius = 6;
+            if (seg.actionType === 'set_begin') { dotColor = '#22c55e'; dotRadius = 9; }
+            else if (seg.actionType === 'set_end') { dotColor = '#ef4444'; dotRadius = 9; }
+            else if (seg.type === 'tap') { dotColor = '#38bdf8'; dotRadius = 7; }
+            else if (seg.type === 'doubletap') { dotColor = '#818cf8'; dotRadius = 7; }
+            else if (seg.type === 'longpress') { dotColor = '#f472b6'; dotRadius = 8; }
+            else if (seg.type === 'swipe') { dotColor = '#fbbf24'; dotRadius = 7; }
+            else if (seg.type === 'pendown') { dotColor = '#f97316'; dotRadius = 6; }
+            else if (seg.type === 'penup') { dotColor = '#34d399'; dotRadius = 6; }
+            else if (seg.type === 'dwell') { dotColor = '#a78bfa'; dotRadius = 6; }
+            else if (seg.type === 'rapid') { dotColor = '#64748b'; dotRadius = 5; }
+            else if (seg.type === 'cut') { dotColor = '#fb923c'; dotRadius = 6; }
 
-            // Draw dot
+            // Draw node dot
             ctx.fillStyle = dotColor;
             ctx.beginPath(); ctx.arc(pxX, pxY, dotRadius, 0, Math.PI * 2); ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Draw step number label (avoid duplicate at same coord)
+            // Draw step number label
             if (!drawnPoints.has(key)) {
                 drawnPoints.set(key, true);
                 const labelX = pxX + dotRadius + 3;
                 const labelY = pxY - dotRadius - 2;
-                ctx.fillStyle = 'rgba(15,23,42,0.8)';
-                ctx.fillRect(labelX - 2, labelY - 10, 22, 13);
-                ctx.fillStyle = '#e2e8f0';
+                ctx.fillStyle = 'rgba(15,23,42,0.85)';
+                ctx.fillRect(labelX - 2, labelY - 10, 24, 13);
+                ctx.fillStyle = (seg.actionType === 'set_begin') ? '#4ade80' : ((seg.actionType === 'set_end') ? '#f87171' : '#e2e8f0');
                 ctx.font = 'bold 9px Outfit, sans-serif';
                 ctx.fillText(`#${seg.stepIndex}`, labelX, labelY);
             }
         });
 
-        // ---- DRAW LIVE PEN TRAJECTORY ----
+        // ---- DRAW LIVE PEN TRAJECTORY (Mờ nhạt / Faint line) ----
         if (penTrajectory.length > 1) {
-            ctx.strokeStyle = 'rgba(56,189,248,0.85)';
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)'; // Faint dim tracking line
+            ctx.lineWidth = 1;
             ctx.setLineDash([]);
             ctx.beginPath();
             penTrajectory.forEach((pt, i) => {
@@ -999,6 +1102,45 @@
             ctx.fillStyle = '#fbbf24';
             ctx.font = 'bold 10px Outfit, sans-serif';
             ctx.fillText(labelStr, headX + 14, headY - 11);
+        }
+
+        // Update pixel scale ratio overlay text (1 px = X mm)
+        const mmPerPx = 1.0 / canvasScale;
+        const scaleRatioEl = document.getElementById('canvas-scale-ratio');
+        if (scaleRatioEl) {
+            const scaleStr = mmPerPx < 0.1 ? mmPerPx.toFixed(3) : mmPerPx.toFixed(2);
+            scaleRatioEl.innerText = `Tỷ lệ: 1 px = ${scaleStr} mm (${canvasScale.toFixed(1)} px = 1 mm)`;
+        }
+
+        // Draw hover target cursor & coordinates if hovering
+        if (mouseHoverPos && !isDraggingCanvas && !simIsRunning) {
+            const hx = mouseHoverPos.x;
+            const hy = mouseHoverPos.y;
+            const targetX = (hx - originX) / canvasScale;
+            const targetY = (originY - hy) / canvasScale;
+
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(hx, 0); ctx.lineTo(hx, h);
+            ctx.moveTo(0, hy); ctx.lineTo(w, hy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Hover info pill
+            const hoverStr = `🎯 Click đến X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
+            ctx.font = '10px Outfit, sans-serif';
+            const tw = ctx.measureText(hoverStr).width + 12;
+            const boxX = (hx + tw + 10 < w) ? hx + 10 : hx - tw - 10;
+            const boxY = (hy - 25 > 0) ? hy - 25 : hy + 15;
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.fillRect(boxX, boxY, tw, 20);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(boxX, boxY, tw, 20);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(hoverStr, boxX + 6, boxY + 14);
         }
 
         // ---- LEGEND ----
