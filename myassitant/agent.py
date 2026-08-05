@@ -9,6 +9,7 @@ import os
 import sys
 import re
 import json
+import html
 import time
 import threading
 import httpx
@@ -36,13 +37,101 @@ from myassitant.agent_tools import TOOL_DEFINITIONS, execute_tool
 TELEGRAM_SEND_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
 
+# ─── Markdown -> Telegram HTML Converter ───────────────────────────────────
+
+def markdown_to_telegram_html(text: str) -> str:
+    """
+    Chuyển đổi văn bản Markdown từ chatbot thành HTML hỗ trợ bởi Telegram.
+    Telegram HTML chỉ hỗ trợ các thẻ:
+    <b>, <i>, <u>, <s>, <code>, <pre>, <a href="...">, <blockquote>, <tg-spoiler>
+    """
+    if not text:
+        return ""
+
+    # 1. Trích xuất code blocks (```lang ... ```) để không bị parse markdown bên trong
+    code_blocks = []
+    def save_code_block(match):
+        lang = match.group(1) or ""
+        code = match.group(2).rstrip("\r\n")
+        code_escaped = html.escape(code)
+        if lang:
+            replacement = f'<pre><code class="language-{html.escape(lang)}">{code_escaped}</code></pre>'
+        else:
+            replacement = f'<pre>{code_escaped}</pre>'
+        idx = len(code_blocks)
+        code_blocks.append(replacement)
+        return f"\x1fCODEBLOCK_{idx}\x1f"
+
+    pattern_code_block = re.compile(r'```([a-zA-Z0-9_+-]*)\n?(.*?)```', re.DOTALL)
+    text = pattern_code_block.sub(save_code_block, text)
+
+    # 2. Trích xuất inline code (`code`)
+    inline_codes = []
+    def save_inline_code(match):
+        code = match.group(1)
+        code_escaped = html.escape(code)
+        replacement = f'<code>{code_escaped}</code>'
+        idx = len(inline_codes)
+        inline_codes.append(replacement)
+        return f"\x1fINLINECODE_{idx}\x1f"
+
+    pattern_inline_code = re.compile(r'`([^`]+)`')
+    text = pattern_inline_code.sub(save_inline_code, text)
+
+    # 3. HTML escape phần text còn lại (tránh vỡ thẻ HTML của Telegram)
+    text = html.escape(text)
+
+    # 4. Header lines (# Header, ## Header, ### Header...) -> <b>Header</b>
+    text = re.sub(r'^(#{1,6})\s+(.+)$', r'<b>\2</b>', text, flags=re.MULTILINE)
+
+    # 5. Bold: **text** hoặc __text__ -> <b>text</b>
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
+    text = re.sub(r'__(.*?)__', r'<b>\1</b>', text, flags=re.DOTALL)
+
+    # 6. Italic: *text* hoặc _text_ -> <i>text</i>
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text, flags=re.DOTALL)
+    text = re.sub(r'(?<!\w)_(.*?)_(?!\w)', r'<i>\1</i>', text, flags=re.DOTALL)
+
+    # 7. Strikethrough: ~~text~~ hoặc ~text~ -> <s>text</s>
+    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text, flags=re.DOTALL)
+    text = re.sub(r'~(.*?)~', r'<s>\1</s>', text, flags=re.DOTALL)
+
+    # 8. Links: [text](url) -> <a href="url">text</a>
+    def replace_link(match):
+        link_text = match.group(1)
+        raw_url = html.unescape(match.group(2))
+        return f'<a href="{html.escape(raw_url)}">{link_text}</a>'
+
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, text)
+
+    # 9. Blockquote: lines starting with &gt; -> <blockquote>...</blockquote>
+    def replace_blockquote(match):
+        quote_text = match.group(1)
+        return f'<blockquote>{quote_text}</blockquote>'
+    text = re.sub(r'^&gt;\s?(.*)$', replace_blockquote, text, flags=re.MULTILINE)
+
+    # 10. List items: - item hoặc * item -> • item
+    text = re.sub(r'^[\-\*]\s+', r'• ', text, flags=re.MULTILINE)
+
+    # 11. Khôi phục lại Inline Code & Code Blocks
+    for i, replacement in enumerate(inline_codes):
+        text = text.replace(f"\x1fINLINECODE_{i}\x1f", replacement)
+
+    for i, replacement in enumerate(code_blocks):
+        text = text.replace(f"\x1fCODEBLOCK_{i}\x1f", replacement)
+
+    return text
+
+
 # ─── Gửi message Telegram ────────────────────────────────────────────────────
 
 def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optional[int] = None):
-    """Gửi message qua Telegram Bot API (sync)."""
+    """Gửi message qua Telegram Bot API (sync) hỗ trợ convert Markdown -> Telegram HTML."""
+    html_text = markdown_to_telegram_html(text)
+
     payload = {
         "chat_id": chat_id,
-        "text": text,
+        "text": html_text,
         "parse_mode": "HTML",
     }
     if reply_to_message_id:
@@ -52,7 +141,17 @@ def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optiona
         with httpx.Client(timeout=15) as client:
             resp = client.post(TELEGRAM_SEND_URL, json=payload)
             if resp.status_code != 200:
-                print(f"[Agent] Telegram send error {resp.status_code}: {resp.text[:200]}")
+                print(f"[Agent] Telegram HTML send error {resp.status_code}: {resp.text[:200]}")
+                # Fallback: Retry sending plain text without parse_mode
+                fallback_payload = {
+                    "chat_id": chat_id,
+                    "text": text,
+                }
+                if reply_to_message_id:
+                    fallback_payload["reply_to_message_id"] = reply_to_message_id
+                resp = client.post(TELEGRAM_SEND_URL, json=fallback_payload)
+                if resp.status_code != 200:
+                    print(f"[Agent] Telegram plain fallback send error {resp.status_code}: {resp.text[:200]}")
             return resp.json()
     except Exception as e:
         print(f"[Agent] Telegram send exception: {e}")

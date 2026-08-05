@@ -71,3 +71,6 @@ user_prompt ở myassitant/agent.py để  tiết kiệm và không bị loãng 
 
 **cập nhật 5** dùng semaphore lock theo group chát để không bị xử lý lặp message 2 lần trong từng nhóm chát
 có thể do cơ chế đổi is_processed =0 hoặc is_chatbot_reply=1 khi chạy đa luồng chưa kịp chuyển thành value đã xử lý hoặc đã trả lời nên bị quét lấy lần 2, cần xử lý , có thể semaphore lock theo nhóm chát tránh xử lý trùng lập 1 message 2 lần  
+
+**cập nhật 6**
+hàm _send_telegram_message text đưa vào từ chatbot là dạng markdown cần convert về dạng html hỗ trợ của telegram trước khi gửi message trở lại nhóm telegram nhìn cho đẹp dễ đọc 

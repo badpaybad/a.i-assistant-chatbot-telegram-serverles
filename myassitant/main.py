@@ -273,7 +273,7 @@ def _verify_url_reachable(base_url: str, timeout_sec: int = 60) -> bool:
                     return True
         except Exception as ex:
             print(f"[Tunnel] Chờ DNS lần {attempt}: {ex}")
-        time.sleep(5)
+        time.sleep(3)
     return False
 
 
