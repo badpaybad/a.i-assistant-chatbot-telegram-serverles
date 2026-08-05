@@ -74,3 +74,5 @@ có thể do cơ chế đổi is_processed =0 hoặc is_chatbot_reply=1 khi ch�
 
 **cập nhật 6**
 hàm _send_telegram_message text đưa vào từ chatbot là dạng markdown cần convert về dạng html hỗ trợ của telegram trước khi gửi message trở lại nhóm telegram nhìn cho đẹp dễ đọc 
+
+**cập nhật 7** với logic lấy history message và current message cho từng nhóm chat đang xử lý trong myassitant/agent.py . cần tìm hiểu đưa ra phương án để có thể có agent chatbot thông minh và hiểu ý những người trong nhóm đang chát rồi đưa ra câu trả lời khi thấy cần trả lời . cần hiểu được đề cập của người dùng ở current message để lấy các thông tin lịch sử trước đó (nội dung message, các tóm tắt file, các file) hoặc theo thời gian cần để xử lý trả lời cho message hiện tại được tag để trả lời. cần agent loop để tạo các prompt thông minh xử lý có suy nghĩ suy luận trước khi trả lời 

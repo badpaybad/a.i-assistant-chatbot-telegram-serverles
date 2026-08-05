@@ -393,14 +393,20 @@ def db_search_notes(group_id: str, query: str) -> str:
 
 
 def db_search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None) -> str:
-    """Tìm kiếm trong lịch sử chat."""
+    """Tìm kiếm trong lịch sử chat bao gồm cả nội dung message, tóm tắt file và đường dẫn file đính kèm."""
     results = db.search_messages(group_id, query, from_date, to_date)
     if not results:
-        return f"Không tìm thấy tin nhắn nào chứa '{query}'."
-    lines = [f"🔍 Tìm thấy {len(results)} tin nhắn:"]
+        return f"Không tìm thấy tin nhắn hoặc file nào khớp với từ khóa '{query}'."
+    lines = [f"🔍 Tìm thấy {len(results)} tin nhắn/file liên quan:"]
     for m in results:
         sender = m.get("from_full_name") or m.get("from_username") or "?"
-        lines.append(f"  [{m['created_at']}] @{sender}: {(m.get('text') or '')[:100]}")
+        user_id = m.get("from_user_id") or ""
+        msg_id = m.get("message_id") or m.get("id")
+        text = (m.get("text") or "").strip()
+        short_text = text[:300] + ("..." if len(text) > 300 else "")
+        file_sum = m.get("file_summaries")
+        file_str = f"\n    📎 File đính kèm: {file_sum}" if file_sum else ""
+        lines.append(f"  - [{m['created_at']}] Message #{msg_id} từ @{sender} (User ID: {user_id}): {short_text}{file_str}")
     return "\n".join(lines)
 
 
