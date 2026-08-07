@@ -293,31 +293,52 @@ def get_message_by_telegram_id(group_id: str, message_id: int) -> Optional[Dict]
 
 
 def search_messages(group_id: str, query: str, from_date: str = None, to_date: str = None, use_regex: bool = False) -> List[Dict]:
-    """Tìm kiếm message trong nhóm theo nội dung, regex hoặc khoảng thời gian."""
+    """Tìm kiếm message trong nhóm theo nội dung text, tóm tắt file hoặc loại file/đường dẫn."""
     conn = get_conn()
     is_regex = use_regex or any(ch in query for ch in r".*+?^$[](){}\|")
+
+    base_sql = """
+        SELECT m.*, 
+               GROUP_CONCAT(f.file_type || ':' || COALESCE(f.description,'') || (CASE WHEN f.local_path IS NOT NULL AND f.local_path != '' THEN ' (' || f.local_path || ')' ELSE '' END), '|') as file_summaries
+        FROM message_of_group m
+        LEFT JOIN file_of_message f ON f.message_id_fk = m.id
+        WHERE m.group_id=?
+    """
+
+    where_conds = []
+    params = [str(group_id)]
+
     if is_regex:
-        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text REGEXP ?"
-        params = [str(group_id), query]
+        where_conds.append("(m.text REGEXP ? OR f.description REGEXP ? OR f.file_type REGEXP ? OR f.local_path REGEXP ?)")
+        params.extend([query, query, query, query])
     else:
-        sql = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ?"
-        params = [str(group_id), f"%{query}%"]
+        where_conds.append("(m.text LIKE ? OR f.description LIKE ? OR f.file_type LIKE ? OR f.local_path LIKE ?)")
+        q_like = f"%{query}%"
+        params.extend([q_like, q_like, q_like, q_like])
 
     if from_date:
-        sql += " AND created_at >= ?"
+        where_conds.append("m.created_at >= ?")
         params.append(from_date)
     if to_date:
-        sql += " AND created_at <= ?"
+        where_conds.append("m.created_at <= ?")
         params.append(to_date)
-    sql += " ORDER BY created_at DESC LIMIT 50"
+
+    sql = base_sql + " AND " + " AND ".join(where_conds) + " GROUP BY m.id ORDER BY m.created_at DESC LIMIT 50"
+
     try:
         rows = conn.execute(sql, params).fetchall()
         return [dict(r) for r in rows]
     except Exception as e:
         print(f"[DB] search_messages error: {e}")
-        # Fallback to simple LIKE
-        sql_fallback = "SELECT * FROM message_of_group WHERE group_id=? AND text LIKE ? ORDER BY created_at DESC LIMIT 50"
-        rows = conn.execute(sql_fallback, (str(group_id), f"%{query}%")).fetchall()
+        sql_fallback = """
+            SELECT m.*, GROUP_CONCAT(f.file_type || ':' || COALESCE(f.description,''), '|') as file_summaries
+            FROM message_of_group m
+            LEFT JOIN file_of_message f ON f.message_id_fk = m.id
+            WHERE m.group_id=? AND (m.text LIKE ? OR f.description LIKE ? OR f.file_type LIKE ?)
+            GROUP BY m.id ORDER BY m.created_at DESC LIMIT 50
+        """
+        q_like = f"%{query}%"
+        rows = conn.execute(sql_fallback, (str(group_id), q_like, q_like, q_like)).fetchall()
         return [dict(r) for r in rows]
 
 

@@ -9,6 +9,7 @@ import os
 import sys
 import re
 import json
+import html
 import time
 import threading
 import httpx
@@ -36,13 +37,101 @@ from myassitant.agent_tools import TOOL_DEFINITIONS, execute_tool
 TELEGRAM_SEND_URL = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
 
+# ─── Markdown -> Telegram HTML Converter ───────────────────────────────────
+
+def markdown_to_telegram_html(text: str) -> str:
+    """
+    Chuyển đổi văn bản Markdown từ chatbot thành HTML hỗ trợ bởi Telegram.
+    Telegram HTML chỉ hỗ trợ các thẻ:
+    <b>, <i>, <u>, <s>, <code>, <pre>, <a href="...">, <blockquote>, <tg-spoiler>
+    """
+    if not text:
+        return ""
+
+    # 1. Trích xuất code blocks (```lang ... ```) để không bị parse markdown bên trong
+    code_blocks = []
+    def save_code_block(match):
+        lang = match.group(1) or ""
+        code = match.group(2).rstrip("\r\n")
+        code_escaped = html.escape(code)
+        if lang:
+            replacement = f'<pre><code class="language-{html.escape(lang)}">{code_escaped}</code></pre>'
+        else:
+            replacement = f'<pre>{code_escaped}</pre>'
+        idx = len(code_blocks)
+        code_blocks.append(replacement)
+        return f"\x1fCODEBLOCK_{idx}\x1f"
+
+    pattern_code_block = re.compile(r'```([a-zA-Z0-9_+-]*)\n?(.*?)```', re.DOTALL)
+    text = pattern_code_block.sub(save_code_block, text)
+
+    # 2. Trích xuất inline code (`code`)
+    inline_codes = []
+    def save_inline_code(match):
+        code = match.group(1)
+        code_escaped = html.escape(code)
+        replacement = f'<code>{code_escaped}</code>'
+        idx = len(inline_codes)
+        inline_codes.append(replacement)
+        return f"\x1fINLINECODE_{idx}\x1f"
+
+    pattern_inline_code = re.compile(r'`([^`]+)`')
+    text = pattern_inline_code.sub(save_inline_code, text)
+
+    # 3. HTML escape phần text còn lại (tránh vỡ thẻ HTML của Telegram)
+    text = html.escape(text)
+
+    # 4. Header lines (# Header, ## Header, ### Header...) -> <b>Header</b>
+    text = re.sub(r'^(#{1,6})\s+(.+)$', r'<b>\2</b>', text, flags=re.MULTILINE)
+
+    # 5. Bold: **text** hoặc __text__ -> <b>text</b>
+    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text, flags=re.DOTALL)
+    text = re.sub(r'__(.*?)__', r'<b>\1</b>', text, flags=re.DOTALL)
+
+    # 6. Italic: *text* hoặc _text_ -> <i>text</i>
+    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text, flags=re.DOTALL)
+    text = re.sub(r'(?<!\w)_(.*?)_(?!\w)', r'<i>\1</i>', text, flags=re.DOTALL)
+
+    # 7. Strikethrough: ~~text~~ hoặc ~text~ -> <s>text</s>
+    text = re.sub(r'~~(.*?)~~', r'<s>\1</s>', text, flags=re.DOTALL)
+    text = re.sub(r'~(.*?)~', r'<s>\1</s>', text, flags=re.DOTALL)
+
+    # 8. Links: [text](url) -> <a href="url">text</a>
+    def replace_link(match):
+        link_text = match.group(1)
+        raw_url = html.unescape(match.group(2))
+        return f'<a href="{html.escape(raw_url)}">{link_text}</a>'
+
+    text = re.sub(r'\[([^\]]+)\]\(([^)]+)\)', replace_link, text)
+
+    # 9. Blockquote: lines starting with &gt; -> <blockquote>...</blockquote>
+    def replace_blockquote(match):
+        quote_text = match.group(1)
+        return f'<blockquote>{quote_text}</blockquote>'
+    text = re.sub(r'^&gt;\s?(.*)$', replace_blockquote, text, flags=re.MULTILINE)
+
+    # 10. List items: - item hoặc * item -> • item
+    text = re.sub(r'^[\-\*]\s+', r'• ', text, flags=re.MULTILINE)
+
+    # 11. Khôi phục lại Inline Code & Code Blocks
+    for i, replacement in enumerate(inline_codes):
+        text = text.replace(f"\x1fINLINECODE_{i}\x1f", replacement)
+
+    for i, replacement in enumerate(code_blocks):
+        text = text.replace(f"\x1fCODEBLOCK_{i}\x1f", replacement)
+
+    return text
+
+
 # ─── Gửi message Telegram ────────────────────────────────────────────────────
 
 def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optional[int] = None):
-    """Gửi message qua Telegram Bot API (sync)."""
+    """Gửi message qua Telegram Bot API (sync) hỗ trợ convert Markdown -> Telegram HTML."""
+    html_text = markdown_to_telegram_html(text)
+
     payload = {
         "chat_id": chat_id,
-        "text": text,
+        "text": html_text,
         "parse_mode": "HTML",
     }
     if reply_to_message_id:
@@ -52,7 +141,17 @@ def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optiona
         with httpx.Client(timeout=15) as client:
             resp = client.post(TELEGRAM_SEND_URL, json=payload)
             if resp.status_code != 200:
-                print(f"[Agent] Telegram send error {resp.status_code}: {resp.text[:200]}")
+                print(f"[Agent] Telegram HTML send error {resp.status_code}: {resp.text[:200]}")
+                # Fallback: Retry sending plain text without parse_mode
+                fallback_payload = {
+                    "chat_id": chat_id,
+                    "text": text,
+                }
+                if reply_to_message_id:
+                    fallback_payload["reply_to_message_id"] = reply_to_message_id
+                resp = client.post(TELEGRAM_SEND_URL, json=fallback_payload)
+                if resp.status_code != 200:
+                    print(f"[Agent] Telegram plain fallback send error {resp.status_code}: {resp.text[:200]}")
             return resp.json()
     except Exception as e:
         print(f"[Agent] Telegram send exception: {e}")
@@ -61,22 +160,66 @@ def _send_telegram_message(chat_id: str, text: str, reply_to_message_id: Optiona
 
 # ─── Build context từ lịch sử message ────────────────────────────────────────
 
-def _build_context_text(group_id: str, limit: int = 5) -> str:
-    """Xây dựng chuỗi context rút gọn từ các message gần nhất để làm ngữ cảnh tham khảo nhẹ."""
+def _build_smart_history_context(group_id: str, limit: int = 10) -> str:
+    """
+    Xây dựng chuỗi lịch sử hội thoại đa chiều, có cấu trúc chi tiết từ các message gần nhất.
+    Bao gồm:
+    - Phân biệt vai trò [USER] vs [BOT / CHATBOT]
+    - Hiển thị liên kết reply (quote tin nhắn nào)
+    - Tóm tắt các file đính kèm (ảnh, audio, docx...)
+    - Giữ văn bản lên đến 400 ký tự cho mỗi message để hiểu đúng ngữ cảnh.
+    """
+    bot_clean = (TELEGRAM_BOT_USERNAME or "").replace("@", "").strip().lower()
     recent = db.get_recent_processed_messages(group_id, limit)
     if not recent:
-        return "(Chưa có lịch sử tin nhắn trước đó)"
+        return "(Chưa có lịch sử tin nhắn trước đó trong nhóm)"
 
     lines = []
     for i, msg in enumerate(recent, 1):
-        sender = msg.get("from_full_name") or msg.get("from_username") or "Unknown"
+        username = (msg.get("from_username") or "").strip()
+        full_name = (msg.get("from_full_name") or "").strip()
+        user_id = str(msg.get("from_user_id") or "")
+        msg_id = msg.get("message_id") or msg.get("id")
+
+        is_bot = False
+        if bot_clean and username and username.lower() == bot_clean:
+            is_bot = True
+        elif msg.get("is_chatbot_reply") == 2:
+            is_bot = True
+
+        if is_bot:
+            sender_str = f"[BOT / CHATBOT] (@{TELEGRAM_BOT_USERNAME or 'bot'})"
+        else:
+            name_part = full_name or username or f"User_{user_id}"
+            user_part = f" (@{username})" if username else ""
+            sender_str = f"[USER] {name_part}{user_part}"
+
         text = (msg.get("text") or "").strip()
         ts = msg.get("created_at", "")
-        short_text = text[:150] + ("..." if len(text) > 150 else "")
-        line = f"  [{ts}] {sender}: {short_text}"
+
+        reply_info = ""
+        reply_to_id = msg.get("reply_to_message_id")
+        if reply_to_id:
+            reply_info = f" (Trả lời Message #{reply_to_id})"
+
+        file_info = ""
+        file_sum = msg.get("file_summaries")
+        if file_sum:
+            file_info = f" [📎 File: {file_sum}]"
+
+        short_text = text[:400] + ("..." if len(text) > 400 else "")
+        if not short_text and file_info:
+            short_text = "(Tin nhắn đính kèm file)"
+
+        line = f"{i}. [{ts}] Message #{msg_id} - {sender_str}{reply_info}: {short_text}{file_info}"
         lines.append(line)
 
     return "\n".join(lines)
+
+
+def _build_context_text(group_id: str, limit: int = 10) -> str:
+    """Wrapper tương thích ngược cho _build_smart_history_context."""
+    return _build_smart_history_context(group_id, limit)
 
 
 # ─── Gọi Gemma4 API ─────────────────────────────────────────────────────────
@@ -437,22 +580,26 @@ class GroupChatAgent:
                     tool_results_str += f"\n[{tr['tool']}]: {tr['result'][:1000]}"
 
             user_prompt = (
-                f"### TIN NHẮN CẦN TRẢ LỜI (ƯU TIÊN HÀNG ĐẦU):\n"
+                f"### TIN NHẮN MỚI NHẤT CẦN XỬ LÝ (VÒNG SUY LUẬN {loop_i}/{AGENT_MAX_LOOP}):\n"
                 f"[{created_at}] {from_full_name} (@{from_username}): {text}\n"
                 f"{reply_context}\n"
                 f"{file_context}\n"
                 f"{tool_results_str}\n\n"
-                f"### TÓM TẮT LỊCH SỬ TRÒ CHUYỆN GẦN ĐÂY (THAM KHẢO RÚT GỌN):\n"
+                f"### LỊCH SỬ HỘI THOẠI TRONG NHÓM (10 TIN NHẮN GẦN NHẤT):\n"
                 f"{context_text}\n\n"
-                f"### HƯỚNG DẪN XỬ LÝ:\n"
-                f"- Tập trung phân tích và trả lời trực tiếp cho tin nhắn mới nhất, tin nhắn được quote/reply và các file đính kèm.\n"
-                f"- Các công cụ khả dụng (Tool Calls):\n"
-                f"  + `send_telegram_file`: BẮT BUỘC gọi tool này để gửi file (ảnh, pdf, icon, code, docx...) về lại Telegram cho người dùng sau khi đã tạo/chuyển đổi file xong.\n"
-                f"  + `execute_python_code` / `execute_bash_script`: Sinh và chạy code/script (VD: ffmpeg convert ảnh, xử lý dữ liệu) khi người dùng yêu cầu.\n"
-                f"  + `db_search_messages` / `db_search_notes` / `db_list_reminders`: Truy vấn CSDL SQLite khi cần thông tin cũ.\n"
-                f"  + `search_google`: Tìm kiếm thông tin Google thời gian thực.\n"
-                f"- LƯU Ý BẮT BUỘC: Nếu người dùng yêu cầu tạo file, convert ảnh/audio/video, hay gửi file, sau khi chạy lệnh tạo file xong, bạn PHẢI gọi tool `send_telegram_file` để gửi file đó lên Telegram. Tuyệt đối KHÔNG hứa 'Tôi sẽ gửi file ngay bây giờ' mà không thực hiện gọi tool `send_telegram_file`!\n"
-                f"{'Nếu không cần dùng thêm tool, hãy đưa ra câu trả lời trực tiếp.' if loop_i > 1 else ''}"
+                f"### HƯỚNG DẪN QUY TRÌNH SUY LUẬN & ĐÁNH GIÁ YÊU CẦU:\n"
+                f"1. Phân tích ý định & Im lặng:\n"
+                f"   - Nếu tin nhắn là lời trò chuyện phiếm giữa các thành viên và KHÔNG CẦN AI can thiệp -> trả về duy nhất '[NO_REPLY]'.\n"
+                f"2. Phân tích Đề cập & Mốc thời gian (Reference & Temporal Analysis):\n"
+                f"   - Kiểm tra tin nhắn có nhắc đến mốc thời gian ('hôm qua', 'tuần trước', 'lúc sáng'), tin nhắn cũ, người dùng X, file hay note nào không.\n"
+                f"   - Nếu thông tin đó CHƯA CÓ trong 10 tin nhắn gần nhất trên, hãy gọi ngay tool `db_search_messages`, `db_search_notes`, hoặc `db_list_reminders` để tìm dữ liệu trong CSDL SQLite.\n"
+                f"3. Công cụ hỗ trợ (Tool Calls):\n"
+                f"   + `db_search_messages`: Tìm kiếm tin nhắn cũ theo từ khóa/thời gian.\n"
+                f"   + `db_search_notes` / `db_list_reminders`: Tra cứu ghi chú và nhắc nhở.\n"
+                f"   + `search_google`: Tìm kiếm Google thời gian thực.\n"
+                f"   + `execute_python_code` / `execute_bash_script`: Thực thi script xử lý dữ liệu/file.\n"
+                f"   + `send_telegram_file`: BẮT BUỘC gọi tool này nếu cần gửi file (ảnh, pdf, script, docx...) về Telegram nhóm.\n"
+                f"{'4. Bạn đã có đủ thông tin từ các công cụ, hãy tổng hợp câu trả lời trực tiếp.' if loop_i > 1 else '4. Nếu cần tra cứu dữ liệu CSDL hoặc thông tin ngoài, hãy gọi tool phù hợp.'}"
                 + (f"\nTag người dùng: {tag_user}" if not is_private else "")
             )
 
