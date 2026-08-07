@@ -1558,6 +1558,8 @@ class FontGcodeRequest(BaseModel):
     font_name: str
     text: str
     font_size_pt: float = 72.0
+    line_spacing: float = 1.2
+    line_spacing_mm: float = 0.0
     z_safe: float = 0.0
     z_draw: float = 45.0
     feed_rate: float = 4000.0
@@ -1632,9 +1634,13 @@ def generate_font_gcode(req: FontGcodeRequest):
 
         font = ImageFont.truetype(font_path, size=font_size_px)
 
+        scale_mm_per_px = (req.font_size_pt * MM_PER_PT) / font_size_px
+        extra_spacing_px = max(0, int(req.line_spacing_mm / scale_mm_per_px))
+        spacing_px = max(0, int(font_size_px * (req.line_spacing - 1.0))) + extra_spacing_px
+
         dummy_img = Image.new("L", (1, 1))
         draw_dummy = ImageDraw.Draw(dummy_img)
-        bbox = draw_dummy.textbbox((0, 0), normalized_text, font=font)
+        bbox = draw_dummy.multiline_textbbox((0, 0), normalized_text, font=font, spacing=spacing_px)
 
         pad_px = int(40 * (RENDER_DPI / 72.0) / 4)
         raw_w_px = max(1, bbox[2] - bbox[0])
@@ -1645,7 +1651,7 @@ def generate_font_gcode(req: FontGcodeRequest):
 
         img = Image.new("L", (canvas_w_px, canvas_h_px), color=255)
         draw = ImageDraw.Draw(img)
-        draw.text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font)
+        draw.multiline_text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font, spacing=spacing_px)
 
         img_np = np.array(img)
         binary_img = img_np < 128
@@ -1698,10 +1704,10 @@ def generate_font_gcode(req: FontGcodeRequest):
         def get_sort_key(path):
             p1 = path[0]
             p2 = path[-1]
-            top_y = min(p1[1], p2[1])
-            left_x = min(p1[0], p2[0])
-            row_bucket = int(top_y / 8.0)
-            return (row_bucket, left_x, top_y)
+            min_y = min(p1[1], p2[1])
+            min_x = min(p1[0], p2[0])
+            row_bucket = int(min_y / 10.0)
+            return (row_bucket, min_x)
 
         oriented_paths = []
         for path in raw_paths:
@@ -1822,5 +1828,5 @@ async def read_index():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8099)
+    uvicorn.run("main:app", host="0.0.0.0", port=8099, reload=True)
 

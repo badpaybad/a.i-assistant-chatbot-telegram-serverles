@@ -897,17 +897,25 @@
           <label for="font-select" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Chọn Font Chữ:</label>
           <select id="font-select" class="input-select" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);"></select>
         </div>
-        <div class="form-group">
-          <label for="font-size-input" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Cỡ Chữ (Font Size pt):</label>
-          <div class="input-with-pills" style="display: flex; gap: 8px; align-items: center;">
-            <input type="number" id="font-size-input" value="72" min="8" max="500" style="width: 80px; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
-            <div class="pill-group" style="display: flex; gap: 4px;">
-              <button class="font-size-pill btn btn-secondary btn-compact" data-size="18">18pt</button>
-              <button class="font-size-pill btn btn-secondary btn-compact" data-size="36">36pt</button>
-              <button class="font-size-pill btn btn-primary btn-compact active" data-size="72">72pt</button>
-              <button class="font-size-pill btn btn-secondary btn-compact" data-size="120">120pt</button>
-            </div>
+        <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+          <div class="form-group">
+            <label for="font-size-input" style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Cỡ Chữ (pt):</label>
+            <input type="number" id="font-size-input" value="72" min="8" max="500" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
           </div>
+          <div class="form-group">
+            <label for="font-line-spacing" style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Cách Dòng (Tỷ lệ):</label>
+            <input type="number" id="font-line-spacing" value="1.2" min="0.5" max="5.0" step="0.1" title="Tỷ lệ khoảng cách giữa các dòng (mặc định 1.2x)" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
+          </div>
+          <div class="form-group">
+            <label for="font-line-spacing-mm" style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Cách Dòng (mm):</label>
+            <input type="number" id="font-line-spacing-mm" value="0.0" min="0.0" max="100.0" step="1.0" title="Khoảng cách bổ sung giữa các dòng tính bằng mm (mặc định 0 mm)" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
+          </div>
+        </div>
+        <div class="pill-group" style="display: flex; gap: 4px; margin-bottom: 4px;">
+          <button class="font-size-pill btn btn-secondary btn-compact" data-size="18">18pt</button>
+          <button class="font-size-pill btn btn-secondary btn-compact" data-size="36">36pt</button>
+          <button class="font-size-pill btn btn-primary btn-compact active" data-size="72">72pt</button>
+          <button class="font-size-pill btn btn-secondary btn-compact" data-size="120">120pt</button>
         </div>
         <div class="form-group">
           <label for="font-text-input" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Nội Dung Văn Bản (Notepad - Hỗ trợ Enter/Tab):</label>

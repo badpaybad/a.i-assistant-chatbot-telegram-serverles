@@ -1946,6 +1946,9 @@
             }
         }
 
+        const lineSpacingInput = document.getElementById('font-line-spacing');
+        const lineSpacingMmInput = document.getElementById('font-line-spacing-mm');
+
         async function generateFontGcode() {
             const font_name = fontSelect ? fontSelect.value : '';
             const text = textInput ? textInput.value : '';
@@ -1962,6 +1965,8 @@
                         font_name: font_name,
                         text: text,
                         font_size_pt: parseFloat(fontSizeInput.value) || 72.0,
+                        line_spacing: parseFloat(lineSpacingInput?.value) || 1.2,
+                        line_spacing_mm: parseFloat(lineSpacingMmInput?.value) || 0.0,
                         feed_rate: parseFloat(feedRateInput.value) || 4000.0,
                         z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
                         z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
@@ -1987,6 +1992,15 @@
 
         if (btnGenerate) btnGenerate.addEventListener('click', generateFontGcode);
         if (fontSelect) fontSelect.addEventListener('change', generateFontGcode);
+        if (fontSizeInput) fontSizeInput.addEventListener('input', generateFontGcode);
+        if (lineSpacingInput) {
+            lineSpacingInput.addEventListener('input', generateFontGcode);
+            lineSpacingInput.addEventListener('change', generateFontGcode);
+        }
+        if (lineSpacingMmInput) {
+            lineSpacingMmInput.addEventListener('input', generateFontGcode);
+            lineSpacingMmInput.addEventListener('change', generateFontGcode);
+        }
         if (strokeModeSelect) strokeModeSelect.addEventListener('change', generateFontGcode);
         if (textInput) textInput.addEventListener('input', generateFontGcode);
 

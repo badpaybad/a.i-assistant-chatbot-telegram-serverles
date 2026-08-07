@@ -1,6 +1,6 @@
 # Hướng dẫn Thiết kế & Triển khai Tính Năng "Gcode with font" cho `cncapi`
 
-Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và các bước triển khai tính năng **Gcode with font** (Soạn thảo văn bản và sinh mã G-code nét vẽ theo Font chữ) từ `cnc/whattodo.md` sang ứng dụng Web API [`cncapi`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/whattodo.md) theo đúng yêu cầu tại **Cập nhật 19** của [`cncapi/whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/whattodo.md).
+Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và các bước triển khai tính năng **Gcode with font** (Soạn thảo văn bản và sinh mã G-code nét vẽ theo Font chữ) từ `cnc/whattodo.md` sang ứng dụng Web API [`cncapi`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/whattodo.md) theo đúng các yêu cầu tại **Cập nhật 19**, **Cập nhật 20** và **Cập nhật 21** của [`cncapi/whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/whattodo.md).
 
 ---
 
@@ -14,18 +14,39 @@ Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và c
 5. **Nút "Vẽ xem trước" (Giả lập)**: Cho phép chạy mô phỏng nét vẽ chữ động trên Canvas Tool Path View để người dùng xem trước hành trình di chuyển của bút mà không tác động tới máy CNC thật.
 6. **Nút "Vẽ trên cnc" (Chạy CNC thật)**: Gửi trực tiếp chuỗi lệnh G-code sinh ra tới bo mạch CNC để điều khiển máy CNC thực tế di chuyển và hạ bút vẽ.
 
+### 1.2. Mục tiêu Cập nhật 20 (`cncapi/whattodo.md`)
+1. **Khắc phục các dòng chữ bị dính/sát nhau khi có xuống dòng `\n`**:
+   - Tăng khoảng cách dòng bằng tỷ lệ `line_spacing` (Mặc định `1.2x`).
+
+### 1.3. Mục tiêu Cập nhật 21 (`cncapi/whattodo.md`)
+1. **Bổ sung cấu hình Khoảng Cách Dòng tính bằng Milimet (`line_spacing_mm`)**:
+   - Khi văn bản có các ký tự xuống dòng `\n`, người dùng có thể thiết lập thêm một khoảng trống tính chính xác bằng đơn vị milimet (mm) giữa các dòng chữ (Mặc định `0.0 mm`, cho phép điều chỉnh từ `0 mm` đến `100 mm`).
+2. **Quy đổi Milimet sang Pixel chính xác**:
+   - Tỷ lệ quy đổi: `scale_mm_per_px = (font_size_pt * 25.4 / 72.0) / font_size_px`.
+   - Số pixel bổ sung thêm cho từng dòng: `extra_spacing_px = int(line_spacing_mm / scale_mm_per_px)`.
+   - Tổng khoảng cách dòng truyền cho PIL render: `spacing_px = max(0, int(font_size_px * (line_spacing - 1.0))) + extra_spacing_px`.
+3. **Đồng Bộ Hướng Trục Y với Cấu Hình Canvas `axisDirY`**:
+   - Ứng dụng `cncapi` sử dụng hướng mặc định `axisDirY = 1` (+Y chỉ hướng xuống dưới).
+   - Tọa độ Y hình ảnh PIL nhị phân chuẩn khớp trực tiếp với Canvas:
+     `y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)`
+   - Sắp xếp nét chữ xuôi chiều đọc tự nhiên từ dòng trên xuống dòng dưới và từ trái qua phải.
+4. **Lưu ý Quy Trình Đóng Gói (Build Dist)**:
+   - Không tự động thực chạy script `build_dist.sh`, người dùng sẽ tự chạy thủ công khi cần.
+
 ---
 
 ## 2. Chi Tiết Các Bước Triển Khai Mã Nguồn (Implementation Steps)
 
 ### Bước 1: Bổ sung API Backend trong [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py)
 
-#### 1.1. Định nghĩa Pydantic Request Model
+#### 1.1. Định nghĩa Pydantic Request Model (Bổ sung `line_spacing_mm`)
 ```python
 class FontGcodeRequest(BaseModel):
     font_name: str
     text: str
     font_size_pt: float = 72.0
+    line_spacing: float = 1.2      # Tỷ lệ khoảng cách dòng (Mặc định 1.2x)
+    line_spacing_mm: float = 0.0   # Khoảng cách bổ sung giữa các dòng tính bằng mm (Mặc định 0.0 mm)
     z_safe: float = 0.0
     z_draw: float = 45.0
     feed_rate: float = 4000.0
@@ -34,159 +55,116 @@ class FontGcodeRequest(BaseModel):
     stroke_mode: str = "single_line"
 ```
 
-#### 1.2. API Lấy Danh Sách Font (`GET /cncapi/v1/fonts` & `/api/fonts`)
-Đọc toàn bộ file `.ttf`, `.otf`, `.woff`, `.woff2` nằm trong thư mục `cncapi/fonts`:
+#### 1.2. Công Thức Tính Spacing Nhị Phân & Đồng Bộ Hướng Trục Y
 ```python
-@app.get("/cncapi/v1/fonts")
-@app.get("/api/fonts")
-def list_available_fonts():
-    fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
-    if not os.path.exists(fonts_dir):
-        os.makedirs(fonts_dir, exist_ok=True)
-    font_files = []
-    valid_exts = (".ttf", ".otf", ".woff", ".woff2")
-    for f in os.listdir(fonts_dir):
-        if f.lower().endswith(valid_exts) and f not in font_files:
-            font_files.append(f)
-    font_files.sort()
-    return {"fonts": font_files}
-```
+MM_PER_PT = 25.4 / 72.0
+RENDER_DPI = 600
+font_size_px = int(req.font_size_pt * (RENDER_DPI / 72.0))
+if font_size_px < 8:
+    font_size_px = 8
 
-#### 1.3. API Sinh Mã G-code Nét Chữ (`POST /cncapi/v1/generate-font-gcode` & `/api/generate-font-gcode`)
-Sử dụng `PIL.ImageFont`, `skimage.morphology.skeletonize` và `cv2.findContours` để trích xuất nét vẽ single-line từ văn bản và tạo chuỗi mã G-code:
-```python
-@app.post("/cncapi/v1/generate-font-gcode")
-@app.post("/api/generate-font-gcode")
-def generate_font_gcode(req: FontGcodeRequest):
-    # 1. Load Font & Render Văn Bản dạng Ảnh Nhị Phân (Binary Image)
-    # 2. Rút Xương Nét Chữ (Skeletonize) để có Nét Đơn (Single Line)
-    # 3. Tìm Contours & Nội Suy PolyDP để chuyển thành Tọa độ Milimet (mm)
-    # 4. Sinh mã lệnh G-code (G0 Z_safe, G0 X.. Y.., G1 Z_draw F.., G1 X.. Y..)
-    # 5. Trả về JSON: {"status": "ok", "gcode": gcode_str, "preview_paths": preview_paths, ...}
+scale_mm_per_px = (req.font_size_pt * MM_PER_PT) / font_size_px
+
+# Quy đổi line_spacing_mm sang pixel extra
+extra_spacing_px = max(0, int(req.line_spacing_mm / scale_mm_per_px))
+# Tổng spacing pixel cho PIL multiline_text
+spacing_px = max(0, int(font_size_px * (req.line_spacing - 1.0))) + extra_spacing_px
+
+dummy_img = Image.new("L", (1, 1))
+draw_dummy = ImageDraw.Draw(dummy_img)
+bbox = draw_dummy.multiline_textbbox((0, 0), normalized_text, font=font, spacing=spacing_px)
+
+pad_px = int(40 * (RENDER_DPI / 72.0) / 4)
+raw_w_px = max(1, bbox[2] - bbox[0])
+raw_h_px = max(1, bbox[3] - bbox[1])
+
+canvas_w_px = raw_w_px + pad_px * 2
+canvas_h_px = raw_h_px + pad_px * 2
+
+img = Image.new("L", (canvas_w_px, canvas_h_px), color=255)
+draw = ImageDraw.Draw(img)
+draw.multiline_text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font, spacing=spacing_px)
+
+# Trích xuất đường nét chuẩn hướng trục Y (trên xuống dưới)
+raw_paths = []
+for contour in contours:
+    if len(contour) < 2:
+        continue
+    approx = cv2.approxPolyDP(contour, epsilon=req.epsilon, closed=False)
+    pts = approx.reshape(-1, 2)
+
+    path_mm = []
+    for pt in pts:
+        x_mm = round((pt[0] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+        y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+        path_mm.append((x_mm, y_mm))
+
+    if len(path_mm) >= 2:
+        raw_paths.append(path_mm)
+
+# Sắp xếp thứ tự nét vẽ từ dòng trên xuống dòng dưới
+def get_sort_key(path):
+    p1 = path[0]
+    p2 = path[-1]
+    min_y = min(p1[1], p2[1])
+    min_x = min(p1[0], p2[0])
+    row_bucket = int(min_y / 10.0)
+    return (row_bucket, min_x)
+
+sorted_paths = sorted(raw_paths, key=get_sort_key)
 ```
 
 ---
 
-### Bước 2: Cập Nhật Đóng Gói PyInstaller trong [`cncapi/main.spec`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.spec)
+### Bước 2: Thiết Kế Giao Diện Web UI (`cncapi/static/index.html` & `styles.css`)
 
-Đảm bảo thư mục `fonts` được nạp kèm vào bản build thực thi standalone (`./dist/cncapi` & `cncapi.exe`):
-
-```python
-a = Analysis(
-    ['main.py'],
-    pathex=[],
-    binaries=[],
-    datas=[
-        ('static', 'static'),
-        ('fonts', 'fonts'),  # Nạp thư mục chứa font vào file đóng gói PyInstaller
-    ],
-    ...
-)
-```
-
----
-
-### Bước 3: Thiết Kế Giao Diện Web UI (`cncapi/static/index.html` & `styles.css`)
-
-#### 3.1. Bổ sung Nút Mở Panel ở Hàng 1, Cột 0 (`index.html`)
-Đặt nút bấm phía trên phần **Bộ Di Chuyển (Machine Jogging)**:
+#### 2.1. Cửa Sổ Floating Panel (Bổ sung Ô nhập `Cách Dòng (mm)`)
 
 ```html
-<!-- CỘT 0 (25%): BỘ DI CHUYỂN & GESTURES -->
-<section class="main-col col-25 card glass-card">
-  <div class="col-title-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-    <h4 class="card-title" style="margin: 0;" data-i18n>Bộ Di Chuyển & Cử Chỉ</h4>
-    <button class="btn btn-warning btn-small" id="btn-open-gcode-font" title="Mở Soạn Thảo G-Code Font">
-      ✍️ Gcode with font
-    </button>
+<!-- CẤU HÌNH KHOẢNG CÁCH DÒNG (CẬP NHẬT 20 & 21) -->
+<div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+  <div class="form-group">
+    <label for="font-size-input">Cỡ Chữ (pt):</label>
+    <input type="number" id="font-size-input" value="72" min="8" max="500" />
   </div>
-  ...
-```
-
-#### 3.2. Cửa Sổ Floating Panel 1/3 Bên Phải (`index.html` & `styles.css`)
-Floating panel `#gcode-font-editor-panel` được định vị cố định ở góc phải màn hình, độ rộng 33% (tối thiểu 360px):
-
-```html
-<!-- FLOATING PANEL: GCODE WITH FONT EDITOR (1/3 RIGHT) -->
-<div id="gcode-font-editor-panel" class="floating-panel-right hidden">
-  <div class="panel-header">
-    <h3>✍️ Gcode with Font Editor</h3>
-    <button class="btn-close" id="btn-close-gcode-font-editor">&times;</button>
+  <div class="form-group">
+    <label for="font-line-spacing">Cách Dòng (Tỷ lệ):</label>
+    <input type="number" id="font-line-spacing" value="1.2" min="0.5" max="5.0" step="0.1" title="Tỷ lệ khoảng cách giữa các dòng (mặc định 1.2x)" />
   </div>
-  <div class="panel-body">
-    <!-- Chọn Font & Preset Size -->
-    <div class="form-group">
-      <label>Chọn Font Chữ:</label>
-      <select id="font-select" class="input-select"></select>
-    </div>
-    <div class="form-group">
-      <label>Cỡ Chữ (Font Size pt):</label>
-      <div class="input-with-pills">
-        <input type="number" id="font-size-input" value="72" min="8" max="500" />
-        <div class="pill-group">
-          <button class="font-size-pill" data-size="18">18pt</button>
-          <button class="font-size-pill" data-size="36">36pt</button>
-          <button class="font-size-pill active" data-size="72">72pt</button>
-          <button class="font-size-pill" data-size="120">120pt</button>
-        </div>
-      </div>
-    </div>
-    <!-- Soạn Văn Bản Notepad -->
-    <div class="form-group">
-      <label>Nội Dung Văn Bản (Hỗ trợ xuống dòng & Tab):</label>
-      <textarea id="font-text-input" rows="5" placeholder="Nhập văn bản cần vẽ..."></textarea>
-    </div>
-    <!-- Các Nút Thao Tác Chuẩn Cập Nhật 19 -->
-    <div class="panel-actions">
-      <button class="btn btn-primary" id="btn-generate-font-gcode">⚡ Tạo G-code</button>
-      <button class="btn btn-info" id="btn-preview-simulate-draw">🎬 Vẽ xem trước (Giả lập)</button>
-      <button class="btn btn-success" id="btn-draw-on-real-cnc">🚀 Vẽ trên CNC (Thực tế)</button>
-      <button class="btn btn-secondary" id="btn-download-font-gcode">💾 Tải file .gcode</button>
-    </div>
+  <div class="form-group">
+    <label for="font-line-spacing-mm">Cách Dòng (mm):</label>
+    <input type="number" id="font-line-spacing-mm" value="0.0" min="0.0" max="100.0" step="1.0" title="Khoảng cách bổ sung giữa các dòng tính bằng mm" />
   </div>
 </div>
 ```
 
-```css
-/* CSS Floating Panel 1/3 Right */
-.floating-panel-right {
-  position: fixed;
-  top: 60px;
-  right: 15px;
-  width: 33%;
-  min-width: 360px;
-  max-width: 480px;
-  height: calc(100vh - 80px);
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.floating-panel-right.hidden {
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(100%);
-}
-```
-
 ---
 
-### Bước 4: Xử Lý Logic Javascript & Preview trên Canvas (`cncapi/static/app.js`)
+### Bước 3: Xử Lý Logic Javascript (`cncapi/static/app.js`)
 
-1. **Nạp Danh Sách Font**: Khi mở panel, tự động gọi `GET /cncapi/v1/fonts` để điền danh sách vào thẻ `<select id="font-select">`.
-2. **Sinh G-code & Tọa Độ Bắt Đầu**: Khi nhấn "Tạo G-code" hoặc thay đổi nội dung, gửi yêu cầu tới `POST /cncapi/v1/generate-font-gcode`.
-3. **Vẽ Xem Trước Từ Vị Trí Đầu CNC (`WPos`)**:
-   - Lấy tọa độ hiện tại của đầu CNC: `curX = state.wpos.x`, `curY = state.wpos.y`.
-   - Bù offset `(curX, curY)` vào từng điểm trong `preview_paths` để vẽ các nét chữ nối tiếp bắt đầu ngay từ vị trí hiện tại của đầu bút CNC trên Tool Path View Canvas.
-4. **Nút "Vẽ xem trước" (Giả lập)**:
-   - Kích hoạt vòng lặp `requestAnimationFrame` mô phỏng di chuyển bút ảo qua từng đường nét trong `preview_paths` trên Canvas Tool Path View. Không gửi mã G-code xuống cổng Serial CNC.
-5. **Nút "Vẽ trên cnc" (Thực tế)**:
-   - Truyền chuỗi lệnh G-code sinh ra xuống cổng Serial điều khiển CNC thực tế để máy bắt đầu thực hiện chuyển động di chuyển và hạ bút vẽ thật.
+1. **Đọc giá trị `#font-line-spacing-mm` và gửi lên API Backend**:
+   ```javascript
+   const lineSpacingMmInput = document.getElementById('font-line-spacing-mm');
+   const line_spacing_mm = parseFloat(lineSpacingMmInput?.value) || 0.0;
+
+   const res = await fetch('/cncapi/v1/generate-font-gcode', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+           font_name: font_name,
+           text: text,
+           font_size_pt: parseFloat(fontSizeInput.value) || 72.0,
+           line_spacing: parseFloat(lineSpacingInput?.value) || 1.2,
+           line_spacing_mm: line_spacing_mm, // Truyền khoảng cách bổ sung mm
+           feed_rate: parseFloat(feedRateInput.value) || 4000.0,
+           z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
+           z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
+           stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line'
+       })
+   });
+   ```
+2. **Lắng nghe Sự kiện `input`/`change`**:
+   Đăng ký event listener lên `#font-line-spacing-mm` để tự động cập nhật lại mã G-code và đường xem trước (preview) trên Canvas realtime khi người dùng tăng giảm milimet.
 
 ---
 
@@ -195,18 +173,10 @@ Floating panel `#gcode-font-editor-panel` được định vị cố định ở
 1. **Khởi động Server Backend**:
    ```bash
    python3 cncapi/main.py
-   # hoặc chạy bản build:
-   ./cncapi/dist/cncapi
    ```
 2. **Mở Trình Duyệt Web**:
    - Truy cập `http://localhost:8099`.
-3. **Kiểm tra Nút & Floating Panel**:
-   - Nhấn nút `✍️ Gcode with font` ở Cột 0 (phía trên Bộ Di Chuyển).
-   - Kiểm tra cửa sổ trượt ra từ lề phải (33% độ rộng), **không che lấp** vùng Canvas Tool Path View ở trung tâm.
-4. **Tạo & Vẽ Xem Trước Giả Lập**:
-   - Chọn Font chữ (ví dụ: `VL_ThuPhap.ttf` hoặc `VL_GREATVIBES.ttf`).
+3. **Thử Nghiệm Hiển Thị Đúng Hướng Chữ**:
+   - Mở panel `✍️ Gcode with font`.
    - Nhập nội dung văn bản (ví dụ: `Xin Chào CNC`).
-   - Nhấn nút **🎬 Vẽ xem trước (Giả lập)** để xem giả lập nét vẽ chạy chuyển động trên Canvas từ vị trí WPos của CNC.
-5. **Thực Thi Máy CNC Thật**:
-   - Kết nối cổng Serial CNC (`/dev/ttyACM0` hoặc `dummy`).
-   - Nhấn nút **🚀 Vẽ trên CNC (Thực tế)** và kiểm tra máy CNC thực tế thực hiện lệnh vẽ.
+   - Quan sát chữ hiển thị trên Tool Path View Canvas đúng chiều xuôi, chữ đọc bình thường không bị lộn ngược từ dưới lên.

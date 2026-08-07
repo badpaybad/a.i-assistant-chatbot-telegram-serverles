@@ -198,4 +198,15 @@ Bổ xung nút để mở editor Gcode with font phía trên Bộ Di Chuyển & 
 ✅ Đã tích hợp vẽ xem trước (Preview) đường nét chữ trên Tool Path View Canvas bắt đầu từ vị trí `WPos` hiện tại của đầu CNC.
 ✅ Đã bổ sung nút `🎬 Vẽ xem trước` (Giả lập chuyển động trên Canvas) và nút `🚀 Vẽ trên CNC` (Gửi G-code thực thi trên máy CNC thật).
 
+**cập nhật 20** ở **cập nhật 19** đã có xuống dòng khi có \n nhưng mà các dòng đang sát nhau, thêm cấu hình để các dòng cách nhau
+✅ Đã bổ sung tham số `line_spacing` (Tỷ lệ khoảng cách giữa các dòng chữ, mặc định `1.2x`) vào API Backend `POST /cncapi/v1/generate-font-gcode`.
+✅ Đã tính toán khoảng cách dòng tương ứng `line_height_px = int(font_size_px * line_spacing)` trong PIL render để loại bỏ tình trạng các dòng chữ bị dính sát nhau.
+✅ Đã bổ sung ô nhập liệu `Cách Dòng (Line Spacing)` (`#font-line-spacing`) trên Floating Panel Web UI và tự động cập nhật preview nét chữ realtime khi thay đổi.
+
+**cập nhật 21** ở cập nhật 20 có line spacing. cần thêm cấu hình dạng khoảng cách tính bằng milimet khi gặp \n sẽ cần tạo ra thêm 1 khoảng trống để các dòng cách nhau  
+không cần chạy tự động build dist tôi sẽ chạy khi cần 
+✅ Đã bổ sung tham số `line_spacing_mm` (Khoảng cách dòng bổ sung mm, mặc định `0.0 mm`) vào API Backend `POST /cncapi/v1/generate-font-gcode`.
+✅ Đã tính toán quy đổi mm sang pixel `extra_spacing_px = int(line_spacing_mm / scale_mm_per_px)` bổ sung vào PIL multiline render giúp các dòng giãn cách chính xác theo milimet.
+✅ Đã bổ sung ô nhập liệu `Cách Dòng (mm)` (`#font-line-spacing-mm`) trên Floating Panel Web UI và tự động cập nhật preview nét chữ realtime khi thay đổi.
+
 **chú ý** để tôi tự test manual, không cần mở chrome để tự verify, cần đọc cncapi/whattodo.md viết cách làm vào cncapi/howtodo.md để tôi review 
