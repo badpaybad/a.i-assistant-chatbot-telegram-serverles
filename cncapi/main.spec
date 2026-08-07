@@ -8,6 +8,7 @@ a = Analysis(
     binaries=[],
     datas=[
         ('static', 'static'),
+        ('fonts', 'fonts'),
     ],
     hiddenimports=[
         'uvicorn.logging',

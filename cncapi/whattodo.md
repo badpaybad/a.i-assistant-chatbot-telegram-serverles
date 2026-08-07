@@ -185,4 +185,17 @@ Cấu Hình Cấu Trúc & Gốc Làm Việc cần bổ xung thêm cấu hình ch
 - Đã cập nhật tất cả các kịch bản build command-line (`build_dist.sh`, `build_dist.bat`, `build_dist.ps1`) tự động kiểm tra và cài đặt thư viện từ `requirements.txt` trước khi chạy đóng gói PyInstaller.
 - Đã cập nhật workflow CI/CD GitHub Actions cài đặt tự động từ `cncapi/requirements.txt` khi đóng gói trên các môi trường Windows, macOS và Linux.
 
-**chú ý** để tôi tự test manual, không cần mở chrome để tự verify
+**cập nhật 19** đọc yêu cầu ở cnc/whattodo.md về Gcode with font và code đã làm ở cnc/main.py , cần lấy tính năng đó sang cncapi
+Bổ xung nút để mở editor Gcode with font phía trên Bộ Di Chuyển & Cử Chỉ
+    click nút Gcode with font thì mở floating pannel 1/3 bên phải page, không che vùng Tool Path View (Xem & Giả Lập Kịch Bản)
+    cần preview trên Tool Path View (Xem & Giả Lập Kịch Bản) 
+    viết chữ từ vị trí hiện tại của đầu cnc 
+    có nút Vẽ xem trước để chạy giả lập trên Tool Path View (Xem & Giả Lập Kịch Bản) 
+    có nút Vẽ trên cnc là để điều khiển cnc thật chạy 
+✅ Đã bổ sung nút `✍️ Gcode with font` ở Cột 0 (phía trên Bộ Di Chuyển).
+✅ Đã thiết kế Floating Panel góc phải 33% chiều rộng (`gcode-font-editor-panel`) không che vùng Tool Path View ở trung tâm.
+✅ Đã thêm API `GET /cncapi/v1/fonts`, `POST /cncapi/v1/generate-font-gcode` và `POST /cncapi/v1/run-gcode`.
+✅ Đã tích hợp vẽ xem trước (Preview) đường nét chữ trên Tool Path View Canvas bắt đầu từ vị trí `WPos` hiện tại của đầu CNC.
+✅ Đã bổ sung nút `🎬 Vẽ xem trước` (Giả lập chuyển động trên Canvas) và nút `🚀 Vẽ trên CNC` (Gửi G-code thực thi trên máy CNC thật).
+
+**chú ý** để tôi tự test manual, không cần mở chrome để tự verify, cần đọc cncapi/whattodo.md viết cách làm vào cncapi/howtodo.md để tôi review 

@@ -356,7 +356,12 @@
       <main class="row-main">
         <!-- CỘT 0 (25%): BỘ DI CHUYỂN & GESTURES -->
         <section class="main-col col-25 card glass-card">
-          <h4 class="card-title" data-i18n>Bộ Di Chuyển & Cử Chỉ</h2>
+          <div class="col-title-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 class="card-title" style="margin: 0;" data-i18n>Bộ Di Chuyển & Cử Chỉ</h4>
+            <button class="btn btn-warning btn-compact" id="btn-open-gcode-font" title="Mở Soạn Thảo G-Code Font">
+              ✍️ Gcode with font
+            </button>
+          </div>
 
           <!-- JOGGING SECTION -->
           <div class="jog-section">
@@ -879,6 +884,58 @@
       </footer>
     </div>
 
-    <script src="/static/app.js?v=42"></script>
+    <!-- FLOATING PANEL: GCODE WITH FONT EDITOR (1/3 RIGHT) -->
+    <div id="gcode-font-editor-panel" class="floating-panel-right hidden">
+      <div class="panel-header">
+        <div class="panel-title-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8;">✍️ Gcode with Font Editor</h3>
+          <button class="btn-close" id="btn-close-gcode-font-editor" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">&times;</button>
+        </div>
+      </div>
+      <div class="panel-body" style="padding-top: 12px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+        <div class="form-group">
+          <label for="font-select" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Chọn Font Chữ:</label>
+          <select id="font-select" class="input-select" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);"></select>
+        </div>
+        <div class="form-group">
+          <label for="font-size-input" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Cỡ Chữ (Font Size pt):</label>
+          <div class="input-with-pills" style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" id="font-size-input" value="72" min="8" max="500" style="width: 80px; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
+            <div class="pill-group" style="display: flex; gap: 4px;">
+              <button class="font-size-pill btn btn-secondary btn-compact" data-size="18">18pt</button>
+              <button class="font-size-pill btn btn-secondary btn-compact" data-size="36">36pt</button>
+              <button class="font-size-pill btn btn-primary btn-compact active" data-size="72">72pt</button>
+              <button class="font-size-pill btn btn-secondary btn-compact" data-size="120">120pt</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="font-text-input" style="font-size: 0.85rem; margin-bottom: 4px; display: block;">Nội Dung Văn Bản (Notepad - Hỗ trợ Enter/Tab):</label>
+          <textarea id="font-text-input" rows="4" placeholder="Nhập văn bản cần vẽ..." style="width: 100%; padding: 8px; border-radius: 6px; background: rgba(15, 23, 42, 0.9); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-family: monospace; resize: vertical;">Xin Chào CNC</textarea>
+        </div>
+        <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div class="form-group">
+            <label for="font-feed-rate" style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Tốc Độ Feedrate:</label>
+            <input type="number" id="font-feed-rate" value="4000" step="100" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);" />
+          </div>
+          <div class="form-group">
+            <label for="font-stroke-mode" style="font-size: 0.8rem; margin-bottom: 4px; display: block;">Chế Độ Nét Chữ:</label>
+            <select id="font-stroke-mode" class="input-select" style="width: 100%; padding: 6px; border-radius: 6px; background: rgba(15, 23, 42, 0.8); color: #fff; border: 1px solid rgba(255,255,255,0.2);">
+              <option value="single_line" selected>1 Nét (Single Line)</option>
+              <option value="contour">Viền Chữ (Contour)</option>
+            </select>
+          </div>
+        </div>
+        <div class="font-info-box" id="font-info-box" style="font-size: 0.78rem; color: #38bdf8; font-family: monospace; min-height: 18px;"></div>
+        <div class="panel-actions" style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+          <button class="btn btn-primary" id="btn-generate-font-gcode">⚡ Tạo G-code</button>
+          <button class="btn btn-info" id="btn-preview-simulate-draw">🎬 Vẽ xem trước (Giả lập)</button>
+          <button class="btn btn-success" id="btn-draw-on-real-cnc">🚀 Vẽ trên CNC (Thực tế)</button>
+          <button class="btn btn-secondary" id="btn-download-font-gcode">💾 Tải file .gcode</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js?v=43"></script>
   </body>
 </html>

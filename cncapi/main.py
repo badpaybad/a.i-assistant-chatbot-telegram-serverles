@@ -1553,6 +1553,220 @@ async def v1_import_scenario_session(req: V1ScenarioImportRequest):
     await send_telemetry()
     return {"status": "success", "name": state.scenario_name, "count": len(state.scenario_actions)}
 
+# Font & Gcode APIs
+class FontGcodeRequest(BaseModel):
+    font_name: str
+    text: str
+    font_size_pt: float = 72.0
+    z_safe: float = 0.0
+    z_draw: float = 45.0
+    feed_rate: float = 4000.0
+    margin_mm: float = 5.0
+    epsilon: float = 1.2
+    stroke_mode: str = "single_line"
+
+class RunGcodeRequest(BaseModel):
+    gcode: str
+
+@app.get("/cncapi/v1/fonts")
+@app.get("/api/fonts")
+def list_available_fonts():
+    fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
+    if not os.path.exists(fonts_dir):
+        os.makedirs(fonts_dir, exist_ok=True)
+    font_files = []
+    valid_exts = (".ttf", ".otf", ".woff", ".woff2")
+    for f in os.listdir(fonts_dir):
+        if f.lower().endswith(valid_exts) and f not in font_files:
+            font_files.append(f)
+            
+    root_dir = os.path.dirname(__file__)
+    for f in os.listdir(root_dir):
+        if f.lower().endswith(valid_exts) and f not in font_files:
+            font_files.append(f)
+            
+    font_files.sort()
+    return {"fonts": font_files}
+
+@app.post("/cncapi/v1/generate-font-gcode")
+@app.post("/api/generate-font-gcode")
+def generate_font_gcode(req: FontGcodeRequest):
+    try:
+        import unicodedata
+        import numpy as np
+        from PIL import Image, ImageDraw, ImageFont
+        try:
+            import cv2
+        except ImportError:
+            cv2 = None
+        try:
+            from skimage.morphology import skeletonize
+        except ImportError:
+            skeletonize = None
+
+        fonts_dir = os.path.join(os.path.dirname(__file__), "fonts")
+        font_path = os.path.join(fonts_dir, req.font_name)
+        if not os.path.exists(font_path):
+            font_path = os.path.join(os.path.dirname(__file__), req.font_name)
+            
+        if not os.path.exists(font_path):
+            return JSONResponse({"status": "error", "message": f"File font '{req.font_name}' không tồn tại"}, status_code=404)
+
+        normalized_text = unicodedata.normalize('NFC', req.text)
+        if not normalized_text.strip():
+            return {
+                "status": "ok",
+                "gcode": "",
+                "preview_paths": [],
+                "actual_w_mm": 0.0,
+                "actual_h_mm": 0.0,
+                "total_paths": 0,
+                "lines_count": 0
+            }
+
+        MM_PER_PT = 25.4 / 72.0
+        RENDER_DPI = 600
+        font_size_px = int(req.font_size_pt * (RENDER_DPI / 72.0))
+        if font_size_px < 8:
+            font_size_px = 8
+
+        font = ImageFont.truetype(font_path, size=font_size_px)
+
+        dummy_img = Image.new("L", (1, 1))
+        draw_dummy = ImageDraw.Draw(dummy_img)
+        bbox = draw_dummy.textbbox((0, 0), normalized_text, font=font)
+
+        pad_px = int(40 * (RENDER_DPI / 72.0) / 4)
+        raw_w_px = max(1, bbox[2] - bbox[0])
+        raw_h_px = max(1, bbox[3] - bbox[1])
+
+        canvas_w_px = raw_w_px + pad_px * 2
+        canvas_h_px = raw_h_px + pad_px * 2
+
+        img = Image.new("L", (canvas_w_px, canvas_h_px), color=255)
+        draw = ImageDraw.Draw(img)
+        draw.text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font)
+
+        img_np = np.array(img)
+        binary_img = img_np < 128
+
+        if req.stroke_mode == "single_line" and skeletonize is not None:
+            skeleton = skeletonize(binary_img)
+            contour_img = (skeleton * 255).astype(np.uint8)
+        else:
+            contour_img = (binary_img * 255).astype(np.uint8)
+
+        if cv2 is not None:
+            contours, _ = cv2.findContours(contour_img, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+        else:
+            contours = []
+
+        if not contours:
+            return {
+                "status": "ok",
+                "gcode": "",
+                "preview_paths": [],
+                "actual_w_mm": 0.0,
+                "actual_h_mm": 0.0,
+                "total_paths": 0,
+                "lines_count": 0
+            }
+
+        scale_mm_per_px = (req.font_size_pt * MM_PER_PT) / font_size_px
+        actual_w_mm = raw_w_px * scale_mm_per_px
+        actual_h_mm = raw_h_px * scale_mm_per_px
+
+        raw_paths = []
+        for contour in contours:
+            if len(contour) < 2:
+                continue
+            if cv2 is not None:
+                approx = cv2.approxPolyDP(contour, epsilon=req.epsilon, closed=False)
+                pts = approx.reshape(-1, 2)
+            else:
+                pts = contour.reshape(-1, 2)
+
+            path_mm = []
+            for pt in pts:
+                x_mm = round((pt[0] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+                y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+                path_mm.append((x_mm, y_mm))
+
+            if len(path_mm) >= 2:
+                raw_paths.append(path_mm)
+
+        def get_sort_key(path):
+            p1 = path[0]
+            p2 = path[-1]
+            top_y = min(p1[1], p2[1])
+            left_x = min(p1[0], p2[0])
+            row_bucket = int(top_y / 8.0)
+            return (row_bucket, left_x, top_y)
+
+        oriented_paths = []
+        for path in raw_paths:
+            p_start = path[0]
+            p_end = path[-1]
+            if (p_end[1] < p_start[1]) or (abs(p_end[1] - p_start[1]) < 0.1 and p_end[0] < p_start[0]):
+                oriented_paths.append(list(reversed(path)))
+            else:
+                oriented_paths.append(path)
+
+        sorted_paths = sorted(oriented_paths, key=get_sort_key)
+
+        first_line = req.text.splitlines()[0] if req.text else ""
+        gcode = [
+            f"; --- G-CODE CNC FONT ---",
+            f"; Chuoi: {first_line[:40]}",
+            f"; Font: {req.font_name}",
+            f"; Font Size: {req.font_size_pt} pt",
+            f"; Kich thuoc thuc te: {actual_w_mm:.2f} x {actual_h_mm:.2f} mm",
+            "G21 ; Don vi: mm",
+            "G90 ; Toa do tuyet doi",
+            f"G0 Z{req.z_safe:.2f} ; Lift Pen\n"
+        ]
+
+        preview_paths = []
+        for path in sorted_paths:
+            start_pt = path[0]
+            gcode.append(f"G0 X{start_pt[0]:.2f} Y{start_pt[1]:.2f}")
+            gcode.append(f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}")
+
+            preview_path = [[start_pt[0], start_pt[1]]]
+            for pt in path[1:]:
+                gcode.append(f"G1 X{pt[0]:.2f} Y{pt[1]:.2f}")
+                preview_path.append([pt[0], pt[1]])
+
+            gcode.append(f"G0 Z{req.z_safe:.2f}\n")
+            preview_paths.append(preview_path)
+
+        gcode.extend(["G0 X0 Y0 ; Tra ve goc 0", "M30 ; Ket thuc"])
+        gcode_str = "\n".join(gcode)
+
+        return {
+            "status": "ok",
+            "gcode": gcode_str,
+            "preview_paths": preview_paths,
+            "actual_w_mm": round(actual_w_mm, 2),
+            "actual_h_mm": round(actual_h_mm, 2),
+            "total_paths": len(sorted_paths),
+            "lines_count": len(gcode)
+        }
+    except Exception as e:
+        logger.error(f"Lỗi generate font gcode: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+@app.post("/cncapi/v1/run-gcode")
+@app.post("/api/run-gcode")
+async def run_gcode(req: RunGcodeRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối máy CNC")
+    lines = [line.strip() for line in req.gcode.splitlines() if line.strip() and not line.strip().startswith(";")]
+    for line in lines:
+        await safe_write_serial((line + "\n").encode('utf-8'))
+        await asyncio.sleep(0.02)
+    return {"status": "success", "lines_sent": len(lines)}
+
 # V1 State & Visualizer Endpoints
 @app.get("/cncapi/v1/state")
 async def v1_get_full_state():
@@ -1609,3 +1823,4 @@ async def read_index():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8099)
+

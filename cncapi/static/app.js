@@ -72,6 +72,12 @@
     let simHeadPos = { x: 0, y: 0 };
     let simIsRunning = false;
 
+    // Font Gcode Editor State
+    let fontPreviewPaths = [];
+    let fontGcode = "";
+    let fontStartOffset = { x: 0, y: 0 };
+    let fontSimAnimationId = null;
+
     // Helper: i18n translation
     function t(key, vars = {}) {
         let text = translations[key] || key;
@@ -110,6 +116,7 @@
     document.addEventListener('DOMContentLoaded', async () => {
         initDOM();
         initCanvas();
+        initGcodeFontEditor();
         loadTranslations('vi');
         await loadSystemSettings();
         connectWebSocket();
@@ -1210,6 +1217,24 @@
             ctx.stroke();
         }
 
+        // ---- DRAW FONT GCODE PREVIEW PATHS ----
+        if (fontPreviewPaths && fontPreviewPaths.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#38bdf8'; // Vivid Cyan
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([]);
+            fontPreviewPaths.forEach(path => {
+                if (!path || path.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(wx(path[0][0] + fontStartOffset.x), wy(path[0][1] + fontStartOffset.y));
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(wx(path[i][0] + fontStartOffset.x), wy(path[i][1] + fontStartOffset.y));
+                }
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
         // ---- DRAW PEN HEAD POSITION ----
         let headX, headY;
         if (simIsRunning) {
@@ -1859,4 +1884,198 @@
         }
     }
 
+    // ==================== GCODE WITH FONT EDITOR ====================
+    function initGcodeFontEditor() {
+        const btnOpen = document.getElementById('btn-open-gcode-font');
+        const btnClose = document.getElementById('btn-close-gcode-font-editor');
+        const panel = document.getElementById('gcode-font-editor-panel');
+        const fontSelect = document.getElementById('font-select');
+        const fontSizeInput = document.getElementById('font-size-input');
+        const fontSizePills = document.querySelectorAll('.font-size-pill');
+        const textInput = document.getElementById('font-text-input');
+        const feedRateInput = document.getElementById('font-feed-rate');
+        const strokeModeSelect = document.getElementById('font-stroke-mode');
+        const btnGenerate = document.getElementById('btn-generate-font-gcode');
+        const btnSimulate = document.getElementById('btn-preview-simulate-draw');
+        const btnRealDraw = document.getElementById('btn-draw-on-real-cnc');
+        const btnDownload = document.getElementById('btn-download-font-gcode');
+        const fontInfoBox = document.getElementById('font-info-box');
+
+        if (!btnOpen || !panel) return;
+
+        btnOpen.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+            if (!panel.classList.contains('hidden')) {
+                loadFonts();
+                generateFontGcode();
+            }
+        });
+
+        if (btnClose) {
+            btnClose.addEventListener('click', () => {
+                panel.classList.add('hidden');
+            });
+        }
+
+        fontSizePills.forEach(pill => {
+            pill.addEventListener('click', () => {
+                fontSizePills.forEach(p => p.classList.remove('active', 'btn-primary'));
+                fontSizePills.forEach(p => p.classList.add('btn-secondary'));
+                pill.classList.remove('btn-secondary');
+                pill.classList.add('btn-primary', 'active');
+                if (fontSizeInput) fontSizeInput.value = pill.dataset.size;
+                generateFontGcode();
+            });
+        });
+
+        async function loadFonts() {
+            try {
+                const res = await fetch('/cncapi/v1/fonts');
+                const data = await res.json();
+                if (data.fonts && data.fonts.length > 0 && fontSelect) {
+                    fontSelect.innerHTML = '';
+                    data.fonts.forEach(f => {
+                        const opt = document.createElement('option');
+                        opt.value = f;
+                        opt.textContent = f;
+                        fontSelect.appendChild(opt);
+                    });
+                }
+            } catch (e) {
+                console.error('Lỗi nạp danh sách font:', e);
+            }
+        }
+
+        async function generateFontGcode() {
+            const font_name = fontSelect ? fontSelect.value : '';
+            const text = textInput ? textInput.value : '';
+            if (!text || !text.trim() || !font_name) return;
+
+            const curWpos = telemetry.wpos || [0, 0, 0];
+            fontStartOffset = { x: curWpos[0], y: curWpos[1] };
+
+            try {
+                const res = await fetch('/cncapi/v1/generate-font-gcode', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        font_name: font_name,
+                        text: text,
+                        font_size_pt: parseFloat(fontSizeInput.value) || 72.0,
+                        feed_rate: parseFloat(feedRateInput.value) || 4000.0,
+                        z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
+                        z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
+                        stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line'
+                    })
+                });
+
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    fontGcode = data.gcode;
+                    fontPreviewPaths = data.preview_paths || [];
+                    if (fontInfoBox) {
+                        fontInfoBox.innerText = `Kích thước: ${data.actual_w_mm} x ${data.actual_h_mm} mm | Đường nét: ${data.total_paths} | Dòng G-code: ${data.lines_count}`;
+                    }
+                    drawCanvas();
+                } else {
+                    if (fontInfoBox) fontInfoBox.innerText = `Lỗi: ${data.message}`;
+                }
+            } catch (e) {
+                console.error('Lỗi generate font gcode:', e);
+            }
+        }
+
+        if (btnGenerate) btnGenerate.addEventListener('click', generateFontGcode);
+        if (fontSelect) fontSelect.addEventListener('change', generateFontGcode);
+        if (strokeModeSelect) strokeModeSelect.addEventListener('change', generateFontGcode);
+        if (textInput) textInput.addEventListener('input', generateFontGcode);
+
+        // Nút "Vẽ xem trước" (Giả lập)
+        if (btnSimulate) {
+            btnSimulate.addEventListener('click', () => {
+                if (!fontPreviewPaths || fontPreviewPaths.length === 0) {
+                    alert(t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
+                    return;
+                }
+                simulateFontDrawAnimation();
+            });
+        }
+
+        // Nút "Vẽ trên CNC" (Thực tế)
+        if (btnRealDraw) {
+            btnRealDraw.addEventListener('click', async () => {
+                if (!fontGcode) {
+                    alert(t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
+                    return;
+                }
+                if (!isConnected) {
+                    alert(t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
+                    return;
+                }
+                if (confirm(t('Xác nhận gửi mã G-code nét chữ tới máy CNC để bắt đầu vẽ?'))) {
+                    try {
+                        const curWpos = telemetry.wpos || [0, 0, 0];
+                        let offsetGcode = `G90\nG0 X${curWpos[0].toFixed(2)} Y${curWpos[1].toFixed(2)}\n` + fontGcode;
+                        const res = await fetch('/cncapi/v1/run-gcode', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gcode: offsetGcode })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            appendConsoleLog(`[GCODE FONT] Đã gửi ${data.lines_sent} dòng G-code tới CNC`, 'system');
+                        }
+                    } catch (e) {
+                        alert(`Lỗi thực thi G-code: ${e.message}`);
+                    }
+                }
+            });
+        }
+
+        // Nút Tải file .gcode
+        if (btnDownload) {
+            btnDownload.addEventListener('click', () => {
+                if (!fontGcode) return;
+                const blob = new Blob([fontGcode], { type: 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const textSlug = (textInput.value || 'text').substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+                a.download = `gcode_font_${textSlug}.gcode`;
+                a.click();
+            });
+        }
+    }
+
+    function simulateFontDrawAnimation() {
+        if (!fontPreviewPaths || fontPreviewPaths.length === 0) return;
+        if (fontSimAnimationId) cancelAnimationFrame(fontSimAnimationId);
+
+        let flatPoints = [];
+        fontPreviewPaths.forEach(path => {
+            path.forEach(pt => {
+                flatPoints.push({ x: pt[0] + fontStartOffset.x, y: pt[1] + fontStartOffset.y });
+            });
+        });
+
+        let pointIdx = 0;
+        simIsRunning = true;
+
+        function animateStep() {
+            if (pointIdx < flatPoints.length) {
+                simHeadPos = { x: flatPoints[pointIdx].x, y: flatPoints[pointIdx].y };
+                drawCanvas();
+                pointIdx++;
+                fontSimAnimationId = requestAnimationFrame(() => {
+                    setTimeout(animateStep, 15);
+                });
+            } else {
+                simIsRunning = false;
+                fontSimAnimationId = null;
+                drawCanvas();
+            }
+        }
+        animateStep();
+    }
+
 })();
+

@@ -1,6 +1,6 @@
 # Hướng dẫn Thiết kế & Triển khai Cloudflare Tunnel + Nginx Proxy & Master Process Supervisor (initpc.py)
 
-Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và các bước triển khai theo đầy đủ 16 yêu cầu tại [`tunnel.whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/tunnel.whattodo.md).
+Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và các bước triển khai theo đầy đủ các yêu cầu tại [`tunnel.whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/tunnel.whattodo.md).
 
 ---
 
@@ -15,11 +15,11 @@ Tài liệu này chi tiết hóa cách thức hoạt động, kiến trúc và c
 >    - Không cần Mở port (Port Forwarding / NAT) trên Router nhà mạng.
 > 3. **Chạy các dịch vụ mong muốn đồng thời trên PC nhà**:
 >    - 🤖 **Telegram Group Chatbot**: Nhận webhook từ Telegram API trực tiếp về máy nhà qua đường dẫn `/webhook/` (port `8090`).
->    - 🖥️ **RustDesk Remote Server**: Điều khiển Remote Desktop từ xa qua ứng dụng RustDesk Client (laptop/điện thoại) bằng Subdomain public & Key bảo mật.
+>    - 🖥️ **Server RustDesk & Remote Desktop trực tiếp vào máy chủ nhà**: Tự động cài đặt RustDesk Server & RustDesk Client, tự động cấu hình trỏ vào `127.0.0.1`, tự sinh mật khẩu và gửi trọn bộ thông số Host ID & Password qua Telegram cho bạn (`@badpaybad`).
 >    - 🧠 **AI Local Server từ xa**: Chạy Gemma4 API local (port `8000`), phục vụ xử lý AI từ xa cho Bot Telegram hoặc các ứng dụng khác.
 >    - 🌐 **Web Apps linh hoạt theo URI Paths**: Nginx tự động chuyển hướng từng URI path (`/app1/`, `/app2/`, `/service/`) tới các port local mong muốn.
-> 4. **Quản lý tự động 100% bằng câu lệnh duy nhất**: `sudo python3 initpc.py` tự động cài đặt phần mềm thiếu, tự tạo cấu hình Nginx, khởi chạy các subprocesses và nhắn tin báo kết quả trực tiếp qua Telegram tới bạn (`@badpaybad`).
-> 5. **Bảo mật Dữ liệu nhạy cảm**: Các thông tin bảo mật trong [`config_dunp.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config_dunp.py) được bảo vệ nghiêm ngặt ở local, ngăn chặn tuyệt đối việc rò rỉ ra public repository nhờ cơ chế cô lập qua [`config.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config.py) và [` .gitignore`](file:///work/a.i-assistant-chatbot-telegram-serverles/.gitignore).
+> 4. **Quản lý tự động 100% bằng câu lệnh duy nhất**: `sudo python3 initpc.py` tự động cài đặt tất cả phần mềm thiếu (Nginx, Cloudflared, RustDesk Server & RustDesk Client), tự tạo cấu hình Nginx, tự cấu hình RustDesk Client máy nhà, khởi chạy các subprocesses và nhắn tin báo kết quả trực tiếp qua Telegram tới bạn (`@badpaybad`).
+> 5. **Bảo mật Dữ liệu nhạy cảm**: Các thông tin bảo mật trong [`config_dunp.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config_dunp.py) được bảo vệ nghiêm ngặt ở local, ngăn chặn tuyệt đối việc rò rỉ ra public repository nhờ cơ chế cô lập qua [`config.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config.py) và [`.gitignore`](file:///work/a.i-assistant-chatbot-telegram-serverles/.gitignore).
 
 ---
 
@@ -33,28 +33,32 @@ sudo python3 initpc.py
 ### 1.1. Luồng thực thi của Master Supervisor (`initpc.py`)
 
 1. **Khởi tạo & Tự động Cài đặt Môi trường (Auto-Install Dependencies)**:
-   - Tự động kiểm tra và cài đặt **Nginx**, **Cloudflared**, và **RustDesk Server** (`hbbs`, `hbbr`) nếu chưa có trên hệ thống.
-   - Đảm bảo hệ thống ở phiên bản mới nhất (`git pull` nếu cần).
+   - Tự động kiểm tra và cài đặt **Nginx**, **Cloudflared**, **RustDesk Server** (`hbbs`, `hbbr`), và **RustDesk Client** (`rustdesk`) nếu chưa có trên hệ thống.
+   - **Tự động đồng bộ git (`git pull`)**: Kéo mã nguồn mới nhất của chính Dự án này (`a.i-assistant-chatbot-telegram-serverles`) từ GitHub về máy PC nhà.
 2. **Nạp Cấu hình Bảo mật (Secure Configuration Management)**:
    - Import cấu hình an toàn từ [`config.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config.py) (mặc định nạp từ [`config_dunp.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config_dunp.py) tại local).
-3. **Tự động Sinh Cấu hình Nginx Proxy (`generate_nginx_config()`)**:
+3. **Tự động Cấu hình RustDesk Client trên PC Nhà (`auto_config_home_rustdesk_client()`)**:
+   - Tự động cấu hình RustDesk Client ở máy nhà trỏ ID Server / Relay Server vào `127.0.0.1` và gán Public Key.
+   - Tự động đặt Mật khẩu cố định bảo mật cho RustDesk Client máy nhà và lấy RustDesk Host ID.
+4. **Tự động Sinh Cấu hình Nginx Proxy (`generate_nginx_config()`)**:
    - Tạo file `nginx_tunnel.conf` dựa trên danh sách Path URI Routing tới các port local.
-4. **Khởi chạy & Giám sát Tiến trình Con (Subprocess Supervision)**:
+5. **Khởi chạy & Giám sát Tiến trình Con (Subprocess Supervision)**:
    - Khởi chạy Nginx Reverse Proxy (Port `8080`).
    - Khởi chạy Cloudflare Tunnel (`cloudflared`).
    - Khởi chạy RustDesk Server (`hbbs` & `hbbr`).
    - Khởi chạy Telegram Webhook App chính ([`myassitant/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/myassitant/main.py) - FastAPI Port `8090`).
    - Khởi chạy Gemma4 Local API Server (Port `8000`).
-5. **Gửi Thông báo Telegram tới User `@badpaybad` (`730806080`)**:
+6. **Gửi Thông báo Telegram tới User `@badpaybad` (`730806080`)**:
    - Bắt URL Subdomain public từ Cloudflare Tunnel output (ví dụ `https://xxx.trycloudflare.com`).
-   - Gửi tin nhắn định dạng HTML tổng hợp Subdomain public, cấu hình RustDesk và bảng Proxy Mapping tới `@badpaybad`.
-6. **Bắt Tín hiệu Shutdown & Graceful Cleanup**:
+   - Gửi tin nhắn định dạng HTML chứa Subdomain public, link Web Client, **RustDesk Host ID & Password tự động** và bảng Proxy Mapping tới `@badpaybad`.
+7. **Bắt Tín hiệu Shutdown & Graceful Cleanup**:
    - Lắng nghe `SIGINT` / `SIGTERM`, tự động kill tất cả tiến trình con và giải phóng port (`fuser -k`).
 
 ```mermaid
 flowchart TD
-    Start[sudo python3 initpc.py] --> AutoInstall[Check & Install: Nginx, Cloudflared, RustDesk, Git Pull]
-    AutoInstall --> LoadConfig[Load Secure Config từ config.py -> config_dunp.py]
+    Start[sudo python3 initpc.py] --> AutoInstall[Check & Install: Nginx, Cloudflared, RustDesk Server & Client, Git Pull Project Repo]
+    AutoInstall --> AutoConfigRustDesk[Tự động Cấu hình RustDesk Client Máy Nhà trỏ 127.0.0.1 & Tạo Pass]
+    AutoConfigRustDesk --> LoadConfig[Load Secure Config từ config.py -> config_dunp.py]
     LoadConfig --> GenNginx[Generate nginx_tunnel.conf từ PROXY_ROUTES]
     
     subgraph Subprocess Execution
@@ -66,17 +70,15 @@ flowchart TD
     end
 
     CFProc -->|Parse URL Public| SubdomainURL[https://xxx.trycloudflare.com]
-    SubdomainURL --> TelegramNotify[Gửi thông báo đầy đủ tới User @badpaybad]
+    SubdomainURL --> TelegramNotify[Gửi thông báo trọn bộ URL, RustDesk ID & Pass tới User @badpaybad]
 ```
 
 ---
 
 ## 2. Bảo mật Dữ liệu Cấu hình (`config_dunp.py`)
 
-Để đảm bảo các thông tin nhạy cảm (Telegram Bot Token, Jira Tokens, API Keys, Passwords) không bao giờ bị rò rỉ công khai trên GitHub hoặc Internet, cơ chế bảo mật sau được áp dụng:
+Tất cả các file cấu hình chứa thông tin cá nhân/mật khẩu được bảo vệ an toàn ở local:
 
-### 2.1. Cấu hình `.gitignore` Ngăn ngừa Commit Secrets
-Tất cả các file cấu hình chứa thông tin cá nhân/mật khẩu bắt buộc phải nằm trong [`.gitignore`](file:///work/a.i-assistant-chatbot-telegram-serverles/.gitignore):
 ```gitignore
 # .gitignore
 config_dunp.py
@@ -86,26 +88,11 @@ config_dev.py
 *.env
 ```
 
-### 2.2. Cơ chế Interface Chuyển tiếp Cấu hình An toàn (`config.py`)
-Ứng dụng và `initpc.py` chỉ tương tác qua [`config.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/config.py). File này sẽ nạp động file cấu hình tương ứng ở local (`config_dunp.py`) mà không lưu trữ cứng bất kỳ secret key nào trong mã nguồn chính.
-
-```python
-# config.py
-import sys
-
-CONFIG_NAME = "config_dunp"
-if len(sys.argv) > 1 and sys.argv[1] == 'config_ngoc':
-    from config_ngoc import *
-else:
-    # Nạp mặc định config_dunp ở local
-    from config_dunp import *
-```
-
 ---
 
 ## 3. Tự động Cài đặt & Chuẩn bị Môi trường (`setup_environment`)
 
-Đoạn mã sau tự động kiểm tra và cài đặt tất cả phần mềm/dịch vụ cần thiết khi chạy `sudo python3 initpc.py`:
+Đoạn mã sau tự động kiểm tra và cài đặt tất cả phần mềm/dịch vụ cần thiết (gồm Nginx, Cloudflared, RustDesk Server và **RustDesk Client**) cũng như cập nhật mã nguồn dự án khi chạy `sudo python3 initpc.py`:
 
 ```python
 import subprocess
@@ -114,13 +101,13 @@ import os
 import sys
 
 def auto_install_dependencies():
-    """Tự động kiểm tra và cài đặt Nginx, Cloudflared, RustDesk Server nếu thiếu."""
+    """Tự động kiểm tra và cài đặt Nginx, Cloudflared, RustDesk Server & Client và cập nhật git project."""
     print("[*] [Auto-Setup] Đang kiểm tra dependencies hệ thống...")
 
     # 1. Kiểm tra & Cài đặt Nginx
     if not shutil.which("nginx"):
         print("[!] Không tìm thấy Nginx. Đang tự động cài đặt qua APT...")
-        subprocess.run(["apt-get", "update"], check=True)
+        subprocess.run(["apt-get", "update", "-y"], check=True)
         subprocess.run(["apt-get", "install", "-y", "nginx"], check=True)
         print("[+] Đã cài đặt Nginx thành công!")
 
@@ -148,19 +135,32 @@ def auto_install_dependencies():
             except Exception as e:
                 print(f"[!] Lỗi khi cài RustDesk server: {e}")
 
-    # 4. Git Pull code mới nhất (tùy chọn)
+    # 4. Kiểm tra & Cài đặt RustDesk Client App trên PC Nhà
+    if not shutil.which("rustdesk"):
+        print("[!] Không tìm thấy RustDesk Client. Đang tự động tải và cài đặt .deb package...")
+        client_url = "https://github.com/rustdesk/rustdesk/releases/download/1.3.8/rustdesk-1.3.8-x86_64.deb"
+        try:
+            subprocess.run(["curl", "-L", "-o", "rustdesk_client.deb", client_url], check=True)
+            subprocess.run(["apt-get", "install", "-y", "./rustdesk_client.deb"], check=True)
+            if os.path.exists("rustdesk_client.deb"):
+                os.remove("rustdesk_client.deb")
+            print("[+] Đã cài đặt RustDesk Client thành công!")
+        except Exception as e:
+            print(f"[!] Lỗi khi cài đặt RustDesk Client: {e}")
+
+    # 5. Git Pull: Tự động kéo mã nguồn mới nhất của CHÍNH DỰ ÁN HỆ THỐNG NÀY từ GitHub
     try:
-        print("[*] Kiểm tra cập nhật git repository...")
+        print("[*] Tự động đồng bộ mã nguồn mới nhất của dự án (git pull)...")
         subprocess.run(["git", "pull"], check=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[!] Không thể git pull: {e}")
 ```
 
 ---
 
 ## 4. Mã nguồn Hoàn chỉnh của Master Supervisor `initpc.py`
 
-File `initpc.py` điều khiển toàn bộ quá trình khởi chạy subprocesses với quyền root (`sudo`):
+File `initpc.py` tự động hóa toàn bộ từ cài đặt Nginx/Cloudflared/RustDesk Server & Client, sinh config Nginx, tự động thiết lập RustDesk Client máy nhà, đến gửi tin nhắn thông báo ID/Pass về Telegram:
 
 ```python
 #!/usr/bin/env python3
@@ -176,12 +176,12 @@ import signal
 import shutil
 import asyncio
 import subprocess
+import secrets
+import string
 
-# Nạp config an toàn từ config.py (mặc định config_dunp ở local)
 from config import TELEGRAM_OWNER_USERID
 import bot_telegram
 
-# Khai báo biến toàn cục quản lý subprocesses
 processes: list[subprocess.Popen] = []
 
 NGINX_LISTEN_PORT     = 8080
@@ -193,13 +193,13 @@ GEMMA4_API_PORT       = 8000
 
 PROXY_ROUTES = [
     {"path": "/webhook/", "target_port": TELEGRAM_WEBHOOK_PORT, "name": "Telegram Webhook", "websocket": False},
-    {"path": "/rustdesk/", "target_port": RUSTDESK_WEB_PORT, "name": "RustDesk Web Client", "websocket": True},
+    {"path": "/rustdesk/", "target_port": RUSTDESK_WEB_PORT, "name": "RustDesk Web Client Console", "websocket": True},
     {"path": "/rustdesk-hbbs/", "target_port": RUSTDESK_HBBS_PORT, "name": "RustDesk HBBS API", "websocket": False},
     {"path": "/gemma4/", "target_port": GEMMA4_API_PORT, "name": "Gemma4 Local API", "websocket": False},
 ]
 
 def auto_install_dependencies():
-    """Tự động cài đặt Nginx, Cloudflared, RustDesk Server nếu thiếu."""
+    """Tự động cài đặt Nginx, Cloudflared, RustDesk Server & Client nếu thiếu."""
     print("[*] [Auto-Setup] Đang kiểm tra môi trường & cài đặt phụ thuộc...")
 
     if not shutil.which("nginx"):
@@ -215,8 +215,72 @@ def auto_install_dependencies():
         if os.path.exists("cloudflared.deb"):
             os.remove("cloudflared.deb")
 
+    if not shutil.which("rustdesk"):
+        print("[!] Đang tải và cài đặt RustDesk Client...")
+        client_url = "https://github.com/rustdesk/rustdesk/releases/download/1.3.8/rustdesk-1.3.8-x86_64.deb"
+        try:
+            subprocess.run(["curl", "-L", "-o", "rustdesk_client.deb", client_url], check=True)
+            subprocess.run(["apt-get", "install", "-y", "./rustdesk_client.deb"], check=True)
+            if os.path.exists("rustdesk_client.deb"):
+                os.remove("rustdesk_client.deb")
+        except Exception as e:
+            print(f"[!] Lỗi khi cài đặt RustDesk Client: {e}")
+
+    try:
+        print("[*] Tự động đồng bộ mã nguồn mới nhất của dự án (git pull)...")
+        subprocess.run(["git", "pull"], check=False)
+    except Exception:
+        pass
+
+def auto_config_home_rustdesk_client() -> tuple[str, str, str]:
+    """
+    Tự động cấu hình RustDesk Client trên PC nhà trỏ vào 127.0.0.1,
+    tự sinh mật khẩu cố định bảo mật và trả về (Host_ID, Password, Public_Key).
+    """
+    print("[*] [Auto-Config] Đang tự động cấu hình RustDesk Client trên máy PC nhà...")
+    
+    rustdesk_key = ""
+    if os.path.exists("id_ed25519.pub"):
+        with open("id_ed25519.pub", "r") as kf:
+            rustdesk_key = kf.read().strip()
+
+    config_dir = "/root/.config/rustdesk" if os.getuid() == 0 else os.path.expanduser("~/.config/rustdesk")
+    os.makedirs(config_dir, exist_ok=True)
+    conf_file = os.path.join(config_dir, "RustDesk2.toml")
+
+    toml_content = f"""id_server = '127.0.0.1'
+relay_server = '127.0.0.1'
+api_server = 'http://127.0.0.1:21118'
+key = '{rustdesk_key}'
+"""
+    try:
+        with open(conf_file, "w", encoding="utf-8") as f:
+            f.write(toml_content)
+        print(f"[+] Đã cấu hình RustDesk Client local trỏ vào 127.0.0.1 tại: {conf_file}")
+    except Exception as e:
+        print(f"[!] Không thể ghi file cấu hình RustDesk local: {e}")
+
+    rustdesk_pass = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
+    if shutil.which("rustdesk"):
+        try:
+            subprocess.run(["rustdesk", "--password", rustdesk_pass], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=3)
+            print(f"[+] Đã tự động đặt mật khẩu RustDesk Client local: {rustdesk_pass}")
+        except Exception:
+            pass
+
+    rustdesk_host_id = "Không lấy được ID"
+    if shutil.which("rustdesk"):
+        try:
+            res = subprocess.run(["rustdesk", "--get-id"], stdout=subprocess.PIPE, text=True, timeout=3)
+            if res.returncode == 0 and res.stdout.strip():
+                rustdesk_host_id = res.stdout.strip()
+        except Exception:
+            pass
+
+    return rustdesk_host_id, rustdesk_pass, rustdesk_key
+
 def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str = "nginx_tunnel.conf"):
-    """Tự động tạo file nginx_tunnel.conf"""
+    """Tự động tạo file nginx_tunnel.conf với WebSocket & Proxy Headers"""
     locations_str = ""
     for route in routes:
         ws = """
@@ -265,7 +329,6 @@ def cleanup_all_processes(signum=None, frame=None):
                 except Exception:
                     pass
 
-    # Giải phóng các TCP Ports
     for port in [NGINX_LISTEN_PORT, TELEGRAM_WEBHOOK_PORT, RUSTDESK_WEB_PORT, RUSTDESK_HBBS_PORT, RUSTDESK_HBBR_PORT, GEMMA4_API_PORT]:
         subprocess.run(f"fuser -k {port}/tcp >/dev/null 2>&1", shell=True)
 
@@ -274,20 +337,16 @@ def cleanup_all_processes(signum=None, frame=None):
         sys.exit(0)
 
 async def main():
-    # Bắt tín hiệu Ctrl+C / kill
     signal.signal(signal.SIGINT, cleanup_all_processes)
     signal.signal(signal.SIGTERM, cleanup_all_processes)
 
-    # 1. Tự động kiểm tra cài đặt
     auto_install_dependencies()
 
-    # 2. Sinh Nginx config & Khởi chạy Nginx Subprocess
     conf_path = os.path.abspath("nginx_tunnel.conf")
     generate_nginx_config(NGINX_LISTEN_PORT, PROXY_ROUTES, conf_path)
     nginx_proc = subprocess.Popen(["nginx", "-c", conf_path])
     processes.append(nginx_proc)
 
-    # 3. Khởi chạy RustDesk Server Subprocesses (nếu có nhị phân hbbs / hbbr)
     hbbs_bin = shutil.which("hbbs") or ("./hbbs" if os.path.exists("./hbbs") else None)
     hbbr_bin = shutil.which("hbbr") or ("./hbbr" if os.path.exists("./hbbr") else None)
     if hbbs_bin and hbbr_bin:
@@ -296,14 +355,14 @@ async def main():
         processes.extend([proc_hbbs, proc_hbbr])
         print("[+] Đã khởi chạy RustDesk HBBS & HBBR Servers")
 
-    # 4. Khởi chạy Telegram Webhook App (myassitant/main.py)
+    rustdesk_host_id, rustdesk_pass, rustdesk_key = auto_config_home_rustdesk_client()
+
     myassitant_script = os.path.join(os.path.dirname(__file__), "myassitant", "main.py")
     if os.path.exists(myassitant_script):
         proc_app = subprocess.Popen([sys.executable, myassitant_script])
         processes.append(proc_app)
         print("[+] Đã khởi chạy Telegram Webhook App (myassitant/main.py)")
 
-    # 5. Khởi chạy Cloudflare Tunnel Subprocess
     cloudflared_cmd = shutil.which("cloudflared") or "./cloudflared"
     cf_proc = subprocess.Popen(
         [cloudflared_cmd, "tunnel", "--url", f"http://localhost:{NGINX_LISTEN_PORT}", "--no-autoupdate"],
@@ -312,7 +371,6 @@ async def main():
     )
     processes.append(cf_proc)
 
-    # 6. Parse URL Cloudflare Subdomain
     public_url = None
     print("[*] Đang chờ lấy Subdomain Cloudflare Tunnel...")
     while True:
@@ -326,35 +384,37 @@ async def main():
                 print(f"[🎉 TUNNEL LIVE] Public Domain: {public_url}")
                 break
 
-    # 7. Gửi thông tin tổng hợp qua Telegram tới @badpaybad
     if public_url:
-        await send_tunnel_info_to_owner(public_url, PROXY_ROUTES)
+        await send_tunnel_info_to_owner(public_url, PROXY_ROUTES, rustdesk_host_id, rustdesk_pass, rustdesk_key)
 
-    # Giữ tiến trình chính hoạt động
     while True:
         await asyncio.sleep(1)
 
-async def send_tunnel_info_to_owner(base_url: str, routes: list[dict]):
+async def send_tunnel_info_to_owner(base_url: str, routes: list[dict], host_id: str, host_pass: str, key: str):
     owner_id = TELEGRAM_OWNER_USERID # '730806080' (@badpaybad)
     
     route_details = ""
     for idx, r in enumerate(routes, 1):
         route_details += f"{idx}. <code>{base_url}{r['path']}</code> ➡️ <code>127.0.0.1:{r['target_port']}</code> ({r['name']})\n"
 
-    # Lấy Key mã hóa của RustDesk HBBS (nếu có)
-    rustdesk_key = "Chưa tìm thấy id_ed25519.pub"
-    if os.path.exists("id_ed25519.pub"):
-        with open("id_ed25519.pub", "r") as kf:
-            rustdesk_key = kf.read().strip()
+    clean_domain = base_url.replace("https://", "").replace("http://", "").strip()
 
     msg = f"""🚀 <b>SYSTEM INITPC & TUNNEL PROXY ONLINE</b>
 
 🔗 <b>Public Subdomain (Nginx):</b> <code>{base_url}</code>
 
-🖥️ <b>RustDesk Server Info:</b>
-• HBBS Port: <code>21115</code> | HBBR Port: <code>21117</code>
-• Web Client Console: <code>{base_url}/rustdesk/</code>
-• Key Public: <code>{rustdesk_key}</code>
+🖥️ <b>THÔNG TIN RUSTDESK REMOTE DESKTOP PC NHÀ (HOME PC):</b>
+• 🌐 <b>Remote qua Trình duyệt Web (Web Client Console):</b> 
+  👉 <code>{base_url}/rustdesk/</code>
+
+• 🆔 <b>RustDesk Host ID (Máy Nhà):</b> <code>{host_id}</code>
+• 🔒 <b>RustDesk Password (Máy Nhà):</b> <code>{host_pass}</code>
+
+• 📱 <b>Thông số Cấu hình App RustDesk Client (Cho thiết bị ngoài):</b>
+  - <b>ID Server / Hostname:</b> <code>{clean_domain}</code>
+  - <b>Relay Server:</b> <code>{clean_domain}</code>
+  - <b>API Server:</b> <code>{base_url}/rustdesk</code>
+  - <b>Public Key:</b> <code>{key}</code>
 
 🔀 <b>Nginx Path Routing Rules:</b>
 {route_details}
@@ -362,7 +422,7 @@ async def send_tunnel_info_to_owner(base_url: str, routes: list[dict]):
 
     if owner_id:
         await bot_telegram.send_telegram_message(chat_id=owner_id, text=msg, parse_mode="HTML")
-        print(f"[+] Đã gửi thông báo khởi chạy tới @badpaybad ({owner_id})")
+        print(f"[+] Đã gửi trọn bộ ID & Mật khẩu RustDesk tới Telegram @badpaybad ({owner_id})")
 
 if __name__ == "__main__":
     try:
@@ -373,32 +433,47 @@ if __name__ == "__main__":
 
 ---
 
-## 5. Hướng dẫn Cấu hình RustDesk Client Kết nối tới Server Qua Subdomain Tunnel
+## 5. Hướng dẫn Chi tiết Cấu hình & Kết nối RustDesk từ Ngoài mạng về Máy PC tại nhà
 
-Dưới đây là chi tiết từng bước để cấu hình ứng dụng **RustDesk Client** (trên máy tính hoặc điện thoại) kết nối với RustDesk Remote Server chạy qua Cloudflare Subdomain Tunnel.
+### 5.1. Thiết lập Cố định Tự động tại Máy PC Nhà (`initpc.py`)
 
-### 5.1. Lấy thông tin Server công khai
-Từ tin nhắn nhận được trên Telegram từ bot, lấy các thông tin sau:
-- **Subdomain Tunnel**: `https://xxx.trycloudflare.com` (ví dụ `https://testing-sonic-profiles.trycloudflare.com`)
-- **Domain Hostname**: `xxx.trycloudflare.com` (bỏ `https://`)
-- **Key Public**: Nội dung chuỗi key lấy từ file `id_ed25519.pub` trên server.
+Khi bạn chạy `sudo python3 initpc.py`:
+1. **Tự động kiểm tra cài đặt**: Tự phát hiện và cài đặt Nginx, Cloudflared, RustDesk Server & **RustDesk Client** nếu hệ thống chưa có.
+2. **Tự động đồng bộ Git**: Tự động gọi `git pull` để kéo mã nguồn mới nhất của dự án Telegram Chatbot này (`a.i-assistant-chatbot-telegram-serverles`) về máy PC nhà.
+3. **Tự động cấu hình**: Hàm `auto_config_home_rustdesk_client()` tự động can thiệp file cấu hình của RustDesk Client máy nhà (`RustDesk2.toml`), trỏ thẳng **ID Server / Relay Server** về `127.0.0.1`.
+4. **Tự động sinh Mật khẩu & Lấy ID**: Tự động sinh mật khẩu cố định mới (`rustdesk_pass`), sau đó lấy **Host ID** (`host_id`).
+5. **Tự động gửi Telegram**: Tự động gửi tin nhắn Telegram báo trọn bộ **Subdomain, Link Web Console, Host ID & Password** tới tài khoản `@badpaybad`.
 
-### 5.2. Các bước Cấu hình trên RustDesk Client
+> 🌟 **LỢI ÍCH 0-EFFORT**: Bạn không cần thao tác thủ công gì trên máy nhà nữa! Máy PC nhà tự động cài app thiếu, kéo code mới nhất của dự án, tự động kết nối bất biến với RustDesk Server local, đồng thời gửi sẵn Mật khẩu & ID về điện thoại cho bạn.
 
-1. **Mở ứng dụng RustDesk Client**:
-   - Mở RustDesk trên máy client (Windows, macOS, Linux, Android, iOS).
-2. **Vào cài đặt Mạng (Network Settings)**:
-   - Nhấn vào biểu tượng **Menu (3 dấu chấm)** ➡️ Chọn **Settings (Cài đặt)** ➡️ Chọn mục **Network (Mạng)**.
-   - Nhấn nút **Unlock Network Settings (Mở khóa cài đặt mạng)** để chỉnh sửa.
-3. **Điền thông số Server**:
-   - **ID Server**: Điền domain public từ Cloudflare Tunnel: `xxx.trycloudflare.com` (hoặc nếu kết nối Web Console điền `xxx.trycloudflare.com/rustdesk`).
-   - **Relay Server**: Điền `xxx.trycloudflare.com`.
-   - **API Server**: Điền `https://xxx.trycloudflare.com/rustdesk`.
-   - **Key**: Dán chuỗi Key public nhận được từ file `id_ed25519.pub`.
-4. **Lưu và Kết nối**:
-   - Nhấn **Apply (Áp dụng)**.
-   - Ở góc dưới giao diện RustDesk sẽ chuyển sang trạng thái: **Ready (Sẵn sàng / Khung viền xanh green)**.
-   - Bây giờ bạn có thể nhập ID máy cần điều khiển từ xa và kết nối bình thường qua đường truyền mã hóa của RustDesk Server!
+---
+
+### 5.2. Cách 1: Kết nối từ Ngoài mạng qua Trình duyệt Web (Web Client Console - Cực nhanh, 0 cài App)
+
+Khi bạn ở ngoài mạng (dùng điện thoại, tablet, hay máy tính công ty) và muốn điều khiển máy PC tại nhà:
+
+1. Mở Telegram trên điện thoại/laptop của bạn, xem tin nhắn tự động mới nhất nhận từ bot.
+2. Bấm trực tiếp vào đường link **Web Client Console**:
+   `https://<subdomain_hiện_tại>.trycloudflare.com/rustdesk/`
+3. Nhập **RustDesk Host ID máy nhà** và **RustDesk Password** (lấy ngay trong tin nhắn Telegram).
+4. Màn hình desktop máy PC nhà hiển thị và cho phép bạn điều khiển trực tiếp ngay trong tab trình duyệt web mà **KHÔNG CẦN CÀI ĐẶT BẤT KỲ APP NÀO**!
+
+---
+
+### 5.3. Cách 2: Kết nối từ Ngoài mạng qua Ứng dụng RustDesk Client Native (App trên Laptop / Điện thoại)
+
+Khi bạn muốn dùng app RustDesk Client cài sẵn trên laptop/điện thoại ngoài mạng:
+
+1. Kiểm tra tin nhắn Telegram từ bot để lấy **Subdomain public mới nhất** (ví dụ `testing-sonic.trycloudflare.com`).
+2. Mở ứng dụng **RustDesk Client** trên laptop/điện thoại ngoài mạng.
+3. Vào **Settings (Cài đặt)** ➡️ **Network (Mạng)** ➡️ **Unlock Network Settings**:
+   - **ID Server**: `testing-sonic.trycloudflare.com` *(Điền subdomain mới, bỏ `https://`)*
+   - **Relay Server**: `testing-sonic.trycloudflare.com`
+   - **API Server**: `https://testing-sonic.trycloudflare.com/rustdesk`
+   - **Key**: Dán chuỗi Public Key nhận từ tin nhắn Telegram (chuỗi key này cố định không đổi).
+4. Nhấn **Apply (Áp dụng)**. Nhìn góc dưới chuyển sang **Ready (Khung xanh)**.
+5. Nhập **Host ID máy nhà** ➡️ Bấm **Connect** ➡️ Nhập **Password** (lấy trong tin nhắn Telegram).
+6. Kết nối điều khiển màn hình máy PC tại nhà thành công qua đường truyền mã hóa!
 
 ---
 
@@ -409,8 +484,11 @@ Từ tin nhắn nhận được trên Telegram từ bot, lấy các thông tin s
    sudo python3 initpc.py
    ```
 2. **Xác minh Khởi chạy Tiến trình**:
-   - Kiểm tra log hiển thị Nginx, RustDesk, Cloudflared Tunnel và `myassitant/main.py` đã lên thành công.
+   - Kiểm tra log hiển thị Nginx, RustDesk Server & Client, Cloudflared Tunnel và `myassitant/main.py` đã lên thành công.
 3. **Xác minh Telegram Notification**:
-   - Kiểm tra tài khoản Telegram `@badpaybad` nhận được tin nhắn báo Subdomain, Port RustDesk và danh sách Nginx Proxy Pass mapping.
-4. **Xác minh RustDesk Client**:
-   - Cấu hình RustDesk Client theo hướng dẫn ở Mục 5 và thử nghiệm kết nối remote desktop.
+   - Kiểm tra tài khoản Telegram `@badpaybad` nhận được tin nhắn báo Subdomain, **trọn bộ RustDesk Host ID, Password & Public Key** và danh sách Nginx Proxy Pass mapping.
+4. **Xác minh Khả năng Tự động Kết nối 100% của Máy Nhà**:
+   - Khởi động lại `initpc.py` nhiều lần để sinh Subdomain ngẫu nhiên mới.
+   - Xác minh RustDesk Client trên máy nhà luôn báo **Ready (Vòng xanh green)** nhờ trỏ vào `127.0.0.1`.
+5. **Xác minh Remote Desktop từ Ngoài mạng**:
+   - Thử nghiệm nhập Host ID & Password nhận từ Telegram vào Web Console link (`/rustdesk/`) để điều khiển màn hình PC nhà.
