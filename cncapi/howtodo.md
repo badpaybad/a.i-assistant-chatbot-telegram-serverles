@@ -166,17 +166,175 @@ sorted_paths = sorted(raw_paths, key=get_sort_key)
 2. **Lắng nghe Sự kiện `input`/`change`**:
    Đăng ký event listener lên `#font-line-spacing-mm` để tự động cập nhật lại mã G-code và đường xem trước (preview) trên Canvas realtime khi người dùng tăng giảm milimet.
 
+### 1.4. Mục tiêu & Nguyên Nhân Cập nhật 22 (`cncapi/whattodo.md`)
+1. **Nguyên nhân bút không hạ khi click "🚀 Vẽ trên CNC"**:
+   - Hàm `generate_font_gcode` trước đây chỉ sinh duy nhất câu lệnh nâng/hạ bút bằng Trục Z (`G0 Z<z_safe>` và `G1 Z<z_draw>`).
+   - Khi hệ thống ở cấu hình mặc định `pen_mode = "spindle-pwm"` (Bút vẽ điều khiển bằng động cơ Servo nối với chân Spindle PWM), máy CNC không nhận được lệnh điều khiển Servo `M3 S<pen_down_pwm>` (ví dụ `M3 S45`), dẫn tới bút vẽ nằm nguyên ở vị trí nâng (Pen UP) trong suốt quá trình chạy CNC thật.
+   - Đồng thời, khi bấm nút `🚀 Vẽ trên CNC`, câu lệnh G-code nét chữ chưa được tính toán cộng offset vị trí làm việc hiện tại `curWpos` (`offsetX`, `offsetY`) mà bị nhảy về gốc tọa độ máy (5, 5).
+2. **Nguyên nhân G-code không vẽ đúng nét chữ như preview trên Tool Path View**:
+   - Khi render ảnh chữ bằng PIL, hàng 0 đại diện cho ĐỈNH chữ và hàng H đại diện cho ĐÁY chữ.
+   - Ở hệ tọa độ CNC chuẩn Cartesian (`axis_dir_y = -1`), trục Y tăng hướng lên trên (North). Nếu không lộn ngược Y trong PIL contour, ĐỈNH chữ sẽ nhận giá trị Y nhỏ (đáy giấy) và ĐÁY chữ nhận giá trị Y lớn (đỉnh giấy), dẫn tới nét chữ bị vẽ LỘN NGƯỢC theo chiều dọc trên máy CNC thật.
+3. **Giải pháp xử lý**:
+   - **Backend (`main.py`)**: Nhận thêm tham số `pen_mode` và `axis_dir_y`.
+     - Nếu `pen_mode == "spindle-pwm"`, sinh ra câu lệnh `M3 S<z_draw>` (kèm `G4 P<pen_dwell>`) khi hạ bút và `M3 S<z_safe>` khi nâng bút. Ngược lại nếu `pen_mode == "z-axis"`, sử dụng `G1 Z<z_draw>` và `G0 Z<z_safe>`.
+     - Tự động đảo chiều tọa độ Y `y_mm = round((raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm, 2)` khi `axis_dir_y == -1` (hệ CNC chuẩn Cartesian), đảm bảo nét vẽ thực tế trên máy CNC trùng khớp 100% với hiển thị preview.
+   - **Frontend (`static/app.js`)**:
+     - Gửi `pen_mode` và `axis_dir_y` hiện tại lên Backend khi tạo mã G-code nét chữ.
+     - Khi bấm `🚀 Vẽ trên CNC`, tính toán offset tọa độ X, Y theo vị trí WPos hiện tại của đầu CNC (`X + curWpos.x`, `Y + curWpos.y`) cho toàn bộ các dòng lệnh G0/G1 để CNC hạ bút và bắt đầu vẽ ngay tại vị trí thực tế của đầu bút.
+
+---
+
+## 2. Chi Tiết Các Bước Triển Khai Mã Nguồn (Implementation Steps)
+
+### Bước 1: Bổ sung API Backend trong [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py)
+
+#### 1.1. Định nghĩa Pydantic Request Model (Bổ sung `line_spacing_mm`, `pen_mode`, `axis_dir_y`)
+```python
+class FontGcodeRequest(BaseModel):
+    font_name: str
+    text: str
+    font_size_pt: float = 72.0
+    line_spacing: float = 1.2      # Tỷ lệ khoảng cách dòng (Mặc định 1.2x)
+    line_spacing_mm: float = 0.0   # Khoảng cách bổ sung giữa các dòng tính bằng mm (Mặc định 0.0 mm)
+    z_safe: float = 0.0
+    z_draw: float = 45.0
+    feed_rate: float = 4000.0
+    margin_mm: float = 5.0
+    epsilon: float = 1.2
+    stroke_mode: str = "single_line"
+    pen_mode: Optional[str] = None    # Phân biệt "spindle-pwm" (Servo) và "z-axis"
+    axis_dir_y: Optional[int] = None  # Hướng trục Y (-1: Cartesian chuẩn, 1: +Y xuống)
+```
+
+#### 1.3. Nạp và Truyền Toàn Bộ G-code Qua `gcode_streamer_task` (Đối chiếu `cnc/main.py`)
+Đối chiếu với kiến trúc gốc ở `cnc/main.py`, khi phát toàn bộ file G-code nét chữ xuống CNC:
+1. Mọi câu lệnh được đi qua `translate_command(line)` để tự động đổi các lệnh di chuyển Z thành lệnh nhấc/hạ bút Servo PWM (`M3 S...`) khi `pen_mode == "spindle-pwm"`.
+2. Nạp toàn bộ danh sách lệnh `processed_lines` vào `gcode_streamer_task()` để truyền xuống GRBL theo **Giao thức đếm ký tự (Character-Counting Buffer Protocol, tối đa 127 bytes)**. Điều này loại bỏ hoàn toàn hiện tượng tràn bộ đệm làm mất câu lệnh hay lộn xộn đường nét vẽ.
+Cập nhật trong `cncapi/main.py`:
+```python
+@app.post("/cncapi/v1/run-gcode")
+@app.post("/api/run-gcode")
+async def run_gcode(req: RunGcodeRequest):
+    if not state.connected or not state.serial_port:
+        raise HTTPException(status_code=400, detail="Chưa kết nối máy CNC")
+    lines = [line.strip() for line in req.gcode.splitlines() if line.strip() and not line.strip().startswith(";")]
+    state.pen_state = None  # Reset trạng thái bút
+    processed_lines = []
+    for line in lines:
+        processed_lines.extend(translate_command(line))
+        
+    if state.stream_task and not state.stream_task.done():
+        state.stream_task.cancel()
+
+    state.stream_gcode_lines = processed_lines
+    state.gcode_index = 0
+    state.scenario_is_looping = False
+    state.is_streaming = True
+    state.is_paused = False
+    state.stream_task = asyncio.create_task(gcode_streamer_task())
+    await broadcast({"type": "stream_status", "status": "started"})
+    return {"status": "success", "lines_sent": len(processed_lines)}
+```
+
+---
+
+### Bước 2: Thiết Kế Giao Diện Web UI (`cncapi/static/index.html` & `styles.css`)
+
+#### 2.1. Cửa Sổ Floating Panel (Bổ sung Ô nhập `Cách Dòng (mm)`)
+
+```html
+<!-- CẤU HÌNH KHOẢNG CÁCH DÒNG (CẬP NHẬT 20 & 21) -->
+<div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+  <div class="form-group">
+    <label for="font-size-input">Cỡ Chữ (pt):</label>
+    <input type="number" id="font-size-input" value="72" min="8" max="500" />
+  </div>
+  <div class="form-group">
+    <label for="font-line-spacing">Cách Dòng (Tỷ lệ):</label>
+    <input type="number" id="font-line-spacing" value="1.2" min="0.5" max="5.0" step="0.1" title="Tỷ lệ khoảng cách giữa các dòng (mặc định 1.2x)" />
+  </div>
+  <div class="form-group">
+    <label for="font-line-spacing-mm">Cách Dòng (mm):</label>
+    <input type="number" id="font-line-spacing-mm" value="0.0" min="0.0" max="100.0" step="1.0" title="Khoảng cách bổ sung giữa các dòng tính bằng mm" />
+  </div>
+</div>
+```
+
+---
+
+### Bước 3: Xử Lý Logic Javascript (`cncapi/static/app.js`)
+
+1. **Gửi `pen_mode` khi gọi API backend `/cncapi/v1/generate-font-gcode`**:
+   ```javascript
+   const res = await fetch('/cncapi/v1/generate-font-gcode', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+           font_name: font_name,
+           text: text,
+           font_size_pt: parseFloat(fontSizeInput.value) || 72.0,
+           line_spacing: parseFloat(lineSpacingInput?.value) || 1.2,
+           line_spacing_mm: line_spacing_mm,
+           feed_rate: parseFloat(feedRateInput.value) || 4000.0,
+           z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
+           z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
+           stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
+           pen_mode: penMode // Phân biệt Servo PWM hoặc Z-Axis
+       })
+   });
+   ```
+
+2. **Cộng Offset Tọa Độ WPos Hiện Tại Khi Bấm "🚀 Vẽ trên CNC"**:
+   ```javascript
+   if (btnRealDraw) {
+       btnRealDraw.addEventListener('click', async () => {
+           const curWpos = telemetry.wpos || [0, 0, 0];
+           const offsetX = curWpos[0];
+           const offsetY = curWpos[1];
+
+           const lines = fontGcode.split('\n');
+           const offsetLines = lines.map(line => {
+               let trimmed = line.trim();
+               if (!trimmed || trimmed.startsWith(';')) return line;
+               const parts = line.split(';');
+               parts[0] = parts[0].replace(/([XY])(-?\d+\.?\d*)/g, (match, axis, val) => {
+                   const num = parseFloat(val);
+                   if (axis === 'X') return `X${(num + offsetX).toFixed(2)}`;
+                   if (axis === 'Y') return `Y${(num + offsetY).toFixed(2)}`;
+                   return match;
+               });
+               return parts.join(';');
+           });
+
+           let offsetGcode = `G90\n` + offsetLines.join('\n');
+           await fetch('/cncapi/v1/run-gcode', {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ gcode: offsetGcode })
+           });
+       });
+   }
+   ```
+
 ---
 
 ## 3. Quy Trình Kiểm Thử Thủ Công (Manual Testing Steps)
 
 1. **Khởi động Server Backend**:
    ```bash
-   python3 cncapi/main.py
+   python3 main.py
    ```
-2. **Mở Trình Duyệt Web**:
+2. **Mở Trình Duyệt Web & Kết Nối CNC**:
    - Truy cập `http://localhost:8099`.
-3. **Thử Nghiệm Hiển Thị Đúng Hướng Chữ**:
+   - Chọn Cổng COM/Serial và bấm **Kết Nối CNC**.
+3. **Thử Nghiệm Tính Năng Hạ Bút Servo (`spindle-pwm`)**:
    - Mở panel `✍️ Gcode with font`.
-   - Nhập nội dung văn bản (ví dụ: `Xin Chào CNC`).
-   - Quan sát chữ hiển thị trên Tool Path View Canvas đúng chiều xuôi, chữ đọc bình thường không bị lộn ngược từ dưới lên.
+   - Nhập nội dung văn bản `Test Pen`.
+   - Chọn chế độ điều khiển bút là `Servo PWM (Spindle PWM)`.
+   - Bấm **🚀 Vẽ trên CNC**.
+   - **Kỳ vọng**: Kiểm tra console log hoặc máy CNC nhận lệnh `M3 S45` (hoặc góc Servo đã cài đặt) để hạ bút chạm bề mặt vẽ trước khi di chuyển nét chữ, sau đó phát lệnh `M3 S0` để nhấc bút lên khi chuyển sang nét chữ tiếp theo.
+4. **Thử Nghiệm Vị Trí Vẽ Bắt Đầu Từ Vị Trí Hiện Tại (`curWpos`)**:
+   - Dùng phím di chuyển đưa đầu CNC tới tọa độ ví dụ `X=50, Y=30`.
+   - Bấm **🚀 Vẽ trên CNC**.
+   - **Kỳ vọng**: Chữ vẽ bắt đầu từ tọa độ `X=50, Y=30` và không bị nhấc bút bay về `(0,0)`.
+

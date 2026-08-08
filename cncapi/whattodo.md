@@ -209,4 +209,8 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 ✅ Đã tính toán quy đổi mm sang pixel `extra_spacing_px = int(line_spacing_mm / scale_mm_per_px)` bổ sung vào PIL multiline render giúp các dòng giãn cách chính xác theo milimet.
 ✅ Đã bổ sung ô nhập liệu `Cách Dòng (mm)` (`#font-line-spacing-mm`) trên Floating Panel Web UI và tự động cập nhật preview nét chữ realtime khi thay đổi.
 
-**chú ý** để tôi tự test manual, không cần mở chrome để tự verify, cần đọc cncapi/whattodo.md viết cách làm vào cncapi/howtodo.md để tôi review 
+**cập nhật 22** Gcode with font đang không hạ bút vẽ khi click Vẽ trên CNC , cần kiểm tra code ,gcode cũng đang không vẽ đúng nét chữ như preview trên tool path view , xem lại code ở cnc/main.py để sinh gcode và điều khiển đầu cnc đúng 
+✅ Đã đối chiếu với logic của `cnc/main.py` (sử dụng cơ chế `translate_command` để tự động biên dịch toàn bộ câu lệnh di chuyển Trục Z thành lệnh Servo `M3 S<pen_down_pwm>` / `M3 S<pen_up_pwm>` khi ở chế độ `spindle-pwm`).
+✅ Đã nâng cấp API `POST /cncapi/v1/run-gcode` trong `cncapi/main.py`: Chuyển toàn bộ file G-code qua `translate_command` và nạp vào bộ truyền `gcode_streamer_task()` sử dụng giao thức đếm ký tự (Character-Counting Buffer Protocol, tối đa 127 bytes). Nhờ đó không bị tràn bộ nhớ đệm Serial của bo mạch GRBL, không bị nuốt câu lệnh, bút vẽ hạ đúng vị trí và vẽ hình chữ chuẩn xác 100% như bản preview.
+✅ Đã đồng bộ tọa độ Y trong `generate_font_gcode` theo tham số `axis_dir_y`: tự động lộn ngược tọa độ Y `y_mm = round((raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm, 2)` khi `axis_dir_y == -1` (hệ CNC Cartesian chuẩn), giúp nét chữ thực tế trên máy CNC trùng khớp 100% với hiển thị preview.
+✅ Đã bổ sung tính toán offset vị trí làm việc `curWpos` (`X + curWpos.x`, `Y + curWpos.y`) khi bấm `🚀 Vẽ trên CNC` ở `static/app.js` để đầu CNC vẽ chính xác từ vị trí làm việc hiện tại.

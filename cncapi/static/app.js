@@ -1970,7 +1970,9 @@
                         feed_rate: parseFloat(feedRateInput.value) || 4000.0,
                         z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
                         z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
-                        stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line'
+                        stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
+                        pen_mode: penMode,
+                        axis_dir_y: axisDirY
                     })
                 });
 
@@ -2029,7 +2031,25 @@
                 if (confirm(t('Xác nhận gửi mã G-code nét chữ tới máy CNC để bắt đầu vẽ?'))) {
                     try {
                         const curWpos = telemetry.wpos || [0, 0, 0];
-                        let offsetGcode = `G90\nG0 X${curWpos[0].toFixed(2)} Y${curWpos[1].toFixed(2)}\n` + fontGcode;
+                        const offsetX = curWpos[0];
+                        const offsetY = curWpos[1];
+                        
+                        // Tính toán offset tọa độ X/Y từ vị trí WPos hiện tại của đầu CNC
+                        const lines = fontGcode.split('\n');
+                        const offsetLines = lines.map(line => {
+                            let trimmed = line.trim();
+                            if (!trimmed || trimmed.startsWith(';')) return line;
+                            const parts = line.split(';');
+                            parts[0] = parts[0].replace(/([XY])(-?\d+\.?\d*)/g, (match, axis, val) => {
+                                const num = parseFloat(val);
+                                if (axis === 'X') return `X${(num + offsetX).toFixed(2)}`;
+                                if (axis === 'Y') return `Y${(num + offsetY).toFixed(2)}`;
+                                return match;
+                            });
+                            return parts.join(';');
+                        });
+                        
+                        let offsetGcode = `G90\n` + offsetLines.join('\n');
                         const res = await fetch('/cncapi/v1/run-gcode', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -2037,7 +2057,7 @@
                         });
                         const data = await res.json();
                         if (data.status === 'success') {
-                            appendConsoleLog(`[GCODE FONT] Đã gửi ${data.lines_sent} dòng G-code tới CNC`, 'system');
+                            appendConsoleLog(`[GCODE FONT] Đã gửi ${data.lines_sent} dòng G-code tới CNC (Bắt đầu tại X=${offsetX.toFixed(2)}, Y=${offsetY.toFixed(2)})`, 'system');
                         }
                     } catch (e) {
                         alert(`Lỗi thực thi G-code: ${e.message}`);

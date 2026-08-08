@@ -1566,6 +1566,8 @@ class FontGcodeRequest(BaseModel):
     margin_mm: float = 5.0
     epsilon: float = 1.2
     stroke_mode: str = "single_line"
+    pen_mode: Optional[str] = None
+    axis_dir_y: Optional[int] = None
 
 class RunGcodeRequest(BaseModel):
     gcode: str
@@ -1682,6 +1684,8 @@ def generate_font_gcode(req: FontGcodeRequest):
         actual_w_mm = raw_w_px * scale_mm_per_px
         actual_h_mm = raw_h_px * scale_mm_per_px
 
+        effective_axis_dir_y = req.axis_dir_y if req.axis_dir_y is not None else getattr(state, 'axis_dir_y', 1)
+
         raw_paths = []
         for contour in contours:
             if len(contour) < 2:
@@ -1695,7 +1699,10 @@ def generate_font_gcode(req: FontGcodeRequest):
             path_mm = []
             for pt in pts:
                 x_mm = round((pt[0] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
-                y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+                if effective_axis_dir_y == -1:
+                    y_mm = round((raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm, 2)
+                else:
+                    y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
                 path_mm.append((x_mm, y_mm))
 
             if len(path_mm) >= 2:
@@ -1706,7 +1713,7 @@ def generate_font_gcode(req: FontGcodeRequest):
             p2 = path[-1]
             min_y = min(p1[1], p2[1])
             min_x = min(p1[0], p2[0])
-            row_bucket = int(min_y / 10.0)
+            row_bucket = int(min_y / 10.0) if effective_axis_dir_y == 1 else int(-min_y / 10.0)
             return (row_bucket, min_x)
 
         oriented_paths = []
@@ -1720,6 +1727,13 @@ def generate_font_gcode(req: FontGcodeRequest):
 
         sorted_paths = sorted(oriented_paths, key=get_sort_key)
 
+        effective_pen_mode = req.pen_mode if req.pen_mode else state.pen_mode
+        is_spindle = (effective_pen_mode == "spindle-pwm")
+
+        pen_up_cmd = f"M3 S{req.z_safe:.0f}" if is_spindle else f"G0 Z{req.z_safe:.2f}"
+        pen_down_cmd = f"M3 S{req.z_draw:.0f}" if is_spindle else f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}"
+        dwell_cmd = f"G4 P{state.pen_dwell}" if (is_spindle and getattr(state, 'pen_dwell', 0) > 0) else None
+
         first_line = req.text.splitlines()[0] if req.text else ""
         gcode = [
             f"; --- G-CODE CNC FONT ---",
@@ -1727,26 +1741,32 @@ def generate_font_gcode(req: FontGcodeRequest):
             f"; Font: {req.font_name}",
             f"; Font Size: {req.font_size_pt} pt",
             f"; Kich thuoc thuc te: {actual_w_mm:.2f} x {actual_h_mm:.2f} mm",
+            f"; Pen Mode: {effective_pen_mode}",
             "G21 ; Don vi: mm",
             "G90 ; Toa do tuyet doi",
-            f"G0 Z{req.z_safe:.2f} ; Lift Pen\n"
+            f"{pen_up_cmd} ; Lift Pen\n"
         ]
 
         preview_paths = []
         for path in sorted_paths:
             start_pt = path[0]
             gcode.append(f"G0 X{start_pt[0]:.2f} Y{start_pt[1]:.2f}")
-            gcode.append(f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}")
+            gcode.append(pen_down_cmd)
+            if dwell_cmd:
+                gcode.append(dwell_cmd)
 
             preview_path = [[start_pt[0], start_pt[1]]]
             for pt in path[1:]:
                 gcode.append(f"G1 X{pt[0]:.2f} Y{pt[1]:.2f}")
                 preview_path.append([pt[0], pt[1]])
 
-            gcode.append(f"G0 Z{req.z_safe:.2f}\n")
+            gcode.append(pen_up_cmd)
+            if dwell_cmd:
+                gcode.append(dwell_cmd)
+            gcode.append("")
             preview_paths.append(preview_path)
 
-        gcode.extend(["G0 X0 Y0 ; Tra ve goc 0", "M30 ; Ket thuc"])
+        gcode.extend(["G0 X0 Y0 ; Tra ve goc", "M30 ; Ket thuc"])
         gcode_str = "\n".join(gcode)
 
         return {
@@ -1768,10 +1788,22 @@ async def run_gcode(req: RunGcodeRequest):
     if not state.connected or not state.serial_port:
         raise HTTPException(status_code=400, detail="Chưa kết nối máy CNC")
     lines = [line.strip() for line in req.gcode.splitlines() if line.strip() and not line.strip().startswith(";")]
+    state.pen_state = None  # Reset pen_state so first Z change forces spindle PWM translation
+    processed_lines = []
     for line in lines:
-        await safe_write_serial((line + "\n").encode('utf-8'))
-        await asyncio.sleep(0.02)
-    return {"status": "success", "lines_sent": len(lines)}
+        processed_lines.extend(translate_command(line))
+        
+    if state.stream_task and not state.stream_task.done():
+        state.stream_task.cancel()
+
+    state.stream_gcode_lines = processed_lines
+    state.gcode_index = 0
+    state.scenario_is_looping = False
+    state.is_streaming = True
+    state.is_paused = False
+    state.stream_task = asyncio.create_task(gcode_streamer_task())
+    await broadcast({"type": "stream_status", "status": "started"})
+    return {"status": "success", "lines_sent": len(processed_lines)}
 
 # V1 State & Visualizer Endpoints
 @app.get("/cncapi/v1/state")
