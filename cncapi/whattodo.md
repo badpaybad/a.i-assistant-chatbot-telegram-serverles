@@ -282,27 +282,5 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
     Dừng và về gốc làm việc
     Việc dừng sẽ là nhấc dao lên rồi mới di chuyển
         Dừng là có thể gửi lệnh dừng khẩn cấp để clear các lệnh đã nạp, sau khi về vị trí quy định sẽ unlock để các thao tác khác thực hiện được     
-✅ Đã hoàn thành Cập nhật 29:
-  1. Tạo endpoint REST API `POST /cncapi/v1/motion/stop-and-return` trong [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py):
-     - Gửi b"\x18" Soft Reset ngắt streamer & xóa toàn bộ các lệnh G-code đã nạp trong bộ đệm GRBL.
-     - Nhấc dao lên trước (`G0 Z{z_safe}` / `M3 S10`).
-     - Di chuyển an toàn về vị trí quy định (`target_x`, `target_y`).
-     - Phát lệnh `$X` Unlock GRBL để hệ thống mở khóa sẵn sàng cho các thao tác tiếp theo.
-  2. Bổ sung 2 nút điều khiển độc lập trên giao diện Web UI trong cả 2 panel **Gcode with font** và **Gcode with image** tại [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html):
-     - **🛑 Dừng & Về gốc ban đầu**: Dừng khẩn cấp, nhấc dao, xóa bộ đệm, quay về vị trí tọa độ xuất phát trước khi bắt đầu vẽ (`startOffset.x`, `startOffset.y`), sau đó Unlock.
-     - **🏠 Dừng & Về gốc WPos (0,0)**: Dừng khẩn cấp, nhấc dao, xóa bộ đệm, quay về gốc tọa độ làm việc WPos `(0, 0)`, sau đó Unlock.
-
-**cập nhật 30** Tool Path View (Xem & Giả Lập Kịch Bản) nút Xóa đồ họa cần cho phép xóa cả nét vẽ Gcode with font và Gcode with image để có thể vẽ lại không bị chồng lấn.
-✅ Đã hoàn thành Cập nhật 30:
-  1. Viết hàm `clearAllCanvasGraphics()` trong [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) để xóa triệt để:
-     - Dữ liệu nét vẽ giả lập `penTrajectory = []`.
-     - Đường nét chữ font `fontPreviewPaths = []` và `fontGcode = ''`.
-     - Đường nét ảnh `imageSegments = []` và `imageGcode = ''`.
-     - Hủy toàn bộ hiệu ứng mô phỏng animation frame (`fontSimAnimationId`, `imageSimAnimationId`).
-     - Reset các ô thông tin preview và thẻ hiển thị ảnh.
-  2. Đăng ký sự kiện click gọi `clearAllCanvasGraphics()` cho:
-     - Nút **Xóa Đồ Họa** (`#btn-clear-path`) góc trên Canvas Tool Path View.
-     - Nút **🧹 Xóa Xem Trước** (`#btn-clear-font-graphics`) trong panel `Gcode with font`.
-     - Nút **🧹 Xóa Xem Trước** (`#btn-clear-image-graphics`) trong panel `Gcode with image`.
 
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
