@@ -239,3 +239,8 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   17. `sort_row_height_mm` (`#font-sort-row-h`, mặc định `10.0 mm`): Gom nhóm hàng vẽ để tối ưu thứ tự nét di chuyển.
 ✅ Đã cập nhật Backend Pydantic Model `FontGcodeRequest` và hàm `generate_font_gcode` tiếp nhận và áp dụng tức thì tất cả các thuộc tính này.
 ✅ Đã gắn event listeners tự động kích hoạt cập nhật mã G-code và hiển thị preview nét chữ 1 nét realtime trên Web UI khi người dùng tăng/giảm thay đổi bất kỳ ô nhập liệu nào.
+
+**cập nhật 24** Gcode with font, bỏ mục Mục 1.6 về cách chạy cnc như viết tay, tuân thủ gcode sinh ra cần vẽ chữ từ trái sang phải mô phỏng giống tay người viết chữ , cần ưu tiên từ trái sang phải , nhìn cho tự nhiên như viết bằng tay phải. 
+✅ Đã khắc phục triệt để thuật toán sắp xếp nét chữ trong hàm `generate_font_gcode` tại `cncapi/main.py`:
+  1. **Loại bỏ ưu tiên nét cao/nét dài**: Phân chia chính xác nhóm dòng chữ (`line_idx`) theo khoảng cách độ cao thực tế của dòng văn bản `line_height_mm`. Không còn hiện tượng các nét chữ cao/dài bị nhảy lên vẽ trước.
+  2. **Viết tuần tự tuyệt đối từ Trái sang Phải (Strict Left-to-Right)**: Trong cùng 1 dòng chữ, mọi đường nét (ngắn, dài, nét chính, dấu phụ) được sắp xếp thứ tự ưu tiên tuyệt đối theo tọa độ `min_x` từ bé đến lớn. Đầu vẽ di chuyển tuần tự 100% từ trái qua phải tự nhiên như tay người viết chữ.

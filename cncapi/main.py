@@ -1717,26 +1717,50 @@ def generate_font_gcode(req: FontGcodeRequest):
                 if path_len >= min_path_len_mm:
                     raw_paths.append(path_mm)
 
-        sort_bucket_h = req.sort_row_height_mm if req.sort_row_height_mm and req.sort_row_height_mm > 0.5 else 10.0
+        # Calculate line height in mm to group text lines accurately
+        line_height_mm = (font_size_px + spacing_px) * scale_mm_per_px
+        if line_height_mm <= 0:
+            line_height_mm = actual_h_mm + 1.0
 
-        def get_sort_key(path):
-            p1 = path[0]
-            p2 = path[-1]
-            min_y = min(p1[1], p2[1])
-            min_x = min(p1[0], p2[0])
-            row_bucket = int(min_y / sort_bucket_h) if effective_axis_dir_y == 1 else int(-min_y / sort_bucket_h)
-            return (row_bucket, min_x)
-
+        # Step 1: Re-orient each stroke to flow strictly Left-to-Right and Top-to-Bottom
         oriented_paths = []
         for path in raw_paths:
             p_start = path[0]
             p_end = path[-1]
-            if (p_end[1] < p_start[1]) or (abs(p_end[1] - p_start[1]) < 0.1 and p_end[0] < p_start[0]):
+            
+            should_reverse = False
+            # If stroke moves Right-to-Left (p_end[0] < p_start[0]), reverse it to flow Left-to-Right
+            if p_end[0] < p_start[0] - 0.1:
+                should_reverse = True
+            elif abs(p_end[0] - p_start[0]) <= 0.1:
+                # Vertical stroke: flow Top-to-Bottom
+                if effective_axis_dir_y == 1 and p_end[1] < p_start[1] - 0.1:
+                    should_reverse = True
+                elif effective_axis_dir_y == -1 and p_end[1] > p_start[1] + 0.1:
+                    should_reverse = True
+
+            if should_reverse:
                 oriented_paths.append(list(reversed(path)))
             else:
                 oriented_paths.append(path)
 
-        sorted_paths = sorted(oriented_paths, key=get_sort_key)
+        # Step 2: Sort strokes strictly Left-to-Right within each text line (Row)
+        def get_stroke_sort_key(path):
+            xs = [pt[0] for pt in path]
+            ys = [pt[1] for pt in path]
+            min_x = min(xs)
+            mid_y = (min(ys) + max(ys)) / 2.0
+            
+            # Determine line index from stroke center Y
+            if effective_axis_dir_y == 1:
+                line_idx = int(mid_y / line_height_mm)
+            else:
+                line_idx = int((actual_h_mm - mid_y) / line_height_mm)
+                
+            # Sort strictly: 1. Text Line Index (Top to Bottom), 2. Left-to-Right (min_x), 3. start_x
+            return (line_idx, min_x, path[0][0])
+
+        sorted_paths = sorted(oriented_paths, key=get_stroke_sort_key)
 
         effective_pen_mode = req.pen_mode if req.pen_mode else getattr(state, 'pen_mode', 'spindle-pwm')
         pen_up_cmd = f"G0 Z{req.z_safe:.2f}"
