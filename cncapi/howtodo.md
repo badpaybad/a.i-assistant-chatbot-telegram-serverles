@@ -228,6 +228,17 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
+### 2.10. Tái Cấu Trúc Vị Trí 2 Nút Mở G-Code Editor (Cập nhật 30)
+
+1. **Di Chuyển Vị Trí Nút Mở Cửa Sổ Nổi (`cncapi/static/index.html`)**:
+   - Gỡ bỏ 2 nút `#btn-open-gcode-font` và `#btn-open-gcode-image` khỏi vị trí header Cột 0.
+   - Thêm khối điều khiển G-code Editors mới nằm trực tiếp bên dưới vùng **Cử Chỉ Touch & Swipe Gestures** (`<div class="gestures-container">`).
+2. **Cấu Trúc Giao Diện Mới**:
+   - Đặt 2 nút trong thẻ `div` phân cách `border-top` mỏng với bố cục lưới 2 cột (`grid-template-columns: 1fr 1fr`).
+   - Giúp quy trình làm việc được liên tục: Sau khi cài đặt tọa độ điểm Bắt Đầu / Kết Thúc hoặc thực hiện thao tác cử chỉ touch/swipe, người dùng có thể nhấp mở ngay các trình biên dịch G-code chữ hoặc G-code ảnh.
+
+---
+
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)
 
 1. **Chạy Server API Backend**:

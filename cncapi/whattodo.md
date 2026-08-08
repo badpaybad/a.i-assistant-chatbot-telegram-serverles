@@ -283,4 +283,10 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
     Việc dừng sẽ là nhấc dao lên rồi mới di chuyển
         Dừng là có thể gửi lệnh dừng khẩn cấp để clear các lệnh đã nạp, sau khi về vị trí quy định sẽ unlock để các thao tác khác thực hiện được     
 
+**cập nhật 30** đưa 2 nút Gcode with font, Gcode with image xuống dưới của vùng Cử Chỉ Touch & Swipe Gestures
+✅ Đã hoàn thành Cập nhật 30:
+  1. Đã chuyển vị trí 2 nút **✍️ Gcode with font** (`#btn-open-gcode-font`) và **🖼️ Gcode with image** (`#btn-open-gcode-image`) từ header Cột 0 xuống bố trí ở vị trí mới ngay phía bên dưới vùng **Cử Chỉ Touch & Swipe Gestures** (`<div class="gestures-container">`) trong [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html).
+  2. Bố trí dạng lưới 2 cột gọn gàng với viền phân cách đường kẻ mỏng (`border-top`), giúp thao tác liên tục thuận tiện ngay sau khi định vị điểm/bắt đầu kịch bản.
+
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
+
