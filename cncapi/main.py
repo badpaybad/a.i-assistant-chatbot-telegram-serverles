@@ -2199,6 +2199,13 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 async def read_index():
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    favicon_path = os.path.join(STATIC_DIR, "favicon.ico")
+    if os.path.exists(favicon_path):
+        return FileResponse(favicon_path)
+    return JSONResponse({"status": "error", "message": "Favicon not found"}, status_code=404)
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8099, reload=True)

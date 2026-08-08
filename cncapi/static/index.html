@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bộ Điều Khiển CNC GRBL - Touch & Script Controller</title>
-    <link type="image/x-icon" href="favicon.ico" rel="shortcut icon" />
+    <link type="image/x-icon" href="/static/favicon.ico?v=1" rel="shortcut icon" />
     <!-- Google Fonts: Outfit & Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -1620,9 +1620,17 @@ Xin Chào</textarea
               🏠 Dừng & Về gốc WPos (0,0)
             </button>
           </div>
-          <button class="btn btn-secondary" id="btn-download-font-gcode">
-            💾 Tải file .gcode
-          </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-clear-font-graphics"
+            >
+              🧹 Xóa Xem Trước
+            </button>
+            <button class="btn btn-secondary btn-compact" id="btn-download-font-gcode">
+              💾 Tải file .gcode
+            </button>
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
             <button
               class="btn btn-secondary btn-compact"
@@ -2080,9 +2088,17 @@ Xin Chào</textarea
               🏠 Dừng & Về gốc WPos (0,0)
             </button>
           </div>
-          <button class="btn btn-secondary" id="btn-download-image-gcode">
-            💾 Tải file .gcode
-          </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-clear-image-graphics"
+            >
+              🧹 Xóa Xem Trước
+            </button>
+            <button class="btn btn-secondary btn-compact" id="btn-download-image-gcode">
+              💾 Tải file .gcode
+            </button>
+          </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
             <button
               class="btn btn-secondary btn-compact"

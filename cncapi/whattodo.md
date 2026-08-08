@@ -292,6 +292,17 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
      - **🛑 Dừng & Về gốc ban đầu**: Dừng khẩn cấp, nhấc dao, xóa bộ đệm, quay về vị trí tọa độ xuất phát trước khi bắt đầu vẽ (`startOffset.x`, `startOffset.y`), sau đó Unlock.
      - **🏠 Dừng & Về gốc WPos (0,0)**: Dừng khẩn cấp, nhấc dao, xóa bộ đệm, quay về gốc tọa độ làm việc WPos `(0, 0)`, sau đó Unlock.
 
-**chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
+**cập nhật 30** Tool Path View (Xem & Giả Lập Kịch Bản) nút Xóa đồ họa cần cho phép xóa cả nét vẽ Gcode with font và Gcode with image để có thể vẽ lại không bị chồng lấn.
+✅ Đã hoàn thành Cập nhật 30:
+  1. Viết hàm `clearAllCanvasGraphics()` trong [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) để xóa triệt để:
+     - Dữ liệu nét vẽ giả lập `penTrajectory = []`.
+     - Đường nét chữ font `fontPreviewPaths = []` và `fontGcode = ''`.
+     - Đường nét ảnh `imageSegments = []` và `imageGcode = ''`.
+     - Hủy toàn bộ hiệu ứng mô phỏng animation frame (`fontSimAnimationId`, `imageSimAnimationId`).
+     - Reset các ô thông tin preview và thẻ hiển thị ảnh.
+  2. Đăng ký sự kiện click gọi `clearAllCanvasGraphics()` cho:
+     - Nút **Xóa Đồ Họa** (`#btn-clear-path`) góc trên Canvas Tool Path View.
+     - Nút **🧹 Xóa Xem Trước** (`#btn-clear-font-graphics`) trong panel `Gcode with font`.
+     - Nút **🧹 Xóa Xem Trước** (`#btn-clear-image-graphics`) trong panel `Gcode with image`.
 
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md

@@ -210,7 +210,21 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 2. **Giao Diện UI & 2 Chế Độ Dừng/Về Gốc (`cncapi/static/index.html` & `app.js`)**:
    - **🛑 Dừng & Về gốc ban đầu**: Nhấc dao, xóa bộ đệm lệnh, quay về vị trí tọa độ xuất phát trước khi bắt đầu vẽ (`startOffset.x`, `startOffset.y`), sau đó Unlock.
    - **🏠 Dừng & Về gốc WPos (0,0)**: Nhấc dao, xóa bộ đệm lệnh, quay về gốc tọa độ làm việc WPos `(0, 0)`, sau đó Unlock.
-   - Áp dụng đồng bộ 100% trên cả 2 công cụ `Gcode with font` và `Gcode with image`.
+---
+
+### 2.9. Xử Lý Xóa Triệt Để Đồ Họa Xem Trước Tool Path View (Cập nhật 30)
+
+1. **Nguyên Nhân Lỗi Chồng Lấn Nét Vẽ**:
+   - Trước đây nút *Xóa đồ họa* (`#btn-clear-path`) chỉ thiết lập mảng `penTrajectory = []`, không giải phóng mảng dữ liệu đường nét `fontPreviewPaths` (Gcode with font) và `imageSegments` (Gcode with image). Vì vậy khi canvas vẽ lại (`drawCanvas()`), các đồ họa nét cũ vẫn còn nguyên gây hiện tượng đè nét.
+2. **Triển Khai Hàm `clearAllCanvasGraphics()` (`cncapi/static/app.js`)**:
+   - Reset toàn bộ dữ liệu đồ họa: `penTrajectory = []`, `fontPreviewPaths = []`, `fontGcode = ''`, `imageSegments = []`, `imageGcode = ''`, `currentImageFile = null`, `currentImageBase64 = null`.
+   - Hủy ngay mọi luồng hiệu ứng giả lập animation frame: `cancelAnimationFrame(fontSimAnimationId)`, `cancelAnimationFrame(imageSimAnimationId)`.
+   - Khôi phục trạng thái mặc định của các thẻ hiển thị ảnh preview và nhãn thông tin.
+   - Thực hiện `drawCanvas()` làm sạch 100% đồ họa trên Tool path view Canvas.
+3. **Gán Sự Kiện Xóa Cho Các Nút Điều Khiển UI (`cncapi/static/index.html`)**:
+   - Gán cho nút **Xóa Đồ Họa** (`#btn-clear-path`) ở góc trên Canvas Tool Path View.
+   - Bổ sung nút **🧹 Xóa Xem Trước** (`#btn-clear-font-graphics`) vào panel `Gcode with font`.
+   - Bổ sung nút **🧹 Xóa Xem Trước** (`#btn-clear-image-graphics`) vào panel `Gcode with image`.
 
 ---
 

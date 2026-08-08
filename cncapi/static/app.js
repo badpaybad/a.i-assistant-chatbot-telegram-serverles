@@ -245,10 +245,7 @@
 
         // Visualizer Controls
         document.getElementById('btn-reset-view')?.addEventListener('click', resetCanvasView);
-        document.getElementById('btn-clear-path')?.addEventListener('click', () => {
-            penTrajectory = [];
-            drawCanvas();
-        });
+        document.getElementById('btn-clear-path')?.addEventListener('click', clearAllCanvasGraphics);
         document.getElementById('select-axis-x')?.addEventListener('change', (e) => {
             axisDirX = parseInt(e.target.value);
             drawCanvas();
@@ -934,6 +931,48 @@
             }
         });
         return segments;
+    }
+
+    function clearAllCanvasGraphics() {
+        penTrajectory = [];
+        fontPreviewPaths = [];
+        fontGcode = '';
+        imageSegments = [];
+        imageGcode = '';
+        currentImageFile = null;
+        currentImageBase64 = null;
+
+        if (fontSimAnimationId) {
+            cancelAnimationFrame(fontSimAnimationId);
+            fontSimAnimationId = null;
+        }
+        if (imageSimAnimationId) {
+            cancelAnimationFrame(imageSimAnimationId);
+            imageSimAnimationId = null;
+        }
+        simIsRunning = false;
+        simHeadPos = null;
+
+        const fontInfoBox = document.getElementById('font-info-box');
+        if (fontInfoBox) fontInfoBox.innerText = '';
+
+        const imageInfoBox = document.getElementById('image-info-box');
+        if (imageInfoBox) imageInfoBox.innerText = '';
+
+        const previewImg = document.getElementById('image-preview-img');
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.style.display = 'none';
+        }
+
+        const infoLabel = document.getElementById('image-info-label');
+        if (infoLabel) infoLabel.innerHTML = 'Chưa chọn file';
+
+        const fileInput = document.getElementById('image-file-input');
+        if (fileInput) fileInput.value = '';
+
+        drawCanvas();
+        appendConsoleLog('[TOOLPATH] Đã xóa toàn bộ đồ họa, nét vẽ và đường dẫn xem trước.', 'info');
     }
 
     function drawCanvas() {
@@ -1924,11 +1963,16 @@
         const btnRealDraw = document.getElementById('btn-draw-on-real-cnc');
         const btnStopHomeStart = document.getElementById('btn-stop-font-home-start');
         const btnStopHomeOrigin = document.getElementById('btn-stop-font-home-origin');
+        const btnClearGraphics = document.getElementById('btn-clear-font-graphics');
         const btnDownload = document.getElementById('btn-download-font-gcode');
         const btnSaveProject = document.getElementById('btn-save-font-project');
         const btnLoadProject = document.getElementById('btn-load-font-project');
         const projectFileInput = document.getElementById('font-project-file-input');
         const fontInfoBox = document.getElementById('font-info-box');
+
+        if (btnClearGraphics) {
+            btnClearGraphics.addEventListener('click', clearAllCanvasGraphics);
+        }
 
         if (!btnOpen || !panel) return;
 
@@ -2338,11 +2382,16 @@
         const btnRealDraw = document.getElementById('btn-draw-image-on-cnc');
         const btnStopHomeStart = document.getElementById('btn-stop-image-home-start');
         const btnStopHomeOrigin = document.getElementById('btn-stop-image-home-origin');
+        const btnClearGraphics = document.getElementById('btn-clear-image-graphics');
         const btnDownload = document.getElementById('btn-download-image-gcode');
         const btnSaveProject = document.getElementById('btn-save-image-project');
         const btnLoadProject = document.getElementById('btn-load-image-project');
         const projectFileInput = document.getElementById('image-project-file-input');
         const infoBox = document.getElementById('image-info-box');
+
+        if (btnClearGraphics) {
+            btnClearGraphics.addEventListener('click', clearAllCanvasGraphics);
+        }
 
         if (!btnOpen || !panel) return;
 
