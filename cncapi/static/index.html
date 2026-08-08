@@ -1590,12 +1590,36 @@ Xin Chào</textarea
           <button class="btn btn-primary" id="btn-generate-font-gcode">
             ⚡ Tạo G-code
           </button>
-          <button class="btn btn-info" id="btn-preview-simulate-draw">
-            🎬 Vẽ xem trước (Giả lập)
-          </button>
-          <button class="btn btn-success" id="btn-draw-on-real-cnc">
-            🚀 Vẽ trên CNC (Thực tế)
-          </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-info btn-compact"
+              id="btn-preview-simulate-draw"
+            >
+              🎬 Vẽ xem trước (Giả lập)
+            </button>
+            <button
+              class="btn btn-success btn-compact"
+              id="btn-draw-on-real-cnc"
+            >
+              🚀 Vẽ trên CNC (Thực tế)
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-danger btn-compact"
+              id="btn-stop-font-home-start"
+              title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về điểm xuất phát trước khi vẽ"
+            >
+              🛑 Dừng & Về gốc ban đầu
+            </button>
+            <button
+              class="btn btn-warning btn-compact"
+              id="btn-stop-font-home-origin"
+              title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về gốc tọa độ làm việc (0,0)"
+            >
+              🏠 Dừng & Về gốc WPos (0,0)
+            </button>
+          </div>
           <button class="btn btn-secondary" id="btn-download-font-gcode">
             💾 Tải file .gcode
           </button>
@@ -2026,12 +2050,36 @@ Xin Chào</textarea
           <button class="btn btn-primary" id="btn-generate-image-gcode">
             ⚡ Chuyển đổi & Tạo G-code
           </button>
-          <button class="btn btn-info" id="btn-preview-image-draw">
-            🎬 Vẽ xem trước (Giả lập)
-          </button>
-          <button class="btn btn-success" id="btn-draw-image-on-cnc">
-            🚀 Vẽ trên CNC (Thực tế)
-          </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-info btn-compact"
+              id="btn-preview-image-draw"
+            >
+              🎬 Vẽ xem trước (Giả lập)
+            </button>
+            <button
+              class="btn btn-success btn-compact"
+              id="btn-draw-image-on-cnc"
+            >
+              🚀 Vẽ trên CNC (Thực tế)
+            </button>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-danger btn-compact"
+              id="btn-stop-image-home-start"
+              title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về điểm xuất phát trước khi vẽ"
+            >
+              🛑 Dừng & Về gốc ban đầu
+            </button>
+            <button
+              class="btn btn-warning btn-compact"
+              id="btn-stop-image-home-origin"
+              title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về gốc tọa độ làm việc (0,0)"
+            >
+              🏠 Dừng & Về gốc WPos (0,0)
+            </button>
+          </div>
           <button class="btn btn-secondary" id="btn-download-image-gcode">
             💾 Tải file .gcode
           </button>

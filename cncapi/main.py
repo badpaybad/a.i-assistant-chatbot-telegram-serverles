@@ -1226,9 +1226,50 @@ async def v1_move_to(req: V1MoveToRequest):
 
     return {"status": "success", "message": f"Đang di chuyển đến X:{req.x}, Y:{req.y}"}
 
+class StopAndReturnRequest(BaseModel):
+    target_x: float = 0.0
+    target_y: float = 0.0
+    z_safe: float = 0.0
+    pen_mode: str = "spindle-pwm"
+
 @app.post("/cncapi/v1/motion/stop")
 async def v1_motion_stop():
     return await stop_stream()
+
+@app.post("/cncapi/v1/motion/stop-and-return")
+async def v1_motion_stop_and_return(req: StopAndReturnRequest):
+    state.is_streaming = False
+    state.is_paused = False
+    if state.stream_task and not state.stream_task.done():
+        state.stream_task.cancel()
+        
+    if state.connected and state.serial_port:
+        try:
+            # 1. Gửi b"\x18" Soft Reset để clear các lệnh đã nạp trong bộ đệm GRBL
+            await safe_write_serial(b"\x18")
+            await asyncio.sleep(0.5)
+            # 2. Unlock GRBL sau reset
+            await safe_write_serial(b"$X\n")
+            await asyncio.sleep(0.1)
+            # 3. Nhấc dao lên trước khi di chuyển
+            if req.pen_mode == "spindle-pwm":
+                lift_cmd = f"M3 S{int(req.z_safe if req.z_safe > 0 else 10)}\n"
+            else:
+                lift_cmd = f"G0 Z{req.z_safe:.2f}\n"
+            await safe_write_serial(lift_cmd.encode())
+            await asyncio.sleep(0.1)
+            # 4. Di chuyển tới vị trí mục tiêu quy định
+            move_cmd = f"G21\nG90\nG0 X{req.target_x:.2f} Y{req.target_y:.2f}\n"
+            await safe_write_serial(move_cmd.encode())
+            await asyncio.sleep(0.3)
+            # 5. Unlock lần nữa để các thao tác khác thực hiện được ngay
+            await safe_write_serial(b"$X\n")
+            await broadcast({"type": "log", "direction": "out", "content": f"<CTRL-X Reset & Return to X{req.target_x:.2f} Y{req.target_y:.2f}>"})
+        except Exception as e:
+            logger.error(f"Lỗi khi dừng và về gốc quy định: {e}")
+            
+    await broadcast({"type": "stream_status", "status": "stopped"})
+    return {"status": "success", "message": f"Đã dừng khẩn cấp và di chuyển về X={req.target_x}, Y={req.target_y}"}
 
 @app.post("/cncapi/v1/motion/pen")
 async def v1_motion_pen(req: V1PenRequest):

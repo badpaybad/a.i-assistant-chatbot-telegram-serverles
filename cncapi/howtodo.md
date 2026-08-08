@@ -198,6 +198,22 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
+### 2.8. Tích Hợp Nút Dừng & Về Gốc Quy Định (Cập nhật 29)
+
+1. **REST API Endpoint `/cncapi/v1/motion/stop-and-return` (`cncapi/main.py`)**:
+   - Nhận đối tượng `StopAndReturnRequest` chứa `target_x`, `target_y`, `z_safe`, `pen_mode`.
+   - **Xóa bộ đệm lệnh đã nạp**: Gửi tín hiệu Soft Reset `b"\x18"` ngắt ngay streamer và hủy bỏ toàn bộ các lệnh G-code đã xếp hàng trong bộ đệm nối tiếp GRBL.
+   - **Mở khóa lần 1**: Gửi `$X\n` để mở khóa GRBL sau reset.
+   - **Nhấc dao an toàn trước khi di chuyển**: Phát lệnh nhấc đầu kim `M3 S10` (Servo PWM) hoặc `G0 Z{z_safe}` (Trục Z).
+   - **Di chuyển về gốc quy định**: Phát lệnh `G21 G90 G0 X{target_x} Y{target_y}` di chuyển vị trí đầu vẽ.
+   - **Mở khóa lần 2**: Gửi `$X\n` để mở khóa hoàn toàn, đảm bảo máy sẵn sàng cho các thao tác kế tiếp.
+2. **Giao Diện UI & 2 Chế Độ Dừng/Về Gốc (`cncapi/static/index.html` & `app.js`)**:
+   - **🛑 Dừng & Về gốc ban đầu**: Nhấc dao, xóa bộ đệm lệnh, quay về vị trí tọa độ xuất phát trước khi bắt đầu vẽ (`startOffset.x`, `startOffset.y`), sau đó Unlock.
+   - **🏠 Dừng & Về gốc WPos (0,0)**: Nhấc dao, xóa bộ đệm lệnh, quay về gốc tọa độ làm việc WPos `(0, 0)`, sau đó Unlock.
+   - Áp dụng đồng bộ 100% trên cả 2 công cụ `Gcode with font` và `Gcode with image`.
+
+---
+
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)
 
 1. **Chạy Server API Backend**:

@@ -1922,6 +1922,8 @@
         const btnGenerate = document.getElementById('btn-generate-font-gcode');
         const btnSimulate = document.getElementById('btn-preview-simulate-draw');
         const btnRealDraw = document.getElementById('btn-draw-on-real-cnc');
+        const btnStopHomeStart = document.getElementById('btn-stop-font-home-start');
+        const btnStopHomeOrigin = document.getElementById('btn-stop-font-home-origin');
         const btnDownload = document.getElementById('btn-download-font-gcode');
         const btnSaveProject = document.getElementById('btn-save-font-project');
         const btnLoadProject = document.getElementById('btn-load-font-project');
@@ -2112,6 +2114,78 @@
             });
         }
 
+        // 1. Nút 🛑 Dừng & Về gốc ban đầu trước khi vẽ (Font)
+        if (btnStopHomeStart) {
+            btnStopHomeStart.addEventListener('click', async () => {
+                if (fontSimAnimationId) {
+                    cancelAnimationFrame(fontSimAnimationId);
+                    fontSimAnimationId = null;
+                }
+                simIsRunning = false;
+                simHeadPos = { x: fontStartOffset.x, y: fontStartOffset.y };
+                drawCanvas();
+
+                const zSafe = parseFloat(document.getElementById('font-z-safe')?.value || '0.0');
+                const penModeVal = document.getElementById('font-pen-mode')?.value || 'spindle-pwm';
+
+                try {
+                    const res = await fetch('/cncapi/v1/motion/stop-and-return', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            target_x: fontStartOffset.x,
+                            target_y: fontStartOffset.y,
+                            z_safe: zSafe,
+                            pen_mode: penModeVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        appendConsoleLog(`[GCODE FONT] Đã phát lệnh Dừng khẩn cấp, nhấc dao & di chuyển về gốc ban đầu trước khi vẽ (X=${fontStartOffset.x.toFixed(2)}, Y=${fontStartOffset.y.toFixed(2)})`, 'warning');
+                        if (fontInfoBox) fontInfoBox.innerText = `🛑 Đã dừng & Về gốc ban đầu (${fontStartOffset.x.toFixed(1)}, ${fontStartOffset.y.toFixed(1)})!`;
+                    }
+                } catch (e) {
+                    alert(`Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
+                }
+            });
+        }
+
+        // 2. Nút 🏠 Dừng & Về gốc WPos (0,0) (Font)
+        if (btnStopHomeOrigin) {
+            btnStopHomeOrigin.addEventListener('click', async () => {
+                if (fontSimAnimationId) {
+                    cancelAnimationFrame(fontSimAnimationId);
+                    fontSimAnimationId = null;
+                }
+                simIsRunning = false;
+                simHeadPos = { x: 0, y: 0 };
+                drawCanvas();
+
+                const zSafe = parseFloat(document.getElementById('font-z-safe')?.value || '0.0');
+                const penModeVal = document.getElementById('font-pen-mode')?.value || 'spindle-pwm';
+
+                try {
+                    const res = await fetch('/cncapi/v1/motion/stop-and-return', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            target_x: 0.0,
+                            target_y: 0.0,
+                            z_safe: zSafe,
+                            pen_mode: penModeVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        appendConsoleLog('[GCODE FONT] Đã phát lệnh Dừng khẩn cấp, nhấc dao & di chuyển về gốc tọa độ làm việc (X0, Y0)', 'info');
+                        if (fontInfoBox) fontInfoBox.innerText = '🏠 Đã dừng & Về gốc WPos (0,0)!';
+                    }
+                } catch (e) {
+                    alert(`Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
+                }
+            });
+        }
+
         // Nút Tải file .gcode
         if (btnDownload) {
             btnDownload.addEventListener('click', () => {
@@ -2262,6 +2336,8 @@
         const btnGenerate = document.getElementById('btn-generate-image-gcode');
         const btnSimulate = document.getElementById('btn-preview-image-draw');
         const btnRealDraw = document.getElementById('btn-draw-image-on-cnc');
+        const btnStopHomeStart = document.getElementById('btn-stop-image-home-start');
+        const btnStopHomeOrigin = document.getElementById('btn-stop-image-home-origin');
         const btnDownload = document.getElementById('btn-download-image-gcode');
         const btnSaveProject = document.getElementById('btn-save-image-project');
         const btnLoadProject = document.getElementById('btn-load-image-project');
@@ -2445,6 +2521,78 @@
                     } catch (e) {
                         alert(`Lỗi thực thi G-code: ${e.message}`);
                     }
+                }
+            });
+        }
+
+        // 1. Nút 🛑 Dừng & Về gốc ban đầu trước khi vẽ (Image)
+        if (btnStopHomeStart) {
+            btnStopHomeStart.addEventListener('click', async () => {
+                if (imageSimAnimationId) {
+                    cancelAnimationFrame(imageSimAnimationId);
+                    imageSimAnimationId = null;
+                }
+                simIsRunning = false;
+                simHeadPos = { x: imageStartOffset.x, y: imageStartOffset.y };
+                drawCanvas();
+
+                const mode = modeSelect?.value || 'servo';
+                const penModeVal = mode === 'servo' ? 'spindle-pwm' : 'z-axis';
+
+                try {
+                    const res = await fetch('/cncapi/v1/motion/stop-and-return', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            target_x: imageStartOffset.x,
+                            target_y: imageStartOffset.y,
+                            z_safe: 2.0,
+                            pen_mode: penModeVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        appendConsoleLog(`[GCODE IMAGE] Đã phát lệnh Dừng khẩn cấp, nhấc dao & di chuyển về gốc ban đầu trước khi vẽ (X=${imageStartOffset.x.toFixed(2)}, Y=${imageStartOffset.y.toFixed(2)})`, 'warning');
+                        if (infoBox) infoBox.innerText = `🛑 Đã dừng & Về gốc ban đầu (${imageStartOffset.x.toFixed(1)}, ${imageStartOffset.y.toFixed(1)})!`;
+                    }
+                } catch (e) {
+                    alert(`Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
+                }
+            });
+        }
+
+        // 2. Nút 🏠 Dừng & Về gốc WPos (0,0) (Image)
+        if (btnStopHomeOrigin) {
+            btnStopHomeOrigin.addEventListener('click', async () => {
+                if (imageSimAnimationId) {
+                    cancelAnimationFrame(imageSimAnimationId);
+                    imageSimAnimationId = null;
+                }
+                simIsRunning = false;
+                simHeadPos = { x: 0, y: 0 };
+                drawCanvas();
+
+                const mode = modeSelect?.value || 'servo';
+                const penModeVal = mode === 'servo' ? 'spindle-pwm' : 'z-axis';
+
+                try {
+                    const res = await fetch('/cncapi/v1/motion/stop-and-return', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            target_x: 0.0,
+                            target_y: 0.0,
+                            z_safe: 2.0,
+                            pen_mode: penModeVal
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        appendConsoleLog('[GCODE IMAGE] Đã phát lệnh Dừng khẩn cấp, nhấc dao & di chuyển về gốc tọa độ làm việc (X0, Y0)', 'info');
+                        if (infoBox) infoBox.innerText = '🏠 Đã dừng & Về gốc WPos (0,0)!';
+                    }
+                } catch (e) {
+                    alert(`Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
                 }
             });
         }
