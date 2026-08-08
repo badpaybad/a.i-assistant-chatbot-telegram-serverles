@@ -1972,7 +1972,7 @@
                         z_draw: parseFloat(document.getElementById('font-z-draw')?.value || document.getElementById('pen-down-val')?.value || '45.0'),
                         stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
                         pen_mode: document.getElementById('font-pen-mode')?.value || penMode || 'spindle-pwm',
-                        axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '-1')),
+                        axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '1')),
                         epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
                         margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '5.0'),
                         binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),

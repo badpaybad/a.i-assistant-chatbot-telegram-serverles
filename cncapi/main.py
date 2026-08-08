@@ -1738,12 +1738,9 @@ def generate_font_gcode(req: FontGcodeRequest):
 
         sorted_paths = sorted(oriented_paths, key=get_sort_key)
 
-        effective_pen_mode = req.pen_mode if req.pen_mode else state.pen_mode
-        is_spindle = (effective_pen_mode == "spindle-pwm")
-
-        pen_up_cmd = f"M3 S{req.z_safe:.0f}" if is_spindle else f"G0 Z{req.z_safe:.2f}"
-        pen_down_cmd = f"M3 S{req.z_draw:.0f}" if is_spindle else f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}"
-        dwell_cmd = f"G4 P{state.pen_dwell}" if (is_spindle and getattr(state, 'pen_dwell', 0) > 0) else None
+        effective_pen_mode = req.pen_mode if req.pen_mode else getattr(state, 'pen_mode', 'spindle-pwm')
+        pen_up_cmd = f"G0 Z{req.z_safe:.2f}"
+        pen_down_cmd = f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}"
 
         first_line = req.text.splitlines()[0] if req.text else ""
         gcode = [
@@ -1763,8 +1760,6 @@ def generate_font_gcode(req: FontGcodeRequest):
             start_pt = path[0]
             gcode.append(f"G0 X{start_pt[0]:.2f} Y{start_pt[1]:.2f}")
             gcode.append(pen_down_cmd)
-            if dwell_cmd:
-                gcode.append(dwell_cmd)
 
             preview_path = [[start_pt[0], start_pt[1]]]
             for pt in path[1:]:
@@ -1772,8 +1767,6 @@ def generate_font_gcode(req: FontGcodeRequest):
                 preview_path.append([pt[0], pt[1]])
 
             gcode.append(pen_up_cmd)
-            if dwell_cmd:
-                gcode.append(dwell_cmd)
             gcode.append("")
             preview_paths.append(preview_path)
 

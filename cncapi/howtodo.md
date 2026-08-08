@@ -330,7 +330,7 @@ async def run_gcode(req: RunGcodeRequest):
    - `z_safe` (`#font-z-safe`): Vị trí/góc PWM khi nhấc bút (Mặc định `0.0`).
    - `z_draw` (`#font-z-draw`): Vị trí/góc PWM khi hạ bút (Mặc định `45.0`).
    - `pen_mode` (`#font-pen-mode`): Chế độ bút (`spindle-pwm` / `z-axis`).
-   - `axis_dir_y` (`#font-axis-dir-y`): Hướng trục Y (`-1` Cartesian chuẩn / `1`).
+   - `axis_dir_y` (`#font-axis-dir-y`): Hướng trục Y (Mặc định `1` [+Y hướng xuống], hoặc `-1` Cartesian chuẩn).
    - `epsilon` (`#font-epsilon`): Độ mịn nét xấp xỉ đường cong `cv2.approxPolyDP` (Mặc định `1.2`).
    - `margin_mm` (`#font-margin-mm`): Khoảng cách lề lùi viền xung quanh chữ (Mặc định `5.0 mm`).
    - `binary_threshold` (`#font-binary-thresh`): Ngưỡng phân tách nét chữ nhị phân 1-254 (Mặc định `128`).

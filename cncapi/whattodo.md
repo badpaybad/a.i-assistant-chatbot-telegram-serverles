@@ -230,7 +230,7 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   8. `z_safe` (`#font-z-safe`, mặc định `0.0`): Vị trí/Góc Servo PWM khi nhấc bút.
   9. `z_draw` (`#font-z-draw`, mặc định `45.0`): Vị trí/Góc Servo PWM khi hạ bút vẽ.
   10. `pen_mode` (`#font-pen-mode`, mặc định `spindle-pwm`): Chế độ điều khiển bút (`spindle-pwm` hoặc `z-axis`).
-  11. `axis_dir_y` (`#font-axis-dir-y`, mặc định `-1`): Hướng trục Y (`-1` Cartesian chuẩn CNC hoặc `1`).
+  11. `axis_dir_y` (`#font-axis-dir-y`, mặc định `1`): Hướng trục Y (`1` +Y hướng xuống hoặc `-1` Cartesian chuẩn CNC).
   12. `epsilon` (`#font-epsilon`, mặc định `1.2`): Độ mịn đường cong xấp xỉ `cv2.approxPolyDP`.
   13. `margin_mm` (`#font-margin-mm`, mặc định `5.0 mm`): Lề lùi viền khung chữ.
   14. `binary_threshold` (`#font-binary-thresh`, mặc định `128`): Ngưỡng tách ảnh chữ nhị phân (1-254).
