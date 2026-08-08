@@ -1968,11 +1968,17 @@
                         line_spacing: parseFloat(lineSpacingInput?.value) || 1.2,
                         line_spacing_mm: parseFloat(lineSpacingMmInput?.value) || 0.0,
                         feed_rate: parseFloat(feedRateInput.value) || 4000.0,
-                        z_safe: parseFloat(document.getElementById('pen-up-val')?.value || '0.0'),
-                        z_draw: parseFloat(document.getElementById('pen-down-val')?.value || '45.0'),
+                        z_safe: parseFloat(document.getElementById('font-z-safe')?.value || document.getElementById('pen-up-val')?.value || '0.0'),
+                        z_draw: parseFloat(document.getElementById('font-z-draw')?.value || document.getElementById('pen-down-val')?.value || '45.0'),
                         stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
-                        pen_mode: penMode,
-                        axis_dir_y: axisDirY
+                        pen_mode: document.getElementById('font-pen-mode')?.value || penMode || 'spindle-pwm',
+                        axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '-1')),
+                        epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
+                        margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '5.0'),
+                        binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
+                        render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '600'),
+                        min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
+                        sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0')
                     })
                 });
 
@@ -2005,6 +2011,19 @@
         }
         if (strokeModeSelect) strokeModeSelect.addEventListener('change', generateFontGcode);
         if (textInput) textInput.addEventListener('input', generateFontGcode);
+
+        // Bind all advanced setting inputs for FontGcodeRequest properties
+        [
+            'font-z-safe', 'font-z-draw', 'font-pen-mode', 'font-axis-dir-y',
+            'font-epsilon', 'font-margin-mm', 'font-binary-thresh', 'font-render-dpi',
+            'font-min-path-len', 'font-sort-row-h'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', generateFontGcode);
+                el.addEventListener('change', generateFontGcode);
+            }
+        });
 
         // Nút "Vẽ xem trước" (Giả lập)
         if (btnSimulate) {

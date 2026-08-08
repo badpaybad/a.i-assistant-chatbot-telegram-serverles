@@ -214,3 +214,28 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 ✅ Đã nâng cấp API `POST /cncapi/v1/run-gcode` trong `cncapi/main.py`: Chuyển toàn bộ file G-code qua `translate_command` và nạp vào bộ truyền `gcode_streamer_task()` sử dụng giao thức đếm ký tự (Character-Counting Buffer Protocol, tối đa 127 bytes). Nhờ đó không bị tràn bộ nhớ đệm Serial của bo mạch GRBL, không bị nuốt câu lệnh, bút vẽ hạ đúng vị trí và vẽ hình chữ chuẩn xác 100% như bản preview.
 ✅ Đã đồng bộ tọa độ Y trong `generate_font_gcode` theo tham số `axis_dir_y`: tự động lộn ngược tọa độ Y `y_mm = round((raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm, 2)` khi `axis_dir_y == -1` (hệ CNC Cartesian chuẩn), giúp nét chữ thực tế trên máy CNC trùng khớp 100% với hiển thị preview.
 ✅ Đã bổ sung tính toán offset vị trí làm việc `curWpos` (`X + curWpos.x`, `Y + curWpos.y`) khi bấm `🚀 Vẽ trên CNC` ở `static/app.js` để đầu CNC vẽ chính xác từ vị trí làm việc hiện tại.
+
+**cập nhật 23** Gcode with font, xem code và đưa thêm các chỉ số có thể config thay đổi được vào mục Điều chỉnh nâng cao, để người dùng có thể tùy chỉnh config các thông số của gcode with font.  hàm generate_font_gcode ờ cncapi/main.py các chỉ số liên quan tới việc tạo nét chữ cần cho người dùng config chỉnh sửa được để tạo gcode . Mục tiêu để viết chữ 1 nét giúp gcode sinh ra điều khiển cnc vẽ chính xác như font cung cấp. 
+    Xem code hiện tại có FontGcodeRequest vậy tất cả các property field của FontGcodeRequest đều cho người dùng config dựa trên các giá trị mặc định hiện tại mà tăng giảm thay đổi
+
+✅ Đã bổ sung mục collapsible UI `⚙️ Điều Chỉnh Nâng Cao (Config Chi Tiết FontGcodeRequest)` trên Floating Panel `gcode-font-editor-panel`.
+✅ Đã hỗ trợ cấu hình tùy chỉnh cho **toàn bộ 17 thuộc tính (properties)** của `FontGcodeRequest` với giá trị mặc định hiển thị sẵn:
+  1. `font_name` (`#font-select`): Font chữ được chọn.
+  2. `text` (`#font-text-input`): Nội dung văn bản vẽ.
+  3. `font_size_pt` (`#font-size-input`, mặc định `72 pt`): Cỡ chữ pt.
+  4. `line_spacing` (`#font-line-spacing`, mặc định `1.2`): Tỷ lệ cách dòng.
+  5. `line_spacing_mm` (`#font-line-spacing-mm`, mặc định `0.0 mm`): Khoảng cách dòng mm bổ sung.
+  6. `feed_rate` (`#font-feed-rate`, mặc định `4000`): Tốc độ Feedrate di chuyển nét vẽ.
+  7. `stroke_mode` (`#font-stroke-mode`, mặc định `single_line`): Chế độ nét chữ (`1 Nét` hoặc `Viền Chữ`).
+  8. `z_safe` (`#font-z-safe`, mặc định `0.0`): Vị trí/Góc Servo PWM khi nhấc bút.
+  9. `z_draw` (`#font-z-draw`, mặc định `45.0`): Vị trí/Góc Servo PWM khi hạ bút vẽ.
+  10. `pen_mode` (`#font-pen-mode`, mặc định `spindle-pwm`): Chế độ điều khiển bút (`spindle-pwm` hoặc `z-axis`).
+  11. `axis_dir_y` (`#font-axis-dir-y`, mặc định `-1`): Hướng trục Y (`-1` Cartesian chuẩn CNC hoặc `1`).
+  12. `epsilon` (`#font-epsilon`, mặc định `1.2`): Độ mịn đường cong xấp xỉ `cv2.approxPolyDP`.
+  13. `margin_mm` (`#font-margin-mm`, mặc định `5.0 mm`): Lề lùi viền khung chữ.
+  14. `binary_threshold` (`#font-binary-thresh`, mặc định `128`): Ngưỡng tách ảnh chữ nhị phân (1-254).
+  15. `render_dpi` (`#font-render-dpi`, mặc định `600 DPI`): Độ phân giải render font (`300`, `600`, `800`, `1200 DPI`).
+  16. `min_path_len_mm` (`#font-min-path-len`, mặc định `0.5 mm`): Lọc nét rác nhiễu quá ngắn.
+  17. `sort_row_height_mm` (`#font-sort-row-h`, mặc định `10.0 mm`): Gom nhóm hàng vẽ để tối ưu thứ tự nét di chuyển.
+✅ Đã cập nhật Backend Pydantic Model `FontGcodeRequest` và hàm `generate_font_gcode` tiếp nhận và áp dụng tức thì tất cả các thuộc tính này.
+✅ Đã gắn event listeners tự động kích hoạt cập nhật mã G-code và hiển thị preview nét chữ 1 nét realtime trên Web UI khi người dùng tăng/giảm thay đổi bất kỳ ô nhập liệu nào.

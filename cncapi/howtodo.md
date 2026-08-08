@@ -316,6 +316,28 @@ async def run_gcode(req: RunGcodeRequest):
    }
    ```
 
+### 1.5. Mục tiêu & Triển khai Cập nhật 23 (`cncapi/whattodo.md`)
+1. **Bổ sung giao diện Điều Chỉnh Nâng Cao (`⚙️ Điều Chỉnh Nâng Cao`)**:
+   - Thêm phần mở rộng collapsible (`<details>`) trong Floating Panel `gcode-font-editor-panel` cho phép người dùng cấu hình trực tiếp toàn bộ 17 thuộc tính của `FontGcodeRequest`.
+2. **Danh sách đầy đủ 17 thuộc tính của `FontGcodeRequest` trên UI**:
+   - `font_name` (`#font-select`): Tên file font chữ.
+   - `text` (`#font-text-input`): Văn bản vẽ.
+   - `font_size_pt` (`#font-size-input`): Cỡ chữ pt (Mặc định `72.0`).
+   - `line_spacing` (`#font-line-spacing`): Tỷ lệ giãn dòng (Mặc định `1.2`).
+   - `line_spacing_mm` (`#font-line-spacing-mm`): Giãn dòng bổ sung mm (Mặc định `0.0`).
+   - `feed_rate` (`#font-feed-rate`): Tốc độ di chuyển nét chữ (Mặc định `4000`).
+   - `stroke_mode` (`#font-stroke-mode`): Mode nét chữ (`single_line` / `contour`).
+   - `z_safe` (`#font-z-safe`): Vị trí/góc PWM khi nhấc bút (Mặc định `0.0`).
+   - `z_draw` (`#font-z-draw`): Vị trí/góc PWM khi hạ bút (Mặc định `45.0`).
+   - `pen_mode` (`#font-pen-mode`): Chế độ bút (`spindle-pwm` / `z-axis`).
+   - `axis_dir_y` (`#font-axis-dir-y`): Hướng trục Y (`-1` Cartesian chuẩn / `1`).
+   - `epsilon` (`#font-epsilon`): Độ mịn nét xấp xỉ đường cong `cv2.approxPolyDP` (Mặc định `1.2`).
+   - `margin_mm` (`#font-margin-mm`): Khoảng cách lề lùi viền xung quanh chữ (Mặc định `5.0 mm`).
+   - `binary_threshold` (`#font-binary-thresh`): Ngưỡng phân tách nét chữ nhị phân 1-254 (Mặc định `128`).
+   - `render_dpi` (`#font-render-dpi`): Độ phân giải render ảnh font chữ (Mặc định `600 DPI`).
+   - `min_path_len_mm` (`#font-min-path-len`): Ngưỡng lọc rác nhiễu nét vẽ ngắn (Mặc định `0.5 mm`).
+   - `sort_row_height_mm` (`#font-sort-row-h`): Độ cao nhóm hàng gom nét vẽ (Mặc định `10.0 mm`).
+
 ---
 
 ## 3. Quy Trình Kiểm Thử Thủ Công (Manual Testing Steps)
@@ -337,4 +359,9 @@ async def run_gcode(req: RunGcodeRequest):
    - Dùng phím di chuyển đưa đầu CNC tới tọa độ ví dụ `X=50, Y=30`.
    - Bấm **🚀 Vẽ trên CNC**.
    - **Kỳ vọng**: Chữ vẽ bắt đầu từ tọa độ `X=50, Y=30` và không bị nhấc bút bay về `(0,0)`.
+5. **Thử Nghiệm Tùy Chỉnh Thông Số Nâng Cao (Cập nhật 23)**:
+   - Mở mục `⚙️ Điều Chỉnh Nâng Cao (Config Nét Chữ 1 Nét)`.
+   - Thay đổi **Mịn Nét (Epsilon)** từ `1.2` xuống `0.4` và xem đường nét preview mịn theo đường cong của font chữ.
+   - Thay đổi **Render DPI** thành `800 DPI` hoặc `1200 DPI` để xem chữ nhỏ được trích xuất sắc nét.
+   - Quan sát thông số số dòng G-code và đường nét trong ô thông tin được cập nhật realtime.
 

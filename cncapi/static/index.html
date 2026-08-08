@@ -1187,6 +1187,85 @@ Xin Chào</textarea
             </select>
           </div>
         </div>
+
+        <!-- MỤC ĐIỀU CHỈNH NÂNG CAO (CẬP NHẬT 23: TOÀN BỘ PROPERTIES CỦA FontGcodeRequest) -->
+        <details class="advanced-settings-details" open style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 8px; margin-top: 2px;">
+          <summary style="cursor: pointer; font-weight: bold; font-size: 0.83rem; color: #38bdf8; user-select: none;">⚙️ Điều Chỉnh Nâng Cao (Config Chi Tiết FontGcodeRequest)</summary>
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
+            <!-- HÀNG 1: Z Safe & Z Draw -->
+            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <div class="form-group">
+                <label for="font-z-safe" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao hoặc giá trị PWM khi nhấc bút (z_safe)">Nhấc Bút (z_safe):</label>
+                <input type="number" id="font-z-safe" value="0.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+              <div class="form-group">
+                <label for="font-z-draw" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao hoặc giá trị PWM khi hạ bút vẽ (z_draw)">Hạ Bút (z_draw):</label>
+                <input type="number" id="font-z-draw" value="45.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+            </div>
+
+            <!-- HÀNG 2: Pen Mode & Axis Dir Y -->
+            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <div class="form-group">
+                <label for="font-pen-mode" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Chế độ điều khiển đầu vẽ bút (pen_mode)">Chế Độ Bút (pen_mode):</label>
+                <select id="font-pen-mode" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
+                  <option value="spindle-pwm" selected>Servo PWM (spindle-pwm)</option>
+                  <option value="z-axis">Trục Z Thật (z-axis)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="font-axis-dir-y" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Hướng trục Y (axis_dir_y)">Hướng Trục Y (axis_dir_y):</label>
+                <select id="font-axis-dir-y" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
+                  <option value="-1" >-1 (Cartesian CNC chuẩn)</option>
+                  <option value="1" selected>1 (+Y Hướng xuống)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- HÀNG 3: Mịn nét Epsilon & Lề biên Margin mm -->
+            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+              <div class="form-group">
+                <label for="font-epsilon" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ sai số xấp xỉ đường cong (epsilon). Giá trị nhỏ nét mịn chính xác theo font.">Mịn Nét (epsilon):</label>
+                <input type="number" id="font-epsilon" value="1.2" min="0.1" max="10.0" step="0.1" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+              <div class="form-group">
+                <label for="font-margin-mm" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Khoảng cách lề lùi viền xung quanh khung chữ (margin_mm)">Lề Biên (margin_mm):</label>
+                <input type="number" id="font-margin-mm" value="5.0" min="0.0" max="50.0" step="0.5" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+            </div>
+
+            <!-- HÀNG 4: Ngưỡng nét, Render DPI, Lọc nhiễu -->
+            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+              <div class="form-group">
+                <label for="font-binary-thresh" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Ngưỡng nhị phân tách nét (binary_threshold: 1-254)">Ngưỡng Nét:</label>
+                <input type="number" id="font-binary-thresh" value="128" min="1" max="254" step="5" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+              <div class="form-group">
+                <label for="font-render-dpi" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ phân giải render ảnh font (render_dpi)">Render DPI:</label>
+                <select id="font-render-dpi" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
+                  <option value="300">300 DPI</option>
+                  <option value="600" selected>600 DPI</option>
+                  <option value="800">800 DPI</option>
+                  <option value="1200">1200 DPI</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="font-min-path-len" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ dài nét tối thiểu (min_path_len_mm)">Lọc Nhiễu (mm):</label>
+                <input type="number" id="font-min-path-len" value="0.5" min="0.0" max="10.0" step="0.1" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+            </div>
+
+            <!-- HÀNG 5: Gom nhóm hàng (sort_row_height_mm) -->
+            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 4px;">
+              <div class="form-group">
+                <label for="font-sort-row-h" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao nhóm hàng (sort_row_height_mm) dùng để tối ưu thứ tự nét vẽ từ trên xuống dưới.">Gom Nhóm Hàng Vẽ (sort_row_height_mm):</label>
+                <input type="number" id="font-sort-row-h" value="10.0" min="1.0" max="100.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+              </div>
+            </div>
+
+          </div>
+        </details>
         <div
           class="font-info-box"
           id="font-info-box"

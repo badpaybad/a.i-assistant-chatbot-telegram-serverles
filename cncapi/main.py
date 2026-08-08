@@ -1565,6 +1565,10 @@ class FontGcodeRequest(BaseModel):
     feed_rate: float = 4000.0
     margin_mm: float = 5.0
     epsilon: float = 1.2
+    binary_threshold: int = 128
+    render_dpi: int = 600
+    min_path_len_mm: float = 0.5
+    sort_row_height_mm: float = 10.0
     stroke_mode: str = "single_line"
     pen_mode: Optional[str] = None
     axis_dir_y: Optional[int] = None
@@ -1629,7 +1633,7 @@ def generate_font_gcode(req: FontGcodeRequest):
             }
 
         MM_PER_PT = 25.4 / 72.0
-        RENDER_DPI = 600
+        RENDER_DPI = req.render_dpi if req.render_dpi and req.render_dpi >= 72 else 600
         font_size_px = int(req.font_size_pt * (RENDER_DPI / 72.0))
         if font_size_px < 8:
             font_size_px = 8
@@ -1656,7 +1660,8 @@ def generate_font_gcode(req: FontGcodeRequest):
         draw.multiline_text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font, spacing=spacing_px)
 
         img_np = np.array(img)
-        binary_img = img_np < 128
+        thresh_val = req.binary_threshold if req.binary_threshold and 1 <= req.binary_threshold <= 254 else 128
+        binary_img = img_np < thresh_val
 
         if req.stroke_mode == "single_line" and skeletonize is not None:
             skeleton = skeletonize(binary_img)
@@ -1687,6 +1692,7 @@ def generate_font_gcode(req: FontGcodeRequest):
         effective_axis_dir_y = req.axis_dir_y if req.axis_dir_y is not None else getattr(state, 'axis_dir_y', 1)
 
         raw_paths = []
+        min_path_len_mm = req.min_path_len_mm if req.min_path_len_mm is not None else 0.5
         for contour in contours:
             if len(contour) < 2:
                 continue
@@ -1706,14 +1712,19 @@ def generate_font_gcode(req: FontGcodeRequest):
                 path_mm.append((x_mm, y_mm))
 
             if len(path_mm) >= 2:
-                raw_paths.append(path_mm)
+                # Calculate path length in mm
+                path_len = sum(np.hypot(path_mm[i][0] - path_mm[i-1][0], path_mm[i][1] - path_mm[i-1][1]) for i in range(1, len(path_mm)))
+                if path_len >= min_path_len_mm:
+                    raw_paths.append(path_mm)
+
+        sort_bucket_h = req.sort_row_height_mm if req.sort_row_height_mm and req.sort_row_height_mm > 0.5 else 10.0
 
         def get_sort_key(path):
             p1 = path[0]
             p2 = path[-1]
             min_y = min(p1[1], p2[1])
             min_x = min(p1[0], p2[0])
-            row_bucket = int(min_y / 10.0) if effective_axis_dir_y == 1 else int(-min_y / 10.0)
+            row_bucket = int(min_y / sort_bucket_h) if effective_axis_dir_y == 1 else int(-min_y / sort_bucket_h)
             return (row_bucket, min_x)
 
         oriented_paths = []
