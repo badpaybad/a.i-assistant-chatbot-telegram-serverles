@@ -244,3 +244,30 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 ✅ Đã khắc phục triệt để thuật toán sắp xếp nét chữ trong hàm `generate_font_gcode` tại `cncapi/main.py`:
   1. **Loại bỏ ưu tiên nét cao/nét dài**: Phân chia chính xác nhóm dòng chữ (`line_idx`) theo khoảng cách độ cao thực tế của dòng văn bản `line_height_mm`. Không còn hiện tượng các nét chữ cao/dài bị nhảy lên vẽ trước.
   2. **Viết tuần tự tuyệt đối từ Trái sang Phải (Strict Left-to-Right)**: Trong cùng 1 dòng chữ, mọi đường nét (ngắn, dài, nét chính, dấu phụ) được sắp xếp thứ tự ưu tiên tuyệt đối theo tọa độ `min_x` từ bé đến lớn. Đầu vẽ di chuyển tuần tự 100% từ trái qua phải tự nhiên như tay người viết chữ.
+
+  **cập nhật 25** xem yêu cầu cnc/whattodo.md về Gcode editor dùng để xử lý ảnh thành sketch và sinh gcode điều khiển cnc xem code ở cnc/main.py cần lấy sang , bổ xung nút Gcode with image cạnh nút Gcode with font. Khi click nút Gcode with image thì sẽ mở floating window nằm bên phải chiếm 1/3 độ rộng page . logic chuyển ảnh thành sketch và gcode lấy ở cnc/main.py
+    cần cho phép hiển thị xem trước lên Tool path view 
+    các nút cần có tương tự như Gcode with font ví dụ
+        nút Vẽ xem trước (chạy trên tool path view)
+        nút Vẽ trên cnc (chạy trên cnc thực tế) 
+    ✅ Đã hoàn thành toàn bộ Cập nhật 25:
+      1. Đã đưa đầy đủ 4 module thuật toán (`image2gcodesketch.py`, `image2gcode.py`, `svg2gcode.py`, `OutlineExtractorPen.py`) vào `cncapi/`.
+      2. Đã tạo REST API `/cncapi/v1/convert-image-gcode` tại `cncapi/main.py` nhận file ảnh/SVG/gcode, xử lý sinh mã G-code và trích xuất danh sách phân đoạn `segments`.
+      3. Đã bổ sung nút `🖼️ Gcode with image` cạnh nút `✍️ Gcode with font` tại Cột 0 và tạo Floating Panel `#gcode-image-editor-panel` nằm ở lề phải chiếm 1/3 độ rộng trang (width 33%).
+      4. Hiển thị đường nét xem trước màu vàng (Amber) trực tiếp trên Tool path view Canvas `#toolpath-canvas`.
+      5. Đã tích hợp đầy đủ nút **🎬 Vẽ xem trước (Giả lập)** mô phỏng chuyển động nét vẽ trên canvas, nút **🚀 Vẽ trên CNC (Thực tế)** tự động cộng offset WPos phát lệnh tới máy CNC, cùng nút **💾 Lưu/Nạp Project JSON**.
+
+**cập nhật 26** theo cập nhật 25 xử lý cho Gcode with image. xem cncapi/project_2 cosplay.json đây là config chuyển ảnh thành sketch có các config khá tốt để cho ảnh chân dung, xem tương ứng với code Thuật Toán Chuyển Đổi nào, lấy các value ra làm config , có thể mới Thuật toán chuyển đổi : Sketch dành cho vẽ chân dung 
+✅ Đã hoàn thành Cập nhật 26:
+  1. Phân tích file `cncapi/project_2 cosplay.json` trích xuất thông số cấu hình sketch tối ưu cho ảnh chân dung: `editorScale: 0.15`, `sketchBlurSize: 9`, `sketchClaheClip: 1.0`, `sketchMinContourLen: 18`, `sketchUseThin: False` (Giữ độ dày mượt tự nhiên của nét chân dung).
+  2. Thêm preset **Sketch Chân Dung (Portrait Preset - Cosplay)** vào dropdown `Thuật Toán Chuyển Đổi` (`#image-algorithm-select`).
+  3. Đã gắn event listener tự động nạp các thông số chuẩn từ `project_2 cosplay.json` vào các ô nhập liệu UI khi chọn preset **Sketch Chân Dung**.
+
+**cập nhật 27** ở Gcode with image, gcode sinh ra cũng cần vẽ từ trái sang phải, giống thứ tự vẽ gcode của Gcode with font 
+✅ Đã hoàn thành Cập nhật 27:
+  1. Đồng bộ thuật toán sắp xếp đường nét `sort_gcode_paths_left_to_right` trong [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) giống 100% logic của `generate_font_gcode` (Cập nhật 24).
+  2. **Đảo hướng nét vẽ (Stroke Orientation)**: Nếu nét vẽ di chuyển từ Phải sang Trái (`p_end.x < p_start.x - 0.1`), tự động đảo ngược danh sách điểm để nét luôn di chuyển từ Trái sang Phải. Với nét đứng dọc (`abs(dx) <= 0.1`), ưu tiên vẽ từ Trên xuống Dưới.
+  3. **Sắp xếp theo thứ tự ưu tiên (Strict LTR Sorting)**: Gom các nét theo nhóm dòng `sort_row_height_mm` (Top to Bottom) và sắp xếp thứ tự ưu tiên tuyệt đối theo tọa độ `min_x` từ bé đến lớn.
+  4. Đảm bảo toàn bộ G-code ảnh sinh ra vẽ tuần tự từ trái sang phải tự nhiên trên Canvas xem trước và máy CNC thật.
+
+**chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md

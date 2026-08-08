@@ -8,7 +8,7 @@ import logging
 import subprocess
 import json
 from typing import Dict, List, Set, Optional, Tuple
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -1808,6 +1808,278 @@ def generate_font_gcode(req: FontGcodeRequest):
         }
     except Exception as e:
         logger.error(f"Lỗi generate font gcode: {e}")
+        return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+def sort_gcode_paths_left_to_right(gcode_text: str, feed_rate: int = 2000, mode: str = "servo", sort_row_height_mm: float = 10.0) -> Tuple[str, List[dict]]:
+    paths = []
+    current_path = []
+    current_x = 0.0
+    current_y = 0.0
+
+    x_pattern = re.compile(r'X([\d\.-]+)', re.IGNORECASE)
+    y_pattern = re.compile(r'Y([\d\.-]+)', re.IGNORECASE)
+
+    for line in gcode_text.splitlines():
+        line_str = line.strip()
+        if not line_str or line_str.startswith(';') or line_str.startswith('('):
+            continue
+
+        cmd_upper = line_str.upper()
+        if cmd_upper.startswith('G0') or cmd_upper.startswith('G00'):
+            x_match = x_pattern.search(line_str)
+            y_match = y_pattern.search(line_str)
+            if x_match: current_x = float(x_match.group(1))
+            if y_match: current_y = float(y_match.group(1))
+            if current_path:
+                if len(current_path) > 1:
+                    paths.append(current_path)
+                current_path = []
+            current_path.append((current_x, current_y))
+        elif cmd_upper.startswith('G1') or ('X' in cmd_upper or 'Y' in cmd_upper):
+            x_match = x_pattern.search(line_str)
+            y_match = y_pattern.search(line_str)
+            if x_match: current_x = float(x_match.group(1))
+            if y_match: current_y = float(y_match.group(1))
+            if not current_path:
+                current_path.append((current_x, current_y))
+            else:
+                current_path.append((current_x, current_y))
+
+    if current_path and len(current_path) > 1:
+        paths.append(current_path)
+
+    if not paths:
+        return gcode_text, []
+
+    # Bước 1: Đảo hướng nét vẽ giống thứ tự của Gcode with font (Left-to-Right, Top-to-Bottom)
+    oriented_paths = []
+    for path in paths:
+        if not path or len(path) <= 1:
+            oriented_paths.append(path)
+            continue
+
+        p_start = path[0]
+        p_end = path[-1]
+
+        should_reverse = False
+        # Nếu nét vẽ di chuyển từ Phải sang Trái (p_end[0] < p_start[0] - 0.1), đảo ngược lại để vẽ từ Trái sang Phải
+        if p_end[0] < p_start[0] - 0.1:
+            should_reverse = True
+        elif abs(p_end[0] - p_start[0]) <= 0.1:
+            # Nét dọc đứng: ưu tiên vẽ từ Trên xuống Dưới
+            if p_end[1] < p_start[1] - 0.1:
+                should_reverse = True
+
+        if should_reverse:
+            oriented_paths.append(list(reversed(path)))
+        else:
+            oriented_paths.append(path)
+
+    # Bước 2: Sắp xếp các đường nét ưu tiên tuyệt đối từ Trái sang Phải (min_x) trong cùng hàng (Row) giống Gcode with font
+    def get_stroke_sort_key(path):
+        xs = [pt[0] for pt in path]
+        ys = [pt[1] for pt in path]
+        min_x = min(xs)
+        mid_y = (min(ys) + max(ys)) / 2.0
+        line_idx = int(mid_y / sort_row_height_mm)
+        # Sắp xếp tuyệt đối: 1. Chỉ số hàng (Top to Bottom), 2. Left-to-Right (min_x), 3. start_x
+        return (line_idx, min_x, path[0][0])
+
+    sorted_paths = sorted(oriented_paths, key=get_stroke_sort_key)
+
+    if mode == "servo":
+        pen_down = "M3 S90"
+        pen_up = "M3 S10"
+    else:
+        pen_down = "G1 Z-1.0 F500"
+        pen_up = "G0 Z2.0"
+
+    new_gcode = [
+        "; --- G-CODE IMAGE (Strict Left-to-Right Order - Identical to Gcode Font) ---",
+        "G21 ; Don vi: mm",
+        "G90 ; Toa do tuyet doi",
+        f"G0 Z2.0",
+        f"F{feed_rate}"
+    ]
+
+    segments = []
+    for i, path in enumerate(sorted_paths):
+        new_gcode.append(f"; --- Net ve thu {i+1} ---")
+        start_pt = path[0]
+        new_gcode.append(f"G0 X{start_pt[0]:.2f} Y{start_pt[1]:.2f}")
+        new_gcode.append(pen_down)
+
+        curr_x, curr_y = start_pt
+        for pt in path[1:]:
+            new_gcode.append(f"G1 X{pt[0]:.2f} Y{pt[1]:.2f}")
+            segments.append({
+                "x1": curr_x, "y1": curr_y,
+                "x2": pt[0], "y2": pt[1]
+            })
+            curr_x, curr_y = pt[0], pt[1]
+
+        new_gcode.append(pen_up)
+
+    new_gcode.append("G0 X0 Y0")
+    new_gcode.append("M30")
+
+    return "\n".join(new_gcode), segments
+
+@app.post("/cncapi/v1/convert-image-gcode")
+@app.post("/api/gcode-editor/convert")
+async def convert_image_gcode(
+    file: UploadFile = File(...),
+    scale_factor: float = Form(0.1),
+    feed_rate: int = Form(2000),
+    mode: str = Form("servo"),
+    algorithm: str = Form("sketch"),
+    active_tab: str = Form("sketch"),
+    clahe_clip_limit: float = Form(1.5),
+    blur_size: int = Form(3),
+    canny_ultra_low: int = Form(5),
+    canny_ultra_high: int = Form(25),
+    canny_medium_low: int = Form(20),
+    canny_medium_high: int = Form(60),
+    canny_strong_low: int = Form(50),
+    canny_strong_high: int = Form(120),
+    min_contour_len: int = Form(5),
+    use_clahe: bool = Form(True),
+    use_blur: bool = Form(True),
+    use_connect: bool = Form(True),
+    use_thin: bool = Form(True),
+    use_len_filter: bool = Form(True),
+    handwriting_auto_invert: bool = Form(True),
+    handwriting_use_otsu: bool = Form(True),
+    handwriting_thresh_val: int = Form(127),
+    handwriting_use_thinning: bool = Form(True),
+    handwriting_use_smooth: bool = Form(True),
+    handwriting_morph_kernel: int = Form(3),
+    handwriting_min_len: int = Form(5),
+    handwriting_mode: str = Form("centerline"),
+    handwriting_raster_step: int = Form(2),
+    handwriting_offset_step: int = Form(2)
+):
+    try:
+        temp_dir = os.path.join(STATIC_DIR, "temp")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        temp_input_path = os.path.join(temp_dir, f"input_{int(time.time())}{file_ext}")
+        temp_gcode_path = os.path.join(temp_dir, f"output_{int(time.time())}.gcode")
+        
+        with open(temp_input_path, "wb") as f:
+            f.write(await file.read())
+            
+        success = False
+        
+        if file_ext == ".svg":
+            from svg2gcode import svg_to_exact_gcode
+            success = svg_to_exact_gcode(
+                svg_path=temp_input_path,
+                gcode_path=temp_gcode_path,
+                scale_factor=scale_factor,
+                feed_rate=feed_rate,
+                mode=mode
+            )
+        elif file_ext in [".png", ".jpg", ".jpeg", ".webp"]:
+            if algorithm == "handwriting" or active_tab == "handwriting":
+                from image2gcode import handwriting_text_to_gcode
+                try:
+                    success = handwriting_text_to_gcode(
+                        image_path=temp_input_path,
+                        gcode_path=temp_gcode_path,
+                        scale_factor=scale_factor,
+                        feed_rate=feed_rate,
+                        mode=mode,
+                        auto_invert=handwriting_auto_invert,
+                        use_otsu=handwriting_use_otsu,
+                        thresh_val=handwriting_thresh_val,
+                        use_thinning=handwriting_use_thinning,
+                        use_smooth=handwriting_use_smooth,
+                        morph_kernel=handwriting_morph_kernel,
+                        min_len=handwriting_min_len,
+                        handwriting_mode=handwriting_mode,
+                        raster_step=handwriting_raster_step,
+                        offset_step=handwriting_offset_step
+                    )
+                except Exception as ex:
+                    logger.error(f"Error in handwriting conversion: {ex}")
+                    success = False
+            elif algorithm == "centerline":
+                from image2gcode import image_to_perfect_single_line_gcode
+                success = image_to_perfect_single_line_gcode(
+                    image_path=temp_input_path,
+                    gcode_path=temp_gcode_path,
+                    scale_factor=scale_factor,
+                    feed_rate=feed_rate,
+                    mode=mode
+                )
+            elif algorithm in ["sketch", "sketch_portrait"]:
+                from image2gcodesketch import maximum_detail_sketch
+                try:
+                    success = maximum_detail_sketch(
+                        image_path=temp_input_path,
+                        gcode_path=temp_gcode_path,
+                        contours_path=os.path.join(temp_dir, f"contours_{int(time.time())}.png"),
+                        scale_mm_per_pixel=scale_factor,
+                        speed=feed_rate,
+                        clahe_clip_limit=clahe_clip_limit,
+                        blur_size=blur_size,
+                        canny_ultra_low=canny_ultra_low,
+                        canny_ultra_high=canny_ultra_high,
+                        canny_medium_low=canny_medium_low,
+                        canny_medium_high=canny_medium_high,
+                        canny_strong_low=canny_strong_low,
+                        canny_strong_high=canny_strong_high,
+                        min_contour_len=min_contour_len,
+                        use_clahe=use_clahe,
+                        use_blur=use_blur,
+                        use_connect=use_connect,
+                        use_thin=use_thin,
+                        use_len_filter=use_len_filter
+                    )
+                except Exception as ex:
+                    logger.error(f"Error in sketch conversion: {ex}")
+                    success = False
+            else: # contour
+                from image2gcode import image_to_gcode
+                success = image_to_gcode(
+                    image_path=temp_input_path,
+                    gcode_path=temp_gcode_path,
+                    scale_factor=scale_factor,
+                    feed_rate=feed_rate,
+                    mode=mode
+                )
+        elif file_ext in [".gcode", ".nc", ".cnc", ".txt"]:
+            import shutil
+            shutil.copyfile(temp_input_path, temp_gcode_path)
+            success = True
+        else:
+            return JSONResponse({"status": "error", "message": f"Unsupported file type: {file_ext}"}, status_code=400)
+            
+        if not success or not os.path.exists(temp_gcode_path):
+            return JSONResponse({"status": "error", "message": "Conversion failed"}, status_code=500)
+            
+        with open(temp_gcode_path, "r", encoding="utf-8", errors="ignore") as f:
+            raw_gcode_content = f.read()
+            
+        gcode_content, segments = sort_gcode_paths_left_to_right(raw_gcode_content, feed_rate=feed_rate, mode=mode)
+                
+        try:
+            if os.path.exists(temp_input_path):
+                os.remove(temp_input_path)
+            if os.path.exists(temp_gcode_path):
+                os.remove(temp_gcode_path)
+        except Exception as e:
+            logger.error(f"Error removing temp files: {e}")
+            
+        return {
+            "status": "ok",
+            "gcode": gcode_content,
+            "segments": segments
+        }
+    except Exception as e:
+        logger.error(f"Error converting in gcode editor: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
 @app.post("/cncapi/v1/run-gcode")

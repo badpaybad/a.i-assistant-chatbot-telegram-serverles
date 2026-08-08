@@ -78,6 +78,14 @@
     let fontStartOffset = { x: 0, y: 0 };
     let fontSimAnimationId = null;
 
+    // Image Gcode Editor State
+    let imageSegments = [];
+    let imageGcode = "";
+    let imageStartOffset = { x: 0, y: 0 };
+    let imageSimAnimationId = null;
+    let currentImageFile = null;
+    let currentImageBase64 = null;
+
     // Helper: i18n translation
     function t(key, vars = {}) {
         let text = translations[key] || key;
@@ -117,6 +125,7 @@
         initDOM();
         initCanvas();
         initGcodeFontEditor();
+        initGcodeImageEditor();
         loadTranslations('vi');
         await loadSystemSettings();
         connectWebSocket();
@@ -1235,6 +1244,21 @@
             ctx.restore();
         }
 
+        // ---- DRAW IMAGE GCODE PREVIEW SEGMENTS ----
+        if (imageSegments && imageSegments.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#f59e0b'; // Amber / Golden Yellow
+            ctx.lineWidth = 1.8;
+            ctx.setLineDash([]);
+            imageSegments.forEach(seg => {
+                ctx.beginPath();
+                ctx.moveTo(wx(seg.x1 + imageStartOffset.x), wy(seg.y1 + imageStartOffset.y));
+                ctx.lineTo(wx(seg.x2 + imageStartOffset.x), wy(seg.y2 + imageStartOffset.y));
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
         // ---- DRAW PEN HEAD POSITION ----
         let headX, headY;
         if (simIsRunning) {
@@ -2124,6 +2148,325 @@
             } else {
                 simIsRunning = false;
                 fontSimAnimationId = null;
+                drawCanvas();
+            }
+        }
+        animateStep();
+    }
+
+    // ==================== GCODE WITH IMAGE EDITOR ====================
+    function initGcodeImageEditor() {
+        const btnOpen = document.getElementById('btn-open-gcode-image');
+        const btnClose = document.getElementById('btn-close-gcode-image-editor');
+        const panel = document.getElementById('gcode-image-editor-panel');
+        const fileInput = document.getElementById('image-file-input');
+        const previewImg = document.getElementById('image-preview-img');
+        const infoLabel = document.getElementById('image-info-label');
+        const algoSelect = document.getElementById('image-algorithm-select');
+        const scaleInput = document.getElementById('image-scale-input');
+        const feedRateInput = document.getElementById('image-feed-rate-input');
+        const modeSelect = document.getElementById('image-mode-select');
+        const btnGenerate = document.getElementById('btn-generate-image-gcode');
+        const btnSimulate = document.getElementById('btn-preview-image-draw');
+        const btnRealDraw = document.getElementById('btn-draw-image-on-cnc');
+        const btnDownload = document.getElementById('btn-download-image-gcode');
+        const btnSaveProject = document.getElementById('btn-save-image-project');
+        const btnLoadProject = document.getElementById('btn-load-image-project');
+        const projectFileInput = document.getElementById('image-project-file-input');
+        const infoBox = document.getElementById('image-info-box');
+
+        if (!btnOpen || !panel) return;
+
+        btnOpen.addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+        });
+
+        if (btnClose) {
+            btnClose.addEventListener('click', () => {
+                panel.classList.add('hidden');
+            });
+        }
+
+        if (fileInput) {
+            fileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                currentImageFile = file;
+
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                        currentImageBase64 = evt.target.result;
+                        if (previewImg) {
+                            previewImg.src = currentImageBase64;
+                            previewImg.style.display = 'block';
+                        }
+                        const img = new Image();
+                        img.onload = () => {
+                            if (infoLabel) {
+                                infoLabel.innerHTML = `<strong>${file.name}</strong><br/>Kích thước: ${img.width} x ${img.height} px`;
+                            }
+                        };
+                        img.src = currentImageBase64;
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    if (previewImg) previewImg.style.display = 'none';
+                    if (infoLabel) {
+                        infoLabel.innerHTML = `<strong>${file.name}</strong> (${(file.size / 1024).toFixed(1)} KB)`;
+                    }
+                }
+            });
+        }
+
+        if (algoSelect) {
+            algoSelect.addEventListener('change', () => {
+                if (algoSelect.value === 'sketch_portrait') {
+                    if (scaleInput) scaleInput.value = '0.15';
+                    if (feedRateInput) feedRateInput.value = '2000';
+                    const claheEl = document.getElementById('image-clahe-clip');
+                    if (claheEl) claheEl.value = '1.0';
+                    const blurEl = document.getElementById('image-blur-size');
+                    if (blurEl) blurEl.value = '9';
+                    const minLenEl = document.getElementById('image-min-contour-len');
+                    if (minLenEl) minLenEl.value = '18';
+                    const thinEl = document.getElementById('image-use-thin');
+                    if (thinEl) thinEl.checked = false;
+                    const claheCheck = document.getElementById('image-use-clahe');
+                    if (claheCheck) claheCheck.checked = true;
+                    const blurCheck = document.getElementById('image-use-blur');
+                    if (blurCheck) blurCheck.checked = true;
+                    const connectCheck = document.getElementById('image-use-connect');
+                    if (connectCheck) connectCheck.checked = true;
+                    const lenCheck = document.getElementById('image-use-len-filter');
+                    if (lenCheck) lenCheck.checked = true;
+                }
+            });
+        }
+
+        async function generateImageGcode() {
+            if (!currentImageFile) {
+                if (infoBox) infoBox.innerText = '⚠️ Vui lòng chọn file ảnh / SVG / G-code trước!';
+                return;
+            }
+
+            const curWpos = telemetry.wpos || [0, 0, 0];
+            imageStartOffset = { x: curWpos[0], y: curWpos[1] };
+
+            const formData = new FormData();
+            formData.append('file', currentImageFile);
+            formData.append('scale_factor', parseFloat(scaleInput?.value || '0.1'));
+            formData.append('feed_rate', parseInt(feedRateInput?.value || '2000'));
+            formData.append('mode', modeSelect?.value || 'servo');
+            formData.append('algorithm', algoSelect?.value || 'sketch');
+            formData.append('active_tab', algoSelect?.value || 'sketch');
+
+            formData.append('clahe_clip_limit', parseFloat(document.getElementById('image-clahe-clip')?.value || '1.5'));
+            formData.append('blur_size', parseInt(document.getElementById('image-blur-size')?.value || '3'));
+            formData.append('min_contour_len', parseInt(document.getElementById('image-min-contour-len')?.value || '5'));
+            formData.append('use_clahe', document.getElementById('image-use-clahe')?.checked ? 'true' : 'false');
+            formData.append('use_blur', document.getElementById('image-use-blur')?.checked ? 'true' : 'false');
+            formData.append('use_connect', document.getElementById('image-use-connect')?.checked ? 'true' : 'false');
+            formData.append('use_thin', document.getElementById('image-use-thin')?.checked ? 'true' : 'false');
+            formData.append('use_len_filter', document.getElementById('image-use-len-filter')?.checked ? 'true' : 'false');
+            formData.append('handwriting_mode', document.getElementById('image-hw-mode')?.value || 'centerline');
+
+            if (infoBox) infoBox.innerText = '⏳ Đang chuyển đổi ảnh sang G-code...';
+
+            try {
+                const res = await fetch('/cncapi/v1/convert-image-gcode', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'ok') {
+                    imageGcode = data.gcode || '';
+                    imageSegments = data.segments || [];
+                    if (infoBox) {
+                        infoBox.innerText = `Phân đoạn: ${imageSegments.length} | Dòng G-code: ${imageGcode.split('\n').length}`;
+                    }
+                    drawCanvas();
+                } else {
+                    if (infoBox) infoBox.innerText = `Lỗi: ${data.message || 'Không thể chuyển đổi'}`;
+                }
+            } catch (e) {
+                console.error('Lỗi convert image gcode:', e);
+                if (infoBox) infoBox.innerText = `Lỗi kết nối: ${e.message}`;
+            }
+        }
+
+        if (btnGenerate) btnGenerate.addEventListener('click', generateImageGcode);
+
+        // Nút "Vẽ xem trước" (Giả lập)
+        if (btnSimulate) {
+            btnSimulate.addEventListener('click', () => {
+                if (!imageSegments || imageSegments.length === 0) {
+                    alert(t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
+                    return;
+                }
+                simulateImageDrawAnimation();
+            });
+        }
+
+        // Nút "Vẽ trên CNC" (Thực tế)
+        if (btnRealDraw) {
+            btnRealDraw.addEventListener('click', async () => {
+                if (!imageGcode) {
+                    alert(t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
+                    return;
+                }
+                if (!isConnected) {
+                    alert(t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
+                    return;
+                }
+                if (confirm(t('Xác nhận gửi mã G-code nét ảnh tới máy CNC để bắt đầu vẽ?'))) {
+                    try {
+                        const curWpos = telemetry.wpos || [0, 0, 0];
+                        const offsetX = curWpos[0];
+                        const offsetY = curWpos[1];
+
+                        const lines = imageGcode.split('\n');
+                        const offsetLines = lines.map(line => {
+                            let trimmed = line.trim();
+                            if (!trimmed || trimmed.startsWith(';')) return line;
+                            const parts = line.split(';');
+                            parts[0] = parts[0].replace(/([XY])(-?\d+\.?\d*)/g, (match, axis, val) => {
+                                const num = parseFloat(val);
+                                if (axis === 'X') return `X${(num + offsetX).toFixed(2)}`;
+                                if (axis === 'Y') return `Y${(num + offsetY).toFixed(2)}`;
+                                return match;
+                            });
+                            return parts.join(';');
+                        });
+
+                        let offsetGcode = `G90\n` + offsetLines.join('\n');
+                        const res = await fetch('/cncapi/v1/run-gcode', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ gcode: offsetGcode })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            appendConsoleLog(`[GCODE IMAGE] Đã gửi ${data.lines_sent} dòng G-code tới CNC (Bắt đầu tại X=${offsetX.toFixed(2)}, Y=${offsetY.toFixed(2)})`, 'system');
+                        }
+                    } catch (e) {
+                        alert(`Lỗi thực thi G-code: ${e.message}`);
+                    }
+                }
+            });
+        }
+
+        // Nút Tải file .gcode
+        if (btnDownload) {
+            btnDownload.addEventListener('click', () => {
+                if (!imageGcode) return;
+                const blob = new Blob([imageGcode], { type: 'text/plain;charset=utf-8' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const filename = (currentImageFile ? currentImageFile.name : 'image').replace(/\.[^/.]+$/, '');
+                a.download = `gcode_image_${filename}.gcode`;
+                a.click();
+            });
+        }
+
+        // Nút Lưu Project JSON
+        if (btnSaveProject) {
+            btnSaveProject.addEventListener('click', () => {
+                if (!imageGcode && !currentImageBase64) {
+                    alert('Chưa có dữ liệu project để lưu!');
+                    return;
+                }
+                const projectData = {
+                    version: '1.0',
+                    timestamp: Date.now(),
+                    filename: currentImageFile ? currentImageFile.name : 'image.png',
+                    image_base64: currentImageBase64,
+                    settings: {
+                        scale_factor: parseFloat(scaleInput?.value || '0.1'),
+                        feed_rate: parseInt(feedRateInput?.value || '2000'),
+                        mode: modeSelect?.value || 'servo',
+                        algorithm: algoSelect?.value || 'sketch'
+                    },
+                    gcode: imageGcode,
+                    segments: imageSegments
+                };
+                const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `project_${Date.now()}.json`;
+                a.click();
+            });
+        }
+
+        // Nút Nạp Project JSON
+        if (btnLoadProject && projectFileInput) {
+            btnLoadProject.addEventListener('click', () => {
+                projectFileInput.click();
+            });
+
+            projectFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = JSON.parse(evt.target.result);
+                        if (data.image_base64) {
+                            currentImageBase64 = data.image_base64;
+                            if (previewImg) {
+                                previewImg.src = currentImageBase64;
+                                previewImg.style.display = 'block';
+                            }
+                        }
+                        if (data.settings) {
+                            if (scaleInput) scaleInput.value = data.settings.scale_factor || 0.1;
+                            if (feedRateInput) feedRateInput.value = data.settings.feed_rate || 2000;
+                            if (modeSelect) modeSelect.value = data.settings.mode || 'servo';
+                            if (algoSelect) algoSelect.value = data.settings.algorithm || 'sketch';
+                        }
+                        if (data.gcode) imageGcode = data.gcode;
+                        if (data.segments) imageSegments = data.segments;
+
+                        const curWpos = telemetry.wpos || [0, 0, 0];
+                        imageStartOffset = { x: curWpos[0], y: curWpos[1] };
+
+                        if (infoBox) {
+                            infoBox.innerText = `Đã nạp Project! Phân đoạn: ${imageSegments.length} | Dòng G-code: ${imageGcode.split('\n').length}`;
+                        }
+                        drawCanvas();
+                    } catch (ex) {
+                        alert('Lỗi nạp file JSON project: ' + ex.message);
+                    }
+                };
+                reader.readAsText(file);
+            });
+        }
+    }
+
+    function simulateImageDrawAnimation() {
+        if (!imageSegments || imageSegments.length === 0) return;
+        if (imageSimAnimationId) cancelAnimationFrame(imageSimAnimationId);
+
+        let flatPoints = [];
+        imageSegments.forEach(seg => {
+            flatPoints.push({ x: seg.x1 + imageStartOffset.x, y: seg.y1 + imageStartOffset.y });
+            flatPoints.push({ x: seg.x2 + imageStartOffset.x, y: seg.y2 + imageStartOffset.y });
+        });
+
+        let pointIdx = 0;
+        simIsRunning = true;
+
+        function animateStep() {
+            if (pointIdx < flatPoints.length) {
+                simHeadPos = { x: flatPoints[pointIdx].x, y: flatPoints[pointIdx].y };
+                drawCanvas();
+                pointIdx++;
+                imageSimAnimationId = requestAnimationFrame(() => {
+                    setTimeout(animateStep, 10);
+                });
+            } else {
+                simIsRunning = false;
+                imageSimAnimationId = null;
                 drawCanvas();
             }
         }

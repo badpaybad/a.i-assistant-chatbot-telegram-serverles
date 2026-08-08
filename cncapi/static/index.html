@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bộ Điều Khiển CNC GRBL - Touch & Script Controller</title>
+    <link type="image/x-icon" href="favicon.ico" rel="shortcut icon" />
     <!-- Google Fonts: Outfit & Space Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -423,13 +424,22 @@
             <h4 class="card-title" style="margin: 0" data-i18n>
               Bộ Di Chuyển & Cử Chỉ
             </h4>
-            <button
-              class="btn btn-warning btn-compact"
-              id="btn-open-gcode-font"
-              title="Mở Soạn Thảo G-Code Font"
-            >
-              ✍️ Gcode with font
-            </button>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap">
+              <button
+                class="btn btn-warning btn-compact"
+                id="btn-open-gcode-font"
+                title="Mở Soạn Thảo G-Code Font"
+              >
+                ✍️ Gcode with font
+              </button>
+              <button
+                class="btn btn-primary btn-compact"
+                id="btn-open-gcode-image"
+                title="Mở Soạn Thảo G-Code với Ảnh/Sketch"
+              >
+                🖼️ Gcode with image
+              </button>
+            </div>
           </div>
 
           <!-- JOGGING SECTION -->
@@ -1189,34 +1199,158 @@ Xin Chào</textarea
         </div>
 
         <!-- MỤC ĐIỀU CHỈNH NÂNG CAO (CẬP NHẬT 23: TOÀN BỘ PROPERTIES CỦA FontGcodeRequest) -->
-        <details class="advanced-settings-details" open style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 6px; padding: 8px; margin-top: 2px;">
-          <summary style="cursor: pointer; font-weight: bold; font-size: 0.83rem; color: #38bdf8; user-select: none;">⚙️ Điều Chỉnh Nâng Cao (Config Chi Tiết FontGcodeRequest)</summary>
-          <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
-            
+        <details
+          class="advanced-settings-details"
+          open
+          style="
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 6px;
+            padding: 8px;
+            margin-top: 2px;
+          "
+        >
+          <summary
+            style="
+              cursor: pointer;
+              font-weight: bold;
+              font-size: 0.83rem;
+              color: #38bdf8;
+              user-select: none;
+            "
+          >
+            ⚙️ Điều Chỉnh Nâng Cao (Config Chi Tiết FontGcodeRequest)
+          </summary>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 8px;
+              margin-top: 8px;
+            "
+          >
             <!-- HÀNG 1: Z Safe & Z Draw -->
-            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div
+              class="form-group-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px"
+            >
               <div class="form-group">
-                <label for="font-z-safe" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao hoặc giá trị PWM khi nhấc bút (z_safe)">Nhấc Bút (z_safe):</label>
-                <input type="number" id="font-z-safe" value="0.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-z-safe"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ cao hoặc giá trị PWM khi nhấc bút (z_safe)"
+                  >Nhấc Bút (z_safe):</label
+                >
+                <input
+                  type="number"
+                  id="font-z-safe"
+                  value="0.0"
+                  step="1.0"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
               <div class="form-group">
-                <label for="font-z-draw" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao hoặc giá trị PWM khi hạ bút vẽ (z_draw)">Hạ Bút (z_draw):</label>
-                <input type="number" id="font-z-draw" value="45.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-z-draw"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ cao hoặc giá trị PWM khi hạ bút vẽ (z_draw)"
+                  >Hạ Bút (z_draw):</label
+                >
+                <input
+                  type="number"
+                  id="font-z-draw"
+                  value="45.0"
+                  step="1.0"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
             </div>
 
             <!-- HÀNG 2: Pen Mode & Axis Dir Y -->
-            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div
+              class="form-group-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px"
+            >
               <div class="form-group">
-                <label for="font-pen-mode" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Chế độ điều khiển đầu vẽ bút (pen_mode)">Chế Độ Bút (pen_mode):</label>
-                <select id="font-pen-mode" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
-                  <option value="spindle-pwm" selected>Servo PWM (spindle-pwm)</option>
+                <label
+                  for="font-pen-mode"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Chế độ điều khiển đầu vẽ bút (pen_mode)"
+                  >Chế Độ Bút (pen_mode):</label
+                >
+                <select
+                  id="font-pen-mode"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.78rem;
+                  "
+                >
+                  <option value="spindle-pwm" selected>
+                    Servo PWM (spindle-pwm)
+                  </option>
                   <option value="z-axis">Trục Z Thật (z-axis)</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="font-axis-dir-y" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Hướng trục Y (axis_dir_y)">Hướng Trục Y (axis_dir_y):</label>
-                <select id="font-axis-dir-y" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
+                <label
+                  for="font-axis-dir-y"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Hướng trục Y (axis_dir_y)"
+                  >Hướng Trục Y (axis_dir_y):</label
+                >
+                <select
+                  id="font-axis-dir-y"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.78rem;
+                  "
+                >
                   <option value="1" selected>1 (+Y Hướng xuống)</option>
                   <option value="-1">-1 (Cartesian CNC chuẩn)</option>
                 </select>
@@ -1224,26 +1358,135 @@ Xin Chào</textarea
             </div>
 
             <!-- HÀNG 3: Mịn nét Epsilon & Lề biên Margin mm -->
-            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div
+              class="form-group-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px"
+            >
               <div class="form-group">
-                <label for="font-epsilon" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ sai số xấp xỉ đường cong (epsilon). Giá trị nhỏ nét mịn chính xác theo font.">Mịn Nét (epsilon):</label>
-                <input type="number" id="font-epsilon" value="1.2" min="0.1" max="10.0" step="0.1" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-epsilon"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ sai số xấp xỉ đường cong (epsilon). Giá trị nhỏ nét mịn chính xác theo font."
+                  >Mịn Nét (epsilon):</label
+                >
+                <input
+                  type="number"
+                  id="font-epsilon"
+                  value="1.2"
+                  min="0.1"
+                  max="10.0"
+                  step="0.1"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
               <div class="form-group">
-                <label for="font-margin-mm" style="font-size: 0.75rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Khoảng cách lề lùi viền xung quanh khung chữ (margin_mm)">Lề Biên (margin_mm):</label>
-                <input type="number" id="font-margin-mm" value="5.0" min="0.0" max="50.0" step="0.5" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-margin-mm"
+                  style="
+                    font-size: 0.75rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Khoảng cách lề lùi viền xung quanh khung chữ (margin_mm)"
+                  >Lề Biên (margin_mm):</label
+                >
+                <input
+                  type="number"
+                  id="font-margin-mm"
+                  value="5.0"
+                  min="0.0"
+                  max="50.0"
+                  step="0.5"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
             </div>
 
             <!-- HÀNG 4: Ngưỡng nét, Render DPI, Lọc nhiễu -->
-            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px;">
+            <div
+              class="form-group-row"
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 6px;
+              "
+            >
               <div class="form-group">
-                <label for="font-binary-thresh" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Ngưỡng nhị phân tách nét (binary_threshold: 1-254)">Ngưỡng Nét:</label>
-                <input type="number" id="font-binary-thresh" value="128" min="1" max="254" step="5" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-binary-thresh"
+                  style="
+                    font-size: 0.72rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Ngưỡng nhị phân tách nét (binary_threshold: 1-254)"
+                  >Ngưỡng Nét:</label
+                >
+                <input
+                  type="number"
+                  id="font-binary-thresh"
+                  value="128"
+                  min="1"
+                  max="254"
+                  step="5"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
               <div class="form-group">
-                <label for="font-render-dpi" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ phân giải render ảnh font (render_dpi)">Render DPI:</label>
-                <select id="font-render-dpi" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.78rem;">
+                <label
+                  for="font-render-dpi"
+                  style="
+                    font-size: 0.72rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ phân giải render ảnh font (render_dpi)"
+                  >Render DPI:</label
+                >
+                <select
+                  id="font-render-dpi"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.78rem;
+                  "
+                >
                   <option value="300">300 DPI</option>
                   <option value="600" selected>600 DPI</option>
                   <option value="800">800 DPI</option>
@@ -1251,19 +1494,78 @@ Xin Chào</textarea
                 </select>
               </div>
               <div class="form-group">
-                <label for="font-min-path-len" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ dài nét tối thiểu (min_path_len_mm)">Lọc Nhiễu (mm):</label>
-                <input type="number" id="font-min-path-len" value="0.5" min="0.0" max="10.0" step="0.1" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-min-path-len"
+                  style="
+                    font-size: 0.72rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ dài nét tối thiểu (min_path_len_mm)"
+                  >Lọc Nhiễu (mm):</label
+                >
+                <input
+                  type="number"
+                  id="font-min-path-len"
+                  value="0.5"
+                  min="0.0"
+                  max="10.0"
+                  step="0.1"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
             </div>
 
             <!-- HÀNG 5: Gom nhóm hàng (sort_row_height_mm) -->
-            <div class="form-group-row" style="display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 4px;">
+            <div
+              class="form-group-row"
+              style="
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 6px;
+                margin-top: 4px;
+              "
+            >
               <div class="form-group">
-                <label for="font-sort-row-h" style="font-size: 0.72rem; margin-bottom: 2px; display: block; color: var(--text-muted);" title="Độ cao nhóm hàng (sort_row_height_mm) dùng để tối ưu thứ tự nét vẽ từ trên xuống dưới.">Gom Nhóm Hàng Vẽ (sort_row_height_mm):</label>
-                <input type="number" id="font-sort-row-h" value="10.0" min="1.0" max="100.0" step="1.0" style="width: 100%; padding: 4px 6px; border-radius: 4px; background: rgba(15, 23, 42, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem;" />
+                <label
+                  for="font-sort-row-h"
+                  style="
+                    font-size: 0.72rem;
+                    margin-bottom: 2px;
+                    display: block;
+                    color: var(--text-muted);
+                  "
+                  title="Độ cao nhóm hàng (sort_row_height_mm) dùng để tối ưu thứ tự nét vẽ từ trên xuống dưới."
+                  >Gom Nhóm Hàng Vẽ (sort_row_height_mm):</label
+                >
+                <input
+                  type="number"
+                  id="font-sort-row-h"
+                  value="10.0"
+                  min="1.0"
+                  max="100.0"
+                  step="1.0"
+                  style="
+                    width: 100%;
+                    padding: 4px 6px;
+                    border-radius: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
               </div>
             </div>
-
           </div>
         </details>
         <div
@@ -1301,6 +1603,442 @@ Xin Chào</textarea
       </div>
     </div>
 
-    <script src="/static/app.js?v=43"></script>
+    <!-- FLOATING PANEL: GCODE WITH IMAGE EDITOR (1/3 RIGHT) -->
+    <div id="gcode-image-editor-panel" class="floating-panel-right hidden">
+      <div class="panel-header">
+        <div
+          class="panel-title-row"
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8">
+            🖼️ Gcode with Image Editor
+          </h3>
+          <button
+            class="btn-close"
+            id="btn-close-gcode-image-editor"
+            style="
+              background: transparent;
+              border: none;
+              color: var(--text-muted);
+              font-size: 1.5rem;
+              cursor: pointer;
+            "
+          >
+            &times;
+          </button>
+        </div>
+      </div>
+      <div
+        class="panel-body"
+        style="
+          padding-top: 12px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          overflow-y: auto;
+        "
+      >
+        <!-- FILE INPUT & PREVIEW -->
+        <div class="form-group">
+          <label style="font-size: 0.85rem; margin-bottom: 4px; display: block"
+            >Chọn File Ảnh / SVG / G-code:</label
+          >
+          <input
+            type="file"
+            id="image-file-input"
+            accept=".png,.jpg,.jpeg,.webp,.svg,.gcode,.nc,.cnc,.txt"
+            style="width: 100%; font-size: 0.8rem"
+          />
+        </div>
+
+        <div
+          id="image-preview-container"
+          style="
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px;
+            border-radius: 6px;
+          "
+        >
+          <img
+            id="image-preview-img"
+            style="
+              max-width: 80px;
+              max-height: 80px;
+              object-fit: contain;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 4px;
+              display: none;
+            "
+          />
+          <div
+            id="image-info-label"
+            style="font-size: 0.78rem; color: var(--text-muted)"
+          >
+            Chưa chọn file
+          </div>
+        </div>
+
+        <!-- ALGORITHM & BASIC SETTINGS -->
+        <div class="form-group">
+          <label
+            for="image-algorithm-select"
+            style="font-size: 0.85rem; margin-bottom: 4px; display: block"
+            >Thuật Toán Chuyển Đổi:</label
+          >
+          <select
+            id="image-algorithm-select"
+            class="input-select"
+            style="
+              width: 100%;
+              padding: 6px;
+              border-radius: 6px;
+              background: rgba(15, 23, 42, 0.8);
+              color: #fff;
+              border: 1px solid rgba(255, 255, 255, 0.2);
+            "
+          >
+            <option value="sketch">
+              Sketch Chi Tiết (Maximum Detail)
+            </option>
+            <option value="sketch_portrait">
+              Sketch Chân Dung (Portrait Preset - Cosplay)
+            </option>
+            <option value="centerline">
+              Nét Đơn Centerline (Single-line Skeleton)
+            </option>
+            <option value="contour">
+              Đường Viền Contour (Smooth Outer/Inner Boundary)
+            </option>
+            <option value="handwriting">
+              Chữ Viết Tay (Handwriting Multi-Mode)
+            </option>
+          </select>
+        </div>
+
+        <div
+          class="form-group-row"
+          style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px"
+        >
+          <div class="form-group">
+            <label
+              for="image-scale-input"
+              style="
+                font-size: 0.75rem;
+                margin-bottom: 2px;
+                display: block;
+                color: var(--text-muted);
+              "
+              >Scale (mm/px):</label
+            >
+            <input
+              type="number"
+              id="image-scale-input"
+              value="0.1"
+              min="0.01"
+              max="10.0"
+              step="0.01"
+              style="
+                width: 100%;
+                padding: 4px 6px;
+                border-radius: 4px;
+                background: rgba(15, 23, 42, 0.9);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                font-size: 0.8rem;
+              "
+            />
+          </div>
+          <div class="form-group">
+            <label
+              for="image-feed-rate-input"
+              style="
+                font-size: 0.75rem;
+                margin-bottom: 2px;
+                display: block;
+                color: var(--text-muted);
+              "
+              >Tốc độ (mm/phút):</label
+            >
+            <input
+              type="number"
+              id="image-feed-rate-input"
+              value="2000"
+              min="100"
+              max="10000"
+              step="100"
+              style="
+                width: 100%;
+                padding: 4px 6px;
+                border-radius: 4px;
+                background: rgba(15, 23, 42, 0.9);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                font-size: 0.8rem;
+              "
+            />
+          </div>
+          <div class="form-group">
+            <label
+              for="image-mode-select"
+              style="
+                font-size: 0.75rem;
+                margin-bottom: 2px;
+                display: block;
+                color: var(--text-muted);
+              "
+              >Chế độ bút:</label
+            >
+            <select
+              id="image-mode-select"
+              style="
+                width: 100%;
+                padding: 4px 6px;
+                border-radius: 4px;
+                background: rgba(15, 23, 42, 0.9);
+                color: #fff;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                font-size: 0.8rem;
+              "
+            >
+              <option value="servo" selected>Servo PWM</option>
+              <option value="z-axis">Trục Z</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- ADVANCED SKETCH & FILTER SETTINGS -->
+        <details
+          style="
+            background: rgba(0, 0, 0, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+          "
+        >
+          <summary
+            style="
+              font-size: 0.82rem;
+              font-weight: 600;
+              cursor: pointer;
+              color: #38bdf8;
+            "
+          >
+            ⚙️ Tùy Chỉnh Nâng Cao (Canny / CLAHE / Filters)
+          </summary>
+          <div
+            style="
+              margin-top: 8px;
+              display: flex;
+              flex-direction: column;
+              gap: 6px;
+            "
+          >
+            <div
+              class="form-group-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px"
+            >
+              <div class="form-group">
+                <label
+                  for="image-clahe-clip"
+                  style="font-size: 0.72rem; color: var(--text-muted)"
+                  >CLAHE Clip Limit:</label
+                >
+                <input
+                  type="number"
+                  id="image-clahe-clip"
+                  value="1.5"
+                  min="0.5"
+                  max="10.0"
+                  step="0.5"
+                  style="
+                    width: 100%;
+                    padding: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
+              </div>
+              <div class="form-group">
+                <label
+                  for="image-blur-size"
+                  style="font-size: 0.72rem; color: var(--text-muted)"
+                  >Blur Kernel Size:</label
+                >
+                <input
+                  type="number"
+                  id="image-blur-size"
+                  value="3"
+                  min="1"
+                  max="15"
+                  step="2"
+                  style="
+                    width: 100%;
+                    padding: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
+              </div>
+            </div>
+
+            <div
+              class="form-group-row"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px"
+            >
+              <div class="form-group">
+                <label
+                  for="image-min-contour-len"
+                  style="font-size: 0.72rem; color: var(--text-muted)"
+                  >Min Contour Len:</label
+                >
+                <input
+                  type="number"
+                  id="image-min-contour-len"
+                  value="5"
+                  min="1"
+                  max="50"
+                  step="1"
+                  style="
+                    width: 100%;
+                    padding: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                />
+              </div>
+              <div class="form-group">
+                <label
+                  for="image-hw-mode"
+                  style="font-size: 0.72rem; color: var(--text-muted)"
+                  >Handwriting Mode:</label
+                >
+                <select
+                  id="image-hw-mode"
+                  style="
+                    width: 100%;
+                    padding: 4px;
+                    background: rgba(15, 23, 42, 0.9);
+                    color: #fff;
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                    font-size: 0.8rem;
+                  "
+                >
+                  <option value="centerline" selected>Centerline</option>
+                  <option value="offset">Offset Infill</option>
+                  <option value="raster">Raster Scanline</option>
+                  <option value="local_raster">Local Raster</option>
+                  <option value="cross_hatch">Cross Hatch</option>
+                  <option value="outline">Outline</option>
+                  <option value="concentric">Concentric</option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+                font-size: 0.75rem;
+                color: #cbd5e1;
+                margin-top: 4px;
+              "
+            >
+              <label
+                ><input type="checkbox" id="image-use-clahe" checked /> Dùng
+                CLAHE</label
+              >
+              <label
+                ><input type="checkbox" id="image-use-blur" checked /> Dùng
+                Blur</label
+              >
+              <label
+                ><input type="checkbox" id="image-use-connect" checked /> Kết
+                nối nét</label
+              >
+              <label
+                ><input type="checkbox" id="image-use-thin" checked /> Ép mỏng
+                1px</label
+              >
+              <label
+                ><input type="checkbox" id="image-use-len-filter" checked /> Lọc
+                chiều dài</label
+              >
+            </div>
+          </div>
+        </details>
+
+        <!-- STATUS / INFO BOX -->
+        <div
+          class="font-info-box"
+          id="image-info-box"
+          style="
+            font-size: 0.78rem;
+            color: #38bdf8;
+            font-family: monospace;
+            min-height: 18px;
+          "
+        ></div>
+
+        <!-- ACTION BUTTONS -->
+        <div
+          class="panel-actions"
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 4px;
+          "
+        >
+          <button class="btn btn-primary" id="btn-generate-image-gcode">
+            ⚡ Chuyển đổi & Tạo G-code
+          </button>
+          <button class="btn btn-info" id="btn-preview-image-draw">
+            🎬 Vẽ xem trước (Giả lập)
+          </button>
+          <button class="btn btn-success" id="btn-draw-image-on-cnc">
+            🚀 Vẽ trên CNC (Thực tế)
+          </button>
+          <button class="btn btn-secondary" id="btn-download-image-gcode">
+            💾 Tải file .gcode
+          </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-save-image-project"
+            >
+              💾 Lưu Project JSON
+            </button>
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-load-image-project"
+            >
+              📂 Nạp Project JSON
+            </button>
+          </div>
+          <input
+            type="file"
+            id="image-project-file-input"
+            class="hidden"
+            accept=".json"
+          />
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/app.js?v=44"></script>
   </body>
 </html>

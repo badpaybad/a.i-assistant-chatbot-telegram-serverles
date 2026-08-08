@@ -1,0 +1,690 @@
+from skimage.morphology import thin
+import time
+import serial
+import numpy as np
+import cv2
+import os
+os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+
+def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1, feed_rate=2000, mode="servo"):
+    """
+    Trích xuất trục trung hòa (xương chữ) thành 1 nét đơn duy nhất và xuất G-code.
+    """
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f"Không tìm thấy file ảnh tại: {image_path}")
+        return False
+    height, width = img.shape
+
+    _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+
+    if cv2.countNonZero(thresh) > (height * width / 2):
+        thresh = cv2.bitwise_not(thresh)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    print("Đang trích xuất trục trung hòa của chữ (Centerline Skeleton)...")
+
+    bool_thresh = np.where(thresh > 0, True, False)
+    thinned_bool = thin(bool_thresh)
+
+    skeleton = np.zeros(thresh.shape, dtype=np.uint8)
+    skeleton[thinned_bool] = 255
+
+    contours, _ = cv2.findContours(
+        skeleton, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    if len(contours) == 0:
+        print("Vẫn không tìm thấy nét chữ nào! Vui lòng kiểm tra lại độ tương phản của ảnh.")
+        return False
+
+    valid_contours = [c for c in contours if len(c) > 2]
+    if not valid_contours:
+        print("Không có nét vẽ nào đủ độ dài hợp lệ.")
+        return False
+
+    print(f"Tìm thấy {len(valid_contours)} đoạn nét đơn vẽ chữ. Đang tối ưu đường chạy...")
+
+    sorted_contours = []
+    current_pos = np.array([0, 0])
+
+    while valid_contours:
+        closest_idx = -1
+        min_dist = float('inf')
+        reverse_contour = False
+
+        for idx, contour in enumerate(valid_contours):
+            start_pt = contour[0][0]
+            end_pt = contour[-1][0]
+
+            dist_to_start = np.linalg.norm(current_pos - start_pt)
+            dist_to_end = np.linalg.norm(current_pos - end_pt)
+
+            if dist_to_start < min_dist:
+                min_dist = dist_to_start
+                closest_idx = idx
+                reverse_contour = False
+
+            if dist_to_end < min_dist:
+                min_dist = dist_to_end
+                closest_idx = idx
+                reverse_contour = True
+
+        chosen_contour = valid_contours.pop(closest_idx)
+        if reverse_contour:
+            chosen_contour = np.flip(chosen_contour, axis=0)
+
+        sorted_contours.append(chosen_contour)
+        current_pos = chosen_contour[-1][0]
+
+    preview_img = np.ones((height, width, 3), dtype=np.uint8) * 255
+    for idx, contour in enumerate(sorted_contours):
+        color_ratio = idx / len(sorted_contours) if len(sorted_contours) > 1 else 0
+        current_color = (0, int(255 * (1 - color_ratio)), int(255 * color_ratio))
+        cv2.drawContours(preview_img, [contour], -1, current_color, 2)
+        f_pt = contour[0][0]
+        cv2.putText(preview_img, str(idx + 1), (f_pt[0], f_pt[1] - 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 0, 0), 1, cv2.LINE_AA)
+
+    preview_file_path = "perfect_single_line_preview.png"
+    cv2.imwrite(preview_file_path, preview_img)
+
+    if mode == "servo":
+        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
+        PEN_UP = "M3 S10 ; Nhac but\nG4 P0.2"
+    else:
+        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dau dao xuong xuong"
+        PEN_UP = "G0 Z2.0 ; Nhac dau dao len an toan"
+
+    with open(gcode_path, "w") as f:
+        f.write(";--- KHOI TAO MAY VE NET DON TRUC TRUNG HOA ---\n")
+        f.write("G21 ; Don vi: mm\n")
+        f.write("G90 ; Toa do tuyet doi\n")
+        f.write(f"G0 Z2.0 ; Dua Z len vi tri an toan\n")
+        f.write(f"F{feed_rate}\n\n")
+
+        for i, contour in enumerate(sorted_contours):
+            f.write(f"; --- Net ve don thu {i+1} ---\n")
+            first_point = contour[0][0]
+            x_start = first_point[0] * scale_factor
+            y_start = first_point[1] * scale_factor
+
+            f.write(f"G0 X{x_start:.3f} Y{y_start:.3f}\n")
+            f.write(f"{PEN_DOWN}\n")
+
+            for point in contour[1:]:
+                actual_point = point[0]
+                x = actual_point[0] * scale_factor
+                y = actual_point[1] * scale_factor
+                f.write(f"G1 X{x:.3f} Y{y:.3f}\n")
+
+            f.write(f"{PEN_UP}\n\n")
+
+        f.write(";--- KET THUC ---\n")
+        f.write(f"{PEN_UP}\n")
+        if mode == "servo":
+            f.write("G0 X0 Y0\n")
+            f.write(f"{PEN_UP}\n")
+        else:
+            f.write("G0 Z2.0\n")
+            f.write("G0 X0 Y0\n")
+            f.write("M30\n")
+
+    print(f"Đã xuất file G-code nét đơn hoàn hảo tại: {gcode_path}")
+    return True
+
+
+def image_to_gcode(image_path, gcode_path, scale_factor=0.12, feed_rate=2000, mode="servo"):
+    """
+    Hàm chuyển đổi ảnh sang G-code dạng VẼ BAO QUANH CHỮ SIÊU MỊN & KHÉP KÍN FULL.
+    """
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f"❌ Không tìm thấy ảnh tại: {image_path}")
+        return False
+
+    img = cv2.resize(img, (0, 0), fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC)
+    adjusted_scale = scale_factor / 2.0
+    height, width = img.shape
+
+    gray = cv2.equalizeHist(img)
+    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+    thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                   cv2.THRESH_BINARY_INV, 15, 3)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+    if not contours:
+        print("❌ Không tìm thấy bất kỳ đường viền nào trên ảnh!")
+        return False
+
+    valid_contours = []
+    for c in contours:
+        if len(c) < 5:
+            continue
+        epsilon = 0.002 * cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, epsilon, True)
+        if len(approx) >= 3:
+            valid_contours.append(approx)
+
+    if not valid_contours:
+        print("❌ Không còn nét vẽ nào hợp lệ sau khi lọc mịn!")
+        return False
+
+    print(f"Tìm thấy {len(valid_contours)} đường viền siêu mịn. Đang tối ưu hành trình...")
+
+    sorted_contours = []
+    current_pos = np.array([0, 0])
+
+    while valid_contours:
+        closest_idx = -1
+        min_dist = float('inf')
+        reverse_contour = False
+
+        for idx, contour in enumerate(valid_contours):
+            start_pt = contour[0][0]
+            end_pt = contour[-1][0]
+
+            dist_to_start = np.linalg.norm(current_pos - start_pt)
+            dist_to_end = np.linalg.norm(current_pos - end_pt)
+
+            if dist_to_start < min_dist:
+                min_dist = dist_to_start
+                closest_idx = idx
+                reverse_contour = False
+
+            if dist_to_end < min_dist:
+                min_dist = dist_to_end
+                closest_idx = idx
+                reverse_contour = True
+
+        chosen_contour = valid_contours.pop(closest_idx)
+        if reverse_contour:
+            chosen_contour = np.flip(chosen_contour, axis=0)
+
+        sorted_contours.append(chosen_contour)
+        current_pos = chosen_contour[-1][0]
+
+    gcode = [
+        ";--- KHOI TAO MAY VE OUTLINE SIEU MIN KHEP KIN ---",
+        "G21 ; Don vi: mm",
+        "G90 ; Toa do tuyet doi"
+    ]
+
+    if mode == "servo":
+        gcode.append("M3 S0 ; Khoi tao xung Servo o muc 0")
+        def pen_up(): return "M5 ; Nhac but (Tat xung)"
+        def pen_down(): return "M3 S90 ; Ha but xuong"
+    else:
+        def pen_up(): return "G0 Z2.0 ; Nhac dao len an toan"
+        def pen_down(): return "G1 Z-1.0 F500 ; Ha dau dao xuong"
+
+    gcode.append(pen_up())
+    gcode.append("G0 Z2.0")
+    gcode.append(f"G1 F{feed_rate}")
+
+    for i, contour in enumerate(sorted_contours):
+        path_points = [point[0] for point in contour]
+
+        clean_path = [path_points[0]]
+        for pt in path_points[1:]:
+            if np.linalg.norm(pt - clean_path[-1]) > 0.5:
+                clean_path.append(pt)
+
+        if len(clean_path) > 1 and np.linalg.norm(clean_path[-1] - clean_path[0]) > 0.01:
+            clean_path.append(clean_path[0])
+
+        if len(clean_path) > 1:
+            gcode.append(f"; --- Duong vien min thu {i+1} ---")
+            x_start = clean_path[0][0] * adjusted_scale
+            y_start = clean_path[0][1] * adjusted_scale
+
+            gcode.append(f"G0 X{x_start:.3f} Y{y_start:.3f}")
+            gcode.append(pen_down())
+
+            first_move = clean_path[1]
+            x_first = first_move[0] * adjusted_scale
+            y_first = first_move[1] * adjusted_scale
+            gcode.append(f"G1 X{x_first:.3f} Y{y_first:.3f} F300")
+
+            for pt in clean_path[2:]:
+                x = pt[0] * adjusted_scale
+                y = pt[1] * adjusted_scale
+                gcode.append(f"G1 X{x:.3f} Y{y:.3f} F{feed_rate}")
+
+            gcode.append(pen_up())
+
+    gcode.append(";--- KET THUC ---")
+    gcode.append(pen_up())
+    if mode == "servo":
+        gcode.append("G0 X0 Y0")
+        gcode.append(pen_up())
+    else:
+        gcode.append("G0 Z2.0")
+        gcode.append("G0 X0 Y0")
+        gcode.append("M5")
+        gcode.append("M30")
+
+    with open(gcode_path, "w") as f:
+        f.write("\n".join(gcode))
+
+    print(f"✅ Đã hoàn thành! Đường viền xuất ra siêu mịn và đóng kín tuyệt đối tại: {gcode_path}")
+    return True
+
+
+def send_gcode_to_grbl(port_name, gcode_file_path):
+    print(f"Đang kết nối tới {port_name}...")
+    try:
+        s = serial.Serial(port_name, 115200, timeout=1)
+    except Exception as e:
+        print(f"Không thể mở cổng kết nối {port_name}: {e}")
+        return
+
+    s.write(b"\r\n\r\n")
+    time.sleep(2)
+    s.flushInput()
+
+    print("Kết nối thành công! Đang gửi file G-code...")
+
+    with open(gcode_file_path, 'r') as f:
+        for line in f:
+            line_clean = line.strip()
+
+            if not line_clean or line_clean.startswith(';'):
+                continue
+
+            command = line_clean + '\n'
+            s.write(command.encode('utf-8'))
+            print(f"Đã gửi: {line_clean}")
+
+            while True:
+                response = s.readline().decode('utf-8').strip()
+                if response:
+                    print(f" GRBL phản hồi: {response}")
+                    if 'ok' in response or 'error' in response:
+                        break
+
+    print("--- Hoàn thành gửi toàn bộ file G-code! ---")
+    s.close()
+
+
+def handwriting_text_to_gcode(
+    image_path,
+    gcode_path="output.gcode",
+    scale_factor=0.1,
+    feed_rate=2000,
+    mode="servo",
+    auto_invert=True,
+    use_otsu=True,
+    thresh_val=127,
+    use_thinning=True,
+    use_smooth=True,
+    morph_kernel=3,
+    min_len=5,
+    handwriting_mode="centerline",
+    raster_step=2,
+    offset_step=2
+):
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f"❌ Không tìm thấy ảnh: {image_path}")
+        return False
+    height, width = img.shape
+
+    if use_otsu:
+        _, thresh = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    else:
+        _, thresh = cv2.threshold(img, thresh_val, 255, cv2.THRESH_BINARY)
+
+    if auto_invert and cv2.countNonZero(thresh) > (height * width / 2):
+        thresh = cv2.bitwise_not(thresh)
+
+    if morph_kernel > 1:
+        if morph_kernel % 2 == 0:
+            morph_kernel += 1
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (morph_kernel, morph_kernel))
+        thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel)
+
+    valid_contours = []
+
+    if handwriting_mode == "local_raster":
+        step = max(1, int(raster_step))
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(thresh, connectivity=8)
+        local_contours = []
+
+        component_indices = list(range(1, num_labels))
+        component_indices.sort(key=lambda idx: (stats[idx, cv2.CC_STAT_TOP] // 30, stats[idx, cv2.CC_STAT_LEFT]))
+
+        for comp_idx in component_indices:
+            x_min = stats[comp_idx, cv2.CC_STAT_LEFT]
+            y_min = stats[comp_idx, cv2.CC_STAT_TOP]
+            w_comp = stats[comp_idx, cv2.CC_STAT_WIDTH]
+            h_comp = stats[comp_idx, cv2.CC_STAT_HEIGHT]
+            area = stats[comp_idx, cv2.CC_STAT_AREA]
+
+            if area < min_len:
+                continue
+
+            comp_mask = (labels[y_min:y_min+h_comp, x_min:x_min+w_comp] == comp_idx)
+            direction = 1
+
+            for local_y in range(0, h_comp, step):
+                row_mask = comp_mask[local_y, :]
+                runs = []
+                in_run = False
+                start_x = 0
+                for local_x in range(w_comp):
+                    if row_mask[local_x]:
+                        if not in_run:
+                            in_run = True
+                            start_x = local_x
+                    else:
+                        if in_run:
+                            in_run = False
+                            if (local_x - 1 - start_x) >= 1:
+                                runs.append((start_x, local_x - 1))
+                if in_run:
+                    if (w_comp - 1 - start_x) >= 1:
+                        runs.append((start_x, w_comp - 1))
+
+                if not runs:
+                    continue
+
+                if direction == -1:
+                    runs.reverse()
+                    runs = [(x2, x1) for (x1, x2) in runs]
+
+                for lx1, lx2 in runs:
+                    gx1 = x_min + lx1
+                    gx2 = x_min + lx2
+                    gy = y_min + local_y
+                    pts = np.array([[[float(gx1), float(gy)]], [[float(gx2), float(gy)]]], dtype=np.float32)
+                    local_contours.append(pts)
+
+                direction *= -1
+
+        valid_contours = local_contours
+
+    elif handwriting_mode == "cross_hatch":
+        step = max(1, int(raster_step))
+        hatch_contours = []
+        direction = 1
+
+        diag_step = int(step * 1.414)
+        if diag_step < 1:
+            diag_step = 1
+
+        for k in range(0, width + height, diag_step):
+            x_start = max(0, k - height + 1)
+            x_end = min(width - 1, k)
+            if x_start > x_end:
+                continue
+
+            line_pts = []
+            for x in range(x_start, x_end + 1):
+                y = k - x
+                if 0 <= y < height:
+                    line_pts.append((x, y))
+
+            if not line_pts:
+                continue
+
+            runs = []
+            in_run = False
+            r_start = None
+            for idx_p, (px, py) in enumerate(line_pts):
+                if thresh[py, px] > 0:
+                    if not in_run:
+                        in_run = True
+                        r_start = (px, py)
+                else:
+                    if in_run:
+                        in_run = False
+                        r_end = line_pts[idx_p - 1]
+                        runs.append((r_start, r_end))
+            if in_run:
+                r_end = line_pts[-1]
+                runs.append((r_start, r_end))
+
+            if not runs:
+                continue
+
+            if direction == -1:
+                runs.reverse()
+                runs = [(p2, p1) for (p1, p2) in runs]
+
+            for (p1, p2) in runs:
+                pts = np.array([[[float(p1[0]), float(p1[1])]], [[float(p2[0]), float(p2[1])]]], dtype=np.float32)
+                hatch_contours.append(pts)
+
+            direction *= -1
+
+        valid_contours = hatch_contours
+
+    elif handwriting_mode == "offset":
+        step = max(1, int(offset_step))
+        curr_img = thresh.copy()
+        offset_contours = []
+        max_iterations = 100
+        iter_cnt = 0
+
+        kernel_dim = step * 2 + 1
+        erode_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_dim, kernel_dim))
+
+        while cv2.countNonZero(curr_img) > 0 and iter_cnt < max_iterations:
+            iter_cnt += 1
+            contours, _ = cv2.findContours(curr_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+            if not contours:
+                break
+
+            for c in contours:
+                if len(c) >= min_len:
+                    if use_smooth:
+                        epsilon = 0.002 * cv2.arcLength(c, True)
+                        approx = cv2.approxPolyDP(c, epsilon, True)
+                        offset_contours.append(approx if len(approx) >= 3 else c)
+                    else:
+                        offset_contours.append(c)
+
+            curr_img = cv2.erode(curr_img, erode_kernel, iterations=1)
+
+        valid_contours = offset_contours
+
+    elif handwriting_mode == "raster":
+        step = max(1, int(raster_step))
+        contours_list = []
+        direction = 1
+
+        for y in range(0, height, step):
+            row = thresh[y, :]
+            runs = []
+            in_run = False
+            start_x = 0
+            for x in range(width):
+                if row[x] > 0:
+                    if not in_run:
+                        in_run = True
+                        start_x = x
+                else:
+                    if in_run:
+                        in_run = False
+                        if (x - 1 - start_x) >= 1:
+                            runs.append((start_x, x - 1))
+            if in_run:
+                if (width - 1 - start_x) >= 1:
+                    runs.append((start_x, width - 1))
+
+            if not runs:
+                continue
+
+            if direction == -1:
+                runs.reverse()
+                runs = [(x2, x1) for (x1, x2) in runs]
+
+            for x1, x2 in runs:
+                pts = np.array([[[float(x1), float(y)]], [[float(x2), float(y)]]], dtype=np.float32)
+                contours_list.append(pts)
+
+            direction *= -1
+
+        valid_contours = contours_list
+
+    elif handwriting_mode == "potrace":
+        try:
+            import potrace
+            if use_thinning:
+                bool_thresh = np.where(thresh > 0, True, False)
+                thinned_bool = thin(bool_thresh)
+                bitmap_data = thinned_bool.astype(bool)
+            else:
+                bitmap_data = (thresh > 0).astype(bool)
+
+            bitmap = potrace.Bitmap(bitmap_data)
+            path = bitmap.trace(alphamax=1.0 if use_smooth else 0.0)
+
+            for curve in path:
+                pts = []
+                start = curve.start_point
+                pts.append([start[0], start[1]])
+                for segment in curve.segments:
+                    if segment.is_corner:
+                        c = segment.c
+                        end = segment.end_point
+                        pts.append([c[0], c[1]])
+                        pts.append([end[0], end[1]])
+                    else:
+                        c1 = segment.c1
+                        c2 = segment.c2
+                        end = segment.end_point
+                        p0 = pts[-1]
+                        num_samples = 8 if use_smooth else 4
+                        for t_step in range(1, num_samples + 1):
+                            t = t_step / float(num_samples)
+                            bx = (1-t)**3 * p0[0] + 3*(1-t)**2 * t * c1[0] + 3*(1-t) * t**2 * c2[0] + t**3 * end[0]
+                            by = (1-t)**3 * p0[1] + 3*(1-t)**2 * t * c1[1] + 3*(1-t) * t**2 * c2[1] + t**3 * end[1]
+                            pts.append([bx, by])
+                if len(pts) >= min_len:
+                    c_arr = np.array(pts, dtype=np.float32).reshape((-1, 1, 2))
+                    valid_contours.append(c_arr)
+        except Exception as e:
+            print(f"⚠️ Potrace error: {e}, fallback to centerline")
+            handwriting_mode = "centerline"
+
+    if handwriting_mode == "centerline" or (not valid_contours and handwriting_mode == "potrace"):
+        bool_thresh = np.where(thresh > 0, True, False)
+        thinned_bool = thin(bool_thresh)
+        skeleton = np.zeros(thresh.shape, dtype=np.uint8)
+        skeleton[thinned_bool] = 255
+
+        contours, _ = cv2.findContours(skeleton, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for c in contours:
+            if len(c) >= min_len:
+                if use_smooth:
+                    epsilon = 0.003 * cv2.arcLength(c, False)
+                    approx = cv2.approxPolyDP(c, epsilon, False)
+                    valid_contours.append(approx if len(approx) > 1 else c)
+                else:
+                    valid_contours.append(c)
+
+    elif handwriting_mode == "outline":
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        for c in contours:
+            if len(c) >= min_len:
+                if use_smooth:
+                    epsilon = 0.002 * cv2.arcLength(c, True)
+                    approx = cv2.approxPolyDP(c, epsilon, True)
+                    valid_contours.append(approx if len(approx) >= 3 else c)
+                else:
+                    valid_contours.append(c)
+
+    elif handwriting_mode == "concentric":
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+        valid_contours = [c for c in contours if len(c) >= min_len]
+
+    if not valid_contours:
+        print("❌ Không tìm thấy nét chữ nào hợp lệ.")
+        return False
+
+    if handwriting_mode in ["raster", "local_raster", "cross_hatch"]:
+        sorted_contours = list(valid_contours)
+    else:
+        valid_c_list = list(valid_contours)
+        sorted_contours = []
+        current_pos = np.array([0.0, 0.0])
+
+        while valid_c_list:
+            closest_idx = -1
+            min_dist = float('inf')
+            reverse_contour = False
+
+            for idx, contour in enumerate(valid_c_list):
+                start_pt = contour[0][0]
+                end_pt = contour[-1][0]
+
+                dist_to_start = np.linalg.norm(current_pos - start_pt)
+                dist_to_end = np.linalg.norm(current_pos - end_pt)
+
+                if dist_to_start < min_dist:
+                    min_dist = dist_to_start
+                    closest_idx = idx
+                    reverse_contour = False
+
+                if dist_to_end < min_dist:
+                    min_dist = dist_to_end
+                    closest_idx = idx
+                    reverse_contour = True
+
+            chosen_contour = valid_c_list.pop(closest_idx)
+            if reverse_contour:
+                chosen_contour = np.flip(chosen_contour, axis=0)
+
+            sorted_contours.append(chosen_contour)
+            current_pos = chosen_contour[-1][0]
+
+    if mode == "servo":
+        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
+        PEN_UP = "M3 S10 ; Nhac but\nG4 P0.2"
+    else:
+        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dau dao xuong"
+        PEN_UP = "G0 Z2.0 ; Nhac dau dao len"
+
+    with open(gcode_path, "w", encoding="utf-8") as f:
+        f.write(";--- CHU VIET TAY / CHU DEN NEN TRANG G-CODE ---\n")
+        f.write("G21 ; Don vi: mm\n")
+        f.write("G90 ; Toa do tuyet doi\n")
+        f.write("G0 Z2.0\n")
+        f.write(f"F{feed_rate}\n\n")
+
+        for i, contour in enumerate(sorted_contours):
+            f.write(f"; Net {i+1}\n")
+            first_point = contour[0][0]
+            x_start = first_point[0] * scale_factor
+            y_start = first_point[1] * scale_factor
+
+            f.write(f"G0 X{x_start:.3f} Y{y_start:.3f}\n")
+            f.write(f"{PEN_DOWN}\n")
+
+            for point in contour[1:]:
+                pt = point[0]
+                x = pt[0] * scale_factor
+                y = pt[1] * scale_factor
+                f.write(f"G1 X{x:.3f} Y{y:.3f}\n")
+
+            f.write(f"{PEN_UP}\n\n")
+
+        f.write(";--- KET THUC ---\n")
+        f.write(f"{PEN_UP}\n")
+        if mode == "servo":
+            f.write("G0 X0 Y0\n")
+            f.write(f"{PEN_UP}\n")
+        else:
+            f.write("G0 Z2.0\n")
+            f.write("G0 X0 Y0\n")
+            f.write("M30\n")
+
+    print(f"✅ Đã tạo file G-code chữ viết tay thành công: {gcode_path}")
+    return True
