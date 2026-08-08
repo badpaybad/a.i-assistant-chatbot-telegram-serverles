@@ -270,4 +270,11 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   3. **Sắp xếp theo thứ tự ưu tiên (Strict LTR Sorting)**: Gom các nét theo nhóm dòng `sort_row_height_mm` (Top to Bottom) và sắp xếp thứ tự ưu tiên tuyệt đối theo tọa độ `min_x` từ bé đến lớn.
   4. Đảm bảo toàn bộ G-code ảnh sinh ra vẽ tuần tự từ trái sang phải tự nhiên trên Canvas xem trước và máy CNC thật.
 
+**cập nhật 28** ở Gcode with font, bổ xung them lưu project, load project giống Gcode with image 
+✅ Đã hoàn thành Cập nhật 28:
+  1. Thêm 2 nút **💾 Lưu Project JSON** (`#btn-save-font-project`) và **📂 Nạp Project JSON** (`#btn-load-font-project`) cùng thẻ file input ẩn `#font-project-file-input` vào panel **Gcode with font** trong [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html).
+  2. Bổ sung event listeners trong `initGcodeFontEditor()` tại [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js):
+     - **Lưu Project JSON Font**: Xuất cấu hình đầy đủ gồm chuỗi văn bản, font_name, font_size_pt, line_spacing, feed_rate, z_safe, z_draw, pen_mode, axis_dir_y, epsilon, margin_mm, binary_threshold, render_dpi, min_path_len_mm, sort_row_height_mm, mã fontGcode và danh sách đường nét `preview_paths`.
+     - **Nạp Project JSON Font**: Nạp lại file JSON project font, tự động điền toàn bộ 15+ thông số vào giao diện Web UI, phục hồi đường nét vẽ xem trước trên Tool path view Canvas và chuỗi G-code.
+
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md

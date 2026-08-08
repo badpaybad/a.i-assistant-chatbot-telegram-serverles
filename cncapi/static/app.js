@@ -1923,6 +1923,9 @@
         const btnSimulate = document.getElementById('btn-preview-simulate-draw');
         const btnRealDraw = document.getElementById('btn-draw-on-real-cnc');
         const btnDownload = document.getElementById('btn-download-font-gcode');
+        const btnSaveProject = document.getElementById('btn-save-font-project');
+        const btnLoadProject = document.getElementById('btn-load-font-project');
+        const projectFileInput = document.getElementById('font-project-file-input');
         const fontInfoBox = document.getElementById('font-info-box');
 
         if (!btnOpen || !panel) return;
@@ -2119,6 +2122,96 @@
                 const textSlug = (textInput.value || 'text').substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
                 a.download = `gcode_font_${textSlug}.gcode`;
                 a.click();
+            });
+        }
+
+        // Nút Lưu Project JSON Font
+        if (btnSaveProject) {
+            btnSaveProject.addEventListener('click', () => {
+                if (!fontGcode && (!fontPreviewPaths || fontPreviewPaths.length === 0)) {
+                    alert('Chưa có dữ liệu project font để lưu!');
+                    return;
+                }
+                const projectData = {
+                    version: '1.0',
+                    type: 'font_gcode_project',
+                    timestamp: Date.now(),
+                    text: textInput?.value || '',
+                    font_name: fontSelect?.value || '',
+                    font_size_pt: parseFloat(fontSizeInput?.value || '72.0'),
+                    line_spacing: parseFloat(lineSpacingInput?.value || '1.2'),
+                    line_spacing_mm: parseFloat(lineSpacingMmInput?.value || '0.0'),
+                    feed_rate: parseFloat(feedRateInput?.value || '4000.0'),
+                    stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
+                    z_safe: parseFloat(document.getElementById('font-z-safe')?.value || '0.0'),
+                    z_draw: parseFloat(document.getElementById('font-z-draw')?.value || '45.0'),
+                    pen_mode: document.getElementById('font-pen-mode')?.value || 'spindle-pwm',
+                    axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || '1'),
+                    epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
+                    margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '5.0'),
+                    binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
+                    render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '600'),
+                    min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
+                    sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0'),
+                    gcode: fontGcode,
+                    preview_paths: fontPreviewPaths
+                };
+                const blob = new Blob([JSON.stringify(projectData, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                const textSlug = (textInput?.value || 'text').substring(0, 15).replace(/[^a-zA-Z0-9]/g, '_');
+                a.download = `project_font_${textSlug}_${Date.now()}.json`;
+                a.click();
+            });
+        }
+
+        // Nút Nạp Project JSON Font
+        if (btnLoadProject && projectFileInput) {
+            btnLoadProject.addEventListener('click', () => {
+                projectFileInput.click();
+            });
+
+            projectFileInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    try {
+                        const data = JSON.parse(evt.target.result);
+                        if (data.text !== undefined && textInput) textInput.value = data.text;
+                        if (data.font_name && fontSelect) fontSelect.value = data.font_name;
+                        if (data.font_size_pt && fontSizeInput) fontSizeInput.value = data.font_size_pt;
+                        if (data.line_spacing && lineSpacingInput) lineSpacingInput.value = data.line_spacing;
+                        if (data.line_spacing_mm && lineSpacingMmInput) lineSpacingMmInput.value = data.line_spacing_mm;
+                        if (data.feed_rate && feedRateInput) feedRateInput.value = data.feed_rate;
+                        if (data.stroke_mode && strokeModeSelect) strokeModeSelect.value = data.stroke_mode;
+
+                        if (data.z_safe !== undefined && document.getElementById('font-z-safe')) document.getElementById('font-z-safe').value = data.z_safe;
+                        if (data.z_draw !== undefined && document.getElementById('font-z-draw')) document.getElementById('font-z-draw').value = data.z_draw;
+                        if (data.pen_mode && document.getElementById('font-pen-mode')) document.getElementById('font-pen-mode').value = data.pen_mode;
+                        if (data.axis_dir_y !== undefined && document.getElementById('font-axis-dir-y')) document.getElementById('font-axis-dir-y').value = data.axis_dir_y;
+                        if (data.epsilon !== undefined && document.getElementById('font-epsilon')) document.getElementById('font-epsilon').value = data.epsilon;
+                        if (data.margin_mm !== undefined && document.getElementById('font-margin-mm')) document.getElementById('font-margin-mm').value = data.margin_mm;
+                        if (data.binary_threshold !== undefined && document.getElementById('font-binary-thresh')) document.getElementById('font-binary-thresh').value = data.binary_threshold;
+                        if (data.render_dpi !== undefined && document.getElementById('font-render-dpi')) document.getElementById('font-render-dpi').value = data.render_dpi;
+                        if (data.min_path_len_mm !== undefined && document.getElementById('font-min-path-len')) document.getElementById('font-min-path-len').value = data.min_path_len_mm;
+                        if (data.sort_row_height_mm !== undefined && document.getElementById('font-sort-row-h')) document.getElementById('font-sort-row-h').value = data.sort_row_height_mm;
+
+                        if (data.gcode) fontGcode = data.gcode;
+                        if (data.preview_paths) fontPreviewPaths = data.preview_paths;
+
+                        const curWpos = telemetry.wpos || [0, 0, 0];
+                        fontStartOffset = { x: curWpos[0], y: curWpos[1] };
+
+                        if (fontInfoBox) {
+                            fontInfoBox.innerText = `Đã nạp Project Font! Đường nét: ${fontPreviewPaths ? fontPreviewPaths.length : 0} | Dòng G-code: ${fontGcode ? fontGcode.split('\n').length : 0}`;
+                        }
+                        drawCanvas();
+                    } catch (ex) {
+                        alert('Lỗi nạp file JSON project font: ' + ex.message);
+                    }
+                };
+                reader.readAsText(file);
             });
         }
     }

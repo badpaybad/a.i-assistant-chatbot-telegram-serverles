@@ -1599,6 +1599,26 @@ Xin Chào</textarea
           <button class="btn btn-secondary" id="btn-download-font-gcode">
             💾 Tải file .gcode
           </button>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px">
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-save-font-project"
+            >
+              💾 Lưu Project JSON
+            </button>
+            <button
+              class="btn btn-secondary btn-compact"
+              id="btn-load-font-project"
+            >
+              📂 Nạp Project JSON
+            </button>
+          </div>
+          <input
+            type="file"
+            id="font-project-file-input"
+            class="hidden"
+            accept=".json"
+          />
         </div>
       </div>
     </div>

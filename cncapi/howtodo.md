@@ -186,6 +186,18 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
+### 2.7. Tích Hợp Lưu & Nạp Project JSON Cho Gcode With Font (Cập nhật 28)
+
+1. **Giao Diện Web UI (`cncapi/static/index.html`)**:
+   - Bổ sung 2 nút **💾 Lưu Project JSON** (`#btn-save-font-project`) và **📂 Nạp Project JSON** (`#btn-load-font-project`) bên dưới nút Tải file .gcode tại panel `Gcode with font`.
+   - Thêm thẻ chọn file ẩn `#font-project-file-input` hỗ trợ file định dạng `.json`.
+2. **Cấu Trúc Cấu Hình Project JSON Font (`cncapi/static/app.js`)**:
+   - Cấu trúc file JSON lưu giữ đầy đủ 15+ thuộc tính của `FontGcodeRequest`: `version`, `type: "font_gcode_project"`, `text`, `font_name`, `font_size_pt`, `line_spacing`, `line_spacing_mm`, `feed_rate`, `stroke_mode`, `z_safe`, `z_draw`, `pen_mode`, `axis_dir_y`, `epsilon`, `margin_mm`, `binary_threshold`, `render_dpi`, `min_path_len_mm`, `sort_row_height_mm`, cùng `gcode` và `preview_paths`.
+3. **Phục Hồi Trạng Thái Dự Án (Project Restoring)**:
+   - Khi chọn nạp file JSON, hệ thống tự động giải mã JSON, điền lại toàn bộ thông số vào các ô nhập liệu UI, khôi phục lại chuỗi mã G-code và vẽ ngay lập tức danh sách đường nét chữ lên Tool path view Canvas.
+
+---
+
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)
 
 1. **Chạy Server API Backend**:
