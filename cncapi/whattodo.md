@@ -338,6 +338,21 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
      - Cập nhật hướng dẫn chi tiết từng bước vào mục 2.14 trong [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md).
 
 **cập nhật 35** Khi nhấn nút về gốc máy $H , thì cần nhấc dao trước rồi mới thực hiện về gốc máy. khi về gốc máy thành công cần unlock
+✅ Đã hoàn thành Cập nhật 35:
+  1. **Nhấc dao trước khi Homing**: Trong backend API `POST /cncapi/v1/origin/home` và hàm xử lý `send_command` trong `cncapi/main.py`, khi nhận lệnh Home `$H`, hệ thống tự động phát lệnh nhấc dao `M3 S<pen_up_pwm>` (hoặc `G90 G0 Z<pen_up_z>`) và chờ trễ `pen_dwell` trước khi thực hiện Homing.
+  2. **Thực hiện Homing & Unlock tự động**: Phát lệnh `$H` di chuyển các trục về gốc máy, sau đó tự động phát lệnh `$X` để unlock máy CNC sẵn sàng vận hành.
+  3. **Đồng bộ Giao diện Web UI**: Nút **Home ($H)** (`#jog-home`) trong `static/app.js` đã được cập nhật gọi API `POST /cncapi/v1/origin/home` để thực thi chính xác chuỗi quy trình 3 bước: Nhấc Dao -> Homing ($H) -> Unlock ($X).
+
+**cập nhật 36** Khi Homing thành công cần set gốc máy , gốc làm việc luôn 
+✅ Đã hoàn thành Cập nhật 36:
+  1. **Tự động set Gốc máy & Gốc làm việc khi Homing**: Khi thực hiện Homing `$H` thành công, hệ thống tự động phát lệnh `G10 L20 P1 X0 Y0 Z0` để thiết lập vị trí hiện tại thành Gốc làm việc (Work Zero - G54 `(0,0,0)`).
+  2. **Đồng bộ Trạng thái State & Telemetry**: Cập nhật `state.mpos = [0,0,0]`, `state.wpos = [0,0,0]`, `state.home_set = True`, lưu vào `calibration_settings.json` và phát broadcast telemetry realtime giúp giao diện Web UI hiển thị ngay vị trí gốc máy và gốc làm việc đã sẵn sàng.
+
+**cập nhật 37** lúc kết nối thành công cnc cần unlock để sẵn sàng làm việc  
+✅ Đã hoàn thành Cập nhật 37:
+  1. **Tự động Unlock khi Kết Nối**: Trong backend `connect_cnc` (`cncapi/main.py`), ngay sau khi kết nối thành công tới cổng Serial hoặc chế độ Giả lập `DummySerial`, hệ thống tự động phát lệnh Unlock `$X` xuống mạch GRBL để xóa ngay trạng thái Alarm nếu có.
+  2. **Máy Sẵn Sàng Làm Việc Ngay**: Giúp máy CNC thoát khỏi trạng thái khóa Alarm mặc định khi vừa bật nguồn/kết nối, sẵn sàng nhận các câu lệnh di chuyển, đặt gốc tọa độ hoặc kịch bản mà không yêu cầu người dùng phải bấm nút Unlock thủ công.
+
 
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
 

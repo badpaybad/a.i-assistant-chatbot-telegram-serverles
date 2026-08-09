@@ -215,11 +215,12 @@ class DummySerial:
 
                 elif "$H" in upper:
                     state.mpos = [0.0, 0.0, 0.0]
-                    state.wpos = [0.0 - state.wco[0], 0.0 - state.wco[1], 0.0 - state.wco[2]]
+                    state.wpos = [0.0, 0.0, 0.0]
+                    state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
                     state.home_set = True
-                    save_settings({"home_set": True})
+                    save_settings({"work_origin": state.work_origin, "home_set": True})
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
-                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "[MSG:Homing cycle complete (Dummy Mode)]"}))
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "[MSG:Homing cycle complete (Dummy Mode - Machine Zero & Work Zero Set)]"}))
 
                 asyncio.create_task(send_telemetry())
             except Exception as e:
@@ -370,12 +371,17 @@ async def serial_reader_loop():
                         if state.sent_buffer_lengths:
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
-                    elif line.startswith("ALARM:"):
+                    elif line.startswith("ALARM:") or "to unlock" in line.lower() or "grbl 1.1" in line.lower():
                         await broadcast({
                             "type": "log",
                             "direction": "in",
-                            "content": f"⚠️ [{line}] Máy CNC bị khóa Alarm! Nếu xảy ra khi Home ($H), kiểm tra dây/công tắc hành trình hoặc gửi $X để Mở khóa (Unlock)."
+                            "content": f"⚠️ [{line}] Tự động gửi lệnh Unlock ($X) để sẵn sàng làm việc..."
                         })
+                        try:
+                            await safe_write_serial(b"$X\n")
+                            await broadcast({"type": "log", "direction": "out", "content": "$X"})
+                        except Exception as ex:
+                            logger.error(f"Lỗi khi gửi $X tự động: {ex}")
             else:
                 await asyncio.sleep(0.01)
         except Exception as e:
@@ -818,6 +824,9 @@ async def connect_cnc(config: ConnectionConfig):
         state.machine_state = "Chế Độ Giả Lập"
         state.reader_task = asyncio.create_task(serial_reader_loop())
         state.polling_task = asyncio.create_task(status_polling_loop())
+        # Cập nhật 37: Tự động unlock khi kết nối thành công để sẵn sàng làm việc
+        await safe_write_serial(b"$X\n")
+        await broadcast({"type": "log", "direction": "out", "content": "$X"})
         await broadcast({"type": "connection", "connected": True, "message": "Đã kết nối chế độ giả lập"})
         await send_telemetry()
         return {"status": "success", "message": "Đã kết nối dummy mode"}
@@ -829,11 +838,19 @@ async def connect_cnc(config: ConnectionConfig):
         state.reader_task = asyncio.create_task(serial_reader_loop())
         state.polling_task = asyncio.create_task(status_polling_loop())
         
-        # Wake up GRBL
-        await safe_write_serial(b"\r\n\r\n")
-        await asyncio.sleep(1.0)
+        # Cập nhật 37: Chờ Arduino DTR Hardware Reset (1.8s) -> Xóa buffer -> Unlock ($X) tự động
+        await asyncio.sleep(1.8)
+        if hasattr(state.serial_port, 'reset_input_buffer'):
+            try:
+                state.serial_port.reset_input_buffer()
+            except Exception:
+                pass
         
-        await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port}"})
+        await safe_write_serial(b"\r\n$X\n")
+        await broadcast({"type": "log", "direction": "out", "content": "$X"})
+        await asyncio.sleep(0.5)
+        
+        await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
@@ -883,6 +900,45 @@ async def send_command(req: CommandRequest):
             if not clean_cmd:
                 continue
             try:
+                if clean_cmd.upper() == "$H":
+                    # Cập nhật 35 & 36 & 37: Nhấc dao trước -> Homing ($H) -> Chờ Homing hoàn tất -> Unlock ($X) -> Set Gốc Làm Việc (G54 X0 Y0 Z0)
+                    pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
+                    await safe_write_serial((pen_up_cmd + "\n").encode())
+                    await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
+                    await asyncio.sleep(state.pen_dwell or 0.25)
+
+                    await safe_write_serial(b"$H\n")
+                    await broadcast({"type": "log", "direction": "out", "content": "$H"})
+
+                    # Chờ Homing hoàn thành (tối đa 30s)
+                    if isinstance(state.serial_port, DummySerial):
+                        await asyncio.sleep(0.5)
+                    else:
+                        for _ in range(150):
+                            await asyncio.sleep(0.2)
+                            if state.machine_state not in ["Home", "Run", "Đang Khởi Tạo"]:
+                                break
+
+                    # Mở khóa Unlock ($X) sau khi Homing hoàn thành
+                    await safe_write_serial(b"$X\n")
+                    await broadcast({"type": "log", "direction": "out", "content": "$X"})
+                    await asyncio.sleep(0.3)
+
+                    # Cập nhật 36: Set gốc làm việc G54 (0,0,0) và gán home_set = True
+                    cmd_set_work = "G10 L20 P1 X0 Y0 Z0"
+                    await safe_write_serial((cmd_set_work + "\n").encode())
+                    await broadcast({"type": "log", "direction": "out", "content": cmd_set_work})
+
+                    state.mpos = [0.0, 0.0, 0.0]
+                    state.wpos = [0.0, 0.0, 0.0]
+                    state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                    state.home_set = True
+                    save_settings({"work_origin": state.work_origin, "home_set": True})
+                    await send_telemetry()
+
+                    results.extend([pen_up_cmd, "$H", "$X", cmd_set_work])
+                    continue
+
                 await safe_write_serial((clean_cmd + "\n").encode())
                 await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
                 results.append(clean_cmd)

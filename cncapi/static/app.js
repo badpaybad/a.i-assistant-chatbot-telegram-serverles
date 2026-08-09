@@ -186,7 +186,13 @@
         bindJogKey('jog-z-plus', 0, 0, 1);
         bindJogKey('jog-z-minus', 0, 0, -1);
 
-        document.getElementById('jog-home')?.addEventListener('click', () => sendCommand('$H'));
+        document.getElementById('jog-home')?.addEventListener('click', async () => {
+            try {
+                await fetch('/cncapi/v1/origin/home', { method: 'POST' });
+            } catch (err) {
+                alert(t('Lỗi khi thực hiện Về gốc máy: ') + err.message);
+            }
+        });
         document.getElementById('jog-unlock')?.addEventListener('click', () => sendCommand('$X'));
 
         // Gesture Action Setup
