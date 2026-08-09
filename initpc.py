@@ -13,6 +13,7 @@ import asyncio
 import subprocess
 import secrets
 import string
+import json
 
 # Tự động chuyển sang Python trong virtualenv của dự án để nạp đủ các thư viện (httpx, fastapi...)
 project_dir = os.path.dirname(os.path.abspath(__file__))
@@ -36,7 +37,8 @@ GEMMA4_API_PORT       = 8000
 PROXY_ROUTES = [
     {"path": "/webhook/", "target_port": TELEGRAM_WEBHOOK_PORT, "name": "Telegram Webhook", "websocket": False},
     {"path": "/rustdesk/", "target_port": RUSTDESK_WEB_PORT, "name": "RustDesk Web Client Console", "websocket": True},
-    {"path": "/rustdesk-hbbs/", "target_port": RUSTDESK_HBBS_PORT, "name": "RustDesk HBBS API", "websocket": False},
+    {"path": "/hbbs/", "target_port": 21119, "name": "RustDesk HBBS Signal (WebSocket)", "websocket": True},
+    {"path": "/hbbr/", "target_port": RUSTDESK_WEB_PORT, "name": "RustDesk HBBR Relay (WebSocket)", "websocket": True},
     {"path": "/gemma4/", "target_port": GEMMA4_API_PORT, "name": "Gemma4 Local API", "websocket": False},
 ]
 
@@ -68,6 +70,24 @@ def auto_install_dependencies():
         except Exception as e:
             print(f"[!] Lỗi khi cài đặt RustDesk Client: {e}")
 
+    # Kiểm tra & Tải RustDesk Server binaries (hbbs & hbbr)
+    if not os.path.exists("./hbbs") or not os.path.exists("./hbbr"):
+        print("[!] Không tìm thấy RustDesk Server (hbbs/hbbr). Đang tự động tải về...")
+        rustdesk_url = "https://github.com/rustdesk/rustdesk-server/releases/download/1.1.12/rustdesk-server-linux-amd64.zip"
+        try:
+            subprocess.run(["curl", "-L", "-o", "rustdesk-server.zip", rustdesk_url], check=True)
+            subprocess.run(["unzip", "-o", "rustdesk-server.zip"], check=True)
+            if os.path.exists("amd64/hbbs"):
+                shutil.copy("amd64/hbbs", "./hbbs")
+                shutil.copy("amd64/hbbr", "./hbbr")
+            os.chmod("./hbbs", 0o755)
+            os.chmod("./hbbr", 0o755)
+            if os.path.exists("rustdesk-server.zip"):
+                os.remove("rustdesk-server.zip")
+            print("[+] Đã tải RustDesk Server (hbbs/hbbr) thành công!")
+        except Exception as e:
+            print(f"[!] Lỗi khi cài đặt RustDesk Server: {e}")
+
     try:
         print("[*] Tự động đồng bộ mã nguồn mới nhất của dự án (git pull)...")
         subprocess.run(["git", "pull"], check=False)
@@ -86,21 +106,56 @@ def auto_config_home_rustdesk_client() -> tuple[str, str, str]:
         with open("id_ed25519.pub", "r") as kf:
             rustdesk_key = kf.read().strip()
 
-    config_dir = "/root/.config/rustdesk" if os.getuid() == 0 else os.path.expanduser("~/.config/rustdesk")
-    os.makedirs(config_dir, exist_ok=True)
-    conf_file = os.path.join(config_dir, "RustDesk2.toml")
-
-    toml_content = f"""id_server = '127.0.0.1'
+    toml_content = f"""rendezvous_server = '127.0.0.1'
 relay_server = '127.0.0.1'
 api_server = 'http://127.0.0.1:21118'
 key = '{rustdesk_key}'
+
+[options]
+custom-rendezvous-server = '127.0.0.1'
+relay-server = '127.0.0.1'
+api-server = 'http://127.0.0.1:21118'
+key = '{rustdesk_key}'
 """
+    # Ghi config trỏ 127.0.0.1 cho cả root và tất cả user home directories
+    config_dirs = ["/root/.config/rustdesk"]
+    if os.path.exists("/home"):
+        for user_home in os.listdir("/home"):
+            hpath = os.path.join("/home", user_home, ".config", "rustdesk")
+            config_dirs.append(hpath)
+
+    for cdir in config_dirs:
+        try:
+            os.makedirs(cdir, exist_ok=True)
+            conf_file = os.path.join(cdir, "RustDesk2.toml")
+            with open(conf_file, "w", encoding="utf-8") as f:
+                f.write(toml_content)
+            print(f"[+] Đã ghi cấu hình RustDesk Client (127.0.0.1) tại: {conf_file}")
+        except Exception:
+            pass
+
+    # Đảm bảo RustDesk Client Service (systemd) luôn được bật và chạy trên PC local
     try:
-        with open(conf_file, "w", encoding="utf-8") as f:
-            f.write(toml_content)
-        print(f"[+] Đã cấu hình RustDesk Client local trỏ vào 127.0.0.1 tại: {conf_file}")
+        subprocess.run(["systemctl", "enable", "--now", "rustdesk"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        print("[+] Đã tự động kích hoạt RustDesk System Service (systemctl enable --now rustdesk).")
     except Exception as e:
-        print(f"[!] Không thể ghi file cấu hình RustDesk local: {e}")
+        print(f"[!] Không thể kích hoạt rustdesk service: {e}")
+
+    # Ép RustDesk Client kết nối về Server Local 127.0.0.1 qua CLI
+    if shutil.which("rustdesk"):
+        try:
+            cfg_dict = {
+                "id_server": "127.0.0.1",
+                "relay_server": "127.0.0.1",
+                "api_server": "http://127.0.0.1:21118",
+                "key": rustdesk_key
+            }
+            cfg_json = json.dumps(cfg_dict)
+            subprocess.run(["rustdesk", "--config", cfg_json], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+            subprocess.run(["systemctl", "restart", "rustdesk"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+            print("[+] Đã tự động ép RustDesk Client kết nối về Server Local (127.0.0.1).")
+        except Exception as e:
+            print(f"[!] Không thể áp dụng CLI config cho RustDesk: {e}")
 
     rustdesk_pass = "".join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
     if shutil.which("rustdesk"):
@@ -149,17 +204,54 @@ def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str 
     }}
 """
 
+    server_block = f"""server {{
+    listen {nginx_port};
+    server_name localhost;
+    {locations_str}
+    location /health {{
+        return 200 'OK';
+        add_header Content-Type text/plain;
+    }}
+
+    # RustDesk Mobile Client Signal WebSocket
+    location /ws/id {{
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:21119;
+    }}
+
+    # RustDesk Mobile Client Relay WebSocket
+    location /ws/relay {{
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:21118;
+    }}
+
+    location / {{
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_pass http://127.0.0.1:21119;
+    }}
+}}
+"""
     conf_content = f"""events {{ worker_connections 1024; }}
 http {{
-    server {{
-        listen {nginx_port};
-        server_name localhost;
-        {locations_str}
-        location /health {{
-            return 200 'OK';
-            add_header Content-Type text/plain;
-        }}
-    }}
+    {server_block}
 }}
 """
     with open(output_path, "w", encoding="utf-8") as f:
@@ -171,18 +263,8 @@ http {{
     if os.path.exists(sys_conf_dir):
         sys_conf_file = os.path.join(sys_conf_dir, "tunnel.conf")
         try:
-            sys_server_block = f"""server {{
-    listen {nginx_port};
-    server_name localhost;
-    {locations_str}
-    location /health {{
-        return 200 'OK';
-        add_header Content-Type text/plain;
-    }}
-}}
-"""
             with open(sys_conf_file, "w", encoding="utf-8") as sf:
-                sf.write(sys_server_block)
+                sf.write(server_block)
             print(f"[+] Đã tự động cập nhật cấu hình Nginx hệ thống OS tại: {sys_conf_file}")
         except Exception as e:
             print(f"[!] Không thể ghi file {sys_conf_file}: {e}")
@@ -256,6 +338,7 @@ async def main():
         proc_hbbr = subprocess.Popen([hbbr_bin])
         processes.extend([proc_hbbs, proc_hbbr])
         print("[+] Đã khởi chạy RustDesk HBBS & HBBR Servers")
+        time.sleep(1)
 
     rustdesk_host_id, rustdesk_pass, rustdesk_key = auto_config_home_rustdesk_client()
 
@@ -351,7 +434,6 @@ async def send_tunnel_info_to_owner(base_url: str, routes: list[dict], host_id: 
 • 📱 <b>Thông số Cấu hình App RustDesk Client (Cho thiết bị ngoài):</b>
   - <b>ID Server / Hostname:</b> <code>{clean_domain}</code>
   - <b>Relay Server:</b> <code>{clean_domain}</code>
-  - <b>API Server:</b> <code>{base_url}/rustdesk</code>
   - <b>Public Key:</b> <code>{key}</code>
 
 🔀 <b>Nginx Path Routing Rules:</b>
