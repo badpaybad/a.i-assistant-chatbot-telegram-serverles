@@ -1408,9 +1408,9 @@ async def v1_execute_gesture(req: V1GestureRequest):
     elif gtype == "swipe_right":
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 X{swipe_dist} F{swipe_feed}", "G90", p_up])
     elif gtype == "swipe_up":
-        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y{swipe_dist} F{swipe_feed}", "G90", p_up])
-    elif gtype == "swipe_down":
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y-{swipe_dist} F{swipe_feed}", "G90", p_up])
+    elif gtype == "swipe_down":
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y{swipe_dist} F{swipe_feed}", "G90", p_up])
     else:
         raise HTTPException(status_code=400, detail=f"Loại cử chỉ không hợp lệ: {req.type}")
 
