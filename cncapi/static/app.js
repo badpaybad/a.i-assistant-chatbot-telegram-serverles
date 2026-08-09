@@ -229,7 +229,7 @@
         document.querySelectorAll('.btn-scenario-action').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (!isHomeSet) {
-                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                     return;
                 }
                 const actionType = e.currentTarget.getAttribute('data-action');
@@ -432,6 +432,9 @@
         if (msg.type === 'telemetry') {
             telemetry = { ...telemetry, ...msg };
             if (msg.home_set !== undefined) {
+                if (!isHomeSet && msg.home_set) {
+                    penTrajectory = [];
+                }
                 isHomeSet = msg.home_set;
             }
             if (msg.scenario_name !== undefined) {
@@ -743,7 +746,7 @@
     // Touch & Swipe Gestures
     async function executeGesture(type) {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
 
@@ -849,7 +852,7 @@
                 if (!isConnected) {
                     alert(t('Vui lòng Kết Nối CNC trước khi di chuyển!'));
                 } else if (!isHomeSet) {
-                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                 } else {
                     const { feed } = getSystemConfig();
                     sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
@@ -1438,7 +1441,7 @@
     // Scenario Builder & Execution
     async function createNewScenario() {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         const nameInput = document.getElementById('scenario-name');
@@ -1468,7 +1471,7 @@
 
     async function addScenarioAction(actionType) {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         try {
@@ -1623,7 +1626,7 @@
 
     async function runScenario() {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
@@ -1643,7 +1646,7 @@
 
     async function toggleRunLoopScenario() {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
@@ -1663,7 +1666,7 @@
 
     function runScenarioSimulation() {
         if (!isHomeSet) {
-            alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
@@ -1925,7 +1928,7 @@
             if (!btn) return;
             btn.addEventListener('click', async () => {
                 if (!isHomeSet) {
-                    alert(t('Cần đặt gốc tọa độ làm việc trước!'));
+                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                     return;
                 }
                 try {

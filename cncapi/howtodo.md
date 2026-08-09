@@ -406,7 +406,35 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
-### 2.18. Bảng Ma Trận Đối Chiếu Tất Cả 37 Cập Nhật (`whattodo.md` vs Code Implementation)
+### 2.18. Tự Động Homing Khi Khởi Động Lại Web Hoặc Kết Nối Lại CNC & Đồng Bộ Gốc Máy Với Gốc Làm Việc (Cập nhật 38)
+
+1. **Quy Trình Reset Trạng Thái Homing & Tự Động Homing Khi Kết Nối CNC**:
+   - Khi web server khởi động lại (khởi tạo `ControllerState.__init__`), hệ thống đặt `home_set = False` và cập nhật cấu hình local JSON (`save_settings({"home_set": False})`).
+   - Mỗi khi người dùng kết nối lại máy CNC hoặc bấm **Kết Nối CNC** trên Web UI (qua cổng Serial phần cứng hay chế độ Giả lập `DummySerial`), backend `connect_cnc()` tự động reset `state.home_set = False`, lưu cấu hình và khởi tạo một tác vụ nền `run_auto_home()` để **tự động điều khiển CNC thực hiện Homing ($H)** ngay lập tức.
+   - Giải pháp này đảm bảo an toàn tuyệt đối đồng thời tăng trải nghiệm người dùng: Không cần người dùng bấm nút Homing thủ công mỗi lần kết nối lại.
+
+2. **Quy Trình Thiết Lập Gốc Máy & Gốc Làm Việc Khi Homing Thành Công**:
+   - Khi thực hiện Homing `$H` (chạy tự động qua `run_auto_home()` hoặc chạy thủ công qua API `POST /cncapi/v1/origin/home`), backend tự động thực hiện chuỗi quy trình 5 bước nghiêm ngặt:
+     1. **Nhấc dao an toàn**: Phát lệnh `M3 S<pen_up_pwm>` hoặc `G90 G0 Z<pen_up_z>` và chờ trễ `pen_dwell`.
+     2. **Thực thi Homing ($H) & Đồng bộ chờ GRBL ACK 'ok'**: Xóa cờ `grbl_ack_event`, phát lệnh `$H` và dùng `asyncio.wait_for(grbl_ack_event.wait(), timeout=30.0)` chờ GRBL thực sự di chuyển xong và gửi phản hồi `ok`.
+     3. **Kiểm tra trạng thái Homing thành công**: Nếu phản hồi của GRBL chứa từ khóa `"error"` hoặc `"ALARM"`, hệ thống sẽ kích hoạt ngoại lệ HTTP 400 Bad Request, giữ nguyên `state.home_set = False` và từ chối các bước thiết lập gốc tiếp theo. Nếu Homing thành công hoàn toàn, hệ thống mới đi tiếp.
+     4. **Mở khóa Alarm ($X)**: Sau khi Homing hoàn thành thực sự, phát lệnh `$X` giải phóng máy CNC khỏi Alarm.
+     5. **Set Gốc làm việc (G54) trùng Gốc máy (G53)**: Phát lệnh `G10 L2 P1 X0 Y0 Z0` thiết lập offset của hệ tọa độ G54 về `(0,0,0)` (loại bỏ lệnh `G10 L20 P1 X0 Y0 Z0` để tránh ghi đè offset khác không khi machine coordinates tại gốc không phải 0). Nhờ đó, Gốc tọa độ làm việc (WPos) trùng khớp hoàn toàn với Gốc máy (MPos).
+     6. **Cập nhật Trạng thái & Telemetry**: Đặt `state.mpos = [0,0,0]`, `state.wpos = [0,0,0]`, `state.wco = [0,0,0]`, `state.work_origin = {"x":0, "y":0, "z":0}`, `state.home_set = True`, lưu cấu hình và gửi telemetry realtime để giao diện Web UI hiển thị chính xác vị trí đầu CNC tại `(0,0)`.
+
+3. **Các File Mã Nguồn Đã Cập Nhật**:
+   - Backend [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py):
+     - Thêm trường `state.last_grbl_response` ghi nhận phản hồi từ GRBL trong `serial_reader_loop()`.
+     - Reset `home_set = False` trong `__init__` và `connect_cnc()`.
+     - Thêm hàm `run_auto_home()` hỗ trợ chạy Homing tự động trong nền (background task) kèm theo cơ chế phát log WebSocket realtime cho người dùng.
+     - Gọi `run_auto_home()` ở cuối `connect_cnc()` khi kết nối thành công.
+     - Trong `send_command()` khi chặn lệnh `$H`: thực hiện Homing, kiểm tra lỗi phản hồi để ném HTTP 400 khi thất bại, phát lệnh `G10 L2 P1 X0 Y0 Z0` và gán `home_set = True`.
+   - Frontend Web UI [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js): Đồng bộ các cảnh báo khi `!isHomeSet` hiển thị thông báo `"Cần thực hiện Homing ($H) về gốc máy trước!"`.
+   - Đa ngôn ngữ [`cncapi/static/lang/vi.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/lang/vi.json) & [`cncapi/static/lang/en.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/lang/en.json): Thêm bản dịch tương ứng.
+
+---
+
+### 2.19. Bảng Ma Trận Đối Chiếu Tất Cả 38 Cập Nhật (`whattodo.md` vs Code Implementation)
 
 | STT Cập Nhật | Nội Dung Yêu Cầu Tại `whattodo.md` | Trạng Thái | File Mã Nguồn Thực Hiện | Chi Tiết Giải Pháp Triển Khai |
 | :---: | :--- | :---: | :--- | :--- |
@@ -447,6 +475,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 35** | Khi bấm nút Về gốc máy ($H), nhấc dao trước rồi mới thực hiện Homing ($H), khi về gốc thành công tự động Unlock ($X) | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | API REST `/origin/home` & `send_command` tự động phát lệnh Nhấc dao -> Homing ($H) -> Unlock ($X). |
 | **Cập nhật 36** | Khi Homing thành công, tự động set Gốc máy MPos=(0,0,0) và Gốc làm việc G54 WPos=(0,0,0) (G10 L20 P1 X0 Y0 Z0) và gán home_set=True | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Tự động phát `G10 L20 P1 X0 Y0 Z0`, gán `home_set=True`, lưu JSON và broadcast telemetry realtime. |
 | **Cập nhật 37** | Khi kết nối CNC thành công, tự động phát lệnh Unlock ($X) để giải phóng máy khỏi trạng thái Alarm và sẵn sàng làm việc ngay | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Tự động gửi `$X` trong `connect_cnc()` cho cả cổng Serial phần cứng và chế độ Giả lập DummySerial. |
+| **Cập nhật 38** | Khi khởi động lại web hoặc kết nối lại CNC thì cần Homing tự động; khi Homing thành công set gốc máy và gốc làm việc trùng gốc máy (0,0,0) | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | `home_set = False` khi khởi động/kết nối lại CNC; khởi tạo tác vụ nền `run_auto_home()` thực hiện Homing `$H`, kiểm tra lỗi phản hồi và chỉ gửi `G10 L2 P1 X0 Y0 Z0` để đồng bộ G54 = G53. |
 
 ---
 

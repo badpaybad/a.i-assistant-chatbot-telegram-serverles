@@ -65,6 +65,7 @@
   "Xóa Hết": "Clear All",
   "Chưa có bước nào trong kịch bản. Nhấn các phím phía trên để thêm bước.": "No steps in scenario yet. Click action buttons above to add steps.",
   "Cần đặt gốc tọa độ làm việc trước!": "Need to set work origin coordinates first!",
+  "Cần thực hiện Homing ($H) về gốc máy trước!": "Please perform Homing ($H) to machine zero first!",
   "Đặt vị trí chèn sau bước này": "Set insertion point after this step",
   "Di chuyển lên": "Move up",
   "Di chuyển xuống": "Move down",

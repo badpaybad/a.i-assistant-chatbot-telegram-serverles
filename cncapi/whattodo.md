@@ -353,8 +353,19 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   1. **Tự động Unlock khi Kết Nối**: Trong backend `connect_cnc` (`cncapi/main.py`), ngay sau khi kết nối thành công tới cổng Serial hoặc chế độ Giả lập `DummySerial`, hệ thống tự động phát lệnh Unlock `$X` xuống mạch GRBL để xóa ngay trạng thái Alarm nếu có.
   2. **Máy Sẵn Sàng Làm Việc Ngay**: Giúp máy CNC thoát khỏi trạng thái khóa Alarm mặc định khi vừa bật nguồn/kết nối, sẵn sàng nhận các câu lệnh di chuyển, đặt gốc tọa độ hoặc kịch bản mà không yêu cầu người dùng phải bấm nút Unlock thủ công.
 
+**cập nhật 38** Khi khởi động lại web hoặc kết nối lại cnc thì cần homing tự động, tự động điều khiển cnc về homing 
+    thực hiện 
+        @app.post("/cncapi/v1/origin/home")
+        async def v1_origin_home():
+            kiểm tra logic đúng chưa: Khi homing thành công set gốc máy và gốc tọa độ làm việc chính là gốc máy 
+✅ Đã hoàn thành Cập nhật 38:
+  1. **Tự động Homing khi Kết nối**: `home_set = False` được thiết lập khi khởi tạo server và mỗi khi bắt đầu kết nối/kết nối lại CNC. Khi kết nối thành công, hệ thống tự động khởi tạo tác vụ nền `run_auto_home()` điều khiển CNC thực hiện Homing `$H` tự động.
+  2. **Kiểm Tra & Xử Lý Lỗi Homing**: Chờ tín hiệu từ GRBL và lưu trữ phản hồi mới nhất. Nếu quá trình homing gặp lỗi hoặc kích hoạt Alarm, backend sẽ phát log lỗi WebSocket màu đỏ, không gán `home_set = True`.
+  3. **Đặt Hệ Tọa Độ Đồng Nhất**: Phát lệnh `G10 L2 P1 X0 Y0 Z0` thiết lập offset G54 về 0, đảm bảo Gốc làm việc (Work Zero) trùng khớp tuyệt đối với Gốc máy (Machine Zero). Đã loại bỏ lệnh `G10 L20` dư thừa để tránh ghi đè offset khác không khi vị trí homed MPos khác 0.
+  4. **Đồng bộ trạng thái**: Giao diện UI tự động cảnh báo yêu cầu homing khi chưa set home.
 
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
+
 
 
 

@@ -56,7 +56,7 @@ def load_settings() -> dict:
         "axis_dir_x": 1,
         "axis_dir_y": 1,
         "mm_per_px": 0.5,
-        "home_set": True,
+        "home_set": False,
         "workpiece_origin": {"x": 0.0, "y": 0.0, "z": 0.0},
         "work_origin": {"x": 0.0, "y": 0.0, "z": 0.0},
         "parking_point": {"x": 0.0, "y": 0.0, "z": 10.0},
@@ -103,7 +103,9 @@ class ControllerState:
         self.cnc_tr = settings.get("cnc_tr")
         self.cnc_bl = settings.get("cnc_bl")
         self.cnc_br = settings.get("cnc_br")
-        self.home_set = settings.get("home_set", False)
+        # Cập nhật 38: Khởi động lại web backend luôn đặt home_set = False (yêu cầu Homing)
+        self.home_set = False
+        save_settings({"home_set": False})
         
         self.feedrate = 0.0
         self.spindle_speed = 0.0
@@ -133,6 +135,7 @@ class ControllerState:
         # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
         self.grbl_ack_event = asyncio.Event()
+        self.last_grbl_response: str = ""
         self.serial_lock = asyncio.Lock()
         
         # Tasks
@@ -216,9 +219,11 @@ class DummySerial:
                 elif "$H" in upper:
                     state.mpos = [0.0, 0.0, 0.0]
                     state.wpos = [0.0, 0.0, 0.0]
+                    state.wco = [0.0, 0.0, 0.0]
                     state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                    state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
                     state.home_set = True
-                    save_settings({"work_origin": state.work_origin, "home_set": True})
+                    save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": True})
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "[MSG:Homing cycle complete (Dummy Mode - Machine Zero & Work Zero Set)]"}))
 
@@ -302,37 +307,40 @@ def parse_grbl_status(status_str: str):
         if state_match:
             state.machine_state = state_match.group(1)
             
+        status_dict = {}
         matches = re.findall(r"([a-zA-Z]+):([-+0-9.,]*)", clean)
         for key, val in matches:
-            val = val.strip(",")
-            try:
-                if key == "WPos":
-                    parts = [float(x) for x in val.split(",") if x.strip()]
-                    if len(parts) >= 3:
-                        state.wpos = parts[:3]
-                        state.mpos = [w + o for w, o in zip(state.wpos, state.wco)]
-                elif key == "MPos":
-                    parts = [float(x) for x in val.split(",") if x.strip()]
-                    if len(parts) >= 3:
-                        state.mpos = parts[:3]
-                        state.wpos = [m - o for m, o in zip(state.mpos, state.wco)]
-                elif key == "WCO":
-                    parts = [float(x) for x in val.split(",") if x.strip()]
-                    if len(parts) >= 3:
-                        state.wco = parts[:3]
-                elif key == "Bf":
-                    bf_parts = [int(x) for x in val.split(",") if x.strip()]
-                    if len(bf_parts) == 2:
-                        state.buffer_blocks = bf_parts[0]
-                        state.buffer_rx = bf_parts[1]
-                elif key == "FS":
-                    fs_parts = [float(x) for x in val.split(",") if x.strip()]
-                    if len(fs_parts) >= 1:
-                        state.feedrate = fs_parts[0]
-                    if len(fs_parts) >= 2:
-                        state.spindle_speed = fs_parts[1]
-            except (ValueError, IndexError):
-                pass
+            status_dict[key] = val.strip(",")
+
+        # Parse WCO first so MPos -> WPos calculation uses the latest offset
+        if "WCO" in status_dict:
+            parts = [float(x) for x in status_dict["WCO"].split(",") if x.strip()]
+            if len(parts) >= 3:
+                state.wco = parts[:3]
+
+        if "WPos" in status_dict:
+            parts = [float(x) for x in status_dict["WPos"].split(",") if x.strip()]
+            if len(parts) >= 3:
+                state.wpos = parts[:3]
+                state.mpos = [w + o for w, o in zip(state.wpos, state.wco)]
+        elif "MPos" in status_dict:
+            parts = [float(x) for x in status_dict["MPos"].split(",") if x.strip()]
+            if len(parts) >= 3:
+                state.mpos = parts[:3]
+                state.wpos = [m - o for m, o in zip(state.mpos, state.wco)]
+
+        if "Bf" in status_dict:
+            bf_parts = [int(x) for x in status_dict["Bf"].split(",") if x.strip()]
+            if len(bf_parts) == 2:
+                state.buffer_blocks = bf_parts[0]
+                state.buffer_rx = bf_parts[1]
+
+        if "FS" in status_dict:
+            fs_parts = [float(x) for x in status_dict["FS"].split(",") if x.strip()]
+            if len(fs_parts) >= 1:
+                state.feedrate = fs_parts[0]
+            if len(fs_parts) >= 2:
+                state.spindle_speed = fs_parts[1]
     except Exception as e:
         logger.error(f"Error parsing GRBL status: {e}")
 
@@ -362,6 +370,7 @@ async def serial_reader_loop():
                         parse_grbl_status(line)
                         await send_telemetry()
                     elif line == "ok" or "error" in line:
+                        state.last_grbl_response = line
                         if "error:5" in line:
                             await broadcast({
                                 "type": "log", 
@@ -372,6 +381,7 @@ async def serial_reader_loop():
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
                     elif line.startswith("ALARM:") or "to unlock" in line.lower() or "grbl 1.1" in line.lower():
+                        state.last_grbl_response = line
                         await broadcast({
                             "type": "log",
                             "direction": "in",
@@ -805,6 +815,15 @@ async def get_serial_ports():
         "platform": sys.platform
     }
 
+async def run_auto_home():
+    try:
+        await broadcast({"type": "log", "direction": "in", "content": "🔄 [Tự động Homing] Bắt đầu tự động Homing về gốc máy..."})
+        await send_command(CommandRequest(command="$H"))
+        await broadcast({"type": "log", "direction": "in", "content": "✅ [Tự động Homing] Homing thành công và gốc tọa độ đã được đồng bộ!"})
+    except Exception as e:
+        logger.error(f"Lỗi khi tự động Homing: {e}")
+        await broadcast({"type": "log", "direction": "in", "content": f"❌ [Tự động Homing] Thất bại: {e}"})
+
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):
     if state.connected:
@@ -822,6 +841,8 @@ async def connect_cnc(config: ConnectionConfig):
         state.serial_port = DummySerial()
         state.connected = True
         state.machine_state = "Chế Độ Giả Lập"
+        state.home_set = False
+        save_settings({"home_set": False})
         state.reader_task = asyncio.create_task(serial_reader_loop())
         state.polling_task = asyncio.create_task(status_polling_loop())
         # Cập nhật 37: Tự động unlock khi kết nối thành công để sẵn sàng làm việc
@@ -829,12 +850,16 @@ async def connect_cnc(config: ConnectionConfig):
         await broadcast({"type": "log", "direction": "out", "content": "$X"})
         await broadcast({"type": "connection", "connected": True, "message": "Đã kết nối chế độ giả lập"})
         await send_telemetry()
+        # Cập nhật 38: Tự động Homing khi kết nối thành công
+        asyncio.create_task(run_auto_home())
         return {"status": "success", "message": "Đã kết nối dummy mode"}
         
     try:
         state.serial_port = serial.Serial(config.port, config.baudrate, timeout=0.1)
         state.connected = True
         state.machine_state = "Đang Khởi Tạo"
+        state.home_set = False
+        save_settings({"home_set": False})
         state.reader_task = asyncio.create_task(serial_reader_loop())
         state.polling_task = asyncio.create_task(status_polling_loop())
         
@@ -852,6 +877,8 @@ async def connect_cnc(config: ConnectionConfig):
         
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
+        # Cập nhật 38: Tự động Homing khi kết nối thành công
+        asyncio.create_task(run_auto_home())
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
         state.connected = False
@@ -907,36 +934,50 @@ async def send_command(req: CommandRequest):
                     await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
                     await asyncio.sleep(state.pen_dwell or 0.25)
 
+                    state.grbl_ack_event.clear()
+                    state.last_grbl_response = ""
                     await safe_write_serial(b"$H\n")
                     await broadcast({"type": "log", "direction": "out", "content": "$H"})
 
-                    # Chờ Homing hoàn thành (tối đa 30s)
+                    # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' khi homing xong)
                     if isinstance(state.serial_port, DummySerial):
                         await asyncio.sleep(0.5)
                     else:
-                        for _ in range(150):
-                            await asyncio.sleep(0.2)
-                            if state.machine_state not in ["Home", "Run", "Đang Khởi Tạo"]:
-                                break
+                        try:
+                            await asyncio.wait_for(state.grbl_ack_event.wait(), timeout=30.0)
+                        except asyncio.TimeoutError:
+                            logger.warning("Homing $H timeout waiting for GRBL ack 'ok'")
+                            raise HTTPException(status_code=400, detail="Homing bị quá thời gian (Timeout)")
+                        await asyncio.sleep(0.5)
+                        
+                        if "error" in state.last_grbl_response or "ALARM" in state.last_grbl_response:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Homing thất bại: {state.last_grbl_response or 'Lỗi không xác định'}"
+                            )
 
                     # Mở khóa Unlock ($X) sau khi Homing hoàn thành
+                    state.grbl_ack_event.clear()
                     await safe_write_serial(b"$X\n")
                     await broadcast({"type": "log", "direction": "out", "content": "$X"})
                     await asyncio.sleep(0.3)
 
-                    # Cập nhật 36: Set gốc làm việc G54 (0,0,0) và gán home_set = True
-                    cmd_set_work = "G10 L20 P1 X0 Y0 Z0"
-                    await safe_write_serial((cmd_set_work + "\n").encode())
-                    await broadcast({"type": "log", "direction": "out", "content": cmd_set_work})
+                    # Cập nhật 36 & 38: Reset tuyệt đối WCO = (0,0,0) giúp Gốc tọa độ làm việc chính là Gốc máy
+                    cmd_set_wco = "G10 L2 P1 X0 Y0 Z0"
+                    await safe_write_serial((cmd_set_wco + "\n").encode())
+                    await broadcast({"type": "log", "direction": "out", "content": cmd_set_wco})
+                    await asyncio.sleep(0.1)
 
                     state.mpos = [0.0, 0.0, 0.0]
                     state.wpos = [0.0, 0.0, 0.0]
+                    state.wco = [0.0, 0.0, 0.0]
                     state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                    state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
                     state.home_set = True
-                    save_settings({"work_origin": state.work_origin, "home_set": True})
+                    save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": True})
                     await send_telemetry()
 
-                    results.extend([pen_up_cmd, "$H", "$X", cmd_set_work])
+                    results.extend([pen_up_cmd, "$H", "$X", cmd_set_wco])
                     continue
 
                 await safe_write_serial((clean_cmd + "\n").encode())
