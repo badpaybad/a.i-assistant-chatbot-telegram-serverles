@@ -213,6 +213,14 @@ class DummySerial:
                                 state.wpos[idx] = val
                             state.mpos[idx] = state.wpos[idx] + state.wco[idx]
 
+                elif "$H" in upper:
+                    state.mpos = [0.0, 0.0, 0.0]
+                    state.wpos = [0.0 - state.wco[0], 0.0 - state.wco[1], 0.0 - state.wco[2]]
+                    state.home_set = True
+                    save_settings({"home_set": True})
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "[MSG:Homing cycle complete (Dummy Mode)]"}))
+
                 asyncio.create_task(send_telemetry())
             except Exception as e:
                 logger.error(f"[Dummy Serial] Simulation error: {e}")
@@ -296,27 +304,34 @@ def parse_grbl_status(status_str: str):
         matches = re.findall(r"([a-zA-Z]+):([-+0-9.,]*)", clean)
         for key, val in matches:
             val = val.strip(",")
-            if key == "WPos":
-                parts = [float(x) for x in val.split(",")]
-                state.wpos = parts
-                state.mpos = [w + o for w, o in zip(state.wpos, state.wco)]
-            elif key == "MPos":
-                parts = [float(x) for x in val.split(",")]
-                state.mpos = parts
-                state.wpos = [m - o for m, o in zip(state.mpos, state.wco)]
-            elif key == "WCO":
-                parts = [float(x) for x in val.split(",")]
-                state.wco = parts
-            elif key == "Bf":
-                bf_parts = val.split(",")
-                if len(bf_parts) == 2:
-                    state.buffer_blocks = int(bf_parts[0])
-                    state.buffer_rx = int(bf_parts[1])
-            elif key == "FS":
-                fs_parts = val.split(",")
-                if len(fs_parts) == 2:
-                    state.feedrate = float(fs_parts[0])
-                    state.spindle_speed = float(fs_parts[1])
+            try:
+                if key == "WPos":
+                    parts = [float(x) for x in val.split(",") if x.strip()]
+                    if len(parts) >= 3:
+                        state.wpos = parts[:3]
+                        state.mpos = [w + o for w, o in zip(state.wpos, state.wco)]
+                elif key == "MPos":
+                    parts = [float(x) for x in val.split(",") if x.strip()]
+                    if len(parts) >= 3:
+                        state.mpos = parts[:3]
+                        state.wpos = [m - o for m, o in zip(state.mpos, state.wco)]
+                elif key == "WCO":
+                    parts = [float(x) for x in val.split(",") if x.strip()]
+                    if len(parts) >= 3:
+                        state.wco = parts[:3]
+                elif key == "Bf":
+                    bf_parts = [int(x) for x in val.split(",") if x.strip()]
+                    if len(bf_parts) == 2:
+                        state.buffer_blocks = bf_parts[0]
+                        state.buffer_rx = bf_parts[1]
+                elif key == "FS":
+                    fs_parts = [float(x) for x in val.split(",") if x.strip()]
+                    if len(fs_parts) >= 1:
+                        state.feedrate = fs_parts[0]
+                    if len(fs_parts) >= 2:
+                        state.spindle_speed = fs_parts[1]
+            except (ValueError, IndexError):
+                pass
     except Exception as e:
         logger.error(f"Error parsing GRBL status: {e}")
 
@@ -346,9 +361,21 @@ async def serial_reader_loop():
                         parse_grbl_status(line)
                         await send_telemetry()
                     elif line == "ok" or "error" in line:
+                        if "error:5" in line:
+                            await broadcast({
+                                "type": "log", 
+                                "direction": "in", 
+                                "content": "⚠️ [Lỗi GRBL error:5] Lệnh Home ($H) thất bại vì chưa bật Homing ($22=1) trong GRBL hoặc chưa kết nối công tắc hành trình!"
+                            })
                         if state.sent_buffer_lengths:
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
+                    elif line.startswith("ALARM:"):
+                        await broadcast({
+                            "type": "log",
+                            "direction": "in",
+                            "content": f"⚠️ [{line}] Máy CNC bị khóa Alarm! Nếu xảy ra khi Home ($H), kiểm tra dây/công tắc hành trình hoặc gửi $X để Mở khóa (Unlock)."
+                        })
             else:
                 await asyncio.sleep(0.01)
         except Exception as e:
@@ -1116,6 +1143,11 @@ class V1SetBoundPointRequest(BaseModel):
     x: Optional[float] = None
     y: Optional[float] = None
 
+class V1HomingDirectionRequest(BaseModel):
+    invert_x: bool = False
+    invert_y: bool = False
+    invert_z: bool = False
+
 class V1ScenarioCreateRequest(BaseModel):
     name: str
 
@@ -1367,6 +1399,50 @@ async def v1_origin_home():
 @app.post("/cncapi/v1/origin/unlock")
 async def v1_origin_unlock():
     return await send_command(CommandRequest(command="$X"))
+
+@app.post("/cncapi/v1/origin/enable_homing")
+async def v1_enable_homing():
+    """Bật tính năng Homing cycle ($22=1) trong GRBL (Yêu cầu có công tắc hành trình)"""
+    return await send_command(CommandRequest(command="$22=1"))
+
+@app.post("/cncapi/v1/origin/disable_homing")
+async def v1_disable_homing():
+    """Tắt tính năng Homing cycle ($22=0) trong GRBL"""
+    return await send_command(CommandRequest(command="$22=0"))
+
+@app.get("/cncapi/v1/origin/homing_direction")
+async def v1_get_homing_direction_info():
+    """Trả về bảng tra cứu mask cấu hình chiều Homing ($23)"""
+    return {
+        "status": "success",
+        "description": "Cấu hình đảo chiều động cơ khi Về Home ($23 - Homing Direction Invert Mask)",
+        "masks": {
+            "0": "X+ Y+ Z+ (Mặc định: cả 3 trục về phía DƯƠNG)",
+            "1": "X- Y+ Z+ (Đảo chiều trục X sang ÂM)",
+            "2": "X+ Y- Z+ (Đảo chiều trục Y sang ÂM)",
+            "3": "X- Y- Z+ (Đảo chiều trục X và Y sang ÂM - Phổ biến)",
+            "4": "X+ Y+ Z- (Đảo chiều trục Z sang ÂM)",
+            "5": "X- Y+ Z- (Đảo chiều trục X và Z)",
+            "6": "X+ Y- Z- (Đảo chiều trục Y và Z)",
+            "7": "X- Y- Z- (Đảo chiều cả 3 trục X, Y, Z sang ÂM)"
+        }
+    }
+
+@app.post("/cncapi/v1/origin/homing_direction")
+async def v1_set_homing_direction(req: V1HomingDirectionRequest):
+    """Cấu hình đảo chiều Homing các trục X, Y, Z (Phát lệnh $23=mask đến GRBL)"""
+    mask = (1 if req.invert_x else 0) | (2 if req.invert_y else 0) | (4 if req.invert_z else 0)
+    cmd = f"$23={mask}"
+    res = await send_command(CommandRequest(command=cmd))
+    return {
+        "status": "success",
+        "mask": mask,
+        "command_sent": cmd,
+        "invert_x": req.invert_x,
+        "invert_y": req.invert_y,
+        "invert_z": req.invert_z,
+        "grbl_result": res
+    }
 
 @app.get("/cncapi/v1/origin/bounds")
 async def v1_get_origin_bounds():

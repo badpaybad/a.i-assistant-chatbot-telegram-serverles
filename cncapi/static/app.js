@@ -77,12 +77,14 @@
     let fontGcode = "";
     let fontStartOffset = { x: 0, y: 0 };
     let fontSimAnimationId = null;
+    let fontSimTimeoutId = null;
 
     // Image Gcode Editor State
     let imageSegments = [];
     let imageGcode = "";
     let imageStartOffset = { x: 0, y: 0 };
     let imageSimAnimationId = null;
+    let imageSimTimeoutId = null;
     let currentImageFile = null;
     let currentImageBase64 = null;
 
@@ -467,9 +469,14 @@
         } else if (msg.type === 'log') {
             appendConsoleLog(msg.direction, msg.content);
         } else if (msg.type === 'stream_status') {
-            if (msg.status === 'completed' && isScenarioLooping) {
+            if (msg.status === 'started') {
+                stopAllSimulations();
+                telemetry.streaming = true;
+                drawCanvas();
+            } else if (msg.status === 'completed' && isScenarioLooping) {
                 setTimeout(runScenario, 500);
             } else if (msg.status === 'completed' || msg.status === 'stopped' || msg.status === 'failed') {
+                stopAllSimulations();
                 telemetry.streaming = false;
                 document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
                 drawCanvas();
@@ -719,6 +726,7 @@
     }
 
     async function stopCNC() {
+        stopAllSimulations();
         try {
             await fetch('/cncapi/v1/motion/stop', { method: 'POST' });
         } catch (e) {
@@ -933,6 +941,34 @@
         return segments;
     }
 
+    function stopAllSimulations() {
+        simIsRunning = false;
+        isSimulating = false;
+        telemetry.streaming = false;
+
+        if (fontSimAnimationId) {
+            cancelAnimationFrame(fontSimAnimationId);
+            fontSimAnimationId = null;
+        }
+        if (fontSimTimeoutId) {
+            clearTimeout(fontSimTimeoutId);
+            fontSimTimeoutId = null;
+        }
+        if (imageSimAnimationId) {
+            cancelAnimationFrame(imageSimAnimationId);
+            imageSimAnimationId = null;
+        }
+        if (imageSimTimeoutId) {
+            clearTimeout(imageSimTimeoutId);
+            imageSimTimeoutId = null;
+        }
+        if (simAnimFrame) {
+            cancelAnimationFrame(simAnimFrame);
+            simAnimFrame = null;
+        }
+        document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
+    }
+
     function clearAllCanvasGraphics() {
         penTrajectory = [];
         fontPreviewPaths = [];
@@ -942,15 +978,7 @@
         currentImageFile = null;
         currentImageBase64 = null;
 
-        if (fontSimAnimationId) {
-            cancelAnimationFrame(fontSimAnimationId);
-            fontSimAnimationId = null;
-        }
-        if (imageSimAnimationId) {
-            cancelAnimationFrame(imageSimAnimationId);
-            imageSimAnimationId = null;
-        }
-        simIsRunning = false;
+        stopAllSimulations();
         simHeadPos = null;
 
         const fontInfoBox = document.getElementById('font-info-box');
@@ -1720,10 +1748,7 @@
 
     function stopScenario() {
         isScenarioLooping = false;
-        isSimulating = false;
-        simIsRunning = false;
-        if (simAnimFrame) { cancelAnimationFrame(simAnimFrame); simAnimFrame = null; }
-        document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
+        stopAllSimulations();
         const btn = document.getElementById('btn-run-loop-scenario');
         if (btn) {
             btn.className = 'btn btn-warning btn-small';
@@ -2121,6 +2146,7 @@
                     return;
                 }
                 if (confirm(t('Xác nhận gửi mã G-code nét chữ tới máy CNC để bắt đầu vẽ?'))) {
+                    stopAllSimulations();
                     try {
                         const curWpos = telemetry.wpos || [0, 0, 0];
                         const offsetX = curWpos[0];
@@ -2161,11 +2187,7 @@
         // 1. Nút 🛑 Dừng & Về gốc ban đầu trước khi vẽ (Font)
         if (btnStopHomeStart) {
             btnStopHomeStart.addEventListener('click', async () => {
-                if (fontSimAnimationId) {
-                    cancelAnimationFrame(fontSimAnimationId);
-                    fontSimAnimationId = null;
-                }
-                simIsRunning = false;
+                stopAllSimulations();
                 simHeadPos = { x: fontStartOffset.x, y: fontStartOffset.y };
                 drawCanvas();
 
@@ -2197,11 +2219,7 @@
         // 2. Nút 🏠 Dừng & Về gốc WPos (0,0) (Font)
         if (btnStopHomeOrigin) {
             btnStopHomeOrigin.addEventListener('click', async () => {
-                if (fontSimAnimationId) {
-                    cancelAnimationFrame(fontSimAnimationId);
-                    fontSimAnimationId = null;
-                }
-                simIsRunning = false;
+                stopAllSimulations();
                 simHeadPos = { x: 0, y: 0 };
                 drawCanvas();
 
@@ -2336,7 +2354,7 @@
 
     function simulateFontDrawAnimation() {
         if (!fontPreviewPaths || fontPreviewPaths.length === 0) return;
-        if (fontSimAnimationId) cancelAnimationFrame(fontSimAnimationId);
+        stopAllSimulations();
 
         let flatPoints = [];
         fontPreviewPaths.forEach(path => {
@@ -2347,18 +2365,27 @@
 
         let pointIdx = 0;
         simIsRunning = true;
+        isSimulating = true;
 
         function animateStep() {
+            if (!simIsRunning) {
+                fontSimAnimationId = null;
+                if (fontSimTimeoutId) { clearTimeout(fontSimTimeoutId); fontSimTimeoutId = null; }
+                return;
+            }
+
             if (pointIdx < flatPoints.length) {
                 simHeadPos = { x: flatPoints[pointIdx].x, y: flatPoints[pointIdx].y };
                 drawCanvas();
                 pointIdx++;
                 fontSimAnimationId = requestAnimationFrame(() => {
-                    setTimeout(animateStep, 15);
+                    fontSimTimeoutId = setTimeout(animateStep, 15);
                 });
             } else {
                 simIsRunning = false;
+                isSimulating = false;
                 fontSimAnimationId = null;
+                if (fontSimTimeoutId) { clearTimeout(fontSimTimeoutId); fontSimTimeoutId = null; }
                 drawCanvas();
             }
         }
@@ -2538,6 +2565,7 @@
                     return;
                 }
                 if (confirm(t('Xác nhận gửi mã G-code nét ảnh tới máy CNC để bắt đầu vẽ?'))) {
+                    stopAllSimulations();
                     try {
                         const curWpos = telemetry.wpos || [0, 0, 0];
                         const offsetX = curWpos[0];
@@ -2577,11 +2605,7 @@
         // 1. Nút 🛑 Dừng & Về gốc ban đầu trước khi vẽ (Image)
         if (btnStopHomeStart) {
             btnStopHomeStart.addEventListener('click', async () => {
-                if (imageSimAnimationId) {
-                    cancelAnimationFrame(imageSimAnimationId);
-                    imageSimAnimationId = null;
-                }
-                simIsRunning = false;
+                stopAllSimulations();
                 simHeadPos = { x: imageStartOffset.x, y: imageStartOffset.y };
                 drawCanvas();
 
@@ -2613,11 +2637,7 @@
         // 2. Nút 🏠 Dừng & Về gốc WPos (0,0) (Image)
         if (btnStopHomeOrigin) {
             btnStopHomeOrigin.addEventListener('click', async () => {
-                if (imageSimAnimationId) {
-                    cancelAnimationFrame(imageSimAnimationId);
-                    imageSimAnimationId = null;
-                }
-                simIsRunning = false;
+                stopAllSimulations();
                 simHeadPos = { x: 0, y: 0 };
                 drawCanvas();
 
@@ -2735,7 +2755,7 @@
 
     function simulateImageDrawAnimation() {
         if (!imageSegments || imageSegments.length === 0) return;
-        if (imageSimAnimationId) cancelAnimationFrame(imageSimAnimationId);
+        stopAllSimulations();
 
         let flatPoints = [];
         imageSegments.forEach(seg => {
@@ -2745,18 +2765,27 @@
 
         let pointIdx = 0;
         simIsRunning = true;
+        isSimulating = true;
 
         function animateStep() {
+            if (!simIsRunning) {
+                imageSimAnimationId = null;
+                if (imageSimTimeoutId) { clearTimeout(imageSimTimeoutId); imageSimTimeoutId = null; }
+                return;
+            }
+
             if (pointIdx < flatPoints.length) {
                 simHeadPos = { x: flatPoints[pointIdx].x, y: flatPoints[pointIdx].y };
                 drawCanvas();
                 pointIdx++;
                 imageSimAnimationId = requestAnimationFrame(() => {
-                    setTimeout(animateStep, 10);
+                    imageSimTimeoutId = setTimeout(animateStep, 10);
                 });
             } else {
                 simIsRunning = false;
+                isSimulating = false;
                 imageSimAnimationId = null;
+                if (imageSimTimeoutId) { clearTimeout(imageSimTimeoutId); imageSimTimeoutId = null; }
                 drawCanvas();
             }
         }

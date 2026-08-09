@@ -283,10 +283,63 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
     Việc dừng sẽ là nhấc dao lên rồi mới di chuyển
         Dừng là có thể gửi lệnh dừng khẩn cấp để clear các lệnh đã nạp, sau khi về vị trí quy định sẽ unlock để các thao tác khác thực hiện được     
 
-**cập nhật 30** đưa 2 nút Gcode with font, Gcode with image xuống dưới của vùng Cử Chỉ Touch & Swipe Gestures
+ **cập nhật 30** đưa 2 nút Gcode with font, Gcode with image xuống dưới của vùng Cử Chỉ Touch & Swipe Gestures
 ✅ Đã hoàn thành Cập nhật 30:
   1. Đã chuyển vị trí 2 nút **✍️ Gcode with font** (`#btn-open-gcode-font`) và **🖼️ Gcode with image** (`#btn-open-gcode-image`) từ header Cột 0 xuống bố trí ở vị trí mới ngay phía bên dưới vùng **Cử Chỉ Touch & Swipe Gestures** (`<div class="gestures-container">`) trong [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html).
   2. Bố trí dạng lưới 2 cột gọn gàng với viền phân cách đường kẻ mỏng (`border-top`), giúp thao tác liên tục thuận tiện ngay sau khi định vị điểm/bắt đầu kịch bản.
 
+ **cập nhật 31** Gcode with font, Gcode with image Khi click nút Dừng về và về gốc, cnc thật đã dừng nhưng giả lập trên Tool path view vẫn chưa dừng và bị block UI, cần xử lý.
+    Khi cnc đã chạy thực xong mà trên tool path view chạy dừng, cần phản ánh thực tế theo cnc chạy
+✅ Đã hoàn thành Cập nhật 31:
+  1. Thêm biến `fontSimTimeoutId` và `imageSimTimeoutId` kết hợp hàm `stopAllSimulations()` trong [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) để hủy đồng thời cả Animation Frame (`cancelAnimationFrame`) lẫn Timer Timeout (`clearTimeout`).
+  2. Bổ sung điều kiện ngắt vĩnh viễn `if (!simIsRunning)` ngay đầu hàm `animateStep()` của cả trình giả lập Font và Image, đảm bảo khi ngắt animation thì vòng lặp đệ quy giải phóng biến và `return` lập tức.
+  3. Gọi `stopAllSimulations()` đồng bộ ngay khi bấm các nút **🛑 Dừng & Về gốc ban đầu** (`#btn-stop-font-home-start`, `#btn-stop-image-home-start`) và **🏠 Dừng & Về gốc WPos (0,0)** (`#btn-stop-font-home-origin`, `#btn-stop-image-home-origin`), lập tức đưa vị trí đầu bút `simHeadPos` về gốc quy định và làm mới Canvas Tool path view mượt mà không bị treo UI.
+  4. Tích hợp `stopAllSimulations()` vào sự kiện `click` nút **🚀 Vẽ trên CNC** (`btnRealDraw`), hàm `clearAllCanvasGraphics()`, `stopCNC()` và sự kiện WebSocket `stream_status` (`started`, `completed`, `stopped`, `failed`), đảm bảo ngắt sạch các luồng giả lập cũ và cho phép Tool path view canvas tự động cập nhật phản ánh 100% tọa độ thực tế (`telemetry.wpos`) của máy CNC.
+
+**cập nhật 32** lệnh Home đang không chạy ($H) cần kiểm tra code , có cần bật công tắc hành trình không, cần code gì và làm gì
+✅ Đã hoàn thành Cập nhật 32:
+  1. **Phân tích nguyên nhân & kiểm tra code**:
+     - Trong `cncapi/main.py`, trình giả lập `DummySerial` chưa bắt câu lệnh `$H`, dẫn tới khi chọn cổng giả lập `dummy` và bấm Home `$H`, vị trí `mpos` và `wpos` không được reset về gốc (0,0).
+     - Trên bo mạch GRBL thật, cài đặt mặc định tắt Homing (`$22=0`). Khi gửi `$H`, GRBL trả về `error:5` (*Homing cycle is not enabled via settings*), máy CNC đứng yên.
+  2. **Giải đáp về Công tắc hành trình (Limit Switches)**:
+     - **Nếu dùng lệnh Home ($H)**: **BẮT BUỘC BẬT `$22=1` VÀ LẮP CÔNG TẮC HÀNH TRÌNH**. Nếu không có công tắc hành trình mà bật `$22=1`, động cơ CNC sẽ đâm kịch khung cơ khí và báo lỗi `ALARM:8` / `ALARM:1`.
+     - **Nếu không có công tắc hành trình**: Không dùng lệnh `$H`. Hãy dùng nút **Về gốc làm việc (0,0)** (`G90 G0 X0 Y0 Z0` / API `/cncapi/v1/origin/goto_work`) hoặc nút **Đặt gốc tọa độ làm việc (G54)** (`G10 L20 P1 X0 Y0 Z0`).
+  3. **Đã cập nhật Code & Hướng dẫn**:
+     - Bổ sung xử lý `$H` trong `DummySerial` (`main.py`): Đưa `mpos = (0,0,0)`, cập nhật `wpos`, gán `home_set = True` và phát log `ok` mô phỏng Home thành công.
+     - Bắt lỗi GRBL `error:5` và `ALARM` trong `serial_reader_loop()`: Tự động gửi log WebSocket thông báo tiếng Việt giải thích rõ nguyên nhân cho người dùng trên Web UI.
+     - Bổ sung Web API REST `/cncapi/v1/origin/enable_homing` (gửi `$22=1`) và `/cncapi/v1/origin/disable_homing` (gửi `$22=0`).
+     - Cập nhật tooltip nút Home (`#jog-home`) trong `static/index.html` và viết tài liệu hướng dẫn chi tiết vào [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md).
+
+**cập nhật 33** khi về Home cần chỉnh lại chiều động cơ thì cần làm gì 
+✅ Đã hoàn thành Cập nhật 33:
+  1. **Phân tích nguyên nhân & cơ chế**:
+     - Chiều di chuyển của các trục khi chạy Home (`$H`) được quy định riêng bởi tham số GRBL **`$23` (Homing direction invert mask)** (khác với `$3` quy định chiều quay Jogging/G-code chung).
+     - Mặc định `$23=0`: Cả 3 trục X, Y, Z di chuyển theo hướng **DƯƠNG (+)** khi tìm công tắc hành trình.
+     - Nếu công tắc hành trình X/Y/Z đặt ở hướng âm **(-)** (ví dụ góc bên trái cho X, góc phía dưới cho Y), cần cài đặt giá trị mask `$23` tương ứng.
+  2. **Bảng giá trị mask `$23`**:
+     - `$23=0`: X+ Y+ Z+ (Mặc định)
+     - `$23=1`: X- Y+ Z+ (Đảo chiều Homing trục X)
+     - `$23=2`: X+ Y- Z+ (Đảo chiều Homing trục Y)
+     - `$23=3`: X- Y- Z+ (Đảo chiều Homing trục X và Y - Phổ biến cho máy vẽ/laser công tắc ở Bottom-Left)
+     - `$23=7`: X- Y- Z- (Đảo chiều cả 3 trục X, Y, Z)
+  3. **Đã cập nhật Code & Hướng dẫn**:
+     - Thêm Web API `POST /cncapi/v1/origin/homing_direction` (truyền `{ "invert_x": true, "invert_y": true, "invert_z": false }`) tự động phát lệnh `$23=mask` xuống GRBL và `GET /cncapi/v1/origin/homing_direction` tra cứu thông tin.
+     - Viết hướng dẫn chi tiết từng bước vào mục 2.13 trong [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md).
+
+**cập nhật 34** nhấn home lệnh $H mà thấy di chuyển mỗi Y , X không di chuyển
+✅ Đã hoàn thành Cập nhật 34:
+  1. **Phân tích nguyên nhân & cơ chế GRBL**:
+     - Firmware GRBL thực hiện Homing (`$H`) theo **thứ tự lần lượt** (thường Z -> Y -> X).
+     - Trục X chưa di chuyển vì **Trục Y di chuyển nhưng chưa chạm/kích hoạt được công tắc Y** (GRBL đứng chờ Y chạm công tắc Y trước mới phát lệnh cho X).
+     - Hoặc **Công tắc X (`X-LIMIT`) bị đè/chập sẵn từ đầu** (GRBL tưởng X đã ở gốc nên không cho X chạy nữa).
+  2. **Hướng dẫn chẩn đoán & xử lý**:
+     - Gõ `?` vào Console xem trường `Pn:`. Nếu có `Pn:X` từ đầu thì công tắc X đang bị chạm/chập sẵn (chỉnh dây hoặc `$5=1`).
+     - Khi bấm `$H` và Y đang chạy, dùng tay bấm thử công tắc Y. Nếu tay bấm công tắc Y mà Y dừng lại và X bắt đầu chạy -> Khẳng định công tắc Y chưa được chạm tới.
+     - Cập nhật hướng dẫn chi tiết từng bước vào mục 2.14 trong [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md).
+
+**cập nhật 35** Khi nhấn nút về gốc máy $H , thì cần nhấc dao trước rồi mới thực hiện về gốc máy. khi về gốc máy thành công cần unlock
+
 **chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
+
+
 

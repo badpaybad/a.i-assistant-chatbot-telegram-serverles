@@ -224,6 +224,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 3. **Gán Sự Kiện Xóa Cho Các Nút Điều Khiển UI (`cncapi/static/index.html`)**:
    - Gán cho nút **Xóa Đồ Họa** (`#btn-clear-path`) ở góc trên Canvas Tool Path View.
    - Bổ sung nút **🧹 Xóa Xem Trước** (`#btn-clear-font-graphics`) vào panel `Gcode with font`.
+**cập nhật 33** khi về Home cần chỉnh lại chiều động cơ thì cần làm gì 
    - Bổ sung nút **🧹 Xóa Xem Trước** (`#btn-clear-image-graphics`) vào panel `Gcode with image`.
 
 ---
@@ -236,6 +237,129 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 2. **Cấu Trúc Giao Diện Mới**:
    - Đặt 2 nút trong thẻ `div` phân cách `border-top` mỏng với bố cục lưới 2 cột (`grid-template-columns: 1fr 1fr`).
    - Giúp quy trình làm việc được liên tục: Sau khi cài đặt tọa độ điểm Bắt Đầu / Kết Thúc hoặc thực hiện thao tác cử chỉ touch/swipe, người dùng có thể nhấp mở ngay các trình biên dịch G-code chữ hoặc G-code ảnh.
+
+---
+
+### 2.11. Xử Lý Triệt Để Giả Lập Tool Path View & Phản Ánh Thực Tế Hành Trình CNC (Cập nhật 31)
+
+1. **Nguyên Nhân Lỗi Giả Lập Không Dừng & Treo UI**:
+   - Khi bấm nút **🛑 Dừng & Về gốc ban đầu** hoặc **🏠 Dừng & Về gốc WPos (0,0)** trong panel `Gcode with font` hoặc `Gcode with image`, code cũ chỉ gọi `cancelAnimationFrame(fontSimAnimationId)` hoặc `cancelAnimationFrame(imageSimAnimationId)`.
+   - Tuy nhiên, trong hàm `animateStep()`, animation được kích hoạt đệ quy qua `requestAnimationFrame(() => setTimeout(animateStep, delay))`. Khi timer `setTimeout` đã nằm trong hàng đợi sự kiện của trình duyệt, việc `cancelAnimationFrame` không thể hủy `setTimeout`.
+   - Hơn nữa, hàm `animateStep()` thiếu câu lệnh kiểm tra trạng thái `if (!simIsRunning)`. Vì vậy, khi `setTimeout` kích hoạt sau 10-15ms, `animateStep()` vẫn tự động chạy tiếp, liên tục ghi đè vị trí `simHeadPos`, gọi `drawCanvas()` làm mới giao diện và đăng ký frame mới, gây ra hiện tượng giả lập chạy vô hạn ngầm và làm block các tương tác UI.
+2. **Triển Khai Giải Pháp Kỹ Thuật (`cncapi/static/app.js`)**:
+   - **Bổ sung biến quản lý Timer Timeout**: Thêm `fontSimTimeoutId` và `imageSimTimeoutId` để quản lý triệt để cả Animation Frame lẫn Timeout Timer.
+   - **Xây dựng hàm tập trung `stopAllSimulations()`**:
+     - Thiết lập `simIsRunning = false`, `isSimulating = false`, `telemetry.streaming = false`.
+     - Hủy và reset về `null` cả `fontSimAnimationId` + `fontSimTimeoutId`, `imageSimAnimationId` + `imageSimTimeoutId`, và `simAnimFrame`.
+     - Dọn dẹp tất cả hiệu ứng highlight `.sim-active` trên danh sách bước kịch bản.
+   - **Ràng buộc ngắt vĩnh viễn trong `animateStep()`**: Thêm điều kiện `if (!simIsRunning)` ngay đầu hàm `animateStep()` ở cả trình giả lập Font và Image. Nếu phát hiện `simIsRunning == false`, lập tức giải phóng biến ID và `return` dừng hoàn toàn vòng lặp đệ quy.
+   - **Tích hợp dừng tức thì khi click Nút Dừng & Về gốc**:
+     - Trong sự kiện `click` của `btnStopHomeStart` và `btnStopHomeOrigin`, gọi `stopAllSimulations()` ngay đồng bộ ở dòng đầu tiên.
+     - Đặt `simHeadPos` về đúng tọa độ đích quy định (Gốc ban đầu hoặc WPos 0,0) và gọi `drawCanvas()` làm mới ngay lập tức trước khi phát lệnh API REST `/cncapi/v1/motion/stop-and-return`.
+   - **Tích hợp vào `clearAllCanvasGraphics()` và `stopCNC()`**: Đảm bảo mọi thao tác dọn dẹp canvas hoặc phát lệnh dừng CNC hệ thống đều tự động ngắt triệt để tất cả luồng giả lập đang chạy.
+3. **Tự Động Đồng Bộ & Phản Ánh Thực Tế Hành Trình Máy CNC**:
+   - **Ngắt giả lập khi chạy thực**: Gọi `stopAllSimulations()` ngay khi người dùng bấm **🚀 Vẽ trên CNC** (`btnRealDraw`), loại bỏ hoàn toàn các luồng giả lập cũ đang chạy ngầm đè lên dữ liệu Telemetry.
+   - **Phản ánh tọa độ Telemetry realtime (`telemetry.wpos`)**:
+     - Trong `drawCanvas()`, khi `simIsRunning` đã về `false`, canvas hiển thị vị trí đầu bút chuẩn xác theo tọa độ làm việc `telemetry.wpos` do phần cứng CNC gửi về qua WebSocket.
+     - Khi phát lệnh Dừng & Về gốc (`stop-and-return`), máy CNC rút dao và di chuyển thực tế về gốc, dữ liệu status `<Idle|MPos:...|WPos:...>` gửi về liên tục và Tool path view canvas lập tức cập nhật theo dõi sát sao từng bước di chuyển thực tế của máy CNC.
+   - **Xử lý sự kiện WebSocket `stream_status`**: Khi nhận tín hiệu `stream_status` (`completed`, `stopped`, `failed`), gọi `stopAllSimulations()`, cập nhật `telemetry.streaming = false` và thực hiện `drawCanvas()` để chốt vị trí đầu bút trùng khớp 100% với trạng thái dừng của CNC thật.
+
+---
+
+### 2.12. Phân Tích & Xử Lý Lệnh Home ($H), Cấu Hình Công Tắc Hành Trình & Giả Lập CNC (Cập nhật 32)
+
+1. **Phân Tích Nguyên Nhân Lệnh `$H` Không Chạy**:
+   - **Môi trường máy CNC thật (GRBL Serial)**:
+     - Mặc định bo mạch GRBL v1.1 tắt chu kỳ Homing tự động (`$22=0`).
+     - Khi người dùng gửi lệnh `$H`, GRBL trả về phản hồi `error:5` (*Homing cycle is not enabled via settings*), dẫn tới máy CNC đứng yên không di chuyển.
+     - Nếu bật `$22=1` mà **không đấu nối công tắc hành trình (Limit Switches)**, khi phát lệnh `$H`, động cơ CNC sẽ di chuyển kịch khung cơ khí, gây va chạm/trượt bước và GRBL bị rơi vào trạng thái khóa `ALARM:8` hoặc `ALARM:1`.
+   - **Môi trường Trình Giả Lập (`DummySerial`)**:
+     - Class `DummySerial` trong [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) chưa xử lý câu lệnh `$H`. Khi nhận lệnh, `DummySerial` chỉ ghi log mà không cập nhật `state.mpos = [0.0, 0.0, 0.0]`, `state.wpos`, hay `state.home_set = True`, làm cho Tool Path View không phản ánh trạng thái Home.
+   - **Thiếu cảnh báo trên Giao diện Web UI**:
+     - Khi nhận lỗi `error:5` hoặc trạng thái `ALARM:8`, Web UI không hiển thị hướng dẫn người dùng nguyên nhân do chưa bật `$22=1` hoặc thiếu công tắc hành trình.
+
+2. **Quy Định Về Công Tắc Hành Trình (Limit Switches)**:
+   - **Trường hợp 1 (Máy CÓ lắp công tắc hành trình)**:
+     - Cần bật cài đặt `$22=1` trong GRBL (qua lệnh Console hoặc API `/cncapi/v1/origin/enable_homing`).
+     - Khi gửi lệnh `$H`, máy sẽ tự động dò các trục về vị trí công tắc hành trình (Limit Switches), rút lùi khoảng pull-off (`$27`) và gán tọa độ máy `MPos = (0,0,0)`.
+   - **Trường hợp 2 (Máy KHÔNG LẮP công tắc hành trình)**:
+     - **KHÔNG BẬT `$22=1`** và **KHÔNG DÙNG LỆNH `$H`**.
+     - Thay vào đó, người dùng phải sử dụng nút **Về gốc làm việc (0,0)** (`G90 G0 X0 Y0 Z0` / API `/cncapi/v1/origin/goto_work`) hoặc thiết lập gốc tọa độ làm việc thủ công **Đặt gốc tọa độ làm việc (Work Zero - G54)** (`G10 L20 P1 X0 Y0 Z0`).
+
+3. **Cập Nhật Code Triển Khai (`main.py`, `index.html`, `app.js`)**:
+   - **Backend (`cncapi/main.py`)**:
+     - **Hỗ trợ DummySerial**: Bổ sung nhánh `elif "$H" in upper:` trong `DummySerial.write()` để reset `mpos` về `(0,0,0)`, tính toán `wpos`, gán `home_set = True`, tự động lưu cấu hình và phát tín hiệu `ok` kèm WebSocket log `[MSG:Homing cycle complete (Dummy Mode)]`.
+     - **Bắt lỗi GRBL `error:5` & `ALARM`**: Trong `serial_reader_loop()`, khi nhận `error:5`, phát ngay WebSocket log cảnh báo: `⚠️ [Lỗi GRBL error:5] Lệnh Home ($H) thất bại vì chưa bật Homing ($22=1) trong GRBL hoặc chưa kết nối công tắc hành trình!`. Khi nhận `ALARM:`, phát log cảnh báo kèm gợi ý lệnh Unlock `$X`.
+     - **Bổ sung Web API REST**:
+       - `POST /cncapi/v1/origin/enable_homing`: Bật Homing `$22=1`.
+       - `POST /cncapi/v1/origin/disable_homing`: Tắt Homing `$22=0`.
+   - **Frontend (`cncapi/static/index.html` & `cncapi/static/app.js`)**:
+     - Cập nhật tooltip nút Home (`#jog-home`): *"Về gốc máy ($H) - Yêu cầu bật $22=1 và có công tắc hành trình"*.
+     - Bắt các thông điệp cảnh báo `error:5` và `ALARM` gửi từ WebSocket để người dùng nhận biết ngay trên Console và giao diện Web UI.
+
+---
+
+### 2.13. Phân Tích & Hướng Dẫn Cấu Hình Chiều Động Cơ Khi Về Home ($23 - Homing Dir Invert Mask) (Cập nhật 33)
+
+1. **Phân Tích Kỹ Thuật Chiều Di Chuyển Khi Về Home**:
+   - Trong firmware GRBL, có hai tham số quản lý chiều di chuyển động cơ riêng biệt:
+     - **`$3` (Step direction invert mask)**: Chiều quay chung của động cơ khi di chuyển Jogging hoặc chạy G-code bình thường.
+     - **`$23` (Homing direction invert mask)**: CHỈ ĐẢO CHIỀU DI CHUYỂN KHI THỰC HIỆN LỆNH HOME (`$H`) để tìm vị trí công tắc hành trình.
+   - Mặc định GRBL quy định `$23=0`, tức là cả 3 trục X, Y, Z sẽ di chuyển về hướng **DƯƠNG (+)** khi bấm `$H`.
+   - Nếu công tắc hành trình X/Y/Z được lắp ở phía góc âm **(-)** (ví dụ: góc bên trái cho X, góc phía dưới cho Y), máy sẽ chạy ngược hướng công tắc. Khi đó ta cần cấu hình giá trị Mask `$23` tương ứng.
+
+2. **Bảng Bít Mask Cấu Hình Tham Số `$23`**:
+
+   | Giá Trị `$23` | Mask Nhị Phân | Hướng Trục X | Hướng Trục Y | Hướng Trục Z | Ghi Chú / Mô Tả Kịch Bản Dùng |
+   | :---: | :---: | :---: | :---: | :---: | :--- |
+   | **`0`** | `000` | **+** | **+** | **+** | Mặc định: Cả 3 trục tìm công tắc ở góc **DƯƠNG (+)** |
+   | **`1`** | `001` | **-** | **+** | **+** | Đảo chiều Homing trục **X** sang hướng **ÂM (-)** |
+   | **`2`** | `010` | **+** | **-** | **+** | Đảo chiều Homing trục **Y** sang hướng **ÂM (-)** |
+   | **`3`** | `011` | **-** | **-** | **+** | Đảo chiều cả trục **X và Y** sang hướng **ÂM (-)** *(Rất phổ biến cho máy vẽ/laser công tắc ở góc Bottom-Left)* |
+   | **`4`** | `100` | **+** | **+** | **-** | Đảo chiều Homing trục **Z** sang hướng **ÂM (-)** |
+   | **`5`** | `101` | **-** | **+** | **-** | Đảo chiều Homing trục **X và Z** sang hướng **ÂM (-)** |
+   | **`6`** | `110` | **+** | **-** | **-** | Đảo chiều Homing trục **Y và Z** sang hướng **ÂM (-)** |
+   | **`7`** | `111` | **-** | **-** | **-** | Đảo chiều cả 3 trục **X, Y, Z** sang hướng **ÂM (-)** |
+
+3. **Các Bước Thực Hiện Cấu Hình `$23`**:
+   - **Phương pháp 1 (Gửi qua Console Serial Web UI)**:
+     - Nhập `$23=3` (hoặc giá trị mong muốn từ bảng trên) vào ô nhập Console và nhấn Enter.
+     - Kiểm tra kết quả phản hồi `ok` từ GRBL.
+   - **Phương pháp 2 (Sử dụng Web API RESTful trong Backend `cncapi`)**:
+     - `GET /cncapi/v1/origin/homing_direction`: Xem bảng tra cứu hướng dẫn.
+     - `POST /cncapi/v1/origin/homing_direction`: Gửi body JSON `{"invert_x": true, "invert_y": true, "invert_z": false}` để hệ thống tự động tính toán mask và gửi `$23=3` xuống GRBL.
+
+---
+
+### 2.14. Phân Tích & Chẩn Đoán Lỗi Home ($H) Chỉ Di Chuyển Trục Y, Trục X Không Di Chuyển (Cập nhật 34)
+
+1. **Nguyên Lý Homing Tuần Tự Trong GRBL**:
+   - Firmware GRBL mặc định thực hiện chu kỳ Về Home (`$H`) theo cơ chế **TUẦN TỰ LẦN LƯỢT TỪNG TRỤC**:
+     - *Bước 1*: Trục Z di chuyển rút lên trên tìm công tắc hành trình Z.
+     - *Bước 2*: Trục Y di chuyển tìm công tắc hành trình Y. Khi chạm công tắc Y, trục Y lùi lại một đoạn `pull-off` (`$27`) và ngắt tín hiệu.
+     - *Bước 3*: **SAU KHI TRỤC Y THÀNH CÔNG**, GRBL mới phát lệnh cho trục X di chuyển tìm công tắc hành trình X.
+
+2. **Các Nguyên Nhân Khiến Trục X Không Di Chuyển**:
+   - **Nguyên nhân 1: Trục Y chưa chạm hoặc không kích hoạt được công tắc Y**:
+     - Do trục Y di chuyển chưa tới công tắc Y, công tắc Y bị hỏng/đứt dây, hoặc chiều di chuyển Homing trục Y bị ngược (chạy kịch khung cơ khí không chạm được công tắc).
+     - **Hệ quả**: GRBL liên tục chờ trục Y chạm công tắc Y, dẫn tới trục X chưa bao giờ đến lượt di chuyển.
+   - **Nguyên nhân 2: Chân công tắc hành trình X (`X-LIMIT`) bị kích hoạt sẵn (Triggered/Closed)**:
+     - Dây tín hiệu công tắc X bị chập mass, công tắc X bị kẹt đè sẵn, hoặc giá trị đảo cực công tắc `$5` (Limit switch invert) bị cấu hình ngược.
+     - **Hệ quả**: GRBL nhận diện trục X đã chạm công tắc từ đầu, nên bỏ qua hoặc lùi một khoảng cực ngắn rồi kết thúc/báo lỗi mà không cho trục X chạy.
+   - **Nguyên nhân 3: Động cơ hoặc Driver trục X gặp sự cố phần cứng**:
+     - Trục X bị kẹt cơ khí, đứt dây động cơ bước X, hoặc hỏng driver A4988/DRV8825 trục X.
+
+3. **Quy Trình Chẩn Đoán & Khắc Phục Chi Tiết**:
+   - **Bước 1: Kiểm tra trạng thái Realtime bằng lệnh `?`**:
+     - Mở Console Serial, gõ `?` -> Enter.
+     - Kiểm tra trường `Pn:` trong chuỗi phản hồi (ví dụ `<Idle|MPos:0,0,0|Pn:X>`):
+       - Nếu hiển thị `Pn:X` khi chưa đụng vào công tắc X: Công tắc X đang bị chạm/chập sẵn. Cần kiểm tra dây công tắc X hoặc gõ `$5=1` (đảo cực công tắc).
+       - Nếu hiển thị `Pn:Y` khi chưa đụng vào công tắc Y: Cần kiểm tra dây công tắc Y.
+   - **Bước 2: Kiểm tra công tắc Y có hoạt động không**:
+     - Phát lệnh `$H`, khi trục Y đang di chuyển, dùng tay nhấn thử vào công tắc hành trình Y.
+     - Nếu ngay khi tay nhấn công tắc Y, trục Y dừng lại và **trục X bắt đầu di chuyển**, điều đó khẳng định 100% nguyên nhân do trục Y di chuyển chưa chạm công tắc Y (cần điều chỉnh vị trí công tắc Y hoặc chỉnh chiều di chuyển Y qua `$23`).
+   - **Bước 3: Kiểm tra di chuyển Jogging trục X**:
+     - Thử bấm nút `X+` và `X-` trên Web UI. Nếu trục X vẫn di chuyển bình thường khi Jogging nhưng không chạy khi Home, nguyên nhân nằm hoàn toàn ở công tắc Y chưa kích hoạt hoặc công tắc X bị chập sẵn.
 
 ---
 
