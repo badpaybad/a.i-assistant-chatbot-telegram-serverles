@@ -222,7 +222,7 @@ def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str 
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_pass http://127.0.0.1:21119;
+        proxy_pass http://127.0.0.1:21119/;
     }}
 
     # RustDesk Mobile Client Relay WebSocket
@@ -234,7 +234,7 @@ def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str 
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_pass http://127.0.0.1:21118;
+        proxy_pass http://127.0.0.1:21118/;
     }}
 
     location / {{
@@ -245,12 +245,16 @@ def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str 
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_pass http://127.0.0.1:21119;
+        proxy_pass http://127.0.0.1:21119/;
     }}
 }}
 """
     conf_content = f"""events {{ worker_connections 1024; }}
 http {{
+    log_format custom '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" "$http_user_agent" '
+                      'Upgrade: "$http_upgrade" Sec-Protocol: "$http_sec_websocket_protocol" Args: "$args"';
+    access_log /var/log/nginx/access.log custom;
     {server_block}
 }}
 """
