@@ -280,6 +280,10 @@ def _verify_url_reachable(base_url: str, timeout_sec: int = 60) -> bool:
 def run_tunnel_and_webhook_thread():
     """Thread khởi tạo tunnel và đăng ký webhook."""
     print("[TunnelThread] Started.")
+    if os.environ.get("SKIP_TUNNEL") == "1" or os.environ.get("DISABLE_INTERNAL_TUNNEL") == "1":
+        print("[TunnelThread] SKIP_TUNNEL=1: Đã kích hoạt Master Nginx Tunnel từ initpc.py, bỏ qua tunnel nội bộ.")
+        return
+
     while not _stop_event.is_set():
         base_url = _start_cloudflare_tunnel()
         if not base_url:

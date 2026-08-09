@@ -311,6 +311,7 @@ async def health():
 
 
 @app.post("/webhook")
+@app.post("/")
 async def telegram_webhook(request: Request):
     """Nhận Telegram update qua webhook."""
     try:
