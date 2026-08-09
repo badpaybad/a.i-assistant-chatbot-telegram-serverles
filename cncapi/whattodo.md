@@ -371,7 +371,14 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   3. **Phản Hồi Trực Quan Rê Chuột (Hover Info)**: Khi rê chuột trên Tool Path View Canvas, nếu con trỏ vượt vùng làm việc, nhãn hiển thị sẽ đổi sang màu đỏ kèm cảnh báo `⚠️ (Vượt 4 góc)` để nhận biết trực quan ngay lập tức.
   4. **Kiểm Tra & Bảo Vệ Chặt Chẽ Trên Backend (API & GCode)**: Trong `cncapi/main.py`, hàm `check_motion_bounds()` và `check_gcode_line_bounds()` chủ động chặn mọi thao tác di chuyển (Move To, Jog, Gestures, GCode `G0`/`G1`) có tọa độ đích nằm ngoài vùng làm việc 4 góc và ném ngoại lệ `HTTP 400 Bad Request`.
 
-**chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md để review với howtodo.md
+**cập nhật 40** ở Trạng Thái & Hệ Thống lấy thêm thông tin về chiều homing x,y các thông tin về $22 $23 và các thông tin hữu ích khác của cnc
+✅ Đã hoàn thành Cập nhật 40:
+  1. **Hiển Thị Chiều Homing & Trạng Thái $22, $23 Trực Quan**: Tại card Trạng Thái & Hệ Thống trên Web UI, bổ sung các badge/chips telemetry thông tin **Chiều Homing** (`X- Y- (Bottom-Left)`), **$22 Homing Cycle** (Bật/Tắt) và **$23 Homing Mask**.
+  2. **Bổ Sung Floating Panel Cấu Hình GRBL Nâng Cao**: Tạo panel `#grbl-system-details-panel` hiển thị toàn bộ tham số GRBL quan trọng (`$20`, `$21`, `$22`, `$23`, `$24`, `$25`, `$27`, `$3`, `$100-$102`, `$110-$112`, `$120-$122`, `$130-$132`), tích hợp nút bật/tắt nhanh `$22` và dropdown chọn chiều Homing `$23`.
+  3. **Backend API REST & Telemetry Sync**: Bổ sung Web API `GET /cncapi/v1/system/grbl_info` và tích hợp parsing tự động thông số GRBL `$$` từ kết nối Serial và DummySerial, đồng bộ realtime qua WebSocket.
+  4. **Tài Liệu & Đa Ngôn Ngữ**: Cập nhật tài liệu hướng dẫn chi tiết trong `howtodo.md` và bổ sung bản dịch tiếng Việt / tiếng Anh trong `vi.json` và `en.json`. 
+
+**chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
 
 
 

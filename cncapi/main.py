@@ -83,6 +83,34 @@ def save_settings(settings_dict: dict):
     except Exception as e:
         logger.error(f"Error saving settings file: {e}")
 
+def get_homing_direction_details(mask: int):
+    invert_x = bool(mask & 1)
+    invert_y = bool(mask & 2)
+    invert_z = bool(mask & 4)
+    x_dir = "-" if invert_x else "+"
+    y_dir = "-" if invert_y else "+"
+    z_dir = "-" if invert_z else "+"
+    
+    if not invert_x and not invert_y:
+        label = "Góc Trên-Phải (Top-Right - X+ Y+)"
+    elif invert_x and not invert_y:
+        label = "Góc Trên-Trái (Top-Left - X- Y+)"
+    elif not invert_x and invert_y:
+        label = "Góc Dưới-Phải (Bottom-Right - X+ Y-)"
+    else:
+        label = "Góc Dưới-Trái (Bottom-Left - X- Y- Phổ biến)"
+        
+    return {
+        "mask": mask,
+        "invert_x": invert_x,
+        "invert_y": invert_y,
+        "invert_z": invert_z,
+        "x_dir": x_dir,
+        "y_dir": y_dir,
+        "z_dir": z_dir,
+        "label": label
+    }
+
 class ControllerState:
     def __init__(self):
         settings = load_settings()
@@ -131,6 +159,30 @@ class ControllerState:
         self.axis_dir_x = int(settings.get("axis_dir_x", 1))
         self.axis_dir_y = int(settings.get("axis_dir_y", 1))
         self.mm_per_px = float(settings.get("mm_per_px", 0.05))
+
+        # GRBL Settings ($0 - $132)
+        self.grbl_settings = {
+            "$22": "1",
+            "$23": "3",
+            "$3": "0",
+            "$20": "0",
+            "$21": "0",
+            "$24": "25.000",
+            "$25": "500.000",
+            "$27": "1.000",
+            "$100": "250.000",
+            "$101": "250.000",
+            "$102": "250.000",
+            "$110": "4000.000",
+            "$111": "4000.000",
+            "$112": "4000.000",
+            "$120": "500.000",
+            "$121": "500.000",
+            "$122": "500.000",
+            "$130": "200.000",
+            "$131": "200.000",
+            "$132": "200.000"
+        }
         
         # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
@@ -216,6 +268,18 @@ class DummySerial:
                                 state.wpos[idx] = val
                             state.mpos[idx] = state.wpos[idx] + state.wco[idx]
 
+                elif cmd.startswith("$22="):
+                    val = cmd.split("=")[1].strip()
+                    state.grbl_settings["$22"] = val
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                elif cmd.startswith("$23="):
+                    val = cmd.split("=")[1].strip()
+                    state.grbl_settings["$23"] = val
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                elif cmd == "$$":
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                    for k, v in state.grbl_settings.items():
+                        asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": f"{k}={v}"}))
                 elif "$H" in upper:
                     state.mpos = [0.0, 0.0, 0.0]
                     state.wpos = [0.0, 0.0, 0.0]
@@ -418,6 +482,9 @@ async def serial_reader_loop():
                     if line.startswith("<") and line.endswith(">"):
                         parse_grbl_status(line)
                         await send_telemetry()
+                    elif line.startswith("$") and "=" in line:
+                        parts = line.split("=", 1)
+                        state.grbl_settings[parts[0].strip()] = parts[1].strip()
                     elif line == "ok" or "error" in line:
                         state.last_grbl_response = line
                         if "error:5" in line:
@@ -478,6 +545,12 @@ async def send_telemetry():
         "z": state.wpos[2] - state.work_origin.get("z", 0.0)
     }
     
+    try:
+        mask = int(state.grbl_settings.get("$23", "3"))
+    except ValueError:
+        mask = 3
+    dir_info = get_homing_direction_details(mask)
+
     await broadcast({
         "type": "telemetry",
         "state": state.machine_state,
@@ -502,6 +575,9 @@ async def send_telemetry():
         "gcode_index": state.gcode_index,
         "gcode_total": len(state.stream_gcode_lines),
         "home_set": state.home_set,
+        "homing_enabled": state.grbl_settings.get("$22") == "1",
+        "homing_mask": mask,
+        "homing_dir_info": dir_info,
         "scenario_name": state.scenario_name,
         "scenario_actions": state.scenario_actions,
         "scenario_insert_index": state.scenario_insert_index,
@@ -556,14 +632,14 @@ def generate_scenario_gcode(actions: list) -> str:
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
             gcode.append(f"G4 P{dur}")
-            gcode.append(p_up)
-        elif act_type == "swipe_down":
+            gcode.append(p_up)            
+        elif act_type == "swipe_up":            
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
             gcode.append("G4 P0.02")
             gcode.append(f"G1 Y{(y - swipe_dist):.2f} F{swipe_feed}")
             gcode.append(p_up)
-        elif act_type == "swipe_up":
+        elif act_type == "swipe_down":
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
             gcode.append("G4 P0.02")
@@ -657,13 +733,13 @@ def compute_scenario_segments(actions: list) -> list:
             segments.append({"type": "longpress", "pts": [{"x": ax, "y": ay}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
             cur_x, cur_y = ax, ay
             pen_down = False
-        elif act_type == "swipe_down":
+        elif act_type == "swipe_up":
             end_y = ay - swipe_dist
             segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
             segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
             cur_x, cur_y = ax, end_y
             pen_down = False
-        elif act_type == "swipe_up":
+        elif act_type == "swipe_down":
             end_y = ay + swipe_dist
             segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
             segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
@@ -1510,10 +1586,10 @@ async def v1_execute_gesture(req: V1GestureRequest):
     elif gtype == "swipe_right":
         err = check_motion_bounds(state.wpos[0] + swipe_dist, state.wpos[1])
         if err: raise HTTPException(status_code=400, detail=err)
-    elif gtype == "swipe_up":
+    elif gtype == "swipe_down":        
         err = check_motion_bounds(state.wpos[0], state.wpos[1] - swipe_dist)
         if err: raise HTTPException(status_code=400, detail=err)
-    elif gtype == "swipe_down":
+    elif gtype == "swipe_up":        
         err = check_motion_bounds(state.wpos[0], state.wpos[1] + swipe_dist)
         if err: raise HTTPException(status_code=400, detail=err)
 
@@ -1538,7 +1614,7 @@ async def v1_execute_gesture(req: V1GestureRequest):
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 X{swipe_dist} F{swipe_feed}", "G90", p_up])
     elif gtype == "swipe_up":
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y-{swipe_dist} F{swipe_feed}", "G90", p_up])
-    elif gtype == "swipe_down":
+    elif gtype == "swipe_down":        
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y{swipe_dist} F{swipe_feed}", "G90", p_up])
     else:
         raise HTTPException(status_code=400, detail=f"Loại cử chỉ không hợp lệ: {req.type}")
@@ -1588,18 +1664,31 @@ async def v1_origin_unlock():
 @app.post("/cncapi/v1/origin/enable_homing")
 async def v1_enable_homing():
     """Bật tính năng Homing cycle ($22=1) trong GRBL (Yêu cầu có công tắc hành trình)"""
-    return await send_command(CommandRequest(command="$22=1"))
+    state.grbl_settings["$22"] = "1"
+    res = await send_command(CommandRequest(command="$22=1"))
+    await send_telemetry()
+    return res
 
 @app.post("/cncapi/v1/origin/disable_homing")
 async def v1_disable_homing():
     """Tắt tính năng Homing cycle ($22=0) trong GRBL"""
-    return await send_command(CommandRequest(command="$22=0"))
+    state.grbl_settings["$22"] = "0"
+    res = await send_command(CommandRequest(command="$22=0"))
+    await send_telemetry()
+    return res
 
 @app.get("/cncapi/v1/origin/homing_direction")
 async def v1_get_homing_direction_info():
     """Trả về bảng tra cứu mask cấu hình chiều Homing ($23)"""
+    try:
+        mask = int(state.grbl_settings.get("$23", "3"))
+    except ValueError:
+        mask = 3
+    dir_info = get_homing_direction_details(mask)
     return {
         "status": "success",
+        "current_mask": mask,
+        "current_direction": dir_info,
         "description": "Cấu hình đảo chiều động cơ khi Về Home ($23 - Homing Direction Invert Mask)",
         "masks": {
             "0": "X+ Y+ Z+ (Mặc định: cả 3 trục về phía DƯƠNG)",
@@ -1618,7 +1707,9 @@ async def v1_set_homing_direction(req: V1HomingDirectionRequest):
     """Cấu hình đảo chiều Homing các trục X, Y, Z (Phát lệnh $23=mask đến GRBL)"""
     mask = (1 if req.invert_x else 0) | (2 if req.invert_y else 0) | (4 if req.invert_z else 0)
     cmd = f"$23={mask}"
+    state.grbl_settings["$23"] = str(mask)
     res = await send_command(CommandRequest(command=cmd))
+    await send_telemetry()
     return {
         "status": "success",
         "mask": mask,
@@ -1626,7 +1717,65 @@ async def v1_set_homing_direction(req: V1HomingDirectionRequest):
         "invert_x": req.invert_x,
         "invert_y": req.invert_y,
         "invert_z": req.invert_z,
+        "homing_dir_info": get_homing_direction_details(mask),
         "grbl_result": res
+    }
+
+@app.get("/cncapi/v1/system/grbl_info")
+async def v1_get_grbl_system_info():
+    """Trả về toàn bộ thông tin cấu hình GRBL, chiều Homing X/Y/Z, $22, $23 và thông số động cơ CNC"""
+    homing_enabled = state.grbl_settings.get("$22") == "1"
+    try:
+        mask = int(state.grbl_settings.get("$23", "3"))
+    except ValueError:
+        mask = 3
+        
+    dir_info = get_homing_direction_details(mask)
+    
+    return {
+        "status": "success",
+        "homing": {
+            "enabled": homing_enabled,
+            "mask": mask,
+            "invert_x": dir_info["invert_x"],
+            "invert_y": dir_info["invert_y"],
+            "invert_z": dir_info["invert_z"],
+            "x_dir": dir_info["x_dir"],
+            "y_dir": dir_info["y_dir"],
+            "z_dir": dir_info["z_dir"],
+            "label": dir_info["label"],
+            "feed_rate": float(state.grbl_settings.get("$24", 25.0)),
+            "seek_rate": float(state.grbl_settings.get("$25", 500.0)),
+            "pulloff": float(state.grbl_settings.get("$27", 1.0))
+        },
+        "limits": {
+            "hard_limits": state.grbl_settings.get("$21") == "1",
+            "soft_limits": state.grbl_settings.get("$20") == "1"
+        },
+        "motion": {
+            "dir_invert_mask": int(state.grbl_settings.get("$3", "0")),
+            "steps_per_mm": {
+                "x": float(state.grbl_settings.get("$100", 250.0)),
+                "y": float(state.grbl_settings.get("$101", 250.0)),
+                "z": float(state.grbl_settings.get("$102", 250.0))
+            },
+            "max_rate": {
+                "x": float(state.grbl_settings.get("$110", 4000.0)),
+                "y": float(state.grbl_settings.get("$111", 4000.0)),
+                "z": float(state.grbl_settings.get("$112", 4000.0))
+            },
+            "accel": {
+                "x": float(state.grbl_settings.get("$120", 500.0)),
+                "y": float(state.grbl_settings.get("$121", 500.0)),
+                "z": float(state.grbl_settings.get("$122", 500.0))
+            },
+            "max_travel": {
+                "x": float(state.grbl_settings.get("$130", 200.0)),
+                "y": float(state.grbl_settings.get("$131", 200.0)),
+                "z": float(state.grbl_settings.get("$132", 200.0))
+            }
+        },
+        "raw_settings": state.grbl_settings
     }
 
 @app.get("/cncapi/v1/origin/bounds")

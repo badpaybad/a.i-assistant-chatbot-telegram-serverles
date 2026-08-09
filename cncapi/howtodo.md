@@ -410,7 +410,26 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
-### 2.20. Bảng Ma Trận Đối Chiếu Tất Cả 39 Cập Nhật (`whattodo.md` vs Code Implementation)
+### 2.20. Hiển Thị Thông Tin Chiều Homing X, Y, Cấu Hình $22, $23 & Các Thông Số Hữu Ích Của CNC (Cập nhật 40)
+
+1. **Phân Tích Nhu Cầu & Mục Tiêu**:
+   - Trong quá trình vận hành CNC, người dùng cần theo dõi nhanh chiều di chuyển của máy khi về Home (X, Y) và trạng thái tính năng Homing cycle (`$22=1` hoặc `$22=0`) mà không cần mở Serial Console gõ lệnh `$$` thủ công.
+   - Cần bổ sung hiển thị trực quan các thông số quan trọng của bo mạch GRBL tại card **Trạng Thái & Hệ Thống** trên Web UI.
+
+2. **Các Thành Phần Cải Tiến**:
+   - **Backend REST API (`GET /cncapi/v1/system/grbl_info`)**:
+     - Cung cấp đối tượng JSON tổng hợp cấu hình Homing (`enabled`, `mask`, `x_dir`, `y_dir`, `z_dir`, `label`, `feed_rate`, `seek_rate`, `pulloff`), giới hạn hành trình (`hard_limits`, `soft_limits`) và thông số động cơ (`steps_per_mm`, `max_rate`, `accel`, `max_travel`).
+     - Tự động parse các dòng cài đặt GRBL (`$0=...`, `$22=...`, `$23=...`) trả về từ Serial reader loop hoặc DummySerial.
+   - **WebSocket Telemetry**:
+     - Định kỳ gửi kèm `homing_enabled`, `homing_mask` và đối tượng `homing_dir_info` để giao diện Web UI luôn được đồng bộ realtime.
+   - **Giao Diện Web UI (`index.html` & `app.js`)**:
+     - Thêm các telemetry chips hiển thị nhanh tại card **Trạng Thái & Hệ Thống**: **🎯 Chiều Homing: X- Y- (Bottom-Left)**, **$22 Homing: Bật/Tắt**, **$23 Mask: 3**.
+     - Thêm nút bấm **⚙️ Cấu Hình GRBL & Homing ($22, $23)** mở ra floating panel `#grbl-system-details-panel`.
+     - Floating panel cho phép xem toàn bộ bảng thông số động cơ (Steps/mm $100-$102, Tốc độ max $110-$112, Gia tốc $120-$122), cùng nút chuyển nhanh $22 Bật/Tắt và dropdown chọn chiều Homing $23 trực quan.
+
+---
+
+### 2.21. Bảng Ma Trận Đối Chiếu Tất Cả 40 Cập Nhật (`whattodo.md` vs Code Implementation)
 
 | STT Cập Nhật | Nội Dung Yêu Cầu Tại `whattodo.md` | Trạng Thái | File Mã Nguồn Thực Hiện | Chi Tiết Giải Pháp Triển Khai |
 | :---: | :--- | :---: | :--- | :--- |
@@ -452,7 +471,8 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 36** | Khi Homing thành công, tự động set Gốc máy MPos=(0,0,0) và Gốc làm việc G54 WPos=(0,0,0) (G10 L20 P1 X0 Y0 Z0) và gán home_set=True | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Tự động phát `G10 L20 P1 X0 Y0 Z0`, gán `home_set=True`, lưu JSON và broadcast telemetry realtime. |
 | **Cập nhật 37** | Khi kết nối CNC thành công, tự động phát lệnh Unlock ($X) để giải phóng máy khỏi trạng thái Alarm và sẵn sàng làm việc ngay | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Tự động gửi `$X` trong `connect_cnc()` cho cả cổng Serial phần cứng và chế độ Giả lập DummySerial. |
 | **Cập nhật 38** | Khi khởi động lại web hoặc kết nối lại CNC thì cần Homing tự động; khi Homing thành công set gốc máy và gốc làm việc trùng gốc máy (0,0,0) | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | `home_set = False` khi khởi động/kết nối lại CNC; khởi tạo tác vụ nền `run_auto_home()` thực hiện Homing `$H`, kiểm tra lỗi phản hồi và chỉ gửi `G10 L2 P1 X0 Y0 Z0` để đồng bộ G54 = G53. |
-| **Cập nhật 39** | Khi có gốc máy, gốc làm việc và 4 góc (TL, TR, BR, BL), kiểm tra việc di chuyển bằng click hoặc di chuyển trên Tool Path View không được vượt quá vùng làm việc | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | `check_motion_bounds` backend & `checkBounds` frontend chặn di chuyển vượt khung `[min_x..max_x, min_y..max_y]`, render hover warning màu đỏ. |�� điều hành | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Lọc cổng USB CNC theo OS (Linux `ttyACM/ttyUSB`, Win `COM`, macOS `usbmodem`). |
+| **Cập nhật 39** | Khi có gốc máy, gốc làm việc và 4 góc (TL, TR, BR, BL), kiểm tra việc di chuyển bằng click hoặc di chuyển trên Tool Path View không được vượt quá vùng làm việc | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | `check_motion_bounds` backend & `checkBounds` frontend chặn di chuyển vượt khung `[min_x..max_x, min_y..max_y]`, render hover warning màu đỏ. | điều hành | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Lọc cổng USB CNC theo OS (Linux `ttyACM/ttyUSB`, Win `COM`, macOS `usbmodem`). |
+| **Cập nhật 40** | ở Trạng Thái & Hệ Thống lấy thêm thông tin về chiều homing x,y các thông tin về $22 $23 và các thông tin hữu ích khác của cnc | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | API `/cncapi/v1/system/grbl_info`, chips telemetry chiều Homing X,Y, panel `#grbl-system-details-panel` điều chỉnh $22, $23 trực quan. |
 | **Cập nhật 18** | Khai báo thư viện vào `requirements.txt` và tự động install trong script build | ✅ Hoàn thành | [`cncapi/requirements.txt`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/requirements.txt), `build_dist.sh` | File requirements chứa 5 core dependencies, tích hợp `pip install` khi build. |
 | **Cập nhật 19** | Gcode with font floating panel 33% bên phải, preview & real draw | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html) | Panel `#gcode-font-editor-panel`, API `/generate-font-gcode` & `/run-gcode`. |
 | **Cập nhật 20** | Cấu hình `line_spacing` cho Gcode with font | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Tham số `line_spacing` (mặc định 1.2x) trong PIL multiline rendering. |

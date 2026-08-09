@@ -405,6 +405,30 @@
               <strong id="tel-buffer">127</strong>
             </div>
           </div>
+
+          <div class="telemetry-mini-row" style="margin-top: 6px; flex-wrap: wrap;">
+            <div class="tel-chip" style="width: 100%; text-align: left; background: rgba(0, 150, 255, 0.15); border: 1px solid rgba(0, 150, 255, 0.3);">
+              <span>🎯 Chiều Homing</span>:
+              <strong id="tel-homing-dir">X- Y- (Bottom-Left)</strong>
+            </div>
+            <div class="tel-chip" style="width: 48%; text-align: center;">
+              <span>$22 Homing</span>:
+              <strong id="tel-homing-enable">Bật</strong>
+            </div>
+            <div class="tel-chip" style="width: 48%; text-align: center;">
+              <span>$23 Mask</span>:
+              <strong id="tel-homing-mask">3</strong>
+            </div>
+          </div>
+
+          <button
+            class="btn btn-secondary btn-compact"
+            id="btn-open-grbl-panel"
+            style="margin-top: 6px; width: 100%; font-size: 11px;"
+            data-i18n
+          >
+            ⚙️ Cấu Hình GRBL & Homing ($22, $23)
+          </button>
         </div>
       </header>
 
@@ -2129,6 +2153,131 @@ Xin Chào</textarea
             accept=".json"
           />
         </div>
+      </div>
+    </div>
+
+    <!-- FLOATING PANEL: CẤU HÌNH & THÔNG TIN GRBL ($22, $23, Homing) -->
+    <div id="grbl-system-details-panel" class="floating-panel-right hidden" style="max-width: 450px;">
+      <div class="panel-header">
+        <div class="panel-title-row" style="display: flex; justify-content: space-between; align-items: center;">
+          <h3 style="margin: 0; font-size: 1.1rem; color: #38bdf8" data-i18n>
+            ⚙️ Cấu Hình GRBL & Chiều Homing CNC
+          </h3>
+          <button class="btn-close" id="btn-close-grbl-panel" style="background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer;">
+            &times;
+          </button>
+        </div>
+      </div>
+      <div class="panel-body" style="padding-top: 12px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto;">
+        
+        <!-- SECTION 1: HOMING CYCLE ($22) & CHIỀU HOMING ($23) -->
+        <div class="card glass-card" style="padding: 10px; background: rgba(15, 23, 42, 0.6);">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #f59e0b;" data-i18n>
+            🎯 1. Cấu Hình Chu Kỳ Homing ($22 & $23)
+          </h4>
+          
+          <div class="form-group" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <label style="margin:0; font-weight:600;" data-i18n>Homing Cycle ($22):</label>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-sm btn-success" id="btn-quick-enable-homing" data-i18n>Bật ($22=1)</button>
+              <button class="btn btn-sm btn-danger" id="btn-quick-disable-homing" data-i18n>Tắt ($22=0)</button>
+            </div>
+          </div>
+          
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label for="grbl-homing-dir-select" style="font-weight:600;" data-i18n>Chiều Homing ($23 Mask):</label>
+            <select id="grbl-homing-dir-select" class="input-select-full" style="background: #1e293b; color: #f8fafc;">
+              <option value="0">0: X+ Y+ Z+ (Góc Trên-Phải - Top-Right)</option>
+              <option value="1">1: X- Y+ Z+ (Góc Trên-Trái - Top-Left)</option>
+              <option value="2">2: X+ Y- Z+ (Góc Dưới-Phải - Bottom-Right)</option>
+              <option value="3" selected>3: X- Y- Z+ (Góc Dưới-Trái - Bottom-Left - Phổ biến)</option>
+              <option value="4">4: X+ Y+ Z- (Z đảo chiều sang Âm)</option>
+              <option value="5">5: X- Y+ Z- (X và Z đảo chiều sang Âm)</option>
+              <option value="6">6: X+ Y- Z- (Y và Z đảo chiều sang Âm)</option>
+              <option value="7">7: X- Y- Z- (Cả 3 trục X, Y, Z đều Âm)</option>
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; font-size: 11px; margin-top: 6px;">
+            <div class="tel-chip" style="text-align: center;">
+              <span>Trục X</span>: <strong id="grbl-dir-x">-</strong>
+            </div>
+            <div class="tel-chip" style="text-align: center;">
+              <span>Trục Y</span>: <strong id="grbl-dir-y">-</strong>
+            </div>
+            <div class="tel-chip" style="text-align: center;">
+              <span>Trục Z</span>: <strong id="grbl-dir-z">+</strong>
+            </div>
+          </div>
+          <div style="font-size: 11px; color: #94a3b8; margin-top: 4px;" id="grbl-dir-label">
+            Vị trí công tắc: Góc Dưới-Trái (Bottom-Left - X- Y-)
+          </div>
+        </div>
+
+        <!-- SECTION 2: TỐC ĐỘ HOMING & PULL-OFF ($24, $25, $27) -->
+        <div class="card glass-card" style="padding: 10px; background: rgba(15, 23, 42, 0.6);">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #38bdf8;" data-i18n>
+            ⚡ 2. Tốc Độ Homing & Giới Hạn ($20, $21, $24, $25, $27)
+          </h4>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+            <div><span>Tốc độ dò ($25):</span> <strong id="grbl-val-25">500</strong> mm/min</div>
+            <div><span>Tốc độ chạm ($24):</span> <strong id="grbl-val-24">25</strong> mm/min</div>
+            <div><span>Độ nảy pull-off ($27):</span> <strong id="grbl-val-27">1.0</strong> mm</div>
+            <div><span>Đảo chiều động cơ ($3):</span> <strong id="grbl-val-3">0</strong></div>
+            <div><span>Hard Limits ($21):</span> <strong id="grbl-val-21">Tắt</strong></div>
+            <div><span>Soft Limits ($20):</span> <strong id="grbl-val-20">Tắt</strong></div>
+          </div>
+        </div>
+
+        <!-- SECTION 3: THÔNG SỐ ĐỘNG CƠ STEPPER (Useful CNC Info) -->
+        <div class="card glass-card" style="padding: 10px; background: rgba(15, 23, 42, 0.6);">
+          <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #4ade80;" data-i18n>
+            🏎️ 3. Tỉ Lệ Bước, Tốc Độ & Gia Tốc Động Cơ
+          </h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
+                <th style="padding: 4px;">Thông số</th>
+                <th style="padding: 4px;">Trục X</th>
+                <th style="padding: 4px;">Trục Y</th>
+                <th style="padding: 4px;">Trục Z</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 4px;">Steps/mm ($100-$102)</td>
+                <td style="padding: 4px;" id="grbl-val-100">250</td>
+                <td style="padding: 4px;" id="grbl-val-101">250</td>
+                <td style="padding: 4px;" id="grbl-val-102">250</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 4px;">Max Speed ($110-$112)</td>
+                <td style="padding: 4px;" id="grbl-val-110">4000</td>
+                <td style="padding: 4px;" id="grbl-val-111">4000</td>
+                <td style="padding: 4px;" id="grbl-val-112">4000</td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <td style="padding: 4px;">Gia tốc ($120-$122)</td>
+                <td style="padding: 4px;" id="grbl-val-120">500</td>
+                <td style="padding: 4px;" id="grbl-val-121">500</td>
+                <td style="padding: 4px;" id="grbl-val-122">500</td>
+              </tr>
+              <tr>
+                <td style="padding: 4px;">Hành trình max ($130-$132)</td>
+                <td style="padding: 4px;" id="grbl-val-130">200</td>
+                <td style="padding: 4px;" id="grbl-val-131">200</td>
+                <td style="padding: 4px;" id="grbl-val-132">200</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary btn-sm" id="btn-refresh-grbl-info" style="flex: 1;" data-i18n>
+            🔄 Lấy Cài Đặt Thực Từ GRBL ($$)
+          </button>
+        </div>
+
       </div>
     </div>
 

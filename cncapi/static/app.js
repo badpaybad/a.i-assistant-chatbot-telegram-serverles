@@ -534,6 +534,18 @@
         document.getElementById('tel-spindle').innerText = Math.round(telemetry.spindle_speed || 0);
         document.getElementById('tel-buffer').innerText = telemetry.buffer_rx || 127;
 
+        if (document.getElementById('tel-homing-dir')) {
+            const homingLabel = telemetry.homing_dir_info ? telemetry.homing_dir_info.label : 'X- Y- (Bottom-Left)';
+            document.getElementById('tel-homing-dir').innerText = homingLabel;
+        }
+        if (document.getElementById('tel-homing-enable')) {
+            document.getElementById('tel-homing-enable').innerText = telemetry.homing_enabled ? 'Bật ($22=1)' : 'Tắt ($22=0)';
+            document.getElementById('tel-homing-enable').style.color = telemetry.homing_enabled ? '#4ade80' : '#f87171';
+        }
+        if (document.getElementById('tel-homing-mask')) {
+            document.getElementById('tel-homing-mask').innerText = telemetry.homing_mask !== undefined ? telemetry.homing_mask : 3;
+        }
+
         updateInfoDisplays();
 
         // Track pen trajectory on tool path view
@@ -2833,6 +2845,134 @@
             }
         }
         animateStep();
+    }
+
+    // ==================== CẬP NHẬT 40: PANELS & LOGIC CẤU HÌNH GRBL ($22, $23, Homing) ====================
+    async function fetchAndRenderGrblInfo() {
+        try {
+            const res = await fetch('/cncapi/v1/system/grbl_info');
+            const data = await res.json();
+            if (data.status === 'success') {
+                const homing = data.homing || {};
+                const limits = data.limits || {};
+                const motion = data.motion || {};
+
+                // Update $22 & $23 controls in panel
+                const selectHomingDir = document.getElementById('grbl-homing-dir-select');
+                if (selectHomingDir) selectHomingDir.value = homing.mask !== undefined ? homing.mask : 3;
+
+                document.getElementById('grbl-dir-x').innerText = homing.x_dir || '-';
+                document.getElementById('grbl-dir-y').innerText = homing.y_dir || '-';
+                document.getElementById('grbl-dir-z').innerText = homing.z_dir || '+';
+                document.getElementById('grbl-dir-label').innerText = homing.label ? `Vị trí công tắc: ${homing.label}` : '';
+
+                // Update speeds & limits
+                document.getElementById('grbl-val-25').innerText = homing.seek_rate || 500;
+                document.getElementById('grbl-val-24').innerText = homing.feed_rate || 25;
+                document.getElementById('grbl-val-27').innerText = homing.pulloff || 1.0;
+                document.getElementById('grbl-val-3').innerText = motion.dir_invert_mask || 0;
+                document.getElementById('grbl-val-21').innerText = limits.hard_limits ? 'Bật' : 'Tắt';
+                document.getElementById('grbl-val-20').innerText = limits.soft_limits ? 'Bật' : 'Tắt';
+
+                // Stepper motor parameters
+                const steps = motion.steps_per_mm || {};
+                document.getElementById('grbl-val-100').innerText = steps.x || 250;
+                document.getElementById('grbl-val-101').innerText = steps.y || 250;
+                document.getElementById('grbl-val-102').innerText = steps.z || 250;
+
+                const maxSpeed = motion.max_rate || {};
+                document.getElementById('grbl-val-110').innerText = maxSpeed.x || 4000;
+                document.getElementById('grbl-val-111').innerText = maxSpeed.y || 4000;
+                document.getElementById('grbl-val-112').innerText = maxSpeed.z || 4000;
+
+                const accel = motion.accel || {};
+                document.getElementById('grbl-val-120').innerText = accel.x || 500;
+                document.getElementById('grbl-val-121').innerText = accel.y || 500;
+                document.getElementById('grbl-val-122').innerText = accel.z || 500;
+
+                const travel = motion.max_travel || {};
+                document.getElementById('grbl-val-130').innerText = travel.x || 200;
+                document.getElementById('grbl-val-131').innerText = travel.y || 200;
+                document.getElementById('grbl-val-132').innerText = travel.z || 200;
+            }
+        } catch (e) {
+            console.error('Lỗi khi nạp thông tin GRBL:', e);
+        }
+    }
+
+    // Toggle GRBL details panel
+    const btnOpenGrblPanel = document.getElementById('btn-open-grbl-panel');
+    const btnCloseGrblPanel = document.getElementById('btn-close-grbl-panel');
+    const grblPanel = document.getElementById('grbl-system-details-panel');
+
+    if (btnOpenGrblPanel && grblPanel) {
+        btnOpenGrblPanel.addEventListener('click', () => {
+            grblPanel.classList.remove('hidden');
+            fetchAndRenderGrblInfo();
+        });
+    }
+    if (btnCloseGrblPanel && grblPanel) {
+        btnCloseGrblPanel.addEventListener('click', () => {
+            grblPanel.classList.add('hidden');
+        });
+    }
+
+    // Enable/Disable Homing ($22)
+    const btnQuickEnableHoming = document.getElementById('btn-quick-enable-homing');
+    const btnQuickDisableHoming = document.getElementById('btn-quick-disable-homing');
+
+    if (btnQuickEnableHoming) {
+        btnQuickEnableHoming.addEventListener('click', async () => {
+            try {
+                await fetch('/cncapi/v1/origin/enable_homing', { method: 'POST' });
+                await fetchAndRenderGrblInfo();
+            } catch (e) { console.error('Lỗi bật homing:', e); }
+        });
+    }
+    if (btnQuickDisableHoming) {
+        btnQuickDisableHoming.addEventListener('click', async () => {
+            try {
+                await fetch('/cncapi/v1/origin/disable_homing', { method: 'POST' });
+                await fetchAndRenderGrblInfo();
+            } catch (e) { console.error('Lỗi tắt homing:', e); }
+        });
+    }
+
+    // Homing Direction Change ($23)
+    const selectHomingDir = document.getElementById('grbl-homing-dir-select');
+    if (selectHomingDir) {
+        selectHomingDir.addEventListener('change', async (e) => {
+            const mask = parseInt(e.target.value, 10);
+            const invert_x = Boolean(mask & 1);
+            const invert_y = Boolean(mask & 2);
+            const invert_z = Boolean(mask & 4);
+
+            try {
+                await fetch('/cncapi/v1/origin/homing_direction', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ invert_x, invert_y, invert_z })
+                });
+                await fetchAndRenderGrblInfo();
+            } catch (err) {
+                console.error('Lỗi cập nhật chiều homing:', err);
+            }
+        });
+    }
+
+    // Refresh settings from GRBL ($$)
+    const btnRefreshGrblInfo = document.getElementById('btn-refresh-grbl-info');
+    if (btnRefreshGrblInfo) {
+        btnRefreshGrblInfo.addEventListener('click', async () => {
+            try {
+                await fetch('/cncapi/v1/motion/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command: '$$' })
+                });
+                setTimeout(fetchAndRenderGrblInfo, 500);
+            } catch (e) { console.error('Lỗi lấy cài đặt GRBL ($$):', e); }
+        });
     }
 
 })();

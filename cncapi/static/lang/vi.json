@@ -73,5 +73,15 @@
   "Cửa Sổ Console Serial": "Cửa Sổ Console Serial",
   "Xóa Nhật Ký": "Xóa Nhật Ký",
   "Đang chờ kết nối CNC...": "Đang chờ kết nối CNC...",
-  "Gửi Lệnh": "Gửi Lệnh"
+  "Gửi Lệnh": "Gửi Lệnh",
+  "⚙️ Cấu Hình GRBL & Homing ($22, $23)": "⚙️ Cấu Hình GRBL & Homing ($22, $23)",
+  "⚙️ Cấu Hình GRBL & Chiều Homing CNC": "⚙️ Cấu Hình GRBL & Chiều Homing CNC",
+  "🎯 1. Cấu Hình Chu Kỳ Homing ($22 & $23)": "🎯 1. Cấu Hình Chu Kỳ Homing ($22 & $23)",
+  "Homing Cycle ($22):": "Homing Cycle ($22):",
+  "Bật ($22=1)": "Bật ($22=1)",
+  "Tắt ($22=0)": "Tắt ($22=0)",
+  "Chiều Homing ($23 Mask):": "Chiều Homing ($23 Mask):",
+  "⚡ 2. Tốc Độ Homing & Giới Hạn ($20, $21, $24, $25, $27)": "⚡ 2. Tốc Độ Homing & Giới Hạn ($20, $21, $24, $25, $27)",
+  "🏎️ 3. Tỉ Lệ Bước, Tốc Độ & Gia Tốc Động Cơ": "🏎️ 3. Tỉ Lệ Bước, Tốc Độ & Gia Tốc Động Cơ",
+  "🔄 Lấy Cài Đặt Thực Từ GRBL ($$)": "🔄 Lấy Cài Đặt Thực Từ GRBL ($$)"
 }
