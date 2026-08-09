@@ -854,8 +854,13 @@
                 } else if (!isHomeSet) {
                     alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                 } else {
-                    const { feed } = getSystemConfig();
-                    sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
+                    const boundCheck = checkBounds(targetWorkX, targetWorkY);
+                    if (!boundCheck.valid) {
+                        alert(boundCheck.message);
+                    } else {
+                        const { feed } = getSystemConfig();
+                        sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
+                    }
                 }
             }
             isMouseDown = false;
@@ -874,6 +879,31 @@
             canvasScale = Math.max(0.2, Math.min(canvasScale, 20.0));
             drawCanvas();
         });
+    }
+
+    function getWorkBounds() {
+        if (cncBounds && cncBounds.tl && cncBounds.tr && cncBounds.bl && cncBounds.br) {
+            const minX = Math.min(cncBounds.tl.x, cncBounds.tr.x, cncBounds.bl.x, cncBounds.br.x);
+            const maxX = Math.max(cncBounds.tl.x, cncBounds.tr.x, cncBounds.bl.x, cncBounds.br.x);
+            const minY = Math.min(cncBounds.tl.y, cncBounds.tr.y, cncBounds.bl.y, cncBounds.br.y);
+            const maxY = Math.max(cncBounds.tl.y, cncBounds.tr.y, cncBounds.bl.y, cncBounds.br.y);
+            return { minX, maxX, minY, maxY };
+        }
+        return null;
+    }
+
+    function checkBounds(x, y) {
+        if (!isHomeSet) return { valid: true };
+        const bounds = getWorkBounds();
+        if (!bounds) return { valid: true };
+        const eps = 1e-4;
+        if (x < bounds.minX - eps || x > bounds.maxX + eps || y < bounds.minY - eps || y > bounds.maxY + eps) {
+            return {
+                valid: false,
+                message: t(`Tọa độ di chuyển (X: ${x.toFixed(2)}, Y: ${y.toFixed(2)}) vượt quá vùng làm việc 4 góc [X: ${bounds.minX.toFixed(2)}..${bounds.maxX.toFixed(2)}, Y: ${bounds.minY.toFixed(2)}..${bounds.maxY.toFixed(2)}]!`)
+            };
+        }
+        return { valid: true };
     }
 
     function resetCanvasView() {
@@ -1391,7 +1421,10 @@
             const targetX = (hx - originX) / (axisDirX * canvasScale);
             const targetY = (hy - originY) / (axisDirY * canvasScale);
 
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+            const boundCheck = checkBounds(targetX, targetY);
+            const isOutOfBounds = !boundCheck.valid;
+
+            ctx.strokeStyle = isOutOfBounds ? 'rgba(239, 68, 68, 0.6)' : 'rgba(56, 189, 248, 0.4)';
             ctx.lineWidth = 1;
             ctx.setLineDash([3, 3]);
             ctx.beginPath();
@@ -1401,17 +1434,18 @@
             ctx.setLineDash([]);
 
             // Hover info pill
-            const hoverStr = `🎯 Click đến X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
+            let hoverStr = `🎯 Click đến X: ${targetX.toFixed(2)}, Y: ${targetY.toFixed(2)}`;
+            if (isOutOfBounds) {
+                hoverStr += ` ⚠️ (Vượt 4 góc)`;
+            }
             ctx.font = '10px Outfit, sans-serif';
             const tw = ctx.measureText(hoverStr).width + 12;
             const boxX = (hx + tw + 10 < w) ? hx + 10 : hx - tw - 10;
             const boxY = (hy - 25 > 0) ? hy - 25 : hy + 15;
             ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-            // ctx.fillRect(boxX, boxY, tw, 20);
-            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeStyle = isOutOfBounds ? '#ef4444' : '#38bdf8';
             ctx.lineWidth = 1;
-            // ctx.strokeRect(boxX, boxY, tw, 20);
-            ctx.fillStyle = '#38bdf8';
+            ctx.fillStyle = isOutOfBounds ? '#ef4444' : '#38bdf8';
             ctx.fillText(hoverStr, boxX + 6, boxY + 14);
         }
 

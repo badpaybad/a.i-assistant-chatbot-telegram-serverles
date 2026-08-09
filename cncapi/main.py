@@ -300,6 +300,55 @@ def translate_command(command: str) -> List[str]:
         logger.error(f"Error translating command '{command}': {e}")
         return [command]
 
+def check_motion_bounds(target_x: float, target_y: float) -> Optional[str]:
+    """
+    Cập nhật 39: Kiểm tra tọa độ mục tiêu (target_x, target_y) trong hệ tọa độ WPos
+    có vượt quá giới hạn vùng làm việc được thiết lập bởi 4 góc (TL, TR, BL, BR) hay không.
+    Chỉ kích hoạt kiểm tra khi:
+      1. Đã Homing / Set gốc máy (state.home_set == True).
+      2. Đã thiết lập đầy đủ cả 4 góc cnc_tl, cnc_tr, cnc_bl, cnc_br.
+    """
+    if not state.home_set:
+        return None
+
+    tl, tr, bl, br = state.cnc_tl, state.cnc_tr, state.cnc_bl, state.cnc_br
+    if tl and tr and bl and br:
+        min_x = min(tl["x"], tr["x"], bl["x"], br["x"])
+        max_x = max(tl["x"], tr["x"], bl["x"], br["x"])
+        min_y = min(tl["y"], tr["y"], bl["y"], br["y"])
+        max_y = max(tl["y"], tr["y"], bl["y"], br["y"])
+
+        eps = 1e-4
+        if target_x < min_x - eps or target_x > max_x + eps or target_y < min_y - eps or target_y > max_y + eps:
+            return f"Tọa độ di chuyển (X:{target_x:.2f}, Y:{target_y:.2f}) vượt quá vùng làm việc 4 góc [X: {min_x:.2f}..{max_x:.2f}, Y: {min_y:.2f}..{max_y:.2f}]"
+    return None
+
+def check_gcode_line_bounds(clean_cmd: str, is_relative: bool = False) -> Optional[str]:
+    """
+    Cập nhật 39: Trích xuất tọa độ X/Y từ câu lệnh GCode di chuyển và kiểm tra giới hạn 4 góc.
+    """
+    if not state.home_set:
+        return None
+
+    cmd_upper = clean_cmd.upper().strip()
+    if cmd_upper.startswith("$") or cmd_upper.startswith("G10") or cmd_upper.startswith("M"):
+        return None
+
+    x_match = re.search(r'\b[xX]([-+]?[0-9]*\.?[0-9]+)\b', clean_cmd)
+    y_match = re.search(r'\b[yY]([-+]?[0-9]*\.?[0-9]+)\b', clean_cmd)
+
+    if not x_match and not y_match:
+        return None
+
+    if is_relative:
+        target_x = state.wpos[0] + (float(x_match.group(1)) if x_match else 0.0)
+        target_y = state.wpos[1] + (float(y_match.group(1)) if y_match else 0.0)
+    else:
+        target_x = float(x_match.group(1)) if x_match else state.wpos[0]
+        target_y = float(y_match.group(1)) if y_match else state.wpos[1]
+
+    return check_motion_bounds(target_x, target_y)
+
 def parse_grbl_status(status_str: str):
     try:
         clean = status_str.strip("<> \r\n")
@@ -980,9 +1029,16 @@ async def send_command(req: CommandRequest):
                     results.extend([pen_up_cmd, "$H", "$X", cmd_set_wco])
                     continue
 
+                # Cập nhật 39: Kiểm tra giới hạn vùng làm việc 4 góc khi di chuyển bằng GCode
+                err_bounds = check_gcode_line_bounds(clean_cmd)
+                if err_bounds:
+                    raise HTTPException(status_code=400, detail=err_bounds)
+
                 await safe_write_serial((clean_cmd + "\n").encode())
                 await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
                 results.append(clean_cmd)
+            except HTTPException:
+                raise
             except Exception as e:
                 logger.error(f"Lỗi gửi lệnh '{clean_cmd}': {e}")
                 raise HTTPException(status_code=500, detail=str(e))
@@ -1315,6 +1371,13 @@ async def v1_jog(req: V1JogRequest):
     move_y = dy * step
     move_z = dz * step
 
+    # Cập nhật 39: Kiểm tra giới hạn 4 góc cho Jogging
+    target_x = state.wpos[0] + move_x
+    target_y = state.wpos[1] + move_y
+    err_bounds = check_motion_bounds(target_x, target_y)
+    if err_bounds:
+        raise HTTPException(status_code=400, detail=err_bounds)
+
     lines = ["G91"]
     move_cmd = "G0"
     if dx != 0: move_cmd += f" X{move_x:.2f}"
@@ -1340,6 +1403,11 @@ async def v1_jog(req: V1JogRequest):
 async def v1_move_to(req: V1MoveToRequest):
     if not state.connected or not state.serial_port:
         raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+
+    # Cập nhật 39: Kiểm tra giới hạn 4 góc cho di chuyển tuyệt đối Move To
+    err_bounds = check_motion_bounds(req.x, req.y)
+    if err_bounds:
+        raise HTTPException(status_code=400, detail=err_bounds)
 
     feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
     cmd = f"G90\nG0 X{req.x:.2f} Y{req.y:.2f}"
@@ -1428,6 +1496,26 @@ async def v1_execute_gesture(req: V1GestureRequest):
     tap_dwell = req.tap_dwell if req.tap_dwell is not None else getattr(state, 'gesture_tap_dwell', 0.05)
     long_press_dwell = req.long_press_dwell if req.long_press_dwell is not None else getattr(state, 'gesture_long_press_dwell', 1.5)
     swipe_dist = req.distance if req.distance is not None else getattr(state, 'gesture_distance', 40.0)
+
+    # Cập nhật 39: Kiểm tra giới hạn 4 góc cho cử chỉ Gestures
+    gtype = req.type.lower()
+    if gtype == "swipe_custom":
+        err1 = check_motion_bounds(req.start_x, req.start_y)
+        err2 = check_motion_bounds(req.end_x, req.end_y)
+        if err1: raise HTTPException(status_code=400, detail=err1)
+        if err2: raise HTTPException(status_code=400, detail=err2)
+    elif gtype == "swipe_left":
+        err = check_motion_bounds(state.wpos[0] - swipe_dist, state.wpos[1])
+        if err: raise HTTPException(status_code=400, detail=err)
+    elif gtype == "swipe_right":
+        err = check_motion_bounds(state.wpos[0] + swipe_dist, state.wpos[1])
+        if err: raise HTTPException(status_code=400, detail=err)
+    elif gtype == "swipe_up":
+        err = check_motion_bounds(state.wpos[0], state.wpos[1] - swipe_dist)
+        if err: raise HTTPException(status_code=400, detail=err)
+    elif gtype == "swipe_down":
+        err = check_motion_bounds(state.wpos[0], state.wpos[1] + swipe_dist)
+        if err: raise HTTPException(status_code=400, detail=err)
 
     is_spindle = state.pen_mode == "spindle-pwm"
     p_down = f"M3 S{state.pen_down_pwm}" if is_spindle else f"G0 Z{state.pen_down_z}"

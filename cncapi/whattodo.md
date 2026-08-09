@@ -364,7 +364,14 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   3. **Đặt Hệ Tọa Độ Đồng Nhất**: Phát lệnh `G10 L2 P1 X0 Y0 Z0` thiết lập offset G54 về 0, đảm bảo Gốc làm việc (Work Zero) trùng khớp tuyệt đối với Gốc máy (Machine Zero). Đã loại bỏ lệnh `G10 L20` dư thừa để tránh ghi đè offset khác không khi vị trí homed MPos khác 0.
   4. **Đồng bộ trạng thái**: Giao diện UI tự động cảnh báo yêu cầu homing khi chưa set home.
 
-**chú ý** đọc whattodo.md suy nghĩ và viết cách làm vào howtodo.md để review với howtodo.md
+**cập nhật 39** khi có gốc máy, gốc tọa độ làm việc và 4 góc( tl,tr, br, bl) thì cần kiểm tra việc di chuyển bằng click hoặc di chuyển trên tool path view sẽ không được vượt qua vùng làm việc (tl,tr,br,bl)
+✅ Đã hoàn thành Cập nhật 39:
+  1. **Xác Định Vùng Giới Hạn Vùng Làm Việc**: Khi đã Homing (`home_set = True`) và có đủ 4 góc định vị (`cnc_tl`, `cnc_tr`, `cnc_bl`, `cnc_br`), hệ thống tự động xác định vùng phạm vi làm việc `[min_x..max_x, min_y..max_y]` theo tọa độ WPos.
+  2. **Kiểm Tra & Chặn Trên Frontend (Web UI)**: Khi người dùng click di chuyển trên Canvas Tool Path View, hàm `checkBounds(x, y)` trong `static/app.js` sẽ kiểm tra vị trí click. Nếu vượt vùng 4 góc, hệ thống lập tức hiển thị `alert` cảnh báo và từ chối phát lệnh di chuyển.
+  3. **Phản Hồi Trực Quan Rê Chuột (Hover Info)**: Khi rê chuột trên Tool Path View Canvas, nếu con trỏ vượt vùng làm việc, nhãn hiển thị sẽ đổi sang màu đỏ kèm cảnh báo `⚠️ (Vượt 4 góc)` để nhận biết trực quan ngay lập tức.
+  4. **Kiểm Tra & Bảo Vệ Chặt Chẽ Trên Backend (API & GCode)**: Trong `cncapi/main.py`, hàm `check_motion_bounds()` và `check_gcode_line_bounds()` chủ động chặn mọi thao tác di chuyển (Move To, Jog, Gestures, GCode `G0`/`G1`) có tọa độ đích nằm ngoài vùng làm việc 4 góc và ném ngoại lệ `HTTP 400 Bad Request`.
+
+**chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md để review với howtodo.md
 
 
 
