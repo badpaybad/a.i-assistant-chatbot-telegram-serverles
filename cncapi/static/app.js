@@ -88,6 +88,32 @@
     let currentImageFile = null;
     let currentImageBase64 = null;
 
+    // Background Gcode Editor State
+    let bgState = {
+        visible: true,
+        imageObj: null,
+        imageLoaded: false,
+        imageData: '',
+        imageFilename: '',
+        width_mm: 210.0,
+        height_mm: 297.0,
+        naturalWidth: 0,
+        naturalHeight: 0,
+        pos_x: 0.0,
+        pos_y: 0.0,
+        rotation_angle: 0.0,
+        treat_as_drawable: false,
+        grayscale: true,
+        threshold: 128,
+        min_len: 5,
+        keep_lines: true,
+        sketch_mode: true,
+        gcode: '',
+        previewPaths: []
+    };
+    let bgSimAnimationId = null;
+    let bgSimTimeoutId = null;
+
     // Helper: i18n translation
     function t(key, vars = {}) {
         let text = translations[key] || key;
@@ -1065,6 +1091,24 @@
         const originX = w / 2 + canvasOffsetX;
         const originY = h / 2 + canvasOffsetY;
 
+        // ---- LAYER 0: BACKGROUND IMAGE ----
+        if (bgState.visible && bgState.imageObj && bgState.imageLoaded) {
+            ctx.save();
+            const bgCanvasX = originX + bgState.pos_x * axisDirX * canvasScale;
+            const bgCanvasY = originY + bgState.pos_y * axisDirY * canvasScale;
+
+            ctx.translate(bgCanvasX, bgCanvasY);
+            if (bgState.rotation_angle) {
+                ctx.rotate((bgState.rotation_angle * Math.PI) / 180.0);
+            }
+            ctx.scale(axisDirX, axisDirY);
+
+            const bgWidthPx = bgState.width_mm * canvasScale;
+            const bgHeightPx = bgState.height_mm * canvasScale;
+            ctx.drawImage(bgState.imageObj, 0, 0, bgWidthPx, bgHeightPx);
+            ctx.restore();
+        }
+
         // ---- GRID ----
         ctx.strokeStyle = 'rgba(30,41,59,0.8)';
         ctx.lineWidth = 1;
@@ -1372,6 +1416,24 @@
                 ctx.beginPath();
                 ctx.moveTo(wx(seg.x1 + imageStartOffset.x), wy(seg.y1 + imageStartOffset.y));
                 ctx.lineTo(wx(seg.x2 + imageStartOffset.x), wy(seg.y2 + imageStartOffset.y));
+                ctx.stroke();
+            });
+            ctx.restore();
+        }
+
+        // ---- DRAW BACKGROUND VECTORIZED PREVIEW PATHS ----
+        if (bgState.treat_as_drawable && bgState.previewPaths && bgState.previewPaths.length > 0) {
+            ctx.save();
+            ctx.strokeStyle = '#a855f7'; // Purple
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([]);
+            bgState.previewPaths.forEach(path => {
+                if (path.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(wx(path[0][0]), wy(path[0][1]));
+                for (let i = 1; i < path.length; i++) {
+                    ctx.lineTo(wx(path[i][0]), wy(path[i][1]));
+                }
                 ctx.stroke();
             });
             ctx.restore();
@@ -1947,6 +2009,9 @@
             isHomeSet = true;
         }
         if (data.parking_point) telemetry.parking_point = data.parking_point;
+        if (data.background_settings) {
+            applyBackgroundSettings(data.background_settings);
+        }
         updateBoundsDisplay();
         updateInfoDisplays();
         drawCanvas();
@@ -2974,6 +3039,330 @@
             } catch (e) { console.error('Lỗi lấy cài đặt GRBL ($$):', e); }
         });
     }
+
+    // ==================== CẬP NHẬT 41: GCODE WITH BACKGROUND EDITOR & LAYER 0 LOGIC ====================
+    function applyBackgroundSettings(bg) {
+        if (!bg) return;
+        if (bg.visible !== undefined) bgState.visible = bg.visible;
+        if (bg.width_mm !== undefined) bgState.width_mm = parseFloat(bg.width_mm);
+        if (bg.height_mm !== undefined) bgState.height_mm = parseFloat(bg.height_mm);
+        if (bg.pos_x !== undefined) bgState.pos_x = parseFloat(bg.pos_x);
+        if (bg.pos_y !== undefined) bgState.pos_y = parseFloat(bg.pos_y);
+        if (bg.rotation_angle !== undefined) bgState.rotation_angle = parseFloat(bg.rotation_angle);
+        if (bg.treat_as_drawable !== undefined) bgState.treat_as_drawable = bg.treat_as_drawable;
+        if (bg.grayscale !== undefined) bgState.grayscale = bg.grayscale;
+        if (bg.threshold !== undefined) bgState.threshold = parseInt(bg.threshold);
+        if (bg.min_len !== undefined) bgState.min_len = parseInt(bg.min_len);
+        if (bg.keep_lines !== undefined) bgState.keep_lines = bg.keep_lines;
+        if (bg.sketch_mode !== undefined) bgState.sketch_mode = bg.sketch_mode;
+
+        // Sync HTML inputs
+        const visCb = document.getElementById('bg-visible-checkbox');
+        if (visCb) visCb.checked = bgState.visible;
+
+        const wInput = document.getElementById('bg-width-mm');
+        if (wInput) wInput.value = bgState.width_mm;
+
+        const hInput = document.getElementById('bg-height-mm');
+        if (hInput) hInput.value = bgState.height_mm;
+
+        const posXInput = document.getElementById('bg-pos-x');
+        if (posXInput) posXInput.value = bgState.pos_x;
+
+        const posYInput = document.getElementById('bg-pos-y');
+        if (posYInput) posYInput.value = bgState.pos_y;
+
+        const rotInput = document.getElementById('bg-rotation-angle');
+        if (rotInput) rotInput.value = bgState.rotation_angle;
+
+        const drawableCb = document.getElementById('bg-treat-as-drawable');
+        if (drawableCb) drawableCb.checked = bgState.treat_as_drawable;
+
+        const drawableOpts = document.getElementById('bg-drawable-options');
+        if (drawableOpts) {
+            if (bgState.treat_as_drawable) drawableOpts.classList.remove('hidden');
+            else drawableOpts.classList.add('hidden');
+        }
+
+        const grayCb = document.getElementById('bg-grayscale-checkbox');
+        if (grayCb) grayCb.checked = bgState.grayscale;
+
+        const threshInput = document.getElementById('bg-threshold-val');
+        if (threshInput) threshInput.value = bgState.threshold;
+
+        const minLenInput = document.getElementById('bg-min-len-val');
+        if (minLenInput) minLenInput.value = bgState.min_len;
+
+        const keepLinesCb = document.getElementById('bg-keep-lines-checkbox');
+        if (keepLinesCb) keepLinesCb.checked = bgState.keep_lines;
+
+        const sketchCb = document.getElementById('bg-sketch-checkbox');
+        if (sketchCb) sketchCb.checked = bgState.sketch_mode;
+
+        if (bg.image_data && bg.image_data !== bgState.imageData) {
+            loadBackgroundFromDataUrl(bg.image_data, bg.image_filename || 'background.png');
+        }
+    }
+
+    function loadBackgroundFromDataUrl(dataUrl, filename = '') {
+        if (!dataUrl) return;
+        bgState.imageData = dataUrl;
+        bgState.imageFilename = filename;
+
+        const img = new Image();
+        img.onload = () => {
+            bgState.imageObj = img;
+            bgState.imageLoaded = true;
+            bgState.naturalWidth = img.naturalWidth;
+            bgState.naturalHeight = img.naturalHeight;
+
+            const previewImg = document.getElementById('bg-preview-img');
+            const infoLabel = document.getElementById('bg-info-label');
+            if (previewImg) {
+                previewImg.src = dataUrl;
+                previewImg.style.display = 'block';
+            }
+            if (infoLabel) {
+                infoLabel.innerText = `${filename || 'Background'} (${img.naturalWidth} x ${img.naturalHeight} px)`;
+            }
+
+            drawCanvas();
+        };
+        img.src = dataUrl;
+    }
+
+    async function saveBackgroundSettingsToSystem(mm_per_px_val = null) {
+        const payload = {
+            background_settings: {
+                image_data: bgState.imageData,
+                image_filename: bgState.imageFilename,
+                visible: bgState.visible,
+                width_mm: bgState.width_mm,
+                height_mm: bgState.height_mm,
+                width_px: bgState.naturalWidth,
+                height_px: bgState.naturalHeight,
+                pos_x: bgState.pos_x,
+                pos_y: bgState.pos_y,
+                rotation_angle: bgState.rotation_angle,
+                treat_as_drawable: bgState.treat_as_drawable,
+                grayscale: bgState.grayscale,
+                threshold: bgState.threshold,
+                min_len: bgState.min_len,
+                keep_lines: bgState.keep_lines,
+                sketch_mode: bgState.sketch_mode
+            }
+        };
+        if (mm_per_px_val !== null) {
+            payload.mm_per_px = mm_per_px_val;
+        }
+
+        try {
+            await fetch('/cncapi/v1/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error('Lỗi lưu background settings:', e);
+        }
+    }
+
+    // Floating Panel Event Handlers for Background Editor
+    const btnOpenBg = document.getElementById('btn-open-gcode-background');
+    const btnCloseBg = document.getElementById('btn-close-gcode-background-editor');
+    const bgPanel = document.getElementById('gcode-background-editor-panel');
+
+    if (btnOpenBg && bgPanel) {
+        btnOpenBg.addEventListener('click', () => {
+            bgPanel.classList.toggle('hidden');
+        });
+    }
+    if (btnCloseBg && bgPanel) {
+        btnCloseBg.addEventListener('click', () => {
+            bgPanel.classList.add('hidden');
+        });
+    }
+
+    // Background File Picker
+    const bgFileInput = document.getElementById('bg-file-input');
+    if (bgFileInput) {
+        bgFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                loadBackgroundFromDataUrl(evt.target.result, file.name);
+                saveBackgroundSettingsToSystem();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    // Update Scale Button (Calculate 1px = ... mm)
+    const btnUpdateBgScale = document.getElementById('btn-update-bg-scale');
+    if (btnUpdateBgScale) {
+        btnUpdateBgScale.addEventListener('click', async () => {
+            const wInput = document.getElementById('bg-width-mm');
+            const hInput = document.getElementById('bg-height-mm');
+            if (wInput) bgState.width_mm = parseFloat(wInput.value) || 210.0;
+            if (hInput) bgState.height_mm = parseFloat(hInput.value) || 297.0;
+
+            if (!bgState.naturalWidth || bgState.naturalWidth <= 0) {
+                alert(t('Vui lòng chọn file ảnh background trước khi cập nhật tỷ lệ!'));
+                return;
+            }
+
+            // Calculate pixel to mm ratio
+            const mm_per_px = bgState.width_mm / bgState.naturalWidth;
+
+            // Update Cấu Hình Cấu Trúc & Gốc Làm Việc (1px = ... mm) input and canvas scale
+            const sysMmPerPxInput = document.getElementById('sys-mm-per-px');
+            if (sysMmPerPxInput) {
+                sysMmPerPxInput.value = mm_per_px.toFixed(6);
+            }
+            canvasScale = 1.0 / mm_per_px;
+
+            const infoEl = document.getElementById('bg-scale-info');
+            if (infoEl) {
+                infoEl.innerText = `Đã cập nhật: 1px = ${mm_per_px.toFixed(5)} mm (${bgState.naturalWidth}x${bgState.naturalHeight}px -> ${bgState.width_mm}x${bgState.height_mm}mm)`;
+            }
+
+            await saveBackgroundSettingsToSystem(mm_per_px);
+            drawCanvas();
+            appendConsoleLog('[BACKGROUND] Đã cập nhật tỷ lệ pixel/mm thành công: 1px = ' + mm_per_px.toFixed(6) + ' mm', 'info');
+        });
+    }
+
+    // Real CNC Position & Rotation Controls
+    document.getElementById('bg-visible-checkbox')?.addEventListener('change', (e) => {
+        bgState.visible = e.target.checked;
+        drawCanvas();
+        saveBackgroundSettingsToSystem();
+    });
+
+    ['bg-width-mm', 'bg-height-mm', 'bg-pos-x', 'bg-pos-y', 'bg-rotation-angle'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', () => {
+                bgState.width_mm = parseFloat(document.getElementById('bg-width-mm')?.value || '210');
+                bgState.height_mm = parseFloat(document.getElementById('bg-height-mm')?.value || '297');
+                bgState.pos_x = parseFloat(document.getElementById('bg-pos-x')?.value || '0');
+                bgState.pos_y = parseFloat(document.getElementById('bg-pos-y')?.value || '0');
+                bgState.rotation_angle = parseFloat(document.getElementById('bg-rotation-angle')?.value || '0');
+                drawCanvas();
+            });
+            el.addEventListener('change', () => saveBackgroundSettingsToSystem());
+        }
+    });
+
+    // Toggle Drawable Options Container
+    document.getElementById('bg-treat-as-drawable')?.addEventListener('change', (e) => {
+        bgState.treat_as_drawable = e.target.checked;
+        const drawableOpts = document.getElementById('bg-drawable-options');
+        if (drawableOpts) {
+            if (bgState.treat_as_drawable) drawableOpts.classList.remove('hidden');
+            else drawableOpts.classList.add('hidden');
+        }
+        drawCanvas();
+        saveBackgroundSettingsToSystem();
+    });
+
+    ['bg-grayscale-checkbox', 'bg-threshold-val', 'bg-min-len-val', 'bg-keep-lines-checkbox', 'bg-sketch-checkbox'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', () => {
+                bgState.grayscale = document.getElementById('bg-grayscale-checkbox')?.checked || false;
+                bgState.threshold = parseInt(document.getElementById('bg-threshold-val')?.value || '128');
+                bgState.min_len = parseInt(document.getElementById('bg-min-len-val')?.value || '5');
+                bgState.keep_lines = document.getElementById('bg-keep-lines-checkbox')?.checked || false;
+                bgState.sketch_mode = document.getElementById('bg-sketch-checkbox')?.checked || false;
+                saveBackgroundSettingsToSystem();
+            });
+        }
+    });
+
+    // Convert Background Image to Vector & G-code
+    document.getElementById('btn-convert-bg-gcode')?.addEventListener('click', async () => {
+        if (!bgState.imageData || !bgState.imageLoaded) {
+            alert(t('Chưa chọn file ảnh background!'));
+            return;
+        }
+        try {
+            const resBlob = await fetch(bgState.imageData);
+            const blob = await resBlob.blob();
+            const formData = new FormData();
+            formData.append('file', blob, bgState.imageFilename || 'bg_image.png');
+            formData.append('scale_factor', bgState.width_mm / (bgState.naturalWidth || 1000));
+            formData.append('feed_rate', 2000);
+            formData.append('algorithm', bgState.sketch_mode ? 'sketch' : 'centerline');
+            formData.append('canny_ultra_low', Math.max(1, Math.floor(bgState.threshold / 5)));
+            formData.append('canny_ultra_high', bgState.threshold);
+            formData.append('min_contour_len', bgState.min_len);
+
+            const res = await fetch('/cncapi/v1/convert-image-gcode', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.status === 'success' || data.gcode) {
+                bgState.gcode = data.gcode;
+                if (data.segments) {
+                    const rawPaths = [];
+                    let curPath = [];
+                    data.segments.forEach(seg => {
+                        const pt1 = [seg.x1 + bgState.pos_x, seg.y1 + bgState.pos_y];
+                        const pt2 = [seg.x2 + bgState.pos_x, seg.y2 + bgState.pos_y];
+                        if (curPath.length === 0) curPath.push(pt1);
+                        curPath.push(pt2);
+                    });
+                    if (curPath.length > 0) rawPaths.push(curPath);
+                    bgState.previewPaths = rawPaths;
+                }
+                drawCanvas();
+                alert(t('Đã chuyển đổi ảnh Background thành Vector & G-code thành công!'));
+            } else {
+                alert(t('Lỗi chuyển đổi: ') + (data.message || 'Lỗi không xác định'));
+            }
+        } catch (e) {
+            console.error('Lỗi chuyển đổi G-code background:', e);
+            alert(t('Không thể kết nối API chuyển đổi G-code'));
+        }
+    });
+
+    document.getElementById('btn-preview-bg-draw')?.addEventListener('click', () => {
+        if (!bgState.previewPaths || bgState.previewPaths.length === 0) {
+            alert(t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
+            return;
+        }
+        alert(t('Đã hiển thị nét vẽ xem trước của Background trên canvas (đường màu tím).'));
+    });
+
+    document.getElementById('btn-draw-bg-on-cnc')?.addEventListener('click', async () => {
+        if (!bgState.gcode) {
+            alert(t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
+            return;
+        }
+        if (!isHomeSet) {
+            alert(t('Cần thực hiện Homing ($H) hoặc đặt gốc tọa độ làm việc trước khi vẽ!'));
+            return;
+        }
+        try {
+            await fetch('/cncapi/v1/scenario/session/run-gcode', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ gcode: bgState.gcode })
+            });
+            appendConsoleLog('[BACKGROUND] Đã gửi lệnh vẽ G-code background xuống CNC thực tế.', 'info');
+        } catch (e) {
+            alert(t('Lỗi gửi lệnh vẽ CNC: ') + e.message);
+        }
+    });
+
+    document.getElementById('btn-save-bg-settings')?.addEventListener('click', async () => {
+        await saveBackgroundSettingsToSystem();
+        alert(t('Đã lưu cấu hình Background vào calibration_settings.json thành công!'));
+    });
 
 })();
 

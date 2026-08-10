@@ -64,6 +64,23 @@ def load_settings() -> dict:
         "cnc_tr": None,
         "cnc_bl": None,
         "cnc_br": None,
+        "background_settings": {
+            "image_data": "",
+            "image_filename": "",
+            "visible": True,
+            "width_mm": 210.0,
+            "height_mm": 297.0,
+            "width_px": 0,
+            "height_px": 0,
+            "pos_x": 0.0,
+            "pos_y": 0.0,
+            "rotation_angle": 0.0,
+            "treat_as_drawable": False,
+            "grayscale": False,
+            "threshold": 128,
+            "keep_lines": False,
+            "sketch_mode": False
+        }
     }
     if os.path.exists(SETTINGS_FILE):
         try:
@@ -131,6 +148,23 @@ class ControllerState:
         self.cnc_tr = settings.get("cnc_tr")
         self.cnc_bl = settings.get("cnc_bl")
         self.cnc_br = settings.get("cnc_br")
+        self.background_settings = settings.get("background_settings", {
+            "image_data": "",
+            "image_filename": "",
+            "visible": True,
+            "width_mm": 210.0,
+            "height_mm": 297.0,
+            "width_px": 0,
+            "height_px": 0,
+            "pos_x": 0.0,
+            "pos_y": 0.0,
+            "rotation_angle": 0.0,
+            "treat_as_drawable": False,
+            "grayscale": False,
+            "threshold": 128,
+            "keep_lines": False,
+            "sketch_mode": False
+        })
         # Cập nhật 38: Khởi động lại web backend luôn đặt home_set = False (yêu cầu Homing)
         self.home_set = False
         save_settings({"home_set": False})
@@ -863,6 +897,7 @@ class SystemSettingsRequest(BaseModel):
     cnc_tr: Optional[Point2D] = None
     cnc_bl: Optional[Point2D] = None
     cnc_br: Optional[Point2D] = None
+    background_settings: Optional[dict] = None
 
 PenSettingsRequest = SystemSettingsRequest
 
@@ -1149,6 +1184,7 @@ async def get_system_settings():
         "cnc_bl": state.cnc_bl,
         "cnc_br": state.cnc_br,
         "cnc_bounds": {"tl": state.cnc_tl, "tr": state.cnc_tr, "bl": state.cnc_bl, "br": state.cnc_br},
+        "background_settings": getattr(state, 'background_settings', {}),
     }
 
 @app.post("/api/settings")
@@ -1170,6 +1206,7 @@ async def update_system_settings(req: SystemSettingsRequest):
     if req.axis_dir_x is not None: state.axis_dir_x = req.axis_dir_x
     if req.axis_dir_y is not None: state.axis_dir_y = req.axis_dir_y
     if req.mm_per_px is not None: state.mm_per_px = req.mm_per_px
+    if req.background_settings is not None: state.background_settings = req.background_settings
     if req.work_origin is not None:
         state.work_origin = {"x": req.work_origin.x, "y": req.work_origin.y, "z": req.work_origin.z}
         state.home_set = True
@@ -1201,6 +1238,7 @@ async def update_system_settings(req: SystemSettingsRequest):
         "cnc_tr": state.cnc_tr,
         "cnc_bl": state.cnc_bl,
         "cnc_br": state.cnc_br,
+        "background_settings": getattr(state, 'background_settings', {}),
         "home_set": state.home_set
     }
     save_settings(to_save)
@@ -2618,5 +2656,5 @@ async def favicon():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8099, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8099, reload=False)
 

@@ -378,7 +378,20 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   3. **Backend API REST & Telemetry Sync**: Bổ sung Web API `GET /cncapi/v1/system/grbl_info` và tích hợp parsing tự động thông số GRBL `$$` từ kết nối Serial và DummySerial, đồng bộ realtime qua WebSocket.
   4. **Tài Liệu & Đa Ngôn Ngữ**: Cập nhật tài liệu hướng dẫn chi tiết trong `howtodo.md` và bổ sung bản dịch tiếng Việt / tiếng Anh trong `vi.json` và `en.json`. 
 
+**cập nhật 41** Cạnh nút Gcode with image. thêm nút Gcode with background. click vào cũng hiện ra float pannel bên phải chiếm 1/3 màn hình. cho phép chọn Ảnh background. có các cấu hình 
+    Checkbox để ẩn hiện ảnh background trên tool path view. 
+    độ rộng độ dài của background thực tế tính = milimet (mặc định là khổ A4) có nút Cập nhật khi nhấn cập nhật . dựa vào thông tin meta từ ảnh background đã chọn và độ rộng dài của background thực tế lúc này hệ thống sẽ tự tính tỷ lệ pixel vơi milimet và cập nhật lên Cấu Hình Cấu Trúc & Gốc Làm Việc (1px = ... mm) để dùng . Ảnh background sẽ được đưa vào Tool path view là layer 0 (background nằm dưới tất cả các object khác) .
+    sau khi cập nhật xong tỷ lệ pixel với milimet, có các option để điều chỉnh background
+      Check box để cho phép cnc xem ảnh backgroud như đối tượng để vẽ (mặc định không chọn)
+        nếu checked sẽ ra các option về xử lý ánh về chuyển đen trắng , giữ hoạt tiết các đường vẽ dạng thẳng , đường kẻ, đường kẻ ô ly các tờ giấy, sketch hóa ảnh để có tể tạo vector cho việc tạo gcode để điều khiển cnc 
+      Các option về vị trí backgound , góc xoay background 
+        chọn lại vị trí x,y thực tế cnc để đặt gốc 0,0 của ảnh background đặt vào vị trí thực tế trên cnc x,y 
+          mặc định vị trí ban đầu của ảnh backround là gốc 0,0 trùng với gốc làm việc của cnc, chiều x của ảnh trùng chiều x dương của cnc, chiều y trùng với chiều y dương của cnc
+        cho phép nhập góc quay ảnh backround xung quanh gốc 0,0 của ảnh (đã có vị trí thực tế trên cnc x,y)
+    Ảnh background và các option cũng cần lưu thành cấu hình (cncapi/calibration_settings.json) để có thể load lại khi tắt đi bật lại 
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
+
 
 
 
