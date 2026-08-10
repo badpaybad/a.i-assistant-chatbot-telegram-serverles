@@ -1471,12 +1471,12 @@
             // Coordinate label
             const lx = simIsRunning ? simHeadPos.x : (telemetry.wpos ? telemetry.wpos[0] : 0);
             const ly = simIsRunning ? simHeadPos.y : (telemetry.wpos ? telemetry.wpos[1] : 0);
-            ctx.fillStyle = 'rgba(15,23,42,0.85)';
             const labelStr = `${lx.toFixed(1)}, ${ly.toFixed(1)}`;
-            const lw = ctx.measureText(labelStr).width + 8;
-            ctx.fillRect(headX + 10, headY - 22, lw, 15);
-            ctx.fillStyle = '#fbbf24';
             ctx.font = 'bold 10px Outfit, sans-serif';
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+            ctx.lineWidth = 2.5;
+            ctx.strokeText(labelStr, headX + 14, headY - 11);
+            ctx.fillStyle = '#fbbf24';
             ctx.fillText(labelStr, headX + 14, headY - 11);
         }
 
