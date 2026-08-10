@@ -544,6 +544,53 @@
                 🛑 Dừng Di Chuyển
               </button>
             </div>
+            <!-- 4 Nút Di Chuyển Đến 4 Góc Khung CNC (CẬP NHẬT 44) -->
+            <div
+              id="jog-goto-corners-container"
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+                margin-top: 6px;
+              "
+            >
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-goto-cnc-tl"
+                title="Di chuyển đến góc TL (Trên-Trái)"
+                style="display: none;"
+                data-i18n
+              >
+                ↖️ Goto TL
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-goto-cnc-tr"
+                title="Di chuyển đến góc TR (Trên-Phải)"
+                style="display: none;"
+                data-i18n
+              >
+                ↗️ Goto TR
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-goto-cnc-bl"
+                title="Di chuyển đến góc BL (Dưới-Trái)"
+                style="display: none;"
+                data-i18n
+              >
+                ↙️ Goto BL
+              </button>
+              <button
+                class="btn btn-secondary btn-small"
+                id="btn-goto-cnc-br"
+                title="Di chuyển đến góc BR (Dưới-Phải)"
+                style="display: none;"
+                data-i18n
+              >
+                ↘️ Goto BR
+              </button>
+            </div>
           </div>
 
           <hr class="section-divider" />

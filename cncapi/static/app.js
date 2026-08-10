@@ -2019,6 +2019,20 @@
 
     function updateBoundsDisplay() {
         const el = document.getElementById('cnc-bounds-info');
+        const corners = ['tl', 'tr', 'bl', 'br'];
+
+        // Cập nhật 44: Hiển thị 4 nút goto khi góc tương ứng được định vị
+        corners.forEach(corner => {
+            const gotoBtn = document.getElementById(`btn-goto-cnc-${corner}`);
+            if (gotoBtn) {
+                if (cncBounds && cncBounds[corner] && cncBounds[corner].x !== undefined && cncBounds[corner].y !== undefined) {
+                    gotoBtn.style.display = 'block';
+                } else {
+                    gotoBtn.style.display = 'none';
+                }
+            }
+        });
+
         if (!el) return;
         const parts = [];
         if (cncBounds && cncBounds.tl) parts.push(`TL:(${cncBounds.tl.x},${cncBounds.tl.y})`);
@@ -2036,28 +2050,60 @@
         const corners = ['tl', 'tr', 'bl', 'br'];
         corners.forEach(corner => {
             const btn = document.getElementById(`btn-set-cnc-${corner}`);
-            if (!btn) return;
-            btn.addEventListener('click', async () => {
-                if (!isHomeSet) {
-                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
-                    return;
-                }
-                try {
-                    const res = await fetch('/cncapi/v1/origin/set_bound_point', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ corner: corner })
-                    });
-                    const data = await res.json();
-                    if (data.status === 'success') {
-                        cncBounds = data.bounds;
-                        updateBoundsDisplay();
-                        drawCanvas();
+            if (btn) {
+                btn.addEventListener('click', async () => {
+                    if (!isHomeSet) {
+                        alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                        return;
                     }
-                } catch (e) {
-                    console.error(`Error setting corner ${corner}:`, e);
-                }
-            });
+                    try {
+                        const res = await fetch('/cncapi/v1/origin/set_bound_point', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ corner: corner })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            cncBounds = data.bounds;
+                            updateBoundsDisplay();
+                            drawCanvas();
+                        }
+                    } catch (e) {
+                        console.error(`Error setting corner ${corner}:`, e);
+                    }
+                });
+            }
+
+            // Cập nhật 44: Lắng nghe sự kiện click nút goto góc tương ứng
+            const gotoBtn = document.getElementById(`btn-goto-cnc-${corner}`);
+            if (gotoBtn) {
+                gotoBtn.addEventListener('click', async () => {
+                    if (!cncBounds || !cncBounds[corner]) {
+                        alert(t('Chưa định vị góc này!'));
+                        return;
+                    }
+                    if (!isHomeSet) {
+                        alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                        return;
+                    }
+                    const targetPt = cncBounds[corner];
+                    try {
+                        const res = await fetch('/cncapi/v1/motion/move_to', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ x: targetPt.x, y: targetPt.y })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            appendConsoleLog(`[MOTION] Đang di chuyển đến góc ${corner.toUpperCase()} (X=${targetPt.x}, Y=${targetPt.y})`, 'info');
+                        } else {
+                            alert(data.detail || data.message || t('Lỗi di chuyển góc'));
+                        }
+                    } catch (e) {
+                        console.error(`Error moving to corner ${corner}:`, e);
+                    }
+                });
+            }
         });
     }
 
