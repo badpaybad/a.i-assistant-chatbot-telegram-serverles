@@ -528,7 +528,12 @@
               </button>
             </div>
 
-            <div class="jog-special-actions">
+            <div class="jog-special-actions"  style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 4px;
+                margin-top: 6px;
+              ">
               <button
                 class="btn btn-secondary btn-small"
                 id="btn-goto-work-origin"
@@ -1727,6 +1732,7 @@ Xin Chào</textarea
               class="btn btn-danger btn-compact"
               id="btn-stop-font-home-start"
               title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về điểm xuất phát trước khi vẽ"
+              data-i18n
             >
               🛑 Dừng & Về gốc ban đầu
             </button>
@@ -1734,6 +1740,7 @@ Xin Chào</textarea
               class="btn btn-warning btn-compact"
               id="btn-stop-font-home-origin"
               title="Dừng khẩn cấp, xóa bộ đệm lệnh, nhấc dao và di chuyển về gốc tọa độ làm việc (0,0)"
+              data-i18n
             >
               🏠 Dừng & Về gốc WPos (0,0)
             </button>

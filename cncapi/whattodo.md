@@ -401,6 +401,8 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 **cập nhật 44** vùng Cấu Hình Kết Nối & Thông Tin CNC đang có các nút tl, tr, bl, br . là để cấu hình 4 góc hoạt động của cnc. 
 ở Bộ Di Chuyển & Cử Chỉ bổ xung 4 nút tương ứng ngay dưới nút về gốc làm việc: goto tl, goto tr, goto br, goto bl . khi đã có cấu hình 4 góc thì 4 nút này (goto tl, goto tr, goto br, goto bl) hiện lên để khi click có thể di chuyển đến các góc tương ứng của cnc .
 
+**cập nhật 45** Tự động lưu cấu hình `step_distance` (`sys-step-distance`) và các tham số ở Cấu Hình Cấu Trúc & Gốc Làm Việc ngay khi người dùng thay đổi giá trị (sự kiện input/change), đảm bảo khi F5 reload trang giá trị mới (ví dụ 0.5mm) được giữ nguyên không bị reset về giá trị cũ.
+
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
 

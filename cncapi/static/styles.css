@@ -196,6 +196,7 @@ input:focus, select:focus {
 .btn-primary { background: var(--primary); color: #000; font-weight: 700; border: none; }
 .btn-success { background: var(--success); color: #000; font-weight: 700; border: none; }
 .btn-warning { background: var(--warning); color: #000; font-weight: 700; border: none; }
+.btn-danger { background: var(--danger); color: #fff; font-weight: 700; border: none; }
 .btn-danger-soft { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
 .btn-secondary { background: rgba(51, 65, 85, 0.5); }
 .btn-info { background: var(--info); color: #fff; border: none; }

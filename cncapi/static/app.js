@@ -192,6 +192,27 @@
             document.getElementById('input-load-settings')?.click();
         });
         document.getElementById('input-load-settings')?.addEventListener('change', loadSystemSettingsFile);
+
+        // Auto-save system settings on change/input
+        const autoSaveSystemInputs = [
+            'sys-step-distance',
+            'sys-feedrate',
+            'sys-swipe-feedrate',
+            'sys-tap-dwell',
+            'sys-long-press-dwell',
+            'sys-swipe-distance',
+            'select-axis-x',
+            'select-axis-y',
+            'sys-mm-per-px'
+        ];
+        autoSaveSystemInputs.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', saveSystemSettingsSilent);
+                el.addEventListener('input', saveSystemSettingsSilent);
+            }
+        });
+
         bindCornerSetButtons();
 
         // Origins
@@ -1873,6 +1894,51 @@
         }
         drawCanvas();
         stopCNC();
+    }
+
+    async function saveSystemSettingsSilent() {
+        const upInput = document.getElementById('pen-up-val');
+        const downInput = document.getElementById('pen-down-val');
+        if (upInput && downInput) {
+            const valUp = parseFloat(upInput.value) || 0;
+            const valDown = parseFloat(downInput.value) || 0;
+            if (penMode === 'spindle-pwm') {
+                penUpPwm = valUp;
+                penDownPwm = valDown;
+            } else {
+                penUpZ = valUp;
+                penDownZ = valDown;
+            }
+        }
+
+        const payload = {
+            port: document.getElementById('port-select')?.value || '',
+            baudrate: parseInt(document.getElementById('baudrate-select')?.value || '115200'),
+            feedrate: parseFloat(document.getElementById('sys-feedrate')?.value || '4000'),
+            swipe_feedrate: parseFloat(document.getElementById('sys-swipe-feedrate')?.value || '10000'),
+            step_distance: parseFloat(document.getElementById('sys-step-distance')?.value || '5'),
+            tap_dwell: parseFloat(document.getElementById('sys-tap-dwell')?.value || '0.05'),
+            long_press_dwell: parseFloat(document.getElementById('sys-long-press-dwell')?.value || '1.5'),
+            swipe_distance: parseFloat(document.getElementById('sys-swipe-distance')?.value || '40'),
+            pen_mode: penMode,
+            pen_up_z: penUpZ,
+            pen_down_z: penDownZ,
+            pen_up_pwm: penUpPwm,
+            pen_down_pwm: penDownPwm,
+            axis_dir_x: parseInt(document.getElementById('select-axis-x')?.value || '1'),
+            axis_dir_y: parseInt(document.getElementById('select-axis-y')?.value || '1'),
+            mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.05'),
+        };
+
+        try {
+            await fetch('/cncapi/v1/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error('Error auto-saving system settings:', e);
+        }
     }
 
     async function saveSystemSettings() {
