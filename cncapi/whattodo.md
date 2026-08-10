@@ -399,7 +399,8 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 **cập nhật 43** với Render DPI: 300 và  tỷ lệ pixel với milimet đi theo Cấu Hình (cncapi/calibration_settings.json) như đã làm ở cập nhật 42. Chọn Font Chữ: mặc định chọn cncapi/fonts/arial.ttf . việc tạo gcode từ font với cỡ chữ 8pt 9pt 10pt 12pt 14pt hay bị mất nét cần tìm hiểu kỹ và xử lý thêm Chế Độ Nét Chữ cũng như Điều chỉnh nâng cao để đạt được vẽ chữ 1 nét đủ tốt chữ rõ ràng không mất nét 
 
 **cập nhật 44** vùng Cấu Hình Kết Nối & Thông Tin CNC đang có các nút tl, tr, bl, br . là để cấu hình 4 góc hoạt động của cnc. 
-ở Bộ Di Chuyển & Cử Chỉ bổ xung 4 nút tương ứng ngay dưới nút về gốc làm việc: goto tl, goto tr, goto br, goto bl . khi đã có cấu hình 4 góc thì 4 nút này (goto tl, goto tr, goto br, goto bl) hiện lên để khi click có thể di chuyển đến các góc tương ứng của cnc . 
+ở Bộ Di Chuyển & Cử Chỉ bổ xung 4 nút tương ứng ngay dưới nút về gốc làm việc: goto tl, goto tr, goto br, goto bl . khi đã có cấu hình 4 góc thì 4 nút này (goto tl, goto tr, goto br, goto bl) hiện lên để khi click có thể di chuyển đến các góc tương ứng của cnc .
+
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
 

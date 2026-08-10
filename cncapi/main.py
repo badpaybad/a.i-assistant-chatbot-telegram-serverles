@@ -167,6 +167,7 @@ class ControllerState:
         })
         # Cập nhật 38: Khởi động lại web backend luôn đặt home_set = False (yêu cầu Homing)
         self.home_set = False
+        self.is_homing = False
         save_settings({"home_set": False})
         
         self.feedrate = 0.0
@@ -976,6 +977,10 @@ async def get_serial_ports():
     }
 
 async def run_auto_home():
+    if state.is_homing:
+        logger.info("Đang trong quá trình Homing, bỏ qua yêu cầu Homing tự động trùng lặp.")
+        return
+    state.is_homing = True
     try:
         await broadcast({"type": "log", "direction": "in", "content": "🔄 [Tự động Homing] Bắt đầu tự động Homing về gốc máy..."})
         await send_command(CommandRequest(command="$H"))
@@ -983,6 +988,8 @@ async def run_auto_home():
     except Exception as e:
         logger.error(f"Lỗi khi tự động Homing: {e}")
         await broadcast({"type": "log", "direction": "in", "content": f"❌ [Tự động Homing] Thất bại: {e}"})
+    finally:
+        state.is_homing = False
 
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):
@@ -1011,7 +1018,8 @@ async def connect_cnc(config: ConnectionConfig):
         await broadcast({"type": "connection", "connected": True, "message": "Đã kết nối chế độ giả lập"})
         await send_telemetry()
         # Cập nhật 38: Tự động Homing khi kết nối thành công
-        asyncio.create_task(run_auto_home())
+        if not state.is_homing:
+            asyncio.create_task(run_auto_home())
         return {"status": "success", "message": "Đã kết nối dummy mode"}
         
     try:
@@ -1038,7 +1046,8 @@ async def connect_cnc(config: ConnectionConfig):
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
         # Cập nhật 38: Tự động Homing khi kết nối thành công
-        asyncio.create_task(run_auto_home())
+        if not state.is_homing:
+            asyncio.create_task(run_auto_home())
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
         state.connected = False
@@ -1088,56 +1097,62 @@ async def send_command(req: CommandRequest):
                 continue
             try:
                 if clean_cmd.upper() == "$H":
-                    # Cập nhật 35 & 36 & 37: Nhấc dao trước -> Homing ($H) -> Chờ Homing hoàn tất -> Unlock ($X) -> Set Gốc Làm Việc (G54 X0 Y0 Z0)
-                    pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
-                    await safe_write_serial((pen_up_cmd + "\n").encode())
-                    await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
-                    await asyncio.sleep(state.pen_dwell or 0.25)
+                    if state.is_homing:
+                        logger.info("Đang trong quá trình Homing...")
+                    state.is_homing = True
+                    try:
+                        # Cập nhật 35 & 36 & 37 & 38: Nhấc dao trước -> Homing ($H) -> Chờ Homing hoàn tất -> Unlock ($X) -> Set Gốc Làm Việc (G10 L20 P1 X0 Y0 Z0)
+                        pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
+                        await safe_write_serial((pen_up_cmd + "\n").encode())
+                        await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
+                        await asyncio.sleep(state.pen_dwell or 0.25)
 
-                    state.grbl_ack_event.clear()
-                    state.last_grbl_response = ""
-                    await safe_write_serial(b"$H\n")
-                    await broadcast({"type": "log", "direction": "out", "content": "$H"})
+                        state.grbl_ack_event.clear()
+                        state.last_grbl_response = ""
+                        await safe_write_serial(b"$H\n")
+                        await broadcast({"type": "log", "direction": "out", "content": "$H"})
 
-                    # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' khi homing xong)
-                    if isinstance(state.serial_port, DummySerial):
-                        await asyncio.sleep(0.5)
-                    else:
-                        try:
-                            await asyncio.wait_for(state.grbl_ack_event.wait(), timeout=30.0)
-                        except asyncio.TimeoutError:
-                            logger.warning("Homing $H timeout waiting for GRBL ack 'ok'")
-                            raise HTTPException(status_code=400, detail="Homing bị quá thời gian (Timeout)")
-                        await asyncio.sleep(0.5)
-                        
-                        if "error" in state.last_grbl_response or "ALARM" in state.last_grbl_response:
-                            raise HTTPException(
-                                status_code=400,
-                                detail=f"Homing thất bại: {state.last_grbl_response or 'Lỗi không xác định'}"
-                            )
+                        # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' khi homing xong)
+                        if isinstance(state.serial_port, DummySerial):
+                            await asyncio.sleep(0.5)
+                        else:
+                            try:
+                                await asyncio.wait_for(state.grbl_ack_event.wait(), timeout=35.0)
+                            except asyncio.TimeoutError:
+                                logger.warning("Homing $H timeout waiting for GRBL ack 'ok'")
+                                raise HTTPException(status_code=400, detail="Homing bị quá thời gian (Timeout)")
+                            await asyncio.sleep(0.5)
+                            
+                            if "error" in state.last_grbl_response or "ALARM" in state.last_grbl_response:
+                                raise HTTPException(
+                                    status_code=400,
+                                    detail=f"Homing thất bại: {state.last_grbl_response or 'Lỗi không xác định'}"
+                                )
 
-                    # Mở khóa Unlock ($X) sau khi Homing hoàn thành
-                    state.grbl_ack_event.clear()
-                    await safe_write_serial(b"$X\n")
-                    await broadcast({"type": "log", "direction": "out", "content": "$X"})
-                    await asyncio.sleep(0.3)
+                        # Mở khóa Unlock ($X) sau khi Homing hoàn thành
+                        state.grbl_ack_event.clear()
+                        await safe_write_serial(b"$X\n")
+                        await broadcast({"type": "log", "direction": "out", "content": "$X"})
+                        await asyncio.sleep(0.3)
 
-                    # Cập nhật 36 & 38: Reset tuyệt đối WCO = (0,0,0) giúp Gốc tọa độ làm việc chính là Gốc máy
-                    cmd_set_wco = "G10 L2 P1 X0 Y0 Z0"
-                    await safe_write_serial((cmd_set_wco + "\n").encode())
-                    await broadcast({"type": "log", "direction": "out", "content": cmd_set_wco})
-                    await asyncio.sleep(0.1)
+                        # Cập nhật 36 & 38 & Fix Bug: Reset WCO = current MPos (G10 L20 P1 X0 Y0 Z0) giúp WPos = (0,0,0) trùng Gốc máy
+                        cmd_set_wco = "G10 L20 P1 X0 Y0 Z0"
+                        await safe_write_serial((cmd_set_wco + "\n").encode())
+                        await broadcast({"type": "log", "direction": "out", "content": cmd_set_wco})
+                        await asyncio.sleep(0.1)
 
-                    state.mpos = [0.0, 0.0, 0.0]
-                    state.wpos = [0.0, 0.0, 0.0]
-                    state.wco = [0.0, 0.0, 0.0]
-                    state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
-                    state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
-                    state.home_set = True
-                    save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": True})
-                    await send_telemetry()
+                        state.mpos = [0.0, 0.0, 0.0]
+                        state.wpos = [0.0, 0.0, 0.0]
+                        state.wco = [0.0, 0.0, 0.0]
+                        state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                        state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                        state.home_set = True
+                        save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": True})
+                        await send_telemetry()
 
-                    results.extend([pen_up_cmd, "$H", "$X", cmd_set_wco])
+                        results.extend([pen_up_cmd, "$H", "$X", cmd_set_wco])
+                    finally:
+                        state.is_homing = False
                     continue
 
                 # Cập nhật 39: Kiểm tra giới hạn vùng làm việc 4 góc khi di chuyển bằng GCode
