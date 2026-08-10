@@ -2192,11 +2192,13 @@
                         pen_mode: document.getElementById('font-pen-mode')?.value || penMode || 'spindle-pwm',
                         axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '1')),
                         epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
-                        margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '5.0'),
+                        margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
+                        rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
                         binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
-                        render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '600'),
+                        render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300'),
                         min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
-                        sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0')
+                        sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0'),
+                        mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.5')
                     })
                 });
 
@@ -2233,7 +2235,7 @@
         // Bind all advanced setting inputs for FontGcodeRequest properties
         [
             'font-z-safe', 'font-z-draw', 'font-pen-mode', 'font-axis-dir-y',
-            'font-epsilon', 'font-margin-mm', 'font-binary-thresh', 'font-render-dpi',
+            'font-epsilon', 'font-margin-mm', 'font-rotation-angle', 'font-binary-thresh', 'font-render-dpi',
             'font-min-path-len', 'font-sort-row-h'
         ].forEach(id => {
             const el = document.getElementById(id);
@@ -2404,9 +2406,10 @@
                     pen_mode: document.getElementById('font-pen-mode')?.value || 'spindle-pwm',
                     axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || '1'),
                     epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
-                    margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '5.0'),
+                    margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
+                    rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
                     binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
-                    render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '600'),
+                    render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300'),
                     min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
                     sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0'),
                     gcode: fontGcode,
@@ -2448,6 +2451,7 @@
                         if (data.axis_dir_y !== undefined && document.getElementById('font-axis-dir-y')) document.getElementById('font-axis-dir-y').value = data.axis_dir_y;
                         if (data.epsilon !== undefined && document.getElementById('font-epsilon')) document.getElementById('font-epsilon').value = data.epsilon;
                         if (data.margin_mm !== undefined && document.getElementById('font-margin-mm')) document.getElementById('font-margin-mm').value = data.margin_mm;
+                        if (data.rotation_angle !== undefined && document.getElementById('font-rotation-angle')) document.getElementById('font-rotation-angle').value = data.rotation_angle;
                         if (data.binary_threshold !== undefined && document.getElementById('font-binary-thresh')) document.getElementById('font-binary-thresh').value = data.binary_threshold;
                         if (data.render_dpi !== undefined && document.getElementById('font-render-dpi')) document.getElementById('font-render-dpi').value = data.render_dpi;
                         if (data.min_path_len_mm !== undefined && document.getElementById('font-min-path-len')) document.getElementById('font-min-path-len').value = data.min_path_len_mm;

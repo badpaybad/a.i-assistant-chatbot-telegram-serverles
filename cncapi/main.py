@@ -2052,15 +2052,17 @@ class FontGcodeRequest(BaseModel):
     z_safe: float = 0.0
     z_draw: float = 45.0
     feed_rate: float = 4000.0
-    margin_mm: float = 5.0
+    margin_mm: float = 0.0
     epsilon: float = 1.2
     binary_threshold: int = 128
-    render_dpi: int = 600
+    render_dpi: int = 300
     min_path_len_mm: float = 0.5
     sort_row_height_mm: float = 10.0
     stroke_mode: str = "single_line"
     pen_mode: Optional[str] = None
     axis_dir_y: Optional[int] = None
+    rotation_angle: float = -90.0
+    mm_per_px: Optional[float] = None
 
 class RunGcodeRequest(BaseModel):
     gcode: str
@@ -2174,11 +2176,22 @@ def generate_font_gcode(req: FontGcodeRequest):
                 "lines_count": 0
             }
 
-        scale_mm_per_px = (req.font_size_pt * MM_PER_PT) / font_size_px
+        import math
+        sys_mm_per_px = req.mm_per_px if req.mm_per_px is not None and req.mm_per_px > 0 else getattr(state, 'mm_per_px', None)
+        if sys_mm_per_px is not None and sys_mm_per_px > 0:
+            scale_mm_per_px = sys_mm_per_px
+        else:
+            scale_mm_per_px = (req.font_size_pt * MM_PER_PT) / font_size_px
+
         actual_w_mm = raw_w_px * scale_mm_per_px
         actual_h_mm = raw_h_px * scale_mm_per_px
 
         effective_axis_dir_y = req.axis_dir_y if req.axis_dir_y is not None else getattr(state, 'axis_dir_y', 1)
+
+        rot_deg = req.rotation_angle if req.rotation_angle is not None else -90.0
+        rad = math.radians(rot_deg)
+        cos_a = math.cos(rad)
+        sin_a = math.sin(rad)
 
         raw_paths = []
         min_path_len_mm = req.min_path_len_mm if req.min_path_len_mm is not None else 0.5
@@ -2193,11 +2206,19 @@ def generate_font_gcode(req: FontGcodeRequest):
 
             path_mm = []
             for pt in pts:
-                x_mm = round((pt[0] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+                x_unrot = (pt[0] - pad_px) * scale_mm_per_px + req.margin_mm
                 if effective_axis_dir_y == -1:
-                    y_mm = round((raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm, 2)
+                    y_unrot = (raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm
                 else:
-                    y_mm = round((pt[1] - pad_px) * scale_mm_per_px + req.margin_mm, 2)
+                    y_unrot = (pt[1] - pad_px) * scale_mm_per_px + req.margin_mm
+
+                if rot_deg != 0.0:
+                    x_mm = round(x_unrot * cos_a - y_unrot * sin_a, 2)
+                    y_mm = round(x_unrot * sin_a + y_unrot * cos_a, 2)
+                else:
+                    x_mm = round(x_unrot, 2)
+                    y_mm = round(y_unrot, 2)
+
                 path_mm.append((x_mm, y_mm))
 
             if len(path_mm) >= 2:

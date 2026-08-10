@@ -390,6 +390,14 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
         cho phép nhập góc quay ảnh backround xung quanh gốc 0,0 của ảnh (đã có vị trí thực tế trên cnc x,y)
     Ảnh background và các option cũng cần lưu thành cấu hình (cncapi/calibration_settings.json) để có thể load lại khi tắt đi bật lại 
 
+**cập nhật 42** Gcode with font , thêm option nhập góc quay của việc vẽ chữ, sẽ liên quan tới việc tương thích để vẽ khi cần cùng với ảnh background ở cập nhật 41
+  Lề Biên (margin_mm): mặc định về 0
+  Góc quay (rotation_angle): mặc định về -90
+  Render DPI: 300
+  tỷ lệ pixel với milimet đi theo Cấu Hình (cncapi/calibration_settings.json)
+
+  
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
 
 
