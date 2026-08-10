@@ -165,3 +165,12 @@ myassitant/files/**
 myassitant/myassitant.db-shm
 myassitant/myassitant.db-wal
 dist/**
+hbbr
+amd64/rustdesk-utils
+amd64/hbbs
+hbbs
+db_v2.sqlite3
+db_v2.sqlite3-shm
+db_v2.sqlite3-wal
+id_ed25519
+id_ed25519.pub

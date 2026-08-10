@@ -179,6 +179,13 @@ import subprocess
 import secrets
 import string
 
+# Tự động chuyển sang Python trong virtualenv của dự án để nạp đủ các thư viện (httpx, fastapi...)
+project_dir = os.path.dirname(os.path.abspath(__file__))
+venv_python = os.path.join(project_dir, "venv", "bin", "python")
+if os.path.exists(venv_python) and os.path.realpath(sys.executable) != os.path.realpath(venv_python):
+    print(f"[*] Tự động chuyển sang Virtualenv Python: {venv_python}")
+    os.execv(venv_python, [venv_python] + sys.argv)
+
 from config import TELEGRAM_OWNER_USERID
 import bot_telegram
 
@@ -283,13 +290,22 @@ def generate_nginx_config(nginx_port: int, routes: list[dict], output_path: str 
     """Tự động tạo file nginx_tunnel.conf với WebSocket & Proxy Headers"""
     locations_str = ""
     for route in routes:
+        path = route['path'].rstrip("/")
         ws = """
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "Upgrade";""" if route.get("websocket") else ""
 
         locations_str += f"""
-    location {route['path']} {{
+    location {path}/ {{
+        proxy_pass http://127.0.0.1:{route['target_port']}/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;{ws}
+    }}
+
+    location {path} {{
         proxy_pass http://127.0.0.1:{route['target_port']}/;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -314,6 +330,25 @@ http {{
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(conf_content)
     print(f"[+] Đã sinh cấu hình Nginx thành công tại {output_path}")
+
+def start_or_reload_nginx(conf_path: str) -> subprocess.Popen:
+    """Tự động kiểm tra cú pháp và nạp/cập nhật Nginx trên local PC (Hot Reload)."""
+    print("[*] [Nginx] Đang kiểm tra & tự động cập nhật cấu hình Nginx local...")
+    test_res = subprocess.run(["nginx", "-t", "-c", conf_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if "syntax is ok" not in test_res.stderr and test_res.returncode != 0:
+        print(f"[!] [Nginx Error] Cấu hình Nginx lỗi cú pháp:\n{test_res.stderr}")
+        raise RuntimeError("Nginx config test failed")
+
+    reload_res = subprocess.run(["nginx", "-s", "reload", "-c", conf_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    if reload_res.returncode == 0:
+        print("[+] [Nginx] Đã tự động reload cập nhật cấu hình Nginx local thành công (Hot Reload).")
+        return None
+    else:
+        subprocess.run(f"fuser -k {NGINX_LISTEN_PORT}/tcp >/dev/null 2>&1", shell=True)
+        time.sleep(0.5)
+        proc = subprocess.Popen(["nginx", "-c", conf_path])
+        print(f"[+] [Nginx] Đã khởi chạy tiến trình Nginx local thành công với cấu hình mới ({conf_path}).")
+        return proc
 
 def cleanup_all_processes(signum=None, frame=None):
     """Giải phóng port và tắt tất cả tiến trình con"""

@@ -21,6 +21,8 @@ import time
 import subprocess
 import mimetypes
 import httpx
+from urllib.parse import quote_plus
+from bs4 import BeautifulSoup
 from typing import Optional, List, Dict, Any
 
 from google import genai
@@ -234,8 +236,27 @@ TOOL_DEFINITIONS = [
 # Tool Implementations
 # ═══════════════════════════════════════════════════════════════════════════════
 
+def _search_ddg_fallback(query: str) -> str:
+    """Fallback tìm kiếm qua DuckDuckGo HTML khi Gemini Google Search bị 403 hoặc lỗi."""
+    try:
+        url = f"https://html.duckduckgo.com/html/?q={quote_plus(query)}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        with httpx.Client(timeout=10, follow_redirects=True, verify=False) as client:
+            resp = client.get(url, headers=headers)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, 'html.parser')
+                snippets = [node.get_text(strip=True) for node in soup.select('.result__snippet') if node.get_text(strip=True)]
+                if snippets:
+                    return "\n".join([f"- {s}" for s in snippets[:5]])
+    except Exception as e:
+        print(f"[AgentTools] DDG fallback error: {e}")
+    return "[Không tìm thấy thông tin trên web]"
+
+
 def search_google(query: str, file_path: Optional[str] = None) -> str:
-    """Tìm kiếm qua Gemini API + Google Search (hỗ trợ gửi kèm file tương tự gemini_truyenkieu.py)."""
+    """Tìm kiếm qua Gemini API + Google Search (tự động fallback DuckDuckGo nếu bị lỗi 403 / API key)."""
     try:
         client = genai.Client(api_key=GEMINI_APIKEY)
         user_parts = [types.Part.from_text(text=f"Tìm kiếm và trả lời ngắn gọn: {query}")]
@@ -291,11 +312,15 @@ def search_google(query: str, file_path: Optional[str] = None) -> str:
             contents=contents
         )
 
-        return response.text.strip() if response.text else "[Không tìm được kết quả]"
+        if response.text and "[Lỗi" not in response.text:
+            return response.text.strip()
+        else:
+            print("[AgentTools] Gemini Search returned empty/error, switching to DDG fallback...")
+            return _search_ddg_fallback(query)
 
     except Exception as e:
-        print(f"[AgentTools] Search google error: {e}")
-        return f"[Lỗi tìm kiếm: {e}]"
+        print(f"[AgentTools] Search google error: {e}. Switching to DDG fallback...")
+        return _search_ddg_fallback(query)
 
 
 def crawl_url(url: str) -> str:

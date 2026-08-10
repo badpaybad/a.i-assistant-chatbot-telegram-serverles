@@ -633,6 +633,18 @@ class GroupChatAgent:
 
         # ── Kiểm tra và gửi reply ────────────────────────────────────────────
         if not final_reply:
+            # Nếu chạy hết các loop mà chưa có câu trả lời, gọi Gemma4 sinh trả lời trực tiếp
+            try:
+                fallback_res = _call_gemma4(
+                    system_prompt=system_text,
+                    user_message=user_prompt + "\n(Vui lòng trả lời câu hỏi trực tiếp dựa trên tri thức của bạn).",
+                    tools=None
+                )
+                final_reply = fallback_res.get("text", "").strip()
+            except Exception:
+                pass
+
+        if not final_reply:
             final_reply = "Em đã nhận tin nhắn nhưng chưa có câu trả lời phù hợp."
 
         # Bỏ qua nếu AI quyết định không cần reply
