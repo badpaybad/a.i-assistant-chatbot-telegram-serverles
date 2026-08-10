@@ -2044,7 +2044,7 @@ async def v1_import_scenario_session(req: V1ScenarioImportRequest):
 
 # Font & Gcode APIs
 class FontGcodeRequest(BaseModel):
-    font_name: str
+    font_name: str = "arial.ttf"
     text: str
     font_size_pt: float = 72.0
     line_spacing: float = 1.2
@@ -2053,10 +2053,10 @@ class FontGcodeRequest(BaseModel):
     z_draw: float = 45.0
     feed_rate: float = 4000.0
     margin_mm: float = 0.0
-    epsilon: float = 1.2
+    epsilon: float = 0.3
     binary_threshold: int = 128
     render_dpi: int = 300
-    min_path_len_mm: float = 0.5
+    min_path_len_mm: float = 0.05
     sort_row_height_mm: float = 10.0
     stroke_mode: str = "single_line"
     pen_mode: Optional[str] = None
@@ -2151,10 +2151,19 @@ def generate_font_gcode(req: FontGcodeRequest):
         draw.multiline_text((pad_px - bbox[0], pad_px - bbox[1]), normalized_text, fill=0, font=font, spacing=spacing_px)
 
         img_np = np.array(img)
-        thresh_val = req.binary_threshold if req.binary_threshold and 1 <= req.binary_threshold <= 254 else 128
+        # Adaptive binarization for small fonts (8pt - 14pt)
+        is_small_font = (req.font_size_pt <= 14.0)
+        default_thresh = 180 if is_small_font else 128
+        thresh_val = req.binary_threshold if req.binary_threshold and 1 <= req.binary_threshold <= 254 else default_thresh
         binary_img = img_np < thresh_val
 
-        if req.stroke_mode == "single_line" and skeletonize is not None:
+        # Morphological dilation for small fonts or single_line_bold mode to prevent stroke breaking
+        if is_small_font or req.stroke_mode == "single_line_bold":
+            if cv2 is not None:
+                kernel = np.ones((2, 2), np.uint8)
+                binary_img = cv2.dilate(binary_img.astype(np.uint8), kernel, iterations=1) > 0
+
+        if (req.stroke_mode in ("single_line", "single_line_bold")) and skeletonize is not None:
             skeleton = skeletonize(binary_img)
             contour_img = (skeleton * 255).astype(np.uint8)
         else:
@@ -2194,12 +2203,14 @@ def generate_font_gcode(req: FontGcodeRequest):
         sin_a = math.sin(rad)
 
         raw_paths = []
-        min_path_len_mm = req.min_path_len_mm if req.min_path_len_mm is not None else 0.5
+        effective_epsilon = min(req.epsilon, 0.3) if is_small_font else req.epsilon
+        min_path_len_mm = min(req.min_path_len_mm, 0.02) if is_small_font else (req.min_path_len_mm if req.min_path_len_mm is not None else 0.05)
+
         for contour in contours:
-            if len(contour) < 2:
+            if len(contour) < 1:
                 continue
-            if cv2 is not None:
-                approx = cv2.approxPolyDP(contour, epsilon=req.epsilon, closed=False)
+            if cv2 is not None and len(contour) >= 2:
+                approx = cv2.approxPolyDP(contour, epsilon=effective_epsilon, closed=False)
                 pts = approx.reshape(-1, 2)
             else:
                 pts = contour.reshape(-1, 2)
@@ -2221,10 +2232,15 @@ def generate_font_gcode(req: FontGcodeRequest):
 
                 path_mm.append((x_mm, y_mm))
 
+            # Preserve single point dots by creating a micro-dip stroke
+            if len(path_mm) == 1:
+                pt_dot = path_mm[0]
+                path_mm = [pt_dot, (round(pt_dot[0] + 0.05, 2), round(pt_dot[1] + 0.05, 2))]
+
             if len(path_mm) >= 2:
                 # Calculate path length in mm
                 path_len = sum(np.hypot(path_mm[i][0] - path_mm[i-1][0], path_mm[i][1] - path_mm[i-1][1]) for i in range(1, len(path_mm)))
-                if path_len >= min_path_len_mm:
+                if path_len >= min_path_len_mm or is_small_font:
                     raw_paths.append(path_mm)
 
         # Calculate line height in mm to group text lines accurately

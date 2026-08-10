@@ -396,7 +396,7 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
   Render DPI: 300
   tỷ lệ pixel với milimet đi theo Cấu Hình (cncapi/calibration_settings.json)
 
-  
+**cập nhật 43** với Render DPI: 300 và  tỷ lệ pixel với milimet đi theo Cấu Hình (cncapi/calibration_settings.json) như đã làm ở cập nhật 42. Chọn Font Chữ: mặc định chọn cncapi/fonts/arial.ttf . việc tạo gcode từ font với cỡ chữ 8pt 9pt 10pt 12pt 14pt hay bị mất nét cần tìm hiểu kỹ và xử lý thêm Chế Độ Nét Chữ cũng như Điều chỉnh nâng cao để đạt được vẽ chữ 1 nét đủ tốt chữ rõ ràng không mất nét 
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
 

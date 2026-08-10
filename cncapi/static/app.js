@@ -2156,6 +2156,9 @@
                         const opt = document.createElement('option');
                         opt.value = f;
                         opt.textContent = f;
+                        if (f.toLowerCase().includes('arial')) {
+                            opt.selected = true;
+                        }
                         fontSelect.appendChild(opt);
                     });
                 }
@@ -2191,12 +2194,12 @@
                         stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
                         pen_mode: document.getElementById('font-pen-mode')?.value || penMode || 'spindle-pwm',
                         axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '1')),
-                        epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
+                        epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '0.3'),
                         margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
                         rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
                         binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
                         render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300'),
-                        min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
+                        min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.05'),
                         sort_row_height_mm: parseFloat(document.getElementById('font-sort-row-h')?.value || '10.0'),
                         mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.5')
                     })
