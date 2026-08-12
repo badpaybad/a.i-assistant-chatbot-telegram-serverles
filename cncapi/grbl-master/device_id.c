@@ -7,6 +7,9 @@
 
 #if defined(__AVR__)
   #include <avr/boot.h>
+#elif defined(ESP32) || defined(ESP_PLATFORM)
+  #include <esp_mac.h>
+  #include "esp_system.h"
 #endif
 
 // Helper function to print an uint8 variable in hex format (2 digits)
@@ -31,7 +34,7 @@ void report_device_id(void)
     #if defined(__AVR_ATmega328PB__)
       printPgmString(PSTR("GRBL-328PB-"));
       uint8_t i;
-      for (i = 0; i < 4; i++) {
+      for (i = 0; i < 10; i++) {
         print_uint8_hex(boot_signature_byte_get(0x0E + i));
       }
     #else
@@ -41,11 +44,7 @@ void report_device_id(void)
       print_uint8_hex(boot_signature_byte_get(0x02)); // 95 (328P Family)
       print_uint8_hex(boot_signature_byte_get(0x04)); // 0F (Revision)
       printPgmString(PSTR("-"));
-      #ifdef boot_signature_byte_get
-        print_uint8_hex(boot_signature_byte_get(0x01)); // OSCCAL Silicon Fingerprint duy nhất từng con chip
-      #else
-        printPgmString(PSTR("00"));
-      #endif
+      print_uint8_hex(boot_signature_byte_get(0x01)); // OSCCAL Silicon Fingerprint duy nhất từng con chip
     #endif
   #else
     printPgmString(PSTR("GRBL-GENERIC"));
@@ -69,3 +68,4 @@ void report_device_id(void)
 
   printPgmString(PSTR("]\r\n"));
 }
+

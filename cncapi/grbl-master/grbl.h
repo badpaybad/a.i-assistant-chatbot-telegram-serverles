@@ -26,11 +26,15 @@
 #define GRBL_VERSION_BUILD "20150620"
 
 // Define standard libraries used by Grbl.
-#include <avr/io.h>
-#include <avr/pgmspace.h>
-#include <avr/interrupt.h>
-#include <avr/wdt.h>
-#include <util/delay.h>
+#if defined(__AVR__)
+  #include <avr/io.h>
+  #include <avr/pgmspace.h>
+  #include <avr/interrupt.h>
+  #include <avr/wdt.h>
+  #include <util/delay.h>
+#else
+  #error "Grbl phien ban nay chi ho tro vi dieu khien AVR (Arduino Uno, Nano, Mega). Vui long chon dung bo mach trong Arduino IDE: Tools > Board > Arduino AVR Boards > Arduino Uno."
+#endif
 #include <math.h>
 #include <inttypes.h>    
 #include <string.h>
