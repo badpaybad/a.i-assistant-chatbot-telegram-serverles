@@ -19,6 +19,7 @@
 
     // Telemetry State
     let telemetry = {
+        device_id: '',
         state: 'NGOẠI TUYẾN',
         mpos: [0, 0, 0],
         wpos: [0, 0, 0],
@@ -575,6 +576,11 @@
         if (stateBadge && isConnected) {
             stateBadge.className = 'state-badge connected';
             stateBadge.innerText = telemetry.state || 'IDLE';
+        }
+
+        const devIdEl = document.getElementById('cnc-device-id');
+        if (devIdEl) {
+            devIdEl.innerText = (isConnected && telemetry.device_id) ? `: ${telemetry.device_id}` : '';
         }
 
         document.getElementById('tel-feedrate').innerText = Math.round(telemetry.feedrate || 0);

@@ -135,6 +135,7 @@ class ControllerState:
         self.port_name = ""
         self.baudrate = 115200
         self.serial_port = None
+        self.device_id = ""
         self.machine_state = "NGOẠI TUYẾN"
         self.mpos = [0.0, 0.0, 0.0]
         self.wpos = [0.0, 0.0, 0.0]
@@ -310,6 +311,10 @@ class DummySerial:
                 elif cmd.startswith("$23="):
                     val = cmd.split("=")[1].strip()
                     state.grbl_settings["$23"] = val
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                elif cmd == "$GETID":
+                    state.device_id = "GRBL-328P-1E950F-DUMMY"
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "[ID:GRBL-328P-1E950F-DUMMY, MAC:]"}))
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
                 elif cmd == "$$":
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
@@ -543,6 +548,13 @@ async def serial_reader_loop():
                             await broadcast({"type": "log", "direction": "out", "content": "$X"})
                         except Exception as ex:
                             logger.error(f"Lỗi khi gửi $X tự động: {ex}")
+                    elif "[ID:" in line:
+                        match = re.search(r"\[ID:([^,\]]+)", line)
+                        if match:
+                            state.device_id = match.group(1).strip()
+                        else:
+                            state.device_id = line.strip()
+                        await send_telemetry()
             else:
                 await asyncio.sleep(0.01)
         except Exception as e:
@@ -616,7 +628,8 @@ async def send_telemetry():
         "scenario_name": state.scenario_name,
         "scenario_actions": state.scenario_actions,
         "scenario_insert_index": state.scenario_insert_index,
-        "scenario_is_looping": state.scenario_is_looping
+        "scenario_is_looping": state.scenario_is_looping,
+        "device_id": state.device_id
     })
 
 def generate_scenario_gcode(actions: list) -> str:
@@ -1003,6 +1016,7 @@ async def connect_cnc(config: ConnectionConfig):
         
     state.port_name = config.port
     state.baudrate = config.baudrate
+    state.device_id = ""
     
     if config.port == "dummy":
         state.serial_port = DummySerial()
@@ -1015,6 +1029,9 @@ async def connect_cnc(config: ConnectionConfig):
         # Cập nhật 37: Tự động unlock khi kết nối thành công để sẵn sàng làm việc
         await safe_write_serial(b"$X\n")
         await broadcast({"type": "log", "direction": "out", "content": "$X"})
+        # Cập nhật 46: Tự động gửi $GETID để lấy device_id
+        await safe_write_serial(b"$GETID\n")
+        await broadcast({"type": "log", "direction": "out", "content": "$GETID"})
         await broadcast({"type": "connection", "connected": True, "message": "Đã kết nối chế độ giả lập"})
         await send_telemetry()
         # Cập nhật 38: Tự động Homing khi kết nối thành công
@@ -1042,6 +1059,9 @@ async def connect_cnc(config: ConnectionConfig):
         await safe_write_serial(b"\r\n$X\n")
         await broadcast({"type": "log", "direction": "out", "content": "$X"})
         await asyncio.sleep(0.5)
+        # Cập nhật 46: Tự động gửi $GETID để lấy device_id
+        await safe_write_serial(b"$GETID\n")
+        await broadcast({"type": "log", "direction": "out", "content": "$GETID"})
         
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
@@ -1063,6 +1083,7 @@ async def disconnect_cnc():
         return {"status": "success", "message": "Chưa kết nối"}
         
     state.connected = False
+    state.device_id = ""
     if state.reader_task:
         state.reader_task.cancel()
     if state.polling_task:

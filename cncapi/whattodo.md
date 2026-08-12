@@ -403,10 +403,6 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 
 **cập nhật 45** Tự động lưu cấu hình `step_distance` (`sys-step-distance`) và các tham số ở Cấu Hình Cấu Trúc & Gốc Làm Việc ngay khi người dùng thay đổi giá trị (sự kiện input/change), đảm bảo khi F5 reload trang giá trị mới (ví dụ 0.5mm) được giữ nguyên không bị reset về giá trị cũ.
 
+**cập nhật 46** (Arduino Uno + driver động cơ shield v3) cnc đã được nạp mạch cncapi/grbl-master/protocol.c bổ xung thêm lệnh để lấy device_id: $GETID (report_device_id cncapi/grbl-master/device_id.c ) ở Cấu Hình Kết Nối & Thông Tin CNC, khi kết nối cnc thành công cần lấy device_id để ngay sau Cấu Hình Kết Nối & Thông Tin CNC: {device_id} 
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
-
-
-
-
-
