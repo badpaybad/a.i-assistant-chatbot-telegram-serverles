@@ -1,5 +1,5 @@
 {
-  "port": "",
+  "port": "/dev/ttyACM0",
   "baudrate": 115200,
   "step_distance": 0.5,
   "jog_feedrate": 4000.0,
