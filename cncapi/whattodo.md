@@ -420,4 +420,14 @@ Các notify tự người dùng cần tắt chứ không tự tắt
 
 **cập nhật 50** khung tl tr bl br hiện tại khá nhỏ so với kích thước thực tế là do vấn đề gì ?
 
+**cập nhật 51** 
+
+Gcode with Image Editor , Khi click Dừng & Về góc ban đầu , Dừng & Về gốc WPos
+  cần nhấc bút trước khi di chuyển 
+
+Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về gốc WPos
+  cần nhấc bút trước khi di chuyển 
+
+**cập nhật 52** 
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

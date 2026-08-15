@@ -1676,8 +1676,8 @@ async def v1_move_to(req: V1MoveToRequest):
 class StopAndReturnRequest(BaseModel):
     target_x: float = 0.0
     target_y: float = 0.0
-    z_safe: float = 0.0
-    pen_mode: str = "spindle-pwm"
+    z_safe: Optional[float] = None
+    pen_mode: Optional[str] = None
 
 @app.post("/cncapi/v1/motion/stop")
 async def v1_motion_stop():
@@ -1698,25 +1698,40 @@ async def v1_motion_stop_and_return(req: StopAndReturnRequest):
             # 2. Unlock GRBL sau reset
             await safe_write_serial(b"$X\n")
             await asyncio.sleep(0.1)
-            # 3. Nhấc dao lên trước khi di chuyển
-            if req.pen_mode == "spindle-pwm":
-                lift_cmd = f"M3 S{int(req.z_safe if req.z_safe > 0 else 10)}\n"
+            
+            # 3. Luôn đọc cấu hình Nhấc Bút chuẩn từ Cấu Hình Cấu Trúc & Gốc Làm Việc (state)
+            effective_pen_mode = getattr(state, 'pen_mode', 'spindle-pwm') if not req.pen_mode else req.pen_mode
+            pen_dwell_sec = getattr(state, 'pen_dwell', 0.25)
+            
+            if effective_pen_mode == "spindle-pwm":
+                pen_up_val = req.z_safe if (req.z_safe is not None and req.z_safe >= 0) else getattr(state, 'pen_up_pwm', 10.0)
+                lift_cmd = f"M3 S{pen_up_val:.2f}\nG4 P{pen_dwell_sec:.2f}\n"
             else:
-                lift_cmd = f"G0 Z{req.z_safe:.2f}\n"
+                pen_up_val = req.z_safe if (req.z_safe is not None and req.z_safe > 0) else getattr(state, 'pen_up_z', 3.0)
+                lift_cmd = f"G90\nG0 Z{pen_up_val:.2f}\n"
+                
+            # Phát lệnh nhấc bút lên an toàn trước
             await safe_write_serial(lift_cmd.encode())
-            await asyncio.sleep(0.1)
-            # 4. Di chuyển tới vị trí mục tiêu quy định
+            # Chờ đúng thời gian trễ nhấc bút (pen_dwell) để đảm bảo đầu bút đã nhấc hoàn toàn lên khỏi mặt phẳng
+            await asyncio.sleep(max(pen_dwell_sec + 0.15, 0.4))
+            
+            # 4. Di chuyển tới vị trí mục tiêu quy định (Gốc ban đầu hoặc Gốc WPos 0,0)
             move_cmd = f"G21\nG90\nG0 X{req.target_x:.2f} Y{req.target_y:.2f}\n"
             await safe_write_serial(move_cmd.encode())
             await asyncio.sleep(0.3)
-            # 5. Unlock lần nữa để các thao tác khác thực hiện được ngay
+            
+            # 5. Nếu dùng Spindle PWM, tắt xung Servo M5 sau khi đã về gốc an toàn
+            if effective_pen_mode == "spindle-pwm":
+                await safe_write_serial(b"M5\n")
+                
+            # 6. Unlock lần nữa để các thao tác khác thực hiện được ngay
             await safe_write_serial(b"$X\n")
-            await broadcast({"type": "log", "direction": "out", "content": f"<CTRL-X Reset & Return to X{req.target_x:.2f} Y{req.target_y:.2f}>"})
+            await broadcast({"type": "log", "direction": "out", "content": f"<CTRL-X Reset, Lift Pen & Return to X{req.target_x:.2f} Y{req.target_y:.2f}>"})
         except Exception as e:
             logger.error(f"Lỗi khi dừng và về gốc quy định: {e}")
             
     await broadcast({"type": "stream_status", "status": "stopped"})
-    return {"status": "success", "message": f"Đã dừng khẩn cấp và di chuyển về X={req.target_x}, Y={req.target_y}"}
+    return {"status": "success", "message": f"Đã dừng khẩn cấp, nhấc bút an toàn và di chuyển về X={req.target_x}, Y={req.target_y}"}
 
 @app.post("/cncapi/v1/motion/pen")
 async def v1_motion_pen(req: V1PenRequest):

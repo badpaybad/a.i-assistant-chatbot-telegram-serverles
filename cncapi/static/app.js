@@ -2591,8 +2591,8 @@
                 simHeadPos = { x: fontStartOffset.x, y: fontStartOffset.y };
                 drawCanvas();
 
-                const zSafe = parseFloat(document.getElementById('font-z-safe')?.value || '0.0');
-                const penModeVal = document.getElementById('font-pen-mode')?.value || 'spindle-pwm';
+                const penModeVal = document.getElementById('pen-mode')?.value || penMode || 'spindle-pwm';
+                const zSafe = parseFloat(document.getElementById('pen-up-val')?.value || (penModeVal === 'spindle-pwm' ? '10.0' : '3.0'));
 
                 try {
                     const res = await fetch('/cncapi/v1/motion/stop-and-return', {
@@ -2623,8 +2623,8 @@
                 simHeadPos = { x: 0, y: 0 };
                 drawCanvas();
 
-                const zSafe = parseFloat(document.getElementById('font-z-safe')?.value || '0.0');
-                const penModeVal = document.getElementById('font-pen-mode')?.value || 'spindle-pwm';
+                const penModeVal = document.getElementById('pen-mode')?.value || penMode || 'spindle-pwm';
+                const zSafe = parseFloat(document.getElementById('pen-up-val')?.value || (penModeVal === 'spindle-pwm' ? '10.0' : '3.0'));
 
                 try {
                     const res = await fetch('/cncapi/v1/motion/stop-and-return', {
@@ -3011,8 +3011,8 @@
                 simHeadPos = { x: imageStartOffset.x, y: imageStartOffset.y };
                 drawCanvas();
 
-                const mode = modeSelect?.value || 'servo';
-                const penModeVal = mode === 'servo' ? 'spindle-pwm' : 'z-axis';
+                const penModeVal = document.getElementById('pen-mode')?.value || penMode || 'spindle-pwm';
+                const zSafe = parseFloat(document.getElementById('pen-up-val')?.value || (penModeVal === 'spindle-pwm' ? '10.0' : '3.0'));
 
                 try {
                     const res = await fetch('/cncapi/v1/motion/stop-and-return', {
@@ -3021,7 +3021,7 @@
                         body: JSON.stringify({
                             target_x: imageStartOffset.x,
                             target_y: imageStartOffset.y,
-                            z_safe: 2.0,
+                            z_safe: zSafe,
                             pen_mode: penModeVal
                         })
                     });
@@ -3043,8 +3043,8 @@
                 simHeadPos = { x: 0, y: 0 };
                 drawCanvas();
 
-                const mode = modeSelect?.value || 'servo';
-                const penModeVal = mode === 'servo' ? 'spindle-pwm' : 'z-axis';
+                const penModeVal = document.getElementById('pen-mode')?.value || penMode || 'spindle-pwm';
+                const zSafe = parseFloat(document.getElementById('pen-up-val')?.value || (penModeVal === 'spindle-pwm' ? '10.0' : '3.0'));
 
                 try {
                     const res = await fetch('/cncapi/v1/motion/stop-and-return', {
@@ -3053,7 +3053,7 @@
                         body: JSON.stringify({
                             target_x: 0.0,
                             target_y: 0.0,
-                            z_safe: 2.0,
+                            z_safe: zSafe,
                             pen_mode: penModeVal
                         })
                     });

@@ -522,8 +522,9 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 47** | Ở chế độ Vị trí trục Z (`pen_mode: z-axis` cho Nema 23 + vít me), nút Nhấc Bút & Hạ Bút điều khiển nâng/hạ trục Z tương đối theo Bước Nhích (mm) (`step_distance`) linh hoạt tương tự điều khiển jog X, Y. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Chế độ `z-axis` phát lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` (Nhấc Bút) và `G91 G0 Z-<step> F<feed> G90` (Hạ Bút) theo Bước Nhích (`sys-step-distance`). |
 | **Cập nhật 48** | Thông báo lỗi Toastr tập trung: Bắt HTTP status != 200, phản hồi lỗi WebSocket GRBL, lỗi không kết nối được cổng USB với CNC, yêu cầu người dùng bấm đóng thủ công (`timeOut: 0`, `closeButton: true`). | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/styles.css`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/styles.css), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Tích hợp Toastr JS/CSS & hệ thống Toast DOM fallback. Tự động bắt lỗi HTTP API != 200, bẫy log lỗi `error:`/`ALARM:` từ WebSocket, bẫy lỗi ngắt kết nối USB và cấu hình `timeOut: 0` để người dùng chủ động bấm đóng (`✕`). |
 | **Cập nhật 49** | Hiển thị và cho phép chỉnh sửa toàn bộ 34+ thông số GRBL ($0–$132) lấy theo lệnh `$$`, lưu persistent thành đối tượng `cnc_physical` trong `calibration_settings.json`. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js), [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json) | Web API `/cncapi/v1/system/grbl_settings`, tự động bẫy phản hồi `$id=val` lưu vào `cnc_physical` đối tượng, UI panel `#grbl-system-details-panel` hiển thị và cho phép sửa tất cả 34+ tham số GRBL. |
-| **Cập nhật 50** | Đồng bộ tập tham số `cnc_physical` chuẩn từ lệnh `$$` vào `calibration_settings.json` và quy chuẩn Hệ tọa độ CNC trên Tool Path View (Gốc Bottom-Left, +X sang Phải, +Y lên Trên) | ✅ Hoàn thành | [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json), [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md) | Lưu trữ chính xác 34+ tham số GRBL physical ($0–$132) và xác nhận quy tắc trục tọa độ chuẩn Đề-các 2D (Gốc 0,0 Bottom-Left, OX sang phải dương, OY lên trên dương). |
-| **Cập nhật 51** | Tải toàn bộ tài nguyên CDN (JS, CSS, Google Fonts) về lưu nội bộ tại `static/vendor/` để ứng dụng Web UI hoạt động offline 100% không cần kết nối Internet. | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/vendor/`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/vendor/) | Đã tải `jquery.min.js`, `toastr.min.css`, `toastr.min.js`, các file phông chữ `.woff2` (`Outfit` & `Space Mono`) và tạo `fonts.css` nội bộ. Thay thế toàn bộ liên kết CDN trong `index.html`. |
+| **Cập nhật 51** | Gcode with Font Editor & Gcode with Image Editor: Khi click **🛑 Dừng & Về gốc ban đầu** hoặc **🏠 Dừng & Về gốc WPos**, hệ thống tự động nhấc bút an toàn và chờ trễ `pen_dwell` hoàn tất trước khi di chuyển X/Y về gốc để chống cào rách phôi/màn hình | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cập nhật API REST `/cncapi/v1/motion/stop-and-return`: thực hiện Soft Reset `\x18`, Unlock `$X`, phát lệnh nhấc bút `M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`, chờ trễ `max(pen_dwell + 0.15, 0.4s)` rồi mới di chuyển `G0 X.. Y..`, cuối cùng tắt xung `M5`. |
+| **Cập nhật 52** | Cấu hình tần số Timer2 61Hz chuẩn cho Servo RC (SG90/MG90S) trên vi điều khiển ATmega328P (Arduino Uno) để triệt tiêu hiện tượng đơ, rung giật, nóng động cơ | ✅ Hoàn thành | [`cncapi/grbl-master/cpu_map.h`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/grbl-master/cpu_map.h), [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md) | Chuyển Prescaler Timer2 từ `1/64` (980Hz) sang `1/1024` (61Hz), tính toán thời gian tick $0.064\text{ms}$ tương ứng dải góc `M3 S7` ($0^\circ$) đến `M3 S39` ($180^\circ$). Cặp giá trị chuẩn: Nhấc `M3 S10`, Hạ `M3 S28`. |
+| **Cập nhật 53** | Tự động đồng bộ toàn diện cấu hình Nhấc / Hạ Bút từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" sang G-code Font và G-code Image | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/image2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/image2gcode.py), [`cncapi/svg2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/svg2gcode.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cả hai bộ sinh `generate_font_gcode` và `sort_gcode_paths_left_to_right` đọc trực tiếp `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`. Các module `image2gcode.py` và `svg2gcode.py` tự động đọc cấu hình động qua `_get_pen_commands()`. |
 
 ### 2.22. Quản Lý & Lưu Cấu Hình Tất Cả Thông Số GRBL ($$) vào đối tượng `cnc_physical` trong `calibration_settings.json` (Cập nhật 49)
 
@@ -691,23 +692,68 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 
 
-### 2.24. Đồng Bộ Hóa Cấu Hình Nhấc / Hạ Bút Từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" Sang G-code Font & G-code Image (Cập Nhật 51)
+### 2.24. Cấu Hình Tần Số PWM Timer2 61Hz Cho Động Cơ Servo RC (SG90 / MG90S) Trên GRBL (Cập Nhật 52)
 
-1. **Vấn Đề Kỹ Thuật**:
-   - Trước đây, khi tạo G-code Font hoặc G-code Image, các giá trị nhấc/hạ bút bị gán cố định (`M3 S90` / `M3 S10` hoặc `G0 Z0` / `G1 Z45`), dẫn đến:
-     - Khi dùng Servo RC với tần số Timer2 mới (61Hz), góc `S90` bị kịch góc hoặc sai vị trí touch.
-     - Khi người dùng thay đổi giá trị Nhấc/Hạ trong khung **Cấu Hình Cấu Trúc & Gốc Làm Việc** (`pen_up_pwm`, `pen_down_pwm`, `pen_up_z`, `pen_down_z`, `pen_dwell`), G-code sinh ra từ ảnh hoặc font không tự động nhận các giá trị mới này.
+1. **Phân Tích Nguyên Nhân Kỹ Thuật (Lỗi Chập Chờn / Đơ Máy Ở 980Hz)**:
+   - GRBL v1.1 mặc định cấu hình Timer2 ở chế độ Fast PWM với Prescaler `1/64` tạo ra tần số phát xung **~980Hz (chu kỳ chỉ 1.02ms)**, tối ưu cho đầu cắt Laser / Spindle DC.
+   - Động cơ Servo RC (SG90 / MG90S) có mạch giải mã tích phân analog chỉ nhận diện độ rộng xung chuẩn trong chu kỳ **20ms (50Hz – 60Hz)**.
+   - Khi cấp xung 980Hz vào Servo RC:
+     - Tụ điện nạp/xả liên tục với tần số quá nhanh dẫn đến bão hòa hoặc sai lệch mức so sánh.
+     - Dòng điện tăng vọt gây sụt áp cổng USB (Brown-out) khiến Servo bị giật rè rè, nóng ran và đơ mạch ("lúc được lúc không").
+
+2. **Giải Pháp Triển Khai Phần Cứng Firmware (`cpu_map.h`)**:
+   - Chuyển bộ chia tần số Prescaler của Timer2 từ `1/64` sang `1/1024`:
+     ```c
+     // File: cncapi/grbl-master/cpu_map.h (dòng 147 & 213)
+     // #define SPINDLE_TCCRB_INIT_MASK   (1<<CS22)               // 1/64 prescaler -> 0.98kHz [CODE CŨ]
+     #define SPINDLE_TCCRB_INIT_MASK   ((1<<CS22) | (1<<CS21) | (1<<CS20)) // 1/1024 prescaler -> ~61Hz [CHUẨN SERVO RC]
+     ```
+
+3. **Toán Học Tính Toán Dải Giá Trị Xung Điều Khiển ($S7 \div S39$)**:
+   - Tần số Timer2 sau chia: $F = 16,000,000 / 1024 = 15,625\text{ Hz}$.
+   - Thời gian của 1 tick ($1$ đơn vị $S$): $T_{tick} = 1 / 15,625\text{ s} = 0.064\text{ ms} = 64\mu s$.
+   - **Góc cực tiểu $0^\circ$ ($0.5\text{ms}$)**: $S_{\min} = 0.5\text{ms} / 0.064\text{ms} \approx \mathbf{7.8} \rightarrow \mathbf{S7 \div S8}$.
+   - **Góc cực đại $180^\circ$ ($2.5\text{ms}$)**: $S_{\max} = 2.5\text{ms} / 0.064\text{ms} \approx \mathbf{39.0} \rightarrow \mathbf{S39}$.
+   - **Cặp giá trị chuẩn**:
+     - **Nhấc Bút (Pen Up)**: `M3 S10` *(hoặc `S12`)*
+     - **Hạ Bút / Chạm Màn Hình (Pen Down)**: `M3 S28` *(hoặc `S32`)*
+
+---
+
+### 2.25. Tự Động Đồng Bộ Toàn Diện Cấu Hình Nhấc / Hạ Bút Từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" Sang G-code Font & G-code Image (Cập Nhật 53)
+
+1. **Vấn Đề Kỹ Thuật Cũ**:
+   - Bộ sinh G-code Font trước đây sinh lệnh cơ khí `G0 Z0` và `G1 Z45` khiến bộ dịch PWM hiểu nhầm Z45 là nhấc bút và Z0 là hạ bút $\rightarrow$ bị đảo ngược hoàn toàn (cần vẽ thì nhấc, cần nhấc thì đè).
+   - Bộ sinh G-code Image trước đây gán cứng các lệnh `M3 S90` và `M3 S10` không theo cấu hình hệ thống.
+
+2. **Giải Pháp Đồng Bộ Hóa Đã Triển Khai**:
+   - **Backend G-code Font (`generate_font_gcode` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
+     - Tự động đọc `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`.
+     - Chế độ `spindle-pwm`: Phát trực tiếp `M3 S<state.pen_up_pwm>` + `G4 P<state.pen_dwell>` khi nhấc bút và `M3 S<state.pen_down_pwm>` + `G4 P<state.pen_dwell>` khi hạ bút.
+     - Chế độ `z-axis`: Phát trực tiếp `G0 Z<state.pen_up_z>` và `G1 Z<state.pen_down_z> F<feed_rate>`.
+     - Kết thúc bản vẽ phát lệnh `M5` tắt xung an toàn.
+   - **Backend G-code Image (`sort_gcode_paths_left_to_right`, [`image2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/image2gcode.py), [`svg2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/svg2gcode.py))**:
+     - Hàm `sort_gcode_paths_left_to_right` đồng bộ hóa 100% với `state.pen_mode` và các thông số nhấc/hạ PWM/Z.
+     - Tất cả các hàm chuyển đổi ảnh/SVG sử dụng helper `_get_pen_commands()` đọc dữ liệu động từ [`calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json).
+   - **Frontend UI (`app.js` & `index.html`)**:
+     - `updatePenInputs()` tự động gán giá trị từ khung Cấu Hình sang các form G-code Font/Image.
+ ### 2.26. Tự Động Nhấc Bút An Toàn Khi Bấm "Dừng & Về Gốc Ban Đầu" / "Dừng & Về Gốc WPos" (Cập Nhật 51)
+
+1. **Vấn Đề Kỹ Thuật Trước Đây**:
+   - Khi đang vẽ G-code Font hoặc G-code Image, nếu người dùng bấm **🛑 Dừng & Về gốc ban đầu** hoặc **🏠 Dừng & Về gốc WPos (0,0)**:
+     - Hệ thống phát lệnh Soft Reset `\x18` để ngắt đệm lệnh, nhưng sau đó lệnh di chuyển `G0 X... Y...` về gốc lại chạy quá nhanh trong khi đầu bút chưa kịp nhấc lên hoàn toàn (hoặc dùng tham số `z_safe` bị gán cứng không theo cấu hình hệ thống).
+     - Kết quả: Đầu bút quẹt/cào thẳng một đường ngang qua mặt phẳng phôi hoặc màn hình cảm ứng trong lúc hồi quy về gốc.
 
 2. **Giải Pháp Đã Triển Khai**:
-   - **Gcode with Font (`generate_font_gcode` trong `main.py`)**:
-     - `effective_pen_mode` tự động đọc từ `state.pen_mode` (`spindle-pwm` hoặc `z-axis`).
-     - Tự động sinh `M3 S<state.pen_up_pwm>` kèm `G4 P<state.pen_dwell>` khi nhấc bút và `M3 S<state.pen_down_pwm>` kèm `G4 P<state.pen_dwell>` khi hạ bút vẽ.
-     - Khi chạy ở chế độ Trục Z cơ khí, tự động sinh `G0 Z<state.pen_up_z>` và `G1 Z<state.pen_down_z> F<feed_rate>`.
-   - **Gcode with Image (`sort_gcode_paths_left_to_right`, `image2gcode.py`, `svg2gcode.py`)**:
-     - Hàm `sort_gcode_paths_left_to_right` trong `main.py` đọc trực tiếp từ `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`.
-     - Các module `image2gcode.py` và `svg2gcode.py` sử dụng hàm `_get_pen_commands()` nạp cấu hình động từ `calibration_settings.json`.
-   - **Giao Diện Frontend (`app.js`)**:
-     - Hàm `updatePenInputs()` và `generateFontGcode()` tự động đồng bộ giá trị giữa khung Cấu Hình Hệ Thống và các form tạo G-code.
+   - **Backend API `/cncapi/v1/motion/stop-and-return` ([`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
+     1. Gửi byte `\x18` (Soft Reset) để hủy toàn bộ các lệnh vẽ còn tồn trong buffer GRBL.
+     2. Gửi lệnh Unlock `$X` để đưa GRBL về trạng thái sẵn sàng.
+     3. Đọc thông số nhấc bút từ `state.pen_mode`, `state.pen_up_pwm` (nếu Servo PWM) hoặc `state.pen_up_z` (nếu Trục Z) và phát lệnh nhấc bút tương ứng (`M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`).
+     4. Chờ đúng thời gian trễ thực tế: `await asyncio.sleep(max(pen_dwell + 0.15, 0.4))` để đảm bảo động cơ Servo / Trục Z đã nhấc bút hoàn toàn tách khỏi bề mặt.
+     5. Phát lệnh di chuyển `G21 G90 G0 X<target_x> Y<target_y>` để đưa đầu CNC về gốc an toàn.
+     6. Nếu chạy Servo PWM, tự động gửi `M5` tắt xung Servo sau khi đã về gốc để bảo vệ động cơ.
+   - **Frontend ([`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - Cả 4 nút bấm dừng về gốc trong **Gcode with Font Editor** và **Gcode with Image Editor** (`btnStopReturnOrigin`, `btnStopHomeOrigin`) đều lấy trực tiếp `pen_mode` và `pen-up-val` từ **Cấu Hình Cấu Trúc & Gốc Làm Việc** truyền vào API, đảm bảo đồng bộ tuyệt đối.
 
 ---
 
