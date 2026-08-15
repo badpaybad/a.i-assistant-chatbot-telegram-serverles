@@ -1139,6 +1139,7 @@ async def disconnect_cnc():
     return {"status": "success", "message": "Đã ngắt kết nối"}
 
 @app.post("/api/command")
+@app.post("/cncapi/v1/motion/command")
 async def send_command(req: CommandRequest):
     if not state.connected or not state.serial_port:
         raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
@@ -1934,15 +1935,41 @@ async def v1_set_homing_direction(req: V1HomingDirectionRequest):
         "grbl_result": res
     }
 
+def safe_parse_float(val, default: float = 0.0) -> float:
+    if val is None:
+        return default
+    if isinstance(val, (int, float)):
+        return float(val)
+    try:
+        s = str(val).strip()
+        import re
+        match = re.search(r"[-+]?\d*\.?\d+", s)
+        if match:
+            return float(match.group(0))
+    except Exception:
+        pass
+    return default
+
+def safe_parse_int(val, default: int = 0) -> int:
+    if val is None:
+        return default
+    if isinstance(val, int):
+        return val
+    try:
+        s = str(val).strip()
+        import re
+        match = re.search(r"[-+]?\d+", s)
+        if match:
+            return int(match.group(0))
+    except Exception:
+        pass
+    return default
+
 @app.get("/cncapi/v1/system/grbl_info")
 async def v1_get_grbl_system_info():
     """Trả về toàn bộ thông tin cấu hình GRBL, chiều Homing X/Y/Z, $22, $23 và thông số động cơ CNC"""
-    homing_enabled = state.grbl_settings.get("$22") == "1"
-    try:
-        mask = int(state.grbl_settings.get("$23", "3"))
-    except ValueError:
-        mask = 3
-        
+    homing_enabled = str(state.grbl_settings.get("$22", "0")).strip().startswith("1")
+    mask = safe_parse_int(state.grbl_settings.get("$23", 3), 3)
     dir_info = get_homing_direction_details(mask)
     
     return {
@@ -1957,35 +1984,35 @@ async def v1_get_grbl_system_info():
             "y_dir": dir_info["y_dir"],
             "z_dir": dir_info["z_dir"],
             "label": dir_info["label"],
-            "feed_rate": float(state.grbl_settings.get("$24", 25.0)),
-            "seek_rate": float(state.grbl_settings.get("$25", 500.0)),
-            "pulloff": float(state.grbl_settings.get("$27", 1.0))
+            "feed_rate": safe_parse_float(state.grbl_settings.get("$24"), 25.0),
+            "seek_rate": safe_parse_float(state.grbl_settings.get("$25"), 500.0),
+            "pulloff": safe_parse_float(state.grbl_settings.get("$27"), 1.0)
         },
         "limits": {
-            "hard_limits": state.grbl_settings.get("$21") == "1",
-            "soft_limits": state.grbl_settings.get("$20") == "1"
+            "hard_limits": str(state.grbl_settings.get("$21", "0")).strip().startswith("1"),
+            "soft_limits": str(state.grbl_settings.get("$20", "0")).strip().startswith("1")
         },
         "motion": {
-            "dir_invert_mask": int(state.grbl_settings.get("$3", "0")),
+            "dir_invert_mask": safe_parse_int(state.grbl_settings.get("$3"), 0),
             "steps_per_mm": {
-                "x": float(state.grbl_settings.get("$100", 250.0)),
-                "y": float(state.grbl_settings.get("$101", 250.0)),
-                "z": float(state.grbl_settings.get("$102", 250.0))
+                "x": safe_parse_float(state.grbl_settings.get("$100"), 250.0),
+                "y": safe_parse_float(state.grbl_settings.get("$101"), 250.0),
+                "z": safe_parse_float(state.grbl_settings.get("$102"), 250.0)
             },
             "max_rate": {
-                "x": float(state.grbl_settings.get("$110", 4000.0)),
-                "y": float(state.grbl_settings.get("$111", 4000.0)),
-                "z": float(state.grbl_settings.get("$112", 4000.0))
+                "x": safe_parse_float(state.grbl_settings.get("$110"), 4000.0),
+                "y": safe_parse_float(state.grbl_settings.get("$111"), 4000.0),
+                "z": safe_parse_float(state.grbl_settings.get("$112"), 4000.0)
             },
             "accel": {
-                "x": float(state.grbl_settings.get("$120", 500.0)),
-                "y": float(state.grbl_settings.get("$121", 500.0)),
-                "z": float(state.grbl_settings.get("$122", 500.0))
+                "x": safe_parse_float(state.grbl_settings.get("$120"), 500.0),
+                "y": safe_parse_float(state.grbl_settings.get("$121"), 500.0),
+                "z": safe_parse_float(state.grbl_settings.get("$122"), 500.0)
             },
             "max_travel": {
-                "x": float(state.grbl_settings.get("$130", 200.0)),
-                "y": float(state.grbl_settings.get("$131", 200.0)),
-                "z": float(state.grbl_settings.get("$132", 200.0))
+                "x": safe_parse_float(state.grbl_settings.get("$130"), 200.0),
+                "y": safe_parse_float(state.grbl_settings.get("$131"), 200.0),
+                "z": safe_parse_float(state.grbl_settings.get("$132"), 200.0)
             }
         },
         "raw_settings": state.grbl_settings
