@@ -82,3 +82,34 @@ G1 Z-10 F500: Hạ đầu 1 xuống 10mm.
 G1 A-10 F500: Hạ đầu 2 xuống 10mm.
 
 
+
+Trong GRBL, tham số $23 (Homing Direction Invert Mask) sử dụng mã nhị phân (Bitmask) dựa trên giá trị cộng dồn của từng trục:
+
+Trục X: 1 (Bit 0)
+Trục Y: 2 (Bit 1)
+Trục Z: 4 (Bit 2)
+Hiện tại bạn đang cài $23=3 (vì 1 + 2 = 3), nghĩa là đang đảo chiều Homing cho cả X và Y.
+
+Cách chỉnh tùy theo mục đích của bạn:
+Nếu muốn đảo chiều Homing cả 3 trục (X, Y và Z):
+
+Chỉnh: $23=7 (vì 1 + 2 + 4 = 7)
+Nếu CHỈ muốn đảo chiều Homing duy nhất trục Z (giữ X và Y mặc định):
+
+Chỉnh: $23=4
+Nếu muốn đảo chiều X và Z (Y giữ mặc định):
+
+Chỉnh: $23=5 (vì 1 + 4 = 5)
+Nếu muốn đảo chiều Y và Z (X giữ mặc định):
+
+Chỉnh: $23=6 (vì 2 + 4 = 6)
+Bảng tổng hợp giá trị $23 để bạn dễ tra cứu:
+Giá trị $23	Trục X	Trục Y	Trục Z
+0	Mặc định	Mặc định	Mặc định
+1	Đảo chiều	Mặc định	Mặc định
+2	Mặc định	Đảo chiều	Mặc định
+3	Đảo chiều	Đảo chiều	Mặc định (hiện tại)
+4	Mặc định	Mặc định	Đảo chiều
+5	Đảo chiều	Mặc định	Đảo chiều
+6	Mặc định	Đảo chiều	Đảo chiều
+7	Đảo chiều	Đảo chiều	Đảo chiều

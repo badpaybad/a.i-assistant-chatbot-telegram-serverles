@@ -65,6 +65,102 @@
     let dragStartY = 0;
     let penTrajectory = [];
 
+    // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48) ====================
+    // Notifications MUST be manually dismissed by the user (timeOut: 0, extendedTimeOut: 0, closeButton: true)
+    function notifyToastr(type, title, message) {
+        console.error(`[Toastr Notify ${type ? type.toUpperCase() : 'ERROR'}] ${title}: ${message}`);
+        const safeTitle = title || (type === 'error' ? 'Lỗi Hệ Thống CNC' : 'Thông Báo');
+        const safeMsg = message || 'Có lỗi xảy ra trong quá trình xử lý!';
+
+        if (window.toastr && typeof window.toastr[type || 'error'] === 'function') {
+            window.toastr.options = {
+                closeButton: true,
+                debug: false,
+                newestOnTop: true,
+                progressBar: false,
+                positionClass: "toast-top-right",
+                preventDuplicates: false,
+                onclick: null,
+                showDuration: "300",
+                hideDuration: "300",
+                timeOut: 0,          // KHÔNG tự động đóng
+                extendedTimeOut: 0,  // KHÔNG tự động đóng khi rê chuột
+                tapToDismiss: false
+            };
+            window.toastr[type || 'error'](safeMsg, safeTitle);
+        }
+
+        // Custom DOM Toast item (đảm bảo hiển thị cả khi offline / không nạp được CDN toastr)
+        showCustomToastItem(type || 'error', safeTitle, safeMsg);
+    }
+
+    function showCustomToastItem(type, title, message) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = `toast-item toast-${type}`;
+        
+        const iconSymbol = type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : 'ℹ️');
+
+        toast.innerHTML = `
+            <div class="toast-icon">${iconSymbol}</div>
+            <div class="toast-content">
+                <div class="toast-title">${escapeHtml(title)}</div>
+                <div class="toast-message">${escapeHtml(message)}</div>
+            </div>
+            <button class="toast-close-btn" title="Đóng">&times;</button>
+        `;
+
+        const closeBtn = toast.querySelector('.toast-close-btn');
+        closeBtn.addEventListener('click', () => {
+            toast.style.animation = 'toastOut 0.25s ease forwards';
+            setTimeout(() => toast.remove(), 250);
+        });
+
+        container.appendChild(toast);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Global Wrapper cho Fetch API - Bắt httpstatus != 200 tự động notify Toastr lỗi
+    async function apiFetch(url, options = {}) {
+        try {
+            const res = await fetch(url, options);
+            if (!res.ok) {
+                let errorDetail = `HTTP ${res.status}: ${res.statusText}`;
+                try {
+                    const cloned = res.clone();
+                    const data = await cloned.json();
+                    if (data.detail) errorDetail = data.detail;
+                    else if (data.message) errorDetail = data.message;
+                } catch (e) {
+                    try {
+                        const text = await res.clone().text();
+                        if (text) errorDetail = text;
+                    } catch (ex) {}
+                }
+                notifyToastr('error', `Lỗi Request CNC (${res.status})`, errorDetail);
+            }
+            return res;
+        } catch (err) {
+            notifyToastr('error', 'Lỗi Gửi Yêu Cầu CNC', err.message || 'Không thể kết nối đến máy chủ backend!');
+            throw err;
+        }
+    }
+
     // Simulation state
     let simAnimFrame = null;
     let simPathSegments = []; // [{type, points:[{x,y}], penDown, stepLabel}]
@@ -236,12 +332,25 @@
 
         document.getElementById('jog-home')?.addEventListener('click', async () => {
             try {
-                await fetch('/cncapi/v1/origin/home', { method: 'POST' });
+                const res = await fetch('/cncapi/v1/origin/home', { method: 'POST' });
+                const data = await res.json();
+                if (data.detail) {
+                    alert(t('Lỗi khi thực hiện Về gốc máy: ') + data.detail);
+                }
             } catch (err) {
                 alert(t('Lỗi khi thực hiện Về gốc máy: ') + err.message);
             }
         });
-        document.getElementById('jog-unlock')?.addEventListener('click', () => sendCommand('$X'));
+        document.getElementById('jog-unlock')?.addEventListener('click', async () => {
+            try {
+                const res = await fetch('/cncapi/v1/origin/unlock', { method: 'POST' });
+                const data = await res.json();
+                isHomeSet = true;
+                appendConsoleLog('info', data.message || 'Đã Mở khóa ($X) & Giải phóng cờ Homing thành công!');
+            } catch (err) {
+                sendCommand('$X');
+            }
+        });
 
         // Gesture Action Setup
         document.getElementById('btn-set-start')?.addEventListener('click', () => {
@@ -424,17 +533,17 @@
             const baudrate = baudrateSelect ? parseInt(baudrateSelect.value) : 115200;
             if (btn) btn.innerText = t('Đang kết nối...');
             try {
-                const res = await fetch('/api/connect', {
+                const res = await apiFetch('/api/connect', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ port, baudrate })
                 });
                 const data = await res.json();
-                if (data.status === 'error') {
-                    alert(data.message);
+                if (data.status === 'error' || !data.connected) {
+                    notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', data.message || 'Lỗi mở cổng Serial USB kết nối với máy CNC!');
                 }
             } catch (e) {
-                console.error('Connect error:', e);
+                notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', e.message || 'Lỗi mở cổng Serial USB kết nối với máy CNC!');
             }
         }
     }
@@ -527,8 +636,17 @@
         } else if (msg.type === 'connection') {
             isConnected = msg.connected;
             updateConnectionUI();
+            if (!msg.connected && msg.message) {
+                notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', msg.message);
+            }
         } else if (msg.type === 'log') {
             appendConsoleLog(msg.direction, msg.content);
+            if (msg.direction === 'in' && msg.content) {
+                const lowerContent = String(msg.content).toLowerCase();
+                if (lowerContent.includes('error:') || lowerContent.includes('alarm:')) {
+                    notifyToastr('error', '⚠️ Lỗi Phản Hồi Từ Máy CNC (GRBL)', msg.content);
+                }
+            }
         } else if (msg.type === 'stream_status') {
             if (msg.status === 'started') {
                 stopAllSimulations();
@@ -666,12 +784,24 @@
     }
 
     function appendConsoleLog(dir, text) {
+        // Ghi log ra Web Browser Console (DevTools console.log)
+        const prefix = dir === 'out' ? '>' : (dir === 'in' ? '<' : '•');
+        const displayMsg = text !== undefined ? `${prefix} ${text}` : dir;
+        if (dir === 'out') {
+            console.log(`%c[CNC OUT] ${displayMsg}`, 'color: #3b82f6; font-weight: bold;');
+        } else if (dir === 'in') {
+            console.log(`%c[CNC IN] ${displayMsg}`, 'color: #10b981; font-weight: bold;');
+        } else if (dir === 'error' || (typeof text === 'string' && (text.includes('error') || text.includes('Lỗi') || text.includes('ALARM')))) {
+            console.error(`[CNC ERROR] ${displayMsg}`);
+        } else {
+            console.log(`[CNC LOG] ${displayMsg}`);
+        }
+
         const out = document.getElementById('console-output');
         if (!out) return;
         const line = document.createElement('div');
         line.className = `log-line ${dir}`;
-        const prefix = dir === 'out' ? '>' : '<';
-        line.innerText = `${prefix} ${text}`;
+        line.innerText = displayMsg;
         out.appendChild(line);
         out.scrollTop = out.scrollHeight;
     }
@@ -706,7 +836,7 @@
             }
         } else {
             const { feed, step } = getSystemConfig();
-            const dir = (stateType === 'up') ? 'Z+' : 'Z-';
+            const dir = (stateType === 'down') ? 'Z+' : 'Z-';
             fetch('/cncapi/v1/motion/jog', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -764,7 +894,7 @@
 
             const { feed, step } = getSystemConfig();
             try {
-                await fetch('/cncapi/v1/motion/jog', {
+                await apiFetch('/cncapi/v1/motion/jog', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ direction: dir, step_distance: step, feedrate: feed })

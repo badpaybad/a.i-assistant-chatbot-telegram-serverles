@@ -179,8 +179,17 @@ uint8_t system_execute_line(char *line)
               protocol_execute_realtime(); // Enter safety door mode.
             }
             
-            
-            mc_homing_cycle(); 
+            char axis_char = line[char_counter+1];
+            if (axis_char == 'X' || axis_char == 'x') {
+              limits_go_home(1<<X_AXIS);
+            } else if (axis_char == 'Y' || axis_char == 'y') {
+              limits_go_home(1<<Y_AXIS);
+            } else if (axis_char == 'Z' || axis_char == 'z') {
+              limits_go_home(1<<Z_AXIS);
+            } else {
+              mc_homing_cycle(); 
+            }
+
             if (!sys.abort) {  // Execute startup scripts after successful homing.
               sys.state = STATE_IDLE; // Set to IDLE when complete.
               st_go_idle(); // Set steppers to the settings idle state before returning.

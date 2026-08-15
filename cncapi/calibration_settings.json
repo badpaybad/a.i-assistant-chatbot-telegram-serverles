@@ -1,8 +1,8 @@
 {
   "port": "",
   "baudrate": 115200,
-  "step_distance": 1.0,
-  "jog_feedrate": 4000.0,
+  "step_distance": 5.0,
+  "jog_feedrate": 1000.0,
   "swipe_feedrate": 10000.0,
   "gesture_distance": 40.0,
   "gesture_tap_dwell": 0.06,
@@ -16,7 +16,7 @@
   "axis_dir_x": 1,
   "axis_dir_y": 1,
   "mm_per_px": 0.0846774193548387,
-  "home_set": false,
+  "home_set": true,
   "workpiece_origin": {
     "x": 0.0,
     "y": 0.0,

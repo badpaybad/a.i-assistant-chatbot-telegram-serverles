@@ -224,6 +224,7 @@ class ControllerState:
         self.websocket_connections: Set[WebSocket] = set()
         self.grbl_ack_event = asyncio.Event()
         self.last_grbl_response: str = ""
+        self.grbl_version: str = "0.9i"
         self.serial_lock = asyncio.Lock()
         
         # Tasks
@@ -293,12 +294,13 @@ class DummySerial:
                             val = float(match.group(1))
                             state.wpos[idx] = val
                             state.mpos[idx] = val + state.wco[idx]
-                elif any(g in upper for g in ["G0", "G1", "G00", "G01"]):
+                elif any(g in upper for g in ["G0", "G1", "G00", "G01", "$J="]):
+                    is_rel = self.relative_mode or "G91" in upper
                     for idx, axis in enumerate(["X", "Y", "Z"]):
                         match = re.search(rf"{axis}([-+]?[0-9]*\.?[0-9]+)", cmd, re.IGNORECASE)
                         if match:
                             val = float(match.group(1))
-                            if self.relative_mode:
+                            if is_rel:
                                 state.wpos[idx] += val
                             else:
                                 state.wpos[idx] = val
@@ -406,25 +408,9 @@ def translate_command(command: str) -> List[str]:
 
 def check_motion_bounds(target_x: float, target_y: float) -> Optional[str]:
     """
-    Cập nhật 39: Kiểm tra tọa độ mục tiêu (target_x, target_y) trong hệ tọa độ WPos
-    có vượt quá giới hạn vùng làm việc được thiết lập bởi 4 góc (TL, TR, BL, BR) hay không.
-    Chỉ kích hoạt kiểm tra khi:
-      1. Đã Homing / Set gốc máy (state.home_set == True).
-      2. Đã thiết lập đầy đủ cả 4 góc cnc_tl, cnc_tr, cnc_bl, cnc_br.
+    Theo yêu cầu: Chỉ kiểm tra tọa độ khi click trực tiếp trên Tool Path View (Frontend app.js).
+    Không chặn di chuyển trực tiếp từ API Jog, nút điều khiển thủ công hoặc lệnh curl.
     """
-    if not state.home_set:
-        return None
-
-    tl, tr, bl, br = state.cnc_tl, state.cnc_tr, state.cnc_bl, state.cnc_br
-    if tl and tr and bl and br:
-        min_x = min(tl["x"], tr["x"], bl["x"], br["x"])
-        max_x = max(tl["x"], tr["x"], bl["x"], br["x"])
-        min_y = min(tl["y"], tr["y"], bl["y"], br["y"])
-        max_y = max(tl["y"], tr["y"], bl["y"], br["y"])
-
-        eps = 1e-4
-        if target_x < min_x - eps or target_x > max_x + eps or target_y < min_y - eps or target_y > max_y + eps:
-            return f"Tọa độ di chuyển (X:{target_x:.2f}, Y:{target_y:.2f}) vượt quá vùng làm việc 4 góc [X: {min_x:.2f}..{max_x:.2f}, Y: {min_y:.2f}..{max_y:.2f}]"
     return None
 
 def check_gcode_line_bounds(clean_cmd: str, is_relative: bool = False) -> Optional[str]:
@@ -536,18 +522,22 @@ async def serial_reader_loop():
                         if state.sent_buffer_lengths:
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
-                    elif line.startswith("ALARM:") or "to unlock" in line.lower() or "grbl 1.1" in line.lower():
+                    elif line.startswith("ALARM:") or "to unlock" in line.lower() or "grbl" in line.lower():
                         state.last_grbl_response = line
-                        await broadcast({
-                            "type": "log",
-                            "direction": "in",
-                            "content": f"⚠️ [{line}] Tự động gửi lệnh Unlock ($X) để sẵn sàng làm việc..."
-                        })
-                        try:
-                            await safe_write_serial(b"$X\n")
-                            await broadcast({"type": "log", "direction": "out", "content": "$X"})
-                        except Exception as ex:
-                            logger.error(f"Lỗi khi gửi $X tự động: {ex}")
+                        match_ver = re.search(r"grbl\s+([0-9]+\.[0-9]+[a-z]?)", line, re.IGNORECASE)
+                        if match_ver:
+                            state.grbl_version = match_ver.group(1)
+                        if "alarm:" in line.lower() or "to unlock" in line.lower():
+                            await broadcast({
+                                "type": "log",
+                                "direction": "in",
+                                "content": f"⚠️ [{line}] Tự động gửi lệnh Unlock ($X) để sẵn sàng làm việc..."
+                            })
+                            try:
+                                await safe_write_serial(b"$X\n")
+                                await broadcast({"type": "log", "direction": "out", "content": "$X"})
+                            except Exception as ex:
+                                logger.error(f"Lỗi khi gửi $X tự động: {ex}")
                     elif "[ID:" in line:
                         match = re.search(r"\[ID:([^,\]]+)", line)
                         if match:
@@ -996,11 +986,19 @@ async def run_auto_home():
     state.is_homing = True
     try:
         await broadcast({"type": "log", "direction": "in", "content": "🔄 [Tự động Homing] Bắt đầu tự động Homing về gốc máy..."})
-        await send_command(CommandRequest(command="$H"))
+        try:
+            await send_command(CommandRequest(command="$HX\n$HY"))
+        except Exception:
+            await send_command(CommandRequest(command="$H"))
         await broadcast({"type": "log", "direction": "in", "content": "✅ [Tự động Homing] Homing thành công và gốc tọa độ đã được đồng bộ!"})
     except Exception as e:
         logger.error(f"Lỗi khi tự động Homing: {e}")
-        await broadcast({"type": "log", "direction": "in", "content": f"❌ [Tự động Homing] Thất bại: {e}"})
+        await broadcast({"type": "log", "direction": "in", "content": f"❌ [Tự động Homing] Thất bại ({e}). Tự động mở khóa ($X)..."})
+        try:
+            await safe_write_serial(b"$X\n")
+            await broadcast({"type": "log", "direction": "out", "content": "$X"})
+        except Exception:
+            pass
     finally:
         state.is_homing = False
 
@@ -1056,8 +1054,8 @@ async def connect_cnc(config: ConnectionConfig):
             except Exception:
                 pass
         
-        await safe_write_serial(b"\r\n$X\n")
-        await broadcast({"type": "log", "direction": "out", "content": "$X"})
+        await safe_write_serial(b"\x18\r\n$X\r\n")
+        await broadcast({"type": "log", "direction": "out", "content": "\x18 $X"})
         await asyncio.sleep(0.5)
         # Cập nhật 46: Tự động gửi $GETID để lấy device_id
         await safe_write_serial(b"$GETID\n")
@@ -1065,9 +1063,9 @@ async def connect_cnc(config: ConnectionConfig):
         
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
-        # Cập nhật 38: Tự động Homing khi kết nối thành công
-        if not state.is_homing:
-            asyncio.create_task(run_auto_home())
+        # Tắt tự động Homing khi kết nối để tránh bo mạch GRBL bị khóa ALARM:8 khi không có công tắc Z
+        # if not state.is_homing:
+        #     asyncio.create_task(run_auto_home())
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
         state.connected = False
@@ -1117,21 +1115,25 @@ async def send_command(req: CommandRequest):
             if not clean_cmd:
                 continue
             try:
-                if clean_cmd.upper() == "$H":
+                if clean_cmd.upper() in ["$H", "$HX", "$HY", "$HZ", "$HXY"]:
                     if state.is_homing:
                         logger.info("Đang trong quá trình Homing...")
                     state.is_homing = True
                     try:
-                        # Cập nhật 35 & 36 & 37 & 38: Nhấc dao trước -> Homing ($H) -> Chờ Homing hoàn tất -> Unlock ($X) -> Set Gốc Làm Việc (G10 L20 P1 X0 Y0 Z0)
-                        pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
-                        await safe_write_serial((pen_up_cmd + "\n").encode())
-                        await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
-                        await asyncio.sleep(state.pen_dwell or 0.25)
+                        homing_cmd = clean_cmd.upper()
+                        # Chỉ phát lệnh nhấc dao nếu Homing tổng ($H, $HXY) hoặc chế độ spindle-pwm
+                        # Ngừa trục Z bị di chuyển khi chỉ Homing riêng $HX / $HY ở chế độ z-axis
+                        pen_up_cmd = ""
+                        if homing_cmd in ["$H", "$HXY"] or state.pen_mode == "spindle-pwm":
+                            pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
+                            await safe_write_serial((pen_up_cmd + "\n").encode())
+                            await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
+                            await asyncio.sleep(state.pen_dwell or 0.25)
 
                         state.grbl_ack_event.clear()
                         state.last_grbl_response = ""
-                        await safe_write_serial(b"$H\n")
-                        await broadcast({"type": "log", "direction": "out", "content": "$H"})
+                        await safe_write_serial(f"{homing_cmd}\n".encode())
+                        await broadcast({"type": "log", "direction": "out", "content": homing_cmd})
 
                         # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' khi homing xong)
                         if isinstance(state.serial_port, DummySerial):
@@ -1140,14 +1142,19 @@ async def send_command(req: CommandRequest):
                             try:
                                 await asyncio.wait_for(state.grbl_ack_event.wait(), timeout=35.0)
                             except asyncio.TimeoutError:
-                                logger.warning("Homing $H timeout waiting for GRBL ack 'ok'")
+                                logger.warning(f"Homing {homing_cmd} timeout waiting for GRBL ack 'ok'")
                                 raise HTTPException(status_code=400, detail="Homing bị quá thời gian (Timeout)")
                             await asyncio.sleep(0.5)
                             
                             if "error" in state.last_grbl_response or "ALARM" in state.last_grbl_response:
+                                err_msg = state.last_grbl_response or 'Lỗi không xác định'
+                                await safe_write_serial(b"\x18\r\n$X\r\n")
+                                await broadcast({"type": "log", "direction": "out", "content": "\x18 $X"})
+                                state.machine_state = "Idle"
+                                await send_telemetry()
                                 raise HTTPException(
                                     status_code=400,
-                                    detail=f"Homing thất bại: {state.last_grbl_response or 'Lỗi không xác định'}"
+                                    detail=f"Homing thất bại: {err_msg}"
                                 )
 
                         # Mở khóa Unlock ($X) sau khi Homing hoàn thành
@@ -1156,22 +1163,36 @@ async def send_command(req: CommandRequest):
                         await broadcast({"type": "log", "direction": "out", "content": "$X"})
                         await asyncio.sleep(0.3)
 
-                        # Cập nhật 36 & 38 & Fix Bug: Reset WCO = current MPos (G10 L20 P1 X0 Y0 Z0) giúp WPos = (0,0,0) trùng Gốc máy
-                        cmd_set_wco = "G10 L20 P1 X0 Y0 Z0"
+                        # Reset WCO phù hợp cho lệnh Homing toàn bộ hoặc Homing từng trục
+                        if homing_cmd == "$HX":
+                            cmd_set_wco = "G10 L20 P1 X0"
+                            state.mpos[0] = 0.0
+                            state.wpos[0] = 0.0
+                        elif homing_cmd == "$HY":
+                            cmd_set_wco = "G10 L20 P1 Y0"
+                            state.mpos[1] = 0.0
+                            state.wpos[1] = 0.0
+                        elif homing_cmd == "$HZ":
+                            cmd_set_wco = "G10 L20 P1 Z0"
+                            state.mpos[2] = 0.0
+                            state.wpos[2] = 0.0
+                        else:
+                            cmd_set_wco = "G10 L20 P1 X0 Y0 Z0"
+                            state.mpos = [0.0, 0.0, 0.0]
+                            state.wpos = [0.0, 0.0, 0.0]
+                            state.wco = [0.0, 0.0, 0.0]
+                            state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                            state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                            state.home_set = True
+
                         await safe_write_serial((cmd_set_wco + "\n").encode())
                         await broadcast({"type": "log", "direction": "out", "content": cmd_set_wco})
                         await asyncio.sleep(0.1)
 
-                        state.mpos = [0.0, 0.0, 0.0]
-                        state.wpos = [0.0, 0.0, 0.0]
-                        state.wco = [0.0, 0.0, 0.0]
-                        state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
-                        state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
-                        state.home_set = True
-                        save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": True})
+                        save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": state.home_set})
                         await send_telemetry()
 
-                        results.extend([pen_up_cmd, "$H", "$X", cmd_set_wco])
+                        results.extend([pen_up_cmd, homing_cmd, "$X", cmd_set_wco])
                     finally:
                         state.is_homing = False
                     continue
@@ -1500,7 +1521,7 @@ async def v1_update_settings(req: SystemSettingsRequest):
 @app.post("/cncapi/v1/motion/jog")
 async def v1_jog(req: V1JogRequest):
     if not state.connected or not state.serial_port:
-        raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
+        raise HTTPException(status_code=400, detail="Chưa kết nối CNC. Vui lòng nhấn Kết Nối (Connect) trước.")
 
     step = req.step_distance if req.step_distance is not None else state.step_distance
     feed = req.feedrate if req.feedrate is not None else state.jog_feedrate
@@ -1521,31 +1542,20 @@ async def v1_jog(req: V1JogRequest):
     move_y = dy * step
     move_z = dz * step
 
-    # Cập nhật 39: Kiểm tra giới hạn 4 góc cho Jogging
-    target_x = state.wpos[0] + move_x
-    target_y = state.wpos[1] + move_y
-    err_bounds = check_motion_bounds(target_x, target_y)
-    if err_bounds:
-        raise HTTPException(status_code=400, detail=err_bounds)
-
     lines = ["G91"]
     move_cmd = "G0"
     if dx != 0: move_cmd += f" X{move_x:.2f}"
     if dy != 0: move_cmd += f" Y{move_y:.2f}"
     if dz != 0: move_cmd += f" Z{move_z:.2f}"
-    move_cmd += f" F{feed}"
+    move_cmd += f" F{int(feed)}"
     lines.append(move_cmd)
     lines.append("G90")
 
-    gcode = "\n".join(lines)
-    translated_cmds = translate_command(gcode)
     results = []
-    for cmd in translated_cmds:
-        clean_cmd = cmd.strip()
-        if not clean_cmd: continue
-        await safe_write_serial((clean_cmd + "\n").encode())
-        await broadcast({"type": "log", "direction": "out", "content": clean_cmd})
-        results.append(clean_cmd)
+    for line in lines:
+        await safe_write_serial((line + "\n").encode())
+        await broadcast({"type": "log", "direction": "out", "content": line})
+        results.append(line)
 
     return {"status": "success", "sent": results}
 
@@ -1632,7 +1642,7 @@ async def v1_motion_pen(req: V1PenRequest):
     else:
         step = state.step_distance
         feed = state.jog_feedrate
-        move_z = step if state_type == "up" else -step
+        move_z = -step if state_type == "up" else step
         lines = ["G91", f"G0 Z{move_z:.2f} F{feed}", "G90"]
         for line in lines:
             await safe_write_serial((line + "\n").encode())
@@ -1735,11 +1745,21 @@ async def v1_goto_parking():
 
 @app.post("/cncapi/v1/origin/home")
 async def v1_origin_home():
+    # Cách B (tạm thời): Homing 2 trục X và Y (bỏ qua trục Z)
+    # Code cũ Homing tất cả các trục:
     return await send_command(CommandRequest(command="$H"))
+    # return await send_command(CommandRequest(command="$HX\n$HY"))
 
 @app.post("/cncapi/v1/origin/unlock")
 async def v1_origin_unlock():
-    return await send_command(CommandRequest(command="$X"))
+    """Tự động gửi Soft Reset (Ctrl+X) & Mở khóa ($X) để xóa ALARM và giải phóng cờ Homing"""
+    state.home_set = True
+    save_settings({"home_set": True})
+    await safe_write_serial(b"\x18\r\n$X\r\n")
+    await broadcast({"type": "log", "direction": "out", "content": "\x18 $X"})
+    state.machine_state = "Idle"
+    await send_telemetry()
+    return {"status": "success", "message": "Đã gửi Soft Reset/Unlock ($X) và đặt cờ Homing = True thành công"}
 
 @app.post("/cncapi/v1/origin/enable_homing")
 async def v1_enable_homing():

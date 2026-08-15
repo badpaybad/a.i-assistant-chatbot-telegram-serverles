@@ -409,5 +409,11 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 Nhấn nút nhấc bút và hạ bút thì chưa thấy cơ cấu của bút dịch chuyển lên hạ xuống. đang dùng động cơ với vít me với động cơ nema 23
 khi ở "pen_mode": "z-axis" cần điều khiển nâng hạ bút không phụ thuộc vào pen_up_z pen_down_z cần điều khiển được như x,y dạng tăng giảm nâng hạ theo step Bước Nhích (mm)
   
+  Khi Z là "pen_mode": "z-axis" Nút hạ bút là Z+ Nhấc bút là Z-
+
+**cập nhật 48** khi gọi request để điều khiển cnc nếu request không thành công httpstatus!=200 thì cần notify toastr lỗi lên 
+Hoặc ở onmessage nhận log từ cnc nếu cnc có lỗi cũng cần notify toastr lỗi lên
+Khi không connect được cổng usb với cnc cũng cần báo 
+Các notify tự người dùng cần tắt chứ không tự tắt 
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

@@ -433,15 +433,18 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 1. **Yêu Cầu & Nghiệp Vụ Mới**:
    - Khi ở chế độ `pen_mode: z-axis` (động cơ bước Nema 23 + vít me cho trục Z), việc nâng/hạ bút **không phụ thuộc vào `pen_up_z` / `pen_down_z`** tuyệt đối.
    - Thao tác nhấn nút **Nhấc Bút** và **Hạ Bút** (hoặc API `/cncapi/v1/motion/pen`) sẽ điều khiển tăng/giảm nâng hạ trục Z tương đối theo **Bước Nhích (mm)** (`sys-step-distance` / `step_distance`) tương tự như điều khiển di chuyển các trục X, Y.
+   - **Quy định hướng di chuyển trục Z**:
+     - **Nút Hạ Bút**: Phát lệnh di chuyển **`Z+`** (+step_distance mm).
+     - **Nút Nhấc Bút**: Phát lệnh di chuyển **`Z-`** (-step_distance mm).
 
 2. **Các Bước Triển Khai Giải Pháp**:
    - **Chế độ Servo/Spindle PWM (`spindle-pwm`)**:
      - Phát lệnh điều khiển Servo PWM `M3 S<pen_up_pwm>` (Nhấc Bút) và `M3 S<pen_down_pwm>` (Hạ Bút).
    - **Chế độ Vị trí trục Z (`z-axis`)**:
-     - **Nhấc Bút**: Phát lệnh jog di chuyển trục Z đi lên `+step_distance` mm (`direction: Z+`, lệnh `G91 G0 Z+<step> F<feed> G90`).
-     - **Hạ Bút**: Phát lệnh jog di chuyển trục Z đi xuống `-step_distance` mm (`direction: Z-`, lệnh `G91 G0 Z-<step> F<feed> G90`).
-     - Frontend [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) (`sendPenCommand`) đọc thông số `step` (Bước Nhích mm) và `feed` từ `getSystemConfig()`, phát yêu cầu REST API `/cncapi/v1/motion/jog`.
-     - Backend [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) (`v1_motion_pen`) phát câu lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` và `G91 G0 Z-<step> F<feed> G90` dựa trên `state.step_distance`.
+     - **Hạ Bút**: Phát lệnh jog di chuyển trục Z đi lên `+step_distance` mm (`direction: Z+`, lệnh `G91 G1 Z+<step> F<feed> G90`).
+     - **Nhấc Bút**: Phát lệnh jog di chuyển trục Z đi xuống `-step_distance` mm (`direction: Z-`, lệnh `G91 G1 Z-<step> F<feed> G90`).
+     - Frontend [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) (`sendPenCommand`) đọc thông số `step` (Bước Nhích mm) và `feed` từ `getSystemConfig()`, phát yêu cầu REST API `/cncapi/v1/motion/jog` với `dir = (stateType === 'down') ? 'Z+' : 'Z-'`.
+     - Backend [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) (`v1_motion_pen`) phát câu lệnh di chuyển tương đối dựa trên `state.step_distance` với `move_z = -step if state_type == "up" else step`.
 
 ---
 
@@ -517,8 +520,11 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 45** | Tự động lưu cấu hình `step_distance` (`sys-step-distance`) và các thông số Cấu Hình Cấu Trúc & Gốc Làm Việc khi thay đổi ô nhập dữ liệu, tránh mất dữ liệu khi nhấn F5 reload page | ✅ Hoàn thành | [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Đã gắn hàm `saveSystemSettingsSilent()` tự động bắt sự kiện `change` & `input` cho `sys-step-distance` và các ô nhập hệ thống để lưu tức tính vào `calibration_settings.json`. |
 | **Cập nhật 46** | Tự động gửi lệnh `$GETID` khi kết nối CNC thành công (phần cứng & dummy) để lấy Device ID và hiển thị ngay sau header `Cấu Hình Kết Nối & Thông Tin CNC: {device_id}` | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Mạch GRBL phản hồi `[ID:..., MAC:...]` qua lệnh `$GETID`. Backend đọc & trích xuất `device_id`, truyền qua telemetry WebSocket và frontend hiển thị realtime tại `<span id="cnc-device-id">`. |
 | **Cập nhật 47** | Ở chế độ Vị trí trục Z (`pen_mode: z-axis` cho Nema 23 + vít me), nút Nhấc Bút & Hạ Bút điều khiển nâng/hạ trục Z tương đối theo Bước Nhích (mm) (`step_distance`) linh hoạt tương tự điều khiển jog X, Y. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Chế độ `z-axis` phát lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` (Nhấc Bút) và `G91 G0 Z-<step> F<feed> G90` (Hạ Bút) theo Bước Nhích (`sys-step-distance`). |
+| **Cập nhật 48** | Thông báo lỗi Toastr tập trung: Bắt HTTP status != 200, phản hồi lỗi WebSocket GRBL, lỗi không kết nối được cổng USB với CNC, yêu cầu người dùng bấm đóng thủ công (`timeOut: 0`, `closeButton: true`). | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/styles.css`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/styles.css), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Tích hợp Toastr JS/CSS & hệ thống Toast DOM fallback. Tự động bắt lỗi HTTP API != 200, bẫy log lỗi `error:`/`ALARM:` từ WebSocket, bẫy lỗi ngắt kết nối USB và cấu hình `timeOut: 0` để người dùng chủ động bấm đóng (`✕`). |
 
 ---
+
+
 
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)
 
