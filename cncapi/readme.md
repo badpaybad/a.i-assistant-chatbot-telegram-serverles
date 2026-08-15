@@ -113,3 +113,52 @@ Giá trị $23	Trục X	Trục Y	Trục Z
 5	Đảo chiều	Mặc định	Đảo chiều
 6	Mặc định	Đảo chiều	Đảo chiều
 7	Đảo chiều	Đảo chiều	Đảo chiều
+
+?       ; 1. Kiểm tra xem có bị dính cờ Pn:Z hay không
+$5=1    ; 2. Thử đảo logic công tắc (nếu bị dính Pn:Z)
+$27=3.0 ; 3. Tăng độ lùi nảy công tắc lên 3mm
+$23=7   ; 4. Đảo chiều Homing trục Z (nếu Z bị đi xuống)
+
+Kết quả kiểm tra chi tiết trong mã nguồn:
+Tệp khai báo: 
+
+cncapi/grbl-master/config.h
+Dòng 239:
+c
+#define VARIABLE_SPINDLE // Default enabled. Comment to disable.
+⚡ Hệ quả phần cứng khi VARIABLE_SPINDLE đang BẬT:
+Theo định nghĩa tại 
+
+cncapi/grbl-master/cpu_map/cpu_map_atmega328p.h
+:
+
+Chân Digital Pin 11 (Cọc cắm in chữ Z+ / Z- trên CNC Shield v3):
+
+Đã biến thành chân xuất xung PWM Spindle (dùng cho điều tốc động cơ Spindle hoặc điều khiển Servo PWM nhấc/hạ bút).
+Chân Digital Pin 12 (Cọc cắm in chữ SpinEn / SpnEn trên CNC Shield v3):
+
+Đã biến thành chân công tắc hành trình Z (Z-LIMIT / Homing Z).
+💡 Tùy chọn xử lý cho bạn:
+Nếu giữ nguyên VARIABLE_SPINDLE đang BẬT (dùng Servo PWM):
+Cắm jack công tắc hành trình Z vào cọc SpinEn (Pin 12) trên CNC Shield v3.
+Nếu muốn dùng lại cọc Z+/Z- (Pin 11) cho công tắc hành trình Z:
+Đổi dòng 239 trong config.h thành // #define VARIABLE_SPINDLE (thêm // ở đầu) rồi nạp lại mạch qua Arduino IDE
+
+
+Để đảo lại chiều động cơ trục Z đúng chuẩn (Z+ đi LÊN, Z- đi XUỐNG), bạn có 2 cách cực kỳ đơn giản sau:
+
+🟢 Cách 1: Đảo chiều bằng phần mềm GRBL (Khuyên dùng)
+Trong GRBL, tham số $3 (Direction Invert Mask) quản lý chiều quay của các động cơ bước. Bạn chỉ cần CỘNG THÊM 4 (hoặc trừ 4) vào giá trị $3 hiện tại trong Console:
+
+Mở Console gõ $$ để xem giá trị $3 hiện tại.
+Cập nhật lại giá trị $3 mới theo bảng sau:
+Giá trị $3 hiện tại	Gõ lệnh mới vào Console	Kết quả
+$3=0	$3=4	Đảo chiều trục Z
+$3=1	$3=5	Giữ đảo X, Đảo chiều trục Z
+$3=2	$3=6	Giữ đảo Y, Đảo chiều trục Z
+$3=3	$3=7	Giữ đảo X, Y, Đảo chiều trục Z
+👉 Sau khi gõ xong: Thử bấm lại nút Z+ (đi LÊN) và Z- (đi XUỐNG) để xác nhận.
+
+.
+$3=4
+$27=5.0

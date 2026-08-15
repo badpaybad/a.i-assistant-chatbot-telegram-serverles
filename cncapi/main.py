@@ -1642,8 +1642,8 @@ async def v1_motion_pen(req: V1PenRequest):
     else:
         step = state.step_distance
         feed = state.jog_feedrate
-        move_z = -step if state_type == "up" else step
-        lines = ["G91", f"G0 Z{move_z:.2f} F{feed}", "G90"]
+        move_z = step if state_type == "up" else -step
+        lines = ["G91", f"G0 Z{move_z:.2f} F{int(feed)}", "G90"]
         for line in lines:
             await safe_write_serial((line + "\n").encode())
             await broadcast({"type": "log", "direction": "out", "content": line})

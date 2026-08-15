@@ -585,6 +585,7 @@
                 handleWSMessage(msg);
             } catch (e) {
                 console.error('WS parse error:', e);
+                notifyToastr("error", "Lỗi phân tích dữ liệu WebSocket", e.message);
             }
         };
     }
@@ -836,8 +837,8 @@
             }
         } else {
             const { feed, step } = getSystemConfig();
-            const dir = (stateType === 'down') ? 'Z+' : 'Z-';
-            fetch('/cncapi/v1/motion/jog', {
+            const dir = (stateType === 'up') ? 'Z+' : 'Z-';
+            apiFetch('/cncapi/v1/motion/jog', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ direction: dir, step_distance: step, feedrate: feed })
