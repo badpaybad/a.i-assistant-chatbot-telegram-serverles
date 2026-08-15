@@ -428,9 +428,24 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - Thêm nút bấm **⚙️ Cấu Hình GRBL & Homing ($22, $23)** mở ra floating panel `#grbl-system-details-panel`.
      - Floating panel cho phép xem toàn bộ bảng thông số động cơ (Steps/mm $100-$102, Tốc độ max $110-$112, Gia tốc $120-$122), cùng nút chuyển nhanh $22 Bật/Tắt và dropdown chọn chiều Homing $23 trực quan.
 
+### 2.21. Khắc Phục Cơ Cấu Nhấc/Hạ Bút Khi Sử Dụng Động Cơ Nema 23 + Vít Me Trục Z (Cập nhật 47)
+
+1. **Yêu Cầu & Nghiệp Vụ Mới**:
+   - Khi ở chế độ `pen_mode: z-axis` (động cơ bước Nema 23 + vít me cho trục Z), việc nâng/hạ bút **không phụ thuộc vào `pen_up_z` / `pen_down_z`** tuyệt đối.
+   - Thao tác nhấn nút **Nhấc Bút** và **Hạ Bút** (hoặc API `/cncapi/v1/motion/pen`) sẽ điều khiển tăng/giảm nâng hạ trục Z tương đối theo **Bước Nhích (mm)** (`sys-step-distance` / `step_distance`) tương tự như điều khiển di chuyển các trục X, Y.
+
+2. **Các Bước Triển Khai Giải Pháp**:
+   - **Chế độ Servo/Spindle PWM (`spindle-pwm`)**:
+     - Phát lệnh điều khiển Servo PWM `M3 S<pen_up_pwm>` (Nhấc Bút) và `M3 S<pen_down_pwm>` (Hạ Bút).
+   - **Chế độ Vị trí trục Z (`z-axis`)**:
+     - **Nhấc Bút**: Phát lệnh jog di chuyển trục Z đi lên `+step_distance` mm (`direction: Z+`, lệnh `G91 G0 Z+<step> F<feed> G90`).
+     - **Hạ Bút**: Phát lệnh jog di chuyển trục Z đi xuống `-step_distance` mm (`direction: Z-`, lệnh `G91 G0 Z-<step> F<feed> G90`).
+     - Frontend [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) (`sendPenCommand`) đọc thông số `step` (Bước Nhích mm) và `feed` từ `getSystemConfig()`, phát yêu cầu REST API `/cncapi/v1/motion/jog`.
+     - Backend [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) (`v1_motion_pen`) phát câu lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` và `G91 G0 Z-<step> F<feed> G90` dựa trên `state.step_distance`.
+
 ---
 
-### 2.21. Bảng Ma Trận Đối Chiếu Tất Cả 40 Cập Nhật (`whattodo.md` vs Code Implementation)
+### 2.22. Bảng Ma Trận Đối Chiếu Tất Cả Cập Nhật (`whattodo.md` vs Code Implementation)
 
 | STT Cập Nhật | Nội Dung Yêu Cầu Tại `whattodo.md` | Trạng Thái | File Mã Nguồn Thực Hiện | Chi Tiết Giải Pháp Triển Khai |
 | :---: | :--- | :---: | :--- | :--- |
@@ -499,8 +514,9 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 42** | Gcode with font: Bổ sung option góc quay chữ (`rotation_angle`, mặc định -90°), cập nhật lề biên `margin_mm=0.0`, `render_dpi=300` và đồng bộ tỷ lệ mm/px từ system calibration | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Ô nhập `#font-rotation-angle` (-90°), ma trận quay 2D `(x*cos - y*sin, x*sin + y*cos)` trong backend, đọc `mm_per_px` từ `calibration_settings.json`. |
 | **Cập nhật 43** | Xử lý triệt để mất nét chữ nhỏ (8pt–14pt): Mặc định font `arial.ttf`, tự động điều chỉnh adaptive thresholding, morphological dilation, epsilon 0.3, min_path_len 0.05mm và micro-dip cho dấu chấm đơn | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Default `arial.ttf`, mode `single_line_bold`, binarization adaptive `thresh=180`, `min_path_len_mm=0.05`, `epsilon=0.3`, tự động chuyển dấu chấm 1-point thành micro-dip stroke `[(x,y), (x+0.05, y+0.05)]`. |
 | **Cập nhật 44** | Bổ sung 4 nút di chuyển góc (`goto tl`, `goto tr`, `goto bl`, `goto br`) ở Bộ Di Chuyển & Cử Chỉ, tự động hiển thị khi 4 góc được cấu hình | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Khối `#jog-goto-corners-container`, tự động hiện/ẩn nút theo `cncBounds[corner]` và gọi `/cncapi/v1/motion/move_to` di chuyển CNC tới tọa độ góc khi click. |
-| **Cập nhật 45** | Tự động lưu cấu hình `step_distance` (`sys-step-distance`) và các thông số Cấu Hình Cấu Trúc & Gốc Làm Việc khi thay đổi ô nhập dữ liệu, tránh mất dữ liệu khi nhấn F5 reload page | ✅ Hoàn thành | [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Đã gắn hàm `saveSystemSettingsSilent()` tự động bắt sự kiện `change` & `input` cho `sys-step-distance` và các ô nhập hệ thống để lưu tức thì vào `calibration_settings.json`. |
+| **Cập nhật 45** | Tự động lưu cấu hình `step_distance` (`sys-step-distance`) và các thông số Cấu Hình Cấu Trúc & Gốc Làm Việc khi thay đổi ô nhập dữ liệu, tránh mất dữ liệu khi nhấn F5 reload page | ✅ Hoàn thành | [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Đã gắn hàm `saveSystemSettingsSilent()` tự động bắt sự kiện `change` & `input` cho `sys-step-distance` và các ô nhập hệ thống để lưu tức tính vào `calibration_settings.json`. |
 | **Cập nhật 46** | Tự động gửi lệnh `$GETID` khi kết nối CNC thành công (phần cứng & dummy) để lấy Device ID và hiển thị ngay sau header `Cấu Hình Kết Nối & Thông Tin CNC: {device_id}` | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Mạch GRBL phản hồi `[ID:..., MAC:...]` qua lệnh `$GETID`. Backend đọc & trích xuất `device_id`, truyền qua telemetry WebSocket và frontend hiển thị realtime tại `<span id="cnc-device-id">`. |
+| **Cập nhật 47** | Ở chế độ Vị trí trục Z (`pen_mode: z-axis` cho Nema 23 + vít me), nút Nhấc Bút & Hạ Bút điều khiển nâng/hạ trục Z tương đối theo Bước Nhích (mm) (`step_distance`) linh hoạt tương tự điều khiển jog X, Y. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Chế độ `z-axis` phát lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` (Nhấc Bút) và `G91 G0 Z-<step> F<feed> G90` (Hạ Bút) theo Bước Nhích (`sys-step-distance`). |
 
 ---
 

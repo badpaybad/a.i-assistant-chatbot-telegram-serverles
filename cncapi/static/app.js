@@ -364,6 +364,10 @@
             upInput.step = "5";
             downInput.step = "5";
         } else {
+            if (penUpZ === penDownZ) {
+                penUpZ = 3.0;
+                penDownZ = 0.0;
+            }
             upInput.value = penUpZ;
             downInput.value = penDownZ;
             upInput.step = "0.5";
@@ -694,18 +698,20 @@
 
     function sendPenCommand(stateType) {
         savePenSettings();
-        if (stateType === 'up') {
-            if (penMode === 'spindle-pwm') {
+        if (penMode === 'spindle-pwm') {
+            if (stateType === 'up') {
                 sendCommand(`M3 S${penUpPwm}`);
             } else {
-                sendCommand(`G0 Z${penUpZ}`);
+                sendCommand(`M3 S${penDownPwm}`);
             }
         } else {
-            if (penMode === 'spindle-pwm') {
-                sendCommand(`M3 S${penDownPwm}`);
-            } else {
-                sendCommand(`G0 Z${penDownZ}`);
-            }
+            const { feed, step } = getSystemConfig();
+            const dir = (stateType === 'up') ? 'Z+' : 'Z-';
+            fetch('/cncapi/v1/motion/jog', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ direction: dir, step_distance: step, feedrate: feed })
+            }).catch(e => console.error('Pen Z step jog error:', e));
         }
     }
 
@@ -1906,14 +1912,16 @@
         const upInput = document.getElementById('pen-up-val');
         const downInput = document.getElementById('pen-down-val');
         if (upInput && downInput) {
-            const valUp = parseFloat(upInput.value) || 0;
-            const valDown = parseFloat(downInput.value) || 0;
-            if (penMode === 'spindle-pwm') {
-                penUpPwm = valUp;
-                penDownPwm = valDown;
-            } else {
-                penUpZ = valUp;
-                penDownZ = valDown;
+            const valUp = parseFloat(upInput.value);
+            const valDown = parseFloat(downInput.value);
+            if (!isNaN(valUp) && !isNaN(valDown)) {
+                if (penMode === 'spindle-pwm') {
+                    penUpPwm = valUp;
+                    penDownPwm = valDown;
+                } else {
+                    penUpZ = valUp;
+                    penDownZ = valDown;
+                }
             }
         }
 
@@ -1951,14 +1959,16 @@
         const upInput = document.getElementById('pen-up-val');
         const downInput = document.getElementById('pen-down-val');
         if (upInput && downInput) {
-            const valUp = parseFloat(upInput.value) || 0;
-            const valDown = parseFloat(downInput.value) || 0;
-            if (penMode === 'spindle-pwm') {
-                penUpPwm = valUp;
-                penDownPwm = valDown;
-            } else {
-                penUpZ = valUp;
-                penDownZ = valDown;
+            const valUp = parseFloat(upInput.value);
+            const valDown = parseFloat(downInput.value);
+            if (!isNaN(valUp) && !isNaN(valDown)) {
+                if (penMode === 'spindle-pwm') {
+                    penUpPwm = valUp;
+                    penDownPwm = valDown;
+                } else {
+                    penUpZ = valUp;
+                    penDownZ = valDown;
+                }
             }
         }
 

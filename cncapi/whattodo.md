@@ -405,4 +405,9 @@ không cần chạy tự động build dist tôi sẽ chạy khi cần
 
 **cập nhật 46** (Arduino Uno + driver động cơ shield v3) cnc đã được nạp mạch cncapi/grbl-master/protocol.c bổ xung thêm lệnh để lấy device_id: $GETID (report_device_id cncapi/grbl-master/device_id.c ) ở Cấu Hình Kết Nối & Thông Tin CNC, khi kết nối cnc thành công cần lấy device_id để ngay sau Cấu Hình Kết Nối & Thông Tin CNC: {device_id} 
 
+**cập nhật 47** ở cấu hình Bút / Spindle Khi chọn là Vị trí trục Z ("pen_mode": "z-axis" ở cncapi/calibration_settings.json )
+Nhấn nút nhấc bút và hạ bút thì chưa thấy cơ cấu của bút dịch chuyển lên hạ xuống. đang dùng động cơ với vít me với động cơ nema 23
+khi ở "pen_mode": "z-axis" cần điều khiển nâng hạ bút không phụ thuộc vào pen_up_z pen_down_z cần điều khiển được như x,y dạng tăng giảm nâng hạ theo step Bước Nhích (mm)
+  
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

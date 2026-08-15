@@ -47,11 +47,11 @@ def load_settings() -> dict:
         "gesture_distance": 40.0,
         "gesture_tap_dwell": 0.05,
         "gesture_long_press_dwell": 1.5,
-        "pen_mode": "spindle-pwm",
-        "pen_up_z": 0.0,
-        "pen_down_z": 45.0,
-        "pen_up_pwm": 0.0,
-        "pen_down_pwm": 45.0,
+        "pen_mode": "z-axis",
+        "pen_up_z": 3.0,
+        "pen_down_z": 0.0,
+        "pen_up_pwm": 30.0,
+        "pen_down_pwm": 90.0,
         "pen_dwell": 0.25,
         "axis_dir_x": 1,
         "axis_dir_y": 1,
@@ -1624,14 +1624,20 @@ async def v1_motion_pen(req: V1PenRequest):
         raise HTTPException(status_code=400, detail="Chưa kết nối CNC")
 
     state_type = req.state.lower().strip()
-    if state_type == "up":
-        cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G0 Z{state.pen_up_z}"
+    if state.pen_mode == "spindle-pwm":
+        cmd = f"M3 S{state.pen_up_pwm}" if state_type == "up" else f"M3 S{state.pen_down_pwm}"
+        await safe_write_serial((cmd + "\n").encode())
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+        return {"status": "success", "command": cmd}
     else:
-        cmd = f"M3 S{state.pen_down_pwm}" if state.pen_mode == "spindle-pwm" else f"G0 Z{state.pen_down_z}"
-
-    await safe_write_serial((cmd + "\n").encode())
-    await broadcast({"type": "log", "direction": "out", "content": cmd})
-    return {"status": "success", "command": cmd}
+        step = state.step_distance
+        feed = state.jog_feedrate
+        move_z = step if state_type == "up" else -step
+        lines = ["G91", f"G0 Z{move_z:.2f} F{feed}", "G90"]
+        for line in lines:
+            await safe_write_serial((line + "\n").encode())
+            await broadcast({"type": "log", "direction": "out", "content": line})
+        return {"status": "success", "command": f"G91 G0 Z{move_z:.2f} F{feed} G90"}
 
 # V1 Gestures Endpoints
 @app.post("/cncapi/v1/gestures/execute")
