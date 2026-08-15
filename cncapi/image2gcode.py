@@ -4,7 +4,33 @@ import serial
 import numpy as np
 import cv2
 import os
+import json
 os.environ["QT_QPA_PLATFORM"] = "xcb"
+
+def _get_pen_commands(mode="servo"):
+    settings_file = os.path.join(os.path.dirname(__file__), "calibration_settings.json")
+    pen_mode = "spindle-pwm" if mode == "servo" else "z-axis"
+    pen_up_pwm = 10.0
+    pen_down_pwm = 28.0
+    pen_up_z = 2.0
+    pen_down_z = -1.0
+    pen_dwell = 0.25
+    if os.path.exists(settings_file):
+        try:
+            with open(settings_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                pen_mode = data.get("pen_mode", pen_mode)
+                pen_up_pwm = data.get("pen_up_pwm", pen_up_pwm)
+                pen_down_pwm = data.get("pen_down_pwm", pen_down_pwm)
+                pen_up_z = data.get("pen_up_z", pen_up_z)
+                pen_down_z = data.get("pen_down_z", pen_down_z)
+                pen_dwell = data.get("pen_dwell", pen_dwell)
+        except Exception:
+            pass
+    if pen_mode == "spindle-pwm" or mode == "servo":
+        return f"M3 S{pen_down_pwm:.2f} ; Ha but\nG4 P{pen_dwell:.2f}", f"M3 S{pen_up_pwm:.2f} ; Nhac but\nG4 P{pen_dwell:.2f}"
+    else:
+        return f"G1 Z{pen_down_z:.2f} F500 ; Ha dau dao xuong", f"G0 Z{pen_up_z:.2f} ; Nhac dau dao len"
 
 
 def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1, feed_rate=2000, mode="servo"):
@@ -90,12 +116,7 @@ def image_to_perfect_single_line_gcode(image_path, gcode_path, scale_factor=0.1,
     preview_file_path = "perfect_single_line_preview.png"
     cv2.imwrite(preview_file_path, preview_img)
 
-    if mode == "servo":
-        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
-        PEN_UP = "M3 S10 ; Nhac but\nG4 P0.2"
-    else:
-        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dau dao xuong xuong"
-        PEN_UP = "G0 Z2.0 ; Nhac dau dao len an toan"
+    PEN_DOWN, PEN_UP = _get_pen_commands(mode)
 
     with open(gcode_path, "w") as f:
         f.write(";--- KHOI TAO MAY VE NET DON TRUC TRUNG HOA ---\n")
@@ -215,13 +236,9 @@ def image_to_gcode(image_path, gcode_path, scale_factor=0.12, feed_rate=2000, mo
         "G90 ; Toa do tuyet doi"
     ]
 
-    if mode == "servo":
-        gcode.append("M3 S0 ; Khoi tao xung Servo o muc 0")
-        def pen_up(): return "M5 ; Nhac but (Tat xung)"
-        def pen_down(): return "M3 S90 ; Ha but xuong"
-    else:
-        def pen_up(): return "G0 Z2.0 ; Nhac dao len an toan"
-        def pen_down(): return "G1 Z-1.0 F500 ; Ha dau dao xuong"
+    PEN_DOWN_CMD, PEN_UP_CMD = _get_pen_commands(mode)
+    def pen_up(): return PEN_UP_CMD
+    def pen_down(): return PEN_DOWN_CMD
 
     gcode.append(pen_up())
     gcode.append("G0 Z2.0")
@@ -645,12 +662,7 @@ def handwriting_text_to_gcode(
             sorted_contours.append(chosen_contour)
             current_pos = chosen_contour[-1][0]
 
-    if mode == "servo":
-        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
-        PEN_UP = "M3 S10 ; Nhac but\nG4 P0.2"
-    else:
-        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dau dao xuong"
-        PEN_UP = "G0 Z2.0 ; Nhac dau dao len"
+    PEN_DOWN, PEN_UP = _get_pen_commands(mode)
 
     with open(gcode_path, "w", encoding="utf-8") as f:
         f.write(";--- CHU VIET TAY / CHU DEN NEN TRANG G-CODE ---\n")

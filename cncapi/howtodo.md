@@ -691,6 +691,26 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 
 
+### 2.24. Đồng Bộ Hóa Cấu Hình Nhấc / Hạ Bút Từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" Sang G-code Font & G-code Image (Cập Nhật 51)
+
+1. **Vấn Đề Kỹ Thuật**:
+   - Trước đây, khi tạo G-code Font hoặc G-code Image, các giá trị nhấc/hạ bút bị gán cố định (`M3 S90` / `M3 S10` hoặc `G0 Z0` / `G1 Z45`), dẫn đến:
+     - Khi dùng Servo RC với tần số Timer2 mới (61Hz), góc `S90` bị kịch góc hoặc sai vị trí touch.
+     - Khi người dùng thay đổi giá trị Nhấc/Hạ trong khung **Cấu Hình Cấu Trúc & Gốc Làm Việc** (`pen_up_pwm`, `pen_down_pwm`, `pen_up_z`, `pen_down_z`, `pen_dwell`), G-code sinh ra từ ảnh hoặc font không tự động nhận các giá trị mới này.
+
+2. **Giải Pháp Đã Triển Khai**:
+   - **Gcode with Font (`generate_font_gcode` trong `main.py`)**:
+     - `effective_pen_mode` tự động đọc từ `state.pen_mode` (`spindle-pwm` hoặc `z-axis`).
+     - Tự động sinh `M3 S<state.pen_up_pwm>` kèm `G4 P<state.pen_dwell>` khi nhấc bút và `M3 S<state.pen_down_pwm>` kèm `G4 P<state.pen_dwell>` khi hạ bút vẽ.
+     - Khi chạy ở chế độ Trục Z cơ khí, tự động sinh `G0 Z<state.pen_up_z>` và `G1 Z<state.pen_down_z> F<feed_rate>`.
+   - **Gcode with Image (`sort_gcode_paths_left_to_right`, `image2gcode.py`, `svg2gcode.py`)**:
+     - Hàm `sort_gcode_paths_left_to_right` trong `main.py` đọc trực tiếp từ `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`.
+     - Các module `image2gcode.py` và `svg2gcode.py` sử dụng hàm `_get_pen_commands()` nạp cấu hình động từ `calibration_settings.json`.
+   - **Giao Diện Frontend (`app.js`)**:
+     - Hàm `updatePenInputs()` và `generateFontGcode()` tự động đồng bộ giá trị giữa khung Cấu Hình Hệ Thống và các form tạo G-code.
+
+---
+
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)
 
 1. **Chạy Server API Backend**:

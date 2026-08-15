@@ -10,7 +10,7 @@
   "pen_mode": "spindle-pwm",
   "pen_up_z": 3.0,
   "pen_down_z": 0.0,
-  "pen_up_pwm": 12.0,
+  "pen_up_pwm": 13.0,
   "pen_down_pwm": 22.0,
   "pen_dwell": 0.25,
   "axis_dir_x": 1,

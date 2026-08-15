@@ -2364,9 +2364,9 @@ class FontGcodeRequest(BaseModel):
     font_size_pt: float = 72.0
     line_spacing: float = 1.2
     line_spacing_mm: float = 0.0
-    z_safe: float = 0.0
-    z_draw: float = 45.0
-    feed_rate: float = 4000.0
+    z_safe: Optional[float] = None
+    z_draw: Optional[float] = None
+    feed_rate: Optional[float] = 4000.0
     margin_mm: float = 0.0
     epsilon: float = 0.3
     binary_threshold: int = 128
@@ -2603,9 +2603,21 @@ def generate_font_gcode(req: FontGcodeRequest):
 
         sorted_paths = sorted(oriented_paths, key=get_stroke_sort_key)
 
+        # Luôn đọc trực tiếp cấu hình Bút từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" (state)
         effective_pen_mode = req.pen_mode if req.pen_mode else getattr(state, 'pen_mode', 'spindle-pwm')
-        pen_up_cmd = f"G0 Z{req.z_safe:.2f}"
-        pen_down_cmd = f"G1 Z{req.z_draw:.2f} F{req.feed_rate:.0f}"
+        pen_dwell_sec = getattr(state, 'pen_dwell', 0.25)
+        
+        if effective_pen_mode == "spindle-pwm":
+            pen_up_val = req.z_safe if req.z_safe is not None else getattr(state, 'pen_up_pwm', 10.0)
+            pen_down_val = req.z_draw if req.z_draw is not None else getattr(state, 'pen_down_pwm', 28.0)
+            pen_up_cmd = f"M3 S{pen_up_val:.2f}\nG4 P{pen_dwell_sec:.2f}"
+            pen_down_cmd = f"M3 S{pen_down_val:.2f}\nG4 P{pen_dwell_sec:.2f}"
+        else:
+            pen_up_val = req.z_safe if req.z_safe is not None else getattr(state, 'pen_up_z', 3.0)
+            pen_down_val = req.z_draw if req.z_draw is not None else getattr(state, 'pen_down_z', 0.0)
+            feed_rate_val = req.feed_rate if req.feed_rate is not None else getattr(state, 'jog_feedrate', 4000.0)
+            pen_up_cmd = f"G0 Z{pen_up_val:.2f}"
+            pen_down_cmd = f"G1 Z{pen_down_val:.2f} F{feed_rate_val:.0f}"
 
         first_line = req.text.splitlines()[0] if req.text else ""
         gcode = [
@@ -2635,7 +2647,10 @@ def generate_font_gcode(req: FontGcodeRequest):
             gcode.append("")
             preview_paths.append(preview_path)
 
-        gcode.extend(["G0 X0 Y0 ; Tra ve goc", "M30 ; Ket thuc"])
+        if effective_pen_mode == "spindle-pwm":
+            gcode.extend(["G0 X0 Y0 ; Tra ve goc", "M5 ; Tat Spindle/Servo", "M30 ; Ket thuc"])
+        else:
+            gcode.extend(["G0 X0 Y0 ; Tra ve goc", "M30 ; Ket thuc"])
         gcode_str = "\n".join(gcode)
 
         return {
@@ -2728,18 +2743,29 @@ def sort_gcode_paths_left_to_right(gcode_text: str, feed_rate: int = 2000, mode:
 
     sorted_paths = sorted(oriented_paths, key=get_stroke_sort_key)
 
-    if mode == "servo":
-        pen_down = "M3 S90"
-        pen_up = "M3 S10"
+    effective_pen_mode = getattr(state, 'pen_mode', 'spindle-pwm')
+    pen_dwell_sec = getattr(state, 'pen_dwell', 0.25)
+    
+    if effective_pen_mode == "spindle-pwm" or mode == "servo":
+        pen_up_val = getattr(state, 'pen_up_pwm', 10.0)
+        pen_down_val = getattr(state, 'pen_down_pwm', 28.0)
+        pen_down = f"M3 S{pen_down_val:.2f}\nG4 P{pen_dwell_sec:.2f}"
+        pen_up = f"M3 S{pen_up_val:.2f}\nG4 P{pen_dwell_sec:.2f}"
+        init_pen = f"M3 S{pen_up_val:.2f}\nG4 P{pen_dwell_sec:.2f} ; Lift Pen"
+        end_cmd = "M5 ; Tat Spindle/Servo\nM30"
     else:
-        pen_down = "G1 Z-1.0 F500"
-        pen_up = "G0 Z2.0"
+        pen_up_val = getattr(state, 'pen_up_z', 2.0)
+        pen_down_val = getattr(state, 'pen_down_z', -1.0)
+        pen_down = f"G1 Z{pen_down_val:.2f} F{feed_rate}"
+        pen_up = f"G0 Z{pen_up_val:.2f}"
+        init_pen = f"G0 Z{pen_up_val:.2f} ; Lift Pen"
+        end_cmd = "M30"
 
     new_gcode = [
         "; --- G-CODE IMAGE (Strict Left-to-Right Order - Identical to Gcode Font) ---",
         "G21 ; Don vi: mm",
         "G90 ; Toa do tuyet doi",
-        f"G0 Z2.0",
+        f"{init_pen}",
         f"F{feed_rate}"
     ]
 
@@ -2761,8 +2787,8 @@ def sort_gcode_paths_left_to_right(gcode_text: str, feed_rate: int = 2000, mode:
 
         new_gcode.append(pen_up)
 
-    new_gcode.append("G0 X0 Y0")
-    new_gcode.append("M30")
+    new_gcode.append("G0 X0 Y0 ; Tra ve goc")
+    new_gcode.append(end_cmd)
 
     return "\n".join(new_gcode), segments
 

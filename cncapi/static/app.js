@@ -482,6 +482,10 @@
             upInput.step = "0.5";
             downInput.step = "0.5";
         }
+        const fontUpInput = document.getElementById('font-z-safe');
+        const fontDownInput = document.getElementById('font-z-draw');
+        if (fontUpInput) fontUpInput.value = upInput.value;
+        if (fontDownInput) fontDownInput.value = downInput.value;
     }
 
     async function savePenSettings() {
@@ -2460,10 +2464,10 @@
                         line_spacing: parseFloat(lineSpacingInput?.value) || 1.2,
                         line_spacing_mm: parseFloat(lineSpacingMmInput?.value) || 0.0,
                         feed_rate: parseFloat(feedRateInput.value) || 4000.0,
-                        z_safe: parseFloat(document.getElementById('font-z-safe')?.value || document.getElementById('pen-up-val')?.value || '0.0'),
-                        z_draw: parseFloat(document.getElementById('font-z-draw')?.value || document.getElementById('pen-down-val')?.value || '45.0'),
+                        z_safe: parseFloat(document.getElementById('pen-up-val')?.value || document.getElementById('font-z-safe')?.value || '10.0'),
+                        z_draw: parseFloat(document.getElementById('pen-down-val')?.value || document.getElementById('font-z-draw')?.value || '28.0'),
                         stroke_mode: strokeModeSelect ? strokeModeSelect.value : 'single_line',
-                        pen_mode: document.getElementById('font-pen-mode')?.value || penMode || 'spindle-pwm',
+                        pen_mode: document.getElementById('pen-mode')?.value || penMode || 'spindle-pwm',
                         axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || (axisDirY !== undefined ? axisDirY : '1')),
                         epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '0.3'),
                         margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),

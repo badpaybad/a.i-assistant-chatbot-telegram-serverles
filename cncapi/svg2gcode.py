@@ -1,7 +1,33 @@
 import os
+import json
 import xml.etree.ElementTree as ET
 from svgpathtools import svg2paths, Path, Line, polyline, Arc, CubicBezier, QuadraticBezier
 import numpy as np
+
+def _get_pen_commands(mode="servo"):
+    settings_file = os.path.join(os.path.dirname(__file__), "calibration_settings.json")
+    pen_mode = "spindle-pwm" if mode == "servo" else "z-axis"
+    pen_up_pwm = 10.0
+    pen_down_pwm = 28.0
+    pen_up_z = 2.0
+    pen_down_z = -1.0
+    pen_dwell = 0.25
+    if os.path.exists(settings_file):
+        try:
+            with open(settings_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                pen_mode = data.get("pen_mode", pen_mode)
+                pen_up_pwm = data.get("pen_up_pwm", pen_up_pwm)
+                pen_down_pwm = data.get("pen_down_pwm", pen_down_pwm)
+                pen_up_z = data.get("pen_up_z", pen_up_z)
+                pen_down_z = data.get("pen_down_z", pen_down_z)
+                pen_dwell = data.get("pen_dwell", pen_dwell)
+        except Exception:
+            pass
+    if pen_mode == "spindle-pwm" or mode == "servo":
+        return f"M3 S{pen_down_pwm:.2f} ; Ha but\nG4 P{pen_dwell:.2f}", f"M3 S{pen_up_pwm:.2f} ; Nhac but\nG4 P{pen_dwell:.2f}"
+    else:
+        return f"G1 Z{pen_down_z:.2f} F500 ; Ha dao xuong", f"G0 Z{pen_up_z:.2f} ; Nhac dao len"
 
 def svg_to_exact_gcode(svg_path, gcode_path, scale_factor=1.0, feed_rate=2000, mode="servo"):
     """
@@ -86,12 +112,7 @@ def svg_to_exact_gcode(svg_path, gcode_path, scale_factor=1.0, feed_rate=2000, m
         sorted_lines.append(chosen_line)
         current_pos = np.array(chosen_line[-1])
 
-    if mode == "servo":
-        PEN_DOWN = "M3 S90 ; Ha but\nG4 P0.2"
-        PEN_UP   = "M3 S10 ; Nhac but\nG4 P0.2"
-    else:
-        PEN_DOWN = "G1 Z-1.0 F500 ; Ha dao xuong"
-        PEN_UP   = "G0 Z2.0 ; Nhac dao len"
+    PEN_DOWN, PEN_UP = _get_pen_commands(mode)
 
     with open(gcode_path, "w") as f:
         f.write(";--- KHOI TAO MAY VE VECTOR SVG DIRECT ---\n")
