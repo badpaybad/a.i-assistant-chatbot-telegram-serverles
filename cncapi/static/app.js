@@ -539,8 +539,13 @@
                     body: JSON.stringify({ port, baudrate })
                 });
                 const data = await res.json();
-                if (data.status === 'error' || !data.connected) {
+                if (data.status === 'error') {
                     notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', data.message || 'Lỗi mở cổng Serial USB kết nối với máy CNC!');
+                } else if (data.status === 'success') {
+                    if (window.toastr && typeof window.toastr.clear === 'function') {
+                        window.toastr.clear();
+                    }
+                    notifyToastr('success', '🔌 Kết Nối Thành Công', data.message || 'Đã kết nối cổng USB máy CNC thành công!');
                 }
             } catch (e) {
                 notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', e.message || 'Lỗi mở cổng Serial USB kết nối với máy CNC!');
@@ -637,7 +642,14 @@
         } else if (msg.type === 'connection') {
             isConnected = msg.connected;
             updateConnectionUI();
-            if (!msg.connected && msg.message) {
+            if (msg.connected) {
+                if (window.toastr && typeof window.toastr.clear === 'function') {
+                    window.toastr.clear();
+                }
+                if (msg.message) {
+                    notifyToastr('success', '🔌 Kết Nối Thành Công', msg.message);
+                }
+            } else if (msg.message) {
                 notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', msg.message);
             }
         } else if (msg.type === 'log') {
