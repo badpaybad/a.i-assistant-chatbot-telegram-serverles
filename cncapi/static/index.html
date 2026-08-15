@@ -2500,12 +2500,23 @@ Xin Chào</textarea
           <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #38bdf8;" data-i18n>
             ⚡ 2. Tốc Độ Homing & Giới Hạn ($20, $21, $24, $25, $27)
           </h4>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 12px; align-items: center;">
             <div><span>Tốc độ dò ($25):</span> <strong id="grbl-val-25">500</strong> mm/min</div>
             <div><span>Tốc độ chạm ($24):</span> <strong id="grbl-val-24">25</strong> mm/min</div>
-            <div><span>Độ nảy pull-off ($27):</span> <strong id="grbl-val-27">1.0</strong> mm</div>
+            <div>
+              <span>Độ nảy pull-off ($27):</span> <strong id="grbl-val-27">1.0</strong> mm
+              <div style="display: flex; gap: 4px; margin-top: 4px;">
+                <button class="btn btn-sm btn-outline-info" id="btn-set-pulloff-3" style="padding: 1px 6px; font-size: 10px;">3mm</button>
+                <button class="btn btn-sm btn-outline-info" id="btn-set-pulloff-5" style="padding: 1px 6px; font-size: 10px;">5mm</button>
+              </div>
+            </div>
+            <div>
+              <span>Hard Limits ($21):</span> <strong id="grbl-val-21">Tắt</strong>
+              <div style="margin-top: 4px;">
+                <button class="btn btn-sm btn-outline-danger" id="btn-disable-hardlimits" style="padding: 1px 6px; font-size: 10px;" data-i18n>Tắt ($21=0)</button>
+              </div>
+            </div>
             <div><span>Đảo chiều động cơ ($3):</span> <strong id="grbl-val-3">0</strong></div>
-            <div><span>Hard Limits ($21):</span> <strong id="grbl-val-21">Tắt</strong></div>
             <div><span>Soft Limits ($20):</span> <strong id="grbl-val-20">Tắt</strong></div>
           </div>
         </div>

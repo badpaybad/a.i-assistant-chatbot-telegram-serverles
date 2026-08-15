@@ -306,6 +306,10 @@ class DummySerial:
                                 state.wpos[idx] = val
                             state.mpos[idx] = state.wpos[idx] + state.wco[idx]
 
+                elif cmd.startswith("$21="):
+                    val = cmd.split("=")[1].strip()
+                    state.grbl_settings["$21"] = val
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
                 elif cmd.startswith("$22="):
                     val = cmd.split("=")[1].strip()
                     state.grbl_settings["$22"] = val
@@ -313,6 +317,10 @@ class DummySerial:
                 elif cmd.startswith("$23="):
                     val = cmd.split("=")[1].strip()
                     state.grbl_settings["$23"] = val
+                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
+                elif cmd.startswith("$27="):
+                    val = cmd.split("=")[1].strip()
+                    state.grbl_settings["$27"] = val
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
                 elif cmd == "$GETID":
                     state.device_id = "GRBL-328P-1E950F-DUMMY"
@@ -527,7 +535,7 @@ async def serial_reader_loop():
                         match_ver = re.search(r"grbl\s+([0-9]+\.[0-9]+[a-z]?)", line, re.IGNORECASE)
                         if match_ver:
                             state.grbl_version = match_ver.group(1)
-                        if "alarm:" in line.lower() or "to unlock" in line.lower():
+                        if not state.is_homing and ("alarm:" in line.lower() or "to unlock" in line.lower()):
                             await broadcast({
                                 "type": "log",
                                 "direction": "in",
@@ -538,6 +546,8 @@ async def serial_reader_loop():
                                 await broadcast({"type": "log", "direction": "out", "content": "$X"})
                             except Exception as ex:
                                 logger.error(f"Lỗi khi gửi $X tự động: {ex}")
+                        if state.is_homing:
+                            state.grbl_ack_event.set()
                     elif "[ID:" in line:
                         match = re.search(r"\[ID:([^,\]]+)", line)
                         if match:
@@ -560,6 +570,31 @@ async def wait_for_ok(timeout=1.0):
         return True
     except asyncio.TimeoutError:
         return False
+
+async def wait_for_idle(timeout=5.0):
+    """Hủy các chuyển động Jog đang xếp hàng (0x85) và chờ máy CNC thực sự trở về trạng thái Idle"""
+    if isinstance(state.serial_port, DummySerial) or not state.connected:
+        return True
+    
+    loop = asyncio.get_running_loop()
+    start = loop.time()
+    
+    # Nếu máy đang Jogging, phát ngay lệnh Jog Cancel (\x85) để ngắt sạch các lệnh Jog dở dang trong buffer
+    if "jog" in state.machine_state.lower():
+        await safe_write_serial(b"\x85\n")
+        await broadcast({"type": "log", "direction": "out", "content": "\x85 (Jog Cancel)"})
+        await asyncio.sleep(0.1)
+
+    while loop.time() - start < timeout:
+        mstate = state.machine_state.lower()
+        if mstate in ["idle", "chờ"]:
+            return True
+        if "jog" in mstate:
+            await safe_write_serial(b"\x85\n")
+        await safe_write_serial(b"?")
+        await asyncio.sleep(0.15)
+        
+    return state.machine_state.lower() in ["idle", "chờ"]
 
 async def status_polling_loop():
     while state.connected and state.serial_port:
@@ -983,24 +1018,22 @@ async def run_auto_home():
     if state.is_homing:
         logger.info("Đang trong quá trình Homing, bỏ qua yêu cầu Homing tự động trùng lặp.")
         return
-    state.is_homing = True
+    grbl_22 = state.grbl_settings.get("$22", "0")
+    if grbl_22 == "0" and not isinstance(state.serial_port, DummySerial):
+        logger.info("Tính năng Homing ($22=0) chưa được bật trong GRBL. Bỏ qua tự động Homing.")
+        await broadcast({
+            "type": "log",
+            "direction": "in",
+            "content": "ℹ️ [Tự động Homing] $22=0 (Chưa bật Homing). Bỏ qua tự động Homing khi kết nối."
+        })
+        return
     try:
-        await broadcast({"type": "log", "direction": "in", "content": "🔄 [Tự động Homing] Bắt đầu tự động Homing về gốc máy..."})
-        try:
-            await send_command(CommandRequest(command="$HX\n$HY"))
-        except Exception:
-            await send_command(CommandRequest(command="$H"))
+        await broadcast({"type": "log", "direction": "in", "content": "🔄 [Tự động Homing] Bắt đầu tự động Homing về gốc máy ($H)..."})
+        await send_command(CommandRequest(command="$H"))
         await broadcast({"type": "log", "direction": "in", "content": "✅ [Tự động Homing] Homing thành công và gốc tọa độ đã được đồng bộ!"})
     except Exception as e:
         logger.error(f"Lỗi khi tự động Homing: {e}")
-        await broadcast({"type": "log", "direction": "in", "content": f"❌ [Tự động Homing] Thất bại ({e}). Tự động mở khóa ($X)..."})
-        try:
-            await safe_write_serial(b"$X\n")
-            await broadcast({"type": "log", "direction": "out", "content": "$X"})
-        except Exception:
-            pass
-    finally:
-        state.is_homing = False
+        await broadcast({"type": "log", "direction": "in", "content": f"⚠️ [Tự động Homing] Không thể tự động Homing ({e})."})
 
 @app.post("/api/connect")
 async def connect_cnc(config: ConnectionConfig):
@@ -1032,9 +1065,6 @@ async def connect_cnc(config: ConnectionConfig):
         await broadcast({"type": "log", "direction": "out", "content": "$GETID"})
         await broadcast({"type": "connection", "connected": True, "message": "Đã kết nối chế độ giả lập"})
         await send_telemetry()
-        # Cập nhật 38: Tự động Homing khi kết nối thành công
-        if not state.is_homing:
-            asyncio.create_task(run_auto_home())
         return {"status": "success", "message": "Đã kết nối dummy mode"}
         
     try:
@@ -1063,9 +1093,6 @@ async def connect_cnc(config: ConnectionConfig):
         
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
-        # Tắt tự động Homing khi kết nối để tránh bo mạch GRBL bị khóa ALARM:8 khi không có công tắc Z
-        # if not state.is_homing:
-        #     asyncio.create_task(run_auto_home())
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
         state.connected = False
@@ -1117,25 +1144,39 @@ async def send_command(req: CommandRequest):
             try:
                 if clean_cmd.upper() in ["$H", "$HX", "$HY", "$HZ", "$HXY"]:
                     if state.is_homing:
-                        logger.info("Đang trong quá trình Homing...")
+                        raise HTTPException(status_code=400, detail="Máy CNC đang trong quá trình Homing. Vui lòng chờ hoàn tất!")
                     state.is_homing = True
                     try:
                         homing_cmd = clean_cmd.upper()
-                        # Chỉ phát lệnh nhấc dao nếu Homing tổng ($H, $HXY) hoặc chế độ spindle-pwm
-                        # Ngừa trục Z bị di chuyển khi chỉ Homing riêng $HX / $HY ở chế độ z-axis
-                        pen_up_cmd = ""
-                        if homing_cmd in ["$H", "$HXY"] or state.pen_mode == "spindle-pwm":
-                            pen_up_cmd = f"M3 S{state.pen_up_pwm}" if state.pen_mode == "spindle-pwm" else f"G90 G0 Z{state.pen_up_z}"
-                            await safe_write_serial((pen_up_cmd + "\n").encode())
-                            await broadcast({"type": "log", "direction": "out", "content": pen_up_cmd})
+                        # Cập nhật 35: Nhấc dao trước khi Homing (áp dụng cho cả spindle-pwm và z-axis)
+                        pen_up_cmds = []
+                        if state.pen_mode == "spindle-pwm":
+                            pen_up_cmds.append(f"M3 S{state.pen_up_pwm}")
+                        elif state.pen_mode == "z-axis" and homing_cmd in ["$H", "$HXY", "$HZ"]:
+                            step = state.step_distance or 1.0
+                            feed = int(state.jog_feedrate or 1000)
+                            pen_up_cmds.extend(["G91", f"G0 Z{step:.2f} F{feed}", "G90"])
+
+                        for pcmd in pen_up_cmds:
+                            await safe_write_serial((pcmd + "\n").encode())
+                            await broadcast({"type": "log", "direction": "out", "content": pcmd})
+                        if pen_up_cmds:
                             await asyncio.sleep(state.pen_dwell or 0.25)
+
+                        # Chờ máy CNC kết thúc các chuyển động trước đó và trở về trạng thái Idle (Phát \x85 hủy Jog nếu đang Jog)
+                        is_idle = await wait_for_idle(timeout=5.0)
+                        if not is_idle:
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"Máy CNC đang bận ({state.machine_state}). Vui lòng chờ di chuyển xong trước khi Homing!"
+                            )
 
                         state.grbl_ack_event.clear()
                         state.last_grbl_response = ""
                         await safe_write_serial(f"{homing_cmd}\n".encode())
                         await broadcast({"type": "log", "direction": "out", "content": homing_cmd})
 
-                        # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' khi homing xong)
+                        # Chờ Homing hoàn thành thực sự (GRBL phản hồi 'ok' hoặc ALARM/error)
                         if isinstance(state.serial_port, DummySerial):
                             await asyncio.sleep(0.5)
                         else:
@@ -1148,13 +1189,42 @@ async def send_command(req: CommandRequest):
                             
                             if "error" in state.last_grbl_response or "ALARM" in state.last_grbl_response:
                                 err_msg = state.last_grbl_response or 'Lỗi không xác định'
+                                if "error:5" in err_msg:
+                                    detail_msg = "Homing thất bại (error:5): Chưa bật Homing ($22=1) trong GRBL hoặc chưa kết nối công tắc hành trình!"
+                                elif "error:2" in err_msg or "error:3" in err_msg:
+                                    detail_msg = (
+                                        f"Lỗi {homing_cmd} ({err_msg}): Firmware GRBL chưa bật tính năng Homing từng trục lẻ!\n"
+                                        "👉 Hướng dẫn khắc phục:\n"
+                                        "1) Dùng lệnh Home tổng ($H) hoặc bấm nút Home trên Web UI.\n"
+                                        "2) Hoặc mở file config.h trong nguồn GRBL, bỏ comment dòng '#define HOMING_SINGLE_AXIS_COMMANDS' rồi nạp lại firmware."
+                                    )
+                                elif "ALARM:8" in err_msg or "alarm:8" in err_msg.lower():
+                                    detail_msg = (
+                                        "Lỗi Homing (ALARM:8): Công tắc không nhả sau khi nhích lùi ($27), động cơ chạy ngược hướng ($23), hoặc Trục Z chưa có công tắc!\n"
+                                        "👉 Hướng dẫn khắc phục:\n"
+                                        "1) Tăng độ nảy nhích lùi ($27=3.0mm hoặc 5.0mm) trong Cấu Hình GRBL.\n"
+                                        "2) Kiểm tra Chiều Homing ($23) xem động cơ có chạy về phía công tắc không.\n"
+                                        "3) Nếu máy vẽ/laser không có công tắc Z, dùng nút 'Đặt gốc tọa độ làm việc (G54)' thay cho $H."
+                                    )
+                                elif "ALARM:1" in err_msg or "alarm:1" in err_msg.lower():
+                                    detail_msg = (
+                                        "Lỗi Homing (ALARM:1): Công tắc hành trình bị nhiễu điện từ động cơ hoặc bị chạm/đè sẵn!\n"
+                                        "👉 Hướng dẫn khắc phục:\n"
+                                        "1) Nhấn nút Tắt Hard Limits ($21=0) trong Cấu Hình GRBL.\n"
+                                        "2) Kiểm tra dây nối và tiếp xúc công tắc hành trình."
+                                    )
+                                elif "ALARM:9" in err_msg or "alarm:9" in err_msg.lower():
+                                    detail_msg = "Lỗi Homing (ALARM:9): Máy CNC đang ở trạng thái Khóa. Vui lòng nhấn Mở Khóa ($X) trước khi thử lại."
+                                else:
+                                    detail_msg = f"Homing thất bại: {err_msg}"
+
                                 await safe_write_serial(b"\x18\r\n$X\r\n")
                                 await broadcast({"type": "log", "direction": "out", "content": "\x18 $X"})
                                 state.machine_state = "Idle"
                                 await send_telemetry()
                                 raise HTTPException(
                                     status_code=400,
-                                    detail=f"Homing thất bại: {err_msg}"
+                                    detail=detail_msg
                                 )
 
                         # Mở khóa Unlock ($X) sau khi Homing hoàn thành
@@ -1163,8 +1233,16 @@ async def send_command(req: CommandRequest):
                         await broadcast({"type": "log", "direction": "out", "content": "$X"})
                         await asyncio.sleep(0.3)
 
-                        # Reset WCO phù hợp cho lệnh Homing toàn bộ hoặc Homing từng trục
-                        if homing_cmd == "$HX":
+                        # Cập nhật 36 & 38: Reset WCO = (0,0,0) giúp Gốc tọa độ làm việc (WPos) đồng bộ trùng tuyệt đối Gốc máy (MPos)
+                        if homing_cmd in ["$H", "$HXY"]:
+                            cmd_set_wco = "G10 L20 P1 X0 Y0 Z0"
+                            state.mpos = [0.0, 0.0, 0.0]
+                            state.wpos = [0.0, 0.0, 0.0]
+                            state.wco = [0.0, 0.0, 0.0]
+                            state.work_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                            state.workpiece_origin = {"x": 0.0, "y": 0.0, "z": 0.0}
+                            state.home_set = True
+                        elif homing_cmd == "$HX":
                             cmd_set_wco = "G10 L20 P1 X0"
                             state.mpos[0] = 0.0
                             state.wpos[0] = 0.0
@@ -1192,7 +1270,7 @@ async def send_command(req: CommandRequest):
                         save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": state.home_set})
                         await send_telemetry()
 
-                        results.extend([pen_up_cmd, homing_cmd, "$X", cmd_set_wco])
+                        results.extend([cmd for cmd in pen_up_cmds + [homing_cmd, "$X", cmd_set_wco] if cmd])
                     finally:
                         state.is_homing = False
                     continue
@@ -1774,6 +1852,30 @@ async def v1_disable_homing():
     """Tắt tính năng Homing cycle ($22=0) trong GRBL"""
     state.grbl_settings["$22"] = "0"
     res = await send_command(CommandRequest(command="$22=0"))
+    await send_telemetry()
+    return res
+
+class V1HomingPulloffRequest(BaseModel):
+    pulloff: float = 3.0
+
+@app.post("/cncapi/v1/origin/homing_pulloff")
+async def v1_set_homing_pulloff(req: V1HomingPulloffRequest):
+    """Cài đặt độ nảy nhích lùi sau khi chạm công tắc ($27=val, khuyên dùng 3.0 hoặc 5.0mm để sửa lỗi ALARM:8)"""
+    val_str = f"{req.pulloff:.3f}"
+    state.grbl_settings["$27"] = val_str
+    res = await send_command(CommandRequest(command=f"$27={req.pulloff:.1f}"))
+    await send_telemetry()
+    return res
+
+class V1HardLimitsRequest(BaseModel):
+    enabled: bool = False
+
+@app.post("/cncapi/v1/origin/hard_limits")
+async def v1_set_hard_limits(req: V1HardLimitsRequest):
+    """Bật/tắt cờ Hard Limits ($21=0/1) chống nhiễu điện công tắc"""
+    val = "1" if req.enabled else "0"
+    state.grbl_settings["$21"] = val
+    res = await send_command(CommandRequest(command=f"$21={val}"))
     await send_telemetry()
     return res
 

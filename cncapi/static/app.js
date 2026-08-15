@@ -3269,6 +3269,40 @@
         });
     }
 
+    // Set Pull-off ($27)
+    document.getElementById('btn-set-pulloff-3')?.addEventListener('click', async () => {
+        try {
+            await fetch('/cncapi/v1/origin/homing_pulloff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pulloff: 3.0 })
+            });
+            await fetchAndRenderGrblInfo();
+        } catch (e) { console.error('Lỗi set pulloff 3mm:', e); }
+    });
+    document.getElementById('btn-set-pulloff-5')?.addEventListener('click', async () => {
+        try {
+            await fetch('/cncapi/v1/origin/homing_pulloff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pulloff: 5.0 })
+            });
+            await fetchAndRenderGrblInfo();
+        } catch (e) { console.error('Lỗi set pulloff 5mm:', e); }
+    });
+
+    // Disable Hard Limits ($21=0)
+    document.getElementById('btn-disable-hardlimits')?.addEventListener('click', async () => {
+        try {
+            await fetch('/cncapi/v1/origin/hard_limits', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: false })
+            });
+            await fetchAndRenderGrblInfo();
+        } catch (e) { console.error('Lỗi tắt hard limits:', e); }
+    });
+
     // Homing Direction Change ($23)
     const selectHomingDir = document.getElementById('grbl-homing-dir-select');
     if (selectHomingDir) {
