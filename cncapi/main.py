@@ -722,13 +722,13 @@ def generate_scenario_gcode(actions: list) -> str:
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
             gcode.append("G4 P0.02")
-            gcode.append(f"G1 Y{(y - swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(f"G1 Y{(y + swipe_dist):.2f} F{swipe_feed}")
             gcode.append(p_up)
         elif act_type == "swipe_down":
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
             gcode.append(p_down)
             gcode.append("G4 P0.02")
-            gcode.append(f"G1 Y{(y + swipe_dist):.2f} F{swipe_feed}")
+            gcode.append(f"G1 Y{(y - swipe_dist):.2f} F{swipe_feed}")
             gcode.append(p_up)
         elif act_type == "swipe_left":
             gcode.append(f"G0 X{x:.2f} Y{y:.2f} F{feed}")
@@ -819,13 +819,13 @@ def compute_scenario_segments(actions: list) -> list:
             cur_x, cur_y = ax, ay
             pen_down = False
         elif act_type == "swipe_up":
-            end_y = ay - swipe_dist
+            end_y = ay + swipe_dist
             segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
             segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
             cur_x, cur_y = ax, end_y
             pen_down = False
         elif act_type == "swipe_down":
-            end_y = ay + swipe_dist
+            end_y = ay - swipe_dist
             segments.append({"type": "rapid", "pts": [{"x": cur_x, "y": cur_y}, {"x": ax, "y": ay}], "penDown": False, "stepIndex": step_label, "actionType": act_type})
             segments.append({"type": "swipe", "pts": [{"x": ax, "y": ay}, {"x": ax, "y": end_y}], "penDown": True, "stepIndex": step_label, "actionType": act_type})
             cur_x, cur_y = ax, end_y
@@ -1809,9 +1809,9 @@ async def v1_execute_gesture(req: V1GestureRequest):
     elif gtype == "swipe_right":
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 X{swipe_dist} F{swipe_feed}", "G90", p_up])
     elif gtype == "swipe_up":
-        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y-{swipe_dist} F{swipe_feed}", "G90", p_up])
-    elif gtype == "swipe_down":        
         gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y{swipe_dist} F{swipe_feed}", "G90", p_up])
+    elif gtype == "swipe_down":        
+        gcode.extend([p_down, "G4 P0.02", "G91", f"G1 Y-{swipe_dist} F{swipe_feed}", "G90", p_up])
     else:
         raise HTTPException(status_code=400, detail=f"Loại cử chỉ không hợp lệ: {req.type}")
 

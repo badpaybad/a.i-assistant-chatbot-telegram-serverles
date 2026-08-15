@@ -434,4 +434,11 @@ Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về g
     flip ngang
     flip dọc 
 
+**cập nhật 53**  Cử Chỉ Touch & Swipe Gestures
+        vuốt lên đang thực tế vuốt xuống, cần đổi cho đúng
+        vuốt xuống đang thực tế vuốt lên, cần đổi cho đúng
+      Quản Lý & Phím Kịch Bản
+        vuốt lên đang thực tế vuốt xuống, cần đổi cho đúng
+        vuốt xuống đang thực tế vuốt lên, cần đổi cho đúng
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

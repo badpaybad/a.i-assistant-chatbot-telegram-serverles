@@ -524,7 +524,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 49** | Hiển thị và cho phép chỉnh sửa toàn bộ 34+ thông số GRBL ($0–$132) lấy theo lệnh `$$`, lưu persistent thành đối tượng `cnc_physical` trong `calibration_settings.json`. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js), [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json) | Web API `/cncapi/v1/system/grbl_settings`, tự động bẫy phản hồi `$id=val` lưu vào `cnc_physical` đối tượng, UI panel `#grbl-system-details-panel` hiển thị và cho phép sửa tất cả 34+ tham số GRBL. |
 | **Cập nhật 51** | Gcode with Font Editor & Gcode with Image Editor: Khi click **🛑 Dừng & Về gốc ban đầu** hoặc **🏠 Dừng & Về gốc WPos**, hệ thống tự động nhấc bút an toàn và chờ trễ `pen_dwell` hoàn tất trước khi di chuyển X/Y về gốc để chống cào rách phôi/màn hình | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cập nhật API REST `/cncapi/v1/motion/stop-and-return`: thực hiện Soft Reset `\x18`, Unlock `$X`, phát lệnh nhấc bút `M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`, chờ trễ `max(pen_dwell + 0.15, 0.4s)` rồi mới di chuyển `G0 X.. Y..`, cuối cùng tắt xung `M5`. |
 | **Cập nhật 52** | Bổ sung đầy đủ các ô nhập thông số Góc Xoay (`rotation_angle`), Lật Ngang (`flip_x`), Lật Dọc (`flip_y`) cho cả 3 bộ sinh: Gcode with Font, Gcode with Image và Gcode Background | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Bổ sung UI controls, tích hợp biến đổi ma trận 2D xoay và lật trục tọa độ cho Font (`generate_font_gcode`), Image/SVG (`sort_gcode_paths_left_to_right`), Background Layer 0 canvas rendering & Background-to-Gcode. |
-| **Cập nhật 53** | Tự động đồng bộ toàn diện cấu hình Nhấc / Hạ Bút từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" sang G-code Font và G-code Image | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/image2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/image2gcode.py), [`cncapi/svg2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/svg2gcode.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cả hai bộ sinh `generate_font_gcode` và `sort_gcode_paths_left_to_right` đọc trực tiếp `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`. Các module `image2gcode.py` và `svg2gcode.py` tự động đọc cấu hình động qua `_get_pen_commands()`. |
+| **Cập nhật 53** | Đảo chiều chuẩn xác cho thao tác Vuốt Lên (+Y) và Vuốt Xuống (-Y) trong Cử Chỉ Touch & Swipe Gestures và Quản Lý & Phím Kịch Bản | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) | Sửa lại dấu di chuyển Y trong `generate_scenario_gcode`, `compute_scenario_segments` và `execute_gesture`: Vuốt Lên di chuyển $+Y$ (tiến lên trên theo trục Đề-các) và Vuốt Xuống di chuyển $-Y$ (lùi xuống dưới). |
 
 ### 2.22. Quản Lý & Lưu Cấu Hình Tất Cả Thông Số GRBL ($$) vào đối tượng `cnc_physical` trong `calibration_settings.json` (Cập nhật 49)
 
@@ -779,6 +779,23 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - Bổ sung `flip_x`, `flip_y` vào `bgState` và lưu persistent trong `calibration_settings.json`.
      - Render Layer 0 canvas áp dụng `ctx.scale((bgState.flip_x ? -1 : 1) * axisDirX, (bgState.flip_y ? -1 : 1) * axisDirY)` và vẽ ảnh bù trừ offset tương ứng.
      - Khi bấm **Tạo Vector & G-code từ Background**, truyền trực tiếp `rotation_angle`, `flip_x`, `flip_y` vào backend để sinh mã G-code đồng bộ 100% với giao diện xem trước.
+
+### 2.28. Khắc Phục Chuẩn Chiều Vuốt Lên (+Y) Và Vuốt Xuống (-Y) Trong Cử Chỉ Gestures Và Kịch Bản (Cập Nhật 53)
+
+1. **Vấn Đề Kỹ Thuật**:
+   - Trước đây trong backend [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py):
+     - `swipe_up` lại trừ đi `swipe_dist` (`G1 Y-40`), làm máy CNC di chuyển lùi xuống dưới thay vì vuốt lên.
+     - `swipe_down` lại cộng thêm `swipe_dist` (`G1 Y+40`), làm máy CNC di chuyển tiến lên trên thay vì vuốt xuống.
+   - Nguyên nhân: Nhầm lẫn dấu trục Y giữa hệ tọa độ màn hình máy tính (gốc Top-Left, Y hướng xuống) với hệ tọa độ máy CNC Đề-các chuẩn (gốc Bottom-Left, +Y hướng lên trên).
+
+2. **Giải Pháp Đã Triển Khai**:
+   - **Thực Thi Cử Chỉ Nhanh (`/cncapi/v1/gestures/execute`)**:
+     - **Vuốt Lên (`swipe_up`)**: Phát `G91 G1 Y{swipe_dist} F{swipe_feed} G90` (di chuyển tương đối $+Y$ lên trên).
+     - **Vuốt Xuống (`swipe_down`)**: Phát `G91 G1 Y-{swipe_dist} F{swipe_feed} G90` (di chuyển tương đối $-Y$ xuống dưới).
+   - **Sinh Mã Kịch Bản (`generate_scenario_gcode` & `compute_scenario_segments`)**:
+     - **`swipe_up`**: Tọa độ đích kết thúc $Y_{\text{end}} = Y + \text{swipe\_dist}$ (tiến lên trên).
+     - **`swipe_down`**: Tọa độ đích kết thúc $Y_{\text{end}} = Y - \text{swipe\_dist}$ (lùi xuống dưới).
+   - Đảm bảo tính nhất quán 100% giữa cử chỉ thủ công, kịch bản tự động và nét vẽ hiển thị trên Tool Path View.
 
 ---
 
