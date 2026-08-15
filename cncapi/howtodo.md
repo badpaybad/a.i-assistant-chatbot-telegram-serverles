@@ -522,7 +522,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 47** | Ở chế độ Vị trí trục Z (`pen_mode: z-axis` cho Nema 23 + vít me), nút Nhấc Bút & Hạ Bút điều khiển nâng/hạ trục Z tương đối theo Bước Nhích (mm) (`step_distance`) linh hoạt tương tự điều khiển jog X, Y. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Chế độ `z-axis` phát lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` (Nhấc Bút) và `G91 G0 Z-<step> F<feed> G90` (Hạ Bút) theo Bước Nhích (`sys-step-distance`). |
 | **Cập nhật 48** | Thông báo lỗi Toastr tập trung: Bắt HTTP status != 200, phản hồi lỗi WebSocket GRBL, lỗi không kết nối được cổng USB với CNC, yêu cầu người dùng bấm đóng thủ công (`timeOut: 0`, `closeButton: true`). | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/styles.css`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/styles.css), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Tích hợp Toastr JS/CSS & hệ thống Toast DOM fallback. Tự động bắt lỗi HTTP API != 200, bẫy log lỗi `error:`/`ALARM:` từ WebSocket, bẫy lỗi ngắt kết nối USB và cấu hình `timeOut: 0` để người dùng chủ động bấm đóng (`✕`). |
 | **Cập nhật 49** | Hiển thị và cho phép chỉnh sửa toàn bộ 34+ thông số GRBL ($0–$132) lấy theo lệnh `$$`, lưu persistent thành đối tượng `cnc_physical` trong `calibration_settings.json`. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js), [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json) | Web API `/cncapi/v1/system/grbl_settings`, tự động bẫy phản hồi `$id=val` lưu vào `cnc_physical` đối tượng, UI panel `#grbl-system-details-panel` hiển thị và cho phép sửa tất cả 34+ tham số GRBL. |
-| **Cập nhật 50** | Sửa logic thông báo Toastr khi kết nối thành công: Xóa tất cả Toastr cũ (`toastr.clear()`), hiển thị thông báo thành công xanh và sửa điều kiện bắt lỗi sai `!data.connected` làm hiện thông báo đỏ khi đã kết nối. | ✅ Hoàn thành | [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Đã sửa điều kiện bẫy lỗi `/api/connect` (`data.status === 'error'`), tự động gọi `toastr.clear()` để dọn sạch các thông báo lỗi cũ khi kết nối USB/WebSocket thành công và hiển thị Toastr xanh "🔌 Kết Nối Thành Công". |
+| **Cập nhật 50** | Đồng bộ tập tham số `cnc_physical` chuẩn từ lệnh `$$` vào `calibration_settings.json` và quy chuẩn Hệ tọa độ CNC trên Tool Path View (Gốc Bottom-Left, +X sang Phải, +Y lên Trên) | ✅ Hoàn thành | [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json), [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md) | Lưu trữ chính xác 34+ tham số GRBL physical ($0–$132) và xác nhận quy tắc trục tọa độ chuẩn Đề-các 2D (Gốc 0,0 Bottom-Left, OX sang phải dương, OY lên trên dương). |
 | **Cập nhật 51** | Tải toàn bộ tài nguyên CDN (JS, CSS, Google Fonts) về lưu nội bộ tại `static/vendor/` để ứng dụng Web UI hoạt động offline 100% không cần kết nối Internet. | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/vendor/`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/vendor/) | Đã tải `jquery.min.js`, `toastr.min.css`, `toastr.min.js`, các file phông chữ `.woff2` (`Outfit` & `Space Mono`) và tạo `fonts.css` nội bộ. Thay thế toàn bộ liên kết CDN trong `index.html`. |
 
 ### 2.22. Quản Lý & Lưu Cấu Hình Tất Cả Thông Số GRBL ($$) vào đối tượng `cnc_physical` trong `calibration_settings.json` (Cập nhật 49)
@@ -583,7 +583,72 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
    - Panel `#grbl-system-details-panel` hiển thị danh sách 34+ thông số GRBL được nhóm theo 5 danh mục trực quan.
    - Tích hợp ô nhập liệu/dropdown cho phép xem và sửa từng tham số kèm nút **💾 Lưu Cấu Hình GRBL Physical** và **🔄 Tải Lại ($$)**.
 
+
+### 2.23. Cập Nhật Tập Tham Số `cnc_physical` Chuẩn và Quy Chuẩn Hệ Tọa Độ CNC Trên Tool Path View (Cập nhật 50)
+
+1. **Yêu Cầu & Phân Tích Nghiệp Vụ**:
+   - Nạp tập tham số vật lý chuẩn thu được từ câu lệnh `$$` của mạch GRBL vào đối tượng `"cnc_physical"` trong file [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json).
+   - Xác nhận quy chuẩn hệ tọa độ Đề-các (Cartesian Coordinate System) dùng cho máy CNC và hiển thị giao diện xem trước đường đi (Tool Path View).
+
+2. **Cấu Trúc Dữ Liệu `cnc_physical` Chuẩn ($0 – $132)**:
+   ```json
+   "cnc_physical": {
+     "$0": "10",
+     "$1": "25",
+     "$2": "0",
+     "$3": "0",
+     "$4": "0",
+     "$5": "0",
+     "$6": "0",
+     "$10": "1",
+     "$11": "0.010",
+     "$12": "0.002",
+     "$13": "0",
+     "$20": "0",
+     "$21": "0",
+     "$22": "1",
+     "$23": "1",
+     "$24": "25.000",
+     "$25": "500.000",
+     "$26": "250",
+     "$27": "1.000",
+     "$30": "1000",
+     "$31": "0",
+     "$32": "0",
+     "$100": "250.000",
+     "$101": "250.000",
+     "$102": "250.000",
+     "$110": "500.000",
+     "$111": "500.000",
+     "$112": "500.000",
+     "$120": "10.000",
+     "$121": "10.000",
+     "$122": "10.000",
+     "$130": "200.000",
+     "$131": "200.000",
+     "$132": "200.000"
+   }
+   ```
+   *Ý nghĩa các tham số quan trọng:*
+   - `$130=200.0`, `$131=200.0`, `$132=200.0`: Hành trình tối đa X, Y, Z = 200mm.
+   - `$100=250.0`, `$101=250.0`, `$102=250.0`: Tỷ lệ xung 250 bước/mm.
+   - `$22=1`: Cho phép chu trình Homing ($H).
+   - `$23=1`: Mật nạ đảo chiều Homing (`00000001` -> Trục X home về bên trái/chiều âm, trục Y & Z home về chiều dương).
+
+3. **Xác Nhận Quy Chuẩn Trục Tọa Độ Trên Tool Path View**:
+   - **Gốc Tọa Độ (0,0)**: Bắt buộc nằm ở góc **Bottom-Left (Góc dưới cùng bên trái)** của bàn làm việc (Machine Working Area).
+   - **Trục OX (Chiều ngang)**: Hướng từ **Trái sang Phải** là chiều **DƯƠNG (+X)**. Hướng từ Phải sang Trái là chiều ÂM (-X).
+   - **Trục OY (Chiều dọc)**: Hướng từ **Dưới lên Trên** là chiều **DƯƠNG (+Y)**. Hướng từ Trên xuống Dưới là chiều ÂM (-Y).
+   - **Trục OZ (Chiều đứng)**: Hướng từ **Dưới lên Trên** (Nâng bút/dao nhấc lên cao) là chiều **DƯƠNG (+Z)**, Hạ bút/dao xuống phôi là chiều ÂM (-Z) hoặc 0.
+
+4. **Kỹ Thuật Xử Lý Biến Đổi Hệ Tọa Độ Trong Tool Path View (Y-Flip Matrix)**:
+   - Màn hình HTML Canvas mặc định có gốc (0,0) ở góc Top-Left, trục Y đi xuống (+Y xuống).
+   - Để hiển thị đúng chuẩn CNC (Bottom-Left), hệ thống áp dụng công thức đảo trục Y khi render:
+     $$\text{y\_canvas} = \text{canvas\_height} - (\text{y\_cnc} \times \text{scale})$$
+   - Hoặc biến đổi ma trận Canvas context: `ctx.transform(1, 0, 0, -1, 0, height)`.
+
 ---
+
 
 
 
