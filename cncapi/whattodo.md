@@ -418,47 +418,6 @@ Các notify tự người dùng cần tắt chứ không tự tắt
 
 **cập nhật 49** ở Cấu Hình GRBL & Chiều Homing CNC cần lấy theo lệnh $$ có bao nhiêu thông số có thể cấu hình được thì cần hiển thị và cho phép sửa thông số, cần lưu thành cnc_physical object ở cncapi/calibration_settings.json 
 
-**cập nhật 50** gửi lệnh $$ có 
-
-  "cnc_physical": {
-    "$0": "10",
-    "$1": "25",
-    "$2": "0",
-    "$3": "0",
-    "$4": "0",
-    "$5": "0",
-    "$6": "0",
-    "$10": "1",
-    "$11": "0.010",
-    "$12": "0.002",
-    "$13": "0",
-    "$20": "0",
-    "$21": "0",
-    "$22": "1",
-    "$23": "1",
-    "$24": "25.000",
-    "$25": "500.000",
-    "$26": "250",
-    "$27": "1.000",
-    "$30": "1000",
-    "$31": "0",
-    "$32": "0",
-    "$100": "250.000",
-    "$101": "250.000",
-    "$102": "250.000",
-    "$110": "500.000",
-    "$111": "500.000",
-    "$112": "500.000",
-    "$120": "10.000",
-    "$121": "10.000",
-    "$122": "10.000",
-    "$130": "200.000",
-    "$131": "200.000",
-    "$132": "200.000"
-  }
-
-
-
-
+**cập nhật 50** khung tl tr bl br hiện tại khá nhỏ so với kích thước thực tế là do vấn đề gì ?
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

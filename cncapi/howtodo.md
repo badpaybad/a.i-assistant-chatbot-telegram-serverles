@@ -649,6 +649,43 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
+### 2.23. Phân Tích & Khắc Phục Vấn Đề Khung 4 Góc (TL, TR, BL, BR) Bị Nhỏ Hơn Kích Thước Thực Tế (Cập nhật 50)
+
+1. **Hiện Tượng Thực Tế**:
+   - Khung viền đỏ nét đứt thể hiện 4 góc làm việc (`TL, TR, BL, BR`) hiển thị trên Canvas có kích thước chỉ khoảng **$94\text{ mm} \times 85\text{ mm}$** (lưu trong `calibration_settings.json` là `TR(94, 85)`, `TL(0, 85)`, `BR(93, 0)`, `BL(0, 0)`).
+   - Khung này nhỏ hơn rất nhiều so với kích thước thật của máy (ví dụ khổ A4 $210 \times 297\text{ mm}$ hoặc hành trình máy $200 \times 200\text{ mm}$ `$130/$131`).
+   - Khi đặt ảnh nền Background (khổ A4 $210 \times 297\text{ mm}$), khung đỏ 4 góc máy chỉ nằm lọt thỏm ở một góc nhỏ.
+
+2. **Các Nguyên Nhân Kỹ Thuật Gây Ra Vấn Đề**:
+   - **Nguyên nhân 1: Tỷ lệ xung GRBL `$100`, `$101` (Steps/mm) chưa được hiệu chuẩn (Calibrate) đúng với phần cứng cơ khí**:
+     - GRBL đang cài đặt mặc định: `$100 = 250.000` xung/mm, `$101 = 250.000` xung/mm.
+     - Khi đầu máy di chuyển cơ khí thực tế một quãng đường $L_{\text{thực}}$ (ví dụ 210mm), nhưng nếu phần cứng thật chỉ cần $80\text{ xung/mm}$ (dây đai GT2 20T vi bước 1/16), thì GRBL ghi nhận tọa độ báo về $WPos = \frac{210 \times 80}{250} \approx 67.2\text{ mm}$!
+     - Khi người dùng chạy máy ra 4 góc biên thật và bấm **Set TL / TR / BL / BR**, GRBL chỉ báo tọa độ nhỏ ($94\text{ mm} \times 85\text{ mm}$) và hệ thống lưu chính xác con số này vào `calibration_settings.json`.
+   - **Nguyên nhân 2: Độ lệch so sánh giữa Khung máy ($94 \times 85\text{ mm}$) và Ảnh nền Background ($210 \times 297\text{ mm}$)**:
+     - Khổ giấy A4 trong `background_settings` được quy ước chuẩn là $210\text{ mm} \times 297\text{ mm}$.
+     - Do tọa độ 4 góc máy đang lưu là $94 \times 85\text{ mm}$, Canvas vẽ đúng tỷ lệ mm khiến khung máy chỉ bằng 1/3 khổ A4.
+   - **Nguyên nhân 3: Quy trình lấy mẫu 4 góc (Set Corner Points)**:
+     - Nếu người dùng bấm Set góc khi đầu vẽ mới chỉ di chuyển một phần hành trình (jog thử) mà chưa chạy ra sát 4 góc cực đại của bàn máy (hoặc chưa thực hiện Homing `$H` về gốc `0,0` trước khi di chuyển đo biên).
+
+3. **Công Thức & Quy Trình Hiệu Chuẩn (Calibration Steps/mm)**:
+   - **Công thức tính bước chuẩn**:
+     $$\text{Tham số mới (\$100 hoặc \$101)} = \text{Tham số hiện tại} \times \frac{\text{Khoảng cách lệnh phát (mm)}}{\text{Khoảng cách thực tế di chuyển (mm)}}$$
+   - **Các thông số phần cứng cơ bản phổ biến**:
+     | Cơ cấu truyền động | Vi bước Driver | Bán kính / Bước ren | Tỷ lệ chuẩn (\$100 / \$101) |
+     | :--- | :--- | :--- | :--- |
+     | **Dây đai GT2 (Pulley 20 răng)** | 1/16 (A4988 / DRV8825) | 40 mm/vòng | **`$100=80.000`, `$101=80.000`** |
+     | **Dây đai GT2 (Pulley 16 răng)** | 1/16 (A4988 / DRV8825) | 32 mm/vòng | **`$100=100.000`, `$101=100.000`** |
+     | **Vít me T8 (Lead 8mm, 4 đầu ren)** | 1/16 (A4988 / DRV8825) | 8 mm/vòng | **`$100=400.000`, `$101=400.000`** |
+     | **Vít me T8 (Lead 8mm, 4 đầu ren)** | 1/8 vi bước | 8 mm/vòng | **`$100=200.000`, `$101=200.000`** |
+
+4. **Cách Khắc Phục Triệt Để**:
+   - **Bước 1**: Mở panel **⚙️ Cấu Hình GRBL ($$)**, điều chỉnh `$100` và `$101` về đúng tỷ lệ phần cứng thực tế (ví dụ: `$100=80`, `$101=80` cho máy vẽ đai GT2 hoặc `$100=400`, `$101=400` cho vít me T8).
+   - **Bước 2**: Thực hiện **Homing ($H)** để đưa máy về gốc chuẩn `(0, 0)`.
+   - **Bước 3**: Dùng bộ điều khiển Jog di chuyển đầu vẽ đến đúng 4 góc biên thực tế của bàn làm việc và bấm lần lượt **Set BL**, **Set BR**, **Set TL**, **Set TR**.
+   - **Bước 4**: Kiểm tra lại Tool Path View: Khung viền đỏ 4 góc sẽ mở rộng bao trọn toàn bộ kích thước thật của bàn máy và khớp hoàn hảo với khổ làm việc (A4/A3).
+
+---
+
 
 
 
