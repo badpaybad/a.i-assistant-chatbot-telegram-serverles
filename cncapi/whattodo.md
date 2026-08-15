@@ -416,4 +416,6 @@ Hoặc ở onmessage nhận log từ cnc nếu cnc có lỗi cũng cần notify 
 Khi không connect được cổng usb với cnc cũng cần báo 
 Các notify tự người dùng cần tắt chứ không tự tắt 
 
+**cập nhật 49** ở Cấu Hình GRBL & Chiều Homing CNC cần lấy theo lệnh $$ có bao nhiêu thông số có thể cấu hình được thì cần hiển thị và cho phép sửa thông số, cần lưu thành cnc_physical object ở cncapi/calibration_settings.json 
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

@@ -196,16 +196,30 @@ class ControllerState:
         self.axis_dir_y = int(settings.get("axis_dir_y", 1))
         self.mm_per_px = float(settings.get("mm_per_px", 0.05))
 
-        # GRBL Settings ($0 - $132)
+        # GRBL Physical Settings ($0 - $132)
         self.grbl_settings = {
-            "$22": "1",
-            "$23": "3",
+            "$0": "10",
+            "$1": "25",
+            "$2": "0",
             "$3": "0",
+            "$4": "0",
+            "$5": "0",
+            "$6": "0",
+            "$10": "1",
+            "$11": "0.010",
+            "$12": "0.002",
+            "$13": "0",
             "$20": "0",
             "$21": "0",
+            "$22": "1",
+            "$23": "3",
             "$24": "25.000",
             "$25": "500.000",
+            "$26": "250",
             "$27": "1.000",
+            "$30": "1000",
+            "$31": "0",
+            "$32": "0",
             "$100": "250.000",
             "$101": "250.000",
             "$102": "250.000",
@@ -219,6 +233,9 @@ class ControllerState:
             "$131": "200.000",
             "$132": "200.000"
         }
+        loaded_physical = settings.get("cnc_physical")
+        if isinstance(loaded_physical, dict):
+            self.grbl_settings.update(loaded_physical)
         
         # WebSockets & Locks
         self.websocket_connections: Set[WebSocket] = set()
@@ -306,21 +323,12 @@ class DummySerial:
                                 state.wpos[idx] = val
                             state.mpos[idx] = state.wpos[idx] + state.wco[idx]
 
-                elif cmd.startswith("$21="):
-                    val = cmd.split("=")[1].strip()
-                    state.grbl_settings["$21"] = val
-                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
-                elif cmd.startswith("$22="):
-                    val = cmd.split("=")[1].strip()
-                    state.grbl_settings["$22"] = val
-                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
-                elif cmd.startswith("$23="):
-                    val = cmd.split("=")[1].strip()
-                    state.grbl_settings["$23"] = val
-                    asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
-                elif cmd.startswith("$27="):
-                    val = cmd.split("=")[1].strip()
-                    state.grbl_settings["$27"] = val
+                elif cmd.startswith("$") and "=" in cmd:
+                    parts = cmd.split("=", 1)
+                    k = parts[0].strip()
+                    v = parts[1].strip()
+                    state.grbl_settings[k] = v
+                    save_settings({"cnc_physical": state.grbl_settings})
                     asyncio.create_task(broadcast({"type": "log", "direction": "in", "content": "ok"}))
                 elif cmd == "$GETID":
                     state.device_id = "GRBL-328P-1E950F-DUMMY"
@@ -518,7 +526,10 @@ async def serial_reader_loop():
                         await send_telemetry()
                     elif line.startswith("$") and "=" in line:
                         parts = line.split("=", 1)
-                        state.grbl_settings[parts[0].strip()] = parts[1].strip()
+                        k = parts[0].strip()
+                        v = parts[1].strip()
+                        state.grbl_settings[k] = v
+                        save_settings({"cnc_physical": state.grbl_settings})
                     elif line == "ok" or "error" in line:
                         state.last_grbl_response = line
                         if "error:5" in line:
@@ -1978,6 +1989,119 @@ async def v1_get_grbl_system_info():
             }
         },
         "raw_settings": state.grbl_settings
+    }
+
+GRBL_PARAM_DEFS = {
+    "$0": {"code": 0, "name": "Step pulse duration", "unit": "microseconds", "desc": "Thời gian xung phát bước phát tín hiệu", "group": "stepper"},
+    "$1": {"code": 1, "name": "Step idle delay", "unit": "milliseconds", "desc": "Độ trễ giữ lực động cơ khi đứng rảnh", "group": "stepper"},
+    "$2": {"code": 2, "name": "Step pulse invert", "unit": "mask", "desc": "Mask đảo chiều xung phát bước (Step pin invert mask)", "group": "stepper"},
+    "$3": {"code": 3, "name": "Direction port invert", "unit": "mask", "desc": "Mask đảo chiều quay động cơ Jogging/GCode", "group": "stepper"},
+    "$4": {"code": 4, "name": "Step enable invert", "unit": "boolean", "desc": "Đảo mức logic kích hoạt chân Enable", "group": "stepper"},
+    "$5": {"code": 5, "name": "Limit pins invert", "unit": "boolean", "desc": "Đảo mức logic công tắc hành trình (0=NC/High, 1=NO/Low)", "group": "stepper"},
+    "$6": {"code": 6, "name": "Probe pin invert", "unit": "boolean", "desc": "Đảo mức logic chân cảm biến Probe", "group": "stepper"},
+    "$10": {"code": 10, "name": "Status report options", "unit": "mask", "desc": "Tùy chọn thông tin báo cáo trạng thái (?)", "group": "system"},
+    "$11": {"code": 11, "name": "Junction deviation", "unit": "mm", "desc": "Độ lệch góc chuyển hướng (Junction deviation)", "group": "system"},
+    "$12": {"code": 12, "name": "Arc tolerance", "unit": "mm", "desc": "Dung sai độ mịn đường cung tròn (G2/G3 Arc tolerance)", "group": "system"},
+    "$13": {"code": 13, "name": "Report inches", "unit": "boolean", "desc": "Báo cáo theo đơn vị Inches (0=mm, 1=inch)", "group": "system"},
+    "$20": {"code": 20, "name": "Soft limits enable", "unit": "boolean", "desc": "Bật/Tắt giới hạn mềm bằng phần mềm (Soft Limits)", "group": "limits"},
+    "$21": {"code": 21, "name": "Hard limits enable", "unit": "boolean", "desc": "Bật/Tắt giới hạn cứng công tắc hành trình (Hard Limits)", "group": "limits"},
+    "$22": {"code": 22, "name": "Homing cycle enable", "unit": "boolean", "desc": "Bật/Tắt chu kỳ về gốc máy (Homing cycle $H)", "group": "limits"},
+    "$23": {"code": 23, "name": "Homing dir invert", "unit": "mask", "desc": "Mask đảo chiều di chuyển khi Homing (Homing Dir Mask)", "group": "limits"},
+    "$24": {"code": 24, "name": "Homing locate feed", "unit": "mm/min", "desc": "Tốc độ dò công tắc nhích chốt vị trí (Homing locate feed)", "group": "limits"},
+    "$25": {"code": 25, "name": "Homing search seek", "unit": "mm/min", "desc": "Tốc độ di chuyển tìm công tắc hành trình (Homing search seek)", "group": "limits"},
+    "$26": {"code": 26, "name": "Homing debounce delay", "unit": "ms", "desc": "Thời gian lọc nhiễu công tắc Homing (Debounce delay)", "group": "limits"},
+    "$27": {"code": 27, "name": "Homing pull-off distance", "unit": "mm", "desc": "Khoảng cách nhích lùi nhả công tắc Homing (Pull-off)", "group": "limits"},
+    "$30": {"code": 30, "name": "Max spindle speed", "unit": "RPM/PWM", "desc": "Tốc độ quay Trục chính / Tín hiệu PWM tối đa", "group": "spindle"},
+    "$31": {"code": 31, "name": "Min spindle speed", "unit": "RPM/PWM", "desc": "Tốc độ quay Trục chính / Tín hiệu PWM tối thiểu", "group": "spindle"},
+    "$32": {"code": 32, "name": "Laser mode enable", "unit": "boolean", "desc": "Bật/Tắt chế độ điều khiển Laser (Laser mode)", "group": "spindle"},
+    "$100": {"code": 100, "name": "X-axis steps/mm", "unit": "step/mm", "desc": "Số xung/bước trên 1 milimet Trục X", "group": "motion"},
+    "$101": {"code": 101, "name": "Y-axis steps/mm", "unit": "step/mm", "desc": "Số xung/bước trên 1 milimet Trục Y", "group": "motion"},
+    "$102": {"code": 102, "name": "Z-axis steps/mm", "unit": "step/mm", "desc": "Số xung/bước trên 1 milimet Trục Z", "group": "motion"},
+    "$110": {"code": 110, "name": "X-axis max rate", "unit": "mm/min", "desc": "Tốc độ di chuyển tối đa Trục X", "group": "motion"},
+    "$111": {"code": 111, "name": "Y-axis max rate", "unit": "mm/min", "desc": "Tốc độ di chuyển tối đa Trục Y", "group": "motion"},
+    "$112": {"code": 112, "name": "Z-axis max rate", "unit": "mm/min", "desc": "Tốc độ di chuyển tối đa Trục Z", "group": "motion"},
+    "$120": {"code": 120, "name": "X-axis accel", "unit": "mm/sec²", "desc": "Gia tốc tăng tốc Trục X", "group": "motion"},
+    "$121": {"code": 121, "name": "Y-axis accel", "unit": "mm/sec²", "desc": "Gia tốc tăng tốc Trục Y", "group": "motion"},
+    "$122": {"code": 122, "name": "Z-axis accel", "unit": "mm/sec²", "desc": "Gia tốc tăng tốc Trục Z", "group": "motion"},
+    "$130": {"code": 130, "name": "X-axis max travel", "unit": "mm", "desc": "Hành trình di chuyển tối đa Trục X", "group": "motion"},
+    "$131": {"code": 131, "name": "Y-axis max travel", "unit": "mm", "desc": "Hành trình di chuyển tối đa Trục Y", "group": "motion"},
+    "$132": {"code": 132, "name": "Z-axis max travel", "unit": "mm", "desc": "Hành trình di chuyển tối đa Trục Z", "group": "motion"},
+}
+
+class GrblPhysicalSettingsPayload(BaseModel):
+    settings: Optional[Dict[str, str]] = None
+    param: Optional[str] = None
+    value: Optional[str] = None
+
+@app.get("/cncapi/v1/system/grbl_settings")
+async def v1_get_grbl_physical_settings():
+    """Lấy danh sách tất cả các thông số cấu hình phần cứng GRBL ($$) kèm metadata và giá trị hiện tại"""
+    # Đồng bộ lưu cnc_physical vào calibration_settings.json
+    save_settings({"cnc_physical": state.grbl_settings})
+    
+    items = []
+    # Ưu tiên các tham số có trong GRBL_PARAM_DEFS
+    all_keys = list(GRBL_PARAM_DEFS.keys())
+    for k in state.grbl_settings.keys():
+        if k not in all_keys:
+            all_keys.append(k)
+            
+    for k in all_keys:
+        meta = GRBL_PARAM_DEFS.get(k, {
+            "code": int(k.replace("$", "")) if k.replace("$", "").isdigit() else 999,
+            "name": f"GRBL Setting {k}",
+            "unit": "",
+            "desc": f"Thông số GRBL {k}",
+            "group": "other"
+        })
+        val = state.grbl_settings.get(k, "")
+        items.append({
+            "key": k,
+            "code": meta["code"],
+            "name": meta["name"],
+            "unit": meta["unit"],
+            "desc": meta["desc"],
+            "group": meta["group"],
+            "value": val
+        })
+        
+    return {
+        "status": "success",
+        "cnc_physical": state.grbl_settings,
+        "parameters": items
+    }
+
+@app.post("/cncapi/v1/system/grbl_settings")
+async def v1_update_grbl_physical_settings(payload: GrblPhysicalSettingsPayload):
+    """Cập nhật một hoặc nhiều thông số cấu hình GRBL ($$), phát lệnh xuống CNC và lưu cnc_physical vào calibration_settings.json"""
+    to_update: Dict[str, str] = {}
+    if payload.settings:
+        for k, v in payload.settings.items():
+            key = k if k.startswith("$") else f"${k}"
+            to_update[key] = str(v).strip()
+    if payload.param is not None and payload.value is not None:
+        key = payload.param if payload.param.startswith("$") else f"${payload.param}"
+        to_update[key] = str(payload.value).strip()
+        
+    if not to_update:
+        raise HTTPException(status_code=400, detail="Không có thông số GRBL nào được truyền để cập nhật")
+        
+    results = {}
+    for key, val_str in to_update.items():
+        cmd = f"{key}={val_str}"
+        state.grbl_settings[key] = val_str
+        await safe_write_serial(f"{cmd}\n".encode())
+        await broadcast({"type": "log", "direction": "out", "content": cmd})
+        results[key] = val_str
+        
+    save_settings({"cnc_physical": state.grbl_settings})
+    await send_telemetry()
+    
+    return {
+        "status": "success",
+        "message": f"Đã cập nhật {len(results)} thông số GRBL physical và lưu vào calibration_settings.json thành công!",
+        "updated": results,
+        "cnc_physical": state.grbl_settings
     }
 
 @app.get("/cncapi/v1/origin/bounds")

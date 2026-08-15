@@ -521,8 +521,69 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 46** | Tự động gửi lệnh `$GETID` khi kết nối CNC thành công (phần cứng & dummy) để lấy Device ID và hiển thị ngay sau header `Cấu Hình Kết Nối & Thông Tin CNC: {device_id}` | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Mạch GRBL phản hồi `[ID:..., MAC:...]` qua lệnh `$GETID`. Backend đọc & trích xuất `device_id`, truyền qua telemetry WebSocket và frontend hiển thị realtime tại `<span id="cnc-device-id">`. |
 | **Cập nhật 47** | Ở chế độ Vị trí trục Z (`pen_mode: z-axis` cho Nema 23 + vít me), nút Nhấc Bút & Hạ Bút điều khiển nâng/hạ trục Z tương đối theo Bước Nhích (mm) (`step_distance`) linh hoạt tương tự điều khiển jog X, Y. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Chế độ `z-axis` phát lệnh di chuyển tương đối `G91 G0 Z+<step> F<feed> G90` (Nhấc Bút) và `G91 G0 Z-<step> F<feed> G90` (Hạ Bút) theo Bước Nhích (`sys-step-distance`). |
 | **Cập nhật 48** | Thông báo lỗi Toastr tập trung: Bắt HTTP status != 200, phản hồi lỗi WebSocket GRBL, lỗi không kết nối được cổng USB với CNC, yêu cầu người dùng bấm đóng thủ công (`timeOut: 0`, `closeButton: true`). | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/styles.css`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/styles.css), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Tích hợp Toastr JS/CSS & hệ thống Toast DOM fallback. Tự động bắt lỗi HTTP API != 200, bẫy log lỗi `error:`/`ALARM:` từ WebSocket, bẫy lỗi ngắt kết nối USB và cấu hình `timeOut: 0` để người dùng chủ động bấm đóng (`✕`). |
+| **Cập nhật 49** | Hiển thị và cho phép chỉnh sửa toàn bộ 34+ thông số GRBL ($0–$132) lấy theo lệnh `$$`, lưu persistent thành đối tượng `cnc_physical` trong `calibration_settings.json`. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js), [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json) | Web API `/cncapi/v1/system/grbl_settings`, tự động bẫy phản hồi `$id=val` lưu vào `cnc_physical` đối tượng, UI panel `#grbl-system-details-panel` hiển thị và cho phép sửa tất cả 34+ tham số GRBL. |
+
+### 2.22. Quản Lý & Lưu Cấu Hình Tất Cả Thông Số GRBL ($$) vào đối tượng `cnc_physical` trong `calibration_settings.json` (Cập nhật 49)
+
+1. **Yêu Cầu & Phân Tích Nghiệp Vụ**:
+   - Khi chạy lệnh `$$`, mạch GRBL v1.1 phản hồi toàn bộ danh sách 34+ tham số phần cứng (`$0` đến `$132`).
+   - Cần lấy đầy đủ tất cả các tham số này, hiển thị trực quan lên giao diện Web UI tại floating panel `#grbl-system-details-panel` và cho phép người dùng nhập/chỉnh sửa trực tiếp từng tham số.
+   - Khi có phản hồi từ lệnh `$$` hoặc khi người dùng chỉnh sửa thông số trên UI, toàn bộ tập dữ liệu cấu hình phần cứng GRBL phải được lưu trữ vĩnh viễn dưới key đối tượng `"cnc_physical"` trong file [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json).
+
+2. **Cấu Trúc Dữ Liệu Đối Tượng `cnc_physical`**:
+   ```json
+   "cnc_physical": {
+     "$0": "10",
+     "$1": "25",
+     "$2": "0",
+     "$3": "0",
+     "$4": "0",
+     "$5": "0",
+     "$6": "0",
+     "$10": "1",
+     "$11": "0.010",
+     "$12": "0.002",
+     "$13": "0",
+     "$20": "0",
+     "$21": "0",
+     "$22": "1",
+     "$23": "3",
+     "$24": "25.000",
+     "$25": "500.000",
+     "$26": "250",
+     "$27": "1.000",
+     "$30": "1000",
+     "$31": "0",
+     "$32": "0",
+     "$100": "250.000",
+     "$101": "250.000",
+     "$102": "250.000",
+     "$110": "4000.000",
+     "$111": "4000.000",
+     "$112": "4000.000",
+     "$120": "500.000",
+     "$121": "500.000",
+     "$122": "500.000",
+     "$130": "200.000",
+     "$131": "200.000",
+     "$132": "200.000"
+   }
+   ```
+
+3. **Backend Python & Web API (`cncapi/main.py`)**:
+   - `load_settings()` & `ControllerState`: Khởi tạo sẵn giá trị mặc định cho `"cnc_physical"`. Nạp lại từ `calibration_settings.json` khi mở ứng dụng.
+   - `serial_reader_loop()` & `DummySerial`: Tự động bẫy các câu lệnh cài đặt `$id=val` từ GRBL, cập nhật vào `state.grbl_settings` và tự động lưu `save_settings({"cnc_physical": state.grbl_settings})`.
+   - Web API REST:
+     - `GET /cncapi/v1/system/grbl_settings`: Trả về danh sách định nghĩa 34+ tham số GRBL (key, code, name, description, unit, value).
+     - `POST /cncapi/v1/system/grbl_settings`: Tiếp nhận body JSON `{ "settings": { "$0": "10", ... } }` hoặc `{ "param": "$100", "value": "250" }`, gửi lệnh xuống máy CNC thật/dummy, đồng bộ `state.grbl_settings` và lưu vĩnh viễn vào `calibration_settings.json`.
+
+4. **Frontend Web UI (`index.html` & `app.js`)**:
+   - Panel `#grbl-system-details-panel` hiển thị danh sách 34+ thông số GRBL được nhóm theo 5 danh mục trực quan.
+   - Tích hợp ô nhập liệu/dropdown cho phép xem và sửa từng tham số kèm nút **💾 Lưu Cấu Hình GRBL Physical** và **🔄 Tải Lại ($$)**.
 
 ---
+
+
 
 
 

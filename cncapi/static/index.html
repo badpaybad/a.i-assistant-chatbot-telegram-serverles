@@ -2495,7 +2495,7 @@ Xin Chào</textarea
           </div>
         </div>
 
-        <!-- SECTION 2: TỐC ĐỘ HOMING & PULL-OFF ($24, $25, $27) -->
+        <!-- SECTION 2: TỐC ĐỘ HOMING & GIỚI HẠN ($20, $21, $24, $25, $27) -->
         <div class="card glass-card" style="padding: 10px; background: rgba(15, 23, 42, 0.6);">
           <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #38bdf8;" data-i18n>
             ⚡ 2. Tốc Độ Homing & Giới Hạn ($20, $21, $24, $25, $27)
@@ -2521,52 +2521,26 @@ Xin Chào</textarea
           </div>
         </div>
 
-        <!-- SECTION 3: THÔNG SỐ ĐỘNG CƠ STEPPER (Useful CNC Info) -->
+        <!-- SECTION 3: DANH SÁCH TOÀN BỘ 34+ THÔNG SỐ GRBL PHYSICAL ($0..$132) -->
         <div class="card glass-card" style="padding: 10px; background: rgba(15, 23, 42, 0.6);">
-          <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; color: #4ade80;" data-i18n>
-            🏎️ 3. Tỉ Lệ Bước, Tốc Độ & Gia Tốc Động Cơ
-          </h4>
-          <table style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left;">
-            <thead>
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.1); color: #94a3b8;">
-                <th style="padding: 4px;">Thông số</th>
-                <th style="padding: 4px;">Trục X</th>
-                <th style="padding: 4px;">Trục Y</th>
-                <th style="padding: 4px;">Trục Z</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <td style="padding: 4px;">Steps/mm ($100-$102)</td>
-                <td style="padding: 4px;" id="grbl-val-100">250</td>
-                <td style="padding: 4px;" id="grbl-val-101">250</td>
-                <td style="padding: 4px;" id="grbl-val-102">250</td>
-              </tr>
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <td style="padding: 4px;">Max Speed ($110-$112)</td>
-                <td style="padding: 4px;" id="grbl-val-110">4000</td>
-                <td style="padding: 4px;" id="grbl-val-111">4000</td>
-                <td style="padding: 4px;" id="grbl-val-112">4000</td>
-              </tr>
-              <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-                <td style="padding: 4px;">Gia tốc ($120-$122)</td>
-                <td style="padding: 4px;" id="grbl-val-120">500</td>
-                <td style="padding: 4px;" id="grbl-val-121">500</td>
-                <td style="padding: 4px;" id="grbl-val-122">500</td>
-              </tr>
-              <tr>
-                <td style="padding: 4px;">Hành trình max ($130-$132)</td>
-                <td style="padding: 4px;" id="grbl-val-130">200</td>
-                <td style="padding: 4px;" id="grbl-val-131">200</td>
-                <td style="padding: 4px;" id="grbl-val-132">200</td>
-              </tr>
-            </tbody>
-          </table>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h4 style="margin: 0; font-size: 0.95rem; color: #4ade80;" data-i18n>
+              🛠️ 3. Chỉnh Sửa Tất Cả Thông Số GRBL ($$)
+            </h4>
+            <span style="font-size: 10px; color: #94a3b8;" data-i18n>(Lưu vào cnc_physical)</span>
+          </div>
+          
+          <div id="grbl-physical-settings-list" style="display: flex; flex-direction: column; gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 4px;">
+            <!-- Dynamic JS render -->
+          </div>
         </div>
 
         <div style="display: flex; gap: 8px;">
+          <button class="btn btn-success btn-sm" id="btn-save-all-grbl-physical" style="flex: 1;" data-i18n>
+            💾 Lưu Cấu Hình Physical
+          </button>
           <button class="btn btn-primary btn-sm" id="btn-refresh-grbl-info" style="flex: 1;" data-i18n>
-            🔄 Lấy Cài Đặt Thực Từ GRBL ($$)
+            🔄 Tải Lại Lệnh $$
           </button>
         </div>
 

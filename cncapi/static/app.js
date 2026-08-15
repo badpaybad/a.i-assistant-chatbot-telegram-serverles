@@ -3178,7 +3178,7 @@
         animateStep();
     }
 
-    // ==================== CẬP NHẬT 40: PANELS & LOGIC CẤU HÌNH GRBL ($22, $23, Homing) ====================
+    // ==================== CẬP NHẬT 40 & 49: PANELS & LOGIC CẤU HÌNH GRBL PHYSICAL ($0..$132, cnc_physical) ====================
     async function fetchAndRenderGrblInfo() {
         try {
             const res = await fetch('/cncapi/v1/system/grbl_info');
@@ -3198,36 +3198,129 @@
                 document.getElementById('grbl-dir-label').innerText = homing.label ? `Vị trí công tắc: ${homing.label}` : '';
 
                 // Update speeds & limits
-                document.getElementById('grbl-val-25').innerText = homing.seek_rate || 500;
-                document.getElementById('grbl-val-24').innerText = homing.feed_rate || 25;
-                document.getElementById('grbl-val-27').innerText = homing.pulloff || 1.0;
-                document.getElementById('grbl-val-3').innerText = motion.dir_invert_mask || 0;
-                document.getElementById('grbl-val-21').innerText = limits.hard_limits ? 'Bật' : 'Tắt';
-                document.getElementById('grbl-val-20').innerText = limits.soft_limits ? 'Bật' : 'Tắt';
-
-                // Stepper motor parameters
-                const steps = motion.steps_per_mm || {};
-                document.getElementById('grbl-val-100').innerText = steps.x || 250;
-                document.getElementById('grbl-val-101').innerText = steps.y || 250;
-                document.getElementById('grbl-val-102').innerText = steps.z || 250;
-
-                const maxSpeed = motion.max_rate || {};
-                document.getElementById('grbl-val-110').innerText = maxSpeed.x || 4000;
-                document.getElementById('grbl-val-111').innerText = maxSpeed.y || 4000;
-                document.getElementById('grbl-val-112').innerText = maxSpeed.z || 4000;
-
-                const accel = motion.accel || {};
-                document.getElementById('grbl-val-120').innerText = accel.x || 500;
-                document.getElementById('grbl-val-121').innerText = accel.y || 500;
-                document.getElementById('grbl-val-122').innerText = accel.z || 500;
-
-                const travel = motion.max_travel || {};
-                document.getElementById('grbl-val-130').innerText = travel.x || 200;
-                document.getElementById('grbl-val-131').innerText = travel.y || 200;
-                document.getElementById('grbl-val-132').innerText = travel.z || 200;
+                if (document.getElementById('grbl-val-25')) document.getElementById('grbl-val-25').innerText = homing.seek_rate || 500;
+                if (document.getElementById('grbl-val-24')) document.getElementById('grbl-val-24').innerText = homing.feed_rate || 25;
+                if (document.getElementById('grbl-val-27')) document.getElementById('grbl-val-27').innerText = homing.pulloff || 1.0;
+                if (document.getElementById('grbl-val-3')) document.getElementById('grbl-val-3').innerText = motion.dir_invert_mask || 0;
+                if (document.getElementById('grbl-val-21')) document.getElementById('grbl-val-21').innerText = limits.hard_limits ? 'Bật' : 'Tắt';
+                if (document.getElementById('grbl-val-20')) document.getElementById('grbl-val-20').innerText = limits.soft_limits ? 'Bật' : 'Tắt';
             }
         } catch (e) {
             console.error('Lỗi khi nạp thông tin GRBL:', e);
+        }
+        await fetchAndRenderGrblPhysicalSettings();
+    }
+
+    async function fetchAndRenderGrblPhysicalSettings() {
+        const container = document.getElementById('grbl-physical-settings-list');
+        if (!container) return;
+        
+        try {
+            const res = await fetch('/cncapi/v1/system/grbl_settings');
+            const data = await res.json();
+            if (data.status === 'success') {
+                const params = data.parameters || [];
+                container.innerHTML = '';
+                
+                params.forEach(item => {
+                    const row = document.createElement('div');
+                    row.className = 'grbl-param-item';
+                    row.style.cssText = 'display: flex; flex-direction: column; gap: 4px; padding: 6px 8px; background: rgba(30, 41, 59, 0.7); border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.05);';
+                    
+                    const header = document.createElement('div');
+                    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; font-size: 11px;';
+                    header.innerHTML = `<span style="font-weight: 700; color: #38bdf8;">${item.key} (${item.name})</span><span style="color: #94a3b8; font-size: 10px;">${item.unit}</span>`;
+                    
+                    const desc = document.createElement('div');
+                    desc.style.cssText = 'font-size: 10px; color: #64748b; margin-bottom: 2px;';
+                    desc.innerText = item.desc || '';
+                    
+                    const inputGroup = document.createElement('div');
+                    inputGroup.style.cssText = 'display: flex; gap: 6px; align-items: center;';
+                    
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'input-text-sm grbl-param-input';
+                    input.dataset.key = item.key;
+                    input.value = item.value !== undefined ? item.value : '';
+                    input.style.cssText = 'flex: 1; padding: 3px 6px; font-size: 11px; background: #0f172a; border: 1px solid #334155; color: #f8fafc; border-radius: 4px;';
+                    
+                    const btnSave = document.createElement('button');
+                    btnSave.className = 'btn btn-sm btn-outline-success';
+                    btnSave.style.cssText = 'padding: 2px 8px; font-size: 10px; cursor: pointer;';
+                    btnSave.innerText = 'Lưu';
+                    btnSave.addEventListener('click', async () => {
+                        await saveSingleGrblParam(item.key, input.value);
+                    });
+                    
+                    inputGroup.appendChild(input);
+                    inputGroup.appendChild(btnSave);
+                    
+                    row.appendChild(header);
+                    row.appendChild(desc);
+                    row.appendChild(inputGroup);
+                    container.appendChild(row);
+                });
+            }
+        } catch (e) {
+            console.error('Lỗi khi nạp danh sách thông số GRBL Physical:', e);
+        }
+    }
+
+    async function saveSingleGrblParam(key, value) {
+        try {
+            const res = await fetch('/cncapi/v1/system/grbl_settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ param: key, value: String(value) })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success(`Đã lưu ${key}=${value} vào cnc_physical thành công!`);
+                }
+                await fetchAndRenderGrblInfo();
+            } else {
+                throw new Error(data.detail || 'Lỗi không xác định');
+            }
+        } catch (e) {
+            console.error(`Lỗi khi lưu ${key}:`, e);
+            if (typeof toastr !== 'undefined') {
+                toastr.error(`Lỗi khi lưu ${key}: ${e.message}`, 'Lỗi Cập Nhật GRBL', { timeOut: 0, closeButton: true });
+            }
+        }
+    }
+
+    async function saveAllGrblPhysicalSettings() {
+        const inputs = document.querySelectorAll('.grbl-param-input');
+        const settings = {};
+        inputs.forEach(inp => {
+            const key = inp.dataset.key;
+            if (key) {
+                settings[key] = inp.value.trim();
+            }
+        });
+        
+        try {
+            const res = await fetch('/cncapi/v1/system/grbl_settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ settings })
+            });
+            const data = await res.json();
+            if (res.ok && data.status === 'success') {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Đã lưu tất cả thông số GRBL physical vào calibration_settings.json thành công!');
+                }
+                await fetchAndRenderGrblInfo();
+            } else {
+                throw new Error(data.detail || 'Lỗi không xác định');
+            }
+        } catch (e) {
+            console.error('Lỗi khi lưu tất cả thông số GRBL physical:', e);
+            if (typeof toastr !== 'undefined') {
+                toastr.error(`Lỗi khi lưu cấu hình GRBL: ${e.message}`, 'Lỗi Cập Nhật GRBL', { timeOut: 0, closeButton: true });
+            }
         }
     }
 
@@ -3246,6 +3339,12 @@
         btnCloseGrblPanel.addEventListener('click', () => {
             grblPanel.classList.add('hidden');
         });
+    }
+
+    // Button Save All GRBL Physical ($$)
+    const btnSaveAllGrblPhysical = document.getElementById('btn-save-all-grbl-physical');
+    if (btnSaveAllGrblPhysical) {
+        btnSaveAllGrblPhysical.addEventListener('click', saveAllGrblPhysicalSettings);
     }
 
     // Enable/Disable Homing ($22)
