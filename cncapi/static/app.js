@@ -199,6 +199,8 @@
         pos_x: 0.0,
         pos_y: 0.0,
         rotation_angle: 0.0,
+        flip_x: false,
+        flip_y: false,
         treat_as_drawable: false,
         grayscale: true,
         threshold: 128,
@@ -1281,11 +1283,19 @@
             if (bgState.rotation_angle) {
                 ctx.rotate((bgState.rotation_angle * Math.PI) / 180.0);
             }
-            ctx.scale(axisDirX, axisDirY);
+            const scaleX = (bgState.flip_x ? -1 : 1) * axisDirX;
+            const scaleY = (bgState.flip_y ? -1 : 1) * axisDirY;
+            ctx.scale(scaleX, scaleY);
 
             const bgWidthPx = bgState.width_mm * canvasScale;
             const bgHeightPx = bgState.height_mm * canvasScale;
-            ctx.drawImage(bgState.imageObj, 0, 0, bgWidthPx, bgHeightPx);
+            ctx.drawImage(
+                bgState.imageObj,
+                bgState.flip_x ? -bgWidthPx : 0,
+                bgState.flip_y ? -bgHeightPx : 0,
+                bgWidthPx,
+                bgHeightPx
+            );
             ctx.restore();
         }
 
@@ -2472,6 +2482,8 @@
                         epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '0.3'),
                         margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
                         rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
+                        flip_x: document.getElementById('font-flip-x')?.checked || false,
+                        flip_y: document.getElementById('font-flip-y')?.checked || false,
                         binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
                         render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300'),
                         min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.05'),
@@ -2513,7 +2525,8 @@
         // Bind all advanced setting inputs for FontGcodeRequest properties
         [
             'font-z-safe', 'font-z-draw', 'font-pen-mode', 'font-axis-dir-y',
-            'font-epsilon', 'font-margin-mm', 'font-rotation-angle', 'font-binary-thresh', 'font-render-dpi',
+            'font-epsilon', 'font-margin-mm', 'font-rotation-angle', 'font-flip-x', 'font-flip-y',
+            'font-binary-thresh', 'font-render-dpi',
             'font-min-path-len', 'font-sort-row-h'
         ].forEach(id => {
             const el = document.getElementById(id);
@@ -2917,6 +2930,9 @@
             formData.append('use_thin', document.getElementById('image-use-thin')?.checked ? 'true' : 'false');
             formData.append('use_len_filter', document.getElementById('image-use-len-filter')?.checked ? 'true' : 'false');
             formData.append('handwriting_mode', document.getElementById('image-hw-mode')?.value || 'centerline');
+            formData.append('rotation_angle', parseFloat(document.getElementById('image-rotation-angle')?.value || '0.0'));
+            formData.append('flip_x', document.getElementById('image-flip-x')?.checked ? 'true' : 'false');
+            formData.append('flip_y', document.getElementById('image-flip-y')?.checked ? 'true' : 'false');
 
             if (infoBox) infoBox.innerText = '⏳ Đang chuyển đổi ảnh sang G-code...';
 
@@ -2943,6 +2959,26 @@
         }
 
         if (btnGenerate) btnGenerate.addEventListener('click', generateImageGcode);
+
+        [
+            'image-scale-input', 'image-feed-rate-input', 'image-mode-select', 'image-algorithm-select',
+            'image-rotation-angle', 'image-flip-x', 'image-flip-y',
+            'image-clahe-clip', 'image-blur-size', 'image-min-contour-len',
+            'image-use-clahe', 'image-use-blur', 'image-use-connect', 'image-use-thin', 'image-use-len-filter',
+            'image-hw-mode'
+        ].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('change', () => {
+                    if (currentImageFile) generateImageGcode();
+                });
+                if (el.tagName === 'INPUT' && el.type === 'number') {
+                    el.addEventListener('input', () => {
+                        if (currentImageFile) generateImageGcode();
+                    });
+                }
+            }
+        });
 
         // Nút "Vẽ xem trước" (Giả lập)
         if (btnSimulate) {
@@ -3464,6 +3500,8 @@
         if (bg.pos_x !== undefined) bgState.pos_x = parseFloat(bg.pos_x);
         if (bg.pos_y !== undefined) bgState.pos_y = parseFloat(bg.pos_y);
         if (bg.rotation_angle !== undefined) bgState.rotation_angle = parseFloat(bg.rotation_angle);
+        if (bg.flip_x !== undefined) bgState.flip_x = bg.flip_x;
+        if (bg.flip_y !== undefined) bgState.flip_y = bg.flip_y;
         if (bg.treat_as_drawable !== undefined) bgState.treat_as_drawable = bg.treat_as_drawable;
         if (bg.grayscale !== undefined) bgState.grayscale = bg.grayscale;
         if (bg.threshold !== undefined) bgState.threshold = parseInt(bg.threshold);
@@ -3489,6 +3527,12 @@
 
         const rotInput = document.getElementById('bg-rotation-angle');
         if (rotInput) rotInput.value = bgState.rotation_angle;
+
+        const flipXCb = document.getElementById('bg-flip-x');
+        if (flipXCb) flipXCb.checked = bgState.flip_x;
+
+        const flipYCb = document.getElementById('bg-flip-y');
+        if (flipYCb) flipYCb.checked = bgState.flip_y;
 
         const drawableCb = document.getElementById('bg-treat-as-drawable');
         if (drawableCb) drawableCb.checked = bgState.treat_as_drawable;
@@ -3559,6 +3603,8 @@
                 pos_x: bgState.pos_x,
                 pos_y: bgState.pos_y,
                 rotation_angle: bgState.rotation_angle,
+                flip_x: bgState.flip_x,
+                flip_y: bgState.flip_y,
                 treat_as_drawable: bgState.treat_as_drawable,
                 grayscale: bgState.grayscale,
                 threshold: bgState.threshold,
@@ -3670,6 +3716,18 @@
         }
     });
 
+    ['bg-flip-x', 'bg-flip-y'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', (e) => {
+                bgState.flip_x = document.getElementById('bg-flip-x')?.checked || false;
+                bgState.flip_y = document.getElementById('bg-flip-y')?.checked || false;
+                drawCanvas();
+                saveBackgroundSettingsToSystem();
+            });
+        }
+    });
+
     // Toggle Drawable Options Container
     document.getElementById('bg-treat-as-drawable')?.addEventListener('change', (e) => {
         bgState.treat_as_drawable = e.target.checked;
@@ -3713,6 +3771,9 @@
             formData.append('canny_ultra_low', Math.max(1, Math.floor(bgState.threshold / 5)));
             formData.append('canny_ultra_high', bgState.threshold);
             formData.append('min_contour_len', bgState.min_len);
+            formData.append('rotation_angle', bgState.rotation_angle || 0.0);
+            formData.append('flip_x', bgState.flip_x ? 'true' : 'false');
+            formData.append('flip_y', bgState.flip_y ? 'true' : 'false');
 
             const res = await fetch('/cncapi/v1/convert-image-gcode', {
                 method: 'POST',

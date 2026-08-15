@@ -428,6 +428,10 @@ Gcode with Image Editor , Khi click Dừng & Về góc ban đầu , Dừng & V�
 Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về gốc WPos
   cần nhấc bút trước khi di chuyển 
 
-**cập nhật 52** 
+**cập nhật 52**  Gcode with font, gcode image , gcode bg
+  cần bổ xung thêm các ô nhập thông số nếu chưa có
+    góc xoay
+    flip ngang
+    flip dọc 
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

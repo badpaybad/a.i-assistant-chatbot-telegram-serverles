@@ -523,7 +523,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 | **Cập nhật 48** | Thông báo lỗi Toastr tập trung: Bắt HTTP status != 200, phản hồi lỗi WebSocket GRBL, lỗi không kết nối được cổng USB với CNC, yêu cầu người dùng bấm đóng thủ công (`timeOut: 0`, `closeButton: true`). | ✅ Hoàn thành | [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/styles.css`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/styles.css), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Tích hợp Toastr JS/CSS & hệ thống Toast DOM fallback. Tự động bắt lỗi HTTP API != 200, bẫy log lỗi `error:`/`ALARM:` từ WebSocket, bẫy lỗi ngắt kết nối USB và cấu hình `timeOut: 0` để người dùng chủ động bấm đóng (`✕`). |
 | **Cập nhật 49** | Hiển thị và cho phép chỉnh sửa toàn bộ 34+ thông số GRBL ($0–$132) lấy theo lệnh `$$`, lưu persistent thành đối tượng `cnc_physical` trong `calibration_settings.json`. | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js), [`cncapi/calibration_settings.json`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/calibration_settings.json) | Web API `/cncapi/v1/system/grbl_settings`, tự động bẫy phản hồi `$id=val` lưu vào `cnc_physical` đối tượng, UI panel `#grbl-system-details-panel` hiển thị và cho phép sửa tất cả 34+ tham số GRBL. |
 | **Cập nhật 51** | Gcode with Font Editor & Gcode with Image Editor: Khi click **🛑 Dừng & Về gốc ban đầu** hoặc **🏠 Dừng & Về gốc WPos**, hệ thống tự động nhấc bút an toàn và chờ trễ `pen_dwell` hoàn tất trước khi di chuyển X/Y về gốc để chống cào rách phôi/màn hình | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cập nhật API REST `/cncapi/v1/motion/stop-and-return`: thực hiện Soft Reset `\x18`, Unlock `$X`, phát lệnh nhấc bút `M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`, chờ trễ `max(pen_dwell + 0.15, 0.4s)` rồi mới di chuyển `G0 X.. Y..`, cuối cùng tắt xung `M5`. |
-| **Cập nhật 52** | Cấu hình tần số Timer2 61Hz chuẩn cho Servo RC (SG90/MG90S) trên vi điều khiển ATmega328P (Arduino Uno) để triệt tiêu hiện tượng đơ, rung giật, nóng động cơ | ✅ Hoàn thành | [`cncapi/grbl-master/cpu_map.h`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/grbl-master/cpu_map.h), [`cncapi/howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/howtodo.md) | Chuyển Prescaler Timer2 từ `1/64` (980Hz) sang `1/1024` (61Hz), tính toán thời gian tick $0.064\text{ms}$ tương ứng dải góc `M3 S7` ($0^\circ$) đến `M3 S39` ($180^\circ$). Cặp giá trị chuẩn: Nhấc `M3 S10`, Hạ `M3 S28`. |
+| **Cập nhật 52** | Bổ sung đầy đủ các ô nhập thông số Góc Xoay (`rotation_angle`), Lật Ngang (`flip_x`), Lật Dọc (`flip_y`) cho cả 3 bộ sinh: Gcode with Font, Gcode with Image và Gcode Background | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/static/index.html`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/index.html), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Bổ sung UI controls, tích hợp biến đổi ma trận 2D xoay và lật trục tọa độ cho Font (`generate_font_gcode`), Image/SVG (`sort_gcode_paths_left_to_right`), Background Layer 0 canvas rendering & Background-to-Gcode. |
 | **Cập nhật 53** | Tự động đồng bộ toàn diện cấu hình Nhấc / Hạ Bút từ "Cấu Hình Cấu Trúc & Gốc Làm Việc" sang G-code Font và G-code Image | ✅ Hoàn thành | [`cncapi/main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py), [`cncapi/image2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/image2gcode.py), [`cncapi/svg2gcode.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/svg2gcode.py), [`cncapi/static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js) | Cả hai bộ sinh `generate_font_gcode` và `sort_gcode_paths_left_to_right` đọc trực tiếp `state.pen_mode`, `state.pen_up_pwm`, `state.pen_down_pwm`, `state.pen_dwell`. Các module `image2gcode.py` và `svg2gcode.py` tự động đọc cấu hình động qua `_get_pen_commands()`. |
 
 ### 2.22. Quản Lý & Lưu Cấu Hình Tất Cả Thông Số GRBL ($$) vào đối tượng `cnc_physical` trong `calibration_settings.json` (Cập nhật 49)
@@ -754,6 +754,31 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      6. Nếu chạy Servo PWM, tự động gửi `M5` tắt xung Servo sau khi đã về gốc để bảo vệ động cơ.
    - **Frontend ([`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
      - Cả 4 nút bấm dừng về gốc trong **Gcode with Font Editor** và **Gcode with Image Editor** (`btnStopReturnOrigin`, `btnStopHomeOrigin`) đều lấy trực tiếp `pen_mode` và `pen-up-val` từ **Cấu Hình Cấu Trúc & Gốc Làm Việc** truyền vào API, đảm bảo đồng bộ tuyệt đối.
+
+### 2.27. Bổ Sung Góc Xoay, Flip Ngang, Flip Dọc Cho Gcode Font, Gcode Image Và Gcode Background (Cập Nhật 52)
+
+1. **Yêu Cầu Nghiệp Vụ**:
+   - Cả 3 bộ công cụ sinh G-code trong hệ thống (**Gcode with Font Editor**, **Gcode with Image Editor**, **Gcode Background Editor**) cần hỗ trợ đầy đủ bộ 3 biến đổi hình học 2D:
+     1. **Góc Xoay (°)** (`rotation_angle`): Xoay đối tượng tự do từ $-360^\circ \div +360^\circ$.
+     2. **Lật Ngang** (`flip_x`): Lật ngược hình chiếu đối xứng qua trục đứng (gương ngang).
+     3. **Lật Dọc** (`flip_y`): Lật ngược hình chiếu đối xứng qua trục ngang (gương dọc).
+
+2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
+   - **Gcode with Font (`generate_font_gcode` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
+     - Thêm `flip_x: bool = False`, `flip_y: bool = False` vào `FontGcodeRequest`.
+     - Áp dụng phép đối xứng trên tọa độ điểm pixel `(px_x, px_y)` trước khi nhân tỷ lệ mm/px:
+       ```python
+       if req.flip_x: px_x = raw_w_px - px_x
+       if req.flip_y: px_y = raw_h_px - px_y
+       ```
+     - Áp dụng ma trận quay 2D $(X\cos\alpha - Y\sin\alpha, X\sin\alpha + Y\cos\alpha)$ theo `rot_deg`.
+   - **Gcode with Image (`sort_gcode_paths_left_to_right` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
+     - Thêm các tham số `rotation_angle: float`, `flip_x: bool`, `flip_y: bool` vào API `/cncapi/v1/convert-image-gcode`.
+     - Tìm tâm điểm bounding box $(\text{center\_x}, \text{center\_y})$ của tập đường nét, sau đó lật đối xứng và xoay toàn bộ vector nét vẽ quanh tâm trước khi sắp xếp thứ tự vẽ Left-to-Right.
+   - **Gcode Background (`bgState` & `drawCanvas` trong [`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - Bổ sung `flip_x`, `flip_y` vào `bgState` và lưu persistent trong `calibration_settings.json`.
+     - Render Layer 0 canvas áp dụng `ctx.scale((bgState.flip_x ? -1 : 1) * axisDirX, (bgState.flip_y ? -1 : 1) * axisDirY)` và vẽ ảnh bù trừ offset tương ứng.
+     - Khi bấm **Tạo Vector & G-code từ Background**, truyền trực tiếp `rotation_angle`, `flip_x`, `flip_y` vào backend để sinh mã G-code đồng bộ 100% với giao diện xem trước.
 
 ---
 

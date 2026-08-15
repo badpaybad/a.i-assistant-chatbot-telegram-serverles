@@ -7,6 +7,7 @@ import asyncio
 import logging
 import subprocess
 import json
+import math
 from typing import Dict, List, Set, Optional, Tuple
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, File, UploadFile, Form
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse
@@ -2392,6 +2393,8 @@ class FontGcodeRequest(BaseModel):
     pen_mode: Optional[str] = None
     axis_dir_y: Optional[int] = None
     rotation_angle: float = -90.0
+    flip_x: bool = False
+    flip_y: bool = False
     mm_per_px: Optional[float] = None
 
 class RunGcodeRequest(BaseModel):
@@ -2547,11 +2550,18 @@ def generate_font_gcode(req: FontGcodeRequest):
 
             path_mm = []
             for pt in pts:
-                x_unrot = (pt[0] - pad_px) * scale_mm_per_px + req.margin_mm
+                px_x = pt[0] - pad_px
+                px_y = pt[1] - pad_px
+                if req.flip_x:
+                    px_x = raw_w_px - px_x
+                if req.flip_y:
+                    px_y = raw_h_px - px_y
+
+                x_unrot = px_x * scale_mm_per_px + req.margin_mm
                 if effective_axis_dir_y == -1:
-                    y_unrot = (raw_h_px - (pt[1] - pad_px)) * scale_mm_per_px + req.margin_mm
+                    y_unrot = (raw_h_px - px_y) * scale_mm_per_px + req.margin_mm
                 else:
-                    y_unrot = (pt[1] - pad_px) * scale_mm_per_px + req.margin_mm
+                    y_unrot = px_y * scale_mm_per_px + req.margin_mm
 
                 if rot_deg != 0.0:
                     x_mm = round(x_unrot * cos_a - y_unrot * sin_a, 2)
@@ -2681,7 +2691,15 @@ def generate_font_gcode(req: FontGcodeRequest):
         logger.error(f"Lỗi generate font gcode: {e}")
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-def sort_gcode_paths_left_to_right(gcode_text: str, feed_rate: int = 2000, mode: str = "servo", sort_row_height_mm: float = 10.0) -> Tuple[str, List[dict]]:
+def sort_gcode_paths_left_to_right(
+    gcode_text: str,
+    feed_rate: int = 2000,
+    mode: str = "servo",
+    sort_row_height_mm: float = 10.0,
+    rotation_angle: float = 0.0,
+    flip_x: bool = False,
+    flip_y: bool = False
+) -> Tuple[str, List[dict]]:
     paths = []
     current_path = []
     current_x = 0.0
@@ -2721,6 +2739,40 @@ def sort_gcode_paths_left_to_right(gcode_text: str, feed_rate: int = 2000, mode:
 
     if not paths:
         return gcode_text, []
+
+    # Bước 0: Áp dụng Lật Ngang, Lật Dọc & Góc Xoay nếu có yêu cầu
+    if flip_x or flip_y or (rotation_angle is not None and rotation_angle != 0.0):
+        all_xs = [pt[0] for path in paths for pt in path]
+        all_ys = [pt[1] for path in paths for pt in path]
+        if all_xs and all_ys:
+            min_x, max_x = min(all_xs), max(all_xs)
+            min_y, max_y = min(all_ys), max(all_ys)
+            center_x = (min_x + max_x) / 2.0
+            center_y = (min_y + max_y) / 2.0
+            
+            rad = math.radians(rotation_angle) if rotation_angle else 0.0
+            cos_a = math.cos(rad)
+            sin_a = math.sin(rad)
+            
+            transformed_paths = []
+            for path in paths:
+                new_path = []
+                for pt in path:
+                    x, y = pt[0], pt[1]
+                    if flip_x:
+                        x = max_x - (x - min_x)
+                    if flip_y:
+                        y = max_y - (y - min_y)
+                    if rotation_angle != 0.0:
+                        dx = x - center_x
+                        dy = y - center_y
+                        rx = dx * cos_a - dy * sin_a
+                        ry = dx * sin_a + dy * cos_a
+                        x = center_x + rx
+                        y = center_y + ry
+                    new_path.append((round(x, 3), round(y, 3)))
+                transformed_paths.append(new_path)
+            paths = transformed_paths
 
     # Bước 1: Đảo hướng nét vẽ giống thứ tự của Gcode with font (Left-to-Right, Top-to-Bottom)
     oriented_paths = []
@@ -2839,7 +2891,10 @@ async def convert_image_gcode(
     handwriting_min_len: int = Form(5),
     handwriting_mode: str = Form("centerline"),
     handwriting_raster_step: int = Form(2),
-    handwriting_offset_step: int = Form(2)
+    handwriting_offset_step: int = Form(2),
+    rotation_angle: float = Form(0.0),
+    flip_x: bool = Form(False),
+    flip_y: bool = Form(False)
 ):
     try:
         temp_dir = os.path.join(STATIC_DIR, "temp")
@@ -2945,7 +3000,14 @@ async def convert_image_gcode(
         with open(temp_gcode_path, "r", encoding="utf-8", errors="ignore") as f:
             raw_gcode_content = f.read()
             
-        gcode_content, segments = sort_gcode_paths_left_to_right(raw_gcode_content, feed_rate=feed_rate, mode=mode)
+        gcode_content, segments = sort_gcode_paths_left_to_right(
+            raw_gcode_content,
+            feed_rate=feed_rate,
+            mode=mode,
+            rotation_angle=rotation_angle,
+            flip_x=flip_x,
+            flip_y=flip_y
+        )
                 
         try:
             if os.path.exists(temp_input_path):
