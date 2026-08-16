@@ -65,33 +65,37 @@
     let dragStartY = 0;
     let penTrajectory = [];
 
-    // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48) ====================
-    // Notifications MUST be manually dismissed by the user (timeOut: 0, extendedTimeOut: 0, closeButton: true)
+    // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48 & 54) ====================
+    // Cập nhật 54: Message thành công tự động tắt sau 10s. Message lỗi/cảnh báo yêu cầu click đóng thủ công.
+    // Dưới icon symbol có nút "Tắt tất cả" để đóng toàn bộ toast hiện có.
     function notifyToastr(type, title, message) {
-        console.error(`[Toastr Notify ${type ? type.toUpperCase() : 'ERROR'}] ${title}: ${message}`);
-        const safeTitle = title || (type === 'error' ? 'Lỗi Hệ Thống CNC' : 'Thông Báo');
-        const safeMsg = message || 'Có lỗi xảy ra trong quá trình xử lý!';
+        const toastType = type || 'error';
+        console.log(`[Toastr Notify ${toastType.toUpperCase()}] ${title}: ${message}`);
+        const safeTitle = title || (toastType === 'error' ? 'Lỗi Hệ Thống CNC' : (toastType === 'success' ? 'Thành Công' : 'Thông Báo'));
+        const safeMsg = message || 'Có thông báo mới từ hệ thống!';
 
-        if (window.toastr && typeof window.toastr[type || 'error'] === 'function') {
+        const isSuccess = toastType === 'success';
+
+        if (window.toastr && typeof window.toastr[toastType] === 'function') {
             window.toastr.options = {
                 closeButton: true,
                 debug: false,
                 newestOnTop: true,
-                progressBar: false,
+                progressBar: isSuccess,
                 positionClass: "toast-top-right",
                 preventDuplicates: false,
                 onclick: null,
                 showDuration: "300",
                 hideDuration: "300",
-                timeOut: 0,          // KHÔNG tự động đóng
-                extendedTimeOut: 0,  // KHÔNG tự động đóng khi rê chuột
+                timeOut: isSuccess ? 10000 : 0,          // 10s tự tắt cho thành công, 0 (không tự tắt) cho lỗi
+                extendedTimeOut: isSuccess ? 2000 : 0,
                 tapToDismiss: false
             };
-            window.toastr[type || 'error'](safeMsg, safeTitle);
+            window.toastr[toastType](safeMsg, safeTitle);
         }
 
-        // Custom DOM Toast item (đảm bảo hiển thị cả khi offline / không nạp được CDN toastr)
-        showCustomToastItem(type || 'error', safeTitle, safeMsg);
+        // Custom DOM Toast item (đảm bảo hiển thị đẹp mắt, có nút "Tắt tất cả" và thanh đếm 10s)
+        showCustomToastItem(toastType, safeTitle, safeMsg);
     }
 
     function showCustomToastItem(type, title, message) {
@@ -105,24 +109,78 @@
         const toast = document.createElement('div');
         toast.className = `toast-item toast-${type}`;
         
-        const iconSymbol = type === 'error' ? '❌' : (type === 'warning' ? '⚠️' : 'ℹ️');
+        let iconSymbol = 'ℹ️';
+        if (type === 'error') iconSymbol = '❌';
+        else if (type === 'warning') iconSymbol = '⚠️';
+        else if (type === 'success') iconSymbol = '✅';
+
+        const isSuccess = type === 'success';
 
         toast.innerHTML = `
-            <div class="toast-icon">${iconSymbol}</div>
+            <div class="toast-left-col">
+                <div class="toast-icon">${iconSymbol}</div>
+                <button class="toast-close-all-btn" title="Tắt tất cả các thông báo hiện có">Tắt tất cả</button>
+            </div>
             <div class="toast-content">
                 <div class="toast-title">${escapeHtml(title)}</div>
                 <div class="toast-message">${escapeHtml(message)}</div>
             </div>
             <button class="toast-close-btn" title="Đóng">&times;</button>
+            ${isSuccess ? '<div class="toast-progress-bar"></div>' : ''}
         `;
 
+        let autoDismissTimer = null;
+        if (isSuccess) {
+            // Tự động tắt sau 10s cho thông báo thành công
+            autoDismissTimer = setTimeout(() => {
+                dismissToastItem(toast);
+            }, 10000);
+        }
+
+        // Nút Đóng từng toast
         const closeBtn = toast.querySelector('.toast-close-btn');
-        closeBtn.addEventListener('click', () => {
-            toast.style.animation = 'toastOut 0.25s ease forwards';
-            setTimeout(() => toast.remove(), 250);
-        });
+        if (closeBtn) {
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (autoDismissTimer) clearTimeout(autoDismissTimer);
+                dismissToastItem(toast);
+            });
+        }
+
+        // Nút "Tắt tất cả" ở ngay dưới icon symbol
+        const closeAllBtn = toast.querySelector('.toast-close-all-btn');
+        if (closeAllBtn) {
+            closeAllBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                closeAllToastItems();
+            });
+        }
 
         container.appendChild(toast);
+    }
+
+    function dismissToastItem(toastEl) {
+        if (!toastEl || !toastEl.parentElement) return;
+        toastEl.style.animation = 'toastOut 0.25s ease forwards';
+        setTimeout(() => {
+            if (toastEl.parentElement) toastEl.remove();
+        }, 250);
+    }
+
+    function closeAllToastItems() {
+        if (window.toastr && typeof window.toastr.clear === 'function') {
+            window.toastr.clear();
+        }
+        const container = document.getElementById('toast-container');
+        if (container) {
+            const items = container.querySelectorAll('.toast-item');
+            items.forEach(el => {
+                el.style.animation = 'toastOut 0.25s ease forwards';
+            });
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 250);
+        }
     }
 
     function escapeHtml(str) {
@@ -573,6 +631,10 @@
             if (isConnected) {
                 if (portInput && data.port) portInput.value = data.port;
                 if (baudrateSelect && data.baudrate) baudrateSelect.value = data.baudrate;
+                if (data.device_id) {
+                    telemetry.device_id = data.device_id;
+                    updateTelemetryUI();
+                }
             } else {
                 await toggleConnection();
             }
@@ -590,6 +652,7 @@
             console.log('WebSocket disconnected. Reconnecting in 2s...');
             setTimeout(connectWebSocket, 2000);
         };
+        ws.onerror = (error) => console.error('WebSocket error:', error);
         ws.onmessage = (event) => {
             try {
                 const msg = JSON.parse(event.data);
@@ -687,6 +750,8 @@
         const stateBadge = document.getElementById('machine-state');
         const btn = document.getElementById('connect-btn');
 
+        const devIdEl = document.getElementById('cnc-device-id');
+
         if (isConnected) {
             if (connBadge) {
                 connBadge.className = 'status-badge connected';
@@ -695,6 +760,9 @@
             if (btn) {
                 btn.className = 'btn btn-danger-soft';
                 btn.innerText = t('Ngắt Kết Nối');
+            }
+            if (devIdEl && telemetry.device_id) {
+                devIdEl.innerText = `: ${telemetry.device_id}`;
             }
         } else {
             if (connBadge) {
@@ -708,6 +776,9 @@
             if (btn) {
                 btn.className = 'btn btn-primary';
                 btn.innerText = t('Kết Nối');
+            }
+            if (devIdEl) {
+                devIdEl.innerText = '';
             }
         }
     }

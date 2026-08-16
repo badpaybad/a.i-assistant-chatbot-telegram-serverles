@@ -650,7 +650,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
-### 2.23. Phân Tích & Khắc Phục Vấn Đề Khung 4 Góc (TL, TR, BL, BR) Bị Nhỏ Hơn Kích Thước Thực Tế (Cập nh�      - Nút **Lưu Project JSON Font** (`#btn-save-font-project`) đóng gói `rotation_angle`, `flip_x`, `flip_y` vào file project JSON; nút **Nạp Project JSON Font** (`#btn-load-font-project`) tự động khôi phục dữ liệu lên checkbox và ô nhập.
+### 2.23. Phân Tích & Khắc Phục Vấn Đề Khung 4 Góc (TL, TR, BL, BR) Bị Nhỏ Hơn Kích Thước Thực Tế (Cập nhật 50)�      - Nút **Lưu Project JSON Font** (`#btn-save-font-project`) đóng gói `rotation_angle`, `flip_x`, `flip_y` vào file project JSON; nút **Nạp Project JSON Font** (`#btn-load-font-project`) tự động khôi phục dữ liệu lên checkbox và ô nhập.
    - **Gcode with Image (`sort_gcode_paths_left_to_right` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) & [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
      - API `/cncapi/v1/convert-image-gcode` tiếp nhận `rotation_angle: float`, `flip_x: bool`, `flip_y: bool`.
      - Tìm tâm điểm bounding box $(\text{center\_x}, \text{center\_y})$ của tập đường nét, lật đối xứng và xoay toàn bộ vector nét vẽ quanh tâm trước khi sắp xếp thứ tự vẽ Left-to-Right.
@@ -799,6 +799,27 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - **`swipe_up`**: Tọa độ đích kết thúc $Y_{\text{end}} = Y + \text{swipe\_dist}$ (tiến lên trên).
      - **`swipe_down`**: Tọa độ đích kết thúc $Y_{\text{end}} = Y - \text{swipe\_dist}$ (lùi xuống dưới).
    - Đảm bảo tính nhất quán 100% giữa cử chỉ thủ công, kịch bản tự động và nét vẽ hiển thị trên Tool Path View.
+
+
+### 2.29. Nâng Cấp Hệ Thống Thông Báo Custom Toast & Nút "Tắt Tất Cả" (Cập Nhật 54)
+
+1. **Yêu Cầu & Phân Tích Nghiệp Vụ**:
+   - Các thông báo thành công (`type: success`) không bắt buộc người dùng phải đóng thủ công; cần tự động biến mất (fade-out) sau **10 giây** để giữ giao diện luôn gọn gàng.
+   - Các thông báo lỗi (`type: error`) và cảnh báo (`type: warning`) rất quan trọng đối với an toàn vận hành CNC, do đó phải **giữ nguyên không tự tắt**, bắt buộc người dùng nhìn thấy và chủ động bấm nút đóng (`✕`).
+   - Ở mỗi toast, ngay dưới icon symbol (`❌`, `⚠️`, `✅`, `ℹ️`) cần trang bị thêm nút **"Tắt tất cả"** để người dùng có thể đóng dọn sạch toàn bộ các thông báo đang hiển thị cùng lúc chỉ bằng 1 thao tác click.
+
+2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
+   - **Giao Diện HTML & CSS (`static/styles.css`)**:
+     - Tạo cột `.toast-left-col` flex-direction dạng `column` căn giữa icon symbol và nút `.toast-close-all-btn` ("Tắt tất cả").
+     - Nút `.toast-close-all-btn` được thiết kế dạng badge nhỏ gọn (font `0.65rem`, padding `2px 5px`, nền bán trong suốt) hài hòa với phong cách Dark Mode Glassmorphism. Khi hover chuyển sang màu đỏ nổi bật.
+     - Tạo thanh tiến trình `.toast-progress-bar` chạy animation `toastProgress 10s linear forwards` dưới đáy toast thành công.
+   - **Hàm `notifyToastr(type, title, message)` (`static/app.js`)**:
+     - Cấu hình Toastr Plugin: nếu `type === 'success'` thì đặt `timeOut: 10000`, `progressBar: true`; nếu `type === 'error' || type === 'warning'` thì đặt `timeOut: 0`, `extendedTimeOut: 0`.
+     - Gọi `showCustomToastItem(toastType, safeTitle, safeMsg)`.
+   - **Hàm `showCustomToastItem(type, title, message)` (`static/app.js`)**:
+     - Nếu `type === 'success'`: Khởi tạo `setTimeout(..., 10000)` tự động gọi `dismissToastItem(toast)`.
+     - Nút `toast-close-btn` (`✕`) gọi `dismissToastItem(toast)` để đóng từng thông báo riêng lẻ và hủy timer tự tắt.
+     - Nút `toast-close-all-btn` ("Tắt tất cả") gắn sự kiện gọi `closeAllToastItems()`, kích hoạt animation `toastOut` cho toàn bộ danh sách `.toast-item` và xóa sạch container sau 250ms.
 
 ---
 

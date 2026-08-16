@@ -562,6 +562,14 @@ async def serial_reader_loop():
                     if line.startswith("<") and line.endswith(">"):
                         parse_grbl_status(line)
                         await send_telemetry()
+                    elif "[ID:" in line or "[id:" in line.lower() or line.startswith("ID:"):
+                        match = re.search(r"\[?ID:\s*([^,\]]+)", line, re.IGNORECASE)
+                        if match:
+                            state.device_id = match.group(1).strip()
+                        else:
+                            state.device_id = line.strip("[] \r\n")
+                        logger.info(f"Đã nhận diện Device ID: {state.device_id}")
+                        await send_telemetry()
                     elif line.startswith("$") and "=" in line:
                         parts = line.split("=", 1)
                         k = parts[0].strip()
@@ -579,15 +587,15 @@ async def serial_reader_loop():
                         if state.sent_buffer_lengths:
                             state.sent_buffer_lengths.pop(0)
                         state.grbl_ack_event.set()
-                    elif line.startswith("ALARM:") or "to unlock" in line.lower() or "grbl" in line.lower():
+                    elif line.startswith("ALARM:") or "to unlock" in line.lower() or ("grbl" in line.lower() and not "[id:" in line.lower()):
                         state.last_grbl_response = line
                         match_ver = re.search(r"grbl\s+([0-9]+\.[0-9]+[a-z]?)", line, re.IGNORECASE)
                         if match_ver:
                             state.grbl_version = match_ver.group(1)
                         if not state.is_homing and ("alarm:" in line.lower() or "to unlock" in line.lower()):
                             await broadcast({
-                                "type": "log",
-                                "direction": "in",
+                                "type": "log", 
+                                "direction": "in", 
                                 "content": f"⚠️ [{line}] Tự động gửi lệnh Unlock ($X) để sẵn sàng làm việc..."
                             })
                             try:
@@ -597,13 +605,6 @@ async def serial_reader_loop():
                                 logger.error(f"Lỗi khi gửi $X tự động: {ex}")
                         if state.is_homing:
                             state.grbl_ack_event.set()
-                    elif "[ID:" in line:
-                        match = re.search(r"\[ID:([^,\]]+)", line)
-                        if match:
-                            state.device_id = match.group(1).strip()
-                        else:
-                            state.device_id = line.strip()
-                        await send_telemetry()
             else:
                 await asyncio.sleep(0.01)
         except Exception as e:
@@ -1142,6 +1143,15 @@ async def connect_cnc(config: ConnectionConfig):
         await safe_write_serial(b"$GETID\n")
         await broadcast({"type": "log", "direction": "out", "content": "$GETID"})
         
+        async def fallback_query_getid():
+            for _ in range(4):
+                if state.device_id or not state.connected:
+                    break
+                await asyncio.sleep(1.0)
+                if not state.device_id and state.connected:
+                    await safe_write_serial(b"$GETID\n")
+        asyncio.create_task(fallback_query_getid())
+
         await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
@@ -1565,7 +1575,8 @@ async def get_state():
         "spindle_speed": state.spindle_speed,
         "buffer_rx": state.buffer_rx,
         "streaming": state.is_streaming,
-        "home_set": state.home_set
+        "home_set": state.home_set,
+        "device_id": state.device_id
     }
 
 # ----------------------------------------------------
@@ -3132,6 +3143,11 @@ async def websocket_endpoint(ws: WebSocket):
             "connected": state.connected,
             "message": f"Đã kết nối {state.port_name}" if state.connected else "Chưa kết nối"
         })
+        if state.connected and not state.device_id:
+            try:
+                await safe_write_serial(b"$GETID\n")
+            except Exception:
+                pass
         await send_telemetry()
         while True:
             await ws.receive_text()

@@ -445,5 +445,8 @@ Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về g
         vuốt lên đang thực tế vuốt xuống, cần đổi cho đúng
         vuốt xuống đang thực tế vuốt lên, cần đổi cho đúng
 
+**cập nhật 54**  showCustomToastItem  
+những message thành công thì có thể để timeout 10s để tự tắt, message lỗi thì cần người dùng click close 
+ở ngay dưới icon symbole cần thêm nút Tắt tất cả để tắt tất cả các toast hiện có 
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md
