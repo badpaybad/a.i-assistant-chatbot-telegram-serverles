@@ -853,6 +853,31 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - Khi đang tự dò cổng: Badge kết nối hiển thị `🔄 TỰ DÒ CỔNG...` với hiệu ứng nhấp nháy màu vàng hổ phách (`reconnectPulse`), nút kết nối chuyển thành `Hủy Dò Cổng`.
      - Khi kết nối thành công: Badge chuyển sang xanh lá `ĐÃ KẾT NỐI`, hiển thị Device ID và Toastr thông báo kết nối lại thành công.
 
+
+### 2.31. Chuyển Đổi Toàn Bộ Hộp Thoại Alert() Sang Custom Toast Warning Không Tự Tắt (Cập Nhật 56)
+
+1. **Yêu Cầu & Phân Tích Nghiệp Vụ**:
+   - Hộp thoại trình duyệt mặc định `window.alert(...)` có tính chất xâm lấn (blocking modal), làm đơ luồng giao diện Web và buộc người dùng phải click OK trên popup trình duyệt trước khi tiếp tục thao tác.
+   - Cần loại bỏ hoàn toàn `alert(...)` và chuyển thành thông báo toast hiện đại `showCustomToastItem` với đặc tả:
+     - Dạng: **`warning`** (icon `⚠️`, viền và tiêu đề màu vàng hổ phách).
+     - **Không tự tắt** (`timeOut: 0`, `extendedTimeOut: 0`): Người dùng phải nhìn thấy nội dung cảnh báo và chủ động bấm nút đóng (`✕`).
+     - **Nút "Tắt tất cả"**: Nằm ngay dưới icon symbol `⚠️` để người dùng có thể đóng nhanh toàn bộ các toast đang hiển thị trên màn hình.
+
+2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
+   - **Override Toàn Cục `window.alert` trong [`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js)**:
+     ```javascript
+     window.alert = function(message) {
+         notifyToastr('warning', t('Cảnh Báo'), message);
+     };
+     ```
+     Đảm bảo tất cả các đoạn mã JavaScript hiện tại hoặc bổ sung trong tương lai khi gọi `alert(...)` đều được chuyển hướng sang toast warning.
+   - **Tái Cấu Trúc Hơn 50 Vị Trí Gọi `alert(...)` Trực Tiếp**:
+     - Các cảnh báo an toàn vận hành (Chưa Homing `$H`, Chưa kết nối CNC, Kịch bản trống, Vượt biên vùng làm việc...): Chuyển thành `notifyToastr('warning', t('Cảnh Báo Vận Hành'), message)`.
+     - Các thông báo thành công (Đã lưu cấu hình, Thiết lập gốc tọa độ, Nạp project thành công...): Chuyển thành `notifyToastr('success', title, message)` có timer 10s tự tắt.
+     - Các lỗi thực thi G-code, lỗi kết nối API: Chuyển thành `notifyToastr('error', title, message)` không tự tắt.
+   - **Nút "Tắt tất cả" Dưới Icon Symbol**:
+     - Cột `.toast-left-col` chứa icon `⚠️` và nút `.toast-close-all-btn` ("Tắt tất cả") cho phép người dùng đóng dọn sạch tất cả thông báo chỉ với 1 click.
+
 ---
 
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)

@@ -66,13 +66,19 @@
     let dragStartY = 0;
     let penTrajectory = [];
 
-    // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48 & 54) ====================
+    // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48, 54, 56) ====================
+    // ==================== CẬP NHẬT 56: OVERRIDE WINDOW.ALERT ====================
+    // Chuyển đổi toàn bộ lệnh alert() thành showCustomToastItem dạng warning, không tự tắt, có nút 'Tắt tất cả'
+    window.alert = function(message) {
+        notifyToastr('warning', t('Cảnh Báo'), message);
+    };
+
     // Cập nhật 54: Message thành công tự động tắt sau 10s. Message lỗi/cảnh báo yêu cầu click đóng thủ công.
     // Dưới icon symbol có nút "Tắt tất cả" để đóng toàn bộ toast hiện có.
     function notifyToastr(type, title, message) {
         const toastType = type || 'error';
         console.log(`[Toastr Notify ${toastType.toUpperCase()}] ${title}: ${message}`);
-        const safeTitle = title || (toastType === 'error' ? 'Lỗi Hệ Thống CNC' : (toastType === 'success' ? 'Thành Công' : 'Thông Báo'));
+        const safeTitle = title || (toastType === 'error' ? 'Lỗi Hệ Thống CNC' : (toastType === 'warning' ? 'Cảnh Báo' : (toastType === 'success' ? 'Thành Công' : 'Thông Báo')));
         const safeMsg = message || 'Có thông báo mới từ hệ thống!';
 
         const isSuccess = toastType === 'success';
@@ -397,10 +403,10 @@
                 const res = await fetch('/cncapi/v1/origin/home', { method: 'POST' });
                 const data = await res.json();
                 if (data.detail) {
-                    alert(t('Lỗi khi thực hiện Về gốc máy: ') + data.detail);
+                    notifyToastr('error', t('Lỗi Về Gốc Máy'), data.detail);
                 }
             } catch (err) {
-                alert(t('Lỗi khi thực hiện Về gốc máy: ') + err.message);
+                notifyToastr('error', t('Lỗi Về Gốc Máy'), err.message);
             }
         });
         document.getElementById('jog-unlock')?.addEventListener('click', async () => {
@@ -448,7 +454,7 @@
         document.querySelectorAll('.btn-scenario-action').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (!isHomeSet) {
-                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                    notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                     return;
                 }
                 const actionType = e.currentTarget.getAttribute('data-action');
@@ -721,10 +727,7 @@
                 }
                 if (msg.message) {
                     notifyToastr('success', '🔌 Kết Nối Thành Công', msg.message);
-                    //kết nối thành công thì về gốc home
-                    setTimeout(function () {
-                        document.getElementById('jog-home')?.click();
-                    }, 200);
+                    
                 }
             } else if (msg.message) {
                 if (isReconnecting) {
@@ -926,7 +929,7 @@
 
     async function sendCommand(gcode) {
         if (!isConnected) {
-            alert(t('Vui lòng Kết Nối CNC (hoặc chọn cổng dummy) trước khi điều khiển!'));
+            notifyToastr('warning', t('Cảnh Báo Kết Nối'), t('Vui lòng Kết Nối CNC (hoặc chọn cổng dummy) trước khi điều khiển!'));
             return;
         }
         try {
@@ -937,7 +940,7 @@
             });
             const data = await res.json();
             if (data.detail) {
-                alert(data.detail);
+                notifyToastr('error', t('Lỗi Điều Khiển CNC'), data.detail);
             }
         } catch (e) {
             console.error('Send command error:', e);
@@ -1031,7 +1034,7 @@
                 body: JSON.stringify({ x: 0.0, y: 0.0, z: 0.0 })
             });
             isHomeSet = true;
-            alert(t('Đã thiết lập gốc tọa độ làm việc (0,0,0) tại vị trí hiện tại.'));
+            notifyToastr('success', t('Thiết Lập Gốc Tọa Độ'), t('Đã thiết lập gốc tọa độ làm việc (0,0,0) tại vị trí hiện tại.'));
         } catch (e) {
             console.error('Error setting work origin:', e);
         }
@@ -1065,7 +1068,7 @@
     // Touch & Swipe Gestures
     async function executeGesture(type) {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
 
@@ -1169,13 +1172,13 @@
                 const targetWorkY = (clickY - originY) / (axisDirY * canvasScale);
 
                 if (!isConnected) {
-                    alert(t('Vui lòng Kết Nối CNC trước khi di chuyển!'));
+                    notifyToastr('warning', t('Cảnh Báo Kết Nối'), t('Vui lòng Kết Nối CNC trước khi di chuyển!'));
                 } else if (!isHomeSet) {
-                    alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                    notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                 } else {
                     const boundCheck = checkBounds(targetWorkX, targetWorkY);
                     if (!boundCheck.valid) {
-                        alert(boundCheck.message);
+                        notifyToastr('warning', t('Cảnh Báo Vùng Làm Việc'), boundCheck.message);
                     } else {
                         const { feed } = getSystemConfig();
                         sendCommand(`G90\nG0 X${targetWorkX.toFixed(2)} Y${targetWorkY.toFixed(2)} F${feed}`);
@@ -1838,13 +1841,13 @@
     // Scenario Builder & Execution
     async function createNewScenario() {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         const nameInput = document.getElementById('scenario-name');
         const name = nameInput?.value || '';
         if (!name || name.trim() === '') {
-            alert(t('Cần nhập tên kịch bản trước!'));
+            notifyToastr('warning', t('Cảnh Báo Kịch Bản'), t('Cần nhập tên kịch bản trước!'));
             return;
         }
         try {
@@ -1868,7 +1871,7 @@
 
     async function addScenarioAction(actionType) {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         try {
@@ -2015,7 +2018,7 @@
                     })
                 });
             } catch (err) {
-                alert(t('Lỗi đọc file JSON kịch bản!'));
+                notifyToastr('error', t('Lỗi Kịch Bản'), t('Lỗi đọc file JSON kịch bản!'));
             }
         };
         reader.readAsText(file);
@@ -2023,11 +2026,11 @@
 
     async function runScenario() {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
-            alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
+            notifyToastr('warning', t('Cảnh Báo Kịch Bản'), t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
         }
         try {
@@ -2043,11 +2046,11 @@
 
     async function toggleRunLoopScenario() {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
-            alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
+            notifyToastr('warning', t('Cảnh Báo Kịch Bản'), t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
         }
         try {
@@ -2063,11 +2066,11 @@
 
     function runScenarioSimulation() {
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
             return;
         }
         if (activeScenario.actions.length === 0) {
-            alert(t('Kịch bản trống! Vui lòng thêm các bước trước.'));
+            notifyToastr('warning', t('Cảnh Báo Kịch Bản'), t('Kịch bản trống! Vui lòng thêm các bước trước.'));
             return;
         }
 
@@ -2285,13 +2288,13 @@
                 a.click();
                 URL.revokeObjectURL(url);
 
-                alert(t('Đã lưu cấu hình vào hệ thống và tải file cnc_settings.json về máy tính!'));
+                notifyToastr('success', t('Lưu Cấu Hình'), t('Đã lưu cấu hình vào hệ thống và tải file cnc_settings.json về máy tính!'));
             } else {
-                alert(t('Lỗi lưu cấu hình: ') + (data.message || 'Error'));
+                notifyToastr('error', t('Lỗi Lưu Cấu Hình'), data.message || 'Error');
             }
         } catch (e) {
             console.error('Error saving settings:', e);
-            alert(t('Không thể kết nối API lưu cấu hình'));
+            notifyToastr('error', t('Lỗi Kết Nối'), t('Không thể kết nối API lưu cấu hình'));
         }
     }
 
@@ -2446,7 +2449,7 @@
             if (btn) {
                 btn.addEventListener('click', async () => {
                     if (!isHomeSet) {
-                        alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                        notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                         return;
                     }
                     try {
@@ -2472,11 +2475,11 @@
             if (gotoBtn) {
                 gotoBtn.addEventListener('click', async () => {
                     if (!cncBounds || !cncBounds[corner]) {
-                        alert(t('Chưa định vị góc này!'));
+                        notifyToastr('warning', t('Cảnh Báo'), t('Chưa định vị góc này!'));
                         return;
                     }
                     if (!isHomeSet) {
-                        alert(t('Cần thực hiện Homing ($H) về gốc máy trước!'));
+                        notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) về gốc máy trước!'));
                         return;
                     }
                     const targetPt = cncBounds[corner];
@@ -2490,7 +2493,7 @@
                         if (data.status === 'success') {
                             appendConsoleLog(`[MOTION] Đang di chuyển đến góc ${corner.toUpperCase()} (X=${targetPt.x}, Y=${targetPt.y})`, 'info');
                         } else {
-                            alert(data.detail || data.message || t('Lỗi di chuyển góc'));
+                            notifyToastr('error', t('Lỗi Di Chuyển Góc'), data.detail || data.message || t('Lỗi di chuyển góc'));
                         }
                     } catch (e) {
                         console.error(`Error moving to corner ${corner}:`, e);
@@ -2513,9 +2516,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                alert(t('Đã nạp file cấu hình thành công!'));
+                notifyToastr('success', t('Nạp Cấu Hình'), t('Đã nạp file cấu hình thành công!'));
             } catch (err) {
-                alert(t('File cấu hình không hợp lệ!'));
+                notifyToastr('error', t('Lỗi Cấu Hình'), t('File cấu hình không hợp lệ!'));
             }
         };
         reader.readAsText(file);
@@ -2694,7 +2697,7 @@
         if (btnSimulate) {
             btnSimulate.addEventListener('click', () => {
                 if (!fontPreviewPaths || fontPreviewPaths.length === 0) {
-                    alert(t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
+                    notifyToastr('warning', t('Cảnh Báo'), t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
                     return;
                 }
                 simulateFontDrawAnimation();
@@ -2705,11 +2708,11 @@
         if (btnRealDraw) {
             btnRealDraw.addEventListener('click', async () => {
                 if (!fontGcode) {
-                    alert(t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
+                    notifyToastr('warning', t('Cảnh Báo'), t('Chưa có G-code nét chữ. Vui lòng tạo G-code trước!'));
                     return;
                 }
                 if (!isConnected) {
-                    alert(t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
+                    notifyToastr('warning', t('Cảnh Báo Kết Nối'), t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
                     return;
                 }
                 if (confirm(t('Xác nhận gửi mã G-code nét chữ tới máy CNC để bắt đầu vẽ?'))) {
@@ -2745,7 +2748,7 @@
                             appendConsoleLog(`[GCODE FONT] Đã gửi ${data.lines_sent} dòng G-code tới CNC (Bắt đầu tại X=${offsetX.toFixed(2)}, Y=${offsetY.toFixed(2)})`, 'system');
                         }
                     } catch (e) {
-                        alert(`Lỗi thực thi G-code: ${e.message}`);
+                        notifyToastr('error', t('Lỗi Vẽ CNC'), `Lỗi thực thi G-code: ${e.message}`);
                     }
                 }
             });
@@ -2778,7 +2781,7 @@
                         if (fontInfoBox) fontInfoBox.innerText = `🛑 Đã dừng & Về gốc ban đầu (${fontStartOffset.x.toFixed(1)}, ${fontStartOffset.y.toFixed(1)})!`;
                     }
                 } catch (e) {
-                    alert(`Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
+                    notifyToastr('error', t('Lỗi Dừng CNC'), `Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
                 }
             });
         }
@@ -2810,7 +2813,7 @@
                         if (fontInfoBox) fontInfoBox.innerText = '🏠 Đã dừng & Về gốc WPos (0,0)!';
                     }
                 } catch (e) {
-                    alert(`Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
+                    notifyToastr('error', t('Lỗi Dừng CNC'), `Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
                 }
             });
         }
@@ -2832,7 +2835,7 @@
         if (btnSaveProject) {
             btnSaveProject.addEventListener('click', () => {
                 if (!fontGcode && (!fontPreviewPaths || fontPreviewPaths.length === 0)) {
-                    alert('Chưa có dữ liệu project font để lưu!');
+                    notifyToastr('warning', t('Cảnh Báo'), 'Chưa có dữ liệu project font để lưu!');
                     return;
                 }
                 const projectData = {
@@ -2917,7 +2920,7 @@
                         }
                         drawCanvas();
                     } catch (ex) {
-                        alert('Lỗi nạp file JSON project font: ' + ex.message);
+                        notifyToastr('error', t('Lỗi Nạp Project'), 'Lỗi nạp file JSON project font: ' + ex.message);
                     }
                 };
                 reader.readAsText(file);
@@ -3142,7 +3145,7 @@
         if (btnSimulate) {
             btnSimulate.addEventListener('click', () => {
                 if (!imageSegments || imageSegments.length === 0) {
-                    alert(t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
+                    notifyToastr('warning', t('Cảnh Báo'), t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
                     return;
                 }
                 simulateImageDrawAnimation();
@@ -3153,11 +3156,11 @@
         if (btnRealDraw) {
             btnRealDraw.addEventListener('click', async () => {
                 if (!imageGcode) {
-                    alert(t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
+                    notifyToastr('warning', t('Cảnh Báo'), t('Chưa có G-code nét ảnh. Vui lòng tạo G-code trước!'));
                     return;
                 }
                 if (!isConnected) {
-                    alert(t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
+                    notifyToastr('warning', t('Cảnh Báo Kết Nối'), t('Vui lòng Kết Nối CNC trước khi thực hiện vẽ!'));
                     return;
                 }
                 if (confirm(t('Xác nhận gửi mã G-code nét ảnh tới máy CNC để bắt đầu vẽ?'))) {
@@ -3192,7 +3195,7 @@
                             appendConsoleLog(`[GCODE IMAGE] Đã gửi ${data.lines_sent} dòng G-code tới CNC (Bắt đầu tại X=${offsetX.toFixed(2)}, Y=${offsetY.toFixed(2)})`, 'system');
                         }
                     } catch (e) {
-                        alert(`Lỗi thực thi G-code: ${e.message}`);
+                        notifyToastr('error', t('Lỗi Vẽ CNC'), `Lỗi thực thi G-code: ${e.message}`);
                     }
                 }
             });
@@ -3225,7 +3228,7 @@
                         if (infoBox) infoBox.innerText = `🛑 Đã dừng & Về gốc ban đầu (${imageStartOffset.x.toFixed(1)}, ${imageStartOffset.y.toFixed(1)})!`;
                     }
                 } catch (e) {
-                    alert(`Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
+                    notifyToastr('error', t('Lỗi Dừng CNC'), `Lỗi thực hiện dừng & về gốc ban đầu: ${e.message}`);
                 }
             });
         }
@@ -3257,7 +3260,7 @@
                         if (infoBox) infoBox.innerText = '🏠 Đã dừng & Về gốc WPos (0,0)!';
                     }
                 } catch (e) {
-                    alert(`Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
+                    notifyToastr('error', t('Lỗi Dừng CNC'), `Lỗi thực hiện dừng & về gốc WPos: ${e.message}`);
                 }
             });
         }
@@ -3279,7 +3282,7 @@
         if (btnSaveProject) {
             btnSaveProject.addEventListener('click', () => {
                 if (!imageGcode && !currentImageBase64) {
-                    alert('Chưa có dữ liệu project để lưu!');
+                    notifyToastr('warning', t('Cảnh Báo'), 'Chưa có dữ liệu project để lưu!');
                     return;
                 }
                 const projectData = {
@@ -3369,7 +3372,7 @@
                         }
                         drawCanvas();
                     } catch (ex) {
-                        alert('Lỗi nạp file JSON project: ' + ex.message);
+                        notifyToastr('error', t('Lỗi Nạp Project'), 'Lỗi nạp file JSON project: ' + ex.message);
                     }
                 };
                 reader.readAsText(file);
@@ -3870,7 +3873,7 @@
             if (hInput) bgState.height_mm = parseFloat(hInput.value) || 297.0;
 
             if (!bgState.naturalWidth || bgState.naturalWidth <= 0) {
-                alert(t('Vui lòng chọn file ảnh background trước khi cập nhật tỷ lệ!'));
+                notifyToastr('warning', t('Cảnh Báo'), t('Vui lòng chọn file ảnh background trước khi cập nhật tỷ lệ!'));
                 return;
             }
 
@@ -3958,7 +3961,7 @@
     // Convert Background Image to Vector & G-code
     document.getElementById('btn-convert-bg-gcode')?.addEventListener('click', async () => {
         if (!bgState.imageData || !bgState.imageLoaded) {
-            alert(t('Chưa chọn file ảnh background!'));
+            notifyToastr('warning', t('Cảnh Báo'), t('Chưa chọn file ảnh background!'));
             return;
         }
         try {
@@ -3997,31 +4000,31 @@
                     bgState.previewPaths = rawPaths;
                 }
                 drawCanvas();
-                alert(t('Đã chuyển đổi ảnh Background thành Vector & G-code thành công!'));
+                notifyToastr('success', t('Background G-code'), t('Đã chuyển đổi ảnh Background thành Vector & G-code thành công!'));
             } else {
-                alert(t('Lỗi chuyển đổi: ') + (data.message || 'Lỗi không xác định'));
+                notifyToastr('error', t('Lỗi Chuyển Đổi'), data.message || 'Lỗi không xác định');
             }
         } catch (e) {
             console.error('Lỗi chuyển đổi G-code background:', e);
-            alert(t('Không thể kết nối API chuyển đổi G-code'));
+            notifyToastr('error', t('Lỗi Kết Nối'), t('Không thể kết nối API chuyển đổi G-code'));
         }
     });
 
     document.getElementById('btn-preview-bg-draw')?.addEventListener('click', () => {
         if (!bgState.previewPaths || bgState.previewPaths.length === 0) {
-            alert(t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
+            notifyToastr('warning', t('Cảnh Báo'), t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
             return;
         }
-        alert(t('Đã hiển thị nét vẽ xem trước của Background trên canvas (đường màu tím).'));
+        notifyToastr('info', t('Xem Trước Background'), t('Đã hiển thị nét vẽ xem trước của Background trên canvas (đường màu tím).'));
     });
 
     document.getElementById('btn-draw-bg-on-cnc')?.addEventListener('click', async () => {
         if (!bgState.gcode) {
-            alert(t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
+            notifyToastr('warning', t('Cảnh Báo'), t('Vui lòng bấm Tạo Vector & G-code từ Background trước!'));
             return;
         }
         if (!isHomeSet) {
-            alert(t('Cần thực hiện Homing ($H) hoặc đặt gốc tọa độ làm việc trước khi vẽ!'));
+            notifyToastr('warning', t('Cảnh Báo Vận Hành'), t('Cần thực hiện Homing ($H) hoặc đặt gốc tọa độ làm việc trước khi vẽ!'));
             return;
         }
         try {
@@ -4032,13 +4035,13 @@
             });
             appendConsoleLog('[BACKGROUND] Đã gửi lệnh vẽ G-code background xuống CNC thực tế.', 'info');
         } catch (e) {
-            alert(t('Lỗi gửi lệnh vẽ CNC: ') + e.message);
+            notifyToastr('error', t('Lỗi Vẽ CNC'), e.message);
         }
     });
 
     document.getElementById('btn-save-bg-settings')?.addEventListener('click', async () => {
         await saveBackgroundSettingsToSystem();
-        alert(t('Đã lưu cấu hình Background vào calibration_settings.json thành công!'));
+        notifyToastr('success', t('Lưu Background'), t('Đã lưu cấu hình Background vào calibration_settings.json thành công!'));
     });
 
 })();
