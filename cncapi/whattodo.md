@@ -433,6 +433,10 @@ Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về g
     góc xoay
     flip ngang
     flip dọc 
+  Gcode with font (nút btn-save-font-project ), gcode image (nút btn-save-image-project)
+    khi lưu project json và load project json cũng cần lưu và load các thông số trên
+  Gcode bg
+    khi lưu cấu hình background (nút btn-save-bg-settings)  cần lưu và load các thông số trên 
 
 **cập nhật 53**  Cử Chỉ Touch & Swipe Gestures
         vuốt lên đang thực tế vuốt xuống, cần đổi cho đúng
@@ -440,5 +444,6 @@ Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về g
       Quản Lý & Phím Kịch Bản
         vuốt lên đang thực tế vuốt xuống, cần đổi cho đúng
         vuốt xuống đang thực tế vuốt lên, cần đổi cho đúng
+
 
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

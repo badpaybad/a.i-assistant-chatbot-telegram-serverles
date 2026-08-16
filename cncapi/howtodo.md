@@ -650,17 +650,13 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 
 ---
 
-### 2.23. Phân Tích & Khắc Phục Vấn Đề Khung 4 Góc (TL, TR, BL, BR) Bị Nhỏ Hơn Kích Thước Thực Tế (Cập nhật 50)
-
-1. **Hiện Tượng Thực Tế**:
-   - Khung viền đỏ nét đứt thể hiện 4 góc làm việc (`TL, TR, BL, BR`) hiển thị trên Canvas có kích thước chỉ khoảng **$94\text{ mm} \times 85\text{ mm}$** (lưu trong `calibration_settings.json` là `TR(94, 85)`, `TL(0, 85)`, `BR(93, 0)`, `BL(0, 0)`).
-   - Khung này nhỏ hơn rất nhiều so với kích thước thật của máy (ví dụ khổ A4 $210 \times 297\text{ mm}$ hoặc hành trình máy $200 \times 200\text{ mm}$ `$130/$131`).
-   - Khi đặt ảnh nền Background (khổ A4 $210 \times 297\text{ mm}$), khung đỏ 4 góc máy chỉ nằm lọt thỏm ở một góc nhỏ.
-
-2. **Các Nguyên Nhân Kỹ Thuật Gây Ra Vấn Đề**:
-   - **Nguyên nhân 1: Tỷ lệ xung GRBL `$100`, `$101` (Steps/mm) chưa được hiệu chuẩn (Calibrate) đúng với phần cứng cơ khí**:
-     - GRBL đang cài đặt mặc định: `$100 = 250.000` xung/mm, `$101 = 250.000` xung/mm.
-     - Khi đầu máy di chuyển cơ khí thực tế một quãng đường $L_{\text{thực}}$ (ví dụ 210mm), nhưng nếu phần cứng thật chỉ cần $80\text{ xung/mm}$ (dây đai GT2 20T vi bước 1/16), thì GRBL ghi nhận tọa độ báo về $WPos = \frac{210 \times 80}{250} \approx 67.2\text{ mm}$!
+### 2.23. Phân Tích & Khắc Phục Vấn Đề Khung 4 Góc (TL, TR, BL, BR) Bị Nhỏ Hơn Kích Thước Thực Tế (Cập nh�      - Nút **Lưu Project JSON Font** (`#btn-save-font-project`) đóng gói `rotation_angle`, `flip_x`, `flip_y` vào file project JSON; nút **Nạp Project JSON Font** (`#btn-load-font-project`) tự động khôi phục dữ liệu lên checkbox và ô nhập.
+   - **Gcode with Image (`sort_gcode_paths_left_to_right` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) & [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - API `/cncapi/v1/convert-image-gcode` tiếp nhận `rotation_angle: float`, `flip_x: bool`, `flip_y: bool`.
+     - Tìm tâm điểm bounding box $(\text{center\_x}, \text{center\_y})$ của tập đường nét, lật đối xứng và xoay toàn bộ vector nét vẽ quanh tâm trước khi sắp xếp thứ tự vẽ Left-to-Right.
+     - Nút **Lưu Project JSON Image** (`#btn-save-image-project`) lưu đối tượng `settings` chứa `rotation_angle`, `flip_x`, `flip_y`, `clahe_clip_limit`, `blur_size`, `min_contour_len`...; nút **Nạp Project JSON Image** (`#btn-load-image-project`) khôi phục chính xác toàn bộ cấu hình.
+   - **Gcode Background (`bgState` & `drawCanvas` trong [`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - Nút **Lưu Cấu Hình Background vào JSON** (`#btn-save-bg-settings`) bổ sung `flip_x`, `flip_y` vào `bgState` và lưu persistent trong `background_settings` của `calibration_settings.json`.frac{210 \times 80}{250} \approx 67.2\text{ mm}$!
      - Khi người dùng chạy máy ra 4 góc biên thật và bấm **Set TL / TR / BL / BR**, GRBL chỉ báo tọa độ nhỏ ($94\text{ mm} \times 85\text{ mm}$) và hệ thống lưu chính xác con số này vào `calibration_settings.json`.
    - **Nguyên nhân 2: Độ lệch so sánh giữa Khung máy ($94 \times 85\text{ mm}$) và Ảnh nền Background ($210 \times 297\text{ mm}$)**:
      - Khổ giấy A4 trong `background_settings` được quy ước chuẩn là $210\text{ mm} \times 297\text{ mm}$.
@@ -758,27 +754,34 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
 ### 2.27. Bổ Sung Góc Xoay, Flip Ngang, Flip Dọc Cho Gcode Font, Gcode Image Và Gcode Background (Cập Nhật 52)
 
 1. **Yêu Cầu Nghiệp Vụ**:
-   - Cả 3 bộ công cụ sinh G-code trong hệ thống (**Gcode with Font Editor**, **Gcode with Image Editor**, **Gcode Background Editor**) cần hỗ trợ đầy đủ bộ 3 biến đổi hình học 2D:
+   - Cả 3 bộ công cụ sinh G-code trong hệ thống (**Gcode with Font Editor**, **Gcode with Image Editor**, **Gcode Background Editor**) phải cung cấp đầy đủ bộ 3 ô nhập thông số biến đổi 2D:
      1. **Góc Xoay (°)** (`rotation_angle`): Xoay đối tượng tự do từ $-360^\circ \div +360^\circ$.
-     2. **Lật Ngang** (`flip_x`): Lật ngược hình chiếu đối xứng qua trục đứng (gương ngang).
-     3. **Lật Dọc** (`flip_y`): Lật ngược hình chiếu đối xứng qua trục ngang (gương dọc).
+     2. **↔️ Lật Ngang** (`flip_x`): Lật ngược hình chiếu đối xứng qua trục đứng (gương ngang).
+     3. **↕️ Lật Dọc** (`flip_y`): Lật ngược hình chiếu đối xứng qua trục ngang (gương dọc).
+   - Khi thực hiện **Lưu cấu hình hệ thống** (`calibration_settings.json` server / `cnc_settings.json` local) hoặc **Lưu Project JSON** (Project Font / Project Image) và **Load lại file JSON**, hệ thống phải tự động lưu trữ và khôi phục chính xác trạng thái các thông số trên.
 
 2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
-   - **Gcode with Font (`generate_font_gcode` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
-     - Thêm `flip_x: bool = False`, `flip_y: bool = False` vào `FontGcodeRequest`.
-     - Áp dụng phép đối xứng trên tọa độ điểm pixel `(px_x, px_y)` trước khi nhân tỷ lệ mm/px:
+   - **Gcode with Font (`generate_font_gcode` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) & [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - Các ô nhập `font-rotation-angle`, `font-flip-x`, `font-flip-y` được tích hợp trên giao diện và gắn event listener tự động cập nhật nét vẽ xem trước.
+     - Backend áp dụng phép đối xứng trên tọa độ điểm pixel `(px_x, px_y)` trước khi nhân tỷ lệ mm/px:
        ```python
        if req.flip_x: px_x = raw_w_px - px_x
        if req.flip_y: px_y = raw_h_px - px_y
        ```
      - Áp dụng ma trận quay 2D $(X\cos\alpha - Y\sin\alpha, X\sin\alpha + Y\cos\alpha)$ theo `rot_deg`.
-   - **Gcode with Image (`sort_gcode_paths_left_to_right` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
-     - Thêm các tham số `rotation_angle: float`, `flip_x: bool`, `flip_y: bool` vào API `/cncapi/v1/convert-image-gcode`.
-     - Tìm tâm điểm bounding box $(\text{center\_x}, \text{center\_y})$ của tập đường nét, sau đó lật đối xứng và xoay toàn bộ vector nét vẽ quanh tâm trước khi sắp xếp thứ tự vẽ Left-to-Right.
+     - Nút **Lưu Project JSON Font** (`btnSaveProject`) đóng gói `rotation_angle`, `flip_x`, `flip_y` vào file project JSON; nút **Nạp Project JSON Font** tự động khôi phục dữ liệu lên checkbox và ô nhập.
+   - **Gcode with Image (`sort_gcode_paths_left_to_right` trong [`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py) & [`app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
+     - API `/cncapi/v1/convert-image-gcode` tiếp nhận `rotation_angle: float`, `flip_x: bool`, `flip_y: bool`.
+     - Tìm tâm điểm bounding box $(\text{center\_x}, \text{center\_y})$ của tập đường nét, lật đối xứng và xoay toàn bộ vector nét vẽ quanh tâm trước khi sắp xếp thứ tự vẽ Left-to-Right.
+     - Nút **Lưu Project JSON Image** lưu đối tượng `settings` chứa `rotation_angle`, `flip_x`, `flip_y`, `clahe_clip_limit`, `blur_size`, `min_contour_len`...; nút **Nạp Project JSON Image** khôi phục chính xác toàn bộ cấu hình.
    - **Gcode Background (`bgState` & `drawCanvas` trong [`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js))**:
-     - Bổ sung `flip_x`, `flip_y` vào `bgState` và lưu persistent trong `calibration_settings.json`.
-     - Render Layer 0 canvas áp dụng `ctx.scale((bgState.flip_x ? -1 : 1) * axisDirX, (bgState.flip_y ? -1 : 1) * axisDirY)` và vẽ ảnh bù trừ offset tương ứng.
-     - Khi bấm **Tạo Vector & G-code từ Background**, truyền trực tiếp `rotation_angle`, `flip_x`, `flip_y` vào backend để sinh mã G-code đồng bộ 100% với giao diện xem trước.
+     - Bổ sung `flip_x`, `flip_y` vào `bgState` và lưu persistent trong `background_settings` của `calibration_settings.json`.
+     - Canvas Layer 0 áp dụng `ctx.scale((bgState.flip_x ? -1 : 1) * axisDirX, (bgState.flip_y ? -1 : 1) * axisDirY)` vẽ ảnh bù trừ offset tương ứng.
+     - Khi bấm **Tạo Vector & G-code từ Background**, truyền trực tiếp `rotation_angle`, `flip_x`, `flip_y` vào backend để sinh mã G-code đồng bộ 100% với xem trước.
+   - **Đồng Bộ Cấu Hình Hệ Thống (System Settings Persistence)**:
+     - `getSystemSettingsPayload()` đóng gói `font_settings`, `image_settings`, và `background_settings` chứa đầy đủ `rotation_angle`, `flip_x`, `flip_y`.
+     - API POST `/cncapi/v1/settings` lưu bền vững vào `calibration_settings.json` tại backend và xuất file `cnc_settings.json` cho người dùng.
+     - `applySettingsPayload()` khôi phục tự động cả 3 nhóm cấu hình vào các phần tử HTML trên Web UI khi khởi tạo hoặc sau khi load file JSON.
 
 ### 2.28. Khắc Phục Chuẩn Chiều Vuốt Lên (+Y) Và Vuốt Xuống (-Y) Trong Cử Chỉ Gestures Và Kịch Bản (Cập Nhật 53)
 

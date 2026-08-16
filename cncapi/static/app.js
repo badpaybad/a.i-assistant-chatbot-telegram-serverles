@@ -2065,7 +2065,7 @@
         stopCNC();
     }
 
-    async function saveSystemSettingsSilent() {
+    function getSystemSettingsPayload() {
         const upInput = document.getElementById('pen-up-val');
         const downInput = document.getElementById('pen-down-val');
         if (upInput && downInput) {
@@ -2082,54 +2082,7 @@
             }
         }
 
-        const payload = {
-            port: document.getElementById('port-select')?.value || '',
-            baudrate: parseInt(document.getElementById('baudrate-select')?.value || '115200'),
-            feedrate: parseFloat(document.getElementById('sys-feedrate')?.value || '4000'),
-            swipe_feedrate: parseFloat(document.getElementById('sys-swipe-feedrate')?.value || '10000'),
-            step_distance: parseFloat(document.getElementById('sys-step-distance')?.value || '5'),
-            tap_dwell: parseFloat(document.getElementById('sys-tap-dwell')?.value || '0.05'),
-            long_press_dwell: parseFloat(document.getElementById('sys-long-press-dwell')?.value || '1.5'),
-            swipe_distance: parseFloat(document.getElementById('sys-swipe-distance')?.value || '40'),
-            pen_mode: penMode,
-            pen_up_z: penUpZ,
-            pen_down_z: penDownZ,
-            pen_up_pwm: penUpPwm,
-            pen_down_pwm: penDownPwm,
-            axis_dir_x: parseInt(document.getElementById('select-axis-x')?.value || '1'),
-            axis_dir_y: parseInt(document.getElementById('select-axis-y')?.value || '1'),
-            mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.05'),
-        };
-
-        try {
-            await fetch('/cncapi/v1/settings', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } catch (e) {
-            console.error('Error auto-saving system settings:', e);
-        }
-    }
-
-    async function saveSystemSettings() {
-        const upInput = document.getElementById('pen-up-val');
-        const downInput = document.getElementById('pen-down-val');
-        if (upInput && downInput) {
-            const valUp = parseFloat(upInput.value);
-            const valDown = parseFloat(downInput.value);
-            if (!isNaN(valUp) && !isNaN(valDown)) {
-                if (penMode === 'spindle-pwm') {
-                    penUpPwm = valUp;
-                    penDownPwm = valDown;
-                } else {
-                    penUpZ = valUp;
-                    penDownZ = valDown;
-                }
-            }
-        }
-
-        const payload = {
+        return {
             port: document.getElementById('port-select')?.value || '',
             baudrate: parseInt(document.getElementById('baudrate-select')?.value || '115200'),
             feedrate: parseFloat(document.getElementById('sys-feedrate')?.value || '4000'),
@@ -2146,8 +2099,75 @@
             axis_dir_x: parseInt(document.getElementById('select-axis-x')?.value || '1'),
             axis_dir_y: parseInt(document.getElementById('select-axis-y')?.value || '1'),
             mm_per_px: parseFloat(document.getElementById('sys-mm-per-px')?.value || '0.05'),
+            font_settings: {
+                font_name: document.getElementById('font-select')?.value || '',
+                font_size_pt: parseFloat(document.getElementById('font-size-input')?.value || '72'),
+                line_spacing: parseFloat(document.getElementById('font-line-spacing')?.value || '1.2'),
+                line_spacing_mm: parseFloat(document.getElementById('font-line-spacing-mm')?.value || '0.0'),
+                feed_rate: parseFloat(document.getElementById('font-feed-rate')?.value || '4000'),
+                stroke_mode: document.getElementById('font-stroke-mode')?.value || 'single_line',
+                z_safe: parseFloat(document.getElementById('font-z-safe')?.value || '10.0'),
+                z_draw: parseFloat(document.getElementById('font-z-draw')?.value || '28.0'),
+                pen_mode: document.getElementById('font-pen-mode')?.value || 'spindle-pwm',
+                axis_dir_y: parseInt(document.getElementById('font-axis-dir-y')?.value || '1'),
+                epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '0.3'),
+                margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
+                rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
+                flip_x: document.getElementById('font-flip-x')?.checked || false,
+                flip_y: document.getElementById('font-flip-y')?.checked || false,
+                binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
+                render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300')
+            },
+            image_settings: {
+                scale_factor: parseFloat(document.getElementById('image-scale-input')?.value || '0.1'),
+                feed_rate: parseInt(document.getElementById('image-feed-rate-input')?.value || '2000'),
+                mode: document.getElementById('image-mode-select')?.value || 'servo',
+                algorithm: document.getElementById('image-algorithm-select')?.value || 'sketch',
+                rotation_angle: parseFloat(document.getElementById('image-rotation-angle')?.value || '0.0'),
+                flip_x: document.getElementById('image-flip-x')?.checked || false,
+                flip_y: document.getElementById('image-flip-y')?.checked || false,
+                clahe_clip_limit: parseFloat(document.getElementById('image-clahe-clip')?.value || '1.5'),
+                blur_size: parseInt(document.getElementById('image-blur-size')?.value || '3'),
+                min_contour_len: parseInt(document.getElementById('image-min-contour-len')?.value || '5')
+            },
+            background_settings: {
+                image_data: bgState.imageData,
+                image_filename: bgState.imageFilename,
+                visible: bgState.visible,
+                width_mm: bgState.width_mm,
+                height_mm: bgState.height_mm,
+                width_px: bgState.naturalWidth,
+                height_px: bgState.naturalHeight,
+                pos_x: bgState.pos_x,
+                pos_y: bgState.pos_y,
+                rotation_angle: bgState.rotation_angle,
+                flip_x: bgState.flip_x,
+                flip_y: bgState.flip_y,
+                treat_as_drawable: bgState.treat_as_drawable,
+                grayscale: bgState.grayscale,
+                threshold: bgState.threshold,
+                min_len: bgState.min_len,
+                keep_lines: bgState.keep_lines,
+                sketch_mode: bgState.sketch_mode
+            }
         };
+    }
 
+    async function saveSystemSettingsSilent() {
+        const payload = getSystemSettingsPayload();
+        try {
+            await fetch('/cncapi/v1/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+        } catch (e) {
+            console.error('Error auto-saving system settings:', e);
+        }
+    }
+
+    async function saveSystemSettings() {
+        const payload = getSystemSettingsPayload();
         try {
             const res = await fetch('/cncapi/v1/settings', {
                 method: 'POST',
@@ -2248,6 +2268,41 @@
             isHomeSet = true;
         }
         if (data.parking_point) telemetry.parking_point = data.parking_point;
+        if (data.font_settings) {
+            const fs = data.font_settings;
+            if (fs.font_name && document.getElementById('font-select')) document.getElementById('font-select').value = fs.font_name;
+            if (fs.font_size_pt !== undefined && document.getElementById('font-size-input')) document.getElementById('font-size-input').value = fs.font_size_pt;
+            if (fs.line_spacing !== undefined && document.getElementById('font-line-spacing')) document.getElementById('font-line-spacing').value = fs.line_spacing;
+            if (fs.line_spacing_mm !== undefined && document.getElementById('font-line-spacing-mm')) document.getElementById('font-line-spacing-mm').value = fs.line_spacing_mm;
+            if (fs.feed_rate !== undefined && document.getElementById('font-feed-rate')) document.getElementById('font-feed-rate').value = fs.feed_rate;
+            if (fs.stroke_mode && document.getElementById('font-stroke-mode')) document.getElementById('font-stroke-mode').value = fs.stroke_mode;
+            if (fs.z_safe !== undefined && document.getElementById('font-z-safe')) document.getElementById('font-z-safe').value = fs.z_safe;
+            if (fs.z_draw !== undefined && document.getElementById('font-z-draw')) document.getElementById('font-z-draw').value = fs.z_draw;
+            if (fs.pen_mode && document.getElementById('font-pen-mode')) document.getElementById('font-pen-mode').value = fs.pen_mode;
+            if (fs.axis_dir_y !== undefined && document.getElementById('font-axis-dir-y')) document.getElementById('font-axis-dir-y').value = fs.axis_dir_y;
+            if (fs.epsilon !== undefined && document.getElementById('font-epsilon')) document.getElementById('font-epsilon').value = fs.epsilon;
+            if (fs.margin_mm !== undefined && document.getElementById('font-margin-mm')) document.getElementById('font-margin-mm').value = fs.margin_mm;
+            if (fs.rotation_angle !== undefined && document.getElementById('font-rotation-angle')) document.getElementById('font-rotation-angle').value = fs.rotation_angle;
+            if (fs.flip_x !== undefined && document.getElementById('font-flip-x')) document.getElementById('font-flip-x').checked = fs.flip_x;
+            if (fs.flip_y !== undefined && document.getElementById('font-flip-y')) document.getElementById('font-flip-y').checked = fs.flip_y;
+            if (fs.binary_threshold !== undefined && document.getElementById('font-binary-thresh')) document.getElementById('font-binary-thresh').value = fs.binary_threshold;
+            if (fs.render_dpi !== undefined && document.getElementById('font-render-dpi')) document.getElementById('font-render-dpi').value = fs.render_dpi;
+        }
+
+        if (data.image_settings) {
+            const ims = data.image_settings;
+            if (ims.scale_factor !== undefined && document.getElementById('image-scale-input')) document.getElementById('image-scale-input').value = ims.scale_factor;
+            if (ims.feed_rate !== undefined && document.getElementById('image-feed-rate-input')) document.getElementById('image-feed-rate-input').value = ims.feed_rate;
+            if (ims.mode && document.getElementById('image-mode-select')) document.getElementById('image-mode-select').value = ims.mode;
+            if (ims.algorithm && document.getElementById('image-algorithm-select')) document.getElementById('image-algorithm-select').value = ims.algorithm;
+            if (ims.rotation_angle !== undefined && document.getElementById('image-rotation-angle')) document.getElementById('image-rotation-angle').value = ims.rotation_angle;
+            if (ims.flip_x !== undefined && document.getElementById('image-flip-x')) document.getElementById('image-flip-x').checked = ims.flip_x;
+            if (ims.flip_y !== undefined && document.getElementById('image-flip-y')) document.getElementById('image-flip-y').checked = ims.flip_y;
+            if (ims.clahe_clip_limit !== undefined && document.getElementById('image-clahe-clip')) document.getElementById('image-clahe-clip').value = ims.clahe_clip_limit;
+            if (ims.blur_size !== undefined && document.getElementById('image-blur-size')) document.getElementById('image-blur-size').value = ims.blur_size;
+            if (ims.min_contour_len !== undefined && document.getElementById('image-min-contour-len')) document.getElementById('image-min-contour-len').value = ims.min_contour_len;
+        }
+
         if (data.background_settings) {
             applyBackgroundSettings(data.background_settings);
         }
@@ -2699,6 +2754,8 @@
                     epsilon: parseFloat(document.getElementById('font-epsilon')?.value || '1.2'),
                     margin_mm: parseFloat(document.getElementById('font-margin-mm')?.value || '0.0'),
                     rotation_angle: parseFloat(document.getElementById('font-rotation-angle')?.value || '-90.0'),
+                    flip_x: document.getElementById('font-flip-x')?.checked || false,
+                    flip_y: document.getElementById('font-flip-y')?.checked || false,
                     binary_threshold: parseInt(document.getElementById('font-binary-thresh')?.value || '128'),
                     render_dpi: parseInt(document.getElementById('font-render-dpi')?.value || '300'),
                     min_path_len_mm: parseFloat(document.getElementById('font-min-path-len')?.value || '0.5'),
@@ -2743,6 +2800,8 @@
                         if (data.epsilon !== undefined && document.getElementById('font-epsilon')) document.getElementById('font-epsilon').value = data.epsilon;
                         if (data.margin_mm !== undefined && document.getElementById('font-margin-mm')) document.getElementById('font-margin-mm').value = data.margin_mm;
                         if (data.rotation_angle !== undefined && document.getElementById('font-rotation-angle')) document.getElementById('font-rotation-angle').value = data.rotation_angle;
+                        if (data.flip_x !== undefined && document.getElementById('font-flip-x')) document.getElementById('font-flip-x').checked = data.flip_x;
+                        if (data.flip_y !== undefined && document.getElementById('font-flip-y')) document.getElementById('font-flip-y').checked = data.flip_y;
                         if (data.binary_threshold !== undefined && document.getElementById('font-binary-thresh')) document.getElementById('font-binary-thresh').value = data.binary_threshold;
                         if (data.render_dpi !== undefined && document.getElementById('font-render-dpi')) document.getElementById('font-render-dpi').value = data.render_dpi;
                         if (data.min_path_len_mm !== undefined && document.getElementById('font-min-path-len')) document.getElementById('font-min-path-len').value = data.min_path_len_mm;
@@ -3133,7 +3192,19 @@
                         scale_factor: parseFloat(scaleInput?.value || '0.1'),
                         feed_rate: parseInt(feedRateInput?.value || '2000'),
                         mode: modeSelect?.value || 'servo',
-                        algorithm: algoSelect?.value || 'sketch'
+                        algorithm: algoSelect?.value || 'sketch',
+                        rotation_angle: parseFloat(document.getElementById('image-rotation-angle')?.value || '0.0'),
+                        flip_x: document.getElementById('image-flip-x')?.checked || false,
+                        flip_y: document.getElementById('image-flip-y')?.checked || false,
+                        clahe_clip_limit: parseFloat(document.getElementById('image-clahe-clip')?.value || '1.5'),
+                        blur_size: parseInt(document.getElementById('image-blur-size')?.value || '3'),
+                        min_contour_len: parseInt(document.getElementById('image-min-contour-len')?.value || '5'),
+                        use_clahe: document.getElementById('image-use-clahe')?.checked || false,
+                        use_blur: document.getElementById('image-use-blur')?.checked || false,
+                        use_connect: document.getElementById('image-use-connect')?.checked || false,
+                        use_thin: document.getElementById('image-use-thin')?.checked || false,
+                        use_len_filter: document.getElementById('image-use-len-filter')?.checked || false,
+                        handwriting_mode: document.getElementById('image-hw-mode')?.value || 'centerline'
                     },
                     gcode: imageGcode,
                     segments: imageSegments
@@ -3167,11 +3238,27 @@
                             }
                         }
                         if (data.settings) {
-                            if (scaleInput) scaleInput.value = data.settings.scale_factor || 0.1;
-                            if (feedRateInput) feedRateInput.value = data.settings.feed_rate || 2000;
-                            if (modeSelect) modeSelect.value = data.settings.mode || 'servo';
-                            if (algoSelect) algoSelect.value = data.settings.algorithm || 'sketch';
+                            if (scaleInput && data.settings.scale_factor !== undefined) scaleInput.value = data.settings.scale_factor;
+                            if (feedRateInput && data.settings.feed_rate !== undefined) feedRateInput.value = data.settings.feed_rate;
+                            if (modeSelect && data.settings.mode) modeSelect.value = data.settings.mode;
+                            if (algoSelect && data.settings.algorithm) algoSelect.value = data.settings.algorithm;
+                            if (data.settings.clahe_clip_limit !== undefined && document.getElementById('image-clahe-clip')) document.getElementById('image-clahe-clip').value = data.settings.clahe_clip_limit;
+                            if (data.settings.blur_size !== undefined && document.getElementById('image-blur-size')) document.getElementById('image-blur-size').value = data.settings.blur_size;
+                            if (data.settings.min_contour_len !== undefined && document.getElementById('image-min-contour-len')) document.getElementById('image-min-contour-len').value = data.settings.min_contour_len;
+                            if (data.settings.use_clahe !== undefined && document.getElementById('image-use-clahe')) document.getElementById('image-use-clahe').checked = data.settings.use_clahe;
+                            if (data.settings.use_blur !== undefined && document.getElementById('image-use-blur')) document.getElementById('image-use-blur').checked = data.settings.use_blur;
+                            if (data.settings.use_connect !== undefined && document.getElementById('image-use-connect')) document.getElementById('image-use-connect').checked = data.settings.use_connect;
+                            if (data.settings.use_thin !== undefined && document.getElementById('image-use-thin')) document.getElementById('image-use-thin').checked = data.settings.use_thin;
+                            if (data.settings.use_len_filter !== undefined && document.getElementById('image-use-len-filter')) document.getElementById('image-use-len-filter').checked = data.settings.use_len_filter;
+                            if (data.settings.handwriting_mode && document.getElementById('image-hw-mode')) document.getElementById('image-hw-mode').value = data.settings.handwriting_mode;
                         }
+                        const rotVal = data.settings?.rotation_angle !== undefined ? data.settings.rotation_angle : data.rotation_angle;
+                        if (rotVal !== undefined && document.getElementById('image-rotation-angle')) document.getElementById('image-rotation-angle').value = rotVal;
+                        const flipXVal = data.settings?.flip_x !== undefined ? data.settings.flip_x : data.flip_x;
+                        if (flipXVal !== undefined && document.getElementById('image-flip-x')) document.getElementById('image-flip-x').checked = flipXVal;
+                        const flipYVal = data.settings?.flip_y !== undefined ? data.settings.flip_y : data.flip_y;
+                        if (flipYVal !== undefined && document.getElementById('image-flip-y')) document.getElementById('image-flip-y').checked = flipYVal;
+
                         if (data.gcode) imageGcode = data.gcode;
                         if (data.segments) imageSegments = data.segments;
 
@@ -3591,6 +3678,21 @@
     }
 
     async function saveBackgroundSettingsToSystem(mm_per_px_val = null) {
+        if (document.getElementById('bg-width-mm')) bgState.width_mm = parseFloat(document.getElementById('bg-width-mm').value) || 210.0;
+        if (document.getElementById('bg-height-mm')) bgState.height_mm = parseFloat(document.getElementById('bg-height-mm').value) || 297.0;
+        if (document.getElementById('bg-pos-x')) bgState.pos_x = parseFloat(document.getElementById('bg-pos-x').value) || 0.0;
+        if (document.getElementById('bg-pos-y')) bgState.pos_y = parseFloat(document.getElementById('bg-pos-y').value) || 0.0;
+        if (document.getElementById('bg-rotation-angle')) bgState.rotation_angle = parseFloat(document.getElementById('bg-rotation-angle').value) || 0.0;
+        if (document.getElementById('bg-flip-x')) bgState.flip_x = document.getElementById('bg-flip-x').checked;
+        if (document.getElementById('bg-flip-y')) bgState.flip_y = document.getElementById('bg-flip-y').checked;
+        if (document.getElementById('bg-visible-checkbox')) bgState.visible = document.getElementById('bg-visible-checkbox').checked;
+        if (document.getElementById('bg-treat-as-drawable')) bgState.treat_as_drawable = document.getElementById('bg-treat-as-drawable').checked;
+        if (document.getElementById('bg-grayscale-checkbox')) bgState.grayscale = document.getElementById('bg-grayscale-checkbox').checked;
+        if (document.getElementById('bg-threshold-val')) bgState.threshold = parseInt(document.getElementById('bg-threshold-val').value) || 128;
+        if (document.getElementById('bg-min-len-val')) bgState.min_len = parseInt(document.getElementById('bg-min-len-val').value) || 5;
+        if (document.getElementById('bg-keep-lines-checkbox')) bgState.keep_lines = document.getElementById('bg-keep-lines-checkbox').checked;
+        if (document.getElementById('bg-sketch-checkbox')) bgState.sketch_mode = document.getElementById('bg-sketch-checkbox').checked;
+
         const payload = {
             background_settings: {
                 image_data: bgState.imageData,
