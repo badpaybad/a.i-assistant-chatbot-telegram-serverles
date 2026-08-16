@@ -317,6 +317,7 @@
         connectWebSocket();
         await fetchPorts();
         await checkCurrentState();
+
     });
 
     function initDOM() {
@@ -720,6 +721,10 @@
                 }
                 if (msg.message) {
                     notifyToastr('success', '🔌 Kết Nối Thành Công', msg.message);
+                    //kết nối thành công thì về gốc home
+                    setTimeout(function () {
+                        document.getElementById('jog-home')?.click();
+                    }, 200);
                 }
             } else if (msg.message) {
                 if (isReconnecting) {
