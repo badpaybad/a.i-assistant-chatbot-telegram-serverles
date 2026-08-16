@@ -282,6 +282,11 @@ class ControllerState:
         self.grbl_version: str = "0.9i"
         self.serial_lock = asyncio.Lock()
         
+        # Auto-reconnect state (Cập nhật 55)
+        self.is_reconnecting = False
+        self.reconnect_task = None
+        self.last_connected_port = settings.get("last_connected_port", "")
+
         # Tasks
         self.reader_task = None
         self.polling_task = None
@@ -316,6 +321,8 @@ async def safe_write_serial(data: bytes):
                 await loop.run_in_executor(None, _do_write)
         except Exception as e:
             logger.error(f"Lỗi safe_write_serial: {e}")
+            if state.connected and not isinstance(state.serial_port, DummySerial):
+                asyncio.create_task(handle_serial_disconnection(f"Lỗi ghi dữ liệu Serial ({e})"))
 
 # Mock Serial Class
 class DummySerial:
@@ -609,9 +616,153 @@ async def serial_reader_loop():
                 await asyncio.sleep(0.01)
         except Exception as e:
             logger.error(f"Error in serial reader: {e}")
-            state.connected = False
-            await broadcast({"type": "connection", "connected": False, "message": f"Mất kết nối: {e}"})
+            await handle_serial_disconnection(f"Lỗi đọc cổng nối tiếp ({e})")
             break
+
+async def handle_serial_disconnection(reason: str = ""):
+    """Xử lý dọn dẹp khi mất kết nối Serial bất ngờ và kích hoạt chu trình tự động quét / kết nối lại khi cắm lại USB hoặc có điện."""
+    if not state.connected and state.is_reconnecting:
+        return
+        
+    target_port = state.port_name or getattr(state, 'last_connected_port', '')
+    is_dummy = isinstance(state.serial_port, DummySerial) or target_port == "dummy"
+    
+    state.connected = False
+    state.device_id = ""
+    state.machine_state = "NGOẠI TUYẾN (ĐANG TỰ DÒ CỔNG...)" if not is_dummy else "NGOẠI TUYẾN"
+    
+    if state.polling_task:
+        state.polling_task.cancel()
+        state.polling_task = None
+    if state.stream_task:
+        state.stream_task.cancel()
+        state.stream_task = None
+        
+    if state.serial_port and not is_dummy:
+        try:
+            state.serial_port.close()
+        except Exception:
+            pass
+    state.serial_port = None
+    
+    if is_dummy:
+        await broadcast({"type": "connection", "connected": False, "reconnecting": False, "message": f"Mất kết nối: {reason}"})
+        return
+
+    state.is_reconnecting = True
+    await broadcast({
+        "type": "connection", 
+        "connected": False, 
+        "reconnecting": True,
+        "message": f"⚠️ Mất kết nối cổng USB ({reason}). Hệ thống đang tự động quét và kết nối lại ngay khi cắm lại USB hoặc bật nguồn..."
+    })
+    await broadcast({
+        "type": "log", 
+        "direction": "in", 
+        "content": f"⚠️ [Mất kết nối USB: {reason}] Đang chạy chế độ tự động dò tìm và kết nối lại máy CNC..."
+    })
+
+    if state.reconnect_task and not state.reconnect_task.done():
+        state.reconnect_task.cancel()
+    state.reconnect_task = asyncio.create_task(auto_reconnect_loop(target_port))
+
+async def auto_reconnect_loop(target_port: str):
+    logger.info(f"Bắt đầu chu trình tự động kết nối lại CNC (cổng mong muốn: '{target_port}')...")
+    retry_count = 0
+    while state.is_reconnecting and not state.connected:
+        retry_count += 1
+        try:
+            available_ports = []
+            try:
+                import serial.tools.list_ports
+                for p in serial.tools.list_ports.comports():
+                    available_ports.append(p.device)
+            except Exception:
+                pass
+
+            if sys.platform.startswith('linux'):
+                import glob
+                for dev in sorted(glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')):
+                    if dev not in available_ports:
+                        available_ports.append(dev)
+
+            candidate_port = None
+            if target_port and target_port in available_ports:
+                candidate_port = target_port
+            elif available_ports:
+                for p in available_ports:
+                    if 'ttyACM' in p or 'ttyUSB' in p or 'COM' in p.upper() or 'usb' in p.lower():
+                        candidate_port = p
+                        break
+                if not candidate_port:
+                    candidate_port = available_ports[0]
+
+            if candidate_port:
+                logger.info(f"[Auto-Reconnect #{retry_count}] Phát hiện cổng {candidate_port}, thử kết nối...")
+                try:
+                    new_serial = serial.Serial(candidate_port, state.baudrate, timeout=0.1)
+                    state.serial_port = new_serial
+                    state.connected = True
+                    state.port_name = candidate_port
+                    state.last_connected_port = candidate_port
+                    save_settings({"last_connected_port": candidate_port, "home_set": False})
+                    state.machine_state = "Đang Khởi Tạo"
+                    state.home_set = False
+                    state.is_reconnecting = False
+
+                    state.reader_task = asyncio.create_task(serial_reader_loop())
+                    state.polling_task = asyncio.create_task(status_polling_loop())
+
+                    # Chờ 1.8s cho Arduino DTR Reset
+                    await asyncio.sleep(1.8)
+                    if hasattr(state.serial_port, 'reset_input_buffer'):
+                        try:
+                            state.serial_port.reset_input_buffer()
+                        except Exception:
+                            pass
+
+                    await safe_write_serial(b"\x18\r\n$X\r\n")
+                    await broadcast({"type": "log", "direction": "out", "content": "\x18 $X (Auto-Reconnect)"})
+                    await asyncio.sleep(0.5)
+                    await safe_write_serial(b"$GETID\n")
+                    await broadcast({"type": "log", "direction": "out", "content": "$GETID (Auto-Reconnect)"})
+
+                    async def fallback_query_getid():
+                        for _ in range(4):
+                            if state.device_id or not state.connected:
+                                break
+                            await asyncio.sleep(1.0)
+                            if not state.device_id and state.connected:
+                                await safe_write_serial(b"$GETID\n")
+                    asyncio.create_task(fallback_query_getid())
+
+                    logger.info(f"✅ Tự động kết nối lại máy CNC thành công cổng {candidate_port}!")
+                    await broadcast({
+                        "type": "connection",
+                        "connected": True,
+                        "reconnecting": False,
+                        "message": f"Đã tự động kết nối lại máy CNC thành công cổng {candidate_port}!"
+                    })
+                    await broadcast({
+                        "type": "log",
+                        "direction": "in",
+                        "content": f"🔌 [Tự Động Kết Nối Lại] Đã kết nối lại thành công cổng {candidate_port} và Unlock ($X)"
+                    })
+                    await send_telemetry()
+                    return
+                except Exception as open_err:
+                    logger.debug(f"[Auto-Reconnect #{retry_count}] Cổng {candidate_port} chưa sẵn sàng: {open_err}")
+                    if state.serial_port:
+                        try:
+                            state.serial_port.close()
+                        except Exception:
+                            pass
+                        state.serial_port = None
+                    state.connected = False
+        except Exception as err:
+            logger.error(f"[Auto-Reconnect Loop Error]: {err}")
+
+        await asyncio.sleep(1.5)
 
 async def wait_for_ok(timeout=1.0):
     state.grbl_ack_event.clear()
@@ -1122,6 +1273,14 @@ async def connect_cnc(config: ConnectionConfig):
     try:
         state.serial_port = serial.Serial(config.port, config.baudrate, timeout=0.1)
         state.connected = True
+        state.port_name = config.port
+        state.last_connected_port = config.port
+        save_settings({"last_connected_port": config.port, "home_set": False})
+        state.is_reconnecting = False
+        if state.reconnect_task and not state.reconnect_task.done():
+            state.reconnect_task.cancel()
+            state.reconnect_task = None
+
         state.machine_state = "Đang Khởi Tạo"
         state.home_set = False
         save_settings({"home_set": False})
@@ -1152,7 +1311,7 @@ async def connect_cnc(config: ConnectionConfig):
                     await safe_write_serial(b"$GETID\n")
         asyncio.create_task(fallback_query_getid())
 
-        await broadcast({"type": "connection", "connected": True, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
+        await broadcast({"type": "connection", "connected": True, "reconnecting": False, "message": f"Đã kết nối {config.port} và Tự Động Mở Khóa ($X)"})
         await send_telemetry()
         return {"status": "success", "message": f"Đã kết nối {config.port}"}
     except Exception as e:
@@ -1165,7 +1324,13 @@ async def connect_cnc(config: ConnectionConfig):
 
 @app.post("/api/disconnect")
 async def disconnect_cnc():
+    state.is_reconnecting = False
+    if state.reconnect_task and not state.reconnect_task.done():
+        state.reconnect_task.cancel()
+        state.reconnect_task = None
+
     if not state.connected:
+        await broadcast({"type": "connection", "connected": False, "reconnecting": False, "message": "Đã ngắt kết nối"})
         return {"status": "success", "message": "Chưa kết nối"}
         
     state.connected = False
@@ -1185,7 +1350,7 @@ async def disconnect_cnc():
     state.serial_port = None
     state.machine_state = "NGOẠI TUYẾN"
     
-    await broadcast({"type": "connection", "connected": False, "message": "Đã ngắt kết nối"})
+    await broadcast({"type": "connection", "connected": False, "reconnecting": False, "message": "Đã ngắt kết nối"})
     return {"status": "success", "message": "Đã ngắt kết nối"}
 
 @app.post("/api/command")
@@ -1576,7 +1741,8 @@ async def get_state():
         "buffer_rx": state.buffer_rx,
         "streaming": state.is_streaming,
         "home_set": state.home_set,
-        "device_id": state.device_id
+        "device_id": state.device_id,
+        "is_reconnecting": state.is_reconnecting
     }
 
 # ----------------------------------------------------

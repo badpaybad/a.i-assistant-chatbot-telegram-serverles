@@ -311,6 +311,18 @@ input:focus, select:focus {
     color: var(--success);
 }
 
+.status-badge.reconnecting, .state-badge.reconnecting {
+    background: rgba(245, 158, 11, 0.2);
+    border: 1px solid #f59e0b;
+    color: #fbbf24;
+    animation: reconnectPulse 1.5s infinite;
+}
+
+@keyframes reconnectPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.65; transform: scale(0.98); }
+}
+
 .telemetry-mini-row {
     display: flex;
     justify-content: space-between;

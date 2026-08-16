@@ -449,4 +449,7 @@ Gcode with Font Editor, Khi click Dừng & Về góc ban đầu, Dừng & Về g
 những message thành công thì có thể để timeout 10s để tự tắt, message lỗi thì cần người dùng click close 
 ở ngay dưới icon symbole cần thêm nút Tắt tất cả để tắt tất cả các toast hiện có 
 
+**cập nhật 55** khi lỗi bị disconnect hoặc usb không kết nối được (do cnc mất điện, do rút ra ...) ERROR:cnc_controller:Error in serial reader: [Errno 5] Input/output error
+  Làm thế nào để kết nối tự động lại khi cắm usb hoặc có điện trở lại
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

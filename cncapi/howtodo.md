@@ -821,6 +821,38 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - Nút `toast-close-btn` (`✕`) gọi `dismissToastItem(toast)` để đóng từng thông báo riêng lẻ và hủy timer tự tắt.
      - Nút `toast-close-all-btn` ("Tắt tất cả") gắn sự kiện gọi `closeAllToastItems()`, kích hoạt animation `toastOut` cho toàn bộ danh sách `.toast-item` và xóa sạch container sau 250ms.
 
+
+### 2.30. Cơ Chế Tự Động Quét & Kết Nối Lại Khi Cắm Lại USB Hoặc Có Điện Trở Lại (Cập Nhật 55)
+
+1. **Yêu Cầu & Phân Tích Hiện Tượng**:
+   - Khi máy CNC bị mất nguồn, tuột dây nguồn hoặc rút cáp USB khỏi máy tính, luồng đọc cổng nối tiếp phát sinh lỗi:
+     ```text
+     ERROR:cnc_controller:Error in serial reader: [Errno 5] Input/output error
+     ```
+   - **Vấn đề trước đây**:
+     1. Luồng đọc chỉ gán `state.connected = False` và thoát (`break`), không giải phóng tài nguyên handle cổng Serial cũ (`state.serial_port.close()`). Điều này khiến hệ điều hành Linux giữ lock và có thể đổi tên thiết bị khi cắm lại (từ `/dev/ttyACM0` sang `/dev/ttyACM1`).
+     2. Không có tiến trình ngầm tự động thăm dò cổng khi người dùng cắm lại dây USB hoặc bật lại nguồn máy CNC, bắt buộc người dùng phải tải lại trang hoặc bấm nút "Kết Nối" thủ công.
+
+2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
+   - **Xử Lý Ngắt Kết Nối An Toàn (`handle_serial_disconnection` trong `main.py`)**:
+     - Ngay khi xảy ra ngoại lệ ngoại vi (`SerialException`, `OSError [Errno 5]`) trong `serial_reader_loop` hoặc `safe_write_serial`:
+     - Tự động đóng và giải phóng đối tượng `state.serial_port` (`close()`), hủy `state.polling_task` và `state.stream_task`.
+     - Chuyển trạng thái sang `state.is_reconnecting = True`, `state.machine_state = "NGOẠI TUYẾN (ĐANG TỰ DÒ CỔNG...)"`.
+     - Phát thông điệp WebSocket `connection` kèm cờ `reconnecting: True` để thông báo Web UI.
+     - Khởi chạy background task `auto_reconnect_loop(target_port)`.
+   - **Vòng Lặp Tự Động Kết Nối Lại (`auto_reconnect_loop` trong `main.py`)**:
+     - Lặp định kỳ mỗi **1.5 giây**:
+     - Quét toàn bộ danh sách cổng USB Serial hệ thống qua `serial.tools.list_ports` kết hợp fallback `glob.glob('/dev/ttyACM*') + glob.glob('/dev/ttyUSB*')`.
+     - Ưu tiên chọn đúng cổng cũ trước đây (`target_port`); nếu cổng cũ bị đổi tên (ví dụ `/dev/ttyACM0` $	o$ `/dev/ttyACM1`), tự động nhận diện thiết bị USB serial ứng viên thích hợp.
+     - Khi cổng xuất hiện: Thử mở cổng `serial.Serial(candidate_port, state.baudrate, timeout=0.1)`.
+     - Sau khi mở thành công: Chờ **1.8s** cho quá trình DTR Hardware Reset của vi điều khiển Arduino, xóa sạch buffer đầu vào (`reset_input_buffer()`), phát lệnh Soft Reset `\x18` + Unlock `` và ``.
+     - Khởi chạy lại `serial_reader_loop()` và `status_polling_loop()`.
+     - Đồng bộ trạng thái kết nối `connected: True`, thông báo Toastr thành công và truyền Telemetry lên Web UI.
+   - **Đồng Bộ Giao Diện Web (`static/app.js` & `static/styles.css`)**:
+     - Bổ sung biến `isReconnecting` quản lý trạng thái.
+     - Khi đang tự dò cổng: Badge kết nối hiển thị `🔄 TỰ DÒ CỔNG...` với hiệu ứng nhấp nháy màu vàng hổ phách (`reconnectPulse`), nút kết nối chuyển thành `Hủy Dò Cổng`.
+     - Khi kết nối thành công: Badge chuyển sang xanh lá `ĐÃ KẾT NỐI`, hiển thị Device ID và Toastr thông báo kết nối lại thành công.
+
 ---
 
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)

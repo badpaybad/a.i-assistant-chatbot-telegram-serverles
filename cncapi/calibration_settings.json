@@ -10,13 +10,13 @@
   "pen_mode": "spindle-pwm",
   "pen_up_z": 3.0,
   "pen_down_z": 0.0,
-  "pen_up_pwm": 13.0,
-  "pen_down_pwm": 22.0,
+  "pen_up_pwm": 17.0,
+  "pen_down_pwm": 27.0,
   "pen_dwell": 0.25,
   "axis_dir_x": 1,
   "axis_dir_y": -1,
   "mm_per_px": 0.0846774193548387,
-  "home_set": false,
+  "home_set": true,
   "workpiece_origin": {
     "x": 0.0,
     "y": 0.0,
@@ -134,5 +134,6 @@
     "$130": "300.000",
     "$131": "300.000",
     "$132": "200.000"
-  }
+  },
+  "last_connected_port": "/dev/ttyACM0"
 }

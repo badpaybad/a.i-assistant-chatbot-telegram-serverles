@@ -13,6 +13,7 @@
     
     let ws = null;
     let isConnected = false;
+    let isReconnecting = false;
     let isHomeSet = false;
     let scenarioInsertIndex = -1;
     let cncBounds = { tl: null, tr: null, bl: null, br: null };
@@ -622,6 +623,7 @@
             const res = await fetch('/api/state');
             const data = await res.json();
             isConnected = data.connected;
+            isReconnecting = !!data.is_reconnecting;
             isHomeSet = data.home_set || false;
             updateConnectionUI();
             
@@ -635,7 +637,7 @@
                     telemetry.device_id = data.device_id;
                     updateTelemetryUI();
                 }
-            } else {
+            } else if (!isReconnecting) {
                 await toggleConnection();
             }
         } catch (e) {
@@ -710,6 +712,7 @@
             updateTelemetryUI();
         } else if (msg.type === 'connection') {
             isConnected = msg.connected;
+            isReconnecting = !!msg.reconnecting;
             updateConnectionUI();
             if (msg.connected) {
                 if (window.toastr && typeof window.toastr.clear === 'function') {
@@ -719,7 +722,11 @@
                     notifyToastr('success', '🔌 Kết Nối Thành Công', msg.message);
                 }
             } else if (msg.message) {
-                notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', msg.message);
+                if (isReconnecting) {
+                    notifyToastr('warning', '🔌 Đang Tự Động Quét & Kết Nối Lại CNC', msg.message);
+                } else {
+                    notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', msg.message);
+                }
             }
         } else if (msg.type === 'log') {
             appendConsoleLog(msg.direction, msg.content);
@@ -763,6 +770,22 @@
             }
             if (devIdEl && telemetry.device_id) {
                 devIdEl.innerText = `: ${telemetry.device_id}`;
+            }
+        } else if (isReconnecting) {
+            if (connBadge) {
+                connBadge.className = 'status-badge reconnecting';
+                connBadge.innerText = t('🔄 TỰ DÒ CỔNG...');
+            }
+            if (stateBadge) {
+                stateBadge.className = 'state-badge disconnected';
+                stateBadge.innerText = t('ĐANG TỰ KẾT NỐI...');
+            }
+            if (btn) {
+                btn.className = 'btn btn-danger-soft';
+                btn.innerText = t('Hủy Dò Cổng');
+            }
+            if (devIdEl) {
+                devIdEl.innerText = '';
             }
         } else {
             if (connBadge) {
