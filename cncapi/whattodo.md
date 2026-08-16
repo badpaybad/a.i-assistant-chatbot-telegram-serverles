@@ -454,4 +454,6 @@ những message thành công thì có thể để timeout 10s để tự tắt, 
 
 **cập nhật 56** ở js các alert cần chuyển thành nofity  showCustomToastItem dạng warning và cũng không tự tắt, người dùng tự click close ,ở ngay dưới icon symbole cần thêm nút Tắt tất cả để tắt tất cả các toast hiện có 
 
+**cập nhật 57** UI js chạy thời gian dài việc vẽ lên tool path view bị chậm so với thực tế cần phân tích nguyên nhân tăng performance và cần phản ánh đúng thực tế cnc đang chạy 
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

@@ -66,6 +66,26 @@
     let dragStartY = 0;
     let penTrajectory = [];
 
+    // ==================== CẬP NHẬT 57: TỐI ƯU HIỆU NĂNG RENDER & OFFSCREEN CANVAS CACHE ====================
+    let staticCanvasCache = null;
+    let staticCtxCache = null;
+    let staticCacheDirty = true;
+    let isDrawScheduled = false;
+
+    function markStaticCacheDirty() {
+        staticCacheDirty = true;
+        requestDrawCanvas();
+    }
+
+    function requestDrawCanvas() {
+        if (isDrawScheduled) return;
+        isDrawScheduled = true;
+        requestAnimationFrame(() => {
+            isDrawScheduled = false;
+            drawCanvas();
+        });
+    }
+
     // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48, 54, 56) ====================
     // ==================== CẬP NHẬT 56: OVERRIDE WINDOW.ALERT ====================
     // Chuyển đổi toàn bộ lệnh alert() thành showCustomToastItem dạng warning, không tự tắt, có nút 'Tắt tất cả'
@@ -481,21 +501,21 @@
         document.getElementById('btn-clear-path')?.addEventListener('click', clearAllCanvasGraphics);
         document.getElementById('select-axis-x')?.addEventListener('change', (e) => {
             axisDirX = parseInt(e.target.value);
-            drawCanvas();
+            markStaticCacheDirty();
         });
         document.getElementById('select-axis-y')?.addEventListener('change', (e) => {
             axisDirY = parseInt(e.target.value);
-            drawCanvas();
+            markStaticCacheDirty();
         });
         document.getElementById('sys-mm-per-px')?.addEventListener('change', (e) => {
             const val = parseFloat(e.target.value) || 0.05;
             canvasScale = 1.0 / val;
-            drawCanvas();
+            markStaticCacheDirty();
         });
         document.getElementById('sys-mm-per-px')?.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value) || 0.05;
             canvasScale = 1.0 / val;
-            drawCanvas();
+            markStaticCacheDirty();
         });
     }
 
@@ -844,13 +864,13 @@
 
         updateInfoDisplays();
 
-        // Track pen trajectory on tool path view
+        // Track pen trajectory on tool path view (lọc khoảng cách > 0.25mm & giới hạn 2000 điểm)
         if (telemetry.wpos) {
             const currentWPos = { x: telemetry.wpos[0], y: telemetry.wpos[1] };
             if (penTrajectory.length === 0 || 
-                Math.hypot(currentWPos.x - penTrajectory[penTrajectory.length - 1].x, currentWPos.y - penTrajectory[penTrajectory.length - 1].y) > 0.3) {
+                Math.hypot(currentWPos.x - penTrajectory[penTrajectory.length - 1].x, currentWPos.y - penTrajectory[penTrajectory.length - 1].y) > 0.25) {
                 penTrajectory.push(currentWPos);
-                if (penTrajectory.length > 1000) penTrajectory.shift();
+                if (penTrajectory.length > 2000) penTrajectory.shift();
             }
         }
 
@@ -877,7 +897,7 @@
             document.querySelectorAll('#scenario-items-list .step-item').forEach(el => el.classList.remove('sim-active'));
         }
 
-        drawCanvas();
+        requestDrawCanvas();
     }
 
     function updateInfoDisplays() {
@@ -908,18 +928,18 @@
         // Ghi log ra Web Browser Console (DevTools console.log)
         const prefix = dir === 'out' ? '>' : (dir === 'in' ? '<' : '•');
         const displayMsg = text !== undefined ? `${prefix} ${text}` : dir;
-        if (dir === 'out') {
-            console.log(`%c[CNC OUT] ${displayMsg}`, 'color: #3b82f6; font-weight: bold;');
-        } else if (dir === 'in') {
-            console.log(`%c[CNC IN] ${displayMsg}`, 'color: #10b981; font-weight: bold;');
-        } else if (dir === 'error' || (typeof text === 'string' && (text.includes('error') || text.includes('Lỗi') || text.includes('ALARM')))) {
+        if (dir === 'error' || (typeof text === 'string' && (text.includes('error') || text.includes('Lỗi') || text.includes('ALARM')))) {
             console.error(`[CNC ERROR] ${displayMsg}`);
-        } else {
-            console.log(`[CNC LOG] ${displayMsg}`);
         }
 
         const out = document.getElementById('console-output');
         if (!out) return;
+
+        // Cập nhật 57: Giới hạn tối đa 200 dòng DOM trong console để chống tràn RAM & Layout Thrashing
+        while (out.children.length >= 200) {
+            out.removeChild(out.firstChild);
+        }
+
         const line = document.createElement('div');
         line.className = `log-line ${dir}`;
         line.innerText = displayMsg;
@@ -1116,7 +1136,7 @@
             const rect = canvas.parentElement.getBoundingClientRect();
             canvas.width = rect.width;
             canvas.height = rect.height;
-            drawCanvas();
+            markStaticCacheDirty();
         }
 
         window.addEventListener('resize', resize);
@@ -1151,9 +1171,11 @@
                     isDraggingCanvas = true;
                     canvasOffsetX = e.clientX - dragStartX;
                     canvasOffsetY = e.clientY - dragStartY;
+                    markStaticCacheDirty();
+                    return;
                 }
             }
-            drawCanvas();
+            requestDrawCanvas();
         });
 
         window.addEventListener('mouseup', (e) => {
@@ -1191,7 +1213,7 @@
 
         canvas.addEventListener('mouseleave', () => {
             mouseHoverPos = null;
-            drawCanvas();
+            requestDrawCanvas();
         });
 
         canvas.addEventListener('wheel', (e) => {
@@ -1199,7 +1221,7 @@
             const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
             canvasScale *= zoomFactor;
             canvasScale = Math.max(0.2, Math.min(canvasScale, 20.0));
-            drawCanvas();
+            markStaticCacheDirty();
         });
     }
 
@@ -1233,7 +1255,7 @@
         canvasScale = 1.0 / (mmPerPx > 0 ? mmPerPx : 0.05);
         canvasOffsetX = 0;
         canvasOffsetY = 0;
-        drawCanvas();
+        markStaticCacheDirty();
     }
 
     /**
@@ -1360,84 +1382,91 @@
         const fileInput = document.getElementById('image-file-input');
         if (fileInput) fileInput.value = '';
 
-        drawCanvas();
+        markStaticCacheDirty();
         appendConsoleLog('[TOOLPATH] Đã xóa toàn bộ đồ họa, nét vẽ và đường dẫn xem trước.', 'info');
     }
 
-    function drawCanvas() {
-        if (!canvas || !ctx) return;
-        const w = canvas.width;
-        const h = canvas.height;
+    function updateStaticCache(w, h, originX, originY) {
+        if (!staticCanvasCache) {
+            staticCanvasCache = document.createElement('canvas');
+        }
+        if (staticCanvasCache.width !== w || staticCanvasCache.height !== h) {
+            staticCanvasCache.width = w;
+            staticCanvasCache.height = h;
+        }
+        staticCtxCache = staticCanvasCache.getContext('2d');
+        const sCtx = staticCtxCache;
+        sCtx.clearRect(0, 0, w, h);
 
-        ctx.clearRect(0, 0, w, h);
-
-        // Origin at center of canvas + pan offset
-        const originX = w / 2 + canvasOffsetX;
-        const originY = h / 2 + canvasOffsetY;
+        function swx(x) { return originX + x * axisDirX * canvasScale; }
+        function swy(y) { return originY + y * axisDirY * canvasScale; }
 
         // ---- LAYER 0: BACKGROUND IMAGE ----
         if (bgState.visible && bgState.imageObj && bgState.imageLoaded) {
-            ctx.save();
+            sCtx.save();
             const bgCanvasX = originX + bgState.pos_x * axisDirX * canvasScale;
             const bgCanvasY = originY + bgState.pos_y * axisDirY * canvasScale;
 
-            ctx.translate(bgCanvasX, bgCanvasY);
+            sCtx.translate(bgCanvasX, bgCanvasY);
             if (bgState.rotation_angle) {
-                ctx.rotate((bgState.rotation_angle * Math.PI) / 180.0);
+                sCtx.rotate((bgState.rotation_angle * Math.PI) / 180.0);
             }
             const scaleX = (bgState.flip_x ? -1 : 1) * axisDirX;
             const scaleY = (bgState.flip_y ? -1 : 1) * axisDirY;
-            ctx.scale(scaleX, scaleY);
+            sCtx.scale(scaleX, scaleY);
 
             const bgWidthPx = bgState.width_mm * canvasScale;
             const bgHeightPx = bgState.height_mm * canvasScale;
-            ctx.drawImage(
+            sCtx.drawImage(
                 bgState.imageObj,
                 bgState.flip_x ? -bgWidthPx : 0,
                 bgState.flip_y ? -bgHeightPx : 0,
                 bgWidthPx,
                 bgHeightPx
             );
-            ctx.restore();
+            sCtx.restore();
         }
 
-        // ---- GRID ----
-        ctx.strokeStyle = 'rgba(30,41,59,0.8)';
-        ctx.lineWidth = 1;
+        // ---- GRID (BATCHED DRAWING) ----
         const gridMm = 10;
         const gridPx = gridMm * canvasScale;
 
-        // minor grid
-        ctx.strokeStyle = 'rgba(51,65,85,0.5)';
+        // Minor grid (10mm)
+        sCtx.strokeStyle = 'rgba(51,65,85,0.5)';
+        sCtx.lineWidth = 1;
+        sCtx.beginPath();
         const startGX = originX % gridPx;
         const startGY = originY % gridPx;
         for (let x = startGX; x < w; x += gridPx) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            sCtx.moveTo(x, 0); sCtx.lineTo(x, h);
         }
         for (let y = startGY; y < h; y += gridPx) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            sCtx.moveTo(0, y); sCtx.lineTo(w, y);
         }
+        sCtx.stroke();
 
-        // major grid (50mm)
+        // Major grid (50mm)
         const majorGridPx = 50 * canvasScale;
-        ctx.strokeStyle = 'rgba(71,85,105,0.6)';
-        ctx.lineWidth = 1;
+        sCtx.strokeStyle = 'rgba(71,85,105,0.6)';
+        sCtx.lineWidth = 1;
+        sCtx.beginPath();
         const startMX = originX % majorGridPx;
         const startMY = originY % majorGridPx;
         for (let x = startMX; x < w; x += majorGridPx) {
-            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+            sCtx.moveTo(x, 0); sCtx.lineTo(x, h);
         }
         for (let y = startMY; y < h; y += majorGridPx) {
-            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+            sCtx.moveTo(0, y); sCtx.lineTo(w, y);
         }
+        sCtx.stroke();
 
-        // Draw coordinate numbers on major grid lines (50mm steps)
-        ctx.font = '9px Outfit, sans-serif';
-        ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+        // Coordinate numbers on major grid lines
+        sCtx.font = '9px Outfit, sans-serif';
+        sCtx.fillStyle = 'rgba(148, 163, 184, 0.7)';
         
         // X grid numbers
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
+        sCtx.textAlign = 'center';
+        sCtx.textBaseline = 'top';
         const minMmX = Math.floor((-originX) / (axisDirX * canvasScale) / 50) * 50;
         const maxMmX = Math.ceil((w - originX) / (axisDirX * canvasScale) / 50) * 50;
         const startXmm = Math.min(minMmX, maxMmX);
@@ -1447,13 +1476,13 @@
             const px = originX + mm * axisDirX * canvasScale;
             if (px >= 0 && px <= w) {
                 const labelY = Math.min(Math.max(originY + 4, 4), h - 14);
-                ctx.fillText(`${mm}`, px, labelY);
+                sCtx.fillText(`${mm}`, px, labelY);
             }
         }
 
         // Y grid numbers
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'middle';
+        sCtx.textAlign = 'right';
+        sCtx.textBaseline = 'middle';
         const minMmY = Math.floor((-originY) / (axisDirY * canvasScale) / 50) * 50;
         const maxMmY = Math.ceil((h - originY) / (axisDirY * canvasScale) / 50) * 50;
         const startYmm = Math.min(minMmY, maxMmY);
@@ -1463,79 +1492,72 @@
             const py = originY + mm * axisDirY * canvasScale;
             if (py >= 0 && py <= h) {
                 const labelX = Math.min(Math.max(originX - 6, 24), w - 4);
-                ctx.fillText(`${mm}`, labelX, py);
+                sCtx.fillText(`${mm}`, labelX, py);
             }
         }
 
         // ---- COORDINATE AXES ----
-        ctx.lineWidth = 2.5;
+        sCtx.lineWidth = 2.5;
         const axisLen = 60;
         // X Axis (Red)
         const endXx = originX + axisDirX * axisLen;
-        ctx.strokeStyle = '#ef4444';
-        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(endXx, originY); ctx.stroke();
-        // arrowhead X
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.moveTo(endXx, originY);
-        ctx.lineTo(endXx - axisDirX * 8, originY - 4);
-        ctx.lineTo(endXx - axisDirX * 8, originY + 4);
-        ctx.fill();
-        ctx.font = 'bold 11px Outfit, sans-serif';
-        ctx.fillText('X', endXx + axisDirX * 4, originY + 4);
+        sCtx.strokeStyle = '#ef4444';
+        sCtx.beginPath(); sCtx.moveTo(originX, originY); sCtx.lineTo(endXx, originY); sCtx.stroke();
+        // Arrowhead X
+        sCtx.fillStyle = '#ef4444';
+        sCtx.beginPath();
+        sCtx.moveTo(endXx, originY);
+        sCtx.lineTo(endXx - axisDirX * 8, originY - 4);
+        sCtx.lineTo(endXx - axisDirX * 8, originY + 4);
+        sCtx.fill();
+        sCtx.font = 'bold 11px Outfit, sans-serif';
+        sCtx.fillText('X', endXx + axisDirX * 4, originY + 4);
 
         // Y Axis (Green)
         const endYy = originY + axisDirY * axisLen;
-        ctx.strokeStyle = '#22c55e';
-        ctx.beginPath(); ctx.moveTo(originX, originY); ctx.lineTo(originX, endYy); ctx.stroke();
-        // arrowhead Y
-        ctx.fillStyle = '#22c55e';
-        ctx.beginPath();
-        ctx.moveTo(originX, endYy);
-        ctx.lineTo(originX - 4, endYy - axisDirY * 8);
-        ctx.lineTo(originX + 4, endYy - axisDirY * 8);
-        ctx.fill();
-        ctx.fillText('Y', originX - 14, endYy + axisDirY * 4);
+        sCtx.strokeStyle = '#22c55e';
+        sCtx.beginPath(); sCtx.moveTo(originX, originY); sCtx.lineTo(originX, endYy); sCtx.stroke();
+        // Arrowhead Y
+        sCtx.fillStyle = '#22c55e';
+        sCtx.beginPath();
+        sCtx.moveTo(originX, endYy);
+        sCtx.lineTo(originX - 4, endYy - axisDirY * 8);
+        sCtx.lineTo(originX + 4, endYy - axisDirY * 8);
+        sCtx.fill();
+        sCtx.fillText('Y', originX - 14, endYy + axisDirY * 4);
 
         // Work Origin dot
-        ctx.fillStyle = '#38bdf8';
-        ctx.beginPath(); ctx.arc(originX, originY, 6, 0, Math.PI * 2); ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(56,189,248,0.9)';
-        ctx.font = '10px Outfit, sans-serif';
-        ctx.fillText('(0,0)', originX + 8, originY + 14);
+        sCtx.fillStyle = '#38bdf8';
+        sCtx.beginPath(); sCtx.arc(originX, originY, 6, 0, Math.PI * 2); sCtx.fill();
+        sCtx.strokeStyle = '#ffffff';
+        sCtx.lineWidth = 1.5;
+        sCtx.stroke();
+        sCtx.fillStyle = 'rgba(56,189,248,0.9)';
+        sCtx.font = '10px Outfit, sans-serif';
+        sCtx.fillText('(0,0)', originX + 8, originY + 14);
 
-        // ---- HELPER: world → canvas ----
-        function wx(x) { return originX + x * axisDirX * canvasScale; }
-        function wy(y) { return originY + y * axisDirY * canvasScale; }
-
-        // ---- DRAW PHYSICAL WORK BOUNDS FRAME (If 4 corners are set) ----
+        // ---- DRAW PHYSICAL WORK BOUNDS FRAME ----
         if (cncBounds && cncBounds.tl && cncBounds.tr && cncBounds.br && cncBounds.bl) {
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(wx(cncBounds.tl.x), wy(cncBounds.tl.y));
-            ctx.lineTo(wx(cncBounds.tr.x), wy(cncBounds.tr.y));
-            ctx.lineTo(wx(cncBounds.br.x), wy(cncBounds.br.y));
-            ctx.lineTo(wx(cncBounds.bl.x), wy(cncBounds.bl.y));
-            ctx.closePath();
+            sCtx.save();
+            sCtx.beginPath();
+            sCtx.moveTo(swx(cncBounds.tl.x), swy(cncBounds.tl.y));
+            sCtx.lineTo(swx(cncBounds.tr.x), swy(cncBounds.tr.y));
+            sCtx.lineTo(swx(cncBounds.br.x), swy(cncBounds.br.y));
+            sCtx.lineTo(swx(cncBounds.bl.x), swy(cncBounds.bl.y));
+            sCtx.closePath();
 
-            // Fill translucent area
-            ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
-            ctx.fill();
+            sCtx.fillStyle = 'rgba(239, 68, 68, 0.08)';
+            sCtx.fill();
 
-            // Dashed outline
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 1.8;
-            ctx.setLineDash([6, 4]);
-            ctx.stroke();
+            sCtx.strokeStyle = '#ef4444';
+            sCtx.lineWidth = 1.8;
+            sCtx.setLineDash([6, 4]);
+            sCtx.stroke();
 
-            // Corner labels & markers
-            ctx.fillStyle = '#ef4444';
-            ctx.font = 'bold 10px Outfit, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
+            sCtx.fillStyle = '#ef4444';
+            sCtx.font = 'bold 10px Outfit, sans-serif';
+            sCtx.textAlign = 'center';
+            sCtx.textBaseline = 'middle';
 
             const corners = [
                 { name: 'TL', pt: cncBounds.tl, dx: -12, dy: -8 },
@@ -1545,25 +1567,104 @@
             ];
 
             corners.forEach(c => {
-                const cx = wx(c.pt.x);
-                const cy = wy(c.pt.y);
-                ctx.beginPath();
-                ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillText(c.name, cx + c.dx, cy + c.dy);
+                const cx = swx(c.pt.x);
+                const cy = swy(c.pt.y);
+                sCtx.beginPath();
+                sCtx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+                sCtx.fill();
+                sCtx.fillText(c.name, cx + c.dx, cy + c.dy);
             });
 
-            ctx.restore();
+            sCtx.restore();
         }
 
-        // ---- DRAW SCENARIO PATH SEGMENTS ----
+        // ---- DRAW FONT GCODE PREVIEW PATHS (BATCHED SINGLE STROKE) ----
+        if (fontPreviewPaths && fontPreviewPaths.length > 0) {
+            sCtx.save();
+            sCtx.strokeStyle = '#38bdf8';
+            sCtx.lineWidth = 2.5;
+            sCtx.setLineDash([]);
+            sCtx.beginPath();
+            const ox = fontStartOffset.x;
+            const oy = fontStartOffset.y;
+            for (let p = 0; p < fontPreviewPaths.length; p++) {
+                const path = fontPreviewPaths[p];
+                if (!path || path.length < 2) continue;
+                sCtx.moveTo(swx(path[0][0] + ox), swy(path[0][1] + oy));
+                for (let i = 1; i < path.length; i++) {
+                    sCtx.lineTo(swx(path[i][0] + ox), swy(path[i][1] + oy));
+                }
+            }
+            sCtx.stroke();
+            sCtx.restore();
+        }
+
+        // ---- DRAW IMAGE GCODE PREVIEW SEGMENTS (BATCHED SINGLE STROKE - 200x FASTER) ----
+        if (imageSegments && imageSegments.length > 0) {
+            sCtx.save();
+            sCtx.strokeStyle = '#f59e0b';
+            sCtx.lineWidth = 1.8;
+            sCtx.setLineDash([]);
+            sCtx.beginPath();
+            const ox = imageStartOffset.x;
+            const oy = imageStartOffset.y;
+            for (let i = 0; i < imageSegments.length; i++) {
+                const seg = imageSegments[i];
+                sCtx.moveTo(swx(seg.x1 + ox), swy(seg.y1 + oy));
+                sCtx.lineTo(swx(seg.x2 + ox), swy(seg.y2 + oy));
+            }
+            sCtx.stroke();
+            sCtx.restore();
+        }
+
+        // ---- DRAW BACKGROUND VECTORIZED PREVIEW PATHS (BATCHED) ----
+        if (bgState.treat_as_drawable && bgState.previewPaths && bgState.previewPaths.length > 0) {
+            sCtx.save();
+            sCtx.strokeStyle = '#a855f7';
+            sCtx.lineWidth = 1.6;
+            sCtx.setLineDash([]);
+            sCtx.beginPath();
+            for (let p = 0; p < bgState.previewPaths.length; p++) {
+                const path = bgState.previewPaths[p];
+                if (!path || path.length < 2) continue;
+                sCtx.moveTo(swx(path[0][0]), swy(path[0][1]));
+                for (let i = 1; i < path.length; i++) {
+                    sCtx.lineTo(swx(path[i][0]), swy(path[i][1]));
+                }
+            }
+            sCtx.stroke();
+            sCtx.restore();
+        }
+
+        staticCacheDirty = false;
+    }
+
+    function drawCanvas() {
+        if (!canvas || !ctx) return;
+        const w = canvas.width;
+        const h = canvas.height;
+
+        const originX = w / 2 + canvasOffsetX;
+        const originY = h / 2 + canvasOffsetY;
+
+        function wx(x) { return originX + x * axisDirX * canvasScale; }
+        function wy(y) { return originY + y * axisDirY * canvasScale; }
+
+        // Render static layers to Offscreen Canvas Cache only when dirty
+        if (staticCacheDirty || !staticCanvasCache || staticCanvasCache.width !== w || staticCanvasCache.height !== h) {
+            updateStaticCache(w, h, originX, originY);
+        }
+
+        // Fast Clear and Draw Cached Static Bitmap (takes < 0.1ms!)
+        ctx.clearRect(0, 0, w, h);
+        ctx.drawImage(staticCanvasCache, 0, 0);
+
+        // ---- DRAW SCENARIO PATH SEGMENTS (BATCHED BY TYPE) ----
         const segs = computeScenarioPathSegments();
         const isRunningOrSimulating = simIsRunning || isSimulating || telemetry.streaming || isScenarioLooping;
 
-        // Determine range of steps between set_begin and set_end
         let beginStepIdx = 1;
         let endStepIdx = activeScenario.actions.length;
-
         const firstBegin = activeScenario.actions.findIndex(a => a.type === 'set_begin');
         if (firstBegin !== -1) {
             beginStepIdx = firstBegin + 1;
@@ -1578,31 +1679,62 @@
             }
         }
 
-        // Pass 1: Draw scenario lines ONLY when running or simulating
-        if (isRunningOrSimulating) {
+        if (isRunningOrSimulating && segs.length > 0) {
+            const rapids = [];
+            const cuts = [];
+            const swipes = [];
+            const others = [];
+
             segs.forEach(seg => {
                 if (seg.pts.length < 2) return;
-                // Only draw line if segment is within set_begin and set_end range
                 if (seg.stepIndex < beginStepIdx || seg.stepIndex > endStepIdx) return;
+                if (seg.type === 'rapid') rapids.push(seg);
+                else if (seg.type === 'cut') cuts.push(seg);
+                else if (seg.type === 'swipe') swipes.push(seg);
+                else others.push(seg);
+            });
 
+            if (rapids.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
                 ctx.beginPath();
-                ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
-                for (let i = 1; i < seg.pts.length; i++) {
-                    ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
-                }
-                if (seg.type === 'rapid') {
-                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.9)'; // Vivid rapid line
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([6, 4]);
-                } else if (seg.type === 'cut') {
-                    ctx.strokeStyle = '#f97316'; // Clear vivid orange line
-                    ctx.lineWidth = 3.5;
-                    ctx.setLineDash([]);
-                } else if (seg.type === 'swipe') {
-                    ctx.strokeStyle = '#eab308'; // Clear vivid yellow line
-                    ctx.lineWidth = 4;
-                    ctx.setLineDash([]);
-                    // Arrowhead at end
+                rapids.forEach(seg => {
+                    ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
+                    for (let i = 1; i < seg.pts.length; i++) ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (cuts.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = '#f97316';
+                ctx.lineWidth = 3.5;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                cuts.forEach(seg => {
+                    ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
+                    for (let i = 1; i < seg.pts.length; i++) ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
+                });
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            if (swipes.length > 0) {
+                ctx.save();
+                ctx.strokeStyle = '#eab308';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([]);
+                ctx.beginPath();
+                swipes.forEach(seg => {
+                    ctx.moveTo(wx(seg.pts[0].x), wy(seg.pts[0].y));
+                    for (let i = 1; i < seg.pts.length; i++) ctx.lineTo(wx(seg.pts[i].x), wy(seg.pts[i].y));
+                });
+                ctx.stroke();
+                // Draw arrowheads
+                swipes.forEach(seg => {
                     const p0 = seg.pts[seg.pts.length - 2];
                     const p1 = seg.pts[seg.pts.length - 1];
                     const angle = Math.atan2(-(p1.y - p0.y), p1.x - p0.x);
@@ -1614,18 +1746,13 @@
                     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-16, -6); ctx.lineTo(-16, 6); ctx.closePath();
                     ctx.fill();
                     ctx.restore();
-                } else {
-                    ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([3, 3]);
-                }
-                ctx.stroke();
-                ctx.setLineDash([]);
-            });
+                });
+                ctx.restore();
+            }
         }
 
-        // Pass 2: Draw action nodes with labels (Always drawn)
-        const drawnPoints = new Map(); // track label positions
+        // Pass 2: Draw action nodes with labels
+        const drawnPoints = new Map();
         segs.forEach(seg => {
             const pt = seg.pts[seg.pts.length - 1];
             const pxX = wx(pt.x), pxY = wy(pt.y);
@@ -1645,14 +1772,12 @@
             else if (seg.type === 'rapid') { dotColor = '#64748b'; dotRadius = 5; }
             else if (seg.type === 'cut') { dotColor = '#fb923c'; dotRadius = 6; }
 
-            // Draw node dot
             ctx.fillStyle = dotColor;
             ctx.beginPath(); ctx.arc(pxX, pxY, dotRadius, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
 
-            // Draw step number label
             if (!drawnPoints.has(key)) {
                 drawnPoints.set(key, true);
                 const labelX = pxX + dotRadius + 3;
@@ -1665,73 +1790,22 @@
             }
         });
 
-        // ---- DRAW LIVE PEN TRAJECTORY (Mờ nhạt / Faint line) ----
+        // ---- DRAW LIVE PEN TRAJECTORY (BATCHED) ----
         if (penTrajectory.length > 1) {
-            ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)'; // Faint dim tracking line
-            ctx.lineWidth = 1;
-            ctx.setLineDash([]);
-            ctx.beginPath();
-            penTrajectory.forEach((pt, i) => {
-                const px = wx(pt.x);
-                const py = wy(pt.y);
-                if (i === 0) ctx.moveTo(px, py);
-                else ctx.lineTo(px, py);
-            });
-            ctx.stroke();
-        }
-
-        // ---- DRAW FONT GCODE PREVIEW PATHS ----
-        if (fontPreviewPaths && fontPreviewPaths.length > 0) {
             ctx.save();
-            ctx.strokeStyle = '#38bdf8'; // Vivid Cyan
-            ctx.lineWidth = 2.5;
-            ctx.setLineDash([]);
-            fontPreviewPaths.forEach(path => {
-                if (!path || path.length < 2) return;
-                ctx.beginPath();
-                ctx.moveTo(wx(path[0][0] + fontStartOffset.x), wy(path[0][1] + fontStartOffset.y));
-                for (let i = 1; i < path.length; i++) {
-                    ctx.lineTo(wx(path[i][0] + fontStartOffset.x), wy(path[i][1] + fontStartOffset.y));
-                }
-                ctx.stroke();
-            });
-            ctx.restore();
-        }
-
-        // ---- DRAW IMAGE GCODE PREVIEW SEGMENTS ----
-        if (imageSegments && imageSegments.length > 0) {
-            ctx.save();
-            ctx.strokeStyle = '#f59e0b'; // Amber / Golden Yellow
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
             ctx.lineWidth = 1.8;
             ctx.setLineDash([]);
-            imageSegments.forEach(seg => {
-                ctx.beginPath();
-                ctx.moveTo(wx(seg.x1 + imageStartOffset.x), wy(seg.y1 + imageStartOffset.y));
-                ctx.lineTo(wx(seg.x2 + imageStartOffset.x), wy(seg.y2 + imageStartOffset.y));
-                ctx.stroke();
-            });
+            ctx.beginPath();
+            ctx.moveTo(wx(penTrajectory[0].x), wy(penTrajectory[0].y));
+            for (let i = 1; i < penTrajectory.length; i++) {
+                ctx.lineTo(wx(penTrajectory[i].x), wy(penTrajectory[i].y));
+            }
+            ctx.stroke();
             ctx.restore();
         }
 
-        // ---- DRAW BACKGROUND VECTORIZED PREVIEW PATHS ----
-        if (bgState.treat_as_drawable && bgState.previewPaths && bgState.previewPaths.length > 0) {
-            ctx.save();
-            ctx.strokeStyle = '#a855f7'; // Purple
-            ctx.lineWidth = 1.6;
-            ctx.setLineDash([]);
-            bgState.previewPaths.forEach(path => {
-                if (path.length < 2) return;
-                ctx.beginPath();
-                ctx.moveTo(wx(path[0][0]), wy(path[0][1]));
-                for (let i = 1; i < path.length; i++) {
-                    ctx.lineTo(wx(path[i][0]), wy(path[i][1]));
-                }
-                ctx.stroke();
-            });
-            ctx.restore();
-        }
-
-        // ---- DRAW PEN HEAD POSITION ----
+        // ---- DRAW PEN HEAD POSITION & COORDINATES ----
         let headX, headY;
         if (simIsRunning) {
             headX = wx(simHeadPos.x);
@@ -1741,20 +1815,20 @@
             headY = wy(telemetry.wpos[1]);
         }
         if (headX !== undefined) {
-            // Outer glow
-            const grad = ctx.createRadialGradient(headX, headY, 2, headX, headY, 12);
-            grad.addColorStop(0, 'rgba(245,158,11,0.9)');
+            // Outer glowing aura
+            const grad = ctx.createRadialGradient(headX, headY, 2, headX, headY, 14);
+            grad.addColorStop(0, 'rgba(245,158,11,0.95)');
             grad.addColorStop(1, 'rgba(245,158,11,0)');
             ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(headX, headY, 12, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(headX, headY, 14, 0, Math.PI * 2); ctx.fill();
             // Core dot
             ctx.fillStyle = '#f59e0b';
             ctx.beginPath(); ctx.arc(headX, headY, 6, 0, Math.PI * 2); ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
-            // Cross-hair
-            ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+            // Crosshair
+            ctx.strokeStyle = 'rgba(255,255,255,0.75)';
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(headX - 12, headY); ctx.lineTo(headX + 12, headY);
@@ -1763,13 +1837,40 @@
             // Coordinate label
             const lx = simIsRunning ? simHeadPos.x : (telemetry.wpos ? telemetry.wpos[0] : 0);
             const ly = simIsRunning ? simHeadPos.y : (telemetry.wpos ? telemetry.wpos[1] : 0);
-            const labelStr = `${lx.toFixed(1)}, ${ly.toFixed(1)}`;
+            const lz = (telemetry.wpos && telemetry.wpos[2] !== undefined) ? telemetry.wpos[2] : 0;
+            const labelStr = `X: ${lx.toFixed(1)} | Y: ${ly.toFixed(1)} | Z: ${lz.toFixed(1)}`;
             ctx.font = 'bold 10px Outfit, sans-serif';
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
-            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = 'rgba(0, 0, 0, 0.85)';
+            ctx.lineWidth = 3;
             ctx.strokeText(labelStr, headX + 14, headY - 11);
             ctx.fillStyle = '#fbbf24';
             ctx.fillText(labelStr, headX + 14, headY - 11);
+        }
+
+        // Real-time G-code Streaming Progress Banner (Cập nhật 57)
+        if (telemetry.streaming && telemetry.gcode_total) {
+            const pct = Math.round((telemetry.gcode_index / telemetry.gcode_total) * 100) || 0;
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1;
+            const bannerW = 230, bannerH = 38;
+            const bx = w - bannerW - 15, by = 15;
+            ctx.beginPath();
+            ctx.roundRect(bx, by, bannerW, bannerH, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.font = 'bold 11px Outfit, sans-serif';
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`🚀 Đang chạy: ${pct}% (${telemetry.gcode_index}/${telemetry.gcode_total})`, bx + 10, by + 16);
+
+            // Progress bar track & fill
+            ctx.fillStyle = 'rgba(51, 65, 85, 0.8)';
+            ctx.fillRect(bx + 10, by + 23, bannerW - 20, 6);
+            ctx.fillStyle = '#22c55e';
+            ctx.fillRect(bx + 10, by + 23, (bannerW - 20) * (pct / 100), 6);
+            ctx.restore();
         }
 
         // Update pixel scale ratio overlay text (1 px = X mm)
@@ -2656,7 +2757,7 @@
                     if (fontInfoBox) {
                         fontInfoBox.innerText = `Kích thước: ${data.actual_w_mm} x ${data.actual_h_mm} mm | Đường nét: ${data.total_paths} | Dòng G-code: ${data.lines_count}`;
                     }
-                    drawCanvas();
+                    markStaticCacheDirty();
                 } else {
                     if (fontInfoBox) fontInfoBox.innerText = `Lỗi: ${data.message}`;
                 }
@@ -3109,7 +3210,7 @@
                     if (infoBox) {
                         infoBox.innerText = `Phân đoạn: ${imageSegments.length} | Dòng G-code: ${imageGcode.split('\n').length}`;
                     }
-                    drawCanvas();
+                    markStaticCacheDirty();
                 } else {
                     if (infoBox) infoBox.innerText = `Lỗi: ${data.message || 'Không thể chuyển đổi'}`;
                 }
@@ -3774,7 +3875,7 @@
                 infoLabel.innerText = `${filename || 'Background'} (${img.naturalWidth} x ${img.naturalHeight} px)`;
             }
 
-            drawCanvas();
+            markStaticCacheDirty();
         };
         img.src = dataUrl;
     }
@@ -3893,7 +3994,7 @@
             }
 
             await saveBackgroundSettingsToSystem(mm_per_px);
-            drawCanvas();
+            markStaticCacheDirty();
             appendConsoleLog('[BACKGROUND] Đã cập nhật tỷ lệ pixel/mm thành công: 1px = ' + mm_per_px.toFixed(6) + ' mm', 'info');
         });
     }
@@ -3901,7 +4002,7 @@
     // Real CNC Position & Rotation Controls
     document.getElementById('bg-visible-checkbox')?.addEventListener('change', (e) => {
         bgState.visible = e.target.checked;
-        drawCanvas();
+        markStaticCacheDirty();
         saveBackgroundSettingsToSystem();
     });
 
@@ -3914,7 +4015,7 @@
                 bgState.pos_x = parseFloat(document.getElementById('bg-pos-x')?.value || '0');
                 bgState.pos_y = parseFloat(document.getElementById('bg-pos-y')?.value || '0');
                 bgState.rotation_angle = parseFloat(document.getElementById('bg-rotation-angle')?.value || '0');
-                drawCanvas();
+                markStaticCacheDirty();
             });
             el.addEventListener('change', () => saveBackgroundSettingsToSystem());
         }
@@ -3926,7 +4027,7 @@
             el.addEventListener('change', (e) => {
                 bgState.flip_x = document.getElementById('bg-flip-x')?.checked || false;
                 bgState.flip_y = document.getElementById('bg-flip-y')?.checked || false;
-                drawCanvas();
+                markStaticCacheDirty();
                 saveBackgroundSettingsToSystem();
             });
         }
@@ -3940,7 +4041,7 @@
             if (bgState.treat_as_drawable) drawableOpts.classList.remove('hidden');
             else drawableOpts.classList.add('hidden');
         }
-        drawCanvas();
+        markStaticCacheDirty();
         saveBackgroundSettingsToSystem();
     });
 

@@ -1086,7 +1086,11 @@ async def gcode_streamer_task():
         try:
             state.sent_buffer_lengths.append(line_len)
             await safe_write_serial((clean_line + "\n").encode())
-            await broadcast({"type": "log", "direction": "out", "content": clean_line})
+            
+            # Cập nhật 57: Tối ưu băng thông WebSocket khi stream file G-code lớn (tránh nghẽn hàng đợi)
+            total_lines = len(state.stream_gcode_lines)
+            if total_lines <= 200 or state.gcode_index % 10 == 0 or any(kw in clean_line for kw in ["M3", "M5", "G0", "G10", "G28", "G90", "G91"]):
+                await broadcast({"type": "log", "direction": "out", "content": clean_line})
             
             state.gcode_index += 1
             if state.gcode_index % 5 == 0:

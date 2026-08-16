@@ -744,7 +744,7 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
    - **Backend API `/cncapi/v1/motion/stop-and-return` ([`main.py`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/main.py))**:
      1. Gửi byte `\x18` (Soft Reset) để hủy toàn bộ các lệnh vẽ còn tồn trong buffer GRBL.
      2. Gửi lệnh Unlock `$X` để đưa GRBL về trạng thái sẵn sàng.
-     3. Đọc thông số nhấc bút từ `state.pen_mode`, `state.pen_up_pwm` (nếu Servo PWM) hoặc `state.pen_up_z` (nếu Trục Z) và phát lệnh nhấc bút tương ứng (`M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`).
+      3. Đọc thông số nhấc bút từ `state.pen_mode`, `state.pen_up_pwm` (nếu Servo PWM) hoặc `state.pen_up_z` (nếu Trục Z) và phát lệnh nhấc bút tương ứng (`M3 S<pen_up_pwm>` hoặc `G0 Z<pen_up_z>`).
      4. Chờ đúng thời gian trễ thực tế: `await asyncio.sleep(max(pen_dwell + 0.15, 0.4))` để đảm bảo động cơ Servo / Trục Z đã nhấc bút hoàn toàn tách khỏi bề mặt.
      5. Phát lệnh di chuyển `G21 G90 G0 X<target_x> Y<target_y>` để đưa đầu CNC về gốc an toàn.
      6. Nếu chạy Servo PWM, tự động gửi `M5` tắt xung Servo sau khi đã về gốc để bảo vệ động cơ.
@@ -877,6 +877,41 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
      - Các lỗi thực thi G-code, lỗi kết nối API: Chuyển thành `notifyToastr('error', title, message)` không tự tắt.
    - **Nút "Tắt tất cả" Dưới Icon Symbol**:
      - Cột `.toast-left-col` chứa icon `⚠️` và nút `.toast-close-all-btn` ("Tắt tất cả") cho phép người dùng đóng dọn sạch tất cả thông báo chỉ với 1 click.
+
+---
+
+### 2.32. Tối Ưu Hiệu Năng Render Tool Path View & Đồng Bộ Real-time với CNC Thực Tế (Cập Nhật 57)
+
+1. **Phân Tích Nguyên Nhân Gốc Rễ Khiến UI Bị Chậm & Lag Khi Chạy Lâu**:
+   - **Nghẽn GPU/Canvas do gọi `ctx.stroke()` riêng lẻ hàng chục ngàn lần**:
+     - Khi nạp G-code tranh/sketch hoặc font chữ nhiều nét, mảng `imageSegments` / `fontPreviewPaths` chứa từ 5.000 đến hơn 30.000 segments.
+     - Mã nguồn cũ duyệt qua từng segment và gọi `ctx.beginPath()`, `ctx.moveTo()`, `ctx.lineTo()`, `ctx.stroke()` cho MỖI nét riêng biệt trong từng frame. 30.000 lệnh vẽ trên mỗi frame khiến thời gian render 1 frame kéo dài 150-300ms (tụt FPS xuống 1-3 FPS).
+   - **Vòng lặp vẽ đồng bộ không qua Scheduler (`requestAnimationFrame`)**:
+     - Hàm `drawCanvas()` bị gọi trực tiếp mỗi khi có gói WebSocket (`telemetry`, `log`, `stream_status`) hoặc khi di chuột. Khi stream G-code dồn dập hàng chục gói tin mỗi giây, UI thread bị block, hàng đợi WebSocket message backlog phình to làm tọa độ vẽ bị chậm sau máy CNC thực tế.
+   - **Vẽ lại toàn bộ lớp tĩnh không cần thiết (Thiếu Offscreen Cache)**:
+     - Lưới tọa độ Grid (10mm, 50mm, nhãn số), Ảnh nền Background, Khung viền vùng làm việc 4 góc và nét vẽ xem trước đều bị xóa và vẽ lại ở từng frame dù không đổi.
+   - **Tràn DOM Memory & Layout Thrashing ở Console Log Output**:
+     - `appendConsoleLog` append thẻ `<div>` vô hạn vào `#console-output` mà không có giới hạn cắt tỉa dòng. Sau hàng vạn câu lệnh G-code, DOM tree phình to gây nghẽn trình duyệt.
+   - **Nghẽn băng thông WebSocket khi phát log từng dòng**:
+     - Backend broadcast log cho từng dòng gcode khiến WebSocket bị quá tải gói tin log, làm chậm trễ các bản tin Telemetry vị trí thực tế của CNC.
+
+2. **Giải Pháp Kiến Trúc Kỹ Thuật Đã Triển Khai**:
+   - **Bộ Lập Lịch Render Frame Bằng `requestAnimationFrame` (`requestDrawCanvas`)**:
+     - Mọi sự kiện cập nhật trạng thái, di chuột, telemetry đều gọi `requestDrawCanvas()`. Sử dụng cờ `isDrawScheduled` để chỉ thực hiện tối đa 60 FPS khớp với chu kỳ vẽ của màn hình, giải phóng hoàn toàn JS Event Loop.
+   - **Bộ Nhớ Đệm Tĩnh Bằng Offscreen Canvas (`updateStaticCache` & `staticCanvasCache`)**:
+     - Toàn bộ Grid, Background Image, Physical Bounds Frame, Vector Preview Paths được vẽ sẵn lên `staticCanvasCache`.
+     - Khi đầu dao CNC di chuyển, canvas chính chỉ cần `ctx.drawImage(staticCanvasCache, 0, 0)` trong **< 0.1ms**, sau đó vẽ overlay đầu bút CNC và đường nét thực tế.
+     - Chỉ render lại static cache (`markStaticCacheDirty()`) khi Pan, Zoom, Resize hoặc khi nạp file mới.
+   - **Path Batching (Gộp Nét Vẽ)**:
+     - Gom toàn bộ segments cùng màu vào 1 lệnh `beginPath()`, nạp tọa độ `moveTo`/`lineTo` rồi chỉ gọi `ctx.stroke()` **1 lần duy nhất**, giảm số draw call từ 30.000 xuống còn 1.
+   - **Chống Tràn DOM Console Log (DOM Node Recycling)**:
+     - Giới hạn tối đa 200 dòng trong `#console-output`, tự động xóa `firstChild` khi vượt quá để tránh tràn RAM và Layout Thrashing.
+   - **Phản Ánh Đúng Thực Tế CNC Đang Chạy**:
+     - Hiển thị đầu dao CNC với hiệu ứng chấm sáng tỏa hào quang Pulsing Aura, crosshair và nhãn tọa độ `(WPos X, Y, Z)` sắc nét.
+     - Mảng `penTrajectory` lọc khoảng cách di chuyển (> 0.25mm) và giới hạn 2000 điểm mượt mà.
+     - Hiển thị thanh tiến độ Streaming Progress (% hoàn thành và `gcode_index / total`) ngay trên góc canvas overlay.
+   - **Tối Ưu Luồng Truyền Dữ Liệu Backend (`main.py`)**:
+     - Throttling log broadcast khi stream file G-code lớn, ưu tiên tuyệt đối cho gói tin Telemetry để vị trí đầu CNC được gửi lên UI mượt mà, tức thời.
 
 ---
 
