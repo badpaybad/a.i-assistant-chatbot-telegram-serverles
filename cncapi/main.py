@@ -1498,10 +1498,21 @@ async def send_command(req: CommandRequest):
                         await broadcast({"type": "log", "direction": "out", "content": cmd_set_wco})
                         await asyncio.sleep(0.1)
 
+                        # Tái kích hoạt trạng thái nhấc bút ngay sau khi hoàn tất chu kỳ Homing
+                        post_pen_cmds = []
+                        if state.pen_mode == "spindle-pwm":
+                            post_pen_cmds.append(f"M3 S{state.pen_up_pwm}")
+                        elif state.pen_mode == "z-axis":
+                            post_pen_cmds.append(f"G0 Z{state.pen_up_z:.2f}")
+
+                        for pcmd in post_pen_cmds:
+                            await safe_write_serial((pcmd + "\n").encode())
+                            await broadcast({"type": "log", "direction": "out", "content": pcmd})
+
                         save_settings({"work_origin": state.work_origin, "workpiece_origin": state.workpiece_origin, "home_set": state.home_set})
                         await send_telemetry()
 
-                        results.extend([cmd for cmd in pen_up_cmds + [homing_cmd, "$X", cmd_set_wco] if cmd])
+                        results.extend([cmd for cmd in pen_up_cmds + [homing_cmd, "$X", cmd_set_wco] + post_pen_cmds if cmd])
                     finally:
                         state.is_homing = False
                     continue

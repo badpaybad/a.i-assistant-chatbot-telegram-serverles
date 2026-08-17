@@ -92,13 +92,37 @@ uint8_t spindle_get_state()
 }
 
 
-// Disables the spindle and sets PWM output to zero when PWM variable spindle speed is enabled.
+// =========================================================================================
+// [SERVO PEN PLOTTER MODIFICATION - CÁCH 1]
+// Định nghĩa giá trị PWM nhấc bút mặc định (pen-up). 
+// Khớp với giá trị 'pen_up_pwm' (mặc định là 17) trong hệ thống calibration_settings.json.
+// =========================================================================================
+#ifndef SERVO_PEN_UP_PWM
+  #define SERVO_PEN_UP_PWM 17 // Giá trị xung PWM nhấc bút mặc định
+#endif
+
+// Disables the spindle and sets PWM output to zero (or pen-up position for servo pen plotters).
 // Called by various main program and ISR routines. Keep routine small, fast, and efficient.
 // Called by spindle_init(), spindle_set_speed(), spindle_set_state(), and mc_reset().
 void spindle_stop()
 {
   #ifdef VARIABLE_SPINDLE
-    SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+    // -------------------------------------------------------------------------------------
+    // [CODE GỐC - CNC Spindle thông thường]:
+    // Tắt hoàn toàn bộ tạo xung PWM (Output voltage = 0V).
+    // Gây ra hiện tượng: Servo mất xung điều khiển -> mất lực giữ -> rơi/sập đầu bút xuống khi Homing ($H) hoặc Reset.
+    //
+    // SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+    // -------------------------------------------------------------------------------------
+
+    // -------------------------------------------------------------------------------------
+    // [CODE MỚI - Máy vẽ Servo Pen Plotter]:
+    // Thay vì tắt PWM, ta LUÔN BẬT TIMER PWM và gán thanh ghi xung về giá trị Nhấc Bút (SERVO_PEN_UP_PWM = 17).
+    // Giúp servo luôn được cấp xung giữ chặt đầu bút ở vị trí trên cao trong suốt quá trình Homing, Reset hoặc M5.
+    // -------------------------------------------------------------------------------------
+    SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled (Luôn bật phát xung PWM)
+    SPINDLE_OCR_REGISTER = SERVO_PEN_UP_PWM;          // Giữ servo ở vị trí NHẤC BÚT an toàn
+
     #ifdef USE_SPINDLE_DIR_AS_ENABLE_PIN
       #ifdef INVERT_SPINDLE_ENABLE_PIN
         SPINDLE_ENABLE_PORT |= (1<<SPINDLE_ENABLE_BIT);  // Set pin to high
@@ -121,11 +145,11 @@ void spindle_stop()
   // and stepper ISR. Keep routine small and efficient.
   void spindle_set_speed(uint8_t pwm_value)
   {
-    SPINDLE_OCR_REGISTER = pwm_value; // Set PWM output level.
     #ifdef SPINDLE_ENABLE_OFF_WITH_ZERO_SPEED
       if (pwm_value == SPINDLE_PWM_OFF_VALUE) {
         spindle_stop();
       } else {
+        SPINDLE_OCR_REGISTER = pwm_value; // Set PWM output level.
         SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
         #ifdef INVERT_SPINDLE_ENABLE_PIN
           SPINDLE_ENABLE_PORT &= ~(1<<SPINDLE_ENABLE_BIT);
@@ -134,10 +158,24 @@ void spindle_stop()
         #endif
       }
     #else
+      // -------------------------------------------------------------------------------------
+      // [CODE GỐC]:
+      // if (pwm_value == SPINDLE_PWM_OFF_VALUE) {
+      //   SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+      // } else {
+      //   SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
+      // }
+      // -------------------------------------------------------------------------------------
+
+      // -------------------------------------------------------------------------------------
+      // [CODE MỚI]:
+      // Luôn bật PWM. Khi tốc độ = 0 (Lệnh M5 hoặc S0), giữ servo ở vị trí Nhấc Bút (SERVO_PEN_UP_PWM).
+      // -------------------------------------------------------------------------------------
+      SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
       if (pwm_value == SPINDLE_PWM_OFF_VALUE) {
-        SPINDLE_TCCRA_REGISTER &= ~(1<<SPINDLE_COMB_BIT); // Disable PWM. Output voltage is zero.
+        SPINDLE_OCR_REGISTER = SERVO_PEN_UP_PWM;        // M5 / S0: Giữ mức nhấc bút
       } else {
-        SPINDLE_TCCRA_REGISTER |= (1<<SPINDLE_COMB_BIT); // Ensure PWM output is enabled.
+        SPINDLE_OCR_REGISTER = pwm_value;               // Set PWM output level tương ứng lệnh S...
       }
     #endif
   }
