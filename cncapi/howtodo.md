@@ -913,6 +913,56 @@ Toàn bộ các chức năng điều khiển CNC, quản lý cấu hình và k�
    - **Tối Ưu Luồng Truyền Dữ Liệu Backend (`main.py`)**:
      - Throttling log broadcast khi stream file G-code lớn, ưu tiên tuyệt đối cho gói tin Telemetry để vị trí đầu CNC được gửi lên UI mượt mà, tức thời.
 
+
+---
+
+### 2.33. Chuẩn Hóa & Chuyển Đổi Toàn Diện `toastr.success` / `toastr.error` Sang `showCustomToastItem` (Cập Nhật 58)
+
+1. **Yêu Cầu & Phân Tích Nghiệp Vụ**:
+   - Trước đây trong hệ thống, các lệnh thông báo thành công hoặc báo lỗi ở một số module (đặc biệt là cấu hình thông số GRBL physical) vẫn còn gọi trực tiếp plugin cũ `toastr.success(...)` và `toastr.error(...)`.
+   - Hàm `notifyToastr(...)` trước đây cũng gọi đồng thời cả `window.toastr[...]` của jQuery Toastr và `showCustomToastItem(...)`, dẫn đến hiện tượng:
+     - Xuất hiện 2 loại toast đè lên nhau (1 toast phẳng phong cách cũ của jQuery Toastr và 1 toast Glassmorphism hiện đại).
+     - Plugin jQuery Toastr cũ không có nút "Tắt tất cả" nằm ngay dưới icon symbol, không có hiệu ứng Glassmorphism đồng bộ và làm tăng độ phụ thuộc vào thư viện ngoài.
+   - Cần chuyển đổi toàn bộ `toastr.success`, `toastr.error` sang hệ thống `showCustomToastItem`, đồng thời tạo Global Shim/Bridge cho `window.toastr` để đảm bảo tương thích ngược 100%.
+
+2. **Giải Pháp Kỹ Thuật Đã Triển Khai**:
+   - **Tối Ưu Hàm `showCustomToastItem(type, title, message)` trong [`static/app.js`](file:///work/a.i-assistant-chatbot-telegram-serverles/cncapi/static/app.js)**:
+     - Hỗ trợ linh hoạt cả 2 kiểu gọi tham số:
+       - Kiểu 3 tham số: `showCustomToastItem(type, title, message)`
+       - Kiểu 2 tham số: `showCustomToastItem(type, message)` (tự động điền tiêu đề mặc định tương ứng với loại: `Lỗi Hệ Thống CNC`, `Cảnh Báo`, `Thành Công`, `Thông Báo` kèm đa ngôn ngữ qua hàm `t(...)`).
+     - Tự động gắn icon symbol tương ứng (`✅` success, `❌` error, `⚠️` warning, `ℹ️` info).
+     - Với `success`: Tự động đếm lùi và ẩn sau 10 giây kèm thanh tiến trình `toast-progress-bar`.
+     - Với `error` / `warning`: Giữ nguyên trên màn hình cho tới khi người dùng bấm nút đóng `✕` hoặc nút `Tắt tất cả`.
+     - Nút **"Tắt tất cả"** (`.toast-close-all-btn`): Nằm ngay dưới icon symbol ở cột trái `.toast-left-col`, cho phép đóng toàn bộ toast chỉ với 1 click.
+   - **Cung Cấp Global Bridge Cho `window.toastr`**:
+     ```javascript
+     window.toastr = {
+         success: function(message, title) {
+             showCustomToastItem('success', title, message);
+         },
+         error: function(message, title) {
+             showCustomToastItem('error', title, message);
+         },
+         warning: function(message, title) {
+             showCustomToastItem('warning', title, message);
+         },
+         info: function(message, title) {
+             showCustomToastItem('info', title, message);
+         },
+         clear: function() {
+             closeAllToastItems();
+         },
+         remove: function() {
+             closeAllToastItems();
+         },
+         options: {}
+     };
+     ```
+   - **Tái Cấu Trúc Toàn Bộ Vị Trí Gọi Toast**:
+     - Loại bỏ việc gọi `window.toastr[...]` bên trong `notifyToastr(...)` để tránh trùng lặp thông báo.
+     - Cập nhật các hàm lưu GRBL physical (`saveGrblSetting`, `saveAllGrblPhysicalSettings`) sang gọi trực tiếp `showCustomToastItem('success', ...)` và `showCustomToastItem('error', ...)`.
+     - Thay thế các lời gọi `window.toastr.clear()` trong các sự kiện kết nối USB sang `closeAllToastItems()`.
+
 ---
 
 ## 3. Quy Trình Kiểm Thử & Xác Nhận (Verification Steps)

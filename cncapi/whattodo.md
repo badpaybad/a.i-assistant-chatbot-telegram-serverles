@@ -456,4 +456,6 @@ những message thành công thì có thể để timeout 10s để tự tắt, 
 
 **cập nhật 57** UI js chạy thời gian dài việc vẽ lên tool path view bị chậm so với thực tế cần phân tích nguyên nhân tăng performance và cần phản ánh đúng thực tế cnc đang chạy 
 
+**cập nhật 58** toastr.success toastr.error cần dùng sang dạng showCustomToastItem
+
 **chú ý** đọc whattodo.md suy nghĩ thật kỹ và viết cách làm vào howtodo.md

@@ -87,45 +87,40 @@
     }
 
     // ==================== TOAST NOTIFICATION SYSTEM (Cập nhật 48, 54, 56) ====================
-    // ==================== CẬP NHẬT 56: OVERRIDE WINDOW.ALERT ====================
+    // ==================== CẬP NHẬT 56 & 58: TOAST NOTIFICATIONS & WINDOW.ALERT ====================
     // Chuyển đổi toàn bộ lệnh alert() thành showCustomToastItem dạng warning, không tự tắt, có nút 'Tắt tất cả'
     window.alert = function(message) {
-        notifyToastr('warning', t('Cảnh Báo'), message);
+        showCustomToastItem('warning', t('Cảnh Báo'), message);
     };
 
-    // Cập nhật 54: Message thành công tự động tắt sau 10s. Message lỗi/cảnh báo yêu cầu click đóng thủ công.
+    // Cập nhật 54 & 58: Message thành công tự động tắt sau 10s. Message lỗi/cảnh báo yêu cầu click đóng thủ công.
     // Dưới icon symbol có nút "Tắt tất cả" để đóng toàn bộ toast hiện có.
     function notifyToastr(type, title, message) {
         const toastType = type || 'error';
-        console.log(`[Toastr Notify ${toastType.toUpperCase()}] ${title}: ${message}`);
-        const safeTitle = title || (toastType === 'error' ? 'Lỗi Hệ Thống CNC' : (toastType === 'warning' ? 'Cảnh Báo' : (toastType === 'success' ? 'Thành Công' : 'Thông Báo')));
-        const safeMsg = message || 'Có thông báo mới từ hệ thống!';
+        const safeTitle = title || (toastType === 'error' ? t('Lỗi Hệ Thống CNC') : (toastType === 'warning' ? t('Cảnh Báo') : (toastType === 'success' ? t('Thành Công') : t('Thông Báo'))));
+        const safeMsg = message || t('Có thông báo mới từ hệ thống!');
 
-        const isSuccess = toastType === 'success';
-
-        if (window.toastr && typeof window.toastr[toastType] === 'function') {
-            window.toastr.options = {
-                closeButton: true,
-                debug: false,
-                newestOnTop: true,
-                progressBar: isSuccess,
-                positionClass: "toast-top-right",
-                preventDuplicates: false,
-                onclick: null,
-                showDuration: "300",
-                hideDuration: "300",
-                timeOut: isSuccess ? 10000 : 0,          // 10s tự tắt cho thành công, 0 (không tự tắt) cho lỗi
-                extendedTimeOut: isSuccess ? 2000 : 0,
-                tapToDismiss: false
-            };
-            window.toastr[toastType](safeMsg, safeTitle);
-        }
-
-        // Custom DOM Toast item (đảm bảo hiển thị đẹp mắt, có nút "Tắt tất cả" và thanh đếm 10s)
         showCustomToastItem(toastType, safeTitle, safeMsg);
     }
 
     function showCustomToastItem(type, title, message) {
+        let toastType = type || 'info';
+        let toastTitle = title;
+        let toastMsg = message;
+
+        // Xử lý linh hoạt khi truyền 2 tham số: showCustomToastItem('success', 'Nội dung thông báo')
+        if (arguments.length === 2) {
+            toastMsg = title;
+            toastTitle = toastType === 'error' ? t('Lỗi Hệ Thống CNC') : (toastType === 'warning' ? t('Cảnh Báo') : (toastType === 'success' ? t('Thành Công') : t('Thông Báo')));
+        } else if (!toastTitle) {
+            toastTitle = toastType === 'error' ? t('Lỗi Hệ Thống CNC') : (toastType === 'warning' ? t('Cảnh Báo') : (toastType === 'success' ? t('Thành Công') : t('Thông Báo')));
+        }
+        if (!toastMsg) {
+            toastMsg = '';
+        }
+
+        console.log(`[Custom Toast ${toastType.toUpperCase()}] ${toastTitle}: ${toastMsg}`);
+
         let container = document.getElementById('toast-container');
         if (!container) {
             container = document.createElement('div');
@@ -134,14 +129,14 @@
         }
 
         const toast = document.createElement('div');
-        toast.className = `toast-item toast-${type}`;
+        toast.className = `toast-item toast-${toastType}`;
         
         let iconSymbol = 'ℹ️';
-        if (type === 'error') iconSymbol = '❌';
-        else if (type === 'warning') iconSymbol = '⚠️';
-        else if (type === 'success') iconSymbol = '✅';
+        if (toastType === 'error') iconSymbol = '❌';
+        else if (toastType === 'warning') iconSymbol = '⚠️';
+        else if (toastType === 'success') iconSymbol = '✅';
 
-        const isSuccess = type === 'success';
+        const isSuccess = toastType === 'success';
 
         toast.innerHTML = `
             <div class="toast-left-col">
@@ -149,8 +144,8 @@
                 <button class="toast-close-all-btn" title="Tắt tất cả các thông báo hiện có">Tắt tất cả</button>
             </div>
             <div class="toast-content">
-                <div class="toast-title">${escapeHtml(title)}</div>
-                <div class="toast-message">${escapeHtml(message)}</div>
+                <div class="toast-title">${escapeHtml(toastTitle)}</div>
+                <div class="toast-message">${escapeHtml(toastMsg)}</div>
             </div>
             <button class="toast-close-btn" title="Đóng">&times;</button>
             ${isSuccess ? '<div class="toast-progress-bar"></div>' : ''}
@@ -195,9 +190,6 @@
     }
 
     function closeAllToastItems() {
-        if (window.toastr && typeof window.toastr.clear === 'function') {
-            window.toastr.clear();
-        }
         const container = document.getElementById('toast-container');
         if (container) {
             const items = container.querySelectorAll('.toast-item');
@@ -209,6 +201,29 @@
             }, 250);
         }
     }
+
+    // Cập nhật 58: Global Bridge chuyển hướng toastr.success, toastr.error, toastr.warning, toastr.info sang showCustomToastItem
+    window.toastr = {
+        success: function(message, title) {
+            showCustomToastItem('success', title, message);
+        },
+        error: function(message, title) {
+            showCustomToastItem('error', title, message);
+        },
+        warning: function(message, title) {
+            showCustomToastItem('warning', title, message);
+        },
+        info: function(message, title) {
+            showCustomToastItem('info', title, message);
+        },
+        clear: function() {
+            closeAllToastItems();
+        },
+        remove: function() {
+            closeAllToastItems();
+        },
+        options: {}
+    };
 
     function escapeHtml(str) {
         if (!str) return '';
@@ -634,9 +649,7 @@
                 if (data.status === 'error') {
                     notifyToastr('error', '🔌 Không Kết Nối Được Cổng USB Với CNC', data.message || 'Lỗi mở cổng Serial USB kết nối với máy CNC!');
                 } else if (data.status === 'success') {
-                    if (window.toastr && typeof window.toastr.clear === 'function') {
-                        window.toastr.clear();
-                    }
+                    closeAllToastItems();
                     notifyToastr('success', '🔌 Kết Nối Thành Công', data.message || 'Đã kết nối cổng USB máy CNC thành công!');
                 }
             } catch (e) {
@@ -742,9 +755,7 @@
             isReconnecting = !!msg.reconnecting;
             updateConnectionUI();
             if (msg.connected) {
-                if (window.toastr && typeof window.toastr.clear === 'function') {
-                    window.toastr.clear();
-                }
+                closeAllToastItems();
                 if (msg.message) {
                     notifyToastr('success', '🔌 Kết Nối Thành Công', msg.message);
                     
@@ -3618,18 +3629,14 @@
             });
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success(`Đã lưu ${key}=${value} vào cnc_physical thành công!`);
-                }
+                showCustomToastItem('success', t('Thành Công'), `Đã lưu ${key}=${value} vào cnc_physical thành công!`);
                 await fetchAndRenderGrblInfo();
             } else {
                 throw new Error(data.detail || 'Lỗi không xác định');
             }
         } catch (e) {
             console.error(`Lỗi khi lưu ${key}:`, e);
-            if (typeof toastr !== 'undefined') {
-                toastr.error(`Lỗi khi lưu ${key}: ${e.message}`, 'Lỗi Cập Nhật GRBL', { timeOut: 0, closeButton: true });
-            }
+            showCustomToastItem('error', t('Lỗi Cập Nhật GRBL'), `Lỗi khi lưu ${key}: ${e.message}`);
         }
     }
 
@@ -3651,18 +3658,14 @@
             });
             const data = await res.json();
             if (res.ok && data.status === 'success') {
-                if (typeof toastr !== 'undefined') {
-                    toastr.success('Đã lưu tất cả thông số GRBL physical vào calibration_settings.json thành công!');
-                }
+                showCustomToastItem('success', t('Thành Công'), 'Đã lưu tất cả thông số GRBL physical vào calibration_settings.json thành công!');
                 await fetchAndRenderGrblInfo();
             } else {
                 throw new Error(data.detail || 'Lỗi không xác định');
             }
         } catch (e) {
             console.error('Lỗi khi lưu tất cả thông số GRBL physical:', e);
-            if (typeof toastr !== 'undefined') {
-                toastr.error(`Lỗi khi lưu cấu hình GRBL: ${e.message}`, 'Lỗi Cập Nhật GRBL', { timeOut: 0, closeButton: true });
-            }
+            showCustomToastItem('error', t('Lỗi Cập Nhật GRBL'), `Lỗi khi lưu cấu hình GRBL: ${e.message}`);
         }
     }
 
