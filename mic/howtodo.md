@@ -121,7 +121,22 @@ Mô hình sau khi huấn luyện xong sẽ tự động được lượng tử h
 
 ---
 
-## 6. Kết Luận
+## 6. Hướng Dẫn Tích Hợp Google Search & Trí Nhớ Hội Thoại (esp32_hub.py)
+
+Hub trung gian `esp32_hub.py` giao tiếp hai chiều giữa ESP32 và Gemini Live API (`gemini-3.1-flash-live-preview`), được trang bị hệ thống công cụ (Tool Call / Function Calling) thông minh:
+
+1. **Google Search Tool (`google_search` / `types.GoogleSearch()`)**:
+   * **Tự động kích hoạt**: Khi người dùng hỏi các câu hỏi cần tra cứu dữ liệu mới trên internet (thời sự, thời tiết, sự kiện, giá cả, tỷ số bóng đá, kiến thức mới...), Gemini Live sẽ tự động kích hoạt `google_search`.
+   * **Xử lý & Tổng hợp**: Hub lấy kết quả trích dẫn từ internet, gửi ngược lại cho Gemini để đọc hiểu và tổng hợp thành câu trả lời ngắn gọn, tự nhiên bằng tiếng Việt chuẩn.
+2. **Lịch sử đàm thoại (`chat_history`)**:
+   * Tự động lưu mọi lượt hỏi - đáp giữa người dùng và trợ lý Du vào SQLite.
+   * Cung cấp công cụ `get_conversation_history` và `search_conversation_history` giúp AI nhớ lại ngữ cảnh cũ.
+3. **Ghi chú & Bộ nhớ người dùng (`user_notes`)**:
+   * Cung cấp các công cụ CRUD: `add_user_note`, `get_user_notes`, `search_user_notes`, `update_user_note`, `delete_user_note` để lưu trữ thông tin riêng theo yêu cầu của người dùng.
+
+---
+
+## 7. Kết Luận
 
 Micro **INMP441** và mạch khuếch đại **MAX98357A** là những linh kiện chất lượng rất tốt trong tầm giá và cực kỳ phổ biến. Nếu hệ thống của bạn hoạt động không ổn định (rè, nhiễu, không nhận dạng được âm thanh), **90% nguyên nhân** nằm ở thiết kế mạch cấp nguồn cẩu thả, đi dây I2S quá dài không bọc nhiễu, hoặc nguồn cấp bị sụt áp đột ngột. Hãy tuân thủ nghiêm ngặt các nguyên tắc thiết kế mạch phần cứng ở trên để có được chất lượng âm thanh tốt nhất.
 

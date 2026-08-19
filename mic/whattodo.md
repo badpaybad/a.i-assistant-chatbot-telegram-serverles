@@ -27,3 +27,11 @@ cần tạo memory list unique esp32client mac address để:
 **cập nhật 6** mic/train.py cần bổ xung log quá trình train để xem loss ... ra file csv vào folder train_dashboard có index.html để xem biểu đồ loss và các thông số khác để đánh giá kết quả train, có thể manual chọn file csv để xem , dựa trên dữ liệu có thể đưa ra các đánh giá và khuyến nghị với các tham số train 
 bổ xung thêm việc chọn best model và last model , khi xuất file và convert cần dùng best model để cho esp32 chạy  
 không cần auto refresh chỉ cần chọn file thì hiện chart và suggestions
+
+**cập nhật 7** [DONE] mic/esp32_hub.py gemini live có hỗ trợ trả text tương ứng với response audio. sẽ cần bổ xung gửi kèm text qua websocket đẻ esp32 có thể dùng được, cần hỗ trợ tiếng Việt có dấu với unicode utf-8, nếu có text cần ghi log lên console để xem và có thể dựa vào đây xem chất lượng response cũng như chữ tiếng Việt hiển thị có dấu đúng không 
+
+**cập nhật 8** [DONE] bổ xung thêm tool call google search , dùng khi nếu phát hiện người dùng muốn tìm kiếm trên internet, hiểu yêu cầu tìm kiếm rồi tổng hợp câu trả lời cho người dùng 
+
+**cập nhật 24** [DONE] giọng nữ "Aoede" Gemini Live API phát âm thanh chuẩn ở tần số 24,000 Hz (24kHz) đồng bộ 24kHz trên toàn hệ thống ESP32. Cần response từ gemini live cực súc tích và gọn gàng đủ nghĩa để trả lời.
+Chỉ cần viết text của người hỏi và text response tương ứng, không cần viết ra chữ gemini live ... nếu đang đợi câu trả lời thì viết ra dấu ba chấm (...) 
+Đảm bảo âm thanh phát ra loa không bị rớt bị sót hay giật giật 

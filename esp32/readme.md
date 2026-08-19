@@ -28,37 +28,42 @@ Dự án sử dụng các thư viện phần cứng của mạch ESP32 như `<Wi
 ## 2. Cài đặt các thư viện bổ sung (Library Manager)
 Mở trình quản lý thư viện bằng cách vào **Tools -> Manage Libraries...** (hoặc nhấn `Ctrl + Shift + I` / `Cmd + Shift + I`) và cài các thư viện sau:
 
-### 1. Thư viện xử lý FFT: `arduinoFFT`
-* **Từ khóa tìm kiếm**: `arduinoFFT`
-* **Tác giả**: *Didier Longueville* / *Hugo Ares*
-* **Yêu cầu phiên bản**: **Phiên bản 2.0.0 trở lên** (vì code sử dụng cú pháp template float mới `ArduinoFFT<float>`).
-
-### 2. Thư viện chạy Model AI: `EloquentTinyML` & `tflm_esp32`
-* **Thư viện chính**: `EloquentTinyML` (Tác giả: *Simone Salerno*)
-  * **Yêu cầu phiên bản**: **Phiên bản 3.0.1 trở lên**
-* **Thư viện phụ thuộc**: `tflm_esp32` (TensorFlow Lite Micro cho chip ESP32)
-  * **Yêu cầu phiên bản**: Phiên bản mới nhất.
-* *Lưu ý quan trọng*: Để sử dụng bản 3.0.x mới nhất, bạn bắt buộc phải cài đặt đồng thời cả hai thư viện `EloquentTinyML` (bản 3.0.1) và `tflm_esp32` trong trình quản lý thư viện (Library Manager). Cấu trúc code mới đã được tối ưu hóa cho cấu hình này.
-
-### 3. Thư viện truyền nhận WebSockets: `WebSockets`
+### 1. Thư viện truyền nhận WebSockets: `WebSockets`
 * **Từ khóa tìm kiếm**: `WebSockets`
 * **Tác giả**: *Markus Sattler*
 * **Yêu cầu phiên bản**: Phiên bản mới nhất.
 
-### 4. Thư viện xử lý JSON: `ArduinoJson`
+### 2. Thư viện xử lý JSON: `ArduinoJson`
 * **Từ khóa tìm kiếm**: `ArduinoJson`
 * **Tác giả**: *Benoit Blanchon*
 * **Yêu cầu phiên bản**: Phiên bản 7.x trở lên.
 
+### 3. Thư viện Màn hình & Cảm ứng: `TFT_eSPI` (Cập nhật 21 & 22)
+* **Từ khóa tìm kiếm**: `TFT_eSPI`
+* **Tác giả**: *Bodmer*
+* **Yêu cầu phiên bản**: Phiên bản mới nhất.
+* **Cấu hình bắt buộc**: Sau khi cài đặt thư viện `TFT_eSPI`, copy file [User_Setup.h](file:///work/a.i-assistant-chatbot-telegram-serverles/esp32/esp32os/User_Setup.h) vào thư mục thư viện của Arduino IDE:
+  * Trên Linux: `/home/<user>/Arduino/libraries/TFT_eSPI/User_Setup.h`
+  * Trên Windows: `Documents\Arduino\libraries\TFT_eSPI\User_Setup.h`
+  * Trên macOS: `~/Documents/Arduino/libraries/TFT_eSPI/User_Setup.h`
+* **Tính năng hỗ trợ**:
+  * Chế độ **Dashboard**: Hiển thị toàn bộ thông số WiFi, Hub WebSocket, Model Gemini, Firebase, DRAM/PSRAM.
+  * Chế độ **Live Voice Chat (Cập nhật 22)**: Hiển thị văn bản transcription thời gian thực **Tiếng Việt có dấu** của người dùng và trợ lý AI Du (bộ vẽ dấu thanh composite renderer) kèm trạng thái đàm thoại (`[DANG NGHE]`, `[DU TRA LOI]`, `[HOAN TAT]`). Chạm màn hình để chuyển đổi qua lại giữa hai chế độ.
+
+> [!NOTE]
+> **Cập nhật 20 - Chế độ Stream Mic Không Wake-word (`esp32mic_no_wakeword.ino`)**:
+> Ở chế độ này, mô hình AI cục bộ TFLite đã được lược bỏ để giải phóng bộ nhớ (>300KB RAM và >1.4MB Flash). Do đó bạn **không cần cài** `arduinoFFT`, `EloquentTinyML` hay `tflm_esp32` nữa. ESP32 sẽ stream trực tiếp âm thanh 16kHz PCM lên server local `mic/esp32_hub.py` và nhận âm thanh 24kHz PCM phát ra loa.
+> *(Nếu bạn muốn sử dụng lại chế độ nhận diện Wake-word TFLite offline cũ ở `esp32mic.ino`, hãy định nghĩa `#define USE_TFLITE_MIC` và cài thêm `arduinoFFT` >=2.0.0, `EloquentTinyML` >=3.0.1 và `tflm_esp32`).*
+
 > [!WARNING]
-> **LỖI BIÊN DỊCH THƯỜNG GẶP**: Nếu bạn gặp lỗi `WebSocketsClient.h: No such file or directory`, điều đó có nghĩa là thư viện **WebSockets** (bởi *Markus Sattler*) chưa được cài đặt. Hãy cài đặt cả **WebSockets** và **ArduinoJson** theo đúng hướng dẫn trên để sửa lỗi này.
+> **LỖI BIÊN DỊCH THƯỜNG GẶP**: Nếu bạn gặp lỗi `WebSocketsClient.h: No such file or directory` hoặc `TFT_eSPI.h: No such file or directory`, hãy đảm bảo đã cài đặt đủ các thư viện **WebSockets**, **ArduinoJson** và **TFT_eSPI** theo đúng hướng dẫn trên.
 
 ---
 
 ## 3. Thứ tự mở file để Biên dịch/Nạp
 Vì project được tách làm nhiều file `.ino` con, khi làm việc:
 * Hãy luôn mở file chính [esp32os.ino](file:///work/a.i-assistant-chatbot-telegram-serverles/esp32/esp32os/esp32os.ino) bằng Arduino IDE.
-* IDE sẽ tự động load các file con (`esp32wifi.ino`, `esp32uiconfig.ino`, `esp32eventbus.ino`, `esp32firebase.ino`, `esp32mic.ino`, `esp32speaker.ino`) thành các tab bên cạnh.
+* IDE sẽ tự động load các file con (`esp32wifi.ino`, `esp32uiconfig.ino`, `esp32eventbus.ino`, `esp32firebase.ino`, `esp32mic_no_wakeword.ino`, `esp32speaker.ino`, `esp32display.ino`) thành các tab bên cạnh.
 * Bấm nút **Verify/Compile** để kiểm tra và **Upload** để nạp chương trình vào ESP32 (cổng `/dev/ttyACM1`).
 
 ---
@@ -94,6 +99,26 @@ Mạch Loa MAX98357A nên được cấp nguồn riêng hoặc nguồn 5V của 
 
 > [!TIP]
 > **Tăng âm lượng bằng phần mềm (Software Volume Boost)**: Trong mã nguồn [esp32speaker.ino](file:///work/a.i-assistant-chatbot-telegram-serverles/esp32/esp32os/esp32speaker.ino#L45) đã được cấu hình sẵn hệ số tăng âm lượng `#define SPEAKER_VOLUME_BOOST 1.5f` (khuếch đại âm thanh lên 2.5 lần bằng thuật toán nhân mẫu và giới hạn biên độ). Kết hợp với việc nối chân **GAIN** phần cứng ở trên sẽ giúp âm thanh phát ra loa đạt mức to nhất có thể.
+
+### C. Màn hình 2.8" SPI TFT LCD & Cảm ứng (ILI9341 + XPT2046 - Cập nhật 21)
+Kết nối các chân của module màn hình TFT cảm ứng 2.8 inch vào ESP32-S3 theo bảng dưới:
+
+| Chân trên Module TFT | Cổng kết nối ESP32-S3 | Chức năng |
+| :--- | :--- | :--- |
+| **VCC** | **3.3V** hoặc **5V** | Nguồn cấp cho màn hình |
+| **GND** | **GND** | Nối đất chung |
+| **CS** (TFT CS) | **GPIO 21** | Chip Select màn hình TFT |
+| **RESET** (RST) | **GPIO 2** | Reset màn hình |
+| **DC** / RS | **GPIO 42** | Data / Command control |
+| **SDI (MOSI)** | **GPIO 38** | Dữ liệu SPI MOSI |
+| **SCK (SCLK)** | **GPIO 40** | Xung nhịp SPI Clock |
+| **LED** (BL) | **GPIO 20** | Điều khiển đèn nền (Backlight) |
+| **SDO (MISO)** | **GPIO 41** | Dữ liệu SPI MISO |
+| **T_CLK** | **GPIO 40** | Xung nhịp Touch (Nối chung với SCK) |
+| **T_CS** | **GPIO 39** | Chip Select IC cảm ứng XPT2046 |
+| **T_DIN** | **GPIO 38** | Dữ liệu Touch DIN (Nối chung với MOSI) |
+| **T_DO** | **GPIO 41** | Dữ liệu Touch DO (Nối chung với MISO) |
+| **T_IRQ** | **GPIO 47** | Tín hiệu ngắt cảm ứng (Touch IRQ) |
 
 ---
 
@@ -151,3 +176,23 @@ Khi cần xóa sạch toàn bộ thông tin đã cấu hình và cấu hình l�
 > [!NOTE]
 > Nếu thả nút trước 10 giây, không có gì xảy ra — factory reset **chỉ kích hoạt khi giữ đủ 10 giây**.
 > Task kiểm tra nút nhấn chạy độc lập trên Core 0 thông qua cơ chế polling mỗi 50ms giúp chống nhiễu phím (debounced) cực kì hiệu quả.
+
+---
+
+## 9. Màn hình Dashboard Cấu hình & Cảm ứng (Cập nhật 21)
+Màn hình 2.8" TFT ILI9341 tự động hiển thị trực quan toàn bộ các thông số cấu hình hệ thống:
+1. **Thẻ 1 - WiFi & Mạng**:
+   - Trạng thái kết nối (ONLINE / AP MODE / OFFLINE)
+   - SSID hiện tại, địa chỉ IP mạng LAN và mức sóng RSSI (dBm)
+   - Địa chỉ MAC của ESP32
+   - Số lượng mạng WiFi đã lưu trữ trong bộ nhớ Flash (tối đa 5 mạng)
+2. **Thẻ 2 - Local Hub & Gemini AI**:
+   - Địa chỉ kết nối Hub (`ws://<host>:<port>/ws`)
+   - Trạng thái kết nối WebSocket theo thời gian thực (CONNECTED / CONNECTING / STANDBY)
+   - Model Gemini đang sử dụng (ví dụ: `gemini-3.1-flash-live-preview`)
+   - Khóa API Key (che bảo mật dạng `AIzaSy...****`)
+3. **Thẻ 3 - Firebase Firestore & Tài nguyên Hệ thống**:
+   - Firebase Project ID & Đường dẫn Document Path
+   - Dung lượng RAM Heap và PSRAM còn trống
+4. **Tương tác Cảm ứng (Touch)**:
+   - Chạm vào bất kỳ điểm nào trên màn hình để kích hoạt hiệu ứng chạm và **làm mới (refresh)** ngay lập tức toàn bộ thông số trên dashboard.

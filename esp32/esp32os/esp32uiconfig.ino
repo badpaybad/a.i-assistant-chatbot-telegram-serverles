@@ -36,7 +36,7 @@ void handleRoot() {
   
   // Load saved Hub settings
   preferences.begin("hub-config", true);
-  String savedHubHost = preferences.getString("host", "192.168.4.248");
+  String savedHubHost = preferences.getString("host", "192.168.1.11");
   int savedHubPort = preferences.getInt("port", 8888);
   preferences.end();
   
@@ -169,7 +169,7 @@ void handleRoot() {
   // ESP32 Hub Host/IP block
   html += "      <div class='form-group'>";
   html += "        <label for='hub_host'>ESP32 Hub Host or IP</label>";
-  html += "        <input type='text' name='hub_host' id='hub_host' placeholder='192.168.4.248' value='" + savedHubHost + "' autocomplete='off'>";
+  html += "        <input type='text' name='hub_host' id='hub_host' placeholder='192.168.1.11' value='" + savedHubHost + "' autocomplete='off'>";
   html += "      </div>";
 
   // ESP32 Hub Port block
@@ -283,7 +283,7 @@ void handleSave() {
     hubPort = 8888;
   }
   if (hubHost.length() == 0) {
-    hubHost = "192.168.4.248";
+    hubHost = "192.168.1.11";
   }
 
   // Save Hub configurations to Preferences

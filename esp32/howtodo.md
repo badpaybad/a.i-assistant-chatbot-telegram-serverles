@@ -10,13 +10,15 @@ Dự án được cấu trúc dạng đa file (multi-tab) trong Arduino IDE, gi�
 
 ```
 esp32os/
-├── esp32os.ino          # File chạy chính (Main entry), khởi động luồng và điều phối chung
-├── esp32wifi.ino        # Trình quản lý kết nối WiFi (Auto-connect 5 mạng gần nhất + Fallback)
-├── esp32uiconfig.ino    # Giao diện Web cấu hình mạng (Captive Portal, Glassmorphism UI)
-├── esp32eventbus.ino    # Bus sự kiện trung tâm (Asynchronous EventBus, Singleton, chạy Core 0)
-├── esp32firebase.ino    # Trình đọc ghi Google Firebase Firestore (Chạy qua REST API + EventBus)
-├── esp32mic.ino         # Mô-đun xử lý Mic INMP441 (I2S RX, FFT, tạo Spectrogram & Suy luận AI)
-└── esp32speaker.ino     # Mô-đun điều khiển Loa MAX98357A (I2S TX, giải mã và phát âm thanh)
+├── esp32os.ino                 # File chạy chính (Main entry), khởi động luồng và điều phối chung
+├── esp32wifi.ino               # Trình quản lý kết nối WiFi (Auto-connect 5 mạng gần nhất + Fallback)
+├── esp32uiconfig.ino           # Giao diện Web cấu hình mạng (Captive Portal, Glassmorphism UI)
+├── esp32eventbus.ino           # Bus sự kiện trung tâm (Asynchronous EventBus, Singleton, chạy Core 0)
+├── esp32firebase.ino           # Trình đọc ghi Google Firebase Firestore (Chạy qua REST API + EventBus)
+├── esp32mic_no_wakeword.ino    # Mô-đun thu Mic & stream WebSocket tới local Hub (Không dùng TFLite)
+├── esp32mic.ino                # Mô-đun cũ nhận diện Wake-word TFLite (Legacy / Backup)
+├── esp32speaker.ino            # Mô-đun điều khiển Loa MAX98357A (I2S TX, giải mã và phát âm thanh)
+└── esp32display.ino            # Mô-đun hiển thị Dashboard & Cảm ứng trên màn hình 2.8" TFT ILI9341
 ```
 
 ---
@@ -86,26 +88,25 @@ sequenceDiagram
   * `enqueue(queueName, payload)` / `dequeue(queueName)`: Hàng đợi FIFO để trao đổi gói tin.
   * `set(key, value)` / `get(key)`: Lưu trữ trạng thái dùng chung.
 
-### B. Thu âm & Nhận diện Giọng nói (`esp32mic.ino`)
-* Chạy bất đồng bộ trên Core 0 thông qua `wakeup_detection_task` để tránh làm chậm Main Loop.
-* **Đọc đệm I2S siêu ngắn (20ms/block)**: Cho phép truyền trực tiếp tín hiệu ra loa (`playSpeaker`) với độ trễ cực thấp (<20ms) và ổn định cao, hoàn toàn loại bỏ tiếng rè rẹt do hụt bộ đệm.
-* **Lọc nhiễu & Đệm xoay vòng (Circular Buffer)**:
-  * Thu âm từ Mic INMP441 (mặc định lấy dữ liệu kênh Trái để tránh tiếng xào xào nhiễu khi chỉ dùng 1 mic hoặc 2 mic đấu song song bị lỏng chân) sử dụng cấu hình tự động nhận diện độ rộng bit (cả 16-bit và 32-bit slot width).
-  * Tách 16 bit có nghĩa nhất (MSB) nếu chạy ở chế độ 32-bit bằng cách dịch phải 16 bit (`>> 16`) arithmetically để chuyển về dạng mẫu signed 16-bit PCM. Nếu chạy ở chế độ 16-bit, dữ liệu được đọc trực tiếp không cần dịch bit.
-  * Tích lũy mẫu mono liên tục vào bộ đệm xoay vòng `loop_audio_buffer` kích thước **16000 mẫu (1.0 giây)**.
-* **Xử lý TFLite Micro khớp chuẩn Python**:
-  * Chu kỳ suy luận được đặt cố định **100ms một lần** (mỗi 1600 mẫu mới), khớp tần suất suy luận với Python.
-  * **Khử sai lệch DC (DC Offset Removal)**: Tính giá trị trung bình (mean) của toàn bộ 16000 mẫu trong bộ đệm và trừ đi từ mỗi mẫu. Bước này bắt buộc phải có để loại bỏ nhiễu DC sinh ra từ cảm ứng phần cứng, khớp với tín hiệu sạch từ môi trường kiểm thử của Python.
-  * **Chuẩn hóa biên độ (Peak Normalization)**: Tìm trị tuyệt đối biên độ lớn nhất (`max_val`) của toàn bộ 16000 mẫu âm thanh đã khử DC trong cửa sổ 1.0 giây và chia tỷ lệ các mẫu cho `max_val` để biên độ luôn nằm trong khoảng `[-1.0, 1.0]`. Giải quyết bài toán chênh lệch âm lượng thu âm thực tế.
-  * Trích xuất cửa sổ trượt (Overlap STFT) với `FRAME_LENGTH = 240` và `FRAME_STEP = 160` tạo ra đúng **99 hàng** phổ (Spectrogram) cho mô hình.
-  * **Cửa sổ Hann (Hann Windowing)**: Áp dụng thủ công cửa sổ Hann kích thước $N=240$ trên mỗi khung trước khi đệm zero-padding lên 512 mẫu để chạy FFT, khớp 100% với hàm toán học `tf.signal.stft` mặc định của TensorFlow. Thu thập **257 cột tần số đầu tiên** cho mỗi hàng phổ.
-  * **Lượng tử hóa tuyến tính (Linear Quantization)**: Dữ liệu được lượng tử hóa tuyến tính sang khoảng `[-128, 127]` dựa theo tham số `scale` và `zero_point` đầu vào của mô hình.
-  * **Hợp tác đa nhiệm (RTOS Yield)**: Chèn lệnh `vTaskDelay` 1ms định kỳ (sau mỗi 10 hàng FFT và trước khi predict) để nhường quyền điều phối cho Task Idle trên Core 0, triệt tiêu hoàn toàn lỗi kích hoạt Watchdog khi chạy tính toán nặng.
-* **Giao thức điều khiển qua EventBus (Control Protocol)**:
-  * Khi phát hiện từ khóa "du ơi", luồng AI sẽ tự động gán `micDetectActive = false` để **tạm dừng nhận dạng**, tránh trùng lặp.
-  * Lắng nghe liên tục trên topic `wakeupword` để nhận lệnh điều khiển:
-    * **Kích hoạt lại AI**: Khi nhận bản tin chứa `type=start` (hoặc `type:start`, `start`), hệ thống sẽ bật lại AI (`micDetectActive = true`).
-    * **Tắt/Tạm dừng AI**: Khi nhận bản tin chứa `type=stop` hoặc `type=pending` (hoặc định dạng dấu hai chấm `:stop`, `:pending`, hoặc chuỗi đơn `stop`, `pending`), hệ thống sẽ dừng xử lý AI (`micDetectActive = false`).
+### B. Thu âm & Stream âm thanh (`esp32mic_no_wakeword.ino` - Cập nhật 20)
+* **Loại bỏ TFLite Wake-word để tối ưu tài nguyên**:
+  * Mô-đun không nạp mô hình TFLite, không chạy STFT FFT và không cấp phát mảng Arena 300KB.
+  * **Giải phóng >300KB RAM/PSRAM** và **>1.4MB bộ nhớ Flash**, giúp hệ thống nhẹ, mát, phản hồi tức thì và dành bộ nhớ cho các tác vụ khác (màn hình, NFC, Bluetooth, v.v.).
+* **Thu âm I2S RX thời gian thực (Real-time Streaming)**:
+  * Thu âm từ 2 mic INMP441 (Stereo 32-bit slot width, 16kHz) qua FreeRTOS Task `mic_recording_task` trên Core 1.
+  * Tách 16-bit MSB và trộn kênh Trái/Phải (Stereo -> Mono 16kHz).
+  * Đẩy các frame PCM vào hàng đợi không khóa `mic_queue`.
+* **Truyền nhận nhị phân qua WebSocket tới `esp32_hub.py`**:
+  * Tại `loopGeminiLive()`, ESP32 lấy các gói PCM từ `mic_queue` và gửi nhị phân (`webSocket.sendBIN`) trực tiếp lên server local Hub.
+  * Máy chủ `esp32_hub.py` đảm nhận toàn bộ việc kết nối Gemini Live, lưu lịch sử SQLite và nhận diện giọng nói (Server-side VAD).
+* **Khử nhiễu vọng phản hồi (Echo Suppression)**:
+  * Khi loa đang phát âm thanh phản hồi từ Hub hoặc trong 500ms sau khi loa vừa phát xong, micro tự động bỏ qua (discard) dữ liệu thu từ I2S và xả sạch hàng đợi `mic_queue` để tránh phản hồi vòng lặp (echo loop).
+* **Tự động kết nối & Duy trì liên lạc (Auto-reconnect)**:
+  * Khi WiFi kết nối thành công, ESP32 tự động thiết lập kết nối WebSocket tới local Hub. Nếu kết nối bị ngắt, hệ thống sẽ tự động thử kết nối lại sau mỗi 5 giây.
+* **Hỗ trợ kiểm tra phần cứng (Self-Test)**:
+  * Cung cấp hàm `micRecordWav(seconds, &out_wav_size)` ghi âm 1s WAV định dạng tiêu chuẩn để `micSelfTest()` kiểm tra mic và loa ngay lúc khởi động mạch.
+
+*(Mô-đun cũ `esp32mic.ino` sử dụng TFLite offline và FFT vẫn được lưu trữ làm tham khảo và có thể bật lại bằng cờ `#define USE_TFLITE_MIC`).*
 
 
 ### C. Phát âm thanh (`esp32speaker.ino`)
@@ -172,6 +173,45 @@ sequenceDiagram
 * **Đọc ghi bất đồng bộ qua EventBus**:
   * Đăng ký nhận sự kiện ghi trên topic `firebase/write`.
   * Đăng ký nhận sự kiện đọc trên topic `firebase/read`. Kết quả đọc được sẽ được publish ngược lại lên topic `firebase/read/result` dưới dạng JSON phẳng.
+
+### H. Màn hình Dashboard Cấu hình & Live Voice Chat (`esp32display.ino` - Cập nhật 21 & 22)
+* **Khởi tạo & Điều khiển Màn hình 2.8" ILI9341**:
+  * Điều khiển qua chuẩn giao tiếp SPI (SCK=40, MOSI=38, MISO=41, CS=21, DC=42, RST=2, BL=20).
+  * Chạy ở chế độ xoay ngang (Landscape 320x240, `tft.setRotation(1)`).
+  * Nạp dữ liệu hiệu chuẩn cảm ứng XPT2046 `calData` (CS=39, IRQ=47).
+* **Trực quan hóa thông số cấu hình (Chế độ Dashboard)**:
+  * **WiFi & Mạng**: Trạng thái kết nối, SSID, địa chỉ IP mạng LAN, mức sóng RSSI, địa chỉ MAC, số lượng mạng đã lưu trữ trong NVS.
+  * **ESP32 Hub & Gemini**: Địa chỉ Hub WebSocket (`ws://<host>:<port>/ws`), trạng thái phiên đàm thoại (CONNECTED / CONNECTING / STANDBY), tên Model Gemini, trạng thái API Key.
+  * **Firebase & Hệ thống**: Firebase Project ID, Firestore Document Path, dung lượng RAM Heap & PSRAM thời gian thực.
+* **Hiển thị Văn bản Đàm thoại Thời gian thực & Vẽ Tiếng Việt có dấu Unicode UTF-8 (Cập nhật 22)**:
+  * **Bộ phân tích và vẽ dấu Tiếng Việt (`parseNextVnChar` & `drawVietnameseChar`)**: 
+    * Tự động phân tích các ký tự Unicode UTF-8 đa byte tiếng Việt thành bộ ba: `(Ký tự gốc, Mũ/Nón, Dấu thanh)`.
+    * Hỗ trợ đầy đủ tất cả các mũ và dấu: Mũ circumflex `â, ê, ô`, Trăng `ă`, Râu `ơ, ư`, Gạch `đ/Đ` và toàn bộ 5 thanh điệu tiếng Việt (Sắc `/`, Huyền `\`, Hỏi `?`, Ngã `~`, Nặng `.`).
+    * Trực tiếp vẽ các dấu thanh và nón lên đúng tọa độ pixel của chữ cái tương ứng trên màn hình TFT ILI9341, giúp hiển thị **Tiếng Việt có dấu hoàn chỉnh** (như `Chào bạn, tôi là Du...`) mà không làm vỡ font hay phát sinh ký tự rác `?`.
+  * **Bộ tự động ngắt dòng thông minh (`drawWrappedVietnameseText`)**: Tính toán chính xác độ rộng theo từng từ tiếng Việt có dấu và tự động xuống dòng mượt mà trong khung hiển thị.
+  * **Tối ưu hóa hiển thị Bất đồng bộ & Chống nghẽn Audio (Throttled Frame Rendering)**:
+    * Khi nhận text chunk từ WebSocket, hệ thống chỉ cập nhật buffer và bật cờ `model_text_dirty = true` mà không gọi vẽ SPI đồng bộ, tránh làm nghẽn bus và giật âm thanh.
+    * Giao diện Live Chat được vẽ lại mượt mà với tần số ~10-12 FPS (mỗi 90ms) và chỉ xóa/vẽ lại khung chữ bên trong (`fillRect(10, 106, 300, 102)`), giảm 90% tải bus SPI.
+    * Hàng đợi âm thanh `audio_play_queue` được nâng lên 48 packets kết hợp 12 DMA buffers (300ms cushion) và ưu tiên FreeRTOS Priority 5 giúp âm thanh phát ra loa trong trẻo, mượt mà, không bị giật/lag.
+  * **Giao diện Live Chat**:
+    * Khi người dùng nói (`event == "user_transcription"`): Màn hình tự động chuyển sang chế độ Chat, hiển thị câu nói tiếng Việt có dấu của người dùng tại Card "BAN (USER)".
+    * Khi AI Du trả lời (`event == "model_transcription"`): Text được stream và hiển thị mượt mà trên Card "DU (TRO LY AO)".
+    * Trạng thái phiên đàm thoại được gắn nhãn trên Header Bar: `[DANG NGHE]`, `[DU TRA LOI]`, `[NGAT LOI]`, `[HOAN TAT]`.
+* **Tối ưu hóa Âm thanh Phát Loa Liền mạch & Phát âm chuẩn tên "Du" (Cập nhật 23)**:
+  * **Chuẩn hóa phát âm tên "Du" (Dờ u Du)**:
+    * Bổ sung chỉ dẫn ngữ âm chi tiết trong `system_instruction` của Gemini Live API: Tên trợ lý là "Du" (D trong "du lịch", "dịu dàng", phát âm âm /z/ hoặc /j/ tiếng Việt miền Bắc chuẩn, tuyệt đối không phát âm thành "Đu" / âm Đ).
+  * **Loại bỏ hoàn toàn độ trễ nhân tạo (Artificial Sleep Elimination)**:
+    * Loại bỏ lệnh `asyncio.sleep` trong vòng lặp chuyển tiếp âm thanh của `mic/esp32_hub.py`, truyền trực tiếp và ngay lập tức từng chunk 2048 bytes (42.6ms) xuống ESP32.
+  * **Cơ chế Jitter Buffer & Zero-Gap I2S Loop**:
+    * Trong `esp32mic_no_wakeword.ino` và `esp32mic.ino`, bổ sung bộ đệm pre-fill jitter buffer (chờ tích lũy tối thiểu 2 gói trước khi bắt đầu xả vào DMA).
+    * Loại bỏ `vTaskDelay(1)` sau mỗi lần ghi I2S, cho phép `audio_playback_task` ghi liền mạch không có bất kỳ khoảng trống nano-giây nào giữa các chunk.
+* **Đồng bộ 24kHz Toàn diện & Tối ưu Giao tiếp Súc tích, Hiển thị Dấu '...' Chờ đợi (Cập nhật 24)**:
+  * **Đồng bộ Tần số Lấy mẫu 24,000 Hz (24kHz)**: Toàn bộ cấu hình phần cứng I2S speaker trên ESP32 (`SPEAKER_SAMPLING_RATE`) được thiết lập cố định 24kHz, đảm bảo giọng nữ "Aoede" của Gemini Live phát ra đúng 100% tốc độ thực, giữ trọn vẹn chất giọng trong sáng, ngọt ngào và tự nhiên của người thật.
+  * **Chỉ thị Phản hồi Cực kỳ Súc tích**: Cấu hình `system_instruction` yêu cầu trợ lý trả lời ngắn gọn, cô đọng (từ 1–2 câu ngắn), đi thẳng vào vấn đề và đủ ý nghĩa.
+  * **Giao diện & Console Sạch sẽ**:
+    * Chỉ hiển thị câu hỏi của người dùng và câu trả lời tương ứng.
+    * Khi người dùng vừa dứt lời và hệ thống đang xử lý câu trả lời, màn hình TFT và Console sẽ hiển thị dấu ba chấm (`...`) biểu thị trạng thái đang suy nghĩ, sau đó tự động thay thế bằng nội dung trả lời hoàn chỉnh.
+    * Lọc bỏ hoàn toàn các log debug và thông tin thừa trên màn hình console.
 
 ---
 

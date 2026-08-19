@@ -3,13 +3,12 @@
 #include <DNSServer.h>
 #include <Preferences.h>
 #include <driver/i2s.h>
-#include <arduinoFFT.h>
-#include <tflm_esp32.h>
-#include <eloquent_tinyml.h>
 #include <WiFiClientSecure.h>
 #include <WebSocketsClient.h>
 #include <ArduinoJson.h>
-#include "wakeupword_model_data.h"
+#include <SPI.h>
+#include <TFT_eSPI.h>
+#include "User_Setup.h"
 
 // =========================================================================
 // HARDWARE PIN CONFIGURATIONS
@@ -32,6 +31,14 @@
 struct WifiCreds {
   String ssid;
   String pass;
+};
+
+// Vietnamese character decomposition structure for TFT display
+struct VnCharInfo {
+  char base;
+  uint8_t hat;  // 0: None, 1: Mũ (^), 2: Trăng (˘), 3: Râu (ơ, ư), 4: Đ (đ)
+  uint8_t tone; // 0: None, 1: Sắc (/), 2: Huyền (\), 3: Hỏi (?), 4: Ngã (~), 5: Nặng (.)
+  uint8_t bytes;
 };
 
 // Callback function prototype for EventBus subscribers
@@ -89,7 +96,7 @@ String dequeue(String queueName);
 void set(String key, String value);
 String get(String key);
 
-// Function declarations from esp32mic.ino
+// Function declarations from esp32mic_no_wakeword.ino
 void initMic();
 uint8_t* micRecordWav(int seconds, int* out_wav_size);
 void startWakeupDetectionTask();
@@ -116,6 +123,19 @@ bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
 bool refreshGcloudToken();
 bool isGcloudTokenExpired();
 
+// Function declarations from esp32display.ino
+void initDisplay();
+void renderConfigDisplay();
+void renderChatDisplay();
+void updateDisplay();
+VnCharInfo parseNextVnChar(const char* str, size_t len);
+void drawVietnameseChar(const VnCharInfo& info, int charX, int charY, uint16_t textColor, uint16_t bgColor, uint8_t font = 2);
+void drawWrappedVietnameseText(const String& utf8Text, int x, int y, int maxW, int maxH, uint16_t textColor, uint16_t bgColor, uint8_t font = 2);
+void displaySetUserText(const String& userText);
+void displayAppendModelText(const String& textChunk);
+void displaySetChatStatus(const String& status);
+void displayEndChatTurn();
+
 extern String current_hub_host;
 extern int current_hub_port;
 
@@ -127,10 +147,8 @@ void startButtonPollingTask();
 void onWakeupwordReceived(const String& topic, const String& payload) {
   Serial.printf("[Main Thread] Received EventBus notification on topic '%s': %s\n", topic.c_str(), payload.c_str());
   
-  // If a detection occurred. Detection is paused in the AI task loop.
-  // We trigger the Voice Chat connection to the local Hub.
-  if (payload.indexOf("type:detected") != -1 || payload.indexOf("type=detected") != -1) {
-    Serial.println("[Main Thread] Wakeup detected! Connecting to Local Hub for Voice Chat...");
+  if (payload.indexOf("type:detected") != -1 || payload.indexOf("type=detected") != -1 || payload.indexOf("type=start") != -1) {
+    Serial.println("[Main Thread] Connecting to Local Hub for Voice Chat...");
     connect_live_chat();
   }
 }
@@ -152,6 +170,9 @@ void setup() {
     Serial.println("            Please enable PSRAM (OPI PSRAM) in Arduino IDE -> Tools -> PSRAM.");
   }
   Serial.printf("[Memory] Free Internal DRAM Heap: %d bytes\n", ESP.getFreeHeap());
+
+  // Initialize 2.8" TFT Touch ILI9341 Display (Cap nhat 21)
+  initDisplay();
   
   // Load stored Gemini API key and model name
   preferences.begin("gemini-config", true);
@@ -202,32 +223,23 @@ void setup() {
   //   1. initMic()       → Init I2S RX driver (2x INMP441)
   //   2. initSpeaker()   → Init I2S TX driver (MAX98357A)
   //   3. playOkSound()   → Play ok.wav → confirms speaker is working
-  //   4. micSelfTest()   → Record 5s WAV → play back → free buffer
-  //   5. startWakeupDetectionTask() → Start AI detection on Core 1
+  //   4. micSelfTest()   → Record 1s WAV → play back → free buffer
   // ═══════════════════════════════════════════════════════════════════════
 
-
-  Serial.println("[Boot] 1/5 - initMic: Initializing microphone I2S RX...");
+  Serial.println("[Boot] 1/4 - initMic: Initializing microphone I2S RX...");
   initMic();
 
-  Serial.println("[Boot] 2/5 - initSpeaker: Initializing speaker I2S TX...");
+  Serial.println("[Boot] 2/4 - initSpeaker: Initializing speaker I2S TX...");
   initSpeaker();
 
-  Serial.println("[Boot] 3/5 - playOkSound: Playing ok.wav to verify speaker...");
+  Serial.println("[Boot] 3/4 - playOkSound: Playing ok.wav to verify speaker...");
   playOkSound();
   Serial.println("[Boot]       Speaker OK ✓");
 
-  Serial.println("[Boot] 4/5 - micSelfTest: Record 5s WAV → play back → free memory...");
+  Serial.println("[Boot] 4/4 - micSelfTest: Record 1s WAV → play back → free memory...");
   micSelfTest();
   Serial.println("[Boot]       Mic OK ✓");
-
-  Serial.println("[Boot] 5/5 - startWakeupDetectionTask: Launching AI detection task...");
-  startWakeupDetectionTask();
-  Serial.println("[Boot] === All hardware verified. Wakeup detection running. ===\n");
-
-  // Publish start command to activate detection in the AI task
-  publish("wakeupword", "type=start");
-
+  Serial.println("[Boot] === All hardware verified (esp32mic_no_wakeword active). ===\n");
 
   // Try to connect to WiFi using stored credentials (auto-connect up to 5 stored networks)
   if (connectWiFi()) {
@@ -284,10 +296,16 @@ void setup() {
   // Start the boot-button polling task LAST (after all hardware is ready).
   // This task polls GPIO 0 every 50ms – no hardware interrupt needed.
   startButtonPollingTask();
+
+  // Render initial configuration dashboard on TFT screen (Cap nhat 21)
+  renderConfigDisplay();
 }
 
 
 void loop() {
+  // Update TFT dynamic status and handle touch events (Cap nhat 21)
+  updateDisplay();
+
   if (inApMode) {
     // Serve DNS and HTTP clients in AP mode
     dnsServer.processNextRequest();

@@ -19,7 +19,7 @@
 #include "ok_wifi_wav.h"
 
 
-#define SPEAKER_SAMPLING_RATE 16000 // Match mic sampling rate for loopback test
+#define SPEAKER_SAMPLING_RATE 24000 // Native Gemini Live sampling rate (24kHz)
 
 // Configures the I2S driver for MAX98357A Speaker Output
 void initSpeaker() {
@@ -30,7 +30,7 @@ void initSpeaker() {
     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT, // Stereo Mode
     .communication_format = I2S_COMM_FORMAT_STAND_I2S,
     .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-    .dma_buf_count = 8,
+    .dma_buf_count = 16,
     .dma_buf_len = 512,
     .use_apll = false
   };
@@ -45,7 +45,7 @@ void initSpeaker() {
   i2s_driver_install(I2S_PORT_OUT, &i2s_config, 0, NULL);
   i2s_set_pin(I2S_PORT_OUT, &pin_config);
   
-  Serial.println("[Speaker] I2S Driver for MAX98357A initialized.");
+  Serial.println("[Speaker] I2S Driver for MAX98357A initialized at 24kHz.");
 }
 
 // Plays a buffer of stereo samples to the speaker
@@ -124,8 +124,11 @@ void playSpeakerWav(const uint8_t* wav_data, size_t wav_len) {
   }
 
   free(stereo_chunk);
-Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
+  Serial.println("[Self-Test] Playing 1 second of silence to flush DAC...");
   playSilence(1000);
+  
+  // Restore speaker sample rate to 24kHz for Gemini Live streaming
+  i2s_set_sample_rates(I2S_PORT_OUT, 24000);
 }
 
 

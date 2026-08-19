@@ -542,6 +542,9 @@ void handle_text_message(uint8_t * payload, size_t length) {
         } else if (event == "user_transcription") {
             String text = doc["text"].as<String>();
             Serial.printf("🎙️ [User]: '%s'\n", text.c_str());
+        } else if (event == "model_transcription") {
+            String text = doc["text"].as<String>();
+            Serial.printf("🤖 [Du]: '%s'\n", text.c_str());
         }
     }
 }

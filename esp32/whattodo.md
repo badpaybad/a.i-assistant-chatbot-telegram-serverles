@@ -89,6 +89,21 @@ nếu firebase jwt access token đã có và chưa expired thì cần firestore 
 
 **cập nhật 18** cần cấp thêm api cho esp32 hub để tạo Google OAuth 2.0 Access Token (đại diện cho services account ) để client esp32 lưu lại, việc lấy access token này vẫn dùng MAC address validate, cần 1 số dịch vụ chạy distributed trên các client esp32. 
 
-**cập nhật 19** PN532 RFID 13.56Mhz để đọc NFC , chỉ ra chân đấu với esp32 s3 n16r8 và code để đọc NFC , xem code esp32/pn532_test/pn532_test.ino 
+**cập nhật 19** PN532 RFID 13.56Mhz để đọc NFC , chỉ ra chân đấu với esp32 s3 n16r8 và code để đọc NFC , xem code esp32/pn532_test/pn532_test.ino
+
+**cập nhật 20** [DONE] clone code mic ở esp32/esp32os/esp32mic.ino thành esp32/esp32os/esp32mic_no_wakeword.ino bỏ tính năng dùng TFLite để detect wake word giải phóng bộ nhớ cho việc khác
+    giữ lại stream mic và phát loa khi làm việc với api, websocket  mic/esp32_hub.py
+    dùng esp32/esp32os/esp32mic_no_wakeword.ino vào esp32/esp32os/esp32os.ino
+
+**cập nhật 21** [DONE] dựa vào esp32/esp32tfttouchili9341/esp32tfttouchili9341.ino dùng trong esp32/esp32os/esp32os.ino và hiển thị text màn hình các thông số cấu hình của esp32os đã lưu ở esp32/esp32os/esp32uiconfig.ino
+
+**cập nhật 22** [DONE] ở mic/esp32_hub.py đã hỗ trợ gửi cả audio và text qua websocket , khi nhận được text cần hiển thị text ra màn hình , cần hỗ trợ hiển thị tiếng Việt có dấu unicode utf-8 
+
+**cập nhật 23** [DONE] việc phát âm ra loa vẫn giật cục chưa mượt mà cần cải thiện cho esp32/esp32os/esp32os.ino và mic/esp32_hub.py để stream websocket mượt mà 
+    ở mic/esp32_hub.py khi phát âm Du (Dờ u Du) chứ không phải Đu là Du 
+
+**cập nhật 24** [DONE] giọng nữ "Aoede" Gemini Live API phát âm thanh chuẩn ở tần số 24,000 Hz (24kHz)  đồng bộ 24kHz trên toàn hệ thống ESP32. Cần response từ gemini live cực súc tích và gọn gàng đủ nghĩa để trả lời.
+Chỉ cần viết text của người hỏi và text response tương ứng, không cần viết ra chữ gemini live ... nếu đang đợi câu trả lời thì viết ra dấu ba chấm (...) 
+Đảm bảo âm thanh phát ra loa không bị rớt bị sót hay giật giật 
 
 **chú ý** cần cập nhật cách làm vào esp32/howtodo.md , việc cài đặt cần thiết các thư viện cách cấu hình IDE cần cập nhật vào esp32/readme.md

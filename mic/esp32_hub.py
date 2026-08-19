@@ -8,6 +8,9 @@ import sqlite3
 import uuid
 import socket
 import re
+import html
+import urllib.request
+import urllib.parse
 import subprocess
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 import uvicorn
@@ -290,6 +293,36 @@ def delete_user_note_tool(note_id: int) -> str:
     """Xóa thông tin ghi chú theo ID."""
     logger.info(f"🤖 Model called tool: delete_user_note(note_id={note_id})")
     return delete_user_note_record(note_id)
+
+def google_search_tool(query: str) -> str:
+    """Tìm kiếm thông tin trên internet qua Google/Web và trả về kết quả tóm tắt."""
+    logger.info(f"🌐 🤖 Model called tool: google_search(query='{query}')")
+    try:
+        url = "https://html.duckduckgo.com/html/?q=" + urllib.parse.quote(query)
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        )
+        with urllib.request.urlopen(req, timeout=6) as response:
+            page = response.read().decode("utf-8")
+        
+        snippets = re.findall(r"<a class=\"result__snippet[^\"]*\"[^>]*>(.*?)</a>", page, re.DOTALL)
+        results = []
+        for i in range(min(5, len(snippets))):
+            clean_snip = re.sub(r"<.*?>", "", snippets[i])
+            clean_snip = html.unescape(clean_snip).strip()
+            if clean_snip:
+                results.append(clean_snip)
+            
+        if results:
+            res_str = "\n".join([f"- {r}" for r in results])
+            logger.info(f"🌐 Search results found for '{query}': {len(results)} snippets")
+            return f"Kết quả tìm kiếm trên internet cho '{query}':\n{res_str}"
+        return f"Không tìm thấy kết quả phù hợp trên internet cho '{query}'."
+    except Exception as e:
+        err = f"Lỗi khi tìm kiếm trên internet: {e}"
+        logger.error(err)
+        return err
 
 
 # Paths for Firebase config
@@ -586,6 +619,7 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
     # Configuration for Gemini Live
     config = types.LiveConnectConfig(
         response_modalities=[types.Modality.AUDIO],
+        output_audio_transcription=types.AudioTranscriptionConfig(),
         speech_config=types.SpeechConfig(
             voice_config=types.VoiceConfig(
                 prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Aoede")
@@ -594,20 +628,36 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
         ),
         system_instruction=types.Content(
             parts=[types.Part.from_text(
-                text="HỆ THỐNG YÊU CẦU BẮT BUỘC:\n"
-                     "1. BẠN PHẢI LUÔN LUÔN PHÁT ÂM TIẾNG VIỆT VỚI GIỌNG CHUẨN MIỀN BẮC VIỆT NAM (GIỌNG HÀ NỘI). TUYỆT ĐỐI KHÔNG ĐƯỢC NÓI LƠ LỚ, KHÔNG GIẢ GIỌNG NƯỚC NGOÀI, VÀ KHÔNG ĐƯỢC CHUYỂN SANG TIẾNG ANH HOẶC NÓI ĐỆM TIẾNG ANH TRONG MỌI TRƯỜNG HỢP.\n"
-                     "2. Bạn là trợ lý ảo thông minh tiếng Việt tên là 'Du'. Hãy trả lời cực kỳ ngắn gọn, tự nhiên, thân thiện và phát âm rõ ràng như đang hội thoại thực tế.\n"
-                     "3. BẠN CÓ THỂ TRUY CẬP VÀO LỊCH SỬ ĐÀM THOẠI tự động trong cơ sở dữ liệu qua các công cụ 'get_conversation_history' và 'search_conversation_history' để nhớ chuyện cũ.\n"
-                     "4. BẠN CÓ THỂ LƯU TRỮ, TRA CỨU, SỬA, XÓA THÔNG TIN RIÊNG của người dùng (sở thích, lịch trình, nhắc nhở...) vào một bảng lưu trữ riêng khi người dùng yêu cầu qua các công cụ: "
-                     "'add_user_note', 'get_user_notes', 'search_user_notes', 'update_user_note', 'delete_user_note'. "
-                     "Khi thực hiện các thao tác này, hãy thông báo lại kết quả chính xác cho người dùng bằng tiếng Việt giọng Bắc chuẩn."
+                text="HỆ THỐNG YÊU CẦU BẮT BUỘC VỀ GIỌNG NÓI VÀ PHÁT ÂM:\n"
+                     "1. GIỌNG HÀ NỘI CHUẨN (MIỀN BẮC VIỆT NAM): Bạn phải luôn luôn phát âm bằng chất giọng chuẩn Hà Nội thanh lịch, trong sáng, truyền cảm, tròn vành rõ chữ và tự nhiên như người bản xứ. Tuyệt đối không nói lơ lớ, không giả giọng nước ngoài, không nói giọng địa phương khác, và không đệm tiếng Anh.\n"
+                     "2. NGỮ ĐIỆU VÀ PHONG THÁI: Nói với âm lượng vừa phải, tiết tấu nhịp nhàng, phát âm chuẩn xác toàn bộ thanh điệu (sắc, huyền, hỏi, ngã, nặng) và các phụ âm tiếng Việt. Phong thái giao tiếp nhẹ nhàng, lễ phép, thông minh, hoạt bát và tinh tế.\n"
+                     "3. DANH XƯNG VÀ TÊN GỌI: Tên bạn là 'Du' (phát âm là Dờ-u-Du / âm 'D' chuẩn tiếng Việt như trong 'du lịch', 'dịu dàng'). Trả lời ngắn gọn, cô đọng, súc tích, đi thẳng vào trọng tâm vấn đề.\n"
+                     "4. TÌM KIẾM GOOGLE / INTERNET: Khi người dùng muốn tra cứu tin tức thời sự, sự kiện, thời tiết, giá cả, kết quả trận đấu, kiến thức cập nhật hoặc bất kỳ nội dung nào cần tra cứu mạng, BẠN HÃY TỰ ĐỘNG DÙNG CÔNG CỤ 'google_search' ĐỂ TÌM KIẾM. Sau khi nhận kết quả, hãy tổng hợp câu trả lời ngắn gọn, chuẩn xác bằng tiếng Việt giọng Hà Nội cho người dùng.\n"
+                     "5. TRUY CẬP LỊCH SỬ ĐÀM THOẠI: Tự động dùng 'get_conversation_history' hoặc 'search_conversation_history' khi cần nhớ lại các cuộc trò chuyện trước.\n"
+                     "6. GHI CHÚ VÀ LƯU TRỮ THÔNG TIN RIÊNG: Khi người dùng yêu cầu nhớ sở thích, nhắc việc, lịch hẹn... hãy dùng các công cụ 'add_user_note', 'get_user_notes', 'search_user_notes', 'update_user_note', 'delete_user_note' và phản hồi rõ ràng, chính xác."
             )]
         ),
         realtime_input_config=types.RealtimeInputConfig(
             activity_handling=types.ActivityHandling.NO_INTERRUPTION
         ),
         tools=[
+            types.Tool(google_search=types.GoogleSearch()),
             types.Tool(function_declarations=[
+                # Nhóm 0: Tìm kiếm thông tin trên Google / Internet
+                types.FunctionDeclaration(
+                    name="google_search",
+                    description="Tìm kiếm thông tin trên Google / Internet khi người dùng yêu cầu tra cứu tin tức mới, thời tiết, sự kiện, giá cả, tỷ số, tra cứu kiến thức...",
+                    parameters=types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "query": types.Schema(
+                                type=types.Type.STRING,
+                                description="Từ khóa hoặc câu truy vấn ngắn gọn để tìm kiếm trên Google/Internet."
+                            )
+                        },
+                        required=["query"]
+                    )
+                ),
                 # Nhóm 1: Tra cứu lịch sử hội thoại tự động (chat_history)
                 types.FunctionDeclaration(
                     name="get_conversation_history",
@@ -731,7 +781,6 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
 
             # Task 1: Forward audio from ESP32 to Gemini Live
             async def esp32_to_gemini():
-                packet_count = 0
                 try:
                     while True:
                         message = await websocket.receive()
@@ -743,13 +792,10 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
                         if "bytes" in message:
                             pcm_chunk = message["bytes"]
                             if pcm_chunk:
-                                # Forward raw 16kHz PCM mono audio
+                                # Forward raw 16kHz PCM mono audio silently
                                 await session.send_realtime_input(
                                     audio=types.Blob(data=pcm_chunk, mime_type="audio/pcm;rate=16000")
                                 )
-                                packet_count += 1
-                                if packet_count % 30 == 0:
-                                    logger.info(f"📤 Forwarded packet #{packet_count} ({len(pcm_chunk)} bytes) to Gemini.")
                         elif "text" in message:
                             text_msg = message["text"]
                             logger.info(f"📩 Received text from ESP32: {text_msg}")
@@ -764,138 +810,151 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
             # Task 2: Forward response from Gemini Live to ESP32
             async def gemini_to_esp32():
                 audio_buffer = bytearray()
-                CHUNK_SIZE = 4096 # Standardize to 4KB chunks (~85ms of 24kHz audio)
-                
-                # Real-time audio pacing parameters
-                start_time = None
-                sent_duration = 0.0
-                CHUNK_DURATION = CHUNK_SIZE / 48000.0 # 4096 bytes / 48000 bytes/sec = 0.085333s
+                CHUNK_SIZE = 2048 # 2KB chunks (~42.6ms of 24kHz mono audio)
+                first_model_chunk_received = False
+                turn_audio_start_time = None
+                turn_sent_seconds = 0.0
                 
                 try:
-                    async for response in session.receive():
-                        # Check if the model is asking to use a tool
-                        if response.tool_call is not None:
-                            logger.info("🤖 Model requested tool call...")
-                            function_responses = []
-                            for fc in response.tool_call.function_calls:
-                                name = fc.name
-                                args = fc.args
-                                call_id = fc.id
-                                logger.info(f"🛠️ Executing function '{name}' with args {args}")
-                                
-                                result = ""
-                                if name == "get_conversation_history":
-                                    limit = args.get("limit", 20)
-                                    result = get_conversation_history(limit)
-                                elif name == "search_conversation_history":
-                                    query_text = args.get("query_text", "")
-                                    result = search_conversation_history(query_text)
-                                elif name == "add_user_note":
-                                    topic = args.get("topic", "Chung")
-                                    content = args.get("content", "")
-                                    result = add_user_note_tool(topic, content)
-                                elif name == "get_user_notes":
-                                    limit = args.get("limit", 50)
-                                    result = get_user_notes_tool(limit)
-                                elif name == "search_user_notes":
-                                    query_text = args.get("query_text", "")
-                                    result = search_user_notes_tool(query_text)
-                                elif name == "update_user_note":
-                                    note_id = int(args.get("note_id", 0))
-                                    new_topic = args.get("new_topic", None)
-                                    new_content = args.get("new_content", None)
-                                    result = update_user_note_tool(note_id, new_topic, new_content)
-                                elif name == "delete_user_note":
-                                    note_id = int(args.get("note_id", 0))
-                                    result = delete_user_note_tool(note_id)
-                                else:
-                                    result = f"Error: Tool '{name}' not found."
-                                    logger.error(result)
+                    while True:
+                        async for response in session.receive():
+                            # Check if the model is asking to use a tool
+                            if response.tool_call is not None:
+                                logger.info("🛠️ Đang tra cứu thông tin...")
+                                function_responses = []
+                                for fc in response.tool_call.function_calls:
+                                    name = fc.name
+                                    args = fc.args
+                                    call_id = fc.id
                                     
-                                function_responses.append(types.FunctionResponse(
-                                    name=name,
-                                    response={'result': result},
-                                    id=call_id
-                                ))
-                            
-                            logger.info(f"📤 Sending tool response back to Gemini: {function_responses}")
-                            await session.send_tool_response(function_responses=function_responses)
-                            continue
+                                    result = ""
+                                    if name == "google_search":
+                                        query = args.get("query", "")
+                                        result = google_search_tool(query)
+                                    elif name == "get_conversation_history":
+                                        limit = args.get("limit", 20)
+                                        result = get_conversation_history(limit)
+                                    elif name == "search_conversation_history":
+                                        query_text = args.get("query_text", "")
+                                        result = search_conversation_history(query_text)
+                                    elif name == "add_user_note":
+                                        topic = args.get("topic", "Chung")
+                                        content = args.get("content", "")
+                                        result = add_user_note_tool(topic, content)
+                                    elif name == "get_user_notes":
+                                        limit = args.get("limit", 50)
+                                        result = get_user_notes_tool(limit)
+                                    elif name == "search_user_notes":
+                                        query_text = args.get("query_text", "")
+                                        result = search_user_notes_tool(query_text)
+                                    elif name == "update_user_note":
+                                        note_id = int(args.get("note_id", 0))
+                                        new_topic = args.get("new_topic", None)
+                                        new_content = args.get("new_content", None)
+                                        result = update_user_note_tool(note_id, new_topic, new_content)
+                                    elif name == "delete_user_note":
+                                        note_id = int(args.get("note_id", 0))
+                                        result = delete_user_note_tool(note_id)
+                                    else:
+                                        result = f"Error: Tool '{name}' not found."
+                                        logger.error(result)
+                                        
+                                    function_responses.append(types.FunctionResponse(
+                                        name=name,
+                                        response={'result': result},
+                                        id=call_id
+                                    ))
+                                
+                                await session.send_tool_response(function_responses=function_responses)
+                                continue
 
-                        server_content = response.server_content
-                        if server_content is not None:
-                            # Interruption event (barge-in)
-                            if server_content.interrupted:
-                                logger.info("🛑 Gemini session interrupted. Sending mute event.")
-                                audio_buffer.clear()
-                                start_time = None
-                                sent_duration = 0.0
-                                if session_state["model_text_acc"]:
-                                    session_state["model_text_acc"].clear()
-                                await websocket.send_json({"event": "interrupted"})
-
-                            # Model speaking turn audio data
-                            if server_content.model_turn is not None:
-                                for part in server_content.model_turn.parts:
-                                    if part.inline_data is not None:
-                                        audio_data = part.inline_data.data
-                                        if audio_data:
-                                            audio_buffer.extend(audio_data)
-                                            while len(audio_buffer) >= CHUNK_SIZE:
-                                                chunk = bytes(audio_buffer[:CHUNK_SIZE])
-                                                del audio_buffer[:CHUNK_SIZE]
-                                                
-                                                if start_time is None:
-                                                    start_time = asyncio.get_event_loop().time()
-                                                
-                                                # Send the chunk to the ESP32
-                                                await websocket.send_bytes(chunk)
-                                                sent_duration += CHUNK_DURATION
-                                                
-                                                # Perform adaptive pacing based on actual elapsed time
-                                                now = asyncio.get_event_loop().time()
-                                                elapsed = now - start_time
-                                                # Maintain a 150ms lead cushion (approx 1.7 chunks) on client play queue
-                                                target_play_time = sent_duration - 0.150
-                                                if target_play_time > elapsed:
-                                                    await asyncio.sleep(target_play_time - elapsed)
-                                    elif part.text is not None:
-                                        # Print or log the text response
-                                        print(part.text, end="", flush=True)
-                                        session_state["model_text_acc"].append(part.text)
-
-                            # Turn complete
-                            if server_content.turn_complete:
-                                # Flush any remaining audio in the buffer
-                                if audio_buffer:
-                                    await websocket.send_bytes(bytes(audio_buffer))
+                            server_content = response.server_content
+                            if server_content is not None:
+                                # Interruption event (barge-in)
+                                if server_content.interrupted:
                                     audio_buffer.clear()
-                                print("\n🤖 [Turn Complete]")
-                                start_time = None
-                                sent_duration = 0.0
-                                if session_state["model_text_acc"]:
-                                    session_state["model_text_acc"].clear()
-                                await websocket.send_json({"event": "turn_complete"})
+                                    first_model_chunk_received = False
+                                    turn_audio_start_time = None
+                                    turn_sent_seconds = 0.0
+                                    if session_state["model_text_acc"]:
+                                        session_state["model_text_acc"].clear()
+                                    await websocket.send_json({"event": "interrupted"})
 
-                            # User input transcription check
-                            if server_content.input_transcription is not None:
-                                trans = server_content.input_transcription
-                                if trans.text:
-                                    session_state["user_text_acc"] = trans.text
-                                    await websocket.send_json({"event": "user_transcription", "text": trans.text})
+                                # Model speaking turn audio data - stream to ESP32 with adaptive flow control
+                                if server_content.model_turn is not None:
+                                    for part in server_content.model_turn.parts:
+                                        if part.inline_data is not None:
+                                            audio_data = part.inline_data.data
+                                            if audio_data:
+                                                audio_buffer.extend(audio_data)
+                                                while len(audio_buffer) >= CHUNK_SIZE:
+                                                    chunk = bytes(audio_buffer[:CHUNK_SIZE])
+                                                    del audio_buffer[:CHUNK_SIZE]
+                                                    
+                                                    if turn_audio_start_time is None:
+                                                        turn_audio_start_time = asyncio.get_event_loop().time()
+                                                        turn_sent_seconds = 0.0
+                                                    
+                                                    await websocket.send_bytes(chunk)
+                                                    # 2048 bytes of 24kHz 16-bit mono = 1024 samples = 0.042667 seconds
+                                                    turn_sent_seconds += len(chunk) / 48000.0
+                                                    
+                                                    # Adaptive rate pacing: Maintain 200-350ms lead time ahead of playback clock
+                                                    now = asyncio.get_event_loop().time()
+                                                    elapsed = now - turn_audio_start_time
+                                                    lead_time = turn_sent_seconds - elapsed
+                                                    if lead_time > 0.350:
+                                                        await asyncio.sleep(lead_time - 0.250)
 
-                                    # Check if the user wants to stop
-                                    text_lower = trans.text.lower()
-                                    if "dừng lại" in text_lower or "làm ơn dừng lại" in text_lower:
-                                        logger.info("🛑 Emergency stop command detected in transcription! Muting speaker.")
-                                        await websocket.send_json({"event": "interrupted"})
+                                # Model output audio transcription (streaming text corresponding to AI voice)
+                                if server_content.output_transcription is not None:
+                                    model_trans = server_content.output_transcription
+                                    if model_trans.text:
+                                        if not first_model_chunk_received:
+                                            first_model_chunk_received = True
+                                            print("\r🤖 [Du]: ", end="", flush=True)
+                                        print(model_trans.text, end="", flush=True)
+                                        session_state["model_text_acc"].append(model_trans.text)
+                                        await websocket.send_json({"event": "model_transcription", "text": model_trans.text})
 
-                                # Save user message to database on finalization
-                                if trans.finished:
-                                    if session_state["user_text_acc"]:
-                                        logger.info(f"🎙️ [User transcription]: '{session_state['user_text_acc']}'")
-                                        save_chat_message(session_id, "user", session_state["user_text_acc"])
-                                        session_state["user_text_acc"] = "" # Reset for next turn
+                                # Turn complete
+                                if server_content.turn_complete:
+                                    # Flush any remaining audio in the buffer
+                                    if audio_buffer:
+                                        await websocket.send_bytes(bytes(audio_buffer))
+                                        audio_buffer.clear()
+                                    print() # New line after response ends
+                                    first_model_chunk_received = False
+                                    turn_audio_start_time = None
+                                    turn_sent_seconds = 0.0
+                                    if session_state["model_text_acc"]:
+                                        full_model_text = "".join(session_state["model_text_acc"]).strip()
+                                        if full_model_text:
+                                            save_chat_message(session_id, "model", full_model_text)
+                                        session_state["model_text_acc"].clear()
+                                    await websocket.send_json({"event": "turn_complete"})
+
+                                # User input transcription check
+                                if server_content.input_transcription is not None:
+                                    trans = server_content.input_transcription
+                                    if trans.text:
+                                        session_state["user_text_acc"] = trans.text
+                                        await websocket.send_json({"event": "user_transcription", "text": trans.text})
+
+                                        # Check if the user wants to stop
+                                        text_lower = trans.text.lower()
+                                        if "dừng lại" in text_lower or "làm ơn dừng lại" in text_lower:
+                                            logger.info("🛑 Lệnh dừng khẩn cấp! Dừng phát loa.")
+                                            await websocket.send_json({"event": "interrupted"})
+
+                                    # When user finishes speaking, log user text and print waiting ...
+                                    if trans.finished:
+                                        if session_state["user_text_acc"]:
+                                            user_query = session_state["user_text_acc"].strip()
+                                            print(f"\n🎙️ [Người hỏi]: {user_query}")
+                                            print("🤖 [Du]: ...", end="", flush=True)
+                                            save_chat_message(session_id, "user", user_query)
+                                            session_state["user_text_acc"] = "" # Reset for next turn
 
                 except WebSocketDisconnect:
                     pass
@@ -927,8 +986,10 @@ async def websocket_endpoint(websocket: WebSocket, mac: str = None):
         try:
             if session_state["user_text_acc"]:
                 save_chat_message(session_id, "user", session_state["user_text_acc"])
-            # We do not save model text responses into chat_history
-            pass
+            if session_state["model_text_acc"]:
+                full_model_text = "".join(session_state["model_text_acc"]).strip()
+                if full_model_text:
+                    save_chat_message(session_id, "model", full_model_text)
         except Exception as e:
             logger.error(f"❌ Error during session state cleanup: {e}")
         logger.info("🔌 WebSocket connection closed and cleaned up.")

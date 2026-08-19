@@ -1,4 +1,6 @@
-// esp32mic.ino - Microphone and AI Wakeup Word Detection
+// esp32mic.ino - Microphone and AI Wakeup Word Detection (Legacy TFLite implementation)
+// NOTE: Replaced by esp32mic_no_wakeword.ino in Cap nhat 20. Define USE_TFLITE_MIC to re-enable.
+#ifdef USE_TFLITE_MIC
 
 #include <WiFiClientSecure.h>
 #include <WebSocketsClient.h>
@@ -34,6 +36,12 @@ volatile bool setup_complete_received = false;
 // Firebase helper functions defined in esp32firebase.ino
 extern bool delete_hub_ip_from_firestore();
 extern bool get_hub_ip_from_firestore(String &out_ip, int &out_port);
+
+// Display helper functions defined in esp32display.ino
+extern void displaySetUserText(const String& userText);
+extern void displayAppendModelText(const String& textChunk);
+extern void displaySetChatStatus(const String& status);
+extern void displayEndChatTurn();
 
 // State variables for Hub resolution
 String current_hub_host = "";
@@ -107,7 +115,7 @@ void mic_recording_task(void *pvParameters);
 //   và cắm chung vào chân GPIO tương ứng trên mạch ESP32-S3. Chỉ có chân L/R là đấu khác nhau.
 
 #define SAMPLING_RATE   16000
-#define SPEAKER_SAMPLING_RATE 16000
+#define SPEAKER_SAMPLING_RATE 24000
 #define NUM_CLASSES     3       // Labels: background, oi_gemini, unknown
 
 #define SPEC_ROWS       99
@@ -211,18 +219,18 @@ void initMic() {
   ml.resolver.AddMul();
 
   // Initialize non-blocking audio play and mic queues
-  audio_play_queue = xQueueCreate(32, sizeof(AudioPacket));
+  audio_play_queue = xQueueCreate(64, sizeof(AudioPacket));
   mic_queue = xQueueCreate(16, sizeof(MicPacket));
   stream_stereo_chunk = (int32_t*)dma_malloc(STREAM_CHUNK_FRAMES * 2 * sizeof(int32_t));
   stream_mono_chunk = (int16_t*)safe_malloc(STREAM_CHUNK_FRAMES * sizeof(int16_t));
 
-  // Spawn background tasks on Core 1
+  // Spawn background tasks on Core 1 (High priority 5 for audio playback)
   xTaskCreatePinnedToCore(
       audio_playback_task,
       "AudioPlayback",
       4096,
       NULL,
-      4,
+      5,
       NULL,
       1
   );
@@ -861,11 +869,8 @@ void disconnect_live_chat() {
         }
     }
     
-    // Signal tone
-    play_beep(400, 150);
-    
-    // Restore speaker rate to 16kHz
-    i2s_set_sample_rates(I2S_PORT_OUT, 16000);
+    // Restore speaker rate to 24kHz
+    i2s_set_sample_rates(I2S_PORT_OUT, 24000);
 
     ws_task_running = true;
 
@@ -913,7 +918,7 @@ void handle_binary_audio(uint8_t * payload, size_t length) {
     
     size_t num_samples = length / sizeof(int16_t);
     int16_t* mono_play_buf = (int16_t*)payload;
-    int16_t* stereo_play_buf = (int16_t*)dma_malloc(num_samples * 2 * sizeof(int16_t));
+    int16_t* stereo_play_buf = (int16_t*)safe_malloc(num_samples * 2 * sizeof(int16_t));
     if (stereo_play_buf) {
         for (size_t i = 0; i < num_samples; i++) {
             int32_t val = (int32_t)(mono_play_buf[i] * SPEAKER_VOLUME_BOOST);
@@ -924,7 +929,7 @@ void handle_binary_audio(uint8_t * payload, size_t length) {
         }
         
         AudioPacket packet = { stereo_play_buf, num_samples };
-        if (audio_play_queue != NULL && xQueueSend(audio_play_queue, &packet, 0) == pdPASS) {
+        if (audio_play_queue != NULL && xQueueSend(audio_play_queue, &packet, pdMS_TO_TICKS(100)) == pdPASS) {
             last_model_audio_time = millis();
         } else {
             Serial.println("❌ [Playback] Playback queue full, dropping chunk!");
@@ -962,14 +967,13 @@ void handle_websocket_message(uint8_t * payload, size_t length) {
                 if (p.buffer) free(p.buffer);
             }
             
-            play_beep(660, 100);
-            delay(50);
-            play_beep(880, 100);
             setup_complete_received = true;
+            displaySetChatStatus("DANG NGHE");
         } else if (event == "interrupted") {
             Serial.println("\n🛑 Người dùng nói ngắt lời, dừng loa...");
             ignore_current_turn = true;
             model_speaking_turn = false;
+            displaySetChatStatus("NGAT LOI");
             
             // Clear the audio play queue
             AudioPacket packet;
@@ -992,9 +996,15 @@ void handle_websocket_message(uint8_t * payload, size_t length) {
             Serial.println("🤖 [Hub] Turn complete.");
             model_speaking_turn = false;
             ignore_current_turn = false;
+            displayEndChatTurn();
         } else if (event == "user_transcription") {
             String text = doc["text"].as<String>();
             Serial.printf("🎙️ [User]: '%s'\n", text.c_str());
+            displaySetUserText(text);
+        } else if (event == "model_transcription") {
+            String text = doc["text"].as<String>();
+            Serial.printf("🤖 [Du]: '%s'\n", text.c_str());
+            displayAppendModelText(text);
         }
     }
 }
@@ -1098,7 +1108,13 @@ void audio_playback_task(void *pvParameters) {
         if (audio_play_queue != NULL && xQueueReceive(audio_play_queue, &packet, pdMS_TO_TICKS(100)) == pdPASS) {
             if (!is_playing_audio) {
                 is_playing_audio = true;
-                i2s_set_sample_rates(I2S_PORT_OUT, 24000); // Hub streams at 24kHz
+                i2s_set_sample_rates(I2S_PORT_OUT, 24000); // Enforce 24kHz native rate for Gemini Live
+                // Jitter buffer pre-fill: Wait briefly until at least 2 packets are queued
+                int prefill_wait = 0;
+                while (uxQueueMessagesWaiting(audio_play_queue) < 2 && prefill_wait < 5) {
+                    vTaskDelay(pdMS_TO_TICKS(10));
+                    prefill_wait++;
+                }
             }
             if (packet.buffer) {
                 size_t bytes_written = 0;
@@ -1116,7 +1132,6 @@ void audio_playback_task(void *pvParameters) {
                 i2s_zero_dma_buffer(I2S_PORT_OUT);
             }
         }
-        vTaskDelay(pdMS_TO_TICKS(1)); // Small yield
     }
 }
 
@@ -1127,10 +1142,10 @@ void mic_recording_task(void *pvParameters) {
             continue;
         }
         
-        // Suppression check (while playing model audio, or within 500ms after last playback)
+        // Suppression check (while playing model audio, or within 800ms after last playback)
         bool should_suppress = model_speaking_turn || 
                                is_playing_audio || 
-                               (millis() - last_model_audio_time < 500) || 
+                               (millis() - last_model_audio_time < 800) || 
                                (audio_play_queue != NULL && uxQueueMessagesWaiting(audio_play_queue) > 0);
         
         if (should_suppress) {
@@ -1239,3 +1254,5 @@ void base64_encode_to_buf(const uint8_t *input, size_t input_len, char *output) 
     }
     output[j] = '\0';
 }
+
+#endif // USE_TFLITE_MIC
