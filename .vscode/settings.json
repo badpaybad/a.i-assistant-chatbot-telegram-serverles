@@ -28,7 +28,7 @@
     "pickerGroup.foreground": "#f3aa0d",
     "list.activeSelectionBackground": "#e69d004d",
     "panelTitle.activeBorder": "#f3aa0d",
-    "activityBar.activeBorder": "#e69d00",
+    "activityBar.activeBorder": "#15202b",
     "activityBar.activeBackground": "#fbed80",
     "activityBar.background": "#fbed80",
     "activityBar.foreground": "#15202b",
@@ -52,7 +52,9 @@
     "activityBarTop.inactiveForeground": "#15202b99",
     "commandCenter.foreground": "#15202b",
     "statusBar.debuggingBackground": "#f9e64f",
-    "statusBar.debuggingForeground": "#15202b"
+    "statusBar.debuggingForeground": "#15202b",
+    "activityBarTop.activeBorder": "#15202b",
+    "statusBar.inactiveBackground": "#f9e64f"
   },
   "dotrush.roslyn.projectOrSolutionFiles": [
     "/work/a.i-assistant-chatbot-telegram-serverles/TreeOfThought/backend/Core.Infra.sln"
