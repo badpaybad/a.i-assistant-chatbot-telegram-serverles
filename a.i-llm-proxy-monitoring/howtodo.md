@@ -329,6 +329,37 @@ Quản trị viên có thể thao tác hoàn toàn trên giao diện mà không 
    - `POST /api/policy/rule`: Thêm mới hoặc cập nhật một rule cụ thể.
    - `DELETE /api/policy/rule/{name}`: Xóa bỏ một rule cụ thể theo tên.
    - `POST /api/policy/default`: Cập nhật cấu hình chính sách mặc định.
+   - `POST /api/client-access`: Khóa nhanh hoặc mở khóa quyền dùng Proxy của một PC LAN theo IP/MAC.
+
+---
+
+### 3.4. Kiểm Soát Máy Trạm (IP & MAC), Xử Lý Vi Phạm & SOCKS5 Proxy Gateway
+
+Theo đúng các yêu cầu bổ sung trong [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+
+#### 1. Kiểm soát Chặt Chẽ Từng Máy Trạm (IP LAN & MAC Address):
+- **Cơ chế giới hạn quyền sử dụng**:
+  - Mỗi quy tắc cho PC trong `policy_matrix.yaml` hỗ trợ trường `action: allow | block`.
+  - Quản trị viên có thể cấm hoàn toàn một PC (theo IP hoặc MAC) sử dụng Proxy. Khi bị cấm, máy trạm lập tức bị từ chối với mã lỗi `403 Forbidden` (`BLOCKED_PC_ACCESS`).
+- **Kiểm soát Model (Model Restrictions)**:
+  - Khống chế chính xác danh sách model được phép gọi (ví dụ: chỉ cho phép `gpt-4o-mini*`, cấm các model đắt tiền hoặc cấm model của hãng khác). Nếu gọi model ngoài danh sách, hệ thống chặn ngay với `403 Forbidden` (`BLOCKED_MODEL`).
+- **Giới hạn số lượng Token (Token Limits tính theo ngày)**:
+  - Giới hạn Max Input Token trên mỗi request (`max_input_tokens_per_request`).
+  - Giới hạn tổng số lượng Token tiêu thụ trong ngày (`daily_total_token_quota`). Khi chạm ngưỡng, tự động từ chối với `429 Too Many Requests` (`BLOCKED_DAILY_QUOTA`).
+- **Hỗ trợ Đa Giao Thức (HTTP, HTTPS, SOCKS5, MCP Streaming)**:
+  - **HTTP/HTTPS Reverse Proxy**: Cổng `8000` (định tuyến theo path `/google`, `/anthropic`, `/openai`, `/copilot`).
+  - **MCP Transports**: Cổng `8000` (hỗ trợ đầy đủ SSE `/mcp/{srv}/sse`, WebSocket `/mcp/{srv}/ws`, gRPC-Web/Protobuf `/mcp/{srv}/grpc`).
+  - **SOCKS5 Proxy (RFC 1928)**: Cổng `1080` (chuyển tiếp kết nối TCP, tự động nhận diện IP/MAC qua bảng ARP, kiểm soát quyền PC và chặn theo Domain Policy).
+
+#### 2. Cảnh Báo Vi Phạm & Cấu Hình Lại Trên UI (Máy Trạm Mạng LAN IP & MAC):
+- **Hiển thị trực quan trạng thái vi phạm**:
+  - Tại bảng **🖥️ Máy Trạm Mạng LAN (IP & MAC)** trên Dashboard:
+    - Nếu máy trạm bị cấm: Hiển thị huy hiệu `⛔ BỊ CHẶN PC`.
+    - Nếu máy trạm có request bị chặn (vượt Quota, gọi model cấm, provider cấm, domain cấm): Hiển thị huy hiệu cảnh báo `🚨 VI PHẠM: <Mã lỗi> (<Số lần> lần)`.
+    - Khi có máy trạm vi phạm, thanh **Banner Cảnh Báo** màu đỏ xuất hiện ngay đầu bảng thông báo tổng số máy vi phạm và lý do cụ thể.
+- **Thao tác nhanh 1-Click để cấu hình lại**:
+  - Nút **`⚙️ Cấu hình lại`**: Mở trực tiếp modal cấu hình quyền và quota với toàn bộ thông tin IP, MAC, Tên máy của PC đó đã được tự động điền sẵn.
+  - Nút **`⛔ Chặn PC`** / **`🟢 Mở khóa`**: Gọi API `POST /api/client-access` để quản trị viên có thể lập tức cô lập hoặc khôi phục quyền truy cập cho máy trạm vi phạm.
 
 ---
 
@@ -801,6 +832,32 @@ sequenceDiagram
 | gRPC native (HTTP/2 + trailers) | ⚠️ Chưa hỗ trợ trực tiếp | — | Uvicorn không phục vụ HTTP/2; đặt Envoy / nginx `grpc_pass` phía trước để chuyển gRPC native ↔ gRPC-Web rồi trỏ vào route trên |
 
 > Payload protobuf là nhị phân nên Gateway không đọc nội dung tham số; việc kiểm soát dựa trên tên method trong đường dẫn gRPC.
+
+---
+
+## 8.7. Cơ Chế Cô Lập Kiểm Thử & Tự Động Thu Hồi / Khôi Phục Dữ Liệu Test
+
+Để đảm bảo quá trình chạy kiểm thử tự động (`python3 -m unittest test_client.py`) không làm ảnh hưởng hay để lại rác trong cơ sở dữ liệu thật (`data/llm_audit.db`) và file chính sách vận hành (`policy_matrix.yaml`), hệ thống áp dụng cơ chế 4 tầng bảo vệ:
+
+1. **Snapshot & Thư mục tạm (Sandbox Environment)**:
+   - Trước khi import `proxy_server` hoặc `database`, bộ test tạo thư mục tạm bằng `tempfile.mkdtemp(prefix="llm_proxy_test_")`.
+   - Sao lưu nội dung gốc của `policy_matrix.yaml` vào bộ nhớ và tạo bản sao trong thư mục tạm.
+   - Trỏ `POLICY_FILE` và `DB_PATH` sang thư mục tạm, giúp toàn bộ thao tác đọc/ghi của test chỉ diễn ra trên DB và file cấu hình tạm.
+
+2. **Dọn dẹp tức thì qua `try...finally` ở từng Test Case**:
+   - Mọi test case tạo rule (ví dụ `test_06`, `test_10`, `test_13`, `test_20`, `test_21`) hoặc tạo domain policy (`test_11`, `test_22`) đều được đặt trong khối `try...finally`.
+   - Ngay cả khi assertion thất bại, khối `finally` sẽ lập tức gọi API xóa rule hoặc reset domain policy về trạng thái ban đầu.
+   - Các rule phục vụ test đều có tiền tố `[TEST]` để dễ nhận diện và tránh nhầm lẫn với rule sản xuất.
+
+3. **Thu hồi và khôi phục toàn diện tại `tearDownClass`**:
+   - Khôi phục nguyên vẹn 100% nội dung gốc của `policy_matrix.yaml` thật.
+   - Xóa bỏ hoàn toàn thư mục tạm `_TMP_DIR` bằng `shutil.rmtree`.
+   - Phục hồi lại các biến môi trường `POLICY_FILE` và `DB_PATH` về giá trị ban đầu.
+   - Kết nối vào cơ sở dữ liệu thật để quét và dọn sạch triệt để mọi bản ghi test (nếu có lọt vào).
+
+4. **Kết quả xác minh (Zero Residual Data)**:
+   - Cơ sở dữ liệu thật `data/llm_audit.db` chỉ chứa các endpoint và nhật ký vận hành thực tế, 0 bản ghi test.
+   - File cấu hình `policy_matrix.yaml` không bị biến đổi sau khi chạy kiểm thử.
 
 ---
 

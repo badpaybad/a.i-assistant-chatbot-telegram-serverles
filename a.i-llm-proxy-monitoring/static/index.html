@@ -620,23 +620,29 @@
             <div class="grid-tables">
                 <!-- Usage by Workstation -->
                 <div class="card">
-                    <div class="card-header">
+                    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <h2 class="card-title">🖥️ Máy Trạm Mạng LAN (IP & MAC)</h2>
+                        <span id="clients-violation-badge" style="display: none;" class="badge badge-blocked">🚨 Có máy trạm vi phạm</span>
                     </div>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>IP LAN</th>
-                                <th>MAC Address</th>
-                                <th>Tên Máy</th>
-                                <th>Requests</th>
-                                <th>Tổng Tokens</th>
-                            </tr>
-                        </thead>
-                        <tbody id="clients-table-body">
-                            <tr><td colspan="5" class="empty-hint">Chưa có dữ liệu máy trạm</td></tr>
-                        </tbody>
-                    </table>
+                    <div id="clients-violation-alert" style="display: none; margin: 12px; padding: 10px 14px; border-radius: 8px; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 12.5px; line-height: 1.5;"></div>
+                    <div style="overflow-x: auto;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>IP LAN</th>
+                                    <th>MAC Address</th>
+                                    <th>Tên Máy</th>
+                                    <th>Trạng Thái & Vi Phạm</th>
+                                    <th>Requests</th>
+                                    <th>Tokens / Quota</th>
+                                    <th>Thao Tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clients-table-body">
+                                <tr><td colspan="7" class="empty-hint">Chưa có dữ liệu máy trạm</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
                 <!-- Usage by Model -->
@@ -817,6 +823,20 @@
                 <button class="btn" onclick="closeModal('ruleModal')">✕</button>
             </div>
             <form id="ruleForm" onsubmit="handleSaveRule(event)">
+                <div class="form-group">
+                    <label class="form-label">Quyền Truy Cập LLM Proxy Gateway *</label>
+                    <div style="display: flex; gap: 20px; align-items: center; margin-top: 6px; padding: 8px 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="rule_action" value="allow" id="rule-action-allow" checked style="accent-color: #22c55e; width: 16px; height: 16px;">
+                            <span style="color: #4ade80; font-weight: 500;">🟢 Cho phép sử dụng (Allow)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="rule_action" value="block" id="rule-action-block" style="accent-color: #ef4444; width: 16px; height: 16px;">
+                            <span style="color: #f87171; font-weight: 500;">⛔ Chặn hoàn toàn PC này (Block Access)</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label class="form-label">Tên Máy Trạm / Người Dùng *</label>
                     <input type="text" id="rule-name" class="form-control" placeholder="Ví dụ: Dev PC 1 - Hoang" required>
@@ -1035,6 +1055,7 @@
 
     <script>
         let currentPolicy = { default_policy: {}, rules: [] };
+        let currentEditingOriginalName = '';
 
         function formatNumber(num) {
             return (num || 0).toLocaleString('en-US');
@@ -1060,10 +1081,12 @@
                 document.getElementById('tab-monitoring').classList.add('active');
                 document.getElementById('view-monitoring').style.display = 'block';
                 document.getElementById('view-policy').style.display = 'none';
+                try { localStorage.setItem('llm_proxy_active_tab', 'monitoring'); } catch(e){}
             } else {
                 document.getElementById('tab-policy').classList.add('active');
                 document.getElementById('view-monitoring').style.display = 'none';
                 document.getElementById('view-policy').style.display = 'block';
+                try { localStorage.setItem('llm_proxy_active_tab', 'policy'); } catch(e){}
                 fetchPolicy();
             }
         }
@@ -1088,20 +1111,82 @@
                 document.getElementById('stat-output-tokens').innerText = formatNumber(t.total_output_tokens);
                 document.getElementById('stat-total-tokens').innerText = formatNumber(t.total_tokens);
 
-                // Update Clients Table
+                // Update Clients Table with Status & Violation Handling
                 const clientsBody = document.getElementById('clients-table-body');
+                const violationBanner = document.getElementById('clients-violation-alert');
+                const violationBadge = document.getElementById('clients-violation-badge');
+                
+                let totalViolatingPCs = 0;
+                let violationDetails = [];
+
                 if (stats.usage_by_client && stats.usage_by_client.length > 0) {
-                    clientsBody.innerHTML = stats.usage_by_client.map(c => `
-                        <tr>
-                            <td><strong>${c.client_ip}</strong></td>
-                            <td><span class="mac-pill">${c.client_mac}</span></td>
-                            <td>${c.machine_name || 'Workstation'}</td>
-                            <td>${formatNumber(c.req_count)}</td>
-                            <td><strong>${formatNumber(c.sum_tokens)}</strong></td>
-                        </tr>
-                    `).join('');
+                    clientsBody.innerHTML = stats.usage_by_client.map(c => {
+                        const isBlockedPC = c.is_blocked_pc || c.policy_action === 'block';
+                        const isQuotaExceeded = (c.daily_quota > 0 && c.sum_tokens >= c.daily_quota);
+                        const hasHistoryBlocked = (c.blocked_count && c.blocked_count > 0);
+                        const displayName = c.policy_name || c.machine_name || 'Workstation';
+                        
+                        let statusHtml = '';
+                        if (isBlockedPC) {
+                            totalViolatingPCs++;
+                            violationDetails.push(`${displayName} (BỊ CHẶN PC)`);
+                            statusHtml = `<span class="badge badge-blocked" title="Máy trạm này bị chặn truy cập theo quy tắc chính sách">⛔ BỊ CHẶN PC</span>`;
+                        } else if (isQuotaExceeded) {
+                            totalViolatingPCs++;
+                            violationDetails.push(`${displayName} (HẾT QUOTA)`);
+                            statusHtml = `<span class="badge badge-blocked" title="Đã vượt quá hạn mức token trong ngày (${formatNumber(c.sum_tokens)}/${formatNumber(c.daily_quota)})">🚨 HẾT QUOTA</span>`;
+                        } else {
+                            statusHtml = `<span class="badge badge-allowed">🟢 Cho phép</span>`;
+                            if (hasHistoryBlocked) {
+                                const reason = c.last_violation_action ? c.last_violation_action.replace('BLOCKED_', '') : 'BLOCKED';
+                                statusHtml += ` <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 11px; margin-left: 4px;" title="${c.last_violation_msg || ''}">(Đã chặn ${c.blocked_count} req ${reason})</span>`;
+                            }
+                        }
+
+                        const quotaDisplay = c.daily_quota > 0 
+                            ? `<strong>${formatNumber(c.sum_tokens)}</strong> <span style="font-size: 11px; color: var(--text-secondary);">/ ${formatNumber(c.daily_quota)}</span>`
+                            : `<strong>${formatNumber(c.sum_tokens)}</strong> <span style="font-size: 11px; color: var(--text-secondary);">/ ∞</span>`;
+
+                        const safeName = displayName.replace(/'/g, "\\'");
+                        const toggleBtn = isBlockedPC
+                            ? `<button class="btn btn-xs" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);" onclick="toggleClientAccess('${c.client_ip}', '${c.client_mac}', '${safeName}', 'allow')" title="Mở khóa quyền dùng Proxy">🟢 Mở khóa</button>`
+                            : `<button class="btn btn-xs btn-danger" onclick="toggleClientAccess('${c.client_ip}', '${c.client_mac}', '${safeName}', 'block')" title="Khóa/Chặn quyền dùng Proxy">⛔ Chặn</button>`;
+
+                        const clearWarningBtn = hasHistoryBlocked
+                            ? `<button class="btn btn-xs" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);" onclick="resolveClientViolations('${c.client_ip}', '${c.client_mac}', '${safeName}')" title="Xóa lịch sử cảnh báo vi phạm">🔄 Xóa cảnh báo</button>`
+                            : '';
+
+                        return `
+                            <tr style="${(isBlockedPC || isQuotaExceeded) ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+                                <td><strong>${c.client_ip}</strong></td>
+                                <td><span class="mac-pill">${c.client_mac}</span></td>
+                                <td>${displayName}</td>
+                                <td>${statusHtml}</td>
+                                <td>${formatNumber(c.req_count)}</td>
+                                <td>${quotaDisplay}</td>
+                                <td>
+                                    <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                        <button class="btn btn-xs" onclick="openReconfigureModal('${c.client_ip}', '${c.client_mac}', '${safeName}')" title="Cấu hình lại Quota, Model, Provider">⚙️ Cấu hình lại</button>
+                                        ${toggleBtn}
+                                        ${clearWarningBtn}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
                 } else {
-                    clientsBody.innerHTML = '<tr><td colspan="5" class="empty-hint">Chưa có dữ liệu máy trạm</td></tr>';
+                    clientsBody.innerHTML = '<tr><td colspan="7" class="empty-hint">Chưa có dữ liệu máy trạm</td></tr>';
+                }
+
+                if (violationBanner) {
+                    if (totalViolatingPCs > 0) {
+                        violationBanner.style.display = 'block';
+                        violationBanner.innerHTML = `⚠️ <strong>CẢNH BÁO VI PHẠM:</strong> Có <strong>${totalViolatingPCs}</strong> máy trạm đang bị chặn hoặc vượt quota (${violationDetails.join(', ')}). Nhấp nút <strong>"⚙️ Cấu hình lại"</strong> hoặc <strong>"🟢 Mở khóa"</strong> tại bảng dưới để xử lý.`;
+                        if (violationBadge) violationBadge.style.display = 'inline-flex';
+                    } else {
+                        violationBanner.style.display = 'none';
+                        if (violationBadge) violationBadge.style.display = 'none';
+                    }
                 }
 
                 // Update Models Table
@@ -1211,9 +1296,13 @@
                     const mcpTools = (r.allowed_mcp_tools || ['*']).join(', ');
                     const mcpHtml = `<div>Servers: <strong>${mcpServers}</strong><br><small style="color: var(--text-secondary);">Tools: ${mcpTools}</small></div>`;
 
+                    const statusBadge = (r.action === 'block') 
+                        ? '<span class="badge badge-blocked" style="margin-left: 6px;">⛔ Bị Chặn</span>' 
+                        : '<span class="badge badge-allowed" style="margin-left: 6px;">🟢 Cho phép</span>';
+
                     return `
                         <tr>
-                            <td><strong>${r.name}</strong></td>
+                            <td><strong>${r.name}</strong> ${statusBadge}</td>
                             <td>${idDetails.join('<br>')}</td>
                             <td>${providersHtml}</td>
                             <td><div style="max-width: 240px; overflow: hidden; text-overflow: ellipsis;">${modelsHtml}</div></td>
@@ -1299,8 +1388,10 @@
         }
 
         function openAddRuleModal() {
+            currentEditingOriginalName = '';
             document.getElementById('rule-modal-title').innerText = "Thêm Quy Tắc Phân Quyền Mới";
             document.getElementById('ruleForm').reset();
+            document.getElementById('rule-action-allow').checked = true;
             document.querySelectorAll('input[name="provider"]').forEach(cb => { cb.checked = false; cb.disabled = false; });
             document.querySelector('input[name="provider"][value="google"]').checked = true;
             document.querySelector('input[name="provider"][value="openai"]').checked = true;
@@ -1317,8 +1408,15 @@
         function editRule(index) {
             const rule = currentPolicy.rules[index];
             if (!rule) return;
+            currentEditingOriginalName = rule.name || '';
 
             document.getElementById('rule-modal-title').innerText = `Chỉnh Sửa Quy Tắc: ${rule.name}`;
+            const action = rule.action || 'allow';
+            if (action === 'block') {
+                document.getElementById('rule-action-block').checked = true;
+            } else {
+                document.getElementById('rule-action-allow').checked = true;
+            }
             document.getElementById('rule-name').value = rule.name || '';
             document.getElementById('rule-ip').value = rule.ip || '';
             document.getElementById('rule-mac').value = rule.mac || '';
@@ -1374,8 +1472,11 @@
             const mcpToolsRaw = document.getElementById('rule-mcp-tools').value || '*';
             const mcpTools = mcpToolsRaw.split(/[\n,]+/).map(m => m.trim()).filter(m => m.length > 0);
 
+            const ruleAction = document.querySelector('input[name="rule_action"]:checked')?.value || 'allow';
             const rulePayload = {
                 name: document.getElementById('rule-name').value.trim(),
+                original_name: currentEditingOriginalName || undefined,
+                action: ruleAction,
                 ip: document.getElementById('rule-ip').value.trim() || undefined,
                 mac: document.getElementById('rule-mac').value.trim() || undefined,
                 ip_range: document.getElementById('rule-ip-range').value.trim() || undefined,
@@ -1398,7 +1499,8 @@
                 if (res.ok) {
                     showToast(result.message || "Đã lưu quy tắc thành công!");
                     closeModal('ruleModal');
-                    fetchPolicy();
+                    await fetchPolicy();
+                    await fetchData();
                 } else {
                     showToast(result.detail || "Lỗi khi lưu quy tắc", true);
                 }
@@ -1662,8 +1764,95 @@
             }
         }
 
+        async function openReconfigureModal(clientIp, clientMac, machineName) {
+            if (!currentPolicy || !currentPolicy.rules || currentPolicy.rules.length === 0) {
+                await fetchPolicy();
+            }
+            switchTab('policy');
+            const rules = (currentPolicy && currentPolicy.rules) ? currentPolicy.rules : [];
+            let matchIdx = -1;
+            for (let i = 0; i < rules.length; i++) {
+                const r = rules[i];
+                if (clientMac && clientMac !== 'UNKNOWN_MAC' && r.mac && r.mac.toLowerCase() === clientMac.toLowerCase()) {
+                    matchIdx = i;
+                    break;
+                }
+                if (clientIp && clientIp !== '-' && r.ip && r.ip === clientIp) {
+                    matchIdx = i;
+                    break;
+                }
+                if (machineName && r.name && r.name.toLowerCase() === machineName.toLowerCase()) {
+                    matchIdx = i;
+                    break;
+                }
+            }
+
+            if (matchIdx >= 0) {
+                editRule(matchIdx);
+            } else {
+                openAddRuleModal();
+                document.getElementById('rule-name').value = machineName || `PC (${clientIp})`;
+                document.getElementById('rule-ip').value = (clientIp && clientIp !== '-') ? clientIp : '';
+                document.getElementById('rule-mac').value = (clientMac && clientMac !== 'UNKNOWN_MAC') ? clientMac : '';
+            }
+        }
+
+        async function resolveClientViolations(clientIp, clientMac, machineName) {
+            try {
+                const res = await fetch('/api/client-access/resolve-violations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_ip: clientIp,
+                        client_mac: clientMac
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Lỗi khi xóa cảnh báo');
+                showToast(data.message || `Đã giải quyết cảnh báo cho ${machineName}!`);
+                await fetchData();
+            } catch (err) {
+                showToast('❌ Thao tác thất bại: ' + err.message, true);
+            }
+        }
+
+        async function toggleClientAccess(clientIp, clientMac, machineName, targetAction) {
+            const actionText = targetAction === 'block' ? 'CHẶN' : 'MỞ KHÓA';
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} máy trạm ${machineName || clientIp} (${clientMac}) không?`)) {
+                return;
+            }
+            try {
+                const res = await fetch('/api/client-access', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        client_ip: clientIp,
+                        client_mac: clientMac,
+                        machine_name: machineName,
+                        action: targetAction
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Lỗi khi cập nhật trạng thái');
+                showToast(data.message || `Đã ${actionText} máy trạm thành công!`);
+                await fetchData();
+                await fetchPolicy();
+            } catch (err) {
+                showToast('❌ Thao tác thất bại: ' + err.message, true);
+            }
+        }
+
+        // Khôi phục tab đang mở trước đó khi reload trang
+        try {
+            const savedTab = localStorage.getItem('llm_proxy_active_tab') || 'monitoring';
+            switchTab(savedTab);
+        } catch(e) {
+            switchTab('monitoring');
+        }
+
         // Tự động tải ban đầu
         fetchData();
+        fetchPolicy();
         fetchDiscovery();
         setInterval(fetchData, 3000);
         setInterval(fetchDiscovery, 3000);

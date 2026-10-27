@@ -2,6 +2,7 @@ import os
 import time
 import json
 import uuid
+import struct
 import asyncio
 import fnmatch
 import ipaddress
@@ -18,7 +19,7 @@ from urllib.parse import urlparse
 
 from database import (
     init_db, log_request, get_daily_token_usage, get_recent_logs, get_summary_stats,
-    record_discovery, get_discoveries, delete_discovery, reset_audit_logs,
+    record_discovery, get_discoveries, delete_discovery, reset_audit_logs, resolve_client_violations,
 )
 from token_utils import resolve_mac_address, estimate_input_tokens, StreamingTokenTracker, NON_INFERENCE_MODEL
 
@@ -30,15 +31,22 @@ except ImportError:
     websockets = None
 
 http_client: httpx.AsyncClient = None
+socks_server = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global http_client
+    global http_client, socks_server
     init_db()
     limits = httpx.Limits(max_keepalive_connections=100, max_connections=300)
     http_client = httpx.AsyncClient(timeout=180.0, limits=limits)
+    
+    # Khởi động SOCKS5 Proxy Server trên cổng 1080 (hoặc biến môi trường SOCKS5_PORT)
+    socks_server = await start_socks5_server()
     print("[INFO] LLM Proxy Monitoring Gateway initialized successfully (connection pool ready)")
     yield
+    if socks_server:
+        socks_server.close()
+        await socks_server.wait_closed()
     if http_client and not http_client.is_closed:
         await http_client.aclose()
 
@@ -240,6 +248,140 @@ async def discover_and_check(kind: str, provider: str, domain: str, transport: s
         print(f"[WARN] record_discovery failed: {e}")
     return allowed, ips
 
+# ==================== SOCKS5 PROXY SERVER (RFC 1928) ====================
+async def handle_socks5_client(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+    peer = writer.get_extra_info("peername")
+    client_ip = peer[0] if peer else "127.0.0.1"
+    client_mac = resolve_mac_address(client_ip)
+    rule = get_policy_for_client(client_ip, client_mac)
+    machine_name = rule.get("name", "Unknown SOCKS5 PC")
+
+    try:
+        # 1. Bắt tay SOCKS5 (Greeting & Authentication)
+        greeting = await reader.readexactly(2)
+        ver, nmethods = greeting[0], greeting[1]
+        if ver != 5:
+            writer.close()
+            await writer.wait_closed()
+            return
+        await reader.readexactly(nmethods)
+        # 0x00: Không yêu cầu xác thực
+        writer.write(b"\x05\x00")
+        await writer.drain()
+
+        # 2. Xử lý Request kết nối
+        header = await reader.readexactly(4)
+        ver, cmd, rsv, atyp = header[0], header[1], header[2], header[3]
+        if ver != 5 or cmd != 1:  # Chỉ hỗ trợ CONNECT (0x01)
+            writer.write(b"\x05\x07\x00\x01\x00\x00\x00\x00\x00\x00")
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        if atyp == 1:  # IPv4
+            addr_bytes = await reader.readexactly(4)
+            dst_host = socket.inet_ntoa(addr_bytes)
+        elif atyp == 3:  # Domain name
+            domain_len = (await reader.readexactly(1))[0]
+            domain_bytes = await reader.readexactly(domain_len)
+            dst_host = domain_bytes.decode("utf-8", errors="ignore")
+        elif atyp == 4:  # IPv6
+            addr_bytes = await reader.readexactly(16)
+            dst_host = socket.inet_ntop(socket.AF_INET6, addr_bytes)
+        else:
+            writer.write(b"\x05\x08\x00\x01\x00\x00\x00\x00\x00\x00")
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        port_bytes = await reader.readexactly(2)
+        dst_port = struct.unpack("!H", port_bytes)[0]
+
+        # 3. Kiểm soát quyền PC (IP & MAC)
+        if rule.get("action") == "block" or rule.get("status") == "blocked":
+            err = f"SOCKS5: Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN sử dụng Proxy"
+            log_request(client_ip, client_mac, machine_name, "socks5", dst_host, f"socks5:{dst_port}", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
+            writer.write(b"\x05\x02\x00\x01\x00\x00\x00\x00\x00\x00")  # Connection not allowed by ruleset
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        # 4. Kiểm soát Domain Policy
+        domain_action = get_domain_action(dst_host)
+        if domain_action == "block":
+            err = f"SOCKS5: Domain '{dst_host}' đã BỊ CHẶN bởi domain policy"
+            log_request(client_ip, client_mac, machine_name, "socks5", dst_host, f"socks5:{dst_port}", 403, "BLOCKED_DOMAIN", 0, 0, 0, err)
+            writer.write(b"\x05\x02\x00\x01\x00\x00\x00\x00\x00\x00")
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        # Discovery endpoint
+        await discover_and_check("socks5", "network", dst_host, "socks5", f":{dst_port}", "-", client_ip, machine_name)
+
+        # 5. Kết nối ra Upstream
+        try:
+            up_reader, up_writer = await asyncio.wait_for(
+                asyncio.open_connection(dst_host, dst_port),
+                timeout=12.0
+            )
+        except Exception:
+            writer.write(b"\x05\x04\x00\x01\x00\x00\x00\x00\x00\x00")  # Host unreachable
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        # Báo kết nối thành công (REP: 0x00)
+        writer.write(b"\x05\x00\x00\x01\x00\x00\x00\x00\x00\x00")
+        await writer.drain()
+
+        log_request(client_ip, client_mac, machine_name, "socks5", dst_host, f"socks5:{dst_port}", 200, "ALLOWED", 0, 0, 0, f"Tunnel {dst_host}:{dst_port}")
+
+        # 6. Chuyển tiếp 2 chiều (Bidirectional Relay)
+        async def relay(src, dst):
+            try:
+                while True:
+                    data = await src.read(65536)
+                    if not data:
+                        break
+                    dst.write(data)
+                    await dst.drain()
+            except Exception:
+                pass
+            finally:
+                try:
+                    dst.close()
+                    await dst.wait_closed()
+                except Exception:
+                    pass
+
+        await asyncio.gather(relay(reader, up_writer), relay(up_reader, writer))
+
+    except Exception:
+        pass
+    finally:
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            pass
+
+async def start_socks5_server():
+    socks5_port = int(os.getenv("SOCKS5_PORT", "1080"))
+    socks5_host = os.getenv("HOST", "0.0.0.0")
+    try:
+        server = await asyncio.start_server(handle_socks5_client, socks5_host, socks5_port)
+        print(f"[INFO] 🚀 SOCKS5 Proxy Server listening on {socks5_host}:{socks5_port}")
+        return server
+    except Exception as e:
+        print(f"[WARN] SOCKS5 Proxy could not start on {socks5_host}:{socks5_port}: {e}")
+        return None
+
 # ==================== MCP BUILT-IN TOOLS ====================
 
 BUILTIN_MCP_TOOLS = [
@@ -405,7 +547,123 @@ async def health_check():
 
 @app.get("/api/stats")
 async def api_stats():
-    return get_summary_stats()
+    stats = get_summary_stats()
+    policy_data = load_policy()
+    rules = policy_data.get("rules", [])
+    default_pol = policy_data.get("default_policy", {})
+    default_action = default_pol.get("action", "allow")
+
+    existing_clients = set()
+    for client in stats.get("usage_by_client", []):
+        cip = client.get("client_ip", "")
+        cmac = client.get("client_mac", "")
+        if cip and cip != "-":
+            existing_clients.add(cip)
+        if cmac and cmac != "UNKNOWN_MAC":
+            existing_clients.add(cmac.lower())
+        rule = get_policy_for_client(cip, cmac)
+        client["policy_name"] = rule.get("name", client.get("machine_name", ""))
+        client["policy_action"] = rule.get("action", default_action)
+        client["daily_quota"] = rule.get("daily_total_token_quota", 0)
+        client["max_input_tokens"] = rule.get("max_input_tokens_per_request", 0)
+        client["allowed_models"] = rule.get("allowed_models", ["*"])
+        client["allowed_providers"] = rule.get("allowed_providers", ["*"])
+        client["is_blocked_pc"] = client["policy_action"] == "block"
+        client["has_violations"] = client.get("blocked_count", 0) > 0
+        client["has_custom_rule"] = any(
+            (r.get("ip") and r["ip"] == cip) or
+            (r.get("mac") and cmac and r["mac"].lower() == cmac.lower())
+            for r in rules
+        )
+
+    # Hiển thị thêm các máy trạm đã có rule trong policy_matrix.yaml nhưng chưa phát sinh traffic hôm nay
+    for r in rules:
+        r_ip = r.get("ip", "")
+        r_mac = r.get("mac", "")
+        is_known = (r_ip and r_ip in existing_clients) or (r_mac and r_mac.lower() in existing_clients)
+        if (r_ip or (r_mac and r_mac != "UNKNOWN_MAC")) and not is_known:
+            r_action = r.get("action", default_action)
+            stats["usage_by_client"].append({
+                "client_ip": r_ip or "-",
+                "client_mac": r_mac or "UNKNOWN_MAC",
+                "machine_name": r.get("name", "Workstation"),
+                "req_count": 0,
+                "sum_tokens": 0,
+                "blocked_count": 0,
+                "last_violation_action": None,
+                "last_violation_msg": None,
+                "policy_name": r.get("name", ""),
+                "policy_action": r_action,
+                "daily_quota": r.get("daily_total_token_quota", 0),
+                "max_input_tokens": r.get("max_input_tokens_per_request", 0),
+                "allowed_models": r.get("allowed_models", ["*"]),
+                "allowed_providers": r.get("allowed_providers", ["*"]),
+                "is_blocked_pc": r_action == "block",
+                "has_violations": False,
+                "has_custom_rule": True
+            })
+
+    return stats
+
+@app.post("/api/client-access")
+async def api_toggle_client_access(payload: dict):
+    client_ip = payload.get("client_ip", "").strip()
+    client_mac = payload.get("client_mac", "").strip()
+    machine_name = payload.get("machine_name", "").strip() or f"PC ({client_ip})"
+    action = payload.get("action", "allow").lower()
+    if action not in ("allow", "block"):
+        raise HTTPException(status_code=400, detail="action phải là 'allow' hoặc 'block'")
+    if not client_ip and not client_mac:
+        raise HTTPException(status_code=400, detail="Cần client_ip hoặc client_mac")
+
+    policy_data = load_policy()
+    rules = policy_data.setdefault("rules", [])
+    matched_rule = None
+    for r in rules:
+        if client_mac and client_mac != "UNKNOWN_MAC" and r.get("mac") and r["mac"].lower() == client_mac.lower():
+            matched_rule = r
+            break
+        if client_ip and r.get("ip") and r["ip"] == client_ip:
+            matched_rule = r
+            break
+
+    if matched_rule:
+        matched_rule["action"] = action
+        if machine_name:
+            matched_rule["name"] = machine_name
+    else:
+        new_rule = {
+            "name": machine_name,
+            "action": action,
+            "allowed_providers": ["*"],
+            "allowed_models": ["*"],
+            "allowed_mcp_servers": ["*"],
+            "allowed_mcp_tools": ["*"],
+            "max_input_tokens_per_request": 0,
+            "max_output_tokens_per_request": 0,
+            "daily_total_token_quota": 0
+        }
+        if client_ip:
+            new_rule["ip"] = client_ip
+        if client_mac and client_mac != "UNKNOWN_MAC":
+            new_rule["mac"] = client_mac
+        rules.append(new_rule)
+
+    save_policy(policy_data)
+
+    # Khi mở khóa máy trạm -> giải quyết xóa trạng thái cảnh báo vi phạm cũ
+    if action == "allow":
+        resolve_client_violations(client_ip, client_mac)
+
+    action_text = "Chặn" if action == "block" else "Cho phép"
+    return {"success": True, "message": f"Đã {action_text} máy trạm '{machine_name}' thành công"}
+
+@app.post("/api/client-access/resolve-violations")
+async def api_resolve_client_violations_endpoint(payload: dict):
+    client_ip = payload.get("client_ip", "").strip()
+    client_mac = payload.get("client_mac", "").strip()
+    count = resolve_client_violations(client_ip, client_mac)
+    return {"success": True, "resolved_count": count, "message": f"Đã giải quyết {count} cảnh báo vi phạm"}
 
 @app.get("/api/logs")
 async def api_logs(limit: int = 100):
@@ -445,22 +703,42 @@ async def api_save_rule(rule: dict):
         policy = load_policy()
         rules = policy.get("rules", [])
         
+        orig_name = str(rule.pop("original_name", "")).strip()
         rule_name = str(rule.get("name", "")).strip()
         if not rule_name:
             raise HTTPException(status_code=400, detail="Tên quy tắc (name) không được để trống")
             
         updated = False
+        target_name = orig_name if orig_name else rule_name
         for idx, r in enumerate(rules):
-            if str(r.get("name", "")).strip().lower() == rule_name.lower():
+            if str(r.get("name", "")).strip().lower() == target_name.lower():
                 rules[idx] = rule
                 updated = True
                 break
         
         if not updated:
+            # Nếu đổi tên mà không tìm thấy theo target_name, kiểm tra xem có trùng IP/MAC không
+            r_ip = rule.get("ip")
+            r_mac = rule.get("mac")
+            for idx, r in enumerate(rules):
+                if (r_ip and r.get("ip") == r_ip) or (r_mac and r_mac != "UNKNOWN_MAC" and r.get("mac") and r["mac"].lower() == r_mac.lower()):
+                    rules[idx] = rule
+                    updated = True
+                    break
+
+        if not updated:
             rules.append(rule)
             
         policy["rules"] = rules
         save_policy(policy)
+
+        # Nếu quy tắc được cho phép (allow) -> tự động giải quyết các cảnh báo vi phạm cũ của IP/MAC này
+        if rule.get("action", "allow") == "allow":
+            cip = rule.get("ip", "")
+            cmac = rule.get("mac", "")
+            if cip or cmac:
+                resolve_client_violations(cip or "", cmac or "")
+
         return {"success": True, "message": f"Đã lưu quy tắc '{rule_name}' thành công"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -566,6 +844,12 @@ async def mcp_sse_endpoint(request: Request, server_name: str = "lan-tools"):
     client_mac = resolve_mac_address(client_ip)
     rule = get_policy_for_client(client_ip, client_mac)
     machine_name = rule.get("name", "Unknown PC")
+
+    # 0. Kiểm tra quyền PC
+    if rule.get("action") == "block" or rule.get("status") == "blocked":
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN quyền sử dụng MCP Gateway"
+        log_request(client_ip, client_mac, machine_name, "mcp", server_name, "sse:connect", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
+        raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_PC_ACCESS"})
 
     # 1. Kiểm tra phân quyền MCP Server
     allowed_servers = rule.get("allowed_mcp_servers", ["*"])
@@ -700,6 +984,14 @@ async def mcp_websocket_endpoint(websocket: WebSocket, server_name: str = "lan-t
     rule = get_policy_for_client(client_ip, client_mac)
     machine_name = rule.get("name", "Unknown PC")
 
+    # 0. Kiểm tra quyền PC
+    if rule.get("action") == "block" or rule.get("status") == "blocked":
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN quyền sử dụng MCP WebSocket"
+        log_request(client_ip, client_mac, machine_name, "mcp", server_name, "ws:connect", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
+        await websocket.send_text(json.dumps({"jsonrpc": "2.0", "error": {"code": -32003, "message": err}}))
+        await websocket.close(code=1008, reason="PC Blocked by Policy")
+        return
+
     # 1. Kiểm tra quyền MCP Server
     allowed_servers = rule.get("allowed_mcp_servers", ["*"])
     if not is_mcp_server_allowed(server_name, allowed_servers):
@@ -832,6 +1124,12 @@ async def mcp_grpc_passthrough(request: Request, server_name: str, rpc_path: str
     rule = get_policy_for_client(client_ip, client_mac)
     machine_name = rule.get("name", "Unknown PC")
 
+    # 0. Kiểm tra quyền PC
+    if rule.get("action") == "block" or rule.get("status") == "blocked":
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN quyền sử dụng MCP gRPC"
+        log_request(client_ip, client_mac, machine_name, "mcp", server_name, f"grpc:/{rpc_path}", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
+        return Response(status_code=403, headers={"grpc-status": "7", "grpc-message": err})
+
     rpc_path = rpc_path.strip("/")
     parts = rpc_path.split("/")
     method_name = parts[-1] if parts else rpc_path
@@ -911,7 +1209,13 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
     rule = get_policy_for_client(client_ip, client_mac)
     machine_name = rule.get("name", "Unknown PC")
 
-    # 0. Discovery + Domain Policy: ghi nhận domain/IP cloud, chặn nếu domain bị Block
+    # 0. Kiểm tra Quyền Truy Cập của Máy Trạm (IP / MAC)
+    if rule.get("action") == "block" or rule.get("status") == "blocked":
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN quyền sử dụng LLM Proxy Gateway"
+        log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 403, "BLOCKED_PC_ACCESS", est_input_tokens, 0, 0, err)
+        raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_PC_ACCESS", "client_ip": client_ip, "client_mac": client_mac})
+
+    # 0.1 Discovery + Domain Policy: ghi nhận domain/IP cloud, chặn nếu domain bị Block
     base_upstream = UPSTREAM_MAP.get(provider, "https://api.openai.com")
     up_domain = host_of(base_upstream)
     req_ct = request.headers.get("content-type", "").lower()

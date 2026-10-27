@@ -8,10 +8,21 @@ import unittest
 # Phải set biến môi trường TRƯỚC khi import proxy_server/database (đọc path lúc import).
 # Nhờ vậy policy_matrix.yaml thật và audit DB thật không bị test ghi vào.
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+_REAL_POLICY_PATH = os.path.join(_BASE_DIR, "policy_matrix.yaml")
+with open(_REAL_POLICY_PATH, "r", encoding="utf-8") as f:
+    _ORIGINAL_POLICY_CONTENT = f.read()
+
+_OLD_POLICY_FILE_ENV = os.environ.get("POLICY_FILE")
+_OLD_DB_PATH_ENV = os.environ.get("DB_PATH")
+
 _TMP_DIR = tempfile.mkdtemp(prefix="llm_proxy_test_")
-shutil.copy(os.path.join(_BASE_DIR, "policy_matrix.yaml"), os.path.join(_TMP_DIR, "policy_matrix.yaml"))
-os.environ["POLICY_FILE"] = os.path.join(_TMP_DIR, "policy_matrix.yaml")
-os.environ["DB_PATH"] = os.path.join(_TMP_DIR, "llm_audit_test.db")
+_TMP_POLICY_PATH = os.path.join(_TMP_DIR, "policy_matrix.yaml")
+with open(_TMP_POLICY_PATH, "w", encoding="utf-8") as f:
+    f.write(_ORIGINAL_POLICY_CONTENT)
+
+_TMP_DB_PATH = os.path.join(_TMP_DIR, "llm_audit_test.db")
+os.environ["POLICY_FILE"] = _TMP_POLICY_PATH
+os.environ["DB_PATH"] = _TMP_DB_PATH
 
 from fastapi.testclient import TestClient
 
@@ -70,11 +81,36 @@ class TestLLMProxy(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Xóa toàn bộ rule test + DB tạm
-        policy = load_policy()
-        policy["rules"] = [r for r in policy.get("rules", []) if not r.get("name", "").startswith("[TEST]")]
-        save_policy(policy)
+        # 1. Khôi phục nguyên vẹn 100% file policy_matrix.yaml thật
+        try:
+            with open(_REAL_POLICY_PATH, "w", encoding="utf-8") as f:
+                f.write(_ORIGINAL_POLICY_CONTENT)
+        except Exception:
+            pass
+
+        # 2. Xóa toàn bộ file và thư mục tạm
         shutil.rmtree(_TMP_DIR, ignore_errors=True)
+
+        # 3. Khôi phục lại biến môi trường ban đầu
+        if _OLD_POLICY_FILE_ENV is not None:
+            os.environ["POLICY_FILE"] = _OLD_POLICY_FILE_ENV
+        else:
+            os.environ.pop("POLICY_FILE", None)
+
+        if _OLD_DB_PATH_ENV is not None:
+            os.environ["DB_PATH"] = _OLD_DB_PATH_ENV
+        else:
+            os.environ.pop("DB_PATH", None)
+
+        # 4. Quét và dọn sạch dữ liệu test trong DB thật (nếu có lọt vào)
+        try:
+            from database import get_connection
+            with get_connection() as conn:
+                conn.execute('DELETE FROM discovered_endpoints WHERE domain LIKE "%test%" OR domain = "localhost"')
+                conn.execute('DELETE FROM llm_audit_log WHERE client_ip LIKE "10.99%" OR client_ip LIKE "192.168.1.188%" OR machine_name LIKE "%TEST%" OR client_ip LIKE "10.0.99%"')
+                conn.commit()
+        except Exception:
+            pass
 
     def test_01_mac_resolution(self):
         """Kiểm tra nhận diện MAC cho localhost và IP LAN"""
@@ -174,7 +210,7 @@ class TestLLMProxy(unittest.TestCase):
         """Kiểm tra API thêm, sửa, xóa rule phân quyền"""
         # 1. Thêm rule mới
         new_rule = {
-            "name": "Test UI Rule",
+            "name": "[TEST] Test UI Rule",
             "ip": "192.168.1.199",
             "mac": "cc:dd:ee:11:22:33",
             "allowed_providers": ["google"],
@@ -187,17 +223,18 @@ class TestLLMProxy(unittest.TestCase):
         self.assertEqual(res_add.status_code, 200)
         self.assertTrue(res_add.json()["success"])
 
-        # 2. Đọc lại policy để xác nhận rule đã được ghi vào
-        res_get = self.client.get("/api/policy")
-        self.assertEqual(res_get.status_code, 200)
-        rules = res_get.json()["rules"]
-        rule_names = [r["name"] for r in rules]
-        self.assertIn("Test UI Rule", rule_names)
-
-        # 3. Xóa rule vừa thêm để dọn dẹp
-        res_del = self.client.delete("/api/policy/rule/Test UI Rule")
-        self.assertEqual(res_del.status_code, 200)
-        self.assertTrue(res_del.json()["success"])
+        try:
+            # 2. Đọc lại policy để xác nhận rule đã được ghi vào
+            res_get = self.client.get("/api/policy")
+            self.assertEqual(res_get.status_code, 200)
+            rules = res_get.json()["rules"]
+            rule_names = [r["name"] for r in rules]
+            self.assertIn("[TEST] Test UI Rule", rule_names)
+        finally:
+            # 3. Xóa rule vừa thêm để dọn dẹp
+            res_del = self.client.delete("/api/policy/rule/[TEST] Test UI Rule")
+            self.assertEqual(res_del.status_code, 200)
+            self.assertTrue(res_del.json()["success"])
 
     def test_07_mcp_policy_checking(self):
         """Kiểm tra phân quyền MCP Server và MCP Tool theo IP/MAC"""
@@ -455,6 +492,99 @@ class TestLLMProxy(unittest.TestCase):
         stats_after = get_summary_stats()
         self.assertEqual(stats_after["totals"]["total_requests"], 0)
         self.assertEqual(stats_after["totals"]["total_tokens"], 0)
+
+    def test_20_blocked_pc_access(self):
+        # 1. Thêm rule chặn hoàn toàn một PC
+        blocked_rule = {
+            "name": "[TEST] Blocked-Test-PC",
+            "ip": "10.99.0.123",
+            "action": "block",
+            "allowed_providers": ["*"],
+            "allowed_models": ["*"]
+        }
+        res = self.client.post("/api/policy/rule", json=blocked_rule)
+        self.assertEqual(res.status_code, 200)
+
+        try:
+            # 2. PC bị chặn gửi request đến gateway
+            res_req = self.client.post(
+                "/openai/v1/chat/completions",
+                headers={"x-forwarded-for": "10.99.0.123"},
+                json={"model": "gpt-4o", "messages": [{"role": "user", "content": "hello"}]}
+            )
+            self.assertEqual(res_req.status_code, 403)
+            self.assertIn("BLOCKED_PC_ACCESS", res_req.text)
+        finally:
+            self.client.delete("/api/policy/rule/[TEST] Blocked-Test-PC")
+
+    def test_21_toggle_client_access_api(self):
+        try:
+            # 1. Gọi API toggle Chặn PC
+            res = self.client.post("/api/client-access", json={
+                "client_ip": "192.168.1.188",
+                "client_mac": "02:00:00:18:18:18",
+                "machine_name": "[TEST] Dev-Laptop-188",
+                "action": "block"
+            })
+            self.assertEqual(res.status_code, 200)
+            self.assertTrue(res.json().get("success"))
+
+            # Kiểm tra request từ PC này bị chặn
+            res_blocked = self.client.post(
+                "/anthropic/v1/messages",
+                headers={"x-forwarded-for": "192.168.1.188"},
+                json={"model": "claude-3-5-sonnet", "messages": [{"role": "user", "content": "hi"}]}
+            )
+            self.assertEqual(res_blocked.status_code, 403)
+
+            # 2. Gọi API mở khóa lại PC
+            res_unblock = self.client.post("/api/client-access", json={
+                "client_ip": "192.168.1.188",
+                "client_mac": "02:00:00:18:18:18",
+                "action": "allow"
+            })
+            self.assertEqual(res_unblock.status_code, 200)
+            self.assertTrue(res_unblock.json().get("success"))
+        finally:
+            self.client.delete("/api/policy/rule/[TEST] Dev-Laptop-188")
+
+    def test_22_socks5_handshake_and_domain_block(self):
+        import asyncio
+        from proxy_server import handle_socks5_client
+
+        async def run_socks5_test():
+            # 1. Chặn domain qua policy API
+            res = self.client.post("/api/domain-policy", json={"domain": "blocked-socks5.test.local", "action": "block"})
+            self.assertEqual(res.status_code, 200)
+
+            try:
+                server = await asyncio.start_server(handle_socks5_client, "127.0.0.1", 11099)
+                reader, writer = await asyncio.open_connection("127.0.0.1", 11099)
+
+                # SOCKS5 Handshake
+                writer.write(b"\x05\x01\x00")
+                await writer.drain()
+                resp = await reader.readexactly(2)
+                self.assertEqual(resp, b"\x05\x00")
+
+                # Connect to blocked domain
+                dom = b"blocked-socks5.test.local"
+                writer.write(b"\x05\x01\x00\x03" + bytes([len(dom)]) + dom + (443).to_bytes(2, "big"))
+                await writer.drain()
+
+                rep = await reader.readexactly(10)
+                # rep[1] == 0x02 nghĩa là Connection not allowed by ruleset (chặn thành công)
+                self.assertEqual(rep[0], 5)
+                self.assertEqual(rep[1], 2)
+
+                writer.close()
+                await writer.wait_closed()
+                server.close()
+                await server.wait_closed()
+            finally:
+                self.client.post("/api/domain-policy", json={"domain": "blocked-socks5.test.local", "action": "reset"})
+
+        asyncio.run(run_socks5_test())
 
 if __name__ == "__main__":
     unittest.main()

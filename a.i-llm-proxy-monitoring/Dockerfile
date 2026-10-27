@@ -5,6 +5,7 @@ FROM python:3.12-slim
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=8000 \
+    SOCKS5_PORT=1080 \
     HOST=0.0.0.0 \
     DB_PATH=/app/data/llm_audit.db \
     POLICY_FILE=/app/policy_matrix.yaml
@@ -29,8 +30,8 @@ COPY static/ ./static/
 # Tạo thư mục data lưu trữ SQLite database
 RUN mkdir -p /app/data
 
-# Mở cổng 8000
-EXPOSE 8000
+# Mở cổng HTTP/WebSocket 8000 và SOCKS5 1080
+EXPOSE 8000 1080
 
 # Kiểm tra trạng thái sức khỏe định kỳ
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \

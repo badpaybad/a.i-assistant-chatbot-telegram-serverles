@@ -565,8 +565,49 @@ Khi máy tính vi phạm chính sách trong [`policy_matrix.yaml`](file:///work/
 | :--- | :--- | :--- |
 | **`403 Forbidden`** | `Provider '...' is not permitted for your workstation` | Máy tính của bạn không được phép sử dụng hãng AI này (ví dụ chính sách chỉ cho dùng Google nhưng gọi OpenAI). Liên hệ Admin để được cấp quyền mở provider. |
 | **`403 Forbidden`** | `Model '...' is forbidden for this PC. Allowed: [...]` | Model đang gọi (ví dụ `claude-3-5-sonnet`) không thuộc danh sách model được duyệt cho máy trạm của bạn. Chuyển sang model tiết kiệm chi phí như `gemini-1.5-flash`, `gpt-4o-mini`. |
+| **`403 Forbidden`** | `Máy trạm '...' đã BỊ CHẶN quyền sử dụng LLM Proxy Gateway` | Địa chỉ IP hoặc MAC của máy trạm bạn đã bị khóa quyền truy cập bởi Quản trị viên (`BLOCKED_PC_ACCESS`). Liên hệ Admin để mở khóa trên Dashboard. |
 | **`RPC -32003`** | `MCP Tool '...' is forbidden for this workstation` | Công cụ MCP bạn vừa gọi bị chặn bởi ma trận phân quyền (ví dụ chỉ cho phép gọi `lan_ping`, cấm các lệnh xóa DB hoặc chạy bash). Liên hệ Admin nếu cần mở quyền tool. |
 | **`400 Bad Request`** | `Input tokens (...) exceed maximum allowed limit (...)` | Đoạn code hoặc context đưa vào prompt quá dài vượt quá giới hạn cấu hình một request. Hãy chia nhỏ prompt hoặc xóa bớt lịch sử chat. |
 | **`429 Too Many Requests`** | `Daily token quota exceeded (... tokens used today)` | Máy trạm của bạn đã tiêu thụ hết hạn mức Token trong ngày được giao. Hạn mức sẽ tự động reset lúc `00:00` hàng ngày, hoặc đề xuất Admin nâng hạn mức trên Dashboard. |
 | **`502 Bad Gateway`** | `Upstream connection error: ...` | Proxy không kết nối được tới server Cloud của hãng AI hoặc upstream MCP server nội bộ. |
+
+---
+
+## 🧦 8. Hướng Dẫn Cấu Hình Proxy SOCKS5 (Cổng 1080)
+
+Ngoài phương thức Reverse Proxy qua Base URL (HTTP cổng `8000`), hệ thống Gateway tích hợp sẵn **SOCKS5 Proxy Server (RFC 1928)** chạy trên cổng `1080` phục vụ các IDE, CLI hoặc ứng dụng mạng LAN chỉ hỗ trợ giao thức SOCKS5.
+
+### 8.1. Thông số kết nối SOCKS5:
+- **Host**: `192.168.1.183` *(thay bằng IP thực tế của máy chủ Proxy LAN)*
+- **Port**: `1080`
+- **Xác thực**: Không yêu cầu mật khẩu (hệ thống tự động nhận diện và phân quyền theo IP LAN & MAC Address vật lý).
+
+### 8.2. Cấu hình bằng Biến Môi Trường (Terminal / Shell):
+- **Linux / macOS**:
+  ```bash
+  export ALL_PROXY="socks5h://192.168.1.183:1080"
+  export HTTPS_PROXY="socks5h://192.168.1.183:1080"
+  ```
+  > 💡 **Khuyến nghị**: Dùng tiền tố `socks5h://` để DNS được phân giải tại máy chủ Proxy, giúp hệ thống ghi nhận chính xác domain đích và kiểm tra Domain Policy.
+
+- **Windows (PowerShell)**:
+  ```powershell
+  $env:ALL_PROXY = "socks5h://192.168.1.183:1080"
+  $env:HTTPS_PROXY = "socks5h://192.168.1.183:1080"
+  ```
+
+### 8.3. Cấu hình trong VS Code / Cursor:
+Trong file `settings.json` của VS Code / Cursor:
+```json
+{
+  "http.proxy": "socks5h://192.168.1.183:1080",
+  "http.proxySupport": "override"
+}
+```
+
+### 8.4. Kiểm tra kết nối SOCKS5 với cURL:
+```bash
+curl -v -x socks5h://192.168.1.183:1080 https://api.openai.com
+```
+*Nếu thành công, Gateway sẽ ghi nhận log kết nối với provider `socks5` và mã hành động `ALLOWED` trên Dashboard.*
 

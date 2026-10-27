@@ -31,6 +31,7 @@ rules:
   max_output_tokens_per_request: 0
   daily_total_token_quota: 0
 - name: Local Host / Admin
+  action: allow
   ip: 127.0.0.1
   mac: LOCAL_HOST
   allowed_providers:
@@ -41,6 +42,6 @@ rules:
   - '*'
   allowed_mcp_tools:
   - '*'
-  max_input_tokens_per_request: 0
-  max_output_tokens_per_request: 0
-  daily_total_token_quota: 0
+  max_input_tokens_per_request: 1
+  max_output_tokens_per_request: 1
+  daily_total_token_quota: 1

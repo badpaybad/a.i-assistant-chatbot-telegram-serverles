@@ -146,16 +146,19 @@ def get_summary_stats() -> Dict[str, Any]:
         """)
         totals = dict(cursor.fetchone() or {})
         
-        # Usage by client IP & MAC
+        # Usage by client IP & MAC with violation detection
         cursor.execute("""
             SELECT client_ip, client_mac,
                    (SELECT machine_name FROM llm_audit_log sub WHERE sub.client_ip = l.client_ip ORDER BY id DESC LIMIT 1) AS machine_name,
                    COUNT(*) AS req_count,
-                   SUM(total_tokens) AS sum_tokens
+                   SUM(total_tokens) AS sum_tokens,
+                   COALESCE(SUM(CASE WHEN action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS blocked_count,
+                   (SELECT action FROM llm_audit_log sub WHERE (sub.client_ip = l.client_ip OR sub.client_mac = l.client_mac) AND sub.action LIKE 'BLOCKED%' ORDER BY id DESC LIMIT 1) AS last_violation_action,
+                   (SELECT error_message FROM llm_audit_log sub WHERE (sub.client_ip = l.client_ip OR sub.client_mac = l.client_mac) AND sub.action LIKE 'BLOCKED%' ORDER BY id DESC LIMIT 1) AS last_violation_msg
             FROM llm_audit_log l
             WHERE DATE(timestamp) = DATE(?)
             GROUP BY client_ip, client_mac
-            ORDER BY sum_tokens DESC
+            ORDER BY blocked_count DESC, sum_tokens DESC
         """, (today_str,))
         usage_by_client = [dict(row) for row in cursor.fetchall()]
 
@@ -173,6 +176,30 @@ def get_summary_stats() -> Dict[str, Any]:
             "usage_by_client": usage_by_client,
             "usage_by_model": usage_by_model
         }
+
+def resolve_client_violations(client_ip: str, client_mac: str = "") -> int:
+    """Đánh dấu các bản ghi vi phạm cũ của máy trạm là đã giải quyết."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        conditions = []
+        params = []
+        if client_ip and client_ip != "-":
+            conditions.append("client_ip = ?")
+            params.append(client_ip)
+        if client_mac and client_mac != "UNKNOWN_MAC":
+            conditions.append("client_mac = ?")
+            params.append(client_mac)
+        if not conditions:
+            return 0
+        where_clause = " OR ".join(conditions)
+        cursor.execute(f"""
+            UPDATE llm_audit_log
+            SET action = 'RESOLVED_' || action
+            WHERE ({where_clause})
+              AND action LIKE 'BLOCKED%'
+        """, params)
+        conn.commit()
+        return cursor.rowcount
 
 def record_discovery(
     kind: str,
