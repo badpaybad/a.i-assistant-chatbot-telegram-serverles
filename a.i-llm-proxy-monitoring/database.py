@@ -174,6 +174,106 @@ def get_recent_logs(limit: int = 100) -> List[Dict[str, Any]]:
         """, (limit,))
         return [dict(row) for row in cursor.fetchall()]
 
+def get_paginated_logs(
+    page: int = 1,
+    page_size: int = 20,
+    search: str = "",
+    column_filters: Optional[Dict[str, str]] = None,
+    sort_by: str = "id",
+    sort_order: str = "desc"
+) -> Dict[str, Any]:
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 20
+
+    allowed_columns = {
+        "id": "id",
+        "timestamp": "timestamp",
+        "client_ip": "client_ip",
+        "client_mac": "client_mac",
+        "machine_name": "machine_name",
+        "provider": "provider",
+        "model": "model",
+        "endpoint": "endpoint",
+        "status_code": "status_code",
+        "action": "action",
+        "input_tokens": "input_tokens",
+        "output_tokens": "output_tokens",
+        "total_tokens": "total_tokens",
+        "latency_ms": "latency_ms",
+        "error_message": "error_message"
+    }
+
+    col = allowed_columns.get(sort_by.lower(), "id")
+    order = "ASC" if str(sort_order).lower() == "asc" else "DESC"
+
+    where_clauses = []
+    params: List[Any] = []
+
+    # Global keyword search
+    if search:
+        search_like = f"%{search.strip()}%"
+        where_clauses.append("""(
+            client_ip LIKE ? OR client_mac LIKE ? OR machine_name LIKE ? OR
+            provider LIKE ? OR model LIKE ? OR endpoint LIKE ? OR
+            action LIKE ? OR error_message LIKE ?
+        )""")
+        params.extend([search_like] * 8)
+
+    # Per-column filters
+    if column_filters:
+        for k, v in column_filters.items():
+            if v and str(v).strip():
+                val = str(v).strip()
+                if k == "client":
+                    where_clauses.append("(client_ip LIKE ? OR client_mac LIKE ?)")
+                    params.extend([f"%{val}%", f"%{val}%"])
+                elif k == "model":
+                    where_clauses.append("(provider LIKE ? OR model LIKE ?)")
+                    params.extend([f"%{val}%", f"%{val}%"])
+                elif k == "notes":
+                    where_clauses.append("(error_message LIKE ? OR endpoint LIKE ?)")
+                    params.extend([f"%{val}%", f"%{val}%"])
+                elif k in allowed_columns:
+                    where_clauses.append(f"{allowed_columns[k]} LIKE ?")
+                    params.append(f"%{val}%")
+
+    where_sql = ("WHERE " + " AND ".join(where_clauses)) if where_clauses else ""
+
+    with get_connection() as conn:
+        cursor = conn.cursor()
+
+        # Count total matching records
+        cursor.execute(f"SELECT COUNT(*) AS total FROM llm_audit_log {where_sql}", tuple(params))
+        total_row = cursor.fetchone()
+        total = int(total_row["total"]) if total_row else 0
+
+        total_pages = (total + page_size - 1) // page_size if total > 0 else 1
+        if page > total_pages and total > 0:
+            page = total_pages
+
+        offset = (page - 1) * page_size
+        query_sql = f"""
+            SELECT id, timestamp, client_ip, client_mac, machine_name,
+                   provider, model, endpoint, status_code, action,
+                   input_tokens, output_tokens, total_tokens, latency_ms, error_message
+            FROM llm_audit_log
+            {where_sql}
+            ORDER BY {col} {order}
+            LIMIT ? OFFSET ?
+        """
+        cursor.execute(query_sql, tuple(params + [page_size, offset]))
+        items = [dict(row) for row in cursor.fetchall()]
+
+        return {
+            "items": items,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
+
 def get_summary_stats() -> Dict[str, Any]:
     today_str = datetime.now().strftime("%Y-%m-%d")
     with get_connection() as conn:

@@ -696,5 +696,65 @@ class TestLLMProxy(unittest.TestCase):
                 conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
                 conn.commit()
 
+    def test_26_audit_logs_pagination_search_sort(self):
+        """Kiểm tra phân trang 20 items/trang, tìm kiếm và sắp xếp cột của nhật ký audit"""
+        from database import log_request, get_connection
+        # Tạo sẵn dữ liệu mẫu 25 bản ghi
+        test_ip = "10.88.88.88"
+        for i in range(25):
+            log_request(
+                client_ip=test_ip,
+                client_mac=f"02:00:00:88:88:{i:02x}",
+                machine_name=f"Dev-PC-{i:02d}",
+                provider="openai" if i % 2 == 0 else "google",
+                model=f"gpt-4o-mini" if i % 2 == 0 else "gemini-1.5-flash",
+                endpoint="/v1/chat/completions",
+                status_code=200,
+                action="ALLOWED",
+                input_tokens=100 + i,
+                output_tokens=50 + i,
+                latency_ms=10 + i
+            )
+
+        try:
+            # 1. Kiểm tra phân trang mặc định 20 items / trang
+            resp_p1 = self.client.get("/api/logs?page=1&page_size=20")
+            self.assertEqual(resp_p1.status_code, 200)
+            data_p1 = resp_p1.json()
+            self.assertIn("items", data_p1)
+            self.assertIn("total", data_p1)
+            self.assertEqual(data_p1["page"], 1)
+            self.assertEqual(data_p1["page_size"], 20)
+            self.assertEqual(len(data_p1["items"]), 20)
+            self.assertGreaterEqual(data_p1["total"], 25)
+            self.assertGreaterEqual(data_p1["total_pages"], 2)
+
+            # 2. Trang 2 phải có các item còn lại
+            resp_p2 = self.client.get("/api/logs?page=2&page_size=20")
+            self.assertEqual(resp_p2.status_code, 200)
+            data_p2 = resp_p2.json()
+            self.assertEqual(data_p2["page"], 2)
+            self.assertGreaterEqual(len(data_p2["items"]), 5)
+
+            # 3. Kiểm tra tìm kiếm theo cột hoặc từ khóa
+            resp_search = self.client.get(f"/api/logs?page=1&page_size=20&filter_provider=openai&filter_client={test_ip}")
+            self.assertEqual(resp_search.status_code, 200)
+            data_search = resp_search.json()
+            for item in data_search["items"]:
+                self.assertEqual(item["provider"], "openai")
+                self.assertEqual(item["client_ip"], test_ip)
+
+            # 4. Kiểm tra sắp xếp theo cột (ví dụ latency_ms asc)
+            resp_sort = self.client.get(f"/api/logs?page=1&page_size=20&filter_client={test_ip}&sort_by=latency_ms&sort_order=asc")
+            self.assertEqual(resp_sort.status_code, 200)
+            items_sort = resp_sort.json()["items"]
+            latencies = [it["latency_ms"] for it in items_sort]
+            self.assertEqual(latencies, sorted(latencies))
+
+        finally:
+            with get_connection() as conn:
+                conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
+                conn.commit()
+
 if __name__ == "__main__":
     unittest.main()

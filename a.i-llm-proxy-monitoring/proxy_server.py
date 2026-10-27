@@ -7,6 +7,7 @@ import asyncio
 import fnmatch
 import ipaddress
 from datetime import datetime
+from typing import Optional, Dict, Any, List, Tuple
 import yaml
 import httpx
 import uvicorn
@@ -18,7 +19,7 @@ import socket
 from urllib.parse import urlparse
 
 from database import (
-    init_db, log_request, get_daily_token_usage, get_daily_detailed_token_usage, get_recent_logs, get_summary_stats,
+    init_db, log_request, get_daily_token_usage, get_daily_detailed_token_usage, get_recent_logs, get_paginated_logs, get_summary_stats,
     record_discovery, get_discoveries, delete_discovery, reset_audit_logs, resolve_client_violations,
     get_policy_from_db, save_policy_to_db, get_client_active_violation,
 )
@@ -717,8 +718,39 @@ async def api_resolve_client_violations_endpoint(payload: dict):
     return {"success": True, "resolved_count": count, "message": f"Đã giải quyết {count} cảnh báo vi phạm"}
 
 @app.get("/api/logs")
-async def api_logs(limit: int = 100):
-    return get_recent_logs(limit=limit)
+async def api_logs(
+    limit: Optional[int] = None,
+    page: Optional[int] = None,
+    page_size: int = 20,
+    search: str = "",
+    sort_by: str = "id",
+    sort_order: str = "desc",
+    filter_time: Optional[str] = None,
+    filter_client: Optional[str] = None,
+    filter_machine: Optional[str] = None,
+    filter_provider: Optional[str] = None,
+    filter_model: Optional[str] = None,
+    filter_status: Optional[str] = None,
+    filter_notes: Optional[str] = None,
+):
+    if page is not None:
+        col_filters = {}
+        if filter_time: col_filters["timestamp"] = filter_time
+        if filter_client: col_filters["client"] = filter_client
+        if filter_machine: col_filters["machine_name"] = filter_machine
+        if filter_provider: col_filters["provider"] = filter_provider
+        if filter_model: col_filters["model"] = filter_model
+        if filter_status: col_filters["action"] = filter_status
+        if filter_notes: col_filters["notes"] = filter_notes
+        return get_paginated_logs(
+            page=page,
+            page_size=page_size,
+            search=search,
+            column_filters=col_filters,
+            sort_by=sort_by,
+            sort_order=sort_order
+        )
+    return get_recent_logs(limit=limit or 500)
 
 @app.post("/api/logs/reset")
 @app.delete("/api/logs")

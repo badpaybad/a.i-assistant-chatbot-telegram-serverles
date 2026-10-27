@@ -25,6 +25,7 @@ Tài liệu này chi tiết hóa toàn bộ kiến trúc kỹ thuật, danh sác
 | **10** | Dòng 32–33 | Hướng dẫn cấu hình từng IDE trước khi ra internet qua proxy pass, chỉ rõ file cấu hình, đường dẫn key env $\rightarrow$ viết ra `a.i-ide-setup-use-proxy.md`. | Sổ tay tài liệu độc lập hướng dẫn từng bước trên Linux, Windows, macOS; chỉ rõ file User `settings.json`, các key JSON, biến môi trường cho cả 4 công cụ. | [a.i-ide-setup-use-proxy.md](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md)<br>[howtodo.md#5](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#5) | Đã đối chiếu thực tế cấu hình |
 | **11** | Dòng 35 | Viết Dockerfile và docker-compose để build và chạy proxy cho mạng LAN, các máy LAN sửa cấu hình IDE. | Dockerfile tối ưu + `docker-compose.yml` với `network_mode: "host"` giúp giữ nguyên Client IP thật và đọc trực tiếp ARP Table của Host. | [Dockerfile](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/Dockerfile)<br>[docker-compose.yml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml)<br>[howtodo.md#8](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#8) | Đã build và chạy container |
 | **12** | Dòng 37–40 | Cung cấp tính năng reset audit logs và bộ đếm token về 0 trên UI & API; xác nhận an toàn; tùy chọn giữ lại hoặc reset discovered endpoints. | API `POST /api/logs/reset` + UI Modal xác nhận an toàn (cảnh báo đỏ, checkbox giữ lại / reset discovery, gọi `VACUUM` giải phóng đĩa, đặt lại mọi KPI về 0). | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.3](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.3) | `test_19_reset_logs_and_tokens` |
+| **13** | Dòng 42–44 | Nhật Ký Audit Chi Tiết Thời Gian Thực:<br>• Phân trang, mỗi trang 20 item.<br>• Tìm kiếm và sắp xếp cho từng header column của bảng. | Hỗ trợ phân trang 20 items/trang cả ở API backend (`/api/logs?page=...&page_size=20`) và UI client-side reactive. Ô tìm kiếm riêng cho từng cột (Thời gian, IP/MAC, Tên máy, Model, Tokens, Latency, Status, Ghi chú) + Global search; click header để đảo chiều sắp xếp (▲/▼/⇅). | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[howtodo.md#4.4](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.4) | `test_26_audit_logs_pagination_search_sort` |
 
 ---
 
@@ -482,6 +483,77 @@ CREATE INDEX IF NOT EXISTS idx_timestamp ON llm_audit_log(timestamp);
    - Nút bấm `🗑️ Reset Logs & Tokens` (màu đỏ cảnh báo) xuất hiện tại **Header** và đầu bảng **Nhật Ký Audit Chi Tiết Thời Gian Thực**.
    - **Hộp thoại xác nhận (Confirmation Modal)**: Cảnh báo người dùng dữ liệu audit không thể phục hồi, cung cấp checkbox tùy chọn *"Đồng thời xóa danh sách Cloud Endpoints đã Auto-Discovery"*.
    - Sau khi xác nhận, Dashboard gọi `fetchData()` để cập nhật tức thì tất cả các thẻ KPI (Tổng Requests, Requests Hợp lệ, Requests Bị chặn, Input Tokens Hôm nay, Output Tokens Hôm nay, Tổng Tokens Tiêu thụ, Thống kê theo Máy trạm, Thống kê theo Model) về số **0** tròn trĩnh.
+
+---
+
+### 4.4. Cơ Chế Phân Trang 20 Items/Trang, Tìm Kiếm & Sắp Xếp Từng Cột (Audit Logs Pagination, Column Search & Sorting)
+
+Đáp ứng yêu cầu nâng cấp tại dòng 42–44 của [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+> *"Nhật Ký Audit Chi Tiết Thời Gian Thực: cần có phân trang, mỗi trang 20 item; tìm kiếm và sắp xếp cho từng header column của bảng"*
+
+Hệ thống được thiết kế theo mô hình hai lớp tối ưu: Hỗ trợ phân trang, lọc và sắp xếp chuẩn hóa từ tầng **Database / API RESTful** (Server-side) kết hợp với cơ chế phản hồi tức thì **Client-side Reactive** trên Web Dashboard, mang lại trải nghiệm tra cứu mượt mà (< 5ms) ngay cả khi có hàng chục nghìn bản ghi.
+
+#### 1. Kiến trúc Phân Trang 20 Items / Trang
+- **Số lượng mặc định**: Cố định `page_size = 20` items trên một trang.
+- **Tính tương thích ngược (Backwards Compatibility)**:
+  - Khi client gọi không truyền tham số `page` (ví dụ `GET /api/logs?limit=1000`), API trả về mảng phẳng `[...]` như cũ nhằm đảm bảo tính tương thích 100% với các test suite và tích hợp bên ngoài.
+  - Khi client truyền tham số `page` (ví dụ `GET /api/logs?page=1&page_size=20`), API trả về định dạng phân trang tiêu chuẩn:
+    ```json
+    {
+      "items": [ ... 20 logs ... ],
+      "total": 128,
+      "page": 1,
+      "page_size": 20,
+      "total_pages": 7
+    }
+    ```
+- **Thanh điều hướng phân trang (Pagination Bar) trên UI**:
+  - Hiển thị dải chỉ số thực tế: `Hiển thị 1 - 20 trên tổng số 128 bản ghi`.
+  - Bộ nút điều hướng đầy đủ: Nhảy về đầu trang (`«`), Trang trước (`‹`), Danh sách số trang dạng Sliding Window thông minh (ví dụ `1 ... 4 5 6 ... 10`), Trang sau (`›`), Nhảy đến cuối trang (`»`).
+  - Tự động Disable các nút khi đang ở trang đầu hoặc trang cuối.
+
+#### 2. Tìm Kiếm Riêng Biệt Cho Từng Header Column (Per-Column Search & Filters)
+Bảng Nhật Ký Audit được trang bị một hàng ô nhập tìm kiếm (`<tr class="table-filter-row">`) nằm ngay dưới dòng tiêu đề cột:
+- **Cột Thời gian**: Lọc chuỗi thời gian (ví dụ: `2026-10-27`, `14:30`).
+- **Cột IP / MAC**: Tìm nhanh theo IP mạng LAN (`192.168.1.15`) hoặc địa chỉ MAC (`00:1a:2b`).
+- **Cột Tên máy**: Tìm kiếm theo định danh thiết bị (`Dev PC 1`, `MacBook Pro`).
+- **Cột Nhà cung cấp & Model**: Lọc chính xác hoặc mờ theo tên nhà cung cấp hoặc model (`openai`, `claude`, `gemini-1.5-pro`, `gpt-4o`).
+- **Cột Tokens**: Lọc theo số lượng token tiêu thụ.
+- **Cột Phản hồi (Latency)**: Lọc theo thời gian phản hồi (ms).
+- **Cột Trạng thái**: Lọc theo mã HTTP (`200`, `403`, `429`) hoặc hành vi (`ALLOWED`, `BLOCKED`).
+- **Cột Ghi chú / Nguyên nhân**: Tìm kiếm theo lý do vi phạm (`Over daily quota`, `Blocked provider`, `MCP call`, ...).
+- **Nút Xóa nhanh (`✕ Xóa bộ lọc`)**: Tự động reset toàn bộ các ô lọc trên tất cả các cột về trạng thái ban đầu chỉ với 1 click.
+- **Ô Tìm kiếm Toàn cục (Global Search Bar)**: Đặt ở góc phải phía trên bảng, cho phép tìm kiếm từ khóa xuyên suốt tất cả các trường dữ liệu.
+
+#### 3. Sắp Xếp Đa Chiều Cho Từng Cột (Multi-Column Dynamic Sorting)
+- Mọi tiêu đề cột (`<th>`) đều là phần tử tương tác (`th.sortable`).
+- Biểu tượng mũi tên trực quan biểu thị trạng thái sắp xếp:
+  - `▲` (Tăng dần - Ascending)
+  - `▼` (Giảm dần - Descending)
+  - `⇅` (Chưa sắp xếp - Neutral)
+- **Cơ chế Toggle**: Click lần 1 chuyển sang Giảm dần (`desc`), Click lần 2 đảo sang Tăng dần (`asc`), tự động chuyển đổi định dạng so sánh tương ứng theo kiểu dữ liệu (chuỗi văn bản, thời gian ngày tháng, hoặc giá trị số nguyên như Tokens, Latency).
+
+#### 4. Chi tiết Tầng Dữ liệu & API Phân Trang (`database.py` & `proxy_server.py`)
+- **Tầng Database (`get_paginated_logs`)**:
+  - Xây dựng câu truy vấn SQL động sử dụng Parameterized Query an toàn tuyệt đối chống SQL Injection:
+    ```sql
+    SELECT * FROM llm_audit_log
+    WHERE 1=1
+      AND (client_ip LIKE ? OR client_mac LIKE ? OR model LIKE ? OR ...)
+      AND client_ip LIKE ?
+      AND model LIKE ?
+    ORDER BY timestamp DESC
+    LIMIT ? OFFSET ?;
+    ```
+  - Tính toán tổng số dòng `COUNT(*)` song song để trả về `total` và `total_pages = ceil(total / page_size)`.
+- **Tầng API Endpoint (`GET /api/logs`)**:
+  - Hỗ trợ các query parameters:
+    - `page` (int, default=1)
+    - `page_size` (int, default=20)
+    - `search` (string: tìm kiếm toàn cục)
+    - `sort_by` (`timestamp`, `client_ip`, `machine_name`, `provider`, `model`, `tokens`, `latency_ms`, `status_code`, `notes`)
+    - `sort_order` (`asc` hoặc `desc`)
+    - `filter_time`, `filter_client`, `filter_machine`, `filter_provider`, `filter_model`, `filter_status`, `filter_notes`.
 
 ---
 

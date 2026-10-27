@@ -38,3 +38,7 @@ Cung cấp tính năng reset các logs và bộ đếm tokens:
     Có chức năng (trên UI và API) để xóa/reset toàn bộ nhật ký audit log và bộ đếm số lượng tokens đã dùng về 0 để bắt đầu tính lại từ đầu khi cần.
     Hỗ trợ xác nhận an toàn trước khi thực hiện reset để tránh thao tác nhầm.
     Có tùy chọn giữ lại hoặc reset danh sách domain/endpoint đã discovery.
+
+ Nhật Ký Audit Chi Tiết Thời Gian Thực
+    cần có phân trang, mỗi trang 20 item 
+    tìm kiếm và sắp xếp cho từng header column của bảng

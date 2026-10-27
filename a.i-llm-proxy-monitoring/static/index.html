@@ -358,6 +358,133 @@
             font-style: italic;
         }
 
+        /* Audit Table Sorting, Filter & Pagination */
+        th.sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: color 0.15s, background-color 0.15s;
+            position: relative;
+            white-space: nowrap;
+        }
+
+        th.sortable:hover {
+            color: var(--text-primary);
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .sort-icon {
+            display: inline-block;
+            margin-left: 4px;
+            font-size: 11px;
+            opacity: 0.45;
+            transition: all 0.2s;
+        }
+
+        th.sortable.sort-asc .sort-icon,
+        th.sortable.sort-desc .sort-icon {
+            opacity: 1;
+            color: var(--accent-blue);
+            font-weight: bold;
+        }
+
+        .table-filter-row th {
+            padding: 6px 6px;
+            background-color: rgba(20, 24, 36, 0.75);
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .column-filter-input {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .column-filter-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+        }
+
+        .column-filter-input::placeholder {
+            color: #525f7a;
+            font-size: 10px;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(20, 24, 36, 0.9);
+            border-radius: 0 0 16px 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .pagination-info {
+            font-size: 12.5px;
+            color: var(--text-secondary);
+        }
+
+        .pagination-info strong {
+            color: var(--text-primary);
+        }
+
+        .pagination-nav {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .page-btn {
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            font-size: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--accent-blue);
+            background-color: rgba(59, 130, 246, 0.12);
+            color: #60a5fa;
+        }
+
+        .page-btn.active {
+            background-color: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #ffffff;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        .page-dots {
+            padding: 0 4px;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
         /* Default Policy Banner */
         .default-banner {
             display: flex;
@@ -667,32 +794,87 @@
             </div>
 
             <!-- Audit Log Table -->
-            <div class="card">
-                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 class="card-title">📋 Nhật Ký Audit Chi Tiết Thời Gian Thực</h2>
-                    <button class="btn btn-danger btn-xs" onclick="openResetLogsModal()" title="Reset toàn bộ logs và đếm tokens về 0">
-                        🗑️ Reset Logs & Tokens
-                    </button>
+            <div class="card" style="padding-bottom: 0;">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <h2 class="card-title">📋 Nhật Ký Audit Chi Tiết Thời Gian Thực</h2>
+                        <span id="logs-count-badge" class="badge" style="background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3);">0 bản ghi</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                        <div style="position: relative;">
+                            <input type="text" id="logs-global-search" class="column-filter-input" style="width: 220px; padding-left: 28px;" placeholder="🔍 Tìm kiếm nhanh..." oninput="handleColumnFilterChange()">
+                            <span style="position: absolute; left: 9px; top: 6px; font-size: 11px; opacity: 0.5;">🔍</span>
+                        </div>
+                        <button class="btn btn-danger btn-xs" onclick="openResetLogsModal()" title="Reset toàn bộ logs và đếm tokens về 0">
+                            🗑️ Reset Logs & Tokens
+                        </button>
+                    </div>
                 </div>
                 <div style="overflow-x: auto;">
-                    <table>
+                    <table id="audit-logs-table">
                         <thead>
                             <tr>
-                                <th>Thời Gian</th>
-                                <th>IP / MAC LAN</th>
-                                <th>Tên Máy</th>
-                                <th>Provider & Model</th>
-                                <th>Tokens In / Out</th>
-                                <th>Tổng Tokens</th>
-                                <th>Độ Trễ</th>
-                                <th>Trạng Thái</th>
-                                <th>Ghi Chú</th>
+                                <th class="sortable" onclick="handleSortLogs('timestamp')" data-col="timestamp" title="Click để sắp xếp theo thời gian">
+                                    Thời Gian <span class="sort-icon" id="sort-icon-timestamp">▼</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('client_ip')" data-col="client_ip" title="Click để sắp xếp theo IP / MAC">
+                                    IP / MAC LAN <span class="sort-icon" id="sort-icon-client_ip">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('machine_name')" data-col="machine_name" title="Click để sắp xếp theo tên máy">
+                                    Tên Máy <span class="sort-icon" id="sort-icon-machine_name">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('model')" data-col="model" title="Click để sắp xếp theo Model / Provider">
+                                    Provider & Model <span class="sort-icon" id="sort-icon-model">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('input_tokens')" data-col="input_tokens" title="Click để sắp xếp theo Token In/Out">
+                                    Tokens In / Out <span class="sort-icon" id="sort-icon-input_tokens">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('total_tokens')" data-col="total_tokens" title="Click để sắp xếp theo Tổng Tokens">
+                                    Tổng Tokens <span class="sort-icon" id="sort-icon-total_tokens">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('latency_ms')" data-col="latency_ms" title="Click để sắp xếp theo Độ trễ">
+                                    Độ Trễ <span class="sort-icon" id="sort-icon-latency_ms">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('action')" data-col="action" title="Click để sắp xếp theo Trạng thái">
+                                    Trạng Thái <span class="sort-icon" id="sort-icon-action">⇅</span>
+                                </th>
+                                <th class="sortable" onclick="handleSortLogs('error_message')" data-col="error_message" title="Click để sắp xếp theo Ghi chú / Endpoint">
+                                    Ghi Chú <span class="sort-icon" id="sort-icon-error_message">⇅</span>
+                                </th>
+                            </tr>
+                            <tr class="table-filter-row">
+                                <th><input type="text" class="column-filter-input" id="filter-col-timestamp" placeholder="Lọc giờ..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-client" placeholder="Lọc IP/MAC..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-machine" placeholder="Lọc tên máy..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-model" placeholder="Lọc model..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-inout" placeholder="Lọc in/out..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-total" placeholder="Lọc tổng..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-latency" placeholder="Lọc ms..." oninput="handleColumnFilterChange()"></th>
+                                <th><input type="text" class="column-filter-input" id="filter-col-status" placeholder="Lọc trạng thái..." oninput="handleColumnFilterChange()"></th>
+                                <th>
+                                    <div style="display: flex; gap: 4px; align-items: center;">
+                                        <input type="text" class="column-filter-input" id="filter-col-notes" placeholder="Lọc ghi chú..." oninput="handleColumnFilterChange()">
+                                        <button class="btn-xs" style="padding: 4px 6px; font-size: 10px;" onclick="clearAllFilters()" title="Xóa tất cả bộ lọc">✕</button>
+                                    </div>
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="logs-table-body">
                             <tr><td colspan="9" class="empty-hint">Đang tải nhật ký...</td></tr>
                         </tbody>
                     </table>
+                </div>
+                <!-- Pagination Footer -->
+                <div class="pagination-container" id="logs-pagination-container">
+                    <div class="pagination-info" id="logs-pagination-info">
+                        Hiển thị <strong>0 - 0</strong> trên tổng số <strong>0</strong> bản ghi
+                    </div>
+                    <div class="pagination-nav" id="logs-pagination-nav">
+                        <!-- Rendered by JS -->
+                    </div>
+                    <div class="pagination-page-size">
+                        <span style="font-size: 11.5px; color: var(--text-secondary);">Phân trang: <strong>20 mục / trang</strong></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1056,6 +1238,12 @@
     <script>
         let currentPolicy = { default_policy: {}, rules: [] };
         let currentEditingOriginalName = '';
+        let rawLogs = [];
+        let filteredLogs = [];
+        let currentLogsPage = 1;
+        const LOGS_PAGE_SIZE = 20;
+        let currentSortCol = 'timestamp';
+        let currentSortOrder = 'desc';
 
         function formatNumber(num) {
             return (num || 0).toLocaleString('en-US');
@@ -1096,7 +1284,7 @@
             try {
                 const [statsRes, logsRes] = await Promise.all([
                     fetch('/api/stats'),
-                    fetch('/api/logs?limit=50')
+                    fetch('/api/logs?limit=1000')
                 ]);
                 
                 const stats = await statsRes.json();
@@ -1210,43 +1398,252 @@
                     modelsBody.innerHTML = '<tr><td colspan="4" class="empty-hint">Chưa có dữ liệu model</td></tr>';
                 }
 
-                // Update Logs Table
-                const logsBody = document.getElementById('logs-table-body');
-                if (logs && logs.length > 0) {
-                    logsBody.innerHTML = logs.map(l => {
-                        const isBlocked = l.action.startsWith('BLOCKED');
-                        const statusBadge = isBlocked 
-                            ? `<span class="badge badge-blocked">${l.action}</span>`
-                            : `<span class="badge badge-allowed">ALLOWED (200)</span>`;
-                        
-                        const isMcp = l.provider === 'mcp';
-                        const providerBadge = isMcp 
-                            ? `<span class="badge badge-mcp">🔌 MCP</span>`
-                            : `<span class="badge badge-provider">${l.provider}</span>`;
-
-                        return `
-                            <tr>
-                                <td style="color: var(--text-secondary);">${l.timestamp.split('.')[0]}</td>
-                                <td>${l.client_ip}<br><span class="mac-pill">${l.client_mac}</span></td>
-                                <td>${l.machine_name || '-'}</td>
-                                <td><strong>${l.model}</strong><br>${providerBadge}</td>
-                                <td>${formatNumber(l.input_tokens)} / ${formatNumber(l.output_tokens)}</td>
-                                <td><strong>${formatNumber(l.total_tokens)}</strong></td>
-                                <td>${l.latency_ms} ms</td>
-                                <td>${statusBadge}</td>
-                                <td style="color: ${isBlocked ? 'var(--accent-red)' : 'var(--text-secondary)'}; font-size: 11px;">
-                                    ${l.error_message || l.endpoint || 'OK'}
-                                </td>
-                            </tr>
-                        `;
-                    }).join('');
-                } else {
-                    logsBody.innerHTML = '<tr><td colspan="9" class="empty-hint">Chưa có nhật ký nào được ghi</td></tr>';
-                }
+                // Process and Render Audit Logs with Pagination, Search & Sorting
+                const newLogs = Array.isArray(logs) ? logs : (logs.items || []);
+                rawLogs = newLogs;
+                applyFiltersAndSort();
 
             } catch (err) {
                 console.error("Lỗi khi tải dữ liệu dashboard:", err);
             }
+        }
+
+        // ==================== AUDIT LOGS: PAGINATION, SEARCH & SORT ====================
+        function handleSortLogs(col) {
+            if (currentSortCol === col) {
+                currentSortOrder = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortCol = col;
+                currentSortOrder = ['timestamp', 'id', 'total_tokens', 'input_tokens', 'output_tokens', 'latency_ms'].includes(col) ? 'desc' : 'asc';
+            }
+            updateSortIcons();
+            applyFiltersAndSort();
+        }
+
+        function updateSortIcons() {
+            const cols = ['timestamp', 'client_ip', 'machine_name', 'model', 'input_tokens', 'total_tokens', 'latency_ms', 'action', 'error_message'];
+            cols.forEach(c => {
+                const icon = document.getElementById(`sort-icon-${c}`);
+                const th = document.querySelector(`th[data-col="${c}"]`);
+                if (th) {
+                    th.classList.remove('sort-asc', 'sort-desc');
+                }
+                if (icon) {
+                    if (c === currentSortCol) {
+                        icon.innerText = currentSortOrder === 'asc' ? '▲' : '▼';
+                        if (th) th.classList.add(currentSortOrder === 'asc' ? 'sort-asc' : 'sort-desc');
+                    } else {
+                        icon.innerText = '⇅';
+                    }
+                }
+            });
+        }
+
+        function handleColumnFilterChange() {
+            currentLogsPage = 1; // Reset về trang 1 khi lọc
+            applyFiltersAndSort();
+        }
+
+        function clearAllFilters() {
+            const inputs = [
+                'logs-global-search', 'filter-col-timestamp', 'filter-col-client',
+                'filter-col-machine', 'filter-col-model', 'filter-col-inout',
+                'filter-col-total', 'filter-col-latency', 'filter-col-status', 'filter-col-notes'
+            ];
+            inputs.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            currentLogsPage = 1;
+            applyFiltersAndSort();
+        }
+
+        function goToLogsPage(page) {
+            const maxPage = Math.max(1, Math.ceil(filteredLogs.length / LOGS_PAGE_SIZE));
+            if (page < 1) page = 1;
+            if (page > maxPage) page = maxPage;
+            currentLogsPage = page;
+            renderLogsTable();
+            renderPagination();
+        }
+
+        function applyFiltersAndSort() {
+            const globalQ = (document.getElementById('logs-global-search')?.value || '').trim().toLowerCase();
+            const fTime = (document.getElementById('filter-col-timestamp')?.value || '').trim().toLowerCase();
+            const fClient = (document.getElementById('filter-col-client')?.value || '').trim().toLowerCase();
+            const fMachine = (document.getElementById('filter-col-machine')?.value || '').trim().toLowerCase();
+            const fModel = (document.getElementById('filter-col-model')?.value || '').trim().toLowerCase();
+            const fInOut = (document.getElementById('filter-col-inout')?.value || '').trim().toLowerCase();
+            const fTotal = (document.getElementById('filter-col-total')?.value || '').trim().toLowerCase();
+            const fLatency = (document.getElementById('filter-col-latency')?.value || '').trim().toLowerCase();
+            const fStatus = (document.getElementById('filter-col-status')?.value || '').trim().toLowerCase();
+            const fNotes = (document.getElementById('filter-col-notes')?.value || '').trim().toLowerCase();
+
+            filteredLogs = rawLogs.filter(l => {
+                // Global search
+                if (globalQ) {
+                    const rowStr = `${l.timestamp || ''} ${l.client_ip || ''} ${l.client_mac || ''} ${l.machine_name || ''} ${l.provider || ''} ${l.model || ''} ${l.input_tokens || 0} ${l.output_tokens || 0} ${l.total_tokens || 0} ${l.latency_ms || 0} ${l.action || ''} ${l.status_code || ''} ${l.error_message || ''} ${l.endpoint || ''}`.toLowerCase();
+                    if (!rowStr.includes(globalQ)) return false;
+                }
+
+                // Per-column filters
+                if (fTime && !(l.timestamp || '').toLowerCase().includes(fTime)) return false;
+                if (fClient && !(`${l.client_ip || ''} ${l.client_mac || ''}`.toLowerCase().includes(fClient))) return false;
+                if (fMachine && !(l.machine_name || '').toLowerCase().includes(fMachine)) return false;
+                if (fModel && !(`${l.provider || ''} ${l.model || ''}`.toLowerCase().includes(fModel))) return false;
+                if (fInOut && !(`${l.input_tokens || 0} ${l.output_tokens || 0}`.toLowerCase().includes(fInOut))) return false;
+                if (fTotal && !(String(l.total_tokens || 0).toLowerCase().includes(fTotal))) return false;
+                if (fLatency && !(String(l.latency_ms || 0).toLowerCase().includes(fLatency))) return false;
+                if (fStatus && !(`${l.action || ''} ${l.status_code || ''}`.toLowerCase().includes(fStatus))) return false;
+                if (fNotes && !(`${l.error_message || ''} ${l.endpoint || ''}`.toLowerCase().includes(fNotes))) return false;
+
+                return true;
+            });
+
+            // Sorting
+            filteredLogs.sort((a, b) => {
+                let valA = a[currentSortCol];
+                let valB = b[currentSortCol];
+
+                if (currentSortCol === 'client_ip') {
+                    valA = `${a.client_ip || ''} ${a.client_mac || ''}`;
+                    valB = `${b.client_ip || ''} ${b.client_mac || ''}`;
+                } else if (currentSortCol === 'model') {
+                    valA = `${a.provider || ''} ${a.model || ''}`;
+                    valB = `${b.provider || ''} ${b.model || ''}`;
+                } else if (currentSortCol === 'error_message') {
+                    valA = `${a.error_message || ''} ${a.endpoint || ''}`;
+                    valB = `${b.error_message || ''} ${b.endpoint || ''}`;
+                }
+
+                // Numeric comparison
+                if (['id', 'input_tokens', 'output_tokens', 'total_tokens', 'latency_ms', 'status_code'].includes(currentSortCol)) {
+                    valA = Number(valA || 0);
+                    valB = Number(valB || 0);
+                    return currentSortOrder === 'asc' ? valA - valB : valB - valA;
+                }
+
+                // String / Date comparison
+                valA = String(valA || '').toLowerCase();
+                valB = String(valB || '').toLowerCase();
+                if (valA < valB) return currentSortOrder === 'asc' ? -1 : 1;
+                if (valA > valB) return currentSortOrder === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Ensure valid page
+            const maxPage = Math.max(1, Math.ceil(filteredLogs.length / LOGS_PAGE_SIZE));
+            if (currentLogsPage > maxPage) currentLogsPage = maxPage;
+
+            renderLogsTable();
+            renderPagination();
+        }
+
+        function renderLogsTable() {
+            const logsBody = document.getElementById('logs-table-body');
+            const badge = document.getElementById('logs-count-badge');
+            if (badge) {
+                badge.innerText = `${formatNumber(filteredLogs.length)} bản ghi`;
+            }
+
+            if (!filteredLogs || filteredLogs.length === 0) {
+                const isFiltering = (rawLogs && rawLogs.length > 0);
+                logsBody.innerHTML = `<tr><td colspan="9" class="empty-hint">${isFiltering ? 'Không có bản ghi nào khớp với điều kiện lọc' : 'Chưa có nhật ký nào được ghi'}</td></tr>`;
+                return;
+            }
+
+            // Slice 20 items for current page
+            const startIdx = (currentLogsPage - 1) * LOGS_PAGE_SIZE;
+            const endIdx = startIdx + LOGS_PAGE_SIZE;
+            const pageItems = filteredLogs.slice(startIdx, endIdx);
+
+            logsBody.innerHTML = pageItems.map(l => {
+                const isBlocked = l.action.startsWith('BLOCKED');
+                const statusBadge = isBlocked 
+                    ? `<span class="badge badge-blocked">${l.action}</span>`
+                    : `<span class="badge badge-allowed">ALLOWED (200)</span>`;
+                
+                const isMcp = l.provider === 'mcp';
+                const providerBadge = isMcp 
+                    ? `<span class="badge badge-mcp">🔌 MCP</span>`
+                    : `<span class="badge badge-provider">${l.provider}</span>`;
+
+                return `
+                    <tr>
+                        <td style="color: var(--text-secondary);">${(l.timestamp || '').split('.')[0]}</td>
+                        <td>${l.client_ip}<br><span class="mac-pill">${l.client_mac}</span></td>
+                        <td>${l.machine_name || '-'}</td>
+                        <td><strong>${l.model}</strong><br>${providerBadge}</td>
+                        <td>${formatNumber(l.input_tokens)} / ${formatNumber(l.output_tokens)}</td>
+                        <td><strong>${formatNumber(l.total_tokens)}</strong></td>
+                        <td>${l.latency_ms} ms</td>
+                        <td>${statusBadge}</td>
+                        <td style="color: ${isBlocked ? 'var(--accent-red)' : 'var(--text-secondary)'}; font-size: 11px;">
+                            ${l.error_message || l.endpoint || 'OK'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPagination() {
+            const infoEl = document.getElementById('logs-pagination-info');
+            const navEl = document.getElementById('logs-pagination-nav');
+            if (!infoEl || !navEl) return;
+
+            const total = filteredLogs.length;
+            const totalPages = Math.max(1, Math.ceil(total / LOGS_PAGE_SIZE));
+
+            if (total === 0) {
+                infoEl.innerHTML = 'Hiển thị <strong>0 - 0</strong> trên tổng số <strong>0</strong> bản ghi';
+                navEl.innerHTML = '';
+                return;
+            }
+
+            const startItem = (currentLogsPage - 1) * LOGS_PAGE_SIZE + 1;
+            const endItem = Math.min(total, currentLogsPage * LOGS_PAGE_SIZE);
+
+            if (total !== rawLogs.length) {
+                infoEl.innerHTML = `Hiển thị <strong>${formatNumber(startItem)} - ${formatNumber(endItem)}</strong> trên <strong>${formatNumber(total)}</strong> bản ghi đã lọc (tổng số ${formatNumber(rawLogs.length)})`;
+            } else {
+                infoEl.innerHTML = `Hiển thị <strong>${formatNumber(startItem)} - ${formatNumber(endItem)}</strong> trên tổng số <strong>${formatNumber(total)}</strong> bản ghi`;
+            }
+
+            // Generate Pagination Buttons
+            let buttonsHtml = '';
+
+            // First & Prev buttons
+            buttonsHtml += `<button class="page-btn" onclick="goToLogsPage(1)" ${currentLogsPage === 1 ? 'disabled' : ''} title="Trang đầu">«</button>`;
+            buttonsHtml += `<button class="page-btn" onclick="goToLogsPage(${currentLogsPage - 1})" ${currentLogsPage === 1 ? 'disabled' : ''} title="Trang trước">‹</button>`;
+
+            // Page numbers with windowing
+            let pages = [];
+            if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+            } else {
+                pages.push(1);
+                if (currentLogsPage > 3) pages.push('...');
+                let start = Math.max(2, currentLogsPage - 1);
+                let end = Math.min(totalPages - 1, currentLogsPage + 1);
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (currentLogsPage < totalPages - 2) pages.push('...');
+                pages.push(totalPages);
+            }
+
+            pages.forEach(p => {
+                if (p === '...') {
+                    buttonsHtml += `<span class="page-dots">...</span>`;
+                } else {
+                    const isActive = p === currentLogsPage;
+                    buttonsHtml += `<button class="page-btn ${isActive ? 'active' : ''}" onclick="goToLogsPage(${p})">${p}</button>`;
+                }
+            });
+
+            // Next & Last buttons
+            buttonsHtml += `<button class="page-btn" onclick="goToLogsPage(${currentLogsPage + 1})" ${currentLogsPage === totalPages ? 'disabled' : ''} title="Trang sau">›</button>`;
+            buttonsHtml += `<button class="page-btn" onclick="goToLogsPage(${totalPages})" ${currentLogsPage === totalPages ? 'disabled' : ''} title="Trang cuối">»</button>`;
+
+            navEl.innerHTML = buttonsHtml;
         }
 
         // ==================== FETCH & RENDER POLICY ====================
