@@ -15,7 +15,7 @@ Làm 1 proxy để map các domain tìm được của từng IDE
         Các thông số kiểm soát cho từng PC : 
             - IP, MAC address: Giới hạn PC nào được phép dùng Proxy.
             - Model Restrictions: Chỉ cho phép gọi các model cụ thể (ví dụ: chỉ OpenAI API Key được dùng cho Anthropic model).
-            - Token Limits: Giới hạn số lượng Input/Output tokens (tính tổng trên 1 ngày).
+            - Token Limits: Giới hạn số lượng Input/Output tokens (tính tổng trên 1 ngày total token input per day, total token output per day ).
             - Protocol/Port: Hỗ trợ các giao thức phổ biến (HTTP, HTTPS, SOCKS5) và các cổng cụ thể cho MCP/Streaming.
         Nếu có PC (IP or MAC address nào vi phạm các thông số cần kiểm soát) thì không cho phép gọi lên api llm cloud nữa , 
             Máy Trạm Mạng LAN (IP & MAC)

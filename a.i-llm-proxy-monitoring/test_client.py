@@ -661,5 +661,40 @@ class TestLLMProxy(unittest.TestCase):
         self.assertEqual(db_policy["default_policy"]["max_input_tokens_per_request"], 0)
         self.assertEqual(db_policy["default_policy"]["max_output_tokens_per_request"], 0)
 
+    def test_25_daily_input_output_token_quotas(self):
+        """Kiểm tra giới hạn hạn mức input token và output token theo ngày (daily quotas)"""
+        test_ip = "10.99.9.55"
+        test_mac = "02:00:00:99:99:55"
+        rule_name = "[TEST] Rule-Daily-Quota-PC"
+
+        self.client.post("/api/policy/rule", json={
+            "name": rule_name,
+            "ip": test_ip,
+            "mac": test_mac,
+            "action": "allow",
+            "allowed_providers": ["google"],
+            "allowed_models": ["gemini-1.5-flash"],
+            "max_input_tokens_per_request": 0,
+            "max_output_tokens_per_request": 0,
+            "daily_input_token_quota": 10,
+            "daily_total_token_quota": 0
+        })
+
+        try:
+            # Gửi request với prompt dài (> 10 tokens)
+            resp = self.client.post(
+                "/google/v1beta/models/gemini-1.5-flash:generateContent",
+                headers={"x-forwarded-for": test_ip},
+                json={"contents": [{"parts": [{"text": "This prompt definitely exceeds the ten input token daily quota limit"}]}]}
+            )
+            self.assertEqual(resp.status_code, 429)
+            self.assertIn("Daily input token quota exceeded", resp.text)
+        finally:
+            self.client.delete(f"/api/policy/rule/{rule_name}")
+            from database import get_connection
+            with get_connection() as conn:
+                conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
+                conn.commit()
+
 if __name__ == "__main__":
     unittest.main()

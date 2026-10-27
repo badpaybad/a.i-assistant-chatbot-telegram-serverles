@@ -18,7 +18,7 @@ import socket
 from urllib.parse import urlparse
 
 from database import (
-    init_db, log_request, get_daily_token_usage, get_recent_logs, get_summary_stats,
+    init_db, log_request, get_daily_token_usage, get_daily_detailed_token_usage, get_recent_logs, get_summary_stats,
     record_discovery, get_discoveries, delete_discovery, reset_audit_logs, resolve_client_violations,
     get_policy_from_db, save_policy_to_db, get_client_active_violation,
 )
@@ -1335,10 +1335,26 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     # 4. Kiểm tra Daily Quota (0 / trống = không giới hạn)
     daily_quota = int(rule.get("daily_total_token_quota") or 0)
-    if daily_quota > 0 and is_inference:
-        current_daily_used = get_daily_token_usage(client_ip, client_mac)
-        if current_daily_used + est_input_tokens > daily_quota:
-            err = f"Daily token quota exceeded ({current_daily_used}/{daily_quota} tokens used today) for {machine_name}"
+    daily_in_quota = int(rule.get("daily_input_token_quota") or 0)
+    daily_out_quota = int(rule.get("daily_output_token_quota") or 0)
+    usage = get_daily_detailed_token_usage(client_ip, client_mac) if is_inference else {"daily_input": 0, "daily_output": 0, "daily_total": 0}
+    if (daily_quota > 0 or daily_in_quota > 0 or daily_out_quota > 0) and is_inference:
+        
+        # 4.1 Daily Input Token Quota
+        if daily_in_quota > 0 and usage["daily_input"] + est_input_tokens > daily_in_quota:
+            err = f"Daily input token quota exceeded ({usage['daily_input']}/{daily_in_quota} input tokens used today) for {machine_name}"
+            log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 429, "BLOCKED_DAILY_QUOTA", est_input_tokens, 0, 0, err)
+            raise HTTPException(status_code=429, detail={"error": err})
+
+        # 4.2 Daily Output Token Quota
+        if daily_out_quota > 0 and usage["daily_output"] >= daily_out_quota:
+            err = f"Daily output token quota exceeded ({usage['daily_output']}/{daily_out_quota} output tokens used today) for {machine_name}"
+            log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 429, "BLOCKED_DAILY_QUOTA", est_input_tokens, 0, 0, err)
+            raise HTTPException(status_code=429, detail={"error": err})
+
+        # 4.3 Daily Total Token Quota
+        if daily_quota > 0 and usage["daily_total"] + est_input_tokens > daily_quota:
+            err = f"Daily token quota exceeded ({usage['daily_total']}/{daily_quota} tokens used today) for {machine_name}"
             log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 429, "BLOCKED_DAILY_QUOTA", est_input_tokens, 0, 0, err)
             raise HTTPException(status_code=429, detail={"error": err})
 
@@ -1401,16 +1417,22 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
                 try:
                     async for chunk in upstream_resp.aiter_bytes():
                         tracker.process_chunk(chunk)
-                        if max_output > 0:
+                        if max_output > 0 or daily_out_quota > 0:
                             _, curr_out = tracker.get_current_counts()
-                            if curr_out > max_output:
+                            if (max_output > 0 and curr_out > max_output) or \
+                               (daily_out_quota > 0 and usage["daily_output"] + curr_out > daily_out_quota):
                                 break
                         yield chunk
                 finally:
                     await upstream_resp.aclose()
                     in_tok, out_tok = tracker.finalize()
                     latency = int((time.time() - start_time) * 1000)
-                    action = "BLOCKED_OUTPUT_TOKENS" if (max_output > 0 and out_tok > max_output) else "ALLOWED"
+                    if max_output > 0 and out_tok > max_output:
+                        action = "BLOCKED_OUTPUT_TOKENS"
+                    elif daily_out_quota > 0 and usage["daily_output"] + out_tok > daily_out_quota:
+                        action = "BLOCKED_DAILY_QUOTA"
+                    else:
+                        action = "ALLOWED"
                     log_request(
                         client_ip, client_mac, machine_name, provider, model_name,
                         subpath, upstream_resp.status_code, action, in_tok, out_tok, latency
@@ -1434,14 +1456,23 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
             tracker.process_chunk(resp_bytes)
             in_tok, out_tok = tracker.finalize()
             latency = int((time.time() - start_time) * 1000)
-            action = "BLOCKED_OUTPUT_TOKENS" if (max_output > 0 and out_tok > max_output) else "ALLOWED"
+            if max_output > 0 and out_tok > max_output:
+                action = "BLOCKED_OUTPUT_TOKENS"
+                err = f"Output tokens ({out_tok}) exceed maximum allowed limit ({max_output}) for this PC"
+            elif daily_out_quota > 0 and usage["daily_output"] + out_tok > daily_out_quota:
+                action = "BLOCKED_DAILY_QUOTA"
+                err = f"Daily output token quota exceeded ({usage['daily_output'] + out_tok}/{daily_out_quota}) for {machine_name}"
+            else:
+                action = "ALLOWED"
+                err = None
+
             log_request(
                 client_ip, client_mac, machine_name, provider, model_name,
-                subpath, upstream_resp.status_code, action, in_tok, out_tok, latency
+                subpath, upstream_resp.status_code, action, in_tok, out_tok, latency, err
             )
-            if max_output > 0 and out_tok > max_output:
-                err = f"Output tokens ({out_tok}) exceed maximum allowed limit ({max_output}) for this PC"
-                raise HTTPException(status_code=400, detail={"error": err})
+            if action != "ALLOWED":
+                status = 400 if action == "BLOCKED_OUTPUT_TOKENS" else 429
+                raise HTTPException(status_code=status, detail={"error": err})
             
             return Response(
                 content=resp_bytes,

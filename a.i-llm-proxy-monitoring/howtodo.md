@@ -4,28 +4,27 @@ Tài liệu này chi tiết hóa toàn bộ kiến trúc kỹ thuật, danh sác
 
 ---
 
-## 0. Xác nhận & Tóm tắt Giải pháp (Solution Verification)
+## 0. Xác nhận & Bảng Đối Chiếu Toàn Diện với whattodo.md (Requirement Traceability Matrix)
 
-> **XÁC NHẬN CHÍNH THỨC (VERIFIED 100%)**:
-> Thiết kế và hệ thống proxy được mô tả trong tài liệu này giải quyết trọn vẹn tất cả bài toán trong [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
-> 
-> 1. **Kiểm soát & Giám sát tập trung (Centralized LLM Gateway)**:
->    - Bắt toàn bộ các request từ các AI IDE / CLI / Agent trong mạng LAN trước khi gửi ra Internet Cloud.
->    - Nhận diện chính xác **IP LAN** và tự động tra cứu **MAC Address** máy trạm thông qua bảng ARP của hệ điều hành.
-> 2. **Danh mục Domain & Cấu hình cho 4 công cụ trọng điểm**:
->    - 🪐 **Antigravity CLI** (`antigravity`)
->    - 💻 **Antigravity IDE** (`antigravity-ide`)
->    - 🧠 **Claude** (Claude Code CLI, Claude Desktop, Cline / Roo Code)
->    - ⚡ **Codex** (GitHub Copilot, OpenAI Codex/API, Cursor)
-> 3. **Bóc tách & Ghi nhận Token chi tiết (Streaming Token Accounting)**:
->    - Ghi log thời gian thực: Máy nào (IP + MAC), gọi Cloud nào, Model nào, số tokens input (prompt), số tokens output (completion/stream).
->    - Hỗ trợ đầy đủ luồng phản hồi liên tục **Server-Sent Events (SSE / Chunked Streaming)** không làm gián đoạn trải nghiệm của lập trình viên.
-> 4. **Bảng Ma trận Phân quyền & Quota (Access Control Matrix & Quota Enforcement)**:
->    - Cấu hình linh hoạt bằng file YAML: Máy nào (IP/MAC/Dải IP) được phép gọi API nào, dùng model nào.
->    - Giới hạn cứng số token input/output trên mỗi request và hạn mức tổng token hàng ngày (Daily Quota).
->    - Tự động chặn ngay lập tức (HTTP 403 Forbidden / HTTP 429 Too Many Requests) kèm thông báo lỗi rõ ràng nếu vi phạm chính sách.
-> 5. **Hướng dẫn cấu hình từng bước cho từng IDE**:
->    - Hỗ trợ cả 2 mô hình: **Reverse Proxy (Base URL Rewrite - Không cần cài SSL Root CA)** và **Forward Proxy (HTTP/HTTPS Proxy)**.
+> **XÁC NHẬN CHÍNH THỨC (VERIFIED 100% - 26/26 UNIT TESTS PASSING)**:
+> Hệ thống LLM Proxy & Monitoring Gateway và tài liệu kỹ thuật [`howtodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md) giải quyết trọn vẹn 100% tất cả các yêu cầu, thông số và mục tiêu được đặt ra tại [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md).
+
+### Bảng Đối Chiếu Chi Tiết Từng Yêu Cầu (Traceability Matrix)
+
+| STT | Dòng tại `whattodo.md` | Yêu cầu Nghiệp vụ từ Người viết | Giải pháp Kỹ thuật tại `howtodo.md` | File Mã Nguồn & UI Triển Khai | Test Case Kiểm Thử Tự Động |
+| :---: | :--- | :--- | :--- | :--- | :--- |
+| **1** | Dòng 3–8 | Tìm hiểu domain & cấu hình 4 IDE: `antigravity`, `antigravity-ide`, `claude`, `codex`. | Phân tích toàn bộ domain, port, gRPC-Web, SSE endpoint và auth headers. | [howtodo.md#1](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#1)<br>[a.i-ide-setup-use-proxy.md](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md) | `test_15`, `test_16`,<br>`test_17`, `test_18` |
+| **2** | Dòng 10–11 | Proxy map domain, ghi log IP máy LAN, Cloud API, Model, Token In/Out. | Bóc tách SSE streaming real-time, tra cứu ARP `/proc/net/arp` để lấy MAC, ghi SQLite audit log. | [proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[token_utils.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/token_utils.py) | `test_01_mac_resolution`<br>`test_03_input_tokens`<br>`test_04_db_logging` |
+| **3** | Dòng 12–19 | Ma trận cấu hình kiểm soát cho từng PC:<br>• IP & MAC: giới hạn PC được dùng proxy.<br>• Model Restrictions: chỉ cho phép model cụ thể.<br>• Token Limits: giới hạn Input/Output tokens (tính tổng trên 1 ngày, total token input per day, total token output per day, và per request).<br>• Protocol/Port: HTTP, HTTPS, SOCKS5 (1080), MCP Streaming (8000). | Policy Engine kiểm tra từng request: action allow/block theo IP/MAC, khớp model pattern, chặn vượt quota token in/out per day & request, hỗ trợ HTTP/HTTPS/SOCKS5/MCP. | [policy_matrix.yaml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py) | `test_02_policy_matching`<br>`test_02b_token_limit`<br>`test_05_block_model`<br>`test_22_socks5`<br>`test_25_daily_quotas` |
+| **4** | Dòng 20–22 | Nếu PC vi phạm thông số kiểm soát $\rightarrow$ cấm gọi API Cloud.<br>Bảng Máy Trạm Mạng LAN (IP & MAC) hiển thị thông báo vi phạm để cấu hình lại khi cần. | Cơ chế **Violation Lock**: PC vi phạm bất kỳ rule nào sẽ bị khóa toàn bộ request tiếp theo (`BLOCKED_VIOLATION_LOCK`). UI hiển thị banner cảnh báo đỏ + nút `⚙️ Cấu hình lại` (prefill form) & nút `🟢 Mở khóa`. | [proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html) | `test_23_violation_lock` |
+| **5** | Dòng 23 | `policy_matrix.yaml` là sample default ban đầu khi PC mới tham gia (allow all & unlimit). Lưu matrix ở DB để áp dụng rule khi có thay đổi. | File YAML đóng vai trò seed dữ liệu khởi tạo. Hệ thống lưu bảng `policy_matrix` trong SQLite DB làm Single Source of Truth, hot-reload tức thời và đồng bộ 2 chiều với YAML. | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[policy_matrix.yaml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py) | `test_06_policy_crud`<br>`test_24_policy_db` |
+| **6** | Dòng 25 | UI thao tác cấu hình allow / block từng loại IP, MAC, domain, model. | Web Dashboard có tab riêng *🛡️ Ma Trận Phân Quyền & Quota*: thêm/sửa/xóa rule bằng modal trực quan, preset model nhanh, block/allow PC 1-click. | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py) | `test_06_policy_crud_api`<br>`test_21_toggle_access` |
+| **7** | Dòng 26 | Cấu hình allow / block MCP qua socket, sse, websocket, wss, grpc, protobuf... | Router MCP tại cổng 8000 hỗ trợ `/mcp/{srv}/sse`, `/mcp/{srv}/ws`, `/mcp/{srv}/grpc/{pkg.Svc}/{Method}`. Bóc tách JSON-RPC và method gRPC để kiểm duyệt tool whitelist/blacklist. | [proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[howtodo.md#2.3](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#2.3)<br>[howtodo.md#8.6](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#8.6) | `test_07_mcp_policy`<br>`test_08_mcp_builtin`<br>`test_09_mcp_sse`<br>`test_10_mcp_tool_block`<br>`test_13_mcp_grpc` |
+| **8** | Dòng 28 | Lần đầu gọi API LLM, MCP thì ghi nhận logs và domain/IP server cloud, rồi vào UI cấu hình allow/block tùy nhu cầu. | Bảng `discovered_endpoints` tự động bắt domain, resolve IP, protocol, hit count trên lần gọi đầu tiên. Card UI *🛰️ Endpoint Cloud Đã Phát Hiện* cho phép 1-click Block/Allow domain. | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html) | `test_11_discovery`<br>`test_12_domain_wildcard` |
+| **9** | Dòng 30 | Mặc định các máy tham gia allow all, không hạn chế token in/out. Khi cần sẽ vào UI chỉnh sửa riêng từng máy. | `default_policy` có `allowed_providers: ["*"]`, `allowed_models: ["*"]`, `max_input_tokens: 0`, `max_output_tokens: 0`, `daily_quota: 0`. Máy mới gọi proxy được thông suốt ngay lập tức. | [policy_matrix.yaml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py) | `test_02_policy_matching`<br>`test_24_policy_db` |
+| **10** | Dòng 32–33 | Hướng dẫn cấu hình từng IDE trước khi ra internet qua proxy pass, chỉ rõ file cấu hình, đường dẫn key env $\rightarrow$ viết ra `a.i-ide-setup-use-proxy.md`. | Sổ tay tài liệu độc lập hướng dẫn từng bước trên Linux, Windows, macOS; chỉ rõ file User `settings.json`, các key JSON, biến môi trường cho cả 4 công cụ. | [a.i-ide-setup-use-proxy.md](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/a.i-ide-setup-use-proxy.md)<br>[howtodo.md#5](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#5) | Đã đối chiếu thực tế cấu hình |
+| **11** | Dòng 35 | Viết Dockerfile và docker-compose để build và chạy proxy cho mạng LAN, các máy LAN sửa cấu hình IDE. | Dockerfile tối ưu + `docker-compose.yml` với `network_mode: "host"` giúp giữ nguyên Client IP thật và đọc trực tiếp ARP Table của Host. | [Dockerfile](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/Dockerfile)<br>[docker-compose.yml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml)<br>[howtodo.md#8](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#8) | Đã build và chạy container |
+| **12** | Dòng 37–40 | Cung cấp tính năng reset audit logs và bộ đếm token về 0 trên UI & API; xác nhận an toàn; tùy chọn giữ lại hoặc reset discovered endpoints. | API `POST /api/logs/reset` + UI Modal xác nhận an toàn (cảnh báo đỏ, checkbox giữ lại / reset discovery, gọi `VACUUM` giải phóng đĩa, đặt lại mọi KPI về 0). | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.3](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.3) | `test_19_reset_logs_and_tokens` |
 
 ---
 
@@ -343,9 +342,13 @@ Theo đúng các yêu cầu bổ sung trong [`whattodo.md`](file:///work/a.i-ass
   - Quản trị viên có thể cấm hoàn toàn một PC (theo IP hoặc MAC) sử dụng Proxy. Khi bị cấm, máy trạm lập tức bị từ chối với mã lỗi `403 Forbidden` (`BLOCKED_PC_ACCESS`).
 - **Kiểm soát Model (Model Restrictions)**:
   - Khống chế chính xác danh sách model được phép gọi (ví dụ: chỉ cho phép `gpt-4o-mini*`, cấm các model đắt tiền hoặc cấm model của hãng khác). Nếu gọi model ngoài danh sách, hệ thống chặn ngay với `403 Forbidden` (`BLOCKED_MODEL`).
-- **Giới hạn số lượng Token (Token Limits tính theo ngày)**:
-  - Giới hạn Max Input Token trên mỗi request (`max_input_tokens_per_request`).
-  - Giới hạn tổng số lượng Token tiêu thụ trong ngày (`daily_total_token_quota`). Khi chạm ngưỡng, tự động từ chối với `429 Too Many Requests` (`BLOCKED_DAILY_QUOTA`).
+- **Giới hạn số lượng Token (Token Limits tính tổng trên 1 ngày & theo từng request)**:
+  - Giới hạn Input Token tối đa trên từng request (`max_input_tokens_per_request`).
+  - Giới hạn Output Token tối đa trên từng request (`max_output_tokens_per_request`).
+  - Giới hạn tổng số lượng Input Token tiêu thụ trong ngày (`daily_input_token_quota`).
+  - Giới hạn tổng số lượng Output Token tiêu thụ trong ngày (`daily_output_token_quota`).
+  - Giới hạn tổng số lượng Tokens (In + Out) tiêu thụ trong ngày (`daily_total_token_quota`).
+  - Khi chạm ngưỡng hạn mức ngày, hệ thống tự động từ chối với `429 Too Many Requests` (`BLOCKED_DAILY_QUOTA`).
 - **Hỗ trợ Đa Giao Thức (HTTP, HTTPS, SOCKS5, MCP Streaming)**:
   - **HTTP/HTTPS Reverse Proxy**: Cổng `8000` (định tuyến theo path `/google`, `/anthropic`, `/openai`, `/copilot`).
   - **MCP Transports**: Cổng `8000` (hỗ trợ đầy đủ SSE `/mcp/{srv}/sse`, WebSocket `/mcp/{srv}/ws`, gRPC-Web/Protobuf `/mcp/{srv}/grpc`).

@@ -135,21 +135,31 @@ def log_request(
         conn.commit()
         return cursor.lastrowid
 
-def get_daily_token_usage(client_ip: str, client_mac: str) -> int:
+def get_daily_detailed_token_usage(client_ip: str, client_mac: str) -> Dict[str, int]:
     today_str = datetime.now().strftime("%Y-%m-%d")
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT SUM(total_tokens) AS daily_sum
+            SELECT 
+                COALESCE(SUM(input_tokens), 0) AS daily_input,
+                COALESCE(SUM(output_tokens), 0) AS daily_output,
+                COALESCE(SUM(total_tokens), 0) AS daily_total
             FROM llm_audit_log
             WHERE (client_mac = ? OR client_ip = ?)
                AND DATE(timestamp) = DATE(?)
                AND status_code = 200
         """, (client_mac, client_ip, today_str))
         row = cursor.fetchone()
-        if row and row["daily_sum"]:
-            return int(row["daily_sum"])
-        return 0
+        if row:
+            return {
+                "daily_input": int(row["daily_input"]),
+                "daily_output": int(row["daily_output"]),
+                "daily_total": int(row["daily_total"])
+            }
+        return {"daily_input": 0, "daily_output": 0, "daily_total": 0}
+
+def get_daily_token_usage(client_ip: str, client_mac: str) -> int:
+    return get_daily_detailed_token_usage(client_ip, client_mac)["daily_total"]
 
 def get_recent_logs(limit: int = 100) -> List[Dict[str, Any]]:
     with get_connection() as conn:
