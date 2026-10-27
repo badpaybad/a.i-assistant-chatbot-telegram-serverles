@@ -26,6 +26,7 @@ Tài liệu này chi tiết hóa toàn bộ kiến trúc kỹ thuật, danh sác
 | **11** | Dòng 35 | Viết Dockerfile và docker-compose để build và chạy proxy cho mạng LAN, các máy LAN sửa cấu hình IDE. | Dockerfile tối ưu + `docker-compose.yml` với `network_mode: "host"` giúp giữ nguyên Client IP thật và đọc trực tiếp ARP Table của Host. | [Dockerfile](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/Dockerfile)<br>[docker-compose.yml](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/docker-compose.yml)<br>[howtodo.md#8](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#8) | Đã build và chạy container |
 | **12** | Dòng 37–40 | Cung cấp tính năng reset audit logs và bộ đếm token về 0 trên UI & API; xác nhận an toàn; tùy chọn giữ lại hoặc reset discovered endpoints. | API `POST /api/logs/reset` + UI Modal xác nhận an toàn (cảnh báo đỏ, checkbox giữ lại / reset discovery, gọi `VACUUM` giải phóng đĩa, đặt lại mọi KPI về 0). | [database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.3](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.3) | `test_19_reset_logs_and_tokens` |
 | **13** | Dòng 42–44 | Nhật Ký Audit Chi Tiết Thời Gian Thực:<br>• Phân trang, mỗi trang 20 item.<br>• Tìm kiếm và sắp xếp cho từng header column của bảng. | Hỗ trợ phân trang 20 items/trang cả ở API backend (`/api/logs?page=...&page_size=20`) và UI client-side reactive. Ô tìm kiếm riêng cho từng cột (Thời gian, IP/MAC, Tên máy, Model, Tokens, Latency, Status, Ghi chú) + Global search; click header để đảo chiều sắp xếp (▲/▼/⇅). | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[proxy_server.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/proxy_server.py)<br>[database.py](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/database.py)<br>[howtodo.md#4.4](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.4) | `test_26_audit_logs_pagination_search_sort` |
+| **14** | Dòng 46 | Thêm icon để đổi theme sáng tối, mặc định chọn theme sáng. | Hỗ trợ chuyển đổi Theme Sáng / Tối (Light & Dark Theme Switcher) với mặc định chuẩn xác Theme Sáng; token màu sắc CSS Variables hoàn chỉnh cho cả 2 theme; nút toggle icon (Sun/Moon SVG) mượt mà trên Header; chống giật FOUC bằng inline meta/script; tự động đồng bộ và lưu trữ qua `localStorage`. | [static/index.html](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/static/index.html)<br>[howtodo.md#4.5](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/howtodo.md#4.5) | `test_27_light_dark_theme_switcher` |
 
 ---
 
@@ -554,6 +555,45 @@ Bảng Nhật Ký Audit được trang bị một hàng ô nhập tìm kiếm (`
     - `sort_by` (`timestamp`, `client_ip`, `machine_name`, `provider`, `model`, `tokens`, `latency_ms`, `status_code`, `notes`)
     - `sort_order` (`asc` hoặc `desc`)
     - `filter_time`, `filter_client`, `filter_machine`, `filter_provider`, `filter_model`, `filter_status`, `filter_notes`.
+
+---
+
+### 4.5. Cơ Chế Chuyển Đổi Giao Diện Sáng / Tối (Light & Dark Theme Switcher - Mặc Định Theme Sáng)
+
+Đáp ứng yêu cầu tại dòng 46 của [`whattodo.md`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/whattodo.md):
+> *"Thêm icon để đổi theme sáng tối, mặc định chọn theme sáng"*
+
+Hệ thống được trang bị kiến trúc Theme Tokens hiện đại chuẩn W3C Web Components:
+
+#### 1. Nguyên Tắc Thiết Kế & Mặc Định Chọn Theme Sáng (Light Theme Default)
+- **Ưu tiên Theme Sáng khi khởi chạy**: Khi người dùng lần đầu truy cập Dashboard trên máy trạm mạng LAN, hệ thống tự động kích hoạt **Theme Sáng (Light Theme)** theo đúng đặc tả yêu cầu.
+- **Phòng chống giật giao diện (Zero-FOUC Prevention)**:
+  - Khai báo `<meta name="color-scheme" content="light dark">` ngay trong thẻ `<head>`.
+  - Một đoạn inline script siêu nhẹ (~5 dòng) được đặt ngay đầu thẻ `<head>` để đọc giá trị từ `localStorage.getItem('app-theme') || 'light'` và gán thuộc tính `data-theme="light"` lên phần tử `<html>` ngay trước khi trình duyệt dựng khung render cây DOM. Nhờ vậy, tuyệt đối không xuất hiện hiện tượng chớp nháy màu nền tối rồi mới chuyển sang sáng.
+
+#### 2. Hệ Thống Token Màu Sắc CSS Variables Toàn Diện
+Bảng màu được tính toán tối ưu độ tương phản chuẩn WCAG 2.1 AA cho cả 2 chế độ:
+- **Chế độ Sáng (`:root, :root[data-theme="light"]`)**:
+  - Nền trang (`--bg-base`): `#f8fafc` (Slate 50 sạch sẽ, dịu mắt).
+  - Nền thẻ / bảng (`--bg-surface`): `#ffffff` với viền `#cbd5e1` và đổ bóng nhẹ `--card-shadow`.
+  - Nền ô nhập (`--input-bg`): `#ffffff` với viền `#cbd5e1`, placeholder `#94a3b8`.
+  - Chữ chính (`--text-primary`): `#0f172a` (Slate 900 đậm rõ nét).
+  - Huy hiệu (Badges) & Pills: Màu nền dịu (10–12% opacity) kết hợp chữ và viền màu đậm tương phản cao (`#047857` cho Allowed, `#b91c1c` cho Blocked, `#1d4ed8` cho Provider, `#6d28d9` cho Model).
+- **Chế độ Tối (`:root[data-theme="dark"]`)**:
+  - Nền trang (`--bg-base`): `#0c0e17` (Deep Dark thời thượng).
+  - Nền thẻ (`--bg-surface`): `#141824`.
+  - Chữ chính: `#f0f3ff`, chữ phụ `#8e9bb5`.
+
+#### 3. Nút Icon Chuyển Đổi Trên Header (Interactive Toggle Button)
+- Nút bấm `id="theme-toggle-btn"` được tích hợp trang trọng ngay trên thanh tác vụ của Header (cạnh nhãn `LIVE MONITOR` và nút `Reset Logs`).
+- **Biểu tượng động (Dynamic SVG Icons)**:
+  - Khi đang ở **Theme Sáng**: Nút hiển thị biểu tượng Mặt Trăng (Moon SVG 🌙) kèm nhãn *"Giao diện Tối"* và tooltip hướng dẫn *"Bấm để chuyển sang giao diện Tối"*.
+  - Khi đang ở **Theme Tối**: Nút hiển thị biểu tượng Mặt Trời (Sun SVG ☀️) kèm nhãn *"Giao diện Sáng"* và tooltip hướng dẫn *"Bấm để chuyển sang giao diện Sáng"*.
+- **Hiệu ứng Micro-animation**: Hiệu ứng xoay góc nhẹ `rotate(15deg)` và phóng to `scale(1.15)` khi di chuột (hover), mang lại cảm giác sống động và cao cấp.
+
+#### 4. Lưu Trữ Bền Vững & Đồng Bộ Đa Tab (Persistence & Multi-tab Sync)
+- **Lưu trữ**: Lựa chọn của người dùng được lưu trữ tự động trong `localStorage ('app-theme')` dưới giá trị `'light'` hoặc `'dark'`.
+- **Đồng bộ đa tab (Cross-tab Sync)**: Lắng nghe sự kiện `window.addEventListener('storage', ...)` giúp thay đổi theme trên một tab sẽ lập tức áp dụng đồng bộ ngay lập tức cho tất cả các tab khác của Dashboard đang mở trong cùng trình duyệt.
 
 ---
 

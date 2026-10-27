@@ -7,21 +7,146 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta name="color-scheme" content="light dark">
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('app-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+                var meta = document.querySelector('meta[name="color-scheme"]');
+                if (meta) meta.content = theme;
+            } catch(e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <style>
-        :root {
+        :root, :root[data-theme="light"] {
+            /* ==================== THEME SÁNG (MẶC ĐỊNH) ==================== */
+            --bg-base: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-card: #f1f5f9;
+            --bg-card-hover: #e2e8f0;
+            --border-color: #cbd5e1;
+            --border-subtle: #e2e8f0;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --text-muted: #94a3b8;
+            --accent-blue: #2563eb;
+            --accent-cyan: #0284c7;
+            --accent-green: #059669;
+            --accent-red: #dc2626;
+            --accent-orange: #d97706;
+            --accent-purple: #7c3aed;
+
+            --header-gradient: linear-gradient(135deg, #1d4ed8, #7c3aed, #db2777);
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+            --modal-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            --table-hover: rgba(0, 0, 0, 0.025);
+            --filter-row-bg: #f8fafc;
+            --pagination-bg: #ffffff;
+            --banner-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            --banner-border: #cbd5e1;
+            --banner-title: #1e293b;
+
+            /* Badges & Pills in Light Mode */
+            --badge-allowed-bg: rgba(5, 150, 105, 0.12);
+            --badge-allowed-text: #047857;
+            --badge-allowed-border: rgba(5, 150, 105, 0.35);
+
+            --badge-blocked-bg: rgba(220, 38, 38, 0.12);
+            --badge-blocked-text: #b91c1c;
+            --badge-blocked-border: rgba(220, 38, 38, 0.35);
+
+            --badge-provider-bg: rgba(37, 99, 235, 0.1);
+            --badge-provider-text: #1d4ed8;
+            --badge-provider-border: rgba(37, 99, 235, 0.3);
+
+            --badge-model-bg: rgba(124, 58, 237, 0.1);
+            --badge-model-text: #6d28d9;
+            --badge-model-border: rgba(124, 58, 237, 0.3);
+
+            --badge-cyan-bg: rgba(2, 132, 199, 0.1);
+            --badge-cyan-text: #0284c7;
+            --badge-cyan-border: rgba(2, 132, 199, 0.3);
+
+            --badge-amber-bg: rgba(217, 119, 6, 0.12);
+            --badge-amber-text: #b45309;
+            --badge-amber-border: rgba(217, 119, 6, 0.3);
+
+            --live-bg: rgba(5, 150, 105, 0.1);
+            --live-border: rgba(5, 150, 105, 0.25);
+            --live-text: #059669;
+
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+            --input-placeholder: #94a3b8;
+
+            color-scheme: light;
+        }
+
+        :root[data-theme="dark"] {
+            /* ==================== THEME TỐI (DARK MODE) ==================== */
             --bg-base: #0c0e17;
             --bg-surface: #141824;
             --bg-card: #1c2233;
             --bg-card-hover: #232b42;
             --border-color: #273048;
+            --border-subtle: rgba(39, 48, 72, 0.4);
             --text-primary: #f0f3ff;
             --text-secondary: #8e9bb5;
+            --text-muted: #525f7a;
             --accent-blue: #3b82f6;
             --accent-cyan: #06b6d4;
             --accent-green: #10b981;
             --accent-red: #ef4444;
             --accent-orange: #f59e0b;
             --accent-purple: #8b5cf6;
+
+            --header-gradient: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+            --card-shadow: none;
+            --modal-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            --table-hover: rgba(255, 255, 255, 0.02);
+            --filter-row-bg: rgba(20, 24, 36, 0.75);
+            --pagination-bg: rgba(20, 24, 36, 0.9);
+            --banner-bg: linear-gradient(135deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+            --banner-border: #334155;
+            --banner-title: #e2e8f0;
+
+            /* Badges & Pills */
+            --badge-allowed-bg: rgba(16, 185, 129, 0.15);
+            --badge-allowed-text: var(--accent-green);
+            --badge-allowed-border: rgba(16, 185, 129, 0.3);
+
+            --badge-blocked-bg: rgba(239, 68, 68, 0.15);
+            --badge-blocked-text: var(--accent-red);
+            --badge-blocked-border: rgba(239, 68, 68, 0.3);
+
+            --badge-provider-bg: rgba(59, 130, 246, 0.15);
+            --badge-provider-text: #93c5fd;
+            --badge-provider-border: rgba(59, 130, 246, 0.3);
+
+            --badge-model-bg: rgba(139, 92, 246, 0.15);
+            --badge-model-text: #c4b5fd;
+            --badge-model-border: rgba(139, 92, 246, 0.3);
+
+            --badge-cyan-bg: rgba(6, 182, 212, 0.12);
+            --badge-cyan-text: #67e8f9;
+            --badge-cyan-border: rgba(6, 182, 212, 0.25);
+
+            --badge-amber-bg: rgba(245, 158, 11, 0.15);
+            --badge-amber-text: #fbbf24;
+            --badge-amber-border: rgba(245, 158, 11, 0.3);
+
+            --live-bg: rgba(16, 185, 129, 0.1);
+            --live-border: rgba(16, 185, 129, 0.2);
+            --live-text: var(--accent-green);
+
+            --input-bg: var(--bg-card);
+            --input-border: var(--border-color);
+            --input-placeholder: #525f7a;
+
+            color-scheme: dark;
         }
 
         * {
@@ -36,6 +161,7 @@
             color: var(--text-primary);
             min-height: 100vh;
             padding: 24px;
+            transition: background-color 0.25s ease, color 0.25s ease;
         }
 
         .container {
@@ -55,7 +181,7 @@
         .logo-group h1 {
             font-size: 24px;
             font-weight: 700;
-            background: linear-gradient(135deg, #60a5fa, #a78bfa, #f472b6);
+            background: var(--header-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -70,6 +196,41 @@
             display: flex;
             gap: 12px;
             align-items: center;
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+
+        .theme-toggle-btn:hover {
+            background-color: var(--bg-card-hover);
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+        }
+
+        .theme-toggle-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .theme-toggle-btn:hover .theme-toggle-icon {
+            transform: scale(1.15) rotate(15deg);
         }
 
         /* Nav Tabs */
@@ -101,13 +262,13 @@
 
         .nav-tab:hover {
             color: var(--text-primary);
-            background: rgba(255, 255, 255, 0.05);
+            background: rgba(125, 125, 125, 0.08);
         }
 
         .nav-tab.active {
             background-color: var(--accent-blue);
             color: #ffffff;
-            box-shadow: 0 2px 10px rgba(59, 130, 246, 0.4);
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.35);
         }
 
         .btn {
@@ -144,24 +305,24 @@
         }
 
         .btn-danger {
-            background: rgba(239, 68, 68, 0.15);
-            color: #f87171;
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: var(--badge-blocked-bg);
+            color: var(--accent-red);
+            border: 1px solid var(--badge-blocked-border);
         }
 
         .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.3);
+            background: rgba(239, 68, 68, 0.25);
             border-color: var(--accent-red);
         }
 
         .btn-success {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: var(--badge-allowed-bg);
+            color: var(--accent-green);
+            border: 1px solid var(--badge-allowed-border);
         }
 
         .btn-success:hover {
-            background: rgba(16, 185, 129, 0.3);
+            background: rgba(16, 185, 129, 0.25);
             border-color: var(--accent-green);
         }
 
@@ -170,19 +331,19 @@
             align-items: center;
             gap: 6px;
             font-size: 13px;
-            color: var(--accent-green);
-            background: rgba(16, 185, 129, 0.1);
+            color: var(--live-text);
+            background: var(--live-bg);
             padding: 6px 12px;
             border-radius: 20px;
-            border: 1px solid rgba(16, 185, 129, 0.2);
+            border: 1px solid var(--live-border);
         }
 
         .live-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--accent-green);
-            box-shadow: 0 0 8px var(--accent-green);
+            background-color: var(--live-text);
+            box-shadow: 0 0 8px var(--live-text);
             animation: pulse 1.5s infinite;
         }
 
@@ -206,6 +367,8 @@
             padding: 18px;
             position: relative;
             overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .stat-card::before {
@@ -248,6 +411,8 @@
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 24px;
+            box-shadow: var(--card-shadow);
+            transition: background-color 0.25s ease, border-color 0.25s ease;
         }
 
         .card-header {
@@ -281,13 +446,13 @@
 
         td {
             padding: 10px 12px;
-            border-bottom: 1px solid rgba(39, 48, 72, 0.4);
+            border-bottom: 1px solid var(--border-subtle);
             font-family: 'JetBrains Mono', monospace;
             font-size: 12.5px;
         }
 
         tr:hover td {
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: var(--table-hover);
         }
 
         .badge {
@@ -300,53 +465,61 @@
         }
 
         .badge-allowed {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--accent-green);
-            border: 1px solid rgba(16, 185, 129, 0.3);
+            background: var(--badge-allowed-bg);
+            color: var(--badge-allowed-text);
+            border: 1px solid var(--badge-allowed-border);
         }
 
         .badge-blocked {
-            background: rgba(239, 68, 68, 0.15);
-            color: var(--accent-red);
-            border: 1px solid rgba(239, 68, 68, 0.3);
+            background: var(--badge-blocked-bg);
+            color: var(--badge-blocked-text);
+            border: 1px solid var(--badge-blocked-border);
         }
 
         .badge-provider {
-            background: rgba(59, 130, 246, 0.15);
-            color: #93c5fd;
-            border: 1px solid rgba(59, 130, 246, 0.3);
+            background: var(--badge-provider-bg);
+            color: var(--badge-provider-text);
+            border: 1px solid var(--badge-provider-border);
             margin: 2px;
         }
 
         .badge-model {
-            background: rgba(139, 92, 246, 0.15);
-            color: #c4b5fd;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            background: var(--badge-model-bg);
+            color: var(--badge-model-text);
+            border: 1px solid var(--badge-model-border);
             margin: 2px;
             font-size: 11px;
         }
 
         .badge-mcp {
-            background: rgba(139, 92, 246, 0.15);
-            color: #c084fc;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            background: var(--badge-model-bg);
+            color: var(--badge-model-text);
+            border: 1px solid var(--badge-model-border);
+            margin: 2px;
+        }
+
+        .badge-warning {
+            background: var(--badge-amber-bg);
+            color: var(--badge-amber-text);
+            border: 1px solid var(--badge-amber-border);
             margin: 2px;
         }
 
         .endpoint-pill {
-            background: rgba(6, 182, 212, 0.12);
-            color: #67e8f9;
+            background: var(--badge-cyan-bg);
+            color: var(--badge-cyan-text);
             padding: 3px 8px;
             border-radius: 6px;
             font-family: 'JetBrains Mono', monospace;
             font-size: 11.5px;
-            border: 1px solid rgba(6, 182, 212, 0.25);
+            border: 1px solid var(--badge-cyan-border);
             display: inline-block;
         }
 
         .mac-pill {
-            color: #c4b5fd;
-            background: rgba(139, 92, 246, 0.1);
+            color: var(--badge-model-text);
+            background: var(--badge-model-bg);
+            border: 1px solid var(--badge-model-border);
             padding: 2px 6px;
             border-radius: 4px;
         }
@@ -389,14 +562,14 @@
 
         .table-filter-row th {
             padding: 6px 6px;
-            background-color: rgba(20, 24, 36, 0.75);
+            background-color: var(--filter-row-bg);
             border-bottom: 2px solid var(--border-color);
         }
 
         .column-filter-input {
             width: 100%;
-            background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
             border-radius: 6px;
             padding: 5px 8px;
             color: var(--text-primary);
@@ -412,7 +585,7 @@
         }
 
         .column-filter-input::placeholder {
-            color: #525f7a;
+            color: var(--input-placeholder);
             font-size: 10px;
         }
 
@@ -422,7 +595,7 @@
             align-items: center;
             padding: 12px 16px;
             border-top: 1px solid var(--border-color);
-            background-color: rgba(20, 24, 36, 0.9);
+            background-color: var(--pagination-bg);
             border-radius: 0 0 16px 16px;
             flex-wrap: wrap;
             gap: 12px;
@@ -635,14 +808,16 @@
         .btn-xs {
             padding: 4px 8px;
             font-size: 11.5px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 6px;
             color: var(--text-secondary);
             cursor: pointer;
+            transition: all 0.15s ease;
         }
 
         .btn-xs:hover {
+            background: var(--bg-card-hover);
             color: var(--text-primary);
             border-color: var(--accent-blue);
         }
@@ -688,6 +863,10 @@
                 <p>Quản lý Ma trận Phân quyền & Giám sát Lưu lượng AI Mạng LAN</p>
             </div>
             <div class="header-actions">
+                <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleTheme()" title="Đổi giao diện Sáng / Tối (Mặc định: Sáng)">
+                    <span class="theme-toggle-icon" id="theme-toggle-icon"></span>
+                    <span id="theme-toggle-label">Giao diện Tối</span>
+                </button>
                 <div class="live-indicator">
                     <div class="live-dot"></div>
                     <span>LIVE MONITOR</span>
@@ -1735,12 +1914,12 @@
                 mcpTbody.innerHTML = serverKeys.map(k => {
                     const s = mcpServers[k];
                     const transportBadge = s.type === 'websocket'
-                        ? `<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">${(s.upstream_url || '').startsWith('wss://') ? 'WSS (TLS Socket)' : 'WebSocket (Socket)'}</span>`
+                        ? `<span class="badge badge-allowed">${(s.upstream_url || '').startsWith('wss://') ? 'WSS (TLS Socket)' : 'WebSocket (Socket)'}</span>`
                         : s.type === 'sse'
-                        ? '<span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa;">SSE (HTTP)</span>'
+                        ? '<span class="badge badge-provider">SSE (HTTP)</span>'
                         : s.type === 'grpc'
-                        ? '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">gRPC / Protobuf</span>'
-                        : '<span class="badge" style="background: rgba(139, 92, 246, 0.15); color: #c084fc;">Built-in Gateway</span>';
+                        ? '<span class="badge badge-warning">gRPC / Protobuf</span>'
+                        : '<span class="badge badge-model">Built-in Gateway</span>';
                     
                     const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
                     const lanEndpoint = s.type === 'websocket'
@@ -2083,8 +2262,8 @@
                 body.innerHTML = items.map(it => {
                     const blocked = it.domain_action === 'block';
                     const status = blocked
-                        ? '<span class="badge" style="background: rgba(239,68,68,0.15); color:#f87171;">⛔ BLOCK</span>'
-                        : '<span class="badge" style="background: rgba(16,185,129,0.15); color:#34d399;">✅ ALLOW</span>';
+                        ? '<span class="badge badge-blocked">⛔ BLOCK</span>'
+                        : '<span class="badge badge-allowed">✅ ALLOW</span>';
                     const kindBadge = it.kind === 'mcp'
                         ? '<span class="badge badge-mcp">🔌 MCP</span>'
                         : '<span class="badge badge-provider">🧠 LLM</span>';
@@ -2252,6 +2431,58 @@
                 showToast('❌ Thao tác thất bại: ' + err.message, true);
             }
         }
+
+        // ==================== THEME CONTROLLER ====================
+        function getPreferredTheme() {
+            try {
+                const stored = localStorage.getItem('app-theme');
+                if (stored === 'dark' || stored === 'light') return stored;
+            } catch(e) {}
+            // Mặc định chọn theme sáng theo yêu cầu của whattodo.md
+            return 'light';
+        }
+
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            try {
+                localStorage.setItem('app-theme', theme);
+                const meta = document.querySelector('meta[name="color-scheme"]');
+                if (meta) meta.content = theme;
+            } catch(e) {}
+
+            const btn = document.getElementById('theme-toggle-btn');
+            const iconSpan = document.getElementById('theme-toggle-icon');
+            const labelSpan = document.getElementById('theme-toggle-label');
+
+            if (theme === 'dark') {
+                if (btn) btn.setAttribute('title', 'Đang dùng giao diện Tối - Bấm để chuyển sang giao diện Sáng');
+                if (iconSpan) {
+                    iconSpan.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #f59e0b;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
+                }
+                if (labelSpan) labelSpan.textContent = 'Giao diện Sáng';
+            } else {
+                if (btn) btn.setAttribute('title', 'Đang dùng giao diện Sáng - Bấm để chuyển sang giao diện Tối');
+                if (iconSpan) {
+                    iconSpan.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color: #4f46e5;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
+                }
+                if (labelSpan) labelSpan.textContent = 'Giao diện Tối';
+            }
+        }
+
+        function toggleTheme() {
+            const current = document.documentElement.getAttribute('data-theme') || 'light';
+            const next = current === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+        }
+
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'app-theme' && (e.newValue === 'light' || e.newValue === 'dark')) {
+                applyTheme(e.newValue);
+            }
+        });
+
+        // Khởi tạo theme ban đầu (mặc định Sáng)
+        applyTheme(getPreferredTheme());
 
         // Khôi phục tab đang mở trước đó khi reload trang
         try {

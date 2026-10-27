@@ -756,5 +756,32 @@ class TestLLMProxy(unittest.TestCase):
                 conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
                 conn.commit()
 
+    def test_27_light_dark_theme_switcher(self):
+        """Kiểm thử tính năng chuyển đổi theme sáng/tối, mặc định chọn theme sáng"""
+        # Kiểm tra dashboard load thành công
+        resp = self.client.get("/")
+        self.assertEqual(resp.status_code, 200)
+        html = resp.text
+
+        # 1. Mặc định chọn theme sáng: kiểm tra script áp dụng fallback 'light'
+        self.assertIn("localStorage.getItem('app-theme') || 'light'", html)
+        self.assertIn("data-theme", html)
+
+        # 2. Kiểm tra có button/icon đổi theme
+        self.assertIn('id="theme-toggle-btn"', html)
+        self.assertIn('onclick="toggleTheme()"', html)
+        self.assertIn('id="theme-toggle-icon"', html)
+
+        # 3. Kiểm tra có đủ cấu hình CSS cho cả 2 theme (Light mặc định & Dark)
+        self.assertIn(':root[data-theme="light"]', html)
+        self.assertIn(':root[data-theme="dark"]', html)
+        self.assertIn('color-scheme: light', html)
+        self.assertIn('color-scheme: dark', html)
+
+        # 4. Kiểm tra hàm JavaScript toggleTheme và applyTheme
+        self.assertIn('function toggleTheme()', html)
+        self.assertIn('function applyTheme(', html)
+
 if __name__ == "__main__":
     unittest.main()
+

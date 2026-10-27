@@ -42,3 +42,5 @@ Cung cấp tính năng reset các logs và bộ đếm tokens:
  Nhật Ký Audit Chi Tiết Thời Gian Thực
     cần có phân trang, mỗi trang 20 item 
     tìm kiếm và sắp xếp cho từng header column của bảng
+
+Thêm icon để đổi theme sáng tối, mặc định chọn theme sáng 
