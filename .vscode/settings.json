@@ -1,4 +1,5 @@
 {
+  "jetski.cloudCodeUrl": "http://127.0.0.1:8000/google",
   "liveServer.settings.port": 5501,
   "workbench.colorCustomizations": {
     "statusBarItem.warningBackground": "#e69d00",

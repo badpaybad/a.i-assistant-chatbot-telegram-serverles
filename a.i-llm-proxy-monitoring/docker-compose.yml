@@ -6,6 +6,10 @@ services:
     container_name: llm_proxy_monitoring
     restart: unless-stopped
     
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+
     # Khi chạy trên Docker Desktop (Linux/macOS/Windows), dùng port mapping 8000:8000
     ports:
       - "8000:8000"
@@ -13,6 +17,7 @@ services:
     environment:
       - PORT=8000
       - HOST=0.0.0.0
+      - GOOGLE_UPSTREAM=https://daily-cloudcode-pa.googleapis.com
       - POLICY_FILE=/app/policy_matrix.yaml
       - DB_PATH=/app/data/llm_audit.db
       - RELOAD=false

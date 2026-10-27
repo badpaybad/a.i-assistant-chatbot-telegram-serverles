@@ -29,11 +29,18 @@ try:
 except ImportError:
     websockets = None
 
+http_client: httpx.AsyncClient = None
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global http_client
     init_db()
-    print("[INFO] LLM Proxy Monitoring Gateway initialized successfully")
+    limits = httpx.Limits(max_keepalive_connections=100, max_connections=300)
+    http_client = httpx.AsyncClient(timeout=180.0, limits=limits)
+    print("[INFO] LLM Proxy Monitoring Gateway initialized successfully (connection pool ready)")
     yield
+    if http_client and not http_client.is_closed:
+        await http_client.aclose()
 
 app = FastAPI(title="LLM Proxy & Monitoring Gateway with MCP", lifespan=lifespan)
 
@@ -47,10 +54,10 @@ app.add_middleware(
 
 POLICY_FILE = os.getenv("POLICY_FILE", os.path.join(os.path.dirname(__file__), "policy_matrix.yaml"))
 UPSTREAM_MAP = {
-    "google": "https://daily-cloudcode-pa.googleapis.com",
-    "anthropic": "https://api.anthropic.com",
-    "openai": "https://api.openai.com",
-    "copilot": "https://api.githubcopilot.com"
+    "google": os.getenv("GOOGLE_UPSTREAM", "https://daily-cloudcode-pa.googleapis.com"),
+    "anthropic": os.getenv("ANTHROPIC_UPSTREAM", "https://api.anthropic.com"),
+    "openai": os.getenv("OPENAI_UPSTREAM", "https://api.openai.com"),
+    "copilot": os.getenv("COPILOT_UPSTREAM", "https://api.githubcopilot.com")
 }
 
 def load_policy():
@@ -935,11 +942,13 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
         upstream_url += f"?{request.url.query}"
 
     # Sao chép và hiệu chỉnh Headers
-    headers = dict(request.headers)
-    headers.pop("host", None)
-    headers.pop("content-length", None)
+    # Sao chép và hiệu chỉnh Headers (loại bỏ hop-by-hop headers)
+    headers = {
+        k: v for k, v in request.headers.items()
+        if k.lower() not in ("host", "content-length", "connection", "keep-alive", "transfer-encoding")
+    }
     
-    # Đảm bảo SNI / Host đúng với target
+    # Đảm bảo SNI / Host đúng với target upstream
     parsed_host = base_upstream.replace("https://", "").replace("http://", "").split("/")[0]
     headers["Host"] = parsed_host
     # Chỉ nhận gzip/deflate để luôn giải nén được response và đọc usage token
@@ -947,16 +956,35 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     tracker = StreamingTokenTracker(provider, est_input_tokens)
 
-    # 6. Gửi Request lên Upstream Cloud LLM
+    # 6. Gửi Request lên Upstream Cloud LLM (dùng persistent pool và retry cho transient DNS/network error)
+    global http_client
+    active_client = http_client
+    if active_client is None or active_client.is_closed:
+        active_client = httpx.AsyncClient(timeout=180.0, limits=httpx.Limits(max_keepalive_connections=50, max_connections=200))
+
     try:
-        client = httpx.AsyncClient(timeout=180.0)
-        upstream_req = client.build_request(
-            method=request.method,
-            url=upstream_url,
-            headers=headers,
-            content=body_bytes
-        )
-        upstream_resp = await client.send(upstream_req, stream=True)
+        last_exc = None
+        upstream_resp = None
+        for attempt in range(3):
+            try:
+                upstream_req = active_client.build_request(
+                    method=request.method,
+                    url=upstream_url,
+                    headers=headers,
+                    content=body_bytes
+                )
+                upstream_resp = await active_client.send(upstream_req, stream=True)
+                last_exc = None
+                break
+            except (httpx.ConnectError, httpx.ConnectTimeout) as ce:
+                last_exc = ce
+                if attempt < 2:
+                    await asyncio.sleep(0.15 * (attempt + 1))
+                    continue
+                raise ce
+
+        if last_exc is not None or upstream_resp is None:
+            raise last_exc or RuntimeError("Failed to get upstream response")
 
         # Xử lý trường hợp Streaming response (SSE, gRPC-web, chunked)
         content_type = upstream_resp.headers.get("content-type", "")
@@ -970,7 +998,6 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
                         yield chunk
                 finally:
                     await upstream_resp.aclose()
-                    await client.aclose()
                     in_tok, out_tok = tracker.finalize()
                     latency = int((time.time() - start_time) * 1000)
                     log_request(
@@ -978,11 +1005,11 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
                         subpath, upstream_resp.status_code, "ALLOWED", in_tok, out_tok, latency
                     )
 
-            resp_headers = dict(upstream_resp.headers)
-            resp_headers.pop("content-length", None)
-            # aiter_bytes() đã giải nén -> không được giữ content-encoding gốc
-            resp_headers.pop("content-encoding", None)
-            resp_headers.pop("transfer-encoding", None)
+            # Loại bỏ hop-by-hop headers và encoding gốc vì aiter_bytes() đã giải nén
+            resp_headers = {
+                k: v for k, v in upstream_resp.headers.items()
+                if k.lower() not in ("content-length", "content-encoding", "transfer-encoding", "connection", "keep-alive")
+            }
             return StreamingResponse(
                 response_streamer(),
                 status_code=upstream_resp.status_code,
@@ -992,7 +1019,6 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
             # Non-streaming response
             resp_bytes = await upstream_resp.aread()
             await upstream_resp.aclose()
-            await client.aclose()
             
             tracker.process_chunk(resp_bytes)
             in_tok, out_tok = tracker.finalize()
@@ -1016,19 +1042,21 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
 # ==================== PROVIDER ENDPOINTS ====================
 
-@app.api_route("/google/{subpath:path}", methods=["GET", "POST", "PUT", "DELETE"])
+ALL_METHODS = ["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD"]
+
+@app.api_route("/google/{subpath:path}", methods=ALL_METHODS)
 async def route_google(request: Request, subpath: str):
     return await handle_proxy_request(request, "google", subpath)
 
-@app.api_route("/anthropic/{subpath:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/anthropic/{subpath:path}", methods=ALL_METHODS)
 async def route_anthropic(request: Request, subpath: str):
     return await handle_proxy_request(request, "anthropic", subpath)
 
-@app.api_route("/openai/{subpath:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/openai/{subpath:path}", methods=ALL_METHODS)
 async def route_openai(request: Request, subpath: str):
     return await handle_proxy_request(request, "openai", subpath)
 
-@app.api_route("/copilot/{subpath:path}", methods=["GET", "POST", "PUT", "DELETE"])
+@app.api_route("/copilot/{subpath:path}", methods=ALL_METHODS)
 async def route_copilot(request: Request, subpath: str):
     return await handle_proxy_request(request, "copilot", subpath)
 
