@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from database import (
     init_db, log_request, get_daily_token_usage, get_recent_logs, get_summary_stats,
-    record_discovery, get_discoveries, delete_discovery,
+    record_discovery, get_discoveries, delete_discovery, reset_audit_logs,
 )
 from token_utils import resolve_mac_address, estimate_input_tokens, StreamingTokenTracker, NON_INFERENCE_MODEL
 
@@ -410,6 +410,22 @@ async def api_stats():
 @app.get("/api/logs")
 async def api_logs(limit: int = 100):
     return get_recent_logs(limit=limit)
+
+@app.post("/api/logs/reset")
+@app.delete("/api/logs")
+async def api_reset_logs(request: Request):
+    try:
+        reset_disc = False
+        try:
+            body = await request.json()
+            if isinstance(body, dict):
+                reset_disc = bool(body.get("reset_discoveries", False))
+        except Exception:
+            pass
+        result = reset_audit_logs(reset_discoveries=reset_disc)
+        return {"success": True, **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/policy")
 async def api_policy():

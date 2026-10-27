@@ -421,5 +421,40 @@ class TestLLMProxy(unittest.TestCase):
         # Không có usage -> giữ ước tính input, output ước tính từ văn bản
         self.assertEqual(self._track("openai", 'data: {"choices":[{"delta":{"content":"abcdefgh"}}]}\n\n'), (999, 2))
 
+    def test_19_reset_logs_and_tokens(self):
+        # 1. Ghi log thử nghiệm vào database
+        log_request(
+            client_ip="10.99.0.88",
+            client_mac="02:00:00:88:88:88",
+            machine_name="Reset-Test-PC",
+            provider="openai",
+            model="gpt-4o",
+            endpoint="/v1/chat/completions",
+            status_code=200,
+            action="ALLOWED",
+            input_tokens=150,
+            output_tokens=250,
+            latency_ms=100
+        )
+        usage_before = get_daily_token_usage("10.99.0.88", "02:00:00:88:88:88")
+        self.assertGreaterEqual(usage_before, 400)
+
+        # 2. Gọi API reset logs
+        res = self.client.post("/api/logs/reset", json={"reset_discoveries": False})
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertTrue(data.get("success"))
+        self.assertGreaterEqual(data.get("deleted_logs"), 1)
+        self.assertGreaterEqual(data.get("deleted_tokens"), 400)
+
+        # 3. Kiểm tra usage và thống kê đã về 0
+        usage_after = get_daily_token_usage("10.99.0.88", "02:00:00:88:88:88")
+        self.assertEqual(usage_after, 0)
+        logs_after = get_recent_logs(limit=10)
+        self.assertEqual(len(logs_after), 0)
+        stats_after = get_summary_stats()
+        self.assertEqual(stats_after["totals"]["total_requests"], 0)
+        self.assertEqual(stats_after["totals"]["total_tokens"], 0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -3,13 +3,21 @@ import os
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-DB_FILE = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "llm_audit.db"))
+def get_db_path() -> str:
+    env_path = os.getenv("DB_PATH")
+    if env_path:
+        return env_path
+    data_dir_db = os.path.join(os.path.dirname(__file__), "data", "llm_audit.db")
+    if os.path.exists(data_dir_db) or os.path.exists(os.path.join(os.path.dirname(__file__), "data")):
+        return data_dir_db
+    return os.path.join(os.path.dirname(__file__), "llm_audit.db")
 
 def get_connection() -> sqlite3.Connection:
-    db_dir = os.path.dirname(DB_FILE)
+    db_file = get_db_path()
+    db_dir = os.path.dirname(db_file)
     if db_dir and not os.path.exists(db_dir):
         os.makedirs(db_dir, exist_ok=True)
-    conn = sqlite3.connect(DB_FILE, timeout=10)
+    conn = sqlite3.connect(db_file, timeout=10)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -99,8 +107,8 @@ def get_daily_token_usage(client_ip: str, client_mac: str) -> int:
             SELECT SUM(total_tokens) AS daily_sum
             FROM llm_audit_log
             WHERE (client_mac = ? OR client_ip = ?)
-              AND DATE(timestamp) = DATE(?)
-              AND status_code = 200
+               AND DATE(timestamp) = DATE(?)
+               AND status_code = 200
         """, (client_mac, client_ip, today_str))
         row = cursor.fetchone()
         if row and row["daily_sum"]:
@@ -129,8 +137,8 @@ def get_summary_stats() -> Dict[str, Any]:
         cursor.execute("""
             SELECT 
                 COUNT(*) AS total_requests,
-                SUM(CASE WHEN status_code = 200 THEN 1 ELSE 0 END) AS successful_requests,
-                SUM(CASE WHEN action LIKE 'BLOCKED%' THEN 1 ELSE 0 END) AS blocked_requests,
+                COALESCE(SUM(CASE WHEN status_code = 200 THEN 1 ELSE 0 END), 0) AS successful_requests,
+                COALESCE(SUM(CASE WHEN action LIKE 'BLOCKED%' THEN 1 ELSE 0 END), 0) AS blocked_requests,
                 COALESCE(SUM(input_tokens), 0) AS total_input_tokens,
                 COALESCE(SUM(output_tokens), 0) AS total_output_tokens,
                 COALESCE(SUM(total_tokens), 0) AS total_tokens
@@ -221,3 +229,43 @@ def delete_discovery(discovery_id: int) -> None:
     with get_connection() as conn:
         conn.execute("DELETE FROM discovered_endpoints WHERE id = ?", (discovery_id,))
         conn.commit()
+
+def reset_audit_logs(reset_discoveries: bool = False) -> Dict[str, Any]:
+    """Xóa toàn bộ bản ghi audit log và đặt lại tất cả bộ đếm tokens để tính lại từ đầu (0).
+    Nếu reset_discoveries=True, cũng sẽ xóa cả danh sách domain/endpoint đã auto-discovery."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*), COALESCE(SUM(total_tokens), 0) FROM llm_audit_log")
+        row = cursor.fetchone()
+        deleted_logs = int(row[0]) if row and row[0] is not None else 0
+        deleted_tokens = int(row[1]) if row and row[1] is not None else 0
+
+        cursor.execute("DELETE FROM llm_audit_log")
+        try:
+            cursor.execute("DELETE FROM sqlite_sequence WHERE name='llm_audit_log'")
+        except sqlite3.OperationalError:
+            pass
+
+        deleted_disc = 0
+        if reset_discoveries:
+            try:
+                cursor.execute("SELECT COUNT(*) FROM discovered_endpoints")
+                r = cursor.fetchone()
+                deleted_disc = int(r[0]) if r and r[0] is not None else 0
+                cursor.execute("DELETE FROM discovered_endpoints")
+                cursor.execute("DELETE FROM sqlite_sequence WHERE name='discovered_endpoints'")
+            except sqlite3.OperationalError:
+                pass
+
+        conn.commit()
+        try:
+            conn.execute("VACUUM")
+        except Exception:
+            pass
+
+        return {
+            "deleted_logs": deleted_logs,
+            "deleted_tokens": deleted_tokens,
+            "deleted_discoveries": deleted_disc,
+            "message": "Đã reset toàn bộ audit logs và bộ đếm tokens về 0 thành công."
+        }

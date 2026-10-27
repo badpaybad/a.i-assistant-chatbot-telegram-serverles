@@ -22,3 +22,8 @@ Viết các hướng dẫn cấu hình cho từng IDE để trước khi ra inte
     viết ra file a.i-ide-setup-use-proxy.md 
 
 Viết dockerfile và dockercompose để build và sẽ chạy proxy cho mang LAN, các máy ở mạng LAN sẽ cần sửa cấu hình IDE để dùng proxy này 
+
+Cung cấp tính năng reset các logs và bộ đếm tokens:
+    Có chức năng (trên UI và API) để xóa/reset toàn bộ nhật ký audit log và bộ đếm số lượng tokens đã dùng về 0 để bắt đầu tính lại từ đầu khi cần.
+    Hỗ trợ xác nhận an toàn trước khi thực hiện reset để tránh thao tác nhầm.
+    Có tùy chọn giữ lại hoặc reset danh sách domain/endpoint đã discovery.

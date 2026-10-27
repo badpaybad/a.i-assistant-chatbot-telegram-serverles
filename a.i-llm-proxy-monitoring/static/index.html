@@ -565,6 +565,10 @@
                     <div class="live-dot"></div>
                     <span>LIVE MONITOR</span>
                 </div>
+                <button class="btn btn-danger" onclick="openResetLogsModal()" title="Xóa toàn bộ logs và đếm tokens lại từ đầu">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    Reset Logs & Tokens
+                </button>
                 <button class="btn" onclick="fetchData()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                     Làm mới
@@ -658,8 +662,11 @@
 
             <!-- Audit Log Table -->
             <div class="card">
-                <div class="card-header">
+                <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
                     <h2 class="card-title">📋 Nhật Ký Audit Chi Tiết Thời Gian Thực</h2>
+                    <button class="btn btn-danger btn-xs" onclick="openResetLogsModal()" title="Reset toàn bộ logs và đếm tokens về 0">
+                        🗑️ Reset Logs & Tokens
+                    </button>
                 </div>
                 <div style="overflow-x: auto;">
                     <table>
@@ -992,6 +999,34 @@
                     <button type="submit" class="btn btn-primary">Lưu MCP Server</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL: CONFIRM RESET LOGS & TOKENS ==================== -->
+    <div class="modal-overlay" id="resetLogsModal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: #f87171;">⚠️ Xác Nhận Reset Logs & Tokens</h3>
+                <button class="btn" onclick="closeModal('resetLogsModal')">✕</button>
+            </div>
+            <div style="margin: 16px 0; color: var(--text-secondary); font-size: 13.5px; line-height: 1.6;">
+                <p>Hành động này sẽ <strong>xóa toàn bộ lịch sử Nhật Ký Audit Log</strong> và <strong>đặt lại tất cả các bộ đếm Tokens (Input / Output / Tổng tiêu thụ)</strong> về <strong>0</strong> để hệ thống bắt đầu tính lại từ đầu.</p>
+                <div style="margin-top: 14px; padding: 12px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.25); color: #fca5a5;">
+                    ⚠️ <em>Lưu ý: Dữ liệu audit đã xóa sẽ không thể phục hồi!</em>
+                </div>
+                <div style="margin-top: 16px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-primary); font-size: 13px;">
+                        <input type="checkbox" id="reset-include-discovery" style="accent-color: #ef4444; width: 16px; height: 16px;">
+                        <span>Đồng thời xóa danh sách Cloud Endpoints đã Auto-Discovery</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn" onclick="closeModal('resetLogsModal')">Hủy bỏ</button>
+                <button type="button" class="btn btn-danger" id="btn-confirm-reset" onclick="handleConfirmResetLogs()">
+                    🗑️ Xác Nhận Reset Về 0
+                </button>
+            </div>
         </div>
     </div>
 
@@ -1589,6 +1624,41 @@
                 else showToast(result.detail || 'Lỗi cấu hình domain', true);
             } catch (err) {
                 showToast('Lỗi kết nối khi cấu hình domain', true);
+            }
+        }
+
+        function openResetLogsModal() {
+            document.getElementById('reset-include-discovery').checked = false;
+            openModal('resetLogsModal');
+        }
+
+        async function handleConfirmResetLogs() {
+            const btn = document.getElementById('btn-confirm-reset');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Đang reset...';
+            try {
+                const includeDiscovery = document.getElementById('reset-include-discovery').checked;
+                const res = await fetch('/api/logs/reset', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reset_discoveries: includeDiscovery })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'Lỗi khi thực hiện reset');
+                }
+                closeModal('resetLogsModal');
+                showToast(`✅ Đã reset về 0: xóa ${formatNumber(data.deleted_logs)} logs (${formatNumber(data.deleted_tokens)} tokens). Bắt đầu đếm lại từ đầu!`);
+                await fetchData();
+                if (includeDiscovery) {
+                    await fetchDiscovery();
+                }
+            } catch (err) {
+                showToast('❌ Reset thất bại: ' + err.message, true);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             }
         }
 

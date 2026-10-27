@@ -398,6 +398,28 @@ CREATE INDEX IF NOT EXISTS idx_client_mac ON llm_audit_log(client_mac);
 CREATE INDEX IF NOT EXISTS idx_timestamp ON llm_audit_log(timestamp);
 ```
 
+### 4.3. Cơ chế Reset Audit Logs & Đặt Lại Bộ Đếm Tokens (Bắt Đầu Tính Lại Từ Đầu)
+
+Để phục vụ nhu cầu tính toán chi phí, phân bổ quota mới hoặc dọn dẹp dữ liệu kiểm thử, hệ thống cung cấp tính năng Reset toàn diện:
+
+1. **Hàm xử lý tầng Database (`database.py`)**:
+   - `reset_audit_logs(reset_discoveries: bool = False)`:
+     - Thực hiện `DELETE FROM llm_audit_log` để xóa toàn bộ bản ghi audit.
+     - Reset autoincrement ID trong `sqlite_sequence` để ID bắt đầu đếm lại từ 1.
+     - Nếu bật `reset_discoveries=True`: xóa sạch cả bảng `discovered_endpoints`.
+     - Thực thi câu lệnh `VACUUM` để giải phóng dung lượng đĩa SQLite ngay lập tức.
+     - Trả về số lượng log và tổng số token đã dọn dẹp.
+
+2. **API Endpoint (`proxy_server.py`)**:
+   - `POST /api/logs/reset` (hoặc `DELETE /api/logs`):
+     - Payload (JSON tùy chọn): `{"reset_discoveries": false}`
+     - Trả về kết quả: `{"success": true, "deleted_logs": N, "deleted_tokens": M, "deleted_discoveries": K, "message": "..."}`.
+
+3. **Giao Diện Trực Quan (`static/index.html`)**:
+   - Nút bấm `🗑️ Reset Logs & Tokens` (màu đỏ cảnh báo) xuất hiện tại **Header** và đầu bảng **Nhật Ký Audit Chi Tiết Thời Gian Thực**.
+   - **Hộp thoại xác nhận (Confirmation Modal)**: Cảnh báo người dùng dữ liệu audit không thể phục hồi, cung cấp checkbox tùy chọn *"Đồng thời xóa danh sách Cloud Endpoints đã Auto-Discovery"*.
+   - Sau khi xác nhận, Dashboard gọi `fetchData()` để cập nhật tức thì tất cả các thẻ KPI (Tổng Requests, Requests Hợp lệ, Requests Bị chặn, Input Tokens Hôm nay, Output Tokens Hôm nay, Tổng Tokens Tiêu thụ, Thống kê theo Máy trạm, Thống kê theo Model) về số **0** tròn trĩnh.
+
 ---
 
 ## 5. Hướng dẫn Cấu hình Chi tiết cho Từng IDE (Step-by-Step)
