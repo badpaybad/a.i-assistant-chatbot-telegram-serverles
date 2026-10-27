@@ -1123,24 +1123,35 @@
                     clientsBody.innerHTML = stats.usage_by_client.map(c => {
                         const isBlockedPC = c.is_blocked_pc || c.policy_action === 'block';
                         const isQuotaExceeded = (c.daily_quota > 0 && c.sum_tokens >= c.daily_quota);
-                        const hasHistoryBlocked = (c.blocked_count && c.blocked_count > 0);
+                        const hasViolations = (c.blocked_count && c.blocked_count > 0) || isQuotaExceeded;
                         const displayName = c.policy_name || c.machine_name || 'Workstation';
                         
                         let statusHtml = '';
+                        let isLocked = isBlockedPC || hasViolations;
+
                         if (isBlockedPC) {
                             totalViolatingPCs++;
                             violationDetails.push(`${displayName} (BỊ CHẶN PC)`);
                             statusHtml = `<span class="badge badge-blocked" title="Máy trạm này bị chặn truy cập theo quy tắc chính sách">⛔ BỊ CHẶN PC</span>`;
-                        } else if (isQuotaExceeded) {
+                        } else if (hasViolations) {
                             totalViolatingPCs++;
-                            violationDetails.push(`${displayName} (HẾT QUOTA)`);
-                            statusHtml = `<span class="badge badge-blocked" title="Đã vượt quá hạn mức token trong ngày (${formatNumber(c.sum_tokens)}/${formatNumber(c.daily_quota)})">🚨 HẾT QUOTA</span>`;
-                        } else {
-                            statusHtml = `<span class="badge badge-allowed">🟢 Cho phép</span>`;
-                            if (hasHistoryBlocked) {
-                                const reason = c.last_violation_action ? c.last_violation_action.replace('BLOCKED_', '') : 'BLOCKED';
-                                statusHtml += ` <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #f87171; font-size: 11px; margin-left: 4px;" title="${c.last_violation_msg || ''}">(Đã chặn ${c.blocked_count} req ${reason})</span>`;
+                            let reasonText = 'Vi phạm kiểm soát';
+                            if (c.last_violation_action) {
+                                const act = c.last_violation_action;
+                                if (act.includes('INPUT_TOKENS')) reasonText = 'Vượt Input Tokens';
+                                else if (act.includes('OUTPUT_TOKENS')) reasonText = 'Vượt Output Tokens';
+                                else if (act.includes('DAILY_QUOTA')) reasonText = 'Hết Quota Ngày';
+                                else if (act.includes('MODEL')) reasonText = 'Cấm Model AI';
+                                else if (act.includes('PROVIDER')) reasonText = 'Cấm Provider';
+                                else if (act.includes('DOMAIN')) reasonText = 'Chặn Domain';
+                                else reasonText = act.replace('BLOCKED_', '');
+                            } else if (isQuotaExceeded) {
+                                reasonText = 'Hết Quota Ngày';
                             }
+                            violationDetails.push(`${displayName} (${reasonText})`);
+                            statusHtml = `<span class="badge badge-blocked" style="background: rgba(239, 68, 68, 0.22); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); font-weight: 600;" title="${c.last_violation_msg || ''}">🚨 BỊ KHÓA (${reasonText})</span>`;
+                        } else {
+                            statusHtml = `<span class="badge badge-allowed">🟢 Hoạt động</span>`;
                         }
 
                         const quotaDisplay = c.daily_quota > 0 
@@ -1148,16 +1159,12 @@
                             : `<strong>${formatNumber(c.sum_tokens)}</strong> <span style="font-size: 11px; color: var(--text-secondary);">/ ∞</span>`;
 
                         const safeName = displayName.replace(/'/g, "\\'");
-                        const toggleBtn = isBlockedPC
-                            ? `<button class="btn btn-xs" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);" onclick="toggleClientAccess('${c.client_ip}', '${c.client_mac}', '${safeName}', 'allow')" title="Mở khóa quyền dùng Proxy">🟢 Mở khóa</button>`
+                        const toggleBtn = isLocked
+                            ? `<button class="btn btn-xs" style="background: rgba(34, 197, 94, 0.2); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.4);" onclick="unlockClient('${c.client_ip}', '${c.client_mac}', '${safeName}', ${isBlockedPC})" title="Mở khóa cho phép máy trạm tiếp tục sử dụng">🟢 Mở khóa</button>`
                             : `<button class="btn btn-xs btn-danger" onclick="toggleClientAccess('${c.client_ip}', '${c.client_mac}', '${safeName}', 'block')" title="Khóa/Chặn quyền dùng Proxy">⛔ Chặn</button>`;
 
-                        const clearWarningBtn = hasHistoryBlocked
-                            ? `<button class="btn btn-xs" style="background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);" onclick="resolveClientViolations('${c.client_ip}', '${c.client_mac}', '${safeName}')" title="Xóa lịch sử cảnh báo vi phạm">🔄 Xóa cảnh báo</button>`
-                            : '';
-
                         return `
-                            <tr style="${(isBlockedPC || isQuotaExceeded) ? 'background: rgba(239, 68, 68, 0.05);' : ''}">
+                            <tr style="${isLocked ? 'background: rgba(239, 68, 68, 0.07);' : ''}">
                                 <td><strong>${c.client_ip}</strong></td>
                                 <td><span class="mac-pill">${c.client_mac}</span></td>
                                 <td>${displayName}</td>
@@ -1168,7 +1175,6 @@
                                     <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
                                         <button class="btn btn-xs" onclick="openReconfigureModal('${c.client_ip}', '${c.client_mac}', '${safeName}')" title="Cấu hình lại Quota, Model, Provider">⚙️ Cấu hình lại</button>
                                         ${toggleBtn}
-                                        ${clearWarningBtn}
                                     </div>
                                 </td>
                             </tr>
@@ -1813,6 +1819,14 @@
                 await fetchData();
             } catch (err) {
                 showToast('❌ Thao tác thất bại: ' + err.message, true);
+            }
+        }
+
+        async function unlockClient(clientIp, clientMac, machineName, isBlockedPC) {
+            if (isBlockedPC) {
+                await toggleClientAccess(clientIp, clientMac, machineName, 'allow');
+            } else {
+                await resolveClientViolations(clientIp, clientMac, machineName);
             }
         }
 

@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import json
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
@@ -66,6 +67,41 @@ def init_db():
                 UNIQUE(kind, provider, domain)
             )
         """)
+        # Bảng lưu trữ Ma Trận Phân Quyền (Policy Matrix) bền vững trong Database
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS policy_matrix (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                config_json TEXT NOT NULL,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
+
+def get_policy_from_db() -> Optional[Dict[str, Any]]:
+    """Đọc ma trận chính sách phân quyền từ Database."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT config_json FROM policy_matrix WHERE id = 1")
+            row = cursor.fetchone()
+            if row and row["config_json"]:
+                return json.loads(row["config_json"])
+    except Exception:
+        pass
+    return None
+
+def save_policy_to_db(policy_data: Dict[str, Any]) -> None:
+    """Lưu ma trận chính sách phân quyền vào Database (áp dụng ngay lập tức)."""
+    json_str = json.dumps(policy_data, ensure_ascii=False)
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO policy_matrix (id, config_json, updated_at)
+            VALUES (1, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(id) DO UPDATE SET
+                config_json = excluded.config_json,
+                updated_at = CURRENT_TIMESTAMP
+        """, (json_str,))
         conn.commit()
 
 def log_request(
@@ -177,16 +213,51 @@ def get_summary_stats() -> Dict[str, Any]:
             "usage_by_model": usage_by_model
         }
 
-def resolve_client_violations(client_ip: str, client_mac: str = "") -> int:
-    """Đánh dấu các bản ghi vi phạm cũ của máy trạm là đã giải quyết."""
+def get_client_active_violation(client_ip: str, client_mac: str = "") -> Optional[Dict[str, Any]]:
+    """
+    Kiểm tra xem máy trạm (IP hoặc MAC) có vi phạm kiểm soát nào chưa được giải quyết hay không.
+    Trả về dict { action, error_message, timestamp } nếu đang vi phạm, ngược lại None.
+    """
     with get_connection() as conn:
         cursor = conn.cursor()
         conditions = []
         params = []
-        if client_ip and client_ip != "-":
+        if client_ip in ("127.0.0.1", "localhost") or client_mac == "LOCAL_HOST":
+            conditions.append("(client_ip IN ('127.0.0.1', 'localhost') OR client_mac = 'LOCAL_HOST')")
+        elif client_ip and client_ip != "-":
             conditions.append("client_ip = ?")
             params.append(client_ip)
-        if client_mac and client_mac != "UNKNOWN_MAC":
+        if client_mac and client_mac not in ("UNKNOWN_MAC", "LOCAL_HOST"):
+            conditions.append("client_mac = ?")
+            params.append(client_mac)
+        if not conditions:
+            return None
+        where_clause = " OR ".join(conditions)
+        cursor.execute(f"""
+            SELECT action, error_message, timestamp
+            FROM llm_audit_log
+            WHERE ({where_clause})
+              AND action LIKE 'BLOCKED_%'
+            ORDER BY (CASE WHEN action = 'BLOCKED_VIOLATION_LOCK' THEN 1 ELSE 0 END) ASC, id DESC
+            LIMIT 1
+        """, params)
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+        return None
+
+def resolve_client_violations(client_ip: str, client_mac: str = "") -> int:
+    """Đánh dấu tất cả các bản ghi vi phạm cũ của máy trạm là đã giải quyết."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        conditions = []
+        params = []
+        if client_ip in ("127.0.0.1", "localhost") or client_mac == "LOCAL_HOST":
+            conditions.append("(client_ip IN ('127.0.0.1', 'localhost') OR client_mac = 'LOCAL_HOST')")
+        elif client_ip and client_ip != "-":
+            conditions.append("client_ip = ?")
+            params.append(client_ip)
+        if client_mac and client_mac not in ("UNKNOWN_MAC", "LOCAL_HOST"):
             conditions.append("client_mac = ?")
             params.append(client_mac)
         if not conditions:

@@ -15,11 +15,12 @@ Làm 1 proxy để map các domain tìm được của từng IDE
         Các thông số kiểm soát cho từng PC : 
             - IP, MAC address: Giới hạn PC nào được phép dùng Proxy.
             - Model Restrictions: Chỉ cho phép gọi các model cụ thể (ví dụ: chỉ OpenAI API Key được dùng cho Anthropic model).
-            - Token Limits: Giới hạn số lượng Input/Output tokens (tính theo ngày).
+            - Token Limits: Giới hạn số lượng Input/Output tokens (tính tổng trên 1 ngày).
             - Protocol/Port: Hỗ trợ các giao thức phổ biến (HTTP, HTTPS, SOCKS5) và các cổng cụ thể cho MCP/Streaming.
         Nếu có PC (IP or MAC address nào vi phạm các thông số cần kiểm soát) thì không cho phép gọi lên api llm cloud nữa , 
             Máy Trạm Mạng LAN (IP & MAC)
                 cần hiển thị thông báo vi phạm để có thể cấu hình lại khi cần 
+        a.i-llm-proxy-monitoring/policy_matrix.yaml này là sample default ban đầu khi có 1 PC (IP or MAC address) mới tham gia gọi proxy cần allow all và unlimit, cần lưu matrix ở db để khi có thay đổi có thể apply các rule về kiểm soát gọi api llm cloud 
 
     cần có UI để thao tác về bảng cấu hình allow / block từng loại ip , mac , domain , model  
     cần cấu hình để allow block MCP gọi thông qua socket, sse, websocket, wss, grpc, protobuf ...

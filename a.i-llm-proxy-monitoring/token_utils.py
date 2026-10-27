@@ -189,6 +189,19 @@ class StreamingTokenTracker:
         for line in lines[:-1]:
             self._process_line(line)
 
+    def get_current_counts(self) -> Tuple[int, int]:
+        """Lấy số lượng tokens hiện tại đang tích lũy."""
+        u = self.usage
+        if self.provider == "google":
+            out_tok = u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)
+        elif self.provider == "anthropic":
+            out_tok = u.get("output_tokens", 0)
+        elif self.provider == "openai":
+            out_tok = u.get("completion_tokens", u.get("output_tokens", 0))
+        else:
+            out_tok = _chars_to_tokens(self.text_chars)
+        return self.input_tokens, out_tok
+
     def finalize(self) -> Tuple[int, int]:
         """Trả về (input_tokens, output_tokens). Ưu tiên usage thật, fallback ước tính."""
         # Xử lý nốt phần còn lại (response non-stream 1 dòng không có newline)

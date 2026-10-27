@@ -20,6 +20,7 @@ from urllib.parse import urlparse
 from database import (
     init_db, log_request, get_daily_token_usage, get_recent_logs, get_summary_stats,
     record_discovery, get_discoveries, delete_discovery, reset_audit_logs, resolve_client_violations,
+    get_policy_from_db, save_policy_to_db, get_client_active_violation,
 )
 from token_utils import resolve_mac_address, estimate_input_tokens, StreamingTokenTracker, NON_INFERENCE_MODEL
 
@@ -68,36 +69,59 @@ UPSTREAM_MAP = {
     "copilot": os.getenv("COPILOT_UPSTREAM", "https://api.githubcopilot.com")
 }
 
-def load_policy():
-    try:
-        with open(POLICY_FILE, "r") as f:
-            return yaml.safe_load(f)
-    except Exception as e:
-        print(f"[ERROR] Failed to load policy matrix: {e}")
-        return {
-            "default_policy": {
-                "action": "allow",
-                "allowed_providers": ["*"],
-                "allowed_models": ["*"],
-                "allowed_mcp_servers": ["*"],
-                "allowed_mcp_tools": ["*"],
-                # 0 = không giới hạn
-                "max_input_tokens_per_request": 0,
-                "max_output_tokens_per_request": 0,
-                "daily_total_token_quota": 0
-            },
-            "mcp_servers": {
-                "lan-tools": {
-                    "type": "builtin",
-                    "description": "Built-in LAN Gateway Tools"
-                }
-            },
-            "rules": []
-        }
+def load_policy() -> dict:
+    """
+    Đọc Ma trận Chính sách từ SQLite Database (Single Source of Truth).
+    Nếu DB chưa có -> Đọc từ POLICY_FILE (sample default ban đầu) để seed vào DB.
+    """
+    pol = get_policy_from_db()
+    if pol and isinstance(pol, dict) and "default_policy" in pol:
+        return pol
+
+    default_sample = {
+        "default_policy": {
+            "action": "allow",
+            "allowed_providers": ["*"],
+            "allowed_models": ["*"],
+            "allowed_mcp_servers": ["*"],
+            "allowed_mcp_tools": ["*"],
+            "max_input_tokens_per_request": 0,
+            "max_output_tokens_per_request": 0,
+            "daily_total_token_quota": 0
+        },
+        "domain_policy": {},
+        "mcp_servers": {
+            "lan-tools": {
+                "type": "builtin",
+                "description": "Bộ công cụ LAN Gateway tích hợp (lan_status, lan_ping, lan_arp_lookup)"
+            }
+        },
+        "rules": []
+    }
+
+    if os.path.exists(POLICY_FILE):
+        try:
+            with open(POLICY_FILE, "r", encoding="utf-8") as f:
+                data = yaml.safe_load(f)
+                if data and isinstance(data, dict):
+                    save_policy_to_db(data)
+                    return data
+        except Exception as e:
+            print(f"[WARN] Failed to read initial seed from {POLICY_FILE}: {e}")
+
+    save_policy_to_db(default_sample)
+    return default_sample
 
 def save_policy(data: dict):
-    with open(POLICY_FILE, "w", encoding="utf-8") as f:
-        yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    """
+    Lưu Ma trận Chính sách vào SQLite DB (áp dụng tức thì) và đồng bộ ra file YAML.
+    """
+    save_policy_to_db(data)
+    try:
+        with open(POLICY_FILE, "w", encoding="utf-8") as f:
+            yaml.dump(data, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    except Exception as e:
+        print(f"[WARN] Failed to write policy yaml backup: {e}")
 
 def extract_client_ip(request: Request) -> str:
     forwarded = request.headers.get("x-forwarded-for")
@@ -153,8 +177,23 @@ def get_policy_for_client(client_ip: str, client_mac: str) -> dict:
         if r.get("ip_range") and match_ip_range(client_ip, r["ip_range"]):
             return r
 
-    # 4. Fallback về Default Policy
-    default_pol = policy_data.get("default_policy", {})
+    # 4. Nếu kết nối từ Host Laptop (localhost hoặc qua Docker bridge 172.16.0.0/12)
+    # khớp với rule localhost / admin
+    if client_ip == "127.0.0.1" or match_ip_range(client_ip, "172.16.0.0/12"):
+        for r in rules:
+            if r.get("ip") == "127.0.0.1" or r.get("mac") == "LOCAL_HOST":
+                return r
+
+    # 5. Fallback về Default Policy: Khi có 1 PC/IP mới tham gia mạng -> Allow All và Unlimit
+    default_pol = dict(policy_data.get("default_policy", {}))
+    default_pol.setdefault("action", "allow")
+    default_pol.setdefault("allowed_providers", ["*"])
+    default_pol.setdefault("allowed_models", ["*"])
+    default_pol.setdefault("allowed_mcp_servers", ["*"])
+    default_pol.setdefault("allowed_mcp_tools", ["*"])
+    default_pol.setdefault("max_input_tokens_per_request", 0)
+    default_pol.setdefault("max_output_tokens_per_request", 0)
+    default_pol.setdefault("daily_total_token_quota", 0)
     default_pol["name"] = "Default Policy (Fallback)"
     return default_pol
 
@@ -304,6 +343,18 @@ async def handle_socks5_client(reader: asyncio.StreamReader, writer: asyncio.Str
             err = f"SOCKS5: Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đã BỊ CHẶN sử dụng Proxy"
             log_request(client_ip, client_mac, machine_name, "socks5", dst_host, f"socks5:{dst_port}", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
             writer.write(b"\x05\x02\x00\x01\x00\x00\x00\x00\x00\x00")  # Connection not allowed by ruleset
+            await writer.drain()
+            writer.close()
+            await writer.wait_closed()
+            return
+
+        # 3.1 Kiểm tra xem PC có vi phạm chưa giải quyết không
+        active_violation = get_client_active_violation(client_ip, client_mac)
+        if active_violation:
+            v_msg = active_violation.get("error_message") or active_violation.get("action")
+            err = f"SOCKS5: Máy trạm '{machine_name}' đang BỊ KHÓA do vi phạm trước đó: {v_msg}"
+            log_request(client_ip, client_mac, machine_name, "socks5", dst_host, f"socks5:{dst_port}", 403, "BLOCKED_VIOLATION_LOCK", 0, 0, 0, err)
+            writer.write(b"\x05\x02\x00\x01\x00\x00\x00\x00\x00\x00")
             await writer.drain()
             writer.close()
             await writer.wait_closed()
@@ -851,6 +902,14 @@ async def mcp_sse_endpoint(request: Request, server_name: str = "lan-tools"):
         log_request(client_ip, client_mac, machine_name, "mcp", server_name, "sse:connect", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
         raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_PC_ACCESS"})
 
+    # 0.1 Kiểm tra vi phạm chưa giải quyết
+    active_violation = get_client_active_violation(client_ip, client_mac)
+    if active_violation:
+        v_msg = active_violation.get("error_message") or active_violation.get("action")
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip}) đang BỊ KHÓA do vi phạm trước đó: {v_msg}"
+        log_request(client_ip, client_mac, machine_name, "mcp", server_name, "sse:connect", 403, "BLOCKED_VIOLATION_LOCK", 0, 0, 0, err)
+        raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_VIOLATION_LOCK"})
+
     # 1. Kiểm tra phân quyền MCP Server
     allowed_servers = rule.get("allowed_mcp_servers", ["*"])
     if not is_mcp_server_allowed(server_name, allowed_servers):
@@ -990,6 +1049,16 @@ async def mcp_websocket_endpoint(websocket: WebSocket, server_name: str = "lan-t
         log_request(client_ip, client_mac, machine_name, "mcp", server_name, "ws:connect", 403, "BLOCKED_PC_ACCESS", 0, 0, 0, err)
         await websocket.send_text(json.dumps({"jsonrpc": "2.0", "error": {"code": -32003, "message": err}}))
         await websocket.close(code=1008, reason="PC Blocked by Policy")
+        return
+
+    # 0.1 Kiểm tra vi phạm chưa giải quyết
+    active_violation = get_client_active_violation(client_ip, client_mac)
+    if active_violation:
+        v_msg = active_violation.get("error_message") or active_violation.get("action")
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip}) đang BỊ KHÓA do vi phạm trước đó: {v_msg}"
+        log_request(client_ip, client_mac, machine_name, "mcp", server_name, "ws:connect", 403, "BLOCKED_VIOLATION_LOCK", 0, 0, 0, err)
+        await websocket.send_text(json.dumps({"jsonrpc": "2.0", "error": {"code": -32003, "message": err}}))
+        await websocket.close(code=1008, reason="PC Locked by Violation")
         return
 
     # 1. Kiểm tra quyền MCP Server
@@ -1215,6 +1284,15 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
         log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 403, "BLOCKED_PC_ACCESS", est_input_tokens, 0, 0, err)
         raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_PC_ACCESS", "client_ip": client_ip, "client_mac": client_mac})
 
+    # 0.05 Kiểm tra Vi Phạm Cần Kiểm Soát (Nếu đã vi phạm trước đó thì không cho phép gọi lên API LLM Cloud nữa)
+    active_violation = get_client_active_violation(client_ip, client_mac)
+    if active_violation:
+        v_action = active_violation.get("action", "BLOCKED")
+        v_msg = active_violation.get("error_message") or v_action
+        err = f"Máy trạm '{machine_name}' (IP: {client_ip} / MAC: {client_mac}) đang BỊ KHÓA gọi API LLM Cloud do vi phạm trước đó: {v_msg}. Vui lòng liên hệ Admin hoặc vào Dashboard mở khóa/cấu hình lại."
+        log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 403, "BLOCKED_VIOLATION_LOCK", est_input_tokens, 0, 0, err)
+        raise HTTPException(status_code=403, detail={"error": err, "violation": "BLOCKED_VIOLATION_LOCK", "reason": v_msg, "client_ip": client_ip, "client_mac": client_mac})
+
     # 0.1 Discovery + Domain Policy: ghi nhận domain/IP cloud, chặn nếu domain bị Block
     base_upstream = UPSTREAM_MAP.get(provider, "https://api.openai.com")
     up_domain = host_of(base_upstream)
@@ -1245,6 +1323,14 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
     if max_input > 0 and est_input_tokens > max_input:
         err = f"Input tokens ({est_input_tokens}) exceed maximum allowed limit ({max_input}) for this PC"
         log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 400, "BLOCKED_INPUT_TOKENS", est_input_tokens, 0, 0, err)
+        raise HTTPException(status_code=400, detail={"error": err})
+
+    # 3.1 Kiểm tra Giới Hạn Output Token theo Request Payload (0 / trống = không giới hạn)
+    max_output = int(rule.get("max_output_tokens_per_request") or 0)
+    req_max_out = body_json.get("max_tokens") or body_json.get("max_completion_tokens") or (body_json.get("generationConfig") or {}).get("maxOutputTokens")
+    if max_output > 0 and req_max_out and int(req_max_out) > max_output:
+        err = f"Requested output tokens ({req_max_out}) exceed maximum allowed limit ({max_output}) for this PC"
+        log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 400, "BLOCKED_OUTPUT_TOKENS", est_input_tokens, 0, 0, err)
         raise HTTPException(status_code=400, detail={"error": err})
 
     # 4. Kiểm tra Daily Quota (0 / trống = không giới hạn)
@@ -1315,14 +1401,19 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
                 try:
                     async for chunk in upstream_resp.aiter_bytes():
                         tracker.process_chunk(chunk)
+                        if max_output > 0:
+                            _, curr_out = tracker.get_current_counts()
+                            if curr_out > max_output:
+                                break
                         yield chunk
                 finally:
                     await upstream_resp.aclose()
                     in_tok, out_tok = tracker.finalize()
                     latency = int((time.time() - start_time) * 1000)
+                    action = "BLOCKED_OUTPUT_TOKENS" if (max_output > 0 and out_tok > max_output) else "ALLOWED"
                     log_request(
                         client_ip, client_mac, machine_name, provider, model_name,
-                        subpath, upstream_resp.status_code, "ALLOWED", in_tok, out_tok, latency
+                        subpath, upstream_resp.status_code, action, in_tok, out_tok, latency
                     )
 
             # Loại bỏ hop-by-hop headers và encoding gốc vì aiter_bytes() đã giải nén
@@ -1343,11 +1434,15 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
             tracker.process_chunk(resp_bytes)
             in_tok, out_tok = tracker.finalize()
             latency = int((time.time() - start_time) * 1000)
-            
+            action = "BLOCKED_OUTPUT_TOKENS" if (max_output > 0 and out_tok > max_output) else "ALLOWED"
             log_request(
                 client_ip, client_mac, machine_name, provider, model_name,
-                subpath, upstream_resp.status_code, "ALLOWED", in_tok, out_tok, latency
+                subpath, upstream_resp.status_code, action, in_tok, out_tok, latency
             )
+            if max_output > 0 and out_tok > max_output:
+                err = f"Output tokens ({out_tok}) exceed maximum allowed limit ({max_output}) for this PC"
+                raise HTTPException(status_code=400, detail={"error": err})
+            
             return Response(
                 content=resp_bytes,
                 status_code=upstream_resp.status_code,

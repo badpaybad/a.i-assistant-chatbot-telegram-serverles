@@ -28,7 +28,10 @@ from fastapi.testclient import TestClient
 
 from proxy_server import app, get_policy_for_client, is_model_allowed, load_policy, save_policy
 from token_utils import resolve_mac_address, estimate_input_tokens
-from database import init_db, log_request, get_daily_token_usage, get_summary_stats, get_recent_logs
+from database import (
+    init_db, log_request, get_daily_token_usage, get_summary_stats, get_recent_logs,
+    get_client_active_violation, get_policy_from_db, save_policy_to_db,
+)
 
 # Rule mẫu chỉ dùng cho test — được nạp lúc setUpClass và xóa lúc tearDownClass
 TEST_FIXTURE_RULES = [
@@ -585,6 +588,78 @@ class TestLLMProxy(unittest.TestCase):
                 self.client.post("/api/domain-policy", json={"domain": "blocked-socks5.test.local", "action": "reset"})
 
         asyncio.run(run_socks5_test())
+
+    def test_23_violation_locking_and_resolution(self):
+        """Kiểm tra máy trạm vi phạm quy tắc sẽ bị khóa gọi API LLM Cloud cho đến khi giải quyết"""
+        test_ip = "10.99.9.50"
+        test_mac = "02:00:00:99:99:50"
+        rule_name = "[TEST] Rule-Violating-PC"
+
+        # 1. Tạo rule giới hạn input token = 5
+        self.client.post("/api/policy/rule", json={
+            "name": rule_name,
+            "ip": test_ip,
+            "mac": test_mac,
+            "action": "allow",
+            "allowed_providers": ["google"],
+            "allowed_models": ["gemini-1.5-flash"],
+            "max_input_tokens_per_request": 5,
+            "max_output_tokens_per_request": 0,
+            "daily_total_token_quota": 0
+        })
+
+        try:
+            # 2. Gửi request vi phạm giới hạn token (> 5 tokens)
+            resp_violate = self.client.post(
+                "/google/v1beta/models/gemini-1.5-flash:generateContent",
+                headers={"x-forwarded-for": test_ip},
+                json={"contents": [{"parts": [{"text": "This prompt is definitely longer than five input tokens to trigger violation"}]}]}
+            )
+            # Yêu cầu bị chặn do vượt token limit
+            self.assertEqual(resp_violate.status_code, 400)
+            self.assertIn("exceed maximum allowed limit", resp_violate.text)
+
+            # Máy trạm giờ đây phải có trạng thái vi phạm
+            violation = get_client_active_violation(test_ip, test_mac)
+            self.assertIsNotNone(violation)
+            self.assertEqual(violation["action"], "BLOCKED_INPUT_TOKENS")
+
+            # 3. Request tiếp theo dù prompt rất ngắn (1 token) cũng phải BỊ KHÓA (403 BLOCKED_VIOLATION_LOCK)
+            resp_locked = self.client.post(
+                "/google/v1beta/models/gemini-1.5-flash:generateContent",
+                headers={"x-forwarded-for": test_ip},
+                json={"contents": [{"parts": [{"text": "hi"}]}]}
+            )
+            self.assertEqual(resp_locked.status_code, 403)
+            self.assertIn("BLOCKED_VIOLATION_LOCK", resp_locked.text)
+
+            # 4. Giải quyết vi phạm qua API resolve-violations
+            res_resolve = self.client.post("/api/client-access/resolve-violations", json={
+                "client_ip": test_ip,
+                "client_mac": test_mac
+            })
+            self.assertEqual(res_resolve.status_code, 200)
+            self.assertGreaterEqual(res_resolve.json().get("resolved_count", 0), 1)
+
+            # Sau khi giải quyết, máy trạm không còn bị khóa
+            violation_after = get_client_active_violation(test_ip, test_mac)
+            self.assertIsNone(violation_after)
+
+        finally:
+            self.client.delete(f"/api/policy/rule/{rule_name}")
+            from database import get_connection
+            with get_connection() as conn:
+                conn.cursor().execute("DELETE FROM llm_audit_log WHERE client_ip = ?", (test_ip,))
+                conn.commit()
+
+    def test_24_policy_db_persistence(self):
+        """Kiểm tra ma trận chính sách được lưu trữ bền vững trong SQLite DB và đồng bộ"""
+        db_policy = get_policy_from_db()
+        self.assertIsNotNone(db_policy)
+        self.assertIn("default_policy", db_policy)
+        self.assertEqual(db_policy["default_policy"]["action"], "allow")
+        self.assertEqual(db_policy["default_policy"]["max_input_tokens_per_request"], 0)
+        self.assertEqual(db_policy["default_policy"]["max_output_tokens_per_request"], 0)
 
 if __name__ == "__main__":
     unittest.main()

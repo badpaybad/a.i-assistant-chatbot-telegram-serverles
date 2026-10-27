@@ -358,8 +358,37 @@ Theo đúng các yêu cầu bổ sung trong [`whattodo.md`](file:///work/a.i-ass
     - Nếu máy trạm có request bị chặn (vượt Quota, gọi model cấm, provider cấm, domain cấm): Hiển thị huy hiệu cảnh báo `🚨 VI PHẠM: <Mã lỗi> (<Số lần> lần)`.
     - Khi có máy trạm vi phạm, thanh **Banner Cảnh Báo** màu đỏ xuất hiện ngay đầu bảng thông báo tổng số máy vi phạm và lý do cụ thể.
 - **Thao tác nhanh 1-Click để cấu hình lại**:
-  - Nút **`⚙️ Cấu hình lại`**: Mở trực tiếp modal cấu hình quyền và quota với toàn bộ thông tin IP, MAC, Tên máy của PC đó đã được tự động điền sẵn.
-  - Nút **`⛔ Chặn PC`** / **`🟢 Mở khóa`**: Gọi API `POST /api/client-access` để quản trị viên có thể lập tức cô lập hoặc khôi phục quyền truy cập cho máy trạm vi phạm.
+  - Nút **`⚙️ Cấu hình lại`**: Mở trực tiếp modal cấu hình quyền và quota với toàn bộ thông tin IP, MAC, Tên máy của PC đó đã được tự động điền sẵn. Khi bấm Lưu, hệ thống tự động lưu vào SQLite DB và giải quyết các cảnh báo vi phạm cũ để mở khóa cho máy trạm.
+  - Nút **`🟢 Mở khóa`**: Gọi API `POST /api/client-access/resolve-violations` để xóa trạng thái vi phạm, cho phép máy trạm tiếp tục sử dụng LLM Cloud ngay lập tức.
+  - Nút **`⛔ Chặn PC`**: Gọi API `POST /api/client-access` để quản trị viên có thể lập tức cô lập quyền truy cập của máy trạm.
+
+#### 3. Cơ Chế Khóa Máy Trạm Khi Vi Phạm (Violation Locking & Quarantine):
+- **Nguyên tắc**: Nếu có bất kỳ PC nào (theo IP hoặc MAC) vi phạm các thông số cần kiểm soát:
+  - Vượt quá số Input Token tối đa (`BLOCKED_INPUT_TOKENS`)
+  - Vượt quá số Output Token tối đa (`BLOCKED_OUTPUT_TOKENS`)
+  - Gọi Model AI không nằm trong danh sách cho phép (`BLOCKED_MODEL`)
+  - Gọi Provider AI không được cấp quyền (`BLOCKED_PROVIDER`)
+  - Vượt quá hạn mức Token tiêu thụ trong ngày (`BLOCKED_DAILY_QUOTA`)
+  - Kết nối đến Domain Cloud bị cấm (`BLOCKED_DOMAIN`)
+  - Bị quản trị viên khóa truy cập (`BLOCKED_PC_ACCESS`)
+- **Hành vi thực thi tức thì**:
+  - Request vi phạm bị chặn ngay lập tức và ghi nhận vào bảng `llm_audit_log` với hành động `BLOCKED_*`.
+  - **Kể từ thời điểm đó, tất cả các request tiếp theo từ PC này lên API LLM Cloud (cũng như qua SOCKS5 và MCP) đều bị KHÓA HOÀN TOÀN (`BLOCKED_VIOLATION_LOCK`, HTTP 403 Forbidden)** nhằm ngăn chặn việc tiếp tục tiêu tốn tài nguyên hoặc vi phạm chính sách công ty.
+  - Trên Web Dashboard, máy trạm chuyển sang trạng thái cảnh báo `🚨 BỊ KHÓA (Vi phạm: [lý do])` với banner thông báo vi phạm màu đỏ nổi bật.
+  - Để cho phép máy trạm tiếp tục gọi LLM Cloud, Quản trị viên chỉ cần nhấp **`🟢 Mở khóa`** hoặc **`⚙️ Cấu hình lại`** trực tiếp tại bảng Máy Trạm Mạng LAN.
+
+#### 4. Lưu Trữ Ma Trận Phân Quyền Trong Database (Policy Matrix DB Persistence):
+- **Nguồn sự thật duy nhất (Single Source of Truth)**:
+  - File [`policy_matrix.yaml`](file:///work/a.i-assistant-chatbot-telegram-serverles/a.i-llm-proxy-monitoring/policy_matrix.yaml) đóng vai trò là **Sample Default ban đầu**. Khi khởi động server lần đầu hoặc cơ sở dữ liệu chưa có cấu hình, hệ thống sẽ đọc file YAML này để seed vào bảng `policy_matrix` trong SQLite Database (`llm_audit.db`).
+  - Ma trận chính sách phân quyền sau đó được **lưu trữ và truy vấn trực tiếp từ Database (`policy_matrix` table)**.
+  - Mọi thao tác thêm/sửa/xóa quy tắc trên Web Dashboard hay REST API (`/api/policy/rule`, `/api/policy/default`, `/api/policy`) đều được ghi thẳng vào Database và có hiệu lực tức thời (hot-reload), đồng thời tự động sao lưu đồng bộ ngược lại vào file `policy_matrix.yaml`.
+- **Mặc định cho máy mới (Allow All & Unlimit)**:
+  - Khi có một PC/IP mới trong mạng LAN tham gia gọi Proxy lần đầu, hệ thống tự động áp dụng `default_policy`:
+    - Cho phép tất cả Provider (`allowed_providers: ["*"]`)
+    - Cho phép tất cả Model (`allowed_models: ["*"]`)
+    - Cho phép tất cả MCP Server & Tool (`allowed_mcp_servers: ["*"]`, `allowed_mcp_tools: ["*"]`)
+    - Không giới hạn số token Input/Output và Quota ngày (`max_input_tokens: 0`, `max_output_tokens: 0`, `daily_quota: 0`).
+  - Khi cần kiểm soát máy nào, Quản trị viên chỉ cần vào UI Dashboard nhấp **`⚙️ Cấu hình lại`** hoặc **`Thêm Quy Tắc Mới`** để áp dụng rule kiểm soát riêng cho máy đó.
 
 ---
 
