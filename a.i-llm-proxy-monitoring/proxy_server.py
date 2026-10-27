@@ -20,7 +20,7 @@ from database import (
     init_db, log_request, get_daily_token_usage, get_recent_logs, get_summary_stats,
     record_discovery, get_discoveries, delete_discovery,
 )
-from token_utils import resolve_mac_address, estimate_input_tokens, StreamingTokenTracker
+from token_utils import resolve_mac_address, estimate_input_tokens, StreamingTokenTracker, NON_INFERENCE_MODEL
 
 from contextlib import asynccontextmanager
 
@@ -882,7 +882,9 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
     except Exception:
         body_json = {}
 
-    model_name, est_input_tokens = estimate_input_tokens(body_json, provider)
+    model_name, est_input_tokens = estimate_input_tokens(body_json, provider, subpath)
+    # Request control-plane (loadCodeAssist, listExperiments, metrics...) không sinh nội dung
+    is_inference = model_name != NON_INFERENCE_MODEL
     rule = get_policy_for_client(client_ip, client_mac)
     machine_name = rule.get("name", "Unknown PC")
 
@@ -906,7 +908,7 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     # 2. Kiểm tra Quyền Model
     allowed_models = rule.get("allowed_models", ["*"])
-    if not is_model_allowed(model_name, allowed_models):
+    if is_inference and not is_model_allowed(model_name, allowed_models):
         err = f"Model '{model_name}' is forbidden for {machine_name}. Allowed: {allowed_models}"
         log_request(client_ip, client_mac, machine_name, provider, model_name, subpath, 403, "BLOCKED_MODEL", est_input_tokens, 0, 0, err)
         raise HTTPException(status_code=403, detail={"error": err})
@@ -920,7 +922,7 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
     # 4. Kiểm tra Daily Quota (0 / trống = không giới hạn)
     daily_quota = int(rule.get("daily_total_token_quota") or 0)
-    if daily_quota > 0:
+    if daily_quota > 0 and is_inference:
         current_daily_used = get_daily_token_usage(client_ip, client_mac)
         if current_daily_used + est_input_tokens > daily_quota:
             err = f"Daily token quota exceeded ({current_daily_used}/{daily_quota} tokens used today) for {machine_name}"
@@ -940,6 +942,8 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
     # Đảm bảo SNI / Host đúng với target
     parsed_host = base_upstream.replace("https://", "").replace("http://", "").split("/")[0]
     headers["Host"] = parsed_host
+    # Chỉ nhận gzip/deflate để luôn giải nén được response và đọc usage token
+    headers["accept-encoding"] = "gzip, deflate"
 
     tracker = StreamingTokenTracker(provider, est_input_tokens)
 
@@ -976,6 +980,9 @@ async def handle_proxy_request(request: Request, provider: str, subpath: str):
 
             resp_headers = dict(upstream_resp.headers)
             resp_headers.pop("content-length", None)
+            # aiter_bytes() đã giải nén -> không được giữ content-encoding gốc
+            resp_headers.pop("content-encoding", None)
+            resp_headers.pop("transfer-encoding", None)
             return StreamingResponse(
                 response_streamer(),
                 status_code=upstream_resp.status_code,

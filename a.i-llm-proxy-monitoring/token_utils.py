@@ -1,7 +1,13 @@
+import codecs
 import json
 import re
 import subprocess
-from typing import Dict, Any, Tuple, Optional
+from typing import Dict, Any, Tuple
+
+# Model marker cho các request "control-plane" (loadCodeAssist, listExperiments, metrics...)
+# không sinh nội dung -> không tiêu thụ token, không áp dụng kiểm tra model/quota.
+NON_INFERENCE_MODEL = "-"
+
 
 def resolve_mac_address(client_ip: str) -> str:
     """Tra cứu MAC address từ IP trong mạng LAN thông qua ARP table"""
@@ -36,159 +42,179 @@ def resolve_mac_address(client_ip: str) -> str:
 
     return "UNKNOWN_MAC"
 
-def estimate_input_tokens(body: Dict[str, Any], provider: str) -> Tuple[str, int]:
+
+# ==================== ƯỚC TÍNH INPUT TOKENS (TRƯỚC KHI GỬI) ====================
+
+# Bỏ qua dữ liệu nhị phân / chữ ký không phải văn bản prompt
+_SKIP_KEYS = {"data", "signature", "thoughtSignature", "thought_signature"}
+
+
+def _count_chars(obj: Any) -> int:
+    """Đếm tổng số ký tự của mọi chuỗi văn bản trong cấu trúc JSON (bỏ base64/chữ ký)."""
+    if obj is None:
+        return 0
+    if isinstance(obj, str):
+        return 0 if obj.startswith("data:") else len(obj)
+    if isinstance(obj, list):
+        return sum(_count_chars(x) for x in obj)
+    if isinstance(obj, dict):
+        return sum(_count_chars(v) for k, v in obj.items() if k not in _SKIP_KEYS)
+    return 0
+
+
+def _json_len(obj: Any) -> int:
+    """Định nghĩa tools/schema được tính theo độ dài JSON (key cũng tốn token)."""
+    if not obj:
+        return 0
+    try:
+        return len(json.dumps(obj, ensure_ascii=False))
+    except Exception:
+        return 0
+
+
+def _chars_to_tokens(chars: int) -> int:
+    # Trung bình ~4 ký tự / token (chỉ là ước tính, giá trị thật lấy từ response)
+    return (chars + 3) // 4 if chars > 0 else 0
+
+
+def estimate_input_tokens(body: Dict[str, Any], provider: str, path: str = "") -> Tuple[str, int]:
     """
-    Trích xuất model và ước tính số lượng input tokens từ request body.
-    Trả về: (model_name, estimated_input_tokens)
+    Trích xuất model và ước tính input tokens từ request body.
+    Trả về (model_name, estimated_input_tokens).
+    Request không sinh nội dung (không có model / contents / messages) -> (NON_INFERENCE_MODEL, 0).
     """
-    model = "unknown-model"
-    text_content = ""
+    if not isinstance(body, dict):
+        body = {}
+    path_model = ""
+    m = re.search(r"models/([^/:?]+)", path or "")
+    if m:
+        path_model = m.group(1)
+    if "count_tokens" in (path or "") or "countTokens" in (path or ""):
+        return NON_INFERENCE_MODEL, 0
+
+    chars = 0
+    model = ""
 
     if provider == "google":
-        # Google Gemini / CloudCode PA
-        model = body.get("model", "") or body.get("modelName", "") or "gemini-default"
-        # contents: [{"parts": [{"text": "..."}]}]
-        contents = body.get("contents", [])
-        if isinstance(contents, list):
-            for c in contents:
-                parts = c.get("parts", []) if isinstance(c, dict) else []
-                for p in parts:
-                    if isinstance(p, dict) and "text" in p:
-                        text_content += p["text"] + " "
-        elif "prompt" in body:
-            text_content += str(body.get("prompt", ""))
-        elif "requests" in body:
-            text_content += str(body.get("requests", ""))
+        # Gemini API: {contents, systemInstruction, tools}
+        # CloudCode PA (Antigravity): {model, project, request: {contents, systemInstruction, tools}}
+        req = body.get("request") if isinstance(body.get("request"), dict) else body
+        contents = req.get("contents")
+        model = body.get("model") or req.get("model") or body.get("modelName") or path_model
+        if not contents and not model and "prompt" not in body:
+            return NON_INFERENCE_MODEL, 0
+        model = model or "gemini-default"
+        chars += _count_chars(contents)
+        chars += _count_chars(req.get("systemInstruction") or req.get("system_instruction"))
+        chars += _json_len(req.get("tools"))
+        chars += _count_chars(body.get("prompt"))
 
     elif provider == "anthropic":
-        # Anthropic Claude
-        model = body.get("model", "claude-default")
-        system_prompt = body.get("system", "")
-        if isinstance(system_prompt, str):
-            text_content += system_prompt + " "
-        elif isinstance(system_prompt, list):
-            for item in system_prompt:
-                if isinstance(item, dict) and "text" in item:
-                    text_content += item["text"] + " "
-        
-        messages = body.get("messages", [])
-        for msg in messages:
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                text_content += content + " "
-            elif isinstance(content, list):
-                for part in content:
-                    if isinstance(part, dict) and "text" in part:
-                        text_content += part["text"] + " "
+        messages = body.get("messages")
+        model = body.get("model") or ""
+        if not messages and not model:
+            return NON_INFERENCE_MODEL, 0
+        model = model or "claude-default"
+        chars += _count_chars(body.get("system"))
+        chars += _count_chars(messages)
+        chars += _json_len(body.get("tools"))
 
-    elif provider in ("openai", "copilot"):
-        # OpenAI / GitHub Copilot
-        model = body.get("model", "gpt-default")
-        messages = body.get("messages", [])
-        for msg in messages:
-            content = msg.get("content", "")
-            if isinstance(content, str):
-                text_content += content + " "
-            elif isinstance(content, list):
-                for part in content:
-                    if isinstance(part, dict) and "text" in part:
-                        text_content += part["text"] + " "
-        if "prompt" in body:
-            text_content += str(body.get("prompt", ""))
+    else:  # openai / copilot (Chat Completions, Responses API, Completions, Embeddings)
+        model = body.get("model") or ""
+        payload_keys = ("messages", "input", "prompt", "instructions")
+        if not model and not any(body.get(k) for k in payload_keys):
+            return NON_INFERENCE_MODEL, 0
+        model = model or "gpt-default"
+        for k in payload_keys:
+            chars += _count_chars(body.get(k))
+        chars += _json_len(body.get("tools") or body.get("functions"))
 
-    # Ước tính số token: trung bình 1 token ~ 4 ký tự
-    est_tokens = max(1, len(text_content) // 4)
-    return model, est_tokens
+    return model, _chars_to_tokens(chars)
+
+
+# ==================== ĐẾM TOKEN THẬT TỪ RESPONSE ====================
+
+# Khóa usage do chính provider trả về (số chính xác để tính tiền)
+_USAGE_KEYS = {
+    "google": ["promptTokenCount", "candidatesTokenCount", "thoughtsTokenCount",
+               "toolUsePromptTokenCount", "cachedContentTokenCount"],
+    "anthropic": ["input_tokens", "output_tokens",
+                  "cache_creation_input_tokens", "cache_read_input_tokens"],
+    "openai": ["prompt_tokens", "completion_tokens", "input_tokens", "output_tokens"],
+}
+_USAGE_RE = {
+    p: re.compile(r'"(%s)"\s*:\s*(\d+)' % "|".join(keys)) for p, keys in _USAGE_KEYS.items()
+}
+# Văn bản model sinh ra (fallback khi provider không trả usage)
+_TEXT_RE = re.compile(r'"(?:text|content)"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
 
 class StreamingTokenTracker:
     """
-    Theo dõi và trích xuất số tokens input & output từ các chunk SSE trả về từ LLM Cloud
+    Đọc usage thật từ response của LLM Cloud, chịu được mọi định dạng:
+    SSE (`data: {...}`), JSON array stream (Gemini/CloudCode), JSON đơn (non-stream),
+    và wrapper `{"response": {...}}` của CloudCode PA.
+    Xử lý theo từng dòng (chuỗi JSON không chứa newline thô) nên không lỗi khi chunk bị cắt.
     """
     def __init__(self, provider: str, est_input_tokens: int = 0):
-        self.provider = provider
+        self.provider = "openai" if provider in ("openai", "copilot") else provider
+        self.est_input_tokens = est_input_tokens
         self.input_tokens = est_input_tokens
         self.output_tokens = 0
-        self.accumulated_text = ""
+        self.cached_tokens = 0
+        self.usage: Dict[str, int] = {}
+        self.text_chars = 0
         self.buffer = ""
+        self._decoder = codecs.getincrementaldecoder("utf-8")(errors="ignore")
+
+    def _process_line(self, line: str):
+        if not line:
+            return
+        usage_re = _USAGE_RE.get(self.provider)
+        if usage_re:
+            for m in usage_re.finditer(line):
+                # Giá trị usage là cộng dồn -> lấy giá trị xuất hiện sau cùng
+                self.usage[m.group(1)] = int(m.group(2))
+        for m in _TEXT_RE.finditer(line):
+            self.text_chars += len(m.group(1))
 
     def process_chunk(self, chunk: bytes):
         try:
-            text = chunk.decode("utf-8", errors="ignore")
+            text = self._decoder.decode(chunk)
         except Exception:
             return
-        
         self.buffer += text
         lines = self.buffer.split("\n")
-        self.buffer = lines[-1]  # Giữ lại phần chưa hoàn thành
-        
+        self.buffer = lines[-1]  # Giữ lại phần dòng chưa hoàn thành
         for line in lines[:-1]:
-            line = line.strip()
-            if not line:
-                continue
-
-            if self.provider == "anthropic":
-                # Anthropic SSE Format:
-                # event: message_start / data: {"type": "message_start", "message": {"usage": {"input_tokens": 123}}}
-                # event: message_delta / data: {"type": "message_delta", "usage": {"output_tokens": 456}}
-                if line.startswith("data: "):
-                    data_str = line[6:]
-                    try:
-                        data = json.loads(data_str)
-                        d_type = data.get("type", "")
-                        if d_type == "message_start":
-                            msg = data.get("message", {})
-                            usage = msg.get("usage", {})
-                            if "input_tokens" in usage:
-                                self.input_tokens = usage["input_tokens"]
-                        elif d_type == "message_delta":
-                            usage = data.get("usage", {})
-                            if "output_tokens" in usage:
-                                self.output_tokens = usage["output_tokens"]
-                        elif d_type == "content_block_delta":
-                            delta = data.get("delta", {})
-                            if "text" in delta:
-                                self.accumulated_text += delta["text"]
-                    except Exception:
-                        pass
-
-            elif self.provider == "google":
-                # Google Gemini / CCPA format
-                # data: {"candidates": [...], "usageMetadata": {"promptTokenCount": 10, "candidatesTokenCount": 20}}
-                if line.startswith("data: "):
-                    line = line[6:]
-                if "usageMetadata" in line:
-                    try:
-                        data = json.loads(line)
-                        usage = data.get("usageMetadata", {})
-                        if "promptTokenCount" in usage:
-                            self.input_tokens = usage["promptTokenCount"]
-                        if "candidatesTokenCount" in usage:
-                            self.output_tokens = usage["candidatesTokenCount"]
-                    except Exception:
-                        pass
-
-            elif self.provider in ("openai", "copilot"):
-                # OpenAI SSE format
-                if line.startswith("data: "):
-                    data_str = line[6:]
-                    if data_str == "[DONE]":
-                        continue
-                    try:
-                        data = json.loads(data_str)
-                        if "usage" in data and data["usage"]:
-                            usage = data["usage"]
-                            self.input_tokens = usage.get("prompt_tokens", self.input_tokens)
-                            self.output_tokens = usage.get("completion_tokens", self.output_tokens)
-                        choices = data.get("choices", [])
-                        for ch in choices:
-                            delta = ch.get("delta", {})
-                            if "content" in delta and delta["content"]:
-                                self.accumulated_text += delta["content"]
-                    except Exception:
-                        pass
+            self._process_line(line)
 
     def finalize(self) -> Tuple[int, int]:
-        """Tính toán giá trị cuối cùng nếu cloud không trả về trường usage"""
-        if self.output_tokens == 0 and len(self.accumulated_text) > 0:
-            self.output_tokens = max(1, len(self.accumulated_text) // 4)
+        """Trả về (input_tokens, output_tokens). Ưu tiên usage thật, fallback ước tính."""
+        # Xử lý nốt phần còn lại (response non-stream 1 dòng không có newline)
+        self.buffer += self._decoder.decode(b"", final=True)
+        if self.buffer:
+            self._process_line(self.buffer)
+            self.buffer = ""
+
+        u = self.usage
+        if self.provider == "google" and ("promptTokenCount" in u or "candidatesTokenCount" in u):
+            # cachedContentTokenCount đã nằm trong promptTokenCount
+            self.input_tokens = u.get("promptTokenCount", 0) + u.get("toolUsePromptTokenCount", 0)
+            self.output_tokens = u.get("candidatesTokenCount", 0) + u.get("thoughtsTokenCount", 0)
+            self.cached_tokens = u.get("cachedContentTokenCount", 0)
+        elif self.provider == "anthropic" and ("input_tokens" in u or "output_tokens" in u):
+            # input_tokens của Anthropic KHÔNG gồm phần cache -> cộng thêm
+            self.cached_tokens = u.get("cache_read_input_tokens", 0)
+            self.input_tokens = (u.get("input_tokens", 0)
+                                 + u.get("cache_creation_input_tokens", 0)
+                                 + u.get("cache_read_input_tokens", 0))
+            self.output_tokens = u.get("output_tokens", 0)
+        elif self.provider == "openai" and any(k in u for k in _USAGE_KEYS["openai"]):
+            self.input_tokens = u.get("prompt_tokens", u.get("input_tokens", self.est_input_tokens))
+            self.output_tokens = u.get("completion_tokens", u.get("output_tokens", 0))
+        else:
+            # Provider không trả usage -> ước tính từ văn bản sinh ra
+            self.input_tokens = self.est_input_tokens
+            self.output_tokens = _chars_to_tokens(self.text_chars)
         return self.input_tokens, self.output_tokens

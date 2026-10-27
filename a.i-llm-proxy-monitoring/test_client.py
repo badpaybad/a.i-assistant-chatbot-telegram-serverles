@@ -359,5 +359,67 @@ class TestLLMProxy(unittest.TestCase):
             self.client.delete("/api/policy/rule/[TEST] gRPC Client")
             self.client.delete("/api/mcp/servers/test-grpc")
 
+    # ---------- Đếm token theo định dạng response thật của từng provider ----------
+    @staticmethod
+    def _track(provider, payload, chunk_size=7):
+        from token_utils import StreamingTokenTracker
+        t = StreamingTokenTracker(provider, est_input_tokens=999)
+        data = payload.encode("utf-8")
+        for i in range(0, len(data), chunk_size):  # cắt chunk nhỏ để thử ghép dòng
+            t.process_chunk(data[i:i + chunk_size])
+        return t.finalize()
+
+    def test_14_control_plane_zero_tokens(self):
+        """loadCodeAssist / listExperiments không phải inference -> 0 token, model '-'"""
+        from token_utils import NON_INFERENCE_MODEL
+        m, n = estimate_input_tokens({"metadata": {"ideType": "ANTIGRAVITY"}}, "google", "v1internal:loadCodeAssist")
+        self.assertEqual((m, n), (NON_INFERENCE_MODEL, 0))
+        m, n = estimate_input_tokens({}, "google", "v1internal:listExperiments")
+        self.assertEqual((m, n), (NON_INFERENCE_MODEL, 0))
+
+    def test_15_cloudcode_request_and_response(self):
+        """CloudCode PA (Antigravity): body bọc trong 'request', response bọc trong 'response'"""
+        body = {"model": "gemini-2.5-pro", "project": "p", "request": {
+            "contents": [{"role": "user", "parts": [{"text": "x" * 400}]}],
+            "systemInstruction": {"parts": [{"text": "y" * 400}]}}}
+        m, n = estimate_input_tokens(body, "google", "v1internal:streamGenerateContent")
+        self.assertEqual(m, "gemini-2.5-pro")
+        self.assertAlmostEqual(n, 200, delta=5)  # ~800 ký tự / 4 (+ role)
+        sse = ('data: {"response": {"candidates": [{"content": {"parts": [{"text": "Hel"}]}}],'
+               ' "usageMetadata": {"promptTokenCount": 1200, "candidatesTokenCount": 3}}}\n\n'
+               'data: {"response": {"candidates": [{"content": {"parts": [{"text": "lo"}]}}],'
+               ' "usageMetadata": {"promptTokenCount": 1200, "candidatesTokenCount": 40,'
+               ' "thoughtsTokenCount": 60, "cachedContentTokenCount": 800}}}\n\n')
+        self.assertEqual(self._track("google", sse), (1200, 100))
+
+    def test_16_gemini_json_array_and_model_from_path(self):
+        m, _ = estimate_input_tokens({"contents": [{"parts": [{"text": "hi"}]}]}, "google",
+                                     "v1beta/models/gemini-2.0-flash:generateContent")
+        self.assertEqual(m, "gemini-2.0-flash")
+        arr = '[{\n  "candidates": [],\n  "usageMetadata": {\n    "promptTokenCount": 10,\n    "candidatesTokenCount": 25\n  }\n}]'
+        self.assertEqual(self._track("google", arr), (10, 25))
+
+    def test_17_anthropic_cache_tokens(self):
+        """Anthropic: input = input + cache_creation + cache_read; output lấy giá trị cuối"""
+        sse = ('event: message_start\ndata: {"type":"message_start","message":{"usage":'
+               '{"input_tokens":12,"cache_creation_input_tokens":3000,"cache_read_input_tokens":20000,"output_tokens":1}}}\n\n'
+               'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\n'
+               'event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":512}}\n\n')
+        self.assertEqual(self._track("anthropic", sse), (23012, 512))
+        # Non-stream JSON 1 dòng, không có newline cuối
+        js = '{"id":"m","content":[{"type":"text","text":"hi"}],"usage":{"input_tokens":7,"output_tokens":9}}'
+        self.assertEqual(self._track("anthropic", js), (7, 9))
+
+    def test_18_openai_chat_and_responses(self):
+        chat = ('data: {"choices":[{"delta":{"content":"Hi"}}]}\n\n'
+                'data: {"choices":[],"usage":{"prompt_tokens":50,"completion_tokens":20,'
+                '"prompt_tokens_details":{"cached_tokens":0}}}\n\ndata: [DONE]\n\n')
+        self.assertEqual(self._track("openai", chat), (50, 20))
+        resp = ('event: response.completed\ndata: {"type":"response.completed","response":{"usage":'
+                '{"input_tokens":70,"input_tokens_details":{"cached_tokens":0},"output_tokens":30}}}\n\n')
+        self.assertEqual(self._track("openai", resp), (70, 30))
+        # Không có usage -> giữ ước tính input, output ước tính từ văn bản
+        self.assertEqual(self._track("openai", 'data: {"choices":[{"delta":{"content":"abcdefgh"}}]}\n\n'), (999, 2))
+
 if __name__ == "__main__":
     unittest.main()
